@@ -34,7 +34,8 @@ describe('meshNodeToCot', () => {
     const node = makeNode();
     const cot = meshNodeToCot(node);
     expect(cot).not.toBeNull();
-    expect(cot).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+    expect(cot!.startsWith('<event ')).toBe(true);
+    expect(cot).not.toContain('<?xml');
     expect(cot).toContain('<event ');
     expect(cot).toContain('</event>');
   });
@@ -262,5 +263,14 @@ describe('cotPongEvent', () => {
     expect(cot).toContain('stale="2026-10-09T12:00:20.000Z"');
     expect(cot).toContain('<point lat="0" lon="0"');
     expect(cot.endsWith('</event>')).toBe(true);
+  });
+});
+
+describe('stream framing', () => {
+  it('writes every event bare so a second event on the stream still parses', () => {
+    const node = makeNode({ latitude: 39.7, longitude: -105 });
+    const stream = [meshNodeToCot(node), cotDeleteEvent('MC-6'), cotPongEvent()].join('\n');
+    expect(stream).not.toContain('<?xml');
+    expect(stream.split('\n').every((line) => line.startsWith('<event '))).toBe(true);
   });
 });

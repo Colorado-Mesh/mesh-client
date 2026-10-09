@@ -5,6 +5,12 @@ import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { escapeXml } from '../../shared/xmlEscape';
 import { advertisedTakStyle } from './advertised-style';
 
+/*
+ * Events are written bare, with no `<?xml ...?>` declaration. A TAK stream is a run of
+ * `<event>` elements, and a declaration is only legal at the very start of an XML document:
+ * ATAK parsed the first event on a connection and dropped every later one.
+ */
+
 /** ATAK hides an event this long after it was sent unless a newer one arrives. */
 export const COT_STALE_MS = 10 * 60 * 1000;
 
@@ -117,7 +123,6 @@ export function cotPongEvent(nowMs: number = Date.now()): string {
   const time = new Date(nowMs).toISOString();
   const stale = new Date(nowMs + COT_PONG_STALE_MS).toISOString();
   return (
-    `<?xml version="1.0" encoding="UTF-8"?>` +
     `<event version="2.0" uid="${COT_PONG_UID}" type="${COT_PONG_TYPE}"` +
     ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
     `<point lat="0" lon="0" hae="0" ce="9999999" le="9999999"/>` +
@@ -131,7 +136,6 @@ export function cotDeleteEvent(targetUid: string, nowMs: number = Date.now()): s
   const stale = new Date(nowMs + COT_STALE_MS).toISOString();
   const target = escapeXml(targetUid);
   return (
-    `<?xml version="1.0" encoding="UTF-8"?>` +
     `<event version="2.0" uid="${target}-delete-${nowMs}" type="t-x-d-d"` +
     ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
     `<point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/>` +
@@ -180,7 +184,6 @@ export function meshNodeToCot(
   detail += `<remarks>${remarks}</remarks>`;
 
   return (
-    `<?xml version="1.0" encoding="UTF-8"?>` +
     `<event version="2.0" uid="${uid}" type="${escapeXml(style.cotType)}"` +
     ` time="${time}" start="${start}" stale="${stale}" how="m-g">` +
     `<point lat="${node.latitude}" lon="${node.longitude}"` +
