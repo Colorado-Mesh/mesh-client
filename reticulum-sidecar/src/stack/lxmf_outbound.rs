@@ -332,22 +332,36 @@ impl LxmfOutboundDriver {
     }
 
     /// Refresh enabled PN candidates used after Direct path failover exhausts.
-    /// Returns `false` when the list is unchanged. Logs only when the ordered cascade
-    /// membership changes — hops / medium refreshes alone are stored silently.
+    /// Returns `false` when the list is unchanged. Logs at INFO only when the candidate
+    /// count changes; Auto re-ranking (reorder / top-N swap) logs at DEBUG; hops / medium
+    /// refreshes alone are stored silently.
     pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) -> bool {
         if candidates == self.pn_cascade_candidates {
             return false;
         }
-        if !pn_cascade_membership_eq(&candidates, &self.pn_cascade_candidates) {
-            tracing::info!(
+        let preferred = self
+            .preferred_pn_hash
+            .map(hex::encode)
+            .unwrap_or_else(|| "none".into());
+        match pn_cascade_change_log_level(&self.pn_cascade_candidates, &candidates) {
+            Some(tracing::Level::INFO) => tracing::info!(
                 target: "lxmf-outbound",
                 count = candidates.len(),
-                preferred = %self
-                    .preferred_pn_hash
-                    .map(hex::encode)
-                    .unwrap_or_else(|| "none".into()),
+                preferred = %preferred,
                 "PN cascade candidates updated"
-            );
+            ),
+            Some(_) => tracing::debug!(
+                target: "lxmf-outbound",
+                count = candidates.len(),
+                preferred = %preferred,
+                ids = %candidates
+                    .iter()
+                    .map(|c| c.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(","),
+                "PN cascade candidates reranked"
+            ),
+            None => {}
         }
         self.pn_cascade_candidates = candidates;
         true
@@ -1739,6 +1753,19 @@ fn pn_cascade_membership_eq(a: &[PnCascadeCandidate], b: &[PnCascadeCandidate]) 
         })
 }
 
+fn pn_cascade_change_log_level(
+    prev: &[PnCascadeCandidate],
+    next: &[PnCascadeCandidate],
+) -> Option<tracing::Level> {
+    if prev.len() != next.len() {
+        Some(tracing::Level::INFO)
+    } else if !pn_cascade_membership_eq(prev, next) {
+        Some(tracing::Level::DEBUG)
+    } else {
+        None
+    }
+}
+
 fn delivery_method_label(method: DeliveryMethod) -> &'static str {
     match method {
         DeliveryMethod::Direct => "direct",
@@ -3015,6 +3042,43 @@ mod tests {
             driver.pn_cascade_candidates[0].hops,
             Some(3),
             "hops refresh must still be stored"
+        );
+    }
+
+    #[test]
+    fn pn_cascade_change_log_level_reserves_info_for_count_changes() {
+        let candidate = |hash_byte: u8, hops| PnCascadeCandidate {
+            hash: [hash_byte; 16],
+            is_local: false,
+            is_discovered: true,
+            hops: Some(hops),
+            medium: None,
+            id: format!("discovered-{hash_byte:02x}"),
+        };
+        let three = vec![candidate(1, 1), candidate(2, 2), candidate(3, 3)];
+
+        assert_eq!(pn_cascade_change_log_level(&three, &three), None);
+        let hops_only = vec![candidate(1, 2), candidate(2, 3), candidate(3, 4)];
+        assert_eq!(pn_cascade_change_log_level(&three, &hops_only), None);
+
+        let reordered = vec![candidate(2, 1), candidate(1, 2), candidate(3, 3)];
+        assert_eq!(
+            pn_cascade_change_log_level(&three, &reordered),
+            Some(tracing::Level::DEBUG)
+        );
+        let swapped = vec![candidate(1, 1), candidate(2, 2), candidate(4, 3)];
+        assert_eq!(
+            pn_cascade_change_log_level(&three, &swapped),
+            Some(tracing::Level::DEBUG)
+        );
+
+        assert_eq!(
+            pn_cascade_change_log_level(&three[..2], &three),
+            Some(tracing::Level::INFO)
+        );
+        assert_eq!(
+            pn_cascade_change_log_level(&three, &[]),
+            Some(tracing::Level::INFO)
         );
     }
 
