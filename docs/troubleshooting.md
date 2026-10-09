@@ -835,6 +835,22 @@ The **TAK** tab runs a local CoT server and a remote relay to an OpenTAKServer, 
 
 Also confirm the phone/tablet is on the same LAN as the desktop, the TAK server is running, and the firewall allows inbound TCP on the configured port (default 8089).
 
+### ATAK reports “remote host's certificate not trusted; check truststore” with a mesh-client data package
+
+**Cause**: Older mesh-client builds shipped the CA in the data package as a PEM file (`certs/ca.pem`). ATAK loads the truststore as a password-protected PKCS#12 file, so the PEM fails to load and the server certificate is rejected.
+
+**Fix**:
+
+1. Update mesh-client (the package now contains `certs/truststore.p12`).
+2. **Generate data package** again and import the new zip on the EUD (remove any previous mesh-client connection/package first).
+
+On an older build, convert the CA by hand and import it in ATAK under **Settings → Network Preferences → TAK Servers → Mesh Client → Import Trust Store** (password `atakatak`):
+
+```bash
+openssl pkcs12 -export -nokeys -in ca.pem -out truststore.p12 -caname mesh-client-ca \
+  -passout pass:atakatak -certpbe PBE-SHA1-3DES -macalg sha1
+```
+
 ## Chat, nodes, and notifications
 
 ### Unread messages but no app-icon badge
