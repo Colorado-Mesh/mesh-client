@@ -6845,7 +6845,6 @@
     "translate": "Terjemahkan pesan",
     "loading": "Menerjemahkan…",
     "attribution": "Diterjemahkan dari {{language}} melalui {{provider}}",
-    "showOriginal": "Tampilkan yang asli",
     "showTranslation": "Tampilkan terjemahan",
     "missingPack": "Terjemahan offline memerlukan paket ini.",
     "downloadPacks": "Unduh paket bahasa",
@@ -6902,6 +6901,7 @@
     "retry": "Coba lagi",
     "downloadSize": "Unduh ({{size}})",
     "readLanguagesHint": "Pesan dalam bahasa ini tidak pernah diterjemahkan secara otomatis. Bahasa yang dipilih di bawah Terjemahkan ke selalu dianggap sebagai bahasa yang Anda baca.",
-    "pivotHint": "Paket mencakup satu arah terjemahan, seperti bahasa Prancis ke bahasa Inggris. Pasangan bahasa lainnya diterjemahkan melalui bahasa Inggris: French to German needs the French → English and English → German packs. Menerjemahkan ke dalam bahasa Inggris hanya membutuhkan satu paket."
+    "pivotHint": "Paket mencakup satu arah terjemahan, seperti bahasa Prancis ke bahasa Inggris. Pasangan bahasa lainnya diterjemahkan melalui bahasa Inggris: French to German needs the French → English and English → German packs. Menerjemahkan ke dalam bahasa Inggris hanya membutuhkan satu paket.",
+    "hideTranslation": "Sembunyikan terjemahan"
   }
 }

@@ -6909,7 +6909,6 @@
     "translate": "Přeložit zprávu",
     "loading": "Překládání",
     "attribution": "Přeloženo z {{language}} přes {{provider}}",
-    "showOriginal": "Zobrazit originál",
     "showTranslation": "Zobrazit překlad",
     "missingPack": "Offline překlad potřebuje tyto balíčky.",
     "downloadPacks": "Stáhnout jazykové balíčky:",
@@ -6966,6 +6965,7 @@
     "retry": "Zkusit znovu",
     "downloadSize": "Stáhnout ({{size}})",
     "readLanguagesHint": "Zprávy v těchto jazycích nejsou nikdy přeloženy automaticky. Jazyk vybraný v části Přeložit do se vždy počítá jako jazyk, který čtete.",
-    "pivotHint": "Balíček pokrývá jeden směr překladu, například z francouzštiny do angličtiny. Jiné jazykové páry jsou přeloženy do angličtiny: Francouzština do němčiny potřebuje francouzskou → angličtinu a anglickou → němčinu. Pro překlad do angličtiny stačí pouze jeden balíček."
+    "pivotHint": "Balíček pokrývá jeden směr překladu, například z francouzštiny do angličtiny. Jiné jazykové páry jsou přeloženy do angličtiny: Francouzština do němčiny potřebuje francouzskou → angličtinu a anglickou → němčinu. Pro překlad do angličtiny stačí pouze jeden balíček.",
+    "hideTranslation": "Skrýt překlad"
   }
 }

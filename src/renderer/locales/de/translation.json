@@ -6845,7 +6845,6 @@
     "translate": "Mitteilung übersetzen",
     "loading": "Übersetzen",
     "attribution": "Übersetzt von {{language}} über {{provider}}",
-    "showOriginal": "Original-Text anzeigen",
     "showTranslation": "Übersetzung anzeigen",
     "missingPack": "Offline-Übersetzungen benötigen diese Pakete.",
     "downloadPacks": "Download von Language Packs:",
@@ -6902,6 +6901,7 @@
     "retry": "Erneut versuchen",
     "downloadSize": "Herunterladen ({{size}})",
     "readLanguagesHint": "Nachrichten in diesen Sprachen werden nie automatisch übersetzt. Die unter Übersetzen in ausgewählte Sprache zählt immer als eine Sprache, die Sie lesen.",
-    "pivotHint": "Ein Paket deckt eine Übersetzungsrichtung ab, z. B. Französisch nach Englisch. Andere Sprachpaare werden über Englisch übersetzt: Französisch nach Deutsch benötigt das Französisch → Englisch und Englisch → Deutsch Packs. Um ins Englische zu übersetzen, braucht man nur eine Packung."
+    "pivotHint": "Ein Paket deckt eine Übersetzungsrichtung ab, z. B. Französisch nach Englisch. Andere Sprachpaare werden über Englisch übersetzt: Französisch nach Deutsch benötigt das Französisch → Englisch und Englisch → Deutsch Packs. Um ins Englische zu übersetzen, braucht man nur eine Packung.",
+    "hideTranslation": "Übersetzung ausblenden"
   }
 }

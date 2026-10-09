@@ -42,7 +42,7 @@ describe('translated message display', () => {
     expect(screen.getByText(text)).toBeInTheDocument();
     expect(screen.getByText('Hello everyone')).toBeInTheDocument();
     expect(screen.getByText(/Bergamot/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.showOriginal' }));
+    fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.hideTranslation' }));
     expect(screen.queryByText('Hello everyone')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.showTranslation' }));
     expect(screen.getByText('Hello everyone')).toBeInTheDocument();

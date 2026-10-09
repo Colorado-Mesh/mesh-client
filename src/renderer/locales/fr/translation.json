@@ -6845,8 +6845,7 @@
     "translate": "Traducir mensaje",
     "loading": "Traduction en cours",
     "attribution": "Traduit de {{language}} via {{provider}}",
-    "showOriginal": "Afficher l’original",
-    "showTranslation": "afficher la traduction",
+    "showTranslation": "Afficher la traduction",
     "missingPack": "La traduction hors ligne a besoin de ces packs.",
     "downloadPacks": "Télécharger les modules linguistiques",
     "online": "Traduire en ligne",
@@ -6902,6 +6901,7 @@
     "retry": "Réessayer",
     "downloadSize": "Télécharger ({{size}})",
     "readLanguagesHint": "Les messages dans ces langues ne sont jamais traduits automatiquement. La langue sélectionnée sous Traduire en compte toujours comme une langue que vous lisez.",
-    "pivotHint": "Un pack couvre une direction de traduction, telle que le français vers l'anglais. Les autres paires de langues passent par l'anglais : le français vers l'allemand nécessite les packs français → anglais et anglais → allemand. La traduction en anglais ne nécessite qu'un seul pack."
+    "pivotHint": "Un pack couvre une direction de traduction, telle que le français vers l'anglais. Les autres paires de langues passent par l'anglais : le français vers l'allemand nécessite les packs français → anglais et anglais → allemand. La traduction en anglais ne nécessite qu'un seul pack.",
+    "hideTranslation": "Masquer la traduction"
   }
 }

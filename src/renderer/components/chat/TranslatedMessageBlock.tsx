@@ -51,14 +51,14 @@ export function TranslatedMessageBlock({
               className={buttonClass}
               aria-label={t(
                 state.showTranslation
-                  ? 'chatTranslation.showOriginal'
+                  ? 'chatTranslation.hideTranslation'
                   : 'chatTranslation.showTranslation',
               )}
               onClick={translation.toggle}
             >
               {t(
                 state.showTranslation
-                  ? 'chatTranslation.showOriginal'
+                  ? 'chatTranslation.hideTranslation'
                   : 'chatTranslation.showTranslation',
               )}
             </button>

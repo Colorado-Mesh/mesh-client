@@ -6845,7 +6845,6 @@
     "translate": "Bericht vertalen",
     "loading": "Vertalen",
     "attribution": "Vertaald van {{language}} via {{provider}}",
-    "showOriginal": "Origineel weergeven",
     "showTranslation": "Vertaling tonen",
     "missingPack": "Offline vertaling heeft deze pakketten nodig.",
     "downloadPacks": "Taalpakketten downloaden",
@@ -6902,6 +6901,7 @@
     "retry": "Opnieuw proberen",
     "downloadSize": "Download ({{size}})",
     "readLanguagesHint": "Berichten in deze talen worden nooit automatisch vertaald. De taal die is geselecteerd onder Vertalen naar telt altijd als een taal die u leest.",
-    "pivotHint": "Een pakket beslaat één vertaalrichting, zoals Frans naar Engels. Andere talenparen worden vertaald via het Engels: Frans naar Duits heeft de → Frans-Engels en → Engels-Duitse pakketten nodig. Vertalen naar het Engels heeft slechts één pakket nodig."
+    "pivotHint": "Een pakket beslaat één vertaalrichting, zoals Frans naar Engels. Andere talenparen worden vertaald via het Engels: Frans naar Duits heeft de → Frans-Engels en → Engels-Duitse pakketten nodig. Vertalen naar het Engels heeft slechts één pakket nodig.",
+    "hideTranslation": "Vertaling verbergen"
   }
 }

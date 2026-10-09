@@ -6845,7 +6845,7 @@
     "translate": "Translate message",
     "loading": "Translating…",
     "attribution": "Translated from {{language}} via {{provider}}",
-    "showOriginal": "Show original",
+    "hideTranslation": "Hide translation",
     "showTranslation": "Show translation",
     "missingPack": "Offline translation needs these packs.",
     "downloadPacks": "Download language packs",

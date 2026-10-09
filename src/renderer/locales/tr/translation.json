@@ -6845,7 +6845,6 @@
     "translate": "Mesajı çevir",
     "loading": "Çevriliyor...",
     "attribution": "{{language}} kaynağından {{provider}} aracılığıyla çevrildi",
-    "showOriginal": "Orijinali göster",
     "showTranslation": "Çeviriyi göster",
     "missingPack": "Çevrimdışı çevirinin bu paketlere ihtiyacı var.",
     "downloadPacks": "Dil paketlerini indirin",
@@ -6902,6 +6901,7 @@
     "retry": "Tekrar dene",
     "downloadSize": "İndir ({{size}})",
     "readLanguagesHint": "Bu dillerdeki mesajlar asla otomatik olarak çevrilmez. Çevir altında seçilen dil her zaman okuduğunuz bir dil olarak sayılır.",
-    "pivotHint": "Bir paket, Fransızca'dan İngilizce'ye gibi bir çeviri yönünü kapsar. Diğer dil çiftleri İngilizce'ye çevrilir: Fransızca'dan Almanca'ya Fransız → İngilizcesi ve İngilizce → Almanca paketlerine ihtiyaç vardır. İngilizceye çeviri sadece bir pakete ihtiyaç duyar."
+    "pivotHint": "Bir paket, Fransızca'dan İngilizce'ye gibi bir çeviri yönünü kapsar. Diğer dil çiftleri İngilizce'ye çevrilir: Fransızca'dan Almanca'ya Fransız → İngilizcesi ve İngilizce → Almanca paketlerine ihtiyaç vardır. İngilizceye çeviri sadece bir pakete ihtiyaç duyar.",
+    "hideTranslation": "Çeviriyi gizle"
   }
 }

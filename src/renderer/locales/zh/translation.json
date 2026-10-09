@@ -6845,7 +6845,6 @@
     "translate": "翻译消息",
     "loading": "正在翻译",
     "attribution": "翻译自{{language}}通过{{provider}}",
-    "showOriginal": "显示原始内容",
     "showTranslation": "显示译文",
     "missingPack": "离线翻译需要这些内容包。",
     "downloadPacks": "下载语言包",
@@ -6902,6 +6901,7 @@
     "retry": "重试",
     "downloadSize": "下载({{size}})",
     "readLanguagesHint": "这些语言的消息永远不会自动翻译。在“翻译成”下选择的语言始终计为您阅读的语言。",
-    "pivotHint": "内容包涵盖一个翻译方向，例如法语到英语。其他语言对通过英语翻译：法语到德语需要法语→英语和英语→德语包。翻译成英文只需要一包。"
+    "pivotHint": "内容包涵盖一个翻译方向，例如法语到英语。其他语言对通过英语翻译：法语到德语需要法语→英语和英语→德语包。翻译成英文只需要一包。",
+    "hideTranslation": "隐藏翻译"
   }
 }
