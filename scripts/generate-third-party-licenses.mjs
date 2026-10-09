@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Generate docs/third-party-licenses.md from license-report (direct npm deps).
+ * Generate docs/third-party-licenses.md from license-report (direct npm deps)
+ * plus a Rust sidecar summary from `cargo metadata` (omitted with a note when
+ * Cargo is unavailable).
  *
  * Runs `pnpm run check:licenses` first. Do not edit the markdown by hand —
  * use `pnpm run docs:licenses`.
@@ -9,6 +11,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { collectRustPackages, isCargoAvailable, runCargoMetadata } from './check-rust-licenses.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const THIRD_PARTY_LICENSES_PATH = path.join(ROOT, 'docs', 'third-party-licenses.md');
@@ -56,20 +60,98 @@ export function runLicenseReportMarkdown(only) {
   ]);
 }
 
+export const RUST_SECTION_UNAVAILABLE_NOTE =
+  'Rust crate licenses are gated by `pnpm run check:rust-licenses` (requires Cargo); run it locally to view this table.';
+
 /**
- * @param {{ prodTable: string, devTable: string }} tables
+ * GitHub repo for a Ratspeak stack crate checked out under `.rsstack/<repo>/`, or null.
+ *
+ * @param {string} manifestPath
+ * @returns {string | null}
+ */
+export function rsstackRepoUrl(manifestPath) {
+  const match = manifestPath.replace(/\\/g, '/').match(/\/\.rsstack\/([^/]+)\//);
+  return match ? `https://github.com/ratspeak/${match[1]}` : null;
+}
+
+/**
+ * @param {import('./check-rust-licenses.mjs').RustPackage[]} packages
  * @returns {string}
  */
-export function buildThirdPartyLicensesMarkdown({ prodTable, devTable }) {
+export function buildRustSidecarSection(packages) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const pkg of packages) {
+    const license = pkg.license || 'Unknown';
+    counts.set(license, (counts.get(license) ?? 0) + 1);
+  }
+  const summaryRows = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([license, count]) => `| ${license} | ${count} |`);
+
+  const stackRows = packages
+    .map((pkg) => ({ pkg, url: rsstackRepoUrl(pkg.manifestPath) }))
+    .filter((row) => row.url !== null)
+    .sort((a, b) => a.pkg.name.localeCompare(b.pkg.name))
+    .map(({ pkg, url }) => {
+      const repo = String(url).split('/').pop();
+      return `| ${pkg.name} | ${pkg.version} | ${pkg.license || 'Unknown'} | [${repo}](${url}) |`;
+    });
+
+  return [
+    `Licenses for all ${packages.length} crates resolved by \`reticulum-sidecar/Cargo.lock\` (\`cargo metadata --locked --all-features\`), gated by \`pnpm run check:rust-licenses\`.`,
+    '',
+    '| License | Crates |',
+    '| --- | --- |',
+    ...summaryRows,
+    '',
+    '### Ratspeak stack crates',
+    '',
+    '| Crate | Version | License | Source |',
+    '| --- | --- | --- | --- |',
+    ...stackRows,
+  ].join('\n');
+}
+
+/**
+ * Rust sidecar section markdown, or null when cargo / metadata is unavailable.
+ * Docs generation must not hard-fail without Rust; `check:rust-licenses` is the gate.
+ *
+ * @param {{ cargoAvailable?: () => boolean, loadMetadata?: () => unknown }} [io]
+ * @returns {string | null}
+ */
+export function loadRustSidecarSection(io = {}) {
+  const cargoAvailable = io.cargoAvailable ?? (() => isCargoAvailable());
+  const loadMetadata = io.loadMetadata ?? (() => runCargoMetadata());
+  if (!cargoAvailable()) {
+    process.stderr.write('docs:licenses: cargo unavailable; Rust section omitted\n');
+    return null;
+  }
+  try {
+    return buildRustSidecarSection(collectRustPackages(loadMetadata()));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`docs:licenses: ${message}; Rust section omitted\n`);
+    return null;
+  }
+}
+
+/**
+ * @param {{ prodTable: string, devTable: string, rustSection?: string | null }} tables
+ * @returns {string}
+ */
+export function buildThirdPartyLicensesMarkdown({ prodTable, devTable, rustSection = null }) {
   const prod = prodTable.trim();
   const dev = devTable.trim();
+  const rust = rustSection?.trim() || RUST_SECTION_UNAVAILABLE_NOTE;
   return `# Third-party licenses
 
 This file is generated. Do not edit by hand. After dependency changes, run \`pnpm run docs:licenses\`.
 
 npm tables below list **direct** \`dependencies\` and \`devDependencies\` from
 [\`package.json\`](../package.json) (via [license-report](https://www.npmjs.com/package/license-report)).
-Transitive licenses are enforced by \`pnpm run check:licenses\`.
+Transitive npm licenses are enforced by \`pnpm run check:licenses\`; Rust sidecar crates by
+\`pnpm run check:rust-licenses\`.
 
 Bundled binaries, fonts, and vendored sources are attributed in [Credits](credits.md).
 
@@ -80,6 +162,10 @@ ${prod}
 ## Development dependencies
 
 ${dev}
+
+## Rust sidecar dependencies
+
+${rust}
 `;
 }
 
@@ -134,6 +220,7 @@ export function writeFormattedMarkdownAtomically(
  * @typedef {object} GenerateThirdPartyLicensesOptions
  * @property {() => void} [checkLicenses]
  * @property {() => { prodTable: string, devTable: string }} [loadReportTables]
+ * @property {() => string | null} [loadRustSection]
  * @property {(filePath: string) => void} [formatMarkdownFile]
  * @property {string} [targetPath]
  * @property {typeof fs} [fsModule]
@@ -146,6 +233,7 @@ export function writeFormattedMarkdownAtomically(
 export function generateThirdPartyLicenses(options = {}) {
   const checkLicenses = options.checkLicenses ?? defaultCheckLicenses;
   const loadReportTables = options.loadReportTables ?? defaultLoadReportTables;
+  const loadRustSection = options.loadRustSection ?? (() => loadRustSidecarSection());
   const formatMarkdownFile = options.formatMarkdownFile ?? defaultFormatMarkdownFile;
   const targetPath = options.targetPath ?? THIRD_PARTY_LICENSES_PATH;
   const fsModule = options.fsModule ?? fs;
@@ -169,7 +257,9 @@ export function generateThirdPartyLicenses(options = {}) {
     return 1;
   }
 
-  const markdown = buildThirdPartyLicensesMarkdown({ prodTable, devTable });
+  process.stderr.write('docs:licenses: cargo metadata (Rust sidecar)\n');
+  const rustSection = loadRustSection();
+  const markdown = buildThirdPartyLicensesMarkdown({ prodTable, devTable, rustSection });
   try {
     writeFormattedMarkdownAtomically(targetPath, markdown, formatMarkdownFile, fsModule);
   } catch (err) {

@@ -218,6 +218,11 @@ if command -v cargo > /dev/null 2>&1; then
   else
     printf 'pre-commit: skip check:reticulum-sidecar (no sidecar paths staged)\n' >&2
   fi
+  if staged_match '^(reticulum-sidecar/Cargo\.(toml|lock)|scripts/check-(rust-)?licenses\.mjs|scripts/clone-ratspeak-stack\.sh)$'; then
+    pnpm run check:rust-licenses || fail 'pnpm run check:rust-licenses'
+  else
+    printf 'pre-commit: skip check:rust-licenses (no sidecar manifest or license-gate paths staged)\n' >&2
+  fi
 else
   printf 'pre-commit: skip Rust checks (cargo not on PATH)\n' >&2
 fi

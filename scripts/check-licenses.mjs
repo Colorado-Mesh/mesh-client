@@ -15,6 +15,7 @@
  *
  * SPDX `OR`: allowed if any clause is allowed (caller may choose that license).
  * SPDX `AND`: allowed only if every clause is allowed.
+ * Cargo-style `/` is treated as `OR` (shared with check-rust-licenses.mjs).
  *
  * Usage: pnpm run check:licenses
  */
@@ -58,6 +59,14 @@ export const ALLOWED_LICENSE_IDS = Object.freeze([
   'GPL-3.0',
   'GPL-3.0-only',
   'GPL-3.0-or-later',
+  // Ratspeak stack sidecar crates (rsReticulum/rsLXMF/rsLXST/rsNomad).
+  'AGPL-3.0-or-later',
+  // lxst-codec2 (Codec2): `LGPL-2.1-only AND MIT AND BSD-3-Clause`.
+  'LGPL-2.1-only',
+  // SPDX id declared by the `bzip2` crate.
+  'bzip2-1.0.6',
+  // unicode-ident data tables: `(MIT OR Apache-2.0) AND Unicode-3.0`.
+  'Unicode-3.0',
   // Data / exception tables required by the toolchain (caniuse-lite, spdx-*).
   'CC-BY-3.0',
   'CC-BY-4.0',
@@ -90,6 +99,32 @@ export function splitSpdxTopLevel(expression, operator) {
   const last = current.trim();
   if (last) parts.push(last);
   return parts;
+}
+
+/**
+ * Split on top-level `/` (with or without surrounding spaces), ignoring parentheses.
+ * SPDX does not define `/`, but Cargo manifests use it as a legacy spelling of `OR`.
+ *
+ * @param {string} expression
+ * @returns {string[]}
+ */
+export function splitSpdxSlash(expression) {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of expression) {
+    if (ch === '(') depth += 1;
+    if (ch === ')') depth -= 1;
+    if (depth === 0 && ch === '/') {
+      parts.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  const last = current.trim();
+  if (last) parts.push(last);
+  return parts.filter((part) => part !== '');
 }
 
 /**
@@ -148,6 +183,8 @@ export function isLicenseAllowed(expression, allowedIds = ALLOWED_LICENSE_IDS) {
     if (orParts.length > 1) return orParts.some(check);
     const andParts = splitSpdxTopLevel(unwrapped, 'AND');
     if (andParts.length > 1) return andParts.every(check);
+    const slashParts = splitSpdxSlash(unwrapped);
+    if (slashParts.length > 1) return slashParts.some(check);
     const id = normalizeLicenseId(unwrapped).toLowerCase();
     return allowed.has(id);
   }
