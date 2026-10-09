@@ -1,6 +1,7 @@
 import type { MeshNode } from '../../renderer/lib/types';
 import type { MeshProtocol } from '../../shared/meshProtocol';
 import type { TakRelayExtras, TakUnitStyle } from '../../shared/tak-types';
+import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { escapeXml } from '../../shared/xmlEscape';
 import { advertisedTakStyle } from './advertised-style';
 
@@ -106,7 +107,7 @@ export const COT_PING_TYPE = 't-x-c-t';
 /** Reply type; the uid is the one TAK Server answers with. */
 const COT_PONG_TYPE = 't-x-c-t-r';
 const COT_PONG_UID = 'takPong';
-const COT_PONG_STALE_MS = 20 * 1000;
+const COT_PONG_STALE_MS = 20 * MS_PER_SECOND;
 
 /**
  * Keepalive reply to a client ping. ATAK, iTAK and WinTAK drop and redial a streaming
