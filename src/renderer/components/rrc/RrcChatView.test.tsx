@@ -13,6 +13,7 @@ import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
 
 const mockScrollToEnd = vi.fn();
 const mockMeasure = vi.fn();
+const mockMeasureElement = vi.fn();
 let mockIsAtEnd = true;
 /** Last options handed to the virtualizer, for row-estimate assertions. */
 let lastVirtualizerOpts: { count: number; estimateSize: (index: number) => number } | null = null;
@@ -33,7 +34,7 @@ vi.mock('@tanstack/react-virtual', () => ({
           start: index * 22,
         })),
       getTotalSize: () => count * 22,
-      measureElement: () => {},
+      measureElement: mockMeasureElement,
       containerRef: { current: null },
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
@@ -1038,8 +1039,17 @@ describe('RRC translation actions', () => {
     );
     const composer = screen.getByRole('textbox');
     fireEvent.change(composer, { target: { value: 'sounds good' } });
+    mockMeasure.mockClear();
+    mockMeasureElement.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.translate' }));
     expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
+    // Only the translated row is re-measured; a full measure() resets every row to its estimate.
+    await waitFor(() => {
+      expect(mockMeasureElement).toHaveBeenCalledWith(
+        screen.getByText('Hello everyone').closest('[data-index="0"]'),
+      );
+    });
+    expect(mockMeasure).not.toHaveBeenCalled();
     expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
     expect(composer).toHaveValue('sounds good');
     const reply = screen.getByRole('button', { name: 'rrc.replyToUser' });

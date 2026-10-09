@@ -24,6 +24,7 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
+  scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -529,6 +530,16 @@ export function RrcChatView({
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
 
+  const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
+    scheduleVirtualRowRemeasure(
+      (node) => {
+        messageVirtualizerRef.current.measureElement(node);
+      },
+      scrollContainerRef.current,
+      rowIndex,
+    );
+  }, []);
+
   const computeIsAtChatEnd = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return false;
@@ -698,7 +709,10 @@ export function RrcChatView({
       ? formatDisplayTime(msg.timestamp, { withSeconds: true, use24Hour: use24HourTime })
       : null;
 
-  const renderLineParts = (msg: RrcChatMessage): { lineClass: string; inner: ReactNode } => {
+  const renderLineParts = (
+    msg: RrcChatMessage,
+    rowIndex: number,
+  ): { lineClass: string; inner: ReactNode } => {
     const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
     const time = formatLineTime(msg);
     const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
@@ -780,7 +794,7 @@ export function RrcChatView({
                 : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase()))
             }
             onContentResize={() => {
-              messageVirtualizerRef.current.measure();
+              scheduleMessageRowRemeasure(rowIndex);
             }}
           />
         </div>
@@ -892,7 +906,7 @@ export function RrcChatView({
                       {expanded && (
                         <div className="border-ink-700 border-l">
                           {row.group.messages.map((msg) => {
-                            const line = renderLineParts(msg);
+                            const line = renderLineParts(msg, vi.index);
                             return (
                               <div
                                 key={msg.id}
@@ -908,7 +922,7 @@ export function RrcChatView({
                     </div>
                   );
                 }
-                const line = renderLineParts(row.msg);
+                const line = renderLineParts(row.msg, vi.index);
                 return (
                   <div
                     key={vi.key}
