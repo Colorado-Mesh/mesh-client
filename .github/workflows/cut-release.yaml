@@ -71,22 +71,10 @@ jobs:
               || secrets.RELEASE_PUSH_TOKEN }}
           persist-credentials: true
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Verify pnpm
-        run: node scripts/ci-verify-pnpm.mjs
-
-      - name: Install dependencies
-        # dry_run only needs the detect script + package.json; still install so
-        # node_modules layout matches (detect has no deps beyond node builtins).
-        run: pnpm install --frozen-lockfile
+      # dry_run only needs the detect script + package.json; still install so
+      # node_modules layout matches (detect has no deps beyond node builtins).
+      - name: Setup Node, pnpm, and dependencies
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Preview version bump
         id: preview
@@ -156,38 +144,10 @@ jobs:
           echo "dry_run=true — not bumping or tagging."
           echo "Re-run with dry_run unchecked to cut v${NEXT_VERSION}."
 
-      - name: Install actionlint
+      # Same composite as the e2e.yaml Release preflight job — keep release tooling there, not inline.
+      - name: Setup release toolchain
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: pnpm run setup:actionlint
-
-      - name: Install yamllint
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: pip install yamllint
-
-      - name: Install flatpak-node-generator
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: |
-          # Keep pin in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
-          COMMIT=$(node --input-type=module -e "
-            import { FLATPAK_NODE_GENERATOR_COMMIT } from './scripts/flatpakPnpmStoreVersion.mjs';
-            process.stdout.write(FLATPAK_NODE_GENERATOR_COMMIT);
-          ")
-          pip3 install --force-reinstall --no-cache-dir \
-            "git+https://github.com/flatpak/flatpak-builder-tools@${COMMIT}#subdirectory=node"
-
-      - name: Install Linux build deps (sidecar / Flatpak checks)
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
-
-      - name: Setup Rust
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-
-      - name: Add actionlint to PATH
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        env:
-          HOOKS_BIN: ${{ github.workspace }}/.githooks/bin
-        run: echo "${HOOKS_BIN}" >> "$GITHUB_PATH"
+        uses: ./.github/actions/setup-release-toolchain
 
       - name: Configure git identity
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}

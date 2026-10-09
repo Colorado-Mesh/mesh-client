@@ -31,6 +31,7 @@ const REQUIRED_PNPM_CHECKS = [
   'check:log-panel-filter',
   'check:i18n',
   'check:licenses',
+  'check:rust-licenses',
   'check:flatpak',
   'check:flatpak-offline-pnpm',
   'test:run',
@@ -149,6 +150,49 @@ describe('release.sh full-suite gate', () => {
   it('rejects --auto combined with an explicit bump (text contract)', () => {
     expect(script).toMatch(/--auto cannot be combined with patch\|minor\|major/);
   });
+
+  it('provisions .rsstack/ before any release check whose script needs it', () => {
+    // Cut release runs on a fresh clone with no .rsstack/; a warm local checkout hides this.
+    const cloneIdx = script.search(/^\s*if ! bash scripts\/clone-ratspeak-stack\.sh; then\s*$/m);
+    expect(cloneIdx).toBeGreaterThanOrEqual(0);
+
+    const consumers = [];
+    for (const match of script.matchAll(/^\s*if ! pnpm run ([\w:-]+)/gm)) {
+      const name = match[1];
+      const command = pkg.scripts[name];
+      expect(command, `package.json is missing script ${name}`).toBeTypeOf('string');
+      if (command.startsWith('bash scripts/clone-ratspeak-stack.sh')) continue;
+      const nodeScript = /^node (scripts\/[\w.-]+\.mjs)/.exec(command)?.[1];
+      if (!nodeScript) continue;
+      const source = fs.readFileSync(path.join(ROOT, nodeScript), 'utf8');
+      if (source.includes("'.rsstack'")) consumers.push({ name, index: match.index });
+    }
+
+    expect(consumers.map((c) => c.name)).toContain('check:rust-licenses');
+    for (const consumer of consumers) {
+      expect(
+        consumer.index,
+        `${consumer.name} runs before clone-ratspeak-stack.sh`,
+      ).toBeGreaterThan(cloneIdx);
+    }
+  });
+
+  it('--preflight-only stops after pre-flight, before notes/bump/tag/push', () => {
+    const passedIdx = script.indexOf('print_success "All pre-flight checks passed!"');
+    const stopIdx = script.indexOf('if [ "$PREFLIGHT_ONLY" = true ]; then', passedIdx);
+    const notesIdx = script.indexOf('generate_release_notes "$LAST_TAG"');
+    const bumpIdx = script.lastIndexOf('pnpm version "$VERSION_TYPE"');
+    expect(passedIdx).toBeGreaterThanOrEqual(0);
+    expect(stopIdx).toBeGreaterThan(passedIdx);
+    expect(notesIdx).toBeGreaterThan(stopIdx);
+    expect(bumpIdx).toBeGreaterThan(stopIdx);
+    expect(script.slice(stopIdx, notesIdx)).toMatch(/exit 0/);
+  });
+
+  it('--preflight-only never pulls main', () => {
+    expect(script).toMatch(/if \[ "\$PREFLIGHT_ONLY" = false \]; then\s*\n\s*git pull origin main/);
+    expect(script).not.toMatch(/^git pull origin main$/m);
+  });
 });
 
 describe('release.sh argv subprocess', () => {
@@ -222,6 +266,31 @@ describe('release.sh argv subprocess', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/^VERSION_TYPE=minor$/m);
     expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
+  });
+
+  it('PARSE_ONLY: --preflight-only implies SKIP_DEP_UPDATE', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--', '--preflight-only'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+        MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+        MESH_CLIENT_RELEASE_YES: '1',
+      },
+    });
+    expect(r.error).toBeUndefined();
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/^PREFLIGHT_ONLY=true$/m);
+    expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
+    expect(r.stdout).toMatch(/^FINISH_ONLY=false$/m);
+  });
+
+  it('rejects --finish combined with --preflight-only', () => {
+    const r = spawnSync('bash', [RELEASE_SH, '--finish', '--preflight-only'], {
+      encoding: 'utf8',
+    });
+    expect(r.status).toBe(1);
+    expect(`${r.stdout}${r.stderr}`).toMatch(/--finish cannot be combined with --preflight-only/);
   });
 
   it('PARSE_ONLY: rejects under GitHub Actions without allow flag', () => {

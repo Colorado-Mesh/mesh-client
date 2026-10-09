@@ -104,7 +104,7 @@ confirm_or_yes() {
 }
 
 print_release_usage() {
-  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish] [--yes] [--skip-dep-update]"
+  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish] [--yes] [--skip-dep-update] [--preflight-only]"
   echo "       pnpm run release               # Auto-detect from commits"
   echo "       pnpm run release --auto         # Explicit auto-detect"
   echo "       pnpm run release minor          # Force minor release"
@@ -112,6 +112,7 @@ print_release_usage() {
   echo "       pnpm run release --finish       # Complete mid-release (no re-bump)"
   echo "       pnpm run release --yes          # Skip confirmation prompts"
   echo "       pnpm run release --skip-dep-update  # Skip pnpm update/dedupe"
+  echo "       pnpm run release --preflight-only   # Run every pre-flight check on this checkout, then stop"
   echo "       MESH_CLIENT_RELEASE_YES=1 pnpm run release   # Same as --yes"
   echo "       (Bare -- from \`pnpm run release -- …\` is ignored; pnpm 11 forwards it.)"
 }
@@ -332,6 +333,7 @@ AUTO_DETECT=false
 FINISH_ONLY=false
 SKIP_DEP_UPDATE=false
 RELEASE_YES=false
+PREFLIGHT_ONLY=false
 if [ "${MESH_CLIENT_RELEASE_YES:-}" = "1" ] || [ "${MESH_CLIENT_RELEASE_YES:-}" = "true" ]; then
   RELEASE_YES=true
 fi
@@ -350,6 +352,11 @@ for arg in "$@"; do
       ;;
     --finish)
       FINISH_ONLY=true
+      ;;
+    --preflight-only)
+      # Validate the checked-out tree (any branch) without mutating deps or git.
+      PREFLIGHT_ONLY=true
+      SKIP_DEP_UPDATE=true
       ;;
     --auto)
       AUTO_DETECT=true
@@ -372,6 +379,12 @@ done
 
 if [ "$FINISH_ONLY" = true ] && { [ -n "$VERSION_TYPE" ] || [ "$AUTO_DETECT" = true ]; }; then
   print_error "--finish cannot be combined with a version bump argument."
+  print_release_usage
+  exit 1
+fi
+
+if [ "$FINISH_ONLY" = true ] && [ "$PREFLIGHT_ONLY" = true ]; then
+  print_error "--finish cannot be combined with --preflight-only."
   print_release_usage
   exit 1
 fi
@@ -405,6 +418,7 @@ if [ "${MESH_CLIENT_RELEASE_PARSE_ONLY:-}" = "1" ]; then
   printf 'RELEASE_YES=%s\n' "$RELEASE_YES"
   printf 'SKIP_DEP_UPDATE=%s\n' "$SKIP_DEP_UPDATE"
   printf 'FINISH_ONLY=%s\n' "$FINISH_ONLY"
+  printf 'PREFLIGHT_ONLY=%s\n' "$PREFLIGHT_ONLY"
   printf 'AUTO_DETECT=%s\n' "$AUTO_DETECT"
   printf 'VERSION_TYPE=%s\n' "$VERSION_TYPE"
   exit 0
@@ -413,7 +427,9 @@ fi
 # 2. Ensure we are on the main branch
 print_header "Checking git status..."
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$CURRENT_BRANCH" != "main" ]; then
+if [ "$PREFLIGHT_ONLY" = true ]; then
+  print_warning "--preflight-only: validating $CURRENT_BRANCH as checked out (no main check, no pull)."
+elif [ "$CURRENT_BRANCH" != "main" ]; then
   print_error "Error: You must be on the main branch to release."
   print_error "Current branch: $CURRENT_BRANCH"
   exit 1
@@ -424,7 +440,9 @@ if [ "$FINISH_ONLY" = true ]; then
   exit 0
 fi
 
-git pull origin main
+if [ "$PREFLIGHT_ONLY" = false ]; then
+  git pull origin main
+fi
 
 # 3. Update dependencies (optional skip for CI cut-release / already-updated trees)
 if [ "$SKIP_DEP_UPDATE" = true ]; then
@@ -451,7 +469,9 @@ fi
 
 # 5. Check if there are commits since last tag
 COMMITS_SINCE_TAG=$(git log "$LAST_TAG"..HEAD --oneline 2> /dev/null || echo "")
-if [ -z "$COMMITS_SINCE_TAG" ]; then
+if [ -z "$COMMITS_SINCE_TAG" ] && [ "$PREFLIGHT_ONLY" = true ]; then
+  print_warning "No commits since last tag ($LAST_TAG); continuing because --preflight-only."
+elif [ -z "$COMMITS_SINCE_TAG" ]; then
   print_error "Error: No commits since last tag ($LAST_TAG)."
   echo "Create some commits before releasing."
   exit 1
@@ -663,6 +683,14 @@ if ! pnpm run check:licenses; then
   exit 1
 fi
 
+# Fresh clones (Cut release, release preflight) have no .rsstack/ yet; check:rust-licenses
+# needs the Ratspeak path deps resolved before cargo metadata can run.
+echo "Provisioning Ratspeak stack (.rsstack/)..."
+if ! bash scripts/clone-ratspeak-stack.sh; then
+  print_error "Ratspeak stack clone failed (scripts/clone-ratspeak-stack.sh)."
+  exit 1
+fi
+
 if ! pnpm run check:rust-licenses -- --require-cargo; then
   print_error "Rust sidecar license check failed. Install Rust and run 'scripts/clone-ratspeak-stack.sh' if .rsstack/ is missing."
   exit 1
@@ -751,6 +779,11 @@ if ! pnpm run reticulum:sidecar:test; then
 fi
 
 print_success "All pre-flight checks passed!"
+
+if [ "$PREFLIGHT_ONLY" = true ]; then
+  print_success "--preflight-only: stopping before release notes, version bump, tag, and push."
+  exit 0
+fi
 
 if ! confirm_or_yes "All validations passed. Proceed with actual release?"; then
   print_warning "Release cancelled after successful validation."
