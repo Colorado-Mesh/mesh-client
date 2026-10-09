@@ -2480,8 +2480,14 @@
 <h2 id="send-path">Send path<a class="headerlink" href="#send-path" title="Permanent link">&para;</a></h2>
 <ul>
 <li>App → MECP → <strong>Show MECP button in Chat</strong> (default <strong>off</strong>) gates the Chat MECP compose control</li>
-<li>When enabled: red <strong>Siren</strong> icon button in the composer action row (<code>ChatComposer</code> <code>actionSlot</code>, next to share-location, left of Send; hidden in Starred) → <code>MecpComposeModal</code> (defaults: ROUTINE + Drill category, no codes selected) → encode → <code>sendEmergencyText</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/emergencySend.ts"><code>emergencySend.ts</code></a>) → live <code>handleSendChunk</code> / <code>useSendMessage</code> (follows open DM/channel)</li>
-<li><strong>Emergency outbox:</strong> when offline / MQTT-only MeshCore, or when the live send throws, the report is queued in the chat outbox with <code>priority: 'emergency'</code> — no 24h drain cutoff, no 5-attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See <a href="../emcomm/#ws2--emergency-priority-outbox">emcomm.md — WS2</a></li>
+<li>When enabled: red <strong>Siren</strong> icon button in the composer action row (<code>ChatComposer</code> <code>actionSlot</code>, next to share-location, left of Send; hidden in Starred) → <code>MecpComposeModal</code> (defaults: ROUTINE + Drill category, no codes selected) → encode → <code>sendEmergencyText</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/emergencySend.ts"><code>emergencySend.ts</code></a>) → emergency outbox row → immediate drain through <code>useSendMessage</code> (follows open DM/channel)</li>
+<li><strong>Retry until acknowledged:</strong> every report is queued in the chat outbox with <code>priority: 'emergency'</code> and stays there until the <strong>network acknowledges</strong> it — no 24h drain cutoff, no attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See <a href="../emcomm/#ws2--emergency-priority-outbox">emcomm.md — WS2</a></li>
+<li><strong>What counts as acknowledged</strong> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/networkAckAwait.ts"><code>networkAckAwait.ts</code></a> <code>awaitNetworkAck</code>), any one of:</li>
+<li>Meshtastic: device <code>acked</code> (routing ACK on a DM, implicit ACK / rebroadcast heard on a channel) or MQTT publish <code>acked</code></li>
+<li>MeshCore: DM ACK (event 130); channel floods need at least one repeater in the heard-repeat window (companion accept alone does not count)</li>
+<li>Reticulum: LXMF receipt (or remote PN <code>propagated</code>), same as <code>assertReticulumSendAcked</code></li>
+<li>Any protocol: another station's R01 echoing our codes (or our severity when it echoes none), a B02 for our B01, or a relayed copy of the same payload (<code>isPeerMecpNetworkAck</code>)</li>
+<li><strong>Stopping retries:</strong> the outbox row shows "Waiting for network acknowledgement…" while a send is in flight and a countdown while backing off. <strong>Stop retrying</strong> (confirm) aborts any in-flight wait (<code>abortOutboxRowSend</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/chatOutboxDrain.ts"><code>chatOutboxDrain.ts</code></a>) and deletes the row; the drain does not re-persist a cancelled row.</li>
 <li>Attach GPS uses the app share-location waterfall (<code>resolveShareLocation</code>), not raw <code>navigator.geolocation</code> alone</li>
 <li>Meshtastic outbound uses normal text (<code>TEXT_MESSAGE_APP</code>), not ALERT_APP. This is deliberate — see <a href="#why-not-alert_app-outbound">Why not ALERT_APP outbound</a></li>
 </ul>
@@ -2489,7 +2495,7 @@
 <p>Evaluated and not planned. Blockers:</p>
 <ul>
 <li><strong>Firmware rate limit:</strong> <code>PhoneAPI.cpp</code> allows one locally-originated <code>ALERT_APP</code> packet per <strong>10s</strong> (same rule as POSITION / WAYPOINT / TELEMETRY), versus 2s for text (<code>MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS</code>). An over-limit packet is dropped with only a queue-status reply — no <code>RATE_LIMIT_EXCEEDED</code> routing error — so <code>@meshtastic/core</code> waits for its 60s queue timeout before rejecting.</li>
-<li><strong>No re-queue on that failure:</strong> the Meshtastic emergency <code>sendFn</code> is fire-and-forget (session <code>sendChatMessage</code> does not surface the device result), so a silently dropped report would never fall back to the emergency outbox.</li>
+<li><strong>Silent drops look like timeouts:</strong> an over-limit <code>ALERT_APP</code> packet never reaches <code>acked</code>, so the emergency outbox would only retry after the network-ACK timeout, burning more of the 10s budget on every attempt.</li>
 <li><strong>Bursts:</strong> <code>tryParseMecp</code> also matches R01 / B02 / B03 ACK and beacon control traffic, and RF rebroadcast (<code>sendMecpRebroadcast.ts</code>) is unpaced, so a MAYDAY followed by an ACK, update, or bridge send within 10s would lose packets.</li>
 <li><strong>No Store &amp; Forward replay:</strong> the S&amp;F server stores only <code>TEXT_MESSAGE_APP</code>.</li>
 </ul>
@@ -2526,7 +2532,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 23:32:29 UTC">October 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 13:15:11 UTC">October 9, 2026</span>
   </span>
 
     

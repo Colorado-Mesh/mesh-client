@@ -5331,7 +5331,7 @@
 </ul>
 <p>Inbound MECP populates the list automatically (live + hydrate from chat history). Map → <strong>Layers → Emergency incidents</strong> plots open rows that have coordinates. Empty is normal until someone sends MECP. Enabling Chat compose under App → MECP only shows the compose control so you can send one — it does not populate the Incident list by itself. See the README <strong>EMCOMM / Incident Command</strong> section and <a href="../development/emcomm/"><code>docs/development/emcomm.md</code></a>.</p>
 <p><strong>MAYDAY stuck / “will send when connected”</strong></p>
-<p>Emergency MECP uses the durable outbox (<code>priority: emergency</code>). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See <a href="../development/emcomm/"><code>docs/development/emcomm.md</code></a>.</p>
+<p>Emergency MECP uses the durable outbox (<code>priority: emergency</code>). It keeps retrying until the network acknowledges the report (no 24h age stop, no attempt limit). Check Chat for the emergency OutboxBubble ("Waiting for network acknowledgement…" or a retry countdown); <strong>Stop retrying</strong> requires confirm. See <a href="../development/emcomm/"><code>docs/development/emcomm.md</code></a>.</p>
 <p><strong>Incident tab empty after restart</strong></p>
 <p>Incidents persist across restarts in local storage (<code>mesh-client:incidents</code>), and on startup the MECP watcher also upserts any MECP still in the hydrated chat history — without re-alerting. The tab can still be empty on a cold start when: local storage was cleared (or this is a fresh install / new profile), the incident was <strong>Resolved</strong> (only open/acked rows are listed), or the original message aged out of chat history before the store saw it. The badge counts open MAYDAY and URGENT rows, including drills (SAFETY and ROUTINE are listed but not counted). The durable record is always <code>mecp-received.log</code> (above).</p>
 <p><strong>Watched node silence / battery / link-down alerts</strong></p>
@@ -5356,7 +5356,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 20:17:48 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 13:15:11 UTC">October 9, 2026</span>
   </span>
 
     
