@@ -144,7 +144,7 @@ jobs:
           echo "dry_run=true — not bumping or tagging."
           echo "Re-run with dry_run unchecked to cut v${NEXT_VERSION}."
 
-      # Same composite as release-preflight.yaml — keep release tooling there, not inline.
+      # Same composite as the e2e.yaml Release preflight job — keep release tooling there, not inline.
       - name: Setup release toolchain
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         uses: ./.github/actions/setup-release-toolchain

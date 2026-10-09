@@ -6,20 +6,19 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                                      | Purpose                                                                         |
-| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation            |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
-| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                |
-| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
-| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)           |
-| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
-| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
-| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
-| `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)           |
-| `release-preflight.yaml`    | Path-filtered PR, nightly, manual            | `release.sh --preflight-only` on a fresh runner with the Cut release toolchain  |
-| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
-| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)              |
+| Workflow                    | Trigger                                      | Purpose                                                                          |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation             |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change  |
+| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                 |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate |
+| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)            |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                        |
+| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                      |
+| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags    |
+| `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)            |
+| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                    |
+| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)               |
 
 ---
 
@@ -89,6 +88,8 @@ Not a PR gate. Runs on a **daily schedule** (default branch only) and on **manua
 3. `pnpm run build` (unpackaged `dist-electron` + renderer)
 4. `pnpm run test:e2e` (Linux under `xvfb-run -a`; macOS/Windows plain) — Playwright launches the local Electron binary via `resolveLocalElectronBin()` with an isolated `--user-data-dir`
 5. On failure, upload `test-results/` + `playwright-report/` (7-day retention)
+
+A separate **Release preflight** job (`ubuntu-latest`) runs `pnpm run release -- --preflight-only` with the same `setup-node-pnpm` + `setup-release-toolchain` composites as `cut-release.yaml`, stopping before any bump, tag, or push. Check it is green before cutting a release.
 
 Local: `pnpm run test:e2e:build`. See [development-environment.md](development-environment.md#playwright-electron-e2e).
 

@@ -2,7 +2,8 @@ name: Setup release toolchain
 description: >-
   Install the non-Node tools scripts/release.sh pre-flight requires (actionlint,
   yamllint, flatpak-node-generator, Linux build deps, Rust). Shared by Cut release
-  and Release preflight so the preflight runs in the same environment as a real cut.
+  and the e2e.yaml Release preflight job so the preflight runs in the same environment
+  as a real cut.
   Run after checkout and Node/pnpm dependency install.
 
 runs:

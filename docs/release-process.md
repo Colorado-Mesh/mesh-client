@@ -44,7 +44,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 **Preferred path:** Actions → **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)).
 
-1. Confirm the latest **Release preflight** run ([`release-preflight.yaml`](../.github/workflows/release-preflight.yaml)) on `main` is green, or dispatch it. It runs the full `release.sh` pre-flight (`--preflight-only`) on a fresh runner using the same composites as Cut release (`setup-node-pnpm`, `setup-release-toolchain`), so release-only breakage surfaces without burning a cut. It also runs on PRs that touch release plumbing and nightly. Locally: `pnpm run release --preflight-only` (any branch; no pull, dep update, bump, tag, or push).
+1. Confirm the latest **Release preflight** job in the daily **E2E** run ([`e2e.yaml`](../.github/workflows/e2e.yaml)) on `main` is green, or dispatch E2E. The job runs the full `release.sh` pre-flight (`--preflight-only`) on a fresh runner using the same composites as Cut release (`setup-node-pnpm`, `setup-release-toolchain`), so release-only breakage surfaces without burning a cut. It is not a PR gate, so check it after merging release-plumbing changes. Locally: `pnpm run release --preflight-only` (any branch; no pull, dep update, bump, tag, or push).
 2. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.). Dry run only previews the version; it does not run pre-flight.
 3. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
 4. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.

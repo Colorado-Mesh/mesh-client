@@ -100,3 +100,33 @@ jobs:
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # scripts/release.sh pre-flight on a fresh runner with the same composites as
+  # cut-release.yaml, stopping before any bump, tag, or push. Catches release-only
+  # breakage a warm local checkout hides (e.g. a check that needs .rsstack/).
+  release-preflight:
+    name: Release preflight
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          # Tags are required for LAST_TAG / bump detection.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node, pnpm, and dependencies
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Setup release toolchain
+        uses: ./.github/actions/setup-release-toolchain
+
+      - name: Run release pre-flight (--preflight-only)
+        env:
+          MESH_CLIENT_RELEASE_YES: '1'
+          MESH_CLIENT_RELEASE_PARSE_ONLY: ''
+        run: pnpm run release -- --preflight-only
