@@ -70,12 +70,14 @@ const RRC_ROW_GAP_PX = 2;
 const RRC_ROW_CHARS_PER_LINE = 64;
 
 /**
- * Each row is its own grid, so columns must be fixed widths to line up across rows.
- * Static class strings so Tailwind can see them. Time widths fit `HH:MM:SS` / `HH:MM:SS AM`.
+ * Each row is its own grid, so column widths must depend only on the pane width (never on row
+ * content) to line up across rows. Static class strings so Tailwind can see them. Time widths fit
+ * `HH:MM:SS` / `HH:MM:SS AM`. In narrow panes or at large text sizes the time and nick columns
+ * shrink (truncating) while the message keeps at least half the row.
  */
-const RRC_GRID_NO_TIME = 'grid-cols-[14ch_minmax(0,1fr)_auto]';
-const RRC_GRID_TIME_24H = 'grid-cols-[8ch_14ch_minmax(0,1fr)_auto]';
-const RRC_GRID_TIME_12H = 'grid-cols-[11ch_14ch_minmax(0,1fr)_auto]';
+const RRC_GRID_NO_TIME = 'grid-cols-[minmax(0,14ch)_minmax(50%,1fr)_auto]';
+const RRC_GRID_TIME_24H = 'grid-cols-[minmax(0,8ch)_minmax(0,14ch)_minmax(50%,1fr)_auto]';
+const RRC_GRID_TIME_12H = 'grid-cols-[minmax(0,11ch)_minmax(0,14ch)_minmax(50%,1fr)_auto]';
 const RRC_ROW_CLASS = 'group grid items-baseline gap-x-2 rounded leading-snug hover:bg-ink-800/40';
 
 function rrcGridColsClass(showTimestamps: boolean, use24HourTime: boolean): string {
@@ -307,7 +309,9 @@ function RrcNoticeGroupSummary({
   }
   return (
     <div className={`${RRC_ROW_CLASS} ${gridColsClass}`}>
-      {showTime && <span className="text-muted text-right tabular-nums">{time ?? ''}</span>}
+      {showTime && (
+        <span className="text-muted truncate text-right tabular-nums">{time ?? ''}</span>
+      )}
       <span aria-hidden className="text-muted text-right">
         *
       </span>
@@ -769,7 +773,7 @@ export function RrcChatView({
     const inner = (
       <div className={`${RRC_ROW_CLASS} ${gridColsClass}`}>
         {showTimestamps && (
-          <span data-testid="rrc-line-time" className="text-muted text-right tabular-nums">
+          <span data-testid="rrc-line-time" className="text-muted truncate text-right tabular-nums">
             {time ?? ''}
           </span>
         )}

@@ -221,6 +221,25 @@ describe('RrcChatView IRC layout', () => {
     expect(time.textContent).not.toMatch(/[[\]]/);
   });
 
+  it.each([false, true])(
+    'lets time and nick columns shrink so the message keeps half the row (timestamps %s)',
+    (showTimestamps) => {
+      render(
+        <RrcChatView
+          {...baseProps}
+          showTimestamps={showTimestamps}
+          messages={[makeMsg({ id: '1', body: 'hi', nickname: 'nv0n' })]}
+        />,
+      );
+      const grid = screen.getByTestId('rrc-chat-line').firstElementChild;
+      expect(grid?.className).toContain('minmax(0,14ch)');
+      expect(grid?.className).toContain('minmax(50%,1fr)');
+      if (showTimestamps) {
+        expect(screen.getByTestId('rrc-line-time').className).toContain('truncate');
+      }
+    },
+  );
+
   it('marks notice and system rows in the nick column', () => {
     render(
       <RrcChatView

@@ -165,6 +165,7 @@ export function awaitNetworkAck(opts: AwaitNetworkAckOptions): Promise<void> {
 
     const identityId =
       sendId != null ? findIdentityWithMessage(protocol, sendId, opts.identityId) : null;
+    const peerAckIdentityId = identityId ?? opts.identityId ?? null;
     let trackedId = sendId;
     const meshtasticTempId =
       protocol === 'meshtastic' && sendId != null ? Number.parseInt(sendId, 10) : NaN;
@@ -227,6 +228,7 @@ export function awaitNetworkAck(opts: AwaitNetworkAckOptions): Promise<void> {
     cleanups.push(
       subscribeMessageStoreEvents((event) => {
         if (event.type === 'added') {
+          if (peerAckIdentityId != null && event.identityId !== peerAckIdentityId) return;
           onPeerRecord(event.record);
           return;
         }

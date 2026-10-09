@@ -229,6 +229,27 @@ describe('awaitNetworkAck', () => {
     await expect(wait).rejects.toThrow(NETWORK_ACK_TIMEOUT_KEY);
   });
 
+  it('ignores peer MECP ACKs that arrive on another identity', async () => {
+    vi.useFakeTimers();
+    addMessage(IDENTITY, record({ id: '804', payload: 'MECP/0/M01' }));
+    const wait = awaitNetworkAck({
+      protocol: 'meshcore',
+      sendResult: '804',
+      payload: 'MECP/0/M01',
+      timeoutMs: 1_000,
+    });
+    const settled = vi.fn();
+    wait.then(settled, settled);
+    addMessage(
+      'other-identity',
+      record({ id: 'peer-3', from: PEER_NODE, payload: 'MECP/0/R01 M01', status: undefined }),
+    );
+    await Promise.resolve();
+    expect(settled).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1_000);
+    await expect(wait).rejects.toThrow(NETWORK_ACK_TIMEOUT_KEY);
+  });
+
   it('rejects with the cancel key when aborted', async () => {
     addMessage(IDENTITY, record({ id: '901' }));
     const controller = new AbortController();
