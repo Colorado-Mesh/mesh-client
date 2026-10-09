@@ -12,7 +12,12 @@ import {
 import { getConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { useMessageStore } from '../../stores/messageStore';
-import { patchMeshcoreNodeLastHeardAt, upsertNode, useNodeStore } from '../../stores/nodeStore';
+import {
+  type NodeRecord,
+  patchMeshcoreNodeLastHeardAt,
+  upsertNode,
+  useNodeStore,
+} from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshcoreChatSenderInNodeStore } from '../meshcore/meshcoreChatSenderNode';
@@ -48,6 +53,7 @@ import {
 } from '../meshcoreUtils';
 import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { DomainEvent } from '../protocols/Protocol';
+import { relayMeshcoreChannelToTak } from '../tak/takChannelRelay';
 import type { ChatMessage, IdentityId } from '../types';
 
 export interface MeshcoreIngestOptions {
@@ -339,6 +345,21 @@ function handleTextMessage(
       senderId === event.payload.from &&
       senderId !== MESHCORE_UNKNOWN_SENDER_STUB_ID &&
       !meshcoreIsChatStubNodeId(senderId));
+  if (isChannel && inserted && !isEcho && channelSender) {
+    const identityNodes = useNodeStore.getState().nodes[identityId] as
+      Record<number, NodeRecord> | undefined;
+    const senderNode = identityNodes?.[senderId];
+    relayMeshcoreChannelToTak(identityId, {
+      channelIndex: event.payload.channelIndex,
+      senderName: displayName,
+      text: channelSender.payload,
+      timestampMs: wireTimestampMs,
+      ...(hopCount != null ? { hops: hopCount } : {}),
+      ...(senderNode?.latitude != null && senderNode.longitude != null
+        ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
+        : {}),
+    });
+  }
   if (!isEcho && mayBumpDmSender && senderId > 0) {
     bumpMeshcoreChatSenderLastHeard(identityId, senderId, {
       timestampMs: wireTimestampMs,

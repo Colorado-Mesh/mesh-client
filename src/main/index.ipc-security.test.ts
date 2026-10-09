@@ -436,6 +436,9 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:remoteImportCredentials',
     'tak:remoteEnroll',
     'tak:remoteClearCredentials',
+    'tak:getStyleSettings',
+    'tak:setStyleSettings',
+    'tak:pushChatMessage',
   ] as const;
 
   it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {

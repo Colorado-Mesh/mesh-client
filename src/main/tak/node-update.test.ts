@@ -15,6 +15,7 @@ describe('parseTakNodeUpdate', () => {
       short_name: 'AB',
       long_name: 'Alpha Base',
       __proto_pollution: 'x',
+      snr: 5,
       hw_model: 'T-BEAM',
     });
     expect(update).toEqual({
@@ -27,8 +28,61 @@ describe('parseTakNodeUpdate', () => {
       last_heard: 1_700_000_000,
       short_name: 'AB',
       long_name: 'Alpha Base',
+      hw_model: 'T-BEAM',
     });
   });
+
+  it('copies advertised role, hops and source', () => {
+    const update = parseTakNodeUpdate({
+      node_id: 1,
+      role: 2,
+      hops_away: 3,
+      source: 'mqtt',
+      infrastructure: true,
+    });
+    expect(update).toMatchObject({ role: 2, hops_away: 3, source: 'mqtt', infrastructure: true });
+  });
+
+  it('copies tracker fix fields within bounds', () => {
+    const update = parseTakNodeUpdate({
+      node_id: 0xa1b2c3d4,
+      uid: 'meshtracker-a1b2c3d4',
+      tracker_role: 'k9',
+      speed: 1.2,
+      course: 90,
+      sequence: 1042,
+      stale_sec: 30,
+    });
+    expect(update).toMatchObject({
+      uid: 'meshtracker-a1b2c3d4',
+      tracker_role: 'k9',
+      speed: 1.2,
+      course: 90,
+      sequence: 1042,
+      stale_sec: 30,
+    });
+  });
+
+  it('drops out-of-range tracker fields and unknown roles', () => {
+    const update = parseTakNodeUpdate({
+      node_id: 1,
+      tracker_role: 'pilot',
+      speed: -1,
+      course: 360,
+      sequence: 1.5,
+      stale_sec: 0,
+      source: 'lora',
+      role: 300,
+    });
+    expect(update).toEqual({ node_id: 1, protocol: 'meshtastic' });
+  });
+
+  it.each(['MESH-1', 'meshtracker-XYZ', 'meshtracker-a1b2c3d4e', 7])(
+    'rejects an update with a non-tracker uid %s',
+    (uid) => {
+      expect(parseTakNodeUpdate({ node_id: 1, uid })).toBeNull();
+    },
+  );
 
   it('defaults the protocol to meshtastic', () => {
     expect(parseTakNodeUpdate({ node_id: 1 })?.protocol).toBe('meshtastic');

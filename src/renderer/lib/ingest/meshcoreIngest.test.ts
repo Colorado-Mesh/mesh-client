@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
+import { setTakSinkActive } from '../../stores/takSinkStore';
+import { clearTakTrackerFixes, useTakTrackerStore } from '../../stores/takTrackerStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
@@ -679,5 +682,80 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBeUndefined();
+  });
+});
+
+describe('meshcore ingest TAK channel relay', () => {
+  const TAK_ID = 'meshcore-ingest-tak-test';
+  const pushChatMessage = vi.fn().mockResolvedValue(undefined);
+  let seq = 0;
+
+  function channelMessage(payload: string, channelIndex = 3) {
+    seq += 1;
+    const id = `ch:${channelIndex}:${1_700_000_000 + seq}`;
+    const timestamp = (1_700_000_000 + seq) * 1000;
+    upsertMessage(TAK_ID, { id, from: 0, to: 0, payload, channelIndex, timestamp });
+    meshcoreIngestHandleTextMessage(TAK_ID, {
+      type: 'text_message',
+      payload: { id, from: 0, to: 0, payload, channelIndex, timestamp },
+    });
+  }
+
+  const FIX = 'Rex: !MT1;u=A1B2C3D4;k=k9;la=39.7;ln=-105.1;q=7';
+
+  beforeEach(() => {
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.tak, 'pushChatMessage').mockImplementation(pushChatMessage);
+    pushChatMessage.mockClear();
+    useMessageStore.setState({ messages: {} });
+    useTakRelayPrefsStore.setState({ byIdentity: {} });
+    clearTakTrackerFixes();
+    setTakSinkActive(true);
+  });
+
+  afterEach(() => {
+    setTakSinkActive(false);
+    useTakRelayPrefsStore.setState({ byIdentity: {} });
+    clearTakTrackerFixes();
+    vi.restoreAllMocks();
+  });
+
+  it('records a tracker fix heard on an enabled tracker channel', () => {
+    useTakRelayPrefsStore.getState().setTrackerChannel(TAK_ID, 3, true);
+    channelMessage(FIX);
+    const entry = useTakTrackerStore.getState().fixes.a1b2c3d4;
+    expect(entry.fix).toMatchObject({ callsign: 'Rex', role: 'k9', lat: 39.7, lon: -105.1 });
+    expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('ignores tracker fixes on channels that are not enabled', () => {
+    useTakRelayPrefsStore.getState().setTrackerChannel(TAK_ID, 1, true);
+    channelMessage(FIX);
+    expect(useTakTrackerStore.getState().fixes).toEqual({});
+  });
+
+  it('does nothing without an active TAK sink', () => {
+    setTakSinkActive(false);
+    useTakRelayPrefsStore.getState().setTrackerChannel(TAK_ID, 3, true);
+    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 3, 'Mesh');
+    channelMessage(FIX);
+    channelMessage('Bob: hello');
+    expect(useTakTrackerStore.getState().fixes).toEqual({});
+    expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('mirrors messages on a bridged channel into its GeoChat room once', () => {
+    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 3, 'Mesh Ops');
+    channelMessage('Bob: on scene');
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    expect(pushChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ room: 'Mesh Ops', senderCallsign: 'Bob', text: 'on scene' }),
+    );
+  });
+
+  it('does not mirror channels without a bridge', () => {
+    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 4, 'Other');
+    channelMessage('Bob: on scene');
+    expect(pushChatMessage).not.toHaveBeenCalled();
   });
 });

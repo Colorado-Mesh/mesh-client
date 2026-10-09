@@ -53,12 +53,14 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKEnrollmentRequest,
+  TAKGeochatMessage,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
   TAKRemoteStatus,
   TAKServerStatus,
   TAKSettings,
+  TakStyleSettings,
 } from '../shared/tak-types';
 import type {
   LibreTranslationConfig,
@@ -1326,6 +1328,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('tak:remoteStatus', handler);
       return () => ipcRenderer.off('tak:remoteStatus', handler);
     },
+    pushChatMessage: (message: TAKGeochatMessage): Promise<void> =>
+      ipcRenderer.invoke('tak:pushChatMessage', message),
+    getStyleSettings: (): Promise<TakStyleSettings> => ipcRenderer.invoke('tak:getStyleSettings'),
+    setStyleSettings: (settings: TakStyleSettings): Promise<TakStyleSettings> =>
+      ipcRenderer.invoke('tak:setStyleSettings', settings),
   },
 
   // ─── Reticulum sidecar ───────────────────────────────────────────

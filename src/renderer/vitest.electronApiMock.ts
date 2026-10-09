@@ -446,6 +446,9 @@ export function createElectronAPIMock(): ElectronAPI {
       remoteEnroll: vi.fn().mockResolvedValue({ caSubjects: [] }),
       remoteClearCredentials: vi.fn().mockResolvedValue({ caSubjects: [] }),
       onRemoteStatus: vi.fn().mockReturnValue(() => {}),
+      getStyleSettings: vi.fn().mockResolvedValue({ filters: [], sendUnmatched: true }),
+      setStyleSettings: vi.fn().mockImplementation((s: unknown) => Promise.resolve(s)),
+      pushChatMessage: vi.fn().mockResolvedValue(undefined),
     },
     bleCoexistence: {
       register: vi.fn().mockResolvedValue({

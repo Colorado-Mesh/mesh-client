@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../../renderer/lib/types';
-import { meshNodeToCot } from './cot-converter';
+import { cotDeleteEvent, meshNodeToCot } from './cot-converter';
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -159,5 +159,96 @@ describe('meshNodeToCot per protocol', () => {
   it('escapes XML special chars in a MeshCore long_name callsign', () => {
     const cot = meshNodeToCot(makeNode({ long_name: 'A&B "base"' }), 'meshcore');
     expect(cot).toContain('callsign="A&amp;B &quot;base&quot;"');
+  });
+});
+
+describe('meshNodeToCot relay fidelity', () => {
+  const NOW = Date.parse('2026-10-09T12:00:00.000Z');
+
+  it('sets start to when the node was last heard, given in seconds', () => {
+    const heardSec = NOW / 1000 - 300;
+    const cot = meshNodeToCot(makeNode({ last_heard: heardSec }), 'meshcore', { nowMs: NOW })!;
+    expect(cot).toContain('time="2026-10-09T12:00:00.000Z"');
+    expect(cot).toContain('start="2026-10-09T11:55:00.000Z"');
+    expect(cot).toContain('stale="2026-10-09T12:10:00.000Z"');
+  });
+
+  it('accepts last_heard in milliseconds and never starts in the future', () => {
+    const ms = meshNodeToCot(makeNode({ last_heard: NOW - 60_000 }), 'meshtastic', {
+      nowMs: NOW,
+    })!;
+    expect(ms).toContain('start="2026-10-09T11:59:00.000Z"');
+    const future = meshNodeToCot(makeNode({ last_heard: NOW + 60_000 }), 'meshtastic', {
+      nowMs: NOW,
+    })!;
+    expect(future).toContain('start="2026-10-09T12:00:00.000Z"');
+  });
+
+  it('styles a MeshCore repeater from its advert type, without a team group', () => {
+    const cot = meshNodeToCot(makeNode({ hw_model: 'Repeater' }), 'meshcore')!;
+    expect(cot).toContain('type="a-f-G-I"');
+    expect(cot).not.toContain('<__group');
+  });
+
+  it('keeps the cyan team member style for people', () => {
+    const cot = meshNodeToCot(makeNode({ hw_model: 'Chat' }), 'meshcore')!;
+    expect(cot).toContain('type="a-f-G-U-C"');
+    expect(cot).toContain('<__group name="Cyan" role="Team Member"/>');
+  });
+
+  it('applies an explicit style and callsign', () => {
+    const cot = meshNodeToCot(makeNode(), 'meshcore', {
+      style: { cotType: 'a-f-G-E-V', group: 'Orange', role: 'Vehicle', color: '#FF0000' },
+      callsign: 'Medic 1',
+    })!;
+    expect(cot).toContain('type="a-f-G-E-V"');
+    expect(cot).toContain('<__group name="Orange" role="Vehicle"/>');
+    expect(cot).toContain(`<color argb="${(0xffff0000 | 0).toString()}"/>`);
+    expect(cot).toContain('callsign="Medic 1"');
+  });
+
+  it('describes how the node was heard in remarks', () => {
+    const cot = meshNodeToCot(
+      makeNode({ long_name: 'Ridge', hops_away: 2, last_heard: NOW / 1000 }),
+      'meshcore',
+      { nowMs: NOW },
+    )!;
+    expect(cot).toContain(
+      '<remarks>Ridge | Heard via MeshCore RF | 2 hops | last heard 2026-10-09T12:00:00.000Z</remarks>',
+    );
+  });
+
+  it('says MQTT for nodes heard only through MQTT and direct for zero hops', () => {
+    const cot = meshNodeToCot(makeNode({ source: 'mqtt', hops_away: 0 }), 'meshtastic')!;
+    expect(cot).toContain('Heard via Meshtastic MQTT | direct');
+  });
+
+  it('uses an explicit tracker uid and emits track and its stale window', () => {
+    const cot = meshNodeToCot(
+      { ...makeNode(), uid: 'meshtracker-a1b2c3d4', speed: 1.5, course: 90, stale_sec: 60 },
+      'meshcore',
+      { nowMs: NOW },
+    )!;
+    expect(cot).toContain('uid="meshtracker-a1b2c3d4"');
+    expect(cot).toContain('<track course="90" speed="1.5"/>');
+    expect(cot).toContain('stale="2026-10-09T12:01:00.000Z"');
+  });
+
+  it('omits track without motion fields', () => {
+    expect(meshNodeToCot(makeNode())).not.toContain('<track');
+  });
+});
+
+describe('cotDeleteEvent', () => {
+  it('builds a forced delete addressed to the target uid', () => {
+    const cot = cotDeleteEvent('MC-6', Date.parse('2026-10-09T12:00:00.000Z'));
+    expect(cot).toContain('type="t-x-d-d"');
+    expect(cot).toContain('time="2026-10-09T12:00:00.000Z"');
+    expect(cot).toContain('<link uid="MC-6" relation="none" type="none"/><__forcedelete/>');
+    expect(cot).not.toContain('uid="MC-6" type=');
+  });
+
+  it('escapes the target uid', () => {
+    expect(cotDeleteEvent('a"b')).toContain('<link uid="a&quot;b"');
   });
 });

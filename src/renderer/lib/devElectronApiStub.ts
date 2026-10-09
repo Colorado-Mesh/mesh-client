@@ -1,4 +1,5 @@
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
+import type { TakStyleSettings } from '@/shared/tak-types';
 
 /* eslint-disable @typescript-eslint/require-await -- no-op async IPC stubs for browser dev */
 const noop = (): void => {};
@@ -370,6 +371,9 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       remoteEnroll: async () => ({ caSubjects: [] }),
       remoteClearCredentials: async () => ({ caSubjects: [] }),
       onRemoteStatus: noopUnsub,
+      getStyleSettings: async () => ({ filters: [], sendUnmatched: true }),
+      setStyleSettings: async (settings: TakStyleSettings) => settings,
+      pushChatMessage: async () => {},
     },
     bleCoexistence: {
       register: async () => ({

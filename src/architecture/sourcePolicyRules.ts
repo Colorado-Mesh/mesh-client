@@ -50,6 +50,19 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message: 'Call hydrateAxeThemeColors() before axe() so contrast checks use real theme tokens',
   },
   {
+    id: 'tak-never-transmits-to-rf',
+    include: [
+      'src/main/tak/**/*.ts',
+      'src/main/tak-server-manager.ts',
+      'src/main/ipc/tak-handlers.ts',
+    ],
+    exclude: ['src/main/**/*.test.ts'],
+    forbid:
+      /from\s*['"][^'"]*(?:gatt-sidecar|serial|mqtt|meshcore|meshtastic|reticulum|radio|ble-)[^'"]*['"]/i,
+    message:
+      'TAK only receives what the mesh heard; TAK code must not import radio, MQTT, or sidecar send paths',
+  },
+  {
     id: 'meshtastic-protocol-rxtime-via-helper',
     include: ['src/renderer/lib/protocols/MeshtasticProtocol.ts'],
     require: /meshtasticPacketRxTimeMs/,

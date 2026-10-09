@@ -15,6 +15,7 @@ import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
 import { enrollTakClientCertificate } from '../tak/enrollment';
+import { parseTakGeochatMessage } from '../tak/geochat-cot';
 import { parseTakNodeUpdate } from '../tak/node-update';
 import {
   clearTakRemoteCredentials,
@@ -31,6 +32,11 @@ import {
   loadTakRemoteSettings,
   validateTakRemoteSettings,
 } from '../tak/remote-settings';
+import {
+  loadTakStyleSettings,
+  parseTakStyleSettings,
+  saveTakStyleSettings,
+} from '../tak/style-settings';
 import type { TakServerManager } from '../tak-server-manager';
 import { assertIpcSender } from '../validate-ipc-sender';
 
@@ -224,6 +230,46 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     }
     if (rejected > 0) {
       console.debug(`[IPC] tak:pushNodeUpdates: dropped ${rejected} invalid node update(s)`);
+    }
+  });
+
+  const chatPushes = createIpcRateLimiter({
+    max: 120,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:pushChatMessage',
+  });
+  ipcMain.handle('tak:pushChatMessage', (event, message: unknown) => {
+    assertIpcSender(event, 'tak:pushChatMessage');
+    // Same as node updates: nothing is listening until a sink starts.
+    const m = getTakServerManager();
+    if (!m?.hasActiveSink()) return;
+    chatPushes.checkOrThrow();
+    m.sendChat(parseTakGeochatMessage(message));
+  });
+
+  // ─── Relayed node styling ────────────────────────────────────────
+
+  ipcMain.handle('tak:getStyleSettings', (event) => {
+    assertIpcSender(event, 'tak:getStyleSettings');
+    return getTakServerManager()?.getStyleSettings() ?? loadTakStyleSettings();
+  });
+
+  const styleSaves = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:setStyleSettings',
+  });
+  ipcMain.handle('tak:setStyleSettings', (event, settings: unknown) => {
+    assertIpcSender(event, 'tak:setStyleSettings');
+    styleSaves.checkOrThrow();
+    try {
+      const parsed = parseTakStyleSettings(settings);
+      saveTakStyleSettings(parsed);
+      getTakServerManager()?.setStyleSettings(parsed);
+      return parsed;
+    } catch (err) {
+      console.error('[IPC] tak:setStyleSettings failed:', errorMessage(err));
+      throw err;
     }
   });
 

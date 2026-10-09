@@ -3,6 +3,8 @@ import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProto
 import type { ReticulumRmapDiscoveredWireRow } from '@/shared/reticulum-types';
 import type { TAKNodeUpdate } from '@/shared/tak-types';
 
+import { type TakTrackerEntry, takTrackerExpiresAtMs } from '../stores/takTrackerStore';
+import { mt1StableUid } from './meshcore/mt1Tracker';
 import { getNodeStatus } from './nodeStatus';
 import { getRadioCapabilities } from './radio/providerFactory';
 import { reticulumHashToNodeId } from './reticulum/destHash';
@@ -32,6 +34,40 @@ export interface TakFeedSources {
   /** RMAP-discovered Reticulum interfaces; only rows with coordinates become markers. */
   rmapRows: readonly ReticulumRmapDiscoveredWireRow[];
   reticulumSelf: TakReticulumSelf | null;
+  /** Latest `!MT1` fix per tracker heard on an enabled MeshCore channel. */
+  trackerFixes?: readonly TakTrackerEntry[];
+}
+
+/** A tracker fix while it is still valid; expired fixes drop off. */
+export function trackerFixToTakUpdate(
+  entry: TakTrackerEntry,
+  nowMs: number = Date.now(),
+): TAKNodeUpdate | null {
+  const { fix } = entry;
+  if (nowMs >= takTrackerExpiresAtMs(entry)) return null;
+  if (!hasMapPosition(fix.lat, fix.lon)) return null;
+  const nodeId = parseInt(fix.id8, 16);
+  if (!Number.isInteger(nodeId) || nodeId <= 0) return null;
+  const update: TAKNodeUpdate = {
+    node_id: nodeId,
+    protocol: 'meshcore',
+    uid: mt1StableUid(fix.id8),
+    latitude: fix.lat,
+    longitude: fix.lon,
+    short_name: '',
+    long_name: fix.callsign,
+    last_heard: Math.floor(entry.receivedAtMs / MS_PER_SECOND),
+    source: 'rf',
+  };
+  if (fix.altitude != null) update.altitude = fix.altitude;
+  if (fix.battery != null) update.battery = fix.battery;
+  if (fix.role) update.tracker_role = fix.role;
+  if (fix.speed != null) update.speed = fix.speed;
+  if (fix.course != null) update.course = fix.course;
+  if (fix.seq != null) update.sequence = fix.seq;
+  if (fix.staleSec != null) update.stale_sec = fix.staleSec;
+  if (entry.hops != null) update.hops_away = entry.hops;
+  return update;
 }
 
 /** Valid WGS84 pair, excluding the (0, 0) placeholder radios report before a GPS fix. */
@@ -59,8 +95,13 @@ export function meshNodeToTakUpdate(node: MeshNode, protocol: MeshProtocol): TAK
     long_name: node.long_name,
     battery: node.battery,
     last_heard: node.last_heard,
+    source: node.source === 'mqtt' || node.heard_via_mqtt_only ? 'mqtt' : 'rf',
   };
   if (node.altitude != null) update.altitude = node.altitude;
+  if (node.hw_model) update.hw_model = node.hw_model;
+  if (node.role != null) update.role = node.role;
+  const hops = node.hops_away ?? node.hops;
+  if (hops != null) update.hops_away = hops;
   return update;
 }
 
@@ -79,6 +120,7 @@ export function rmapRowToTakUpdate(row: ReticulumRmapDiscoveredWireRow): TAKNode
     short_name: '',
     long_name: row.discovery_name || row.interface_type,
     last_heard: row.last_heard,
+    infrastructure: true,
   };
 }
 
@@ -107,12 +149,17 @@ export function collectTakNodeUpdates(sources: TakFeedSources): TAKNodeUpdate[] 
       last_heard: Math.floor(Date.now() / MS_PER_SECOND),
     });
   }
+  const nowMs = Date.now();
+  for (const entry of sources.trackerFixes ?? []) {
+    const update = trackerFixToTakUpdate(entry, nowMs);
+    if (update) out.push(update);
+  }
   return out;
 }
 
 /** Cache key matching main's TAK node cache. */
 export function takNodeUpdateKey(update: TAKNodeUpdate): string {
-  return `${update.protocol}:${update.node_id}`;
+  return update.uid ?? `${update.protocol}:${update.node_id}`;
 }
 
 /** Fields that change what ATAK shows; last_heard alone does not warrant a re-send. */
@@ -124,5 +171,14 @@ export function takNodeUpdateSignature(update: TAKNodeUpdate): string {
     update.short_name ?? '',
     update.long_name ?? '',
     update.battery ?? '',
+    update.hw_model ?? '',
+    update.role ?? '',
+    update.hops_away ?? '',
+    update.source ?? '',
+    update.tracker_role ?? '',
+    update.speed ?? '',
+    update.course ?? '',
+    update.sequence ?? '',
+    update.stale_sec ?? '',
   ].join('|');
 }

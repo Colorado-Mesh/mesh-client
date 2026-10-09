@@ -3112,6 +3112,7 @@ mqttManager.on('nodeUpdate', (n: CachedNode) => {
     ...n,
     altitude: n.altitude ?? undefined,
     protocol: 'meshtastic',
+    source: 'mqtt',
   });
 });
 mqttManager.on(

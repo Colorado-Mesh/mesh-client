@@ -11,6 +11,8 @@ import {
   takNodeUpdateSignature,
 } from '@/renderer/lib/takNodeFeed';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
+import { setTakSinkActive } from '@/renderer/stores/takSinkStore';
+import { type TakTrackerEntry, useTakTrackerStore } from '@/renderer/stores/takTrackerStore';
 import { TAK_NODE_UPDATE_BATCH_MAX, type TAKNodeUpdate } from '@/shared/tak-types';
 
 /** Our Reticulum identity while the stack is up; its position comes from app static GPS. */
@@ -30,6 +32,7 @@ interface ReplicatorInputs {
   nodesByProtocol: TakFeedSources['nodesByProtocol'];
   reticulumSelf: TakReticulumSelfIdentity | null;
   rmapRows: TakFeedSources['rmapRows'];
+  trackerFixes: Record<string, TakTrackerEntry>;
 }
 
 function readSources(inputs: ReplicatorInputs): TakFeedSources {
@@ -49,6 +52,7 @@ function readSources(inputs: ReplicatorInputs): TakFeedSources {
             longitude: staticGps.lon,
           }
         : null,
+    trackerFixes: Object.values(inputs.trackerFixes),
   };
 }
 
@@ -76,14 +80,27 @@ export function useTakNodeReplicator({
   reticulumSelf,
 }: UseTakNodeReplicatorArgs): void {
   const rmapRows = useReticulumDiscoveryMapStore((s) => s.discovered);
-  const inputsRef = useRef<ReplicatorInputs>({ nodesByProtocol, reticulumSelf, rmapRows });
-  /** Last signature sent per `${protocol}:${node_id}`; rebuilt on every full send. */
+  const trackerFixes = useTakTrackerStore((s) => s.fixes);
+  const inputsRef = useRef<ReplicatorInputs>({
+    nodesByProtocol,
+    reticulumSelf,
+    rmapRows,
+    trackerFixes,
+  });
+  /** Last signature sent per `${protocol}:${node_id}` (or tracker uid); rebuilt on every full send. */
   const sentRef = useRef(new Map<string, string>());
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    inputsRef.current = { nodesByProtocol, reticulumSelf, rmapRows };
-  }, [nodesByProtocol, reticulumSelf, rmapRows]);
+    inputsRef.current = { nodesByProtocol, reticulumSelf, rmapRows, trackerFixes };
+  }, [nodesByProtocol, reticulumSelf, rmapRows, trackerFixes]);
+
+  useEffect(() => {
+    setTakSinkActive(active);
+    return () => {
+      setTakSinkActive(false);
+    };
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -121,7 +138,7 @@ export function useTakNodeReplicator({
       }
       if (changed.length > 0) sendUpdates(changed);
     }, TAK_NODE_SCAN_INTERVAL_MS);
-  }, [active, nodesByProtocol, reticulumSelf, rmapRows]);
+  }, [active, nodesByProtocol, reticulumSelf, rmapRows, trackerFixes]);
 
   useEffect(
     () => () => {

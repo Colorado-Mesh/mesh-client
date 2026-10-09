@@ -9,7 +9,10 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
+import type { IdentityId } from '../lib/types';
+import TakChannelRelaySection from './TakChannelRelaySection';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
+import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface AtakMessage {
@@ -54,9 +57,11 @@ function formatTimeAgo(ts: number, t: TFunction): string {
 interface Props {
   atakMessages?: Map<number, AtakMessage[]>;
   capabilities?: ProtocolCapabilities;
+  /** MeshCore identity whose channels may feed tracker fixes and GeoChat into TAK. */
+  meshcoreIdentityId?: IdentityId | null;
 }
 
-export default function TakServerPanel({ atakMessages, capabilities }: Props) {
+export default function TakServerPanel({ atakMessages, capabilities, meshcoreIdentityId }: Props) {
   const { t } = useTranslation();
   const id = useId();
   const {
@@ -282,6 +287,10 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       )}
 
       <TakRemoteRelaySection />
+
+      <TakUnitFiltersSection />
+
+      <TakChannelRelaySection identityId={meshcoreIdentityId ?? null} />
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (
