@@ -16,54 +16,6 @@ const RETENTION = 'appPanel.retentionLimitsHeading';
 
 const appEntries: readonly SettingSearchEntry[] = [
   {
-    id: 'app.translation',
-    slot: 'App',
-    labelKey: 'chatTranslation.settingsTitle',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.enabled',
-    slot: 'App',
-    labelKey: 'chatTranslation.enabled',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.target',
-    slot: 'App',
-    labelKey: 'chatTranslation.target',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.readLanguages',
-    slot: 'App',
-    labelKey: 'chatTranslation.readLanguages',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.auto',
-    slot: 'App',
-    labelKey: 'chatTranslation.auto',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.packs',
-    slot: 'App',
-    labelKey: 'chatTranslation.packs',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.libre',
-    slot: 'App',
-    labelKey: 'chatTranslation.serverUrl',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.removeAll',
-    slot: 'App',
-    labelKey: 'chatTranslation.removeAll',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
     id: 'app.protocols.enabled',
     slot: 'App',
     labelKey: 'appPanel.protocolsSection',
@@ -487,6 +439,54 @@ const appEntries: readonly SettingSearchEntry[] = [
     labelKey: 'mecp.rebroadcast.title',
     sectionKey: 'mecp.section.title',
     keywords: ['mecp', 'emergency', 'relay', 'bridge'],
+  },
+  {
+    id: 'app.translation',
+    slot: 'App',
+    labelKey: 'chatTranslation.settingsTitle',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.enabled',
+    slot: 'App',
+    labelKey: 'chatTranslation.enabled',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.target',
+    slot: 'App',
+    labelKey: 'chatTranslation.target',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.readLanguages',
+    slot: 'App',
+    labelKey: 'chatTranslation.readLanguages',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.auto',
+    slot: 'App',
+    labelKey: 'chatTranslation.auto',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.packs',
+    slot: 'App',
+    labelKey: 'chatTranslation.packs',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.libre',
+    slot: 'App',
+    labelKey: 'chatTranslation.serverUrl',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.removeAll',
+    slot: 'App',
+    labelKey: 'chatTranslation.removeAll',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
   },
   {
     id: 'app.danger.resetDiagnostics',

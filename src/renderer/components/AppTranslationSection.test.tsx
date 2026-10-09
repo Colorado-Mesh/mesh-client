@@ -30,6 +30,9 @@ describe('App translation settings', () => {
     await waitFor(() => {
       expect(api.getStatus).toHaveBeenCalled();
     });
+    const section = container.querySelector('details[data-setting-anchor="app.translation"]');
+    expect(section).toBeInstanceOf(HTMLDetailsElement);
+    expect((section as HTMLDetailsElement).open).toBe(false);
     expect(api.installPack).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.enable' }));
     await waitFor(() => {

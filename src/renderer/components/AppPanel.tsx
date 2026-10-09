@@ -790,7 +790,6 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
-      <AppTranslationSection />
 
       <div className="space-y-2">
         <div className="flex items-center gap-1">
@@ -2484,6 +2483,8 @@ export default function AppPanel({
           <MecpRebroadcastSettings />
         </div>
       </section>
+
+      <AppTranslationSection />
 
       {isLoraBlocklistProtocol(protocol) ? (
         <div data-setting-anchor="app.blockedNodes">

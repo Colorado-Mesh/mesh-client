@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import {
   neededTranslationPacks,
   readsTranslationLanguage,
@@ -267,15 +268,15 @@ export function AppTranslationSection() {
     // catch-no-log-ok invalid URL disables online opt-in and test
   }
   return (
-    <section
+    <details
       data-setting-anchor="app.translation"
-      className="space-y-3"
-      aria-labelledby="app-translation-heading"
+      className="group bg-deep-black border-secondary-dark rounded-lg border"
     >
-      <h3 id="app-translation-heading" className="text-ink-200 font-semibold">
-        {t('chatTranslation.settingsTitle')}
-      </h3>
-      <div className="bg-deep-black border-ink-800 rounded-card space-y-4 border p-4">
+      <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+        <h3>{t('chatTranslation.settingsTitle')}</h3>
+        <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-ink-700 space-y-4 border-t px-4 pt-3 pb-4">
         <p className="text-muted text-sm">{t('chatTranslation.offlinePrivacy')}</p>
         {!status?.enabled ? (
           <>
@@ -639,6 +640,6 @@ export function AppTranslationSection() {
           </p>
         )}
       </div>
-    </section>
+    </details>
   );
 }
