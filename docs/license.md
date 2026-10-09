@@ -23,6 +23,16 @@ Release builds may bundle `mesh-client-reticulum`, a separate executable built f
 
 If you distribute builds that include the sidecar, comply with AGPL-3.0 source-offer requirements for that component.
 
+## Reticulum License
+
+The [Reticulum reference implementation (RNS)](https://reticulum.network/) is distributed under the [Reticulum License](https://reticulum.network/manual/license.html). It carries three conditions: the software may not be used in systems that purposefully harm human beings, may not be used in the creation of AI, machine-learning, or language-model training datasets, and its copyright and permission notice must be included in all copies or substantial portions. The Reticulum protocol itself is public domain.
+
+This repository contains no RNS source code. Reticulum support comes from the bundled sidecar, which runs as a separate process and links [rsReticulum](https://github.com/ratspeak/rsReticulum) and [rsLXMF](https://github.com/ratspeak/rsLXMF). Those crates are distributed by their upstream under their own license terms (AGPL-3.0-or-later); see those repositories for their licensing.
+
+As a matter of project practice, the mesh-client project does not develop or distribute mesh-client for systems designed to purposefully harm human beings, and does not use Reticulum-licensed code to create AI, machine-learning, or language-model training datasets. This is a statement of how the project operates, not an additional term on the GPL-3.0-or-later application code.
+
+Attribution for Reticulum, rsReticulum, rsLXMF, and the Ratspeak stack is in [docs/credits.md](credits.md).
+
 ## GPL-3.0-or-later License (application code)
 
 ```text
