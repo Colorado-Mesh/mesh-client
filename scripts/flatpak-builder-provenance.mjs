@@ -8,7 +8,17 @@
  */
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, createReadStream, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  constants as fsConstants,
+  createReadStream,
+  fstatSync,
+  openSync,
+  readSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
@@ -155,13 +165,53 @@ export async function verifyFlatpakReleaseProvenance(rawResults, expected) {
   return bundleDigests;
 }
 
+/**
+ * Read one bounded regular file through the same descriptor used for metadata
+ * checks. Rechecking the descriptor rejects concurrent mutation while reading.
+ *
+ * @param {string} filePath
+ * @param {string} label
+ */
+export function readBoundedRegularFile(filePath, label) {
+  const fd = openSync(filePath, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+  try {
+    const before = fstatSync(fd, { bigint: true });
+    if (!before.isFile() || before.size > BigInt(MAX_VERIFICATION_RESULT_BYTES)) {
+      throw new Error(`${label} is missing, invalid, or too large`);
+    }
+    const checkedSize = Number(before.size);
+    const contents = Buffer.alloc(checkedSize);
+    let offset = 0;
+    while (offset < checkedSize) {
+      const bytesRead = readSync(fd, contents, offset, checkedSize - offset, offset);
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    const grewPastCheckedSize = readSync(fd, Buffer.alloc(1), 0, 1, checkedSize) !== 0;
+    const after = fstatSync(fd, { bigint: true });
+    if (
+      offset !== checkedSize ||
+      grewPastCheckedSize ||
+      before.dev !== after.dev ||
+      before.ino !== after.ino ||
+      before.size !== after.size ||
+      before.mtimeNs !== after.mtimeNs ||
+      before.ctimeNs !== after.ctimeNs ||
+      BigInt(contents.length) !== after.size
+    ) {
+      throw new Error(`${label} changed while it was being read`);
+    }
+    return contents;
+  } finally {
+    closeSync(fd);
+  }
+}
+
 /** @param {string} filePath */
 export function readVerificationResults(filePath) {
-  const stats = statSync(filePath);
-  if (!stats.isFile() || stats.size > MAX_VERIFICATION_RESULT_BYTES) {
-    throw new Error('Flatpak verification results are missing, invalid, or too large');
-  }
-  return JSON.parse(readFileSync(filePath, 'utf8'));
+  return JSON.parse(
+    readBoundedRegularFile(filePath, 'Flatpak verification results').toString('utf8'),
+  );
 }
 
 /**
@@ -218,32 +268,42 @@ export function buildGithubAttestationVerifyArgs(input) {
  */
 export async function verifyGithubFlatpakAttestation(input) {
   assertReviewedBuilderImage(input.builderImage);
-  const attestationStats = statSync(input.attestationBundle);
-  if (!attestationStats.isFile() || attestationStats.size > MAX_VERIFICATION_RESULT_BYTES) {
-    throw new Error('Sigstore attestation bundle is missing, invalid, or too large');
-  }
-  const args = buildGithubAttestationVerifyArgs(input);
-  const runGh =
-    input.runGh ??
-    ((ghArgs) =>
-      spawnSync('gh', ghArgs, {
-        encoding: 'utf8',
-        maxBuffer: MAX_VERIFICATION_RESULT_BYTES,
-      }));
-  const result = runGh(args);
-  if (result.error || result.status !== 0) {
-    const detail = result.error?.message ?? result.stderr?.trim() ?? `exit ${result.status}`;
-    throw new Error(`GitHub attestation verification failed: ${detail}`);
-  }
-  let parsed;
+  const attestationBytes = readBoundedRegularFile(
+    input.attestationBundle,
+    'Sigstore attestation bundle',
+  );
+  let snapshotCreated = false;
   try {
-    parsed = JSON.parse(result.stdout ?? '');
-  } catch {
-    throw new Error('GitHub attestation verification returned invalid JSON');
+    writeFileSync(input.releaseAttestation, attestationBytes, { flag: 'wx', mode: 0o400 });
+    snapshotCreated = true;
+    const args = buildGithubAttestationVerifyArgs({
+      ...input,
+      attestationBundle: input.releaseAttestation,
+    });
+    const runGh =
+      input.runGh ??
+      ((ghArgs) =>
+        spawnSync('gh', ghArgs, {
+          encoding: 'utf8',
+          maxBuffer: MAX_VERIFICATION_RESULT_BYTES,
+        }));
+    const result = runGh(args);
+    if (result.error || result.status !== 0) {
+      const detail = result.error?.message ?? result.stderr?.trim() ?? `exit ${result.status}`;
+      throw new Error(`GitHub attestation verification failed: ${detail}`);
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(result.stdout ?? '');
+    } catch {
+      throw new Error('GitHub attestation verification returned invalid JSON');
+    }
+    const records = await verifyFlatpakReleaseProvenance(parsed, input);
+    snapshotCreated = false;
+    return records;
+  } finally {
+    if (snapshotCreated) rmSync(input.releaseAttestation, { force: true });
   }
-  const records = await verifyFlatpakReleaseProvenance(parsed, input);
-  copyFileSync(input.attestationBundle, input.releaseAttestation);
-  return records;
 }
 
 /**

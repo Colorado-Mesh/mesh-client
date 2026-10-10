@@ -251,7 +251,7 @@ describe('Flatpak builder provenance', () => {
     expect(capturedArgs).toEqual(
       buildGithubAttestationVerifyArgs({
         bundleDir,
-        attestationBundle,
+        attestationBundle: releaseAttestation,
         sourceSha: SOURCE_SHA,
         sourceRef: 'refs/tags/v1.2.3',
         repository: 'Colorado-Mesh/mesh-client',
