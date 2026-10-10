@@ -9,6 +9,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FLATPAK_BUILDER_IMAGE } from './flatpak-builder-provenance.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -43,8 +44,7 @@ export function resolveContainerEngine(options = {}) {
  */
 export const CONTAINER_ENGINE = resolveContainerEngine();
 export const ACT_PLATFORM_IMAGE = 'ghcr.io/catthehacker/ubuntu:full-latest';
-export const FLATPAK_CONTAINER_IMAGE =
-  'ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08';
+export const FLATPAK_CONTAINER_IMAGE = FLATPAK_BUILDER_IMAGE;
 
 export const ACT_PULL_IMAGES = [ACT_PLATFORM_IMAGE, FLATPAK_CONTAINER_IMAGE];
 

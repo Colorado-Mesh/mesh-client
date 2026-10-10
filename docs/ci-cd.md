@@ -146,7 +146,7 @@ Builds Flatpak bundles using [`flatpak/flatpak-github-actions`](https://github.c
 
 **Triggers:** version tags (`v*`) and manual `workflow_dispatch` (**Build Flatpak (no release)**).
 
-A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privileged `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08` container (Flathub remote, `flatpak-builder`, and system-scope runtime installs). **x86_64** runs on `ubuntu-latest`; **aarch64** runs on `ubuntu-24.04-arm` (native ARM runners — not QEMU on bare Ubuntu).
+A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privileged `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc` multi-architecture OCI index (Flathub remote, `flatpak-builder`, and system-scope runtime installs). **x86_64** runs on `ubuntu-latest`; **aarch64** runs on `ubuntu-24.04-arm` (native ARM runners — not QEMU on bare Ubuntu). Update that digest only after reviewing the upstream image and confirming the replacement index contains both `linux/amd64` and `linux/arm64`; keep the workflow, `scripts/flatpak-builder-provenance.mjs`, and `scripts/run-act.mjs` in sync.
 
 1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
@@ -154,7 +154,7 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
 5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
 
-On **version tag pushes**, a `publish` job waits for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`), then attaches both **clean-named** bundles with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
+On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestation that binds both final bundle SHA-256 digests to the source commit and reviewed builder image. It independently verifies the signer workflow, source SHA/ref, predicate, and both digests before waiting for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`) and attaching the **clean-named** bundles plus attestation with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
 `flatpak/generated-sources.json` is generated automatically in CI by `flatpak-node-generator` before each build — it does not need to be committed to the repo. For local builds, generate it manually; see [development-environment.md](development-environment.md) for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.
 
