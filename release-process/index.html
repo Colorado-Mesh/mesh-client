@@ -3160,8 +3160,8 @@
 <ol>
 <li><strong><code>schema-release-compare</code></strong> — compares this SHA’s schema to the last published release; uploads <code>READ-ME-FIRST-flatpak.md</code> (included again beside Flatpak Actions artifacts)</li>
 <li><strong><code>reticulum-sidecar</code></strong> — builds <code>mesh-client-reticulum</code> per arch (x86_64 on <code>ubuntu-latest</code>, aarch64 on <code>ubuntu-24.04-arm</code>) with full RNS stack features</li>
-<li><strong><code>flatpak</code></strong> — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds <code>org.coloradomesh.MeshClient.flatpak</code> per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual <strong>Build Flatpak (no release)</strong> dispatch also renames downloadable artifacts to <code>…-run{N}.flatpak</code>; tag runs keep clean names)</li>
-<li><strong><code>publish</code></strong> (tag only) — waits for the Electron prepare draft (<code>ci-wait-github-draft-release.mjs</code>), then attaches both clean-named <code>.flatpak</code> files with <code>ci-upload-release-assets.mjs</code> using the shared <code>release_id</code> (never creates or publishes a release)</li>
+<li><strong><code>flatpak</code></strong> — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds <code>org.coloradomesh.MeshClient.flatpak</code> per arch inside the digest-pinned Flathub freedesktop 24.08 multi-architecture container, smoke-installs the unstamped bundle (manual <strong>Build Flatpak (no release)</strong> dispatch also renames downloadable artifacts to <code>…-run{N}.flatpak</code>; tag runs keep clean names)</li>
+<li><strong><code>publish</code></strong> (tag only) — on a bare GitHub runner, signs and verifies source/builder/bundle-digest provenance, waits for the Electron prepare draft (<code>ci-wait-github-draft-release.mjs</code>), then attaches both clean-named <code>.flatpak</code> files and their Sigstore attestation with <code>ci-upload-release-assets.mjs</code> using the shared <code>release_id</code> (never creates or publishes a release)</li>
 </ol>
 <p>Both tag-triggered workflows must complete before the release is fully populated. Flatpak bundles often arrive a few minutes after the Electron artifacts.</p>
 <h3 id="reticulum-sidecar-in-installers">Reticulum sidecar in installers<a class="headerlink" href="#reticulum-sidecar-in-installers" title="Permanent link">&para;</a></h3>
@@ -3197,7 +3197,7 @@
 </tr>
 <tr>
 <td>Linux Flatpak</td>
-<td><code>org.coloradomesh.MeshClient-x86_64.flatpak</code>, <code>org.coloradomesh.MeshClient-aarch64.flatpak</code></td>
+<td><code>org.coloradomesh.MeshClient-x86_64.flatpak</code>, <code>org.coloradomesh.MeshClient-aarch64.flatpak</code>, and <code>mesh-client-flatpak-attestation.sigstore.json</code></td>
 </tr>
 <tr>
 <td>Windows x64</td>
@@ -3342,7 +3342,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 22:22:28 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 10, 2026 20:26:16 UTC">October 10, 2026</span>
   </span>
 
     
