@@ -4869,7 +4869,7 @@
 </code></pre></div>
 <p>Output goes to the <code>release/</code> directory.</p>
 <p><strong>macOS (<code>dist:mac</code>)</strong> runs <code>electron-builder --mac --x64 --arm64 --publish never</code> (Intel + Apple Silicon DMG/ZIP pairs), then <strong><code>node scripts/verify-mac-packaging.mjs</code></strong>. Verify stages <strong><code>00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt</code></strong> for GitHub Releases, asserts both arch <code>.dmg</code> + <code>.zip</code> artifacts, deep-validates every archive (symlink-preserving ZIP extract via <code>ditto -xk</code>, DMG mount including <strong>IMPORTANT-Read-Me.txt</strong>), launcher/framework sizes, Squirrel/Mantle/ReactiveObjC framework symlinks, and bundled Reticulum sidecar — same checks CI <code>packaging-smoke</code> uses on downloaded artifacts. <strong>Developer ID–signed</strong> builds also run <code>codesign --verify --deep --strict</code> and <code>xcrun stapler validate</code> on the finished <code>.app</code>, plus <code>codesign --verify --strict</code> on the bundled Reticulum sidecar; unsigned or ad-hoc (non–Developer ID) local builds skip that gate and are still expected to pass verify. Building both arches is slower than a single-arch pack.</p>
-<p><strong>Optional macOS signing (release parity):</strong> export the same env vars CI uses before <code>pnpm run dist:mac</code> or <code>dist:mac:publish</code>:</p>
+<p><strong>Optional macOS signing (release parity):</strong> export the same env vars CI uses before <code>pnpm run dist:mac</code>. <code>dist:mac:publish</code> requires them and also requires <code>RELEASE_ID</code> plus <code>GH_TOKEN</code> for an existing draft release; it builds with publishing disabled, verifies every artifact in required Developer ID mode, and only then uploads through the controlled release uploader.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_LINK</span><span class="o">=</span><span class="s1">'…'</span><span class="w"> </span><span class="c1"># base64 .p12 Developer ID Application cert</span>
 <a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_KEY_PASSWORD</span><span class="o">=</span><span class="s1">'…'</span>
 <a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_IDENTITY_AUTO_DISCOVERY</span><span class="o">=</span><span class="nb">true</span>
@@ -4878,7 +4878,7 @@
 <a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">APPLE_TEAM_ID</span><span class="o">=</span><span class="s1">'…'</span>
 <a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:mac
 </code></pre></div>
-<p>When <code>CSC_LINK</code> is unset, electron-builder skips signing/notarization (<code>CSC_IDENTITY_AUTO_DISCOVERY=false</code> in CI). See <a href="../release-process/#macos-code-signing-and-notarization">Release Process — macOS code signing and notarization</a>.</p>
+<p>When <code>CSC_LINK</code> is unset, local <code>dist:mac</code> can skip signing/notarization. Release workflow macOS jobs and <code>dist:mac:publish</code> fail closed unless the complete signing/notarization configuration is present and the app plus bundled sidecar match <code>APPLE_TEAM_ID</code>. See <a href="../release-process/#macos-code-signing-and-notarization">Release Process — macOS code signing and notarization</a>.</p>
 <h3 id="build-analysis">Build analysis<a class="headerlink" href="#build-analysis" title="Permanent link">&para;</a></h3>
 <p>To analyze the main process bundle size and composition:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build:main:minify-meta
@@ -5227,7 +5227,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 20:57:45 UTC">October 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 10, 2026 22:17:40 UTC">October 10, 2026</span>
   </span>
 
     
