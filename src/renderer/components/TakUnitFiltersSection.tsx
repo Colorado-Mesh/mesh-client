@@ -277,6 +277,7 @@ interface FormProps {
   onSave: (settings: TakStyleSettings) => Promise<boolean>;
 }
 
+/** Editable copy of the saved style settings; nothing reaches main until Save. */
 function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -349,6 +350,7 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
           disabled={isSaving}
           maxLength={TAK_ICONSET_PATH_MAX_LEN}
           spellCheck={false}
+          aria-label={t('takServerPanel.unitStylesRelayIcon')}
           aria-describedby={`${id}-relay-icon-hint`}
           className={`${INPUT_BOX_SM_CLASS} w-full`}
         />

@@ -100,6 +100,8 @@ describe('parseTakStyleSettings relay icon', () => {
     ['an empty segment', 'uid//Repeater.png'],
     ['markup', 'uid/WildFire/"><x a="'],
     ['a control character', 'uid/Wild\nFire/Repeater.png'],
+    ['a DEL character', 'uid/Wild\u007fFire/Repeater.png'],
+    ['a C1 control character', 'uid/Wild\u0085Fire/Repeater.png'],
     ['over the length cap', `uid/WildFire/${'x'.repeat(260)}.png`],
   ])('rejects %s', (_label, relayIconsetPath) => {
     expect(() => parseTakStyleSettings({ ...VALID, relayIconsetPath })).toThrow(/relayIconsetPath/);

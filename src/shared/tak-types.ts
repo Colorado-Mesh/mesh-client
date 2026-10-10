@@ -44,11 +44,14 @@ export interface TakUnitStyle {
 
 export const TAK_ICONSET_PATH_MAX_LEN = 256;
 const ICONSET_PATH_FORBIDDEN = new Set(['<', '>', '"', "'", '&']);
+/** Unicode control characters: C0, DEL, and C1. */
+const CONTROL_CHAR_RE = /\p{Cc}/u;
 
+/** One path segment: non-empty, no surrounding whitespace, no markup or control characters. */
 function isIconsetPathSegment(segment: string): boolean {
   if (segment.length === 0 || segment.trim() !== segment) return false;
   for (const ch of segment) {
-    if (ch.charCodeAt(0) < 0x20 || ICONSET_PATH_FORBIDDEN.has(ch)) return false;
+    if (CONTROL_CHAR_RE.test(ch) || ICONSET_PATH_FORBIDDEN.has(ch)) return false;
   }
   return true;
 }
