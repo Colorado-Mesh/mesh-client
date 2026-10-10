@@ -35,6 +35,7 @@ const MICRON_RENDER_LIMIT_HTML =
   '<p class="nomad-micron-render-error" data-micron-render-error="true" role="alert">Page exceeds safe rendering limits.</p>';
 
 class MicronRenderLimitError extends Error {
+  /** Identify which fixed render budget was exceeded. */
   constructor(limit) {
     super(`Micron render limit exceeded: ${limit}`);
     this.name = 'MicronRenderLimitError';
@@ -210,6 +211,7 @@ class MicronParser {
       .toLowerCase();
   }
 
+  /** Point empty in-page links at the next rendered Micron heading within the work budget. */
   static _resolveEmptyAnchors(root, state = null) {
     if (!root || typeof root.querySelectorAll !== 'function') return;
     const candidates = Array.from(root.querySelectorAll('a[href="#"], .micron-header-anchor'));
@@ -226,6 +228,7 @@ class MicronParser {
     }
   }
 
+  /** Read page-level foreground and background directives from the Micron header. */
   parseHeaderTags(markup, parsedLines = null) {
     let pageFg = null;
     let pageBg = null;
@@ -1878,6 +1881,7 @@ class MicronParser {
     state.formatting = snap.formatting;
   }
 
+  /** Split one escaped Micron table row while charging its scan work to the render budget. */
   _parseTableRow(line, state = null) {
     consumeBudget(state, 'operations', line.length + 1);
     line = line.trim();
@@ -1900,6 +1904,7 @@ class MicronParser {
     return cells;
   }
 
+  /** Convert a Micron table separator row into per-column alignment values. */
   _parseTableAlignments(line, state = null) {
     const cells = this._parseTableRow(line, state);
     return cells.map((c) => {
@@ -1910,6 +1915,7 @@ class MicronParser {
     });
   }
 
+  /** Wrap complex text a word at a time while preserving the original spaces. */
   splitAtSpaces(line, state = null) {
     consumeBudget(state, 'operations', line.length + 1);
     let out = '';
@@ -1920,6 +1926,7 @@ class MicronParser {
     return out;
   }
 
+  /** Wrap non-ASCII or HTML-sensitive graphemes for safe styled rendering. */
   wrapWord(word, state = null) {
     consumeBudget(state, 'operations', word.length + 1);
     if (word.length === 0) return '';
