@@ -274,3 +274,25 @@ describe('stream framing', () => {
     expect(stream.split('\n').every((line) => line.startsWith('<event '))).toBe(true);
   });
 });
+
+describe('meshNodeToCot user icon', () => {
+  it('emits a usericon element when the style names an icon set path', () => {
+    const cot = meshNodeToCot(makeNode({ latitude: 39.7, longitude: -105 }), 'meshcore', {
+      style: {
+        cotType: 'a-f-G-I',
+        iconsetPath: 'geoops/WildFire/Repeater.png',
+      },
+    });
+    expect(cot).toContain('type="a-f-G-I"');
+    expect(cot).toContain('<usericon iconsetpath="geoops/WildFire/Repeater.png"/>');
+  });
+
+  it('escapes the path and omits the element by default', () => {
+    const node = makeNode({ latitude: 39.7, longitude: -105 });
+    const cot = meshNodeToCot(node, 'meshcore', {
+      style: { cotType: 'a-f-G-I', iconsetPath: 'uid/A&B/x.png' },
+    });
+    expect(cot).toContain('<usericon iconsetpath="uid/A&amp;B/x.png"/>');
+    expect(meshNodeToCot(node, 'meshcore')).not.toContain('<usericon');
+  });
+});

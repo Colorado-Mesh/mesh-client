@@ -6455,6 +6455,8 @@
     "unitStylesTitle": "Relayed unit styles",
     "unitStylesDesc": "Relayed nodes are drawn from the role they advertise: repeaters and routers as installations, sensors as sensors, everyone else as a team member. Add filters to restyle nodes by name. The first enabled filter that matches wins.",
     "unitStylesSendUnmatched": "Relay nodes that no filter matches",
+    "unitStylesRelayIcon": "Icon for repeaters, routers and room servers",
+    "unitStylesRelayIconHint": "Optional. Path of an icon in an ATAK icon set, as set UID/group/file name. Devices without that icon set show the installation symbol.",
     "unitStylesAddFilter": "Add filter",
     "unitStylesSave": "Save styles",
     "unitStylesSaved": "Saved and applied",

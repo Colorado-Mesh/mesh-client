@@ -4,6 +4,7 @@ import path from 'path';
 
 import {
   DEFAULT_TAK_STYLE_SETTINGS,
+  isTakIconsetPath,
   TAK_MATCH_OPS,
   TAK_TEAM_COLORS,
   TAK_TEAM_ROLES,
@@ -104,7 +105,21 @@ export function parseTakStyleSettings(raw: unknown): TakStyleSettings {
   if (!Array.isArray(s.filters) || s.filters.length > TAK_UNIT_FILTERS_MAX) {
     fail(`filters must be an array of at most ${TAK_UNIT_FILTERS_MAX}`);
   }
-  return { filters: (s.filters as unknown[]).map(parseFilter), sendUnmatched: s.sendUnmatched };
+  const settings: TakStyleSettings = {
+    filters: (s.filters as unknown[]).map(parseFilter),
+    sendUnmatched: s.sendUnmatched,
+  };
+  if (s.relayIconsetPath !== undefined) {
+    if (typeof s.relayIconsetPath !== 'string') fail('relayIconsetPath must be a string');
+    const iconPath = s.relayIconsetPath.trim();
+    if (iconPath) {
+      if (!isTakIconsetPath(iconPath)) {
+        fail('relayIconsetPath must be <icon set uid>/<group>/<file>');
+      }
+      settings.relayIconsetPath = iconPath;
+    }
+  }
+  return settings;
 }
 
 /**
