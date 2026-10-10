@@ -193,6 +193,16 @@ describe('release.sh full-suite gate', () => {
     expect(script).toMatch(/if \[ "\$PREFLIGHT_ONLY" = false \]; then\s*\n\s*git pull origin main/);
     expect(script).not.toMatch(/^git pull origin main$/m);
   });
+
+  it('splits release preparation from the credentialed push', () => {
+    expect(script).toMatch(/--prepare-only\)/);
+    expect(script).toMatch(/--push-only\)/);
+    expect(script).toMatch(/commit_and_tag_release/);
+    expect(script).toMatch(/push_prepared_release/);
+    expect(script).toMatch(/Prepared release checkout is not clean; refusing to push/);
+    expect(script).toMatch(/Prepared release tag .* does not point to HEAD/);
+    expect(script).toMatch(/HEAD is not the expected release commit/);
+  });
 });
 
 describe('release.sh argv subprocess', () => {
@@ -283,6 +293,62 @@ describe('release.sh argv subprocess', () => {
     expect(r.stdout).toMatch(/^PREFLIGHT_ONLY=true$/m);
     expect(r.stdout).toMatch(/^SKIP_DEP_UPDATE=true$/m);
     expect(r.stdout).toMatch(/^FINISH_ONLY=false$/m);
+  });
+
+  it('PARSE_ONLY: --prepare-only and --push-only remain distinct modes', () => {
+    const baseEnv = {
+      ...process.env,
+      MESH_CLIENT_RELEASE_PARSE_ONLY: '1',
+      MESH_CLIENT_ALLOW_PARSE_ONLY_IN_CI: '1',
+    };
+    const prepare = spawnSync('bash', [RELEASE_SH, 'patch', '--prepare-only'], {
+      encoding: 'utf8',
+      env: baseEnv,
+    });
+    const push = spawnSync('bash', [RELEASE_SH, '--push-only'], {
+      encoding: 'utf8',
+      env: baseEnv,
+    });
+    expect(prepare.status).toBe(0);
+    expect(prepare.stdout).toMatch(/^PREPARE_ONLY=true$/m);
+    expect(prepare.stdout).toMatch(/^PUSH_ONLY=false$/m);
+    expect(push.status).toBe(0);
+    expect(push.stdout).toMatch(/^PREPARE_ONLY=false$/m);
+    expect(push.stdout).toMatch(/^PUSH_ONLY=true$/m);
+    expect(push.stdout).toMatch(/^AUTO_DETECT=false$/m);
+  });
+
+  it('rejects combining --push-only with preparation options', () => {
+    const r = spawnSync('bash', [RELEASE_SH, 'patch', '--push-only'], { encoding: 'utf8' });
+    expect(r.status).toBe(1);
+    expect(`${r.stdout}${r.stderr}`).toMatch(/cannot be combined with release preparation options/);
+  });
+
+  it('rejects a lightweight tag in --push-only mode', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-release-lightweight-tag-'));
+    try {
+      fs.writeFileSync(path.join(tmp, 'package.json'), '{"version":"1.2.3"}\n');
+      for (const args of [
+        ['init', '-b', 'main'],
+        ['config', 'user.name', 'Release Test'],
+        ['config', 'user.email', 'release-test@example.invalid'],
+        ['add', 'package.json'],
+        ['commit', '-m', 'chore: release v1.2.3'],
+        ['tag', 'v1.2.3'],
+      ]) {
+        const git = spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+        expect(git.status, `${git.stdout}${git.stderr}`).toBe(0);
+      }
+
+      const r = spawnSync('bash', [RELEASE_SH, '--push-only'], {
+        cwd: tmp,
+        encoding: 'utf8',
+      });
+      expect(r.status).toBe(1);
+      expect(`${r.stdout}${r.stderr}`).toMatch(/tag v1\.2\.3 is not annotated/);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it('rejects --finish combined with --preflight-only', () => {

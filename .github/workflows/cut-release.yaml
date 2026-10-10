@@ -47,30 +47,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require RELEASE_PUSH_TOKEN (unless dry-run)
-        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
-        env:
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
-        run: |
-          if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
-            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows).'
-            echo 'Default GITHUB_TOKEN cannot trigger release.yaml / flatpak.yaml on tag push,'
-            echo 'and cannot bypass the main merge-queue ruleset.'
-            exit 1
-          fi
-
       - name: Checkout main
         # actions/checkout v6.1.0
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: main
           fetch-depth: 0
-          # dry_run uses GITHUB_TOKEN; real cuts need admin RELEASE_PUSH_TOKEN.
-          token: >-
-            ${{ (inputs.dry_run == true || inputs.dry_run == 'true')
-              && github.token
-              || secrets.RELEASE_PUSH_TOKEN }}
-          persist-credentials: true
+          persist-credentials: false
 
       # dry_run only needs the detect script + package.json; still install so
       # node_modules layout matches (detect has no deps beyond node builtins).
@@ -156,7 +139,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
-      - name: Run release (MESH_CLIENT_RELEASE_YES)
+      - name: Prepare release without push credentials
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           MESH_CLIENT_RELEASE_YES: '1'
@@ -172,18 +155,52 @@ jobs:
           fi
           case "${RELEASE_BUMP}" in
             patch|minor|major)
-              pnpm run release -- "${RELEASE_BUMP}" "${EXTRA[@]}"
+              pnpm run release -- "${RELEASE_BUMP}" --prepare-only "${EXTRA[@]}"
               ;;
             *)
               # Exact X.Y.Z from preview (auto resolves to patch|minor|major already)
               if [[ "${RELEASE_BUMP}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                pnpm run release -- "${RELEASE_BUMP}" "${EXTRA[@]}"
+                pnpm run release -- "${RELEASE_BUMP}" --prepare-only "${EXTRA[@]}"
               else
                 echo "::error::Unexpected bump from preview: ${RELEASE_BUMP}"
                 exit 1
               fi
               ;;
           esac
+      - name: Push prepared release
+        if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
+        env:
+          # The admin credential exists only for this final, non-repository-controlled operation.
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          MESH_CLIENT_RELEASE_PARSE_ONLY: ''
+        run: |
+          set -euo pipefail
+          if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
+            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows).'
+            exit 1
+          fi
+
+          ASKPASS="${RUNNER_TEMP}/mesh-release-askpass.sh"
+          cleanup() {
+            rm -f "${ASKPASS}"
+            unset GIT_ASKPASS GIT_TERMINAL_PROMPT RELEASE_PUSH_TOKEN
+          }
+          trap cleanup EXIT
+          umask 077
+          # Keep variable expansion inside the askpass process, not while creating it.
+          # shellcheck disable=SC2016
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'case "$1" in' \
+            '  *Username*) printf "%s\n" "x-access-token" ;;' \
+            '  *) printf "%s\n" "$RELEASE_PUSH_TOKEN" ;;' \
+            'esac' > "${ASKPASS}"
+          chmod 700 "${ASKPASS}"
+          export GIT_ASKPASS="${ASKPASS}"
+          export GIT_TERMINAL_PROMPT=0
+
+          pnpm run release -- --push-only
+
           {
             echo "## Next steps"
             echo ""

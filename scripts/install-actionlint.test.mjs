@@ -7,12 +7,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   downloadToFile,
-  githubApiHeaders,
   normalizeArch,
   normalizeOs,
-  pickActionlintAsset,
   PINNED_ACTIONLINT_VERSION,
   pinnedActionlintAsset,
+  sha256File,
+  verifySha256,
 } from './install-actionlint.mjs';
 
 const tempDirs = [];
@@ -36,19 +36,8 @@ async function makeTempDir(prefix) {
 }
 
 describe('install-actionlint', () => {
-  it('pins a concrete actionlint version for API rate-limit fallback', () => {
+  it('pins a concrete actionlint version', () => {
     expect(PINNED_ACTIONLINT_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-  });
-
-  it('builds githubApiHeaders with Bearer token when GITHUB_TOKEN is set', () => {
-    const headers = githubApiHeaders({ GITHUB_TOKEN: ' ghp_test ' });
-    expect(headers.Authorization).toBe('Bearer ghp_test');
-    expect(headers['User-Agent']).toBe('mesh-client');
-  });
-
-  it('omits Authorization when no token is present', () => {
-    const headers = githubApiHeaders({});
-    expect(headers.Authorization).toBeUndefined();
   });
 
   it('normalizes platform/arch keys used in release asset names', () => {
@@ -65,27 +54,24 @@ describe('install-actionlint', () => {
     expect(asset.browser_download_url).toBe(
       `https://github.com/rhysd/actionlint/releases/download/v${PINNED_ACTIONLINT_VERSION}/${asset.name}`,
     );
+    expect(asset.sha256).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  it('picks the matching asset from a releases/latest payload', () => {
-    const asset = pickActionlintAsset(
-      [
-        {
-          name: `actionlint_${PINNED_ACTIONLINT_VERSION}_linux_amd64.tar.gz`,
-          browser_download_url: 'https://example.test/linux.tar.gz',
-        },
-        {
-          name: `actionlint_${PINNED_ACTIONLINT_VERSION}_darwin_arm64.tar.gz`,
-          browser_download_url: 'https://example.test/darwin.tar.gz',
-        },
-      ],
-      'darwin',
-      'arm64',
+  it('fails closed for unreviewed versions and platforms', () => {
+    expect(() => pinnedActionlintAsset('linux', 'amd64', '9.9.9')).toThrow(
+      /No reviewed actionlint checksum/,
     );
-    expect(asset).toEqual({
-      name: `actionlint_${PINNED_ACTIONLINT_VERSION}_darwin_arm64.tar.gz`,
-      browser_download_url: 'https://example.test/darwin.tar.gz',
-    });
+    expect(pinnedActionlintAsset('freebsd', 'amd64')).toBeNull();
+  });
+
+  it('verifies downloaded bytes before extraction', async () => {
+    const dir = await makeTempDir('actionlint-sha-');
+    const file = join(dir, 'asset.bin');
+    await fs.writeFile(file, 'trusted-bytes');
+    const expected = '5de028e8486c711022de7b791d8ce8d98182e24ff81887f58f50ea0a132ee947';
+    expect(await sha256File(file)).toBe(expected);
+    await expect(verifySha256(file, expected)).resolves.toBeUndefined();
+    await expect(verifySha256(file, '0'.repeat(64))).rejects.toThrow(/SHA-256 mismatch/);
   });
 
   it('downloadToFile retries transient fetch failures then succeeds', async () => {

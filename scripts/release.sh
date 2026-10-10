@@ -104,7 +104,7 @@ confirm_or_yes() {
 }
 
 print_release_usage() {
-  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish] [--yes] [--skip-dep-update] [--preflight-only]"
+  echo "Usage: pnpm run release [patch|minor|major|x.x.x|--auto|--finish] [--yes] [--skip-dep-update] [--preflight-only|--prepare-only]"
   echo "       pnpm run release               # Auto-detect from commits"
   echo "       pnpm run release --auto         # Explicit auto-detect"
   echo "       pnpm run release minor          # Force minor release"
@@ -113,6 +113,8 @@ print_release_usage() {
   echo "       pnpm run release --yes          # Skip confirmation prompts"
   echo "       pnpm run release --skip-dep-update  # Skip pnpm update/dedupe"
   echo "       pnpm run release --preflight-only   # Run every pre-flight check on this checkout, then stop"
+  echo "       pnpm run release patch --prepare-only  # Validate, bump, commit, and tag locally; do not push"
+  echo "       pnpm run release --push-only        # Push an already prepared release commit and tag"
   echo "       MESH_CLIENT_RELEASE_YES=1 pnpm run release   # Same as --yes"
   echo "       (Bare -- from \`pnpm run release -- …\` is ignored; pnpm 11 forwards it.)"
 }
@@ -160,11 +162,44 @@ push_release_main_with_rebase() {
   return 1
 }
 
-commit_tag_and_push_release() {
+commit_and_tag_release() {
   local new_version="$1"
   git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
   [ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
   git commit -m "chore: release $new_version"
+  git tag -a "$new_version" -m "Release $new_version"
+}
+
+push_prepared_release() {
+  local clean_version new_version head_commit tag_commit
+  clean_version=$(read_package_version)
+  if ! assert_release_semver "$clean_version"; then
+    exit 1
+  fi
+  new_version="v${clean_version}"
+
+  if [ -n "$(git status --porcelain)" ]; then
+    print_error "Prepared release checkout is not clean; refusing to push."
+    exit 1
+  fi
+  if ! git rev-parse --verify "${new_version}^{commit}" > /dev/null 2>&1; then
+    print_error "Prepared release tag $new_version is missing. Run with --prepare-only first."
+    exit 1
+  fi
+  if [ "$(git cat-file -t "$new_version")" != "tag" ]; then
+    print_error "Prepared release tag $new_version is not annotated; refusing to push."
+    exit 1
+  fi
+  head_commit=$(git rev-parse HEAD)
+  tag_commit=$(git rev-parse "${new_version}^{commit}")
+  if [ "$tag_commit" != "$head_commit" ]; then
+    print_error "Prepared release tag $new_version does not point to HEAD; refusing to push."
+    exit 1
+  fi
+  if [ "$(git log -1 --format=%s)" != "chore: release $new_version" ]; then
+    print_error "HEAD is not the expected release commit for $new_version; refusing to push."
+    exit 1
+  fi
 
   print_header "Creating tag $new_version and pushing to GitHub..."
   if ! push_release_main_with_rebase "$new_version" 5; then
@@ -218,12 +253,21 @@ finish_pending_release() {
 
   generate_release_notes "$last_tag" "$new_version"
 
-  if ! confirm_or_yes "package.json is already at $clean_version. Commit, tag $new_version, and push?"; then
+  local finish_action="commit, tag $new_version, and push"
+  if [ "$PREPARE_ONLY" = true ]; then
+    finish_action="commit and tag $new_version locally"
+  fi
+  if ! confirm_or_yes "package.json is already at $clean_version. ${finish_action}?"; then
     print_warning "Release finish cancelled."
     exit 0
   fi
 
-  commit_tag_and_push_release "$new_version"
+  commit_and_tag_release "$new_version"
+  if [ "$PREPARE_ONLY" = true ]; then
+    print_success "Prepared $new_version locally. A separate --push-only invocation must publish it."
+    return 0
+  fi
+  push_prepared_release
 }
 
 # ====================== Generate copy-paste release notes ======================
@@ -334,6 +378,8 @@ FINISH_ONLY=false
 SKIP_DEP_UPDATE=false
 RELEASE_YES=false
 PREFLIGHT_ONLY=false
+PREPARE_ONLY=false
+PUSH_ONLY=false
 if [ "${MESH_CLIENT_RELEASE_YES:-}" = "1" ] || [ "${MESH_CLIENT_RELEASE_YES:-}" = "true" ]; then
   RELEASE_YES=true
 fi
@@ -357,6 +403,12 @@ for arg in "$@"; do
       # Validate the checked-out tree (any branch) without mutating deps or git.
       PREFLIGHT_ONLY=true
       SKIP_DEP_UPDATE=true
+      ;;
+    --prepare-only)
+      PREPARE_ONLY=true
+      ;;
+    --push-only)
+      PUSH_ONLY=true
       ;;
     --auto)
       AUTO_DETECT=true
@@ -389,6 +441,18 @@ if [ "$FINISH_ONLY" = true ] && [ "$PREFLIGHT_ONLY" = true ]; then
   exit 1
 fi
 
+if [ "$PREPARE_ONLY" = true ] && [ "$PREFLIGHT_ONLY" = true ]; then
+  print_error "--prepare-only cannot be combined with --preflight-only."
+  print_release_usage
+  exit 1
+fi
+
+if [ "$PUSH_ONLY" = true ] && { [ "$PREPARE_ONLY" = true ] || [ "$FINISH_ONLY" = true ] || [ "$PREFLIGHT_ONLY" = true ] || [ -n "$VERSION_TYPE" ] || [ "$AUTO_DETECT" = true ]; }; then
+  print_error "--push-only cannot be combined with release preparation options."
+  print_release_usage
+  exit 1
+fi
+
 if [ "$AUTO_DETECT" = true ] && [ -n "$VERSION_TYPE" ]; then
   print_error "--auto cannot be combined with patch|minor|major|x.x.x."
   print_release_usage
@@ -401,7 +465,7 @@ if [ "$POSITIONAL_COUNT" -gt 1 ]; then
   exit 1
 fi
 
-if [ "$FINISH_ONLY" = false ] && [ -z "$VERSION_TYPE" ] && [ "$AUTO_DETECT" = false ]; then
+if [ "$FINISH_ONLY" = false ] && [ "$PUSH_ONLY" = false ] && [ -z "$VERSION_TYPE" ] && [ "$AUTO_DETECT" = false ]; then
   # No bump arg and no --auto → same as historical bare `pnpm run release`.
   AUTO_DETECT=true
 fi
@@ -419,6 +483,8 @@ if [ "${MESH_CLIENT_RELEASE_PARSE_ONLY:-}" = "1" ]; then
   printf 'SKIP_DEP_UPDATE=%s\n' "$SKIP_DEP_UPDATE"
   printf 'FINISH_ONLY=%s\n' "$FINISH_ONLY"
   printf 'PREFLIGHT_ONLY=%s\n' "$PREFLIGHT_ONLY"
+  printf 'PREPARE_ONLY=%s\n' "$PREPARE_ONLY"
+  printf 'PUSH_ONLY=%s\n' "$PUSH_ONLY"
   printf 'AUTO_DETECT=%s\n' "$AUTO_DETECT"
   printf 'VERSION_TYPE=%s\n' "$VERSION_TYPE"
   exit 0
@@ -437,6 +503,11 @@ fi
 
 if [ "$FINISH_ONLY" = true ]; then
   finish_pending_release
+  exit 0
+fi
+
+if [ "$PUSH_ONLY" = true ]; then
+  push_prepared_release
   exit 0
 fi
 
@@ -811,5 +882,11 @@ NEW_VERSION="v${CLEAN_VERSION}"
 sync_metainfo_release "$CLEAN_VERSION"
 print_success "Updated $METAINFO_FILE with release $CLEAN_VERSION"
 
-# 11–13. Commit, tag, push
-commit_tag_and_push_release "$NEW_VERSION"
+# 11–13. Commit and tag, then optionally push. CI uses two separate invocations so
+# the release credential is absent while repository-controlled validation runs.
+commit_and_tag_release "$NEW_VERSION"
+if [ "$PREPARE_ONLY" = true ]; then
+  print_success "Prepared $NEW_VERSION locally. A separate --push-only invocation must publish it."
+  exit 0
+fi
+push_prepared_release

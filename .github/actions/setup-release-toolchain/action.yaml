@@ -19,10 +19,6 @@ runs:
         HOOKS_BIN: ${{ github.workspace }}/.githooks/bin
       run: echo "${HOOKS_BIN}" >> "$GITHUB_PATH"
 
-    - name: Install yamllint
-      shell: bash
-      run: pip install yamllint
-
     - name: Install flatpak-node-generator
       shell: bash
       run: |
@@ -33,6 +29,14 @@ runs:
         ")
         pip3 install --force-reinstall --no-cache-dir \
           "git+https://github.com/flatpak/flatpak-builder-tools@${COMMIT}#subdirectory=node"
+
+    # Install this last: flatpak-node-generator also depends on PyYAML, and its
+    # forced install must never replace the hash-authenticated yamllint runtime.
+    - name: Install yamllint
+      shell: bash
+      run: >-
+        python3 -m pip install --require-hashes --only-binary=:all:
+        -r scripts/requirements-yamllint.txt
 
     - name: Install Linux build deps (sidecar / Flatpak checks)
       shell: bash

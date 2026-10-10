@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createWriteStream, promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -9,23 +10,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
 const outDir = join(repoRoot, '.githooks', 'bin');
 
-/**
- * Pinned fallback when api.github.com is rate-limited (common on unauthenticated CI).
- * Bump when intentionally upgrading actionlint; asset names must match rhysd/actionlint releases.
- */
+/** Bump the version and every platform digest together after reviewing the upstream release. */
 export const PINNED_ACTIONLINT_VERSION = '1.7.12';
 
-export function githubApiHeaders(env = process.env) {
-  const headers = {
-    'User-Agent': 'mesh-client',
-    Accept: 'application/vnd.github+json',
-  };
-  const token = env.GITHUB_TOKEN || env.GH_TOKEN;
-  if (typeof token === 'string' && token.trim()) {
-    headers.Authorization = `Bearer ${token.trim()}`;
-  }
-  return headers;
-}
+const ACTIONLINT_ARCHIVE_SHA256 = Object.freeze({
+  darwin_amd64: '5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644',
+  darwin_arm64: 'aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f',
+  linux_amd64: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8',
+  linux_arm64: '325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6',
+  windows_amd64: '6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9',
+  windows_arm64: 'cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41',
+});
 
 export function normalizeArch(arch = process.arch) {
   switch (arch) {
@@ -53,26 +48,32 @@ export function normalizeOs(platform = process.platform) {
 
 /** Construct a release asset URL without calling the GitHub Releases API. */
 export function pinnedActionlintAsset(osKey, archKey, version = PINNED_ACTIONLINT_VERSION) {
+  if (version !== PINNED_ACTIONLINT_VERSION) {
+    throw new Error(`No reviewed actionlint checksum is available for v${version}`);
+  }
+  const sha256 = ACTIONLINT_ARCHIVE_SHA256[`${osKey}_${archKey}`];
+  if (!sha256) return null;
   const expectedExt = osKey === 'windows' ? '.zip' : '.tar.gz';
   const name = `actionlint_${version}_${osKey}_${archKey}${expectedExt}`;
   return {
     name,
     browser_download_url: `https://github.com/rhysd/actionlint/releases/download/v${version}/${name}`,
+    sha256,
   };
 }
 
-export function pickActionlintAsset(assets, osKey, archKey) {
-  const expectedExt = osKey === 'windows' ? '.zip' : '.tar.gz';
-  const needle = `${osKey}_${archKey}`;
-  const asset = (assets ?? []).find(
-    (a) =>
-      typeof a?.name === 'string' &&
-      a.name.includes(needle) &&
-      a.name.startsWith('actionlint_') &&
-      a.name.endsWith(expectedExt),
-  );
-  if (!asset?.browser_download_url || typeof asset.name !== 'string') return null;
-  return { name: asset.name, browser_download_url: asset.browser_download_url };
+export async function sha256File(filePath) {
+  const bytes = await fs.readFile(filePath);
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+export async function verifySha256(filePath, expectedSha256) {
+  const actualSha256 = await sha256File(filePath);
+  if (actualSha256 !== expectedSha256) {
+    throw new Error(
+      `SHA-256 mismatch for ${filePath}: expected ${expectedSha256}, got ${actualSha256}`,
+    );
+  }
 }
 
 function sleep(ms) {
@@ -139,15 +140,6 @@ export async function downloadToFile(
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-async function pathExists(p) {
-  try {
-    await fs.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function findFileRecursively(startDir, targetNames, maxDepth, depth = 0) {
   if (depth > maxDepth) return null;
   let entries;
@@ -168,30 +160,6 @@ async function findFileRecursively(startDir, targetNames, maxDepth, depth = 0) {
   return null;
 }
 
-async function resolveActionlintAsset(osKey, archKey, headers) {
-  const apiUrl = 'https://api.github.com/repos/rhysd/actionlint/releases/latest';
-  try {
-    const res = await fetch(apiUrl, { headers });
-    if (!res.ok) {
-      throw new Error(
-        `Failed to query actionlint release metadata: ${res.status} ${res.statusText}`,
-      );
-    }
-    const json = await res.json();
-    const asset = pickActionlintAsset(json.assets, osKey, archKey);
-    if (!asset) {
-      throw new Error(`Could not find a matching actionlint asset for ${osKey}_${archKey}`);
-    }
-    return asset;
-  } catch (err) {
-    const pinned = pinnedActionlintAsset(osKey, archKey);
-    console.warn(
-      `[install-actionlint] ${err instanceof Error ? err.message : String(err)} — falling back to pinned v${PINNED_ACTIONLINT_VERSION} (${pinned.name})`,
-    );
-    return pinned;
-  }
-}
-
 async function main() {
   const osKey = normalizeOs();
   const archKey = normalizeArch();
@@ -204,51 +172,55 @@ async function main() {
   const destPath = join(outDir, binName);
   await fs.mkdir(outDir, { recursive: true });
 
-  if (await pathExists(destPath)) {
-    console.log(`actionlint already installed at ${destPath}`);
-    process.exit(0);
+  // Always replace the destination from a freshly authenticated archive. Trusting an
+  // existing executable would let a poisoned workspace cache bypass verification.
+  const asset = pinnedActionlintAsset(osKey, archKey);
+  if (!asset) {
+    console.error(`No reviewed actionlint asset for ${osKey}/${archKey}`);
+    process.exit(1);
   }
-
-  const headers = githubApiHeaders();
-  const asset = await resolveActionlintAsset(osKey, archKey, headers);
 
   const tmpBase = await fs.mkdtemp(join(tmpdir(), 'actionlint-'));
   const archivePath = join(tmpBase, asset.name);
 
-  console.log(`Downloading ${asset.name}...`);
-  // Release asset CDN does not require auth; omit Authorization to avoid token leakage in logs.
-  await downloadToFile(asset.browser_download_url, archivePath, {
-    'User-Agent': 'mesh-client',
-  });
-
-  console.log('Extracting...');
-  if (osKey === 'windows') {
-    const ps = [
-      '-NoProfile',
-      '-Command',
-      `Expand-Archive -LiteralPath '${archivePath}' -DestinationPath '${tmpBase}' -Force`,
-    ];
-    const x = spawnSync('powershell', ps, { stdio: 'inherit' });
-    if (x.status !== 0) {
-      console.error(`Failed to extract ${asset.name} with Expand-Archive (exit ${x.status ?? 1}).`);
-      process.exit(x.status ?? 1);
-    }
-  } else {
-    const x = spawnSync('tar', ['-xzf', archivePath, '-C', tmpBase], {
-      stdio: 'inherit',
+  try {
+    console.log(`Downloading ${asset.name}...`);
+    await downloadToFile(asset.browser_download_url, archivePath, {
+      'User-Agent': 'mesh-client',
     });
-    if (x.status !== 0) process.exit(x.status ?? 1);
-  }
+    await verifySha256(archivePath, asset.sha256);
 
-  const found = await findFileRecursively(tmpBase, [binName], 6);
-  if (!found) {
-    console.error('Extracted actionlint binary not found.');
-    process.exit(1);
-  }
+    console.log('Extracting verified archive...');
+    if (osKey === 'windows') {
+      const ps = [
+        '-NoProfile',
+        '-Command',
+        `Expand-Archive -LiteralPath '${archivePath}' -DestinationPath '${tmpBase}' -Force`,
+      ];
+      const x = spawnSync('powershell', ps, { stdio: 'inherit' });
+      if (x.status !== 0) {
+        throw new Error(
+          `Failed to extract ${asset.name} with Expand-Archive (exit ${x.status ?? 1}).`,
+        );
+      }
+    } else {
+      const x = spawnSync('tar', ['-xzf', archivePath, '-C', tmpBase], {
+        stdio: 'inherit',
+      });
+      if (x.status !== 0) throw new Error(`Failed to extract ${asset.name}.`);
+    }
 
-  await fs.copyFile(found, destPath);
-  if (osKey !== 'windows') {
-    await fs.chmod(destPath, 0o755);
+    const found = await findFileRecursively(tmpBase, [binName], 6);
+    if (!found) throw new Error('Extracted actionlint binary not found.');
+
+    const pendingPath = `${destPath}.pending`;
+    await fs.rm(pendingPath, { force: true });
+    await fs.copyFile(found, pendingPath);
+    if (osKey !== 'windows') await fs.chmod(pendingPath, 0o755);
+    await fs.rm(destPath, { force: true });
+    await fs.rename(pendingPath, destPath);
+  } finally {
+    await fs.rm(tmpBase, { recursive: true, force: true });
   }
 
   console.log(`Installed actionlint to ${destPath}`);

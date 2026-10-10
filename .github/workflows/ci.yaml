@@ -89,7 +89,9 @@ jobs:
         run: pnpm audit --audit-level=high
 
       - name: Install yamllint
-        run: pip install yamllint
+        run: >-
+          python3 -m pip install --require-hashes --only-binary=:all:
+          -r scripts/requirements-yamllint.txt
 
       - name: YAML Lint
         run: yamllint -f github -s .
