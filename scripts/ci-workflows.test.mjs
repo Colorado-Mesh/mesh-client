@@ -10,11 +10,69 @@ import { describe, expect, it } from 'vitest';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
 const SETUP_NODE_SHA = '249970729cb0ef3589644e2896645e5dc5ba9c38';
+const DOWNLOAD_ARTIFACT_V7_SHA = '37930b1c2abaa49bbe596cd826c3c89aef350131';
 /** pnpm/action-setup v6.1.0 — required for pnpm 12 native bootstrap (esp. Windows). */
 const PNPM_ACTION_SETUP_SHA = 'ea17c68df8912ef543352723c149a84f56e3d413';
+const ACTION_CONFIG_ROOTS = ['.github/workflows', '.github/actions'];
+const IMMUTABLE_GITHUB_ACTION_RE = /^[^./][^@\s]*@[0-9a-f]{40}$/;
+const IMMUTABLE_DOCKER_ACTION_RE = /^docker:\/\/[^@\s]+@sha256:[0-9a-f]{64}$/;
 
 function read(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+}
+
+/** Recursively lists workflow and composite-action YAML files. */
+function listActionYamlFiles(relativeRoot) {
+  const absoluteRoot = path.join(ROOT, relativeRoot);
+  return fs.readdirSync(absoluteRoot, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = path.join(relativeRoot, entry.name);
+    if (entry.isSymbolicLink()) {
+      throw new Error(`action policy roots must not contain symbolic links: ${relativePath}`);
+    }
+    if (entry.isDirectory()) return listActionYamlFiles(relativePath);
+    return /\.ya?ml$/i.test(entry.name) ? [relativePath] : [];
+  });
+}
+
+/** Returns whether a local reference stays inside the action-policy scan roots. */
+function isAllowedLocalActionReference(reference) {
+  if (!reference.startsWith('./')) return false;
+  const normalized = path.posix.normalize(reference.slice(2).replaceAll('\\', '/'));
+  return ACTION_CONFIG_ROOTS.some((root) => normalized.startsWith(`${root}/`));
+}
+
+/** Returns whether a workflow action reference is locally scanned or immutable. */
+function isImmutableActionReference(reference) {
+  if (reference.startsWith('./')) return isAllowedLocalActionReference(reference);
+  if (reference.startsWith('docker://')) return IMMUTABLE_DOCKER_ACTION_RE.test(reference);
+  return IMMUTABLE_GITHUB_ACTION_RE.test(reference);
+}
+
+/** Returns whether Docker metadata uses a digest or a child path without parent traversal. */
+function isImmutableDockerActionImage(image) {
+  if (image.startsWith('docker://')) return IMMUTABLE_DOCKER_ACTION_RE.test(image);
+  const normalized = path.posix.normalize(image.replaceAll('\\', '/'));
+  return normalized !== '..' && !normalized.startsWith('../') && !path.posix.isAbsolute(normalized);
+}
+
+/** Recursively collects every parsed YAML value whose mapping key is `uses`. */
+function collectActionReferences(value, yamlPath = '$') {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) => collectActionReferences(entry, `${yamlPath}[${index}]`));
+  }
+  if (!value || typeof value !== 'object') return [];
+
+  return Object.entries(value).flatMap(([key, entry]) => {
+    const entryPath = `${yamlPath}.${key}`;
+    if (key === 'uses') return [{ path: entryPath, reference: entry }];
+    return collectActionReferences(entry, entryPath);
+  });
+}
+
+/** Collects the image dependency declared by Docker action metadata. */
+function collectDockerActionImages(value) {
+  if (!value || typeof value !== 'object' || value.runs?.using !== 'docker') return [];
+  return [{ path: '$.runs.image', reference: value.runs.image }];
 }
 
 /**
@@ -33,6 +91,71 @@ describe('CI workflow contracts', () => {
   const ciWorkflow = read('.github/workflows/ci.yaml');
   const testsWorkflow = read('.github/workflows/tests.yaml');
   const setupAction = read('.github/actions/setup-node-pnpm/action.yaml');
+
+  it('pins every external workflow action to an immutable digest', () => {
+    const violations = ACTION_CONFIG_ROOTS.flatMap(listActionYamlFiles).flatMap((relativePath) => {
+      const document = load(read(relativePath));
+      const actionViolations = collectActionReferences(document).flatMap(
+        ({ path: yamlPath, reference }) => {
+          if (typeof reference === 'string' && isImmutableActionReference(reference)) return [];
+          return [`${relativePath}:${yamlPath}: ${String(reference)}`];
+        },
+      );
+      const dockerViolations = collectDockerActionImages(document).flatMap(
+        ({ path: yamlPath, reference }) => {
+          if (typeof reference === 'string' && isImmutableDockerActionImage(reference)) return [];
+          return [`${relativePath}:${yamlPath}: ${String(reference)}`];
+        },
+      );
+      return [...actionViolations, ...dockerViolations];
+    });
+
+    expect(violations, 'mutable external action references').toEqual([]);
+  });
+
+  it.each([
+    ['spaced key', 'steps:\n  - uses : actions/checkout@v6'],
+    ['quoted key', "steps:\n  - 'uses': actions/checkout@v6"],
+    ['quoted value', "steps:\n  - uses: 'actions/checkout@v6'"],
+    ['flow mapping', 'steps: [{ uses: actions/checkout@v6 }]'],
+    ['expression', 'jobs:\n  call:\n    uses: ${{ inputs.workflow }}'],
+  ])('detects mutable action references written with %s syntax', (_label, yaml) => {
+    const references = collectActionReferences(load(yaml));
+    expect(references).toHaveLength(1);
+    expect(isImmutableActionReference(references[0].reference)).toBe(false);
+  });
+
+  it.each([
+    `actions/checkout@${CHECKOUT_SHA}`,
+    `'actions/checkout@${CHECKOUT_SHA}'`,
+    './.github/actions/setup-node-pnpm',
+    'docker://alpine@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  ])('accepts immutable or local action reference %s', (yamlReference) => {
+    const [{ reference }] = collectActionReferences(load(`steps: [{ uses: ${yamlReference} }]`));
+    expect(isImmutableActionReference(reference)).toBe(true);
+  });
+
+  it.each(['./ci/custom-action', './.github/actions/../custom-action', '../outside/action'])(
+    'rejects a local action outside the scanned policy roots: %s',
+    (reference) => {
+      expect(isImmutableActionReference(reference)).toBe(false);
+    },
+  );
+
+  it.each([
+    ['mutable registry tag', 'docker://debian:stretch-slim', false],
+    [
+      'registry digest',
+      'docker://debian@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      true,
+    ],
+    ['local Dockerfile', 'Dockerfile', true],
+    ['escaping Dockerfile', '../../Dockerfile', false],
+  ])('classifies Docker action metadata image %s', (_label, image, expected) => {
+    const document = load(`runs: { using: docker, image: ${image} }`);
+    const [{ reference }] = collectDockerActionImages(document);
+    expect(isImmutableDockerActionImage(reference)).toBe(expected);
+  });
 
   it('preserves the repository required check names', () => {
     expect(ciWorkflow).toContain('name: Build & Test');
@@ -186,7 +309,7 @@ describe('CI workflow contracts', () => {
     expect(mergeJob).not.toContain('pnpm exec vitest run --merge-reports');
     const download = steps.find((step) => step.startsWith('name: Download scoped test results'));
     expect(download).toContain("if: always() && needs.changes.outputs.vitest_mode == 'related'");
-    expect(download).toContain('uses: actions/download-artifact@v7');
+    expect(download).toContain(`uses: actions/download-artifact@${DOWNLOAD_ARTIFACT_V7_SHA}`);
     expect(download).toContain('pattern: vitest-junit-*');
     expect(download).toContain('path: test-results');
     expect(download).toContain('merge-multiple: true');

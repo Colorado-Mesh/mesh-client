@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - name: Resolve vX.Y.Z tag and repair if needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
