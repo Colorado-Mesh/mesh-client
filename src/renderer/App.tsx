@@ -1137,8 +1137,13 @@ function AppContent() {
     [meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state],
   );
   const selfNodeIdByProtocol = useMemo(
-    () => protocolRecord(meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, null),
-    [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId],
+    () =>
+      protocolRecord(
+        meshtasticRuntime.selfNodeId,
+        meshcoreRuntime.selfNodeId,
+        typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : null,
+      ),
+    [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, reticulumRuntime.selfNodeId],
   );
   useBotSenderDetection(uiMessagesByProtocol, selfNodeIdByProtocol);
   const securityLocalNodeNumByProtocol = useMemo(

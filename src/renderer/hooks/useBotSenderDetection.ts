@@ -11,8 +11,9 @@ function messageScanKey(m: ChatMessage): string {
 }
 
 /**
- * Scan newly arrived messages (newest first, stopping at the first already-seen key) and
- * mark senders whose text matches a known bot reply template. Pure for unit tests.
+ * Check messages not seen before (hydration can insert older rows anywhere) and mark senders
+ * whose text matches a known bot reply template. Deferred until the local node id is known so
+ * own messages are never marked. Pure for unit tests.
  */
 export function scanForBotSenders(
   messages: readonly ChatMessage[],
@@ -20,10 +21,11 @@ export function scanForBotSenders(
   selfNodeId: number | null | undefined,
   onBot: (senderId: number) => void,
 ): void {
+  if (selfNodeId == null) return;
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     const key = messageScanKey(m);
-    if (seen.has(key)) break;
+    if (seen.has(key)) continue;
     seen.add(key);
     if (m.sender_id <= 0 || m.sender_id === selfNodeId) continue;
     if (isBotReplyText(m.payload)) onBot(m.sender_id);

@@ -23,21 +23,37 @@ describe('scanForBotSenders', () => {
     expect(onBot.mock.calls).toEqual([[11]]);
   });
 
-  it('stops at the first already-seen message so only new arrivals are scanned', () => {
+  it('skips already-seen messages but still checks older rows inserted by hydration', () => {
     const seen = new Set<string>();
-    const first = [msg(1, 10, BOT_REPLY)];
+    const first = [msg(5, 10, BOT_REPLY)];
     const onBot = vi.fn();
-    scanForBotSenders(first, seen, null, onBot);
+    scanForBotSenders(first, seen, 99, onBot);
     expect(onBot).toHaveBeenCalledTimes(1);
 
     onBot.mockClear();
     scanForBotSenders(
-      [...first, msg(2, 12, 'Air: tx 1s rx 2s | rx flood 0 direct 0 | tx flood 0 direct 0')],
+      [
+        msg(1, 13, BOT_REPLY),
+        ...first,
+        msg(6, 12, 'Air: tx 1s rx 2s | rx flood 0 direct 0 | tx flood 0 direct 0'),
+      ],
       seen,
-      null,
+      99,
       onBot,
     );
-    expect(onBot.mock.calls).toEqual([[12]]);
+    expect(onBot.mock.calls).toEqual([[12], [13]]);
+  });
+
+  it('defers scanning until the local node id is known', () => {
+    const seen = new Set<string>();
+    const messages = [msg(1, 99, BOT_REPLY), msg(2, 11, BOT_REPLY)];
+    const onBot = vi.fn();
+    scanForBotSenders(messages, seen, null, onBot);
+    expect(onBot).not.toHaveBeenCalled();
+    expect(seen.size).toBe(0);
+
+    scanForBotSenders(messages, seen, 99, onBot);
+    expect(onBot.mock.calls).toEqual([[11]]);
   });
 });
 
@@ -50,9 +66,9 @@ describe('useBotSenderDetection', () => {
 
   it('feeds the bot senders store per protocol as messages arrive', () => {
     const self: Record<MeshProtocol, number | null> = {
-      meshtastic: null,
-      meshcore: null,
-      reticulum: null,
+      meshtastic: 1000,
+      meshcore: 2000,
+      reticulum: 3000,
     };
     const initial: Record<MeshProtocol, ChatMessage[]> = {
       meshtastic: [msg(1, 5, '🤖 Copy, 4 hops at 12:51')],
