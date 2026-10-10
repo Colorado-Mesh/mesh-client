@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 
 import { MeshcoreFloodScopeSection } from './MeshcoreFloodScopeSection';
@@ -19,6 +21,9 @@ vi.mock('react-i18next', () => ({
         'radioPanel.floodScopeSavedEmpty': 'No saved scopes yet.',
         'radioPanel.floodScopeRemoveSaved': 'Remove from saved scopes',
         'radioPanel.floodScopeRemoveSavedAria': `Remove ${hashtag} from saved scopes`,
+        'radioPanel.floodScopeAddHashtag': 'Region hashtag to save',
+        'radioPanel.floodScopeAddSaved': 'Save region',
+        'radioPanel.floodScopePresetsFull': 'Saved region list is full',
         'radioPanel.floodScopeInvalidHashtag': 'Enter a valid region hashtag',
         'radioPanel.floodScopeCustom': 'Custom hashtag',
         'radioPanel.floodScopeCustomPlaceholder': '#metro',
@@ -165,5 +170,88 @@ describe('MeshcoreFloodScopeSection', () => {
     );
 
     expect(screen.queryByRole('button', { name: /Apply flood scope/i })).not.toBeInTheDocument();
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'saves and removes presets while disconnected without applying a radio default on %s',
+    (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onApplyFloodScope = vi.fn();
+      const onSavedHashtagChange = vi.fn();
+      const onSavedPresetsChange = vi.fn();
+      render(
+        <MeshcoreFloodScopeSection
+          disabled
+          isConnected={false}
+          savedHashtag="#us-southeast"
+          savedPresets={['#us-tn']}
+          onSavedPresetsChange={onSavedPresetsChange}
+          onApplyFloodScope={onApplyFloodScope}
+          onSavedHashtagChange={onSavedHashtagChange}
+        />,
+      );
+      fireEvent.change(screen.getByRole('textbox', { name: 'Region hashtag to save' }), {
+        target: { value: 'us-tn-tri' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Save region' }));
+      expect(onSavedPresetsChange).toHaveBeenLastCalledWith(['#us-tn', '#us-tn-tri']);
+      fireEvent.click(screen.getByRole('button', { name: 'Remove #us-tn from saved scopes' }));
+      expect(onSavedPresetsChange).toHaveBeenLastCalledWith([]);
+      expect(onApplyFloodScope).not.toHaveBeenCalled();
+      expect(onSavedHashtagChange).not.toHaveBeenCalled();
+      const settings = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+        string,
+        unknown
+      >;
+      expect(settings.meshcoreFloodScopeHashtag).toBeUndefined();
+    },
+  );
+
+  it.each([
+    { presets: ['#us-tn'], draft: '#', error: 'Enter a valid region hashtag' },
+    {
+      presets: Array.from({ length: 20 }, (_, i) => `#region-${i}`),
+      draft: '#extra',
+      error: 'Saved region list is full',
+    },
+  ])(
+    'refuses an invalid or overflowing preset without removing saved entries',
+    ({ presets, draft, error }) => {
+      const onSavedPresetsChange = vi.fn();
+      render(
+        <MeshcoreFloodScopeSection
+          disabled={false}
+          isConnected
+          savedHashtag=""
+          savedPresets={presets}
+          onSavedPresetsChange={onSavedPresetsChange}
+          onApplyFloodScope={vi.fn()}
+        />,
+      );
+      fireEvent.change(screen.getByRole('textbox', { name: 'Region hashtag to save' }), {
+        target: { value: draft },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Save region' }));
+      expect(screen.getByRole('alert')).toHaveTextContent(error);
+      expect(onSavedPresetsChange).not.toHaveBeenCalled();
+    },
+  );
+
+  it('has no axe violations with the saved-region controls enabled', async () => {
+    const { container } = render(
+      <MeshcoreFloodScopeSection
+        disabled={false}
+        isConnected
+        savedHashtag="#us-southeast"
+        savedPresets={['#us-tn']}
+        onSavedPresetsChange={vi.fn()}
+        onApplyFloodScope={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'Region hashtag to save' }), {
+      target: { value: '#us-tn-tri' },
+    });
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

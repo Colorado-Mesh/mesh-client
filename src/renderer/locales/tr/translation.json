@@ -865,7 +865,8 @@
     "cancelAutoResend": "Yeniden denemeyi iptal et",
     "cancelAutoResendAria": "Bu mesajın otomatik yeniden denemesini iptal et",
     "outboxEmergencyWillSend": "Ağ onaylayana kadar yeniden denemeye devam edecek",
-    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir."
+    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir.",
+    "floodScopeInherited": "Varsayılan ({{scope}})"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "Frekans Kayması",
     "frequencyOffsetDesc": "Gelişmiş: Kristal kalibrasyon hatasını düzeltmek için hesaplanan merkez frekansına MHz cinsinden ofset eklenir. Test ekipmanınız yoksa 0 'da bırakın.",
     "enumLicensedOnlySuffix": "(Sadece Lisanslı)",
-    "unknownEnumValue": "Bilinmiyor ({{value}})"
+    "unknownEnumValue": "Bilinmiyor ({{value}})",
+    "floodScopePresetsTitle": "Kaydedilen bölgeler",
+    "floodScopePresetsHelp": "Bölgeleri buraya ekleyin, ardından Gönder'in yanında veya Radyo → Kanallarında her kanal için bir kapsam seçin. Bir bölgeyi kaydetmek veya kaldırmak, radyo varsayılanını ve kanal seçeneklerini değiştirmez.",
+    "floodScopeAddHashtag": "Kaydedilecek bölge etiketi",
+    "floodScopeAddSaved": "Bölgeyi kaydet",
+    "floodScopePresetsFull": "{{count}} bölgeye kadar tasarruf edebilirsiniz. Birini eklemeden önce diğerini kaldırın."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -6529,7 +6535,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS düzeltmesi alınamadı",
-      "sendFailed": "MECP raporu gönderilemedi"
+      "sendFailed": "MECP raporu gönderilemedi",
+      "openResponse": "MECP ile yanıt verin",
+      "requestTitle": "MECP talebi veya raporu",
+      "responseTitle": "MECP yanıtı",
+      "showAllCodes": "Tüm MECP kodlarını göster",
+      "openRequest": "MECP ile talepte bulunun veya rapor verin"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "Mesh Acil Durum İletişim Protokolü — Sohbetten raporlar oluşturun, Meshtastic ve MeshCore arasında RF'yi burada köprüleyin ve dayanıklı alınan denetim günlüğünü dışa aktarın.",
       "learnMore": "MECP nasıl çalışır?",
       "protocolSource": "GitHub'daki protokol kaynağı",
-      "showComposeButton": "Sohbette MECP düğmesini göster",
-      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir.",
       "standingAlert": "Olay Komuta istasyonu (ayakta alarm)",
-      "standingAlertHint": "Varsayılan olarak kapalı. EOC'ler ve izlenen istasyonlar için: kırmızı bir başlığı yukarıda tutar ve görev çubuğunu yanıp söner veya biri her yeni Mayday'e veya ACİL duruma bakana kadar rıhtımı sektirir. Herkes hala bir kerelik uyarı tonunu duyar ve tostu görür."
+      "standingAlertHint": "Varsayılan olarak kapalı. EOC'ler ve izlenen istasyonlar için: kırmızı bir başlığı yukarıda tutar ve görev çubuğunu yanıp söner veya biri her yeni Mayday'e veya ACİL duruma bakana kadar rıhtımı sektirir. Herkes hala bir kerelik uyarı tonunu duyar ve tostu görür.",
+      "showComposeButtons": "Sohbette MECP düğmelerini göster",
+      "showComposeButtonsHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet kırmızı bir istek/rapor düğmesi ve mavi bir yanıt düğmesi gösterir."
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} değişiklik",
     "read": "Ayarlar okundu",
     "radioConnected": "Telsiz bağlı",
-    "radioDisconnected": "Telsiz bağlantısı kesildi"
+    "radioDisconnected": "Telsiz bağlantısı kesildi",
+    "scope": "Varsayılan Flood kapsamı",
+    "defaultScope": "Bölge adı (kapsam dışı için boş)",
+    "scopeSummary": "Bu düğümün gönderdiği Flood paketlerinin bölgesi",
+    "scopeHint": "Firmware v1.15+: #us-tn-tri gibi bir genel bölge adı girin; bölge sınırı olmaması için boş bırakın. Flood duyurularına ve Flood üzerinden oda mesajı teslimine uygulanır. Doğrudan rotalar ve oda erişim izinleri ayrıdır. Companion telsizin ve kanallarının kapsamları ayrı ayarlanır."
   },
   "chatTranslation": {
     "translate": "Mesajı çevir",

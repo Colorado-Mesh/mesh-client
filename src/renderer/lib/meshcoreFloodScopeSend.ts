@@ -51,7 +51,7 @@ export async function withMeshcoreFloodScopeOverride(
 ): Promise<void> {
   // `undefined` = no override; empty string = temporarily clear flood scope.
   if (overrideHashtag === undefined) {
-    await send();
+    await withMeshcoreFloodScopeMutex(send);
     return;
   }
 

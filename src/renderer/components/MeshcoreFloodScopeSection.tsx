@@ -8,8 +8,10 @@ import {
 } from '@/renderer/lib/meshcoreFloodScope';
 import {
   isValidMeshcoreFloodScopeHashtag,
+  MESHCORE_FLOOD_SCOPE_PRESETS_MAX,
   rememberMeshcoreFloodScopePreset,
   removeMeshcoreFloodScopePreset,
+  saveMeshcoreFloodScopePresets,
 } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
@@ -58,6 +60,8 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     );
     const [applying, setApplying] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
+    const [presetDraft, setPresetDraft] = useState('');
+    const [presetError, setPresetError] = useState<string | null>(null);
 
     useEffect(() => {
       if (!savedHashtag) {
@@ -146,6 +150,80 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     const fields = (
       <>
         <p className="text-muted text-xs">{t('radioPanel.floodScopeHelp')}</p>
+        <div className="space-y-2">
+          <p className="text-ink-300 text-sm">{t('radioPanel.floodScopePresetsTitle')}</p>
+          <p className="text-muted text-xs">{t('radioPanel.floodScopePresetsHelp')}</p>
+          <div className="flex flex-wrap gap-2">
+            <input
+              value={presetDraft}
+              onChange={(event) => {
+                setPresetDraft(event.target.value);
+                setPresetError(null);
+              }}
+              placeholder={t('radioPanel.floodScopeCustomPlaceholder')}
+              className={`${INPUT_BOX_CLASS} min-w-0 flex-1`}
+              aria-label={t('radioPanel.floodScopeAddHashtag')}
+            />
+            <button
+              type="button"
+              className="border-ink-700 text-ink-200 hover:bg-ink-800 rounded-control border px-3 py-1.5 text-xs disabled:opacity-40"
+              aria-label={t('radioPanel.floodScopeAddSaved')}
+              disabled={!presetDraft.trim()}
+              onClick={() => {
+                const hashtag = normalizeMeshcoreFloodScopeHashtag(presetDraft);
+                if (!isValidMeshcoreFloodScopeHashtag(hashtag)) {
+                  setPresetError(t('radioPanel.floodScopeInvalidHashtag'));
+                  return;
+                }
+                if (
+                  savedPresets.length >= MESHCORE_FLOOD_SCOPE_PRESETS_MAX &&
+                  !savedPresets.includes(hashtag)
+                ) {
+                  setPresetError(
+                    t('radioPanel.floodScopePresetsFull', {
+                      count: MESHCORE_FLOOD_SCOPE_PRESETS_MAX,
+                    }),
+                  );
+                  return;
+                }
+                onSavedPresetsChange(saveMeshcoreFloodScopePresets([...savedPresets, hashtag]));
+                setPresetDraft('');
+                setPresetError(null);
+              }}
+            >
+              {t('radioPanel.floodScopeAddSaved')}
+            </button>
+          </div>
+          {presetError && (
+            <p role="alert" className="text-xs text-red-400">
+              {presetError}
+            </p>
+          )}
+          {savedPresets.length === 0 ? (
+            <p className="text-muted text-xs">{t('radioPanel.floodScopeSavedEmpty')}</p>
+          ) : (
+            <ul className="space-y-1">
+              {savedPresets.map((hashtag) => (
+                <li
+                  key={hashtag}
+                  className="text-ink-300 flex items-center justify-between gap-2 text-xs"
+                >
+                  <span className="break-words">{hashtag}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleRemoveSaved(hashtag);
+                    }}
+                    className="text-muted shrink-0 underline hover:text-red-300"
+                    aria-label={t('radioPanel.floodScopeRemoveSavedAria', { hashtag })}
+                  >
+                    {t('radioPanel.floodScopeRemoveSaved')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <fieldset className="space-y-2" disabled={disabled || applying}>
           <legend className="sr-only">{t('radioPanel.floodScopeTitle')}</legend>
           <label className="text-ink-300 flex items-center gap-2 text-sm">
@@ -196,21 +274,6 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
                       </option>
                     ))}
                   </select>
-                  {selectedSaved ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleRemoveSaved(selectedSaved);
-                      }}
-                      disabled={disabled || applying}
-                      className="text-muted text-xs underline hover:text-red-300 disabled:opacity-40"
-                      aria-label={t('radioPanel.floodScopeRemoveSavedAria', {
-                        hashtag: selectedSaved,
-                      })}
-                    >
-                      {t('radioPanel.floodScopeRemoveSaved')}
-                    </button>
-                  ) : null}
                 </>
               )}
             </div>

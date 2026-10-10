@@ -441,7 +441,7 @@ const appEntries: readonly SettingSearchEntry[] = [
   {
     id: 'app.mecp.showComposeButton',
     slot: 'App',
-    labelKey: 'mecp.section.showComposeButton',
+    labelKey: 'mecp.section.showComposeButtons',
     sectionKey: 'mecp.section.title',
     keywords: ['mecp', 'emergency', 'report'],
   },
@@ -778,7 +778,7 @@ export const appSurface: SettingsSearchSurface = {
     'chatPanel.clearChannelMessagesRadioChanged': 'warning toast, not a control',
     'radioPanel.directMessages': 'channel option label in the Danger Zone clear-messages picker',
     'mecp.section.hint': 'section prose, no control',
-    'mecp.section.showComposeButtonHint': 'help text for the indexed MECP compose toggle',
+    'mecp.section.showComposeButtonsHint': 'help text for the indexed MECP compose toggle',
     'mecp.section.standingAlertHint': 'help text for the indexed standing-alert toggle',
     'mecp.section.learnMore': 'external documentation link',
     'mecp.section.protocolSource': 'external source link',

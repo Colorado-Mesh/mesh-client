@@ -48,8 +48,10 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 
 ## Send path
 
-- App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat MECP compose control
-- When enabled: red **Siren** icon button in the composer action row (`ChatComposer` `actionSlot`, next to share-location, left of Send; hidden in Starred) → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → emergency outbox row → immediate drain through `useSendMessage` (follows open DM/channel)
+- App → MECP → **Show MECP buttons in Chat** (default **off**) gates the Chat MECP compose control
+- When enabled: red **Siren** (request/report) and blue **ShieldCheck** (response) buttons in the composer action row (`ChatComposer` `actionSlot`, left of Send; hidden in Starred) → `MecpComposeModal` → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → emergency outbox row → immediate drain through `useSendMessage` (targets the queued DM/channel). Requests open on Drill; responses open on Response. Both default to ROUTINE with no selected codes. Each opening starts a fresh compose session.
+- `mecpComposeRoles.ts` filters the shared upstream language packs for UI shortcuts: request/report omits R, H and B02; response offers R/H, position, coordination, drills, M14/M15 search results, T10 shelter and B02 beacon acknowledgement. B01/B03 remain with the originator. **Show all MECP codes** exposes the complete pack without dropping selected codes. These profiles do not add wire fields, fork translations or change received-message severity colors.
+- MeshCore emergency outbox sends use the destination channel’s saved scope and restore the radio-wide default. Retries use the current channel preference; explicit Unscoped stays unscoped even when the radio default is regional.
 - **Retry until acknowledged:** every report is queued in the chat outbox with `priority: 'emergency'` and stays there until the **network acknowledges** it — no 24h drain cutoff, no attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See [emcomm.md — WS2](emcomm.md#ws2--emergency-priority-outbox)
 - **What counts as acknowledged** ([`networkAckAwait.ts`](../../src/renderer/lib/networkAckAwait.ts) `awaitNetworkAck`), any one of:
   - Meshtastic: device `acked` (routing ACK on a DM, implicit ACK / rebroadcast heard on a channel) or MQTT publish `acked`

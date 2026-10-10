@@ -865,7 +865,8 @@
     "cancelAutoResend": "Batalkan coba lagi",
     "cancelAutoResendAria": "Batalkan percobaan ulang otomatis pesan ini",
     "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai jaringan menyadarinya",
-    "outboxEmergencyCancelConfirm": "Berhenti mencoba lagi pesan darurat ini? Itu tidak akan lagi dikirim kembali, bahkan jika jaringan tidak pernah mengakuinya."
+    "outboxEmergencyCancelConfirm": "Berhenti mencoba lagi pesan darurat ini? Itu tidak akan lagi dikirim kembali, bahkan jika jaringan tidak pernah mengakuinya.",
+    "floodScopeInherited": "Default ({{scope}})"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "Ofset Frekuensi",
     "frequencyOffsetDesc": "Lanjutan: offset dalam MHz ditambahkan ke frekuensi pusat yang dihitung untuk memperbaiki kesalahan kalibrasi kristal. Berangkat pada 0 kecuali Anda memiliki peralatan uji.",
     "enumLicensedOnlySuffix": "(hanya berlisensi)",
-    "unknownEnumValue": "Tidak diketahui ({{value}})"
+    "unknownEnumValue": "Tidak diketahui ({{value}})",
+    "floodScopePresetsTitle": "Wilayah tersimpan",
+    "floodScopePresetsHelp": "Tambahkan wilayah di sini, lalu pilih ruang lingkup untuk setiap saluran di samping Kirim atau di → Saluran Radio. Menyimpan atau menghapus suatu wilayah membuat pilihan default dan saluran radio tidak berubah.",
+    "floodScopeAddHashtag": "Hashtag wilayah untuk disimpan",
+    "floodScopeAddSaved": "Simpan wilayah",
+    "floodScopePresetsFull": "Anda bisa menghemat hingga {{count}} wilayah. Hapus satu sebelum menambahkan yang lain."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -6529,7 +6535,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Tidak bisa mendapatkan perbaikan GPS",
-      "sendFailed": "Gagal mengirim laporan MECP"
+      "sendFailed": "Gagal mengirim laporan MECP",
+      "openResponse": "Tanggapi dengan MECP",
+      "requestTitle": "Permintaan atau laporan MECP",
+      "responseTitle": "Tanggapan MECP",
+      "showAllCodes": "Tampilkan semua kode MECP",
+      "openRequest": "Minta atau laporkan dengan MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "Protokol Komunikasi Darurat Mesh — menulis laporan dari Chat, menjembatani RF antara Meshtastic dan MeshCore di sini, dan mengekspor log audit yang diterima tahan lama.",
       "learnMore": "Cara kerja MECP",
       "protocolSource": "Sumber protokol di GitHub",
-      "showComposeButton": "Tampilkan tombol MECP di Obrolan",
-      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat.",
       "standingAlert": "Stasiun Komando Insiden (peringatan berdiri)",
-      "standingAlertHint": "Mati secara default. Untuk EOC dan stasiun yang dipantau: pasang spanduk merah dan nyalakan bilah tugas atau pantulkan dok sampai seseorang melihat setiap MAYDAY baru atau MENDESAK. Semua orang masih mendengar nada peringatan satu kali dan melihat roti panggang."
+      "standingAlertHint": "Mati secara default. Untuk EOC dan stasiun yang dipantau: pasang spanduk merah dan nyalakan bilah tugas atau pantulkan dok sampai seseorang melihat setiap MAYDAY baru atau MENDESAK. Semua orang masih mendengar nada peringatan satu kali dan melihat roti panggang.",
+      "showComposeButtons": "Tampilkan tombol MECP di Obrolan",
+      "showComposeButtonsHint": "Mati secara default. Saat diaktifkan, Obrolan menunjukkan tombol permintaan/laporan merah dan tombol respons biru."
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} perubahan",
     "read": "Pengaturan dibaca",
     "radioConnected": "Radio terhubung",
-    "radioDisconnected": "Radio terputus"
+    "radioDisconnected": "Radio terputus",
+    "scope": "Cakupan Flood default",
+    "defaultScope": "Nama wilayah (kosong untuk dibuka)",
+    "scopeSummary": "Wilayah untuk paket Flood keluar dari simpul ini",
+    "scopeHint": "Firmware v1.15+: masukkan wilayah publik seperti #us-tn-tri; kosongkan untuk tanpa batas wilayah. Berlaku untuk pengumuman Flood dan pengiriman pesan ruangan melalui Flood. Rute langsung dan akses ruangan terpisah. Radio Companion dan kanalnya memiliki pengaturan cakupan sendiri."
   },
   "chatTranslation": {
     "translate": "Terjemahkan pesan",

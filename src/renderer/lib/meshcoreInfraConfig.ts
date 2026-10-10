@@ -1,6 +1,6 @@
 import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 
-export type InfraConfigSection = 'identity' | 'radio' | 'routing' | 'room';
+export type InfraConfigSection = 'identity' | 'radio' | 'routing' | 'scope' | 'room';
 export type InfraConfigValues = Partial<Record<InfraConfigKey, string>>;
 export type InfraConfigKey =
   | 'name'
@@ -17,6 +17,7 @@ export type InfraConfigKey =
   | 'advert.interval'
   | 'flood.advert.interval'
   | 'flood.max'
+  | 'region.default'
   | 'allow.read.only'
   | 'guest.password';
 
@@ -83,6 +84,7 @@ export const INFRA_CONFIG_FIELDS: Record<InfraConfigSection, InfraConfigField[]>
       integer: true,
     },
   ],
+  scope: [{ key: 'region.default', label: 'infraConfig.defaultScope', type: 'text', maxBytes: 30 }],
   room: [
     { key: 'allow.read.only', label: 'infraConfig.allowReadOnly', type: 'boolean' },
     { key: 'guest.password', label: 'infraConfig.guestPassword', type: 'password', maxBytes: 15 },
@@ -124,6 +126,7 @@ interface ConfigRead {
 }
 
 function sectionReads(section: InfraConfigSection): ConfigRead[] {
+  if (section === 'scope') return [{ command: 'region default', keys: ['region.default'] }];
   if (section === 'radio')
     return [
       { command: 'get radio', keys: RADIO_KEYS },
@@ -133,6 +136,13 @@ function sectionReads(section: InfraConfigSection): ConfigRead[] {
 }
 
 function parseRead(read: ConfigRead, response: string): InfraConfigValues {
+  if (read.command === 'region default') {
+    const match = /^default scope is (\S+)$/i.exec(response.trim().replace(/^>\s*/, ''));
+    if (!match) throw configError('infraConfig.invalidReply');
+    const value = match[1] === '<null>' ? '' : match[1];
+    validateInfraConfigValue(INFRA_CONFIG_FIELDS.scope[0], value);
+    return { 'region.default': value };
+  }
   if (!response.trimStart().startsWith('>')) throw configError('infraConfig.invalidReply');
   const body = response.trimStart();
   const value = body.startsWith('> ') ? body.slice(2) : body.slice(1);
@@ -181,6 +191,8 @@ export function validateInfraConfigValue(field: InfraConfigField, value: string)
     throw configError('infraConfig.invalidValue');
   if (field.key === 'name' && (!value.trim() || /[[\]\\:,?*]/.test(value)))
     throw configError('infraConfig.invalidValue');
+  if (field.key === 'region.default' && value !== '' && !/^#?[\p{L}\p{N}_-]+$/u.test(value))
+    throw configError('infraConfig.invalidValue');
   if (field.type === 'boolean' && !['on', 'off'].includes(value))
     throw configError('infraConfig.invalidValue');
   if (field.type === 'select' && !field.options?.includes(value))
@@ -209,6 +221,8 @@ export function infraConfigValueMatches(
   actual: string | undefined,
 ): boolean {
   if (expected === undefined || actual === undefined) return expected === actual;
+  if (field.key === 'region.default')
+    return expected.replace(/^#/, '') === actual.replace(/^#/, '');
   if (field.type !== 'number') return expected === actual;
   return (
     Math.min(
@@ -261,6 +275,13 @@ export async function applyInfraConfig(
     }
     for (const { key, type } of changed) {
       if (section === 'radio' && RADIO_KEYS.includes(key)) continue;
+      if (key === 'region.default') {
+        writes.push({
+          command: `region default ${edited[key] || '<null>'}`,
+          read: { command: 'region default', keys: [key] },
+        });
+        continue;
+      }
       writes.push({
         command: `set ${key} ${type === 'number' ? Number(edited[key]) : (edited[key] ?? '')}`,
         read: { command: `get ${key}`, keys: [key] },
@@ -270,7 +291,10 @@ export async function applyInfraConfig(
       assertCurrent(isCurrent);
       const reply = await send(command, isCurrent);
       assertCurrent(isCurrent);
-      assertInfraConfigCommandOk(reply);
+      if (read.command === 'region default') {
+        if (!/^default scope is now \S+$/i.test(reply.trim().replace(/^>\s*/, '')))
+          throw configError('infraConfig.commandRejected');
+      } else assertInfraConfigCommandOk(reply);
       result.rebootRequired ||= /reboot to apply/i.test(reply);
       // Firmware can round numeric values or truncate text. Only report saved after readback.
       const confirmed = parseRead(read, await send(read.command, isCurrent));

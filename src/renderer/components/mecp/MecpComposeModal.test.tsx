@@ -52,6 +52,53 @@ describe('MecpComposeModal', () => {
     expect(String(onSend.mock.calls[0]?.[0])).toMatch(/M01/);
   });
 
+  it('focuses requests on reports and exposes the full standard code list when needed', async () => {
+    const user = userEvent.setup();
+    render(<MecpComposeModal mode="request" open onClose={() => {}} onSend={vi.fn()} />);
+    expect(screen.getByRole('dialog', { name: 'MECP request or report' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Response' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Have / Offer Resources' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Medical' }));
+    await user.click(screen.getByRole('button', { name: /M01 Injury/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Show all MECP codes' }));
+    expect(screen.getByRole('button', { name: 'Response' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove code M01' })).toBeInTheDocument();
+  });
+
+  it('opens responses on R codes and sends the standard wire format', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+    render(<MecpComposeModal mode="response" open onClose={() => {}} onSend={onSend} />);
+    expect(screen.getByRole('dialog', { name: 'MECP response' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Response' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /send mecp/i })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /R02 Help coming/ }));
+    await user.click(screen.getByRole('button', { name: /send mecp/i }));
+    expect(onSend).toHaveBeenCalledWith('MECP/3/R02');
+  });
+
+  it.each(['request', 'response'] as const)(
+    'has no axe violations in %s mode with a selected code',
+    async (mode) => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <MecpComposeModal mode={mode} open onClose={() => {}} onSend={vi.fn()} />,
+      );
+      await user.click(
+        screen.getByRole('button', {
+          name: mode === 'request' ? /D02 This is a test/ : /R02 Help coming/,
+        }),
+      );
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
+
   it('has no axe violations', async () => {
     const { container } = render(<MecpComposeModal open onClose={() => {}} onSend={() => {}} />);
     hydrateAxeThemeColors(container);

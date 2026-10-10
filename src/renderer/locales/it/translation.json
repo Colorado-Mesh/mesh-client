@@ -865,7 +865,8 @@
     "cancelAutoResend": "Annulla / Riprova",
     "cancelAutoResendAria": "Annulla il tentativo automatico di questo messaggio",
     "outboxEmergencyWillSend": "Continuerà a riprovare fino a quando la rete non lo riconoscerà",
-    "outboxEmergencyCancelConfirm": "Smettere di riprovare questo messaggio di emergenza? Non sarà più risentito, anche se la rete non lo ha mai riconosciuto."
+    "outboxEmergencyCancelConfirm": "Smettere di riprovare questo messaggio di emergenza? Non sarà più risentito, anche se la rete non lo ha mai riconosciuto.",
+    "floodScopeInherited": "Predefinito ({{scope}})"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "Compensazione di frequenza",
     "frequencyOffsetDesc": "Avanzato: offset in MHz aggiunto alla frequenza centrale calcolata per correggere l'errore di calibrazione del cristallo. Lasciare a 0 a meno che non si disponga di apparecchiature di prova.",
     "enumLicensedOnlySuffix": "(solo con licenza)",
-    "unknownEnumValue": "Sconosciuto ({{value}})"
+    "unknownEnumValue": "Sconosciuto ({{value}})",
+    "floodScopePresetsTitle": "Regioni salvate",
+    "floodScopePresetsHelp": "Aggiungi le regioni qui, quindi scegli un ambito per ciascun canale accanto a Invia o nei → canali radio. Il salvataggio o la rimozione di una regione lascia invariate le impostazioni predefinite della radio e le scelte del canale.",
+    "floodScopeAddHashtag": "Hashtag della regione da salvare",
+    "floodScopeAddSaved": "Salva regione",
+    "floodScopePresetsFull": "Puoi risparmiare fino a {{count}} regioni. Rimuovine uno prima di aggiungerne un altro."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",
@@ -6529,7 +6535,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Impossibile ottenere una correzione GPS",
-      "sendFailed": "Non è stato possibile inviare il report"
+      "sendFailed": "Non è stato possibile inviare il report",
+      "openResponse": "Rispondi con MeCP",
+      "requestTitle": "Richiesta o segnalazione MeCP",
+      "responseTitle": "Risposta MeCP",
+      "showAllCodes": "Mostra tutti i codici MeCP",
+      "openRequest": "Richiedi o segnala con MeCP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "Protocollo di comunicazione di emergenza Mesh — componi report da Chat, collega RF tra Meshtastic e MeshCore qui ed esporta il registro di controllo durevole ricevuto.",
       "learnMore": "Come funziona MeCP",
       "protocolSource": "Fonte del protocollo su GitHub",
-      "showComposeButton": "Mostra pulsante MeCP in chat",
-      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza.",
       "standingAlert": "Incidente Stazione di comando (allarme in piedi)",
-      "standingAlertHint": "Disattivato per impostazione predefinita. Per EOC e stazioni monitorate: mantiene un banner rosso e lampeggia sulla barra delle applicazioni o fa rimbalzare il dock fino a quando qualcuno non guarda ogni nuovo MAYDAY o URGENTE. Tutti sentono ancora il tono di allerta una tantum e vedono il brindisi."
+      "standingAlertHint": "Disattivato per impostazione predefinita. Per EOC e stazioni monitorate: mantiene un banner rosso e lampeggia sulla barra delle applicazioni o fa rimbalzare il dock fino a quando qualcuno non guarda ogni nuovo MAYDAY o URGENTE. Tutti sentono ancora il tono di allerta una tantum e vedono il brindisi.",
+      "showComposeButtons": "Mostra pulsanti MeCP in Chat",
+      "showComposeButtonsHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante rosso di richiesta/segnalazione e un pulsante blu di risposta."
     },
     "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} modifiche",
     "read": "Impostazioni lette",
     "radioConnected": "Radio connessa",
-    "radioDisconnected": "Radio disconnessa"
+    "radioDisconnected": "Radio disconnessa",
+    "scope": "Ambito Flood predefinito",
+    "defaultScope": "Nome della regione (vuoto per senza ambito)",
+    "scopeSummary": "Regione per i pacchetti Flood in uscita da questo nodo",
+    "scopeHint": "Firmware v1.15+: inserisci una regione pubblica come #us-tn-tri; lascia vuoto per non limitare la regione. Vale per gli annunci Flood e la consegna dei messaggi della sala tramite Flood. I percorsi diretti e i permessi della sala sono indipendenti. Gli ambiti della radio Companion e dei suoi canali si configurano separatamente."
   },
   "chatTranslation": {
     "translate": "Traduci messaggio",

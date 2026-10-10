@@ -25,9 +25,11 @@ MECP/<severity>/<codes> [freetext]
 
 ## Sending a report
 
-1. Turn on **App → MECP → Show MECP button in Chat** (off by default).
-2. In Chat, open the conversation to send to, then click the red **siren** button next to Send.
-3. Choose severity and codes, add free text and optionally your position, and send.
+1. Turn on **App → MECP → Show MECP buttons in Chat** (off by default).
+2. In Chat, open the conversation to send to, then click the red **siren** button to request help or report conditions, or the blue **shield** button to respond.
+3. Choose severity and codes, add free text and optionally your position, and send. Both workflows start at ROUTINE with no codes selected. The response workflow opens on acknowledgements and help updates. Use **Show all MECP codes** if you need a code from another category.
+
+Both workflows use the same standard MECP codes and translated labels, so other clients can read them. On MeshCore, queued reports and retries use the destination channel’s saved scope. Choose **Unscoped** beside Send for mesh-wide floods, or a saved region for local floods; **Default** follows the companion radio’s default.
 
 Every report goes through the **emergency outbox**. It is sent right away when the radio is up, and it keeps retrying (after 30 seconds, 1 minute, 2 minutes, then every 5 minutes) until the network acknowledges it. Acknowledgement means the radio heard the mesh repeat or confirm it (a Meshtastic ACK, a MeshCore repeater rebroadcast or DM ACK, a Reticulum delivery receipt), or another station acknowledged or relayed your report. There is no age cutoff or attempt limit. While a report is waiting, Chat shows it with **Waiting for network acknowledgement…** or a retry countdown. If a report is stuck, use **Stop retrying** on it (you are asked to confirm). A soft cap of 20 queued emergency reports blocks the least urgent extras, but never deletes anything and never blocks a MAYDAY.
 
