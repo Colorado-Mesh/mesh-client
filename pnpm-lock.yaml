@@ -17,7 +17,7 @@ overrides:
   builder-util-runtime: ^9.7.0
   electron: ^44.1.0
   fast-uri: ^3.1.6
-  ip-address: ^10.3.1
+  ip-address: ^10.6.0
   js-yaml: ^4.3.2
   katex@<0.18.2: '>=0.18.2 <0.19'
   markdown-it@<=14.1.1: '>=14.2.0 <15'
@@ -75,6 +75,9 @@ importers:
       i18next:
         specifier: ^26.4.2
         version: 26.4.2(typescript@6.0.3)
+      ip-address:
+        specifier: ^10.6.0
+        version: 10.7.3
       js-md5:
         specifier: ^0.8.3
         version: 0.8.3

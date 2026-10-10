@@ -1,8 +1,11 @@
 // @vitest-environment node
+import type { LookupAddress } from 'node:dns';
+import type { LookupFunction } from 'node:net';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { agentConnectOpts } = vi.hoisted(() => ({
-  agentConnectOpts: [] as { port?: number }[],
+  agentConnectOpts: [] as { lookup?: LookupFunction; port?: number; servername?: string }[],
 }));
 
 vi.mock('node:dns/promises', () => ({
@@ -14,7 +17,9 @@ vi.mock('node:dns/promises', () => ({
 
 vi.mock('undici', () => {
   class MockAgent {
-    constructor(opts: { connect?: { port?: number } }) {
+    constructor(opts: {
+      connect?: { lookup?: LookupFunction; port?: number; servername?: string };
+    }) {
       if (opts.connect) agentConnectOpts.push(opts.connect);
     }
     close = vi.fn().mockResolvedValue(undefined);
@@ -84,6 +89,7 @@ function makeStreamResponse(
   });
 }
 
+/** Extracts the normalized hostname from a mocked fetch input. */
 function fetchRequestHostname(input: string | URL | Request): string | null {
   try {
     const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -91,6 +97,23 @@ function fetchRequestHostname(input: string | URL | Request): string | null {
   } catch {
     return null;
   }
+}
+
+/** Invokes a captured socket lookup and returns its selected address. */
+function runPinnedLookup(
+  lookup: LookupFunction | undefined,
+  all = false,
+): Promise<{ address: string | LookupAddress[]; family?: number }> {
+  if (!lookup) throw new Error('expected a pinned lookup function');
+  return new Promise((resolve, reject) => {
+    lookup('attacker.example', { all }, (err, address, family) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve({ address, family });
+    });
+  });
 }
 
 describe('isBlockedHostname', () => {
@@ -130,6 +153,40 @@ describe('isBlockedHostnameResolved', () => {
     mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
     await expect(isBlockedHostnameResolved('example.com')).resolves.toBe(false);
   });
+
+  it.each([
+    '::ffff:7f00:1',
+    '::ffff:c0a8:101',
+    '::ffff:a9fe:a9fe',
+    '::ffff:e000:1',
+    '::ffff:0:0',
+    '64:ff9b::7f00:1',
+    '64:ff9b:1::7f00:1',
+    '::',
+    'fd00::1',
+    'fe80::1',
+    'fe80::1%en0',
+    'ff02::1',
+    '2001:db8::1',
+    '2001::1',
+    '2002:808:808::1',
+    '100::1',
+    '2001:2::1',
+  ])('blocks non-global IPv6 address %s', async (address) => {
+    await expect(isBlockedHostnameResolved(address)).resolves.toBe(true);
+  });
+
+  it('blocks a hostname that resolves to mapped IPv4 loopback', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '::ffff:7f00:1', family: 6 });
+    await expect(isBlockedHostnameResolved('attacker.example')).resolves.toBe(true);
+  });
+
+  it.each(['2001:4860:4860::8888', '::ffff:808:808', '64:ff9b::808:808'])(
+    'allows global IPv6 address %s',
+    async (address) => {
+      await expect(isBlockedHostnameResolved(address)).resolves.toBe(false);
+    },
+  );
 
   it('blocks when DNS lookup fails', async () => {
     mockDnsLookup.mockRejectedValue(new Error('ENOTFOUND'));
@@ -215,6 +272,48 @@ describe('fetchLinkPreview', () => {
   it('returns null for IPv6 loopback URLs (SSRF guard)', async () => {
     expect(await fetchLinkPreview('http://[::1]/')).toBeNull();
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null when DNS resolves to mapped IPv4 loopback (SSRF guard)', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '::ffff:7f00:1', family: 6 });
+    expect(await fetchLinkPreview('https://attacker.example/page')).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('pins the socket lookup to the validated DNS address', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
+    mockFetch.mockResolvedValue(makeStreamResponse('<title>Pinned</title>'));
+
+    await fetchLinkPreview('https://attacker.example/page');
+
+    expect(mockDnsLookup).toHaveBeenCalledTimes(2);
+    const connect = agentConnectOpts.at(-1);
+    await expect(runPinnedLookup(connect?.lookup)).resolves.toEqual({
+      address: '93.184.216.34',
+      family: 4,
+    });
+    await expect(runPinnedLookup(connect?.lookup, true)).resolves.toEqual({
+      address: [{ address: '93.184.216.34', family: 4 }],
+      family: undefined,
+    });
+    expect(connect?.servername).toBe('attacker.example');
+    expect(mockDnsLookup).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows a global IPv6 literal', async () => {
+    mockFetch.mockResolvedValue(makeStreamResponse('<title>IPv6</title>'));
+    expect(await fetchLinkPreview('https://[2001:4860:4860::8888]/')).toEqual({
+      title: 'IPv6',
+      description: undefined,
+      image: undefined,
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const connect = agentConnectOpts.at(-1);
+    await expect(runPinnedLookup(connect?.lookup)).resolves.toEqual({
+      address: '2001:4860:4860::8888',
+      family: 6,
+    });
+    expect(connect?.servername).toBeUndefined();
   });
 
   it('returns null for IPv4 address URLs', async () => {
@@ -678,6 +777,19 @@ describe('fetchLinkPreview', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it('blocks an og:image mapped IPv4 loopback literal', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="Mapped image trap">`,
+      `<meta property="og:image" content="https://[::ffff:7f00:1]/secret.png">`,
+    ].join('\n');
+    mockFetch.mockResolvedValue(makeStreamResponse(pageHtml));
+
+    const result = await fetchLinkPreview('https://example.com/page');
+    expect(result?.title).toBe('Mapped image trap');
+    expect(result?.image).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('blocks proxied image fetch when redirect targets a private host', async () => {
     const pageHtml = [
       `<meta property="og:title" content="Redirect trap">`,
@@ -700,6 +812,30 @@ describe('fetchLinkPreview', () => {
     const result = await fetchLinkPreview('https://example.com/page');
     expect(result?.title).toBe('Redirect trap');
     expect(result?.image).toBeUndefined();
+  });
+
+  it('blocks an image redirect to a mapped IPv4 loopback literal', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="Mapped redirect trap">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/trap.png">`,
+    ].join('\n');
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: false,
+            status: 302,
+            headers: new Headers({ location: 'https://[::ffff:7f00:1]/secret.png' }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    }) as typeof undiciFetch);
+
+    const result = await fetchLinkPreview('https://example.com/page');
+    expect(result?.title).toBe('Mapped redirect trap');
+    expect(result?.image).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it('proxies GitHub opengraph images as data URLs in main', async () => {

@@ -101,6 +101,12 @@ describe('parseChatMentionSegments', () => {
         { kind: 'text', text: 'ftp://example.com' },
       ]);
     });
+
+    it('leaves bracketed IPv6 URLs as plain text', () => {
+      expect(parseChatMentionSegments('http://[::ffff:7f00:1]/')).toEqual([
+        { kind: 'text', text: 'http://[::ffff:7f00:1]/' },
+      ]);
+    });
   });
 });
 
