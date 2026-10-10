@@ -71,6 +71,27 @@ describe('TakUnitFiltersSection', () => {
     expect(await screen.findByText('Saved and applied')).toBeInTheDocument();
   });
 
+  it('fills and saves the relay icon path, and omits it when cleared', async () => {
+    const icon = 'abc123/WildFire/Repeater.png';
+    vi.mocked(tak().getStyleSettings).mockResolvedValue({ ...SAVED, relayIconsetPath: icon });
+    const user = userEvent.setup();
+    await renderSection();
+    const input = screen.getByLabelText('Icon for repeaters, routers and room servers');
+    expect(input).toHaveValue(icon);
+
+    await user.clear(input);
+    await user.type(input, '  abc123/WildFire/Repeater Mobile Relay.png ');
+    await user.click(screen.getByRole('button', { name: 'Save styles' }));
+    expect(tak().setStyleSettings).toHaveBeenLastCalledWith({
+      ...SAVED,
+      relayIconsetPath: 'abc123/WildFire/Repeater Mobile Relay.png',
+    });
+
+    await user.clear(input);
+    await user.click(screen.getByRole('button', { name: 'Save styles' }));
+    expect(tak().setStyleSettings).toHaveBeenLastCalledWith(SAVED);
+  });
+
   it('removes a filter', async () => {
     const user = userEvent.setup();
     await renderSection();

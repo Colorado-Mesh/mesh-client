@@ -108,3 +108,37 @@ describe('resolveTakStyle', () => {
     expect(resolveTakStyle(s, node({ long_name: 'K9 Rex' }), 'meshcore')?.matched).toBe(true);
   });
 });
+
+describe('resolveTakStyle relay icon', () => {
+  const ICON = 'geoops/WildFire/Repeater.png';
+  const withIcon = (filters: TakUnitFilter[] = []): TakStyleSettings => ({
+    ...settings(filters),
+    relayIconsetPath: ICON,
+  });
+
+  it('adds the configured icon to advertised relays of any protocol', () => {
+    const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
+    expect(resolveTakStyle(withIcon(), repeater, 'meshcore')?.style).toEqual({
+      ...TAK_RELAY_STYLE,
+      iconsetPath: ICON,
+    });
+    const room = node({ long_name: 'Lobby', hw_model: 'Room' });
+    expect(resolveTakStyle(withIcon(), room, 'meshcore')?.style.iconsetPath).toBe(ICON);
+    const router = node({ long_name: 'Tower', role: 2 });
+    expect(resolveTakStyle(withIcon(), router, 'meshtastic')?.style.iconsetPath).toBe(ICON);
+  });
+
+  it('leaves the shared relay style untouched', () => {
+    resolveTakStyle(withIcon(), node({ hw_model: 'Repeater' }), 'meshcore');
+    expect(TAK_RELAY_STYLE).not.toHaveProperty('iconsetPath');
+  });
+
+  it('does not add it to companions, filter matches, or when unset', () => {
+    const companion = node({ long_name: 'Ridge', hw_model: 'Chat' });
+    expect(resolveTakStyle(withIcon(), companion, 'meshcore')?.style).toBe(TAK_PERSON_STYLE);
+    const matched = node({ long_name: 'Medic 12', hw_model: 'Repeater' });
+    expect(resolveTakStyle(withIcon([filter()]), matched, 'meshcore')?.style).toBe(EMS);
+    const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
+    expect(resolveTakStyle(settings([]), repeater, 'meshcore')?.style).toBe(TAK_RELAY_STYLE);
+  });
+});

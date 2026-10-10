@@ -125,6 +125,13 @@ const takEntries: readonly SettingSearchEntry[] = [
     keywords: ['tak', 'cot', 'filter', 'relay', 'unmatched'],
   },
   {
+    id: 'tak.styles.relayIcon',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.unitStylesRelayIcon',
+    sectionKey: STYLES,
+    keywords: ['tak', 'cot', 'icon', 'iconset', 'repeater', 'room server', 'router', 'symbol'],
+  },
+  {
     id: 'tak.styles.addFilter',
     slot: 'TAK',
     labelKey: 'takServerPanel.unitStylesAddFilter',

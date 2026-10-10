@@ -35,6 +35,29 @@ export interface TakUnitStyle {
   role?: string;
   /** `#RRGGBB`; emitted as `<color argb>`. */
   color?: string;
+  /**
+   * Icon from an ATAK icon set, as `<set uid>/<group>/<file>`; emitted as
+   * `<usericon iconsetpath>`. A client without that set installed draws `cotType` instead.
+   */
+  iconsetPath?: string;
+}
+
+export const TAK_ICONSET_PATH_MAX_LEN = 256;
+const ICONSET_PATH_FORBIDDEN = new Set(['<', '>', '"', "'", '&']);
+
+function isIconsetPathSegment(segment: string): boolean {
+  if (segment.length === 0 || segment.trim() !== segment) return false;
+  for (const ch of segment) {
+    if (ch.charCodeAt(0) < 0x20 || ICONSET_PATH_FORBIDDEN.has(ch)) return false;
+  }
+  return true;
+}
+
+/** `<set uid>/<group>/<file>`: three non-empty segments with no markup or control characters. */
+export function isTakIconsetPath(value: string): boolean {
+  if (value.length > TAK_ICONSET_PATH_MAX_LEN) return false;
+  const segments = value.split('/');
+  return segments.length === 3 && segments.every(isIconsetPathSegment);
 }
 
 /** ATAK team colors accepted as `<__group name>`. */
@@ -107,6 +130,11 @@ export interface TakStyleSettings {
   filters: TakUnitFilter[];
   /** Relay nodes no filter matches; off sends only matched nodes. */
   sendUnmatched: boolean;
+  /**
+   * Icon set path for nodes that advertise a relay role (repeaters, routers, room servers,
+   * interfaces) and that no filter matches. Unset keeps the plain installation symbol.
+   */
+  relayIconsetPath?: string;
 }
 
 export const DEFAULT_TAK_STYLE_SETTINGS: TakStyleSettings = { filters: [], sendUnmatched: true };

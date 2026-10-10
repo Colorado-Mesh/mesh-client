@@ -175,6 +175,7 @@ export function meshNodeToCot(
   }
   const argb = style.color ? hexToArgb(style.color) : undefined;
   if (argb != null) detail += `<color argb="${argb}"/>`;
+  if (style.iconsetPath) detail += `<usericon iconsetpath="${escapeXml(style.iconsetPath)}"/>`;
   detail += `<status battery="${battery}"/>`;
   if (finite(node.speed) || finite(node.course)) {
     const course = finite(node.course) ? ` course="${node.course}"` : '';

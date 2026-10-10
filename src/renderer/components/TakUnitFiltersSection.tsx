@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  TAK_ICONSET_PATH_MAX_LEN,
   TAK_MATCH_OPS,
   TAK_TEAM_COLORS,
   TAK_TEAM_ROLES,
@@ -281,6 +282,7 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
   const id = useId();
   const [drafts, setDrafts] = useState<DraftFilter[]>(() => initial.filters.map(toDraft));
   const [sendUnmatched, setSendUnmatched] = useState(initial.sendUnmatched);
+  const [relayIcon, setRelayIcon] = useState(initial.relayIconsetPath ?? '');
   const [previewName, setPreviewName] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -307,7 +309,10 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
 
   const handleSave = async () => {
     setSaved(false);
-    if (await onSave({ filters, sendUnmatched })) setSaved(true);
+    const relayIconsetPath = relayIcon.trim();
+    const next: TakStyleSettings = { filters, sendUnmatched };
+    if (relayIconsetPath) next.relayIconsetPath = relayIconsetPath;
+    if (await onSave(next)) setSaved(true);
   };
 
   return (
@@ -327,6 +332,29 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
         <label htmlFor={`${id}-unmatched`} className="text-ink-300 cursor-pointer text-sm">
           {t('takServerPanel.unitStylesSendUnmatched')}
         </label>
+      </div>
+
+      <div data-setting-anchor="tak.styles.relayIcon">
+        <label htmlFor={`${id}-relay-icon`} className="text-ink-400 mb-1 block text-xs">
+          {t('takServerPanel.unitStylesRelayIcon')}
+        </label>
+        <input
+          id={`${id}-relay-icon`}
+          type="text"
+          value={relayIcon}
+          onChange={(e) => {
+            setSaved(false);
+            setRelayIcon(e.target.value);
+          }}
+          disabled={isSaving}
+          maxLength={TAK_ICONSET_PATH_MAX_LEN}
+          spellCheck={false}
+          aria-describedby={`${id}-relay-icon-hint`}
+          className={`${INPUT_BOX_SM_CLASS} w-full`}
+        />
+        <p id={`${id}-relay-icon-hint`} className="text-ink-400 mt-1 text-xs">
+          {t('takServerPanel.unitStylesRelayIconHint')}
+        </p>
       </div>
 
       {drafts.length > 0 && (
