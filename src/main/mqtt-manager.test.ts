@@ -23,6 +23,11 @@ import {
   portNumEnumToProtoName,
   prepareMqttProtobufBytes,
 } from './mqtt-manager';
+import {
+  MQTT_MAX_PACKET_BYTES,
+  MQTT_PACKET_TOO_LARGE_ERROR_CODE,
+  MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE,
+} from './mqtt-packet-limits';
 
 vi.mock('mqtt', () => {
   const mockClient = {
@@ -1387,6 +1392,25 @@ describe('_doConnect — WebSocket scheme', () => {
     expect(vi.mocked(mqtt.connect)).toHaveBeenCalledOnce();
     const opts = vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as { path: string };
     expect(opts.path).toBe('/ws');
+  });
+
+  it('limits the mqtt parser and WebSocket message size', () => {
+    new MQTTManager().connect({
+      server: 'mqtt.example.com',
+      port: 443,
+      username: '',
+      password: '',
+      topicPrefix: 'msh',
+      autoLaunch: false,
+      useWebSocket: true,
+    });
+
+    const opts = vi.mocked(mqtt.connect).mock.calls[0][0] as unknown as {
+      maximumPacketSize: number;
+      wsOptions: { maxPayload: number };
+    };
+    expect(opts.maximumPacketSize).toBe(MQTT_MAX_PACKET_BYTES);
+    expect(opts.wsOptions.maxPayload).toBe(MQTT_MAX_PACKET_BYTES);
   });
 });
 
@@ -3591,6 +3615,48 @@ describe('MQTTManager reconnect backoff + connect watchdog', () => {
     const enetdown = Object.assign(new Error('read ENETDOWN'), { code: 'ENETDOWN' });
     lastHandler(client, 'error')(enetdown);
     expect(manager.getStatus()).not.toBe('error');
+  });
+
+  it.each([MQTT_PACKET_TOO_LARGE_ERROR_CODE, MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE])(
+    'force-ends and permanently stops reconnecting after %s',
+    (code) => {
+      const manager = new MQTTManager();
+      const errorSpy = vi.fn();
+      manager.on('error', errorSpy);
+      manager.connect(settings);
+      const client = getLastMockMqttClient();
+      client.end.mockClear();
+      const oversized = Object.assign(new Error('oversized packet'), {
+        code,
+      });
+
+      lastHandler(client, 'error')(oversized);
+
+      expect(client.end).toHaveBeenCalledWith(true);
+      expect(manager.getStatus()).toBe('error');
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('automatic reconnect'));
+      expect((manager as unknown as { currentSettings: MQTTSettings | null }).currentSettings).toBe(
+        null,
+      );
+
+      lastHandler(client, 'close')();
+      vi.advanceTimersByTime(10 * 60 * 1000);
+      manager.handlePowerResume();
+      expect(vi.mocked(mqtt.connect)).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('rejects an oversized message before copying a string payload', () => {
+    const manager = new MQTTManager();
+    manager.on('error', () => {});
+    manager.connect(settings);
+    const client = getLastMockMqttClient();
+    client.end.mockClear();
+
+    lastHandler(client, 'message')('msh/test', 'x'.repeat(MQTT_MAX_PACKET_BYTES + 1), {});
+
+    expect(client.end).toHaveBeenCalledWith(true);
+    expect(manager.getStatus()).toBe('error');
   });
 
   it('handlePowerResume reconnects after ENETDOWN left status in error', () => {

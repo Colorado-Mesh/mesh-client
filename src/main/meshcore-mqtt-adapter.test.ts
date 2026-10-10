@@ -1,10 +1,15 @@
 // @vitest-environment node
-import type { IClientOptions } from 'mqtt';
+import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import { computeMqttExponentialReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
+import {
+  MQTT_MAX_PACKET_BYTES,
+  MQTT_PACKET_TOO_LARGE_ERROR_CODE,
+  MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE,
+} from './mqtt-packet-limits';
 
 vi.mock('mqtt', () => {
   const mockClient = {
@@ -234,7 +239,7 @@ describe('MeshcoreMqttAdapter — clientId', () => {
     const stableId = 'meshcore-mqtt-abcdef0123456789';
     adapter.connect({ ...BASE_SETTINGS, username: 'normal-user', clientId: stableId });
     const call = vi.mocked(mqtt.connect).mock.calls[vi.mocked(mqtt.connect).mock.calls.length - 1];
-    const opts = call[0] as IClientOptions;
+    const opts = call[0] as mqtt.IClientOptions;
     expect(opts.clientId).toBe(stableId);
   });
 
@@ -245,8 +250,91 @@ describe('MeshcoreMqttAdapter — clientId', () => {
     adapter.disconnect();
     adapter.connect({ ...BASE_SETTINGS, clientId: stableId });
     const calls = vi.mocked(mqtt.connect).mock.calls;
-    expect((calls[calls.length - 1][0] as IClientOptions).clientId).toBe(stableId);
-    expect((calls[0][0] as IClientOptions).clientId).toBe(stableId);
+    expect((calls[calls.length - 1][0] as mqtt.IClientOptions).clientId).toBe(stableId);
+    expect((calls[0][0] as mqtt.IClientOptions).clientId).toBe(stableId);
+  });
+
+  it('limits the mqtt parser and WebSocket message size', async () => {
+    const mqtt = await import('mqtt');
+    adapter.connect({ ...BASE_SETTINGS, useWebSocket: true, port: 443 });
+
+    const call = vi.mocked(mqtt.connect).mock.calls.at(-1)!;
+    const opts = call[0] as unknown as mqtt.IClientOptions & {
+      maximumPacketSize: number;
+      wsOptions: { maxPayload: number };
+    };
+    expect(opts.maximumPacketSize).toBe(MQTT_MAX_PACKET_BYTES);
+    expect(opts.wsOptions.maxPayload).toBe(MQTT_MAX_PACKET_BYTES);
+  });
+});
+
+describe('MeshcoreMqttAdapter — oversized MQTT packets', () => {
+  let adapter: MeshcoreMqttAdapter;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
+    adapter = new MeshcoreMqttAdapter();
+    adapter.on('error', () => {});
+  });
+
+  afterEach(() => {
+    adapter.disconnect();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  function latestClient(): {
+    on: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
+  } {
+    const result = vi.mocked(mqtt.connect).mock.results.at(-1);
+    if (!result) throw new Error('mqtt.connect not called');
+    return result.value as {
+      on: ReturnType<typeof vi.fn>;
+      end: ReturnType<typeof vi.fn>;
+    };
+  }
+
+  function latestHandler(client: { on: ReturnType<typeof vi.fn> }, event: string) {
+    const hit = client.on.mock.calls.filter((call: unknown[]) => call[0] === event).at(-1);
+    if (typeof hit?.[1] !== 'function') throw new Error(`no ${event} handler`);
+    return hit[1] as (...args: unknown[]) => void;
+  }
+
+  it.each([MQTT_PACKET_TOO_LARGE_ERROR_CODE, MQTT_WEBSOCKET_PACKET_TOO_LARGE_ERROR_CODE])(
+    'force-ends and permanently stops reconnecting after %s',
+    (code) => {
+      adapter.connect({ ...BASE_SETTINGS });
+      const client = latestClient();
+      client.end.mockClear();
+      const oversized = Object.assign(new Error('oversized packet'), {
+        code,
+      });
+
+      latestHandler(client, 'error')(oversized);
+
+      expect(client.end).toHaveBeenCalledWith(true);
+      expect(adapter.getStatus()).toBe('error');
+      expect(adapter.getSettings()).toBeNull();
+
+      latestHandler(client, 'close')();
+      vi.advanceTimersByTime(10 * 60 * 1000);
+      adapter.handlePowerResume();
+      expect(vi.mocked(mqtt.connect)).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('rejects an oversized message before copying a string payload', () => {
+    adapter.connect({ ...BASE_SETTINGS });
+    const client = latestClient();
+    client.end.mockClear();
+
+    latestHandler(client, 'message')('msh/test', 'x'.repeat(MQTT_MAX_PACKET_BYTES + 1));
+
+    expect(client.end).toHaveBeenCalledWith(true);
+    expect(adapter.getStatus()).toBe('error');
   });
 });
 
