@@ -14,6 +14,13 @@ import { computeMqttReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { mqttUsesTls } from '../shared/mqttTls';
 import { sanitizeLogMessage } from './log-service';
 import { forceEndMqttClient } from './mqtt-client-teardown';
+import {
+  isMqttPacketTooLargeError,
+  MQTT_MAX_PACKET_BYTES,
+  mqttPacketTooLargeMessage,
+  mqttPayloadByteLength,
+  type PacketLimitedMqttClientOptions,
+} from './mqtt-packet-limits';
 
 export type { MeshcoreMqttChatEnvelopeV1 } from '../shared/meshcoreMqttEnvelope';
 
@@ -204,6 +211,15 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     this.emit('error', message);
   }
 
+  private rejectOversizedMqttPacket(): void {
+    const message = mqttPacketTooLargeMessage();
+    console.error('[MeshCore MQTT]', message);
+    // Clear settings before ending the transport so neither close nor power-resume paths
+    // reconnect automatically to a broker that violated the packet limit.
+    this.disconnect();
+    this.setError(message);
+  }
+
   disconnect(): void {
     this.clearTokenRefreshTimer();
     this.clearConnectTimers();
@@ -265,7 +281,8 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const wsEnabled = settings.useWebSocket === true;
     const wsPath = settings.wsPath ?? '/mqtt';
     const wsScheme = usesTls ? 'wss' : 'ws';
-    let connectOpts: mqtt.IClientOptions = {
+    let connectOpts: PacketLimitedMqttClientOptions = {
+      maximumPacketSize: MQTT_MAX_PACKET_BYTES,
       clientId,
       username: settings.username || undefined,
       password: settings.password || undefined,
@@ -284,7 +301,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
         path: wsPath,
         rejectUnauthorized: settings.port === 443 ? true : rejectUnauthorizedTls,
         // Prefer IPv4 when DNS returns AAAA first but the path is broken (reduces WSS hangs).
-        wsOptions: { family: 4 },
+        wsOptions: { family: 4, maxPayload: MQTT_MAX_PACKET_BYTES },
       };
     } else {
       connectOpts = {
@@ -322,6 +339,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     const sessionClient = this.client;
     sessionClient.on('error', (err) => {
       if (this.client !== sessionClient) return;
+      if (isMqttPacketTooLargeError(err)) {
+        this.rejectOversizedMqttPacket();
+        return;
+      }
       this.clearConnectTimers();
       console.error(
         '[MeshCore MQTT] client error',
@@ -436,6 +457,10 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     });
     sessionClient.on('message', (topic, payload) => {
       if (this.client !== sessionClient) return;
+      if (mqttPayloadByteLength(payload) > MQTT_MAX_PACKET_BYTES) {
+        this.rejectOversizedMqttPacket();
+        return;
+      }
       if (!this.firstMessageLogged) {
         this.firstMessageLogged = true;
         console.debug('[MeshCore MQTT] first message received on topic', sanitizeLogMessage(topic));

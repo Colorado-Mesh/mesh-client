@@ -44,6 +44,13 @@ import {
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '../shared/reactionEmoji';
 import { sanitizeLogMessage } from './log-service';
 import { forceEndMqttClient } from './mqtt-client-teardown';
+import {
+  isMqttPacketTooLargeError,
+  MQTT_MAX_PACKET_BYTES,
+  mqttPacketTooLargeMessage,
+  mqttPayloadByteLength,
+  type PacketLimitedMqttClientOptions,
+} from './mqtt-packet-limits';
 
 const { ServiceEnvelopeSchema } = MqttProto;
 const {
@@ -700,9 +707,10 @@ export class MQTTManager extends EventEmitter {
         : `mqtt://${hostTrim}:${settings.port}`;
     console.debug('[Meshtastic MQTT] connect start', sanitizeLogMessage(logUrl), 'ws:', wsEnabled); // log-filter-ok Meshtastic MQTT logs → App log panel
 
-    let connectOpts: mqtt.IClientOptions;
+    let connectOpts: PacketLimitedMqttClientOptions;
     if (wsEnabled) {
       connectOpts = {
+        maximumPacketSize: MQTT_MAX_PACKET_BYTES,
         protocol: wsScheme,
         host: hostTrim,
         port: settings.port,
@@ -717,11 +725,12 @@ export class MQTTManager extends EventEmitter {
         protocolVersion: 4, // force MQTT 3.1.1; avoids v5 negotiation issues
         rejectUnauthorized,
         // Prefer IPv4 when DNS returns AAAA first but the path is broken (same as MeshcoreMqttAdapter).
-        wsOptions: { family: 4 },
+        wsOptions: { family: 4, maxPayload: MQTT_MAX_PACKET_BYTES },
       };
       this.client = mqtt.connect(connectOpts);
     } else {
       connectOpts = {
+        maximumPacketSize: MQTT_MAX_PACKET_BYTES,
         host: hostTrim,
         port: settings.port,
         protocol: usesTls ? 'mqtts' : 'mqtt',
@@ -749,6 +758,10 @@ export class MQTTManager extends EventEmitter {
 
     client.on('error', (err: Error & { code?: string | number }) => {
       if (!isCurrentClient()) return;
+      if (isMqttPacketTooLargeError(err)) {
+        this.rejectOversizedMqttPacket();
+        return;
+      }
       // Transient network errors will trigger 'close' → our backoff handler; don't
       // flip status to "error" for them — that would hide the "connecting" state.
       const isTransient = isTransientNetworkError(err);
@@ -1368,6 +1381,15 @@ export class MQTTManager extends EventEmitter {
     this.emit('error', message);
   }
 
+  private rejectOversizedMqttPacket(): void {
+    const message = mqttPacketTooLargeMessage();
+    console.error('[Meshtastic MQTT]', message); // log-filter-ok fixed local diagnostic, no broker data
+    // Clear settings before ending the transport so neither close nor power-resume paths
+    // reconnect automatically to a broker that violated the packet limit.
+    this.disconnect();
+    this.setError(message);
+  }
+
   private isDuplicate(packetId: number): boolean {
     const now = Date.now();
     // Cleanup expired entries occasionally — collect first, then delete to avoid iterator mutation
@@ -1460,6 +1482,10 @@ export class MQTTManager extends EventEmitter {
   }
 
   private onMessage(topic: string, payload: Buffer | string, packet?: { retain?: boolean }): void {
+    if (mqttPayloadByteLength(payload) > MQTT_MAX_PACKET_BYTES) {
+      this.rejectOversizedMqttPacket();
+      return;
+    }
     const raw = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
     if (raw.length > 0) {
       this.emit('brokerRaw', { topic, payload: raw, retained: packet?.retain ?? false });

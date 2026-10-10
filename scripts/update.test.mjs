@@ -46,6 +46,10 @@ function runUpdate(args, env = {}, cwd = repoRoot, scriptPath = updateScriptPath
 }
 
 describe('update.sh Reticulum stack functionality check', () => {
+  it('watches the patched mqtt-packet dependency for upstream updates', () => {
+    expect(updateScript).toMatch(/WATCH_ENTRIES=\([\s\S]*'mqtt-packet\|mqtt-packet\|/);
+  });
+
   it('prepares and requires every rs path dependency before the full-feature build', () => {
     const rebuildFunction = updateScript.match(
       /rebuild_reticulum_sidecar\(\) \{([\s\S]*?)^\}/m,

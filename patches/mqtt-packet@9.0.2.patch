@@ -1,0 +1,22 @@
+diff --git a/parser.js b/parser.js
+index db781838d819d03da5c1d0171f1c3f14c1c352aa..446063ef9c5956e3c7af819bd0e8d14723a1b5d1 100644
+--- a/parser.js
++++ b/parser.js
+@@ -80,6 +80,17 @@ class Parser extends EventEmitter {
+     const result = this._parseVarByteNum(true)
+ 
+     if (result) {
++      const maximumPacketSize = this.settings.maximumPacketSize
++      const totalPacketSize = 1 + result.bytes + result.value
++      if (
++        Number.isSafeInteger(maximumPacketSize) &&
++        maximumPacketSize > 0 &&
++        totalPacketSize > maximumPacketSize
++      ) {
++        const error = new Error(`MQTT packet size ${totalPacketSize} exceeds maximumPacketSize ${maximumPacketSize}`)
++        error.code = 'MQTT_PACKET_TOO_LARGE'
++        return this._emitError(error)
++      }
+       this.packet.length = result.value
+       this._list.consume(result.bytes)
+     }
