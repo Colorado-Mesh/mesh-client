@@ -85,12 +85,12 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Fix** (canonical recover path):
 
-1. From mesh-client repo root, re-float the `.rsstack/` workspace and re-apply overlays:
+1. From mesh-client repo root, restore the reviewed `.rsstack/` pins and re-apply overlays:
    ```bash
    ./scripts/clone-ratspeak-stack.sh
    pnpm run reticulum:sidecar:build
    ```
-   `clone-ratspeak-stack.sh` floats `rsReticulum` / `rsLXMF` / `rsNomad` to `origin/main` (override with `RS_*_REF` for bisect) and fails if an overlay will not apply.
+   `clone-ratspeak-stack.sh` requires the reviewed full SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`, verifies each one was served by its expected origin, and fails if an overlay will not apply. A local bisect override requires `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`; CI and release builds reject it.
 2. If the `.rsstack/` checkouts already exist and you only need overlays: `./scripts/ensure-rsReticulum-patches.sh` then `pnpm run reticulum:sidecar:build`.
 3. **Manual apply** (single overlay):
    ```bash
@@ -252,7 +252,7 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Fix**:
 
-1. Ensure `.rsstack/rsReticulum` is on floated `origin/main` — handler-free `resolve_destination_on_transport` in `crates/rns-runtime/src/link_client.rs` supersedes the retired `rsReticulum-link-client-nomad` overlay (see [patches/README.md](../reticulum-sidecar/patches/README.md)).
+1. Run `./scripts/clone-ratspeak-stack.sh` and ensure `.rsstack/rsReticulum` is on the reviewed `RS_RETICULUM_PIN` — handler-free `resolve_destination_on_transport` in `crates/rns-runtime/src/link_client.rs` supersedes the retired `rsReticulum-link-client-nomad` overlay (see [patches/README.md](../reticulum-sidecar/patches/README.md)).
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
