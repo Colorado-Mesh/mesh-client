@@ -49,11 +49,14 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'patches/**'
               - 'scripts/check-flatpak*.mjs'
+              - 'scripts/flatpak-builder-provenance*.mjs'
               - 'scripts/flatpakPnpmStoreVersion*.mjs'
               - 'scripts/flatpak-pnpm-install*'
+              - 'scripts/run-act.mjs'
               - 'scripts/sync-flatpak-electron*'
               - '.github/actions/setup-node-pnpm/action.yaml'
               - '.github/workflows/ci.yaml'
+              - '.github/workflows/flatpak.yaml'
 
   quality:
     name: Code quality
@@ -137,9 +140,6 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-node-pnpm
 
-      - name: Check Flatpak
-        run: pnpm run check:flatpak
-
       # PR-cycle only (not pre-commit): needs flatpak-node-generator to verify offline store vN.
       - name: Install flatpak-node-generator
         run: |
@@ -186,6 +186,7 @@ jobs:
           pnpm run check:xss-patterns
           pnpm run check:protocol-string-gates
           pnpm run check:log-panel-filter
+          pnpm run check:flatpak
 
   build:
     name: Build & Test

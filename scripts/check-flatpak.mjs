@@ -9,6 +9,11 @@ import {
   flatpakWorkflowStoreVersionViolations,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
+import {
+  FLATPAK_ATTEST_ACTION,
+  FLATPAK_ATTESTATION_PREDICATE_TYPE,
+  FLATPAK_BUILDER_IMAGE,
+} from './flatpak-builder-provenance.mjs';
 import { metainfoVersionMismatchMessage } from './metainfoRelease.mjs';
 import { FLATPAK_BUILD_INFO_EXPORT_SNIPPET } from './write-flatpak-ci-build-info.mjs';
 
@@ -766,6 +771,233 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
   return violations;
 }
 
+/**
+ * Keep the privileged Flatpak build tied to one reviewed OCI index and require
+ * the bare publication job to sign and verify the final release bundle hashes.
+ *
+ * @param {unknown} doc
+ * @param {string} fileLabel
+ * @returns {{ file: string, message: string }[]}
+ */
+export function flatpakWorkflowBuilderProvenanceViolations(doc, fileLabel) {
+  const violations = [];
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+    return [{ file: fileLabel, message: 'flatpak.yaml must parse to a mapping' }];
+  }
+  const jobs = doc.jobs;
+  if (!jobs || typeof jobs !== 'object' || Array.isArray(jobs)) {
+    return [{ file: fileLabel, message: 'flatpak.yaml must define jobs' }];
+  }
+
+  const flatpakJob = jobs.flatpak;
+  if (!flatpakJob || typeof flatpakJob !== 'object' || Array.isArray(flatpakJob)) {
+    violations.push({ file: fileLabel, message: 'flatpak.yaml must define a flatpak job' });
+  } else {
+    const container =
+      flatpakJob.container &&
+      typeof flatpakJob.container === 'object' &&
+      !Array.isArray(flatpakJob.container)
+        ? flatpakJob.container
+        : null;
+    const jobEnv =
+      flatpakJob.env && typeof flatpakJob.env === 'object' && !Array.isArray(flatpakJob.env)
+        ? flatpakJob.env
+        : null;
+    if (container?.image !== FLATPAK_BUILDER_IMAGE) {
+      violations.push({
+        file: fileLabel,
+        message: `flatpak job container must equal reviewed OCI index ${FLATPAK_BUILDER_IMAGE}`,
+      });
+    }
+    if (jobEnv?.FLATPAK_BUILDER_IMAGE !== FLATPAK_BUILDER_IMAGE) {
+      violations.push({
+        file: fileLabel,
+        message: 'flatpak job must expose the exact reviewed builder image to provenance checks',
+      });
+    }
+  }
+
+  const publishJob = jobs.publish;
+  if (!publishJob || typeof publishJob !== 'object' || Array.isArray(publishJob)) {
+    violations.push({ file: fileLabel, message: 'flatpak.yaml must define a publish job' });
+    return violations;
+  }
+  if (publishJob.container !== undefined || publishJob['runs-on'] !== 'ubuntu-latest') {
+    violations.push({
+      file: fileLabel,
+      message: 'Flatpak provenance must be signed and verified on the bare ubuntu-latest publisher',
+    });
+  }
+
+  const publishEnv =
+    publishJob.env && typeof publishJob.env === 'object' && !Array.isArray(publishJob.env)
+      ? publishJob.env
+      : null;
+  if (publishEnv?.FLATPAK_BUILDER_IMAGE !== FLATPAK_BUILDER_IMAGE) {
+    violations.push({
+      file: fileLabel,
+      message: 'publish job must verify the exact reviewed Flatpak builder image',
+    });
+  }
+  const permissions =
+    publishJob.permissions &&
+    typeof publishJob.permissions === 'object' &&
+    !Array.isArray(publishJob.permissions)
+      ? publishJob.permissions
+      : null;
+  for (const permission of ['artifact-metadata', 'attestations', 'id-token']) {
+    if (permissions?.[permission] !== 'write') {
+      violations.push({
+        file: fileLabel,
+        message: `publish job must grant ${permission}: write for signed provenance`,
+      });
+    }
+  }
+
+  const steps = Array.isArray(publishJob.steps) ? publishJob.steps : [];
+  const predicateIndex = steps.findIndex(
+    (step) =>
+      step &&
+      typeof step === 'object' &&
+      !Array.isArray(step) &&
+      typeof step.run === 'string' &&
+      /(?:^|\n)\s*node\s+scripts\/flatpak-builder-provenance\.mjs\s+write-predicate\b/.test(
+        step.run,
+      ),
+  );
+  const attestIndex = steps.findIndex(
+    (step) =>
+      step &&
+      typeof step === 'object' &&
+      !Array.isArray(step) &&
+      step.uses === FLATPAK_ATTEST_ACTION &&
+      step.with?.['subject-path'] === 'flatpak-dist/*.flatpak' &&
+      step.with?.['predicate-type'] === FLATPAK_ATTESTATION_PREDICATE_TYPE &&
+      step.with?.['predicate-path'] === 'flatpak-builder-predicate.json',
+  );
+  const verifyIndex = steps.findIndex(
+    (step) =>
+      step &&
+      typeof step === 'object' &&
+      !Array.isArray(step) &&
+      step.run === 'node scripts/flatpak-builder-provenance.mjs verify-github' &&
+      step.env?.ATTESTATION_BUNDLE_PATH ===
+        '${{ steps.flatpak_attestation.outputs.bundle-path }}' &&
+      step.env?.GH_TOKEN === '${{ secrets.GITHUB_TOKEN }}',
+  );
+  const uploadIndex = steps.findIndex(
+    (step) =>
+      step &&
+      typeof step === 'object' &&
+      !Array.isArray(step) &&
+      typeof step.run === 'string' &&
+      /(?:^|\n)\s*node\s+scripts\/ci-upload-release-assets\.mjs\b/.test(step.run) &&
+      step.run.includes('flatpak-dist/*.flatpak') &&
+      step.run.includes('flatpak-dist/mesh-client-flatpak-attestation.sigstore.json'),
+  );
+
+  if (predicateIndex < 0) {
+    violations.push({ file: fileLabel, message: 'publish job must write the reviewed predicate' });
+  }
+  if (attestIndex < 0) {
+    violations.push({
+      file: fileLabel,
+      message: `publish job must sign both Flatpaks with ${FLATPAK_ATTEST_ACTION}`,
+    });
+  }
+  if (verifyIndex < 0) {
+    violations.push({
+      file: fileLabel,
+      message: 'publish job must verify signer, source, predicate, and both final bundle digests',
+    });
+  }
+  if (uploadIndex < 0) {
+    violations.push({
+      file: fileLabel,
+      message: 'publish job must attach verified Flatpaks and their Sigstore attestation bundle',
+    });
+  }
+  if (
+    predicateIndex >= 0 &&
+    attestIndex >= 0 &&
+    verifyIndex >= 0 &&
+    uploadIndex >= 0 &&
+    !(predicateIndex < attestIndex && attestIndex < verifyIndex && verifyIndex < uploadIndex)
+  ) {
+    violations.push({
+      file: fileLabel,
+      message: 'Flatpak publication order must be predicate, sign, verify, then release upload',
+    });
+  }
+  return violations;
+}
+
+/**
+ * Ensure a change to the builder identity or its parity/policy code cannot skip
+ * the Flatpak CI job which runs this scanner.
+ *
+ * @param {unknown} doc
+ * @param {string} fileLabel
+ * @returns {{ file: string, message: string }[]}
+ */
+export function flatpakCiPathFilterViolations(doc, fileLabel) {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+    return [{ file: fileLabel, message: 'ci.yaml must parse to a mapping' }];
+  }
+  const steps = doc.jobs?.changes?.steps;
+  const filterStep = Array.isArray(steps) ? steps.find((step) => step?.id === 'filter') : null;
+  const filterSource = filterStep?.with?.filters;
+  if (typeof filterSource !== 'string') {
+    return [{ file: fileLabel, message: 'CI changes job must define parsed path filters' }];
+  }
+  let parsed;
+  try {
+    parsed = yaml.load(filterSource);
+  } catch (error) {
+    return [
+      {
+        file: fileLabel,
+        message: `CI path filters are invalid YAML: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ];
+  }
+  const flatpakPaths = parsed?.flatpak;
+  if (!Array.isArray(flatpakPaths)) {
+    return [{ file: fileLabel, message: 'CI path filters must define a flatpak list' }];
+  }
+  const policyJob = doc.jobs?.['policy-scanners'];
+  const policySteps = Array.isArray(policyJob?.steps) ? policyJob.steps : [];
+  const hasAlwaysOnScanner =
+    policyJob?.if === undefined &&
+    policySteps.some(
+      (step) =>
+        step?.if === undefined &&
+        typeof step?.run === 'string' &&
+        step.run.split('\n').some((line) => line.trim() === 'pnpm run check:flatpak'),
+    );
+  const violations = [];
+  if (!hasAlwaysOnScanner) {
+    violations.push({
+      file: fileLabel,
+      message: 'policy-scanners must run check:flatpak unconditionally',
+    });
+  }
+  const required = [
+    '.github/workflows/flatpak.yaml',
+    'scripts/flatpak-builder-provenance*.mjs',
+    'scripts/run-act.mjs',
+  ];
+  violations.push(
+    ...required
+      .filter((entry) => !flatpakPaths.includes(entry))
+      .map((entry) => ({
+        file: fileLabel,
+        message: `flatpak CI path filter must include ${entry}`,
+      })),
+  );
+  return violations;
+}
+
 function checkManifestCiBuildInfoExport() {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
@@ -802,7 +1034,25 @@ function checkFlatpakWorkflowTestBuildContracts() {
   return [
     ...flatpakWorkflowTestBuildContractViolations(doc, rel),
     ...flatpakWorkflowSidecarExecutableContractViolations(doc, rel),
+    ...flatpakWorkflowBuilderProvenanceViolations(doc, rel),
   ];
+}
+
+function checkFlatpakCiPathFilters() {
+  if (!fs.existsSync(CI_WORKFLOW)) return [];
+  const rel = path.relative(ROOT, CI_WORKFLOW);
+  let doc;
+  try {
+    doc = yaml.load(fs.readFileSync(CI_WORKFLOW, 'utf8'));
+  } catch (error) {
+    return [
+      {
+        file: rel,
+        message: `failed to parse ci.yaml: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ];
+  }
+  return flatpakCiPathFilterViolations(doc, rel);
 }
 
 function main() {
@@ -816,6 +1066,7 @@ function main() {
     ...checkManifestBranchAndElectronPayload(PKG_JSON),
     ...checkManifestCiBuildInfoExport(),
     ...checkFlatpakWorkflowTestBuildContracts(),
+    ...checkFlatpakCiPathFilters(),
     ...checkManifestReticulumSidecarPayload(),
     ...checkWrapperLaunchPaths(),
     ...checkDesktopStartupWMClass(PKG_JSON),

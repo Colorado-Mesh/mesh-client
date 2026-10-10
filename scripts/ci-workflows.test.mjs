@@ -81,6 +81,7 @@ describe('CI workflow contracts', () => {
       'check:xss-patterns',
       'check:protocol-string-gates',
       'check:log-panel-filter',
+      'check:flatpak',
     ]) {
       expect(job).toContain(`pnpm run ${script}`);
     }
@@ -91,7 +92,7 @@ describe('CI workflow contracts', () => {
     expect(runs.some((line) => line === 'pnpm run check:pr')).toBe(false);
     expect(runs.some((line) => line.startsWith('pnpm run check:i18n'))).toBe(false);
     expect(runs.some((line) => line === 'pnpm run check:licenses')).toBe(false);
-    expect(runs.some((line) => line.startsWith('pnpm run check:flatpak'))).toBe(false);
+    expect(runs.some((line) => line === 'pnpm run check:flatpak-offline-pnpm')).toBe(false);
   });
 
   it('blocks required coverage checks when detection or any shard fails', () => {

@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import yaml from 'js-yaml';
 
 import {
   ACT_CI_JOBS,
   ACT_PLATFORM_IMAGE,
   ACT_PULL_IMAGES,
   ACT_TARGETS,
+  FLATPAK_CONTAINER_IMAGE,
   buildActArgs,
   buildActBaseArgs,
   parseActMode,
@@ -269,9 +271,19 @@ describe('run-act buildActArgs', () => {
 });
 
 describe('run-act ACT_PULL_IMAGES', () => {
-  it('includes platform and flatpak container images', () => {
+  it('uses the exact immutable Flatpak image from the real workflow', () => {
+    const flatpakWorkflow = yaml.load(
+      readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), '..', '.github/workflows/flatpak.yaml'),
+        'utf8',
+      ),
+    );
     expect(ACT_PULL_IMAGES).toHaveLength(2);
     expect(ACT_PULL_IMAGES[0]).toBe(ACT_PLATFORM_IMAGE);
-    expect(ACT_PULL_IMAGES[1]).toContain('flatpak-github-actions');
+    expect(ACT_PULL_IMAGES[1]).toBe(FLATPAK_CONTAINER_IMAGE);
+    expect(FLATPAK_CONTAINER_IMAGE).toBe(
+      'ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc',
+    );
+    expect(flatpakWorkflow.jobs.flatpak.container.image).toBe(FLATPAK_CONTAINER_IMAGE);
   });
 });

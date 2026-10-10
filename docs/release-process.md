@@ -192,8 +192,8 @@ Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars
 
 1. **`schema-release-compare`** — compares this SHA’s schema to the last published release; uploads `READ-ME-FIRST-flatpak.md` (included again beside Flatpak Actions artifacts)
 2. **`reticulum-sidecar`** — builds `mesh-client-reticulum` per arch (x86_64 on `ubuntu-latest`, aarch64 on `ubuntu-24.04-arm`) with full RNS stack features
-3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
-4. **`publish`** (tag only) — waits for the Electron prepare draft (`ci-wait-github-draft-release.mjs`), then attaches both clean-named `.flatpak` files with `ci-upload-release-assets.mjs` using the shared `release_id` (never creates or publishes a release)
+3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the digest-pinned Flathub freedesktop 24.08 multi-architecture container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
+4. **`publish`** (tag only) — on a bare GitHub runner, signs and verifies source/builder/bundle-digest provenance, waits for the Electron prepare draft (`ci-wait-github-draft-release.mjs`), then attaches both clean-named `.flatpak` files and their Sigstore attestation with `ci-upload-release-assets.mjs` using the shared `release_id` (never creates or publishes a release)
 
 Both tag-triggered workflows must complete before the release is fully populated. Flatpak bundles often arrive a few minutes after the Electron artifacts.
 
@@ -213,13 +213,13 @@ Both tag-triggered workflows must complete before the release is fully populated
 3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`; a **Repair published release tag** workflow also reattaches the tag if Publish lands on a leftover placeholder.
 4. Confirm artifacts:
 
-| Platform      | Artifacts                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| macOS         | `.dmg` and `.zip` (x64 and arm64)                                                           |
-| Linux         | `.AppImage`, `.deb`, `.rpm` (x64 and arm64)                                                 |
-| Linux Flatpak | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak` |
-| Windows x64   | `Mesh-client-Setup-{version}.exe`                                                           |
-| Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)         |
+| Platform      | Artifacts                                                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| macOS         | `.dmg` and `.zip` (x64 and arm64)                                                                                                                |
+| Linux         | `.AppImage`, `.deb`, `.rpm` (x64 and arm64)                                                                                                      |
+| Linux Flatpak | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak`, and `mesh-client-flatpak-attestation.sigstore.json` |
+| Windows x64   | `Mesh-client-Setup-{version}.exe`                                                                                                                |
+| Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)                                                              |
 
 1. Paste or edit release notes (use the block printed by `pnpm run release`, or GitHub’s generated notes)
 2. Optionally smoke-test downloads on one platform per family

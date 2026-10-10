@@ -105,6 +105,10 @@ jobs:
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
+    env:
+      FLATPAK_BUILDER_IMAGE:
+        "ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:\
+        66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc"
     strategy:
       fail-fast: false
       matrix:
@@ -114,7 +118,8 @@ jobs:
           - arch: aarch64
             runner: ubuntu-24.04-arm
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
+      image: "ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:\
+        66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc"
       options: --privileged
 
     steps:
@@ -279,7 +284,14 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
+      artifact-metadata: write
+      attestations: write
       contents: write
+      id-token: write
+    env:
+      FLATPAK_BUILDER_IMAGE:
+        "ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:\
+        66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc"
 
     steps:
       - uses: actions/checkout@v6
@@ -308,6 +320,28 @@ jobs:
             mv "$staging" "flatpak-dist/${name}"
           done
 
+      - name: Write reviewed Flatpak builder predicate
+        run: |
+          node scripts/flatpak-builder-provenance.mjs write-predicate \
+            --output flatpak-builder-predicate.json \
+            --source-sha "$GITHUB_SHA" \
+            --builder-image "$FLATPAK_BUILDER_IMAGE"
+
+      # actions/attest v4.2.2
+      - name: Sign Flatpak builder provenance
+        id: flatpak_attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: flatpak-dist/*.flatpak
+          predicate-type: https://github.com/Colorado-Mesh/mesh-client/attestations/flatpak-builder/v1
+          predicate-path: flatpak-builder-predicate.json
+
+      - name: Verify signed Flatpak provenance and bundle digests
+        env:
+          ATTESTATION_BUNDLE_PATH: ${{ steps.flatpak_attestation.outputs.bundle-path }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/flatpak-builder-provenance.mjs verify-github
+
       - name: Resolve release tag from package.json
         id: release_tag
         run: echo "value=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
@@ -324,4 +358,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ steps.draft.outputs.release_id }}
-        run: node scripts/ci-upload-release-assets.mjs flatpak-dist/*.flatpak
+        run: >-
+          node scripts/ci-upload-release-assets.mjs
+          flatpak-dist/*.flatpak
+          flatpak-dist/mesh-client-flatpak-attestation.sigstore.json

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  flatpakCiPathFilterViolations,
+  flatpakWorkflowBuilderProvenanceViolations,
   flatpakWorkflowSidecarExecutableContractViolations,
   flatpakWorkflowTestBuildContractViolations,
   manifestCiBuildInfoExportViolations,
@@ -127,6 +129,130 @@ describe('flatpakWorkflowSidecarExecutableContractViolations', () => {
     expect(messages.join('\n')).toMatch(/\.tar artifact/);
     expect(messages.join('\n')).toMatch(/tar -xf/);
     expect(messages.join('\n')).toMatch(/test -x/);
+  });
+});
+
+describe('flatpakWorkflowBuilderProvenanceViolations', () => {
+  function realWorkflow() {
+    return yaml.load(fs.readFileSync(path.join(ROOT, '.github/workflows/flatpak.yaml'), 'utf8'));
+  }
+
+  it('accepts the pinned, signed, fail-closed real workflow', () => {
+    expect(flatpakWorkflowBuilderProvenanceViolations(realWorkflow(), 'flatpak.yaml')).toEqual([]);
+  });
+
+  it.each([
+    ['tag-only image', 'ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08'],
+    [
+      'attacker-selected digest',
+      `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:${'b'.repeat(64)}`,
+    ],
+    ['dynamic expression', '${{ env.ATTACKER_IMAGE }}'],
+    [
+      'single-architecture manifest',
+      `ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08@sha256:${'9'.repeat(64)}`,
+    ],
+  ])('rejects %s for the privileged builder', (_label, image) => {
+    const doc = realWorkflow();
+    doc.jobs.flatpak.container.image = image;
+    const messages = flatpakWorkflowBuilderProvenanceViolations(doc, 'fake.yaml').map(
+      (violation) => violation.message,
+    );
+    expect(messages.join('\n')).toMatch(/reviewed OCI index/);
+  });
+
+  it('rejects a mutable or decoy attestation action', () => {
+    const doc = realWorkflow();
+    const actionStep = doc.jobs.publish.steps.find((step) => step.id === 'flatpak_attestation');
+    actionStep.uses = 'actions/attest@v4';
+    actionStep.run =
+      '# actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6\n' +
+      'echo gh attestation verify --deny-self-hosted-runners';
+    const messages = flatpakWorkflowBuilderProvenanceViolations(doc, 'fake.yaml').map(
+      (violation) => violation.message,
+    );
+    expect(messages.join('\n')).toMatch(/sign both Flatpaks/);
+  });
+
+  it('rejects missing verification and upload of the signed bundle', () => {
+    const doc = realWorkflow();
+    doc.jobs.publish.steps = doc.jobs.publish.steps.filter(
+      (step) =>
+        step.name !== 'Verify signed Flatpak provenance and bundle digests' &&
+        step.name !== 'Attach Flatpak to draft release',
+    );
+    const messages = flatpakWorkflowBuilderProvenanceViolations(doc, 'fake.yaml').map(
+      (violation) => violation.message,
+    );
+    expect(messages.join('\n')).toMatch(/verify signer, source, predicate/);
+    expect(messages.join('\n')).toMatch(/attach verified Flatpaks/);
+  });
+
+  it('rejects release upload before provenance verification', () => {
+    const doc = realWorkflow();
+    const steps = doc.jobs.publish.steps;
+    const verifyIndex = steps.findIndex(
+      (step) => step.name === 'Verify signed Flatpak provenance and bundle digests',
+    );
+    const uploadIndex = steps.findIndex((step) => step.name === 'Attach Flatpak to draft release');
+    [steps[verifyIndex], steps[uploadIndex]] = [steps[uploadIndex], steps[verifyIndex]];
+    const messages = flatpakWorkflowBuilderProvenanceViolations(doc, 'fake.yaml').map(
+      (violation) => violation.message,
+    );
+    expect(messages.join('\n')).toMatch(/predicate, sign, verify, then release upload/);
+  });
+});
+
+describe('flatpakCiPathFilterViolations', () => {
+  function realCiWorkflow() {
+    return yaml.load(fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yaml'), 'utf8'));
+  }
+
+  it('accepts the real CI path filter', () => {
+    expect(flatpakCiPathFilterViolations(realCiWorkflow(), 'ci.yaml')).toEqual([]);
+  });
+
+  it.each([
+    '.github/workflows/flatpak.yaml',
+    'scripts/flatpak-builder-provenance*.mjs',
+    'scripts/run-act.mjs',
+  ])('rejects omission of %s', (requiredPath) => {
+    const doc = realCiWorkflow();
+    const filter = doc.jobs.changes.steps.find((step) => step.id === 'filter');
+    const parsed = yaml.load(filter.with.filters);
+    parsed.flatpak = parsed.flatpak.filter((entry) => entry !== requiredPath);
+    filter.with.filters = yaml.dump(parsed);
+    const messages = flatpakCiPathFilterViolations(doc, 'ci.yaml').map(
+      (violation) => violation.message,
+    );
+    expect(messages.join('\n')).toContain(requiredPath);
+  });
+
+  it('rejects a Flatpak policy scanner gated by its own path filter', () => {
+    const doc = realCiWorkflow();
+    const scanner = doc.jobs['policy-scanners'].steps.find(
+      (step) => typeof step.run === 'string' && step.run.includes('pnpm run check:flatpak'),
+    );
+    scanner.if = "needs.changes.outputs.flatpak == 'true'";
+    expect(flatpakCiPathFilterViolations(doc, 'ci.yaml')).toContainEqual({
+      file: 'ci.yaml',
+      message: 'policy-scanners must run check:flatpak unconditionally',
+    });
+  });
+
+  it('rejects removal of the always-on Flatpak policy scanner', () => {
+    const doc = realCiWorkflow();
+    const scanner = doc.jobs['policy-scanners'].steps.find(
+      (step) => typeof step.run === 'string' && step.run.includes('pnpm run check:flatpak'),
+    );
+    scanner.run = scanner.run
+      .split('\n')
+      .filter((line) => line.trim() !== 'pnpm run check:flatpak')
+      .join('\n');
+    expect(flatpakCiPathFilterViolations(doc, 'ci.yaml')).toContainEqual({
+      file: 'ci.yaml',
+      message: 'policy-scanners must run check:flatpak unconditionally',
+    });
   });
 });
 
