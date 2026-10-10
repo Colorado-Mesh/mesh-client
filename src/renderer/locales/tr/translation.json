@@ -865,8 +865,7 @@
     "cancelAutoResend": "Yeniden denemeyi iptal et",
     "cancelAutoResendAria": "Bu mesajın otomatik yeniden denemesini iptal et",
     "outboxEmergencyWillSend": "Ağ onaylayana kadar yeniden denemeye devam edecek",
-    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir.",
-    "floodScopeInherited": "Varsayılan ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

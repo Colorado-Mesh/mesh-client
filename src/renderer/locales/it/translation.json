@@ -865,8 +865,7 @@
     "cancelAutoResend": "Annulla / Riprova",
     "cancelAutoResendAria": "Annulla il tentativo automatico di questo messaggio",
     "outboxEmergencyWillSend": "Continuerà a riprovare fino a quando la rete non lo riconoscerà",
-    "outboxEmergencyCancelConfirm": "Smettere di riprovare questo messaggio di emergenza? Non sarà più risentito, anche se la rete non lo ha mai riconosciuto.",
-    "floodScopeInherited": "Predefinito ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Smettere di riprovare questo messaggio di emergenza? Non sarà più risentito, anche se la rete non lo ha mai riconosciuto."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

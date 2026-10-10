@@ -51,7 +51,6 @@ vi.mock('react-i18next', () => ({
         'chatPanel.shareLocation': 'Share location',
         'chatPanel.shareLocationLabel': 'Location',
         'chatPanel.floodScopeOverrideDefault': 'Default scope',
-        'chatPanel.floodScopeInherited': `Default (${opts?.scope})`,
         'chatPanel.floodScopeOverrideUnscoped': 'Unscoped',
         'chatPanel.floodScopeOverrideAria': 'Per-channel flood scope override',
         'chatPanel.floodScopeOverrideMenuButton': 'Change flood scope for this channel',
@@ -924,7 +923,7 @@ describe('ChatComposer', () => {
     ).toBeNull();
   });
 
-  it('shows flood-scope menu button when showFloodScopeOverride is true', () => {
+  it('shows a compact flood-scope menu button until an override is selected', () => {
     render(
       <ChatComposer
         protocol="meshcore"
@@ -935,26 +934,12 @@ describe('ChatComposer', () => {
         onSendChunk={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: 'Change flood scope for this channel' }),
-    ).toBeInTheDocument();
-  });
-
-  it('shows the inherited radio scope beside Send before an override is selected', () => {
-    render(
-      <ChatComposer
-        protocol="meshcore"
-        viewKey="ch:0"
-        isConnected
-        allowOutbox={false}
-        showFloodScopeOverride
-        floodScopeDefault="#us-southeast"
-        onSendChunk={vi.fn()}
-      />,
-    );
-    expect(
-      screen.getByRole('button', { name: 'Change flood scope for this channel' }),
-    ).toHaveTextContent('Default (#us-southeast)');
+    const button = screen.getByRole('button', {
+      name: 'Change flood scope for this channel',
+    });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveTextContent('');
+    expect(button).toHaveAttribute('title', 'Remembered per channel.');
   });
 
   it('sends with saved floodScopeOverride after selecting from menu', async () => {

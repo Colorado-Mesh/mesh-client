@@ -884,8 +884,7 @@
     "cancelAutoResend": "Zrušit opakování",
     "cancelAutoResendAria": "Zrušit automatické opakování této zprávy",
     "outboxEmergencyWillSend": "Bude se opakovat, dokud to síť nepotvrdí",
-    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila.",
-    "floodScopeInherited": "Výchozí ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

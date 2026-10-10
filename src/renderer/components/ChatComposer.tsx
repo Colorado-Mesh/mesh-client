@@ -206,8 +206,6 @@ export interface ChatComposerProps {
   floodScopeStorageKey?: string | null;
   /** MeshCore: user-managed flood-scope quick-picks. */
   floodScopePresets?: string[];
-  /** Radio-wide scope inherited when this conversation has no override. */
-  floodScopeDefault?: string;
   /**
    * MeshCore: remember a hashtag after a successful scoped send.
    * When omitted, Composer persists via the storage helper directly.
@@ -281,7 +279,6 @@ export function ChatComposer({
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
   floodScopePresets = [],
-  floodScopeDefault = '',
   floodScopeStorageKey,
   onRememberFloodScopePreset,
   resolveShareLocation,
@@ -1287,13 +1284,11 @@ export function ChatComposer({
   const textareaClass =
     'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3.5 py-2.5 text-sm text-ink-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green';
 
+  const floodScopeOverrideActive = floodScopeOverride !== '';
   const floodScopeOverrideIndicator =
     floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
       ? t('chatPanel.floodScopeOverrideUnscoped')
-      : floodScopeOverride ||
-        t('chatPanel.floodScopeInherited', {
-          scope: floodScopeDefault || t('chatPanel.floodScopeOverrideUnscoped'),
-        });
+      : floodScopeOverride || null;
 
   const sendButtonToneClass = `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
     showQueueButton
@@ -1624,24 +1619,22 @@ export function ChatComposer({
               }}
               disabled={disabled || sending || scopeKey === null}
               aria-label={
-                floodScopeOverride !== ''
+                floodScopeOverrideIndicator
                   ? `${t('chatPanel.floodScopeOverrideMenuButton')}: ${floodScopeOverrideIndicator}`
                   : t('chatPanel.floodScopeOverrideMenuButton')
               }
               aria-haspopup="listbox"
               aria-expanded={floodScopeMenuOpen}
               aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
-              title={
-                floodScopeMenuOpen
-                  ? undefined
-                  : `${floodScopeOverrideIndicator} — ${t('chatPanel.floodScopeOverrideHint')}`
-              }
+              title={floodScopeMenuOpen ? undefined : t('chatPanel.floodScopeOverrideHint')}
               {...floodScopeChevronTooltipProps}
-              className={`${sendButtonSplitChevronClass} inline-flex max-w-[10rem] min-w-0 items-center gap-1`}
+              className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] min-w-0 items-center gap-0.5`}
             >
-              <span className="truncate text-xs leading-none font-normal">
-                {floodScopeOverrideIndicator}
-              </span>
+              {floodScopeOverrideActive && floodScopeOverrideIndicator ? (
+                <span className="text-2xs truncate leading-none font-normal">
+                  {floodScopeOverrideIndicator}
+                </span>
+              ) : null}
               {floodScopeMenuOpen ? (
                 <ChevronUp
                   aria-hidden

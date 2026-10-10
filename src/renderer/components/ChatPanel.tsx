@@ -4653,7 +4653,6 @@ function ChatPanel({
           showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
           floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}
           floodScopePresets={meshcoreFloodScopePresets}
-          floodScopeDefault={meshcoreFloodScopeHashtag}
           onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
           resolveShareLocation={resolveShareLocation}
           onSendLocationWaypoint={
