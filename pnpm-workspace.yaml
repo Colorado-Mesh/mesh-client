@@ -76,7 +76,8 @@ overrides:
   # unsupported major on those consumers.
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
-  # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) — floor >=10.3.1.
+  # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) plus the link-preview
+  # global-address classification API — floor >=10.6.0.
   # @xmldom/xmldom: GHSA-6gmq-8vp8-gcm6 (+ GHSA-4w3w-2rp5-g8jm /
   # GHSA-w2rr-34g9-rvrj / GHSA-93r5-fhx6-vmg9 / GHSA-8344-3jmq-59r6 /
   # GHSA-6h8r-xr42-gp59 / GHSA-27p8-2357-5qqv / GHSA-c7q8-3ch8-vqpv) —
@@ -100,7 +101,7 @@ overrides:
   builder-util-runtime: ^9.7.0
   electron: ^44.1.0
   fast-uri: ^3.1.6
-  ip-address: ^10.3.1
+  ip-address: ^10.6.0
   js-yaml: ^4.3.2
   katex@<0.18.2: '>=0.18.2 <0.19'
   markdown-it@<=14.1.1: '>=14.2.0 <15'

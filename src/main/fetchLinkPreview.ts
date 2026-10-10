@@ -133,6 +133,7 @@ async function withInflightDedup<K, T>(
   return promise;
 }
 
+/** Resolves one hostname within the link-preview DNS deadline. */
 async function lookupHostname(hostname: string): Promise<string> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -150,6 +151,7 @@ async function lookupHostname(hostname: string): Promise<string> {
   }
 }
 
+/** Returns whether an IP address is globally reachable. */
 function isGlobalIpAddress(address: string): boolean {
   const bare = stripConnectHostBrackets(address.trim());
   if (Address4.isValid(bare)) return new Address4(bare).isGlobal();
@@ -177,11 +179,13 @@ async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
   return address;
 }
 
+/** Returns the explicit URL port or the protocol default. */
 function defaultConnectPort(url: URL): number {
   if (url.port) return Number(url.port);
   return url.protocol === 'http:' ? 80 : 443;
 }
 
+/** Creates a socket lookup that always returns the validated address. */
 function pinnedLookup(address: string): LookupFunction {
   const family = Address4.isValid(address) ? 4 : 6;
   return (_hostname, options, callback) => {
@@ -193,6 +197,7 @@ function pinnedLookup(address: string): LookupFunction {
   };
 }
 
+/** Fetches a URL through an agent pinned to its validated DNS result. */
 async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
   const url = new URL(urlString);
   const address = await resolvePinnedPreviewAddress(url.hostname);

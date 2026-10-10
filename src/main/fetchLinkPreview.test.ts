@@ -89,6 +89,7 @@ function makeStreamResponse(
   });
 }
 
+/** Extracts the normalized hostname from a mocked fetch input. */
 function fetchRequestHostname(input: string | URL | Request): string | null {
   try {
     const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -98,6 +99,7 @@ function fetchRequestHostname(input: string | URL | Request): string | null {
   }
 }
 
+/** Invokes a captured socket lookup and returns its selected address. */
 function runPinnedLookup(
   lookup: LookupFunction | undefined,
   all = false,
