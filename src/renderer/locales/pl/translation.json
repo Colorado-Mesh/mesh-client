@@ -941,6 +941,62 @@
       "hops_few": "{{count}} przeskoki",
       "hops_many": "{{count}} przeskoków",
       "hops_other": "{{count}} przeskoku"
+    },
+    "firmwareBot": {
+      "label": "Odpowiedź bota",
+      "status": {
+        "title": "Stan {{name}}",
+        "uptime": "W górę {{uptime}}",
+        "battery": "Bateria {{mv}} mV ({{percent}}%)",
+        "storage": "Pamięć {{used}}/{{total}} KB",
+        "counters": "Zobaczono {{seen}}, wysłano {{sent}}, nie udało się {{fail}}"
+      },
+      "air": {
+        "title": "Czas antenowy",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / bezpośrednie {{direct}}",
+        "txPackets": "TX Flood {{flood}} / bezpośrednie {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} sąsiad",
+        "title_few": "{{count}} sąsiedzi",
+        "title_many": "{{count}} sąsiadów",
+        "title_other": "{{count}} sąsiada",
+        "none": "Ostatnio nikt nie słyszał",
+        "ago": "{{ago}} temu"
+      },
+      "trace": {
+        "title": "Namierzać",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Sygnał zwrotny SNR {{snr}} dB",
+        "directLink": "Bezpośredni link",
+        "timeout": "Upłynął limit czasu",
+        "sent": "Wysłano"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Oprogramowanie sprzętowe",
+        "built": "Zbudowany {{built}}"
+      },
+      "channels": {
+        "title": "Kanały botów",
+        "bot": "Polecenia {{name}}",
+        "testing": "Testowanie {{name}}",
+        "emergency": "Awaryjne {{name}}",
+        "public": "Publiczne {{name}}"
+      },
+      "help": {
+        "title": "Polecenia",
+        "diagTitle": "Polecenia diagnostyczne"
+      }
     }
   },
   "common": {
@@ -985,7 +1041,10 @@
     "colorPurple": "Fioletowy/a/e",
     "delete": "Usuwać",
     "copy": "Kopiuj",
-    "copied": "Skopiowano"
+    "copied": "Skopiowano",
+    "botBadge": "Nerw",
+    "botBadgeLabel": "Nerw",
+    "botBadgeTooltip": "Wykryty jako bot na podstawie automatycznych odpowiedzi"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",

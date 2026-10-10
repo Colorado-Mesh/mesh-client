@@ -905,6 +905,60 @@
       "path": "Percorso: {{path}}",
       "hops_one": "{{count}} salto",
       "hops_other": "{{count}} salti"
+    },
+    "firmwareBot": {
+      "label": "Risposta del bot",
+      "status": {
+        "title": "Stato {{name}}",
+        "uptime": "Su {{uptime}}",
+        "battery": "Batteria {{mv}} mV ({{percent}}%)",
+        "storage": "Spazio di archiviazione {{used}}/{{total}} KB",
+        "counters": "Visto {{seen}}, inviato {{sent}}, non riuscito {{fail}}"
+      },
+      "air": {
+        "title": "Tempo di trasmissione",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX flusso {{flood}} / diretto {{direct}}",
+        "txPackets": "Flusso TX {{flood}} / diretto {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} vicino",
+        "title_other": "{{count}} vicini",
+        "none": "Nessuno ha sentito di recente",
+        "ago": "{{ago}} fa"
+      },
+      "trace": {
+        "title": "Traccia",
+        "hop": "{{hash}} {{snr}}dB",
+        "tail": "Restituisce SNR {{snr}} dB",
+        "directLink": "Collegamento diretto",
+        "timeout": "Timeout",
+        "sent": "Inviato"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Costruito {{built}}"
+      },
+      "channels": {
+        "title": "Canali bot",
+        "bot": "Comandi {{name}}",
+        "testing": "Test {{name}}",
+        "emergency": "Emergenza {{name}}",
+        "public": "Pubblico {{name}}"
+      },
+      "help": {
+        "title": "Comandi",
+        "diagTitle": "Comandi diagnostici"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Viola",
     "delete": "Eliminare",
     "copy": "Copia",
-    "copied": "Copiati"
+    "copied": "Copiati",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Rilevato come bot dalle sue risposte automatiche"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",

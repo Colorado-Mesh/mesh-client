@@ -905,6 +905,60 @@
       "path": "Chemin : {{path}}",
       "hops_one": "{{count}} hop",
       "hops_other": "{{count}} sauts"
+    },
+    "firmwareBot": {
+      "label": "Réponse du robot",
+      "status": {
+        "title": "Statut {{name}}",
+        "uptime": "Jusqu'à {{uptime}}",
+        "battery": "Batterie {{mv}} mV ({{percent}}%)",
+        "storage": "Stockage {{used}}/{{total}} Ko",
+        "counters": "Vu {{seen}}, envoyé {{sent}}, échoué {{fail}}"
+      },
+      "air": {
+        "title": "Temps d'antenne",
+        "tx": "Émission {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / direct {{direct}}",
+        "txPackets": "TX Flood {{flood}} / direct {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} voisin",
+        "title_other": "{{count}} voisins",
+        "none": "Aucun entendu récemment",
+        "ago": "il y a {{ago}}"
+      },
+      "trace": {
+        "title": "Tracer",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Retour SNR {{snr}} dB",
+        "directLink": "Lien direct",
+        "timeout": "Délai expiré",
+        "sent": "Envoyé"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "Bande passante {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Micrologiciel",
+        "built": "Construit {{built}}"
+      },
+      "channels": {
+        "title": "Canaux de robots",
+        "bot": "Commandes {{name}}",
+        "testing": "Test {{name}}",
+        "emergency": "Urgence {{name}}",
+        "public": "Publique {{name}}"
+      },
+      "help": {
+        "title": "Commandes",
+        "diagTitle": "Commandes de diagnostic"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Violet",
     "delete": "Supprimer",
     "copy": "Copier",
-    "copied": "Copié"
+    "copied": "Copié",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Détecté comme un bot à partir de ses réponses automatisées"
   },
   "configApplyNotice": {
     "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",

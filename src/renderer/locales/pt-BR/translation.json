@@ -905,6 +905,60 @@
       "path": "Caminho: {{path}}",
       "hops_one": "{{count}} hop",
       "hops_other": "{{count}} saltos"
+    },
+    "firmwareBot": {
+      "label": "Resposta do bot",
+      "status": {
+        "title": "Estado {{name}}",
+        "uptime": "Acima {{uptime}}",
+        "battery": "Bateria {{mv}} mV ({{percent}}%)",
+        "storage": "Armazenamento {{used}}/{{total}} KB",
+        "counters": "Visto {{seen}}, enviado {{sent}}, falhou {{fail}}"
+      },
+      "air": {
+        "title": "Tempo de antena",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / direta {{direct}}",
+        "txPackets": "TX Flood {{flood}} / direta {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} vizinho",
+        "title_other": "{{count}} vizinhos",
+        "none": "Nenhum ouvido recentemente",
+        "ago": "{{ago}} atrás"
+      },
+      "trace": {
+        "title": "Rastreamento",
+        "hop": "{{hash}} {{snr}}dB",
+        "tail": "Retorno SNR {{snr}} dB",
+        "directLink": "Link direto",
+        "timeout": "Tempo limite esgotado",
+        "sent": "Enviado"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}}MHz",
+        "sf": "SF{{sf}}",
+        "bw": "LB {{bw}} kHz",
+        "cr": "CR{{cr}}",
+        "power": "{{power}}dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Construído {{built}}"
+      },
+      "channels": {
+        "title": "Canais de bot",
+        "bot": "Comandos {{name}}",
+        "testing": "Testando {{name}}",
+        "emergency": "Emergência {{name}}",
+        "public": "Público {{name}}"
+      },
+      "help": {
+        "title": "Comandos",
+        "diagTitle": "Comandos de diagnóstico"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Roxo",
     "delete": "Excluir",
     "copy": "Copiar",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "botBadge": "Robô",
+    "botBadgeLabel": "Robô",
+    "botBadgeTooltip": "Detectado como um bot em suas respostas automatizadas"
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",

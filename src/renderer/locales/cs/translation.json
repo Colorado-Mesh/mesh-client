@@ -926,6 +926,61 @@
       "hops_few": "{{count}} skoky",
       "hops_many": "{{count}} skoků",
       "hops_other": "{{count}} skoků"
+    },
+    "firmwareBot": {
+      "label": "Odpověď robota",
+      "status": {
+        "title": "Stav {{name}}",
+        "uptime": "Nahoru {{uptime}}",
+        "battery": "Baterie {{mv}} mV ({{percent}}%)",
+        "storage": "Úložiště {{used}}/{{total}} kB",
+        "counters": "Viděno {{seen}}, odesláno {{sent}}, nezdařilo se {{fail}}"
+      },
+      "air": {
+        "title": "Vysílací čas",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / přímá {{direct}}",
+        "txPackets": "TX Flood {{flood}} / přímá {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} soused",
+        "title_few": "{{count}} sousedé",
+        "title_other": "{{count}} sousedů",
+        "none": "V poslední době nikdo neslyšel",
+        "ago": "před {{ago}}"
+      },
+      "trace": {
+        "title": "Stopa",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Návrat SNR {{snr}} dB",
+        "directLink": "Přímý odkaz",
+        "timeout": "Vypršel časový limit",
+        "sent": "Odesláno"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Postaveno {{built}}"
+      },
+      "channels": {
+        "title": "Botové kanály",
+        "bot": "Příkazy {{name}}",
+        "testing": "Testování {{name}}",
+        "emergency": "Pohotovost {{name}}",
+        "public": "Veřejné {{name}}"
+      },
+      "help": {
+        "title": "Příkazy",
+        "diagTitle": "Diagnostické příkazy"
+      }
     }
   },
   "common": {
@@ -970,7 +1025,10 @@
     "colorPurple": "Fialová",
     "delete": "Vymazat",
     "copy": "Kopírovat",
-    "copied": "Zkopírováno"
+    "copied": "Zkopírováno",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Zjištěno jako robot ze svých automatických odpovědí"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",

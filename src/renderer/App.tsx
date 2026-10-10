@@ -174,6 +174,7 @@ import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectio
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
+import { useBotSenderDetection } from './hooks/useBotSenderDetection';
 import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
@@ -1139,6 +1140,7 @@ function AppContent() {
     () => protocolRecord(meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, null),
     [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId],
   );
+  useBotSenderDetection(uiMessagesByProtocol, selfNodeIdByProtocol);
   const securityLocalNodeNumByProtocol = useMemo(
     () => protocolRecord(meshtasticConnectionView.state.myNodeNum, undefined as number | undefined),
     [meshtasticConnectionView.state.myNodeNum],

@@ -261,12 +261,27 @@ describe('isMeshcoreTransportStatusChatLine', () => {
     expect(isMeshcoreTransportStatusChatLine('nack @[x] detail')).toBe(true);
   });
 
-  it('detects path hash hop summary lines', () => {
+  it('lets firmware bot replies through as chat', () => {
     expect(
       isMeshcoreTransportStatusChatLine(
         '[111b] @[🏴‍☠️CatDude AF5F] | 5 hops, 2-byte hashes, SNR 12.00 | recv 21:56:11',
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      isMeshcoreTransportStatusChatLine(
+        'CO Bot: [111b] @[alice] | 2 hops, 2-byte hashes, SNR -1.25 | recv 21:25:45',
+      ),
+    ).toBe(false);
+    expect(
+      isMeshcoreTransportStatusChatLine(
+        'CO Bot: [00ff] Air: tx 12s rx 340s | rx flood 10 direct 2 | tx flood 3 direct 1',
+      ),
+    ).toBe(false);
+  });
+
+  it('still detects non-bot hop summary lines', () => {
+    expect(isMeshcoreTransportStatusChatLine('relay | 3 hops via ab,cd | SNR 4.5')).toBe(true);
+    expect(isMeshcoreTransportStatusChatLine('[111b] @[bob] something else')).toBe(true);
   });
 });
 

@@ -70,12 +70,14 @@ import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
+import { useIsBotSender } from '../stores/botSendersStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
+import { BotBadge } from './BotBadge';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
@@ -496,6 +498,7 @@ export default function NodeDetailModal({
     protocol: activeProtocol,
   } = useRadioProvider(protocol ?? 'meshtastic');
   const isMeshcoreProtocol = activeProtocol === 'meshcore';
+  const nodeIsBot = useIsBotSender(activeProtocol, node?.node_id);
 
   const meshcoreContactQrUri = useMemo(() => {
     if (!isMeshcoreProtocol || !contactPubkey || !node) return null;
@@ -1036,6 +1039,7 @@ export default function NodeDetailModal({
             <h3 id="node-modal-title" className="text-ink-100 truncate text-lg font-semibold">
               {displayName}
             </h3>
+            {nodeIsBot && <BotBadge />}
             {mqttIgnoredNodes.has(node.node_id) && (
               <span className="text-2xs shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 font-medium text-orange-300">
                 {t('nodeDetailModal.mqttIgnoredBadge')}

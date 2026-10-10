@@ -905,6 +905,60 @@
       "path": "Pad: {{path}}",
       "hops_one": "{{count}} hop",
       "hops_other": "{{count}} hops"
+    },
+    "firmwareBot": {
+      "label": "Bot-antwoord",
+      "status": {
+        "title": "Status {{name}}",
+        "uptime": "Omhoog {{uptime}}",
+        "battery": "Batterij {{mv}} mV ({{percent}}%)",
+        "storage": "Opslag {{used}}/{{total}} KB",
+        "counters": "{{seen}} gezien, {{sent}} verzonden, mislukt {{fail}}"
+      },
+      "air": {
+        "title": "Zendtijd",
+        "tx": "TX {{seconds}} sec",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / direct {{direct}}",
+        "txPackets": "TX Flood {{flood}} / direct {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} buurman",
+        "title_other": "{{count}} buren",
+        "none": "Niets onlangs gehoord",
+        "ago": "{{ago}} geleden"
+      },
+      "trace": {
+        "title": "Spoor",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Retour SNR {{snr}} dB",
+        "directLink": "Directe link",
+        "timeout": "Time-out",
+        "sent": "Verstuurd"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Gebouwd {{built}}"
+      },
+      "channels": {
+        "title": "Bot-kanalen",
+        "bot": "Commando's {{name}}",
+        "testing": "Testen {{name}}",
+        "emergency": "Noodgeval {{name}}",
+        "public": "Openbaar {{name}}"
+      },
+      "help": {
+        "title": "Commando's",
+        "diagTitle": "Diagnostische opdrachten"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Paars",
     "delete": "Verwijderen",
     "copy": "Kopiëren",
-    "copied": "Gekopieerd"
+    "copied": "Gekopieerd",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Gedetecteerd als een bot uit de geautomatiseerde antwoorden"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",

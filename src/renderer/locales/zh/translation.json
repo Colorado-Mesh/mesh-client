@@ -905,6 +905,60 @@
       "path": "路径：{{path}}",
       "hops_one": "{{count}}跳",
       "hops_other": "{{count}}跳"
+    },
+    "firmwareBot": {
+      "label": "机器人回复",
+      "status": {
+        "title": "状态 {{name}}",
+        "uptime": "向上 {{uptime}}",
+        "battery": "电池 {{mv}} mV ({{percent}}%)",
+        "storage": "存储 {{used}}/{{total}} KB",
+        "counters": "已看到 {{seen}}，已发送 {{sent}}，失败 {{fail}}"
+      },
+      "air": {
+        "title": "通话时间",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX 泛洪 {{flood}} / 直接 {{direct}}",
+        "txPackets": "TX 泛洪 {{flood}} / 直接 {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} 邻居",
+        "title_other": "{{count}} 邻居",
+        "none": "最近没有听说过",
+        "ago": "{{ago}} 前"
+      },
+      "trace": {
+        "title": "痕迹",
+        "hop": "{{hash}} {{snr}} 分贝",
+        "tail": "返回信噪比 {{snr}} dB",
+        "directLink": "直接链接",
+        "timeout": "超时",
+        "sent": "发送"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} 兆赫",
+        "sf": "SF{{sf}}",
+        "bw": "带宽 {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "固件",
+        "built": "建成 {{built}}"
+      },
+      "channels": {
+        "title": "机器人渠道",
+        "bot": "命令 {{name}}",
+        "testing": "测试{{name}}",
+        "emergency": "紧急情况{{name}}",
+        "public": "公共 {{name}}"
+      },
+      "help": {
+        "title": "命令",
+        "diagTitle": "诊断命令"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "紫色",
     "delete": "删除",
     "copy": "复制",
-    "copied": "已复制"
+    "copied": "已复制",
+    "botBadge": "机器人",
+    "botBadgeLabel": "机器人",
+    "botBadgeTooltip": "从其自动回复中检测为机器人"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",

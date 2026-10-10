@@ -184,7 +184,7 @@ describe('MeshCoreProtocol.subscribe', () => {
     const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
     conn.emit(EVENT_CHANNEL_MESSAGE, {
       channelIdx: 6,
-      text: '[2552] @[Nix Mobile 3] | 1 hops, 1-byte hashes, SNR -1.75 | recv 16:44:41',
+      text: 'ack @[Nix Mobile 3] | 07,3e | SNR: -1.75 dB | RSSI: -90 dBm | Received at: 16:44:41',
       senderTimestamp: 1_700_000,
     });
     expect(events.some((e) => e.type === 'text_message')).toBe(false);
@@ -193,8 +193,24 @@ describe('MeshCoreProtocol.subscribe', () => {
       type: 'device_log',
       payload: expect.objectContaining({
         source: 'meshcore',
-        message: expect.stringContaining('SNR -1.75'),
+        message: expect.stringContaining('SNR: -1.75'),
       }),
+    });
+    teardown();
+  });
+
+  it('routes firmware bot replies on channels to chat', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 6,
+      text: 'CO Bot: [2552] @[Nix Mobile 3] | 1 hops, 1-byte hashes, SNR -1.75 | recv 16:44:41',
+      senderTimestamp: 1_700_000,
+    });
+    expect(events.some((e) => e.type === 'device_log')).toBe(false);
+    expect(events.find((e) => e.type === 'text_message')).toMatchObject({
+      payload: expect.objectContaining({ channelIndex: 6 }),
     });
     teardown();
   });

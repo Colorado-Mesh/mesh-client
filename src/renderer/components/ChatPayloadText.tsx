@@ -6,12 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import {
   DroneReportCard,
+  FirmwareBotReplyCard,
   RncpControlChip,
   SignalReportChip,
 } from '@/renderer/components/chat/ChatStructuredPayloads';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import { parseDroneReport } from '@/renderer/lib/droneReportParse';
+import {
+  parseFirmwareBotReply,
+  stripFirmwareBotRequestToken,
+} from '@/renderer/lib/firmwareBotReplyParse';
 import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import {
   meshcoreGiphyMediaUrl,
@@ -262,6 +267,8 @@ export interface ChatPayloadTextProps {
   onContentResize?: () => void;
   /** Active protocol supports rncp; otherwise rncp sentinel text is shown verbatim. */
   rncpControlEnabled?: boolean;
+  /** Sender is a detected bot; hides its `[1a2b] ` request token even on unrecognized replies. */
+  senderIsBot?: boolean;
 }
 
 /**
@@ -275,6 +282,7 @@ export function ChatPayloadText({
   loadLinkPreviews = true,
   onContentResize,
   rncpControlEnabled = false,
+  senderIsBot = false,
 }: ChatPayloadTextProps) {
   const { t } = useTranslation();
   const gifId = parseMeshcoreGifId(text);
@@ -310,8 +318,12 @@ export function ChatPayloadText({
       );
     }
   }
-  const displayText = rncpKind ? stripRncpSentinels(text) : text;
   const signalReport = rncpKind ? null : parseSignalReport(text);
+  const firmwareBotReply = rncpKind ? null : parseFirmwareBotReply(text);
+  let displayText = rncpKind ? stripRncpSentinels(text) : text;
+  if (!rncpKind && (senderIsBot || signalReport || firmwareBotReply)) {
+    displayText = stripFirmwareBotRequestToken(displayText).body;
+  }
   const segments = parseChatMentionSegments(displayText);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
 
@@ -356,6 +368,7 @@ export function ChatPayloadText({
         )}
       </div>
       {signalReport && <SignalReportChip report={signalReport} />}
+      {firmwareBotReply && <FirmwareBotReplyCard reply={firmwareBotReply} />}
       {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (

@@ -8,6 +8,7 @@ import {
 } from '../../shared/meshcorePathHash';
 import { isPlaceholderLongName } from '../../shared/nodeNameUtils';
 import { errLikeToLogString } from './errLikeToLogString';
+import { isFirmwareBotReplyText } from './firmwareBotReplyParse';
 import { filterOutMeshcoreLocallyDeletedContacts } from './meshcoreLocallyDeletedContacts';
 import { mergeMeshcoreLastHeardFromAdvert } from './nodeStatus';
 import type { ConnectionType, MeshNode } from './types';
@@ -175,10 +176,15 @@ export function meshcoreTraceResultToOutPathBytes(
   return meshcorePubkeyPathPrefix(destPubKey, 1);
 }
 
+const MESHCORE_CHANNEL_SENDER_PREFIX = /^[^:\n]{1,64}: /u;
+
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */
 export function isMeshcoreTransportStatusChatLine(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
+  if (isFirmwareBotReplyText(t)) return false;
+  const senderPrefix = MESHCORE_CHANNEL_SENDER_PREFIX.exec(t);
+  if (senderPrefix && isFirmwareBotReplyText(t.slice(senderPrefix[0].length))) return false;
   if (/^\s*ack\s+@/iu.test(t)) return true;
   if (/^\s*nack\s+@/iu.test(t)) return true;
   if (/^\s*\[[0-9a-f]{4}\]\s+@\[/iu.test(t)) return true;

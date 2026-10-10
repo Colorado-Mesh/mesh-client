@@ -905,6 +905,60 @@
       "path": "パス: {{path}}",
       "hops_one": "{{count}} ホップ",
       "hops_other": "{{count}} ホップ"
+    },
+    "firmwareBot": {
+      "label": "ボットの返信",
+      "status": {
+        "title": "ステータス {{name}}",
+        "uptime": "上 {{uptime}}",
+        "battery": "バッテリー {{mv}} mV ({{percent}}%)",
+        "storage": "ストレージ {{used}}/{{total}} KB",
+        "counters": "{{seen}} を受信、{{sent}} を送信、{{fail}} に失敗しました"
+      },
+      "air": {
+        "title": "放送時間",
+        "tx": "TX {{seconds}} 秒",
+        "rx": "RX {{seconds}}",
+        "rxPackets": "RX フラッド {{flood}} / ダイレクト {{direct}}",
+        "txPackets": "TX フラッド {{flood}} / 直接 {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} 隣人",
+        "title_other": "{{count}} 隣人",
+        "none": "最近聞いたことはありません",
+        "ago": "{{ago}}前"
+      },
+      "trace": {
+        "title": "トレース",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "SNR {{snr}} dB を返す",
+        "directLink": "直接リンク",
+        "timeout": "タイムアウトしました",
+        "sent": "送信済み"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}}dBm"
+      },
+      "version": {
+        "title": "ファームウェア",
+        "built": "{{built}} を構築しました"
+      },
+      "channels": {
+        "title": "ボットチャンネル",
+        "bot": "コマンド {{name}}",
+        "testing": "{{name}} をテストしています",
+        "emergency": "緊急{{name}}",
+        "public": "公共 {{name}}"
+      },
+      "help": {
+        "title": "コマンド",
+        "diagTitle": "診断コマンド"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "紫",
     "delete": "消去",
     "copy": "コピー",
-    "copied": "コピーしました"
+    "copied": "コピーしました",
+    "botBadge": "ボット",
+    "botBadgeLabel": "ボット",
+    "botBadgeTooltip": "自動返信からボットとして検出される"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
