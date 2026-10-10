@@ -940,7 +940,8 @@
       "hops_one": "{{count}} przeskok",
       "hops_few": "{{count}} przeskoki",
       "hops_many": "{{count}} przeskoków",
-      "hops_other": "{{count}} przeskoku"
+      "hops_other": "{{count}} przeskoku",
+      "place": "Od: {{place}}"
     },
     "firmwareBot": {
       "label": "Odpowiedź bota",
@@ -997,6 +998,10 @@
         "title": "Polecenia",
         "diagTitle": "Polecenia diagnostyczne"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Kod kontroli stanu zdrowia",
+      "tooltip": "Kod testowy do kontroli zdrowia MeshCore. Obserwatorzy na siatce nadawcy zgłaszają, który z nich ją otrzymał."
     }
   },
   "common": {

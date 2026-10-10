@@ -904,7 +904,8 @@
       "noise": "Bruit {{noise}} dBm",
       "path": "Chemin : {{path}}",
       "hops_one": "{{count}} hop",
-      "hops_other": "{{count}} sauts"
+      "hops_other": "{{count}} sauts",
+      "place": "De : {{place}}"
     },
     "firmwareBot": {
       "label": "Réponse du robot",
@@ -959,6 +960,10 @@
         "title": "Commandes",
         "diagTitle": "Commandes de diagnostic"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Code du bilan de santé",
+      "tooltip": "Code de test pour MeshCore Bilan de santé. Les observateurs sur le maillage de l'expéditeur signalent lequel d'entre eux l'a reçu."
     }
   },
   "common": {

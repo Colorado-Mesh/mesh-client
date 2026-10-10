@@ -904,7 +904,8 @@
       "noise": "Gürültü {{noise}} dBm",
       "path": "Yol: {{path}}",
       "hops_one": "{{count}} atlama",
-      "hops_other": "{{count}} atlama"
+      "hops_other": "{{count}} atlama",
+      "place": "Gönderen: {{place}}"
     },
     "firmwareBot": {
       "label": "Bot yanıtı",
@@ -959,6 +960,10 @@
         "title": "Komutlar",
         "diagTitle": "Teşhis komutları"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Sağlık Kontrolü kodu",
+      "tooltip": "MeshCore Sağlamlık Denetimi için test kodu. Gönderenin mesh'indeki gözlemciler, hangisinin aldığını bildirir."
     }
   },
   "common": {

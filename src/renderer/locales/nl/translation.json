@@ -904,7 +904,8 @@
       "noise": "Ruis {{noise}} dBm",
       "path": "Pad: {{path}}",
       "hops_one": "{{count}} hop",
-      "hops_other": "{{count}} hops"
+      "hops_other": "{{count}} hops",
+      "place": "Vanaf: {{place}}"
     },
     "firmwareBot": {
       "label": "Bot-antwoord",
@@ -959,6 +960,10 @@
         "title": "Commando's",
         "diagTitle": "Diagnostische opdrachten"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Health Check-code",
+      "tooltip": "Testcode voor MeshCore Health Check. Waarnemers op het mesh van de afzender melden wie van hen het heeft ontvangen."
     }
   },
   "common": {

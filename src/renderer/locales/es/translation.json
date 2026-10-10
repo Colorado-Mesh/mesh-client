@@ -904,7 +904,8 @@
       "noise": "Ruido {{noise}} dBm",
       "path": "Ruta: {{path}}",
       "hops_one": "{{count}} salto",
-      "hops_other": "{{count}} saltos"
+      "hops_other": "{{count}} saltos",
+      "place": "De: {{place}}"
     },
     "firmwareBot": {
       "label": "Respuesta del robot",
@@ -959,6 +960,10 @@
         "title": "Comandos",
         "diagTitle": "Comandos de diagnóstico"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Código de comprobación de estado",
+      "tooltip": "Código de prueba para MeshCore Comprobación de estado. Los observadores en la malla del remitente informan cuál de ellos lo recibió."
     }
   },
   "common": {

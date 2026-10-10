@@ -935,7 +935,12 @@
       "snr": "SNR {{snr}} dB",
       "rssi": "RSSI {{rssi}} dBm",
       "noise": "Noise {{noise}} dBm",
-      "path": "Path: {{path}}"
+      "path": "Path: {{path}}",
+      "place": "From: {{place}}"
+    },
+    "healthCheck": {
+      "label": "MeshCore Health Check code",
+      "tooltip": "Test code for MeshCore Health Check. Observers on the sender's mesh report which of them received it."
     },
     "firmwareBot": {
       "label": "Bot reply",
