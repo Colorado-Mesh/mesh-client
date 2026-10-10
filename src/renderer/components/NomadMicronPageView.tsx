@@ -4,6 +4,7 @@ import {
   bindNomadMicronMedia,
   bindNomadMicronPartials,
   buildNomadLinkRequest,
+  canonicalNomadPageResourceKey,
   isExternalHttpUrl,
   isNomadFilePath,
   loadNomadMicronPartial,
@@ -12,6 +13,7 @@ import {
   type NomadMicronPartialPageResult,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
+  resolveNomadPartialResourceKey,
 } from '@/renderer/lib/nomad/micronParser';
 import { nomadRasterDataUrl } from '@/renderer/lib/nomad/nomadRasterPreview';
 import { openRrcHubFromLink } from '@/renderer/lib/openRrcHubFromLink';
@@ -24,6 +26,8 @@ import { isRrcLink } from '@/renderer/lib/rrcLink';
 interface NomadMicronPageViewProps {
   content: string;
   defaultPagePath: string;
+  /** Actual path of the page whose content is rendered. */
+  pagePath: string;
   selectedHash: string;
   /** When true, constrain page width to the viewer and wrap text (default for prose). */
   fitWidth?: boolean;
@@ -66,6 +70,7 @@ function mediaBindOptions(
 export default function NomadMicronPageView({
   content,
   defaultPagePath,
+  pagePath,
   selectedHash,
   fitWidth = true,
   onNavigate,
@@ -179,50 +184,76 @@ export default function NomadMicronPageView({
     };
     container.addEventListener('click', onActivate);
 
-    const partialMediaAborts: AbortController[] = [];
+    const partialMediaAborts = new Map<HTMLElement, AbortController>();
+    const abortPartialMediaTree = (element: HTMLElement) => {
+      for (const [owner, controller] of partialMediaAborts) {
+        if (owner === element || element.contains(owner)) {
+          controller.abort();
+          partialMediaAborts.delete(owner);
+        }
+      }
+    };
+    const onPartialReplacing = (event: Event) => {
+      const el = event.target;
+      if (!(el instanceof HTMLElement) || !el.classList.contains('Mu-partial')) return;
+      if (!container.contains(el)) return;
+      abortPartialMediaTree(el);
+    };
     const onPartialLoaded = (event: Event) => {
       const el = event.target;
       if (!(el instanceof HTMLElement) || !el.classList.contains('Mu-partial')) return;
       if (!container.contains(el)) return;
+      abortPartialMediaTree(el);
       const ac = new AbortController();
-      partialMediaAborts.push(ac);
       const bindOpts = mediaBindOptions(linkContextRef.current, ac.signal);
       if (!bindOpts) return;
+      partialMediaAborts.set(el, ac);
       void bindNomadMicronMedia(el, bindOpts);
     };
+    container.addEventListener('partial-replacing', onPartialReplacing);
     container.addEventListener('partial-loaded', onPartialLoaded);
 
     let unbindPartials: (() => void) | undefined;
     if (linkContextRef.current.onFetchPartial) {
-      unbindPartials = bindNomadMicronPartials(container, async (info) => {
-        const ctx = linkContextRef.current;
-        const fetchPage = ctx.onFetchPartial;
-        if (!fetchPage) return null;
-        try {
-          return await loadNomadMicronPartial({
-            destination: info.destination,
-            fields: info.fields,
-            signal: info.signal,
-            defaultPagePath: ctx.defaultPagePath,
-            selectedHash: ctx.selectedHash,
-            formContainer: containerRef.current,
-            fetchPage,
-          });
-        } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') throw e;
-          console.warn('[NomadMicronPageView] partial fetch failed', e);
-          throw e;
-        }
-      });
+      unbindPartials = bindNomadMicronPartials(
+        container,
+        async (info) => {
+          const ctx = linkContextRef.current;
+          const fetchPage = ctx.onFetchPartial;
+          if (!fetchPage) return null;
+          try {
+            return await loadNomadMicronPartial({
+              destination: info.destination,
+              fields: info.fields,
+              signal: info.signal,
+              defaultPagePath: ctx.defaultPagePath,
+              selectedHash: ctx.selectedHash,
+              formContainer: containerRef.current,
+              fetchPage,
+            });
+          } catch (e) {
+            if (e instanceof DOMException && e.name === 'AbortError') throw e;
+            console.warn('[NomadMicronPageView] partial fetch failed', e);
+            throw e;
+          }
+        },
+        {
+          rootResourceKey: canonicalNomadPageResourceKey(selectedHash, pagePath),
+          resolveResourceKey: (info) =>
+            resolveNomadPartialResourceKey(info.destination, selectedHash, defaultPagePath),
+        },
+      );
     }
 
     return () => {
       container.removeEventListener('click', onActivate);
+      container.removeEventListener('partial-replacing', onPartialReplacing);
       container.removeEventListener('partial-loaded', onPartialLoaded);
-      for (const ac of partialMediaAborts) ac.abort();
+      for (const ac of partialMediaAborts.values()) ac.abort();
+      partialMediaAborts.clear();
       unbindPartials?.();
     };
-  }, [content]);
+  }, [content, defaultPagePath, pagePath, selectedHash]);
 
   // Rebind /media when page content or fetch context changes (hash / path / fetcher).
   useEffect(() => {

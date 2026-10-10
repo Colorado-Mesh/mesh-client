@@ -461,6 +461,12 @@ When **browsing** remote Nomad nodes (not hosting), the Micron viewer keeps two 
 
 Toolbar **⌀** clears both LRUs without closing the viewer; **✕** closes the viewer and also clears them.
 
+Remote Micron partials share one controller per open page. It rejects direct and indirect include
+cycles and caps recursion depth, admitted partials, aggregate source bytes, concurrent requests,
+refresh timers, request rate, total requests, and controller lifetime. Refreshing a parent cancels
+its descendant partial and media work before replacing the subtree. Navigating to another node or
+page creates a new controller even when the page source is byte-for-byte identical.
+
 ---
 
 ## Nomad identify to this site

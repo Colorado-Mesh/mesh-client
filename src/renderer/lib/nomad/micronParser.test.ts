@@ -9,20 +9,24 @@ import {
   bindNomadMicronMedia,
   bindNomadMicronPartials,
   buildNomadLinkRequest,
+  canonicalNomadPageResourceKey,
   collectNomadFormFieldValues,
   formatNomadRequestDataForUrlBar,
   isNomadFilePath,
   isNomadMediaPath,
   isNomadMicronPage,
   loadNomadMicronPartial,
+  MicronParser,
   mountNomadMicronHtml,
   NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY,
+  NOMAD_MICRON_PARTIAL_LIMITS,
   nomadPageRequestDataEquals,
   normalizeNomadPageRequestData,
   parseNomadLinkFieldsSpec,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
   resolveNomadMediaFetchTarget,
+  resolveNomadPartialResourceKey,
   serializeNomadPageRequestDataKey,
   splitNomadLinkDestination,
 } from './micronParser';
@@ -156,7 +160,7 @@ describe('renderNomadMicronPage', () => {
 });
 
 describe('loadNomadMicronPartial', () => {
-  it('fetches, renders Micron markup, and includes form field request data', async () => {
+  it('fetches raw Micron source with its byte size and includes form field request data', async () => {
     const hash = 'b'.repeat(32);
     const formContainer = document.createElement('div');
     formContainer.innerHTML = '<input name="user_name" value="joey">';
@@ -183,8 +187,8 @@ describe('loadNomadMicronPartial', () => {
         var_mode: 'live',
       }),
     );
-    expect(result.markup).toContain('Partial body');
-    expect(result.markup.toLowerCase()).not.toContain('<script');
+    expect(result.source).toBe('`!Partial body:`!');
+    expect(result.sourceBytes).toBe(new TextEncoder().encode(result.source).byteLength);
   });
 
   it('throws when the page fetch fails', async () => {
@@ -232,6 +236,371 @@ describe('bindNomadMicronPartials', () => {
     await vi.advanceTimersByTimeAsync(1500);
     expect(fetchPage).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it('canonicalizes partial ancestry and rejects a direct page cycle before fetching', async () => {
+    const hash = 'A'.repeat(32);
+    expect(canonicalNomadPageResourceKey(hash, '//page/dir/.././index.mu')).toBe(
+      `${hash.toLowerCase()}:/page/index.mu`,
+    );
+
+    const container = document.createElement('div');
+    mountNomadMicronHtml(
+      container,
+      renderNomadMicronPage('`{aaAAaaAAaaAAaaAAaaAAaaAAaaAAaaAA:/page/./index.mu}'),
+    );
+    const fetcher = vi.fn();
+    const cleanup = bindNomadMicronPartials(container, fetcher, {
+      rootResourceKey: canonicalNomadPageResourceKey(hash, '/page/index.mu'),
+      resolveResourceKey: (info) =>
+        resolveNomadPartialResourceKey(info.destination, hash, '/page/index.mu'),
+    });
+
+    await Promise.resolve();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(container.querySelector('.Mu-partial')).toHaveAttribute(
+      'data-partial-error',
+      'partial_cycle',
+    );
+    cleanup();
+  });
+
+  it('rejects an indirect partial cycle in the same page controller', async () => {
+    const hash = 'b'.repeat(32);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/b.mu}'));
+    const fetcher = vi.fn().mockResolvedValue({
+      markup: renderNomadMicronPage('`{:/page/dir/../index.mu}'),
+      sourceBytes: 32,
+    });
+    const cleanup = bindNomadMicronPartials(container, fetcher, {
+      rootResourceKey: canonicalNomadPageResourceKey(hash, '/page/index.mu'),
+      resolveResourceKey: (info) =>
+        resolveNomadPartialResourceKey(info.destination, hash, '/page/index.mu'),
+    });
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-partial-error="partial_cycle"]')).not.toBeNull();
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    cleanup();
+  });
+
+  it('serializes eager fanout and aborts queued work on cleanup', async () => {
+    const container = document.createElement('div');
+    mountNomadMicronHtml(
+      container,
+      renderNomadMicronPage(
+        Array.from({ length: 4 }, (_, index) => `\`{:/page/${index}.mu}`).join('\n'),
+      ),
+    );
+    const resolvers: ((value: { markup: string; sourceBytes: number }) => void)[] = [];
+    const seenSignals: (AbortSignal | null)[] = [];
+    let active = 0;
+    let maxActive = 0;
+    const fetcher = vi.fn((info: { signal: AbortSignal | null }) => {
+      seenSignals.push(info.signal);
+      return new Promise<{ markup: string; sourceBytes: number }>((resolve) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        resolvers.push((value) => {
+          active -= 1;
+          resolve(value);
+        });
+      });
+    });
+    const cleanup = bindNomadMicronPartials(container, fetcher);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    resolvers.shift()?.({ markup: 'first', sourceBytes: 5 });
+    await vi.waitFor(() => {
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    });
+    expect(maxActive).toBe(NOMAD_MICRON_PARTIAL_LIMITS.maxConcurrency);
+    const secondSignal = seenSignals[1]!;
+    cleanup();
+    expect(secondSignal.aborted).toBe(true);
+    resolvers.shift()?.({ markup: 'late', sourceBytes: 4 });
+    await Promise.resolve();
+    expect(container.textContent).not.toContain('late');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('enforces partial count, refresh timer, and aggregate byte ceilings', async () => {
+    const countContainer = document.createElement('div');
+    mountNomadMicronHtml(
+      countContainer,
+      renderNomadMicronPage(
+        Array.from(
+          { length: NOMAD_MICRON_PARTIAL_LIMITS.maxPartials + 1 },
+          (_, index) => `\`{:/page/count-${index}.mu}`,
+        ).join('\n'),
+      ),
+    );
+    const countCleanup = bindNomadMicronPartials(countContainer, () => new Promise(() => {}));
+    expect(
+      countContainer.querySelector('[data-partial-error="partial_count_limit"]'),
+    ).not.toBeNull();
+    countCleanup();
+
+    const timerContainer = document.createElement('div');
+    mountNomadMicronHtml(
+      timerContainer,
+      renderNomadMicronPage(
+        Array.from(
+          { length: NOMAD_MICRON_PARTIAL_LIMITS.maxRefreshTimers + 1 },
+          (_, index) => `\`{:/page/timer-${index}.mu\`1}`,
+        ).join('\n'),
+      ),
+    );
+    const timerCleanup = bindNomadMicronPartials(timerContainer, () => new Promise(() => {}));
+    expect(
+      timerContainer.querySelectorAll('[data-partial-refresh-error="partial_timer_limit"]'),
+    ).toHaveLength(1);
+    timerCleanup();
+
+    const byteContainer = document.createElement('div');
+    mountNomadMicronHtml(
+      byteContainer,
+      renderNomadMicronPage('`{:/page/one.mu}\n`{:/page/two.mu}'),
+    );
+    const renderSpy = vi.spyOn(MicronParser.prototype, 'convertMicronToHtml');
+    const byteFetcher = vi
+      .fn()
+      .mockResolvedValueOnce({
+        source: 'within',
+        sourceBytes: NOMAD_MICRON_PARTIAL_LIMITS.maxSourceBytes,
+      })
+      .mockResolvedValueOnce({ source: 'over', sourceBytes: 1 });
+    const byteCleanup = bindNomadMicronPartials(byteContainer, byteFetcher);
+    await vi.waitFor(() => {
+      expect(byteFetcher).toHaveBeenCalledTimes(2);
+    });
+    await vi.waitFor(() => {
+      expect(
+        byteContainer.querySelector('[data-partial-error="partial_source_byte_limit"]'),
+      ).not.toBeNull();
+    });
+    expect(byteContainer.textContent).toContain('within');
+    expect(byteContainer.textContent).not.toContain('over');
+    expect(renderSpy).not.toHaveBeenCalledWith('over');
+    renderSpy.mockRestore();
+    byteCleanup();
+  });
+
+  it('enforces the recursive depth ceiling', async () => {
+    const hash = 'c'.repeat(32);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/1.mu}'));
+    let response = 1;
+    const fetcher = vi.fn().mockImplementation(() => {
+      response += 1;
+      return Promise.resolve({
+        markup: renderNomadMicronPage(`\`{:/page/${response}.mu}`),
+        sourceBytes: 24,
+      });
+    });
+    const cleanup = bindNomadMicronPartials(container, fetcher, {
+      rootResourceKey: canonicalNomadPageResourceKey(hash, '/page/root.mu'),
+      resolveResourceKey: (info) =>
+        resolveNomadPartialResourceKey(info.destination, hash, '/page/root.mu'),
+    });
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-partial-error="partial_depth_limit"]')).not.toBeNull();
+    });
+    expect(fetcher).toHaveBeenCalledTimes(NOMAD_MICRON_PARTIAL_LIMITS.maxDepth);
+    cleanup();
+  });
+
+  it('keeps the network slot until a descendant settles, then clears its refresh timer', async () => {
+    vi.useFakeTimers();
+    try {
+      const container = document.createElement('div');
+      mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/parent.mu}'));
+      let parentCalls = 0;
+      let childCalls = 0;
+      const childSignals: (AbortSignal | null)[] = [];
+      const childResolvers: ((value: { markup: string; sourceBytes: number }) => void)[] = [];
+      const fetcher = vi.fn((info: { destination: string; signal: AbortSignal | null }) => {
+        if (info.destination.includes('parent.mu')) {
+          parentCalls += 1;
+          return Promise.resolve({
+            markup:
+              parentCalls === 1
+                ? renderNomadMicronPage('`{:/page/child.mu`1}')
+                : renderNomadMicronPage('PARENT_REFRESHED'),
+            sourceBytes: 32,
+          });
+        }
+        childCalls += 1;
+        childSignals.push(info.signal);
+        return new Promise<{ markup: string; sourceBytes: number }>((resolve) => {
+          childResolvers.push(resolve);
+        });
+      });
+      const cleanup = bindNomadMicronPartials(container, fetcher);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(parentCalls).toBe(1);
+      expect(childCalls).toBe(1);
+
+      cleanup.reload?.((info) => info.destination.includes('parent.mu'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(childSignals[0]?.aborted).toBe(false);
+      expect(parentCalls).toBe(1);
+
+      childResolvers[0]?.({ markup: 'CHILD_SETTLED', sourceBytes: 8 });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(parentCalls).toBe(2);
+      expect(container.textContent).toContain('PARENT_REFRESHED');
+
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(childCalls).toBe(1);
+      cleanup();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the existing descendant subtree live when a parent refresh fails', async () => {
+    vi.useFakeTimers();
+    try {
+      const container = document.createElement('div');
+      mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/parent.mu}'));
+      let parentCalls = 0;
+      let childCalls = 0;
+      const fetcher = vi.fn((info: { destination: string }) => {
+        if (info.destination.includes('parent.mu')) {
+          parentCalls += 1;
+          if (parentCalls > 1) return Promise.reject(new Error('refresh_failed'));
+          return Promise.resolve({
+            markup: renderNomadMicronPage('`{:/page/child.mu`1}'),
+            sourceBytes: 32,
+          });
+        }
+        childCalls += 1;
+        return Promise.resolve({ markup: `CHILD_${childCalls}`, sourceBytes: 8 });
+      });
+      const cleanup = bindNomadMicronPartials(container, fetcher);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(childCalls).toBe(1);
+
+      cleanup.reload?.((info) => info.destination.includes('parent.mu'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(parentCalls).toBe(2);
+      expect(container.querySelector('[data-partial-error="refresh_failed"]')).not.toBeNull();
+      expect(container.textContent).toContain('CHILD_1');
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(childCalls).toBe(2);
+      expect(container.textContent).toContain('CHILD_2');
+      cleanup();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps the existing descendant subtree live when a parent refresh cannot render', async () => {
+    vi.useFakeTimers();
+    try {
+      const container = document.createElement('div');
+      mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/parent.mu}'));
+      let parentCalls = 0;
+      let childCalls = 0;
+      const fetcher = vi.fn((info: { destination: string }) => {
+        if (info.destination.includes('parent.mu')) {
+          parentCalls += 1;
+          const source = parentCalls === 1 ? '`{:/page/child.mu`1}' : 'PARENT_RENDER_MUST_FAIL';
+          return Promise.resolve({ source, sourceBytes: source.length });
+        }
+        childCalls += 1;
+        return Promise.resolve({ markup: `CHILD_${childCalls}`, sourceBytes: 8 });
+      });
+      const cleanup = bindNomadMicronPartials(container, fetcher);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(childCalls).toBe(1);
+
+      const originalConvert = MicronParser.prototype.convertMicronToHtml;
+      const renderSpy = vi
+        .spyOn(MicronParser.prototype, 'convertMicronToHtml')
+        .mockImplementation(function (this: MicronParser, source: string) {
+          if (source === 'PARENT_RENDER_MUST_FAIL') throw new Error('render_failed');
+          return originalConvert.call(this, source);
+        });
+      cleanup.reload?.((info) => info.destination.includes('parent.mu'));
+      await vi.advanceTimersByTimeAsync(0);
+      renderSpy.mockRestore();
+
+      expect(parentCalls).toBe(2);
+      expect(container.querySelector('[data-partial-error="render_failed"]')).not.toBeNull();
+      expect(container.textContent).toContain('CHILD_1');
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(childCalls).toBe(2);
+      expect(container.textContent).toContain('CHILD_2');
+      cleanup();
+    } finally {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    }
+  });
+
+  it('enforces the total request budget and page-controller lifetime', async () => {
+    vi.useFakeTimers();
+    try {
+      const rateContainer = document.createElement('div');
+      mountNomadMicronHtml(rateContainer, renderNomadMicronPage('`{:/page/rate.mu}'));
+      const rateFetcher = vi.fn().mockResolvedValue({ markup: 'ok', sourceBytes: 1 });
+      const rateCleanup = bindNomadMicronPartials(rateContainer, rateFetcher);
+      await vi.advanceTimersByTimeAsync(0);
+      for (let index = 1; index < NOMAD_MICRON_PARTIAL_LIMITS.maxRequestsPerMinute; index += 1) {
+        rateCleanup.reload?.();
+        await vi.advanceTimersByTimeAsync(0);
+      }
+      expect(rateFetcher).toHaveBeenCalledTimes(NOMAD_MICRON_PARTIAL_LIMITS.maxRequestsPerMinute);
+      rateCleanup.reload?.();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(
+        rateContainer.querySelector('[data-partial-error="partial_request_rate_limit"]'),
+      ).not.toBeNull();
+      rateCleanup();
+
+      const requestContainer = document.createElement('div');
+      mountNomadMicronHtml(requestContainer, renderNomadMicronPage('`{:/page/reload.mu}'));
+      const requestFetcher = vi.fn().mockResolvedValue({ markup: 'ok', sourceBytes: 1 });
+      const requestCleanup = bindNomadMicronPartials(requestContainer, requestFetcher);
+      await vi.advanceTimersByTimeAsync(0);
+
+      for (let index = 1; index < NOMAD_MICRON_PARTIAL_LIMITS.maxRequests; index += 1) {
+        await vi.advanceTimersByTimeAsync(1001);
+        requestCleanup.reload?.();
+        await vi.advanceTimersByTimeAsync(0);
+      }
+      expect(requestFetcher).toHaveBeenCalledTimes(NOMAD_MICRON_PARTIAL_LIMITS.maxRequests);
+
+      await vi.advanceTimersByTimeAsync(1001);
+      requestCleanup.reload?.();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(requestFetcher).toHaveBeenCalledTimes(NOMAD_MICRON_PARTIAL_LIMITS.maxRequests);
+      expect(
+        requestContainer.querySelector('[data-partial-error="partial_request_limit"]'),
+      ).not.toBeNull();
+      requestCleanup();
+
+      const lifetimeContainer = document.createElement('div');
+      mountNomadMicronHtml(lifetimeContainer, renderNomadMicronPage('`{:/page/slow.mu}'));
+      const signals: (AbortSignal | null)[] = [];
+      const lifetimeCleanup = bindNomadMicronPartials(lifetimeContainer, (info) => {
+        signals.push(info.signal);
+        return new Promise(() => {});
+      });
+      expect(signals[0]?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(NOMAD_MICRON_PARTIAL_LIMITS.maxLifetimeMs);
+      expect(signals[0]?.aborted).toBe(true);
+      lifetimeCleanup();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
