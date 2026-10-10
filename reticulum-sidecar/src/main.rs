@@ -25,12 +25,13 @@ mod ble;
 mod gatt;
 mod stack;
 
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
 use tracing::{error, info};
 
@@ -70,8 +71,40 @@ enum Commands {
     },
 }
 
-fn is_loopback_host(host: &str) -> bool {
-    matches!(host, "127.0.0.1" | "localhost" | "::1" | "[::1]")
+fn loopback_socket_addr(host: &str, port: u16) -> Result<SocketAddr, String> {
+    let bare_host = host
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+        .unwrap_or(host);
+    let ip = bare_host
+        .parse::<IpAddr>()
+        .map_err(|_| "sidecar host must be an explicit loopback IP address".to_string())?;
+    if !ip.is_loopback() {
+        return Err("sidecar refuses non-loopback listen addresses".to_string());
+    }
+    Ok(SocketAddr::new(ip, port))
+}
+
+async fn read_auth_token_from_stdin() -> Result<String, String> {
+    let mut line = String::new();
+    let mut reader = BufReader::new(tokio::io::stdin());
+    let bytes = reader
+        .read_line(&mut line)
+        .await
+        .map_err(|e| format!("failed to read sidecar authentication bootstrap: {e}"))?;
+    if bytes == 0 {
+        return Err("missing sidecar authentication bootstrap".to_string());
+    }
+    if line.ends_with('\n') {
+        line.pop();
+        if line.ends_with('\r') {
+            line.pop();
+        }
+    }
+    if line.is_empty() || line.contains(['\r', '\n']) {
+        return Err("invalid sidecar authentication bootstrap".to_string());
+    }
+    Ok(line)
 }
 
 fn run_validate_config(config_dir: &Path, json: bool) -> ExitCode {
@@ -144,18 +177,21 @@ async fn main() -> ExitCode {
         info!("mesh-client-reticulum headless mode");
     }
 
-    if !is_loopback_host(&cli.host)
-        && std::env::var("MESH_CLIENT_RETICULUM_BIND_ALL")
-            .ok()
-            .as_deref()
-            != Some("1")
-    {
-        error!(
-            host = %cli.host,
-            "refusing to bind to non-loopback host without MESH_CLIENT_RETICULUM_BIND_ALL=1"
-        );
-        return ExitCode::from(1);
-    }
+    let addr = match loopback_socket_addr(&cli.host, cli.port) {
+        Ok(addr) => addr,
+        Err(e) => {
+            error!(host = %cli.host, port = cli.port, error = %e, "invalid listen address");
+            return ExitCode::from(1);
+        }
+    };
+
+    let auth_token = match read_auth_token_from_stdin().await {
+        Ok(token) => token,
+        Err(e) => {
+            error!(error = %e, "sidecar authentication bootstrap failed");
+            return ExitCode::from(1);
+        }
+    };
 
     let config_dir = PathBuf::from(
         cli.reticulum_config_dir
@@ -172,12 +208,10 @@ async fn main() -> ExitCode {
     // Persist + HTTP shell first — do not await live RNS/BLE before binding.
     let stack = Arc::new(Box::pin(StackHandle::bootstrap(config_dir, storage_dir, event_tx)).await);
 
-    let app = api::router(stack.clone());
-
-    let addr: SocketAddr = match format!("{}:{}", cli.host, cli.port).parse() {
-        Ok(addr) => addr,
+    let app = match api::router(stack.clone(), auth_token) {
+        Ok(app) => app,
         Err(e) => {
-            error!(host = %cli.host, port = cli.port, error = %e, "invalid listen address");
+            error!(error = %e, "sidecar authentication bootstrap rejected");
             return ExitCode::from(1);
         }
     };
@@ -214,5 +248,19 @@ mod tests {
     fn ble_only_start_is_explicit() {
         assert!(!Cli::parse_from(["mesh-client-reticulum"]).ble_only);
         assert!(Cli::parse_from(["mesh-client-reticulum", "--ble-only"]).ble_only);
+    }
+
+    #[test]
+    fn listen_address_is_strictly_loopback() {
+        assert_eq!(
+            loopback_socket_addr("127.0.0.1", 19437).unwrap(),
+            "127.0.0.1:19437".parse().unwrap()
+        );
+        assert_eq!(
+            loopback_socket_addr("::1", 19437).unwrap(),
+            "[::1]:19437".parse().unwrap()
+        );
+        assert!(loopback_socket_addr("0.0.0.0", 19437).is_err());
+        assert!(loopback_socket_addr("localhost", 19437).is_err());
     }
 }

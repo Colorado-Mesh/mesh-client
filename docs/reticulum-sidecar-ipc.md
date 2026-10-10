@@ -4,7 +4,14 @@ HTTP + WebSocket on `127.0.0.1` (ephemeral port in production; default dev port 
 
 Aligned with [Ratspeak](https://github.com/ratspeak/Ratspeak) `ratspeak-tauri` commands — not meshchat aiohttp.
 
-Electron main validates proxy paths: must start with `/api/v1/` (no `..` segments).
+The sidecar accepts only explicit IPv4 or IPv6 loopback listen addresses. Electron main creates a
+new 256-bit bearer credential for each process and sends it as a single base64url line over the
+child's stdin before polling health. The credential is never passed in argv, environment variables,
+URLs, status responses, or logs. Every HTTP route and WebSocket upgrade requires
+`Authorization: Bearer <credential>`.
+
+Electron main validates proxy paths (they must start with `/api/v1/` and contain no `..` segments)
+and adds the credential. The renderer never receives it.
 
 ## REST
 

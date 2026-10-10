@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'child_process';
+import { randomBytes } from 'crypto';
 import { app } from 'electron';
 import { EventEmitter } from 'events';
 import fs from 'fs';
@@ -49,6 +50,19 @@ const FLUSH_STATE_TIMEOUT_MS = 5 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
 const QUIT_STOP_GRACE_MS = 750;
+const SIDECAR_AUTH_TOKEN_BYTES = 32;
+
+/** Generate the per-process bearer credential delivered through the child's private stdin. */
+export function createReticulumSidecarAuthToken(): string {
+  return randomBytes(SIDECAR_AUTH_TOKEN_BYTES).toString('base64url');
+}
+
+function sidecarAuthorizationHeaders(
+  token: string,
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  return { ...headers, Authorization: `Bearer ${token}` };
+}
 
 /** Minimal env for sidecar child processes (start + validate-config). */
 export function sidecarChildEnv(): NodeJS.ProcessEnv {
@@ -144,14 +158,20 @@ async function findFreePort(host = '127.0.0.1'): Promise<number> {
   });
 }
 
-async function pollSidecarHealth(port: number): Promise<ReticulumStatusResponse> {
+async function pollSidecarHealth(
+  port: number,
+  authToken: string,
+): Promise<ReticulumStatusResponse> {
   const url = `http://127.0.0.1:${port}/api/v1/status`;
   const deadline = Date.now() + HEALTH_POLL_TIMEOUT_MS;
   let lastError = 'health poll timeout';
 
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(2_000) });
+      const res = await fetch(url, {
+        headers: sidecarAuthorizationHeaders(authToken),
+        signal: AbortSignal.timeout(2_000),
+      });
       if (!res.ok) {
         lastError = `status ${res.status}`;
       } else {
@@ -172,6 +192,7 @@ async function pollSidecarHealth(port: number): Promise<ReticulumStatusResponse>
 
 export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
+  private authToken: string | null = null;
   private ws: { close: () => void } | null = null;
   private voiceWs: { close: () => void } | null = null;
   private wsPort = 0;
@@ -221,6 +242,22 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   resolveBinaryPath(): string {
     return resolveSidecarBinaryPath();
+  }
+
+  /** Main-process-only credential handoff for the GATT proxy sharing this sidecar. */
+  getAuthTokenForLocalProxy(): string {
+    return this.requireAuthToken();
+  }
+
+  private requireAuthToken(): string {
+    if (!this.authToken) {
+      throw new Error('Reticulum sidecar authentication is unavailable');
+    }
+    return this.authToken;
+  }
+
+  private authHeaders(headers: Record<string, string> = {}): Record<string, string> {
+    return sidecarAuthorizationHeaders(this.requireAuthToken(), headers);
   }
 
   getStatus(): ReticulumSidecarStatus {
@@ -394,6 +431,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.stackSessionTracker.recordStop();
     this.clearSidecarTrackers();
     this.bleOnly = false;
+    this.authToken = null;
     this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
   }
@@ -454,7 +492,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if ((opts.reuseIfRunning || bleOnly || this.bleOnly) && this._status.running && this.proc) {
       let healthy = false;
       try {
-        await pollSidecarHealth(this._status.port);
+        await pollSidecarHealth(this._status.port, this.requireAuthToken());
         healthy = true;
       } catch {
         // catch-no-log-ok: reuseIfRunning health failed — stop stale process and start fresh
@@ -518,10 +556,27 @@ export class ReticulumSidecarManager extends EventEmitter {
     ];
     if (bleOnly) args.push('--ble-only');
 
-    const proc = spawn(binary, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: sidecarChildEnv(),
+    const authToken = createReticulumSidecarAuthToken();
+    this.authToken = authToken;
+    let proc: ChildProcess;
+    try {
+      proc = spawn(binary, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: sidecarChildEnv(),
+      });
+    } catch (error) {
+      this.authToken = null;
+      throw error;
+    }
+    if (!proc.stdin) {
+      this.authToken = null;
+      proc.kill('SIGKILL');
+      throw new Error('Reticulum sidecar authentication pipe is unavailable');
+    }
+    proc.stdin.on('error', () => {
+      // catch-no-log-ok: an early child exit may close stdin before end() flushes.
     });
+    proc.stdin.end(`${authToken}\n`);
     this.proc = proc;
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
@@ -584,6 +639,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       // across the next spawn.
       this.stopWatchdog();
       this.proc = null;
+      this.authToken = null;
       this.bleOnly = false;
       this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
@@ -597,7 +653,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
 
     try {
-      await pollSidecarHealth(port);
+      await pollSidecarHealth(port, authToken);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await this.stopProc();
@@ -652,7 +708,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     try {
       const res = await fetch(`http://127.0.0.1:${port}/api/v1/stack/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: '{}',
         signal: AbortSignal.any([abort.signal, AbortSignal.timeout(HEALTH_POLL_TIMEOUT_MS)]),
       });
@@ -699,6 +755,7 @@ export class ReticulumSidecarManager extends EventEmitter {
         await this.stop();
         await this.startProcess({}, bleOnly);
       },
+      getAuthorizationHeader: () => `Bearer ${this.requireAuthToken()}`,
     });
   }
 
@@ -819,7 +876,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     try {
       const res = await fetch(`http://127.0.0.1:${status.port}/api/v1/stack/${operation}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: '{}',
         signal: abort.signal,
       });
@@ -851,6 +908,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const normalized = assertReticulumProxyPath(apiPath);
     const timeoutMs = reticulumProxyGetTimeoutMs(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
+      headers: this.authHeaders(),
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) {
@@ -883,7 +941,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const postTimeoutMs = pathOnly === '/api/v1/rrc/connect' ? 60_000 : 30_000;
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body ?? {}),
       signal: AbortSignal.timeout(postTimeoutMs),
     });
@@ -905,7 +963,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
       body: '{}',
       signal: AbortSignal.timeout(30_000),
     });
@@ -925,7 +983,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     assertProxyBodySize(body);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body ?? {}),
       signal: AbortSignal.timeout(30_000),
     });
@@ -944,6 +1002,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const normalized = assertReticulumProxyPath(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'DELETE',
+      headers: this.authHeaders(),
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
@@ -967,6 +1026,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.wsPort = port;
     try {
       const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+        headers: this.authHeaders(),
         maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
       });
       socket.on('open', () => {
@@ -1041,6 +1101,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     prev?.close();
     try {
       const socket = new WebSocket(`ws://127.0.0.1:${port}/ws/voice`, {
+        headers: this.authHeaders(),
         maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
       });
       socket.on('open', () => {

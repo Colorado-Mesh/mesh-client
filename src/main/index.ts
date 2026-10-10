@@ -349,7 +349,7 @@ gattSidecarProxy.setEnsureSidecar(async () => {
   }
   const mgr = ensureReticulumSidecarManager();
   const port = await mgr.ensureForBle();
-  gattSidecarProxy.setPort(port);
+  gattSidecarProxy.setPort(port, mgr.getAuthTokenForLocalProxy());
   return port;
 });
 bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
@@ -362,7 +362,7 @@ bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
     if (!(status.processRunning ?? status.running)) {
       gattSidecarProxy.invalidateAfterSidecarExit();
     } else if (status.port > 0) {
-      gattSidecarProxy.setPort(status.port);
+      gattSidecarProxy.setPort(status.port, mgr.getAuthTokenForLocalProxy());
     }
   });
 }

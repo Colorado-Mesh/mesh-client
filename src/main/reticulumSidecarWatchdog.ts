@@ -16,6 +16,8 @@ export interface SidecarWatchdogOptions {
   isProcessAlive: () => boolean;
   /** Restart a hung sidecar (process alive, HTTP unresponsive). */
   restartFn: () => Promise<void>;
+  /** Current per-process bearer value for the authenticated health route. */
+  getAuthorizationHeader: () => string;
   /** Called when status health flips (for ReticulumSidecarStatus.healthy). */
   onHealthChange?: (healthy: boolean) => void;
   pollIntervalMs?: number;
@@ -35,6 +37,7 @@ export function startSidecarWatchdog(opts: SidecarWatchdogOptions): () => void {
     getPort,
     isProcessAlive,
     restartFn,
+    getAuthorizationHeader,
     onHealthChange,
     pollIntervalMs = SIDECAR_WATCHDOG_POLL_INTERVAL_MS,
     fetchTimeoutMs = SIDECAR_WATCHDOG_FETCH_TIMEOUT_MS,
@@ -65,6 +68,7 @@ export function startSidecarWatchdog(opts: SidecarWatchdogOptions): () => void {
 
     try {
       const res = await fetchImpl(`http://127.0.0.1:${port}/api/v1/status`, {
+        headers: { Authorization: getAuthorizationHeader() },
         signal: AbortSignal.timeout(fetchTimeoutMs),
       });
       if (!res.ok) {

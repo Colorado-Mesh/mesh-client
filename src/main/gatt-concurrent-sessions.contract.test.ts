@@ -38,7 +38,7 @@ describe('GattSidecarProxy concurrent sessions', () => {
   beforeEach(() => {
     sessionSeq = 0;
     proxy = new GattSidecarProxy();
-    proxy.setPort(9876);
+    proxy.setPort(9876, 'test-sidecar-token');
     fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (
         typeof url === 'string' &&

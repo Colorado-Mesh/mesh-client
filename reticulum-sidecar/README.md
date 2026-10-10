@@ -60,8 +60,11 @@ Optional: `--features rns-stack,rns-serial,rns-ble,rns-rnode-tcp`
 
 ```bash
 pnpm run reticulum:sidecar:dev
-curl -s http://127.0.0.1:19437/api/v1/status
 ```
+
+The launcher supplies a fresh bearer credential through stdin without printing or persisting it.
+Exercise the API through Electron's main-process proxy; raw unauthenticated localhost requests are
+rejected.
 
 Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Network configuration).
 

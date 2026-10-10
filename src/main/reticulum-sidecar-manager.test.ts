@@ -84,17 +84,21 @@ const SIDECAR_MANAGER_SOURCE = fs.readFileSync(
   'utf-8',
 );
 
-function mockSidecarProc(
-  pid = 4242,
-): EventEmitter & { pid: number; kill: ReturnType<typeof vi.fn> } {
+function mockSidecarProc(pid = 4242): EventEmitter & {
+  pid: number;
+  kill: ReturnType<typeof vi.fn>;
+  stdin: EventEmitter & { end: ReturnType<typeof vi.fn> };
+} {
   const proc = new EventEmitter() as EventEmitter & {
     pid: number;
     kill: ReturnType<typeof vi.fn>;
+    stdin: EventEmitter & { end: ReturnType<typeof vi.fn> };
     stdout: EventEmitter;
     stderr: EventEmitter;
   };
   proc.pid = pid;
   proc.kill = vi.fn();
+  proc.stdin = Object.assign(new EventEmitter(), { end: vi.fn() });
   proc.stdout = new EventEmitter();
   proc.stderr = new EventEmitter();
   return proc;
@@ -232,6 +236,17 @@ describe('ReticulumSidecarManager', () => {
     expect(first.pid).toBe(4242);
     const spawnEnv = spawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv | undefined;
     expect(spawnEnv?.RUST_LOG).toBe(SIDECAR_DEFAULT_RUST_LOG);
+    expect(spawnMock.mock.calls[0]?.[2]?.stdio).toEqual(['pipe', 'pipe', 'pipe']);
+    const bootstrap = String(proc.stdin.end.mock.calls[0]?.[0]);
+    const token = bootstrap.trimEnd();
+    expect(Buffer.from(token, 'base64url')).toHaveLength(32);
+    expect(JSON.stringify(spawnMock.mock.calls[0]?.[1])).not.toContain(token);
+    expect(JSON.stringify(spawnEnv)).not.toContain(token);
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/status$/),
+      expect.objectContaining({ headers: { Authorization: `Bearer ${token}` } }),
+    );
+    expect(JSON.stringify(first)).not.toContain(token);
 
     await manager.stop();
 
@@ -460,8 +475,12 @@ describe('ReticulumSidecarManager', () => {
 
   function setRunning(manager: ReticulumSidecarManager, port = 59477): void {
     (
-      manager as unknown as { _status: { running: boolean; port: number; pid: number | null } }
+      manager as unknown as {
+        authToken: string;
+        _status: { running: boolean; port: number; pid: number | null };
+      }
     )._status = { running: true, port, pid: 4242 };
+    (manager as unknown as { authToken: string }).authToken = 'test-sidecar-token';
   }
 
   it('proxyGet rejects when sidecar is not running', async () => {
@@ -484,7 +503,10 @@ describe('ReticulumSidecarManager', () => {
     expect(body).toEqual({ status: 'ok' });
     expect(fetchMock).toHaveBeenCalledWith(
       'http://127.0.0.1:59477/api/v1/interfaces',
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer test-sidecar-token' },
+        signal: expect.any(AbortSignal),
+      }),
     );
   });
 
@@ -512,6 +534,10 @@ describe('ReticulumSidecarManager', () => {
       'http://127.0.0.1:59477/api/v1/interfaces',
       expect.objectContaining({
         method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-sidecar-token',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(payload),
       }),
     );
@@ -635,8 +661,14 @@ describe('ReticulumSidecarManager', () => {
     const voiceWsInstance = mockWsInstances.find((w) => w.url.endsWith('/ws/voice'));
     expect(wsInstance).toBeDefined();
     expect(voiceWsInstance).toBeDefined();
-    expect(wsInstance!.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
-    expect(voiceWsInstance!.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
+    expect(wsInstance!.options).toEqual({
+      headers: { Authorization: expect.stringMatching(/^Bearer [A-Za-z0-9_-]{43}$/) },
+      maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
+    });
+    expect(voiceWsInstance!.options).toEqual({
+      headers: { Authorization: expect.stringMatching(/^Bearer [A-Za-z0-9_-]{43}$/) },
+      maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
+    });
 
     const events: unknown[] = [];
     const voiceAudio: unknown[] = [];

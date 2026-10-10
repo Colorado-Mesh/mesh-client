@@ -1,5 +1,6 @@
 //! HTTP + WebSocket API (Ratspeak-aligned contract; see docs/reticulum-sidecar-ipc.md).
 
+mod auth;
 mod config;
 mod games;
 mod gatt;
@@ -23,16 +24,17 @@ mod ws;
 
 use std::sync::Arc;
 
-use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post, put};
+use axum::{Router, middleware};
 use http::HeaderValue;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 
 use crate::stack::StackHandle;
 
-pub fn router(stack: Arc<StackHandle>) -> Router {
-    Router::new()
+pub fn router(stack: Arc<StackHandle>, auth_token: String) -> Result<Router, String> {
+    let auth = auth::ApiAuth::try_new(auth_token)?;
+    Ok(Router::new()
         .route("/api/v1/status", get(status::status))
         .route("/api/v1/app/info", get(status::app_info))
         .route("/api/v1/identity/status", get(identity::identity_status))
@@ -392,6 +394,11 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(localhost_cors_layer())
         .with_state(stack)
+        // Last layer is outermost: every HTTP route and WebSocket upgrade authenticates first.
+        .layer(middleware::from_fn_with_state(
+            auth,
+            auth::require_bearer_auth,
+        )))
 }
 
 fn localhost_cors_layer() -> CorsLayer {
