@@ -204,7 +204,7 @@ jobs:
         run: node scripts/write-schema-upgrade-notice.mjs
 
       - name: Validate macOS signing secrets
-        if: matrix.os == 'macos-latest' && github.event_name == 'release'
+        if: matrix.os == 'macos-latest'
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -212,17 +212,14 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          if [ -z "$CSC_LINK" ]; then
-            echo "CSC_LINK not set — skipping notarization secret validation (unsigned/fork build)."
-            exit 0
-          fi
           missing=""
+          [ -z "$CSC_LINK" ] && missing="$missing CSC_LINK"
           [ -z "$CSC_KEY_PASSWORD" ] && missing="$missing CSC_KEY_PASSWORD"
           [ -z "$APPLE_ID" ] && missing="$missing APPLE_ID"
           [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ] && missing="$missing APPLE_APP_SPECIFIC_PASSWORD"
           [ -z "$APPLE_TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
           if [ -n "$missing" ]; then
-            echo "CSC_LINK is set but missing required notarization secrets:$missing"
+            echo "Missing required macOS release signing/notarization secrets:$missing"
             exit 1
           fi
 
@@ -247,6 +244,8 @@ jobs:
           APPLE_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
+          MESH_CLIENT_MAC_SIGNATURE_POLICY: ${{ matrix.os == 'macos-latest' && 'required' || 'optional' }}
+          MESH_CLIENT_EXPECTED_MAC_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
         # dist:* uses --publish never so electron-builder never POSTs a draft release.
         run: ${{ matrix.build_script }}
 
@@ -417,6 +416,9 @@ jobs:
         run: bash scripts/ci-install-linux-appimage-smoke-deps.sh
 
       - name: Run packaging smoke test
+        env:
+          MESH_CLIENT_MAC_SIGNATURE_POLICY: ${{ matrix.os == 'macos-latest' && 'required' || 'optional' }}
+          MESH_CLIENT_EXPECTED_MAC_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
         run: ${{ matrix.smoke_run }}
 
       # Proves the packaged AppImage actually boots (native arch), not just that its
