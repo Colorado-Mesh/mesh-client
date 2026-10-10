@@ -19,7 +19,8 @@ jobs:
       prev_tag: ${{ steps.compare.outputs.prev_tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           fetch-depth: 0
 
@@ -30,7 +31,8 @@ jobs:
         run: node scripts/ci-schema-release-compare.mjs --write-readme READ-ME-FIRST-test-build.md
 
       - name: Upload READ-ME-FIRST warning
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: READ-ME-FIRST-test-build
           path: READ-ME-FIRST-test-build.md
@@ -67,8 +69,8 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
 
@@ -78,7 +80,8 @@ jobs:
         run: node scripts/ci-prefer-windows-pnpm-exe.mjs
 
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        # actions/setup-node v6.5.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -132,7 +135,8 @@ jobs:
         run: node scripts/write-schema-upgrade-notice.mjs
 
       - name: Download READ-ME-FIRST warning
-        uses: actions/download-artifact@v7
+        # actions/download-artifact v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: READ-ME-FIRST-test-build
           path: release-warnings
@@ -181,7 +185,8 @@ jobs:
       # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: test-mesh-client-macos-${{ github.sha }}
           path: |
@@ -201,7 +206,8 @@ jobs:
 
       - name: Upload Linux Artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: test-mesh-client-linux-${{ github.sha }}
           path: |
@@ -215,7 +221,8 @@ jobs:
 
       - name: Upload Windows Artifact
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: test-mesh-client-windows-${{ github.sha }}
           path: |
@@ -262,10 +269,11 @@ jobs:
               && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - name: Download build artifact
-        uses: actions/download-artifact@v7
+        # actions/download-artifact v7.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: ${{ matrix.artifact }}
           path: release
@@ -286,7 +294,8 @@ jobs:
 
       - name: Upload Windows x64 install failure logs
         if: failure() && matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: mesh-client-win-x64-install-logs-${{ github.sha }}
           path: |
@@ -296,7 +305,8 @@ jobs:
 
       - name: Upload Windows arm64 install failure logs
         if: failure() && matrix.os == 'windows-11-vs2026-arm'
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: mesh-client-win-arm64-install-logs-${{ github.sha }}
           path: |

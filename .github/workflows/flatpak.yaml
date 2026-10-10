@@ -20,7 +20,8 @@ jobs:
       prev_tag: ${{ steps.compare.outputs.prev_tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        # actions/checkout v6.1.0
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           fetch-depth: 0
 
@@ -38,7 +39,8 @@ jobs:
           --write-readme READ-ME-FIRST-flatpak.md
 
       - name: Upload READ-ME-FIRST warning
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: READ-ME-FIRST-flatpak
           path: READ-ME-FIRST-flatpak.md
@@ -62,8 +64,8 @@ jobs:
             runner: ubuntu-24.04-arm
             cargo_target: aarch64-unknown-linux-gnu
     steps:
-      - uses: actions/checkout@v6
-
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
@@ -88,7 +90,9 @@ jobs:
           tar -cf "${GITHUB_WORKSPACE}/mesh-client-reticulum-${{ matrix.arch }}.tar" \
             -C "${GITHUB_WORKSPACE}/resources/reticulum-sidecar" mesh-client-reticulum
 
-      - uses: actions/upload-artifact@v7
+      # actions/upload-artifact v7.0.2
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: mesh-client-reticulum-${{ matrix.arch }}
           path: mesh-client-reticulum-${{ matrix.arch }}.tar
@@ -118,9 +122,11 @@ jobs:
       options: --privileged
 
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      # actions/download-artifact v8.0.2
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: mesh-client-reticulum-${{ matrix.arch }}
           path: .sidecar-artifacts
@@ -141,7 +147,8 @@ jobs:
         run: node scripts/write-schema-upgrade-notice.mjs
 
       - name: Download READ-ME-FIRST warning
-        uses: actions/download-artifact@v8
+        # actions/download-artifact v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: READ-ME-FIRST-flatpak
           path: flatpak-warnings
@@ -257,7 +264,8 @@ jobs:
 
       # Artifact name ends with .flatpak so publish flatten → flatpak-dist/*.flatpak matches.
       - name: Upload Flatpak bundle
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}.flatpak
           path: |
@@ -267,7 +275,8 @@ jobs:
 
       # Schema warning beside the bundle for Actions downloads.
       - name: Upload READ-ME-FIRST with Flatpak artifacts
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: flatpak-schema-warning-${{ matrix.arch }}
           path: flatpak-warnings/READ-ME-FIRST-flatpak.md
@@ -282,11 +291,14 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ github.sha }}
 
-      - uses: actions/download-artifact@v8
+      # actions/download-artifact v8.0.2
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: 'org.coloradomesh.MeshClient.flatpak-*.flatpak'
           path: flatpak-dist
