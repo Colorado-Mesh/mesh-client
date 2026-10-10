@@ -941,6 +941,62 @@
       "hops_few": "{{count}} перехода",
       "hops_many": "{{count}} переходов",
       "hops_other": "{{count}} перехода"
+    },
+    "firmwareBot": {
+      "label": "Ответ бота",
+      "status": {
+        "title": "Статус {{name}}",
+        "uptime": "Вверх {{uptime}}",
+        "battery": "Батарея {{mv}} мВ ({{percent}}%)",
+        "storage": "Хранилище {{used}}/{{total}} КБ",
+        "counters": "Виден {{seen}}, отправлен {{sent}}, не удалось {{fail}}"
+      },
+      "air": {
+        "title": "эфирное время",
+        "tx": "TX {{seconds}} с",
+        "rx": "RX {{seconds}} с",
+        "rxPackets": "RX-флуд {{flood}} / прямой {{direct}}",
+        "txPackets": "TX-флуд {{flood}} / прямой {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} сосед",
+        "title_few": "{{count}} соседа",
+        "title_many": "{{count}} соседей",
+        "title_other": "{{count}} соседа",
+        "none": "Ничего не слышал в последнее время",
+        "ago": "{{ago}} назад"
+      },
+      "trace": {
+        "title": "След",
+        "hop": "{{hash}} {{snr}} дБ",
+        "tail": "Возвращение SNR {{snr}} дБ",
+        "directLink": "Прямая ссылка",
+        "timeout": "Время ожидания истекло",
+        "sent": "Отправил"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} МГц",
+        "sf": "SF{{sf}}",
+        "bw": "Полоса пропускания {{bw}} кГц",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} дБм"
+      },
+      "version": {
+        "title": "Прошивка",
+        "built": "Построен {{built}}"
+      },
+      "channels": {
+        "title": "Бот-каналы",
+        "bot": "Команды {{name}}",
+        "testing": "Тестирование {{name}}",
+        "emergency": "Чрезвычайная ситуация {{name}}",
+        "public": "Публичный {{name}}"
+      },
+      "help": {
+        "title": "Команды",
+        "diagTitle": "Диагностические команды"
+      }
     }
   },
   "common": {
@@ -985,7 +1041,10 @@
     "colorPurple": "Пурпурный",
     "delete": "Удалить",
     "copy": "Скопировать",
-    "copied": "Скопировано"
+    "copied": "Скопировано",
+    "botBadge": "Бот",
+    "botBadgeLabel": "Бот",
+    "botBadgeTooltip": "Обнаружен как бот по автоматическим ответам"
   },
   "configApplyNotice": {
     "persistNote": "Примененные настройки сохраняются во флэш-памяти устройства и сохраняются при перезагрузке.",

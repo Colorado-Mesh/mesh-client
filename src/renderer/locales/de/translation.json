@@ -905,6 +905,60 @@
       "path": "Pfad: {{path}}",
       "hops_one": "{{count}} Hop",
       "hops_other": "{{count}} Hops"
+    },
+    "firmwareBot": {
+      "label": "Bot-Antwort",
+      "status": {
+        "title": "Status {{name}}",
+        "uptime": "Bis {{uptime}}",
+        "battery": "Batterie {{mv}} mV ({{percent}}%)",
+        "storage": "Speicher {{used}}/{{total}} KB",
+        "counters": "Gesehen {{seen}}, gesendet {{sent}}, fehlgeschlagen {{fail}}"
+      },
+      "air": {
+        "title": "Sendezeit",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX-Flut {{flood}} / direkt {{direct}}",
+        "txPackets": "TX-Flut {{flood}} / direkt {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} Nachbar",
+        "title_other": "{{count}} Nachbarn",
+        "none": "In letzter Zeit habe ich nichts davon gehört",
+        "ago": "Vor {{ago}}"
+      },
+      "trace": {
+        "title": "Verfolgen",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Rückgabe-SNR {{snr}} dB",
+        "directLink": "Direkter Link",
+        "timeout": "Zeitüberschreitung",
+        "sent": "Gesendet"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Gebaut {{built}}"
+      },
+      "channels": {
+        "title": "Bot-Kanäle",
+        "bot": "Befehle {{name}}",
+        "testing": "Testen von {{name}}",
+        "emergency": "Notfall {{name}}",
+        "public": "Öffentlich {{name}}"
+      },
+      "help": {
+        "title": "Befehle",
+        "diagTitle": "Diagnosebefehle"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Violett",
     "delete": "Löschen",
     "copy": "Kopieren",
-    "copied": "Kopiert"
+    "copied": "Kopiert",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Aufgrund seiner automatisierten Antworten als Bot erkannt"
   },
   "configApplyNotice": {
     "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",

@@ -905,6 +905,60 @@
       "path": "Jalur: {{path}}",
       "hops_one": "{{count}} hop",
       "hops_other": "{{count}} hop"
+    },
+    "firmwareBot": {
+      "label": "Balasan bot",
+      "status": {
+        "title": "Status {{name}}",
+        "uptime": "Naik {{uptime}}",
+        "battery": "Baterai {{mv}} mV ({{percent}}%)",
+        "storage": "Penyimpanan {{used}}/{{total}} KB",
+        "counters": "Terlihat {{seen}}, dikirim {{sent}}, gagal {{fail}}"
+      },
+      "air": {
+        "title": "Jam tayang",
+        "tx": "TX {{seconds}} dtk",
+        "rx": "RX {{seconds}} dtk",
+        "rxPackets": "RX Flood {{flood}} / langsung {{direct}}",
+        "txPackets": "TX Flood {{flood}} / langsung {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} tetangga",
+        "title_other": "{{count}} tetangga",
+        "none": "Tidak ada yang terdengar baru-baru ini",
+        "ago": "{{ago}} yang lalu"
+      },
+      "trace": {
+        "title": "Jejak",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Kembalikan SNR {{snr}} dB",
+        "directLink": "Tautan langsung",
+        "timeout": "Waktu habis",
+        "sent": "Terkirim"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}}MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Dibangun {{built}}"
+      },
+      "channels": {
+        "title": "Saluran bot",
+        "bot": "Perintah {{name}}",
+        "testing": "Menguji {{name}}",
+        "emergency": "Darurat {{name}}",
+        "public": "Publik {{name}}"
+      },
+      "help": {
+        "title": "Perintah",
+        "diagTitle": "Perintah diagnostik"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Ungu",
     "delete": "Menghapus",
     "copy": "Menyalin",
-    "copied": "Disalin"
+    "copied": "Disalin",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Terdeteksi sebagai bot dari balasan otomatisnya"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",

@@ -905,6 +905,60 @@
       "path": "Yol: {{path}}",
       "hops_one": "{{count}} atlama",
       "hops_other": "{{count}} atlama"
+    },
+    "firmwareBot": {
+      "label": "Bot yanıtı",
+      "status": {
+        "title": "Durum {{name}}",
+        "uptime": "Yukarı {{uptime}}",
+        "battery": "Pil {{mv}} mV ({{percent}}%)",
+        "storage": "Depolama {{used}}/{{total}} KB",
+        "counters": "{{seen}} görüldü, {{sent}} gönderildi, başarısız oldu {{fail}}"
+      },
+      "air": {
+        "title": "Yayın Süresi",
+        "tx": "TX {{seconds}} sn",
+        "rx": "RX {{seconds}} sn",
+        "rxPackets": "RX Flood {{flood}} / doğrudan {{direct}}",
+        "txPackets": "TX Flood {{flood}} / doğrudan {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} komşu",
+        "title_other": "{{count}} komşu",
+        "none": "Yakın zamanda hiçbiri duyulmadı",
+        "ago": "{{ago}} önce"
+      },
+      "trace": {
+        "title": "İz",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Dönüş SNR {{snr}} dB",
+        "directLink": "Doğrudan bağlantı",
+        "timeout": "Zaman aşımına uğradı",
+        "sent": "Gönderilmiş"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "{{built}} oluşturuldu"
+      },
+      "channels": {
+        "title": "Bot kanalları",
+        "bot": "Komutlar {{name}}",
+        "testing": "{{name}} test ediliyor",
+        "emergency": "Acil durum {{name}}",
+        "public": "Herkese açık {{name}}"
+      },
+      "help": {
+        "title": "Komutlar",
+        "diagTitle": "Teşhis komutları"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Mor",
     "delete": "Silmek",
     "copy": "Kopyala",
-    "copied": "Kopyalandı"
+    "copied": "Kopyalandı",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Otomatik yanıtlarından bot olduğu algılandı"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",

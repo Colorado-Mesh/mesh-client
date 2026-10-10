@@ -204,6 +204,21 @@ describe('mapMeshcoreDbRowsToChatMessages', () => {
     expect(ambiguous?.sender_name).toBe('10th mountain division');
     expect(ambiguous?.payload).toBe('T');
   });
+
+  it('keeps firmware bot test replies instead of dropping them as transport status', () => {
+    const mapped = mapMeshcoreDbRowsToChatMessages([
+      row({
+        id: 300,
+        sender_id: 0xa1234567,
+        sender_name: 'CO Bot',
+        payload: 'CO Bot: [111b] @[alice] | 2 hops, 2-byte hashes, SNR -1.25 | recv 21:25:45',
+      }),
+    ]);
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0]?.payload).toBe(
+      '[111b] @[alice] | 2 hops, 2-byte hashes, SNR -1.25 | recv 21:25:45',
+    );
+  });
 });
 
 describe('persistMeshcoreMessageSenderRepairs', () => {

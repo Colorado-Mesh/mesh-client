@@ -936,6 +936,60 @@
       "rssi": "RSSI {{rssi}} dBm",
       "noise": "Noise {{noise}} dBm",
       "path": "Path: {{path}}"
+    },
+    "firmwareBot": {
+      "label": "Bot reply",
+      "status": {
+        "title": "Status {{name}}",
+        "uptime": "Up {{uptime}}",
+        "battery": "Battery {{mv}} mV ({{percent}}%)",
+        "storage": "Storage {{used}}/{{total}} KB",
+        "counters": "Seen {{seen}}, sent {{sent}}, failed {{fail}}"
+      },
+      "air": {
+        "title": "Airtime",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX flood {{flood}} / direct {{direct}}",
+        "txPackets": "TX flood {{flood}} / direct {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} neighbor",
+        "title_other": "{{count}} neighbors",
+        "none": "None heard recently",
+        "ago": "{{ago}} ago"
+      },
+      "trace": {
+        "title": "Trace",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Return SNR {{snr}} dB",
+        "directLink": "Direct link",
+        "timeout": "Timed out",
+        "sent": "Sent"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} MHz",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} dBm"
+      },
+      "version": {
+        "title": "Firmware",
+        "built": "Built {{built}}"
+      },
+      "channels": {
+        "title": "Bot channels",
+        "bot": "Commands {{name}}",
+        "testing": "Testing {{name}}",
+        "emergency": "Emergency {{name}}",
+        "public": "Public {{name}}"
+      },
+      "help": {
+        "title": "Commands",
+        "diagTitle": "Diagnostic commands"
+      }
     }
   },
   "common": {
@@ -980,7 +1034,10 @@
     "colorAmber": "Amber",
     "colorRed": "Red",
     "colorPurple": "Purple",
-    "emDash": "—"
+    "emDash": "—",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Detected as a bot from its automated replies"
   },
   "configApplyNotice": {
     "persistNote": "Applied settings are saved to the device's flash memory and persist across reboots.",

@@ -905,6 +905,60 @@
       "path": "Ruta: {{path}}",
       "hops_one": "{{count}} salto",
       "hops_other": "{{count}} saltos"
+    },
+    "firmwareBot": {
+      "label": "Respuesta del robot",
+      "status": {
+        "title": "Estado {{name}}",
+        "uptime": "Arriba {{uptime}}",
+        "battery": "Batería {{mv}} mV ({{percent}}%)",
+        "storage": "Almacenamiento {{used}}/{{total}} KB",
+        "counters": "Visto {{seen}}, enviado {{sent}}, fallido {{fail}}"
+      },
+      "air": {
+        "title": "Tiempo en antena",
+        "tx": "TX {{seconds}} s",
+        "rx": "RX {{seconds}} s",
+        "rxPackets": "RX Flood {{flood}} / directa {{direct}}",
+        "txPackets": "TX Flood {{flood}} / directa {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} vecino",
+        "title_other": "{{count}} vecinos",
+        "none": "Ninguno escuchado recientemente",
+        "ago": "Hace {{ago}}"
+      },
+      "trace": {
+        "title": "Rastro",
+        "hop": "{{hash}} {{snr}} dB",
+        "tail": "Retorno SNR {{snr}} dB",
+        "directLink": "Enlace directo",
+        "timeout": "Tiempo agotado",
+        "sent": "Enviado"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}}MHz",
+        "sf": "SF{{sf}}",
+        "bw": "Ancho de banda {{bw}} kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}}dBm"
+      },
+      "version": {
+        "title": "firmware",
+        "built": "Construido {{built}}"
+      },
+      "channels": {
+        "title": "Canales de robots",
+        "bot": "Comandos {{name}}",
+        "testing": "Prueba {{name}}",
+        "emergency": "Emergencia {{name}}",
+        "public": "Público {{name}}"
+      },
+      "help": {
+        "title": "Comandos",
+        "diagTitle": "Comandos de diagnóstico"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "Morado",
     "delete": "Borrar",
     "copy": "Copiar",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "botBadge": "Bot",
+    "botBadgeLabel": "Bot",
+    "botBadgeTooltip": "Detectado como un bot por sus respuestas automáticas"
   },
   "configApplyNotice": {
     "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",

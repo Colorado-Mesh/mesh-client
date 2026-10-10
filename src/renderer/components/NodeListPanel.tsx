@@ -84,9 +84,11 @@ import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { MeshNode, MeshProtocol } from '../lib/types';
+import { useBotSendersStore } from '../stores/botSendersStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { BotBadge } from './BotBadge';
 import SignalBars from './SignalBars';
 import { useToast } from './Toast';
 import { Button, IconButton } from './ui/Button';
@@ -250,6 +252,7 @@ export default function NodeListPanel({
   const capabilities = useRadioProvider(mode);
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+  const botSenders = useBotSendersStore((s) => s.senders[mode]);
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const protocolDiagnosticRows = useMemo(
@@ -1484,6 +1487,7 @@ export default function NodeListPanel({
                                 {t('nodeListPanel.youBadge')}
                               </span>
                             )}
+                            {!isSelf && botSenders.has(node.node_id) && <BotBadge />}
                             {mode === 'meshcore' &&
                               meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
                                 <span

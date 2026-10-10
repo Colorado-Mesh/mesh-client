@@ -905,6 +905,60 @@
       "path": "경로: {{path}}",
       "hops_one": "{{count}} 홉",
       "hops_other": "{{count}} 홉"
+    },
+    "firmwareBot": {
+      "label": "봇 답글",
+      "status": {
+        "title": "상태 {{name}}",
+        "uptime": "위로 {{uptime}}",
+        "battery": "배터리 {{mv}}mV({{percent}}%)",
+        "storage": "저장 공간 {{used}}/{{total}}KB",
+        "counters": "{{seen}} 확인, {{sent}} 전송, {{fail}} 실패"
+      },
+      "air": {
+        "title": "방송 시간",
+        "tx": "TX {{seconds}}초",
+        "rx": "RX {{seconds}}초",
+        "rxPackets": "RX 플러드 {{flood}} / 직접 {{direct}}",
+        "txPackets": "TX 플러드 {{flood}} / 직접 {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} 이웃",
+        "title_other": "{{count}} 이웃",
+        "none": "최근 들어본 바 없음",
+        "ago": "{{ago}} 전"
+      },
+      "trace": {
+        "title": "추적하다",
+        "hop": "{{hash}} {{snr}}dB",
+        "tail": "SNR {{snr}}dB 반환",
+        "directLink": "직접링크",
+        "timeout": "시간 초과",
+        "sent": "전송된"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}}MHz",
+        "sf": "SF{{sf}}",
+        "bw": "대역폭 {{bw}}kHz",
+        "cr": "CR {{cr}}",
+        "power": "{{power}}dBm"
+      },
+      "version": {
+        "title": "펌웨어",
+        "built": "{{built}} 구축됨"
+      },
+      "channels": {
+        "title": "봇 채널",
+        "bot": "명령 {{name}}",
+        "testing": "{{name}} 테스트 중",
+        "emergency": "긴급상황 {{name}}",
+        "public": "공개 {{name}}"
+      },
+      "help": {
+        "title": "명령",
+        "diagTitle": "진단 명령"
+      }
     }
   },
   "common": {
@@ -949,7 +1003,10 @@
     "colorPurple": "자색",
     "delete": "삭제",
     "copy": "복사",
-    "copied": "복사됨"
+    "copied": "복사됨",
+    "botBadge": "봇",
+    "botBadgeLabel": "봇",
+    "botBadgeTooltip": "자동 응답에서 봇으로 감지됨"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",

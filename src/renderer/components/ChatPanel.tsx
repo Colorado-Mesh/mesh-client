@@ -213,11 +213,13 @@ import {
 import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
+import { useBotSendersStore } from '../stores/botSendersStore';
 import { isMecpSenderBlocked, mecpBlockKey } from '../stores/mecpBlockStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
+import { BotBadge } from './BotBadge';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
@@ -1332,6 +1334,7 @@ function ChatPanel({
   const channelViewActive = viewMode === 'channels' || viewMode === 'weather';
   const weatherHideInChannels = useWeatherFilterStore((s) => s.hideInChannels);
   const weatherConfig = useWeatherFilterStore((s) => s.configs[protocol]);
+  const botSenders = useBotSendersStore((s) => s.senders[protocol]);
   const setWeatherSenderMarked = useWeatherFilterStore((s) => s.setSenderMarked);
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
@@ -2902,6 +2905,7 @@ function ChatPanel({
                   >
                     {getDmLabel(nodeNum)}
                   </span>
+                  {botSenders.has(nodeNum) && <BotBadge />}
                   {dmOnlyChat && showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
                   {dmOnlyChat && showDmUnreadBadge && dmMecpSeverity !== undefined && (
                     <MecpUnreadIcon severity={dmMecpSeverity} />
@@ -3893,6 +3897,7 @@ function ChatPanel({
                                     >
                                       {displaySenderName}
                                     </button>
+                                    {!isOwn && botSenders.has(msg.sender_id) && <BotBadge />}
                                     {!isOwn && (
                                       <button
                                         type="button"
@@ -4130,6 +4135,7 @@ function ChatPanel({
                                   // while reading history (the usual place users look for them).
                                   loadLinkPreviews
                                   rncpControlEnabled={capabilities.hasRncpTransfer}
+                                  senderIsBot={botSenders.has(msg.sender_id)}
                                   onContentResize={() => {
                                     scheduleMessageRowRemeasure(i);
                                   }}

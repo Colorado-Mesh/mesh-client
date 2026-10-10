@@ -1,4 +1,5 @@
-import { FileDown, MapPin, Plane, Settings, Signal } from 'lucide-react-motion';
+import type { TFunction } from 'i18next';
+import { Bot, FileDown, MapPin, Plane, Settings, Signal } from 'lucide-react-motion';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +10,7 @@ import {
   formatDroneDistance,
   type ParsedDroneReport,
 } from '@/renderer/lib/droneReportParse';
+import type { ParsedFirmwareBotReply } from '@/renderer/lib/firmwareBotReplyParse';
 import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import { haversineDistanceKm } from '@/renderer/lib/nodeStatus';
 import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
@@ -195,6 +197,259 @@ export function DroneReportCard({
       )}
       {!report.drone && !report.pilot && (
         <div className="text-xs text-cyan-100/80">{t('chatPayload.droneReport.noPosition')}</div>
+      )}
+    </div>
+  );
+}
+
+interface BotReplyPart {
+  key: string;
+  text: string;
+  className?: string;
+}
+
+function snrPart(key: string, text: string, snr: number): BotReplyPart {
+  return { key, text, className: SIGNAL_QUALITY_CLASS[signalQualityFromSnr(snr)] };
+}
+
+function firmwareBotReplyParts(
+  reply: ParsedFirmwareBotReply,
+  t: TFunction,
+): { title: string; parts: BotReplyPart[] } {
+  switch (reply.kind) {
+    case 'status':
+      return {
+        title: t('chatPayload.firmwareBot.status.title', { name: reply.name }),
+        parts: [
+          { key: 'up', text: t('chatPayload.firmwareBot.status.uptime', { uptime: reply.uptime }) },
+          ...(reply.batteryMv != null
+            ? [
+                {
+                  key: 'batt',
+                  text: t('chatPayload.firmwareBot.status.battery', {
+                    mv: reply.batteryMv,
+                    percent: reply.batteryPercent ?? 0,
+                  }),
+                },
+              ]
+            : []),
+          {
+            key: 'storage',
+            text: t('chatPayload.firmwareBot.status.storage', {
+              used: reply.storageUsedKb,
+              total: reply.storageTotalKb,
+            }),
+          },
+          {
+            key: 'counters',
+            text: t('chatPayload.firmwareBot.status.counters', {
+              seen: reply.seen,
+              sent: reply.sent,
+              fail: reply.fail,
+            }),
+            ...(reply.fail > 0 ? { className: 'text-orange-400' } : {}),
+          },
+        ],
+      };
+    case 'air':
+      return {
+        title: t('chatPayload.firmwareBot.air.title'),
+        parts: [
+          { key: 'tx', text: t('chatPayload.firmwareBot.air.tx', { seconds: reply.txSeconds }) },
+          { key: 'rx', text: t('chatPayload.firmwareBot.air.rx', { seconds: reply.rxSeconds }) },
+          {
+            key: 'rxPackets',
+            text: t('chatPayload.firmwareBot.air.rxPackets', {
+              flood: reply.rxFlood,
+              direct: reply.rxDirect,
+            }),
+          },
+          {
+            key: 'txPackets',
+            text: t('chatPayload.firmwareBot.air.txPackets', {
+              flood: reply.txFlood,
+              direct: reply.txDirect,
+            }),
+          },
+        ],
+      };
+    case 'neighbors':
+      return {
+        title: t('chatPayload.firmwareBot.neighbors.title', { count: reply.neighbors.length }),
+        parts:
+          reply.neighbors.length === 0
+            ? [{ key: 'none', text: t('chatPayload.firmwareBot.neighbors.none') }]
+            : [],
+      };
+    case 'trace':
+      switch (reply.state) {
+        case 'result':
+          return {
+            title: t('chatPayload.firmwareBot.trace.title'),
+            parts: [
+              {
+                key: 'hops',
+                text: t('chatPayload.signalReport.hops', { count: reply.hops.length }),
+              },
+              ...reply.hops.map((hop, i) =>
+                snrPart(
+                  `hop-${i}`,
+                  t('chatPayload.firmwareBot.trace.hop', { hash: hop.hash, snr: hop.snr }),
+                  hop.snr,
+                ),
+              ),
+              snrPart(
+                'tail',
+                t('chatPayload.firmwareBot.trace.tail', { snr: reply.tailSnr }),
+                reply.tailSnr,
+              ),
+            ],
+          };
+        case 'directZeroHop':
+          return {
+            title: t('chatPayload.firmwareBot.trace.title'),
+            parts: [
+              { key: 'direct', text: t('chatPayload.signalReport.direct') },
+              snrPart(
+                'tail',
+                t('chatPayload.firmwareBot.trace.tail', { snr: reply.tailSnr }),
+                reply.tailSnr,
+              ),
+            ],
+          };
+        case 'directLink':
+          return {
+            title: t('chatPayload.firmwareBot.trace.title'),
+            parts: [
+              { key: 'direct', text: t('chatPayload.firmwareBot.trace.directLink') },
+              snrPart('snr', t('chatPayload.signalReport.snr', { snr: reply.snr }), reply.snr),
+            ],
+          };
+        case 'timeout':
+          return {
+            title: t('chatPayload.firmwareBot.trace.title'),
+            parts: [
+              {
+                key: 'timeout',
+                text: t('chatPayload.firmwareBot.trace.timeout'),
+                className: 'text-orange-400',
+              },
+              {
+                key: 'hops',
+                text:
+                  reply.hops === 0
+                    ? t('chatPayload.signalReport.direct')
+                    : t('chatPayload.signalReport.hops', { count: reply.hops }),
+              },
+            ],
+          };
+        case 'sent':
+          return {
+            title: t('chatPayload.firmwareBot.trace.title'),
+            parts: [
+              { key: 'sent', text: t('chatPayload.firmwareBot.trace.sent') },
+              {
+                key: 'hops',
+                text:
+                  reply.hops === 0
+                    ? t('chatPayload.signalReport.direct')
+                    : t('chatPayload.signalReport.hops', { count: reply.hops }),
+              },
+            ],
+          };
+      }
+      break;
+    case 'lora':
+      return {
+        title: t('chatPayload.firmwareBot.lora.title'),
+        parts: [
+          { key: 'freq', text: t('chatPayload.firmwareBot.lora.freq', { freq: reply.freqMhz }) },
+          { key: 'sf', text: t('chatPayload.firmwareBot.lora.sf', { sf: reply.sf }) },
+          { key: 'bw', text: t('chatPayload.firmwareBot.lora.bw', { bw: reply.bwKhz }) },
+          { key: 'cr', text: t('chatPayload.firmwareBot.lora.cr', { cr: reply.cr }) },
+          {
+            key: 'power',
+            text: t('chatPayload.firmwareBot.lora.power', { power: reply.txPowerDbm }),
+          },
+        ],
+      };
+    case 'version':
+      return {
+        title: t('chatPayload.firmwareBot.version.title'),
+        parts: [
+          { key: 'version', text: reply.version },
+          {
+            key: 'built',
+            text: t('chatPayload.firmwareBot.version.built', { built: reply.built }),
+          },
+        ],
+      };
+    case 'channels':
+      return {
+        title: t('chatPayload.firmwareBot.channels.title'),
+        parts: [
+          { key: 'bot', text: t('chatPayload.firmwareBot.channels.bot', { name: reply.bot }) },
+          {
+            key: 'testing',
+            text: t('chatPayload.firmwareBot.channels.testing', { name: reply.testing }),
+          },
+          {
+            key: 'emergency',
+            text: t('chatPayload.firmwareBot.channels.emergency', { name: reply.emergency }),
+          },
+          {
+            key: 'public',
+            text: t('chatPayload.firmwareBot.channels.public', { name: reply.publicChannel }),
+          },
+        ],
+      };
+    case 'help':
+      return {
+        title: reply.diag
+          ? t('chatPayload.firmwareBot.help.diagTitle')
+          : t('chatPayload.firmwareBot.help.title'),
+        parts: reply.commands.map((cmd) => ({ key: `cmd-${cmd}`, text: cmd })),
+      };
+  }
+  return { title: t('chatPayload.firmwareBot.label'), parts: [] };
+}
+
+/** Structured readout for a Colorado-Mesh firmware-bot reply (status, air, trace, ...). */
+export function FirmwareBotReplyCard({ reply }: Readonly<{ reply: ParsedFirmwareBotReply }>) {
+  const { t } = useTranslation();
+  const { title, parts } = firmwareBotReplyParts(reply, t);
+  return (
+    <div
+      role="group"
+      aria-label={t('chatPayload.firmwareBot.label')}
+      className="rounded-badge border-ink-700 bg-ink-900 text-ink-200 mt-1 inline-flex max-w-full flex-col gap-0.5 border px-2 py-1 text-xs"
+      data-testid="firmware-bot-reply-card"
+      data-kind={reply.kind}
+    >
+      <div className="flex flex-wrap items-center gap-x-2">
+        <Bot aria-hidden className="h-3.5 w-3.5 shrink-0" />
+        <span className="text-ink-100 font-medium">{title}</span>
+        {parts.map((part) => (
+          <span key={part.key} className={part.className}>
+            {part.text}
+          </span>
+        ))}
+      </div>
+      {reply.kind === 'neighbors' && reply.neighbors.length > 0 && (
+        <ul className="space-y-0.5">
+          {reply.neighbors.map((n, i) => (
+            <li key={`${n.name}-${i}`} className="flex flex-wrap items-center gap-x-2">
+              <span className="text-ink-100 truncate">{n.name}</span>
+              <span>{t('chatPayload.signalReport.rssi', { rssi: n.rssi })}</span>
+              <span className={SIGNAL_QUALITY_CLASS[signalQualityFromSnr(n.snr)]}>
+                {t('chatPayload.signalReport.snr', { snr: n.snr })}
+              </span>
+              <span className="text-ink-400">
+                {t('chatPayload.firmwareBot.neighbors.ago', { ago: n.ago })}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

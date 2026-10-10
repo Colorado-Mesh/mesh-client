@@ -273,6 +273,78 @@ describe('ChatPayloadText', () => {
     });
   });
 
+  describe('Colorado-Mesh firmware bot replies', () => {
+    it('hides the request token on recognized replies and renders a status card', () => {
+      render(
+        <ChatPayloadText
+          text="[1a2b] CO Bot | up 1d 2h 3m | batt 4012mV 87% | storage 12/256KB | seen 10 sent 4 fail 0"
+          query=""
+        />,
+      );
+      expect(screen.queryByText(/\[1a2b\]/)).toBeNull();
+      const card = screen.getByRole('group', { name: 'Bot reply' });
+      expect(card).toHaveAttribute('data-kind', 'status');
+      expect(card).toHaveTextContent('Up 1d 2h 3m');
+      expect(card).toHaveTextContent('Battery 4012 mV (87%)');
+    });
+
+    it('renders trace hops with per-hop SNR', () => {
+      render(
+        <ChatPayloadText
+          text="[00ff] Trace @[bob] 1a2b3c4d 2h tail 5.25 | 2751@4.00 -> ea4d@-1.25"
+          query=""
+        />,
+      );
+      const card = screen.getByRole('group', { name: 'Bot reply' });
+      expect(card).toHaveTextContent('2 hops');
+      expect(card).toHaveTextContent('2751 4 dB');
+      expect(card).toHaveTextContent('ea4d -1.25 dB');
+      expect(card).toHaveTextContent('Return SNR 5.25 dB');
+    });
+
+    it('renders neighbor rows', () => {
+      render(
+        <ChatPayloadText
+          text="Neighbors: Ridge Rptr -92dBm 5.25 3m, abcd1234 -101dBm -2.00 1h"
+          query=""
+        />,
+      );
+      const card = screen.getByRole('group', { name: 'Bot reply' });
+      expect(card).toHaveTextContent('2 neighbors');
+      expect(card.querySelectorAll('li')).toHaveLength(2);
+      expect(card).toHaveTextContent('3m ago');
+    });
+
+    it('hides the token on test replies via the signal report parser', () => {
+      render(
+        <ChatPayloadText
+          text="[111b] @[alice] | 2 hops, 2-byte hashes, SNR -1.25 | recv 21:25:45"
+          query=""
+        />,
+      );
+      expect(screen.queryByText(/\[111b\]/)).toBeNull();
+      expect(screen.getByRole('group', { name: 'Signal report' })).toHaveTextContent('2 hops');
+    });
+
+    it('hides the token on unrecognized replies only when the sender is a known bot', () => {
+      const { rerender } = render(<ChatPayloadText text="[1a2b] Pong!" query="" />);
+      expect(screen.getByText('[1a2b] Pong!')).toBeInTheDocument();
+      rerender(<ChatPayloadText text="[1a2b] Pong!" query="" senderIsBot />);
+      expect(screen.getByText('Pong!')).toBeInTheDocument();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = render(
+        <ChatPayloadText
+          text="Air: tx 12s rx 340s | rx flood 10 direct 2 | tx flood 3 direct 1"
+          query=""
+        />,
+      );
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
   describe('rncp control messages', () => {
     const REQUEST =
       'Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers.\n\nmesh-client:request-rncp-receive:v1';

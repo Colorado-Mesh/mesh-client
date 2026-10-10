@@ -941,6 +941,62 @@
       "hops_few": "{{count}} переходи",
       "hops_many": "{{count}} переходів",
       "hops_other": "{{count}} переходу"
+    },
+    "firmwareBot": {
+      "label": "Відповідь бота",
+      "status": {
+        "title": "Статус {{name}}",
+        "uptime": "Вгору {{uptime}}",
+        "battery": "Акумулятор {{mv}} мВ ({{percent}}%)",
+        "storage": "Пам'ять {{used}}/{{total}} КБ",
+        "counters": "Переглянуто {{seen}}, надіслано {{sent}}, помилка {{fail}}"
+      },
+      "air": {
+        "title": "Ефірний час",
+        "tx": "TX {{seconds}} с",
+        "rx": "RX {{seconds}} с",
+        "rxPackets": "RX флуд {{flood}} / прямий {{direct}}",
+        "txPackets": "TX флуд {{flood}} / прямий {{direct}}"
+      },
+      "neighbors": {
+        "title_one": "{{count}} сусід",
+        "title_few": "{{count}} сусіди",
+        "title_many": "{{count}} сусідів",
+        "title_other": "{{count}} сусіда",
+        "none": "Останнім часом ніхто не чув",
+        "ago": "{{ago}} тому"
+      },
+      "trace": {
+        "title": "Слід",
+        "hop": "{{hash}} {{snr}} дБ",
+        "tail": "Зворотнє SNR {{snr}} дБ",
+        "directLink": "Пряме посилання",
+        "timeout": "Час очікування минув",
+        "sent": "Надіслано"
+      },
+      "lora": {
+        "title": "LoRa",
+        "freq": "{{freq}} МГц",
+        "sf": "SF{{sf}}",
+        "bw": "BW {{bw}} кГц",
+        "cr": "CR {{cr}}",
+        "power": "{{power}} дБм"
+      },
+      "version": {
+        "title": "Прошивка",
+        "built": "Побудовано {{built}}"
+      },
+      "channels": {
+        "title": "Канали ботів",
+        "bot": "Команди {{name}}",
+        "testing": "Тестування {{name}}",
+        "emergency": "Екстрена ситуація {{name}}",
+        "public": "Загальнодоступний {{name}}"
+      },
+      "help": {
+        "title": "Команди",
+        "diagTitle": "Діагностичні команди"
+      }
     }
   },
   "common": {
@@ -985,7 +1041,10 @@
     "colorPurple": "Фіолетовий",
     "delete": "Видалити",
     "copy": "Копіювати",
-    "copied": "Скопійовано"
+    "copied": "Скопійовано",
+    "botBadge": "Бот",
+    "botBadgeLabel": "Бот",
+    "botBadgeTooltip": "Виявлено як бота з його автоматичних відповідей"
   },
   "configApplyNotice": {
     "persistNote": "Застосовані налаштування зберігаються у флеш-пам'яті пристрою та зберігаються під час перезавантаження.",
