@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { mecpCodeInComposeMode, type MecpComposeMode } from '@/renderer/lib/mecp/mecpComposeRoles';
 import {
   CATEGORIES,
   type CategoryLetter,
@@ -37,16 +38,25 @@ interface MecpComposeModalProps {
   onSend: (mecpString: string) => void | Promise<void>;
   /** App GPS waterfall (device → static → browser → IP). Prefer over raw geolocation. */
   resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
+  mode?: MecpComposeMode;
 }
 
 const DEFAULT_MECP_SEVERITY: Severity = 3;
 const DEFAULT_MECP_CATEGORY: CategoryLetter = 'D';
 const DEFAULT_MECP_CODES: string[] = [];
 
-export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComposeModalProps) {
+export function MecpComposeModal({
+  open,
+  onClose,
+  onSend,
+  resolveGps,
+  mode = 'all',
+}: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
   const [severity, setSeverity] = useState<Severity>(DEFAULT_MECP_SEVERITY);
-  const [category, setCategory] = useState<CategoryLetter>(DEFAULT_MECP_CATEGORY);
+  const initialCategory = mode === 'response' ? 'R' : DEFAULT_MECP_CATEGORY;
+  const [category, setCategory] = useState<CategoryLetter>(initialCategory);
+  const [showAllCodes, setShowAllCodes] = useState(mode === 'all');
   const [codes, setCodes] = useState<string[]>(() => [...DEFAULT_MECP_CODES]);
   const [freetext, setFreetext] = useState('');
   const [langFile, setLangFile] = useState(() =>
@@ -120,9 +130,23 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
 
   const codesForCategory = useMemo(() => {
     return Object.keys(langFile.codes)
-      .filter((c) => c.startsWith(category))
+      .filter(
+        (c) => c.startsWith(category) && mecpCodeInComposeMode(c, showAllCodes ? 'all' : mode),
+      )
       .sort();
-  }, [langFile.codes, category]);
+  }, [langFile.codes, category, showAllCodes, mode]);
+  const categories = (Object.keys(CATEGORIES) as CategoryLetter[]).filter((letter) =>
+    Object.keys(langFile.codes).some(
+      (code) => code.startsWith(letter) && mecpCodeInComposeMode(code, showAllCodes ? 'all' : mode),
+    ),
+  );
+  const title =
+    mode === 'response'
+      ? t('mecp.compose.responseTitle')
+      : mode === 'request'
+        ? t('mecp.compose.requestTitle')
+        : t('mecp.compose.title');
+  const responseMode = mode === 'response';
 
   const encoded = useMemo(
     () => encode(severity, codes, freetext.trim() || undefined),
@@ -183,7 +207,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
       await onSend(encoded.message);
       onClose();
       setCodes([...DEFAULT_MECP_CODES]);
-      setCategory(DEFAULT_MECP_CATEGORY);
+      setCategory(initialCategory);
       setFreetext('');
       setSeverity(DEFAULT_MECP_SEVERITY);
     } catch (e) {
@@ -193,7 +217,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
     } finally {
       setSending(false);
     }
-  }, [canSend, clearError, encoded.message, onClose, onSend, t]);
+  }, [canSend, clearError, encoded.message, initialCategory, onClose, onSend, t]);
 
   if (!open) return null;
 
@@ -207,13 +231,17 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
       />
       <div
         ref={panelRef}
-        className="bg-deep-black rounded-modal shadow-level-4 relative max-h-[90vh] w-full max-w-lg overflow-y-auto border border-red-700/50 p-4"
+        className={`bg-deep-black rounded-modal shadow-level-4 relative max-h-[90vh] w-full max-w-lg overflow-y-auto border p-4 ${responseMode ? 'border-blue-700/50' : 'border-red-700/50'}`}
         role="dialog"
         aria-modal="true"
-        aria-label={t('mecp.compose.title')}
+        aria-label={title}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-red-200">{t('mecp.compose.title')}</h2>
+          <h2
+            className={`text-lg font-semibold ${responseMode ? 'text-blue-200' : 'text-red-200'}`}
+          >
+            {title}
+          </h2>
           <button
             type="button"
             className="text-ink-400 text-sm hover:text-white"
@@ -245,9 +273,23 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           ))}
         </div>
 
+        {mode !== 'all' && (
+          <label className="text-ink-300 mb-3 flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={showAllCodes}
+              aria-label={t('mecp.compose.showAllCodes')}
+              onChange={(event) => {
+                setShowAllCodes(event.target.checked);
+                setCategory(initialCategory);
+              }}
+            />
+            {t('mecp.compose.showAllCodes')}
+          </label>
+        )}
         <p className="text-ink-400 mb-2 text-xs">{t('mecp.compose.category')}</p>
         <div className="mb-3 grid grid-cols-3 gap-1 sm:grid-cols-4">
-          {(Object.keys(CATEGORIES) as CategoryLetter[]).map((letter) => (
+          {categories.map((letter) => (
             <button
               key={letter}
               type="button"
@@ -258,7 +300,11 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 setCategory(letter);
               }}
               className={`text-2xs rounded px-1 py-1 ${
-                category === letter ? 'bg-red-900/80 text-red-100' : 'bg-ink-800 text-ink-300'
+                category === letter
+                  ? responseMode
+                    ? 'bg-blue-900/80 text-blue-100'
+                    : 'bg-red-900/80 text-red-100'
+                  : 'bg-ink-800 text-ink-300'
               }`}
             >
               {letter} {langFile.categories[letter]?.name ?? ''}
@@ -277,7 +323,11 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 toggleCode(code);
               }}
               className={`text-2xs rounded px-1.5 py-0.5 ${
-                codes.includes(code) ? 'bg-red-700 text-white' : 'bg-ink-800 text-ink-300'
+                codes.includes(code)
+                  ? responseMode
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-red-700 text-white'
+                  : 'bg-ink-800 text-ink-300'
               }`}
             >
               {code} {langFile.codes[code]}
@@ -294,7 +344,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 onClick={() => {
                   toggleCode(code);
                 }}
-                className="text-2xs rounded-full bg-red-900/60 px-2 py-0.5 text-red-100"
+                className={`text-2xs rounded-full px-2 py-0.5 ${responseMode ? 'bg-blue-900/60 text-blue-100' : 'bg-red-900/60 text-red-100'}`}
               >
                 {code} ×
               </button>
@@ -366,7 +416,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           <button
             type="button"
             disabled={!canSend}
-            className="rounded bg-red-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40"
+            className={`rounded px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40 ${responseMode ? 'bg-blue-700' : 'bg-red-700'}`}
             onClick={() => void handleSend()}
             aria-label={t('mecp.compose.send')}
           >

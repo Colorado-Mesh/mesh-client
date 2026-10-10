@@ -884,7 +884,8 @@
     "cancelAutoResend": "Zrušit opakování",
     "cancelAutoResendAria": "Zrušit automatické opakování této zprávy",
     "outboxEmergencyWillSend": "Bude se opakovat, dokud to síť nepotvrdí",
-    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila."
+    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila.",
+    "floodScopeInherited": "Výchozí ({{scope}})"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -4746,7 +4747,12 @@
     "frequencyOffsetLabel": "Frekvenční posun",
     "frequencyOffsetDesc": "Pokročilé: offset v MHz přidaný k vypočtené středové frekvenci pro opravu chyby kalibrace krystalů. Ponechte v 0, pokud nemáte testovací zařízení.",
     "enumLicensedOnlySuffix": "(pouze s licencí)",
-    "unknownEnumValue": "Neznámý ({{value}})"
+    "unknownEnumValue": "Neznámý ({{value}})",
+    "floodScopePresetsTitle": "Uložené oblasti",
+    "floodScopePresetsHelp": "Zde přidejte regiony a poté vyberte rozsah pro každý kanál vedle Odeslat nebo v Rádiových → kanálech. Uložení nebo odebrání oblasti ponechává výchozí nastavení rádia a volby kanálu beze změny.",
+    "floodScopeAddHashtag": "Hashtag regionu, který chcete uložit",
+    "floodScopeAddSaved": "Uložit region",
+    "floodScopePresetsFull": "Můžeš ušetřit až {{count}} regionů. Před přidáním dalšího odstraňte jeden."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -6590,7 +6596,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6601,7 +6606,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nepodařilo se získat opravu GPS",
-      "sendFailed": "Nepodařilo se odeslat zprávu MECP"
+      "sendFailed": "Nepodařilo se odeslat zprávu MECP",
+      "openResponse": "Reaguj pomocí MECP",
+      "requestTitle": "Požadavek nebo zpráva MECP",
+      "responseTitle": "Odpověď MECP",
+      "showAllCodes": "Zobrazit všechny kódy MECP",
+      "openRequest": "Žádost nebo hlášení s MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6623,10 +6633,10 @@
       "hint": "Mesh Emergency Communication Protocol — sestavte zprávy z chatu, přemostěte RF mezi Meshtastic a MeshCore zde a exportujte trvanlivý přijatý protokol auditu.",
       "learnMore": "Jak MECP funguje",
       "protocolSource": "Zdroj protokolu na GitHub",
-      "showComposeButton": "Zobrazit tlačítko MECP v chatu",
-      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv.",
       "standingAlert": "Stanice velení incidentu (stálá pohotovost)",
-      "standingAlertHint": "Ve výchozím nastavení vypnuto. Pro EOC a monitorované stanice: udržuje červený banner nahoře a bliká na hlavním panelu nebo odrazí dok, dokud se někdo nepodívá na každý nový MAYDAY nebo URGENTNÍ. Každý stále slyší jednorázový výstražný tón a vidí přípitek."
+      "standingAlertHint": "Ve výchozím nastavení vypnuto. Pro EOC a monitorované stanice: udržuje červený banner nahoře a bliká na hlavním panelu nebo odrazí dok, dokud se někdo nepodívá na každý nový MAYDAY nebo URGENTNÍ. Každý stále slyší jednorázový výstražný tón a vidí přípitek.",
+      "showComposeButtons": "Zobrazit tlačítka MECP v chatu",
+      "showComposeButtonsHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje červené tlačítko požadavku/zprávy a modré tlačítko odpovědi."
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP",
     "block": {
@@ -7013,7 +7023,11 @@
     "read": "Nastavení načteno",
     "radioConnected": "Rádio připojeno",
     "radioDisconnected": "Rádio odpojeno",
-    "pendingChanges_few": "{{count}} změny"
+    "pendingChanges_few": "{{count}} změny",
+    "scope": "Výchozí rozsah Flood",
+    "defaultScope": "Název regionu (prázdný pro neskopírovaný)",
+    "scopeSummary": "Oblast pro odchozí Flood pakety tohoto uzlu",
+    "scopeHint": "Firmware v1.15+: zadejte veřejný název oblasti, např. #us-tn-tri; prázdná hodnota znamená bez omezení oblasti. Platí pro Flood oznámení a doručování zpráv místnosti přes Flood. Přímé trasy a přístupová práva místnosti jsou nezávislé. Rozsahy rádia a jeho kanálů se nastavují samostatně."
   },
   "chatTranslation": {
     "translate": "Přeložit zprávu",

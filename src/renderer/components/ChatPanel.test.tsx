@@ -3069,7 +3069,8 @@ describe('ChatPanel MECP compose button', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument();
     });
-    expect(screen.queryByRole('button', { name: 'Open MECP compose' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Request or report with MECP' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Respond with MECP' })).toBeNull();
   });
 
   it('renders in the composer action row before Send and opens the compose modal', async () => {
@@ -3080,7 +3081,7 @@ describe('ChatPanel MECP compose button', () => {
         <ChatPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const mecpBtn = screen.getByRole('button', { name: 'Open MECP compose' });
+    const mecpBtn = screen.getByRole('button', { name: 'Request or report with MECP' });
     const sendBtn = screen.getByRole('button', { name: 'Send' });
     expect(
       mecpBtn.compareDocumentPosition(sendBtn) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -3088,8 +3089,36 @@ describe('ChatPanel MECP compose button', () => {
     expect(mecpBtn).not.toHaveTextContent('MECP');
 
     await user.click(mecpBtn);
-    expect(await screen.findByRole('dialog', { name: 'Compose MECP report' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: 'MECP request or report' }),
+    ).toBeInTheDocument();
   });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'opens the blue response workflow separately from requests on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      localStorage.setItem('mesh-client:appSettings', JSON.stringify({ mecpComposeEnabled: true }));
+      const user = userEvent.setup();
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} />
+        </ToastProvider>,
+      );
+      const request = screen.getByRole('button', { name: 'Request or report with MECP' });
+      const response = screen.getByRole('button', { name: 'Respond with MECP' });
+      expect(request.className).toContain('bg-red-950');
+      expect(response.className).toContain('bg-blue-950');
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+      await user.click(response);
+      expect(await screen.findByRole('dialog', { name: 'MECP response' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Response' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    },
+  );
 });
 
 describe('ChatPanel tapback reaction picker', () => {
@@ -6675,7 +6704,7 @@ describe('ChatPanel — starred view', () => {
     const channelWithShield = 'General 1, Unread MAYDAY MECP report';
     await user.click(await screen.findByRole('button', { name: 'Alice' }));
     expect(await screen.findByPlaceholderText(dmPlaceholder)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open MECP compose' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Request or report with MECP' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: channelWithShield })).toBeInTheDocument();
 
     rerender(panel(messages, true));
@@ -6684,7 +6713,7 @@ describe('ChatPanel — starred view', () => {
     expect(screen.queryByPlaceholderText(dmPlaceholder)).toBeNull();
     expect(screen.queryByPlaceholderText(channelPlaceholder)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Open MECP compose' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Request or report with MECP' })).toBeNull();
     expect(screen.getByText(i18n.t('chatPanel.noStarredMessages'))).toBeInTheDocument();
     expect(onSend).not.toHaveBeenCalled();
 

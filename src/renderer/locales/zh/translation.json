@@ -865,7 +865,8 @@
     "cancelAutoResend": "取消重试",
     "cancelAutoResendAria": "取消此消息的自动重试",
     "outboxEmergencyWillSend": "将继续重试，直到网络确认",
-    "outboxEmergencyCancelConfirm": "停止重试此紧急消息？它将不再被重新发送，即使网络从未确认过。"
+    "outboxEmergencyCancelConfirm": "停止重试此紧急消息？它将不再被重新发送，即使网络从未确认过。",
+    "floodScopeInherited": "默认值({{scope}})"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "频率偏移",
     "frequencyOffsetDesc": "高级：将偏移量（以MHz为单位）添加到计算的中心频率以校正晶体校准误差。在0离开，除非你有测试设备。",
     "enumLicensedOnlySuffix": "仅授权",
-    "unknownEnumValue": "未知({{value}})"
+    "unknownEnumValue": "未知({{value}})",
+    "floodScopePresetsTitle": "已保存的区域",
+    "floodScopePresetsHelp": "在此处添加区域，然后为“发送”旁边或“广播频道”中的每个→频道选择一个范围。保存或删除区域时，单选框默认值和频道选择保持不变。",
+    "floodScopeAddHashtag": "要保存的区域主题标签",
+    "floodScopeAddSaved": "保存区域",
+    "floodScopePresetsFull": "您最多可以节省{{count}}个地区。请先删除一个，然后再添加另一个。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -6529,7 +6535,6 @@
     "exportLog": "导出MECP日志",
     "compose": {
       "title": "撰写MECP报告",
-      "open": "打开MECP撰写",
       "severity": "严重性",
       "category": "类别",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}}/{{max}}字节",
       "send": "发送MECP",
       "gpsFailed": "无法获取GPS修复",
-      "sendFailed": "无法发送报告文件"
+      "sendFailed": "无法发送报告文件",
+      "openResponse": "使用MECP回复",
+      "requestTitle": "MECP请求或报告",
+      "responseTitle": "MECP响应",
+      "showAllCodes": "显示所有MECP代码",
+      "openRequest": "向MECP申请或报告"
     },
     "rebroadcast": {
       "title": "MECP射频重播",
@@ -6562,10 +6572,10 @@
       "hint": "网格紧急通信协议—从聊天中撰写报告，在此处连接Meshtastic和MeshCore之间的射频，并导出持久收到的审计日志。",
       "learnMore": "MECP的工作原理",
       "protocolSource": "GitHub上的协议源",
-      "showComposeButton": "在聊天中显示MECP按钮",
-      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。",
       "standingAlert": "事故指挥站（常备警报）",
-      "standingAlertHint": "默认情况下关闭。对于EOC和监控站：保持红色横幅并闪烁任务栏或反弹码头，直到有人查看每个新的MAYDAY或紧急情况。每个人仍然听到一次性的警报声，看到了祝酒词。"
+      "standingAlertHint": "默认情况下关闭。对于EOC和监控站：保持红色横幅并闪烁任务栏或反弹码头，直到有人查看每个新的MAYDAY或紧急情况。每个人仍然听到一次性的警报声，看到了祝酒词。",
+      "showComposeButtons": "在聊天中显示MECP按钮",
+      "showComposeButtonsHint": "默认情况下关闭。启用时，聊天显示红色请求/报告按钮和蓝色响应按钮。"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} 项更改",
     "read": "已读取设置",
     "radioConnected": "电台已连接",
-    "radioDisconnected": "电台未连接"
+    "radioDisconnected": "电台未连接",
+    "scope": "默认泛洪范围",
+    "defaultScope": "区域名称（空白表示无范围）",
+    "scopeSummary": "此节点发出的泛洪数据包使用的区域",
+    "scopeHint": "固件v1.15及以上：输入公共区域名称，例如#us-tn-tri；留空表示不限制区域。适用于泛洪广播公告和通过泛洪传送的聊天室消息。直连路由和聊天室访问权限独立设置。伴随无线电设备及其各个频道的范围需分别配置。"
   },
   "chatTranslation": {
     "translate": "翻译消息",

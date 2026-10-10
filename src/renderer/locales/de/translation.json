@@ -865,7 +865,8 @@
     "cancelAutoResend": "Erneuten Versuch abbrechen",
     "cancelAutoResendAria": "Automatischen Wiederholungsversuch dieser Nachricht abbrechen",
     "outboxEmergencyWillSend": "Wird so lange wiederholt, bis das Netzwerk es bestätigt",
-    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat."
+    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat.",
+    "floodScopeInherited": "Standard ({{scope}})"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "Frequenzversatz",
     "frequencyOffsetDesc": "Erweitert: Offset in MHz wird zur berechneten Mittenfrequenz hinzugefügt, um den Kristallkalibrierungsfehler zu korrigieren. Lassen Sie bei 0 stehen, es sei denn, Sie haben eine Testausrüstung.",
     "enumLicensedOnlySuffix": "(nur lizenziert)",
-    "unknownEnumValue": "Unbekannt ({{value}})"
+    "unknownEnumValue": "Unbekannt ({{value}})",
+    "floodScopePresetsTitle": "Gespeicherte Regionen",
+    "floodScopePresetsHelp": "Fügen Sie hier Regionen hinzu und wählen Sie dann einen Bereich für jeden Kanal neben Senden oder in → Radiokanälen aus. Beim Speichern oder Entfernen einer Region bleiben die Radio-Standard- und Kanalauswahl unverändert.",
+    "floodScopeAddHashtag": "Region-Hashtag zum Speichern",
+    "floodScopeAddSaved": "Region speichern",
+    "floodScopePresetsFull": "Du kannst bis zu {{count}} Regionen sparen. Entfernen Sie eine, bevor Sie eine weitere hinzufügen."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
@@ -6529,7 +6535,6 @@
     "exportLog": "MECP-Protokoll exportieren",
     "compose": {
       "title": "MECP-Bericht erstellen",
-      "open": "Öffnen Sie MECP Compose",
       "severity": "Schweregrad",
       "category": "Kategorie",
       "codes": "Code",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} Bytes",
       "send": "MECP senden",
       "gpsFailed": "Konnte keine GPS-Fixierung erhalten",
-      "sendFailed": "Senden des Berichts fehlgeschlagen"
+      "sendFailed": "Senden des Berichts fehlgeschlagen",
+      "openResponse": "Mit MECP antworten",
+      "requestTitle": "MECP-Anfrage oder -Bericht",
+      "responseTitle": "MECP-Antwort",
+      "showAllCodes": "Alle Codes anzeigen",
+      "openRequest": "Anfrage oder Bericht mit MECP"
     },
     "rebroadcast": {
       "title": "MECP RF Rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "Mesh Emergency Communication Protocol — Erstellen Sie Berichte aus dem Chat, überbrücken Sie RF zwischen Meshtastic und MeshCore hier und exportieren Sie das dauerhaft empfangene Auditprotokoll.",
       "learnMore": "So funktioniert MECP",
       "protocolSource": "Protokollquelle auf GitHub",
-      "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
-      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an.",
       "standingAlert": "Einsatzleitstelle (Standalarm)",
-      "standingAlertHint": "Standardmäßig ausgeschaltet. Für EOCs und überwachte Stationen: Lässt ein rotes Banner hoch und blinkt die Taskleiste oder springt das Dock, bis jemand jeden neuen MAYDAY oder jede neue DRINGLICHKEIT ansieht. Jeder hört immer noch den einmaligen Alarmton und sieht den Toast."
+      "standingAlertHint": "Standardmäßig ausgeschaltet. Für EOCs und überwachte Stationen: Lässt ein rotes Banner hoch und blinkt die Taskleiste oder springt das Dock, bis jemand jeden neuen MAYDAY oder jede neue DRINGLICHKEIT ansieht. Jeder hört immer noch den einmaligen Alarmton und sieht den Toast.",
+      "showComposeButtons": "MECP-Schaltflächen im Chat anzeigen",
+      "showComposeButtonsHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine rote Anforderungs-/Bericht-Schaltfläche und eine blaue Antwort-Schaltfläche an."
     },
     "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} Änderungen",
     "read": "Einstellungen gelesen",
     "radioConnected": "Funkgerät verbunden",
-    "radioDisconnected": "Funkgerät getrennt"
+    "radioDisconnected": "Funkgerät getrennt",
+    "scope": "Standard-Flood-Scope",
+    "defaultScope": "Regionsname (leer für unscoped)",
+    "scopeSummary": "Region für ausgehende Flood-Pakete dieses Knotens",
+    "scopeHint": "Firmware v1.15+: Öffentlichen Regionsnamen wie #us-tn-tri eingeben; leer lassen für Unscoped. Gilt für Flood-Adverts und Raumzustellung über Flood. Direkte Routen und Raumzugriff sind unabhängig. Scopes des Companion-Radios und seiner Kanäle werden separat eingestellt."
   },
   "chatTranslation": {
     "translate": "Mitteilung übersetzen",

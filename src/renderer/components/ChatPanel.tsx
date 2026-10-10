@@ -20,6 +20,7 @@ import {
   PARENT_HOVER_ATTR,
   RotateCcw,
   Search,
+  ShieldCheck,
   Siren,
   Smile,
   Star,
@@ -57,7 +58,11 @@ import {
 } from '@/renderer/lib/autoResend/autoResendController';
 import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
-import { clearFloodScopeOverride } from '@/renderer/lib/chatPanelProtocolStorage';
+import {
+  clearFloodScopeOverride,
+  FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+  loadFloodScopeOverridesInitial,
+} from '@/renderer/lib/chatPanelProtocolStorage';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -1213,6 +1218,7 @@ function ChatPanel({
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpComposeMode, setMecpComposeMode] = useState<'request' | 'response'>('request');
   const [mecpComposeSession, setMecpComposeSession] = useState(0);
   const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
   const [mecpLang, setMecpLang] = useState(() =>
@@ -1854,9 +1860,40 @@ function ChatPanel({
         : viewKey;
 
   const outboxSendFn = useCallback(
-    (text: string, ch: number, dest?: number, replyId?: number) =>
-      Promise.resolve().then(() => onSend(text, ch, dest, replyId)),
-    [onSend],
+    async (text: string, ch: number, dest?: number, replyId?: number) => {
+      let result: string | undefined;
+      const send = async () => {
+        result = await onSend(text, ch, dest, replyId);
+      };
+      if (applyMeshcoreFloodScopeHashtag) {
+        // Outbox rows can target a different channel from the currently open conversation.
+        const key =
+          dest != null
+            ? `dm:${dest}`
+            : meshcoreChannelScopeKey(
+                scopeRadioSignature,
+                meshcoreChannelSources?.find((c) => c.index === ch),
+              );
+        const savedScope = key ? loadFloodScopeOverridesInitial(protocol)[key] : undefined;
+        await withMeshcoreFloodScopeOverride(
+          applyMeshcoreFloodScopeHashtag,
+          meshcoreFloodScopeHashtag,
+          savedScope === FLOOD_SCOPE_OVERRIDE_UNSCOPED ? '' : savedScope || undefined,
+          send,
+        );
+      } else {
+        await send();
+      }
+      return result;
+    },
+    [
+      applyMeshcoreFloodScopeHashtag,
+      meshcoreChannelSources,
+      meshcoreFloodScopeHashtag,
+      onSend,
+      protocol,
+      scopeRadioSignature,
+    ],
   );
 
   const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
@@ -2355,23 +2392,19 @@ function ChatPanel({
           onSend(text, sendChannel, destination, opts?.replyHash ?? opts?.replyId ?? undefined),
         );
       };
-      if (
-        protocol === 'meshcore' &&
-        applyMeshcoreFloodScopeHashtag &&
-        opts?.floodScopeOverride !== undefined
-      ) {
+      if (applyMeshcoreFloodScopeHashtag) {
         try {
           await withMeshcoreFloodScopeOverride(
             applyMeshcoreFloodScopeHashtag,
             meshcoreFloodScopeHashtag,
-            opts.floodScopeOverride,
+            opts?.floodScopeOverride,
             doSend,
           );
         } catch (err) {
           const msg = err instanceof Error ? err.message : '';
           if (msg === 'meshcore.errors.floodScopeBusy') {
             setChatActionError({ message: t('meshcore.errors.floodScopeBusy'), viewKey });
-            return undefined;
+            throw new Error(t('meshcore.errors.floodScopeBusy'));
           }
           throw err;
         }
@@ -4570,6 +4603,7 @@ function ChatPanel({
         <MecpComposeModal
           key={mecpComposeSession}
           open={mecpComposeOpen}
+          mode={mecpComposeMode}
           onClose={() => {
             setMecpComposeOpen(false);
           }}
@@ -4619,6 +4653,7 @@ function ChatPanel({
           showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
           floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}
           floodScopePresets={meshcoreFloodScopePresets}
+          floodScopeDefault={meshcoreFloodScopeHashtag}
           onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
           resolveShareLocation={resolveShareLocation}
           onSendLocationWaypoint={
@@ -4634,17 +4669,37 @@ function ChatPanel({
           textareaRef={composerInputRef}
           actionSlot={
             mecpComposeEnabled ? (
-              <ChatToolbarTooltipButton
-                tooltip={t('mecp.compose.open')}
-                aria-label={t('mecp.compose.open')}
-                className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
-                onClick={() => {
-                  setMecpComposeSession((n) => n + 1);
-                  setMecpComposeOpen(true);
-                }}
-              >
-                <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              </ChatToolbarTooltipButton>
+              <>
+                <ChatToolbarTooltipButton
+                  tooltip={t('mecp.compose.openRequest')}
+                  aria-label={t('mecp.compose.openRequest')}
+                  className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
+                  onClick={() => {
+                    setMecpComposeMode('request');
+                    setMecpComposeSession((n) => n + 1);
+                    setMecpComposeOpen(true);
+                  }}
+                >
+                  <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                </ChatToolbarTooltipButton>
+                <ChatToolbarTooltipButton
+                  tooltip={t('mecp.compose.openResponse')}
+                  aria-label={t('mecp.compose.openResponse')}
+                  className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-blue-600/70 bg-blue-950/50 px-2.5 text-blue-300 transition-colors hover:bg-blue-900/60 hover:text-blue-200 disabled:opacity-50"
+                  onClick={() => {
+                    setMecpComposeMode('response');
+                    setMecpComposeSession((n) => n + 1);
+                    setMecpComposeOpen(true);
+                  }}
+                >
+                  <ShieldCheck
+                    aria-hidden
+                    className="h-4 w-4"
+                    trigger={parentIconTrigger}
+                    size={16}
+                  />
+                </ChatToolbarTooltipButton>
+              </>
             ) : undefined
           }
           onVoiceMemo={

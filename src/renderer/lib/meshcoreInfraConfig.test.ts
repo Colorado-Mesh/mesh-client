@@ -6,6 +6,108 @@ const current = () => true;
 const radio = { frequency: '910.525', bandwidth: '62.5', sf: '7', cr: '8', tx: '20' };
 
 describe('MeshCore infrastructure configuration', () => {
+  it.each([
+    ['#us-tn-tri', '#us-tn-tri'],
+    ['<null>', ''],
+  ])('reads the server default scope %s', async (reply, value) => {
+    const send = vi.fn().mockResolvedValue(` default scope is ${reply}`);
+    expect(await readInfraConfig('scope', send, current)).toEqual({
+      values: { 'region.default': value },
+      unavailable: [],
+    });
+    expect(send).toHaveBeenCalledWith('region default', current);
+  });
+
+  it.each([
+    ['#us-tn-tri', '#us-tn-tri'],
+    ['', '<null>'],
+  ])('saves and checks the server scope %s', async (edited, argument) => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce(` default scope is now ${argument}`)
+      .mockResolvedValueOnce(` default scope is ${argument}`);
+    const result = await applyInfraConfig(
+      'scope',
+      { 'region.default': '#us-southeast' },
+      { 'region.default': edited },
+      send,
+      current,
+    );
+    expect(result.error).toBeUndefined();
+    expect(result.values).toEqual({ 'region.default': edited });
+    expect(send.mock.calls).toEqual([
+      [`region default ${argument}`, current],
+      ['region default', current],
+    ]);
+  });
+
+  it('accepts equivalent region names but rejects firmware prefix matches', async () => {
+    const exact = vi
+      .fn()
+      .mockResolvedValueOnce('default scope is now us-tn')
+      .mockResolvedValueOnce('default scope is us-tn');
+    expect(
+      (
+        await applyInfraConfig(
+          'scope',
+          { 'region.default': '' },
+          { 'region.default': '#us-tn' },
+          exact,
+          current,
+        )
+      ).error,
+    ).toBeUndefined();
+    const prefix = vi
+      .fn()
+      .mockResolvedValueOnce('default scope is now #us-tn-tri')
+      .mockResolvedValueOnce('default scope is #us-tn-tri');
+    const result = await applyInfraConfig(
+      'scope',
+      { 'region.default': '' },
+      { 'region.default': '#us-tn' },
+      prefix,
+      current,
+    );
+    expect(result.error).toBeDefined();
+    expect(result.values['region.default']).toBe('#us-tn-tri');
+  });
+
+  it('marks unsupported scope firmware unavailable and rejects invalid acknowledgements', async () => {
+    expect(
+      await readInfraConfig(
+        'scope',
+        vi.fn().mockResolvedValue('Unknown command: region default'),
+        current,
+      ),
+    ).toEqual({ values: {}, unavailable: ['region.default'] });
+    const send = vi.fn().mockResolvedValue('OK');
+    const result = await applyInfraConfig(
+      'scope',
+      { 'region.default': '' },
+      { 'region.default': '#us-tn' },
+      send,
+      current,
+    );
+    expect(result.error).toBeDefined();
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['bad region', '#us-tn\nreboot', '#'.repeat(2), 'é'.repeat(16), '#'.padEnd(31, 'a')])(
+    'rejects invalid or oversized server scope %s before sending',
+    async (scope) => {
+      const send = vi.fn();
+      const result = await applyInfraConfig(
+        'scope',
+        { 'region.default': '' },
+        { 'region.default': scope },
+        send,
+        current,
+      );
+      expect(result.error).toBeDefined();
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
+
   it('loads radio settings sequentially and parses the combined response', async () => {
     const send = vi.fn().mockResolvedValueOnce('> 910.525,62.5,7,8').mockResolvedValueOnce('> 20');
     expect(await readInfraConfig('radio', send, current)).toEqual({

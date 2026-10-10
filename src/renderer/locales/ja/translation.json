@@ -865,7 +865,8 @@
     "cancelAutoResend": "再試行をキャンセル",
     "cancelAutoResendAria": "このメッセージの自動再試行をキャンセルする",
     "outboxEmergencyWillSend": "ネットワークが確認するまで再試行します",
-    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。"
+    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。",
+    "floodScopeInherited": "デフォルト({{scope}})"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "頻度オフセット",
     "frequencyOffsetDesc": "アドバンス：計算された中心周波数にMHz単位のオフセットを追加して、結晶キャリブレーションエラーを修正します。試験装置がない限り、0のままにしておきます。",
     "enumLicensedOnlySuffix": "（ライセンスのみ）",
-    "unknownEnumValue": "不明（ {{value}} ）"
+    "unknownEnumValue": "不明（ {{value}} ）",
+    "floodScopePresetsTitle": "保存された地域",
+    "floodScopePresetsHelp": "ここに領域を追加し、送信またはラジオ→チャンネルの横にある各チャンネルのスコープを選択します。範囲を保存または削除すると、ラジオのデフォルトとチャンネルの選択肢は変更されません。",
+    "floodScopeAddHashtag": "保存する地域のハッシュタグ",
+    "floodScopeAddSaved": "地域を保存",
+    "floodScopePresetsFull": "{{count}}地域まで節約できます。1つ削除してから別のものを追加してください。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -6529,7 +6535,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS修正を取得できませんでした",
-      "sendFailed": "MECPレポートの送信に失敗しました"
+      "sendFailed": "MECPレポートの送信に失敗しました",
+      "openResponse": "MECPで対応",
+      "requestTitle": "MECPの要求または報告",
+      "responseTitle": "MECP応答",
+      "showAllCodes": "すべてのMECPコードを表示",
+      "openRequest": "MECPにリクエストまたは報告する"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "メッシュ緊急通信プロトコル—チャットからレポートを作成し、ここでMeshtasticとMeshCoreの間のRFをブリッジし、耐久性のある受信監査ログをエクスポートします。",
       "learnMore": "MECPの仕組み",
       "protocolSource": "GitHub上のプロトコルソース",
-      "showComposeButton": "チャットにMECPボタンを表示する",
-      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。",
       "standingAlert": "インシデントコマンドステーション（スタンディングアラート）",
-      "standingAlertHint": "デフォルトでオフになっています。EOCと監視ステーションの場合：赤いバナーを上にしてタスクバーを点滅させるか、誰かが新しいメーデーまたは緊急を見るまでドックを跳ね返します。誰もが一度限りの警告音を聞き、トーストを見ます。"
+      "standingAlertHint": "デフォルトでオフになっています。EOCと監視ステーションの場合：赤いバナーを上にしてタスクバーを点滅させるか、誰かが新しいメーデーまたは緊急を見るまでドックを跳ね返します。誰もが一度限りの警告音を聞き、トーストを見ます。",
+      "showComposeButtons": "チャットでMECPボタンを表示する",
+      "showComposeButtonsHint": "デフォルトではオフになっています。有効にすると、チャットには赤いリクエスト/レポートボタンと青い応答ボタンが表示されます。"
     },
     "exportLogEmpty": "受信したログにMECPメッセージはまだありません",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} 件の変更",
     "read": "設定を読み取り済み",
     "radioConnected": "無線機接続済み",
-    "radioDisconnected": "無線機未接続"
+    "radioDisconnected": "無線機未接続",
+    "scope": "デフォルトのフラッドスコープ",
+    "defaultScope": "リージョン名（スコープなしの場合は空白）",
+    "scopeSummary": "このノードが送信するFloodパケットのリージョン",
+    "scopeHint": "ファームウェアv1.15以降：#us-tn-triなどの公開リージョン名を入力します。空欄はリージョン制限なしです。FloodアドバートとFlood経由のルームメッセージ配信に適用されます。直接ルートとルームへのアクセス権は別です。コンパニオン無線機と各チャンネルのスコープは個別に設定します。"
   },
   "chatTranslation": {
     "translate": "メッセージを翻訳する",

@@ -21,6 +21,42 @@ describe('withMeshcoreFloodScopeOverride', () => {
     expect(send).toHaveBeenCalledOnce();
   });
 
+  it('waits for a scoped send to restore before sending on the inherited default', async () => {
+    const apply = vi.fn().mockResolvedValue(undefined);
+    let finish!: () => void;
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const scopedSend = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+          entered();
+        }),
+    );
+    const scoped = withMeshcoreFloodScopeOverride(apply, '#us-southeast', '#us-tn-tri', scopedSend);
+    await started;
+    const inheritedSend = vi.fn().mockResolvedValue(undefined);
+    const inherited = withMeshcoreFloodScopeOverride(
+      apply,
+      '#us-southeast',
+      undefined,
+      inheritedSend,
+    );
+    await Promise.resolve();
+    try {
+      expect(inheritedSend).not.toHaveBeenCalled();
+    } finally {
+      finish();
+    }
+    await Promise.all([scoped, inherited]);
+    expect(apply.mock.calls).toEqual([['#us-tn-tri'], ['#us-southeast']]);
+    expect(apply.mock.invocationCallOrder[1]).toBeLessThan(
+      inheritedSend.mock.invocationCallOrder[0],
+    );
+  });
+
   it('restores scope when send rejects', async () => {
     const apply = vi.fn().mockResolvedValue(undefined);
     const send = vi.fn().mockRejectedValue(new Error('rf busy'));

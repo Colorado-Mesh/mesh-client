@@ -72,6 +72,7 @@ const SECTION_LABELS: Record<InfraConfigSection, string> = {
   identity: 'infraConfig.identity',
   radio: 'infraConfig.radio',
   routing: 'infraConfig.routing',
+  scope: 'infraConfig.scope',
   room: 'infraConfig.room',
 };
 
@@ -79,12 +80,14 @@ const SECTION_ICONS = {
   identity: MapPin,
   radio: RadioTower,
   routing: Network,
+  scope: Network,
   room: MessageSquare,
 };
 const SECTION_DESCRIPTIONS: Record<InfraConfigSection, string> = {
   identity: 'infraConfig.identitySummary',
   radio: 'infraConfig.radioSummary',
   routing: 'infraConfig.routingSummary',
+  scope: 'infraConfig.scopeSummary',
   room: 'infraConfig.roomSummary',
 };
 
@@ -350,6 +353,7 @@ function ConfigSection({
           <p className="text-muted text-xs">{t('infraConfig.advertHint')}</p>
         )}
         {section === 'room' && <p className="text-muted text-xs">{t('infraConfig.guestHint')}</p>}
+        {section === 'scope' && <p className="text-muted text-xs">{t('infraConfig.scopeHint')}</p>}
         <div className="border-ink-800 flex flex-wrap items-center gap-2 border-t pt-4">
           <Button
             variant="primary"
@@ -575,6 +579,7 @@ export function MeshcoreInfraConfigPanel({ node, isConnected, onSend, onBack, on
           'identity',
           'radio',
           'routing',
+          'scope',
           ...(node.hw_model === 'Room' ? ['room'] : []),
         ] as InfraConfigSection[]
       ).map((section) => (

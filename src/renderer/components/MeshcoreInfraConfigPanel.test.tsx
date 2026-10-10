@@ -41,6 +41,51 @@ function props(overrides = {}) {
 }
 
 describe('MeshCore infrastructure configuration panel', () => {
+  it('reads, applies, and checks a room server default scope separately from access settings', async () => {
+    const user = userEvent.setup();
+    let scope = '<null>';
+    const send = vi.fn((command: string) => {
+      if (command.startsWith('region default ')) {
+        scope = command.slice('region default '.length);
+        return Promise.resolve(` default scope is now ${scope}`);
+      }
+      return Promise.resolve(` default scope is ${scope}`);
+    });
+    const { container } = render(
+      <MeshcoreInfraConfigPanel
+        {...props({ node: { ...node, hw_model: 'Room' }, onSend: send })}
+      />,
+    );
+    await user.click(screen.getByText('Default flood scope'));
+    const field = screen.getByLabelText('Region name (blank for unscoped)');
+    await waitFor(() => {
+      expect(field).toBeEnabled();
+    });
+    expect(field).toHaveValue('');
+    await user.type(field, '#us-tn-tri');
+    await user.click(screen.getByRole('button', { name: 'Apply Default flood scope' }));
+    expect(await screen.findByText('Settings saved and checked.')).toBeInTheDocument();
+    expect(send.mock.calls.map(([command]) => command)).toEqual([
+      'region default',
+      'region default #us-tn-tri',
+      'region default',
+    ]);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('keeps a default scope unavailable on firmware without region support', async () => {
+    const user = userEvent.setup();
+    render(
+      <MeshcoreInfraConfigPanel
+        {...props({ onSend: vi.fn().mockResolvedValue('Unknown command: region default') })}
+      />,
+    );
+    await user.click(screen.getByText('Default flood scope'));
+    expect(await screen.findByText('Unavailable on this firmware or board')).toBeInTheDocument();
+    expect(screen.getByLabelText('Region name (blank for unscoped)')).toBeDisabled();
+  });
+
   it('loads only the opened section and keeps unloaded settings disabled', async () => {
     const user = userEvent.setup();
     const p = props();

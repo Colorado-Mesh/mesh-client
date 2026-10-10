@@ -899,7 +899,8 @@
     "cancelAutoResend": "Anuluj ponowienie",
     "cancelAutoResendAria": "Anuluj automatyczne ponawianie tej wiadomości",
     "outboxEmergencyWillSend": "Będzie ponawiać próby, dopóki sieć tego nie potwierdzi",
-    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła."
+    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła.",
+    "floodScopeInherited": "Domyślnie ({{scope}})"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -4784,7 +4785,12 @@
     "frequencyOffsetLabel": "Przesunięcie częstotliwości",
     "frequencyOffsetDesc": "Zaawansowane: przesunięcie w MHz dodane do obliczonej częstotliwości środkowej w celu skorygowania błędu kalibracji kryształu. Pozostawić w pozycji 0, chyba że masz sprzęt testowy.",
     "enumLicensedOnlySuffix": "(tylko licencjonowane)",
-    "unknownEnumValue": "Nieznane ({{value}})"
+    "unknownEnumValue": "Nieznane ({{value}})",
+    "floodScopePresetsTitle": "Zapisane regiony",
+    "floodScopePresetsHelp": "Dodaj regiony tutaj, a następnie wybierz zakres dla każdego kanału obok Wyślij lub w → kanałach radiowych. Zapisanie lub usunięcie regionu pozostawia ustawienia domyślne radia i wybór kanału bez zmian.",
+    "floodScopeAddHashtag": "Hasztag regionu do zapisania",
+    "floodScopeAddSaved": "Zapisz region",
+    "floodScopePresetsFull": "Możesz zaoszczędzić do {{count}} regionów. Usuń jeden przed dodaniem kolejnego."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -6635,7 +6641,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6646,7 +6651,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nie można uzyskać poprawki GPS",
-      "sendFailed": "Nie udało się wysłać raportu MECP"
+      "sendFailed": "Nie udało się wysłać raportu MECP",
+      "openResponse": "Odpowiedz za pomocą MECP",
+      "requestTitle": "Żądanie lub raport MECP",
+      "responseTitle": "Odpowiedź MECP",
+      "showAllCodes": "Pokaż wszystkie kody MECP",
+      "openRequest": "Wniosek lub raport z MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6668,10 +6678,10 @@
       "hint": "Protokół Siatkowej Komunikacji Awaryjnej — twórz raporty z Czatu, łącz tutaj RF między Meshtastic i MeshCore i eksportuj trwały otrzymany dziennik audytu.",
       "learnMore": "Jak działa MECP",
       "protocolSource": "Źródło protokołu na GitHub",
-      "showComposeButton": "Pokaż przycisk MECP na czacie",
-      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych.",
       "standingAlert": "Stanowisko kierowania incydentami (stan gotowości)",
-      "standingAlertHint": "Domyślnie wyłączone. W przypadku EOC i monitorowanych stacji: trzyma podniesiony czerwony baner i miga na pasku zadań lub odbija się od doku, dopóki ktoś nie spojrzy na każdy nowy MAYDAY lub PILNY. Wszyscy wciąż słyszą jednorazowy sygnał ostrzegawczy i widzą grzankę."
+      "standingAlertHint": "Domyślnie wyłączone. W przypadku EOC i monitorowanych stacji: trzyma podniesiony czerwony baner i miga na pasku zadań lub odbija się od doku, dopóki ktoś nie spojrzy na każdy nowy MAYDAY lub PILNY. Wszyscy wciąż słyszą jednorazowy sygnał ostrzegawczy i widzą grzankę.",
+      "showComposeButtons": "Pokaż przyciski MECP na czacie",
+      "showComposeButtonsHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje czerwony przycisk żądania/raportu i niebieski przycisk odpowiedzi."
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku",
     "block": {
@@ -7062,7 +7072,11 @@
     "radioConnected": "Radio połączone",
     "radioDisconnected": "Radio rozłączone",
     "pendingChanges_few": "{{count}} zmiany",
-    "pendingChanges_many": "{{count}} zmian"
+    "pendingChanges_many": "{{count}} zmian",
+    "scope": "Domyślny zakres Flood",
+    "defaultScope": "Nazwa regionu (pusta dla obszaru nieobjętego zakresem)",
+    "scopeSummary": "Region dla wychodzących pakietów Flood tego węzła",
+    "scopeHint": "Firmware v1.15+: wpisz publiczną nazwę regionu, np. #us-tn-tri; puste pole oznacza brak ograniczenia regionu. Dotyczy ogłoszeń Flood i dostarczania wiadomości pokoju przez Flood. Trasy bezpośrednie i uprawnienia dostępu do pokoju są niezależne. Zakresy radia Companion i jego kanałów ustawia się osobno."
   },
   "chatTranslation": {
     "translate": "Translate message",

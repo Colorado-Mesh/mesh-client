@@ -865,7 +865,8 @@
     "cancelAutoResend": "Opnieuw proberen annuleren",
     "cancelAutoResendAria": "Automatisch opnieuw proberen van dit bericht annuleren",
     "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het netwerk het bevestigt",
-    "outboxEmergencyCancelConfirm": "Stop met het opnieuw proberen van dit noodbericht? Het zal niet langer kwalijk worden genomen, zelfs als het netwerk het nooit heeft erkend."
+    "outboxEmergencyCancelConfirm": "Stop met het opnieuw proberen van dit noodbericht? Het zal niet langer kwalijk worden genomen, zelfs als het netwerk het nooit heeft erkend.",
+    "floodScopeInherited": "Standaard ({{scope}})"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -4702,7 +4703,12 @@
     "frequencyOffsetLabel": "Frequentie-afwijking",
     "frequencyOffsetDesc": "Geavanceerd: offset in MHz toegevoegd aan de berekende centrumfrequentie om kristalkalibratiefout te corrigeren. Laat op 0 staan, tenzij je testapparatuur hebt.",
     "enumLicensedOnlySuffix": "(alleen met licentie)",
-    "unknownEnumValue": "Onbekend ({{value}})"
+    "unknownEnumValue": "Onbekend ({{value}})",
+    "floodScopePresetsTitle": "Opgeslagen regio's",
+    "floodScopePresetsHelp": "Voeg hier regio's toe en kies vervolgens een bereik voor elk kanaal naast Verzenden of in → Radiokanalen. Als u een regio opslaat of verwijdert, blijven de standaardradio- en kanaalkeuzes ongewijzigd.",
+    "floodScopeAddHashtag": "Regio-hashtag om op te slaan",
+    "floodScopeAddSaved": "Regio opslaan",
+    "floodScopePresetsFull": "Je kunt tot {{count}} regio's besparen. Verwijder er een voordat je een andere toevoegt."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -6529,7 +6535,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6540,7 +6545,12 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Kon geen GPS-fix krijgen",
-      "sendFailed": "Kan MECP-rapport niet verzenden"
+      "sendFailed": "Kan MECP-rapport niet verzenden",
+      "openResponse": "Reageren met MECP",
+      "requestTitle": "MECP-aanvraag of -rapport",
+      "responseTitle": "MECP-respons",
+      "showAllCodes": "Alle MECP-codes weergeven",
+      "openRequest": "Aanvragen of melden bij MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6562,10 +6572,10 @@
       "hint": "Mesh Emergency Communication Protocol — stel hier rapporten op van Chat, overbrug RF tussen Meshtastic en MeshCore en exporteer het duurzaam ontvangen auditlogboek.",
       "learnMore": "Hoe MECP werkt",
       "protocolSource": "Protocolbron op GitHub",
-      "showComposeButton": "Toon de MECP-knop in de chat",
-      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden.",
       "standingAlert": "Incident Commandostation (staand alarm)",
-      "standingAlertHint": "Standaard uitgeschakeld. Voor EOC's en bewaakte stations: houdt een rode banner omhoog en knippert de taakbalk of stuitert het dock totdat iemand naar elke nieuwe MAYDAY of URGENT kijkt. Iedereen hoort nog steeds de eenmalige alarmtoon en ziet de toost."
+      "standingAlertHint": "Standaard uitgeschakeld. Voor EOC's en bewaakte stations: houdt een rode banner omhoog en knippert de taakbalk of stuitert het dock totdat iemand naar elke nieuwe MAYDAY of URGENT kijkt. Iedereen hoort nog steeds de eenmalige alarmtoon en ziet de toost.",
+      "showComposeButtons": "Toon MECP-knoppen in de chat",
+      "showComposeButtonsHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een rode aanvraag-/rapportknop en een blauwe antwoordknop."
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek",
     "block": {
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} wijzigingen",
     "read": "Instellingen gelezen",
     "radioConnected": "Radio verbonden",
-    "radioDisconnected": "Radio niet verbonden"
+    "radioDisconnected": "Radio niet verbonden",
+    "scope": "Standaard Flood-scope",
+    "defaultScope": "Naam regio (leeg voor unscoped)",
+    "scopeSummary": "Regio voor uitgaande Flood-pakketten van deze node",
+    "scopeHint": "Firmware v1.15+: voer een publieke regio zoals #us-tn-tri in; laat leeg voor geen regiobeperking. Geldt voor Flood-adverts en bezorging van ruimteberichten via Flood. Directe routes en toegang tot de ruimte staan hier los van. Scopes van de Companion-radio en zijn kanalen worden apart ingesteld."
   },
   "chatTranslation": {
     "translate": "Bericht vertalen",

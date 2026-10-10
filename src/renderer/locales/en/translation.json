@@ -896,7 +896,8 @@
       "listLabel": "Direct messages",
       "empty": "No conversations match"
     },
-    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies."
+    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies.",
+    "floodScopeInherited": "Default ({{scope}})"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -5034,7 +5035,12 @@
         "UNLOCK_FAILED": "Unlock failed",
         "DISABLED": "Disabled"
       }
-    }
+    },
+    "floodScopePresetsTitle": "Saved regions",
+    "floodScopePresetsHelp": "Add regions here, then choose a scope for each channel beside Send or in Radio → Channels. Saving or removing a region leaves the radio default and channel choices unchanged.",
+    "floodScopeAddHashtag": "Region hashtag to save",
+    "floodScopeAddSaved": "Save region",
+    "floodScopePresetsFull": "You can save up to {{count}} regions. Remove one before adding another."
   },
   "rawPacketLog": {
     "filterPackets": "Filter packets",
@@ -6745,10 +6751,10 @@
       "hint": "Mesh Emergency Communication Protocol — compose reports from Chat, bridge RF between Meshtastic and MeshCore here, and export the durable received audit log.",
       "learnMore": "How MECP works (site & video)",
       "protocolSource": "Protocol source on GitHub",
-      "showComposeButton": "Show MECP button in Chat",
-      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
       "standingAlert": "Incident Command station (standing alert)",
-      "standingAlertHint": "Off by default. For EOCs and monitored stations: keeps a red banner up and flashes the taskbar or bounces the dock until someone looks at each new MAYDAY or URGENT. Everyone still hears the one-time alert tone and sees the toast."
+      "standingAlertHint": "Off by default. For EOCs and monitored stations: keeps a red banner up and flashes the taskbar or bounces the dock until someone looks at each new MAYDAY or URGENT. Everyone still hears the one-time alert tone and sees the toast.",
+      "showComposeButtons": "Show MECP buttons in Chat",
+      "showComposeButtonsHint": "Off by default. When enabled, Chat shows a red request/report button and a blue response button."
     },
     "block": {
       "listTitle": "Blocked emergency senders",
@@ -6769,7 +6775,6 @@
     },
     "compose": {
       "title": "Compose MECP report",
-      "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6780,7 +6785,12 @@
       "gpsFailed": "Could not get a GPS fix",
       "sendFailed": "Failed to send MECP report",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Send MECP"
+      "send": "Send MECP",
+      "openResponse": "Respond with MECP",
+      "requestTitle": "MECP request or report",
+      "responseTitle": "MECP response",
+      "showAllCodes": "Show all MECP codes",
+      "openRequest": "Request or report with MECP"
     },
     "rebroadcast": {
       "title": "RF rebroadcast bridge",
@@ -6948,7 +6958,11 @@
     "pendingChanges_other": "{{count}} changes",
     "read": "Settings read",
     "radioConnected": "Radio connected",
-    "radioDisconnected": "Radio disconnected"
+    "radioDisconnected": "Radio disconnected",
+    "scope": "Default flood scope",
+    "defaultScope": "Region name (blank for unscoped)",
+    "scopeSummary": "Region used for this node’s outgoing floods",
+    "scopeHint": "Firmware v1.15+: enter a public region name such as #us-tn-tri, or leave blank for unscoped. This controls flooded adverts and room delivery; direct routes and room access are separate. The companion radio and channel scopes are configured separately."
   },
   "chatTranslation": {
     "translate": "Translate message",

@@ -2377,15 +2377,15 @@ export default function AppPanel({
                 onChange={(e) => {
                   updateSetting('mecpComposeEnabled', e.target.checked);
                 }}
-                aria-label={t('mecp.section.showComposeButton')}
+                aria-label={t('mecp.section.showComposeButtons')}
                 className="accent-brand-green h-4 w-4 rounded"
               />
               <label htmlFor="mecpComposeEnabled" className="text-ink-300 cursor-pointer text-sm">
-                {t('mecp.section.showComposeButton')}
+                {t('mecp.section.showComposeButtons')}
               </label>
             </div>
             <p className="text-muted pl-7 text-xs leading-relaxed">
-              {t('mecp.section.showComposeButtonHint')}
+              {t('mecp.section.showComposeButtonsHint')}
             </p>
           </div>
           <div data-setting-anchor="app.mecp.standingAlert" className="space-y-1">
