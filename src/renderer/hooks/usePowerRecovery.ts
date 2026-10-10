@@ -25,10 +25,6 @@ export const DEFAULT_POWER_RESUME_SCHEDULE: readonly {
     protocol: 'meshcore',
     delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS,
   },
-  {
-    protocol: 'reticulum',
-    delayMs: POWER_RESUME_RECOVERY_DELAY_MS + POWER_RESUME_MESHCORE_STAGGER_MS + 4_000,
-  },
 ];
 
 export interface UsePowerRecoveryOptions {
@@ -52,13 +48,6 @@ export function usePowerRecovery(
       : {
           meshtastic: options.meshtastic,
           meshcore: options.meshcore,
-          // Legacy shape (no explicit Reticulum entry) is test-only today — production wiring
-          // (App.tsx) always passes `callbacksByProtocol` with a real Reticulum entry. The real
-          // `useReticulumRuntime.onPowerSuspend` bumps a `resumeGenerationRef` (mirroring
-          // Meshtastic/MeshCore's `reconnectGenerationRef`) so a stale in-flight `connect()`
-          // started before an earlier suspend can't clobber a fresher post-resume state; this
-          // no-op fallback only applies when a caller opts into the legacy two-protocol shape.
-          reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
         };
   const resumeSchedule =
     'resumeSchedule' in options && options.resumeSchedule

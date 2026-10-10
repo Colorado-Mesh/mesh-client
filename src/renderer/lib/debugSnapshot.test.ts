@@ -13,10 +13,8 @@ import { lastReadStorageKey } from './chatPanelProtocolStorage';
 import {
   analyzeDebugSnapshot,
   buildDebugSnapshot,
-  buildDebugSnapshotAsync,
   copyDebugSnapshotToClipboard,
   DEBUG_SNAPSHOT_ID_LEGEND,
-  type DebugReticulumSnapshot,
   type DebugSnapshot,
 } from './debugSnapshot';
 import {
@@ -32,7 +30,6 @@ import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
-  OFFLINE_RETICULUM_IDENTITY_ID,
 } from './offlineProtocolIdentities';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { MESH_PROTOCOL_STORAGE_KEY } from './storedMeshProtocol';
@@ -87,25 +84,6 @@ function makeMeshtasticBucketOverrides(
   };
 }
 
-function makeReticulumSnapshot(
-  overrides: Partial<DebugReticulumSnapshot> = {},
-): DebugReticulumSnapshot {
-  const bucket = makeBucketOverrides({
-    hydrationSlotId: OFFLINE_RETICULUM_IDENTITY_ID,
-    connectIdentityId: OFFLINE_RETICULUM_IDENTITY_ID,
-    uiStoreIdentityId: OFFLINE_RETICULUM_IDENTITY_ID,
-    ...(overrides.bucket ?? {}),
-  });
-  return {
-    bucket,
-    sidecar: { running: false, port: 0, pid: null },
-    stack: null,
-    diagnosticRows: [],
-    fetchErrors: {},
-    ...overrides,
-  };
-}
-
 function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSnapshot {
   const ui = {
     activePanelIndex: 0,
@@ -120,7 +98,6 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
   };
   const meshcore = makeBucketOverrides(overrides.meshcore ?? {});
   const meshtastic = makeMeshtasticBucketOverrides(overrides.meshtastic ?? {});
-  const reticulum = makeReticulumSnapshot(overrides.reticulum ?? {});
   const base: Omit<DebugSnapshot, 'warnings'> = {
     capturedAt: '2026-06-19T16:00:00.000Z',
     legend: DEBUG_SNAPSHOT_ID_LEGEND,
@@ -139,13 +116,6 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
         mqttConnected: meshcore.mqttConnected,
         uiStoreIdentityId: meshcore.uiStoreIdentityId,
       },
-      reticulum: {
-        sessionState: reticulum.bucket.sessionState,
-        liveSession: reticulum.bucket.liveSession,
-        rfTransportConnected: reticulum.bucket.rfTransportConnected,
-        mqttConnected: reticulum.bucket.mqttConnected,
-        uiStoreIdentityId: reticulum.bucket.uiStoreIdentityId,
-      },
     },
     activeTab: {
       protocol: 'meshcore',
@@ -159,7 +129,6 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ui,
     meshtastic,
     meshcore,
-    reticulum,
     ...overrides,
   };
   return { ...base, warnings: analyzeDebugSnapshot(base) };
@@ -174,49 +143,6 @@ describe('buildDebugSnapshot', () => {
     resetDebugSnapshotUiContext();
     resetDebugSnapshotMeshtasticContext();
     localStorage.clear();
-  });
-
-  it('matches idle disconnected baseline shape', () => {
-    ensureOfflineProtocolIdentities();
-    upsertMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
-      id: 'mt-1',
-      from: 1,
-      to: 0,
-      payload: 'hi',
-      channelIndex: 0,
-      timestamp: 1,
-    });
-    upsertMessage(OFFLINE_MESHCORE_IDENTITY_ID, {
-      id: 'mc-1',
-      from: 2,
-      to: 0,
-      payload: 'hey',
-      channelIndex: 30,
-      timestamp: 2,
-    });
-
-    const snap = buildDebugSnapshot();
-
-    expect(snap.legend).toBe(DEBUG_SNAPSHOT_ID_LEGEND);
-    expect(snap.activeTab.uiStoreIdentityId).toBe(OFFLINE_MESHTASTIC_IDENTITY_ID);
-    expect(snap.activeTab.liveSession).toBe(false);
-    expect(snap.meshtastic.connectIdentityId).toBe(OFFLINE_MESHTASTIC_IDENTITY_ID);
-    expect(snap.meshtastic.uiStoreIdentityId).toBe(OFFLINE_MESHTASTIC_IDENTITY_ID);
-    expect(snap.meshtastic.identitySplit).toBe(false);
-    expect(snap.meshtastic.primaryTransportStatuses).toEqual([]);
-    expect(snap.meshtastic.sessionState).toBe('hydratedOnly');
-    expect(snap.meshtastic.liveSession).toBe(false);
-    expect(snap.meshtastic.hydrationSlotIsLiveSession).toBe(false);
-    expect(snap.meshtastic.hydrationSlotMessageCount).toBe(snap.meshtastic.connectMessageCount);
-    expect(snap.meshcore.hydrationSlotMessageCount).toBe(snap.meshcore.connectMessageCount);
-    expect(snap.reticulum.bucket.hydrationSlotId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
-    expect(snap.reticulum.sidecar.running).toBe(false);
-    expect(snap.reticulum.stack).toBeNull();
-    expect(snap.meshtastic.channelPills).toEqual([]);
-    expect(snap.meshtastic.channelConfigsSummary).toEqual([]);
-    expect(snap.meshtastic.mqttChannelKeyEntryCount).toBeNull();
-    expect(snap.meshtastic.mqttChannelNameToIndex).toBeNull();
-    expect(snap.warnings).toEqual([]);
   });
 
   it('includes Meshtastic channel pills and config summary from debug context', () => {
@@ -256,17 +182,6 @@ describe('buildDebugSnapshot', () => {
     expect(snap.meshtastic.channelConfigsSummary[1]?.isDefaultPublicPsk).toBe(true);
     expect(snap.meshtastic.mqttChannelKeyEntryCount).toBe(2);
     expect(snap.meshtastic.mqttChannelNameToIndex).toEqual({ LongFast: 1, Private: 0 });
-  });
-
-  it('uses activeProtocol from ui context for activeTab including reticulum', () => {
-    ensureOfflineProtocolIdentities();
-    setDebugSnapshotUiContext({ activeProtocol: 'reticulum' });
-
-    const snap = buildDebugSnapshot();
-
-    expect(snap.activeTab.protocol).toBe('reticulum');
-    expect(snap.activeTab.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
-    expect(snap.sessionSummary.reticulum.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
   });
 
   it('includes resolved and primary identity bucket counts when connected', () => {
@@ -552,19 +467,6 @@ describe('analyzeDebugSnapshot', () => {
     expect(snap.warnings.some((w) => w.code === 'connectedNoPrimaryMessages')).toBe(true);
   });
 
-  it('flags sidecarNotRunning when identity is configured but sidecar is down', () => {
-    const snap = makeSyntheticSnapshot({
-      reticulum: makeReticulumSnapshot({
-        sidecar: { running: false, port: 0, pid: null, lastError: 'health poll timeout' },
-        stack: {
-          identityStatus: { configured: true, identity_hash: 'aa', lxmf_hash: 'bb' },
-        },
-      }),
-    });
-
-    expect(snap.warnings.some((w) => w.code === 'sidecarNotRunning')).toBe(true);
-  });
-
   it('flags windowHiddenOnChat', () => {
     const snap = makeSyntheticSnapshot({
       windowHidden: true,
@@ -581,60 +483,6 @@ describe('analyzeDebugSnapshot', () => {
     });
 
     expect(snap.warnings.some((w) => w.code === 'windowHiddenOnChat')).toBe(true);
-  });
-});
-
-describe('buildDebugSnapshotAsync', () => {
-  beforeEach(() => {
-    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
-    resetDebugSnapshotUiContext();
-    vi.mocked(window.electronAPI.reticulum.getStatus).mockReset();
-    vi.mocked(window.electronAPI.reticulum.proxyGet).mockReset();
-  });
-
-  it('includes live sidecar stack payload when running', async () => {
-    ensureOfflineProtocolIdentities();
-    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
-      running: true,
-      port: 19437,
-      pid: 7,
-    });
-    vi.mocked(window.electronAPI.reticulum.proxyGet).mockResolvedValue({
-      status: 'ok',
-      rns_ready: true,
-      lxmf_ready: false,
-    });
-
-    const snap = await buildDebugSnapshotAsync();
-
-    expect(snap.reticulum.sidecar.running).toBe(true);
-    expect(snap.reticulum.stack?.status).toMatchObject({ rns_ready: true });
-  });
-
-  it('includes mainLiveness from getRendererLiveness', async () => {
-    ensureOfflineProtocolIdentities();
-    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
-      running: false,
-      port: 0,
-      pid: null,
-    });
-    vi.mocked(window.electronAPI.app.getRendererLiveness).mockResolvedValue({
-      mainUptimeSec: 3600,
-      lastRendererHeartbeatAgeMs: 12_000,
-      rendererUnresponsiveSeen: true,
-      rss: 100,
-      heapUsed: 50,
-    });
-
-    const snap = await buildDebugSnapshotAsync();
-
-    expect(snap.mainLiveness).toEqual({
-      mainUptimeSec: 3600,
-      lastRendererHeartbeatAgeMs: 12_000,
-      rendererUnresponsiveSeen: true,
-      rss: 100,
-      heapUsed: 50,
-    });
   });
 });
 

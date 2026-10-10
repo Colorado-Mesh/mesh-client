@@ -37,10 +37,10 @@ const TIER1_PATHS = [
 /** Tier 2 — dependency install + sidecar build output (recreated by `--full`). */
 const TIER2_PATHS = [
   'node_modules',
-  'reticulum-sidecar/target',
-  'resources/reticulum-sidecar/staged',
-  'resources/reticulum-sidecar/mesh-client-reticulum',
-  'resources/reticulum-sidecar/mesh-client-reticulum.exe',
+  'ble-sidecar/target',
+  'resources/ble-sidecar/staged',
+  'resources/ble-sidecar/mesh-hub-ble',
+  'resources/ble-sidecar/mesh-hub-ble.exe',
 ].map((name) => ({ name, tier: 2 }));
 
 const ALL_PATHS = [...TIER1_PATHS, ...TIER2_PATHS];
@@ -134,7 +134,7 @@ export function printPlan(out, full, removals, reinstall) {
   if (reinstall.install) {
     out.write('After removal, a working environment will be restored:\n');
     if (reinstall.sidecar) out.write('  - pnpm install\n');
-    if (reinstall.sidecar) out.write('  - pnpm run reticulum:sidecar:build\n');
+    if (reinstall.sidecar) out.write('  - pnpm run ble:sidecar:build\n');
   }
 }
 
@@ -225,7 +225,7 @@ export async function runClean(rootDir = repoRoot, argv = process.argv.slice(2),
     }
     let sidecarOk = true;
     if (reinstall.sidecar) {
-      sidecarOk = run(['pnpm', 'run', 'reticulum:sidecar:build'], rootDir) === 0;
+      sidecarOk = run(['pnpm', 'run', 'ble:sidecar:build'], rootDir) === 0;
       if (!sidecarOk) {
         throw restorationError(
           'clean-build: sidecar rebuild failed (is cargo installed?) — Reticulum may be unavailable.',

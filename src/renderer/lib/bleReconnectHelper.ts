@@ -1,12 +1,12 @@
 import type { GattBleSessionId, GattBleStartScanResult } from '@/shared/electron-api.types';
 import { bleIdsMatch } from '@/shared/normalizeBleMac';
 
+import { isBleScanBusyErrorMessage } from './bleAdapterLease';
 import {
   isMeshcoreMissingServicesErrorMessage,
   isMeshcoreSetupAbortError,
 } from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
-import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
 
 export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 60_000;

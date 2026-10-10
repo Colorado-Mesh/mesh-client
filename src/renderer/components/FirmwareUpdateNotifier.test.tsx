@@ -7,7 +7,6 @@ import type * as FirmwareCheck from '@/renderer/lib/firmwareCheck';
 import {
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
 } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { DeviceState } from '@/renderer/lib/types';
 
@@ -37,12 +36,8 @@ function renderNotifier(onResult = vi.fn()) {
   render(
     <ToastProvider>
       <FirmwareUpdateNotifier
-        deviceStateByProtocol={protocolRecord(idle, meshcore, idle)}
-        capabilitiesByProtocol={protocolRecord(
-          MESHTASTIC_CAPABILITIES,
-          MESHCORE_CAPABILITIES,
-          RETICULUM_CAPABILITIES,
-        )}
+        deviceStateByProtocol={protocolRecord(idle, meshcore)}
+        capabilitiesByProtocol={protocolRecord(MESHTASTIC_CAPABILITIES, MESHCORE_CAPABILITIES)}
         activeProtocol="meshcore"
         onResult={onResult}
       />
@@ -86,53 +81,5 @@ describe('FirmwareUpdateNotifier', () => {
     localStorage.setItem(DISMISS_KEY, '1.17.0');
     renderNotifier();
     expect(await screen.findByText('Firmware update available: v1.17.1')).toBeInTheDocument();
-  });
-
-  it('toasts the other protocol when the active protocol changes', async () => {
-    fetchMeshtasticRelease.mockResolvedValue({
-      version: '2.6.0',
-      releaseUrl: 'https://github.com/meshtastic/firmware/releases/tag/v2.6.0',
-    });
-    const idle = { status: 'disconnected' } as unknown as DeviceState;
-    const meshcore = {
-      status: 'configured',
-      firmwareVersion: '1.17.0.4',
-    } as unknown as DeviceState;
-    const meshtastic = {
-      status: 'configured',
-      firmwareVersion: '2.5.0',
-    } as unknown as DeviceState;
-    const shared = {
-      deviceStateByProtocol: protocolRecord(meshtastic, meshcore, idle),
-      capabilitiesByProtocol: protocolRecord(
-        MESHTASTIC_CAPABILITIES,
-        MESHCORE_CAPABILITIES,
-        RETICULUM_CAPABILITIES,
-      ),
-      onResult: vi.fn(),
-    };
-    const { rerender } = render(
-      <ToastProvider>
-        <FirmwareUpdateNotifier {...shared} activeProtocol="meshcore" />
-      </ToastProvider>,
-    );
-    expect(await screen.findByText('Firmware update available: v1.17.1')).toBeInTheDocument();
-
-    rerender(
-      <ToastProvider>
-        <FirmwareUpdateNotifier {...shared} activeProtocol="meshtastic" />
-      </ToastProvider>,
-    );
-    expect(await screen.findByText('Firmware update available: v2.6.0')).toBeInTheDocument();
-
-    rerender(
-      <ToastProvider>
-        <FirmwareUpdateNotifier {...shared} activeProtocol="meshcore" />
-      </ToastProvider>,
-    );
-    await waitFor(() => {
-      expect(fetchMeshcoreRelease).toHaveBeenCalledTimes(2);
-    });
-    expect(screen.getAllByText('Firmware update available: v1.17.1')).toHaveLength(1);
   });
 });

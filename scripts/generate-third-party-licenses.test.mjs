@@ -99,7 +99,7 @@ describe('buildRustSidecarSection', () => {
       cargoAvailable: () => true,
       loadMetadata: () => RUST_METADATA,
     });
-    expect(section).toMatch(/all 4 crates resolved by `reticulum-sidecar\/Cargo\.lock`/);
+    expect(section).toMatch(/all 4 crates resolved by `ble-sidecar\/Cargo\.lock`/);
     expect(section).toMatch(/\| MIT OR Apache-2\.0 \| 2 \|/);
     expect(section).toMatch(/\| AGPL-3\.0-or-later \| 1 \|/);
     expect(section).toMatch(

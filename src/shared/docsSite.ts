@@ -1,7 +1,7 @@
 import type { MeshProtocol } from './meshProtocol';
 
 /** Published MkDocs site (built from `docs/` by `.github/workflows/docs.yml`). */
-export const DOCS_SITE_URL = 'https://colorado-mesh.github.io/mesh-client/';
+export const DOCS_SITE_URL = 'https://charlottemeshtastic.github.io/mesh-client/';
 
 /**
  * URL of a page on the docs site. `page` is the `docs/<page>.md` basename without
@@ -16,7 +16,6 @@ export function docsSitePageUrl(page: string, anchor?: string): string {
 export const TROUBLESHOOTING_PAGE_BY_PROTOCOL: Readonly<Record<MeshProtocol, string>> = {
   meshtastic: 'troubleshooting',
   meshcore: 'troubleshooting-meshcore',
-  reticulum: 'troubleshooting-reticulum',
 };
 
 export function troubleshootingDocsUrl(protocol: MeshProtocol): string {

@@ -13,7 +13,6 @@ import {
   asTraceRouteResult,
   asTraceRouteResultsMap,
   asWaypointMap,
-  chatChannelsFromRuntimeChannels,
   traceRouteHopLabels,
 } from './protocolRuntimeAdapters';
 
@@ -30,31 +29,6 @@ describe('protocolRuntimeAdapters', () => {
       { index: 1, name: 'Ops' },
       { index: 0, name: 'Primary' },
     ]);
-  });
-
-  it('chatChannelsFromRuntimeChannels mirrors App: Reticulum empty, MeshCore configured, else pills', () => {
-    const channels = [
-      { index: 0, name: 'General', secret: new Uint8Array(16).fill(0x11) },
-      { index: 1, name: 'Unset', secret: new Uint8Array(16) },
-    ];
-    expect(
-      chatChannelsFromRuntimeChannels(channels, {
-        hasReticulumInterfaceConfig: true,
-        hasCompanionContactManagementConfig: false,
-      }),
-    ).toEqual([]);
-    expect(
-      chatChannelsFromRuntimeChannels(channels, {
-        hasReticulumInterfaceConfig: false,
-        hasCompanionContactManagementConfig: true,
-      }),
-    ).toEqual([{ index: 0, name: 'General' }]);
-    expect(
-      chatChannelsFromRuntimeChannels([{ index: 2, name: 'Secondary' }, { name: 'no-index' }], {
-        hasReticulumInterfaceConfig: false,
-        hasCompanionContactManagementConfig: false,
-      }),
-    ).toEqual([{ index: 2, name: 'Secondary' }]);
   });
 
   it('asTraceRouteResult requires route[] and from', () => {

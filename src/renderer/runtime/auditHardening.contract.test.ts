@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Source contracts for audit hardening in LoRa runtimes / Nomad toast path.
+ * Source contracts for audit hardening in LoRa runtimes.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,10 +11,6 @@ import { extractUseCallbackBody, loadRuntimeSource } from '../lib/sourceContract
 
 const MESHTASTIC = loadRuntimeSource('useMeshtasticRuntime.ts');
 const MESHCORE = loadRuntimeSource('useMeshcoreRuntime.ts');
-const NOMAD_PAGE_VIEWER = readFileSync(
-  join(import.meta.dirname ?? __dirname, '../stores/nomadPageViewerStore.ts'),
-  'utf-8',
-);
 const CHAT_PANEL = readFileSync(
   join(import.meta.dirname ?? __dirname, '../components/ChatPanel.tsx'),
   'utf-8',
@@ -53,14 +49,6 @@ describe('audit hardening source contracts', () => {
   it('Meshtastic GPS interval uses readGpsRefreshIntervalSecs', () => {
     expect(MESHTASTIC).toContain('readGpsRefreshIntervalSecs');
     expect(MESHTASTIC).not.toContain("'mesh-client:gpsSettings'");
-  });
-
-  it('nomad pageReady toast dynamic i18n import has a rejection handler', () => {
-    expect(NOMAD_PAGE_VIEWER).toMatch(
-      /import\('@\/renderer\/lib\/i18n'\)[\s\S]*?\.catch\(\(err: unknown\) =>/,
-    );
-    expect(NOMAD_PAGE_VIEWER).toContain('pageReadyToast i18n import failed');
-    expect(NOMAD_PAGE_VIEWER).toContain('errLikeToLogString(err)');
   });
 
   it('ChatPanel localizes MeshCore Unknown sender sentinel only', () => {

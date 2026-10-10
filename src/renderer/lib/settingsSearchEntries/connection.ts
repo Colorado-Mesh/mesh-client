@@ -4,17 +4,13 @@ import type {
   SettingsSearchSurface,
 } from '../settingsSearch';
 
-// Reticulum's Connection slot renders ReticulumStackPanel instead of the LoRa radio/MQTT views.
-const hasLoraConnection = (ctx: SettingsSearchContext) =>
-  !ctx.capabilities.hasReticulumInterfaceConfig;
 const hasMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttConnectionPanel;
 const hasMeshtasticMqtt = (ctx: SettingsSearchContext) => ctx.capabilities.hasMqttHybrid;
 const hasMeshcoreMqtt = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasMqttConnectionPanel && !ctx.capabilities.hasMqttHybrid;
 // HTTP/TCP host fields: Meshtastic nodes on Wi-Fi vs MeshCore companion TCP.
 const hasNetworkNodeAddress = (ctx: SettingsSearchContext) => ctx.capabilities.hasWifiConfig;
-const hasCompanionTcpHost = (ctx: SettingsSearchContext) =>
-  hasLoraConnection(ctx) && !ctx.capabilities.hasWifiConfig;
+const hasCompanionTcpHost = (ctx: SettingsSearchContext) => !ctx.capabilities.hasWifiConfig;
 
 const RADIO = 'connectionPanel.radioConnection';
 const MQTT = 'connectionPanel.mqttConnection';
@@ -27,7 +23,6 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     labelKey: 'connectionPanel.connectionType',
     sectionKey: RADIO,
     keywords: ['bluetooth', 'ble', 'serial', 'usb', 'wifi', 'http', 'tcp', 'transport'],
-    visible: hasLoraConnection,
   },
   {
     id: 'connection.radio.httpAddress',
@@ -67,7 +62,6 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     labelKey: 'connectionPanel.connectButton',
     sectionKey: RADIO,
     keywords: ['connect radio', 'pair', 'device'],
-    visible: hasLoraConnection,
   },
   {
     id: 'connection.lastConnection.reconnect',
@@ -75,7 +69,6 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     labelKey: 'connectionPanel.reconnect',
     sectionKey: LAST,
     keywords: ['last device', 'reconnect', 'recent'],
-    visible: hasLoraConnection,
   },
   {
     id: 'connection.lastConnection.forget',
@@ -83,7 +76,6 @@ const connectionEntries: readonly SettingSearchEntry[] = [
     labelKey: 'connectionPanel.forgetDevice',
     sectionKey: LAST,
     keywords: ['last device', 'remove', 'clear'],
-    visible: hasLoraConnection,
   },
   {
     id: 'connection.mqtt.meshtasticPreset',

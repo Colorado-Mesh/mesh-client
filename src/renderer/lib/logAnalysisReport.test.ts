@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import en from '@/renderer/locales/en/translation.json';
 
-import { buildLogAnalysisReport, LOG_REPORT_SAMPLES_PER_CATEGORY } from './logAnalysisReport';
-import { analyzeLogs, type LogEntry } from './logAnalyzer';
+import { buildLogAnalysisReport } from './logAnalysisReport';
+import { analyzeLogs } from './logAnalyzer';
 
 const i18n = createInstance();
 beforeAll(async () => {
@@ -30,21 +30,6 @@ describe('troubleshooting report', () => {
     expect(report).toContain('1970-01-01T00:00:01.000Z [warn] [renderer:dbPersistRetry]');
     expect(report).toContain(en.logAnalyzeModal.historyNote);
     expect(report).not.toContain(en.logAnalyzer.categories['internal-error'].recommendation);
-  });
-
-  it('bounds samples, keeps recent evidence and flattens embedded newlines', () => {
-    const entries: LogEntry[] = Array.from({ length: 30 }, (_, index) => ({
-      ts: index * 1000,
-      level: 'error',
-      source: 'test',
-      message: `failure-${index}\n${'x'.repeat(1000)}`,
-    }));
-    const report = buildLogAnalysisReport(analyzeLogs(entries, 'reticulum'), 'reticulum', i18n.t);
-    expect(report).toContain(`Showing ${LOG_REPORT_SAMPLES_PER_CATEGORY} of 30 matching entries`);
-    expect(report).toContain('failure-29 ');
-    expect(report).not.toContain('failure-0 ');
-    expect(report).not.toContain('failure-29\n');
-    expect(report.length).toBeLessThan(3000);
   });
 
   it('handles an empty log without inventing evidence', () => {

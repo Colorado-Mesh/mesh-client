@@ -56,7 +56,7 @@ describe('writeFlatpakCiBuildInfoFile', () => {
         GITHUB_RUN_ID: '99',
         GITHUB_RUN_NUMBER: '214',
         GITHUB_SHA: 'bd423682bafb610fd16b9131e52605aaf80f1728',
-        GITHUB_REPOSITORY: 'Colorado-Mesh/mesh-client',
+        GITHUB_REPOSITORY: 'charlottemeshtastic/mesh-client',
         GITHUB_SERVER_URL: 'https://github.com',
       },
       { outPath },
@@ -65,7 +65,7 @@ describe('writeFlatpakCiBuildInfoFile', () => {
       channel: 'test',
       runNumber: 214,
       sha: 'bd42368',
-      runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/99',
+      runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/99',
     });
   });
 

@@ -18,7 +18,7 @@ import {
 } from '../lib/weatherPosts';
 import { useWeatherForecastStore } from './weatherForecastStore';
 
-const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'reticulum'];
+const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore'];
 
 interface WeatherFilterState {
   hideInChannels: boolean;

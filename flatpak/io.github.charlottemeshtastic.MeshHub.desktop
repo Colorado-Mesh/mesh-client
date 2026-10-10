@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Mesh Hub
+Comment=Meshtastic and MeshCore mesh network client
+Exec=mesh-client %U
+Icon=io.github.charlottemeshtastic.MeshHub
+Type=Application
+Categories=Utility;Network;HamRadio;
+StartupWMClass=mesh-hub

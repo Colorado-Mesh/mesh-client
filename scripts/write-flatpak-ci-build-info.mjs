@@ -73,7 +73,7 @@ export function writeFlatpakCiBuildInfoFile(env = process.env, opts = {}) {
 }
 
 /**
- * Shell snippet used in org.coloradomesh.MeshClient.yml before pnpm run build.
+ * Shell snippet used in io.github.charlottemeshtastic.MeshHub.yml before pnpm run build.
  * Kept as a constant so check-flatpak can assert the contract.
  */
 export const FLATPAK_BUILD_INFO_EXPORT_SNIPPET = [

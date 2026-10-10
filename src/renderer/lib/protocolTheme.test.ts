@@ -15,7 +15,7 @@ describe('protocolTheme', () => {
 
   it('gives every protocol a unique two-letter rail monogram', () => {
     const monograms = REGISTERED_MESH_PROTOCOLS.map((p) => PROTOCOL_THEME[p].monogram);
-    expect(monograms).toEqual(['MT', 'MC', 'RN']);
+    expect(monograms).toEqual(['MT', 'MC']);
     expect(new Set(monograms).size).toBe(monograms.length);
   });
 

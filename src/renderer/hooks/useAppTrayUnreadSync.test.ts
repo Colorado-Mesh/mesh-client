@@ -17,13 +17,13 @@ describe('useAppTrayUnreadSync', () => {
           useAppTrayUnreadSync(...counts);
         },
         {
-          initialProps: { counts: [1, 2, 3, 4, 5] as [number, number, number, number, number] },
+          initialProps: { counts: [1, 2, 3] as [number, number, number] },
         },
       );
-      expect(window.electronAPI.setTrayUnread).toHaveBeenLastCalledWith(15);
-      rerender({ counts: [0, 2, 0, 0, 0] });
+      expect(window.electronAPI.setTrayUnread).toHaveBeenLastCalledWith(6);
+      rerender({ counts: [0, 2, 0] });
       expect(window.electronAPI.setTrayUnread).toHaveBeenLastCalledWith(2);
-      rerender({ counts: [0, 0, 0, 0, 0] });
+      rerender({ counts: [0, 0, 0] });
       expect(window.electronAPI.setTrayUnread).toHaveBeenLastCalledWith(0);
     },
   );

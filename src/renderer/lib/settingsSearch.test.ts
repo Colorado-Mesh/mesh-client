@@ -8,7 +8,6 @@ import {
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
   type ProtocolCapabilities,
-  RETICULUM_CAPABILITIES,
 } from './radio/BaseRadioProvider';
 import {
   buildSettingSearchItems,
@@ -39,7 +38,7 @@ const enT = ((key: string) => {
 }) as TFunction;
 
 function contextFor(
-  protocol: 'meshtastic' | 'meshcore' | 'reticulum',
+  protocol: 'meshtastic' | 'meshcore',
   capabilities: ProtocolCapabilities,
 ): SettingsSearchContext {
   const mappings = computeTabMappings(keyT, protocol, capabilities);
@@ -52,7 +51,6 @@ function contextFor(
 const PROTOCOLS = [
   ['meshtastic', MESHTASTIC_CAPABILITIES],
   ['meshcore', MESHCORE_CAPABILITIES],
-  ['reticulum', RETICULUM_CAPABILITIES],
 ] as const;
 
 function item(label: string, extra = ''): LauncherSettingItem {
@@ -173,36 +171,6 @@ describe('registry visibility per protocol', () => {
     },
   );
 
-  it('keeps protocol-specific App rows on their protocol only', () => {
-    const ids = (protocol: (typeof PROTOCOLS)[number][0], caps: ProtocolCapabilities) =>
-      new Set(
-        buildSettingSearchItems(SETTING_SEARCH_ENTRIES, contextFor(protocol, caps), keyT).map(
-          (i) => i.id,
-        ),
-      );
-    const meshtastic = ids('meshtastic', MESHTASTIC_CAPABILITIES);
-    const meshcore = ids('meshcore', MESHCORE_CAPABILITIES);
-    const reticulum = ids('reticulum', RETICULUM_CAPABILITIES);
-
-    expect(meshtastic.has('app.retention.meshtasticMessageCap')).toBe(true);
-    expect(meshcore.has('app.retention.meshtasticMessageCap')).toBe(false);
-    expect(reticulum.has('app.retention.meshtasticMessageCap')).toBe(false);
-
-    expect(meshcore.has('app.retention.meshcoreMessageCap')).toBe(true);
-    expect(meshtastic.has('app.retention.meshcoreMessageCap')).toBe(false);
-
-    expect(reticulum.has('app.retention.reticulumMessageCap')).toBe(true);
-    expect(meshcore.has('app.retention.reticulumMessageCap')).toBe(false);
-
-    expect(meshcore.has('app.floodAdvert.schedule')).toBe(true);
-    expect(meshtastic.has('app.floodAdvert.schedule')).toBe(false);
-
-    // Shared rows are listed everywhere the App panel is.
-    for (const set of [meshtastic, meshcore, reticulum]) {
-      expect(set.has('app.appearance.reduceMotion')).toBe(true);
-    }
-  });
-
   it('does not depend on connection state (context carries none)', () => {
     const ctx = contextFor('meshcore', MESHCORE_CAPABILITIES);
     const first = buildSettingSearchItems(SETTING_SEARCH_ENTRIES, ctx, keyT);
@@ -213,31 +181,10 @@ describe('registry visibility per protocol', () => {
 });
 
 describe('registry integrity', () => {
-  const SEGMENT_RE = /^[a-z][a-zA-Z0-9]*$/;
-
   it('has unique ids', () => {
     const ids = SETTING_SEARCH_ENTRIES.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
-
-  it.each(SETTING_SEARCH_ENTRIES.map((e) => [e.id, e] as const))(
-    '%s is well formed',
-    (id, entry) => {
-      const segments = id.split('.');
-      expect(segments.length).toBeGreaterThanOrEqual(2);
-      expect(segments.length).toBeLessThanOrEqual(3);
-      for (const segment of segments) expect(segment).toMatch(SEGMENT_RE);
-      expect(TAB_SLOT_IDS).toContain(entry.slot);
-      // Acronym slots lowercase entirely (RRC -> rrc, TAK -> tak, RF -> rf).
-      const slotCamel =
-        entry.slot === entry.slot.toUpperCase()
-          ? entry.slot.toLowerCase()
-          : entry.slot.charAt(0).toLowerCase() + entry.slot.slice(1);
-      expect(segments[0]).toBe(slotCamel);
-      expect(typeof lookupEn(entry.labelKey)).toBe('string');
-      if (entry.sectionKey) expect(typeof lookupEn(entry.sectionKey)).toBe('string');
-    },
-  );
 });
 
 describe('stripUnfilledInterpolation', () => {

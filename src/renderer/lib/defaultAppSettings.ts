@@ -17,11 +17,6 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreContactCapEnabled: true,
   meshcoreContactCapCount: 10000,
   meshcoreDeleteNeverAdvertised: true,
-  /** Reticulum SQLite destination + in-memory peer cap / age prune (App tab). */
-  reticulumAutoPruneEnabled: true,
-  reticulumAutoPruneDays: 30,
-  reticulumDestinationCapEnabled: true,
-  reticulumDestinationCapCount: 50000,
   distanceFilterEnabled: false,
   distanceFilterMax: 500,
   distanceUnit: 'miles' as const,
@@ -68,22 +63,13 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   shareLocationSendWaypoint: true,
   /**
    * When false, mesh-client skips host GPS lookups and blocks all app-initiated location
-   * transmission (Meshtastic, MeshCore, Reticulum). Static coords remain for local map only.
+   * transmission (Meshtastic, MeshCore). Static coords remain for local map only.
    */
   shareMyLocation: true,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */
   meshcorePathHashMode: 0 as 0 | 1 | 2,
-  /** Start Reticulum sidecar automatically when opening the Reticulum tab. */
-  reticulumAutostart: false,
-  /** Retry failed LXMF messages to a peer when that peer announces. */
-  reticulumAutoResendOnAnnounce: false,
-  /**
-   * RRC unread + sound: any new room msg/action (default). Off = IRC-style
-   * DMs + @mentions only.
-   */
-  rrcUnreadAllRoomMessages: true,
   /** When true, show the Chat MECP compose button (default off). */
   mecpComposeEnabled: false,
   /** Node silence alert threshold; null = use protocol capability defaults. */

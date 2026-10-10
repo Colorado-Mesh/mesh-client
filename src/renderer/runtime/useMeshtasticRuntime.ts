@@ -15,6 +15,7 @@ import {
   getStoreForwardHistoryProfile,
   isShareMyLocationEnabled,
 } from '@/renderer/lib/appSettingsStorage';
+import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/bleAdapterLease';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY } from '@/renderer/lib/chatSendErrorI18n';
 import { getConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
@@ -59,8 +60,6 @@ import {
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
-import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
-import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import {
   environmentReadingFromNodePatch,
   takeEnvironmentNodeUpdateMarker,
@@ -2139,12 +2138,6 @@ export function useMeshtasticRuntime() {
       console.debug('[useMeshtasticRuntime] skip reconnect (user disconnect)');
       return;
     }
-    if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
-      console.debug(
-        '[useMeshtasticRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
-      );
-      return;
-    }
     if (
       connectionParamsRef.current?.type === 'ble' &&
       shouldSkipBleReconnectAfterExhaustion({
@@ -2389,12 +2382,8 @@ export function useMeshtasticRuntime() {
       },
       runOpenAndAttach: async (ctx, params) => {
         const { generation, attemptActive, lateTransport } = ctx;
-        const bleBondRecoveryBlocks = () =>
-          params.type === 'ble' && getReticulumBleBondDesyncActive();
         const isSuperseded = () =>
-          reconnectGenerationRef.current !== generation ||
-          !attemptActive() ||
-          bleBondRecoveryBlocks();
+          reconnectGenerationRef.current !== generation || !attemptActive();
         if (isSuperseded()) {
           throw new Error('Reconnect superseded before open');
         }
@@ -2586,12 +2575,6 @@ export function useMeshtasticRuntime() {
     const onBleLeaseReleased = () => {
       if (connectionParamsRef.current?.type !== 'ble') return;
       if (meshtasticExplicitDisconnectRef.current) return;
-      if (getReticulumBleBondDesyncActive()) {
-        console.debug(
-          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (RNode bond recovery)',
-        );
-        return;
-      }
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
         return;
       }
@@ -2625,18 +2608,6 @@ export function useMeshtasticRuntime() {
 
   const scheduleMeshtasticReconnectAttempt = useCallback(() => {
     meshtasticRfReconnectRef.current.scheduleOwner(() => {
-      if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
-        console.debug(
-          '[useMeshtasticRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
-        );
-        // cancel() bumps controller generation; sync reconnectGenerationRef so an in-flight
-        // runOpenAndAttach sees supersession (endAttempt alone leaves generation unchanged).
-        meshtasticRfReconnectRef.current.cancel();
-        reconnectGenerationRef.current = meshtasticRfReconnectRef.current.generation;
-        isReconnectingRef.current = false;
-        meshtasticDeferredReconnectRef.current = false;
-        return;
-      }
       if (!isReconnectingRef.current || meshtasticExplicitDisconnectRef.current) {
         return;
       }

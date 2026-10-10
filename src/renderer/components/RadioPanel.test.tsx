@@ -7,7 +7,6 @@ import type { MeshCoreSelfInfo } from '@/renderer/lib/meshcore/meshcoreHookTypes
 import {
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
 } from '@/renderer/lib/radio/BaseRadioProvider';
 import {
   generateConfigUrl,
@@ -304,28 +303,6 @@ describe('RadioPanel Meshtastic Short Name validation', () => {
     expect(shortNameField).not.toBeNull();
     hydrateAxeThemeColors(shortNameField!);
     expect(await axe(shortNameField!)).toHaveNoViolations();
-  });
-
-  it('does not render Short Name for Reticulum capabilities', async () => {
-    const user = userEvent.setup();
-    render(
-      <ToastProvider>
-        <RadioPanel
-          {...defaultProps}
-          isConnected
-          capabilities={RETICULUM_CAPABILITIES}
-          onSetOwner={vi.fn().mockResolvedValue(undefined)}
-        />
-      </ToastProvider>,
-    );
-
-    await openDeviceUserSection(user);
-    expect(screen.queryByLabelText('Short Name')).not.toBeInTheDocument();
-    expect(screen.queryByText('Licensed (Ham Radio Operator)')).not.toBeInTheDocument();
-    const longNameField = screen.getByLabelText('Long Name').closest('.space-y-1');
-    expect(longNameField).not.toBeNull();
-    hydrateAxeThemeColors(longNameField!);
-    expect(await axe(longNameField!)).toHaveNoViolations();
   });
 
   it('does not suppress GPS when Client Mute role apply fails', async () => {

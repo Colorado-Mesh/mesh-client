@@ -4,12 +4,10 @@ import type {
   SettingsSearchSurface,
 } from '../settingsSearch';
 
-// App.tsx renders ReticulumPeerListPanel instead of NodeListPanel when this flag is set.
-const hasNodeList = (ctx: SettingsSearchContext) => !ctx.capabilities.hasReticulumPeersList;
 // NodeListPanel shows the contact import, refresh, advert and offload controls only with this flag.
 const hasContactTools = (ctx: SettingsSearchContext) => ctx.capabilities.hasContactImportExport;
 const hasContactGroups = (ctx: SettingsSearchContext) =>
-  hasNodeList(ctx) && ctx.capabilities.hasUserManagedContactGroups;
+  ctx.capabilities.hasUserManagedContactGroups;
 
 const CONTACTS = 'nodeListPanel.headingContacts';
 
@@ -20,7 +18,7 @@ const nodesEntries: readonly SettingSearchEntry[] = [
     labelKey: 'nodeListPanel.searchNodesPlaceholder',
     sectionKey: 'nodeListPanel.headingNodeDatabase',
     keywords: ['find', 'filter', 'search', 'node'],
-    visible: (ctx) => hasNodeList(ctx) && !ctx.capabilities.nodeListTabUsesContactsLabel,
+    visible: (ctx) => !ctx.capabilities.nodeListTabUsesContactsLabel,
   },
   {
     id: 'nodes.filters.searchContacts',
@@ -28,7 +26,7 @@ const nodesEntries: readonly SettingSearchEntry[] = [
     labelKey: 'nodeListPanel.searchContactsPlaceholder',
     sectionKey: CONTACTS,
     keywords: ['find', 'filter', 'search', 'contact'],
-    visible: (ctx) => hasNodeList(ctx) && ctx.capabilities.nodeListTabUsesContactsLabel,
+    visible: (ctx) => ctx.capabilities.nodeListTabUsesContactsLabel,
   },
   {
     id: 'nodes.filters.contactGroup',

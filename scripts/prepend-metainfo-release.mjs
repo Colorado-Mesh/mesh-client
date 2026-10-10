@@ -10,7 +10,11 @@ import { prependMetainfoRelease } from './metainfoRelease.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const DEFAULT_METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainfo.xml');
+const DEFAULT_METAINFO = path.join(
+  ROOT,
+  'flatpak',
+  'io.github.charlottemeshtastic.MeshHub.metainfo.xml',
+);
 
 const [version, date, metainfoArg] = process.argv.slice(2);
 if (!version || !date) {

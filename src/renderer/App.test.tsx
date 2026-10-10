@@ -12,28 +12,14 @@ import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
-  OFFLINE_RETICULUM_IDENTITY_ID,
 } from './lib/offlineProtocolIdentities';
 import { writeLauncherPins } from './lib/panelLauncher';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
-import {
-  MESHCORE_CAPABILITIES,
-  MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
-} from './lib/radio/BaseRadioProvider';
+import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
-import {
-  isReticulumManualStackStopSuppress,
-  resetReticulumManualStackStopSuppressForTests,
-  setReticulumManualStackStopSuppress,
-} from './lib/reticulum/reticulumManualStackStopSuppress';
-import { type MeshcoreSessionApi, registerMeshcoreSession } from './lib/sessions/meshcoreSession';
+import { registerMeshcoreSession } from './lib/sessions/meshcoreSession';
 import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
-import { getReticulumSession } from './lib/sessions/reticulumSession';
-import {
-  resetReticulumVacuumScheduleForTests,
-  resetStartupDbPruneForTests,
-} from './lib/startupDbPrune';
+import { resetStartupDbPruneForTests } from './lib/startupDbPrune';
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import { TAB_SLOT_IDS } from './lib/tabSlotIds';
 import type { ChatMessage } from './lib/types';
@@ -45,8 +31,7 @@ import { upsertNode, useNodeStore } from './stores/nodeStore';
 
 const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
 
-const { openReticulumGameSessionMock, playMessageNotificationMock } = vi.hoisted(() => ({
-  openReticulumGameSessionMock: vi.fn().mockResolvedValue(true),
+const { playMessageNotificationMock } = vi.hoisted(() => ({
   playMessageNotificationMock: vi.fn(),
 }));
 
@@ -108,8 +93,6 @@ const {
   lastMapPanelProps,
   lastNodeDetailModalProps,
   lastNodeListPanelProps,
-  reticulumRefreshMessagesFromDb,
-  reticulumRefreshNodesFromDb,
   tryAutoLaunchMqttMock,
   useDeviceMock,
   useMeshCoreMock,
@@ -294,8 +277,6 @@ const {
   lastMapPanelProps: { current: null as null | Record<string, unknown> },
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
-  reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
-  reticulumRefreshNodesFromDb: vi.fn().mockResolvedValue(undefined),
   tryAutoLaunchMqttMock: vi.fn().mockResolvedValue(undefined),
   useDeviceMock: vi.fn(),
   useMeshCoreMock: vi.fn(),
@@ -303,7 +284,6 @@ const {
 
 beforeEach(() => {
   resetStartupDbPruneForTests();
-  resetReticulumVacuumScheduleForTests();
   localStorage.clear();
   Object.defineProperty(document, 'hidden', { value: false, configurable: true });
   getStoredMeshProtocolMock.mockReset();
@@ -314,8 +294,6 @@ beforeEach(() => {
   lastMapPanelProps.current = null;
   lastNodeDetailModalProps.current = null;
   lastNodeListPanelProps.current = null;
-  reticulumRefreshNodesFromDb.mockClear();
-  reticulumRefreshMessagesFromDb.mockClear();
   tryAutoLaunchMqttMock.mockClear();
   useIdentityStore.setState({
     identities: {
@@ -349,8 +327,6 @@ beforeEach(() => {
   vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) =>
     protocol === 'meshcore' ? MESHCORE_CAPABILITIES : MESHTASTIC_CAPABILITIES,
   );
-  openReticulumGameSessionMock.mockClear();
-  openReticulumGameSessionMock.mockResolvedValue(true);
 });
 
 function setDocumentHidden(hidden: boolean): void {
@@ -482,18 +458,6 @@ vi.mock('./lib/mqttAutoLaunch', async (importOriginal) => {
   };
 });
 
-vi.mock('./hooks/useReticulumPanelActions', async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
-  const actual = await importOriginal<typeof import('./hooks/useReticulumPanelActions')>();
-  return {
-    useReticulumPanelActions: (runtime: Parameters<typeof actual.useReticulumPanelActions>[0]) => ({
-      ...actual.useReticulumPanelActions(runtime),
-      refreshNodesFromDb: reticulumRefreshNodesFromDb,
-      refreshMessagesFromDb: reticulumRefreshMessagesFromDb,
-    }),
-  };
-});
-
 vi.mock('./lazyTabPanels', () => ({
   AppPanel: (props: Record<string, unknown>) => {
     lastAppPanelProps.current = props;
@@ -506,7 +470,6 @@ vi.mock('./lazyTabPanels', () => ({
     );
   },
   DiagnosticsPanel: () => null,
-  GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
   MapPanel: (props: Record<string, unknown>) => {
     lastMapPanelProps.current = props;
     return null;
@@ -518,29 +481,10 @@ vi.mock('./lazyTabPanels', () => ({
   RawPacketLogPanel: () => null,
   RepeatersPanel: () => null,
   RFHistogramsPanel: () => null,
-  RrcPanel: () => null,
   SecurityPanel: () => null,
   TakServerPanel: () => null,
   TelemetryPanel: () => null,
-  ReticulumNetworkPanel: ({ onOpenInterfaces }: { onOpenInterfaces?: () => void }) => (
-    <button
-      type="button"
-      aria-label="test-open-reticulum-interfaces"
-      onClick={() => onOpenInterfaces?.()}
-    >
-      open interfaces
-    </button>
-  ),
 }));
-
-vi.mock('./lib/reticulum/reticulumGamesSession', async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
-  const actual = await importOriginal<typeof import('./lib/reticulum/reticulumGamesSession')>();
-  return {
-    ...actual,
-    openReticulumGameSession: (...args: unknown[]) => openReticulumGameSessionMock(...args),
-  };
-});
 
 vi.mock('./lazyModals', () => ({
   ContactGroupsModal: () => null,
@@ -690,7 +634,7 @@ describe('App shell layout', () => {
       within(protocolGroup)
         .getAllByRole('radio')
         .map((b) => b.textContent),
-    ).toEqual(['MT', 'MC', 'RN']);
+    ).toEqual(['MT', 'MC']);
     // Connection is the first tab, so the Device section opens on launch.
     expect(railButton('Device')).toHaveAttribute('aria-current', 'page');
 
@@ -705,36 +649,6 @@ describe('App shell layout', () => {
     const statusBar = screen.getByRole('contentinfo');
     expect(within(statusBar).getByRole('button', { name: /^Radio: / })).toBeInTheDocument();
     expect(within(statusBar).getByText(/messages/)).toBeInTheDocument();
-  });
-
-  it('drops disabled protocols from the switcher and hides it with one left (#1124)', async () => {
-    renderApp();
-    openPanel('App');
-    await waitFor(() => {
-      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
-    });
-    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
-      hidden: string[],
-    ) => void;
-
-    act(() => {
-      setHidden(['meshcore']);
-    });
-    const group = within(appRail()).getByRole('radiogroup', { name: 'Protocol switcher' });
-    expect(
-      within(group)
-        .getAllByRole('radio')
-        .map((b) => b.textContent),
-    ).toEqual(['MT', 'RN']);
-
-    act(() => {
-      setHidden(['meshtastic', 'meshcore']);
-    });
-    expect(within(appRail()).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
-    // The active protocol was disabled, so the app moved to the one still enabled.
-    await waitFor(() => {
-      expect(localStorage.getItem('mesh-protocol')).toBe('reticulum');
-    });
   });
 
   it.each([
@@ -837,86 +751,6 @@ describe('App shell layout', () => {
     });
     expect(latchMeshcore).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.mqtt.disconnect).not.toHaveBeenCalledWith('meshtastic');
-  });
-
-  it('latches an already-disconnected protocol and releases that latch when it is shown again', async () => {
-    resetReticulumManualStackStopSuppressForTests();
-    onTestFinished(() => {
-      resetReticulumManualStackStopSuppressForTests();
-    });
-    const latchMeshtastic = vi.fn(() => true);
-    const clearMeshtastic = vi.fn();
-    registerMeshtasticSession({
-      prepareRfConnect: vi.fn().mockResolvedValue(undefined),
-      attachRfSession: vi.fn().mockResolvedValue(undefined),
-      handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
-      finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-      connectAutomatic: vi.fn().mockResolvedValue(undefined),
-      sendChatMessage: vi.fn(),
-      latchExplicitDisconnect: latchMeshtastic,
-      clearExplicitDisconnectLatch: clearMeshtastic,
-    });
-    renderApp();
-    openPanel('App');
-    await waitFor(() => {
-      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
-    });
-    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
-      hidden: string[],
-    ) => void;
-
-    act(() => {
-      setHidden(['meshtastic']);
-    });
-    await waitFor(() => {
-      expect(latchMeshtastic).toHaveBeenCalledTimes(1);
-    });
-
-    act(() => {
-      setHidden([]);
-    });
-    await waitFor(() => {
-      expect(clearMeshtastic).toHaveBeenCalledTimes(1);
-    });
-
-    act(() => {
-      setHidden(['reticulum']);
-    });
-    await waitFor(() => {
-      expect(isReticulumManualStackStopSuppress()).toBe(true);
-    });
-
-    act(() => {
-      setHidden([]);
-    });
-    await waitFor(() => {
-      expect(isReticulumManualStackStopSuppress()).toBe(false);
-    });
-  });
-
-  it('leaves a Reticulum Stop latched when the protocol is hidden and shown again', async () => {
-    resetReticulumManualStackStopSuppressForTests();
-    setReticulumManualStackStopSuppress(true);
-    onTestFinished(() => {
-      resetReticulumManualStackStopSuppressForTests();
-    });
-    renderApp();
-    openPanel('App');
-    await waitFor(() => {
-      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
-    });
-    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
-      hidden: string[],
-    ) => void;
-
-    act(() => {
-      setHidden(['reticulum']);
-    });
-    act(() => {
-      setHidden([]);
-    });
-
-    expect(isReticulumManualStackStopSuppress()).toBe(true);
   });
 
   it('switches sections from the rail and remembers the last panel per section', () => {
@@ -1189,7 +1023,7 @@ describe('App accessibility', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
-  it('App panel About block shows tagline and Discord, GitHub, Website links', async () => {
+  it('App panel About block shows tagline and the GitHub link', async () => {
     renderApp();
     openPanel('App');
     await screen.findByRole('region', { name: 'About' });
@@ -1197,18 +1031,11 @@ describe('App accessibility', () => {
     expect(screen.getByText(/For everyone, everywhere/)).toBeInTheDocument();
     expect(screen.getByText(/Join us:/)).toBeInTheDocument();
 
-    expect(screen.getByRole('link', { name: 'Discord' })).toHaveAttribute(
-      'href',
-      'https://discord.com/invite/McChKR5NpS',
-    );
     expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute(
       'href',
-      'https://github.com/Colorado-Mesh/mesh-client',
+      'https://github.com/charlottemeshtastic/mesh-client',
     );
-    expect(screen.getByRole('link', { name: 'Website' })).toHaveAttribute(
-      'href',
-      'https://coloradomesh.org/',
-    );
+    expect(screen.queryByRole('link', { name: 'Discord' })).toBeNull();
   });
 
   it('shows pulsing red MQTT header when connection lost unexpectedly', async () => {
@@ -2004,81 +1831,6 @@ describe('App accessibility', () => {
       expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('0');
     });
   });
-
-  it('opens Games from mesh-client:openGamesSession while MeshCore is active', async () => {
-    getStoredMeshProtocolMock.mockReturnValue('meshcore');
-    expect(MESHCORE_CAPABILITIES.hasLrgpGames).toBe(false);
-    expect(RETICULUM_CAPABILITIES.hasLrgpGames).toBe(true);
-
-    // App.test defaults reticulum → Meshtastic caps; restore Games capability without
-    // mounting ReticulumStackAutostartCoordinator (needs appSettingsStorage exports).
-    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
-      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
-      if (protocol === 'reticulum') {
-        return { ...RETICULUM_CAPABILITIES, hasReticulumInterfaceConfig: false };
-      }
-      return MESHTASTIC_CAPABILITIES;
-    });
-
-    renderApp();
-
-    await waitFor(() => {
-      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
-    });
-    expect(screen.queryByRole('tab', { name: /^Games/ })).not.toBeInTheDocument();
-
-    act(() => {
-      window.dispatchEvent(
-        new CustomEvent('mesh-client:openGamesSession', {
-          detail: { sessionId: 'lrgp:test-session-from-meshcore' },
-        }),
-      );
-    });
-
-    await waitFor(() => {
-      expect(localStorage.getItem('mesh-protocol')).toBe('reticulum');
-    });
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /^Games/ })).toHaveAttribute('aria-selected', 'true');
-    });
-    expect(screen.getByTestId('games-panel-mock')).toBeInTheDocument();
-    expect(openReticulumGameSessionMock).toHaveBeenCalledWith('lrgp:test-session-from-meshcore');
-  });
-
-  it('dual-TCP Open Interfaces CTA activates the Reticulum Connection panel', async () => {
-    getStoredMeshProtocolMock.mockReturnValue('reticulum');
-    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
-      if (protocol === 'reticulum') return RETICULUM_CAPABILITIES;
-      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
-      return MESHTASTIC_CAPABILITIES;
-    });
-
-    renderApp();
-
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Network' })).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole('tab', { name: 'Network' }));
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: 'test-open-reticulum-interfaces' }),
-      ).toBeInTheDocument();
-    });
-    expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'test-open-reticulum-interfaces' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
-    });
-    expect(screen.getByTestId('connection-panel-mock')).toBeInTheDocument();
-  });
 });
 
 describe('App ConnectionPanel facade wiring', () => {
@@ -2086,25 +1838,6 @@ describe('App ConnectionPanel facade wiring', () => {
     registerMeshcoreSession(null);
     registerMeshtasticSession(null);
   });
-
-  function stubRadioCapabilities(): void {
-    vi.mocked(providerFactory.useRadioProvider).mockImplementation((protocol) => {
-      if (protocol === 'reticulum') return RETICULUM_CAPABILITIES;
-      if (protocol === 'meshcore') return MESHCORE_CAPABILITIES;
-      return MESHTASTIC_CAPABILITIES;
-    });
-  }
-
-  function createMeshcoreSessionStub(): MeshcoreSessionApi {
-    return {
-      connect: vi.fn().mockResolvedValue(undefined),
-      prepareRfConnect: vi.fn().mockResolvedValue(undefined),
-      attachRfSession: vi.fn().mockResolvedValue(undefined),
-      handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
-      finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-      connectAutomatic: vi.fn().mockResolvedValue(undefined),
-    };
-  }
 
   it('mounts a single ConnectionPanel from App.tsx', () => {
     const source = readFileSync(join(__dirname, 'App.tsx'), 'utf-8');
@@ -2118,285 +1851,6 @@ describe('App ConnectionPanel facade wiring', () => {
     expect(source).toContain('useAllProtocolConnectionActions()');
     expect(source).not.toMatch(/useProtocolConnectionActions\(/);
   });
-
-  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
-    'routes %s active-tab refresh and reconnect through the facade',
-    async (protocol) => {
-      stubRadioCapabilities();
-      getStoredMeshProtocolMock.mockReturnValue(protocol);
-      ensureOfflineProtocolIdentities();
-
-      const meshtasticRuntime = createDeviceMock();
-      const meshcoreRuntime = createMeshCoreMock();
-      useDeviceMock.mockReturnValue({
-        ...meshtasticRuntime,
-        state: { status: 'disconnected', myNodeNum: 0, connectionType: 'serial' },
-      });
-      useMeshCoreMock.mockReturnValue({
-        ...meshcoreRuntime,
-        state: { status: 'disconnected', myNodeNum: 0, connectionType: 'serial' },
-      });
-
-      const meshtasticSession = {
-        prepareRfConnect: vi.fn().mockResolvedValue(undefined),
-        attachRfSession: vi.fn().mockResolvedValue(undefined),
-        handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
-        finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-        connectAutomatic: vi.fn().mockResolvedValue(undefined),
-        sendChatMessage: vi.fn(),
-      };
-      registerMeshtasticSession(meshtasticSession);
-      const meshcoreSession = createMeshcoreSessionStub();
-      registerMeshcoreSession(meshcoreSession);
-
-      const identityId =
-        protocol === 'meshtastic'
-          ? MESHTASTIC_TEST_IDENTITY
-          : protocol === 'meshcore'
-            ? OFFLINE_MESHCORE_IDENTITY_ID
-            : OFFLINE_RETICULUM_IDENTITY_ID;
-      setConnection(identityId, {
-        status: 'disconnected',
-        connectionType: 'serial',
-        connectionLoss: true,
-        myNodeNum: 0,
-      });
-
-      renderApp();
-
-      await waitFor(() => {
-        expect(screen.getAllByTestId('connection-panel-mock')).toHaveLength(1);
-      });
-
-      const reticulumSession = getReticulumSession();
-      const reticulumConnectAutomatic = vi
-        .spyOn(reticulumSession, 'connectAutomatic')
-        .mockResolvedValue(undefined);
-      vi.spyOn(reticulumSession, 'finalizeDriverDisconnect').mockResolvedValue(undefined);
-
-      openPanel('App');
-      await waitFor(() => {
-        expect(lastAppPanelProps.current?.onNodesPruned).toEqual(expect.any(Function));
-      });
-
-      act(() => {
-        (lastAppPanelProps.current?.onNodesPruned as () => void)();
-        (lastAppPanelProps.current?.onMessagesPruned as () => void)();
-      });
-
-      const refreshByProtocol = {
-        meshtastic: meshtasticRuntime,
-        meshcore: meshcoreRuntime,
-        reticulum: {
-          refreshNodesFromDb: reticulumRefreshNodesFromDb,
-          refreshMessagesFromDb: reticulumRefreshMessagesFromDb,
-        },
-      };
-      const inactive = (['meshtastic', 'meshcore', 'reticulum'] as const).filter(
-        (p) => p !== protocol,
-      );
-
-      expect(refreshByProtocol[protocol].refreshNodesFromDb).toHaveBeenCalled();
-      expect(refreshByProtocol[protocol].refreshMessagesFromDb).toHaveBeenCalled();
-      for (const p of inactive) {
-        expect(refreshByProtocol[p].refreshNodesFromDb).not.toHaveBeenCalled();
-        expect(refreshByProtocol[p].refreshMessagesFromDb).not.toHaveBeenCalled();
-      }
-
-      vi.mocked(meshtasticSession.connectAutomatic).mockClear();
-      vi.mocked(meshcoreSession.connectAutomatic).mockClear();
-      reticulumConnectAutomatic.mockClear();
-
-      fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
-
-      const connectByProtocol = {
-        meshtastic: meshtasticSession.connectAutomatic,
-        meshcore: meshcoreSession.connectAutomatic,
-        reticulum: reticulumConnectAutomatic,
-      };
-
-      await waitFor(
-        () => {
-          expect(connectByProtocol[protocol]).toHaveBeenCalled();
-        },
-        { timeout: 2000 },
-      );
-      for (const p of inactive) {
-        expect(connectByProtocol[p]).not.toHaveBeenCalled();
-      }
-    },
-  );
-
-  it('auto-launches Meshtastic MQTT only when switching onto hasMqttHybrid', async () => {
-    stubRadioCapabilities();
-    expect(MESHTASTIC_CAPABILITIES.hasMqttHybrid).toBe(true);
-    expect(MESHCORE_CAPABILITIES.hasMqttHybrid).toBe(false);
-    expect(RETICULUM_CAPABILITIES.hasMqttHybrid).toBe(false);
-
-    getStoredMeshProtocolMock.mockReturnValue('meshcore');
-    ensureOfflineProtocolIdentities();
-    setConnection(MESHTASTIC_TEST_IDENTITY, {
-      status: 'disconnected',
-      connectionType: null,
-      mqttStatus: 'disconnected',
-      myNodeNum: 0,
-    });
-
-    renderApp();
-
-    await waitFor(() => {
-      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
-    });
-    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
-
-    fireEvent.click(screen.getByRole('radio', { name: /Switch to Reticulum/ }));
-    await waitFor(() => {
-      expect(screen.getByRole('radio', { name: /Switch to Reticulum/ })).toHaveAttribute(
-        'aria-checked',
-        'true',
-      );
-    });
-    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
-
-    tryAutoLaunchMqttMock.mockClear();
-    fireEvent.click(screen.getByRole('radio', { name: /Switch to Meshtastic/ }));
-
-    await waitFor(() => {
-      expect(tryAutoLaunchMqttMock).toHaveBeenCalledWith('meshtastic');
-    });
-    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshcore');
-    expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('reticulum');
-  });
-
-  it.each([
-    {
-      protocol: 'meshtastic' as const,
-      myNodeNum: 0xabc,
-      extras: {
-        firmware: true,
-        mqttIdentity: false,
-        reticulum: false,
-        myNodeLabel: '!abc',
-      },
-    },
-    {
-      protocol: 'meshcore' as const,
-      myNodeNum: 0x12345678,
-      extras: {
-        firmware: true,
-        mqttIdentity: true,
-        reticulum: false,
-        myNodeLabel: '!12345678',
-      },
-    },
-    {
-      protocol: 'reticulum' as const,
-      myNodeNum: 0,
-      extras: {
-        firmware: false,
-        mqttIdentity: false,
-        reticulum: true,
-        myNodeLabel: undefined,
-      },
-    },
-  ])(
-    'renders one $protocol ConnectionPanel and wires connect/disconnect extras',
-    async ({ protocol, myNodeNum, extras }) => {
-      stubRadioCapabilities();
-      getStoredMeshProtocolMock.mockReturnValue(protocol);
-      if (protocol === 'meshtastic') {
-        useDeviceMock.mockReturnValue({
-          ...createDeviceMock(),
-          state: { status: 'disconnected', myNodeNum, connectionType: null },
-        });
-      }
-      if (protocol === 'meshcore') {
-        useMeshCoreMock.mockReturnValue({
-          ...createMeshCoreMock(),
-          state: { status: 'disconnected', myNodeNum, connectionType: null },
-        });
-      }
-
-      const meshtasticSession = {
-        prepareRfConnect: vi.fn().mockResolvedValue(undefined),
-        attachRfSession: vi.fn().mockResolvedValue(undefined),
-        handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
-        finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
-        connectAutomatic: vi.fn().mockResolvedValue(undefined),
-        sendChatMessage: vi.fn(),
-      };
-      registerMeshtasticSession(meshtasticSession);
-      const meshcoreSession = createMeshcoreSessionStub();
-      registerMeshcoreSession(meshcoreSession);
-
-      renderApp();
-
-      await waitFor(() => {
-        expect(screen.getAllByTestId('connection-panel-mock')).toHaveLength(1);
-      });
-
-      const props = lastConnectionPanelProps.current;
-      expect(props?.protocol).toBe(protocol);
-      expect(props?.onConnect).toEqual(expect.any(Function));
-      expect(props?.onDisconnect).toEqual(expect.any(Function));
-      expect(props?.onAutoConnect).toEqual(expect.any(Function));
-      if (protocol !== 'reticulum') {
-        expect(props?.myNodeLabel).toBe(extras.myNodeLabel);
-      }
-
-      if (extras.firmware) {
-        expect(props?.firmwareCheckState).toEqual({ phase: 'idle' });
-        expect(props?.onOpenFirmwareReleases).toEqual(expect.any(Function));
-      } else {
-        expect(props?.firmwareCheckState).toBeUndefined();
-        expect(props?.onOpenFirmwareReleases).toBeUndefined();
-      }
-
-      if (extras.mqttIdentity) {
-        expect(props?.ensureMeshcoreMqttIdentity).toEqual(expect.any(Function));
-      } else {
-        expect(props?.ensureMeshcoreMqttIdentity).toBeUndefined();
-      }
-
-      if (extras.reticulum) {
-        expect(props?.onStartReticulumStack).toEqual(expect.any(Function));
-        expect(props?.onOpenReticulumRmapSettings).toEqual(expect.any(Function));
-        expect(props?.onOpenReticulumSetupDestination).toEqual(expect.any(Function));
-      } else {
-        expect(props?.onStartReticulumStack).toBeUndefined();
-        expect(props?.onOpenReticulumRmapSettings).toBeUndefined();
-        expect(props?.onOpenReticulumSetupDestination).toBeUndefined();
-      }
-
-      if (protocol === 'meshtastic') {
-        await act(async () => {
-          await (props?.onConnect as (type: string) => Promise<void>)('serial').catch(
-            () => undefined,
-          );
-        });
-        expect(meshtasticSession.prepareRfConnect).toHaveBeenCalledWith(
-          'serial',
-          undefined,
-          undefined,
-        );
-        await act(async () => {
-          await (props?.onDisconnect as () => Promise<void>)();
-        });
-        expect(meshtasticSession.finalizeDriverDisconnect).toHaveBeenCalled();
-      }
-
-      if (protocol === 'meshcore') {
-        await act(async () => {
-          await (props?.onConnect as (type: string) => Promise<void>)('serial');
-        });
-        expect(meshcoreSession.connect).toHaveBeenCalled();
-        await act(async () => {
-          await (props?.onDisconnect as () => Promise<void>)();
-        });
-        expect(meshcoreSession.finalizeDriverDisconnect).toHaveBeenCalled();
-      }
-    },
-  );
 });
 
 describe('App phone layout (bottom bar)', () => {

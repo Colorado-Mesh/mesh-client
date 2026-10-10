@@ -8,7 +8,6 @@ import {
   MESSAGE_RETENTION_MAX_COUNT,
   MESSAGE_RETENTION_MIN_COUNT,
   parseMessageRetention,
-  RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
 } from './messageRetention';
 
 describe('parseMessageRetention', () => {
@@ -65,26 +64,6 @@ describe('fetchMessageRetention', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  it('returns parsed values from the IPC bridge', async () => {
-    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
-      [MESSAGE_RETENTION_KEYS.meshtasticEnabled]: '0',
-      [MESSAGE_RETENTION_KEYS.meshtasticCount]: '4000',
-      [MESSAGE_RETENTION_KEYS.meshcoreEnabled]: '1',
-      [MESSAGE_RETENTION_KEYS.meshcoreCount]: '7500',
-    });
-    const r = await fetchMessageRetention();
-    expect(r).toEqual({
-      meshtasticEnabled: false,
-      meshtasticCount: 4000,
-      meshcoreEnabled: true,
-      meshcoreCount: 7500,
-      reticulumEnabled: true,
-      reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
-      rrcEnabled: true,
-      rrcCount: RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
-    });
   });
 
   it('falls back to defaults when the IPC bridge throws', async () => {

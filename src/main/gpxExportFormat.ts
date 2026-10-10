@@ -42,7 +42,7 @@ export function formatGpxTracks(
   points: readonly GpxTrackPoint[],
   opts?: { creator?: string },
 ): string {
-  const creator = escapeXml(opts?.creator ?? 'mesh-client');
+  const creator = escapeXml(opts?.creator ?? 'Mesh Hub');
   const byNode = new Map<number, GpxTrackPoint[]>();
   for (const p of points) {
     if (!Number.isFinite(p.node_id) || !Number.isInteger(p.node_id)) continue;

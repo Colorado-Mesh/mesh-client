@@ -30,11 +30,6 @@ import {
   NETWORK_ACK_MAX_TIMEOUT_MS,
 } from '../lib/networkAckAwait';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
-import {
-  assertReticulumSendAcked,
-  resolveReticulumIdentityId,
-  RETICULUM_RECEIPT_TIMEOUT_MS,
-} from '../lib/reticulumOutboundReceipt';
 import { useIncidentStore } from '../stores/incidentStore';
 
 export type { OutboxEntry };
@@ -334,7 +329,6 @@ async function sendOneOutboxRow(
   row: OutboxEntry,
   protocol: MeshProtocol,
   sendFn: ChatOutboxSendFn,
-  reticulumReceiptTimeoutMs: number,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
   removeRow: (id: number) => void,
 ): Promise<void> {
@@ -343,7 +337,6 @@ async function sendOneOutboxRow(
   const signal = beginOutboxRowSend(row.id);
   try {
     await withOutboxDrainRowTimeout(async () => {
-      const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
       const sendResult = await sendFn(
         row.payload,
         row.channel,
@@ -364,12 +357,9 @@ async function sendOneOutboxRow(
           protocol,
           sendResult,
           payload: row.payload,
-          identityId: reticulumIdentityId,
+          identityId: null,
           signal,
-          ...(protocol === 'reticulum' ? { timeoutMs: reticulumReceiptTimeoutMs } : {}),
         });
-      } else if (protocol === 'reticulum') {
-        await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
       }
     });
     if (signal.aborted) {
@@ -405,7 +395,6 @@ export interface DrainChatOutboxOnceOptions {
   sendFn: ChatOutboxSendFn;
   /** Re-checked before every row so a mid-drain disconnect stops further sends. */
   isSendAvailable: () => boolean;
-  reticulumReceiptTimeoutMs?: number;
   /** Restrict which eligible rows are sent (App-level drain passes emergency + ACK rows). */
   rowFilter?: (row: OutboxEntry) => boolean;
   onRowsListed?: (rows: OutboxEntry[]) => void;
@@ -430,7 +419,6 @@ export function drainChatOutboxOnce({
   protocol,
   sendFn,
   isSendAvailable,
-  reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   rowFilter,
   onRowsListed,
   updateRow,
@@ -462,15 +450,7 @@ export function drainChatOutboxOnce({
         await quarantineLegacyMultipartOutboxRow(row, trackUpdate);
         continue;
       }
-      const sendRow = () =>
-        sendOneOutboxRow(
-          row,
-          protocol,
-          sendFn,
-          reticulumReceiptTimeoutMs,
-          trackUpdate,
-          trackRemove,
-        );
+      const sendRow = () => sendOneOutboxRow(row, protocol, sendFn, trackUpdate, trackRemove);
       // Meshtastic-only pacing, shared with ChatComposer so live sends and outbox drain cannot
       // race firmware's TEXT_MESSAGE_APP RATE_LIMIT_EXCEEDED window. Single-packet protocols
       // drain without a client interval — they only advance the fast-send clock after success.
@@ -487,8 +467,6 @@ export function drainChatOutboxOnce({
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
   isSendAvailable: boolean;
-  /** Test override for deterministic timeout coverage. */
-  reticulumReceiptTimeoutMs?: number;
   sendFn: ChatOutboxSendFn;
 }
 
@@ -503,7 +481,6 @@ export interface UseChatOutbox {
 export function useChatOutbox({
   protocol,
   isSendAvailable,
-  reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   sendFn,
 }: UseChatOutboxOptions): UseChatOutbox {
   const [rows, setRows] = useState<OutboxEntry[]>([]);
@@ -598,7 +575,6 @@ export function useChatOutbox({
         sendFn: (text, channel, destination, replyId) =>
           sendFnRef.current(text, channel, destination, replyId),
         isSendAvailable: () => isSendAvailableRef.current,
-        reticulumReceiptTimeoutMs,
         onRowsListed: setRows,
         updateRow,
         removeRow,
@@ -609,14 +585,7 @@ export function useChatOutbox({
     } finally {
       drainingRef.current = false;
     }
-  }, [
-    protocol,
-    isSendAvailable,
-    reticulumReceiptTimeoutMs,
-    updateRow,
-    removeRow,
-    scheduleRetryTimer,
-  ]);
+  }, [protocol, isSendAvailable, updateRow, removeRow, scheduleRetryTimer]);
 
   useEffect(() => {
     drainOnceRef.current = drainOnce;

@@ -1,13 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import {
-  isLiveTcpSession,
-  parseHttpProbeTarget,
-  parseTcpProbeTarget,
-  rttToSignalLevel,
-} from './hostLinkQuality';
-import type { ConnectionType, MeshProtocol } from './types';
+import { parseHttpProbeTarget, parseTcpProbeTarget, rttToSignalLevel } from './hostLinkQuality';
 
 describe('rttToSignalLevel', () => {
   it('maps latency buckets to 0–4 bars', () => {
@@ -56,22 +50,4 @@ describe('parseTcpProbeTarget', () => {
       port: 5000,
     });
   });
-});
-
-describe('isLiveTcpSession', () => {
-  it.each([
-    ['meshtastic', 'tcp', true],
-    ['meshcore', 'http', true],
-    ['meshtastic', 'http', false],
-    ['meshcore', 'tcp', false],
-    ['meshcore', 'ble', false],
-    ['reticulum', 'ble', false],
-    ['reticulum', 'http', false],
-    ['meshtastic', null, false],
-  ] as const satisfies readonly (readonly [MeshProtocol, ConnectionType | null, boolean])[])(
-    '%s + %s → %s',
-    (protocol, connectionType, expected) => {
-      expect(isLiveTcpSession(protocol, connectionType)).toBe(expected);
-    },
-  );
 });

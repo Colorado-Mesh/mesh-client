@@ -173,7 +173,7 @@ export function parseGithubLinkNext(linkHeader) {
  * @returns {Promise<Array<{ tag_name?: string, name?: string, draft?: boolean, prerelease?: boolean }>>}
  */
 export async function fetchAllGithubReleases(opts = {}) {
-  const owner = opts.owner ?? 'Colorado-Mesh';
+  const owner = opts.owner ?? 'charlottemeshtastic';
   const repo = opts.repo ?? 'mesh-client';
   const headers = opts.headers ?? {
     Accept: 'application/vnd.github+json',
@@ -204,7 +204,7 @@ export async function fetchAllGithubReleases(opts = {}) {
  * @returns {Promise<{ tag: string, schema: number } | null>}
  */
 export async function fetchLatestPublishedReleaseSchema(opts = {}) {
-  const owner = opts.owner ?? 'Colorado-Mesh';
+  const owner = opts.owner ?? 'charlottemeshtastic';
   const repo = opts.repo ?? 'mesh-client';
   const token = opts.token ?? process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
   const headers = {

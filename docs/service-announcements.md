@@ -1,8 +1,8 @@
 # Service announcements
 
-Maintainers can show a short notice to every running mesh-client (maintenance windows, outages, "please update", feature news) by editing one JSON file on `main`: [`announcements/announcements.json`](https://github.com/Colorado-Mesh/mesh-client/blob/main/announcements/announcements.json).
+Maintainers can show a short notice to every running mesh-client (maintenance windows, outages, "please update", feature news) by editing one JSON file on `main`: [`announcements/announcements.json`](https://github.com/charlottemeshtastic/mesh-client/blob/main/announcements/announcements.json).
 
-Each client fetches the file from `https://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/announcements/announcements.json` 10 seconds after launch, every 6 hours, and 60 seconds after the network comes back. Notices appear in a dismissible strip at the top of the window, one at a time with a `1 of N` control. Dismissal is remembered per announcement `id`.
+Each client fetches the file from `https://raw.githubusercontent.com/charlottemeshtastic/mesh-client/main/announcements/announcements.json` 10 seconds after launch, every 6 hours, and 60 seconds after the network comes back. Notices appear in a dismissible strip at the top of the window, one at a time with a `1 of N` control. Dismissal is remembered per announcement `id`.
 
 Anyone who can merge to `main` can put text in front of every user. Review feed PRs like a release note.
 
@@ -17,7 +17,7 @@ Anyone who can merge to `main` can put text in front of every user. Review feed 
       "severity": "warning",
       "title": "RNS backbone maintenance Saturday",
       "body": "The public backbone will be offline 02:00-04:00 UTC.\nLocal RF is unaffected.",
-      "url": "https://github.com/Colorado-Mesh/mesh-client/discussions",
+      "url": "https://github.com/charlottemeshtastic/mesh-client/discussions",
       "urlLabel": "Details",
       "startsAt": "2026-10-08T00:00:00Z",
       "expiresAt": "2026-10-12T00:00:00Z",

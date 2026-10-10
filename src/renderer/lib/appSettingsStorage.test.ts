@@ -4,13 +4,10 @@ import {
   APP_SETTINGS_STORAGE_KEY,
   getAppSettingsRaw,
   getOperationalAlertSettings,
-  isReticulumAutoResendOnAnnounceEnabled,
-  isRrcUnreadAllRoomMessagesEnabled,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
   mergeAppSettingsPartial,
   setAppSettingsRaw,
-  setReticulumAutoResendOnAnnounceEnabled,
 } from './appSettingsStorage';
 
 const LEGACY_KEY = 'mesh-client:adminSettings';
@@ -89,71 +86,6 @@ describe('appSettingsStorage', () => {
     expect(parsed.mapBasemapId).toBe('dark');
     expect(parsed.chatCompactMode).toBe(true);
     expect(parsed.other).toBe(1);
-  });
-
-  it('isRrcUnreadAllRoomMessagesEnabled defaults true and honors explicit false', () => {
-    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
-    localStorage.setItem(
-      APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ rrcUnreadAllRoomMessages: true }),
-    );
-    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
-    localStorage.setItem(
-      APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ rrcUnreadAllRoomMessages: false }),
-    );
-    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(false);
-  });
-
-  it('ignores malformed rrcUnreadAllRoomMessages string values', () => {
-    localStorage.setItem(
-      APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ rrcUnreadAllRoomMessages: 'false' }),
-    );
-    expect(isRrcUnreadAllRoomMessagesEnabled()).toBe(true);
-  });
-
-  describe('reticulumAutoResendOnAnnounce', () => {
-    it('defaults to false when unset', () => {
-      expect(isReticulumAutoResendOnAnnounceEnabled()).toBe(false);
-    });
-
-    it('reads an explicit true', () => {
-      localStorage.setItem(
-        APP_SETTINGS_STORAGE_KEY,
-        JSON.stringify({ reticulumAutoResendOnAnnounce: true }),
-      );
-      expect(isReticulumAutoResendOnAnnounceEnabled()).toBe(true);
-    });
-
-    it('ignores malformed string values', () => {
-      localStorage.setItem(
-        APP_SETTINGS_STORAGE_KEY,
-        JSON.stringify({ reticulumAutoResendOnAnnounce: 'true' }),
-      );
-      expect(isReticulumAutoResendOnAnnounceEnabled()).toBe(false);
-    });
-
-    it('setter round-trips and preserves unrelated keys', () => {
-      localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ mapBasemapId: 'dark' }));
-
-      setReticulumAutoResendOnAnnounceEnabled(true);
-      expect(isReticulumAutoResendOnAnnounceEnabled()).toBe(true);
-
-      setReticulumAutoResendOnAnnounceEnabled(false);
-      expect(isReticulumAutoResendOnAnnounceEnabled()).toBe(false);
-
-      const parsed = JSON.parse(getAppSettingsRaw() ?? '{}') as Record<string, unknown>;
-      expect(parsed.mapBasemapId).toBe('dark');
-    });
-
-    it('persists to SQLite through appSettings.set', () => {
-      setReticulumAutoResendOnAnnounceEnabled(true);
-      expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith(
-        'reticulumAutoResendOnAnnounce',
-        '1',
-      );
-    });
   });
 
   it('setAppSettingsRaw replaces after migrating legacy', () => {

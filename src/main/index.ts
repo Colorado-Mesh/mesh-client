@@ -39,7 +39,10 @@ import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { parseConnectHostPort } from '../shared/connectHost';
 import { docsSitePageUrl } from '../shared/docsSite';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
-import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
+import {
+  findMeshDeepLinkInArgv,
+  isForwardableMeshClientOpenUrl,
+} from '../shared/meshClientDeepLink';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
   sanitizeMeshcoreLastAdvertForDb,
@@ -54,7 +57,6 @@ import {
 } from '../shared/meshtasticBluetoothPin';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
-import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
 import {
@@ -64,6 +66,7 @@ import {
   BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
+import { BleSidecarManager } from './ble-sidecar-manager';
 import { formatBluetoothctlSpawnError } from './bluetoothctlSpawnError';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
 import {
@@ -133,17 +136,13 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerBlockedContactsIpcHandlers } from './ipc/blocked-contacts-handlers';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
-import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGeoIpcHandlers } from './ipc/geo-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
-import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
-import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
-import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
-import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerServiceAnnouncementIpcHandlers } from './ipc/service-announcement-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
@@ -191,16 +190,6 @@ import { PermissionDecisionLogger } from './permissionDecisionLog';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
-import {
-  readReticulumAttachmentBytes,
-  takeReticulumAttachmentAudioRateToken,
-} from './reticulum-attachment-audio';
-import {
-  readReticulumAttachmentAsDataUrl,
-  takeReticulumAttachmentImageRateToken,
-} from './reticulum-attachment-image';
-import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
-import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
   buildSupportBundleZip,
   defaultSupportBundleFilename,
@@ -250,13 +239,13 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.meshclient.app');
+  app.setAppUserModelId('io.github.charlottemeshtastic.meshhub');
 }
 
 /** Trusted Help menu / About credits URLs (static, not user-controlled). */
-const HELP_URL_WEBSITE = 'https://coloradomesh.org/';
-const HELP_URL_GITHUB = 'https://github.com/Colorado-Mesh/mesh-client';
-const HELP_URL_DISCORD = 'https://discord.com/invite/McChKR5NpS';
+const HELP_URL_GITHUB = 'https://github.com/charlottemeshtastic/mesh-client';
+/** Upstream project Mesh Hub is forked from (GPL attribution). */
+const HELP_URL_UPSTREAM = 'https://github.com/Colorado-Mesh/mesh-client';
 
 // ─── Window state persistence ───────────────────────────────────────
 interface WindowState {
@@ -317,12 +306,6 @@ const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
 
-const IDLE_RETICULUM_STATUS: ReticulumSidecarStatus = {
-  running: false,
-  port: 0,
-  pid: null,
-};
-
 /** MAC address format: XX:XX:XX:XX:XX:XX */
 function isMacAddress(value: string): boolean {
   const parts = value.split(':');
@@ -333,21 +316,18 @@ function isMacAddress(value: string): boolean {
 let takServerManager: TakServerManager | null = null;
 let takServerManagerLoadPromise: Promise<TakServerManager> | null = null;
 
-let reticulumSidecarManager: ReticulumSidecarManager | null = null;
+let bleSidecarManager: BleSidecarManager | null = null;
 
-function ensureReticulumSidecarManager(): ReticulumSidecarManager {
-  if (!reticulumSidecarManager) {
-    reticulumSidecarManager = new ReticulumSidecarManager();
-    wireReticulumSidecarBridge(reticulumSidecarManager, () => mainWindow);
-  }
-  return reticulumSidecarManager;
+function ensureBleSidecarManager(): BleSidecarManager {
+  bleSidecarManager ??= new BleSidecarManager();
+  return bleSidecarManager;
 }
 
 gattSidecarProxy.setEnsureSidecar(async () => {
   if (isQuitting) {
     throw new Error('gatt sidecar ensure blocked: app is quitting');
   }
-  const mgr = ensureReticulumSidecarManager();
+  const mgr = ensureBleSidecarManager();
   const port = await mgr.ensureForBle();
   gattSidecarProxy.setPort(port);
   return port;
@@ -357,7 +337,7 @@ bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
 // When the shared sidecar process exits (Stop / Quit / crash), clear GATT's
 // cached port so LoRa reconnect does not hammer a dead HTTP port.
 {
-  const mgr = ensureReticulumSidecarManager();
+  const mgr = ensureBleSidecarManager();
   mgr.on('status', (status: { running: boolean; processRunning?: boolean; port: number }) => {
     if (!(status.processRunning ?? status.running)) {
       gattSidecarProxy.invalidateAfterSidecarExit();
@@ -499,10 +479,10 @@ async function shutdownAppResources(): Promise<void> {
     ); // log-injection-ok internal cleanup
   }
   try {
-    await reticulumSidecarManager?.stop({ forQuit: true });
+    await bleSidecarManager?.stop({ forQuit: true });
   } catch (err) {
     console.debug(
-      '[main] Reticulum sidecar stop during shutdown (ignored):',
+      '[main] Bluetooth helper stop during shutdown (ignored):',
       err instanceof Error ? err.message : err,
     ); // log-injection-ok internal cleanup
   }
@@ -1193,8 +1173,8 @@ if (process.platform === 'linux') {
 function getAppIconPath() {
   if (process.platform === 'win32') {
     return app.isPackaged
-      ? path.join(process.resourcesPath, 'colorado-mesh.ico')
-      : path.join(__dirname, '../../resources/icons/win/colorado-mesh.ico');
+      ? path.join(process.resourcesPath, 'mesh-hub.ico')
+      : path.join(__dirname, '../../resources/icons/win/mesh-hub.ico');
   }
   if (process.platform === 'darwin') {
     return app.isPackaged
@@ -1276,14 +1256,14 @@ function buildTrayIcon(hasUnread: boolean): Electron.NativeImage {
 function setupTray(window: BrowserWindow) {
   try {
     tray = new Tray(buildTrayIcon(false));
-    tray.setToolTip('Mesh-Client');
+    tray.setToolTip('Mesh Hub');
     tray.on('click', () => {
       window.show();
       window.focus();
     });
     trayContextMenu = Menu.buildFromTemplate([
       {
-        label: 'Show Mesh-Client',
+        label: 'Show Mesh Hub',
         click: () => {
           window.show();
           window.focus();
@@ -1333,16 +1313,13 @@ function applyAboutPanelOptions(): void {
     '',
     APP_ABOUT_TAGLINE,
     '',
-    `Reticulum support uses a bundled AGPL-3.0-or-later sidecar (mesh-client-reticulum). See ${docsSitePageUrl('reticulum')} and ${docsSitePageUrl('license')}.`,
+    `Bluetooth support uses a bundled AGPL-3.0-or-later helper (mesh-hub-ble). See ${docsSitePageUrl('license')}.`,
     '',
-    'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
+    'License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Bluetooth helper binary.',
+    'Based on mesh-client by Colorado Mesh.',
     '',
-    'License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Reticulum sidecar binary.',
-    'Author: Colorado Mesh',
-    '',
-    `Website:  ${HELP_URL_WEBSITE}`,
     `GitHub:   ${HELP_URL_GITHUB}`,
-    `Discord:  ${HELP_URL_DISCORD}`,
+    `Upstream: ${HELP_URL_UPSTREAM}`,
   ].join('\n');
 
   const iconCandidate = path.join(process.resourcesPath, '256x256.png');
@@ -1353,17 +1330,17 @@ function applyAboutPanelOptions(): void {
       app.setAboutPanelOptions({
         applicationName: app.name,
         applicationVersion: version,
-        copyright: 'Copyright © Colorado Mesh',
+        copyright: 'Copyright © Colorado Mesh and Mesh Hub contributors',
         credits,
-        authors: ['Colorado Mesh'],
-        website: HELP_URL_WEBSITE,
+        authors: ['Colorado Mesh', 'Mesh Hub contributors'],
+        website: HELP_URL_GITHUB,
         ...(iconPath ? { iconPath } : {}),
       });
     } else {
       app.setAboutPanelOptions({
         applicationName: app.name,
         applicationVersion: version,
-        copyright: 'Copyright © Colorado Mesh',
+        copyright: 'Copyright © Colorado Mesh and Mesh Hub contributors',
         credits,
         ...(iconPath ? { iconPath } : {}),
       });
@@ -1397,21 +1374,15 @@ function buildHelpMenuExternalLinkItems(): (
   return [
     { type: 'separator' as const },
     {
-      label: 'Colorado Mesh Website',
-      click: () => {
-        openHelpExternalLink(HELP_URL_WEBSITE);
-      },
-    },
-    {
       label: 'GitHub Repository',
       click: () => {
         openHelpExternalLink(HELP_URL_GITHUB);
       },
     },
     {
-      label: 'Discord',
+      label: 'Upstream Project (mesh-client)',
       click: () => {
-        openHelpExternalLink(HELP_URL_DISCORD);
+        openHelpExternalLink(HELP_URL_UPSTREAM);
       },
     },
   ];
@@ -1765,7 +1736,7 @@ function createWindow() {
     y: center ? undefined : bounds.y,
     minWidth: 900,
     minHeight: 600,
-    title: 'Mesh Client',
+    title: 'Mesh Hub',
     // Use the helper to select .ico, .icns, or .png automatically
     icon: getAppIconPath(),
     webPreferences: {
@@ -2052,7 +2023,7 @@ function createWindow() {
     );
     try {
       dialog.showErrorBox(
-        'Mesh-Client — Renderer Stopped',
+        'Mesh Hub — Renderer Stopped',
         `The renderer process ended unexpectedly (${details.reason}, exit ${details.exitCode ?? 'n/a'}).\n\nRestart the application. If this keeps happening, export the log from the app (if still usable) or check the log file in your userData folder.`,
       );
     } catch {
@@ -2082,7 +2053,7 @@ function createWindow() {
         ? 'Ensure the dev server is running (pnpm run dev) and the URL is reachable.'
         : 'The app bundle may be missing or damaged. Try reinstalling or run from source with pnpm run build && pnpm start.';
       dialog.showErrorBox(
-        'Mesh-Client — Failed to Load',
+        'Mesh Hub — Failed to Load',
         `Could not load the application UI (code ${errorCode}: ${errorDesc}).\n\n${hint}\n\nURL: ${validatedURL}`,
       );
     } catch {
@@ -2236,7 +2207,7 @@ ipcMain.on('set-tray-unread', (event, count: unknown) => {
       }
       tray?.setImage(img);
     }
-    tray?.setToolTip(hasUnread ? `Mesh-Client (${n} unread)` : 'Mesh-Client');
+    tray?.setToolTip(hasUnread ? `Mesh Hub (${n} unread)` : 'Mesh Hub');
   } catch (e) {
     console.error(
       '[main] tray unread update failed:',
@@ -2868,12 +2839,8 @@ gattSidecarProxy.on(
 );
 
 // ─── GATT BLE: IPC command handlers ─────────────────────────────────
-const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
-  'gatt:meshtastic',
-  'gatt:meshcore',
-  'reticulum',
-]);
-const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt', 'reticulum']);
+const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>(['gatt:meshtastic', 'gatt:meshcore']);
+const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt']);
 
 ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:register');
@@ -2918,7 +2885,7 @@ ipcMain.handle('bleCoexistence:getState', (event) => {
 ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:acquireScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:acquireScan: owner must be gatt or reticulum');
+    throw new Error('bleCoexistence:acquireScan: owner must be gatt');
   }
   try {
     await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
@@ -2943,14 +2910,9 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
 ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:releaseScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:releaseScan: owner must be gatt or reticulum');
+    throw new Error('bleCoexistence:releaseScan: owner must be gatt');
   }
   bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
-  return bleCoexistenceCoordinator.getState();
-});
-ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => {
-  assertIpcSender(event, 'bleCoexistence:suspendForReticulumBleConnect');
-  await bleCoexistenceCoordinator.suspendForReticulumBleConnect();
   return bleCoexistenceCoordinator.getState();
 });
 
@@ -3661,8 +3623,8 @@ const disposeTranslation = registerTranslationHandlers({
   },
 });
 app.on('before-quit', disposeTranslation);
-registerFlasherHandlers();
 registerServiceAnnouncementIpcHandlers({ ipcMain });
+registerBlockedContactsIpcHandlers({ ipcMain });
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3800,10 +3762,6 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticMessageRetentionCount',
   'meshcoreMessageRetentionEnabled',
   'meshcoreMessageRetentionCount',
-  'reticulumMessageRetentionEnabled',
-  'reticulumMessageRetentionCount',
-  'rrcMessageRetentionEnabled',
-  'rrcMessageRetentionCount',
   'locale',
   'mapBasemapId',
   'meshtasticMqttClientId',
@@ -3818,16 +3776,6 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'use24HourTime',
   'notificationSounds',
   'alwaysShowMessageActions',
-  'reticulumAutostart',
-  'reticulumAutoResendOnAnnounce',
-  'reticulumLastSelfLxmfHash',
-  'reticulumRmapAnnounceIntervalMin',
-  'reticulumRmapReachableOn',
-  'reticulumRmapHeightMeters',
-  'reticulumRmapDiscoveryLxmfAddress',
-  'reticulumRmapDiscoveryStampValue',
-  'reticulumRmapDiscoveryEncrypt',
-  'reticulumRmapPublishIfac',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
@@ -4892,7 +4840,7 @@ ipcMain.handle('db:import', async (event) => {
     return null;
   } catch (err) {
     if (isDatabaseSchemaTooNewError(err)) {
-      showFatalStartupError('Mesh-Client — Import Blocked', formatDatabaseSchemaTooNewMessage(err));
+      showFatalStartupError('Mesh Hub — Import Blocked', formatDatabaseSchemaTooNewMessage(err));
     }
     finishDbIpcHandler('db:import', err);
   }
@@ -5145,109 +5093,6 @@ ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
   } catch (err) {
     console.error(
       '[IPC] gps:exportGpx failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
-  const o = opts as Record<string, unknown>;
-  const fileName = typeof o.fileName === 'string' ? path.basename(o.fileName) : 'attachment';
-  const dataBase64 = typeof o.dataBase64 === 'string' ? o.dataBase64 : '';
-  const promptSave = o.promptSave !== false;
-  if (!dataBase64 || dataBase64.length > 16 * 1024 * 1024) {
-    throw new Error('dataBase64 invalid or too large');
-  }
-  try {
-    const buf = Buffer.from(dataBase64, 'base64');
-    if (buf.length > 16 * 1024 * 1024) throw new Error('decoded attachment too large');
-    let targetPath: string;
-    if (promptSave) {
-      if (!mainWindow) return { success: false };
-      const ext = path.extname(fileName) || '';
-      const result = await dialog.showSaveDialog(mainWindow, {
-        title: 'Save attachment',
-        defaultPath: fileName,
-        filters: ext ? [{ name: ext.slice(1), extensions: [ext.slice(1)] }] : undefined,
-      });
-      if (result.canceled || !result.filePath) return { success: false };
-      targetPath = result.filePath;
-    } else {
-      const dir = path.join(app.getPath('userData'), 'reticulum', 'attachments');
-      await fs.promises.mkdir(dir, { recursive: true });
-      const safeName = fileName.replace(/[^\w.-]+/g, '_').slice(0, 120) || 'attachment';
-      targetPath = path.join(dir, `${Date.now()}-${safeName}`);
-    }
-    await fs.promises.writeFile(targetPath, buf);
-    return { success: true, path: targetPath };
-  } catch (err) {
-    console.error(
-      '[IPC] chat:saveReticulumAttachment failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (typeof filePath !== 'string' || !filePath.trim()) {
-    throw new Error('filePath must be a non-empty string');
-  }
-  try {
-    shell.showItemInFolder(assertReticulumAttachmentPathJailed(filePath));
-    return { ok: true };
-  } catch (err) {
-    console.error(
-      '[IPC] chat:showItemInFolder failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
-  const o = opts as Record<string, unknown>;
-  if (typeof o.filePath !== 'string' || !o.filePath.trim() || o.filePath.length > 512) {
-    throw new Error('filePath must be a non-empty string');
-  }
-  // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
-  if (!takeReticulumAttachmentImageRateToken()) {
-    console.debug('[IPC] chat:readReticulumAttachmentAsDataUrl rate limited');
-    return { dataUrl: null };
-  }
-  try {
-    const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath);
-    return { dataUrl };
-  } catch (err) {
-    console.error(
-      '[IPC] chat:readReticulumAttachmentAsDataUrl failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-
-ipcMain.handle('chat:readReticulumAttachmentBytes', async (event, filePath: unknown) => {
-  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
-  if (typeof filePath !== 'string' || !filePath.trim() || filePath.length > 512) {
-    throw new Error('filePath must be a non-empty string');
-  }
-  if (!takeReticulumAttachmentAudioRateToken()) {
-    console.debug('[IPC] chat:readReticulumAttachmentBytes rate limited');
-    return { dataBase64: null };
-  }
-  try {
-    const dataBase64 = await readReticulumAttachmentBytes(filePath);
-    return { dataBase64 };
-  } catch (err) {
-    console.error(
-      '[IPC] chat:readReticulumAttachmentBytes failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -6745,19 +6590,10 @@ registerTakIpcHandlers({
   validateTakSettings,
 });
 
-registerReticulumIpcHandlers({
-  idleStatus: IDLE_RETICULUM_STATUS,
-  ensureManager: ensureReticulumSidecarManager,
-  getManager: () => reticulumSidecarManager,
-  getMainWindow: () => mainWindow,
-});
-registerReticulumDbIpcHandlers({ ipcMain });
-registerRrcDbIpcHandlers({ ipcMain });
 registerEnvironmentTelemetryIpcHandlers({ ipcMain });
-registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
-/** Pending lxm:// URL until mainWindow is ready (cold start / race). */
+/** Pending deep-link URL until mainWindow is ready (cold start / race). */
 let pendingOpenUrl: string | null = null;
 
 function forwardOpenUrlToRenderer(url: string): void {
@@ -6791,7 +6627,7 @@ app.on('open-url', (event, url) => {
 // Registered here (before whenReady) so it's ready before any second
 // instance can send its data.
 app.on('second-instance', (_event, argv) => {
-  const url = findLxmUrlInArgv(argv);
+  const url = findMeshDeepLinkInArgv(argv);
   if (url) forwardOpenUrlToRenderer(url);
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -6824,15 +6660,7 @@ void app
         );
       }
 
-      // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
-      if (process.defaultApp) {
-        if (process.argv.length >= 2) {
-          app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
-        }
-      } else {
-        app.setAsDefaultProtocolClient('lxm');
-      }
-      const coldStartUrl = findLxmUrlInArgv(process.argv);
+      const coldStartUrl = findMeshDeepLinkInArgv(process.argv);
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
       initDatabase();
@@ -6960,7 +6788,7 @@ void app
         : isNativeModuleError
           ? `A native module failed to load. This usually means the app needs to be rebuilt for this version of Electron.\n\nFix: run "pnpm install" in the project directory, then restart.\n\nDetails: ${error.message}`
           : `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`;
-      showFatalStartupError('Mesh-Client — Startup Error', message);
+      showFatalStartupError('Mesh Hub — Startup Error', message);
       app.quit();
       return;
     }
@@ -6986,7 +6814,7 @@ void app
       sanitizeLogMessage(error instanceof Error ? (error.stack ?? error.message) : String(error)),
     );
     showFatalStartupError(
-      'Mesh-Client — Startup Error',
+      'Mesh Hub — Startup Error',
       `The application failed to start:\n\n${error instanceof Error ? error.message : String(error)}\n\nPlease report this issue.`,
     );
     app.quit();
@@ -7050,10 +6878,10 @@ app.on('will-quit', (event) => {
       ); // log-injection-ok internal cleanup
     }
     try {
-      await reticulumSidecarManager?.stop({ forQuit: true });
+      await bleSidecarManager?.stop({ forQuit: true });
     } catch (err) {
       console.debug(
-        '[main] Reticulum sidecar stop during will-quit (ignored):',
+        '[main] Bluetooth helper stop during will-quit (ignored):',
         err instanceof Error ? err.message : err,
       ); // log-injection-ok internal cleanup
     }

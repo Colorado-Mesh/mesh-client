@@ -36,7 +36,7 @@ export function metainfoVersionMismatchMessage(topVersion, pkgVersion) {
   const lines = [
     `top <release version=${shown}> does not match package.json version "${pkgVersion}"`,
     'Do NOT re-run `pnpm run release` — that would bump the version again.',
-    `1. Set the top <release version="…"> in flatpak/org.coloradomesh.MeshClient.metainfo.xml to "${pkgVersion}"`,
+    `1. Set the top <release version="…"> in flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml to "${pkgVersion}"`,
     '2. If package.json was already bumped mid-release, complete with: pnpm run release --finish',
   ];
   return lines.join(' — ');

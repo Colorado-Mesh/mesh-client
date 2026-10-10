@@ -116,7 +116,6 @@ function ReticulumRouteLine({ coverage }: { coverage: RelayCoverage }): ReactEle
 /** Stable coverage lookup key matching filler writers (store canonical id / packet id). */
 export function relayCoverageMessageKey(msg: ChatMessage): string | undefined {
   if (msg.storeId) return msg.storeId;
-  if (msg.reticulum_message_hash) return msg.reticulum_message_hash;
   if (msg.id != null) return String(msg.id);
   if (msg.packetId != null) return String(msg.packetId);
   return undefined;

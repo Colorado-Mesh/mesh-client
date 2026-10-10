@@ -11,8 +11,8 @@ describe('useAllProtocolConnectionActions', () => {
   it('returns connection actions for every protocol', () => {
     const { result } = renderHook(() => useAllProtocolConnectionActions());
 
-    expect(Object.keys(result.current)).toEqual(['meshtastic', 'meshcore', 'reticulum']);
-    for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+    expect(Object.keys(result.current)).toEqual(['meshtastic', 'meshcore']);
+    for (const protocol of ['meshtastic', 'meshcore'] as const) {
       expect(result.current[protocol].connect).toEqual(expect.any(Function));
       expect(result.current[protocol].connectAutomatic).toEqual(expect.any(Function));
       expect(result.current[protocol].disconnect).toEqual(expect.any(Function));

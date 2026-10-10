@@ -41,12 +41,12 @@ Open `manifest.json` first when triaging: `appVersion` is package semver; **`bui
 
 Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:
 
-| Install                   | Log / DB location                                            |
-| ------------------------- | ------------------------------------------------------------ |
-| macOS                     | `~/Library/Application Support/mesh-client/`                 |
-| Windows                   | `%APPDATA%\mesh-client\`                                     |
-| Linux (native / AppImage) | `~/.config/mesh-client/`                                     |
-| Flatpak                   | `~/.var/app/org.coloradomesh.MeshClient/config/mesh-client/` |
+| Install                   | Log / DB location                                                      |
+| ------------------------- | ---------------------------------------------------------------------- |
+| macOS                     | `~/Library/Application Support/mesh-client/`                           |
+| Windows                   | `%APPDATA%\mesh-client\`                                               |
+| Linux (native / AppImage) | `~/.config/mesh-client/`                                               |
+| Flatpak                   | `~/.var/app/io.github.charlottemeshtastic.MeshHub/config/mesh-client/` |
 
 **Copy Debug Snapshot** (clipboard JSON) and **Log → Export** remain available under Data Management and the Log panel.
 
@@ -171,7 +171,7 @@ Older releases also shipped a **universal** NSIS installer (x64 + arm64 in one `
 **Fix**
 
 1. Delete the broken install folder: `%LOCALAPPDATA%\Programs\Mesh-client\`
-2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client-Setup-{version}-arm64.exe` (not the x64-only `Mesh-client-Setup-{version}.exe`). Older releases may show dotted GitHub names (`Mesh-client.Setup.{version}-arm64.exe`) — use that file if the hyphenated name is missing.
+2. Download the **arm64** installer from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases): `Mesh-client-Setup-{version}-arm64.exe` (not the x64-only `Mesh-client-Setup-{version}.exe`). Older releases may show dotted GitHub names (`Mesh-client.Setup.{version}-arm64.exe`) — use that file if the hyphenated name is missing.
 3. Re-run the installer. Confirm `Mesh-client.exe` exists in the install folder and the app appears in **Installed apps**.
 
 **Diagnostic checklist (if the exe is still missing)**
@@ -198,7 +198,7 @@ Download a CI or release artifact's `win-arm64-unpacked` folder and run `Mesh-cl
 
 ### macOS: File is damaged and cannot be opened
 
-**Official releases (v5.22.0+):** macOS artifacts from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) are **Developer ID signed and notarized** (`notarize: true` in [`electron-builder.yml`](../electron-builder.yml); signing secrets in [`release.yaml`](../.github/workflows/release.yaml)). They should open from **Applications** without `xattr`. If macOS still blocks a signed build, check **System Settings → Privacy & Security** for an **Allow** entry first.
+**Official releases (v5.22.0+):** macOS artifacts from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) are **Developer ID signed and notarized** (`notarize: true` in [`electron-builder.yml`](../electron-builder.yml); signing secrets in [`release.yaml`](../.github/workflows/release.yaml)). They should open from **Applications** without `xattr`. If macOS still blocks a signed build, check **System Settings → Privacy & Security** for an **Allow** entry first.
 
 **Unsigned builds** (local `pnpm run dist:mac` without `CSC_*` / `APPLE_*` env vars, fork CI artifacts, or older pre-notarization releases): macOS tags downloads with **`com.apple.quarantine`**. Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt — common on **Apple silicon**, not a corrupt file.
 
@@ -233,7 +233,7 @@ Referenced from: .../Electron Framework.framework/Versions/A/Electron Framework
 
 Similar errors may mention `Mantle.framework` or `ReactiveObjC.framework`. Electron Framework may load; the sibling auto-update frameworks fail first.
 
-**Cause:** The **macOS `.zip`** from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) was extracted with a tool that **does not preserve macOS framework symlinks** — especially **7-Zip**, and sometimes Finder Archive Utility. That flattens entries such as `Squirrel.framework/Squirrel` into tiny invalid files, so dyld aborts at launch. The release artifact itself is fine; the installed `.app` bundle is broken.
+**Cause:** The **macOS `.zip`** from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) was extracted with a tool that **does not preserve macOS framework symlinks** — especially **7-Zip**, and sometimes Finder Archive Utility. That flattens entries such as `Squirrel.framework/Squirrel` into tiny invalid files, so dyld aborts at launch. The release artifact itself is fine; the installed `.app` bundle is broken.
 
 **Fix:**
 
@@ -286,7 +286,7 @@ Or extract the ZIP with `ditto -xk` (not 7-Zip) and verify that tree. If the mou
 
 ### Flatpak: `vmwgfx: driver missing` (VMware on macOS)
 
-**Symptom**: `flatpak run org.coloradomesh.MeshClient` fails or exits after Mesa logs `vmwgfx: driver missing` (use `flatpak -v run ...` to see it). Common on **Linux guests in VMware Fusion or Workstation with a macOS host**, including **aarch64** Ubuntu/ARM VMs.
+**Symptom**: `flatpak run io.github.charlottemeshtastic.MeshHub` fails or exits after Mesa logs `vmwgfx: driver missing` (use `flatpak -v run ...` to see it). Common on **Linux guests in VMware Fusion or Workstation with a macOS host**, including **aarch64** Ubuntu/ARM VMs.
 
 **Cause**: The Flatpak uses the same GPU stack as the x86_64 bundle (`--device=all`, Wayland/X11). It expects a working virtual GPU in the guest. On macOS-hosted VMware, **3D acceleration / `vmwgfx` is often off or unsupported** unless you enable it in the VM settings — without that, Mesa cannot open the VMware DRI driver and Electron’s GPU process fails.
 
@@ -300,28 +300,28 @@ Or extract the ZIP with `ditto -xk` (not 7-Zip) and verify that tree. If the mou
    ```
 4. Reinstall or rerun the Flatpak:
    ```bash
-   flatpak run org.coloradomesh.MeshClient
+   flatpak run io.github.charlottemeshtastic.MeshHub
    ```
 
 **Workaround** (software rendering when the host cannot expose `vmwgfx`):
 
 ```bash
-MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+MESH_CLIENT_DISABLE_GPU=1 flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 When `/sys/class/drm` is visible inside the sandbox, the wrapper may auto-detect `vmwgfx` and set `MESH_CLIENT_DISABLE_GPU=1` if DRI is unreliable there. Opt out of auto-detection: `MESH_CLIENT_DISABLE_GPU=0 flatpak run ...`. Force GPU despite detection: `MESH_CLIENT_ENABLE_GPU=1 flatpak run ...`.
 
-**Reinstall a release bundle** after downloading a new `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases):
+**Reinstall a release bundle** after downloading a new `.flatpak` from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases):
 
 ```bash
-flatpak uninstall --user org.coloradomesh.MeshClient
-flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak # or -x86_64
-flatpak run org.coloradomesh.MeshClient
+flatpak uninstall --user io.github.charlottemeshtastic.MeshHub
+flatpak install --user ./io.github.charlottemeshtastic.MeshHub-aarch64.flatpak # or -x86_64
+flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 ### Flatpak: immediate exit on Arch / CachyOS / Wayland (#598)
 
-**Symptom**: `flatpak run org.coloradomesh.MeshClient` prints `Command failed` right after `Running 'bwrap … -- mesh-client'` with no window. Common on **Arch, CachyOS, KDE Plasma 6, and Hyprland** (pure Wayland). The AppImage from the same release often works.
+**Symptom**: `flatpak run io.github.charlottemeshtastic.MeshHub` prints `Command failed` right after `Running 'bwrap … -- mesh-client'` with no window. Common on **Arch, CachyOS, KDE Plasma 6, and Hyprland** (pure Wayland). The AppImage from the same release often works.
 
 **Cause**: The Flatpak sandbox mounts an empty `/tmp/.X11-unix`, so Electron cannot fall back to X11 unless the wrapper passes Wayland/Ozone flags. Older bundles also omitted Chromium sandbox flags and `TMPDIR` setup that zypak expects. A different immediate exit with `No usable sandbox!` on hardened hosts is covered in [Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux](#flatpak-no-usable-sandbox-on-ubuntu-2310--hardened-linux).
 
@@ -329,14 +329,14 @@ The log line `F: /lib32 does not exist in runtime` is **harmless** on x86_64-onl
 
 **Fix**:
 
-1. Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (bundles after the #598 fix include an updated wrapper).
+1. Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) (bundles after the #598 fix include an updated wrapper).
 2. Run with debug logging if it still fails:
    ```bash
-   ZYPAK_DEBUG=1 flatpak run org.coloradomesh.MeshClient
+   ZYPAK_DEBUG=1 flatpak run io.github.charlottemeshtastic.MeshHub
    ```
 3. Inspect the installed payload:
    ```bash
-   flatpak run --command=sh org.coloradomesh.MeshClient
+   flatpak run --command=sh io.github.charlottemeshtastic.MeshHub
    # inside sandbox:
    ls -l /app/lib/mesh-client/electron/electron
    ls -l /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum
@@ -346,20 +346,20 @@ The log line `F: /lib32 does not exist in runtime` is **harmless** on x86_64-onl
 **Workarounds**:
 
 ```bash
-MESH_CLIENT_DISABLE_GPU=1 flatpak run org.coloradomesh.MeshClient
+MESH_CLIENT_DISABLE_GPU=1 flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 **Reinstall**:
 
 ```bash
-flatpak uninstall --user org.coloradomesh.MeshClient
-flatpak install --user ./org.coloradomesh.MeshClient-x86_64.flatpak
-flatpak run org.coloradomesh.MeshClient
+flatpak uninstall --user io.github.charlottemeshtastic.MeshHub
+flatpak install --user ./io.github.charlottemeshtastic.MeshHub-x86_64.flatpak
+flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 ### Flatpak: "No usable sandbox!" on Ubuntu 23.10+ / hardened Linux
 
-**Symptom**: `flatpak run org.coloradomesh.MeshClient` exits immediately with no window. The terminal may show `zypak-helper` lines (for example `Wait found events, but sd-event found none`) followed by:
+**Symptom**: `flatpak run io.github.charlottemeshtastic.MeshHub` exits immediately with no window. The terminal may show `zypak-helper` lines (for example `Wait found events, but sd-event found none`) followed by:
 
 ```text
 FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:129] No usable sandbox!
@@ -367,12 +367,12 @@ FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:129] No usable sandb
 
 **Cause**: The host blocks **unprivileged user namespaces** (common on **Ubuntu 23.10+** with AppArmor `apparmor_restrict_unprivileged_userns`, and on some hardened **Fedora** / **Arch** setups). The Flatpak wrapper passes `--disable-setuid-sandbox` (zypak owns Chromium sandboxing), so when user namespaces are unavailable Chromium has no usable sandbox and aborts.
 
-**Fix in app**: Current releases auto-retry with `--no-sandbox` when this fatal is detected (same fallback as `pnpm start` via `scripts/start-electron.mjs`). Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) if you are on an older bundle.
+**Fix in app**: Current releases auto-retry with `--no-sandbox` when this fatal is detected (same fallback as `pnpm start` via `scripts/start-electron.mjs`). Reinstall the latest `.flatpak` from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) if you are on an older bundle.
 
 **Workaround** (skip the probe, force `--no-sandbox` on first launch):
 
 ```bash
-MESH_CLIENT_NO_SANDBOX=1 flatpak run org.coloradomesh.MeshClient
+MESH_CLIENT_NO_SANDBOX=1 flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium runs with `--no-sandbox`; only the inner Chromium namespace sandbox is relaxed.
@@ -397,7 +397,7 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Fix**:
 
-1. Install the **latest** Mesh-Client release from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (do not downgrade the app after your database has been migrated).
+1. Install the **latest** Mesh-Client release from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) (do not downgrade the app after your database has been migrated).
 2. If you must use an older build, restore a `.db` backup exported **before** the upgrade, or start with a fresh profile (export first if you need data from the newer schema).
 
 **Log**: Details are in `mesh-client.log` under the app `userData` folder (macOS `~/Library/Application Support/mesh-client/`, Windows `%APPDATA%\mesh-client\`, Linux `~/.config/mesh-client/`).
@@ -1066,7 +1066,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Developer reference: [`docs/development/offline-maps.md`](development/offline-maps.md).
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/charlottemeshtastic/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Developer reference: [`docs/development/offline-maps.md`](development/offline-maps.md).
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
@@ -1124,7 +1124,7 @@ Click the **globe icon** in the header to select from the 16 supported languages
 
 **A translation is incorrect or missing.**
 
-Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
+Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/charlottemeshtastic/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
 
 **Why are some strings still in English?**
 

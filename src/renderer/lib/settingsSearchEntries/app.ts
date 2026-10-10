@@ -8,8 +8,6 @@ import type {
 const hasNodeDbRetention = (ctx: SettingsSearchContext) => ctx.capabilities.hasNodeDbReset;
 const hasContactRetention = (ctx: SettingsSearchContext) =>
   ctx.capabilities.nodeListTabUsesContactsLabel;
-const hasDestinationRetention = (ctx: SettingsSearchContext) =>
-  ctx.capabilities.hasReticulumPeersList;
 
 const DANGER = 'appPanel.dangerZoneSection';
 const RETENTION = 'appPanel.retentionLimitsHeading';
@@ -19,7 +17,7 @@ const appEntries: readonly SettingSearchEntry[] = [
     id: 'app.protocols.enabled',
     slot: 'App',
     labelKey: 'appPanel.protocolsSection',
-    keywords: ['meshtastic', 'meshcore', 'reticulum', 'enable', 'hide', 'protocol'],
+    keywords: ['meshtastic', 'meshcore', 'enable', 'hide', 'protocol'],
   },
   {
     id: 'app.logPanel.showLogPanel',
@@ -171,22 +169,6 @@ const appEntries: readonly SettingSearchEntry[] = [
     visible: hasContactRetention,
   },
   {
-    id: 'app.retention.autoPruneDestinations',
-    slot: 'App',
-    labelKey: 'appPanel.reticulumAutoPruneDestinationsLabel',
-    sectionKey: RETENTION,
-    keywords: ['prune', 'peers', 'cleanup'],
-    visible: hasDestinationRetention,
-  },
-  {
-    id: 'app.retention.destinationCap',
-    slot: 'App',
-    labelKey: 'appPanel.reticulumCapDestinationsLabel',
-    sectionKey: RETENTION,
-    keywords: ['limit', 'peers'],
-    visible: hasDestinationRetention,
-  },
-  {
     id: 'app.retention.messageLimit',
     slot: 'App',
     labelKey: 'appPanel.limitMessagesLoadedLabel',
@@ -208,22 +190,6 @@ const appEntries: readonly SettingSearchEntry[] = [
     sectionKey: RETENTION,
     keywords: ['messages', 'retention', 'database'],
     visible: hasContactRetention,
-  },
-  {
-    id: 'app.retention.reticulumMessageCap',
-    slot: 'App',
-    labelKey: 'appPanel.capStoredMessagesLabel',
-    sectionKey: RETENTION,
-    keywords: ['messages', 'retention', 'database'],
-    visible: hasDestinationRetention,
-  },
-  {
-    id: 'app.retention.rrcMessageCap',
-    slot: 'App',
-    labelKey: 'appPanel.capStoredRrcMessagesLabel',
-    sectionKey: RETENTION,
-    keywords: ['rrc', 'rooms', 'retention'],
-    visible: (ctx) => ctx.capabilities.hasRrcPanel,
   },
   {
     id: 'app.retention.compactMessages',
@@ -383,14 +349,6 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['disconnect', 'alert'],
   },
   {
-    id: 'app.notifications.rrcUnreadAll',
-    slot: 'App',
-    labelKey: 'appPanel.rrcUnreadAllRoomMessages',
-    sectionKey: 'appPanel.notificationsSection',
-    keywords: ['rrc', 'rooms', 'unread'],
-    visible: (ctx) => ctx.capabilities.hasRrcPanel,
-  },
-  {
     id: 'app.translation',
     slot: 'App',
     labelKey: 'chatTranslation.settingsTitle',
@@ -472,7 +430,6 @@ const appEntries: readonly SettingSearchEntry[] = [
     labelKey: 'appPanel.loraBlocklist.title',
     sectionKey: 'appPanel.loraBlocklist.title',
     keywords: ['block', 'unblock', 'spam', 'ignore', 'node'],
-    visible: (ctx) => !ctx.capabilities.hasReticulumInterfaceConfig,
   },
   {
     id: 'app.mecp.exportLog',
@@ -565,14 +522,6 @@ const appEntries: readonly SettingSearchEntry[] = [
     sectionKey: DANGER,
     keywords: ['public key', 'delete', 'cleanup'],
     visible: hasContactRetention,
-  },
-  {
-    id: 'app.danger.clearReticulumContacts',
-    slot: 'App',
-    labelKey: 'appPanel.clearReticulumContactsButton',
-    sectionKey: DANGER,
-    keywords: ['delete', 'peers', 'wipe'],
-    visible: hasDestinationRetention,
   },
   {
     id: 'app.danger.clearMessages',
@@ -726,13 +675,9 @@ export const appSurface: SettingsSearchSurface = {
       'accessible name of the indexed never-advertised toggle',
     'appPanel.autoPruneUnheardContacts': 'accessible name of the indexed contact auto-prune',
     'appPanel.capTotalContacts': 'accessible name of the indexed contact cap',
-    'appPanel.reticulumAutoPruneDestinations': 'accessible name of the indexed destination prune',
-    'appPanel.reticulumCapDestinations': 'accessible name of the indexed destination cap',
-    'appPanel.reticulumDestinationsUnit': 'unit beside the indexed destination cap',
     'appPanel.messagesLoadLimitIntro': 'card intro; its rows are indexed',
     'appPanel.limitMessagesLoaded': 'accessible name of the indexed message load limit',
     'appPanel.capStoredMessages': 'accessible name of the indexed stored-message caps',
-    'appPanel.capStoredRrcMessages': 'accessible name of the indexed RRC message cap',
     'appPanel.supportSectionDesc': 'section prose, no control',
     'appPanel.exportForGitHub': 'accessible name of the indexed GitHub export button',
     'appPanel.exportForDeveloper': 'accessible name of the indexed developer export button',

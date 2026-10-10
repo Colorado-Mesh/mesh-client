@@ -8,7 +8,7 @@ Findings describe historical events, not necessarily ongoing failures. One line 
 
 ## Review of current logging
 
-Issue [#915](https://github.com/Colorado-Mesh/mesh-client/issues/915) prompted an inventory of TypeScript log calls and Rust sidecar warning/error emitters, followed by a comparison with the existing patterns and the sidecar forwarding code. The review found that the recommendation resolver was ignoring the category recommendation map, causing specific failures to display generic internal-error advice. USB serial also lacked a recommendation. Both are now covered by map-completeness tests.
+Issue [#915](https://github.com/charlottemeshtastic/mesh-client/issues/915) prompted an inventory of TypeScript log calls and Rust sidecar warning/error emitters, followed by a comparison with the existing patterns and the sidecar forwarding code. The review found that the recommendation resolver was ignoring the category recommendation map, causing specific failures to display generic internal-error advice. USB serial also lacked a recommendation. Both are now covered by map-completeness tests.
 
 | Log family                                                            | Analysis coverage and decision                                                                                                                                                                                                                            |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

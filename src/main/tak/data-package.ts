@@ -39,7 +39,7 @@ function buildManifestXml(): string {
 <MissionPackageManifest version="2">
   <Configuration>
     <Parameter name="uid" value="mesh-client-tak-package"/>
-    <Parameter name="name" value="Mesh Client TAK Server"/>
+    <Parameter name="name" value="Mesh Hub TAK Server"/>
     <Parameter name="onReceiveImport" value="true"/>
     <Parameter name="onReceiveDelete" value="false"/>
   </Configuration>
@@ -56,7 +56,7 @@ function buildPrefXml(ip: string, port: number): string {
 <preferences>
   <preference version="1" name="cot_streams">
     <entry key="count" class="class java.lang.Integer">1</entry>
-    <entry key="description0" class="class java.lang.String">Mesh Client</entry>
+    <entry key="description0" class="class java.lang.String">Mesh Hub</entry>
     <entry key="enabled0" class="class java.lang.Boolean">true</entry>
     <entry key="connectString0" class="class java.lang.String">${ip}:${port}:ssl</entry>
     <entry key="caLocation0" class="class java.lang.String">cert/${TRUSTSTORE_FILE}</entry>

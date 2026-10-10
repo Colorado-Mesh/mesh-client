@@ -24,7 +24,7 @@ jobs:
       pull-requests: read
     runs-on: ubuntu-latest
     outputs:
-      reticulum-sidecar: ${{ steps.filter.outputs.reticulum-sidecar }}
+      ble-sidecar: ${{ steps.filter.outputs.ble-sidecar }}
       vitest_mode: ${{ steps.vitest.outputs.vitest_mode }}
       vitest_paths: ${{ steps.vitest.outputs.vitest_paths }}
       vitest_projects: ${{ steps.vitest.outputs.vitest_projects }}
@@ -41,13 +41,9 @@ jobs:
         id: filter
         with:
           filters: |
-            reticulum-sidecar:
-              - 'reticulum-sidecar/**'
-              - 'scripts/clone-ratspeak-stack.sh'
-              - 'scripts/ensure-rsReticulum-patches.sh'
-              - 'scripts/apply-rsReticulum-*.sh'
-              - 'scripts/apply-rsLXMF-*.sh'
-              - 'scripts/check-reticulum-sidecar.sh'
+            ble-sidecar:
+              - 'ble-sidecar/**'
+              - 'scripts/check-ble-sidecar.sh'
               - '.github/workflows/tests.yaml'
 
       - name: Resolve Vitest scope
@@ -149,10 +145,10 @@ jobs:
         run: |
           [[ "$CHANGES_RESULT" == 'success' && "$SHARDS_RESULT" == 'success' ]]
 
-  reticulum-sidecar-coverage:
-    name: Reticulum sidecar coverage
+  ble-sidecar-coverage:
+    name: Bluetooth helper coverage
     needs: changes
-    if: needs.changes.outputs.reticulum-sidecar == 'true'
+    if: needs.changes.outputs.ble-sidecar == 'true'
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -162,11 +158,6 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
-        shell: bash
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-        run: bash scripts/clone-ratspeak-stack.sh
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           components: llvm-tools-preview
@@ -175,26 +166,24 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
       - name: cargo llvm-cov (threshold)
-        working-directory: reticulum-sidecar
+        working-directory: ble-sidecar
         # Baseline ~45% lines (2026-07 CI); ratchet toward Vitest-aligned 52% over time.
         run: >-
           cargo llvm-cov
-          --features rns-stack,rns-ble,rns-rnode-tcp
-          --ignore-filename-regex 'rsReticulum|rsLXMF'
           --fail-under-lines 45
           --lcov --output-path lcov.info
       - name: Upload lcov
         if: always() && github.actor != 'nektos/act'
         uses: actions/upload-artifact@v7
         with:
-          name: reticulum-sidecar-lcov
-          path: reticulum-sidecar/lcov.info
+          name: ble-sidecar-lcov
+          path: ble-sidecar/lcov.info
           retention-days: 7
           if-no-files-found: warn
 
   merge-reports:
     name: Merge coverage
-    needs: [changes, tests, reticulum-sidecar-coverage]
+    needs: [changes, tests, ble-sidecar-coverage]
     if: always() && !cancelled()
     permissions:
       contents: read
@@ -204,8 +193,8 @@ jobs:
       - name: Verify selected test jobs
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
-          SIDECAR_SELECTED: ${{ needs.changes.outputs.reticulum-sidecar }}
-          SIDECAR_RESULT: ${{ needs.reticulum-sidecar-coverage.result }}
+          SIDECAR_SELECTED: ${{ needs.changes.outputs.ble-sidecar }}
+          SIDECAR_RESULT: ${{ needs.ble-sidecar-coverage.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           VITEST_MODE: ${{ needs.changes.outputs.vitest_mode }}
         run: |
@@ -218,7 +207,7 @@ jobs:
             exit 1
           fi
           if [[ "$SIDECAR_SELECTED" == 'true' && "$SIDECAR_RESULT" != 'success' ]]; then
-            echo "Reticulum sidecar coverage finished with: $SIDECAR_RESULT" >&2
+            echo "Bluetooth helper coverage finished with: $SIDECAR_RESULT" >&2
             exit 1
           fi
 

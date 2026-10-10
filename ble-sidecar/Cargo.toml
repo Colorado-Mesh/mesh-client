@@ -1,0 +1,64 @@
+[package]
+name = "mesh-hub-ble"
+version = "0.1.0"
+edition = "2024"
+description = "Bluetooth LE (GATT) helper for Mesh Hub: Meshtastic and MeshCore radio sessions"
+license = "AGPL-3.0-or-later"
+rust-version = "1.85"
+
+[[bin]]
+name = "mesh-hub-ble"
+path = "src/main.rs"
+
+[features]
+default = ["gatt-ble"]
+# Meshtastic/MeshCore GATT via btleplug.
+gatt-ble = ["dep:btleplug", "dep:btleplug_win"]
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+futures-util = "0.3"
+hex = "0.4"
+http = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Groups at lower priority so individual allows below can override.
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# High-churn pedantic style (ratchet down over time). Protocol casts and large
+# modules are intentional; INI fixtures keep raw-string hashes for clarity.
+doc_markdown = "allow"
+needless_raw_string_hashes = "allow"
+too_many_lines = "allow"
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_sign_loss = "allow"
+cast_lossless = "allow"
+assigning_clones = "allow"
+map_unwrap_or = "allow"
+case_sensitive_file_extension_comparisons = "allow"
+
+# LoRa GATT btleplug. Windows uses 0.13 for `add_peripheral` (connect to a bonded or
+# OS-connected radio that is not advertising). Other platforms stay on 0.11, the version
+# the macOS / Linux backend was written and tested against.
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+btleplug = { version = "0.11", optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+btleplug_win = { package = "btleplug", version = "0.13.4", optional = true }
+windows = { version = "0.58", features = ["Devices_Bluetooth", "Devices_Bluetooth_GenericAttributeProfile", "Devices_Enumeration", "Foundation"] }

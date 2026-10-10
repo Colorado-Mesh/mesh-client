@@ -1,5 +1,3 @@
-import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
-
 import {
   buildMeshcoreNodeMapFromDb,
   isMeshcoreRoomChatMessage,
@@ -38,11 +36,7 @@ import {
 } from './meshtasticDbCacheHydration';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
 import { lastHeardToUnixSeconds } from './nodeStatus';
-import {
-  chatMessageToMessageRecord,
-  meshNodeToNodeRecord,
-  reticulumDbRowToMessageRecord,
-} from './storeRecordAdapters';
+import { chatMessageToMessageRecord, meshNodeToNodeRecord } from './storeRecordAdapters';
 import type { IdentityId, MeshNode, MeshProtocol } from './types';
 
 /** MeshCore SQLite message load cap (matches runtime mount hydration). */
@@ -328,75 +322,9 @@ async function hydrateMeshcoreIdentity(
   }
 }
 
-function hydrateReticulumIdentity(
-  identityId: IdentityId,
-  opts: HydrateIdentityStoresOptions,
-  isCurrent: () => boolean,
-): Promise<void> {
-  const loadNodes = opts.nodes !== false;
-  const loadMessages = opts.messages !== false;
-  return (async () => {
-    if (loadNodes) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
-          destination_hash: string;
-          display_name?: string | null;
-          last_heard?: number | null;
-          favorited?: number | null;
-        }[];
-        if (!isCurrent()) return;
-        const { reticulumHashToNodeId, registerReticulumDestinationHash } =
-          await import('./reticulum/destHash');
-        const records: NodeRecord[] = [];
-        for (const row of rows) {
-          // A row without a canonical hash cannot be keyed or displayed; skipping it
-          // keeps one bad SQLite row from failing the whole hydration pass.
-          const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
-          if (!destinationHash) {
-            console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
-            continue;
-          }
-          const nodeId = reticulumHashToNodeId(destinationHash);
-          registerReticulumDestinationHash(nodeId, destinationHash);
-          records.push({
-            nodeId,
-            longName: row.display_name ?? destinationHash.slice(0, 16),
-            shortName: row.display_name?.slice(0, 4) ?? 'RT',
-            lastHeardAt: row.last_heard ?? undefined,
-            reticulumDestinationHash: destinationHash,
-          });
-        }
-        if (!isCurrent()) return;
-        upsertNodeRecordsForIdentity(identityId, records);
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));
-      }
-    }
-    if (loadMessages) {
-      try {
-        const rows = (await window.electronAPI.db.getReticulumMessages(identityId, 500)) as {
-          sender_id: string;
-          sender_name?: string;
-          payload: string;
-          timestamp: number;
-          to_hash?: string;
-        }[];
-        if (!isCurrent()) return;
-        replaceMessageRecordsForIdentity(
-          identityId,
-          rows.map((row) => reticulumDbRowToMessageRecord(row)),
-        );
-      } catch (e) {
-        console.warn('[hydrateReticulumIdentity] messages ' + errLikeToLogString(e));
-      }
-    }
-  })();
-}
-
 const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
   meshtastic: hydrateMeshtasticIdentity,
   meshcore: hydrateMeshcoreIdentity,
-  reticulum: hydrateReticulumIdentity,
 };
 
 /**

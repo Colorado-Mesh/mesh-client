@@ -71,9 +71,10 @@ describe('style guide tokens (styles.css)', () => {
     }
   });
 
-  it('the default accent is the Meshtastic scale', () => {
-    expect(DEFAULT_THEME_COLORS.brandGreen).toBe(token('--color-meshtastic-500'));
-    expect(DEFAULT_THEME_COLORS.readableGreen).toBe(token('--color-meshtastic-700'));
+  it('the default accent is Mesh Hub Signature Orange', () => {
+    expect(DEFAULT_THEME_COLORS.brandGreen).toBe('#ffa31a');
+    expect(DEFAULT_THEME_COLORS.brandGreen).toBe(token('--color-brand-green'));
+    expect(DEFAULT_THEME_COLORS.readableGreen).toBe(token('--color-readable-green'));
   });
 
   it('each protocol accent is its own scale: 500 for the accent, 700 for fills', () => {
@@ -97,13 +98,14 @@ describe('style guide tokens (styles.css)', () => {
     }
   });
 
-  it('the ink neutrals carry the Midnight Serenity swatches and keep muted text at 4.5:1', () => {
+  it('the ink neutrals carry the Mesh Hub charcoal swatches and keep muted text at 4.5:1', () => {
     for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
       expect(token(`--color-ink-${step}`)).toMatch(/^#[0-9a-f]{6}$/);
     }
-    expect(token('--color-ink-950')).toBe('#11151c'); // Ink Black
-    expect(token('--color-ink-800')).toBe('#212d40'); // Deep Space Blue
-    expect(token('--color-ink-700')).toBe('#364156'); // Charcoal Blue
+    expect(token('--color-ink-950')).toBe('#1b1b1b'); // Off-Black
+    expect(token('--color-ink-900')).toBe('#292929'); // Dark Charcoal
+    expect(token('--color-ink-500')).toBe('#808080'); // Light Charcoal / Grey
+    expect(token('--color-ink-50')).toBe('#ffffff'); // Pure White
     expect(DEFAULT_THEME_COLORS.muted).toBe(token('--color-ink-400'));
     for (const surface of [950, 900, 800]) {
       expect(

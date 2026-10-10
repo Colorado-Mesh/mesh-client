@@ -25,15 +25,13 @@ export function asChannelIndexPills(
   return pills;
 }
 
-/** App `chatChannels` — Reticulum empty, MeshCore configured-PSK only, else last-wins pills. */
+/** App `chatChannels` — MeshCore configured-PSK only, else last-wins pills. */
 export function chatChannelsFromRuntimeChannels(
   channels: readonly unknown[],
   capabilities: {
-    hasReticulumInterfaceConfig: boolean;
     hasCompanionContactManagementConfig: boolean;
   },
 ): { index: number; name: string }[] {
-  if (capabilities.hasReticulumInterfaceConfig) return [];
   if (capabilities.hasCompanionContactManagementConfig) {
     return meshcoreConfiguredChatChannels(channels);
   }

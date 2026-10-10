@@ -2,7 +2,7 @@
 /**
  * Emit a GitHub Actions matrix `include` JSON for release.yaml platform filtering.
  */
-import { PLATFORM_TARGETS } from './reticulum-sidecar-staging.mjs';
+import { PLATFORM_TARGETS } from './ble-sidecar-staging.mjs';
 
 const ROWS = [
   {

@@ -23,7 +23,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { findAppArchive } from './find-nsis-app-archive.mjs';
-import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { assertBundledBleSidecarInBundle } from './assert-bundled-ble-sidecar.mjs';
 import { findWinSetupInstaller } from './win-setup-installer-names.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -136,7 +136,7 @@ function probe7zExtract(installerPath, outDir, arch) {
 
   const exePath = path.join(archiveDir, APP_EXE);
   assertExe(`7z probe ${APP_EXE}`, exePath);
-  assertBundledReticulumSidecarInBundle({
+  assertBundledBleSidecarInBundle({
     label: `7z probe ${arch} Reticulum sidecar`,
     platform: 'win32',
     bundleRoot: archiveDir,
@@ -210,7 +210,7 @@ function main(arch, probe7z) {
     }
 
     assertExe(`installed ${APP_EXE}`, exePath);
-    assertBundledReticulumSidecarInBundle({
+    assertBundledBleSidecarInBundle({
       label: `installed ${arch} Reticulum sidecar`,
       platform: 'win32',
       bundleRoot: instDir,

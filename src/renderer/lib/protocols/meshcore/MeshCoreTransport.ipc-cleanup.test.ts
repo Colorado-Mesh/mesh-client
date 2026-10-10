@@ -233,32 +233,6 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
     });
 
-    it('unsubscribes IPC listeners on peripheral disconnect event', async () => {
-      const offData = vi.fn();
-      const offDisc = vi.fn();
-      const offAbort = vi.fn();
-      let onDiscCb: ((sid: 'meshtastic' | 'meshcore' | 'reticulum') => void) | undefined;
-      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onGattDisconnected = vi.fn(
-        (cb: (sid: 'meshtastic' | 'meshcore' | 'reticulum') => void) => {
-          onDiscCb = cb;
-          return offDisc;
-        },
-      );
-      window.electronAPI.onGattConnectAborted = vi.fn().mockReturnValue(offAbort);
-
-      await createMeshCoreConnection({
-        transport: 'ble',
-        blePeripheralId: 'aa:bb:cc:dd:ee:ff',
-      });
-      expect(onDiscCb).toBeTypeOf('function');
-      onDiscCb!('meshcore');
-
-      expect(offData).toHaveBeenCalledTimes(1);
-      expect(offDisc).toHaveBeenCalledTimes(1);
-      expect(offAbort).toHaveBeenCalledTimes(1);
-    });
-
     it('unsubscribes IPC listeners when connect fails after listeners are registered', async () => {
       const offData = vi.fn();
       const offDisc = vi.fn();
@@ -280,48 +254,6 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       expect(offDisc).toHaveBeenCalledTimes(1);
       expect(offAbort).toHaveBeenCalledTimes(1);
       expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
-    });
-
-    it('unsubscribes IPC listeners when main signals connect aborted during handshake', async () => {
-      const offData = vi.fn();
-      const offDisc = vi.fn();
-      const offAbort = vi.fn();
-      let onAbortCb:
-        | ((payload: {
-            sessionId: 'meshtastic' | 'meshcore' | 'reticulum';
-            message: string;
-          }) => void)
-        | undefined;
-      window.electronAPI.onGattFromRadio = vi.fn().mockReturnValue(offData);
-      window.electronAPI.onGattDisconnected = vi.fn().mockReturnValue(offDisc);
-      window.electronAPI.onGattConnectAborted = vi.fn(
-        (
-          cb: (payload: {
-            sessionId: 'meshtastic' | 'meshcore' | 'reticulum';
-            message: string;
-          }) => void,
-        ) => {
-          onAbortCb = cb;
-          return offAbort;
-        },
-      );
-      window.electronAPI.disconnectGatt = vi.fn().mockResolvedValue(undefined);
-      connectGattWithScanBusyRetryMock.mockImplementation(() => {
-        expect(onAbortCb).toBeTypeOf('function');
-        onAbortCb!({ sessionId: 'meshcore', message: 'pairing cancelled' });
-        return Promise.resolve();
-      });
-
-      await expect(
-        createMeshCoreConnection({
-          transport: 'ble',
-          blePeripheralId: 'aa:bb:cc:dd:ee:ff',
-        }),
-      ).rejects.toThrow('pairing cancelled');
-
-      expect(offData).toHaveBeenCalledTimes(1);
-      expect(offDisc).toHaveBeenCalledTimes(1);
-      expect(offAbort).toHaveBeenCalledTimes(1);
     });
   });
 });

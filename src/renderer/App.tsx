@@ -34,9 +34,7 @@ import {
 } from '@/renderer/lib/channelIdentity';
 import {
   type ChatNotificationTarget,
-  focusRrcNotificationTarget,
   notifyInactiveChat,
-  notifyInactiveRrc,
 } from '@/renderer/lib/chatDesktopNotifications';
 import { resolveInactiveChatNotification } from '@/renderer/lib/chatInactiveNotifications';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
@@ -44,11 +42,9 @@ import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
   ensureMeshcoreChatLastReadSanitized,
-  ensureReticulumChatLastReadSanitized,
   getSanitizedMeshcoreChatLastRead,
   getSanitizedMeshcoreRoomsLastRead,
   getSanitizedMeshtasticChatLastRead,
-  getSanitizedReticulumChatLastRead,
   loadMutedViews,
   removePersistedLastReadForChannel,
   subscribeMutedViewsChanged,
@@ -58,7 +54,6 @@ import {
 import {
   buildProtocolSwitcherUnreadByProtocol,
   type ChatUnreadDmOptions,
-  computeReticulumChatUnread,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
 import {
@@ -68,7 +63,6 @@ import {
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -119,13 +113,6 @@ import {
   traceRouteHopLabels,
 } from '@/renderer/lib/protocolRuntimeAdapters';
 import { remapChannelMessagesToLiveSlots } from '@/renderer/lib/remapChannelMessagesToLiveSlots';
-import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
-import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
-import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
-import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
-import { resolveInactiveRrcNotification } from '@/renderer/lib/rrcInactiveNotifications';
-import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
-import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import {
@@ -138,7 +125,6 @@ import {
   meshtasticDeviceRoleFromConfigSlice,
   resolveAppliedMeshtasticDeviceRole,
 } from '@/shared/meshtasticAppliedDeviceRole';
-import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
 import { AppAboutSection } from './components/AppAboutSection';
@@ -154,12 +140,7 @@ import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdver
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
-import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
-import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
-import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDetailErrorBoundary';
-import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
-import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBufferingHeaderIndicator';
 import { ServiceAnnouncementStrip } from './components/ServiceAnnouncementStrip';
 import { AppRail } from './components/shell/AppRail';
 import { BottomNav } from './components/shell/BottomNav';
@@ -198,8 +179,6 @@ import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolCo
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useRefreshPositionOnProtocolSwitch } from './hooks/useRefreshPositionOnProtocolSwitch';
 import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
-import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
-import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useServiceAnnouncements } from './hooks/useServiceAnnouncements';
@@ -211,31 +190,22 @@ import { useTakServer } from './hooks/useTakServer';
 import { useUnseenEmergencyAlerts } from './hooks/useUnseenEmergencyAlerts';
 import { useWeatherForecastIngest } from './hooks/useWeatherForecastIngest';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
-import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
+import { ContactGroupsModal, NodeDetailModal } from './lazyModals';
 import {
   AdminPanel,
   AppPanel,
   ChannelUtilizationChart,
   DiagnosticsPanel,
-  GamesPanel,
   IncidentPanel,
   MapPanel,
   ModulePanel,
-  NomadNetworkPanel,
   PacketDistributionPanel,
   PeerGraphPanel,
   RadioPanel,
   RawPacketLogPanel,
   RepeatersPanel,
-  ReticulumAdminPanel,
-  ReticulumMapPanel,
-  ReticulumNetworkPanel,
-  ReticulumPeerListPanel,
-  ReticulumRemotePanel,
-  ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
-  RrcPanel,
   SecurityPanel,
   TakServerPanel,
   TelemetryPanel,
@@ -247,7 +217,7 @@ import {
   resolvePanelSetOwnerHandler,
 } from './lib/appPanelHandlerSelection';
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
-import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appSettingsStorage';
+import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
   ADMIN_PANEL_INDEX,
   APP_PANEL_INDEX,
@@ -255,25 +225,20 @@ import {
   computeTabMappings,
   DIAGNOSTICS_PANEL_INDEX,
   findFilteredTabIndexForPanel,
-  GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
   INCIDENT_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
   NODES_PANEL_INDEX,
-  NOMAD_NETWORK_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
-  REMOTE_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   RF_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
-  RRC_PANEL_INDEX,
   SECURITY_PANEL_INDEX,
   SNIFFER_PANEL_INDEX,
   STATS_PANEL_INDEX,
   TAK_PANEL_INDEX,
   TELEMETRY_PANEL_INDEX,
-  TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { playMessageNotification } from './lib/chatNotifications';
@@ -339,10 +304,8 @@ import {
   resolveSectionTargetTab,
 } from './lib/navSections';
 import { nodeDisplayName, nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
-import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
 import { loadNotificationSoundSettings } from './lib/notificationSoundSettings';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
-import { OPEN_RRC_HUB_EVENT } from './lib/openRrcHubFromLink';
 import { subscribeOpenSettingRequests } from './lib/openSettingRequest';
 import {
   formatShortcut,
@@ -353,28 +316,10 @@ import {
 import { parseStoredJson } from './lib/parseStoredJson';
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
-import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
-import { buildResendArgs } from './lib/reticulum/buildResendArgs';
-import { reticulumHashToNodeId } from './lib/reticulum/destHash';
-import {
-  openReticulumDmFromHash,
-  ReticulumChatMissingLxmfError,
-} from './lib/reticulum/reticulumDestinationInput';
-import {
-  setReticulumGamesTabFocused,
-  totalGamesUnread,
-} from './lib/reticulum/reticulumGamesNotifications';
-import { openReticulumGameSession } from './lib/reticulum/reticulumGamesSession';
-import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
-import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
-import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
-import { startReticulumVoiceMemo } from './lib/reticulum/reticulumVoiceMemo';
-import { sendReticulumVoiceMemo } from './lib/reticulum/sendReticulumVoiceMemo';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { buildSettingSearchItems, type SettingSearchEntry } from './lib/settingsSearch';
 import { loadSettingSearchEntries } from './lib/settingsSearchEntriesLoader';
-import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
   messageRecordsToChatMessages,
@@ -400,22 +345,13 @@ import {
 } from './runtime/ProtocolRuntimeContext';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
-import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
-import { useNomadPageViewerStore } from './stores/nomadPageViewerStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
-import { useReticulumGamesStore } from './stores/reticulumGamesStore';
-import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
-import { useReticulumPeerStore } from './stores/reticulumPeerStore';
-import { useReticulumSetupGuideStore } from './stores/reticulumSetupGuideStore';
-import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
-import { useRncpTransferStore } from './stores/rncpTransferStore';
-import { useRrcSessionStore } from './stores/rrcSessionStore';
 import { useTimeFormatStore } from './stores/timeFormatStore';
 import { useWeatherFilterStore } from './stores/weatherFilterStore';
 
@@ -530,21 +466,17 @@ function HeaderMqttGlobeIcon({ variant }: { variant: ReturnType<typeof mqttHeade
 export default function App() {
   const meshtasticRuntime = useMeshtasticRuntime();
   const meshcoreRuntime = useMeshcoreRuntime();
-  const reticulumRuntime = useReticulumRuntime();
   const runtimeMap = useMemo<RuntimeMap>(
     () => ({
       meshtastic: meshtasticRuntime,
       meshcore: meshcoreRuntime,
-      reticulum: reticulumRuntime,
     }),
-    [meshtasticRuntime, meshcoreRuntime, reticulumRuntime],
+    [meshtasticRuntime, meshcoreRuntime],
   );
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
       <ToastProvider>
         <AppContent />
-        <RncpEnableRequestModal />
-        <ReticulumVoiceOverlay />
       </ToastProvider>
     </ProtocolRuntimeProvider>
   );
@@ -553,19 +485,6 @@ export default function App() {
 function AppContent() {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  useEffect(() => {
-    const onOffer = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ file_name?: string }>).detail;
-      if (detail?.file_name) {
-        addToast(t('reticulumRemote.transfer.offerToast', { file: detail.file_name }), 'info');
-      }
-    };
-    window.addEventListener('mesh-client:rncp-offer', onOffer);
-    return () => {
-      window.removeEventListener('mesh-client:rncp-offer', onOffer);
-    };
-  }, [addToast, t]);
-
   useEffect(() => {
     void loadNotificationSoundSettings().catch((error: unknown) => {
       console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
@@ -595,7 +514,6 @@ function AppContent() {
   const runtimes = useAllRuntimes();
   const meshtasticRuntime = runtimes.meshtastic;
   const meshcoreRuntime = runtimes.meshcore;
-  const reticulumRuntime = runtimes.reticulum;
   const [activeTab, setActiveTab] = useState(0);
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherPins, setLauncherPins] = useState(readLauncherPins);
@@ -625,13 +543,6 @@ function AppContent() {
   const nodeDetailPaneFits = useMediaQuery(NODE_DETAIL_PANE_MEDIA_QUERY);
   /** Phones and very narrow windows: bottom bar instead of the rail (future mobile builds). */
   const shellCompact = useMediaQuery(SHELL_COMPACT_QUERY);
-  const [selectedPeerHash, setSelectedPeerHashState] = useState<string | null>(null);
-  /** Same rule as nodes: picked from the Peers list or the map on a wide window shows in a pane. */
-  const [peerDetailPaneHost, setPeerDetailPaneHost] = useState<DetailPaneHost | null>(null);
-  const setSelectedPeerHash = useCallback((hash: string | null) => {
-    setPeerDetailPaneHost(null);
-    setSelectedPeerHashState(hash);
-  }, []);
   // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
   const selectedNodeHistoryPoints = usePositionHistoryStore(
     useCallback(
@@ -675,19 +586,14 @@ function AppContent() {
   const [lastReadRevision, setLastReadRevision] = useState({
     meshtastic: 0,
     meshcore: 0,
-    reticulum: 0,
   });
   const [roomsLastReadRevision, setRoomsLastReadRevision] = useState(0);
   const [meshcoreMutedViewsRevision, setMeshcoreMutedViewsRevision] = useState(0);
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMeshtasticMsgCountRef = useRef(0);
   const prevMeshcoreMsgCountRef = useRef(0);
-  const prevReticulumMsgCountRef = useRef(0);
-  const prevRrcMsgCountRef = useRef(0);
   const isMeshtasticInitialRef = useRef(true);
   const isMeshcoreInitialRef = useRef(true);
-  const isReticulumInitialRef = useRef(true);
-  const isRrcInitialRef = useRef(true);
   const mainViewportRef = useRef<HTMLDivElement>(null);
   const activePanelIndexRef = useRef(0);
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
@@ -853,7 +759,6 @@ function AppContent() {
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
   const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
   const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
-  const reticulumEnabled = enabledProtocols.includes('reticulum');
   const handleHiddenProtocolsChange = useCallback((hidden: MeshProtocol[]) => {
     setHiddenProtocols((prev) =>
       prev.length === hidden.length && prev.every((p) => hidden.includes(p)) ? prev : hidden,
@@ -865,16 +770,6 @@ function AppContent() {
   const allConnectionActions = useAllProtocolConnectionActions();
   const meshtasticConnection = allConnectionActions.meshtastic;
   const meshcoreConnection = allConnectionActions.meshcore;
-  const reticulumConnection = allConnectionActions.reticulum;
-  const startReticulumStack = useCallback(
-    () => reticulumConnection.connectAutomatic('http'),
-    [reticulumConnection],
-  );
-  /** UI Start after Stop — clears shared suppress so connect() is allowed. Autostart must not use this. */
-  const startReticulumStackManual = useCallback(() => {
-    setReticulumManualStackStopSuppress(false);
-    return reticulumConnection.connectAutomatic('http');
-  }, [reticulumConnection]);
 
   usePowerRecovery({
     callbacksByProtocol: {
@@ -885,10 +780,6 @@ function AppContent() {
       meshcore: {
         onPowerSuspend: meshcoreRuntime.onPowerSuspend,
         onPowerResume: meshcoreRuntime.onPowerResume,
-      },
-      reticulum: {
-        onPowerSuspend: reticulumRuntime.onPowerSuspend,
-        onPowerResume: reticulumRuntime.onPowerResume,
       },
     },
     hiddenProtocols,
@@ -902,7 +793,6 @@ function AppContent() {
   const allPanelActions = useAllProtocolPanelActions({
     meshtastic: meshtasticRuntime,
     meshcore: meshcoreRuntime,
-    reticulum: reticulumRuntime,
   });
   const meshtasticPanelActions = allPanelActions.meshtastic as ReturnType<
     typeof useMeshtasticPanelActions
@@ -910,15 +800,11 @@ function AppContent() {
   const meshcorePanelActions = allPanelActions.meshcore as ReturnType<
     typeof useMeshcorePanelActions
   >;
-  const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
-    typeof useReticulumPanelActions
-  >;
   const activeFacade = useProtocolFacade(protocol, allPanelActions, allConnectionActions);
   const panelActions = activeFacade.panel.actions;
   const {
     identityIdByProtocol,
     focusedIdentityId,
-    reticulumIdentityId,
     capabilities: activeProtocolCapabilities,
     connection: activeConnection,
   } = activeFacade;
@@ -932,7 +818,6 @@ function AppContent() {
   );
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
   const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
-  const reticulumStoreMessages = useMessages(reticulumIdentityId);
   const meshtasticChannelKeyByIndex = useMemo(
     () => buildMeshtasticChannelKeyByIndex(meshtasticRuntime.channelConfigs),
     [meshtasticRuntime.channelConfigs],
@@ -1007,25 +892,11 @@ function AppContent() {
     if (!meshcoreNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshcoreNodesById));
   }, [meshcoreNodesById]);
-  const reticulumUiMessages = useMemo(
-    () => messageRecordsToChatMessages(reticulumStoreMessages),
-    [reticulumStoreMessages],
-  );
-  const reticulumNodesById = useNodeStore((s) =>
-    reticulumIdentityId ? s.nodes[reticulumIdentityId] : undefined,
-  );
-  const reticulumUiNodes = useMemo(() => {
-    if (!reticulumNodesById) return new Map<number, MeshNode>();
-    return nodeRecordsToMeshNodeMap(Object.values(reticulumNodesById));
-  }, [reticulumNodesById]);
-  const reticulumPathPeerCount = useReticulumPeerStore((s) => s.peers.size);
 
   const meshtasticDbRefresh = useProtocolDbRefresh('meshtastic', meshtasticIdentityId);
   const meshcoreDbRefresh = useProtocolDbRefresh('meshcore', meshcoreIdentityId);
-  const reticulumDbRefresh = useProtocolDbRefresh('reticulum', reticulumIdentityId);
   const { refreshAllFromDb: refreshMeshtasticAllFromDb } = meshtasticDbRefresh;
   const { refreshAllFromDb: refreshMeshcoreAllFromDb } = meshcoreDbRefresh;
-  const { refreshAllFromDb: refreshReticulumAllFromDb } = reticulumDbRefresh;
 
   // Wait for startup prune before first hydrate (avoids double hydrate). Stagger active protocol first.
   const [startupPruneDone, setStartupPruneDone] = useState(false);
@@ -1035,7 +906,6 @@ function AppContent() {
     useCallback(() => {
       ensureOfflineProtocolIdentities();
       setStartupPruneDone(true);
-      scheduleReticulumVacuumIfNeeded();
     }, []),
   );
 
@@ -1045,12 +915,10 @@ function AppContent() {
     const identityByProtocol: Record<MeshProtocol, string | null | undefined> = {
       meshtastic: meshtasticIdentityId,
       meshcore: meshcoreIdentityId,
-      reticulum: reticulumIdentityId,
     };
     const refreshByProtocol: Record<MeshProtocol, () => Promise<void>> = {
       meshtastic: refreshMeshtasticAllFromDb,
       meshcore: refreshMeshcoreAllFromDb,
-      reticulum: refreshReticulumAllFromDb,
     };
     void (async () => {
       const order: MeshProtocol[] = [
@@ -1074,10 +942,8 @@ function AppContent() {
     protocol,
     meshtasticIdentityId,
     meshcoreIdentityId,
-    reticulumIdentityId,
     refreshMeshtasticAllFromDb,
     refreshMeshcoreAllFromDb,
-    refreshReticulumAllFromDb,
   ]);
 
   useEffect(() => {
@@ -1088,55 +954,46 @@ function AppContent() {
     }
   }, [meshcoreIdentityId]);
 
-  useRrcStartupAutoConnect();
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
-  const reticulumConnectionView = useConnectionView(reticulumIdentityId);
 
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
-  const reticulumCapabilities = useRadioProvider('reticulum');
-  useEffect(() => {
-    if (!reticulumCapabilities.hasReticulumInterfaceConfig) {
-      skipReticulumStartupAutostartGate();
-    }
-  }, [reticulumCapabilities.hasReticulumInterfaceConfig]);
   const capabilitiesByProtocol = useMemo(
-    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities),
-    [meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
+    () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities),
+    [meshtasticCapabilities, meshcoreCapabilities],
   );
   const tabsByProtocol = useMemo(
     () =>
       protocolRecord(
         computeTabMappings(t, 'meshtastic', meshtasticCapabilities),
         computeTabMappings(t, 'meshcore', meshcoreCapabilities),
-        computeTabMappings(t, 'reticulum', reticulumCapabilities),
       ),
-    [t, meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
+    [t, meshtasticCapabilities, meshcoreCapabilities],
   );
   const uiNodesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes),
-    [meshtasticUiNodes, meshcoreUiNodes, reticulumUiNodes],
+    () => protocolRecord(meshtasticUiNodes, meshcoreUiNodes),
+    [meshtasticUiNodes, meshcoreUiNodes],
   );
   const uiMessagesByProtocol = useMemo(
-    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages),
-    [meshtasticUiMessages, meshcoreUiMessages, reticulumUiMessages],
+    () => protocolRecord(meshtasticUiMessages, meshcoreUiMessages),
+    [meshtasticUiMessages, meshcoreUiMessages],
   );
   const connectionViewByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
-    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+    () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView),
+    [meshtasticConnectionView, meshcoreConnectionView],
   );
   const panelActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
-    [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],
+    () => protocolRecord(meshtasticPanelActions, meshcorePanelActions),
+    [meshtasticPanelActions, meshcorePanelActions],
   );
   const deviceStateByProtocol = useMemo(
-    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state),
-    [meshtasticRuntime.state, meshcoreRuntime.state, reticulumRuntime.state],
+    () => protocolRecord(meshtasticRuntime.state, meshcoreRuntime.state),
+    [meshtasticRuntime.state, meshcoreRuntime.state],
   );
   const selfNodeIdByProtocol = useMemo(
-    () => protocolRecord(meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId, null),
+    () => protocolRecord(meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId),
     [meshtasticRuntime.selfNodeId, meshcoreRuntime.selfNodeId],
   );
   const securityLocalNodeNumByProtocol = useMemo(
@@ -1175,15 +1032,16 @@ function AppContent() {
     [meshtasticRuntime.deviceLogs],
   );
   const deviceLogsByProtocol = useMemo(
-    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs, []),
+    () => protocolRecord(normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs),
     [normalizedMeshtasticDeviceLogs, meshcoreRuntime.deviceLogs],
   );
   const nodesForUi = selectByProtocol(uiNodesByProtocol, protocol);
   const activeUiMessages = selectByProtocol(uiMessagesByProtocol, protocol);
-  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = selectByProtocol(
-    tabsByProtocol,
-    protocol,
+  const activeTabMappings = useMemo(
+    () => selectByProtocol(tabsByProtocol, protocol),
+    [tabsByProtocol, protocol],
   );
+  const { displayTabLabels, tabSlotIds, tabIndexToPanelIndex } = activeTabMappings;
 
   useMeshcoreDistanceFilterHint(
     protocol,
@@ -1229,23 +1087,9 @@ function AppContent() {
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const takRemoteStatus = useTakRemoteStatus();
   useTakContacts();
-  const reticulumSelfNodeId = asNumericNodeId(reticulumRuntime.selfNodeId);
-  const reticulumStackUp =
-    reticulumRuntime.state.status === 'configured' ||
-    reticulumRuntime.state.status === 'connected' ||
-    reticulumRuntime.state.status === 'stale';
-  const reticulumSelfName = reticulumUiNodes.get(reticulumSelfNodeId)?.long_name ?? '';
-  const takReticulumSelf = useMemo(
-    () =>
-      reticulumStackUp && reticulumSelfNodeId > 0
-        ? { nodeId: reticulumSelfNodeId, name: reticulumSelfName }
-        : null,
-    [reticulumStackUp, reticulumSelfNodeId, reticulumSelfName],
-  );
   useTakNodeReplicator({
     active: takStatus.running || takRemoteStatus.state !== 'disconnected',
     nodesByProtocol: uiNodesByProtocol,
-    reticulumSelf: takReticulumSelf,
   });
   const activeRuntime = useRuntime(protocol);
   const activeSelfNodeNum = asNumericNodeId(
@@ -1276,11 +1120,8 @@ function AppContent() {
   const lastPanelByProtocol = useRef(new Map<MeshProtocol, number | null>());
   const meshtasticMsgsRef = useRef(meshtasticUiMessages);
   const meshcoreMsgsRef = useRef(meshcoreUiMessages);
-  const reticulumMsgsRef = useRef(reticulumUiMessages);
-  const rrcMsgsRef = useRef<RrcChatMessage[]>([]);
   const meshtasticMyNodeNumRef = useRef(meshtasticRuntime.state.myNodeNum);
   const meshcoreSelfIdRef = useRef(meshcoreRuntime.selfNodeId);
-  const reticulumOwnNodeIdSetRef = useRef<ReadonlySet<number>>(new Set());
 
   useEffect(() => {
     return subscribePersistedLastRead((changedProtocol) => {
@@ -1318,8 +1159,6 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
     setLastReadRevision((prev) => ({ ...prev, meshcore: prev.meshcore + 1 }));
   }, [meshcoreIdentityId, meshcoreUiMessages]);
-
-  const reticulumLastReadSanitizedRef = useRef(false);
 
   const meshtasticSelfPublicKeyHex =
     meshtasticNodesById?.[
@@ -1361,24 +1200,6 @@ function AppContent() {
       connectionMyNodeNum,
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
-
-  const reticulumIdentity = useReticulumIdentityStore((s) => s.identity);
-  useEffect(() => {
-    const hash = reticulumIdentity?.lxmf_hash?.trim();
-    if (!hash) return;
-    persistReticulumSelfLxmfHash(hash);
-  }, [reticulumIdentity?.lxmf_hash]);
-
-  const reticulumOwnNodeIdSet = useMemo(
-    () =>
-      resolveReticulumOwnNodeIdSet({
-        runtimeSelfNodeId:
-          typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : null,
-        connectionMyNodeNum: reticulumRuntime.state.myNodeNum,
-        lxmfHash: reticulumIdentity?.lxmf_hash,
-      }),
-    [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum],
-  );
 
   const mecpMeshtasticSlice = useMemo(
     () => ({
@@ -1428,30 +1249,7 @@ function AppContent() {
     }),
     [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId, meshcoreUiNodes],
   );
-  const mecpReticulumSlice = useMemo(
-    () => ({
-      protocol: 'reticulum' as const,
-      messages: reticulumStoreMessages,
-      ownNodeIds: reticulumOwnNodeIdSet,
-      ownSenderId: reticulumRuntime.state.myNodeNum,
-      resolveLastKnown: () => null,
-    }),
-    [reticulumStoreMessages, reticulumOwnNodeIdSet, reticulumRuntime.state.myNodeNum],
-  );
-  useMecpAlertWatcher(mecpMeshtasticSlice, mecpMeshcoreSlice, mecpReticulumSlice);
-
-  useEffect(() => {
-    if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
-    if (localStorage.getItem('mesh-client:lastReadSanitized:reticulum') === '1') {
-      reticulumLastReadSanitizedRef.current = true;
-      return;
-    }
-    if (reticulumUiMessages.length === 0) return;
-    ensureReticulumChatLastReadSanitized(reticulumUiMessages, reticulumOwnNodeIdSet);
-    reticulumLastReadSanitizedRef.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
-    setLastReadRevision((prev) => ({ ...prev, reticulum: prev.reticulum + 1 }));
-  }, [reticulumIdentityId, reticulumOwnNodeIdSet, reticulumUiMessages]);
+  useMecpAlertWatcher(mecpMeshtasticSlice, mecpMeshcoreSlice);
 
   const meshtasticConfiguredChannelIndices = useMemo(
     () => new Set(meshtasticRuntime.channels.map((c) => c.index)),
@@ -1526,45 +1324,6 @@ function AppContent() {
     weatherHideInChannels,
     weatherFilterConfigs,
   ]);
-
-  const reticulumChatUnread = useMemo(() => {
-    touch(lastReadRevision.reticulum);
-    const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
-    return computeReticulumChatUnread(
-      reticulumUiMessages,
-      reticulumConnectionView.state.status,
-      lastRead,
-      reticulumOwnNodeIdSet,
-    );
-  }, [
-    lastReadRevision.reticulum,
-    reticulumConnectionView.state.status,
-    reticulumOwnNodeIdSet,
-    reticulumUiMessages,
-  ]);
-
-  const rrcUnreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
-  const rrcUnreadByHub = useRrcSessionStore((s) => s.unreadByHub);
-  const rrcSessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
-  const rrcMessages = useRrcSessionStore((s) => s.messages);
-  const rrcNickname = useRrcSessionStore((s) => s.nickname);
-  const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
-  const rrcLocalIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
-  const rrcUnread = useMemo(() => {
-    touch(rrcUnreadByRoom);
-    touch(rrcUnreadByHub);
-    // Non-focused hubs only touch `sessionsByHub`, not the focused-hub mirror fields above.
-    touch(rrcSessionsByHub);
-    return useRrcSessionStore.getState().totalUnread();
-  }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
-  const remotePendingOffers = useRncpTransferStore((s) => s.pendingOffers.size);
-  const gamesSessions = useReticulumGamesStore((s) => s.sessions);
-  const gamesUnread = useMemo(() => totalGamesUnread(gamesSessions), [gamesSessions]);
-  const rrcMessageFlat = useMemo(() => {
-    const out: RrcChatMessage[] = [];
-    for (const list of rrcMessages.values()) out.push(...list);
-    return out;
-  }, [rrcMessages]);
 
   const meshcoreRoomsUnread = useMemo(() => {
     touch(roomsLastReadRevision);
@@ -1643,9 +1402,7 @@ function AppContent() {
 
   const capabilities = activeProtocolCapabilities;
   const showConnectionPanel =
-    capabilities.hasChannelConfig ||
-    capabilities.prefersDeviceOwnerLongNameInHeader ||
-    capabilities.hasReticulumInterfaceConfig;
+    capabilities.hasChannelConfig || capabilities.prefersDeviceOwnerLongNameInHeader;
   const showConnectionFirmwareCheck = capabilities.hasFirmwareUpdateCheck;
   const openFirmwareReleases = useCallback(() => {
     void window.electronAPI.update.openReleases(
@@ -1657,13 +1414,8 @@ function AppContent() {
   }, [capabilities.prefersDeviceOwnerLongNameInHeader, firmwareCheckState.releaseUrl]);
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
-    : capabilities.nodeListTabUsesPeersLabel
-      ? t('common.peers')
-      : t('common.nodes');
-  const footerNodeCount =
-    protocol === 'reticulum' && reticulumPathPeerCount > 0
-      ? reticulumPathPeerCount
-      : nodesForUi.size;
+    : t('common.nodes');
+  const footerNodeCount = nodesForUi.size;
 
   const operationalAlertSettings = useOperationalAlertSettings();
   useEffect(() => {
@@ -1711,24 +1463,18 @@ function AppContent() {
       protocolRecord(
         isChatOutboxSendAvailable('meshtastic', meshtasticConnectionView),
         isChatOutboxSendAvailable('meshcore', meshcoreConnectionView),
-        isChatOutboxSendAvailable('reticulum', reticulumConnectionView),
       ),
-    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+    [meshtasticConnectionView, meshcoreConnectionView],
   );
   const meshtasticSendMessage = useSendMessage(meshtasticIdentityId);
   const meshcoreSendMessage = useSendMessage(meshcoreIdentityId);
-  const reticulumSendMessage = useSendMessage(reticulumIdentityId);
   const outboxSendFnByProtocol = useMemo(() => {
     const wrap =
       (send: typeof meshtasticSendMessage): ChatOutboxSendFn =>
       (text, channel, destination, replyId) =>
         send(text, channel, destination, replyId == null ? undefined : String(replyId));
-    return protocolRecord(
-      wrap(meshtasticSendMessage),
-      wrap(meshcoreSendMessage),
-      wrap(reticulumSendMessage),
-    );
-  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage]);
+    return protocolRecord(wrap(meshtasticSendMessage), wrap(meshcoreSendMessage));
+  }, [meshtasticSendMessage, meshcoreSendMessage]);
   const emergencyOutboxDrains = useMemo(
     () =>
       REGISTERED_MESH_PROTOCOLS.map((p) => ({
@@ -1740,8 +1486,8 @@ function AppContent() {
   );
   useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
   const autoResendSendByProtocol = useMemo(
-    () => protocolRecord(meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage),
-    [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage],
+    () => protocolRecord(meshtasticSendMessage, meshcoreSendMessage),
+    [meshtasticSendMessage, meshcoreSendMessage],
   );
   useAutoResend(autoResendSendByProtocol);
 
@@ -1750,29 +1496,21 @@ function AppContent() {
       ownSenderIdSet([
         ...meshtasticOwnNodeIdSet,
         ...meshcoreOwnNodeIdSet,
-        ...reticulumOwnNodeIdSet,
         meshtasticRuntime.state.myNodeNum,
         meshcoreRuntime.selfNodeId,
-        reticulumRuntime.state.myNodeNum,
       ]),
     [
       meshtasticOwnNodeIdSet,
       meshcoreOwnNodeIdSet,
-      reticulumOwnNodeIdSet,
       meshtasticRuntime.state.myNodeNum,
       meshcoreRuntime.selfNodeId,
-      reticulumRuntime.state.myNodeNum,
     ],
   );
 
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
       useIncidentStore.getState().markSeen(incident.id);
-      const route = resolveIncidentAckRoute(
-        incident,
-        protocol,
-        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
-      );
+      const route = resolveIncidentAckRoute(incident, protocol, () => false);
       const text = composeIncidentAck(incident);
       const beaconAck = incidentNeedsBeaconAck(incident);
       // ACKs are routine traffic: queue as normal priority so they never compete with reports.
@@ -1815,14 +1553,7 @@ function AppContent() {
           addToast(t('incidentPanel.ackFailed'), 'error');
         });
     },
-    [
-      protocol,
-      capabilitiesByProtocol,
-      chatSendAvailableByProtocol,
-      outboxSendFnByProtocol,
-      addToast,
-      t,
-    ],
+    [protocol, chatSendAvailableByProtocol, outboxSendFnByProtocol, addToast, t],
   );
 
   const handleIncidentResolve = useCallback(
@@ -1835,7 +1566,7 @@ function AppContent() {
           sendFn: (p) => selectByProtocol(outboxSendFnByProtocol, p),
           queueOutbox: (entry) => window.electronAPI.chat.outbox.add(entry),
         },
-        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+        () => false,
       )
         .then((result) => {
           if (result === 'cancel-sent' || result === 'cancel-queued') {
@@ -1856,45 +1587,26 @@ function AppContent() {
           addToast(t('incidentPanel.beaconCancelFailed'), 'error');
         });
     },
-    [
-      incidentOwnSenderIds,
-      chatSendAvailableByProtocol,
-      outboxSendFnByProtocol,
-      capabilitiesByProtocol,
-      addToast,
-      t,
-    ],
+    [incidentOwnSenderIds, chatSendAvailableByProtocol, outboxSendFnByProtocol, addToast, t],
   );
 
   const chatUnreadByProtocol = useMemo(
-    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
-    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread],
+    () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread),
+    [meshtasticChatUnread, meshcoreChatUnread],
   );
   const protocolSwitcherUnreadByProtocol = useMemo(
-    () =>
-      buildProtocolSwitcherUnreadByProtocol(
-        meshtasticChatUnread,
-        meshcoreChatUnread,
-        reticulumChatUnread,
-        rrcUnread,
-        gamesUnread,
-      ),
-    [meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread, rrcUnread, gamesUnread],
+    () => buildProtocolSwitcherUnreadByProtocol(meshtasticChatUnread, meshcoreChatUnread),
+    [meshtasticChatUnread, meshcoreChatUnread],
   );
   const roomsUnreadByProtocol = useMemo(
-    () => protocolRecord(0, meshcoreRoomsUnread, 0),
+    () => protocolRecord(0, meshcoreRoomsUnread),
     [meshcoreRoomsUnread],
   );
   const chatUnread = selectByProtocol(chatUnreadByProtocol, protocol);
   const roomsUnread = selectByProtocol(roomsUnreadByProtocol, protocol);
   const storeMessageCountByProtocol = useMemo(
-    () =>
-      protocolRecord(
-        meshtasticStoreMessages.length,
-        meshcoreStoreMessages.length,
-        reticulumStoreMessages.length,
-      ),
-    [meshtasticStoreMessages.length, meshcoreStoreMessages.length, reticulumStoreMessages.length],
+    () => protocolRecord(meshtasticStoreMessages.length, meshcoreStoreMessages.length),
+    [meshtasticStoreMessages.length, meshcoreStoreMessages.length],
   );
   const meshtasticOwnNodeIdsForChat = useMemo(
     () =>
@@ -1912,32 +1624,8 @@ function AppContent() {
       meshtasticSelfPublicKeyHex,
     ],
   );
-  const reticulumOwnNodeIdsForChat = useMemo(
-    () => Array.from(reticulumOwnNodeIdSet),
-    [reticulumOwnNodeIdSet],
-  );
-  const headerMyNodeNum = (() => {
-    if (protocol !== 'reticulum') return activeConnectionView.state.myNodeNum;
-    const fromRuntime =
-      typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0;
-    const fromIdentity = reticulumIdentity?.lxmf_hash
-      ? reticulumHashToNodeId(reticulumIdentity.lxmf_hash)
-      : 0;
-    return Math.max(activeConnectionView.state.myNodeNum, fromRuntime, fromIdentity);
-  })();
+  const headerMyNodeNum = activeConnectionView.state.myNodeNum;
   const headerSelfNodeLabel = (() => {
-    if (protocol === 'reticulum') {
-      const selfId = headerMyNodeNum;
-      const stored =
-        reticulumIdentityId && selfId > 0
-          ? useNodeStore.getState().nodes[reticulumIdentityId]?.[selfId >>> 0]?.longName
-          : undefined;
-      return resolveReticulumSelfHeaderLabel({
-        identityDisplayName: reticulumIdentity?.display_name,
-        lxmfHash: reticulumIdentity?.lxmf_hash ?? null,
-        storedLongName: stored,
-      });
-    }
     return capabilities.prefersDeviceOwnerLongNameInHeader
       ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
           panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
@@ -1945,23 +1633,13 @@ function AppContent() {
   })();
 
   const sendReactionByProtocol = useMemo(
-    () =>
-      protocolRecord(
-        meshtasticPanelActions.sendReaction,
-        meshcoreRuntime.sendReaction,
-        reticulumPanelActions.sendReaction,
-      ),
-    [
-      meshtasticPanelActions.sendReaction,
-      meshcoreRuntime.sendReaction,
-      reticulumPanelActions.sendReaction,
-    ],
+    () => protocolRecord(meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction),
+    [meshtasticPanelActions.sendReaction, meshcoreRuntime.sendReaction],
   );
 
   const activePanelIndex = tabIndexToPanelIndex[activeTab] ?? 0;
 
   // Two-level navigation (issue #1062): rail sections over the same capability-gated tab list.
-  const activeTabMappings = selectByProtocol(tabsByProtocol, protocol);
   const navSections = useMemo(
     () => computeNavSections(activeTabMappings, capabilities),
     [activeTabMappings, capabilities],
@@ -1971,21 +1649,9 @@ function AppContent() {
     () => ({
       Chat: chatUnread,
       Rooms: roomsUnread,
-      RRC: rrcUnread,
-      Games: capabilities.hasLrgpGames ? gamesUnread : 0,
-      Remote: capabilities.hasReticulumRemotePanel ? remotePendingOffers : 0,
       Incident: incidentBadgeCount,
     }),
-    [
-      chatUnread,
-      roomsUnread,
-      rrcUnread,
-      capabilities.hasLrgpGames,
-      gamesUnread,
-      capabilities.hasReticulumRemotePanel,
-      remotePendingOffers,
-      incidentBadgeCount,
-    ],
+    [chatUnread, roomsUnread, incidentBadgeCount],
   );
 
   useEffect(() => {
@@ -2036,7 +1702,7 @@ function AppContent() {
   // change many times a second, and rebuilding on each change reshuffled results while typing.
   // Matching is capped in findLauncherDestinations so 100,000 contacts stay cheap. The snapshot
   // carries its protocol: switching protocols in the phone More sheet keeps the launcher open,
-  // and a MeshCore node id handed to the Reticulum peer path (or the reverse) opens nothing.
+  // and a node id handed to the other protocol's detail path opens nothing.
   const [launcherSnapshot, setLauncherSnapshot] = useState<{
     protocol: MeshProtocol;
     contacts: LauncherContactItem[];
@@ -2077,20 +1743,6 @@ function AppContent() {
   );
   const buildLauncherContacts = useCallback((): LauncherContactItem[] => {
     const items: LauncherContactItem[] = [];
-    if (capabilities.hasReticulumPeersList) {
-      for (const node of reticulumUiNodes.values()) {
-        const hash = node.reticulum_destination_hash;
-        if (!hash) continue;
-        const name = nodeDisplayName(node, 'reticulum') || hash.slice(0, 8);
-        items.push({
-          id: hash,
-          name,
-          detail: hash.slice(0, 8),
-          search: `${name} ${hash}`.toLowerCase(),
-        });
-      }
-      return items;
-    }
     for (const node of nodesForUi.values()) {
       if (node.node_id === activeSelfNodeNum) continue;
       const name = nodeDisplayName(node, protocol);
@@ -2104,13 +1756,7 @@ function AppContent() {
       });
     }
     return items;
-  }, [
-    capabilities.hasReticulumPeersList,
-    reticulumUiNodes,
-    nodesForUi,
-    protocol,
-    activeSelfNodeNum,
-  ]);
+  }, [nodesForUi, protocol, activeSelfNodeNum]);
 
   const toggleLauncher = useCallback(() => {
     if (!launcherOpen) {
@@ -2201,19 +1847,6 @@ function AppContent() {
   });
   useChatMacroShortcuts();
 
-  // Live wire_packet WS frames are disabled (they starved LXMF). Poll while Sniffer/Stats is open.
-  useReticulumRawPacketPoll({
-    pollActive:
-      protocol === 'reticulum' &&
-      capabilities.hasRawPacketLog &&
-      (activePanelIndex === SNIFFER_PANEL_INDEX || activePanelIndex === STATS_PANEL_INDEX) &&
-      (reticulumRuntime.state.status === 'configured' ||
-        reticulumRuntime.state.status === 'connected' ||
-        reticulumRuntime.state.status === 'stale' ||
-        reticulumRuntime.state.status === 'connecting'),
-    hydrateRawPackets: () => reticulumRuntime.hydrateRawPackets?.() ?? Promise.resolve(),
-  });
-
   useEffect(() => {
     void useMapLayerStore.getState().hydrateFromDatabase();
   }, []);
@@ -2223,13 +1856,10 @@ function AppContent() {
     protocolRef.current = protocol;
     meshtasticMsgsRef.current = meshtasticUiMessages;
     meshcoreMsgsRef.current = meshcoreUiMessages;
-    reticulumMsgsRef.current = reticulumUiMessages;
-    rrcMsgsRef.current = rrcMessageFlat;
     meshtasticMyNodeNumRef.current = meshtasticRuntime.state.myNodeNum;
     meshtasticOwnNodeIdSetRef.current = meshtasticOwnNodeIdSet;
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
     meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
-    reticulumOwnNodeIdSetRef.current = reticulumOwnNodeIdSet;
     meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
     lastTabByProtocol.current.set(protocol, activeTab);
     lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -2245,9 +1875,6 @@ function AppContent() {
     meshcoreRuntime.selfNodeId,
     meshcoreOwnNodeIdSet,
     meshcoreChatUnreadDmOptions,
-    reticulumUiMessages,
-    reticulumOwnNodeIdSet,
-    rrcMessageFlat,
   ]);
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
@@ -2399,32 +2026,6 @@ function AppContent() {
     [protocol, setSelectedNodeId, tabsByProtocol],
   );
 
-  const handleNavigateToReticulumConnection = useCallback(() => {
-    const connectionTabIndex = findFilteredTabIndexForPanel(
-      selectByProtocol(tabsByProtocol, 'reticulum'),
-      0,
-    );
-    if (connectionTabIndex >= 0) {
-      setActiveTab(connectionTabIndex);
-    }
-  }, [tabsByProtocol]);
-
-  const [reticulumPropagationNavKey, setReticulumPropagationNavKey] = useState(0);
-  const handleOpenReticulumPropagationSettings = useCallback(() => {
-    const radioTabIndex = findFilteredTabIndexForPanel(
-      selectByProtocol(tabsByProtocol, 'reticulum'),
-      RADIO_TAB_PANEL_INDEX,
-    );
-    if (radioTabIndex >= 0) {
-      setActiveTab(radioTabIndex);
-    }
-    setReticulumPropagationNavKey((key) => key + 1);
-  }, [tabsByProtocol]);
-
-  const handleRefreshReticulumDiagnostics = useCallback(() => {
-    void reticulumRuntime.syncDiagnostics?.();
-  }, [reticulumRuntime]);
-
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const envMode = useDiagnosticsStore((s) => s.envMode);
@@ -2495,14 +2096,6 @@ function AppContent() {
     if (canTransmitLocation({ protocol: 'meshcore' })) {
       chatShareLocationResolver = async () => {
         const pos = await meshcorePanelActions.refreshOurPosition();
-        return pos ? { lat: pos.lat, lon: pos.lon } : null;
-      };
-    }
-  } else if (protocol === 'reticulum') {
-    if (canTransmitLocation({ protocol: 'reticulum' })) {
-      chatShareLocationResolver = async () => {
-        const stored = readStoredStaticGps();
-        const pos = await resolveOurPosition(undefined, undefined, stored?.lat, stored?.lon);
         return pos ? { lat: pos.lat, lon: pos.lon } : null;
       };
     }
@@ -2713,13 +2306,12 @@ function AppContent() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
-      const args = buildResendArgs(msg);
       sendMessage(
-        args.text,
-        args.channelIndex,
-        args.destination,
-        args.replyTo,
-        args.retryOfStoreId,
+        msg.payload,
+        msg.channel,
+        msg.to ?? undefined,
+        msg.replyId != null ? String(msg.replyId) : undefined,
+        msg.storeId,
       );
     },
     [sendMessage],
@@ -2745,23 +2337,13 @@ function AppContent() {
   const chatChannels = useMemo(
     () =>
       chatChannelsFromRuntimeChannels(activeRuntime.channels, {
-        hasReticulumInterfaceConfig: capabilities.hasReticulumInterfaceConfig,
         hasCompanionContactManagementConfig: capabilities.hasCompanionContactManagementConfig,
       }),
-    [
-      capabilities.hasReticulumInterfaceConfig,
-      capabilities.hasCompanionContactManagementConfig,
-      activeRuntime.channels,
-    ],
+    [capabilities.hasCompanionContactManagementConfig, activeRuntime.channels],
   );
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
-  const [gamesTabVisited, setGamesTabVisited] = useState(false);
-  const [rrcTabVisited, setRrcTabVisited] = useState(false);
-  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
-  const [nomadTabVisited, setNomadTabVisited] = useState(false);
-  const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
 
   useEffect(() => {
@@ -2775,11 +2357,6 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
     setChatTabVisited(false);
     setRoomsTabVisited(false);
-    setGamesTabVisited(false);
-    setRrcTabVisited(false);
-    setRemoteTabVisited(false);
-    setNomadTabVisited(false);
-    setPeersTabVisited(false);
     setAppTabVisited(false);
   }, [protocol]);
 
@@ -2790,142 +2367,9 @@ function AppContent() {
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
 
-  useEffect(() => {
-    if (activePanelIndex === GAMES_PANEL_INDEX) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Games tab visit for keep-alive mount
-      setGamesTabVisited(true);
-    }
-  }, [activePanelIndex]);
-
-  const handleOpenGamesSession = useCallback(
-    (sessionId: string) => {
-      // Gate on Reticulum capabilities — deep links must work while another protocol is active.
-      if (!reticulumCapabilities.hasLrgpGames) return;
-      if (!reticulumEnabled) {
-        console.debug('[App] games deep link ignored: Reticulum disabled in App → Protocols');
-        return;
-      }
-      void (async () => {
-        if (protocol !== 'reticulum') {
-          lastTabByProtocol.current.set(protocol, activeTab);
-          lastPanelByProtocol.current.set(protocol, activePanelIndex);
-          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-          setProtocol('reticulum');
-        }
-        const gamesTabIndex = findFilteredTabIndexForPanel(
-          selectByProtocol(tabsByProtocol, 'reticulum'),
-          GAMES_PANEL_INDEX,
-        );
-        if (gamesTabIndex >= 0) {
-          setActiveTab(gamesTabIndex);
-          setGamesTabVisited(true);
-        }
-        await openReticulumGameSession(sessionId);
-      })();
-    },
-    [
-      activePanelIndex,
-      activeTab,
-      protocol,
-      reticulumCapabilities.hasLrgpGames,
-      reticulumEnabled,
-      tabsByProtocol,
-    ],
-  );
-
-  useEffect(() => {
-    const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<{ sessionId?: string }>).detail;
-      if (typeof detail?.sessionId === 'string' && detail.sessionId.trim()) {
-        handleOpenGamesSession(detail.sessionId);
-      }
-    };
-    window.addEventListener('mesh-client:openGamesSession', onOpen);
-    return () => {
-      window.removeEventListener('mesh-client:openGamesSession', onOpen);
-    };
-  }, [handleOpenGamesSession]);
-
-  const handleOpenNomadPage = useCallback(
-    (destinationHash: string, path: string) => {
-      // Gate on Reticulum capabilities — links must work while another protocol is active.
-      if (!reticulumCapabilities.hasNomadNetworkPanel) return;
-      if (!reticulumEnabled) {
-        console.debug('[App] Nomad link ignored: Reticulum disabled in App → Protocols');
-        return;
-      }
-      if (protocol !== 'reticulum') {
-        lastTabByProtocol.current.set(protocol, activeTab);
-        lastPanelByProtocol.current.set(protocol, activePanelIndex);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-        setProtocol('reticulum');
-      }
-      const nomadTabIndex = findFilteredTabIndexForPanel(
-        selectByProtocol(tabsByProtocol, 'reticulum'),
-        NOMAD_NETWORK_PANEL_INDEX,
-      );
-      if (nomadTabIndex >= 0) {
-        setActiveTab(nomadTabIndex);
-        setNomadTabVisited(true);
-      }
-      void useNomadPageViewerStore.getState().loadPage(destinationHash, path);
-    },
-    [
-      activePanelIndex,
-      activeTab,
-      protocol,
-      reticulumCapabilities.hasNomadNetworkPanel,
-      reticulumEnabled,
-      tabsByProtocol,
-    ],
-  );
-
-  useEffect(() => {
-    const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<OpenNomadPageDetail>).detail;
-      if (detail?.destinationHash) {
-        handleOpenNomadPage(detail.destinationHash, detail.path);
-      }
-    };
-    window.addEventListener(OPEN_NOMAD_PAGE_EVENT, onOpen);
-    return () => {
-      window.removeEventListener(OPEN_NOMAD_PAGE_EVENT, onOpen);
-    };
-  }, [handleOpenNomadPage]);
-
-  const handleOpenRrcHubTab = useCallback(() => {
-    // Gate on Reticulum capabilities — micron rrc:// links must work while another protocol is active.
-    if (!reticulumCapabilities.hasRrcPanel) return;
-    if (!reticulumEnabled) {
-      console.debug('[App] rrc:// link ignored: Reticulum disabled in App → Protocols');
-      return;
-    }
-    if (protocol !== 'reticulum') {
-      lastTabByProtocol.current.set(protocol, activeTab);
-      lastPanelByProtocol.current.set(protocol, activePanelIndex);
-      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-      setProtocol('reticulum');
-    }
-    const rrcTabIndex = findFilteredTabIndexForPanel(
-      selectByProtocol(tabsByProtocol, 'reticulum'),
-      RRC_PANEL_INDEX,
-    );
-    if (rrcTabIndex >= 0) {
-      setActiveTab(rrcTabIndex);
-      setRrcTabVisited(true);
-    }
-  }, [
-    activePanelIndex,
-    activeTab,
-    protocol,
-    reticulumCapabilities.hasRrcPanel,
-    reticulumEnabled,
-    tabsByProtocol,
-  ]);
-
   const openChatFromNotification = useCallback(
     (target: ChatNotificationTarget) => {
-      const targetProtocol = target.kind === 'rrc' ? 'reticulum' : target.protocol;
+      const targetProtocol = target.protocol;
       if (!enabledProtocols.includes(targetProtocol)) {
         console.debug(
           `[App] notification click ignored: ${targetProtocol} disabled in App → Protocols`,
@@ -2940,13 +2384,10 @@ function AppContent() {
       }
       const tabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, targetProtocol),
-        target.kind === 'rrc' ? RRC_PANEL_INDEX : CHAT_PANEL_INDEX,
+        CHAT_PANEL_INDEX,
       );
       if (tabIndex >= 0) setActiveTab(tabIndex);
-      if (target.kind === 'rrc') {
-        setRrcTabVisited(true);
-        focusRrcNotificationTarget(target, useRrcSessionStore.getState());
-      } else if (target.dmPeer != null) {
+      if (target.dmPeer != null) {
         setPendingDmTarget(target.dmPeer);
       } else if (target.channel != null) {
         setPendingChannelTarget(target.channel);
@@ -2961,55 +2402,6 @@ function AppContent() {
   const onChatNotificationClick = useCallback((target: ChatNotificationTarget) => {
     openChatFromNotificationRef.current(target);
   }, []);
-
-  useEffect(() => {
-    const onOpen = () => {
-      handleOpenRrcHubTab();
-    };
-    window.addEventListener(OPEN_RRC_HUB_EVENT, onOpen);
-    return () => {
-      window.removeEventListener(OPEN_RRC_HUB_EVENT, onOpen);
-    };
-  }, [handleOpenRrcHubTab]);
-
-  useEffect(() => {
-    setReticulumGamesTabFocused(
-      protocol === 'reticulum' &&
-        capabilities.hasLrgpGames &&
-        activePanelIndex === GAMES_PANEL_INDEX,
-    );
-    return () => {
-      setReticulumGamesTabFocused(false);
-    };
-  }, [protocol, capabilities.hasLrgpGames, activePanelIndex]);
-
-  useEffect(() => {
-    if (activePanelIndex === RRC_PANEL_INDEX) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track RRC tab visit for keep-alive mount
-      setRrcTabVisited(true);
-    }
-  }, [activePanelIndex]);
-
-  useEffect(() => {
-    if (activePanelIndex === REMOTE_PANEL_INDEX) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Remote tab visit for keep-alive mount
-      setRemoteTabVisited(true);
-    }
-  }, [activePanelIndex]);
-
-  useEffect(() => {
-    if (activePanelIndex === NOMAD_NETWORK_PANEL_INDEX) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Nomad tab visit for keep-alive mount
-      setNomadTabVisited(true);
-    }
-  }, [activePanelIndex]);
-
-  useEffect(() => {
-    if (activePanelIndex === NODES_PANEL_INDEX && capabilities.hasReticulumPeersList) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Peers tab visit for keep-alive mount
-      setPeersTabVisited(true);
-    }
-  }, [activePanelIndex, capabilities.hasReticulumPeersList]);
 
   useEffect(() => {
     if (activePanelIndex === APP_PANEL_INDEX) {
@@ -3482,117 +2874,7 @@ function AppContent() {
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length, capabilitiesByProtocol, onChatNotificationClick]);
 
-  // ─── Track Reticulum LXMF Chat messages arriving while inactive ──
-  useEffect(() => {
-    const count = reticulumUiMessages.length;
-    if (isReticulumInitialRef.current) {
-      prevReticulumMsgCountRef.current = count;
-      if (count > 0) isReticulumInitialRef.current = false;
-      return;
-    }
-    const isActiveAndChatOpen =
-      protocolRef.current === 'reticulum' &&
-      activePanelIndexRef.current === 1 &&
-      !isAppWindowInactive();
-    if (count > prevReticulumMsgCountRef.current && !isActiveAndChatOpen) {
-      const newMsgs = reticulumMsgsRef.current.slice(prevReticulumMsgCountRef.current);
-      const ownNodes = reticulumOwnNodeIdSetRef.current;
-      const ownSenderId = [...ownNodes][0] ?? 0;
-      const notification = resolveInactiveChatNotification({
-        newMessages: newMsgs,
-        allMessages: reticulumMsgsRef.current,
-        protocol: 'reticulum',
-        ownNodeIds: ownNodes,
-        ownSenderId,
-        mutedViews: loadMutedViews('reticulum'),
-        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
-      });
-      if (notification && enabledProtocolsRef.current.includes('reticulum')) {
-        playMessageNotification(notification.type);
-        if (isAppWindowInactive()) {
-          notifyInactiveChat({
-            protocol: 'reticulum',
-            notification,
-            onOpen: onChatNotificationClick,
-          });
-        }
-      }
-    }
-    prevReticulumMsgCountRef.current = count;
-  }, [reticulumUiMessages.length, onChatNotificationClick]);
-
-  // ─── Track RRC messages arriving while inactive ──────────────────
-  useEffect(() => {
-    const count = rrcMessageFlat.length;
-    if (isRrcInitialRef.current) {
-      prevRrcMsgCountRef.current = count;
-      if (count > 0) isRrcInitialRef.current = false;
-      return;
-    }
-    if (count <= prevRrcMsgCountRef.current) {
-      prevRrcMsgCountRef.current = count;
-      return;
-    }
-    const delta = count - prevRrcMsgCountRef.current;
-    prevRrcMsgCountRef.current = count;
-    // Flat map order is room-keyed, not append order — use newest by timestamp.
-    const sorted = [...rrcMsgsRef.current].sort((a, b) => a.timestamp - b.timestamp);
-    const newMsgs = sorted.slice(-delta);
-
-    const onRrcPanel =
-      protocolRef.current === 'reticulum' && activePanelIndexRef.current === RRC_PANEL_INDEX;
-    const activeRoom = useRrcSessionStore.getState().activeRoom;
-    const forOtherRoom = newMsgs.some((m) => {
-      const room = m.room?.trim() || '[hub]';
-      return activeRoom == null || !rrcRoomsMatch(activeRoom, room);
-    });
-
-    const notification = resolveInactiveRrcNotification({
-      newMessages: newMsgs,
-      nickname: rrcNickname,
-      hubDestHash: rrcHubDestHash,
-      mutedViews: loadMutedViews('reticulum'),
-      notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
-      localIdentityHash: rrcLocalIdentityHash,
-      notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
-    });
-    const windowInactive = isAppWindowInactive();
-    // Watching the active room: still ping on whisper / @nick (IRC highlight); stay silent on channel.
-    if (
-      notification &&
-      enabledProtocolsRef.current.includes('reticulum') &&
-      shouldPlayRrcNotification({
-        onRrcPanel,
-        windowInactive,
-        forOtherRoom,
-        type: notification.type,
-      })
-    ) {
-      playMessageNotification(notification.type);
-      if (windowInactive) {
-        notifyInactiveRrc({
-          message: notification.message,
-          room: notification.room,
-          hubHash: rrcHubDestHash,
-          onOpen: onChatNotificationClick,
-        });
-      }
-    }
-  }, [
-    rrcMessageFlat.length,
-    rrcNickname,
-    rrcHubDestHash,
-    rrcLocalIdentityHash,
-    onChatNotificationClick,
-  ]);
-
-  useAppTrayUnreadSync(
-    meshtasticChatUnread,
-    meshcoreChatUnread,
-    meshcoreRoomsUnread,
-    reticulumChatUnread,
-    rrcUnread,
-  );
+  useAppTrayUnreadSync(meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread);
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
   const advertSentRef = useRef(false);
@@ -3713,24 +2995,6 @@ function AppContent() {
     [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions, setSelectedNodeId],
   );
 
-  const handleOpenReticulumDmByHash = useCallback(
-    (hash: string) => {
-      try {
-        const nodeId = openReticulumDmFromHash(hash);
-        handleMessageNode(nodeId);
-      } catch (e) {
-        if (e instanceof ReticulumChatMissingLxmfError) {
-          // catch-no-log-ok expected missing-lxmf; surface via toast
-          addToast(t('chatPanel.reticulumChatNeedsLxmfDelivery'), 'error');
-          return;
-        }
-        console.warn('[App] open Reticulum DM by hash failed ' + errLikeToLogString(e));
-        addToast(t('chatPanel.dmAddressInvalid'), 'error');
-      }
-    },
-    [addToast, handleMessageNode, t],
-  );
-
   const handleOpenRoom = useCallback(
     (nodeNum: number) => {
       setPendingRoomTarget(nodeNum);
@@ -3803,31 +3067,10 @@ function AppContent() {
       ? 0
       : rawQueueUsed;
   const queueShowBadge = activeQueue != null;
-  const queueColorClass = queueBadgeColorClass(
-    queueUsed,
-    activeQueue?.maxlen ?? 0,
-    protocol === 'reticulum' ? 'ratio' : 'absolute',
-  );
-  const reticulumQueueIfaceName =
-    legacyQueue != null &&
-    'interfaceName' in legacyQueue &&
-    typeof legacyQueue.interfaceName === 'string'
-      ? legacyQueue.interfaceName.trim()
-      : '';
-  const queueTooltipText =
-    protocol === 'reticulum'
-      ? reticulumQueueIfaceName
-        ? t('app.reticulumQueueTooltip', { name: reticulumQueueIfaceName })
-        : t('app.reticulumQueueTooltipGeneric')
-      : capabilities.modulesTabUsesRepeatersLabel
-        ? t('app.meshcoreQueueTooltip')
-        : t('app.meshtasticQueueTooltip');
-  const reticulumQueueBuffering =
-    protocol === 'reticulum' &&
-    legacyQueue != null &&
-    'buffering' in legacyQueue &&
-    legacyQueue.buffering === true;
-  const reticulumTxBuffering = reticulumQueueBuffering;
+  const queueColorClass = queueBadgeColorClass(queueUsed, activeQueue?.maxlen ?? 0, 'absolute');
+  const queueTooltipText = capabilities.modulesTabUsesRepeatersLabel
+    ? t('app.meshcoreQueueTooltip')
+    : t('app.meshtasticQueueTooltip');
   const connectionTakSummary = useMemo(
     () =>
       capabilities.hasTakPanel
@@ -3871,10 +3114,8 @@ function AppContent() {
   const showStatusBarNode =
     headerMyNodeNum > 0 &&
     Boolean(headerSelfNodeLabel) &&
-    (protocol === 'reticulum'
-      ? isConnectedOrOperational
-      : !capabilities.prefersDeviceOwnerLongNameInHeader ||
-        activeConnectionView.state.status === 'configured');
+    (!capabilities.prefersDeviceOwnerLongNameInHeader ||
+      activeConnectionView.state.status === 'configured');
   const radioTransport = activeConnectionView.state.connectionType?.toUpperCase() ?? '';
   const radioStatusText = showStatusBarNode
     ? t('shell.status.radioNode', {
@@ -3898,11 +3139,7 @@ function AppContent() {
     nodeDetailPane !== null &&
     nodeDetailPane.protocol === protocol &&
     activePanelIndex === panelIndexForPaneHost(nodeDetailPane.host);
-  const nodeDetailPaneOpen =
-    selectedNodeId !== null &&
-    nodeDetailPaneFits &&
-    onNodePaneHostPanel &&
-    !capabilities.hasReticulumPeersList;
+  const nodeDetailPaneOpen = selectedNodeId !== null && nodeDetailPaneFits && onNodePaneHostPanel;
   const nodeDetailPaneOnList = nodeDetailPaneOpen && nodeDetailPane?.host === 'list';
   const nodeDetailPaneOnMap = nodeDetailPaneOpen && nodeDetailPane?.host === 'map';
   // A pane selection stays hidden on other panels and protocols and comes back on the list or map
@@ -3915,45 +3152,6 @@ function AppContent() {
     setNodeDetailPane(nodeDetailPaneFits ? { protocol, host } : null);
     setSelectedNodeIdState(nodeId);
   };
-
-  const onPeerPaneHostPanel =
-    peerDetailPaneHost !== null &&
-    capabilities.hasReticulumPeersList &&
-    activePanelIndex === panelIndexForPaneHost(peerDetailPaneHost);
-  const peerDetailPaneOpen = selectedPeerHash !== null && nodeDetailPaneFits && onPeerPaneHostPanel;
-  const peerDetailPaneOnList = peerDetailPaneOpen && peerDetailPaneHost === 'list';
-  const peerDetailPaneOnMap = peerDetailPaneOpen && peerDetailPaneHost === 'map';
-  const peerDetailModalOpen =
-    capabilities.hasReticulumPeerDetailModal &&
-    selectedPeerHash !== null &&
-    (peerDetailPaneHost === null || (!nodeDetailPaneFits && onPeerPaneHostPanel));
-  const selectPeerFrom = (host: DetailPaneHost, hash: string) => {
-    setPeerDetailPaneHost(nodeDetailPaneFits ? host : null);
-    setSelectedPeerHashState(hash);
-  };
-
-  const renderPeerDetail = (variant: 'modal' | 'pane') =>
-    selectedPeerHash === null ? null : (
-      <ReticulumPeerDetailErrorBoundary
-        peerHash={selectedPeerHash}
-        onClose={() => {
-          setSelectedPeerHash(null);
-        }}
-        suspenseFallback={<DialogLazyFallback />}
-      >
-        <ReticulumPeerDetailModal
-          // One instance per peer: the pane stays mounted while the list selection changes, and a
-          // half-typed rename (or path / probe state) must not carry over to the next peer.
-          key={selectedPeerHash}
-          variant={variant}
-          peerHash={selectedPeerHash}
-          onClose={() => {
-            setSelectedPeerHash(null);
-          }}
-          onSendMessage={handleMessageNode}
-        />
-      </ReticulumPeerDetailErrorBoundary>
-    );
 
   const renderNodeDetail = (variant: 'modal' | 'pane') => (
     <Suspense fallback={<DialogLazyFallback />}>
@@ -4281,13 +3479,6 @@ function AppContent() {
                         enabled: enabledProtocols.includes('meshcore'),
                       }}
                     />
-                    {reticulumCapabilities.hasReticulumInterfaceConfig ? (
-                      <ReticulumStackAutostartCoordinator
-                        connecting={reticulumConnection.state.status === 'connecting'}
-                        onStartStack={startReticulumStack}
-                        enabled={reticulumEnabled}
-                      />
-                    ) : null}
                     <ErrorBoundary>
                       <div
                         id="panel-0"
@@ -4324,55 +3515,6 @@ function AppContent() {
                                 capabilities.hasMqttConnectionPanel &&
                                 capabilities.prefersDeviceOwnerLongNameInHeader
                                   ? meshcoreRuntime.ensureMeshcoreMqttIdentity
-                                  : undefined
-                              }
-                              onStartReticulumStack={
-                                capabilities.hasReticulumInterfaceConfig
-                                  ? startReticulumStack
-                                  : undefined
-                              }
-                              onOpenReticulumRmapSettings={
-                                capabilities.hasReticulumInterfaceConfig
-                                  ? () => {
-                                      const networkTabIdx = tabSlotIds.indexOf('Radio');
-                                      if (networkTabIdx >= 0) {
-                                        setActiveTab(networkTabIdx);
-                                      }
-                                    }
-                                  : undefined
-                              }
-                              onOpenReticulumSetupDestination={
-                                capabilities.hasReticulumInterfaceConfig
-                                  ? (destination) => {
-                                      const target = tabSlotIds.indexOf(destination);
-                                      if (target >= 0) setActiveTab(target);
-                                      return target >= 0;
-                                    }
-                                  : undefined
-                              }
-                              onOpenAppGpsSettings={
-                                capabilities.hasReticulumInterfaceConfig
-                                  ? () => {
-                                      const appTabIdx = tabSlotIds.indexOf('App');
-                                      if (appTabIdx >= 0) {
-                                        setAppTabVisited(true);
-                                        setActiveTab(appTabIdx);
-                                      }
-                                    }
-                                  : undefined
-                              }
-                              onOpenAdminBluetooth={
-                                capabilities.hasReticulumInterfaceConfig
-                                  ? () => {
-                                      const adminTabIdx = findFilteredTabIndexForPanel(
-                                        selectByProtocol(tabsByProtocol, protocol),
-                                        ADMIN_PANEL_INDEX,
-                                      );
-                                      if (adminTabIdx >= 0) {
-                                        setActiveTab(adminTabIdx);
-                                        requestReticulumAdminBluetoothFocus();
-                                      }
-                                    }
                                   : undefined
                               }
                             />
@@ -4416,17 +3558,14 @@ function AppContent() {
                               meshcoreChannelManagementDisabled={!isOperational}
                               myNodeNum={activeSelfNodeNum}
                               ownNodeIds={
-                                protocol === 'reticulum'
-                                  ? reticulumOwnNodeIdsForChat
-                                  : capabilities.hasMqttHybrid
-                                    ? meshtasticOwnNodeIdsForChat
-                                    : Array.from(meshcoreOwnNodeIdSet)
+                                capabilities.hasMqttHybrid
+                                  ? meshtasticOwnNodeIdsForChat
+                                  : Array.from(meshcoreOwnNodeIdSet)
                               }
                               onSend={handleSend}
                               onReact={selectByProtocol(sendReactionByProtocol, protocol)}
                               onResend={handleResend}
                               onNodeClick={setSelectedNodeId}
-                              onPeerClick={setSelectedPeerHash}
                               isConnected={
                                 isOperational || activeConnectionView.mqttStatus === 'connected'
                               }
@@ -4442,94 +3581,6 @@ function AppContent() {
                               isActive={activePanelIndex === 1}
                               protocol={protocol}
                               identityId={focusedIdentityId}
-                              dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
-                              hasRncpTransfer={capabilities.hasRncpTransfer}
-                              hasLxstVoice={capabilities.hasLxstVoice}
-                              hasReticulumVoiceMemo={capabilities.hasReticulumVoiceMemo}
-                              onVoiceMemo={
-                                capabilities.hasReticulumVoiceMemo && reticulumIdentityId
-                                  ? (destination: number) => {
-                                      const phase = useReticulumVoiceMemoStore.getState().phase;
-                                      if (
-                                        phase === 'sending' ||
-                                        phase === 'starting' ||
-                                        phase === 'stopping'
-                                      ) {
-                                        return;
-                                      }
-                                      if (phase === 'recording' || phase === 'ready') {
-                                        sendReticulumVoiceMemo({
-                                          identityId: reticulumIdentityId,
-                                          destination,
-                                          onOversize: () => {
-                                            addToast(
-                                              t('chatPanel.voiceMemo.tooLargeForWire'),
-                                              'warning',
-                                            );
-                                          },
-                                          onNoPropagationNode: () => {
-                                            addToast(
-                                              t('chatPanel.reticulumNoPropagationNode'),
-                                              'error',
-                                            );
-                                          },
-                                          onTooLargeForPropagation: () => {
-                                            addToast(
-                                              t('chatPanel.voiceMemo.tooLargeForPropagation'),
-                                              'info',
-                                            );
-                                          },
-                                          onMissingLxmfDelivery: () => {
-                                            addToast(
-                                              t('chatPanel.reticulumChatNeedsLxmfDelivery'),
-                                              'error',
-                                            );
-                                          },
-                                        });
-                                        return;
-                                      }
-                                      void startReticulumVoiceMemo()
-                                        .then((ok) => {
-                                          if (!ok) {
-                                            const err =
-                                              useReticulumVoiceMemoStore.getState().lastError;
-                                            if (err === 'call_busy') {
-                                              addToast(
-                                                t('chatPanel.voiceMemo.callBusy'),
-                                                'warning',
-                                              );
-                                            } else if (err === 'mic_denied') {
-                                              addToast(t('chatPanel.voiceMemo.micDenied'), 'error');
-                                            } else if (
-                                              err === 'sidecar_unavailable' ||
-                                              err === 'start_failed' ||
-                                              err
-                                            ) {
-                                              useReticulumVoiceMemoStore.getState().reset();
-                                              addToast(
-                                                t('chatPanel.voiceMemo.startFailed'),
-                                                'error',
-                                              );
-                                            }
-                                          }
-                                        })
-                                        .catch((e: unknown) => {
-                                          console.warn(
-                                            '[App] startReticulumVoiceMemo rejected:',
-                                            errLikeToLogString(e),
-                                          );
-                                          useReticulumVoiceMemoStore.getState().reset();
-                                          addToast(t('chatPanel.voiceMemo.startFailed'), 'error');
-                                        });
-                                    }
-                                  : undefined
-                              }
-                              hasLrgpGames={capabilities.hasLrgpGames}
-                              hasLxmfPaper={capabilities.hasLxmfPaper}
-                              showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
-                              showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
-                              composerPayloadLimit={capabilities.lxmfPayloadLimit}
-                              lxmfReplyHashReplies={capabilities.hasLxmfDeliveryStatus}
                               scrollToTopRef={scrollToTopChatRef}
                               outerScrollMetricsRootRef={mainViewportRef}
                               compactMode={chatCompactMode}
@@ -4566,17 +3617,6 @@ function AppContent() {
                                       })
                                   : undefined
                               }
-                              onOpenPropagationSettings={
-                                protocol === 'reticulum'
-                                  ? handleOpenReticulumPropagationSettings
-                                  : undefined
-                              }
-                              reticulumStackLive={
-                                protocol === 'reticulum' &&
-                                (reticulumConnectionView.state.status === 'configured' ||
-                                  reticulumConnectionView.state.status === 'connected' ||
-                                  reticulumConnectionView.state.status === 'stale')
-                              }
                               resolveShareLocation={chatShareLocationResolver}
                               onSendLocationWaypoint={
                                 protocol === 'meshtastic' && chatShareLocationResolver
@@ -4604,174 +3644,19 @@ function AppContent() {
                         </div>
                       )}
                       <div
-                        id={`panel-${GAMES_PANEL_INDEX}`}
-                        role="tabpanel"
-                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), GAMES_PANEL_INDEX))}`}
-                        hidden={activePanelIndex !== GAMES_PANEL_INDEX}
-                        className="h-full w-full min-w-0"
-                      >
-                        {(activePanelIndex === GAMES_PANEL_INDEX || gamesTabVisited) && (
-                          <ErrorBoundary>
-                            <Suspense fallback={<PanelSkeleton />}>
-                              <div
-                                className="h-full w-full min-w-0"
-                                hidden={
-                                  activePanelIndex !== GAMES_PANEL_INDEX ||
-                                  !capabilities.hasLrgpGames
-                                }
-                              >
-                                <GamesPanel
-                                  isActive={
-                                    activePanelIndex === GAMES_PANEL_INDEX &&
-                                    capabilities.hasLrgpGames
-                                  }
-                                />
-                              </div>
-                            </Suspense>
-                          </ErrorBoundary>
-                        )}
-                      </div>
-                      <div
-                        id={`panel-${RRC_PANEL_INDEX}`}
-                        role="tabpanel"
-                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), RRC_PANEL_INDEX))}`}
-                        hidden={activePanelIndex !== RRC_PANEL_INDEX}
-                        className="h-full w-full min-w-0"
-                      >
-                        {(activePanelIndex === RRC_PANEL_INDEX || rrcTabVisited) && (
-                          <ErrorBoundary>
-                            <Suspense fallback={<PanelSkeleton />}>
-                              <div
-                                className="h-full w-full min-w-0"
-                                hidden={
-                                  activePanelIndex !== RRC_PANEL_INDEX || !capabilities.hasRrcPanel
-                                }
-                              >
-                                <RrcPanel
-                                  isActive={
-                                    activePanelIndex === RRC_PANEL_INDEX && capabilities.hasRrcPanel
-                                  }
-                                  alwaysShowMessageActions={alwaysShowMessageActions}
-                                  onOpenDm={handleOpenReticulumDmByHash}
-                                />
-                              </div>
-                            </Suspense>
-                          </ErrorBoundary>
-                        )}
-                      </div>
-                      <div
-                        id={`panel-${REMOTE_PANEL_INDEX}`}
-                        role="tabpanel"
-                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), REMOTE_PANEL_INDEX))}`}
-                        hidden={activePanelIndex !== REMOTE_PANEL_INDEX}
-                        className="h-full w-full min-w-0"
-                      >
-                        {(activePanelIndex === REMOTE_PANEL_INDEX || remoteTabVisited) && (
-                          <ErrorBoundary>
-                            <Suspense fallback={<PanelSkeleton />}>
-                              <div
-                                className="h-full w-full min-w-0"
-                                hidden={
-                                  activePanelIndex !== REMOTE_PANEL_INDEX ||
-                                  !capabilities.hasReticulumRemotePanel
-                                }
-                              >
-                                <ReticulumRemotePanel
-                                  isActive={
-                                    activePanelIndex === REMOTE_PANEL_INDEX &&
-                                    capabilities.hasReticulumRemotePanel
-                                  }
-                                />
-                              </div>
-                            </Suspense>
-                          </ErrorBoundary>
-                        )}
-                      </div>
-                      <div
-                        id={`panel-${NOMAD_NETWORK_PANEL_INDEX}`}
-                        role="tabpanel"
-                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NOMAD_NETWORK_PANEL_INDEX))}`}
-                        hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
-                        className="h-full w-full min-w-0"
-                      >
-                        {(activePanelIndex === NOMAD_NETWORK_PANEL_INDEX || nomadTabVisited) && (
-                          <ErrorBoundary>
-                            <Suspense fallback={<PanelSkeleton />}>
-                              <div
-                                className="h-full w-full min-w-0"
-                                hidden={
-                                  activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX ||
-                                  !capabilities.hasNomadNetworkPanel
-                                }
-                              >
-                                <NomadNetworkPanel
-                                  isActive={
-                                    activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
-                                    capabilities.hasNomadNetworkPanel
-                                  }
-                                  onOpenDm={handleOpenReticulumDmByHash}
-                                />
-                              </div>
-                            </Suspense>
-                          </ErrorBoundary>
-                        )}
-                      </div>
-                      <div
                         id={`panel-${NODES_PANEL_INDEX}`}
                         role="tabpanel"
                         aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NODES_PANEL_INDEX))}`}
                         hidden={activePanelIndex !== NODES_PANEL_INDEX}
                         className="h-full min-h-0 w-full min-w-0"
                       >
-                        {(activePanelIndex === NODES_PANEL_INDEX || peersTabVisited) && (
+                        {activePanelIndex === NODES_PANEL_INDEX && (
                           <Suspense fallback={<PanelSkeleton />}>
                             <div
                               className="h-full min-h-0 w-full min-w-0"
                               hidden={activePanelIndex !== NODES_PANEL_INDEX}
                             >
-                              {capabilities.hasReticulumPeersList ? (
-                                <div
-                                  className={
-                                    peerDetailPaneOnList
-                                      ? DETAIL_PANE_GRID_CLASS
-                                      : 'h-full min-h-0 min-w-0'
-                                  }
-                                >
-                                  <div className="h-full min-h-0 min-w-0">
-                                    <ReticulumPeerListPanel
-                                      isConnected={isConnectedOrOperational}
-                                      contactNodes={reticulumUiNodes}
-                                      onPeerClick={(hash) => {
-                                        selectPeerFrom('list', hash);
-                                      }}
-                                      selectedPeerHash={
-                                        peerDetailPaneOnList ? selectedPeerHash : null
-                                      }
-                                      onSendMessage={handleMessageNode}
-                                      onRefresh={reticulumPanelActions.requestRefresh}
-                                      onSoftRefresh={reticulumPanelActions.requestSoftRefresh}
-                                      onToggleFavorite={reticulumPanelActions.setNodeFavorited}
-                                      groups={contactGroups.groups}
-                                      selectedGroupId={contactGroups.selectedGroupId}
-                                      onGroupChange={contactGroups.setSelectedGroupId}
-                                      onManageGroups={
-                                        capabilities.hasUserManagedContactGroups
-                                          ? () => {
-                                              setShowGroupsModal(true);
-                                            }
-                                          : undefined
-                                      }
-                                      groupMemberIds={contactGroups.groupMemberIds}
-                                      contactGroupsEnabled={
-                                        capabilities.hasUserManagedContactGroups
-                                      }
-                                      hasLxstVoice={capabilities.hasLxstVoice}
-                                      hasLrgpGames={capabilities.hasLrgpGames}
-                                    />
-                                  </div>
-                                  {peerDetailPaneOnList && renderPeerDetail('pane')}
-                                </div>
-                              ) : (
+                              {
                                 <div
                                   className={
                                     nodeDetailPaneOnList
@@ -4849,7 +3734,7 @@ function AppContent() {
                                   </div>
                                   {nodeDetailPaneOnList && renderNodeDetail('pane')}
                                 </div>
-                              )}
+                              }
                             </div>
                           </Suspense>
                         )}
@@ -4866,37 +3751,14 @@ function AppContent() {
                             <Suspense fallback={<PanelSkeleton />}>
                               <div
                                 className={
-                                  nodeDetailPaneOnMap || peerDetailPaneOnMap
+                                  nodeDetailPaneOnMap
                                     ? DETAIL_PANE_GRID_CLASS
                                     : 'h-full min-h-0 min-w-0'
                                 }
                               >
                                 <div className="h-full min-h-0 min-w-0">
-                                  {protocol === 'reticulum' &&
-                                  capabilities.hasReticulumDiscoveryMap ? (
-                                    <ReticulumMapPanel
-                                      stackConfigured={
-                                        reticulumConnection.state.status === 'configured'
-                                      }
-                                      onPeerClick={(hash) => {
-                                        selectPeerFrom('map', hash);
-                                      }}
-                                      onOpenRmapSettings={() => {
-                                        const networkTabIdx = tabSlotIds.indexOf('Radio');
-                                        if (networkTabIdx >= 0) {
-                                          setActiveTab(networkTabIdx);
-                                        }
-                                      }}
-                                      onOpenAppGpsSettings={() => {
-                                        const appTabIdx = tabSlotIds.indexOf('App');
-                                        if (appTabIdx >= 0) {
-                                          setAppTabVisited(true);
-                                          setActiveTab(appTabIdx);
-                                        }
-                                      }}
-                                    />
-                                  ) : capabilities.hasFullPositionConfig ||
-                                    capabilities.nodeListTabUsesContactsLabel ? (
+                                  {capabilities.hasFullPositionConfig ||
+                                  capabilities.nodeListTabUsesContactsLabel ? (
                                     <MapPanel
                                       nodes={nodesForUi}
                                       myNodeNum={activeSelfNodeNum}
@@ -4940,7 +3802,6 @@ function AppContent() {
                                   ) : null}
                                 </div>
                                 {nodeDetailPaneOnMap && renderNodeDetail('pane')}
-                                {peerDetailPaneOnMap && renderPeerDetail('pane')}
                               </div>
                             </Suspense>
                           </ErrorBoundary>
@@ -4956,259 +3817,231 @@ function AppContent() {
                         {activePanelIndex === RADIO_TAB_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              {capabilities.hasReticulumNetworkPanel ? (
-                                <ReticulumNetworkPanel
-                                  connecting={reticulumConnectionView.state.status === 'connecting'}
-                                  onStartStack={startReticulumStackManual}
-                                  propagationSectionOpenKey={reticulumPropagationNavKey}
-                                  onOpenInterfaces={handleNavigateToReticulumConnection}
-                                  onOpenSetupGuide={() => {
-                                    const target = findFilteredTabIndexForPanel(
-                                      selectByProtocol(tabsByProtocol, 'reticulum'),
-                                      0,
-                                    );
-                                    if (target < 0) return false;
-                                    useReticulumSetupGuideStore.getState().setOpen(true);
-                                    setActiveTab(target);
-                                    return true;
-                                  }}
-                                  onOpenAppGpsSettings={() => {
-                                    const appTabIdx = tabSlotIds.indexOf('App');
-                                    if (appTabIdx >= 0) {
-                                      setAppTabVisited(true);
-                                      setActiveTab(appTabIdx);
-                                    }
-                                  }}
+                              <>
+                                {configureNodeSelector}
+                                <RadioPanel
+                                  configTarget={configTarget}
+                                  onSetConfig={meshtasticPanelActions.setConfig}
+                                  onCommit={meshtasticPanelActions.commitConfig}
+                                  onSetChannel={meshtasticPanelActions.setDeviceChannel}
+                                  onClearChannel={meshtasticPanelActions.clearChannel}
+                                  channelConfigs={effectiveChannelConfigs}
+                                  remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
+                                  remoteChannelsTailStatus={
+                                    isRemoteConfigureTarget
+                                      ? meshtasticRuntime.remoteConfigChannelsTailStatus
+                                      : undefined
+                                  }
+                                  onRetryRemoteChannelsTail={
+                                    isRemoteConfigureTarget
+                                      ? handleRetryRemoteChannelsTail
+                                      : undefined
+                                  }
+                                  meshtasticLoraConfig={
+                                    capabilities.hasChannelConfig ? effectiveLoraConfig : undefined
+                                  }
+                                  meshtasticConfigSlices={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveMeshtasticConfigSlices
+                                      : undefined
+                                  }
+                                  moduleConfigs={
+                                    capabilities.hasChannelConfig
+                                      ? effectiveModuleConfigs
+                                      : undefined
+                                  }
+                                  onSetModuleConfig={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.setModuleConfig
+                                      : undefined
+                                  }
+                                  onApplyChannelSet={
+                                    capabilities.hasChannelConfig
+                                      ? meshtasticPanelActions.applyChannelSet
+                                      : undefined
+                                  }
+                                  isConnected={isOperational}
+                                  deviceFixedPosition={effectiveDeviceFixedPosition}
+                                  ourPosition={activeOurPosition}
+                                  onSendPositionToDevice={resolvePanelPositionSendHandler(
+                                    capabilities,
+                                    meshtasticPanelActions.sendPositionToDevice,
+                                    meshcorePanelActions.sendPositionToDevice,
+                                  )}
+                                  deviceOwner={effectiveDeviceOwner}
+                                  onSetOwner={resolvePanelSetOwnerHandler(
+                                    capabilities,
+                                    meshtasticPanelActions.setOwner,
+                                    meshcorePanelActions.setOwner,
+                                  )}
+                                  capabilities={capabilities}
+                                  onSendLockdownAuth={
+                                    // Lockdown auth always addresses 'self', so offering it
+                                    // while the panel targets a remote node would silently
+                                    // act on the local radio instead.
+                                    capabilities.hasLockdown && !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.sendLockdownAuth
+                                      : undefined
+                                  }
+                                  meshcoreChannels={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.channels
+                                      : undefined
+                                  }
+                                  identityId={focusedIdentityId}
+                                  onMeshcoreSetChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreSetChannel
+                                      : undefined
+                                  }
+                                  onMeshcoreDeleteChannel={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.meshcoreDeleteChannel
+                                      : undefined
+                                  }
+                                  onApplyLoraParams={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.setRadioParams
+                                      : undefined
+                                  }
+                                  loraConfig={meshcoreLoraConfig}
+                                  meshcoreSelfInfo={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.selfInfo
+                                      : undefined
+                                  }
+                                  meshcoreContactsForTelemetry={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreContactsForTelemetry
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreTelemetryPrivacy={
+                                    capabilities.hasCompanionTelemetryPrivacyConfig
+                                      ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
+                                      : undefined
+                                  }
+                                  meshcoreAutoadd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcoreRuntime.meshcoreAutoadd
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreContactAutoAdd={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcoreContactAutoAdd
+                                      : undefined
+                                  }
+                                  onRefreshMeshcoreAutoaddFromDevice={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowPublicKeys={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowPublicKeys
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowPublicKeysChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowPublicKeysChange
+                                      : undefined
+                                  }
+                                  meshcoreContactsShowRefreshControl={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreContactsShowRefreshControl
+                                      : undefined
+                                  }
+                                  onMeshcoreContactsShowRefreshControlChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreContactsShowRefreshControlChange
+                                      : undefined
+                                  }
+                                  meshcoreAutoOffloadWhenFull={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreAutoOffloadWhenFull
+                                      : undefined
+                                  }
+                                  onMeshcoreAutoOffloadWhenFullChange={
+                                    capabilities.hasContactImportExport
+                                      ? onMeshcoreAutoOffloadWhenFullChange
+                                      : undefined
+                                  }
+                                  onClearAllMeshcoreContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.clearAllMeshcoreContacts
+                                      : undefined
+                                  }
+                                  onSendAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendAdvert
+                                      : undefined
+                                  }
+                                  onSendZeroHopAdvert={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.sendZeroHopAdvert
+                                      : undefined
+                                  }
+                                  onApplyMeshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
+                                      : undefined
+                                  }
+                                  meshcoreFloodScopeHashtag={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreFloodScopeHashtag
+                                      : ''
+                                  }
+                                  onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
+                                  meshcoreFloodScopePresets={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreFloodScopePresets
+                                      : []
+                                  }
+                                  onMeshcoreFloodScopePresetsChange={
+                                    capabilities.hasContactImportExport
+                                      ? handleMeshcoreFloodScopePresetsChange
+                                      : undefined
+                                  }
+                                  onXmodemUpload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemUpload
+                                      : undefined
+                                  }
+                                  onXmodemDownload={
+                                    capabilities.hasXmodem &&
+                                    isOperational &&
+                                    !isRemoteConfigureTarget
+                                      ? meshtasticPanelActions.xmodemDownload
+                                      : undefined
+                                  }
+                                  onSyncClock={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.syncClock
+                                      : undefined
+                                  }
+                                  deviceReportedPathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                      : null
+                                  }
+                                  onApplyMeshcorePathHashMode={
+                                    capabilities.hasCompanionContactManagementConfig
+                                      ? meshcorePanelActions.applyMeshcorePathHashMode
+                                      : undefined
+                                  }
+                                  onRefreshContacts={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.refreshContacts
+                                      : undefined
+                                  }
+                                  onOffloadContactsFromRadio={
+                                    capabilities.hasContactImportExport
+                                      ? meshcorePanelActions.offloadContactsFromRadio
+                                      : undefined
+                                  }
                                 />
-                              ) : (
-                                <>
-                                  {configureNodeSelector}
-                                  <RadioPanel
-                                    configTarget={configTarget}
-                                    onSetConfig={meshtasticPanelActions.setConfig}
-                                    onCommit={meshtasticPanelActions.commitConfig}
-                                    onSetChannel={meshtasticPanelActions.setDeviceChannel}
-                                    onClearChannel={meshtasticPanelActions.clearChannel}
-                                    channelConfigs={effectiveChannelConfigs}
-                                    remoteChannelFailedIndices={effectiveRemoteChannelFailedIndices}
-                                    remoteChannelsTailStatus={
-                                      isRemoteConfigureTarget
-                                        ? meshtasticRuntime.remoteConfigChannelsTailStatus
-                                        : undefined
-                                    }
-                                    onRetryRemoteChannelsTail={
-                                      isRemoteConfigureTarget
-                                        ? handleRetryRemoteChannelsTail
-                                        : undefined
-                                    }
-                                    meshtasticLoraConfig={
-                                      capabilities.hasChannelConfig
-                                        ? effectiveLoraConfig
-                                        : undefined
-                                    }
-                                    meshtasticConfigSlices={
-                                      capabilities.hasChannelConfig
-                                        ? effectiveMeshtasticConfigSlices
-                                        : undefined
-                                    }
-                                    moduleConfigs={
-                                      capabilities.hasChannelConfig
-                                        ? effectiveModuleConfigs
-                                        : undefined
-                                    }
-                                    onSetModuleConfig={
-                                      capabilities.hasChannelConfig
-                                        ? meshtasticPanelActions.setModuleConfig
-                                        : undefined
-                                    }
-                                    onApplyChannelSet={
-                                      capabilities.hasChannelConfig
-                                        ? meshtasticPanelActions.applyChannelSet
-                                        : undefined
-                                    }
-                                    isConnected={isOperational}
-                                    deviceFixedPosition={effectiveDeviceFixedPosition}
-                                    ourPosition={activeOurPosition}
-                                    onSendPositionToDevice={resolvePanelPositionSendHandler(
-                                      capabilities,
-                                      meshtasticPanelActions.sendPositionToDevice,
-                                      meshcorePanelActions.sendPositionToDevice,
-                                    )}
-                                    deviceOwner={effectiveDeviceOwner}
-                                    onSetOwner={resolvePanelSetOwnerHandler(
-                                      capabilities,
-                                      meshtasticPanelActions.setOwner,
-                                      meshcorePanelActions.setOwner,
-                                    )}
-                                    capabilities={capabilities}
-                                    onSendLockdownAuth={
-                                      // Lockdown auth always addresses 'self', so offering it
-                                      // while the panel targets a remote node would silently
-                                      // act on the local radio instead.
-                                      capabilities.hasLockdown && !isRemoteConfigureTarget
-                                        ? meshtasticPanelActions.sendLockdownAuth
-                                        : undefined
-                                    }
-                                    meshcoreChannels={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcoreRuntime.channels
-                                        : undefined
-                                    }
-                                    identityId={focusedIdentityId}
-                                    onMeshcoreSetChannel={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.meshcoreSetChannel
-                                        : undefined
-                                    }
-                                    onMeshcoreDeleteChannel={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.meshcoreDeleteChannel
-                                        : undefined
-                                    }
-                                    onApplyLoraParams={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.setRadioParams
-                                        : undefined
-                                    }
-                                    loraConfig={meshcoreLoraConfig}
-                                    meshcoreSelfInfo={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcoreRuntime.selfInfo
-                                        : undefined
-                                    }
-                                    meshcoreContactsForTelemetry={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcoreRuntime.meshcoreContactsForTelemetry
-                                        : undefined
-                                    }
-                                    onApplyMeshcoreTelemetryPrivacy={
-                                      capabilities.hasCompanionTelemetryPrivacyConfig
-                                        ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
-                                        : undefined
-                                    }
-                                    meshcoreAutoadd={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcoreRuntime.meshcoreAutoadd
-                                        : undefined
-                                    }
-                                    onApplyMeshcoreContactAutoAdd={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.applyMeshcoreContactAutoAdd
-                                        : undefined
-                                    }
-                                    onRefreshMeshcoreAutoaddFromDevice={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.refreshMeshcoreAutoaddFromDevice
-                                        : undefined
-                                    }
-                                    meshcoreContactsShowPublicKeys={
-                                      capabilities.hasContactImportExport
-                                        ? meshcoreContactsShowPublicKeys
-                                        : undefined
-                                    }
-                                    onMeshcoreContactsShowPublicKeysChange={
-                                      capabilities.hasContactImportExport
-                                        ? onMeshcoreContactsShowPublicKeysChange
-                                        : undefined
-                                    }
-                                    meshcoreContactsShowRefreshControl={
-                                      capabilities.hasContactImportExport
-                                        ? meshcoreContactsShowRefreshControl
-                                        : undefined
-                                    }
-                                    onMeshcoreContactsShowRefreshControlChange={
-                                      capabilities.hasContactImportExport
-                                        ? onMeshcoreContactsShowRefreshControlChange
-                                        : undefined
-                                    }
-                                    meshcoreAutoOffloadWhenFull={
-                                      capabilities.hasContactImportExport
-                                        ? meshcoreAutoOffloadWhenFull
-                                        : undefined
-                                    }
-                                    onMeshcoreAutoOffloadWhenFullChange={
-                                      capabilities.hasContactImportExport
-                                        ? onMeshcoreAutoOffloadWhenFullChange
-                                        : undefined
-                                    }
-                                    onClearAllMeshcoreContacts={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.clearAllMeshcoreContacts
-                                        : undefined
-                                    }
-                                    onSendAdvert={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.sendAdvert
-                                        : undefined
-                                    }
-                                    onSendZeroHopAdvert={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.sendZeroHopAdvert
-                                        : undefined
-                                    }
-                                    onApplyMeshcoreFloodScopeHashtag={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
-                                        : undefined
-                                    }
-                                    meshcoreFloodScopeHashtag={
-                                      capabilities.hasContactImportExport
-                                        ? meshcoreFloodScopeHashtag
-                                        : ''
-                                    }
-                                    onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
-                                    meshcoreFloodScopePresets={
-                                      capabilities.hasContactImportExport
-                                        ? meshcoreFloodScopePresets
-                                        : []
-                                    }
-                                    onMeshcoreFloodScopePresetsChange={
-                                      capabilities.hasContactImportExport
-                                        ? handleMeshcoreFloodScopePresetsChange
-                                        : undefined
-                                    }
-                                    onXmodemUpload={
-                                      capabilities.hasXmodem &&
-                                      isOperational &&
-                                      !isRemoteConfigureTarget
-                                        ? meshtasticPanelActions.xmodemUpload
-                                        : undefined
-                                    }
-                                    onXmodemDownload={
-                                      capabilities.hasXmodem &&
-                                      isOperational &&
-                                      !isRemoteConfigureTarget
-                                        ? meshtasticPanelActions.xmodemDownload
-                                        : undefined
-                                    }
-                                    onSyncClock={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.syncClock
-                                        : undefined
-                                    }
-                                    deviceReportedPathHashMode={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? (meshcoreRuntime.state.pathHashMode ?? null)
-                                        : null
-                                    }
-                                    onApplyMeshcorePathHashMode={
-                                      capabilities.hasCompanionContactManagementConfig
-                                        ? meshcorePanelActions.applyMeshcorePathHashMode
-                                        : undefined
-                                    }
-                                    onRefreshContacts={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.refreshContacts
-                                        : undefined
-                                    }
-                                    onOffloadContactsFromRadio={
-                                      capabilities.hasContactImportExport
-                                        ? meshcorePanelActions.offloadContactsFromRadio
-                                        : undefined
-                                    }
-                                  />
-                                </>
-                              )}
+                              </>
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -5323,12 +4156,7 @@ function AppContent() {
                         {activePanelIndex === ADMIN_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              {capabilities.hasReticulumAdminPanel ? (
-                                <ReticulumAdminPanel
-                                  connecting={reticulumConnectionView.state.status === 'connecting'}
-                                  onStartStack={startReticulumStackManual}
-                                />
-                              ) : (
+                              {
                                 <AdminPanel
                                   configTarget={configTarget}
                                   capabilities={capabilities}
@@ -5370,7 +4198,7 @@ function AppContent() {
                                       : undefined
                                   }
                                 />
-                              )}
+                              }
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -5611,10 +4439,6 @@ function AppContent() {
                                     handleAlwaysShowMessageActionsChange
                                   }
                                   onHiddenProtocolsChange={handleHiddenProtocolsChange}
-                                  reticulumIdentityId={reticulumIdentityId}
-                                  reticulumSidecarReady={
-                                    reticulumRuntime.state.status !== 'disconnected'
-                                  }
                                 />
                                 <AppAboutSection />
                               </div>
@@ -5661,16 +4485,6 @@ function AppContent() {
                                 }}
                                 capabilities={capabilities}
                                 protocol={protocol}
-                                onNavigateToReticulumConnection={
-                                  protocol === 'reticulum'
-                                    ? handleNavigateToReticulumConnection
-                                    : undefined
-                                }
-                                onRefreshReticulumDiagnostics={
-                                  protocol === 'reticulum'
-                                    ? handleRefreshReticulumDiagnostics
-                                    : undefined
-                                }
                               />
                             </Suspense>
                           </ErrorBoundary>
@@ -5687,15 +4501,7 @@ function AppContent() {
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <div className="p-4">
-                                {protocol === 'reticulum' ? (
-                                  <PacketDistributionPanel
-                                    variant="reticulum"
-                                    packets={
-                                      reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]
-                                    }
-                                    getNodeLabel={rawPacketGetNodeLabel}
-                                  />
-                                ) : capabilities.modulesTabUsesRepeatersLabel ? (
+                                {capabilities.modulesTabUsesRepeatersLabel ? (
                                   <PacketDistributionPanel
                                     variant="meshcore"
                                     packets={meshcoreRuntime.rawPackets}
@@ -5730,18 +4536,7 @@ function AppContent() {
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <div className="flex h-full min-h-0 flex-col">
-                                {protocol === 'reticulum' ? (
-                                  <RawPacketLogPanel
-                                    variant="reticulum"
-                                    packets={
-                                      reticulumRuntime.rawPackets as ReticulumRawPacketEntry[]
-                                    }
-                                    onClear={() => {
-                                      void reticulumPanelActions.clearRawPackets?.();
-                                    }}
-                                    getNodeLabel={rawPacketGetNodeLabel}
-                                  />
-                                ) : capabilities.modulesTabUsesRepeatersLabel ? (
+                                {capabilities.modulesTabUsesRepeatersLabel ? (
                                   <RawPacketLogPanel
                                     variant="meshcore"
                                     packets={meshcoreRuntime.rawPackets}
@@ -5801,23 +4596,6 @@ function AppContent() {
                                 myNodeId={activeSelfNodeNum}
                                 onNodeClick={setSelectedNodeId}
                               />
-                            </Suspense>
-                          </ErrorBoundary>
-                        ) : null}
-                      </div>
-                      <div
-                        id={`panel-${TOPOLOGY_PANEL_INDEX}`}
-                        role="tabpanel"
-                        aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TOPOLOGY_PANEL_INDEX))}`}
-                        hidden={activePanelIndex !== TOPOLOGY_PANEL_INDEX}
-                        className="h-full w-full min-w-0"
-                        style={{ height: 'calc(100vh - 140px)' }}
-                      >
-                        {activePanelIndex === TOPOLOGY_PANEL_INDEX &&
-                        capabilities.hasReticulumTopologyPanel ? (
-                          <ErrorBoundary>
-                            <Suspense fallback={<PanelSkeleton />}>
-                              <ReticulumTopologyPanel onPeerClick={setSelectedPeerHash} />
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}
@@ -5940,7 +4718,7 @@ function AppContent() {
               {takStatusLabel}
             </StatusBarButton>
           )}
-          {/* Queue status badge: absolute thresholds for LoRa; ratio for Reticulum */}
+          {/* Queue status badge: absolute thresholds */}
           {queueShowBadge && activeQueue && (
             <HelpTooltip text={queueTooltipText} className="shrink-0 px-1">
               <div
@@ -5967,12 +4745,6 @@ function AppContent() {
               }
               connectionType={meshcoreWaitingMessagesInput.connectionType}
               onSync={() => void handleMeshcoreSyncWaitingMessages()}
-            />
-          )}
-          {reticulumTxBuffering && (
-            <ReticulumTxBufferingHeaderIndicator
-              buffering
-              interfaceName={reticulumQueueIfaceName || null}
             />
           )}
         </StatusBar>
@@ -6007,8 +4779,7 @@ function AppContent() {
           }}
           onOpenContact={(id) => {
             openTabFromLauncher(tabSlotIds.indexOf('Nodes'));
-            if (capabilities.hasReticulumPeersList) selectPeerFrom('list', id);
-            else selectNodeFrom('list', Number(id));
+            selectNodeFrom('list', Number(id));
           }}
           settings={launcherSnapshot.settings}
           onOpenSetting={openSettingFromLauncher}
@@ -6068,8 +4839,6 @@ function AppContent() {
 
       {/* Node Detail Modal — rendered outside main for proper z-indexing */}
       {nodeDetailModalOpen && renderNodeDetail('modal')}
-
-      {peerDetailModalOpen && renderPeerDetail('modal')}
     </>
   );
 }

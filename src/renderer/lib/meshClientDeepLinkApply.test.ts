@@ -14,9 +14,7 @@ vi.stubGlobal('window', {
   },
 });
 
-vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
-  registerReticulumKnownIdentity: vi.fn(),
-}));
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({}));
 
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   refreshReticulumPeersFromSidecar: vi.fn().mockResolvedValue(undefined),
@@ -37,75 +35,14 @@ vi.mock('@/renderer/lib/offlineProtocolIdentities', () => ({
   getOfflineIdentityIdForProtocol: () => 'id-reticulum-offline',
 }));
 
-import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-
-import {
-  applyLxmaContactImport,
-  applyLxmContactImport,
-  applyLxmPaperIngest,
-  applyMeshcoreChannelAdd,
-  applyMeshcoreContactAdd,
-} from './meshClientDeepLinkApply';
+import { applyMeshcoreChannelAdd, applyMeshcoreContactAdd } from './meshClientDeepLinkApply';
 
 describe('meshClientDeepLinkApply', () => {
   beforeEach(() => {
-    vi.mocked(registerReticulumKnownIdentity).mockReset();
     upsertReticulumDestination.mockReset();
     upsertReticulumDestination.mockResolvedValue({ changes: 1 });
     proxyPost.mockReset();
     ingestReticulumLxmfPayloadWithSideEffects.mockClear();
-  });
-
-  it('applyLxmaContactImport registers then upserts with is_contact', async () => {
-    vi.mocked(registerReticulumKnownIdentity).mockResolvedValue({ ok: true });
-    const dest = 'a'.repeat(32);
-    const pub = 'b'.repeat(128);
-    const result = await applyLxmaContactImport({
-      destinationHash: dest,
-      publicKeyHex: pub,
-      displayName: 'Zed',
-    });
-    expect(result).toEqual({ ok: true, kind: 'lxmaContact' });
-    expect(registerReticulumKnownIdentity).toHaveBeenCalledWith(dest, pub);
-    expect(upsertReticulumDestination).toHaveBeenCalledWith(
-      expect.objectContaining({
-        destination_hash: dest,
-        display_name: 'Zed',
-        is_contact: true,
-      }),
-    );
-  });
-
-  it('applyLxmaContactImport skips upsert when register fails', async () => {
-    vi.mocked(registerReticulumKnownIdentity).mockResolvedValue({
-      ok: false,
-      error: 'sidecar_not_running',
-    });
-    const result = await applyLxmaContactImport({
-      destinationHash: 'a'.repeat(32),
-      publicKeyHex: 'b'.repeat(128),
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errorKey).toBe('qrIngest.lxmaRegisterFailed');
-    expect(upsertReticulumDestination).not.toHaveBeenCalled();
-  });
-
-  it('applyLxmContactImport upserts without is_contact by default', async () => {
-    const result = await applyLxmContactImport({
-      destinationHash: 'c'.repeat(32),
-      name: 'Ann',
-    });
-    expect(result.ok).toBe(true);
-    expect(upsertReticulumDestination).toHaveBeenCalledWith(
-      expect.objectContaining({
-        destination_hash: 'c'.repeat(32),
-        display_name: 'Ann',
-      }),
-    );
-    const arg = upsertReticulumDestination.mock.calls[0]?.[0] as {
-      is_contact?: boolean;
-    };
-    expect(arg.is_contact).toBeUndefined();
   });
 
   it('applyMeshcoreContactAdd calls saveContact dep', async () => {
@@ -143,64 +80,5 @@ describe('meshClientDeepLinkApply', () => {
     );
     expect(result).toEqual({ ok: true, kind: 'meshcoreChannelAdd' });
     expect(applyChannel).toHaveBeenCalledWith({ name: 'Pub', secretHex: 'cd'.repeat(16) });
-  });
-
-  it('applyLxmPaperIngest posts uri to sidecar', async () => {
-    proxyPost.mockResolvedValue({ ok: true });
-    const uri = `lxm://${'A'.repeat(48)}`;
-    const result = await applyLxmPaperIngest({ uri });
-    expect(result).toEqual({ ok: true, kind: 'lxmPaperMessage' });
-    expect(proxyPost).toHaveBeenCalledWith('/api/v1/lxmf/paper/ingest', { uri });
-  });
-
-  it('applyLxmPaperIngest fallback-ingests HTTP message payload', async () => {
-    const message = {
-      sender_hash: 'aa'.repeat(16),
-      text: 'paper inbound',
-      message_hash: 'bb'.repeat(16),
-      delivery_method: 'paper',
-      received_via: 'paper',
-      direction: 'inbound',
-    };
-    proxyPost.mockResolvedValue({ ok: true, message });
-    const result = await applyLxmPaperIngest({ uri: `lxm://${'C'.repeat(48)}` });
-    expect(result).toEqual({ ok: true, kind: 'lxmPaperMessage' });
-    expect(ingestReticulumLxmfPayloadWithSideEffects).toHaveBeenCalledWith('id-reticulum', message);
-  });
-
-  it('applyLxmPaperIngest maps decrypt_failed', async () => {
-    proxyPost.mockResolvedValue({ ok: false, error: 'decrypt_failed' });
-    const result = await applyLxmPaperIngest({ uri: `lxm://${'B'.repeat(48)}` });
-    expect(result).toEqual({
-      ok: false,
-      errorKey: 'qrIngest.paperDecryptFailed',
-      detail: 'decrypt_failed',
-    });
-  });
-
-  it('applyLxmPaperIngest maps invalid_uri', async () => {
-    proxyPost.mockResolvedValue({ ok: false, error: 'invalid_uri' });
-    const result = await applyLxmPaperIngest({ uri: 'lxm://bad' });
-    expect(result).toEqual({
-      ok: false,
-      errorKey: 'qrIngest.paperInvalidUri',
-      detail: 'invalid_uri',
-    });
-  });
-
-  it('applyLxmPaperIngest maps identity_not_configured', async () => {
-    proxyPost.mockResolvedValue({ ok: false, error: 'identity_not_configured' });
-    const result = await applyLxmPaperIngest({ uri: `lxm://${'D'.repeat(48)}` });
-    expect(result).toEqual({
-      ok: false,
-      errorKey: 'qrIngest.paperIdentityNotConfigured',
-      detail: 'identity_not_configured',
-    });
-  });
-
-  it('applyLxmPaperIngest maps thrown errors to generic failure', async () => {
-    proxyPost.mockRejectedValue(new Error('network'));
-    const result = await applyLxmPaperIngest({ uri: `lxm://${'E'.repeat(48)}` });
-    expect(result).toEqual({ ok: false, errorKey: 'qrIngest.paperIngestFailed' });
   });
 });

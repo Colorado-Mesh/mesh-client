@@ -1,11 +1,11 @@
-site_name: Colorado Mesh Client
-site_url: https://colorado-mesh.github.io/mesh-client/
+site_name: Mesh Hub
+site_url: https://charlottemeshtastic.github.io/mesh-client/
 site_description: >-
-  Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.
-repo_url: https://github.com/Colorado-Mesh/mesh-client
-repo_name: Colorado-Mesh/mesh-client
+  Cross-platform desktop client for Meshtastic and MeshCore mesh networks.
+repo_url: https://github.com/charlottemeshtastic/mesh-client
+repo_name: charlottemeshtastic/mesh-client
 edit_uri: edit/main/docs/
-copyright: Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+copyright: Copyright &copy; Colorado Mesh volunteers and Mesh Hub contributors. Mesh Hub is GPL-3.0-or-later.
 
 exclude_docs: |
   requirements.txt
@@ -56,14 +56,8 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Colorado-Mesh/mesh-client
+      link: https://github.com/charlottemeshtastic/mesh-client
       name: GitHub
-    - icon: fontawesome/brands/discord
-      link: https://discord.com/invite/McChKR5NpS
-      name: Discord
-    - icon: material/web
-      link: https://coloradomesh.org/
-      name: Colorado Mesh
 
 plugins:
   - search
@@ -104,8 +98,6 @@ nav:
   - Install: install.md
   - Features: features.md
   - User Guide:
-      - Reticulum Setup Guide: reticulum-setup-guide.md
-      - Reticulum: reticulum.md
       - EMCOMM (MECP & Incident Command): emcomm.md
       - Key Backup & Crypto: key-backup-and-crypto.md
       - Meshtastic Telemetry: meshtastic-telemetry-local-client.md
@@ -115,10 +107,8 @@ nav:
   - Support:
       - Troubleshooting: troubleshooting.md
       - MeshCore Troubleshooting: troubleshooting-meshcore.md
-      - Reticulum Troubleshooting: troubleshooting-reticulum.md
       - Diagnostics: diagnostics.md
       - Log Analysis: log-analysis.md
-      - Community: https://coloradomesh.org/
   - Engineering:
       - Development Guide: development-environment.md
       - Contributing: contributing.md
@@ -128,10 +118,6 @@ nav:
       - Release Process: release-process.md
       - Service Announcements: service-announcements.md
       - Meshtastic & MeshCore Parity: meshcore-meshtastic-parity.md
-      - Reticulum Development: reticulum-development.md
-      - Reticulum Sidecar IPC: reticulum-sidecar-ipc.md
-      - Reticulum Games Parity: reticulum-games-parity.md
-      - Nomad Hosting Interop: nomad-hosting-interop.md
       - LetsMesh MQTT Auth: letsmesh-mqtt-auth.md
       - Subsystem reference:
           - Overview: development/index.md

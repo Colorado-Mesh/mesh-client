@@ -22,7 +22,8 @@ describe('appTagline', () => {
   it('exports ASCII-only taglines for packaging and About metadata', () => {
     expect(isAsciiOnly(APP_PACKAGE_DESCRIPTION)).toBe(true);
     expect(isAsciiOnly(APP_ABOUT_TAGLINE)).toBe(true);
-    expect(APP_ABOUT_TAGLINE).toContain('Reticulum');
+    expect(APP_ABOUT_TAGLINE).toContain('MeshCore');
+    expect(APP_ABOUT_TAGLINE).not.toContain('Reticulum');
     expect(APP_ABOUT_TAGLINE).toContain('multi-language support');
     expect(APP_PACKAGE_DESCRIPTION).not.toContain('multi-language support');
   });

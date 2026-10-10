@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
-import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import {
   clearHeardRepeatWindowIfMessage,
@@ -16,8 +15,7 @@ import { omitRecordKey } from './storeUtils';
 export type MessageStatus = 'sending' | 'acked' | 'failed';
 
 /**
- * Transport markers. Reticulum multi-egress uses `+`-joined atoms (e.g. `rf+tcp`).
- * Meshtastic hybrid RF+MQTT remains `both`.
+ * Transport markers. Meshtastic hybrid RF+MQTT is `both`.
  */
 export type MessageTransport =
   | 'rf'
@@ -55,24 +53,6 @@ export interface MessageRecord {
   error?: string;
   /** MeshCore room server posts (BBS); filters Rooms panel stream. */
   roomServerId?: number;
-  /** Reticulum LXMF message hash (hex) for reply/reaction threading. */
-  reticulumMessageHash?: string;
-  /** Reticulum sender destination hash (hex). */
-  reticulumSenderHash?: string;
-  /** Reticulum reply target message hash (hex). */
-  reticulumReplyToHash?: string;
-  /** Reticulum LXMF delivery method when queued (direct / propagated / opportunistic / paper / stored_locally). */
-  reticulumDeliveryMethod?: ReticulumDeliveryMethod;
-  /** Sidecar outbound delivery_attempts (for triage dumps; optional). */
-  reticulumDeliveryAttempts?: number;
-  /** Saved attachment path on disk (local saves). */
-  reticulumAttachmentPath?: string;
-  /** Kind of inbound attachment saved at reticulumAttachmentPath. */
-  reticulumAttachmentKind?: 'image' | 'audio';
-  /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
-  reticulumAudioMode?: number;
-  /** Estimated audio duration in seconds (decoded client-side; optional). */
-  reticulumAudioDurationSec?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
   /** Group-channel identity key (`channelIdentityKey.ts`); null-ish for DMs or legacy rows. */
@@ -142,15 +122,6 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'isHistory',
   'error',
   'roomServerId',
-  'reticulumMessageHash',
-  'reticulumSenderHash',
-  'reticulumReplyToHash',
-  'reticulumDeliveryMethod',
-  'reticulumDeliveryAttempts',
-  'reticulumAttachmentPath',
-  'reticulumAttachmentKind',
-  'reticulumAudioMode',
-  'reticulumAudioDurationSec',
   'viaStoreForward',
   'channelKey',
   'radioNodeId',
@@ -431,28 +402,7 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
     const rest = omitRecordKey(byIdentity, fromId);
     const target = byIdentity[toId];
     if (target?.status === 'acked') {
-      // Keep Completes text/status, but carry forward local attachment metadata from the
-      // optimistic row (voice memos cache Ogg before the LXMF hash is known).
-      const merged: MessageRecord = {
-        ...target,
-        ...(existing.reticulumAttachmentPath && !target.reticulumAttachmentPath
-          ? {
-              reticulumAttachmentPath: existing.reticulumAttachmentPath,
-              reticulumAttachmentKind:
-                existing.reticulumAttachmentKind ?? target.reticulumAttachmentKind,
-            }
-          : {}),
-        ...(existing.reticulumAudioMode != null && target.reticulumAudioMode == null
-          ? { reticulumAudioMode: existing.reticulumAudioMode }
-          : {}),
-        ...(existing.reticulumAudioDurationSec != null && target.reticulumAudioDurationSec == null
-          ? { reticulumAudioDurationSec: existing.reticulumAudioDurationSec }
-          : {}),
-      };
-      if (messageRecordFieldsEqual(target, merged)) {
-        return mergeIdentityMessages(s, identityId, rest);
-      }
-      return mergeIdentityMessages(s, identityId, { ...rest, [toId]: merged });
+      return mergeIdentityMessages(s, identityId, rest);
     }
     return mergeIdentityMessages(s, identityId, { ...rest, [toId]: { ...existing, id: toId } });
   });

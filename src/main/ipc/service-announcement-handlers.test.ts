@@ -188,7 +188,7 @@ describe('createServiceAnnouncementFetcher', () => {
     ['off-host', 'https://evil.example/announcements.json'],
     [
       'cleartext github host',
-      'http://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/announcements/announcements.json',
+      'http://raw.githubusercontent.com/charlottemeshtastic/mesh-client/main/announcements/announcements.json',
     ],
   ])('ignores an %s response', async (_label, finalUrl) => {
     const res = response(feedText(row));

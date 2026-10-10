@@ -19,7 +19,7 @@ import { MAP_CONTROL_CLASS } from './mapControlClasses';
 const MGRS_LABEL_MAX_SQUARES = 60;
 const KM_TO_MI = 0.621371;
 
-const MGRS_LINE_COLOR = '#93a0b7';
+const MGRS_LINE_COLOR = '#a3a3a3';
 const MEASURE_LINE_COLOR = '#facc15';
 const INCIDENT_SEVERITY_COLORS: Record<number, string> = {
   0: '#dc2626',

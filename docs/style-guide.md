@@ -1,6 +1,6 @@
 # UI style guide
 
-Rules for the Mesh Client UI (desktop today, iOS and Android later), written for contributors and for AI coding agents. It combines the Colorado Mesh style guide by ashortgrayble (color scales, type system, radius, elevation) with the v6 redesign from [issue #1062](https://github.com/Colorado-Mesh/mesh-client/issues/1062): Option B navigation (rail, section tabs, status bar) plus Option C's launcher.
+Rules for the Mesh Client UI (desktop today, iOS and Android later), written for contributors and for AI coding agents. It combines the Colorado Mesh style guide by ashortgrayble (color scales, type system, radius, elevation) with the v6 redesign from [issue #1062](https://github.com/charlottemeshtastic/mesh-client/issues/1062): Option B navigation (rail, section tabs, status bar) plus Option C's launcher.
 
 The source of truth for exact values, contrast ratios and rationale is the [Colorado Mesh style guide in Figma](https://www.figma.com/design/ZPZsHgPZX8dQTUYzP4uDjZ/Colorado-Mesh?node-id=17-4). The tokens in `src/renderer/styles.css` carry its values.
 

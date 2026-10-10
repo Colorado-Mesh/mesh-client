@@ -16,7 +16,6 @@ import {
   dualNobleBleBothRadiosConfigured,
   getNobleBleDualRadioPrimaryProtocol,
   isNobleBleDualRadioSecondary,
-  isRendererGattBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
@@ -24,7 +23,6 @@ import {
   isProtocolRfAutoConnectCancelled,
   resetProtocolRfAutoConnectCancel,
 } from '@/renderer/lib/protocolRfAutoConnectGate';
-import { awaitReticulumBleCoexistenceClear } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
 import type { RfConnectAutomaticFn } from '@/renderer/lib/rfConnectionTypes';
 import { tryGetMeshcoreSession } from '@/renderer/lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '@/renderer/lib/sessions/meshtasticSession';
@@ -104,7 +102,7 @@ export function useProtocolRfAutoConnect({
   }, [connectAutomatic]);
 
   useEffect(() => {
-    if (protocol === 'reticulum' || firedRef.current) return;
+    if (firedRef.current) return;
     if (!enabled) {
       // A disabled primary must not leave the dual-radio secondary waiting on its settle.
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
@@ -173,17 +171,6 @@ export function useProtocolRfAutoConnect({
       if (protocol === 'meshcore' && meshcoreTargetsSharedMeshtasticBlePeripheral(bleId)) {
         console.debug(
           `[useProtocolRfAutoConnect] meshcore BLE auto-connect skipped — same peripheral as Meshtastic (${bleId})`,
-        );
-        onAutoConnectCancelled();
-        return;
-      }
-
-      if (isRendererGattBlePlatform()) {
-        await awaitReticulumBleCoexistenceClear();
-      }
-      if (isCancelled()) {
-        console.debug(
-          `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after coexistence wait`,
         );
         onAutoConnectCancelled();
         return;

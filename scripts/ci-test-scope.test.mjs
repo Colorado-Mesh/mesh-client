@@ -19,9 +19,7 @@ describe('ci-test-scope planning', () => {
   });
 
   it('runs the sidecar route/doc guard for an IPC-doc-only pull request', () => {
-    expect(
-      planCiTests('pull_request', ['docs/reticulum-sidecar-ipc.md', 'README.md']),
-    ).toMatchObject({
+    expect(planCiTests('pull_request', ['docs/ble-sidecar-ipc.md', 'README.md'])).toMatchObject({
       mode: 'related',
       projects: ['main'],
       relatedPaths: ['src/architecture/sidecarRouteDocs.test.ts'],
@@ -29,7 +27,7 @@ describe('ci-test-scope planning', () => {
   });
 
   it('runs the sidecar route/doc guard when sidecar routes change', () => {
-    const plan = planCiTests('pull_request', ['reticulum-sidecar/src/api/mod.rs']);
+    const plan = planCiTests('pull_request', ['ble-sidecar/src/api/mod.rs']);
     expect(plan.mode).toBe('related');
     expect(plan.relatedPaths).toContain('src/architecture/sidecarRouteDocs.test.ts');
   });
@@ -73,7 +71,7 @@ describe('ci-test-scope planning', () => {
     'package.json',
     'patches/debug@4.4.3.patch',
     'pnpm-lock.yaml',
-    'org.coloradomesh.MeshClient.yml',
+    'io.github.charlottemeshtastic.MeshHub.yml',
     'tsconfig.main.json',
     'vitest.config.mts',
   ])('fails closed to the full suite when %s changes', (filePath) => {

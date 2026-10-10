@@ -10,7 +10,7 @@ These requirements apply to all platforms.
 
 - Git
 - Node.js **22.15.0+** and pnpm **12+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) when available, or `npm install -g corepack@latest` / `npm install -g pnpm@<pin>` on Node 25+ where Corepack is not bundled). `pnpm install` fails on engine mismatch. After pulling a pnpm major bump, `preinstall` and `pnpm run dev` print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.
-- [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
+- [CI](https://github.com/charlottemeshtastic/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
 Verify:
@@ -62,7 +62,7 @@ If `pnpm run docs:install` fails with `externally-managed-environment`, activate
 ### 2) Clone and install
 
 ```bash
-git clone https://github.com/Colorado-Mesh/mesh-client
+git clone https://github.com/charlottemeshtastic/mesh-client
 cd mesh-client
 node scripts/check-environment.mjs # optional but recommended on first clone
 pnpm install
@@ -363,7 +363,7 @@ For a release-quality local Flatpak, use `cargo build --release` with `rns-stack
 **4. Build and install locally**
 
 ```bash
-flatpak-builder --user --install --force-clean build-dir org.coloradomesh.MeshClient.yml
+flatpak-builder --user --install --force-clean build-dir io.github.charlottemeshtastic.MeshHub.yml
 ```
 
 This installs the app into your user Flatpak store.
@@ -371,15 +371,15 @@ This installs the app into your user Flatpak store.
 **5. Run**
 
 ```bash
-flatpak run org.coloradomesh.MeshClient
+flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 **6. Produce a `.flatpak` bundle** (for sharing without a repo)
 
 ```bash
 flatpak build-bundle ~/.local/share/flatpak/repo \
-  org.coloradomesh.MeshClient.flatpak \
-  org.coloradomesh.MeshClient stable
+  io.github.charlottemeshtastic.MeshHub.flatpak \
+  io.github.charlottemeshtastic.MeshHub stable
 ```
 
 Installing a `.flatpak` file creates a one-off remote named like `meshclient-origin` (not `flathub`); that is expected. The ref branch is `stable` (release CI sets this; older artifacts used `master`). Version is shown in MetaInfo / `flatpak info`, not in the remote name.
@@ -387,9 +387,9 @@ Installing a `.flatpak` file creates a one-off remote named like `meshclient-ori
 **Reinstall after downloading a new bundle**
 
 ```bash
-flatpak uninstall --user org.coloradomesh.MeshClient
-flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
-flatpak run org.coloradomesh.MeshClient
+flatpak uninstall --user io.github.charlottemeshtastic.MeshHub
+flatpak install --user ./io.github.charlottemeshtastic.MeshHub-aarch64.flatpak
+flatpak run io.github.charlottemeshtastic.MeshHub
 ```
 
 **Runtime issues** (GPU, VMware guests): see [Flatpak: `vmwgfx: driver missing` (VMware on macOS)](troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
@@ -400,7 +400,7 @@ flatpak run org.coloradomesh.MeshClient
 
 ```bash
 flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
-  manifest org.coloradomesh.MeshClient.yml
+  manifest io.github.charlottemeshtastic.MeshHub.yml
 ```
 
 #### Test
@@ -813,7 +813,7 @@ Electron **44** (this repo’s runtime) requires **macOS 13 Ventura** or later f
 ### Build/run flow
 
 ```bash
-git clone https://github.com/Colorado-Mesh/mesh-client
+git clone https://github.com/charlottemeshtastic/mesh-client
 cd mesh-client
 pnpm install
 pnpm run dev
@@ -864,7 +864,7 @@ If a downloaded app reports "Mesh-client is damaged and can't be opened", see [m
 ### Build/run flow
 
 ```powershell
-git clone https://github.com/Colorado-Mesh/mesh-client
+git clone https://github.com/charlottemeshtastic/mesh-client
 cd mesh-client
 pnpm install
 pnpm run dev
@@ -915,7 +915,7 @@ sudo dnf install python3 nspr nss
 ### Build/run flow
 
 ```bash
-git clone https://github.com/Colorado-Mesh/mesh-client
+git clone https://github.com/charlottemeshtastic/mesh-client
 cd mesh-client
 pnpm install
 pnpm run dev

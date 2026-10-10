@@ -99,7 +99,7 @@ export function buildRustSidecarSection(packages) {
     });
 
   return [
-    `Licenses for all ${packages.length} crates resolved by \`reticulum-sidecar/Cargo.lock\` (\`cargo metadata --locked --all-features\`), gated by \`pnpm run check:rust-licenses\`.`,
+    `Licenses for all ${packages.length} crates resolved by \`ble-sidecar/Cargo.lock\` (\`cargo metadata --locked --all-features\`), gated by \`pnpm run check:rust-licenses\`.`,
     '',
     '| License | Crates |',
     '| --- | --- |',

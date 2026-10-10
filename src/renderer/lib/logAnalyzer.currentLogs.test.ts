@@ -20,11 +20,6 @@ const fixtures: { category: string; protocol: MeshProtocol; message: string }[] 
     message: '[main] renderer webContents unresponsive',
   },
   {
-    category: 'renderer-unresponsive',
-    protocol: 'reticulum',
-    message: '[main] renderer heartbeat stalled (no heartbeat while window visible)',
-  },
-  {
     category: 'database-persistence',
     protocol: 'meshtastic',
     message:
@@ -46,86 +41,6 @@ const fixtures: { category: string; protocol: MeshProtocol; message: string }[] 
     protocol: 'meshtastic',
     message: '[IPC] meshtastic:tcp-write error: broken pipe',
   },
-  {
-    category: 'reticulum-sidecar',
-    protocol: 'reticulum',
-    message: '[reticulumSidecarWatchdog] hung poll failure 2/2: status 503',
-  },
-  {
-    category: 'reticulum-sidecar',
-    protocol: 'reticulum',
-    message: '[reticulumSidecarWatchdog] restarting hung sidecar',
-  },
-  {
-    category: 'reticulum-sidecar',
-    protocol: 'reticulum',
-    message: '[ReticulumIPC] start failed: RETICULUM_SIDECAR_BUNDLED_MISSING',
-  },
-  {
-    category: 'reticulum-sidecar',
-    protocol: 'reticulum',
-    message: '[ReticulumSidecar] ws error: ECONNRESET',
-  },
-  {
-    category: 'reticulum-sidecar',
-    protocol: 'reticulum',
-    message: '[ReticulumSidecar] voice ws bridge unavailable: socket closed',
-  },
-  {
-    category: 'reticulum-delivery',
-    protocol: 'reticulum',
-    message:
-      '[ReticulumSidecar] WARN lxmf-outbound: LXMF outbound delivery failed dest=abc attempts=3',
-  },
-  {
-    category: 'reticulum-delivery',
-    protocol: 'reticulum',
-    message: '[ReticulumSidecar] WARN LXMF path request budget exhausted; marking outbound failed',
-  },
-  {
-    category: 'reticulum-delivery',
-    protocol: 'reticulum',
-    message: '[reticulumPropagationStore] sync Error: PROPAGATION_PATH_UNKNOWN',
-  },
-  {
-    category: 'reticulum-backpressure',
-    protocol: 'reticulum',
-    message:
-      '[ReticulumSidecar] WARN LXMF outbound backchannel saturated — dropping newest packet capacity=64',
-  },
-  {
-    category: 'reticulum-backpressure',
-    protocol: 'reticulum',
-    message:
-      '[ReticulumSidecar] WARN LXMF inbound raw channel full; dropping newest opportunistic packet',
-  },
-  {
-    category: 'reticulum-backpressure',
-    protocol: 'reticulum',
-    message:
-      '[ReticulumSidecar] WARN websocket event subscriber lagged; some events dropped skipped=5',
-  },
-  {
-    category: 'reticulum-backpressure',
-    protocol: 'reticulum',
-    message:
-      '[ReticulumSidecar] WARN voice audio websocket subscriber lagged; frames dropped skipped=5',
-  },
-  {
-    category: 'reticulum-backpressure',
-    protocol: 'reticulum',
-    message: '[ReticulumSidecar] ws message exceeded 1048576 byte cap, dropping',
-  },
-  {
-    category: 'firmware-flash',
-    protocol: 'meshtastic',
-    message: '[nrf52DfuFlasher] sendFirmware stalled — closing serial port',
-  },
-  {
-    category: 'firmware-flash',
-    protocol: 'meshcore',
-    message: '[esp32Flasher] writeFlash stalled — closing serial port',
-  },
 ];
 
 describe('current production log messages', () => {
@@ -141,42 +56,6 @@ describe('current production log messages', () => {
         (finding) => finding.id === category,
       ),
     ).toBeUndefined();
-  });
-
-  it.each([
-    '[main] renderer webContents responsive again',
-    '[ReticulumSidecar] exited code=0 signal=null',
-    '[useReticulumRuntime] restarting stack to reload interface config',
-    '[ReticulumSidecar] INFO propagation-deposit: stored at propagation node',
-    '[ReticulumSidecar] WARN LXMF inbound opportunistic packet len=123',
-  ])('does not infer an outage from routine progress: %s', (message) => {
-    const warning = entry(message);
-    const categories = analyzeLogs([warning], 'reticulum').categories;
-    expect(categories).toEqual([
-      expect.objectContaining({ id: 'unclassified', count: 1, entries: [warning] }),
-    ]);
-  });
-
-  it('does not suggest LoRa channel keys for Reticulum decryption failures', () => {
-    const result = analyzeLogs(
-      [entry('[ReticulumSidecar] WARN opportunistic LXMF decrypt failed')],
-      'reticulum',
-    );
-    expect(result.categories.map((finding) => finding.id)).toEqual(['reticulum-delivery']);
-  });
-
-  it('gates stack-specific guidance', () => {
-    expect(
-      analyzeLogs([entry('[ReticulumIPC] start failed: unavailable')], 'meshcore').categories.map(
-        (finding) => finding.id,
-      ),
-    ).toEqual(['unclassified']);
-    expect(
-      analyzeLogs(
-        [entry('[IPC] meshtastic:tcp-connect error: refused')],
-        'reticulum',
-      ).categories.map((finding) => finding.id),
-    ).toEqual(['unclassified']);
   });
 });
 

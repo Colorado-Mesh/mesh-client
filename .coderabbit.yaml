@@ -17,7 +17,7 @@ reviews:
     - '!**/pnpm-lock.yaml'
     - '!flatpak/generated-sources.json'
     - '!patches/**'
-    - '!reticulum-sidecar/patches/**'
+    - '!ble-sidecar/patches/**'
     - '!**/coverage/**'
     - '!**/dist/**'
     - '!**/dist-electron/**'

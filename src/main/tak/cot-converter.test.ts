@@ -137,16 +137,7 @@ describe('meshNodeToCot per protocol', () => {
     expect(cot).toContain('callsign="Ridge Repeater"');
   });
 
-  it('uses the RN- prefix and long_name callsign for Reticulum nodes', () => {
-    const cot = meshNodeToCot(
-      makeNode({ node_id: 7, short_name: 'Mesa', long_name: 'Mesa RNode' }),
-      'reticulum',
-    );
-    expect(cot).toContain('uid="RN-7"');
-    expect(cot).toContain('callsign="Mesa RNode"');
-  });
-
-  it.each(['meshcore', 'reticulum'] as const)(
+  it.each(['meshcore'] as const)(
     'falls back to node_id for %s nodes without a long_name',
     (protocol) => {
       const cot = meshNodeToCot(

@@ -63,12 +63,12 @@ Local `scripts/release.sh` remains for emergencies when Actions is unavailable. 
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
-3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
+3. Syncs **`io.github.charlottemeshtastic.MeshHub.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
 4. Auto-detects **patch / minor / major** via [`detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (scoped Conventional Commits such as `feat(rrc):` count as **minor**) since the last tag (or accept an explicit bump — see below)
 5. Runs **pre-flight validation** (`check:environment`, release CLI health, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:flatpak-offline-pnpm`**, **`check:i18n`**, lockfile re-dedupe stability (not `pnpm dedupe --check` — that breaks hoisted `node_modules/.bin`), audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
 6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
 7. Bumps `package.json` via `pnpm version`
-8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
+8. Prepends a `<release>` entry to `flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml`
 9. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
 
 ```bash
@@ -97,7 +97,7 @@ If pre-flight fails, fix the issue on `main` and cut again — do not tag manual
 If `package.json` was already bumped but the Flatpak MetaInfo `<release>` entry is wrong/corrupt (or the release commit was blocked by `check:flatpak`):
 
 1. **Do not** re-run `pnpm run release` — that would bump again.
-2. Fix the top `<release version="…">` in `flatpak/org.coloradomesh.MeshClient.metainfo.xml` to match `package.json`’s `version`.
+2. Fix the top `<release version="…">` in `flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml` to match `package.json`’s `version`.
 3. Complete with `pnpm run release --finish` (commit + tag + push; no version bump, no full preflight replay).
 
 The version written into MetaInfo always comes from `package.json` after `pnpm version` (never from `pnpm version` stdout).
@@ -155,10 +155,10 @@ Only if `pnpm run release` cannot be used:
 
 ```bash
 # Edit package.json version, then:
-git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
+git add package.json pnpm-lock.yaml io.github.charlottemeshtastic.MeshHub.yml
 # If electron changed: node scripts/sync-flatpak-electron.mjs
-# Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/org.coloradomesh.MeshClient.metainfo.xml
-git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
+# Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml
+git add flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml
 git commit -m "chore: release vX.Y.Z"
 git tag -a vX.Y.Z -m "Release X.Y.Z"
 git push origin main
@@ -192,7 +192,7 @@ Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars
 
 1. **`schema-release-compare`** — compares this SHA’s schema to the last published release; uploads `READ-ME-FIRST-flatpak.md` (included again beside Flatpak Actions artifacts)
 2. **`reticulum-sidecar`** — builds `mesh-client-reticulum` per arch (x86_64 on `ubuntu-latest`, aarch64 on `ubuntu-24.04-arm`) with full RNS stack features
-3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `org.coloradomesh.MeshClient.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
+3. **`flatpak`** — stamps CI build info, writes schema upgrade notice when bumped, generates offline pnpm sources, builds `io.github.charlottemeshtastic.MeshHub.flatpak` per arch inside the Flathub freedesktop 24.08 container, smoke-installs the unstamped bundle (manual **Build Flatpak (no release)** dispatch also renames downloadable artifacts to `…-run{N}.flatpak`; tag runs keep clean names)
 4. **`publish`** (tag only) — waits for the Electron prepare draft (`ci-wait-github-draft-release.mjs`), then attaches both clean-named `.flatpak` files with `ci-upload-release-assets.mjs` using the shared `release_id` (never creates or publishes a release)
 
 Both tag-triggered workflows must complete before the release is fully populated. Flatpak bundles often arrive a few minutes after the Electron artifacts.
@@ -213,13 +213,13 @@ Both tag-triggered workflows must complete before the release is fully populated
 3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`; a **Repair published release tag** workflow also reattaches the tag if Publish lands on a leftover placeholder.
 4. Confirm artifacts:
 
-| Platform      | Artifacts                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| macOS         | `.dmg` and `.zip` (x64 and arm64)                                                           |
-| Linux         | `.AppImage`, `.deb`, `.rpm` (x64 and arm64)                                                 |
-| Linux Flatpak | `org.coloradomesh.MeshClient-x86_64.flatpak`, `org.coloradomesh.MeshClient-aarch64.flatpak` |
-| Windows x64   | `Mesh-client-Setup-{version}.exe`                                                           |
-| Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)         |
+| Platform      | Artifacts                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------- |
+| macOS         | `.dmg` and `.zip` (x64 and arm64)                                                                               |
+| Linux         | `.AppImage`, `.deb`, `.rpm` (x64 and arm64)                                                                     |
+| Linux Flatpak | `io.github.charlottemeshtastic.MeshHub-x86_64.flatpak`, `io.github.charlottemeshtastic.MeshHub-aarch64.flatpak` |
+| Windows x64   | `Mesh-client-Setup-{version}.exe`                                                                               |
+| Windows arm64 | `Mesh-client-Setup-{version}-arm64.exe` (Windows 11 on ARM — not the x64 installer)                             |
 
 1. Paste or edit release notes (use the block printed by `pnpm run release`, or GitHub’s generated notes)
 2. Optionally smoke-test downloads on one platform per family
@@ -234,7 +234,7 @@ If `latest.yml` lists hyphenated Setup names but the release only has dotted Git
 
 1. Download the existing x64 and arm64 NSIS binaries from the release (dotted names).
 2. Re-upload the **same files** as extra assets named `Mesh-client-Setup-{version}.exe` and `Mesh-client-Setup-{version}-arm64.exe`. Keep the dotted files.
-3. Confirm `https://github.com/Colorado-Mesh/mesh-client/releases/download/v{version}/Mesh-client-Setup-{version}.exe` returns 302, not 404.
+3. Confirm `https://github.com/charlottemeshtastic/mesh-client/releases/download/v{version}/Mesh-client-Setup-{version}.exe` returns 302, not 404.
 
 Example for v5.36.0 (run from a temp dir after `gh auth login`):
 

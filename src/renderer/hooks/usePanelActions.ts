@@ -6,12 +6,9 @@ import type { IdentityId, MeshProtocol } from '../lib/types';
 import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
 import type { useMeshcorePanelActions } from './useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './useMeshtasticPanelActions';
-import type { useReticulumPanelActions } from './useReticulumPanelActions';
 
 export type PanelActions =
-  | ReturnType<typeof useMeshtasticPanelActions>
-  | ReturnType<typeof useMeshcorePanelActions>
-  | ReturnType<typeof useReticulumPanelActions>;
+  ReturnType<typeof useMeshtasticPanelActions> | ReturnType<typeof useMeshcorePanelActions>;
 
 export interface PanelActionsBundle {
   actions: PanelActions;

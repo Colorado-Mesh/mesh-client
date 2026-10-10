@@ -134,11 +134,3 @@ export function useBlocklistIdentityId(protocol: MeshProtocol): string | null {
 export function useBlockedEntries(protocol: MeshProtocol): BlockedContactEntry[] {
   return useBlockStore((s) => s.byProtocol[protocol]?.entries ?? EMPTY_ENTRIES);
 }
-
-/**
- * Identity whose blocklist the Reticulum UI should show, or `null`.
- * Only `useReticulumRuntime` hydrates the Reticulum bucket.
- */
-export function useReticulumBlocklistIdentityId(): string | null {
-  return useBlocklistIdentityId('reticulum');
-}

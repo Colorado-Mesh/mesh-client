@@ -5,10 +5,7 @@ import {
   Code,
   Crosshair,
   FileChartColumn,
-  Gamepad2,
   GitBranch,
-  Globe,
-  Hash,
   House,
   Link2,
   Lock,
@@ -19,7 +16,6 @@ import {
   Settings,
   Shield,
   Siren,
-  Terminal,
   Users,
   Wifi,
   Wrench,
@@ -43,14 +39,6 @@ export function TabIcon({ name }: { name: string }) {
       return <MessageCircle {...p} />;
     case 'Incident':
       return <Siren {...p} />;
-    case 'Games':
-      return <Gamepad2 {...p} />;
-    case 'RRC':
-      return <Hash {...p} />;
-    case 'Remote':
-      return <Terminal {...p} />;
-    case 'NomadNetwork':
-      return <Globe {...p} />;
     case 'Nodes':
     case 'Contacts':
       return <Users {...p} />;
@@ -82,8 +70,6 @@ export function TabIcon({ name }: { name: string }) {
       return <Wifi {...p} />;
     case 'Graph':
       return <GitBranch {...p} />;
-    case 'Topology':
-      return <Network {...p} />;
     case 'Admin':
       return <Shield {...p} />;
     default:
@@ -103,8 +89,6 @@ export function NavSectionIcon({ id }: { id: NavSectionId }) {
       return <Network {...p} />;
     case 'map':
       return <MapPin {...p} />;
-    case 'nomad':
-      return <Globe {...p} />;
     case 'monitor':
       return <FileChartColumn {...p} />;
     case 'device':

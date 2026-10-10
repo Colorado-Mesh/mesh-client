@@ -7,10 +7,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { computeTabMappings } from '@/renderer/lib/appTabMappings';
 import { computeNavSections } from '@/renderer/lib/navSections';
-import {
-  MESHCORE_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
-} from '@/renderer/lib/radio/BaseRadioProvider';
+import { MESHCORE_CAPABILITIES } from '@/renderer/lib/radio/BaseRadioProvider';
 
 import { AppRail } from './AppRail';
 
@@ -18,10 +15,6 @@ const identityT = ((key: string) => key) as TFunction;
 const meshcoreSections = computeNavSections(
   computeTabMappings(identityT, 'meshcore', MESHCORE_CAPABILITIES),
   MESHCORE_CAPABILITIES,
-);
-const reticulumSections = computeNavSections(
-  computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES),
-  RETICULUM_CAPABILITIES,
 );
 
 describe('AppRail', () => {
@@ -60,22 +53,6 @@ describe('AppRail', () => {
     );
     expect(footerTitles).toEqual(['Incident', 'App']);
     expect(scroll?.querySelector('[data-nav-section="incident"]')).toBeNull();
-  });
-
-  it('opens its tooltips beside the rail so they never cover the next item', () => {
-    render(
-      <AppRail
-        header={<button title="Reticulum">RN</button>}
-        sections={meshcoreSections}
-        activeSectionId="chat"
-        badgeCounts={{}}
-        onSectionSelect={vi.fn()}
-      />,
-    );
-    const nav = screen.getByRole('navigation', { name: 'Application panels' });
-    expect(nav).toHaveAttribute('data-tooltip-side', 'right');
-    // The protocol switcher sits inside the rail, so its tooltips open to the right as well.
-    expect(nav).toContainElement(screen.getByRole('button', { name: 'RN' }));
   });
 
   it('marks the active section with aria-current', () => {
@@ -134,21 +111,6 @@ describe('AppRail', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows Reticulum pending file offers on Network in amber', () => {
-    render(
-      <AppRail
-        sections={reticulumSections}
-        activeSectionId="chat"
-        badgeCounts={{ Remote: 3 }}
-        onSectionSelect={vi.fn()}
-      />,
-    );
-    const network = screen.getByRole('button', {
-      name: /^Network, 3 pending inbound file offers$/,
-    });
-    expect(network.querySelector('.bg-orange-800')).not.toBeNull();
-  });
-
   it('caps section badges at 99+', () => {
     render(
       <AppRail
@@ -174,36 +136,6 @@ describe('AppRail', () => {
     const nav = screen.getByRole('navigation', { name: 'Application panels' });
     const scroll = nav.querySelector('[data-rail-scroll]');
     expect(scroll?.firstElementChild).toBe(screen.getByTestId('rail-header'));
-  });
-
-  it('has no axe violations with badges', async () => {
-    const { container } = render(
-      <AppRail
-        sections={reticulumSections}
-        activeSectionId="chat"
-        badgeCounts={{ Chat: 12, Remote: 1, Incident: 1 }}
-        onSectionSelect={vi.fn()}
-      />,
-    );
-    hydrateAxeThemeColors(container);
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
-  it('gives Reticulum a Nomad Network entry between Map and Monitor', () => {
-    render(
-      <AppRail
-        sections={reticulumSections}
-        activeSectionId="chat"
-        badgeCounts={{}}
-        onSectionSelect={vi.fn()}
-      />,
-    );
-    const nav = screen.getByRole('navigation', { name: 'Application panels' });
-    const names = Array.from(nav.querySelectorAll('button')).map((b) => b.getAttribute('title'));
-    expect(names.slice(0, 5)).toEqual(['Chat', 'Network', 'Map', 'Nomad Network', 'Monitor']);
-    // The 72px rail shows "Nomad" instead of a truncated "Nomad…"; the name stays in full.
-    const nomad = screen.getByRole('button', { name: 'Nomad Network' });
-    expect(nomad).toHaveTextContent(/^Nomad$/);
   });
 
   describe('pinned panels', () => {

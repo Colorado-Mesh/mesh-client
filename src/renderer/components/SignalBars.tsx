@@ -34,8 +34,8 @@ interface Props {
 
 const BAR_HEIGHTS = [3, 6, 9, 12];
 const FILLED_COLOR = '#4ade80';
-const UNFILLED_COLOR = '#364156';
-const NO_DATA_COLOR = '#48556a';
+const UNFILLED_COLOR = '#424242';
+const NO_DATA_COLOR = '#5c5c5c';
 
 export default function SignalBars({ rssi, level, noData, isSelf, className }: Props) {
   if (isSelf) {

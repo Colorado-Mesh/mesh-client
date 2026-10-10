@@ -5,11 +5,11 @@ import {
   packSidecarResourcePath,
   resolveStagedSidecarPathForPackContext,
   stagedSidecarPath,
-} from './reticulum-sidecar-staging.mjs';
+} from './ble-sidecar-staging.mjs';
 
 const projectRoot = '/repo/mesh-client';
 
-describe('reticulum-sidecar-staging', () => {
+describe('ble-sidecar-staging', () => {
   it('maps electron-builder Arch enum to staging keys', () => {
     expect(archKeyFromElectronBuilder(1)).toBe('x64');
     expect(archKeyFromElectronBuilder(3)).toBe('arm64');
@@ -18,31 +18,19 @@ describe('reticulum-sidecar-staging', () => {
 
   it('resolves staged sidecar paths per platform and arch', () => {
     expect(stagedSidecarPath(projectRoot, 'win32', 'x64')).toBe(
-      path.join(
-        projectRoot,
-        'resources/reticulum-sidecar/staged/win32-x64/mesh-client-reticulum.exe',
-      ),
+      path.join(projectRoot, 'resources/ble-sidecar/staged/win32-x64/mesh-hub-ble.exe'),
     );
     expect(stagedSidecarPath(projectRoot, 'win32', 'arm64')).toBe(
-      path.join(
-        projectRoot,
-        'resources/reticulum-sidecar/staged/win32-arm64/mesh-client-reticulum.exe',
-      ),
+      path.join(projectRoot, 'resources/ble-sidecar/staged/win32-arm64/mesh-hub-ble.exe'),
     );
     expect(stagedSidecarPath(projectRoot, 'linux', 'arm64')).toBe(
-      path.join(
-        projectRoot,
-        'resources/reticulum-sidecar/staged/linux-arm64/mesh-client-reticulum',
-      ),
+      path.join(projectRoot, 'resources/ble-sidecar/staged/linux-arm64/mesh-hub-ble'),
     );
     expect(stagedSidecarPath(projectRoot, 'darwin', 'arm64')).toBe(
-      path.join(
-        projectRoot,
-        'resources/reticulum-sidecar/staged/darwin-arm64/mesh-client-reticulum',
-      ),
+      path.join(projectRoot, 'resources/ble-sidecar/staged/darwin-arm64/mesh-hub-ble'),
     );
     expect(stagedSidecarPath(projectRoot, 'darwin', 'x64')).toBe(
-      path.join(projectRoot, 'resources/reticulum-sidecar/staged/darwin-x64/mesh-client-reticulum'),
+      path.join(projectRoot, 'resources/ble-sidecar/staged/darwin-x64/mesh-hub-ble'),
     );
   });
 
@@ -51,10 +39,10 @@ describe('reticulum-sidecar-staging', () => {
       stagedSidecarPath(projectRoot, 'win32', 'arm64'),
     );
     expect(packSidecarResourcePath(projectRoot, 'win32')).toBe(
-      path.join(projectRoot, 'resources/reticulum-sidecar/mesh-client-reticulum.exe'),
+      path.join(projectRoot, 'resources/ble-sidecar/mesh-hub-ble.exe'),
     );
     expect(packSidecarResourcePath(projectRoot, 'linux')).toBe(
-      path.join(projectRoot, 'resources/reticulum-sidecar/mesh-client-reticulum'),
+      path.join(projectRoot, 'resources/ble-sidecar/mesh-hub-ble'),
     );
   });
 });

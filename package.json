@@ -1,9 +1,11 @@
 {
-  "name": "mesh-client",
+  "name": "mesh-hub",
+  "productName": "Mesh Hub",
   "version": "6.3.0",
-  "description": "Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.",
+  "description": "Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.",
   "keywords": [
     "meshtastic",
+    "meshcore",
     "mesh-network",
     "bluetooth",
     "mqtt",
@@ -12,12 +14,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Colorado-Mesh/mesh-client"
+    "url": "https://github.com/charlottemeshtastic/mesh-client"
   },
   "license": "GPL-3.0-or-later",
   "author": {
-    "name": "Colorado Mesh",
-    "email": "nv0n@coloradomesh.org"
+    "name": "Mesh Hub contributors",
+    "email": "charlottemeshtastic@users.noreply.github.com"
   },
   "contributors": [
     "Joey Stanford https://github.com/rinchen",
@@ -43,8 +45,6 @@
     "act:pr": "node scripts/run-act.mjs pr",
     "act:pr:native": "node scripts/run-act.mjs pr --native",
     "act:pull-images": "node scripts/run-act.mjs pull-images",
-    "act:reticulum": "node scripts/run-act.mjs reticulum-sidecar",
-    "act:reticulum:native": "node scripts/run-act.mjs reticulum-sidecar --native",
     "act:tests": "node scripts/run-act.mjs tests",
     "act:tests:native": "node scripts/run-act.mjs tests --native",
     "build": "pnpm run build:main:prod && pnpm run build:preload && pnpm run build:renderer",
@@ -72,12 +72,9 @@
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
     "check:pinned-majors": "node scripts/check-pinned-majors.mjs",
-    "check:pn-hosting-policy": "node scripts/check-pn-hosting-policy.mjs",
     "check:pr": "node scripts/check-pr.mjs",
     "check:protocol-string-gates": "node scripts/check-protocol-string-gates.mjs",
-    "check:reticulum-decommissioned-hubs": "node scripts/check-reticulum-decommissioned-hubs.mjs",
-    "check:reticulum-interface-modes": "node scripts/check-reticulum-interface-modes.mjs",
-    "check:reticulum-sidecar": "bash scripts/check-reticulum-sidecar.sh",
+    "check:ble-sidecar": "bash scripts/check-ble-sidecar.sh",
     "check:rust-licenses": "node scripts/check-rust-licenses.mjs",
     "check:service-announcements": "node scripts/check-service-announcements.mjs",
     "check:silent-catches": "node scripts/check-silent-catches.mjs",
@@ -113,18 +110,14 @@
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
-    "reticulum:config:check": "node scripts/reticulum-config-check.mjs",
-    "reticulum:rsnomad:clippy": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad.sh",
-    "reticulum:rsnomad:fmt:check": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad-fmt.sh",
-    "reticulum:sidecar:build": "bash scripts/ensure-rsReticulum-patches.sh && cd reticulum-sidecar && cargo build --features rns-stack,rns-ble,rns-rnode-tcp",
-    "reticulum:sidecar:clean": "cd reticulum-sidecar && cargo clean",
-    "reticulum:sidecar:clippy": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo clippy --all-targets -- -D warnings",
-    "reticulum:sidecar:clippy:full": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo clippy --all-targets --features rns-stack,rns-ble,rns-rnode-tcp -- -D warnings",
-    "reticulum:sidecar:coverage": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo llvm-cov --features rns-stack,rns-ble,rns-rnode-tcp --html --ignore-filename-regex 'rsReticulum|rsLXMF|rsNomad'",
-    "reticulum:sidecar:dev": "bash scripts/ensure-rsReticulum-patches.sh && cd reticulum-sidecar && cargo run --features rns-stack,rns-ble,rns-rnode-tcp -- --headless --port 19437",
-    "reticulum:sidecar:fmt": "cd reticulum-sidecar && cargo fmt",
-    "reticulum:sidecar:fmt:check": "cd reticulum-sidecar && cargo fmt --check",
-    "reticulum:sidecar:test": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo test --features rns-stack,rns-ble,rns-rnode-tcp",
+    "ble:sidecar:build": "cd ble-sidecar && cargo build",
+    "ble:sidecar:clean": "cd ble-sidecar && cargo clean",
+    "ble:sidecar:clippy": "cd ble-sidecar && cargo clippy --all-targets -- -D warnings",
+    "ble:sidecar:coverage": "cd ble-sidecar && cargo llvm-cov --html",
+    "ble:sidecar:dev": "cd ble-sidecar && cargo run -- --headless --port 19437",
+    "ble:sidecar:fmt": "cd ble-sidecar && cargo fmt",
+    "ble:sidecar:fmt:check": "cd ble-sidecar && cargo fmt --check",
+    "ble:sidecar:test": "cd ble-sidecar && cargo test",
     "setup:actionlint": "node scripts/install-actionlint.mjs",
     "setup:build-deps": "node scripts/setup-build-deps.mjs",
     "setup:dialout": "node scripts/setup-dialout.mjs",
@@ -243,5 +236,6 @@
   "engines": {
     "node": ">=22.15.0",
     "pnpm": ">=12.0.0"
-  }
+  },
+  "homepage": "https://github.com/charlottemeshtastic/mesh-client"
 }

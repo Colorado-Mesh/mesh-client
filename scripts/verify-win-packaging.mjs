@@ -10,7 +10,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { assertBundledBleSidecarInBundle } from './assert-bundled-ble-sidecar.mjs';
 import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import { collectWinSetupInstallers } from './win-setup-installer-names.mjs';
 
@@ -66,13 +66,13 @@ function main() {
 
   assertExe('x64 unpacked app', path.join(releaseDir, 'win-unpacked', APP_EXE));
   assertExe('arm64 unpacked app', path.join(releaseDir, 'win-arm64-unpacked', APP_EXE));
-  assertBundledReticulumSidecarInBundle({
+  assertBundledBleSidecarInBundle({
     label: 'x64 bundled Reticulum sidecar',
     platform: 'win32',
     bundleRoot: path.join(releaseDir, 'win-unpacked'),
     fail,
   });
-  assertBundledReticulumSidecarInBundle({
+  assertBundledBleSidecarInBundle({
     label: 'arm64 bundled Reticulum sidecar',
     platform: 'win32',
     bundleRoot: path.join(releaseDir, 'win-arm64-unpacked'),

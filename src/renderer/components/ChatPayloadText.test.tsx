@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { installDevElectronApiStubIfNeeded } from '@/renderer/lib/devElectronApiStub';
-import { subscribeOpenSettingRequests } from '@/renderer/lib/openSettingRequest';
 
 import { ChatPayloadText } from './ChatPayloadText';
 
@@ -267,51 +266,6 @@ describe('ChatPayloadText', () => {
           text="Sig @[alice]: heard you at SNR -7.5 | last RSSI -92 dBm, noise -105 dBm"
           query=""
         />,
-      );
-      hydrateAxeThemeColors(document.documentElement);
-      expect(await axe(container)).toHaveNoViolations();
-    });
-  });
-
-  describe('rncp control messages', () => {
-    const REQUEST =
-      'Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers.\n\nmesh-client:request-rncp-receive:v1';
-    const HASH = '613023503ca443dfa4099c09dc6f973d';
-    const SHARE = `File receiving is enabled. Here is my rncp receive destination.\n${HASH}\n\nmesh-client:rncp-receive-dest:v1:${HASH}`;
-
-    it('hides the request sentinel and shows a chip that opens Remote settings', () => {
-      const listener = vi.fn();
-      const unsubscribe = subscribeOpenSettingRequests(listener);
-      render(
-        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
-      );
-      expect(screen.getByText('File-receive request')).toBeInTheDocument();
-      expect(screen.getByText(/Please enable file receiving/)).toBeInTheDocument();
-      expect(screen.queryByText(/mesh-client:request-rncp-receive/)).toBeNull();
-      fireEvent.click(screen.getByRole('button', { name: 'Open Remote inbound file settings' }));
-      expect(listener).toHaveBeenCalledWith({ slot: 'Remote', id: 'remote.inbound.mode' });
-      unsubscribe();
-    });
-
-    it('keeps the plain hash line on a destination share', () => {
-      render(<ChatPayloadText text={SHARE} query="" loadLinkPreviews={false} rncpControlEnabled />);
-      expect(screen.getByText('Shared file-receive destination')).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(HASH))).toBeInTheDocument();
-      expect(screen.queryByText(/mesh-client:rncp-receive-dest/)).toBeNull();
-    });
-
-    it('shows the message unchanged without a chip when rncp is unsupported', () => {
-      render(<ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />);
-      expect(screen.queryByText('File-receive request')).toBeNull();
-      expect(
-        screen.queryByRole('button', { name: 'Open Remote inbound file settings' }),
-      ).toBeNull();
-      expect(screen.getByText(/mesh-client:request-rncp-receive:v1/)).toBeInTheDocument();
-    });
-
-    it('has no axe violations', async () => {
-      const { container } = render(
-        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
       );
       hydrateAxeThemeColors(document.documentElement);
       expect(await axe(container)).toHaveNoViolations();

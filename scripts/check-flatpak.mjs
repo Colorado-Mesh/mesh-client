@@ -15,14 +15,14 @@ import { FLATPAK_BUILD_INFO_EXPORT_SNIPPET } from './write-flatpak-ci-build-info
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainfo.xml');
-const DESKTOP = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.desktop');
-const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
+const METAINFO = path.join(ROOT, 'flatpak', 'io.github.charlottemeshtastic.MeshHub.metainfo.xml');
+const DESKTOP = path.join(ROOT, 'flatpak', 'io.github.charlottemeshtastic.MeshHub.desktop');
+const MANIFEST = path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml');
 const FLATPAK_WORKFLOW = path.join(ROOT, '.github/workflows/flatpak.yaml');
 const CI_WORKFLOW = path.join(ROOT, '.github/workflows/ci.yaml');
 const WRAPPER = path.join(ROOT, 'flatpak', 'mesh-client-wrapper.sh');
 const PKG = path.join(ROOT, 'package.json');
-const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
+const EXPECTED_APP_ID = 'io.github.charlottemeshtastic.MeshHub';
 const EXPECTED_MAIN = 'dist-electron/main/index.js';
 const EXPECTED_ELECTRON = '/app/lib/mesh-client/electron/electron';
 const SEMVER_PATTERN = /(\d+\.\d+\.\d+)/;
@@ -108,19 +108,25 @@ function checkMetainfoAppId() {
 function checkManifestAppId() {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) {
-    violations.push({ file: 'org.coloradomesh.MeshClient.yml', message: 'manifest file missing' });
+    violations.push({
+      file: 'io.github.charlottemeshtastic.MeshHub.yml',
+      message: 'manifest file missing',
+    });
     return violations;
   }
 
   const yaml = fs.readFileSync(MANIFEST, 'utf8');
   const m = yaml.match(/^app-id:\s*(.+)$/m);
   if (!m) {
-    violations.push({ file: 'org.coloradomesh.MeshClient.yml', message: 'missing app-id field' });
+    violations.push({
+      file: 'io.github.charlottemeshtastic.MeshHub.yml',
+      message: 'missing app-id field',
+    });
     return violations;
   }
   if (m[1].trim() !== EXPECTED_APP_ID) {
     violations.push({
-      file: 'org.coloradomesh.MeshClient.yml',
+      file: 'io.github.charlottemeshtastic.MeshHub.yml',
       message: `app-id is "${m[1].trim()}", expected "${EXPECTED_APP_ID}"`,
     });
   }
@@ -328,23 +334,19 @@ function checkManifestReticulumSidecarPayload() {
     violations.push({
       file: rel,
       message:
-        'manifest must copy resources/ into /app/lib/mesh-client/ (Reticulum sidecar under resources/reticulum-sidecar/)',
+        'manifest must copy resources/ into /app/lib/mesh-client/ (Reticulum sidecar under resources/ble-sidecar/)',
     });
   }
 
   // Flatpak must force +x after copy — GitHub artifact downloads strip execute bits (#1044).
   if (
-    !yaml.includes(
-      'chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
-    ) &&
-    !yaml.includes(
-      'install -Dm755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
-    )
+    !yaml.includes('chmod 755 /app/lib/mesh-client/resources/ble-sidecar/mesh-hub-ble') &&
+    !yaml.includes('install -Dm755 /app/lib/mesh-client/resources/ble-sidecar/mesh-hub-ble')
   ) {
     violations.push({
       file: rel,
       message:
-        'manifest must chmod 755 (or install -Dm755) the Reticulum sidecar under /app/lib/mesh-client/resources/reticulum-sidecar/',
+        'manifest must chmod 755 (or install -Dm755) the Reticulum sidecar under /app/lib/mesh-client/resources/ble-sidecar/',
     });
   }
 
@@ -684,11 +686,11 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
     return violations;
   }
 
-  const sidecarJob = jobs['reticulum-sidecar'];
+  const sidecarJob = jobs['ble-sidecar'];
   if (!sidecarJob || typeof sidecarJob !== 'object' || Array.isArray(sidecarJob)) {
     violations.push({
       file: fileLabel,
-      message: 'flatpak.yaml must define a reticulum-sidecar job',
+      message: 'flatpak.yaml must define a ble-sidecar job',
     });
   } else {
     const steps = Array.isArray(sidecarJob.steps) ? sidecarJob.steps : [];
@@ -697,7 +699,7 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
     for (const step of steps) {
       if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
       const run = typeof step.run === 'string' ? step.run : '';
-      if (/tar\s+-cf\b/.test(run) && /mesh-client-reticulum/.test(run)) {
+      if (/tar\s+-cf\b/.test(run) && /mesh-hub-ble/.test(run)) {
         sawTarCreate = true;
       }
       const withBlock =
@@ -707,7 +709,7 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
         step.uses.includes('upload-artifact') &&
         withBlock &&
         typeof withBlock.path === 'string' &&
-        withBlock.path.includes('mesh-client-reticulum') &&
+        withBlock.path.includes('mesh-hub-ble') &&
         withBlock.path.endsWith('.tar')
       ) {
         sawTarUpload = true;
@@ -717,13 +719,13 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
       violations.push({
         file: fileLabel,
         message:
-          'reticulum-sidecar job must tar the sidecar binary so execute bits survive artifact upload',
+          'ble-sidecar job must tar the sidecar binary so execute bits survive artifact upload',
       });
     }
     if (!sawTarUpload) {
       violations.push({
         file: fileLabel,
-        message: 'reticulum-sidecar job must upload a .tar artifact (not the raw binary)',
+        message: 'ble-sidecar job must upload a .tar artifact (not the raw binary)',
       });
     }
   }
@@ -739,28 +741,24 @@ export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabe
   for (const step of steps) {
     if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
     const run = typeof step.run === 'string' ? step.run : '';
-    if (/tar\s+-xf\b/.test(run) && /mesh-client-reticulum/.test(run)) {
+    if (/tar\s+-xf\b/.test(run) && /mesh-hub-ble/.test(run)) {
       sawTarExtract = true;
     }
-    if (
-      /test\s+-x\s+\/app\/lib\/mesh-client\/resources\/reticulum-sidecar\/mesh-client-reticulum/.test(
-        run,
-      )
-    ) {
+    if (/test\s+-x\s+\/app\/lib\/mesh-client\/resources\/ble-sidecar\/mesh-hub-ble/.test(run)) {
       sawSmokeExecutable = true;
     }
   }
   if (!sawTarExtract) {
     violations.push({
       file: fileLabel,
-      message: 'flatpak job must tar -xf the sidecar artifact into resources/reticulum-sidecar/',
+      message: 'flatpak job must tar -xf the sidecar artifact into resources/ble-sidecar/',
     });
   }
   if (!sawSmokeExecutable) {
     violations.push({
       file: fileLabel,
       message:
-        'flatpak smoke must test -x the bundled sidecar (not merely test -f) under /app/lib/mesh-client/resources/reticulum-sidecar/',
+        'flatpak smoke must test -x the bundled sidecar (not merely test -f) under /app/lib/mesh-client/resources/ble-sidecar/',
     });
   }
   return violations;

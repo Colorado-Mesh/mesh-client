@@ -172,17 +172,13 @@ function NodeBlockButton({
   const { t } = useTranslation();
   const identityId = protocol && isLoraBlocklistProtocol(protocol) ? LORA_BLOCKLIST_SCOPE_ID : null;
   const blockedHash =
-    protocol === 'meshcore' && publicKeyHex
-      ? publicKeyHex
-      : protocol && protocol !== 'reticulum'
-        ? String(node.node_id)
-        : '';
+    protocol === 'meshcore' && publicKeyHex ? publicKeyHex : protocol ? String(node.node_id) : '';
   const isBlocked = useBlockStore((s) =>
     blockedHash && protocol ? s.isBlocked(blockedHash, protocol) : false,
   );
   const block = useBlockStore((s) => s.block);
   const unblock = useBlockStore((s) => s.unblock);
-  if (!protocol || protocol === 'reticulum' || !identityId || !blockedHash) return null;
+  if (!protocol || !identityId || !blockedHash) return null;
   return (
     <button
       type="button"

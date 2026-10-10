@@ -4,7 +4,6 @@ import {
   REGISTERED_MESH_PROTOCOLS,
 } from '@/shared/meshProtocol';
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
-import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '@/shared/tak-types';
 
 export type { MeshProtocol };
@@ -97,18 +96,6 @@ export interface RfDiagnosticRow {
   causeI18n?: DiagnosticTextI18n;
   /** Foreign transmitter when this row is cross-protocol / Foreign LoRa (not `nodeId`). */
   foreignSenderId?: number;
-  /** Reticulum interface audit: target row in Connection panel. */
-  reticulumInterfaceId?: string;
-  /** Reticulum in-app repair action key. */
-  reticulumRepairKind?:
-    | 'repair_config'
-    | 'disable'
-    | 'apply_preset'
-    | 'edit'
-    | 'restart_stack'
-    | 'add_auto'
-    | 'disable_share_instance'
-    | 'open_interfaces';
 }
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;
@@ -182,8 +169,6 @@ export interface MeshNode {
   air_util_tx?: number;
   altitude?: number;
   favorited?: boolean;
-  /** Reticulum LXMF destination hash (canonical address for send). */
-  reticulum_destination_hash?: string;
   on_radio?: boolean;
   // MeshCore routing info
   hops?: number;
@@ -376,28 +361,9 @@ export interface CachedNode {
 
 export interface ChatMessage {
   id?: number;
-  /**
-   * Zustand `messageStore` key when `id` is not a numeric Meshtastic/MeshCore packet id
-   * (e.g. Reticulum `reticulum-pending-*` or LXMF message hash).
-   */
+  /** Zustand `messageStore` key when `id` is not a numeric Meshtastic/MeshCore packet id. */
   storeId?: string;
   sender_id: number;
-  /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
-  reticulum_sender_hash?: string;
-  /** Stable LXMF message hash for ratspeak.chat.v2 threaded replies. */
-  reticulum_message_hash?: string;
-  /** Reticulum reply target message hash (hex). */
-  reticulum_reply_to_hash?: string;
-  /** Local path when a Reticulum attachment was saved to disk. */
-  reticulumAttachmentPath?: string;
-  /** Kind of attachment saved at reticulumAttachmentPath. */
-  reticulumAttachmentKind?: 'image' | 'audio';
-  /** LXMF FIELD_AUDIO mode (16 = AM_OPUS_OGG). */
-  reticulumAudioMode?: number;
-  /** Estimated audio duration in seconds. */
-  reticulumAudioDurationSec?: number;
-  /** Reticulum LXMF delivery method for outbound status badge (direct / propagated / opportunistic / paper). */
-  reticulumDeliveryMethod?: ReticulumDeliveryMethod;
   sender_name: string;
   payload: string;
   channel: number;
@@ -417,7 +383,7 @@ export interface ChatMessage {
   // Which transport(s) delivered this incoming message
   /**
    * Which transport(s) delivered this message.
-   * Reticulum multi-egress may use `+`-joined atoms (e.g. `rf+tcp`); Meshtastic hybrid RF+MQTT uses `both`.
+   * Meshtastic hybrid RF+MQTT uses `both`.
    */
   receivedVia?:
     | 'rf'

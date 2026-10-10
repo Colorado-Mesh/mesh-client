@@ -15,13 +15,11 @@ export type ConnectionActionsByProtocol = Record<MeshProtocol, ProtocolConnectio
 export function useAllProtocolConnectionActions(): ConnectionActionsByProtocol {
   const meshtasticActions = useProtocolConnectionActions('meshtastic');
   const meshcoreActions = useProtocolConnectionActions('meshcore');
-  const reticulumActions = useProtocolConnectionActions('reticulum');
   return useMemo(
     () => ({
       meshtastic: meshtasticActions,
       meshcore: meshcoreActions,
-      reticulum: reticulumActions,
     }),
-    [meshtasticActions, meshcoreActions, reticulumActions],
+    [meshtasticActions, meshcoreActions],
   );
 }

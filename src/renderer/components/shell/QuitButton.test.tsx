@@ -35,7 +35,7 @@ describe('QuitButton', () => {
     setConnection('id-meshcore-test', { status: 'configured' });
     render(<QuitButton />);
     await userEvent.click(screen.getByRole('button', { name: 'Disconnect & Quit' }));
-    const dialog = await screen.findByRole('alertdialog', { name: 'Quit Mesh Client?' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Quit Mesh Hub?' });
     expect(dialog).toHaveTextContent('Every radio and MQTT link will disconnect.');
     expect(window.electronAPI.quitApp).not.toHaveBeenCalled();
 
@@ -59,7 +59,7 @@ describe('QuitButton', () => {
     ] as never);
     render(<QuitButton />);
     await userEvent.click(screen.getByRole('button', { name: 'Quit' }));
-    const dialog = await screen.findByRole('alertdialog', { name: 'Quit Mesh Client?' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Quit Mesh Hub?' });
     expect(dialog).toHaveTextContent('Open MAYDAY or URGENT incidents: 1.');
     expect(dialog).toHaveTextContent('Emergency messages still waiting to send: 1.');
 

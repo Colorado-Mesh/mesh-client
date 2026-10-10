@@ -32,7 +32,7 @@ export function ensureMapStyles(): void {
       outline: none;
     }
     .leaflet-locate-control a:hover {
-      background: #f2f5f9;
+      background: #f2f2f2;
       color: #000000;
     }
     .leaflet-locate-control a.locating {
@@ -67,9 +67,9 @@ export function ensureLoRaMapPanelStyles(): void {
       opacity: 0.75 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
-      background: #19212d;
-      border: 1px solid #364156;
-      color: #e3e8f0;
+      background: #292929;
+      border: 1px solid #424242;
+      color: #e0e0e0;
       border-radius: 0.75rem;
       padding: 0;
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
@@ -86,13 +86,13 @@ export function ensureLoRaMapPanelStyles(): void {
       overflow-y: auto;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-tip {
-      background: #19212d;
+      background: #292929;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button {
-      color: #93a0b7 !important;
+      color: #a3a3a3 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
-      color: #e3e8f0 !important;
+      color: #e0e0e0 !important;
     }
   `;
   document.head.appendChild(style);

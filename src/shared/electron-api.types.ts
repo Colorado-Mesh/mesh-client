@@ -5,69 +5,10 @@ import type {
   EnvironmentTelemetryRow,
   EnvironmentTelemetrySource,
 } from './environmentTelemetry';
-import type { FirmwareBackupSaveResult } from './firmwareBackup';
-import type {
-  GamesActionRequest,
-  GamesActionResult,
-  GamesAppManifest,
-  GamesListSessionsResponse,
-  GamesOkResponse,
-  GamesSessionDetailResponse,
-  GamesStatusResponse,
-} from './games-types';
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
-import type {
-  PathCapability,
-  RemoteAddressBookRow,
-  RemoteFileDialogResult,
-  RemoteIdentityResponse,
-  RemoteInboundPolicyRow,
-  RemoteOkResponse,
-  RemotePathCapabilityRequest,
-  RncpFetchRequest,
-  RncpListenerRequest,
-  RncpListenerStatus,
-  RncpSendRequest,
-  RncpSendResponse,
-  RncpStatusResponse,
-  RncpTransferIdRequest,
-  RnshConnectRequest,
-  RnshConnectResponse,
-  RnshDisconnectRequest,
-  RnshInputRequest,
-  RnshResizeRequest,
-  RnshStatusResponse,
-  UpsertRemoteAddressRequest,
-  UpsertRemoteInboundPolicyRequest,
-} from './remote-types';
-import type {
-  ReticulumConfigValidateResult,
-  ReticulumSidecarEvent,
-  ReticulumSidecarStartOptions,
-  ReticulumSidecarStatus,
-  SystemReticulumInstance,
-} from './reticulum-types';
-import type {
-  VoiceMemoAudioRequest,
-  VoiceMemoOkResponse,
-  VoiceMemoSessionRequest,
-  VoiceMemoStartResponse,
-} from './reticulum-voice-memo-types';
-import type {
-  RrcConnectRequest,
-  RrcDisconnectRequest,
-  RrcHubInfo,
-  RrcJoinRequest,
-  RrcMultiSessionSnapshot,
-  RrcPartRequest,
-  RrcSendRequest,
-  RrcSessionSnapshot,
-  RrcSetNicknameRequest,
-  RrcUpsertHubRequest,
-} from './rrc-types';
 import type { ServiceAnnouncementFetchResult } from './serviceAnnouncementFeed';
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
@@ -85,45 +26,11 @@ import type {
   TakStyleSettings,
 } from './tak-types';
 import type { TranslationAPI } from './translation-types';
-import type {
-  VoiceAudioRequest,
-  VoiceCallRequest,
-  VoiceMuteRequest,
-  VoiceOkResponse,
-  VoiceStatusResponse,
-} from './voice-types';
 
 export type { MeshProtocol, SupportBundleMode };
 
 export type { MeshNode, MQTTSettings, MQTTStatus };
 
-export interface IdentityVaultStatus {
-  configured: boolean;
-  unlocked: boolean;
-}
-
-export interface IdentityVaultActionResult {
-  ok: boolean;
-  error?: string;
-}
-
-export interface ReticulumIdentityImportDialogResult {
-  path: string | null;
-  contentBase64: string | null;
-  byteLength: number | null;
-  error: 'invalid_private_key_length' | 'read_failed' | null;
-}
-
-export interface ReticulumIdentityBackupImportDialogResult {
-  path: string | null;
-  contentText: string | null;
-  error: 'read_failed' | 'too_large' | null;
-}
-
-export interface ReticulumIdentityExportSaveResult {
-  path: string | null;
-  error: 'write_failed' | 'invalid_opts' | 'content_too_large' | null;
-}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/**
@@ -275,26 +182,6 @@ export interface ChatExportMessage {
   to?: number;
 }
 
-/** IPC request for `chat:readReticulumAttachmentAsDataUrl`. */
-export interface ReadReticulumAttachmentAsDataUrlOpts {
-  filePath: string;
-  mimeType?: string;
-}
-
-/** IPC response for `chat:readReticulumAttachmentAsDataUrl`. */
-export interface ReadReticulumAttachmentAsDataUrlResult {
-  dataUrl: string | null;
-}
-
-/**
- * IPC response for `chat:readReticulumAttachmentBytes`.
- * Used to read a jailed OggS audio file (≤256 KiB).
- */
-export interface ReadReticulumAttachmentBytesResult {
-  /** Base64-encoded file contents, or null on failure / out-of-jail / rate-limit. */
-  dataBase64: string | null;
-}
-
 export type OutboxStatus = 'queued' | 'sending' | 'blocked' | 'failed';
 
 export interface OutboxEntry {
@@ -343,9 +230,9 @@ export interface RendererLivenessSnapshot {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
-export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore';
 
-export type BleScanOwner = 'gatt' | 'reticulum';
+export type BleScanOwner = 'gatt';
 
 export type GattBleStartScanResult =
   | { ok: true }
@@ -426,59 +313,6 @@ export interface ElectronAPI {
     pruneNodesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
-    pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
-    listRrcMessages: (
-      hubHash: string,
-      room: string,
-      limit?: number,
-    ) => Promise<
-      {
-        message_id: string;
-        hub_hash: string;
-        room: string;
-        sender_hash: string | null;
-        nickname: string | null;
-        kind: string;
-        body: string;
-        timestamp: number;
-      }[]
-    >;
-    insertRrcMessage: (message: {
-      message_id: string;
-      hub_hash: string;
-      room: string;
-      sender_hash?: string | null;
-      nickname?: string | null;
-      kind: string;
-      body: string;
-      timestamp: number;
-    }) => Promise<{ changes: number }>;
-    /**
-     * Nick cache for one hub. Survives transcript clears / retention pruning, so
-     * the RRC nicklist can still name a peer that only ever spoke once.
-     */
-    listRrcNicks: (
-      hubHash: string,
-      limit?: number,
-    ) => Promise<
-      {
-        identity_hash: string;
-        nickname: string;
-        last_seen: number;
-      }[]
-    >;
-    upsertRrcNick: (nick: {
-      hub_hash: string;
-      identity_hash: string;
-      nickname: string;
-      last_seen: number;
-    }) => Promise<{ changes: number }>;
-    deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
-    pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
-    pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;
-    pruneReticulumDestinationsByCount: (maxCount: number) => Promise<DbPruneResult>;
-    deleteReticulumDestinationsByAge: (days: number) => Promise<DbPruneResult>;
-    pruneReticulumIdentityActivityByAge: (days: number) => Promise<DbPruneResult>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     /** With `channelKey`, also removes that channel's history recorded in other slots. */
@@ -523,61 +357,6 @@ export interface ElectronAPI {
       senderId: number,
       senderName: string,
     ) => Promise<void>;
-    getReticulumMessages: (identityId: string, limit?: number) => Promise<unknown[]>;
-    searchReticulumMessages: (
-      identityId: string,
-      query: string,
-      limit?: number,
-    ) => Promise<unknown[]>;
-    deleteReticulumMessage: (
-      identityId: string,
-      messageHash: string,
-    ) => Promise<{ changes: number }>;
-    clearReticulumMessages: (identityId: string) => Promise<{ changes: number }>;
-    /** Clears last_heard on LXMF contact destinations; preserves display_name / favorite / icon peer meta. */
-    clearReticulumContactDestinations: () => Promise<{ changes: number }>;
-    saveReticulumMessage: (message: {
-      identity_id: string;
-      sender_id: string;
-      sender_name?: string | null;
-      payload: string;
-      timestamp: number;
-      to_hash?: string | null;
-      reply_to_hash?: string | null;
-      message_hash?: string | null;
-      /** Exact prior row to replace (optimistic pending or failed hash) in the same transaction. */
-      replaces_message_hash?: string | null;
-      received_via?: string | null;
-      delivery_status?: string | null;
-      delivery_method?: string | null;
-      delivery_attempts?: number | null;
-      next_delivery_attempt_at?: number | null;
-      attachment_path?: string | null;
-      audio_mode?: number | null;
-      audio_duration_sec?: number | null;
-    }) => Promise<void>;
-    markStaleReticulumOutbound: (
-      identityId: string,
-      staleAfterMs?: number,
-    ) => Promise<{ changes?: number }>;
-    vacuumReticulumTables: () => Promise<{ ok?: boolean }>;
-    getReticulumDestinations: () => Promise<unknown[]>;
-    deleteReticulumDestination: (destinationHash: string) => Promise<{ changes: number }>;
-    upsertReticulumDestination: (row: {
-      destination_hash: string;
-      display_name?: string | null;
-      last_heard?: number | null;
-      favorited?: boolean | number | null;
-      /** Explicit saved contact (Contacts tab). Omitted patches must not clear. */
-      is_contact?: boolean | number | null;
-      icon_name?: string | null;
-      icon_color?: string | null;
-    }) => Promise<void>;
-    setReticulumDestinationVerified: (opts: {
-      destination_hash: string;
-      verified: boolean;
-      identity_hash?: string;
-    }) => Promise<{ changes: number }>;
     getBlockedContacts: (
       protocol: string,
       identityId: string,
@@ -600,48 +379,6 @@ export interface ElectronAPI {
       identityId: string,
       hashes: string[],
     ) => Promise<{ imported: number; skipped: number }>;
-    getReticulumIdentityActivity: (destinationHash: string) => Promise<
-      {
-        destination_hash: string;
-        aspect: string;
-        identity_hash?: string | null;
-        last_seen: number;
-        hops?: number | null;
-      }[]
-    >;
-    getReticulumIdentityActivityByIdentity: (identityHash: string) => Promise<
-      {
-        destination_hash: string;
-        aspect: string;
-        identity_hash?: string | null;
-        last_seen: number;
-        hops?: number | null;
-      }[]
-    >;
-    upsertReticulumIdentityActivity: (row: {
-      destination_hash: string;
-      aspect: string;
-      identity_hash?: string | null;
-      last_seen: number;
-      hops?: number | null;
-    }) => Promise<{ changes: number }>;
-    upsertReticulumIdentityActivityBatch: (
-      rows: {
-        destination_hash: string;
-        aspect: string;
-        identity_hash?: string | null;
-        last_seen: number;
-        hops?: number | null;
-      }[],
-    ) => Promise<{ changes: number }>;
-    listReticulumRemoteAddresses: () => Promise<RemoteAddressBookRow[]>;
-    upsertReticulumRemoteAddress: (row: UpsertRemoteAddressRequest) => Promise<{ changes: number }>;
-    deleteReticulumRemoteAddress: (id: string) => Promise<{ changes: number }>;
-    listReticulumInboundPolicy: () => Promise<RemoteInboundPolicyRow[]>;
-    upsertReticulumInboundPolicy: (
-      row: UpsertRemoteInboundPolicyRequest,
-    ) => Promise<{ changes: number }>;
-    deleteReticulumInboundPolicy: (identityHash: string) => Promise<{ changes: number }>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -1013,8 +750,6 @@ export interface ElectronAPI {
     getState: () => Promise<BleCoexistenceState>;
     acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceAcquireScanResult>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
-    /** Disconnect LoRa GATT sessions and hold scan mutex for Reticulum BLE RNode connect. */
-    suspendForReticulumBleConnect: () => Promise<BleCoexistenceState>;
   };
 
   // ─── GATT BLE (sidecar proxy) ────────────────────────────────────────────────
@@ -1176,11 +911,6 @@ export interface ElectronAPI {
       filename: string,
       data: Uint8Array,
     ) => Promise<{ success: boolean; path?: string }>;
-  };
-
-  // ─── RNode flasher (ESP32 firmware backup save) ──────────────────────────────
-  flasher: {
-    saveFirmwareBackup: (filename: string, data: Uint8Array) => Promise<FirmwareBackupSaveResult>;
   };
 
   // ─── Connection status ───────────────────────────────────────────────────────
@@ -1347,19 +1077,6 @@ export interface ElectronAPI {
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
-    saveReticulumAttachment: (opts: {
-      fileName: string;
-      mimeType?: string;
-      dataBase64: string;
-      /** When false, save under app userData without a dialog. */
-      promptSave?: boolean;
-    }) => Promise<{ success: boolean; path?: string }>;
-    showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
-    readReticulumAttachmentAsDataUrl: (
-      opts: ReadReticulumAttachmentAsDataUrlOpts,
-    ) => Promise<ReadReticulumAttachmentAsDataUrlResult>;
-    /** Read a jailed OggS audio attachment (≤256 KiB) as base64. */
-    readReticulumAttachmentBytes: (filePath: string) => Promise<ReadReticulumAttachmentBytesResult>;
     linkPreview: {
       fetch: (url: string) => Promise<{
         title: string;
@@ -1426,163 +1143,6 @@ export interface ElectronAPI {
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */
     setStyleSettings: (settings: TakStyleSettings) => Promise<TakStyleSettings>;
-  };
-
-  // ─── Reticulum sidecar ───────────────────────────────────────────────────────
-  reticulum: {
-    start: (opts?: ReticulumSidecarStartOptions) => Promise<ReticulumSidecarStatus>;
-    stop: () => Promise<void>;
-    getStatus: () => Promise<ReticulumSidecarStatus>;
-    /** Drop latched TCP/TX issues for interfaces not in the enabled set; returns updated status. */
-    syncInterfaceIssueScope: (enabledInterfaceNames: string[]) => Promise<ReticulumSidecarStatus>;
-    /**
-     * Clear BLE bond-removed / pairing-timeout latches after named interfaces report online.
-     * Returns updated sidecar status (emits onStatus when the alert changes).
-     */
-    clearBleBondIssuesForOnlineInterfaces: (
-      onlineInterfaceNames: string[],
-    ) => Promise<ReticulumSidecarStatus>;
-    proxyGet: (apiPath: string) => Promise<unknown>;
-    proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
-    proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;
-    proxyDelete: (apiPath: string) => Promise<unknown>;
-    /** Dedicated factory reset (blocked on generic proxyPost). UI must confirm first. */
-    factoryReset: () => Promise<unknown>;
-    readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
-    /** Read-only probe for a system rnsd / other Reticulum app (never writes its config). */
-    detectSystemInstance: () => Promise<SystemReticulumInstance>;
-    showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
-    showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
-    showIdentityBackupImportDialog: () => Promise<ReticulumIdentityBackupImportDialogResult>;
-    saveIdentityExportDialog: (opts: {
-      defaultPath: string;
-      contentBase64: string;
-    }) => Promise<ReticulumIdentityExportSaveResult>;
-    /** Save dialog + write of the blocked-contact list. `path` is null when cancelled. */
-    saveBlocklistDialog: (
-      hashes: string[],
-    ) => Promise<{ path: string | null; error: string | null }>;
-    /**
-     * Open dialog + bounded read + parse of a blocklist file. `hashes` is null when
-     * cancelled or unreadable; `skipped` counts entries rejected while parsing.
-     */
-    openBlocklistDialog: () => Promise<{
-      hashes: string[] | null;
-      skipped: number;
-      error: string | null;
-    }>;
-    /** Pick a Nomad site root or pages directory for watched hosting. */
-    showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
-    /**
-     * Apply Nomad watched content source. Path must match the last
-     * {@link showNomadContentSourceDialog} result (picker capability).
-     */
-    setNomadContentSource: (path: string) => Promise<unknown>;
-    validateConfig: () => Promise<ReticulumConfigValidateResult>;
-    onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
-    /**
-     * High-rate LXST PCM receive frames (`voice.audio` via `/ws/voice`).
-     * Not delivered on {@link onEvent} / shared `/ws`.
-     */
-    onVoiceAudio: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
-    onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
-    /** Thin typed wrappers over proxyGet/proxyPost for RRC. */
-    rrc: {
-      listHubs: () => Promise<{ hubs: RrcHubInfo[] }>;
-      upsertHub: (
-        opts: RrcUpsertHubRequest,
-      ) => Promise<{ ok: boolean; hub?: RrcHubInfo; error?: string }>;
-      setFavorite: (
-        destHash: string,
-        favorited: boolean,
-      ) => Promise<{ ok: boolean; error?: string }>;
-      connect: (opts: RrcConnectRequest) => Promise<{ ok: boolean; error?: string }>;
-      disconnect: (opts?: RrcDisconnectRequest) => Promise<{ ok: boolean }>;
-      getStatus: () => Promise<RrcMultiSessionSnapshot>;
-      join: (opts: RrcJoinRequest) => Promise<{ ok: boolean; error?: string }>;
-      part: (opts: RrcPartRequest) => Promise<{ ok: boolean; error?: string }>;
-      send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
-      setNickname: (opts: RrcSetNicknameRequest) => Promise<{ ok: boolean; error?: string }>;
-      getRooms: (hubDestHash?: string) => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
-    };
-    /** Thin typed wrappers over proxyGet/proxyPost for rnsh (remote shell). */
-    rnsh: {
-      connect: (opts: RnshConnectRequest) => Promise<RnshConnectResponse>;
-      input: (opts: RnshInputRequest) => Promise<RemoteOkResponse>;
-      resize: (opts: RnshResizeRequest) => Promise<RemoteOkResponse>;
-      disconnect: (opts: RnshDisconnectRequest) => Promise<RemoteOkResponse>;
-      getStatus: () => Promise<RnshStatusResponse>;
-    };
-    /** LXST voice (rsLXST telephony) — thin wrappers over `/api/v1/voice/*`. */
-    voice: {
-      getStatus: () => Promise<VoiceStatusResponse>;
-      call: (opts: VoiceCallRequest) => Promise<VoiceOkResponse>;
-      answer: () => Promise<VoiceOkResponse>;
-      reject: () => Promise<VoiceOkResponse>;
-      hangup: () => Promise<VoiceOkResponse>;
-      mute: (opts: VoiceMuteRequest) => Promise<VoiceOkResponse>;
-      sendAudio: (opts: VoiceAudioRequest) => Promise<VoiceOkResponse>;
-    };
-    /**
-     * LXMF voice memos (FIELD_AUDIO Ogg Opus). Dedicated IPC — generic proxyPost
-     * rejects `/api/v1/voice/memo/*` paths so memo PCM does not share the proxy bucket.
-     */
-    voiceMemo: {
-      start: () => Promise<VoiceMemoStartResponse>;
-      sendAudio: (opts: VoiceMemoAudioRequest) => Promise<VoiceMemoOkResponse>;
-      stop: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
-      cancel: (opts: VoiceMemoSessionRequest) => Promise<VoiceMemoOkResponse>;
-    };
-    /**
-     * LRGP games (lrgp-rs). Dedicated IPC channels — generic `proxyGet`/`proxyPost`
-     * reject `/api/v1/games/*` so session polls/moves do not share the 900/min proxy bucket.
-     */
-    games: {
-      getStatus: () => Promise<GamesStatusResponse>;
-      listApps: () => Promise<{ apps?: GamesAppManifest[] } | GamesStatusResponse>;
-      listSessions: (peer?: string) => Promise<GamesListSessionsResponse>;
-      getSession: (sessionId: string) => Promise<GamesSessionDetailResponse>;
-      sendAction: (opts: GamesActionRequest) => Promise<GamesActionResult>;
-      resend: (sessionId: string) => Promise<GamesActionResult | GamesOkResponse>;
-      markRead: (sessionId: string) => Promise<GamesOkResponse>;
-      deleteSession: (sessionId: string) => Promise<GamesOkResponse>;
-    };
-    /**
-     * rncp (file transfer). `send` / `fetch` / `setListener` are picker-backed
-     * (path must match the last `showOpenFileDialog` / `showSaveDirectoryDialog`
-     * result) — see `reticulum-remote-paths.ts`.
-     */
-    rncp: {
-      send: (opts: RncpSendRequest) => Promise<RncpSendResponse>;
-      fetch: (opts: RncpFetchRequest) => Promise<RncpSendResponse>;
-      cancel: (opts: RncpTransferIdRequest) => Promise<RemoteOkResponse>;
-      accept: (opts: RncpTransferIdRequest) => Promise<unknown>;
-      reject: (opts: RncpTransferIdRequest) => Promise<RemoteOkResponse>;
-      getStatus: () => Promise<RncpStatusResponse>;
-      getListener: () => Promise<RncpListenerStatus>;
-      setListener: (opts: RncpListenerRequest) => Promise<RemoteOkResponse>;
-      /** Force one `rncp.receive` announce while the inbound listener is enabled. */
-      announce: () => Promise<RemoteOkResponse>;
-      /** Pick a local file to send. */
-      showOpenFileDialog: () => Promise<RemoteFileDialogResult>;
-      /** Pick a local directory for listener save_dir / fetch_jail or fetch save_path. */
-      showSaveDirectoryDialog: () => Promise<RemoteFileDialogResult>;
-      /** Reveal a path in the OS file manager; must match a prior picker result. */
-      revealInFolder: (path: string) => Promise<RemoteOkResponse>;
-    };
-    /** Remote identity + rnsh/rncp path-capability gating. */
-    remote: {
-      pathCapability: (opts: RemotePathCapabilityRequest) => Promise<PathCapability>;
-      getIdentity: () => Promise<RemoteIdentityResponse>;
-    };
-  };
-
-  // ─── Reticulum identity vault ────────────────────────────────────────────────
-  vault: {
-    setPasscode: (passcode: string, secret: string) => Promise<IdentityVaultActionResult>;
-    unlock: (passcode: string) => Promise<IdentityVaultActionResult>;
-    lock: () => Promise<IdentityVaultActionResult>;
-    status: () => Promise<IdentityVaultStatus>;
   };
 
   // ─── Deep links (custom protocol) ───────────────────────────────────────────

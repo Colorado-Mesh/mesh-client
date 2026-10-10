@@ -23,8 +23,6 @@ export interface EmergencyOutboxDrainTarget {
 
 export interface UseEmergencyOutboxDrainOptions {
   drains: EmergencyOutboxDrainTarget[];
-  /** Test override for deterministic Reticulum receipt timeouts. */
-  reticulumReceiptTimeoutMs?: number;
 }
 
 export interface ChatOutboxConnectionSnapshot {
@@ -86,10 +84,7 @@ function scheduleEmergencyRetryTimer(
  * share {@link drainChatOutboxOnce}'s per-protocol lock with ChatPanel so a row is never sent
  * twice. Mount once from App.
  */
-export function useEmergencyOutboxDrain({
-  drains,
-  reticulumReceiptTimeoutMs,
-}: UseEmergencyOutboxDrainOptions): void {
+export function useEmergencyOutboxDrain({ drains }: UseEmergencyOutboxDrainOptions): void {
   const drainsRef = useRef(drains);
   const retryAtByProtocolRef = useRef(new Map<MeshProtocol, number>());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,7 +116,6 @@ export function useEmergencyOutboxDrain({
           isSendAvailable: () =>
             drainsRef.current.find((d) => d.protocol === protocol)?.isSendAvailable === true,
           rowFilter: isAppManagedOutboxRow,
-          ...(reticulumReceiptTimeoutMs != null ? { reticulumReceiptTimeoutMs } : {}),
         });
         const at = earliestEmergencyRetryAt(result.rows);
         if (at == null) retryAtByProtocolRef.current.delete(protocol);
@@ -132,7 +126,7 @@ export function useEmergencyOutboxDrain({
         console.warn('[useEmergencyOutboxDrain] drain failed', protocol, err);
       }
     },
-    [reticulumReceiptTimeoutMs, scheduleTimer],
+    [scheduleTimer],
   );
 
   useEffect(() => {

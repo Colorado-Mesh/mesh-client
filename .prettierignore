@@ -33,7 +33,7 @@ src/main/fixtures/reticulum-ble-rnode-config/
 .github/codeql/extensions/**/*.yml
 
 # Rust sidecar (no Prettier TOML parser)
-reticulum-sidecar/
+ble-sidecar/
 
 # Images
 *.png

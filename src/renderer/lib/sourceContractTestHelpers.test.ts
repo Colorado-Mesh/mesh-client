@@ -46,7 +46,7 @@ describe('sourceContractTestHelpers', () => {
   });
 
   it('loadRuntimeSource reads a runtime module', () => {
-    const source = loadRuntimeSource('useReticulumRuntime.ts');
-    expect(source).toContain('useReticulumRuntime');
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    expect(source).toContain('useMeshcoreRuntime');
   });
 });

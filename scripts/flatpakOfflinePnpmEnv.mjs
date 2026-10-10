@@ -67,7 +67,7 @@ export function parseMeshClientModuleBuildEnv(yaml) {
  */
 export function offlinePnpmEnvContractViolations(
   yaml,
-  fileRel = 'org.coloradomesh.MeshClient.yml',
+  fileRel = 'io.github.charlottemeshtastic.MeshHub.yml',
 ) {
   const env = parseMeshClientModuleBuildEnv(yaml);
   /** @type {{ file: string, message: string }[]} */

@@ -24,7 +24,7 @@ export function chatRfHopLabelPresentation(
   corrected: boolean,
   reduceMotion: boolean,
 ): { className: string; refined: boolean } {
-  // ink-400 (#93a0b7) on chat ink-800 (#212d40) keeps 4.5:1+ for text-2xs.
+  // ink-400 (#a3a3a3) on chat ink-800 (#333333) keeps 4.5:1+ for text-2xs.
   if (!corrected) {
     return {
       className: 'text-2xs text-ink-400 transition-colors duration-500',

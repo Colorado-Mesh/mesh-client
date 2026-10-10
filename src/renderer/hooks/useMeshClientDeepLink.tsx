@@ -5,18 +5,12 @@ import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  applyLxmaContactImport,
-  applyLxmContactImport,
   applyMeshcoreChannelAdd,
   applyMeshcoreContactAdd,
 } from '@/renderer/lib/meshClientDeepLinkApply';
-import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
-import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticulumQrIngestToast';
 import { classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
 
 type PendingImport =
-  | { kind: 'lxmContact'; destinationHash: string; name: string | null }
-  | { kind: 'lxmaContact'; destinationHash: string; publicKeyHex: string }
   | {
       kind: 'meshcoreContactAdd';
       name: string;
@@ -31,7 +25,7 @@ type PendingImport =
     };
 
 /**
- * Mount once from App: listen for lxm:// / lxma:// / meshcore:// / OS deep links and route actions.
+ * Mount once from App: listen for meshcore:// / Meshtastic / OS deep links and route actions.
  * External imports require explicit confirmation.
  */
 export function MeshClientDeepLinkHost(): ReactElement | null {
@@ -46,32 +40,6 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
 
     const unsub = api.onOpenUrl((url) => {
       const parsed = classifyMeshClientDeepLink(url);
-      if (parsed.kind === 'lxmPaperMessage') {
-        void (async () => {
-          const outcome = await handleReticulumQrIngest(parsed.uri);
-          showReticulumQrIngestToast(outcome, { t, addToast });
-        })().catch((err: unknown) => {
-          console.error('[MeshClientDeepLinkHost] paper ingest failed: ' + errLikeToLogString(err));
-          addToast(t('qrIngest.unknownLink'), 'error');
-        });
-        return;
-      }
-      if (parsed.kind === 'lxmContact') {
-        setPending({
-          kind: 'lxmContact',
-          destinationHash: parsed.destinationHash,
-          name: parsed.name ?? null,
-        });
-        return;
-      }
-      if (parsed.kind === 'lxmaContact') {
-        setPending({
-          kind: 'lxmaContact',
-          destinationHash: parsed.destinationHash,
-          publicKeyHex: parsed.publicKeyHex,
-        });
-        return;
-      }
       if (parsed.kind === 'meshcoreContactAdd') {
         setPending({
           kind: 'meshcoreContactAdd',
@@ -88,18 +56,6 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
           secretHex: parsed.secretHex,
           ...(parsed.regionScope !== undefined ? { regionScope: parsed.regionScope } : {}),
         });
-        return;
-      }
-      if (parsed.kind === 'lxmIdentity') {
-        addToast(t('qrIngest.identityShown'), 'success');
-        return;
-      }
-      if (parsed.kind === 'lxmGameSession') {
-        window.dispatchEvent(
-          new CustomEvent('mesh-client:openGamesSession', {
-            detail: { sessionId: parsed.sessionId },
-          }),
-        );
         return;
       }
       if (parsed.kind === 'meshtasticChannel') {
@@ -119,32 +75,6 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
     if (!pending || importBusy) return;
     setImportBusy(true);
     try {
-      if (pending.kind === 'lxmContact') {
-        const result = await applyLxmContactImport({
-          destinationHash: pending.destinationHash,
-          name: pending.name,
-        });
-        if (result.ok) {
-          addToast(t('qrIngest.contactImported'), 'success');
-          setPending(null);
-        } else {
-          addToast(t(result.errorKey), 'error');
-        }
-        return;
-      }
-      if (pending.kind === 'lxmaContact') {
-        const result = await applyLxmaContactImport({
-          destinationHash: pending.destinationHash,
-          publicKeyHex: pending.publicKeyHex,
-        });
-        if (result.ok) {
-          addToast(t('qrIngest.contactImported'), 'success');
-          setPending(null);
-        } else {
-          addToast(t(result.errorKey), 'error');
-        }
-        return;
-      }
       if (pending.kind === 'meshcoreContactAdd') {
         const result = await applyMeshcoreContactAdd(pending, {
           saveContact: async ({ nodeId, publicKeyHex, name, contactType }) => {
@@ -222,31 +152,20 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
 
   if (!pending) return null;
 
-  const label =
-    pending.kind === 'lxmContact'
-      ? (pending.name ?? pending.destinationHash.slice(0, 12))
-      : pending.kind === 'lxmaContact'
-        ? pending.destinationHash.slice(0, 12)
-        : pending.name;
+  const label = pending.name;
 
   const titleKey =
     pending.kind === 'meshcoreChannelAdd'
       ? 'qrIngest.confirmMeshcoreChannelImportTitle'
-      : pending.kind === 'meshcoreContactAdd'
-        ? 'qrIngest.confirmMeshcoreContactImportTitle'
-        : 'qrIngest.confirmContactImportTitle';
+      : 'qrIngest.confirmMeshcoreContactImportTitle';
   const bodyKey =
     pending.kind === 'meshcoreChannelAdd'
       ? 'qrIngest.confirmMeshcoreChannelImportBody'
-      : pending.kind === 'meshcoreContactAdd'
-        ? 'qrIngest.confirmMeshcoreContactImportBody'
-        : 'qrIngest.confirmContactImportBody';
+      : 'qrIngest.confirmMeshcoreContactImportBody';
   const actionKey =
     pending.kind === 'meshcoreChannelAdd'
       ? 'qrIngest.confirmMeshcoreChannelImportAction'
-      : pending.kind === 'meshcoreContactAdd'
-        ? 'qrIngest.confirmMeshcoreContactImportAction'
-        : 'qrIngest.confirmContactImportAction';
+      : 'qrIngest.confirmMeshcoreContactImportAction';
 
   return (
     <ConfirmModal

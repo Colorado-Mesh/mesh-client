@@ -54,20 +54,20 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  appBg: '#11151c',
-  sidebarActiveBg: '#212d40',
-  brandGreen: '#67e8b4',
-  brightGreen: '#67e8b4',
-  readableGreen: '#047857',
-  deepBlack: '#19212d',
-  secondaryDark: '#364156',
-  muted: '#93a0b7',
-  chatIncomingBg: '#212d40',
-  chatIncomingBorder: '#364156',
-  chatOutgoingBg: '#047857',
-  chatOutgoingBorder: '#67e8b4',
-  messageActionsBarBg: '#19212d',
-  messageActionButtonHover: '#93a0b7',
+  appBg: '#1b1b1b',
+  sidebarActiveBg: '#333333',
+  brandGreen: '#ffa31a',
+  brightGreen: '#ffa31a',
+  readableGreen: '#b35f00',
+  deepBlack: '#292929',
+  secondaryDark: '#424242',
+  muted: '#a3a3a3',
+  chatIncomingBg: '#333333',
+  chatIncomingBorder: '#424242',
+  chatOutgoingBg: '#b35f00',
+  chatOutgoingBorder: '#ffa31a',
+  messageActionsBarBg: '#292929',
+  messageActionButtonHover: '#a3a3a3',
 };
 
 export interface ThemeTokenMeta {

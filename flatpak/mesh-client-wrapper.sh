@@ -7,7 +7,7 @@ ELECTRON="${APP_ROOT}/electron/electron"
 # package.json "main"; launch via "." from APP_ROOT
 MAIN_REL=dist-electron/main/index.js
 
-export TMPDIR="${XDG_RUNTIME_DIR:-/tmp}/app/${FLATPAK_ID:-org.coloradomesh.MeshClient}"
+export TMPDIR="${XDG_RUNTIME_DIR:-/tmp}/app/${FLATPAK_ID:-io.github.charlottemeshtastic.MeshHub}"
 mkdir -p "$TMPDIR"
 export CHROME_WRAPPER=/app/bin/mesh-client
 

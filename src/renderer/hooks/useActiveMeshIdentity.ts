@@ -53,18 +53,15 @@ function useResolvedIdentityId(protocol: MeshProtocol): IdentityId | null {
 export function useActiveMeshIdentity(protocol: MeshProtocol): ActiveMeshIdentity {
   const meshtasticIdentityId = useResolvedIdentityId('meshtastic');
   const meshcoreIdentityId = useResolvedIdentityId('meshcore');
-  const reticulumIdentityId = useResolvedIdentityId('reticulum');
   const capabilities = useRadioProvider(protocol);
 
   const identityIdByProtocol = useMemo((): Record<MeshProtocol, IdentityId | null> => {
     const map = {} as Record<MeshProtocol, IdentityId | null>;
     for (const p of REGISTERED_MESH_PROTOCOLS) {
-      if (p === 'meshtastic') map[p] = meshtasticIdentityId;
-      else if (p === 'meshcore') map[p] = meshcoreIdentityId;
-      else map[p] = reticulumIdentityId;
+      map[p] = p === 'meshtastic' ? meshtasticIdentityId : meshcoreIdentityId;
     }
     return map;
-  }, [meshtasticIdentityId, meshcoreIdentityId, reticulumIdentityId]);
+  }, [meshtasticIdentityId, meshcoreIdentityId]);
 
   const focusedIdentityId = identityIdByProtocol[protocol];
 

@@ -60,11 +60,6 @@ describe('launcher pins storage', () => {
     expect(DEFAULT_LAUNCHER_PINS).toEqual([]);
   });
 
-  it('round-trips through localStorage', () => {
-    writeLauncherPins(['Diagnostics', 'RRC']);
-    expect(readLauncherPins()).toEqual(['Diagnostics', 'RRC']);
-  });
-
   it('keeps an empty pin list instead of restoring defaults', () => {
     writeLauncherPins([]);
     expect(readLauncherPins()).toEqual([]);

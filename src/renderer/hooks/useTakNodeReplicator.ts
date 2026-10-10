@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import {
   collectTakNodeUpdates,
   TAK_NODE_REFRESH_MS,
@@ -10,48 +9,24 @@ import {
   takNodeUpdateKey,
   takNodeUpdateSignature,
 } from '@/renderer/lib/takNodeFeed';
-import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { setTakSinkActive } from '@/renderer/stores/takSinkStore';
 import { type TakTrackerEntry, useTakTrackerStore } from '@/renderer/stores/takTrackerStore';
 import { TAK_NODE_UPDATE_BATCH_MAX, type TAKNodeUpdate } from '@/shared/tak-types';
-
-/** Our Reticulum identity while the stack is up; its position comes from app static GPS. */
-export interface TakReticulumSelfIdentity {
-  nodeId: number;
-  name: string;
-}
 
 interface UseTakNodeReplicatorArgs {
   /** A TAK sink in main is accepting node updates. */
   active: boolean;
   nodesByProtocol: TakFeedSources['nodesByProtocol'];
-  reticulumSelf: TakReticulumSelfIdentity | null;
 }
 
 interface ReplicatorInputs {
   nodesByProtocol: TakFeedSources['nodesByProtocol'];
-  reticulumSelf: TakReticulumSelfIdentity | null;
-  rmapRows: TakFeedSources['rmapRows'];
   trackerFixes: Record<string, TakTrackerEntry>;
 }
 
 function readSources(inputs: ReplicatorInputs): TakFeedSources {
-  const identity = inputs.reticulumSelf;
-  // Only static GPS: the other resolveOurPosition fallbacks (OS/IP geolocation) are
-  // city-level and would put a misleading friendly marker on the TAK map.
-  const staticGps = identity ? readStoredStaticGps() : null;
   return {
     nodesByProtocol: inputs.nodesByProtocol,
-    rmapRows: inputs.rmapRows,
-    reticulumSelf:
-      identity && staticGps
-        ? {
-            nodeId: identity.nodeId,
-            name: identity.name,
-            latitude: staticGps.lat,
-            longitude: staticGps.lon,
-          }
-        : null,
     trackerFixes: Object.values(inputs.trackerFixes),
   };
 }
@@ -66,25 +41,18 @@ function sendUpdates(updates: TAKNodeUpdate[]): void {
 }
 
 /**
- * Feeds node positions from all three protocols (plus RMAP stations and our own Reticulum
- * position) to the TAK sinks in main, whichever protocol tab is active. Mount once from
+ * Feeds node positions from both protocols (plus MeshCore tracker fixes) to the TAK sinks
+ * in main, whichever protocol tab is active. Mount once from
  * AppContent.
  *
  * Sends everything when a sink becomes active and every {@link TAK_NODE_REFRESH_MS} so markers
  * do not go stale in ATAK; in between, a throttled scan sends only nodes whose position, name,
  * or battery changed.
  */
-export function useTakNodeReplicator({
-  active,
-  nodesByProtocol,
-  reticulumSelf,
-}: UseTakNodeReplicatorArgs): void {
-  const rmapRows = useReticulumDiscoveryMapStore((s) => s.discovered);
+export function useTakNodeReplicator({ active, nodesByProtocol }: UseTakNodeReplicatorArgs): void {
   const trackerFixes = useTakTrackerStore((s) => s.fixes);
   const inputsRef = useRef<ReplicatorInputs>({
     nodesByProtocol,
-    reticulumSelf,
-    rmapRows,
     trackerFixes,
   });
   /** Last signature sent per `${protocol}:${node_id}` (or tracker uid); rebuilt on every full send. */
@@ -92,8 +60,8 @@ export function useTakNodeReplicator({
   const scanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    inputsRef.current = { nodesByProtocol, reticulumSelf, rmapRows, trackerFixes };
-  }, [nodesByProtocol, reticulumSelf, rmapRows, trackerFixes]);
+    inputsRef.current = { nodesByProtocol, trackerFixes };
+  }, [nodesByProtocol, trackerFixes]);
 
   useEffect(() => {
     setTakSinkActive(active);
@@ -138,7 +106,7 @@ export function useTakNodeReplicator({
       }
       if (changed.length > 0) sendUpdates(changed);
     }, TAK_NODE_SCAN_INTERVAL_MS);
-  }, [active, nodesByProtocol, reticulumSelf, rmapRows, trackerFixes]);
+  }, [active, nodesByProtocol, trackerFixes]);
 
   useEffect(
     () => () => {

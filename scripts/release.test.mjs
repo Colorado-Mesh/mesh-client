@@ -20,9 +20,6 @@ const REQUIRED_PNPM_CHECKS = [
   'check:insecure-temp-files',
   'check:db-migrations',
   'check:ipc-contract',
-  'check:reticulum-interface-modes',
-  'check:pn-hosting-policy',
-  'check:reticulum-decommissioned-hubs',
   'check:console-log',
   'check:silent-catches',
   'check:url-hostname-sanitization',
@@ -35,7 +32,7 @@ const REQUIRED_PNPM_CHECKS = [
   'check:flatpak',
   'check:flatpak-offline-pnpm',
   'test:run',
-  'reticulum:sidecar:test',
+  'ble:sidecar:test',
 ];
 
 describe('release.sh full-suite gate', () => {
@@ -149,32 +146,6 @@ describe('release.sh full-suite gate', () => {
 
   it('rejects --auto combined with an explicit bump (text contract)', () => {
     expect(script).toMatch(/--auto cannot be combined with patch\|minor\|major/);
-  });
-
-  it('provisions .rsstack/ before any release check whose script needs it', () => {
-    // Cut release runs on a fresh clone with no .rsstack/; a warm local checkout hides this.
-    const cloneIdx = script.search(/^\s*if ! bash scripts\/clone-ratspeak-stack\.sh; then\s*$/m);
-    expect(cloneIdx).toBeGreaterThanOrEqual(0);
-
-    const consumers = [];
-    for (const match of script.matchAll(/^\s*if ! pnpm run ([\w:-]+)/gm)) {
-      const name = match[1];
-      const command = pkg.scripts[name];
-      expect(command, `package.json is missing script ${name}`).toBeTypeOf('string');
-      if (command.startsWith('bash scripts/clone-ratspeak-stack.sh')) continue;
-      const nodeScript = /^node (scripts\/[\w.-]+\.mjs)/.exec(command)?.[1];
-      if (!nodeScript) continue;
-      const source = fs.readFileSync(path.join(ROOT, nodeScript), 'utf8');
-      if (source.includes("'.rsstack'")) consumers.push({ name, index: match.index });
-    }
-
-    expect(consumers.map((c) => c.name)).toContain('check:rust-licenses');
-    for (const consumer of consumers) {
-      expect(
-        consumer.index,
-        `${consumer.name} runs before clone-ratspeak-stack.sh`,
-      ).toBeGreaterThan(cloneIdx);
-    }
   });
 
   it('--preflight-only stops after pre-flight, before notes/bump/tag/push', () => {

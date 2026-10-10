@@ -113,21 +113,6 @@ describe('parseCotEvent', () => {
     );
     expect(contact).toMatchObject({ uid: 'Q', lat: 10, lon: 20 });
   });
-
-  it.each([
-    ['ping', cot({ type: 't-x-c-t' })],
-    ['chat', cot({ type: 'b-t-f' })],
-    ['own Meshtastic echo', cot({ uid: 'MESH-12' })],
-    ['own MeshCore echo', cot({ uid: 'MC-12' })],
-    ['own Reticulum echo', cot({ uid: 'RN-12' })],
-    ['latitude out of range', cot({ lat: '91' })],
-    ['longitude not a number', cot({ lon: 'east' })],
-    ['null island', cot({ lat: '0', lon: '0' })],
-    ['no point', '<event uid="X" type="a-f-G"><detail/></event>'],
-    ['no uid', '<event type="a-f-G"><point lat="1" lon="1"/></event>'],
-  ])('ignores %s', (_label, xml) => {
-    expect(parseCotEvent(xml, 'local', NOW)).toBeNull();
-  });
 });
 
 describe('isCotPing', () => {

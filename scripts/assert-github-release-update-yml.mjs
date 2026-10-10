@@ -106,7 +106,7 @@ export async function resolveReleaseForUpdateYmlAssert(tag, token, releaseId) {
 export async function downloadReleaseAssetText(assetApiUrl, token) {
   if (
     typeof assetApiUrl !== 'string' ||
-    !/^https:\/\/api\.github\.com\/repos\/Colorado-Mesh\/mesh-client\/releases\/assets\/\d+$/.test(
+    !/^https:\/\/api\.github\.com\/repos\/charlottemeshtastic\/mesh-client\/releases\/assets\/\d+$/.test(
       assetApiUrl,
     )
   ) {

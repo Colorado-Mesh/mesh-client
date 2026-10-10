@@ -44,30 +44,30 @@ export default function ChannelUtilizationChart({ nodes }: ChannelUtilizationCha
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fill: '#93a0b7', fontSize: 11 }}
+            tick={{ fill: '#a3a3a3', fontSize: 11 }}
             tickFormatter={(v) => `${v}%`}
           />
           <YAxis
             type="category"
             dataKey="name"
             width={120}
-            tick={{ fill: '#93a0b7', fontSize: 11 }}
+            tick={{ fill: '#a3a3a3', fontSize: 11 }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#212d40',
-              border: '1px solid #364156',
+              backgroundColor: '#333333',
+              border: '1px solid #424242',
               borderRadius: 6,
             }}
-            labelStyle={{ color: '#e3e8f0' }}
-            itemStyle={{ color: '#93a0b7' }}
+            labelStyle={{ color: '#e0e0e0' }}
+            itemStyle={{ color: '#a3a3a3' }}
             formatter={(value) => [`${value}%`, t('channelUtilization.tooltipLabel')]}
           />
           <Bar dataKey="pct" radius={[0, 3, 3, 0]} fill="#4ade80">
             <LabelList
               dataKey="pct"
               position="right"
-              style={{ fill: '#93a0b7', fontSize: 11 }}
+              style={{ fill: '#a3a3a3', fontSize: 11 }}
               formatter={(v: unknown) => `${v}%`}
             />
           </Bar>

@@ -18,40 +18,23 @@ export function protocolNotificationLabel(protocol: MeshProtocol | null | undefi
   return PROTOCOL_THEME[protocol ?? 'meshtastic'].displayName;
 }
 
-/**
- * Id shown when a watched node has no long or short name.
- * Reticulum uses the existing 12-hex destination-hash prefix (peer/chat short id);
- * without a hash, the folded node id in uppercase hex — same fallback as Reticulum labels.
- */
+/** Id shown when a watched node has no long or short name. */
 export function fallbackWatchedNodeId(
   nodeId: number,
   protocol: MeshProtocol | null | undefined,
-  reticulumDestinationHash?: string,
 ): string {
   if (protocol === 'meshcore') {
     return `Node-${nodeId.toString(16).toUpperCase()}`;
-  }
-  if (protocol === 'reticulum') {
-    const hash = reticulumDestinationHash
-      ?.replace(/[^0-9a-f]/gi, '')
-      .toLowerCase()
-      .slice(0, 12);
-    if (hash) return hash;
-    return (nodeId >>> 0).toString(16).toUpperCase();
   }
   return formatMeshtasticNodeId(nodeId);
 }
 
 export function notificationNodeName(
-  node: Pick<MeshNode, 'long_name' | 'short_name' | 'reticulum_destination_hash'>,
+  node: Pick<MeshNode, 'long_name' | 'short_name'>,
   nodeId: number,
   protocol: MeshProtocol | null | undefined,
 ): string {
-  return (
-    node.long_name ||
-    node.short_name ||
-    fallbackWatchedNodeId(nodeId, protocol, node.reticulum_destination_hash)
-  );
+  return node.long_name || node.short_name || fallbackWatchedNodeId(nodeId, protocol);
 }
 
 function computeIsOnline(

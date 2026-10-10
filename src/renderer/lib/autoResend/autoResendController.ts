@@ -120,16 +120,13 @@ function resendArgsFor(record: MessageRecord): Parameters<AutoResendSendFn>[1] {
     text: record.payload,
     channelIndex: record.channelIndex,
     ...(isChannel ? {} : { destination: record.to }),
-    ...((record.reticulumReplyToHash ?? record.replyTo) != null
-      ? { replyTo: record.reticulumReplyToHash ?? record.replyTo }
-      : {}),
-    retryOfStoreId: record.reticulumMessageHash ?? record.id,
+    ...(record.replyTo != null ? { replyTo: record.replyTo } : {}),
+    retryOfStoreId: record.id,
   };
 }
 
-/** Drop the superseded failed bubble (Reticulum re-keys it via `retryOfStoreId` instead). */
+/** Drop the superseded failed bubble. */
 function removeSupersededBubble(protocol: MeshProtocol, identityId: IdentityId, id: string): void {
-  if (protocol === 'reticulum') return;
   deleteMessage(identityId, id);
   const packetId = Number(id);
   if (!Number.isInteger(packetId) || packetId < 0) return;

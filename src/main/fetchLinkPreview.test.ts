@@ -141,7 +141,7 @@ describe('shouldProxyPreviewImageUrl', () => {
   it('proxies GitHub opengraph CDN', () => {
     expect(
       shouldProxyPreviewImageUrl(
-        'https://opengraph.githubassets.com/52768cefbf1a3fa13ca046289d01a61233c6ad064abe523c29e2cf8e7771f81b/Colorado-Mesh/mesh-client',
+        'https://opengraph.githubassets.com/52768cefbf1a3fa13ca046289d01a61233c6ad064abe523c29e2cf8e7771f81b/charlottemeshtastic/mesh-client',
       ),
     ).toBe(true);
   });
@@ -705,7 +705,7 @@ describe('fetchLinkPreview', () => {
   it('proxies GitHub opengraph images as data URLs in main', async () => {
     const pageHtml = [
       `<meta property="og:title" content="mesh-client">`,
-      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/charlottemeshtastic/mesh-client">`,
     ].join('\n');
     const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const imageStream = new ReadableStream<Uint8Array>({
@@ -728,7 +728,7 @@ describe('fetchLinkPreview', () => {
       return Promise.resolve(makeStreamResponse(pageHtml));
     }) as typeof undiciFetch);
 
-    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    const result = await fetchLinkPreview('https://github.com/charlottemeshtastic/mesh-client');
     expect(result?.title).toBe('mesh-client');
     expect(result?.image).toMatch(/^data:image\/png;base64,/);
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -737,7 +737,7 @@ describe('fetchLinkPreview', () => {
   it('omits image when GitHub opengraph CDN returns 429', async () => {
     const pageHtml = [
       `<meta property="og:title" content="mesh-client">`,
-      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/charlottemeshtastic/mesh-client">`,
     ].join('\n');
     mockFetch.mockImplementation(((input: string | URL | Request) => {
       if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
@@ -746,10 +746,10 @@ describe('fetchLinkPreview', () => {
       return Promise.resolve(makeStreamResponse(pageHtml));
     }) as typeof undiciFetch);
 
-    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    const result = await fetchLinkPreview('https://github.com/charlottemeshtastic/mesh-client');
     expect(result).toEqual({ title: 'mesh-client', description: undefined, image: undefined });
 
-    const cached = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    const cached = await fetchLinkPreview('https://github.com/charlottemeshtastic/mesh-client');
     expect(cached).toEqual(result);
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
@@ -889,7 +889,7 @@ describe('fetchLinkPreview', () => {
 
     const pageHtml = [
       `<meta property="og:title" content="mesh-client">`,
-      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/charlottemeshtastic/mesh-client">`,
     ].join('\n');
     const cancelErr = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
     mockFetch.mockImplementation(((input: string | URL | Request) => {
@@ -909,7 +909,7 @@ describe('fetchLinkPreview', () => {
       return Promise.resolve(makeStreamResponse(pageHtml));
     }) as typeof undiciFetch);
 
-    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    const result = await fetchLinkPreview('https://github.com/charlottemeshtastic/mesh-client');
     expect(result?.title).toBe('mesh-client');
     expect(result?.image).toBeUndefined();
     expect(unhandled).toHaveLength(0);

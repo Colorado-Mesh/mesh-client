@@ -37,7 +37,7 @@ jobs:
           retention-days: 30
 
   sidecars:
-    name: Stage Reticulum
+    name: Stage Bluetooth helper
     needs: schema-release-compare
     permissions:
       contents: read
@@ -106,7 +106,7 @@ jobs:
             pkg-config \
             gcc-aarch64-linux-gnu
 
-      - name: Download Reticulum sidecars for Electron packaging
+      - name: Download Bluetooth helpers for Electron packaging
         uses: ./.github/actions/download-packaging-sidecars
         with:
           platform: ${{ matrix.sidecar_platform }}
@@ -247,7 +247,7 @@ jobs:
             smoke_run: >-
               node scripts/assert-update-yml-artifacts.mjs --require latest-linux.yml
               --require latest-linux-arm64.yml && node scripts/verify-linux-packaging.mjs
-              && node scripts/test-linux-appimage-reticulum-sidecar.mjs
+              && node scripts/test-linux-appimage-ble-sidecar.mjs
           - os: windows-latest
             label: x64 NSIS install
             artifact: test-mesh-client-windows-${{ github.sha }}

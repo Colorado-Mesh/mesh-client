@@ -1,75 +1,14 @@
-import { MS_PER_DAY } from '@/shared/timeConstants';
-
 import { getAppSettingsRaw } from './appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { errLikeToLogString } from './errLikeToLogString';
-import { fetchMessageRetention, RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS } from './messageRetention';
+import { fetchMessageRetention } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
 import { MAX_MESH_ENTITY_CAP, SESSION_DB_PRUNE_INTERVAL_MS } from './sessionMemoryCaps';
 
 let startupDbPrunePromise: Promise<void> | null = null;
 let sessionDbPrunePromise: Promise<void> | null = null;
-let reticulumVacuumScheduled = false;
 
 export { SESSION_DB_PRUNE_INTERVAL_MS };
-
-/** At most one idle VACUUM per this interval (localStorage gate). */
-const RETICULUM_VACUUM_MIN_INTERVAL_MS = 7 * MS_PER_DAY;
-const RETICULUM_VACUUM_LAST_MS_KEY = 'mesh-client:lastReticulumVacuumMs';
-
-/**
- * Schedule a Reticulum table VACUUM after first paint / idle — never on the cold-start
- * prune path. Single-flight per session; skipped if vacuumed within the last 7 days.
- */
-export function scheduleReticulumVacuumIfNeeded(): void {
-  if (reticulumVacuumScheduled) return;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
-  if (typeof window === 'undefined' || !window.electronAPI.db.vacuumReticulumTables) return;
-
-  let lastMs = 0;
-  try {
-    const raw = localStorage.getItem(RETICULUM_VACUUM_LAST_MS_KEY);
-    if (raw) {
-      const n = Number(raw);
-      if (Number.isFinite(n) && n > 0) lastMs = n;
-    }
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable in tests
-  }
-  if (Date.now() - lastMs < RETICULUM_VACUUM_MIN_INTERVAL_MS) return;
-
-  reticulumVacuumScheduled = true;
-  const run = (): void => {
-    void window.electronAPI.db
-      .vacuumReticulumTables()
-      .then(() => {
-        try {
-          localStorage.setItem(RETICULUM_VACUUM_LAST_MS_KEY, String(Date.now()));
-        } catch {
-          // catch-no-log-ok
-        }
-      })
-      .catch((e: unknown) => {
-        console.warn('[App] idle vacuumReticulumTables failed ' + errLikeToLogString(e));
-      });
-  };
-
-  const ric = (
-    window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-    }
-  ).requestIdleCallback;
-  if (typeof ric === 'function') {
-    ric(run, { timeout: 60_000 });
-  } else {
-    setTimeout(run, 30_000);
-  }
-}
-
-/** @internal Vitest only */
-export function resetReticulumVacuumScheduleForTests(): void {
-  reticulumVacuumScheduled = false;
-}
 
 export interface DbPruneOptions {
   /** Node ids whose position history is kept regardless of age/per-node caps (open incidents). */
@@ -205,38 +144,6 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
     );
   }
 
-  if (s.reticulumAutoPruneEnabled) {
-    const days =
-      typeof s.reticulumAutoPruneDays === 'number' && s.reticulumAutoPruneDays > 0
-        ? s.reticulumAutoPruneDays
-        : 30;
-    ops.push(
-      window.electronAPI.db.deleteReticulumDestinationsByAge(days).catch((e: unknown) => {
-        console.warn(
-          `[App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
-        );
-      }),
-      window.electronAPI.db.pruneReticulumIdentityActivityByAge(days).catch((e: unknown) => {
-        console.warn(
-          `[App] ${label} pruneReticulumIdentityActivityByAge failed ` + errLikeToLogString(e),
-        );
-      }),
-    );
-  }
-  if (s.reticulumDestinationCapEnabled) {
-    const cap =
-      typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
-        ? Math.min(100_000, s.reticulumDestinationCapCount)
-        : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
-    ops.push(
-      window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {
-        console.warn(
-          `[App] ${label} pruneReticulumDestinationsByCount failed ` + errLikeToLogString(e),
-        );
-      }),
-    );
-  }
-
   ops.push(
     fetchMessageRetention()
       .then((r) => {
@@ -259,33 +166,6 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
               }),
           );
         }
-        if (r.reticulumEnabled) {
-          innerOps.push(
-            window.electronAPI.db
-              .pruneReticulumMessagesByCount(r.reticulumCount)
-              .catch((e: unknown) => {
-                console.warn(
-                  `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
-                );
-              }),
-          );
-        }
-        if (r.rrcEnabled) {
-          innerOps.push(
-            window.electronAPI.db.pruneRrcMessagesByCount(r.rrcCount).catch((e: unknown) => {
-              console.warn(
-                `[App] ${label} pruneRrcMessagesByCount failed ` + errLikeToLogString(e),
-              );
-            }),
-            window.electronAPI.db
-              .pruneRrcMessagesByAge(RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS)
-              .catch((e: unknown) => {
-                console.warn(
-                  `[App] ${label} pruneRrcMessagesByAge failed ` + errLikeToLogString(e),
-                );
-              }),
-          );
-        }
         return Promise.all(innerOps);
       })
       .catch((e: unknown) => {
@@ -296,8 +176,4 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
   if (ops.length > 0) {
     await Promise.all(ops);
   }
-
-  // VACUUM is intentionally not part of cold-start prune — it rewrites the whole DB and
-  // dominated Reticulum startups (~1s). Use scheduleReticulumVacuumIfNeeded() after prune
-  // that deleted rows, or idle/manual maintenance.
 }

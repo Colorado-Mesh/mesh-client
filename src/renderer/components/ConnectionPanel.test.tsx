@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
@@ -21,8 +18,6 @@ import {
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
 import ConnectionPanel from './ConnectionPanel';
-
-const CONNECTION_PANEL_SOURCE = readFileSync(join(__dirname, 'ConnectionPanel.tsx'), 'utf-8');
 
 const disconnectedState: DeviceState = {
   status: 'disconnected',
@@ -1007,15 +1002,15 @@ describe('ConnectionPanel status i18n and pulse', () => {
     expect(screen.getByText('Bluetooth')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute(
       'href',
-      'https://colorado-mesh.github.io/mesh-client/troubleshooting/',
+      'https://charlottemeshtastic.github.io/mesh-client/troubleshooting/',
     );
     expect(screen.queryByText('configured')).not.toBeInTheDocument();
     expect(screen.queryByText('ble')).not.toBeInTheDocument();
   });
 
   it.each([
-    ['meshtastic', 'https://colorado-mesh.github.io/mesh-client/troubleshooting/'],
-    ['meshcore', 'https://colorado-mesh.github.io/mesh-client/troubleshooting-meshcore/'],
+    ['meshtastic', 'https://charlottemeshtastic.github.io/mesh-client/troubleshooting/'],
+    ['meshcore', 'https://charlottemeshtastic.github.io/mesh-client/troubleshooting-meshcore/'],
   ] as const)('links %s Docs to its troubleshooting page on the docs site', (protocol, href) => {
     renderWithFirmware(undefined, undefined, protocol);
     expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute('href', href);
@@ -1891,48 +1886,6 @@ describe('ConnectionPanel LetsMesh username sync', () => {
       localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
       getItemSpy.mockRestore();
     }
-  });
-});
-
-describe('ConnectionPanel Reticulum', () => {
-  it('shows Reticulum stack panel instead of BLE spinner while sidecar is connecting', async () => {
-    const lastConnKey = 'mesh-client:lastConnection:reticulum';
-    localStorage.setItem(
-      lastConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'saved-reticulum-ble' }),
-    );
-    const onAutoConnect = vi.fn().mockResolvedValue(undefined);
-
-    try {
-      render(
-        <ConnectionPanel
-          state={{ ...disconnectedState, status: 'connecting' }}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={onAutoConnect}
-          onDisconnect={vi.fn().mockResolvedValue(undefined)}
-          mqttStatus="disconnected"
-          protocol="reticulum"
-          onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Reticulum stack')).toBeInTheDocument();
-      });
-      expect(screen.queryByText(/Scanning for Bluetooth devices/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Auto-connecting/i)).not.toBeInTheDocument();
-      expect(onAutoConnect).not.toHaveBeenCalled();
-    } finally {
-      localStorage.removeItem(lastConnKey);
-    }
-  });
-
-  it('Cancel fire-and-forgets onDisconnect and stops a GATT scan only where one runs', () => {
-    // handleCancelConnection backs the connecting view Cancel; a hung onDisconnect must not block it.
-    expect(CONNECTION_PANEL_SOURCE).toMatch(/void onDisconnect\(\)\.catch\(\(e: unknown\) => \{/);
-    expect(CONNECTION_PANEL_SOURCE).toMatch(
-      /if \(capabilities\.hasGattBleScanning\) \{\s*void window\.electronAPI\.stopGattScanning\(protocol\)/,
-    );
   });
 });
 

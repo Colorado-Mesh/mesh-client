@@ -6,11 +6,6 @@ import type { MeshProtocol } from './types';
 
 export const CHAT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Chat');
 export const INCIDENT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Incident');
-export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
-export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
-export const REMOTE_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Remote');
-export const NOMAD_NETWORK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('NomadNetwork');
-export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
 export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
 export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
@@ -33,15 +28,11 @@ type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof Protoc
 export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
-  'hasLrgpGames', // Games
-  'hasRrcPanel', // RRC
-  'hasNomadNetworkPanel', // Nomad Network
-  'hasReticulumRemotePanel', // Remote
   undefined, // Nodes/Contacts
-  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel', 'hasReticulumDiscoveryMap'] }, // Map
-  { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
+  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel'] }, // Map
+  { or: ['hasChannelConfig', 'hasJsonRadioConfigImport'] }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
-  { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin
+  'hasSecurityPanel', // Admin
   'hasRoomServersPanel', // Rooms
   'hasEnvironmentTelemetry', // Telemetry
   'hasSecurityPanel', // Security
@@ -53,7 +44,6 @@ export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)
   'hasRawPacketLog', // Sniffer
   'hasRfStats', // RF
   { or: ['hasNeighborInfo', 'nodeListTabUsesContactsLabel'] }, // Graph
-  'hasReticulumTopologyPanel', // Topology
 ];
 
 function tabVisible(
@@ -67,19 +57,13 @@ function tabVisible(
 }
 
 function tabLabelKey(capabilities: ProtocolCapabilities, panelIndex: number): `tabs.${string}` {
-  if (panelIndex === NOMAD_NETWORK_PANEL_INDEX) return 'tabs.nomadnetwork';
   if (panelIndex === NODES_PANEL_INDEX && capabilities.nodeListTabUsesContactsLabel) {
     return 'tabs.contacts';
   }
-  if (panelIndex === NODES_PANEL_INDEX && capabilities.nodeListTabUsesPeersLabel)
-    return 'tabs.peers';
   if (panelIndex === MODULES_PANEL_INDEX && capabilities.modulesTabUsesRepeatersLabel) {
     return 'tabs.repeaters';
   }
   if (panelIndex === ROOMS_PANEL_INDEX && capabilities.hasRoomServersPanel) return 'tabs.rooms';
-  if (panelIndex === RADIO_TAB_PANEL_INDEX && capabilities.hasReticulumNetworkPanel) {
-    return 'tabs.network';
-  }
   return `tabs.${TAB_SLOT_IDS[panelIndex].toLowerCase()}`;
 }
 

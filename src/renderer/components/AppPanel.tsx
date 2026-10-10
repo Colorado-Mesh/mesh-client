@@ -86,7 +86,6 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { getLiveChannelKey } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
-import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { AppTranslationSection } from './AppTranslationSection';
 import { ConfirmModal } from './ConfirmModal';
@@ -113,7 +112,6 @@ type DangerActionId =
   | 'pruneOfflineNodes'
   | 'clearNodes'
   | 'deleteContactsNoPubkeys'
-  | 'clearReticulumContacts'
   | 'clearMessages'
   | 'clearAllRepeaters'
   | 'clearAllData';
@@ -170,10 +168,6 @@ interface AppSettings {
   meshcoreContactCapEnabled: boolean;
   meshcoreContactCapCount: number;
   meshcoreDeleteNeverAdvertised: boolean;
-  reticulumAutoPruneEnabled: boolean;
-  reticulumAutoPruneDays: number;
-  reticulumDestinationCapEnabled: boolean;
-  reticulumDestinationCapCount: number;
   distanceFilterEnabled: boolean;
   distanceFilterMax: number;
   distanceUnit: 'miles' | 'km';
@@ -195,7 +189,6 @@ interface AppSettings {
   use24HourTime: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
-  rrcUnreadAllRoomMessages: boolean;
   mecpComposeEnabled: boolean;
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
@@ -255,9 +248,6 @@ interface Props {
   onAlwaysShowMessageActionsChange?: (alwaysShow: boolean) => void;
   /** Protocols hidden from the switcher and skipped by autostart (App → Protocols). */
   onHiddenProtocolsChange?: (hidden: MeshProtocol[]) => void;
-  /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
-  reticulumIdentityId?: string | null;
-  reticulumSidecarReady?: boolean;
 }
 
 interface PendingAction {
@@ -307,8 +297,6 @@ export default function AppPanel({
   onChatCompactModeChange,
   onAlwaysShowMessageActionsChange,
   onHiddenProtocolsChange,
-  reticulumIdentityId = null,
-  reticulumSidecarReady = false,
 }: Props) {
   const [soundNotifEnabled, setSoundNotifEnabled] = useState(
     () => localStorage.getItem('mesh-client:notifMuted') !== '1',
@@ -340,8 +328,6 @@ export default function AppPanel({
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
-  const reticulumContactCount = useReticulumPeerStore((s) => s.contacts.size);
-  const clearAllReticulumContacts = useReticulumPeerStore((s) => s.clearAllContacts);
 
   const historyWindowOptionLabels = useMemo((): Record<number, string> => {
     return {
@@ -353,9 +339,7 @@ export default function AppPanel({
     };
   }, [t]);
 
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasReticulumInterfaceConfig, hasRrcPanel } =
-    useRadioProvider(protocol);
-  const isReticulumDmOnly = hasReticulumInterfaceConfig;
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
@@ -608,7 +592,7 @@ export default function AppPanel({
   );
 
   const updateRetentionEnabled = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', enabled: boolean) => {
+    (which: 'meshtastic' | 'meshcore', enabled: boolean) => {
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
@@ -618,7 +602,7 @@ export default function AppPanel({
   );
 
   const updateRetentionCount = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', count: number) => {
+    (which: 'meshtastic' | 'meshcore', count: number) => {
       const clamped = Math.max(
         MESSAGE_RETENTION_MIN_COUNT,
         Math.min(MESSAGE_RETENTION_MAX_COUNT, Math.floor(count) || MESSAGE_RETENTION_MIN_COUNT),
@@ -1416,102 +1400,6 @@ export default function AppPanel({
           </div>
         )}
 
-        {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
-        {protocol === 'reticulum' && (
-          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-            <p className="text-muted text-xs leading-relaxed">
-              {t('appPanel.reticulumDestinationRetentionHint')}
-            </p>
-            <div
-              data-setting-anchor="app.retention.autoPruneDestinations"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="reticulumAutoPrune"
-                checked={settings.reticulumAutoPruneEnabled}
-                onChange={(e) => {
-                  updateSetting('reticulumAutoPruneEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.reticulumAutoPruneDestinations')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-reticulum-auto-prune-label"
-                htmlFor="reticulumAutoPrune"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.reticulumAutoPruneDestinationsLabel')}
-              </label>
-              <input
-                id="apppanel-reticulum-auto-prune-days"
-                type="number"
-                min={1}
-                value={settings.reticulumAutoPruneDays}
-                onChange={(e) => {
-                  updateSetting(
-                    'reticulumAutoPruneDays',
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  );
-                }}
-                disabled={!settings.reticulumAutoPruneEnabled}
-                aria-labelledby="apppanel-reticulum-auto-prune-label"
-                aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
-                  days: settings.reticulumAutoPruneDays,
-                })}
-                className={`${INPUT_BOX_CLASS} w-20 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.days')}</span>
-            </div>
-            <div
-              data-setting-anchor="app.retention.destinationCap"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="reticulumDestinationCap"
-                checked={settings.reticulumDestinationCapEnabled}
-                onChange={(e) => {
-                  updateSetting('reticulumDestinationCapEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.reticulumCapDestinations')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-reticulum-destination-cap-label"
-                htmlFor="reticulumDestinationCap"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.reticulumCapDestinationsLabel')}
-              </label>
-              <input
-                id="apppanel-reticulum-destination-cap-count"
-                type="number"
-                min={1}
-                max={100000}
-                value={settings.reticulumDestinationCapCount}
-                onChange={(e) => {
-                  updateSetting(
-                    'reticulumDestinationCapCount',
-                    Math.max(1, Math.min(100000, parseInt(e.target.value) || 1)),
-                  );
-                }}
-                disabled={!settings.reticulumDestinationCapEnabled}
-                aria-labelledby="apppanel-reticulum-destination-cap-label"
-                aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
-                  count: settings.reticulumDestinationCapCount,
-                })}
-                className={`${INPUT_BOX_CLASS} w-24 text-right`}
-              />
-              <span className="text-ink-300 text-sm">
-                {t('appPanel.reticulumDestinationsUnit', {
-                  count: settings.reticulumDestinationCapCount,
-                })}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
         <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
           <p className="text-muted text-xs leading-relaxed">
@@ -1599,93 +1487,6 @@ export default function AppPanel({
               />
               <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
-          ) : protocol === 'reticulum' ? (
-            <>
-              <div
-                data-setting-anchor="app.retention.reticulumMessageCap"
-                className="border-ink-700 flex items-center gap-2 border-t pt-2"
-              >
-                <input
-                  type="checkbox"
-                  id="messageRetentionReticulum"
-                  checked={retention.reticulumEnabled}
-                  onChange={(e) => {
-                    updateRetentionEnabled('reticulum', e.target.checked);
-                  }}
-                  aria-label={t('appPanel.capStoredMessages')}
-                  className="accent-brand-green"
-                />
-                <label
-                  id="apppanel-message-retention-reticulum-label"
-                  htmlFor="messageRetentionReticulum"
-                  className="text-ink-300 flex-1 cursor-pointer text-sm"
-                >
-                  {t('appPanel.capStoredMessagesLabel')}
-                </label>
-                <input
-                  id="apppanel-message-retention-reticulum-count"
-                  type="number"
-                  min={MESSAGE_RETENTION_MIN_COUNT}
-                  max={MESSAGE_RETENTION_MAX_COUNT}
-                  value={retention.reticulumCount}
-                  onChange={(e) => {
-                    updateRetentionCount(
-                      'reticulum',
-                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                    );
-                  }}
-                  disabled={!retention.reticulumEnabled}
-                  aria-labelledby="apppanel-message-retention-reticulum-label"
-                  aria-label={t('appPanel.capStoredMessagesCountAria', {
-                    count: retention.reticulumCount,
-                  })}
-                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
-                />
-                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
-              </div>
-              <div
-                data-setting-anchor="app.retention.rrcMessageCap"
-                className="border-ink-700 flex items-center gap-2 border-t pt-2"
-              >
-                <input
-                  type="checkbox"
-                  id="messageRetentionRrc"
-                  checked={retention.rrcEnabled}
-                  onChange={(e) => {
-                    updateRetentionEnabled('rrc', e.target.checked);
-                  }}
-                  aria-label={t('appPanel.capStoredRrcMessages')}
-                  className="accent-brand-green"
-                />
-                <label
-                  id="apppanel-message-retention-rrc-label"
-                  htmlFor="messageRetentionRrc"
-                  className="text-ink-300 flex-1 cursor-pointer text-sm"
-                >
-                  {t('appPanel.capStoredRrcMessagesLabel')}
-                </label>
-                <input
-                  id="apppanel-message-retention-rrc-count"
-                  type="number"
-                  min={MESSAGE_RETENTION_MIN_COUNT}
-                  max={MESSAGE_RETENTION_MAX_COUNT}
-                  value={retention.rrcCount}
-                  onChange={(e) => {
-                    updateRetentionCount(
-                      'rrc',
-                      Number.parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                    );
-                  }}
-                  disabled={!retention.rrcEnabled}
-                  aria-labelledby="apppanel-message-retention-rrc-label"
-                  aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
-                    count: retention.rrcCount,
-                  })}
-                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
-                />
-                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
-              </div>
-            </>
           ) : (
             <div
               data-setting-anchor="app.retention.meshtasticMessageCap"
@@ -2310,31 +2111,6 @@ export default function AppPanel({
             </label>
           </div>
         </div>
-        {hasRrcPanel && (
-          <div data-setting-anchor="app.notifications.rrcUnreadAll" className="space-y-1">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="rrcUnreadAllRoomMessages"
-                checked={settings.rrcUnreadAllRoomMessages}
-                onChange={(e) => {
-                  updateSetting('rrcUnreadAllRoomMessages', e.target.checked);
-                }}
-                aria-label={t('appPanel.rrcUnreadAllRoomMessages')}
-                className="accent-brand-green h-4 w-4 rounded"
-              />
-              <label
-                htmlFor="rrcUnreadAllRoomMessages"
-                className="text-ink-300 cursor-pointer text-sm"
-              >
-                {t('appPanel.rrcUnreadAllRoomMessages')}
-              </label>
-            </div>
-            <p className="text-muted pl-7 text-xs leading-relaxed">
-              {t('appPanel.rrcUnreadAllRoomMessagesHint')}
-            </p>
-          </div>
-        )}
       </div>
 
       <AppTranslationSection />
@@ -2873,109 +2649,39 @@ export default function AppPanel({
               )}
             </div>
 
-            {/* Reticulum contacts */}
-            {protocol === 'reticulum' && (
-              <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium text-red-400/90">
-                  {t('appPanel.dangerZoneReticulumHeading')}
-                </div>
-                <p className="text-muted text-xs leading-relaxed">
-                  {t('appPanel.clearReticulumContactsDesc')}
-                </p>
-                <button
-                  type="button"
-                  data-setting-anchor="app.danger.clearReticulumContacts"
-                  disabled={!reticulumSidecarReady}
-                  aria-label={t('appPanel.clearReticulumContactsButton', {
-                    count: reticulumContactCount,
-                  })}
-                  onClick={() => {
-                    executeWithConfirmation({
-                      actionId: 'clearReticulumContacts',
-                      title: t('appPanel.clearReticulumContactsTitle'),
-                      message: t('appPanel.clearReticulumContactsConfirm', {
-                        count: reticulumContactCount,
-                      }),
-                      confirmLabel: t('appPanel.clearReticulumContactsConfirmButton', {
-                        count: reticulumContactCount,
-                      }),
-                      danger: true,
-                      action: async () => {
-                        await clearAllReticulumContacts();
-                      },
-                    });
-                  }}
-                  className={DANGER_ROW_CLASS}
-                >
-                  <div className="font-medium">
-                    {t('appPanel.clearReticulumContactsButton', {
-                      count: reticulumContactCount,
-                    })}
-                  </div>
-                </button>
-              </div>
-            )}
-
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
               <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.messagesSection')}
               </div>
-              {isReticulumDmOnly ? (
-                <p className="text-muted text-xs leading-relaxed">
-                  {t('appPanel.reticulumDmOnlyMessagesHint')}
-                </p>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <label htmlFor="apppanel-clear-channel" className="text-ink-400 shrink-0 text-sm">
-                    {t('appPanel.clearChannelLabel')}
-                  </label>
-                  <select
-                    id="apppanel-clear-channel"
-                    value={clearChannelTarget}
-                    onChange={(e) => {
-                      setClearChannelTarget(parseInt(e.target.value, 10));
-                    }}
-                    aria-label={t('common.channel')}
-                    className="bg-app-bg text-body text-ink-200 h-8 flex-1 rounded-lg border border-red-800/60 px-2 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
-                  >
-                    <option value={CLEAR_ALL_CHANNELS_VALUE}>
-                      {t('appPanel.allChannelsOption')}
+              <div className="flex items-center gap-2">
+                <label htmlFor="apppanel-clear-channel" className="text-ink-400 shrink-0 text-sm">
+                  {t('appPanel.clearChannelLabel')}
+                </label>
+                <select
+                  id="apppanel-clear-channel"
+                  value={clearChannelTarget}
+                  onChange={(e) => {
+                    setClearChannelTarget(parseInt(e.target.value, 10));
+                  }}
+                  aria-label={t('common.channel')}
+                  className="bg-app-bg text-body text-ink-200 h-8 flex-1 rounded-lg border border-red-800/60 px-2 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
+                >
+                  <option value={CLEAR_ALL_CHANNELS_VALUE}>
+                    {t('appPanel.allChannelsOption')}
+                  </option>
+                  {msgChannels.map((ch) => (
+                    <option key={ch} value={ch}>
+                      {getChannelLabel(ch)}
                     </option>
-                    {msgChannels.map((ch) => (
-                      <option key={ch} value={ch}>
-                        {getChannelLabel(ch)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                  ))}
+                </select>
+              </div>
               <button
                 data-setting-anchor="app.danger.clearMessages"
                 type="button"
                 aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
                 onClick={() => {
-                  if (isReticulumDmOnly) {
-                    executeWithConfirmation({
-                      actionId: 'clearMessages',
-                      title: t('appPanel.clearReticulumMessagesTitle'),
-                      message: t('appPanel.clearReticulumMessagesConfirm', { count: messageCount }),
-                      confirmLabel: t('appPanel.clearReticulumMessagesConfirmButton', {
-                        count: messageCount,
-                      }),
-                      danger: true,
-                      messageClearMeta: {
-                        clearedAll: true,
-                        replaceFromDb: true,
-                        messagesMode: 'replace',
-                      },
-                      action: async () => {
-                        if (!reticulumIdentityId) return;
-                        await window.electronAPI.db.clearReticulumMessages(reticulumIdentityId);
-                      },
-                    });
-                    return;
-                  }
                   const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
                   const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
                   const radioNodeId = myNodeNum ?? 0;

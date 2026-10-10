@@ -28,7 +28,7 @@ import { app, dialog, shell } from 'electron';
 import { getDatabase } from './database';
 import { sanitizeLogMessage } from './log-service';
 
-const REPO_OWNER = 'Colorado-Mesh';
+const REPO_OWNER = 'charlottemeshtastic';
 const REPO_NAME = 'mesh-client';
 const ISSUE_TEMPLATE = 'crash_report.md';
 
@@ -264,7 +264,7 @@ function requestReportConsent(ctx: CrashContext): ConsentDecision {
   try {
     const response = dialog.showMessageBoxSync({
       type: 'question',
-      title: 'Mesh-Client — Send a crash report?',
+      title: 'Mesh Hub — Send a crash report?',
       message: 'Report this crash on GitHub?',
       detail: describeReportContents(ctx),
       buttons: ['Always allow', 'Allow once', 'Cancel'],
@@ -312,7 +312,7 @@ export function showCrashReportDialog(ctx: CrashContext): boolean {
   try {
     const response = dialog.showMessageBoxSync({
       type: 'error',
-      title: 'Mesh-Client — Unexpected Error',
+      title: 'Mesh Hub — Unexpected Error',
       message: 'An unexpected error occurred.',
       detail,
       buttons: ['Report on GitHub', 'Dismiss'],

@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
+const MANIFEST = path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml');
 const PKG = path.join(ROOT, 'package.json');
 const SEMVER_PATTERN = /(\d+\.\d+\.\d+)/;
 const FETCH_TIMEOUT_MS = 30_000;
@@ -382,7 +382,7 @@ async function main() {
     const stale = results.filter((r) => r.changed);
     for (const { label, version } of stale) {
       console.error(
-        `sync-flatpak-electron: org.coloradomesh.MeshClient.yml is out of sync with ${label} ${version}`,
+        `sync-flatpak-electron: io.github.charlottemeshtastic.MeshHub.yml is out of sync with ${label} ${version}`,
       );
     }
     process.exit(stale.length > 0 ? 1 : 0);
@@ -391,8 +391,8 @@ async function main() {
   for (const { label, version, changed } of results) {
     console.log(
       changed
-        ? `sync-flatpak-electron: updated org.coloradomesh.MeshClient.yml for ${label} ${version}`
-        : `sync-flatpak-electron: org.coloradomesh.MeshClient.yml already matches ${label} ${version}`,
+        ? `sync-flatpak-electron: updated io.github.charlottemeshtastic.MeshHub.yml for ${label} ${version}`
+        : `sync-flatpak-electron: io.github.charlottemeshtastic.MeshHub.yml already matches ${label} ${version}`,
     );
   }
 }

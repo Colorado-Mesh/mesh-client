@@ -32,7 +32,7 @@ describe('weatherFilterStore', () => {
     localStorage.clear();
     useWeatherFilterStore.getState().setHideInChannels(false);
     useWeatherFilterStore.getState().setPattern('');
-    for (const p of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+    for (const p of ['meshtastic', 'meshcore'] as const) {
       for (const id of useWeatherFilterStore.getState().configs[p].markedSenders) {
         useWeatherFilterStore.getState().setSenderMarked(p, id, false);
       }

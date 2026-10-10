@@ -15,8 +15,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const SIDECAR_PATH_RE =
-  /^(reticulum-sidecar\/|scripts\/check-reticulum-sidecar\.sh|scripts\/clone-ratspeak-stack\.sh|scripts\/check-rsnomad\.sh)/;
+const SIDECAR_PATH_RE = /^(ble-sidecar\/|scripts\/check-ble-sidecar\.sh)/;
 
 /**
  * @param {string} cmd
@@ -109,19 +108,17 @@ export function main() {
   const mergeBase = resolveOriginMainMergeBase();
   if (!mergeBase) {
     console.error(
-      'check:pr: skip sidecar path check (origin/main unavailable); run pnpm run check:reticulum-sidecar manually if needed',
+      'check:pr: skip sidecar path check (origin/main unavailable); run pnpm run check:ble-sidecar manually if needed',
     );
     return 0;
   }
 
   const changed = listChangedPathsVsMergeBase(mergeBase);
   if (branchTouchesSidecar(changed)) {
-    const code = run('pnpm', ['run', 'check:reticulum-sidecar']);
+    const code = run('pnpm', ['run', 'check:ble-sidecar']);
     if (code !== 0) return code;
   } else {
-    console.error(
-      'check:pr: skip check:reticulum-sidecar (no sidecar paths in branch vs origin/main)',
-    );
+    console.error('check:pr: skip check:ble-sidecar (no sidecar paths in branch vs origin/main)');
   }
 
   console.error('check:pr: OK');

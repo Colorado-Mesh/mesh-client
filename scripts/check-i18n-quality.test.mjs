@@ -1850,7 +1850,7 @@ describe('roomsPanel saved passwords per-key quality', () => {
 
   it('flags spaced reticulum sidecar build command', () => {
     const enVal =
-      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run ble:sidecar:build` (requires Rust).';
     const issues = localeStringQualityIssues({
       locale: 'ko',
       flatKey: 'connectionPanel.reticulumSidecarMissing',
@@ -1862,11 +1862,11 @@ describe('roomsPanel saved passwords per-key quality', () => {
 
   it('flags Rust translated as corrosion in reticulumSidecarMissing', () => {
     const enVal =
-      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run reticulum:sidecar:build` (requires Rust).';
+      'Reticulum sidecar not built. From the mesh-client repo run `pnpm run ble:sidecar:build` (requires Rust).';
     const issues = localeStringQualityIssues({
       locale: 'es',
       flatKey: 'connectionPanel.reticulumSidecarMissing',
-      val: 'Sidecar no construido. Ejecute `pnpm run reticulum:sidecar:build` (requiere óxido).',
+      val: 'Sidecar no construido. Ejecute `pnpm run ble:sidecar:build` (requiere óxido).',
       enVal,
     });
     expectIssue(issues, 'reticulum sidecar Rust false friend');

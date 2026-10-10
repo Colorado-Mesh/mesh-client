@@ -31,7 +31,6 @@ import { MS_PER_DAY } from '@/shared/timeConstants';
 
 import {
   diagnosticRowsToRoutingMap,
-  filterDiagnosticRowsForProtocol,
   FOREIGN_LORA_RF_CONDITIONS,
   meshHasRoutingAnomaliesFromRows,
 } from '../lib/diagnostics/diagnosticRows';
@@ -52,7 +51,6 @@ import {
   getRecommendedAction,
   getRecommendedActionForRfCondition,
 } from '../lib/diagnostics/RemediationEngine';
-import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
 import { downloadBlob } from '../lib/downloadBlob';
 import { diagnosticsRowsToJson } from '../lib/exportFormats';
@@ -62,9 +60,7 @@ import { useLocationTrust } from '../lib/ourPositionReference';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
-import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
-import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 import SetLocationCard from './SetLocationCard';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
@@ -158,10 +154,6 @@ interface Props {
   meshtasticListenerNodeId?: number;
   /** MeshCore contacts only — used for heard-by-Meshtastic links (not merged Meshtastic nodes). */
   meshcoreNodes?: Map<number, MeshNode>;
-  /** Reticulum: switch to Connection tab for interface edit actions. */
-  onNavigateToReticulumConnection?: () => void;
-  /** Reticulum: refresh config audit rows after repair/disable. */
-  onRefreshReticulumDiagnostics?: () => void;
   /** Re-resolve our position after the user sets or confirms a saved location. */
   onLocationChanged?: () => void;
 }
@@ -189,8 +181,6 @@ export default function DiagnosticsPanel({
   protocol,
   meshtasticListenerNodeId = 0,
   meshcoreNodes = new Map(),
-  onNavigateToReticulumConnection,
-  onRefreshReticulumDiagnostics,
   onLocationChanged,
 }: Props) {
   const { t } = useTranslation();
@@ -205,20 +195,12 @@ export default function DiagnosticsPanel({
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
   const showNodeHexId = capabilities?.showsNodeNumHexId !== false;
-  // LoRa Node/Offense tables are Meshtastic/MeshCore only. Derive from
-  // capabilities.protocol (not the tab prop alone) so a mismatched protocol
-  // prop cannot resurrect LoRa mesh tables on Reticulum. Native Reticulum rows
-  // render in ReticulumDiagnosticsSection — never as !00000000 peers.
-  const showLoRaMeshDiagnostics =
-    capabilities?.protocol !== 'reticulum' && capabilities?.hasHopCount !== false;
+  const showLoRaMeshDiagnostics = capabilities?.hasHopCount !== false;
   const showForeignLoraDiagnostics = capabilities?.hasDiagnosticsPanel !== false;
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const diagnosticRowsRestoredAt = useDiagnosticsStore((s) => s.diagnosticRowsRestoredAt);
   const clearDiagnosticRowsSnapshot = useDiagnosticsStore((s) => s.clearDiagnosticRowsSnapshot);
-  const visibleDiagnosticRows = useMemo(
-    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
-    [diagnosticRows, protocol],
-  );
+  const visibleDiagnosticRows = diagnosticRows;
   const routingAnomaliesMap = useMemo(
     () => diagnosticRowsToRoutingMap(visibleDiagnosticRows),
     [visibleDiagnosticRows],
@@ -501,20 +483,14 @@ export default function DiagnosticsPanel({
     return order(a.severity) - order(b.severity);
   });
 
-  const selfRows = anomalyList.filter(
-    (r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r) && !isReticulumDiagnosticRow(r),
-  );
+  const selfRows = anomalyList.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
   const foreignLoraListenerId =
     foreignLoraListenerNodeId > 0 ? foreignLoraListenerNodeId : myNodeNum;
   const otherCrossProtocolRows = anomalyList.filter(
     (r) =>
       r.nodeId === foreignLoraListenerId && isForeignLoraRfRow(r) && !isMeshCoreInterferenceRow(r),
   );
-  // Reticulum interface/stack rows belong in ReticulumDiagnosticsSection only —
-  // never as peer Node/Offense rows (avoids !00000000 self placeholders).
-  const meshRows = anomalyList.filter(
-    (r) => r.nodeId !== myNodeNum && !isReticulumDiagnosticRow(r),
-  );
+  const meshRows = anomalyList.filter((r) => r.nodeId !== myNodeNum);
 
   const errorCount = visibleDiagnosticRows.filter(
     (r) => r.kind === 'routing' && r.severity === 'error',
@@ -883,21 +859,6 @@ export default function DiagnosticsPanel({
         </div>
       </div>
 
-      {capabilities?.hasReticulumNativeDiagnostics ? <DiagnosticsPingPanel /> : null}
-
-      {capabilities?.hasReticulumNativeDiagnostics ? (
-        <div className="space-y-2">
-          <h3 className="text-muted text-sm font-medium">
-            {t('diagnosticsPanel.reticulum.sectionTitle')}
-          </h3>
-          <ReticulumDiagnosticsSection
-            rows={diagnosticRows}
-            onNavigateToConnection={onNavigateToReticulumConnection}
-            onRefreshDiagnostics={onRefreshReticulumDiagnostics}
-          />
-        </div>
-      ) : null}
-
       {diagnosticRowsRestoredAt != null &&
         showLoRaMeshDiagnostics &&
         visibleDiagnosticRows.length > 0 && (
@@ -1010,28 +971,28 @@ export default function DiagnosticsPanel({
                   </h3>
                   <ResponsiveContainer height={140} width="100%">
                     <LineChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
-                      <CartesianGrid stroke="#364156" strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="#424242" strokeDasharray="3 3" vertical={false} />
                       <XAxis
                         dataKey="time"
                         interval="preserveStartEnd"
-                        tick={{ fill: '#93a0b7', fontSize: 10 }}
+                        tick={{ fill: '#a3a3a3', fontSize: 10 }}
                         tickLine={false}
                       />
                       <YAxis
                         domain={[0, 100]}
-                        tick={{ fill: '#93a0b7', fontSize: 10 }}
+                        tick={{ fill: '#a3a3a3', fontSize: 10 }}
                         tickLine={false}
                         unit="%"
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#212d40',
-                          border: '1px solid #364156',
+                          backgroundColor: '#333333',
+                          border: '1px solid #424242',
                           borderRadius: '6px',
                           fontSize: '12px',
                         }}
                         formatter={(v) => [`${v}%`, t('diagnosticsPanel.cuHistoryTooltipLabel')]}
-                        labelStyle={{ color: '#93a0b7' }}
+                        labelStyle={{ color: '#a3a3a3' }}
                       />
                       <Line
                         dataKey="cu"
@@ -1458,7 +1419,7 @@ export default function DiagnosticsPanel({
         />
       )}
 
-      {/* Anomaly Table — LoRa mesh only; Reticulum-only rows live in ReticulumDiagnosticsSection */}
+      {/* Anomaly Table — LoRa mesh only */}
       {showLoRaMeshDiagnostics && (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">

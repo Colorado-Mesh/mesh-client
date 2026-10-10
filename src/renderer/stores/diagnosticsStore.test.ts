@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RETICULUM_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
 import {
   computeCuStats24h,
@@ -124,39 +123,6 @@ describe('diagnosticsStore analysis timers', () => {
     store.runReanalysis(() => new Map(), 1);
     vi.advanceTimersByTime(2000);
     expect(vi.getTimerCount()).toBe(1);
-  });
-
-  it('runReanalysis clears LoRa diagnostic rows for Reticulum but keeps native reticulum rows', () => {
-    vi.useFakeTimers();
-    const store = useDiagnosticsStore.getState();
-    const reticulumRow = {
-      kind: 'rf' as const,
-      id: 'rf:0:reticulum/rns-not-ready',
-      nodeId: 0,
-      condition: 'reticulum/rns-not-ready',
-      cause: 'RNS stack is not ready',
-      severity: 'warning' as const,
-      detectedAt: Date.now(),
-    };
-    useDiagnosticsStore.setState({
-      diagnosticRows: [
-        {
-          kind: 'routing',
-          id: 'routing:1',
-          nodeId: 1,
-          type: 'bad_route',
-          severity: 'warning',
-          description: 'stale routing row',
-          detectedAt: Date.now(),
-        },
-        reticulumRow,
-      ],
-      diagnosticRowsRestoredAt: Date.now(),
-    });
-    store.runReanalysis(() => new Map(), 0, RETICULUM_CAPABILITIES);
-    vi.advanceTimersByTime(2000);
-    expect(useDiagnosticsStore.getState().diagnosticRows).toEqual([reticulumRow]);
-    expect(useDiagnosticsStore.getState().diagnosticRowsRestoredAt).toBeNull();
   });
 
   it('runReanalysis preserves restored rows when node map is not hydrated yet', () => {

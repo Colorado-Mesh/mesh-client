@@ -76,7 +76,7 @@ describe('buildCrashReportUrl', () => {
     });
     const params = new URL(url).searchParams;
 
-    expect(url).toContain('https://github.com/Colorado-Mesh/mesh-client/issues/new');
+    expect(url).toContain('https://github.com/charlottemeshtastic/mesh-client/issues/new');
     expect(params.get('template')).toBe('crash_report.md');
     expect(params.get('title')).toContain('[Crash]');
     expect(params.get('title')).toContain('Cannot read properties of null');
@@ -268,7 +268,7 @@ describe('showCrashReportDialog', () => {
     );
     expect(result).toBe(true);
     expect(mockedOpenExternal).toHaveBeenCalledWith(
-      expect.stringContaining('https://github.com/Colorado-Mesh/mesh-client/issues/new'),
+      expect.stringContaining('https://github.com/charlottemeshtastic/mesh-client/issues/new'),
     );
   });
 

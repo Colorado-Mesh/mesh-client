@@ -13,7 +13,6 @@ import {
   replaceRfRowsForNode,
   replaceRoutingRowsFromMap,
 } from '../lib/diagnostics/diagnosticRows';
-import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import {
   diagnoseConnectedNode,
   diagnoseOtherNode,
@@ -1330,8 +1329,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       diagnosticsDebounce.fullReanalysisTimer = null;
       if (generation !== diagnosticsReanalysisGeneration) return;
       if (capabilities?.hasHopCount === false) {
-        set((state) => ({
-          diagnosticRows: state.diagnosticRows.filter(isReticulumDiagnosticRow),
+        set(() => ({
+          diagnosticRows: [],
           diagnosticRowsRestoredAt: null,
         }));
         schedulePersistDiagnosticRows(() => get().diagnosticRows);

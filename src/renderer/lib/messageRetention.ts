@@ -5,11 +5,8 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
  * Independent caps per protocol live in the `app_settings` KV table:
  *   - meshtasticMessageRetentionEnabled / meshtasticMessageRetentionCount
  *   - meshcoreMessageRetentionEnabled  / meshcoreMessageRetentionCount
- *   - reticulumMessageRetentionEnabled / reticulumMessageRetentionCount
- *   - rrcMessageRetentionEnabled / rrcMessageRetentionCount
  *
- * Defaults: enabled with a cap of 4000 messages per LoRa/LXMF table (RRC default
- * 10000). Pruning is invoked from the renderer at app startup (see `App.tsx`)
+ * Defaults: enabled with a cap of 4000 messages per protocol table. Pruning is invoked from the renderer at app startup (see `App.tsx`)
  * and applies the cap by keeping the newest N rows by `timestamp`.
  *
  * Failure mode: if IPC throws (DB locked / preload unavailable), callers fall
@@ -17,9 +14,6 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
  */
 
 export const MESSAGE_RETENTION_DEFAULT_COUNT = 4000;
-export const RRC_MESSAGE_RETENTION_DEFAULT_COUNT = 10_000;
-/** Age prune for RRC history when retention is enabled (startup). */
-export const RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS = 30;
 export const MESSAGE_RETENTION_MIN_COUNT = 100;
 export const MESSAGE_RETENTION_MAX_COUNT = 100_000;
 
@@ -28,10 +22,6 @@ export interface MessageRetentionSettings {
   meshtasticCount: number;
   meshcoreEnabled: boolean;
   meshcoreCount: number;
-  reticulumEnabled: boolean;
-  reticulumCount: number;
-  rrcEnabled: boolean;
-  rrcCount: number;
 }
 
 export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
@@ -39,10 +29,6 @@ export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
   meshtasticCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   meshcoreEnabled: true,
   meshcoreCount: MESSAGE_RETENTION_DEFAULT_COUNT,
-  reticulumEnabled: true,
-  reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
-  rrcEnabled: true,
-  rrcCount: RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
 };
 
 export const MESSAGE_RETENTION_KEYS = {
@@ -50,10 +36,6 @@ export const MESSAGE_RETENTION_KEYS = {
   meshtasticCount: 'meshtasticMessageRetentionCount',
   meshcoreEnabled: 'meshcoreMessageRetentionEnabled',
   meshcoreCount: 'meshcoreMessageRetentionCount',
-  reticulumEnabled: 'reticulumMessageRetentionEnabled',
-  reticulumCount: 'reticulumMessageRetentionCount',
-  rrcEnabled: 'rrcMessageRetentionEnabled',
-  rrcCount: 'rrcMessageRetentionCount',
 } as const;
 
 function parseBool(v: string | undefined, fallback: boolean): boolean {
@@ -69,7 +51,7 @@ function parseCount(v: string | undefined, fallback: number): number {
   return Math.max(MESSAGE_RETENTION_MIN_COUNT, Math.min(MESSAGE_RETENTION_MAX_COUNT, n));
 }
 
-const MESSAGE_RETENTION_PROTOCOLS = ['meshtastic', 'meshcore', 'reticulum', 'rrc'] as const;
+const MESSAGE_RETENTION_PROTOCOLS = ['meshtastic', 'meshcore'] as const;
 
 export function parseMessageRetention(
   raw: Record<string, string> | null | undefined,

@@ -51,7 +51,6 @@ import { deviceHeaderVariant } from '../lib/connectionHeaderStatus';
 import {
   humanizeBleError,
   humanizeHttpError,
-  humanizeReticulumSidecarError,
   humanizeSerialError,
 } from '../lib/connectionPanelErrorHumanize';
 import {
@@ -179,8 +178,6 @@ import { HelpTooltip } from './HelpTooltip';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
 import { MqttProfileControls } from './MqttProfileControls';
 import { PickerSortControls } from './PickerSortControls';
-import type { ReticulumSetupDestination } from './reticulum/ReticulumSetupGuide';
-import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
 import { Button } from './ui/Button';
 import { CopyField } from './ui/CopyField';
@@ -408,15 +405,6 @@ interface Props {
   onOpenFirmwareReleases?: () => void;
   /** MeshCore: export private key from connected radio when MQTT identity cache is incomplete. */
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
-  /** Reticulum: start or restart the AGPL sidecar stack. */
-  onStartReticulumStack?: () => Promise<void>;
-  /** Reticulum: open Network tab RMAP discovery settings. */
-  onOpenReticulumRmapSettings?: () => void;
-  /** Reticulum: open App tab GPS settings for RMAP coordinates. */
-  onOpenAppGpsSettings?: () => void;
-  /** Reticulum: open Admin Bluetooth for USB Clear paired / Start pairing. */
-  onOpenAdminBluetooth?: () => void;
-  onOpenReticulumSetupDestination?: (destination: ReticulumSetupDestination) => boolean;
   /** TAK server summary for the link tiles; omitted when the protocol has no TAK panel. */
   tak?: ConnectionTakSummary;
 }
@@ -440,11 +428,6 @@ export default function ConnectionPanel({
   firmwareCheckState,
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
-  onStartReticulumStack,
-  onOpenReticulumRmapSettings,
-  onOpenAppGpsSettings,
-  onOpenAdminBluetooth,
-  onOpenReticulumSetupDestination,
   tak,
 }: Props) {
   const { t } = useTranslation();
@@ -452,7 +435,6 @@ export default function ConnectionPanel({
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const letsMeshUsernameSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [reticulumStackError, setReticulumStackError] = useState<string | null>(null);
 
   useEffect(() => {
     runConnectionPanelStorageMigrations();
@@ -1867,7 +1849,7 @@ export default function ConnectionPanel({
     ) : null;
 
   let connectingProgressView: ReactNode = null;
-  if (!capabilities.hasReticulumInterfaceConfig && connecting && !isConnected) {
+  if (connecting && !isConnected) {
     connectingProgressView = (
       <div className="flex w-full flex-col items-center justify-center space-y-6 py-10">
         {renderAutoReconnectBanner()}
@@ -2991,35 +2973,6 @@ export default function ConnectionPanel({
         {connectingProgressView}
         {mqttSection}
         {coloradoRegionGateModal}
-      </div>
-    );
-  }
-
-  if (capabilities.hasReticulumInterfaceConfig) {
-    return (
-      <div className="w-full space-y-4">
-        <ReticulumStackPanel
-          tak={tak}
-          connecting={state.status === 'connecting'}
-          stackError={reticulumStackError}
-          onOpenReticulumRmapSettings={onOpenReticulumRmapSettings}
-          onOpenAppGpsSettings={onOpenAppGpsSettings}
-          onOpenAdminBluetooth={onOpenAdminBluetooth}
-          onOpenSetupDestination={onOpenReticulumSetupDestination}
-          onStartStack={async () => {
-            setReticulumStackError(null);
-            try {
-              await onStartReticulumStack?.();
-            } catch (err: unknown) {
-              setReticulumStackError(humanizeReticulumSidecarError(err, t));
-              throw err;
-            }
-          }}
-          onStopStack={async () => {
-            setReticulumStackError(null);
-            await onDisconnect();
-          }}
-        />
       </div>
     );
   }

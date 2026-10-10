@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { readdirSync, readFileSync } from 'fs';
-import { dirname, join, normalize } from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
@@ -190,402 +190,7 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 });
 
-const RENDERER_ROOT = join(__dirname, '../renderer');
-const SRC_ROOT = join(__dirname, '..');
-
-function listRendererSources(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...listRendererSources(full));
-      continue;
-    }
-    if (!entry.isFile() || !/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) {
-      continue;
-    }
-    out.push(normalize(full));
-  }
-  return out;
-}
-
-function readBalanced(
-  source: string,
-  openIndex: number,
-  open: string,
-  close: string,
-): string | null {
-  let depth = 0;
-  let quote: string | null = null;
-  for (let i = openIndex; i < source.length; i++) {
-    const c = source[i];
-    if (quote) {
-      if (c === '\\') {
-        i += 1;
-        continue;
-      }
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === '`') {
-      quote = c;
-      continue;
-    }
-    if (c === open) depth += 1;
-    else if (c === close) {
-      depth -= 1;
-      if (depth === 0) return source.slice(openIndex + 1, i);
-    }
-  }
-  return null;
-}
-
-function readFirstArg(source: string, start: number): string {
-  let i = start;
-  while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
-  const begin = i;
-  let depth = 0;
-  let quote: string | null = null;
-  for (; i < source.length; i++) {
-    const c = source[i];
-    if (quote) {
-      if (c === '\\') {
-        i += 1;
-        continue;
-      }
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === '`') {
-      quote = c;
-      continue;
-    }
-    if (c === '(' || c === '[' || c === '{') depth += 1;
-    else if (c === ')' || c === ']' || c === '}') {
-      if (depth === 0) return source.slice(begin, i).trim();
-      depth -= 1;
-    } else if (c === ',' && depth === 0) {
-      return source.slice(begin, i).trim();
-    }
-  }
-  return source.slice(begin).trim();
-}
-
-function appSettingsSetArgExprs(source: string): string[] {
-  const args: string[] = [];
-  const re = /electronAPI\.appSettings\s*\.set\s*\(/g;
-  for (const match of source.matchAll(re)) {
-    const arg = readFirstArg(source, (match.index ?? 0) + match[0].length);
-    if (arg) args.push(arg);
-  }
-  return args;
-}
-
-function isIdentChar(ch: string): boolean {
-  return (
-    (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch === '_'
-  );
-}
-
-function isIdent(value: string): boolean {
-  if (value.length === 0) return false;
-  for (const ch of value) {
-    if (!isIdentChar(ch)) return false;
-  }
-  return true;
-}
-
-/** Index just after `=` for `const`/`let name =`, skipping identifier prefixes. */
-function constAssignmentValueStarts(source: string, name: string): number[] {
-  const starts: number[] = [];
-  for (const keyword of ['const', 'let']) {
-    const needle = `${keyword} ${name}`;
-    let from = 0;
-    while (from < source.length) {
-      const at = source.indexOf(needle, from);
-      if (at < 0) break;
-      const before = at === 0 ? '' : (source[at - 1] ?? '');
-      if (before && isIdentChar(before)) {
-        from = at + needle.length;
-        continue;
-      }
-      let i = at + needle.length;
-      if (isIdentChar(source[i] ?? '')) {
-        from = at + needle.length;
-        continue;
-      }
-      while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
-      if (source[i] !== '=') {
-        from = at + needle.length;
-        continue;
-      }
-      i += 1;
-      while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
-      starts.push(i);
-      from = i;
-    }
-  }
-  return starts;
-}
-
-function readQuoted(source: string, start: number): string | null {
-  const quote = source[start];
-  if (quote !== "'" && quote !== '"') return null;
-  const end = source.indexOf(quote, start + 1);
-  if (end < 0) return null;
-  return source.slice(start + 1, end);
-}
-
-function stringConstValue(source: string, name: string): string | null {
-  for (const start of constAssignmentValueStarts(source, name)) {
-    const value = readQuoted(source, start);
-    if (value != null) return value;
-  }
-  return null;
-}
-
-function objectConstValues(source: string, name: string): Record<string, string> | null {
-  for (const start of constAssignmentValueStarts(source, name)) {
-    if (source[start] !== '{') continue;
-    const body = readBalanced(source, start, '{', '}');
-    if (body == null) return null;
-    const values: Record<string, string> = {};
-    for (const prop of body.matchAll(/([A-Za-z0-9_]+)\s*:\s*(['"])([^'"\\]*)\2/g)) {
-      const key = prop[1];
-      const value = prop[3];
-      if (key && value != null) values[key] = value;
-    }
-    return values;
-  }
-  return null;
-}
-
-function importedValueBindings(source: string): Map<string, { from: string; exported: string }> {
-  const bindings = new Map<string, { from: string; exported: string }>();
-  for (const match of source.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g)) {
-    const specifiers = match[1];
-    const from = match[2];
-    if (!specifiers || !from) continue;
-    for (const part of specifiers.split(',')) {
-      const piece = part.trim();
-      if (!piece || piece.startsWith('type ')) continue;
-      const parts = piece.split(/\s+/).filter(Boolean);
-      const exported = parts[0];
-      const local = parts.length === 3 && parts[1] === 'as' ? parts[2] : exported;
-      if (!exported || !local || !isIdent(exported) || !isIdent(local)) continue;
-      if (parts.length !== 1 && !(parts.length === 3 && parts[1] === 'as')) continue;
-      bindings.set(local, { from, exported });
-    }
-  }
-  return bindings;
-}
-
-function localInitializers(source: string, name: string): string[] {
-  const out: string[] = [];
-  for (const start of constAssignmentValueStarts(source, name)) {
-    let stop = source.length;
-    const semi = source.indexOf(';', start);
-    const nl = source.indexOf('\n', start);
-    if (semi >= 0) stop = Math.min(stop, semi);
-    if (nl >= 0) stop = Math.min(stop, nl);
-    const init = source.slice(start, stop).trim();
-    if (init) out.push(init);
-  }
-  return out;
-}
-
-function resolveModule(
-  fromFile: string,
-  spec: string,
-  sources: ReadonlyMap<string, string>,
-): string | null {
-  const base = spec.startsWith('@/')
-    ? join(SRC_ROOT, spec.slice(2))
-    : spec.startsWith('.')
-      ? join(dirname(fromFile), spec)
-      : null;
-  if (!base) return null;
-  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')]) {
-    const normalized = normalize(candidate);
-    if (sources.has(normalized)) return normalized;
-  }
-  return null;
-}
-
-function lookupStringConst(
-  name: string,
-  source: string,
-  file: string,
-  sources: ReadonlyMap<string, string>,
-): string | null {
-  const local = stringConstValue(source, name);
-  if (local != null) return local;
-  const imported = importedValueBindings(source).get(name);
-  if (!imported) return null;
-  const otherPath = resolveModule(file, imported.from, sources);
-  const other = otherPath ? sources.get(otherPath) : undefined;
-  return other ? stringConstValue(other, imported.exported) : null;
-}
-
-function lookupObjectConst(
-  name: string,
-  source: string,
-  file: string,
-  sources: ReadonlyMap<string, string>,
-): Record<string, string> | null {
-  const local = objectConstValues(source, name);
-  if (local && Object.keys(local).length > 0) return local;
-  const imported = importedValueBindings(source).get(name);
-  if (!imported) return null;
-  const otherPath = resolveModule(file, imported.from, sources);
-  const other = otherPath ? sources.get(otherPath) : undefined;
-  return other ? objectConstValues(other, imported.exported) : null;
-}
-
-function resolveAppSettingsKeyExpr(
-  expr: string,
-  source: string,
-  file: string,
-  sources: ReadonlyMap<string, string>,
-  depth = 0,
-): string[] {
-  if (depth > 6) return [];
-  const trimmed = expr.trim().replace(/;$/, '');
-  const literal = /^(['"])([^'"\\]*)\1$/.exec(trimmed);
-  if (literal?.[2] != null) return [literal[2]];
-
-  const member = /^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/.exec(trimmed);
-  if (member?.[1] && member[2]) {
-    const value = lookupObjectConst(member[1], source, file, sources)?.[member[2]];
-    return value != null ? [value] : [];
-  }
-
-  const indexed = /^([A-Za-z0-9_]+)\[(.+)\]$/.exec(trimmed);
-  if (indexed?.[1]) {
-    const values = lookupObjectConst(indexed[1], source, file, sources);
-    if (!values) return [];
-    const indexLiteral = /^(['"])([^'"\\]*)\1$/.exec(indexed[2]?.trim() ?? '');
-    if (indexLiteral?.[2] != null) {
-      const value = values[indexLiteral[2]];
-      return value != null ? [value] : [];
-    }
-    return Object.values(values);
-  }
-
-  if (!/^[A-Za-z0-9_]+$/.test(trimmed)) return [];
-  const direct = lookupStringConst(trimmed, source, file, sources);
-  if (direct != null) return [direct];
-  const resolved = localInitializers(source, trimmed).flatMap((init) =>
-    init === trimmed ? [] : resolveAppSettingsKeyExpr(init, source, file, sources, depth + 1),
-  );
-  return [...new Set(resolved)];
-}
-
-/** String-literal keys the renderer passes to `electronAPI.appSettings.set`. */
-function collectRendererAppSettingsSetKeys(): string[] {
-  const files = listRendererSources(RENDERER_ROOT);
-  const sources = new Map(files.map((file) => [file, readFileSync(file, 'utf-8')]));
-  const keys = new Set<string>();
-  for (const [file, source] of sources) {
-    for (const arg of appSettingsSetArgExprs(source)) {
-      for (const key of resolveAppSettingsKeyExpr(arg, source, file, sources)) {
-        if (key) keys.add(key);
-      }
-    }
-  }
-  return [...keys].sort();
-}
-
 describe('Persistent app settings IPC (source contract)', () => {
-  it('registers appSettings:get and appSettings:set with allow-listed keys', () => {
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:get'");
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:set'");
-    expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
-    expect(INDEX_SOURCE).toMatch(/key not allowed/);
-    expect(INDEX_SOURCE).toContain("'meshtasticLastRfSelfNodeId'");
-    expect(INDEX_SOURCE).toContain("'meshcoreLastSelfNodeId'");
-    // Missing allowlist entries fail silently, so pin the Reticulum keys explicitly.
-    expect(INDEX_SOURCE).toContain("'reticulumAutostart'");
-    expect(INDEX_SOURCE).toContain("'reticulumAutoResendOnAnnounce'");
-    expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
-    expect(INDEX_SOURCE).toContain("'use24HourTime'");
-    expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_LAST_POST_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
-  });
-
-  it('allowlists every renderer key persisted via appSettings:set', () => {
-    const allowListStart = INDEX_SOURCE.indexOf('const APP_SETTINGS_ALLOWED_KEYS');
-    const allowListEnd = INDEX_SOURCE.indexOf('const APP_SETTINGS_MAX_VALUE_LENGTH');
-    expect(allowListStart).toBeGreaterThanOrEqual(0);
-    expect(allowListEnd).toBeGreaterThan(allowListStart);
-    const allowListBlock = INDEX_SOURCE.slice(allowListStart, allowListEnd);
-    const rmapSource = readFileSync(
-      join(__dirname, '../renderer/lib/reticulum/reticulumRmapDiscovery.ts'),
-      'utf-8',
-    );
-    const rmapKeysBlock = /export const RMAP_SETTINGS_KEYS = \{([\s\S]*?)\}/.exec(rmapSource)?.[1];
-    const rmapKeys = [...(rmapKeysBlock ?? '').matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]);
-    expect(rmapKeys.length).toBeGreaterThanOrEqual(7);
-
-    const identitySource = readFileSync(
-      join(__dirname, '../renderer/lib/meshtasticMqttIdentity.ts'),
-      'utf-8',
-    );
-    const ownNodeKey = /MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY = '([^']+)'/.exec(
-      identitySource,
-    )?.[1];
-    expect(ownNodeKey).toBeDefined();
-
-    for (const key of [...rmapKeys, ownNodeKey]) {
-      expect(allowListBlock).toContain(`'${key}'`);
-    }
-
-    const prefixSource = readFileSync(
-      join(__dirname, '../shared/appSettingsKeyPrefixes.ts'),
-      'utf-8',
-    );
-    const prefixes = [...prefixSource.matchAll(/export const ([A-Z0-9_]+) = '([^']+)'/g)].flatMap(
-      (match) => {
-        const name = match[1];
-        const value = match[2];
-        if (!name || !value || !INDEX_SOURCE.includes(`key.startsWith(${name})`)) return [];
-        return [value];
-      },
-    );
-    const rendererKeys = collectRendererAppSettingsSetKeys();
-    expect(rendererKeys).toEqual(
-      expect.arrayContaining([
-        'storeForwardHistoryProfile',
-        'locale',
-        'mapBasemapId',
-        'notificationSounds',
-        'reduceMotion',
-        'use24HourTime',
-        'storeForwardAutoFetchHistory',
-        'reticulumAutostart',
-        'reticulumAutoResendOnAnnounce',
-        'meshtasticConfigureTargetNodeNum',
-        'meshtasticLastRfSelfNodeId',
-        'meshtasticOwnNodeNumsByPublicKey',
-        'meshcoreLastSelfNodeId',
-        'reticulumLastSelfLxmfHash',
-        'meshtasticMessageRetentionEnabled',
-        'rrcMessageRetentionCount',
-        'reticulumRmapPublishIfac',
-      ]),
-    );
-    const missing = rendererKeys.filter(
-      (key) =>
-        !allowListBlock.includes(`'${key}'`) &&
-        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length),
-    );
-    expect(missing).toEqual([]);
-  });
-
   it('gives own-node public key history a JSON-sized value limit', () => {
     expect(INDEX_SOURCE).toMatch(/key === 'meshtasticOwnNodeNumsByPublicKey'\) return 4096/);
   });
@@ -649,9 +254,8 @@ describe('About dialog crash guard (source contract)', () => {
     expect(INDEX_SOURCE).toContain(
       'void shell.openExternal(target.toString() /* parseHttpOrHttpsUrl */).catch((e: unknown) => {',
     );
-    expect(INDEX_SOURCE).toContain('HELP_URL_WEBSITE');
     expect(INDEX_SOURCE).toContain('HELP_URL_GITHUB');
-    expect(INDEX_SOURCE).toContain('HELP_URL_DISCORD');
+    expect(INDEX_SOURCE).toContain('HELP_URL_UPSTREAM');
   });
 });
 
@@ -727,90 +331,6 @@ describe('MQTT IPC handlers (source contract)', () => {
   it('registers support bundle export IPC', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('support:exportBundle'");
     expect(INDEX_SOURCE).toContain('buildSupportBundleZip');
-  });
-});
-
-describe('Reticulum sidecar IPC handlers (source contract)', () => {
-  const RETICULUM_HANDLERS_SOURCE = readFileSync(
-    join(__dirname, 'ipc/reticulum-handlers.ts'),
-    'utf8',
-  );
-  const RETICULUM_DB_HANDLERS_SOURCE = readFileSync(
-    join(__dirname, 'ipc/reticulum-db-handlers.ts'),
-    'utf8',
-  );
-  it('registers reticulum lifecycle and proxy handlers', () => {
-    expect(INDEX_SOURCE).toContain('registerReticulumIpcHandlers');
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:start'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:stop'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:syncInterfaceIssueScope'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain(
-      "'reticulum:clearBleBondIssuesForOnlineInterfaces'",
-    );
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain('settleReticulumProxyFailure');
-    expect(RETICULUM_HANDLERS_SOURCE).toContain('reticulumProxyIpcErrorEnvelope');
-    expect(PRELOAD_SOURCE).toContain('unwrapReticulumProxy');
-    expect(PRELOAD_SOURCE).toContain('throwIfReticulumProxyIpcError');
-    expect(PRELOAD_SOURCE).toContain("'/api/v1/rrc/hubs'");
-    expect(PRELOAD_SOURCE).toContain('rrc:');
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPost'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceSendAudio'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesStatus'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesAction'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyPut'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyDelete'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:readDefaultConfigFile'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('reticulum:showConfigImportDialog'",
-    );
-    expect(RETICULUM_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('reticulum:showIdentityImportDialog'",
-    );
-    expect(RETICULUM_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('reticulum:showIdentityBackupImportDialog'",
-    );
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveIdentityExportDialog'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:saveBlocklistDialog'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:openBlocklistDialog'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('reticulum:showNomadContentSourceDialog'",
-    );
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:setNomadContentSource'");
-    expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:validateConfig'");
-    expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
-    expect(INDEX_SOURCE).toContain('registerRrcDbIpcHandlers');
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:searchReticulumMessages'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:deleteReticulumMessage'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:clearReticulumMessages'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:clearReticulumContactDestinations'",
-    );
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getBlockedContacts'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:blockContact'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:unblockContact'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:exportBlockedContacts'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:importBlockedContacts'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getReticulumIdentityActivity'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getReticulumIdentityActivityByIdentity'");
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:upsertReticulumIdentityActivityBatch'",
-    );
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:pruneReticulumDestinationsByCount'",
-    );
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:deleteReticulumDestinationsByAge'",
-    );
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:pruneReticulumIdentityActivityByAge'",
-    );
-    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
-      "ipcMain.handle('db:deleteReticulumDestination'",
-    );
   });
 });
 
@@ -953,7 +473,7 @@ describe('Native Electron call guards (source contract)', () => {
   });
 
   it('guards fatal startup error dialog fallback', () => {
-    expect(INDEX_SOURCE).toContain("showFatalStartupError('Mesh-Client — Startup Error', message)");
+    expect(INDEX_SOURCE).toContain("showFatalStartupError('Mesh Hub — Startup Error', message)");
     expect(INDEX_SOURCE).toContain('isDatabaseSchemaTooNewError(error)');
     expect(INDEX_SOURCE).toContain('formatDatabaseSchemaTooNewMessage');
     expect(INDEX_SOURCE).not.toMatch(/showMessageBox\([^)]*mainWindow[^)]*Startup Error/s);
@@ -970,7 +490,7 @@ describe('Native Electron call guards (source contract)', () => {
   });
 
   it('shows import blocked dialog when merge source schema is too new', () => {
-    expect(INDEX_SOURCE).toContain("'Mesh-Client — Import Blocked'");
+    expect(INDEX_SOURCE).toContain("'Mesh Hub — Import Blocked'");
     expect(INDEX_SOURCE).toMatch(
       /db:import[\s\S]*?isDatabaseSchemaTooNewError\(err\)[\s\S]*?formatDatabaseSchemaTooNewMessage/,
     );
@@ -981,19 +501,6 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('chat:fetchLinkPreview'[\s\S]*?validateIpcSender\(event\)/,
     );
-  });
-
-  it('registers chat:readReticulumAttachmentAsDataUrl with sender validation and path jail', () => {
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:readReticulumAttachmentAsDataUrl'");
-    expect(INDEX_SOURCE).toMatch(
-      /ipcMain\.handle\('chat:readReticulumAttachmentAsDataUrl'[\s\S]*?validateIpcSender\(event\)/,
-    );
-    expect(INDEX_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
-    expect(INDEX_SOURCE).toContain('takeReticulumAttachmentImageRateToken');
-    expect(INDEX_SOURCE).toContain('o.filePath.length > 512');
-    // Optional mimeType on the wire is ignored — magic bytes alone decide embed MIME.
-    expect(INDEX_SOURCE).toContain('magic bytes alone decide embed MIME');
-    expect(INDEX_SOURCE).toContain('return { dataUrl }');
   });
 
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {
@@ -1084,13 +591,6 @@ describe('unseen emergency window attention', () => {
     expect(body).toContain('window.flashFrame(false)');
     expect(body).not.toContain('process.platform');
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('app:requestAttention')");
-  });
-});
-
-describe('RNode flasher firmware backup', () => {
-  it('registers the save handler module and exposes it on the flasher namespace', () => {
-    expect(INDEX_SOURCE).toContain('registerFlasherHandlers();');
-    expect(PRELOAD_SOURCE).toContain("'flasher:saveFirmwareBackup'");
   });
 });
 

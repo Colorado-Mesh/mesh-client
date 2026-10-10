@@ -31,8 +31,8 @@ const SRC_TS_PATH_RE = /^src\/.+\.(?:ts|tsx)$/;
 /** Cross-checks sidecar routes against the IPC doc; neither input is a TS import. */
 export const SIDECAR_ROUTE_DOCS_TEST_PATH = 'src/architecture/sidecarRouteDocs.test.ts';
 const SIDECAR_ROUTE_DOCS_INPUTS = new Set([
-  'reticulum-sidecar/src/api/mod.rs',
-  'docs/reticulum-sidecar-ipc.md',
+  'ble-sidecar/src/api/mod.rs',
+  'docs/ble-sidecar-ipc.md',
 ]);
 
 /** Validates the staged announcements feed blob; the JSON is fetched remotely, never imported. */
@@ -70,7 +70,7 @@ const FORCE_FULL_PATTERNS = [
   /^package\.json$/,
   /^pnpm-lock\.yaml$/,
   // Vendored Electron/pnpm pins: only reachable in CI, where the manifest-only skip is off.
-  /^org\.coloradomesh\.MeshClient\.yml$/,
+  /^io\.github\.charlottemeshtastic\.MeshHub\.yml$/,
 ];
 
 /**
@@ -82,8 +82,8 @@ const FORCE_FULL_PATTERNS = [
 const MANIFEST_ONLY_PATHS = new Set([
   'package.json',
   'pnpm-lock.yaml',
-  'org.coloradomesh.MeshClient.yml',
-  'flatpak/org.coloradomesh.MeshClient.metainfo.xml',
+  'io.github.charlottemeshtastic.MeshHub.yml',
+  'flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml',
 ]);
 
 /**

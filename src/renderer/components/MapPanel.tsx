@@ -25,11 +25,7 @@ import {
   latestPositionHistoryPoint,
   resolveNodeMapPosition,
 } from '../lib/coordUtils';
-import {
-  filterDiagnosticRowsForProtocol,
-  getRoutingRowForNode,
-  routingAnomalyNodeIds,
-} from '../lib/diagnostics/diagnosticRows';
+import { getRoutingRowForNode, routingAnomalyNodeIds } from '../lib/diagnostics/diagnosticRows';
 import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
@@ -105,7 +101,7 @@ function createMarkerIcon(
   const nodeBadgeSvg = (c: number) => {
     const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
     if (!path) return '';
-    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#19212d" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#292929" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
   };
 
   if (isSelf) {
@@ -563,10 +559,7 @@ export default function MapPanel({
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const protocolDiagnosticRows = useMemo(
-    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
-    [diagnosticRows, protocol],
-  );
+  const protocolDiagnosticRows = diagnosticRows;
   const routingNodeIds = useMemo(
     () => routingAnomalyNodeIds(protocolDiagnosticRows),
     [protocolDiagnosticRows],
@@ -954,7 +947,7 @@ export default function MapPanel({
       if (count > 100) size = 60;
       const border = overlayColors.online;
       const fill = basemap.isDark ? overlayColors.online : '#15803d';
-      const text = basemap.isDark ? '#11151c' : '#ffffff';
+      const text = basemap.isDark ? '#1b1b1b' : '#ffffff';
       return L.divIcon({
         html: `<div style="background:${border}33;border:3px solid ${border};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:${fill};color:${text};font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
         className: '',

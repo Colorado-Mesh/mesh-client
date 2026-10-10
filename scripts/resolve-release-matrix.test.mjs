@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { PLATFORM_TARGETS } from './reticulum-sidecar-staging.mjs';
+import { PLATFORM_TARGETS } from './ble-sidecar-staging.mjs';
 import { fileURLToPath } from 'node:url';
 
 function resolve(platforms, sidecars = false) {

@@ -244,59 +244,6 @@ describe('isDeviceEntry — MeshCore protocol', () => {
   });
 });
 
-describe('isDeviceEntry — Reticulum protocol', () => {
-  it('classifies [ReticulumSidecar] message as Reticulum device entry', () => {
-    expect(
-      isDeviceEntry(
-        entry('main', '[ReticulumSidecar] sidecar listening on 127.0.0.1:19437'),
-        'reticulum',
-      ),
-    ).toBe(true);
-  });
-
-  it('classifies [useReticulumRuntime] message as Reticulum device entry', () => {
-    expect(
-      isDeviceEntry(entry('main', '[useReticulumRuntime] connect failed timeout'), 'reticulum'),
-    ).toBe(true);
-  });
-
-  it('classifies [ReticulumNetworkPanel] message as Reticulum device entry', () => {
-    expect(
-      isDeviceEntry(
-        entry('main', '[ReticulumNetworkPanel] identity status network error'),
-        'reticulum',
-      ),
-    ).toBe(true);
-  });
-
-  it('classifies [IdentitySlotsSection] message as Reticulum device entry', () => {
-    expect(
-      isDeviceEntry(entry('renderer', '[IdentitySlotsSection] switch failed'), 'reticulum'),
-    ).toBe(true);
-  });
-
-  it('classifies [ReticulumIPC] message as Reticulum device entry', () => {
-    expect(isDeviceEntry(entry('main', '[ReticulumIPC] start'), 'reticulum')).toBe(true);
-  });
-
-  it('classifies [Reticulum] BLE coexistence messages as Reticulum device entry', () => {
-    expect(
-      isDeviceEntry(
-        entry('renderer', '[Reticulum] bleCoexistence acquireScan failed'),
-        'reticulum',
-      ),
-    ).toBe(true);
-  });
-
-  it('does NOT classify Meshtastic SDK source as Reticulum device entry', () => {
-    expect(isDeviceEntry(entry('meshtastic-sdk', 'packet decoded'), 'reticulum')).toBe(false);
-  });
-
-  it('does NOT classify [useMeshcoreRuntime] message as Reticulum device entry', () => {
-    expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] connected'), 'reticulum')).toBe(false);
-  });
-});
-
 describe('isDeviceEntry — no protocol (fallback)', () => {
   it('classifies meshtastic source as device entry', () => {
     expect(isDeviceEntry(entry('meshtastic', 'msg'))).toBe(true);
@@ -326,14 +273,6 @@ describe('isDeviceEntry — no protocol (fallback)', () => {
     expect(isDeviceEntry(entry('main', '[useMeshcoreRuntime] something'))).toBe(true);
   });
 
-  it('classifies [useReticulumRuntime] message as device entry', () => {
-    expect(isDeviceEntry(entry('main', '[useReticulumRuntime] something'))).toBe(true);
-  });
-
-  it('classifies [ReticulumSidecar] message as device entry', () => {
-    expect(isDeviceEntry(entry('main', '[ReticulumSidecar] stack ready'))).toBe(true);
-  });
-
   it('does NOT classify generic app-only message as device entry', () => {
     expect(isDeviceEntry(entry('main', 'App started successfully'))).toBe(false);
     expect(isDeviceEntry(entry('renderer', 'React mounted'))).toBe(false);
@@ -349,12 +288,6 @@ describe('dual-mode appEntries guard', () => {
   it('MeshCore [MeshCore MQTT] entry is excluded from app view when Meshtastic is active', () => {
     const mqttEntry = entry('main', '[MeshCore MQTT] status: connected');
     expect(isAppLogEntry(mqttEntry, 'meshtastic')).toBe(false);
-  });
-
-  it('Reticulum sidecar entry is excluded from app view', () => {
-    const rtEntry = entry('main', '[ReticulumSidecar] listening on 127.0.0.1:19437');
-    expect(isAppLogEntry(rtEntry, 'meshtastic')).toBe(false);
-    expect(isAppLogEntry(rtEntry, 'meshcore')).toBe(false);
   });
 
   it('Meshtastic SDK entry is excluded from app view', () => {
@@ -375,35 +308,6 @@ describe('dual-mode appEntries guard', () => {
   it('generic app entry passes through to app view', () => {
     const appEntry = entry('main', 'Window created');
     expect(isAppLogEntry(appEntry, 'meshtastic')).toBe(true);
-  });
-});
-
-describe('protocol-scoped appEntries — Reticulum tab', () => {
-  it('excludes Meshtastic MQTT from Reticulum app view', () => {
-    const mqttEntry = entry('main', '[Meshtastic MQTT] CONNACK received');
-    expect(isAppLogEntry(mqttEntry, 'reticulum')).toBe(false);
-    expect(isOwnedByOtherProtocol(mqttEntry, 'reticulum')).toBe(true);
-  });
-
-  it('excludes MeshCore MQTT from Reticulum app view', () => {
-    const mqttEntry = entry('main', '[MeshCore MQTT] connect start');
-    expect(isAppLogEntry(mqttEntry, 'reticulum')).toBe(false);
-  });
-
-  it('excludes MeshCore runtime from Reticulum device view', () => {
-    const mcEntry = entry('main', '[useMeshcoreRuntime] connected');
-    expect(isDeviceEntry(mcEntry, 'reticulum')).toBe(false);
-    expect(isAppLogEntry(mcEntry, 'reticulum')).toBe(false);
-  });
-
-  it('includes generic app lines in Reticulum app view', () => {
-    expect(isAppLogEntry(entry('main', 'Window created'), 'reticulum')).toBe(true);
-  });
-
-  it('includes Reticulum sidecar lines in Reticulum device view only', () => {
-    const rtEntry = entry('main', '[ReticulumSidecar] stack ready');
-    expect(isDeviceEntry(rtEntry, 'reticulum')).toBe(true);
-    expect(isAppLogEntry(rtEntry, 'reticulum')).toBe(false);
   });
 });
 

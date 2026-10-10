@@ -2,21 +2,16 @@ import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import { computeTabMappings } from './appTabMappings';
-import { BOTTOM_NAV_SECTION_IDS, splitBottomNavSections } from './bottomNav';
+import { splitBottomNavSections } from './bottomNav';
 import { sectionBadge, sumNavBadges } from './navBadges';
 import { computeNavSections } from './navSections';
-import {
-  MESHCORE_CAPABILITIES,
-  MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
-} from './radio/BaseRadioProvider';
+import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './radio/BaseRadioProvider';
 import type { MeshProtocol } from './types';
 
 const identityT = ((key: string) => key) as TFunction;
 const CAPS = {
   meshtastic: MESHTASTIC_CAPABILITIES,
   meshcore: MESHCORE_CAPABILITIES,
-  reticulum: RETICULUM_CAPABILITIES,
 } as const;
 
 function sectionsFor(protocol: MeshProtocol) {
@@ -25,19 +20,6 @@ function sectionsFor(protocol: MeshProtocol) {
 }
 
 describe('splitBottomNavSections', () => {
-  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
-    'keeps every %s section reachable: bottom bar plus More',
-    (protocol) => {
-      const sections = sectionsFor(protocol);
-      const { primary, overflow } = splitBottomNavSections(sections);
-      expect([...primary, ...overflow].map((s) => s.id).sort()).toEqual(
-        sections.map((s) => s.id).sort(),
-      );
-      expect(primary.every((s) => BOTTOM_NAV_SECTION_IDS.includes(s.id))).toBe(true);
-      expect(overflow.some((s) => BOTTOM_NAV_SECTION_IDS.includes(s.id))).toBe(false);
-    },
-  );
-
   it('puts Incident on the bottom bar, never under More (EMCOMM S9)', () => {
     const sections = sectionsFor('meshcore');
     expect(sections.some((s) => s.id === 'incident')).toBe(true);

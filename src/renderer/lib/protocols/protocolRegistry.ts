@@ -2,14 +2,12 @@ import {
   MESHCORE_CAPABILITIES,
   MESHTASTIC_CAPABILITIES,
   type ProtocolCapabilities,
-  RETICULUM_CAPABILITIES,
 } from '../radio/BaseRadioProvider';
 import type { MeshProtocol } from '../types';
 import { isMeshProtocol } from '../types';
 import { meshcoreProtocol } from './MeshCoreProtocol';
 import { meshtasticProtocol } from './MeshtasticProtocol';
 import type { Protocol } from './Protocol';
-import { reticulumProtocol } from './ReticulumProtocol';
 
 export interface ProtocolRegistration {
   type: MeshProtocol;
@@ -33,12 +31,6 @@ registerProtocol({
   type: 'meshcore',
   protocol: meshcoreProtocol,
   capabilities: MESHCORE_CAPABILITIES,
-});
-
-registerProtocol({
-  type: 'reticulum',
-  protocol: reticulumProtocol,
-  capabilities: RETICULUM_CAPABILITIES,
 });
 
 export function getProtocolRegistration(type: string): ProtocolRegistration | null {

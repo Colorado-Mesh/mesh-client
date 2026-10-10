@@ -2,7 +2,7 @@
 /**
  * Gate Rust crate licenses for the Reticulum sidecar via `cargo metadata`.
  *
- * Inventory: every package resolved by `reticulum-sidecar/Cargo.lock` with
+ * Inventory: every package resolved by `ble-sidecar/Cargo.lock` with
  * `--locked --all-features`. `--all-features` is required: the Ratspeak stack
  * path deps (rsLXST, rsNomad, lrgp-rs) are optional and are omitted otherwise.
  * Do not add `--offline`; cold caches need the registry index.
@@ -13,13 +13,11 @@
  * Failure points:
  * - `cargo` missing: skip with a notice (exit 0) unless `--require-cargo`
  *   (release pre-flight), which exits 1.
- * - `.rsstack/` missing: exit 1 (run scripts/clone-ratspeak-stack.sh).
  * - `cargo metadata` failure or malformed JSON: exit 1 with the error.
  *
  * Usage: pnpm run check:rust-licenses [-- --require-cargo]
  */
 import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,8 +25,7 @@ import { ALLOWED_LICENSE_IDS, isLicenseAllowed } from './check-licenses.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export const SIDECAR_DIR = path.join(ROOT, 'reticulum-sidecar');
-export const RSSTACK_DIR = path.join(ROOT, '.rsstack');
+export const SIDECAR_DIR = path.join(ROOT, 'ble-sidecar');
 export const CARGO_METADATA_ARGS = Object.freeze([
   'metadata',
   '--format-version',
@@ -162,7 +159,6 @@ export function formatRustLicenseCheckReport(evaluation) {
  * @typedef {object} RustLicenseCheckOptions
  * @property {boolean} [requireCargo] Exit 1 instead of skipping when cargo is missing.
  * @property {() => boolean} [cargoAvailable]
- * @property {() => boolean} [rsstackPresent]
  * @property {() => unknown} [loadMetadata]
  * @property {{ write: (chunk: string) => unknown }} [stdout]
  * @property {{ write: (chunk: string) => unknown }} [stderr]
@@ -176,7 +172,6 @@ export function runRustLicenseCheck(options = {}) {
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;
   const cargoAvailable = options.cargoAvailable ?? (() => isCargoAvailable());
-  const rsstackPresent = options.rsstackPresent ?? (() => fs.existsSync(RSSTACK_DIR));
   const loadMetadata = options.loadMetadata ?? (() => runCargoMetadata());
 
   if (!cargoAvailable()) {
@@ -188,13 +183,6 @@ export function runRustLicenseCheck(options = {}) {
       'check:rust-licenses: cargo not found on PATH; skipping (install Rust to gate sidecar licenses)\n',
     );
     return 0;
-  }
-
-  if (!rsstackPresent()) {
-    stderr.write(
-      'check:rust-licenses: .rsstack/ not provisioned; run scripts/clone-ratspeak-stack.sh\n',
-    );
-    return 1;
   }
 
   try {

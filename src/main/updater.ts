@@ -29,7 +29,7 @@ export function getCheckNowFromMenu(): (() => void) | null {
   return checkFromMenu;
 }
 
-const REPO = 'Colorado-Mesh/mesh-client';
+const REPO = 'charlottemeshtastic/mesh-client';
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
 
 type SendFn = (channel: string, payload?: unknown) => void;

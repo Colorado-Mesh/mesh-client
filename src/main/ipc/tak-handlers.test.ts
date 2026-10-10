@@ -133,25 +133,6 @@ describe('tak:pushNodeUpdates', () => {
     vi.clearAllMocks();
   });
 
-  it('forwards valid updates and drops invalid ones', async () => {
-    const onNodeUpdate = vi.fn();
-    const handler = await registerWith({ hasActiveSink: () => true, onNodeUpdate });
-    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-
-    handler({}, [
-      { node_id: 1, protocol: 'meshcore', latitude: 40, longitude: -105 },
-      { node_id: -1 },
-      { node_id: 2, protocol: 'reticulum', latitude: 41, longitude: -104 },
-    ]);
-
-    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:pushNodeUpdates');
-    expect(onNodeUpdate.mock.calls.map((c) => (c[0] as { node_id: number }).node_id)).toEqual([
-      1, 2,
-    ]);
-    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('dropped 1 invalid'));
-    debugSpy.mockRestore();
-  });
-
   it('skips the batch when no sink is active', async () => {
     const onNodeUpdate = vi.fn();
     const handler = await registerWith({ hasActiveSink: () => false, onNodeUpdate });

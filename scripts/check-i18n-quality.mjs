@@ -976,7 +976,7 @@ export function isReticulumIdenticalEnglishOk(flatKey, leafKey, val, enVal) {
   return false;
 }
 
-export const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run reticulum:sidecar:build';
+export const RETICULUM_SIDECAR_BUILD_CMD = 'pnpm run ble:sidecar:build';
 
 /** MyMemory often breaks npm script colons or translates Rust/cargo as common nouns. */
 export const RETICULUM_SIDECAR_BUILD_SPACED_RE = /reticulum\s*:\s*sidecar\s*:\s*build/i;
@@ -1060,7 +1060,7 @@ export function reticulumConnectionPanelLiteralIssues(enVal, val) {
       );
     }
     if (RETICULUM_SIDECAR_BUILD_SPACED_RE.test(val) && !val.includes(RETICULUM_SIDECAR_BUILD_CMD)) {
-      issues.push('reticulum:sidecar:build command must not insert spaces around colons');
+      issues.push('ble:sidecar:build command must not insert spaces around colons');
     }
   }
   if (enVal.includes('mesh-client') && MESH_CLIENT_LOWERCASE_SPACED_RE.test(val)) {

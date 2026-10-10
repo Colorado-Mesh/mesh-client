@@ -137,7 +137,11 @@ describe('sync-flatpak-electron.mjs', () => {
   });
 
   it('still matches the real manifest after an Electron bump', () => {
-    const manifestPath = path.join(import.meta.dirname, '..', 'org.coloradomesh.MeshClient.yml');
+    const manifestPath = path.join(
+      import.meta.dirname,
+      '..',
+      'io.github.charlottemeshtastic.MeshHub.yml',
+    );
     const manifest = fs.readFileSync(manifestPath, 'utf8');
     const sha256ByZipArch = parseElectronSha256s(FIXTURE_SHASUMS, '41.10.1');
 
@@ -229,7 +233,7 @@ describe('syncFlatpakPnpm integration', () => {
   function writeFixture(pnpmVersion) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-flatpak-pnpm-'));
     tempDirs.push(dir);
-    const manifestPath = path.join(dir, 'org.coloradomesh.MeshClient.yml');
+    const manifestPath = path.join(dir, 'io.github.charlottemeshtastic.MeshHub.yml');
     const packagePath = path.join(dir, 'package.json');
     fs.writeFileSync(manifestPath, SAMPLE_PNPM_MANIFEST, 'utf8');
     fs.writeFileSync(
@@ -315,7 +319,7 @@ describe('syncFlatpakElectron integration', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-flatpak-electron-'));
     tempDirs.push(dir);
 
-    const manifestPath = path.join(dir, 'org.coloradomesh.MeshClient.yml');
+    const manifestPath = path.join(dir, 'io.github.charlottemeshtastic.MeshHub.yml');
     const packagePath = path.join(dir, 'package.json');
     fs.writeFileSync(manifestPath, SAMPLE_MANIFEST, 'utf8');
     fs.writeFileSync(

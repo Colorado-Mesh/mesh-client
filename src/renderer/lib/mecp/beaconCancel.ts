@@ -57,7 +57,6 @@ export function shouldTransmitBeaconCancel(
 export function beaconCancelToNodeForMessage(protocol: MeshProtocol, to: number): number | null {
   if (!Number.isFinite(to)) return null;
   const toU = to >>> 0;
-  if (protocol === 'reticulum') return toU > 0 ? toU : null;
   if (toU === 0 || toU === 0xffffffff) return null;
   return toU;
 }

@@ -93,17 +93,6 @@ export function isShareLocationSendWaypointEnabled(): boolean {
   return parsed?.shareLocationSendWaypoint ?? DEFAULT_APP_SETTINGS_SHARED.shareLocationSendWaypoint;
 }
 
-/** Whether RRC badges/sounds fire for every room msg/action (false = IRC-style mention/DM). */
-export function isRrcUnreadAllRoomMessagesEnabled(): boolean {
-  const parsed = parseStoredJson<{ rrcUnreadAllRoomMessages?: unknown }>(
-    getAppSettingsRaw(),
-    'isRrcUnreadAllRoomMessagesEnabled',
-  );
-  return typeof parsed?.rrcUnreadAllRoomMessages === 'boolean'
-    ? parsed.rrcUnreadAllRoomMessages
-    : DEFAULT_APP_SETTINGS_SHARED.rrcUnreadAllRoomMessages;
-}
-
 /** Whether Chat shows the MECP compose button (App → MECP; default off). */
 export function isMecpComposeEnabled(): boolean {
   const parsed = parseStoredJson<{ mecpComposeEnabled?: boolean }>(
@@ -197,53 +186,6 @@ export function getOperationalAlertSettings(): OperationalAlertSettings {
         ? parsed.notifyOnLinkDown
         : DEFAULT_APP_SETTINGS_SHARED.notifyOnLinkDown,
   };
-}
-
-/** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */
-export function isReticulumAutostartEnabled(): boolean {
-  const parsed = parseStoredJson<{ reticulumAutostart?: boolean }>(
-    getAppSettingsRaw(),
-    'isReticulumAutostartEnabled',
-  );
-  return parsed?.reticulumAutostart ?? DEFAULT_APP_SETTINGS_SHARED.reticulumAutostart;
-}
-
-export function setReticulumAutostartEnabled(enabled: boolean): void {
-  mergeAppSetting('reticulumAutostart', enabled, 'setReticulumAutostartEnabled');
-  void window.electronAPI.appSettings
-    .set('reticulumAutostart', enabled ? '1' : '0')
-    .catch((e: unknown) => {
-      console.warn(
-        '[appSettingsStorage] persist reticulumAutostart failed ' + errLikeToLogString(e),
-      );
-    });
-}
-
-/** Whether an announce from a peer should retry that peer's failed LXMF messages. */
-export function isReticulumAutoResendOnAnnounceEnabled(): boolean {
-  const parsed = parseStoredJson<{ reticulumAutoResendOnAnnounce?: boolean }>(
-    getAppSettingsRaw(),
-    'isReticulumAutoResendOnAnnounceEnabled',
-  );
-  return typeof parsed?.reticulumAutoResendOnAnnounce === 'boolean'
-    ? parsed.reticulumAutoResendOnAnnounce
-    : DEFAULT_APP_SETTINGS_SHARED.reticulumAutoResendOnAnnounce;
-}
-
-export function setReticulumAutoResendOnAnnounceEnabled(enabled: boolean): void {
-  mergeAppSetting(
-    'reticulumAutoResendOnAnnounce',
-    enabled,
-    'setReticulumAutoResendOnAnnounceEnabled',
-  );
-  void window.electronAPI.appSettings
-    .set('reticulumAutoResendOnAnnounce', enabled ? '1' : '0')
-    .catch((e: unknown) => {
-      console.warn(
-        '[appSettingsStorage] persist reticulumAutoResendOnAnnounce failed ' +
-          errLikeToLogString(e),
-      );
-    });
 }
 
 /** Merge keys into existing app settings without dropping unrelated persisted fields. */

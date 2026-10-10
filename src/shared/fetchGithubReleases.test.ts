@@ -10,7 +10,7 @@ import {
 } from '@/shared/fetchGithubReleases';
 import { pickLatestPublishedRelease } from '@/shared/githubReleaseVersion';
 
-const REPO = 'Colorado-Mesh/mesh-client';
+const REPO = 'charlottemeshtastic/mesh-client';
 const TEST_PAGE_SIZE = 2;
 
 function releaseRow(version: string) {

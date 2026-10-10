@@ -40,7 +40,7 @@ const CARTO_SUBDOMAINS = ['a', 'b', 'c', 'd'] as const;
 
 /** Identifying User-Agent for OSM/CARTO tile policy compliance. */
 export function meshTilesUserAgent(appVersion: string): string {
-  return `mesh-client/${appVersion} (+https://github.com/Colorado-Mesh/mesh-client)`;
+  return `mesh-client/${appVersion} (+https://github.com/charlottemeshtastic/mesh-client)`;
 }
 
 /** Referer expected by OSM tile servers for packaged Electron loads. */

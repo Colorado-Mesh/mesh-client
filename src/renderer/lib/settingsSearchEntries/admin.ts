@@ -1,11 +1,4 @@
-import type {
-  SettingSearchEntry,
-  SettingsSearchContext,
-  SettingsSearchSurface,
-} from '../settingsSearch';
-
-// App.tsx renders ReticulumAdminPanel instead of AdminPanel when this flag is set.
-const hasAdminPanel = (ctx: SettingsSearchContext) => !ctx.capabilities.hasReticulumAdminPanel;
+import type { SettingSearchEntry, SettingsSearchSurface } from '../settingsSearch';
 
 const COMMANDS = 'radioPanel.deviceCommands';
 const DANGER = 'radioPanel.dangerZone';
@@ -17,7 +10,6 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.enterDfuButton',
     sectionKey: COMMANDS,
     keywords: ['dfu', 'firmware', 'bootloader', 'flash'],
-    visible: hasAdminPanel,
   },
   {
     id: 'admin.deviceCommands.reboot',
@@ -25,7 +17,6 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.rebootButton',
     sectionKey: COMMANDS,
     keywords: ['restart', 'reboot', 'power cycle'],
-    visible: hasAdminPanel,
   },
   {
     id: 'admin.deviceCommands.rebootOta',
@@ -33,7 +24,6 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.rebootOtaButton',
     sectionKey: COMMANDS,
     keywords: ['ota', 'firmware', 'update', 'wifi'],
-    visible: hasAdminPanel,
   },
   {
     id: 'admin.deviceCommands.resetNodeDb',
@@ -41,7 +31,7 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.resetNodeDbButton',
     sectionKey: COMMANDS,
     keywords: ['nodedb', 'clear nodes', 'node database'],
-    visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasNodeDbReset,
+    visible: (ctx) => ctx.capabilities.hasNodeDbReset,
   },
   {
     id: 'admin.deviceCommands.shutdown',
@@ -49,7 +39,7 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.shutdownButton',
     sectionKey: COMMANDS,
     keywords: ['power off', 'turn off', 'shutdown'],
-    visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasShutdown,
+    visible: (ctx) => ctx.capabilities.hasShutdown,
   },
   {
     id: 'admin.dangerZone.factoryResetConfig',
@@ -57,7 +47,7 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.factoryResetConfigButton',
     sectionKey: DANGER,
     keywords: ['factory reset', 'wipe', 'config', 'defaults'],
-    visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasFactoryReset,
+    visible: (ctx) => ctx.capabilities.hasFactoryReset,
   },
   {
     id: 'admin.dangerZone.factoryReset',
@@ -65,7 +55,7 @@ const adminEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.factoryResetButton',
     sectionKey: DANGER,
     keywords: ['factory reset', 'wipe', 'erase', 'defaults'],
-    visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasFactoryReset,
+    visible: (ctx) => ctx.capabilities.hasFactoryReset,
   },
 ];
 

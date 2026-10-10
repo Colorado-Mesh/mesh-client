@@ -25,7 +25,6 @@ function byProtocol(meshcoreCount: number): Record<MeshProtocol, ChatMessage[]> 
   return {
     meshtastic: [],
     meshcore: Array.from({ length: meshcoreCount }, (_, i) => msg(i + 1)),
-    reticulum: [],
   };
 }
 
@@ -42,24 +41,5 @@ describe('InactiveProtocolNotifier', () => {
       <InactiveProtocolNotifier activeProtocol="meshtastic" messagesByProtocol={byProtocol(2)} />,
     );
     expect(addToast).toHaveBeenCalledTimes(1);
-  });
-
-  it('never toasts for a protocol disabled in App → Protocols', () => {
-    const enabled: MeshProtocol[] = ['meshtastic', 'reticulum'];
-    const { rerender } = render(
-      <InactiveProtocolNotifier
-        activeProtocol="meshtastic"
-        messagesByProtocol={byProtocol(1)}
-        enabledProtocols={enabled}
-      />,
-    );
-    rerender(
-      <InactiveProtocolNotifier
-        activeProtocol="meshtastic"
-        messagesByProtocol={byProtocol(3)}
-        enabledProtocols={enabled}
-      />,
-    );
-    expect(addToast).not.toHaveBeenCalled();
   });
 });

@@ -7,7 +7,6 @@ import {
   hostFromAddressInput,
   humanizeBleError,
   humanizeHttpError,
-  humanizeReticulumSidecarError,
   humanizeSerialError,
   isMeshtasticLocalAddress,
 } from './connectionPanelErrorHumanize';
@@ -186,16 +185,6 @@ describe('humanizeBleError', () => {
     expect(result).toContain(`connectionPanel.humanize.ble.${hintKey}`);
   });
 
-  it.each(['linux', 'darwin', 'win32'] as const)(
-    'tells the user to fix the RNode when bond recovery holds the adapter on %s',
-    (platform) => {
-      mockPlatform(platform);
-      expect(
-        humanizeBleError(new Error('RNode bond recovery holds the Bluetooth adapter'), t),
-      ).toBe('connectionPanel.humanize.ble.rnodeBondRecoveryHold');
-    },
-  );
-
   it.each([
     ['win32', 'stackUnresponsiveWindowsRePair'],
     ['linux', 'stackUnresponsiveGeneric'],
@@ -229,13 +218,6 @@ describe('humanizeBleError', () => {
     );
     expect(humanizeBleError({ code: 'pairing_required', message: 'need pin' }, t)).toBe(
       'connectionPanel.errors.ble.pairing_required',
-    );
-  });
-
-  it('maps scan_busy messages to connectionPanel.errors.ble.scan_busy', () => {
-    mockPlatform('darwin');
-    expect(humanizeBleError(new Error('Bluetooth scan in progress (reticulum)'), t)).toBe(
-      'connectionPanel.errors.ble.scan_busy',
     );
   });
 
@@ -367,42 +349,5 @@ describe('humanizeBleError', () => {
     const result = humanizeBleError(new Error('bluetoothctl not found'), t);
     expect(result).not.toBe('');
     expect(result).toContain('bluetoothctlMissingHint');
-  });
-});
-
-describe('humanizeReticulumSidecarError', () => {
-  const t = mockT();
-
-  it('maps missing sidecar binary to build hint', () => {
-    expect(
-      humanizeReticulumSidecarError(
-        new Error('Reticulum sidecar binary not found: /tmp/mesh-client-reticulum'),
-        t,
-      ),
-    ).toBe('connectionPanel.reticulumSidecarMissing');
-  });
-
-  it('maps missing packaged sidecar to upgrade hint', () => {
-    expect(
-      humanizeReticulumSidecarError(
-        new Error('RETICULUM_SIDECAR_BUNDLED_MISSING: packaged sidecar binary not found'),
-        t,
-      ),
-    ).toBe('connectionPanel.reticulumSidecarBundledMissing');
-  });
-
-  it('maps missing cargo to rustup hint', () => {
-    expect(
-      humanizeReticulumSidecarError(new Error('RETICULUM_CARGO_MISSING: cargo not found'), t),
-    ).toBe('connectionPanel.reticulumSidecarCargoMissing');
-  });
-
-  it('maps missing rsReticulum packet-tap overlay to patch hint', () => {
-    expect(
-      humanizeReticulumSidecarError(
-        new Error('RETICULUM_RNS_PATCH_MISSING: register_packet_tap not found'),
-        t,
-      ),
-    ).toBe('connectionPanel.reticulumSidecarPatchMissing');
   });
 });

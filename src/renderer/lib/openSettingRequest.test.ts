@@ -11,11 +11,11 @@ describe('openSettingRequest', () => {
   it('delivers requests to subscribers until unsubscribed', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeOpenSettingRequests(listener);
-    requestOpenSetting({ slot: 'Remote', id: 'remote.inbound.mode' });
-    expect(listener).toHaveBeenCalledWith({ slot: 'Remote', id: 'remote.inbound.mode' });
+    requestOpenSetting({ slot: 'App', id: 'app.appearance.reduceMotion' });
+    expect(listener).toHaveBeenCalledWith({ slot: 'App', id: 'app.appearance.reduceMotion' });
 
     unsubscribe();
-    requestOpenSetting({ slot: 'Remote', id: 'remote.inbound.mode' });
+    requestOpenSetting({ slot: 'App', id: 'app.appearance.reduceMotion' });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -23,9 +23,7 @@ describe('openSettingRequest', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeOpenSettingRequests(listener);
     window.dispatchEvent(new CustomEvent(OPEN_SETTING_REQUEST_EVENT));
-    window.dispatchEvent(
-      new CustomEvent(OPEN_SETTING_REQUEST_EVENT, { detail: { slot: 'Remote' } }),
-    );
+    window.dispatchEvent(new CustomEvent(OPEN_SETTING_REQUEST_EVENT, { detail: { slot: 'App' } }));
     expect(listener).not.toHaveBeenCalled();
     unsubscribe();
   });

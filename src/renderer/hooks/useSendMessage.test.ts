@@ -21,18 +21,12 @@ import {
 } from '../lib/meshcoreStoreDedup';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
-import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
-import { registerReticulumDestinationHash } from '../lib/reticulum/destHash';
 import { type MeshcoreSessionApi, registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import {
   type MeshtasticSessionApi,
   registerMeshtasticSession,
 } from '../lib/sessions/meshtasticSession';
-import {
-  registerReticulumSession,
-  type ReticulumSessionApi,
-} from '../lib/sessions/reticulumSession';
 import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { setConnection } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
@@ -48,7 +42,6 @@ const ID_MC_DM = 'id-send-mc-dm';
 
 const ID_MT = 'id-send-mt';
 const ID_MC = 'id-send-mc';
-const ID_RT = 'id-send-rt';
 
 vi.mock('../lib/drivers/ConnectionDriver', () => ({
   connectionDriver: {
@@ -181,7 +174,6 @@ describe('useSendMessage', () => {
     vi.mocked(connectionDriver.getHandle).mockClear();
     registerMeshtasticSession(null);
     registerMeshcoreSession(null);
-    registerReticulumSession(null);
     // Unrelated DM sends stay pending without the "tracker not registered" warning.
     // Hop-ACK tests replace this with the real arm helper.
     setMeshcoreDmAckPendingImpl(() => undefined);
@@ -1065,211 +1057,5 @@ describe('useSendMessage', () => {
       expect(useRelayCoverageStore.getState().coverageFor(ID_MC_FAIL, msgId)).toBeUndefined();
     });
     sendSpy.mockRestore();
-  });
-
-  it('persists optimistic Reticulum outbound to SQLite', () => {
-    const saveReticulum = vi
-      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
-      .mockResolvedValue(undefined);
-    const sendMessage = vi.fn().mockResolvedValue(undefined);
-    registerReticulumSession({
-      connect: vi.fn(),
-      connectAutomatic: vi.fn(),
-      disconnect: vi.fn(),
-      finalizeDriverDisconnect: vi.fn(),
-      selfNodeId: 0xabcd,
-      getFullNodeLabel: () => 'Self',
-      sendMessage,
-    } satisfies ReticulumSessionApi);
-    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
-    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
-    addIdentity({
-      id: ID_RT,
-      protocol: reticulumProtocol,
-      signature: 'sig-rt',
-      transports: [],
-      createdAt: 1,
-      lastSeenAt: 1,
-    });
-
-    const { result } = renderHook(() => useSendMessage(ID_RT));
-    result.current('hello lxmf', 0, 0x1234);
-
-    const rows = Object.values(useMessageStore.getState().messages[ID_RT] ?? {});
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.status).toBe('sending');
-    expect(saveReticulum).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identity_id: ID_RT,
-        payload: 'hello lxmf',
-        delivery_status: 'sending',
-      }),
-    );
-    saveReticulum.mockRestore();
-  });
-
-  it('sends Reticulum reply with truncated preview when parent is in store', () => {
-    const saveReticulum = vi
-      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
-      .mockResolvedValue(undefined);
-    const sendMessage = vi.fn().mockResolvedValue(undefined);
-    registerReticulumSession({
-      connect: vi.fn(),
-      connectAutomatic: vi.fn(),
-      disconnect: vi.fn(),
-      finalizeDriverDisconnect: vi.fn(),
-      selfNodeId: 0xabcd,
-      getFullNodeLabel: () => 'Self',
-      sendMessage,
-    } satisfies ReticulumSessionApi);
-    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
-    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
-    addIdentity({
-      id: ID_RT,
-      protocol: reticulumProtocol,
-      signature: 'sig-rt',
-      transports: [],
-      createdAt: 1,
-      lastSeenAt: 1,
-    });
-    const parentHash = 'aa'.repeat(32);
-    const longPayload = 'x'.repeat(80);
-    addMessage(ID_RT, {
-      id: 'parent-1',
-      from: 0x1234,
-      senderName: 'Peer',
-      to: 0xabcd,
-      payload: longPayload,
-      channelIndex: 0,
-      timestamp: 1000,
-      status: 'acked',
-      reticulumMessageHash: parentHash,
-    });
-
-    const { result } = renderHook(() => useSendMessage(ID_RT));
-    result.current('reply body', 0, 0x1234, parentHash);
-
-    expect(sendMessage).toHaveBeenCalledWith(
-      'reply body',
-      'dd'.repeat(16),
-      parentHash,
-      expect.any(String),
-      expect.stringMatching(/^x{50}…$/),
-    );
-    const rows = Object.values(useMessageStore.getState().messages[ID_RT] ?? {});
-    const outbound = rows.find((r) => r.payload === 'reply body');
-    expect(outbound?.reticulumReplyToHash).toBe(parentHash);
-    expect(outbound?.replyPreviewText).toMatch(/^x{50}…$/);
-    expect(outbound?.replyPreviewSender).toBe('Peer');
-    saveReticulum.mockRestore();
-  });
-
-  it('sends Reticulum reply without preview when parent is missing', () => {
-    const saveReticulum = vi
-      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
-      .mockResolvedValue(undefined);
-    const sendMessage = vi.fn().mockResolvedValue(undefined);
-    registerReticulumSession({
-      connect: vi.fn(),
-      connectAutomatic: vi.fn(),
-      disconnect: vi.fn(),
-      finalizeDriverDisconnect: vi.fn(),
-      selfNodeId: 0xabcd,
-      getFullNodeLabel: () => 'Self',
-      sendMessage,
-    } satisfies ReticulumSessionApi);
-    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
-    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
-    addIdentity({
-      id: ID_RT,
-      protocol: reticulumProtocol,
-      signature: 'sig-rt',
-      transports: [],
-      createdAt: 1,
-      lastSeenAt: 1,
-    });
-    const missingHash = 'bb'.repeat(32);
-
-    const { result } = renderHook(() => useSendMessage(ID_RT));
-    result.current('orphan reply', 0, 0x1234, missingHash);
-
-    expect(sendMessage).toHaveBeenCalledWith(
-      'orphan reply',
-      'dd'.repeat(16),
-      missingHash,
-      expect.any(String),
-      undefined,
-    );
-    const rows = Object.values(useMessageStore.getState().messages[ID_RT] ?? {});
-    const outbound = rows.find((r) => r.payload === 'orphan reply');
-    expect(outbound?.reticulumReplyToHash).toBe(missingHash);
-    expect(outbound?.replyPreviewText).toBeUndefined();
-    saveReticulum.mockRestore();
-  });
-
-  it('reuses the failed Reticulum row on retry instead of adding a second bubble', () => {
-    const saveReticulum = vi
-      .spyOn(window.electronAPI.db, 'saveReticulumMessage')
-      .mockResolvedValue(undefined);
-    const sendMessage = vi.fn().mockResolvedValue(undefined);
-    registerReticulumSession({
-      connect: vi.fn(),
-      connectAutomatic: vi.fn(),
-      disconnect: vi.fn(),
-      finalizeDriverDisconnect: vi.fn(),
-      selfNodeId: 0xabcd,
-      getFullNodeLabel: () => 'Self',
-      sendMessage,
-    } satisfies ReticulumSessionApi);
-    registerReticulumDestinationHash(0xabcd, 'cc'.repeat(16));
-    registerReticulumDestinationHash(0x1234, 'dd'.repeat(16));
-    addIdentity({
-      id: ID_RT,
-      protocol: reticulumProtocol,
-      signature: 'sig-rt',
-      transports: [],
-      createdAt: 1,
-      lastSeenAt: 1,
-    });
-    const failedHash = 'ee'.repeat(32);
-    const failedAt = 1_700_000_000_000;
-    addMessage(ID_RT, {
-      id: failedHash,
-      from: 0xabcd,
-      senderName: 'Self',
-      to: 0x1234,
-      payload: 'retry me',
-      channelIndex: 0,
-      timestamp: failedAt,
-      status: 'failed',
-      error: 'delivery failed',
-      reticulumMessageHash: failedHash,
-      reticulumDeliveryMethod: 'propagated',
-      receivedVia: 'tcp',
-    });
-
-    const { result } = renderHook(() => useSendMessage(ID_RT));
-    result.current('retry me', 0, 0x1234, undefined, failedHash);
-
-    const byId = useMessageStore.getState().messages[ID_RT] ?? {};
-    expect(Object.keys(byId)).toHaveLength(1);
-    expect(byId[failedHash]).toMatchObject({
-      id: failedHash,
-      payload: 'retry me',
-      timestamp: failedAt,
-      status: 'sending',
-      error: undefined,
-      reticulumDeliveryMethod: undefined,
-      reticulumMessageHash: undefined,
-    });
-    expect(byId[failedHash]?.reticulumMessageHash).toBeUndefined();
-    expect(sendMessage).toHaveBeenCalledWith(
-      'retry me',
-      'dd'.repeat(16),
-      undefined,
-      failedHash,
-      undefined,
-    );
-    saveReticulum.mockRestore();
   });
 });

@@ -83,12 +83,12 @@ describe('matching a palette', () => {
     const colors = { ...themeColorsFor(zinc, meshcore), appBg: '#09090B' };
     expect(matchThemeSurface(colors, 'zinc')).toBe('zinc');
     expect(matchThemeAccent(colors)).toBe('meshcore');
-    expect(matchThemeSurface(DEFAULT_THEME_COLORS, DEFAULT_THEME_SURFACE_ID)).toBe('midnight');
-    expect(matchThemeAccent(DEFAULT_THEME_COLORS)).toBe('meshtastic');
+    expect(matchThemeSurface(DEFAULT_THEME_COLORS, DEFAULT_THEME_SURFACE_ID)).toBe('charcoal');
+    expect(matchThemeAccent(DEFAULT_THEME_COLORS)).toBe('signature');
   });
 
   it('returns null once a single color is changed by hand', () => {
-    expect(matchThemeSurface({ ...DEFAULT_THEME_COLORS, muted: '#abcdef' }, 'midnight')).toBeNull();
+    expect(matchThemeSurface({ ...DEFAULT_THEME_COLORS, muted: '#abcdef' }, 'charcoal')).toBeNull();
     expect(matchThemeAccent({ ...DEFAULT_THEME_COLORS, brandGreen: '#abcdef' })).toBeNull();
   });
 });
@@ -101,17 +101,17 @@ describe('surface storage', () => {
     applyThemeSurface(DEFAULT_THEME_SURFACE_ID);
   });
 
-  it('defaults to Midnight and ignores unknown ids', () => {
-    expect(loadThemeSurfaceId()).toBe('midnight');
+  it('defaults to Charcoal and ignores unknown ids', () => {
+    expect(loadThemeSurfaceId()).toBe('charcoal');
     localStorage.setItem(THEME_SURFACE_STORAGE_KEY, 'sepia');
-    expect(loadThemeSurfaceId()).toBe('midnight');
-    expect(toThemeSurfaceId(42)).toBe('midnight');
+    expect(loadThemeSurfaceId()).toBe('charcoal');
+    expect(toThemeSurfaceId(42)).toBe('charcoal');
   });
 
   it('stores only a non-default choice', () => {
     persistThemeSurfaceId('slate');
     expect(loadThemeSurfaceId()).toBe('slate');
-    persistThemeSurfaceId('midnight');
+    persistThemeSurfaceId('charcoal');
     expect(localStorage.getItem(THEME_SURFACE_STORAGE_KEY)).toBeNull();
   });
 

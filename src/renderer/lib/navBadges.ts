@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import type { NavSection } from './navSections';
 import type { TabSlotId } from './tabSlotIds';
 
-/** `unread` messages, `pending` rncp offers (Remote), `incident` open MAYDAY/URGENT incidents. */
+/** `unread` messages, `pending` offers, `incident` open MAYDAY/URGENT incidents. */
 export type NavBadgeTone = 'unread' | 'pending' | 'incident';
 
 export interface NavBadge {
@@ -15,7 +15,6 @@ export interface NavBadge {
 export type NavBadgeCounts = Partial<Record<TabSlotId, number>>;
 
 const SLOT_TONE: Partial<Record<TabSlotId, NavBadgeTone>> = {
-  Remote: 'pending',
   Incident: 'incident',
 };
 

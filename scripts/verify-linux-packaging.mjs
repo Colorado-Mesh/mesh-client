@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
-import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
+import { assertBundledBleSidecarInBundle } from './assert-bundled-ble-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -141,7 +141,7 @@ function main() {
     if (!existsSync(bundleRoot)) {
       continue;
     }
-    assertBundledReticulumSidecarInBundle({
+    assertBundledBleSidecarInBundle({
       label: `${label} bundled Reticulum sidecar`,
       platform: 'linux',
       bundleRoot,

@@ -534,7 +534,6 @@ describe('privileged IPC sender validation (source contract)', () => {
     'chat:outbox:add',
     'chat:outbox:remove',
     'chat:fetchLinkPreview',
-    'chat:readReticulumAttachmentAsDataUrl',
     'appSettings:get',
     'appSettings:set',
     'app:rendererHeartbeat',
@@ -974,30 +973,6 @@ describe('HTTP fromradio response size cap (source contract, H5)', () => {
     const body = INDEX_SOURCE.slice(idx, idx + 1000);
     expect(body).toContain('if (err instanceof ResponseSizeCapExceededError)');
     expect(body).toContain('httpDevice = null');
-  });
-});
-
-// ─── H6: Reticulum sidecar proxy/WS response caps ────────────────────
-
-describe('Reticulum sidecar proxy/WS caps (source contract, H6)', () => {
-  it('defines proxy response and WS message byte caps in shared limits', () => {
-    const limitsSource = readFileSync(
-      join(__dirname, '../shared/reticulumProxyLimits.ts'),
-      'utf-8',
-    );
-    expect(limitsSource).toContain(
-      'export const RETICULUM_PROXY_MAX_RESPONSE_BYTES = 16 * 1024 * 1024;',
-    );
-    expect(limitsSource).toContain(
-      'export const RETICULUM_WS_MAX_MESSAGE_BYTES = 2 * 1024 * 1024;',
-    );
-  });
-
-  it('reticulum-sidecar-manager imports and applies both caps', () => {
-    const sidecarSource = readFileSync(join(__dirname, 'reticulum-sidecar-manager.ts'), 'utf-8');
-    expect(sidecarSource).toContain('RETICULUM_PROXY_MAX_RESPONSE_BYTES');
-    expect(sidecarSource).toContain('RETICULUM_WS_MAX_MESSAGE_BYTES');
-    expect(sidecarSource).toContain('maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES');
   });
 });
 

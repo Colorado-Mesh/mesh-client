@@ -4,16 +4,7 @@ import { join } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ensureOfflineProtocolIdentities,
-  OFFLINE_MESHCORE_IDENTITY_ID,
-  OFFLINE_RETICULUM_IDENTITY_ID,
-} from '../lib/offlineProtocolIdentities';
-import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
-import type { Protocol } from '../lib/protocols/Protocol';
-import { reticulumProtocol } from '../lib/protocols/ReticulumProtocol';
-import type { IdentityId, MeshProtocol } from '../lib/types';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { addIdentity, useIdentityStore } from '../stores/identityStore';
 import { useMessageStore } from '../stores/messageStore';
@@ -24,18 +15,6 @@ import type { ProtocolConnectionActions } from './useProtocolConnection';
 import { useProtocolFacade } from './useProtocolFacade';
 
 const IDENTITY = 'id-facade-mt';
-
-const PROTOCOL_ADAPTER: Record<MeshProtocol, Protocol> = {
-  meshtastic: meshtasticProtocol,
-  meshcore: meshcoreProtocol,
-  reticulum: reticulumProtocol,
-};
-
-const CONNECTED_IDS: Record<MeshProtocol, IdentityId> = {
-  meshtastic: 'id-facade-mt-live',
-  meshcore: 'id-facade-mc-live',
-  reticulum: 'id-facade-rn-live',
-};
 
 function panelActionsStub() {
   return {
@@ -102,26 +81,7 @@ function connectionPrebuilt(): ConnectionActionsByProtocol {
   return {
     meshtastic: connectionActionsStub(),
     meshcore: connectionActionsStub(),
-    reticulum: connectionActionsStub(),
   };
-}
-
-function addConnectedIdentity(protocol: MeshProtocol, id: IdentityId): void {
-  addIdentity({
-    id,
-    protocol: PROTOCOL_ADAPTER[protocol],
-    signature: `sig-facade-${protocol}`,
-    transports: [
-      {
-        transportId: `t-${protocol}`,
-        type: 'ble',
-        status: 'connected',
-        params: { type: 'ble', peripheralId: `${protocol}-ble` },
-      },
-    ],
-    createdAt: 100,
-    lastSeenAt: 100,
-  });
 }
 
 describe('useProtocolFacade', () => {
@@ -171,43 +131,6 @@ describe('useProtocolFacade', () => {
         ? result.current.panel.actions.setConfig
         : undefined,
     ).toBe(meshtasticActions.setConfig);
-  });
-
-  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
-    'resolves focused and per-protocol identity IDs for %s',
-    (protocol) => {
-      for (const p of ['meshtastic', 'meshcore', 'reticulum'] as const) {
-        addConnectedIdentity(p, CONNECTED_IDS[p]);
-      }
-
-      const connections = connectionPrebuilt();
-      const { result } = renderHook(() =>
-        useProtocolFacade(protocol, panelPrebuilt(), connections),
-      );
-
-      expect(result.current.connection).toBe(connections[protocol]);
-      expect(result.current.focusedIdentityId).toBe(CONNECTED_IDS[protocol]);
-      expect(result.current.identityIdByProtocol).toEqual(CONNECTED_IDS);
-      expect(result.current.reticulumIdentityId).toBe(CONNECTED_IDS.reticulum);
-      expect(result.current.capabilities.protocol).toBe(protocol);
-    },
-  );
-
-  it('resolves reticulum to its own offline bucket, not meshcore', () => {
-    ensureOfflineProtocolIdentities();
-
-    const { result } = renderHook(() =>
-      useProtocolFacade('reticulum', panelPrebuilt(), connectionPrebuilt()),
-    );
-
-    expect(result.current.focusedIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
-    expect(result.current.reticulumIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
-    expect(result.current.identityIdByProtocol.reticulum).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
-    expect(result.current.identityIdByProtocol.meshcore).toBe(OFFLINE_MESHCORE_IDENTITY_ID);
-    expect(result.current.reticulumIdentityId).not.toBe(
-      result.current.identityIdByProtocol.meshcore,
-    );
-    expect(result.current.capabilities.protocol).toBe('reticulum');
   });
 
   it('does not import or call useProtocolConnectionActions', () => {

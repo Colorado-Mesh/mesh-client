@@ -26,7 +26,7 @@ describe('parseBuildInfo', () => {
         workflow: 'Build Binaries (no release)',
         runNumber: 1842,
         runId: '12345678901',
-        runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/12345678901',
+        runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/12345678901',
         sha: 'a1b2c3d',
       }),
     );
@@ -35,7 +35,7 @@ describe('parseBuildInfo', () => {
       workflow: 'Build Binaries (no release)',
       runNumber: 1842,
       runId: '12345678901',
-      runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/12345678901',
+      runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/12345678901',
       sha: 'a1b2c3d',
     });
   });
@@ -70,7 +70,7 @@ describe('formatBuildInfoLogFragment', () => {
       buildChannel: 'test',
       runNumber: 1842,
       runId: '12345678901',
-      runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/12345678901',
+      runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/12345678901',
       sha: 'a1b2c3d',
     });
     expect(fragment).toBe('buildChannel=test run=1842 runId=12345678901 sha=a1b2c3d');
@@ -104,7 +104,7 @@ describe('buildInfoForManifest', () => {
         workflow: 'Build Binaries (no release)',
         runNumber: 1842,
         runId: '12345678901',
-        runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/12345678901',
+        runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/12345678901',
         sha: 'a1b2c3d',
       }),
     ).toEqual({
@@ -113,7 +113,7 @@ describe('buildInfoForManifest', () => {
         workflow: 'Build Binaries (no release)',
         runNumber: 1842,
         runId: '12345678901',
-        runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/12345678901',
+        runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/12345678901',
         sha: 'a1b2c3d',
       },
     });

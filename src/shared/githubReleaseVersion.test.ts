@@ -58,20 +58,22 @@ describe('githubReleaseVersion', () => {
         name: '5.29.0',
         draft: false,
         prerelease: false,
-        html_url: 'https://github.com/Colorado-Mesh/mesh-client/releases/tag/v5.29.0',
+        html_url: 'https://github.com/charlottemeshtastic/mesh-client/releases/tag/v5.29.0',
       },
       {
         tag_name: 'untagged-deadbeef',
         name: '5.30.0',
         draft: false,
         prerelease: false,
-        html_url: 'https://github.com/Colorado-Mesh/mesh-client/releases/tag/untagged-deadbeef',
+        html_url:
+          'https://github.com/charlottemeshtastic/mesh-client/releases/tag/untagged-deadbeef',
       },
     ]);
     expect(picked).toEqual({
       tag: 'v5.30.0',
       version: '5.30.0',
-      releaseUrl: 'https://github.com/Colorado-Mesh/mesh-client/releases/tag/untagged-deadbeef',
+      releaseUrl:
+        'https://github.com/charlottemeshtastic/mesh-client/releases/tag/untagged-deadbeef',
     });
   });
 

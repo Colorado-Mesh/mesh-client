@@ -147,7 +147,6 @@ describe('runRustLicenseCheck', () => {
     const stderr = sink();
     const code = runRustLicenseCheck({
       cargoAvailable: () => false,
-      rsstackPresent: () => true,
       loadMetadata: okMetadata,
       stdout: sink(),
       stderr,
@@ -161,7 +160,6 @@ describe('runRustLicenseCheck', () => {
     const code = runRustLicenseCheck({
       requireCargo: true,
       cargoAvailable: () => false,
-      rsstackPresent: () => true,
       loadMetadata: okMetadata,
       stdout: sink(),
       stderr,
@@ -170,24 +168,10 @@ describe('runRustLicenseCheck', () => {
     expect(stderr.text()).toMatch(/required by --require-cargo/);
   });
 
-  it('fails when .rsstack is not provisioned', () => {
-    const stderr = sink();
-    const code = runRustLicenseCheck({
-      cargoAvailable: () => true,
-      rsstackPresent: () => false,
-      loadMetadata: okMetadata,
-      stdout: sink(),
-      stderr,
-    });
-    expect(code).toBe(1);
-    expect(stderr.text()).toMatch(/clone-ratspeak-stack\.sh/);
-  });
-
   it('passes and reports to stdout when every crate is allowed', () => {
     const stdout = sink();
     const code = runRustLicenseCheck({
       cargoAvailable: () => true,
-      rsstackPresent: () => true,
       loadMetadata: okMetadata,
       stdout,
       stderr: sink(),
@@ -200,7 +184,6 @@ describe('runRustLicenseCheck', () => {
     const stderr = sink();
     const code = runRustLicenseCheck({
       cargoAvailable: () => true,
-      rsstackPresent: () => true,
       loadMetadata: () => ({ packages: [pkg('bad', 'Proprietary')] }),
       stdout: sink(),
       stderr,
@@ -213,7 +196,6 @@ describe('runRustLicenseCheck', () => {
     const stderr = sink();
     const code = runRustLicenseCheck({
       cargoAvailable: () => true,
-      rsstackPresent: () => true,
       loadMetadata: () => {
         throw new Error('check:rust-licenses: cargo metadata failed (101): boom');
       },

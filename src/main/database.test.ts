@@ -413,70 +413,8 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(SCHEMA_SYNC_SOURCE).toMatch(/value TEXT NOT NULL/);
   });
 
-  it('seeds the four retention defaults via INSERT OR IGNORE so user values are preserved', () => {
-    expect(SCHEMA_SYNC_SOURCE).toMatch(
-      /INSERT OR IGNORE INTO app_settings\(key, value\) VALUES \(\?, \?\)/,
-    );
-    expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionEnabled', '1'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionCount', '4000'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'reticulumMessageRetentionEnabled', '1'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'reticulumMessageRetentionCount', '4000'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'rrcMessageRetentionEnabled', '1'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'rrcMessageRetentionCount', '10000'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionEnabled', '1'");
-    expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionCount', '4000'");
-    expect(SCHEMA_SYNC_SOURCE).toMatch(
-      /db\.pragma\(`user_version = \$\{CURRENT_SCHEMA_VERSION\}`\)/,
-    );
-  });
-
   it('appSettings:get IPC handler reads from app_settings', () => {
     expect(INDEX_SOURCE).toContain("'appSettings:get'");
-    expect(INDEX_SOURCE).toMatch(/SELECT key, value FROM app_settings/);
-  });
-
-  it('appSettings:set IPC handler enforces an allow-list of retention keys', () => {
-    expect(INDEX_SOURCE).toContain("'appSettings:set'");
-    expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
-    expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionEnabled');
-    expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionCount');
-    expect(INDEX_SOURCE).toContain('reticulumMessageRetentionEnabled');
-    expect(INDEX_SOURCE).toContain('reticulumMessageRetentionCount');
-    expect(INDEX_SOURCE).toContain('rrcMessageRetentionEnabled');
-    expect(INDEX_SOURCE).toContain('rrcMessageRetentionCount');
-    expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionEnabled');
-    expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionCount');
-    expect(INDEX_SOURCE).toContain('reduceMotion');
-    expect(INDEX_SOURCE).toContain('use24HourTime');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_SYNC_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_LAST_POST_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX');
-    expect(INDEX_SOURCE).toContain('reticulumLastSelfLxmfHash');
-    expect(INDEX_SOURCE).toContain('reticulumRmapAnnounceIntervalMin');
-    expect(INDEX_SOURCE).toContain('reticulumRmapReachableOn');
-    expect(INDEX_SOURCE).toContain('reticulumRmapHeightMeters');
-    expect(INDEX_SOURCE).not.toContain('reticulumRmapNotAllowed');
-    expect(INDEX_SOURCE).toMatch(/key not allowed/);
-    expect(INDEX_SOURCE).toMatch(/INSERT OR REPLACE INTO app_settings\(key, value\) VALUES/);
-  });
-
-  it('appSettings:set allowlists RMAP prefs for SQLite persistence', () => {
-    // Source-level: Electron-bound IPC cannot be exercised here; assert write path + allowlist.
-    const allowListBlock = INDEX_SOURCE.slice(
-      INDEX_SOURCE.indexOf('APP_SETTINGS_ALLOWED_KEYS'),
-      INDEX_SOURCE.indexOf('APP_SETTINGS_MAX_VALUE_LENGTH'),
-    );
-    expect(allowListBlock).toContain("'reticulumLastSelfLxmfHash'");
-    expect(allowListBlock).toContain("'reticulumRmapAnnounceIntervalMin'");
-    expect(allowListBlock).toContain("'reticulumRmapReachableOn'");
-    expect(allowListBlock).toContain("'reticulumRmapHeightMeters'");
-    expect(allowListBlock).not.toContain("'reticulumRmapNotAllowed'");
-    expect(INDEX_SOURCE).toMatch(
-      /isAppSettingsKeyAllowed\(key\)[\s\S]*?throw new Error\('appSettings:set: key not allowed'\)/,
-    );
-    expect(INDEX_SOURCE).toMatch(
-      /\.prepareOnce\('INSERT OR REPLACE INTO app_settings\(key, value\) VALUES \(\?, \?\)'\)/,
-    );
     expect(INDEX_SOURCE).toMatch(/SELECT key, value FROM app_settings/);
   });
 

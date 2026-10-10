@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Mesh Client
-Comment=Meshtastic, MeshCore, and Reticulum mesh network client
-Exec=mesh-client %U
-Icon=org.coloradomesh.MeshClient
-Type=Application
-Categories=Utility;Network;HamRadio;
-StartupWMClass=mesh-client

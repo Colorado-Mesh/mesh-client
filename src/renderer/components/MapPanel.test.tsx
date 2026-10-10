@@ -762,20 +762,4 @@ describe('MapPanel layer controls', () => {
       expect(useMapLayerStore.getState().sensorMetric).toBe('relativeHumidity');
     },
   );
-
-  it('hides the sensor toggle when the protocol has no environment telemetry', async () => {
-    const user = userEvent.setup();
-    render(
-      <MapPanel
-        nodes={new Map()}
-        myNodeNum={1}
-        locationFilter={defaultFilter}
-        ourPosition={null}
-        onLocateMe={vi.fn().mockResolvedValue(null)}
-        protocol="reticulum"
-      />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Toggle map layer controls' }));
-    expect(screen.queryByRole('checkbox', { name: 'Sensors' })).toBeNull();
-  });
 });

@@ -74,13 +74,13 @@ describe('stampedInstallerName', () => {
   });
 
   it('stamps Flatpak and is idempotent', () => {
-    expect(stampedInstallerName('org.coloradomesh.MeshClient.flatpak', 214)).toBe(
-      'org.coloradomesh.MeshClient-run214.flatpak',
+    expect(stampedInstallerName('io.github.charlottemeshtastic.MeshHub.flatpak', 214)).toBe(
+      'io.github.charlottemeshtastic.MeshHub-run214.flatpak',
     );
-    expect(stampedInstallerName('org.coloradomesh.MeshClient-run214.flatpak', 214)).toBe(
-      'org.coloradomesh.MeshClient-run214.flatpak',
+    expect(stampedInstallerName('io.github.charlottemeshtastic.MeshHub-run214.flatpak', 214)).toBe(
+      'io.github.charlottemeshtastic.MeshHub-run214.flatpak',
     );
-    expect(hasRunStamp('org.coloradomesh.MeshClient-run214.flatpak')).toBe(true);
+    expect(hasRunStamp('io.github.charlottemeshtastic.MeshHub-run214.flatpak')).toBe(true);
   });
 });
 
@@ -89,7 +89,7 @@ describe('shouldRenameInstaller', () => {
     expect(shouldRenameInstaller('Mesh-client-5.26.0.AppImage')).toBe(true);
     expect(shouldRenameInstaller('Mesh-client Setup 5.26.0.exe')).toBe(true);
     expect(shouldRenameInstaller('Mesh-client-Setup-5.26.0.exe')).toBe(true);
-    expect(shouldRenameInstaller('org.coloradomesh.MeshClient.flatpak')).toBe(true);
+    expect(shouldRenameInstaller('io.github.charlottemeshtastic.MeshHub.flatpak')).toBe(true);
     expect(shouldRenameInstaller('READ-ME-FIRST-test-build.md')).toBe(false);
     expect(shouldRenameInstaller('Mesh-client.exe')).toBe(false);
     expect(shouldRenameInstaller('Mesh-client-5.26.0.AppImage.blockmap')).toBe(false);

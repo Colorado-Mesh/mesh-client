@@ -7,9 +7,17 @@ export type InkStep = (typeof INK_STEPS)[number];
 export type InkScale = Record<InkStep, string>;
 
 export type ThemeSurfaceId =
-  'midnight' | 'slate' | 'zinc' | 'graphite' | 'deepSea' | 'dusk' | 'evergreen' | 'highContrast';
+  | 'charcoal'
+  | 'midnight'
+  | 'slate'
+  | 'zinc'
+  | 'graphite'
+  | 'deepSea'
+  | 'dusk'
+  | 'evergreen'
+  | 'highContrast';
 
-export type ThemeAccentId = 'meshtastic' | 'meshcore' | 'reticulum' | 'sky' | 'classic';
+export type ThemeAccentId = 'signature' | 'meshtastic' | 'meshcore' | 'sky' | 'classic';
 
 /** A neutral family: the values behind every `ink-*` class (`--color-ink-*`). */
 export interface ThemeSurface {
@@ -33,11 +41,28 @@ function scale(values: readonly string[]): InkScale {
 
 /**
  * Surface families for App > Appearance > Colors, dark only (many older panels hard-code light
- * text). Midnight is the default and must match the `--color-ink-*` values in styles.css. The
- * tinted families keep Midnight's lightness and chroma per step with another hue, so every family
- * passes the same text and border contrast pairs (`themePresets.test.ts`).
+ * text). Charcoal (the Mesh Hub palette) is the default and must match the `--color-ink-*` values
+ * in styles.css. The other families pass the same text and border contrast pairs
+ * (`themePresets.test.ts`).
  */
 export const THEME_SURFACES: readonly ThemeSurface[] = [
+  {
+    id: 'charcoal',
+    labelKey: 'appPanel.themeSurfaces.charcoal',
+    scale: scale([
+      '#ffffff',
+      '#f2f2f2',
+      '#e0e0e0',
+      '#c7c7c7',
+      '#a3a3a3',
+      '#808080',
+      '#5c5c5c',
+      '#424242',
+      '#333333',
+      '#292929',
+      '#1b1b1b',
+    ]),
+  },
   {
     id: 'midnight',
     labelKey: 'appPanel.themeSurfaces.midnight',
@@ -179,8 +204,14 @@ export const THEME_SURFACES: readonly ThemeSurface[] = [
   },
 ];
 
-/** Accents are the protocol scales plus two extras; any accent pairs with any surface. */
+/** Signature orange (default), the protocol scales, plus two extras; any accent pairs with any surface. */
 export const THEME_ACCENTS: readonly ThemeAccent[] = [
+  {
+    id: 'signature',
+    labelKey: 'appPanel.themeAccents.signature',
+    base: '#ffa31a',
+    fill: '#b35f00',
+  },
   {
     id: 'meshtastic',
     labelKey: 'appPanel.themeAccents.meshtastic',
@@ -188,19 +219,13 @@ export const THEME_ACCENTS: readonly ThemeAccent[] = [
     fill: '#047857',
   },
   { id: 'meshcore', labelKey: 'appPanel.themeAccents.meshcore', base: '#00d3f2', fill: '#0e7490' },
-  {
-    id: 'reticulum',
-    labelKey: 'appPanel.themeAccents.reticulum',
-    base: '#facc15',
-    fill: '#a16207',
-  },
   { id: 'sky', labelKey: 'appPanel.themeAccents.sky', base: '#38bdf8', fill: '#0369a1' },
   // The pre-v6 green.
   { id: 'classic', labelKey: 'appPanel.themeAccents.classic', base: '#86efac', fill: '#15803d' },
 ];
 
-export const DEFAULT_THEME_SURFACE_ID: ThemeSurfaceId = 'midnight';
-export const DEFAULT_THEME_ACCENT_ID: ThemeAccentId = 'meshtastic';
+export const DEFAULT_THEME_SURFACE_ID: ThemeSurfaceId = 'charcoal';
+export const DEFAULT_THEME_ACCENT_ID: ThemeAccentId = 'signature';
 
 /** Which ink step each surface theme token takes. */
 const SURFACE_TOKEN_STEPS = {

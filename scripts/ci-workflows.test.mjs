@@ -97,7 +97,7 @@ describe('CI workflow contracts', () => {
   it('blocks required coverage checks when detection or any shard fails', () => {
     const gate = testsWorkflow
       .split('      - name: Verify test shards')[1]
-      .split('  reticulum-sidecar-coverage:')[0]
+      .split('  ble-sidecar-coverage:')[0]
       .split('        run: |\n')[1];
     expect(testsWorkflow).toContain('needs: [changes, test-shards]');
     for (const changes of ['success', 'failure', 'cancelled', 'skipped']) {
@@ -162,7 +162,7 @@ describe('CI workflow contracts', () => {
         (await local.calculateConfigForFile(file)).rules,
       );
     }
-  });
+  }, 30_000); // Loads two full ESLint configs; slow under parallel pre-commit load.
 
   it('uses distinct artifact names for shards and bounds lint concurrency', () => {
     expect(testsWorkflow).toContain('name: vitest-blob-${{ matrix.project }}-${{ matrix.shard }}');
@@ -334,25 +334,20 @@ describe('CI workflow contracts', () => {
   });
 });
 
-describe('full-stack sidecar cache', () => {
-  const workflow = load(read('.github/workflows/reticulum-sidecar.yaml'));
-  const job = workflow.jobs['build-rns-stack'];
+describe('Bluetooth helper sidecar cache', () => {
+  const workflow = load(read('.github/workflows/ble-sidecar.yaml'));
+  const job = workflow.jobs.build;
   const cacheIndex = job.steps.findIndex((step) => step.uses?.startsWith('Swatinem/rust-cache@'));
 
-  it('restores dependencies after fresh upstream sources and the selected toolchain', () => {
-    const cloneIndex = job.steps.findIndex((step) =>
-      step.run?.includes('bash scripts/clone-ratspeak-stack.sh'),
-    );
+  it('restores dependencies after the selected toolchain', () => {
     const toolchainIndex = job.steps.findIndex((step) =>
       step.uses?.startsWith('dtolnay/rust-toolchain@'),
     );
-    expect(cloneIndex).toBeGreaterThanOrEqual(0);
     expect(toolchainIndex).toBeGreaterThanOrEqual(0);
-    expect(cacheIndex).toBeGreaterThan(cloneIndex);
     expect(cacheIndex).toBeGreaterThan(toolchainIndex);
     expect(job.steps[cacheIndex].uses).toMatch(/^Swatinem\/rust-cache@[0-9a-f]{40}$/);
     expect(job.steps[cacheIndex].with).toMatchObject({
-      workspaces: 'reticulum-sidecar -> target',
+      workspaces: 'ble-sidecar -> target',
       'cache-bin': false,
       'cache-workspace-crates': false,
     });
@@ -369,9 +364,7 @@ describe('full-stack sidecar cache', () => {
   });
 
   it('always tests and rebuilds before uploading, including on a cache hit', () => {
-    const testIndex = job.steps.findIndex((step) =>
-      step.run?.startsWith('cargo test --features rns-stack,rns-ble,rns-rnode-tcp'),
-    );
+    const testIndex = job.steps.findIndex((step) => step.run?.startsWith('cargo test'));
     const buildIndex = job.steps.findIndex((step) =>
       step.run?.startsWith('cargo build --release --target'),
     );
@@ -384,7 +377,7 @@ describe('full-stack sidecar cache', () => {
     for (const step of job.steps.filter((step) => step.run?.includes('cargo '))) {
       expect(step.if).toBeUndefined();
       expect(step['continue-on-error']).toBeUndefined();
-      expect(step['working-directory']).toBe('reticulum-sidecar');
+      expect(step['working-directory']).toBe('ble-sidecar');
     }
     expect(job.if).toBeUndefined();
     expect(job['continue-on-error']).toBeUndefined();
@@ -392,15 +385,8 @@ describe('full-stack sidecar cache', () => {
 });
 
 describe('Windows ARM64 sidecar builds', () => {
-  const workflow = read('.github/workflows/reticulum-sidecar.yaml');
-  const variants = [
-    { suffix: '', features: '', artifact: 'mesh-client-reticulum-win-arm64' },
-    {
-      suffix: '-rns-stack',
-      features: ' --features rns-stack,rns-ble,rns-rnode-tcp',
-      artifact: 'mesh-client-reticulum-rns-win-arm64',
-    },
-  ];
+  const workflow = read('.github/workflows/ble-sidecar.yaml');
+  const variants = [{ suffix: '', features: '', artifact: 'mesh-hub-ble-win-arm64' }];
 
   function job(name) {
     const body = workflow.split(`\n  ${name}:\n`)[1];
@@ -428,29 +414,24 @@ describe('Windows ARM64 sidecar builds', () => {
     expect(arm64).toContain(
       `run: cargo build --release --target aarch64-pc-windows-msvc${variant.features}\n`,
     );
-    expect(arm64).toContain('working-directory: reticulum-sidecar');
+    expect(arm64).toContain('working-directory: ble-sidecar');
     expect(arm64).toContain(`name: ${variant.artifact}\n`);
     expect(arm64).toContain(
-      'path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe',
+      'path: ble-sidecar/target/aarch64-pc-windows-msvc/release/mesh-hub-ble.exe',
     );
   });
 
-  it.each(variants)(
-    'caches dependencies after fresh source/toolchain setup for $artifact',
-    (variant) => {
-      const arm64 = job(`build-windows-arm64${variant.suffix}`);
-      const clone = requireIndex(arm64, 'run: bash scripts/clone-ratspeak-stack.sh', 'clone');
-      const toolchain = requireIndex(arm64, 'targets: aarch64-pc-windows-msvc', 'toolchain');
-      const cache = requireIndex(arm64, 'uses: Swatinem/rust-cache@', 'cache');
-      const build = requireIndex(arm64, 'run: cargo build', 'build');
-      expect(clone).toBeLessThan(cache);
-      expect(toolchain).toBeLessThan(cache);
-      expect(cache).toBeLessThan(build);
-      expect(arm64).toMatch(/Swatinem\/rust-cache@[0-9a-f]{40}\n/);
-      expect(arm64).toContain('workspaces: reticulum-sidecar -> target');
-      expect(arm64).toContain('key: aarch64-pc-windows-msvc');
-      expect(arm64).toContain('cache-workspace-crates: false');
-      expect(arm64).not.toMatch(/shared-key:|add-job-id-key: false/);
-    },
-  );
+  it.each(variants)('caches dependencies after toolchain setup for $artifact', (variant) => {
+    const arm64 = job(`build-windows-arm64${variant.suffix}`);
+    const toolchain = requireIndex(arm64, 'targets: aarch64-pc-windows-msvc', 'toolchain');
+    const cache = requireIndex(arm64, 'uses: Swatinem/rust-cache@', 'cache');
+    const build = requireIndex(arm64, 'run: cargo build', 'build');
+    expect(toolchain).toBeLessThan(cache);
+    expect(cache).toBeLessThan(build);
+    expect(arm64).toMatch(/Swatinem\/rust-cache@[0-9a-f]{40}\n/);
+    expect(arm64).toContain('workspaces: ble-sidecar -> target');
+    expect(arm64).toContain('key: aarch64-pc-windows-msvc');
+    expect(arm64).toContain('cache-workspace-crates: false');
+    expect(arm64).not.toMatch(/shared-key:|add-job-id-key: false/);
+  });
 });

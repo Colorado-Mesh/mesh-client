@@ -2,11 +2,6 @@ import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types'
 
 import { errLikeToLogString } from './errLikeToLogString';
 import { withMeshtasticTextSendPacing } from './meshtasticTextSendPacing';
-import {
-  assertReticulumSendAcked,
-  resolveReticulumIdentityId,
-  RETICULUM_RECEIPT_TIMEOUT_MS,
-} from './reticulumOutboundReceipt';
 
 export interface EmergencySendDeps {
   isSendAvailable: boolean;
@@ -22,8 +17,6 @@ export interface EmergencySendDeps {
   channel: number;
   toNode: number | null;
   replyId?: number | null;
-  /** Test override for the Reticulum remote-receipt wait. */
-  reticulumReceiptTimeoutMs?: number;
 }
 
 export type EmergencySendOutcome = 'sent' | 'queued';
@@ -68,7 +61,7 @@ export function sendEmergencyText(
 }
 
 /**
- * Live send with enqueue-on-failure (radio unavailable, send throws, or no Reticulum receipt).
+ * Live send with enqueue-on-failure (radio unavailable or send throws).
  * Incident ACK uses `'normal'` so it does not compete with emergency reports.
  */
 export async function sendTextWithOutboxFallback(
@@ -88,15 +81,6 @@ export async function sendTextWithOutboxFallback(
   try {
     if (deps.protocol === 'meshtastic') {
       await withMeshtasticTextSendPacing(send);
-    } else if (deps.protocol === 'reticulum') {
-      // LXMF send returns a pending store id; only a remote receipt counts as delivered.
-      const identityId = resolveReticulumIdentityId();
-      const sendResult = await send();
-      await assertReticulumSendAcked(
-        identityId,
-        sendResult,
-        deps.reticulumReceiptTimeoutMs ?? RETICULUM_RECEIPT_TIMEOUT_MS,
-      );
     } else {
       await send();
     }

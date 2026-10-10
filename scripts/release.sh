@@ -60,7 +60,7 @@ PY
   return 0
 }
 
-METAINFO_FILE="flatpak/org.coloradomesh.MeshClient.metainfo.xml"
+METAINFO_FILE="flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml"
 
 read_package_version() {
   node -p "require('./package.json').version"
@@ -162,7 +162,7 @@ push_release_main_with_rebase() {
 
 commit_tag_and_push_release() {
   local new_version="$1"
-  git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
+  git add package.json pnpm-lock.yaml io.github.charlottemeshtastic.MeshHub.yml
   [ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
   git commit -m "chore: release $new_version"
 
@@ -175,7 +175,7 @@ commit_tag_and_push_release() {
   print_success "--------------------------------------------------------"
   print_success "Success! $new_version has been pushed."
   print_success "GitHub Actions will now begin building the distributables."
-  echo "Check progress at: https://github.com/Colorado-Mesh/mesh-client/actions"
+  echo "Check progress at: https://github.com/charlottemeshtastic/mesh-client/actions"
   print_warning "Releases are created as drafts — review artifacts, then publish on GitHub."
   print_success "--------------------------------------------------------"
 }
@@ -212,7 +212,7 @@ finish_pending_release() {
   if ! pnpm run check:flatpak; then
     print_error "MetaInfo does not match package.json."
     print_error "Do NOT re-run \`pnpm run release\` (that would bump again)."
-    print_error "Fix flatpak/org.coloradomesh.MeshClient.metainfo.xml top <release version=\"$clean_version\">, then: pnpm run release --finish"
+    print_error "Fix flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml top <release version=\"$clean_version\">, then: pnpm run release --finish"
     exit 1
   fi
 
@@ -277,7 +277,7 @@ EOF
   echo "### macOS install"
   echo "- **Recommended:** open the **\`.dmg\`** and drag **Mesh-client** to **Applications**."
   echo "- If you use the **\`.zip\`**: extract with **[Keka](https://www.keka.io/en/)** or \`ditto -xk\` — **do not use 7-Zip** (or Finder Archive Utility); they break framework symlinks and can crash at launch with \`Library not loaded: Squirrel.framework\`."
-  echo "- See [troubleshooting](https://colorado-mesh.github.io/mesh-client/troubleshooting/#macos-library-not-loaded-squirrelframework-after-zip-extract) if the app will not open after a ZIP extract."
+  echo "- See [troubleshooting](https://charlottemeshtastic.github.io/mesh-client/troubleshooting/#macos-library-not-loaded-squirrelframework-after-zip-extract) if the app will not open after a ZIP extract."
 
   echo ""
   echo "### Breaking Changes"
@@ -308,7 +308,7 @@ EOF
 
   echo ""
   echo "### Full Changelog"
-  echo "[\`$last_tag...$new_version\`](https://github.com/Colorado-Mesh/mesh-client/compare/$last_tag...$new_version)"
+  echo "[\`$last_tag...$new_version\`](https://github.com/charlottemeshtastic/mesh-client/compare/$last_tag...$new_version)"
 
   echo ""
   print_header "========================================"
@@ -628,21 +628,6 @@ if ! pnpm run check:ipc-contract; then
   exit 1
 fi
 
-if ! pnpm run check:reticulum-interface-modes; then
-  print_error "Reticulum interface mode catalog check failed."
-  exit 1
-fi
-
-if ! pnpm run check:pn-hosting-policy; then
-  print_error "PN hosting policy catalog check failed."
-  exit 1
-fi
-
-if ! pnpm run check:reticulum-decommissioned-hubs; then
-  print_error "Reticulum decommissioned hub catalog check failed."
-  exit 1
-fi
-
 if ! pnpm run check:console-log; then
   print_error "console.log policy check failed."
   exit 1
@@ -773,7 +758,7 @@ if ! command -v cargo > /dev/null 2>&1; then
   exit 1
 fi
 echo "Running Reticulum sidecar tests..."
-if ! pnpm run reticulum:sidecar:test; then
+if ! pnpm run ble:sidecar:test; then
   print_error "Reticulum sidecar tests failed."
   exit 1
 fi

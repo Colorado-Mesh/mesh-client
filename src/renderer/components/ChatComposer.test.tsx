@@ -16,7 +16,6 @@ import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
-import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 
 import { ChatComposer } from './ChatComposer';
 
@@ -398,25 +397,6 @@ describe('ChatComposer', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('timeout');
     });
     expect(textarea).toHaveValue('stuck text');
-  });
-
-  it('keeps the draft when the composer unmounts and comes back (compact Back to list)', () => {
-    localStorage.removeItem(draftsStorageKey('reticulum'));
-    const composer = (
-      <ChatComposer
-        protocol="reticulum"
-        viewKey="rrc:hub:#lobby"
-        isConnected
-        allowOutbox={false}
-        onSendChunk={vi.fn()}
-      />
-    );
-    const first = render(composer);
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'half a thought' } });
-    first.unmount();
-
-    render(composer);
-    expect(screen.getByRole('textbox')).toHaveValue('half a thought');
   });
 
   it('restores draft when viewKey changes', () => {
@@ -1285,127 +1265,6 @@ describe('ChatComposer', () => {
     expect(onRememberFloodScopePreset).not.toHaveBeenCalled();
   });
 
-  describe('VoiceMemoComposerButton', () => {
-    beforeEach(() => {
-      useReticulumVoiceMemoStore.getState().reset();
-    });
-
-    it('shows record button when compose is empty and onVoiceMemo is set', () => {
-      render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="dm:1"
-          isConnected
-          allowOutbox={false}
-          onSendChunk={vi.fn().mockResolvedValue(undefined)}
-          onVoiceMemo={vi.fn()}
-        />,
-      );
-      expect(screen.getByRole('button', { name: 'Record voice memo' })).toBeEnabled();
-    });
-
-    it('disables the button while starting', () => {
-      useReticulumVoiceMemoStore.getState().setStarting();
-      render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="dm:1"
-          isConnected
-          allowOutbox={false}
-          onSendChunk={vi.fn().mockResolvedValue(undefined)}
-          onVoiceMemo={vi.fn()}
-        />,
-      );
-      expect(screen.getByRole('button', { name: 'Send voice memo' })).toBeDisabled();
-    });
-
-    it('includes elapsed seconds in aria-label while recording', () => {
-      useReticulumVoiceMemoStore.getState().setStarting();
-      useReticulumVoiceMemoStore.getState().startRecording('sess-1');
-      useReticulumVoiceMemoStore.getState().tickElapsed(12);
-      render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="dm:1"
-          isConnected
-          allowOutbox={false}
-          onSendChunk={vi.fn().mockResolvedValue(undefined)}
-          onVoiceMemo={vi.fn()}
-        />,
-      );
-      expect(screen.getByRole('button', { name: 'Send voice memo (12s recorded)' })).toBeEnabled();
-    });
-
-    it('passes axe with voice memo button visible', async () => {
-      const { container } = render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="dm:1"
-          isConnected
-          allowOutbox={false}
-          onSendChunk={vi.fn().mockResolvedValue(undefined)}
-          onVoiceMemo={vi.fn()}
-        />,
-      );
-      hydrateAxeThemeColors(container);
-      expect(await axe(container)).toHaveNoViolations();
-    });
-  });
-
-  describe('RRC hub body limits', () => {
-    it('shows a wire-byte counter and splits sends under a hub payloadLimit', async () => {
-      const onSendChunk = vi.fn().mockResolvedValue(undefined);
-      const onInterceptSend = vi.fn().mockResolvedValue(false);
-      render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="rrc:hub:general"
-          isConnected
-          allowOutbox={false}
-          payloadLimit={50}
-          useWireByteCount
-          shouldSuppressLimits={() => false}
-          onInterceptSend={onInterceptSend}
-          onSendChunk={onSendChunk}
-          sendButtonLabel="Send"
-        />,
-      );
-      const body = 'a'.repeat(60);
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: body } });
-      expect(await screen.findByRole('button', { name: 'Send 2 parts' })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Send 2 parts' }));
-      await waitFor(() => {
-        expect(onSendChunk.mock.calls.length).toBeGreaterThan(1);
-      });
-      expect(onInterceptSend).toHaveBeenCalled();
-    });
-
-    it('intercepts slash commands without calling onSendChunk', async () => {
-      const onSendChunk = vi.fn().mockResolvedValue(undefined);
-      const onInterceptSend = vi.fn().mockResolvedValue(true);
-      render(
-        <ChatComposer
-          protocol="reticulum"
-          viewKey="rrc:hub:general"
-          isConnected
-          allowOutbox={false}
-          payloadLimit={350}
-          useWireByteCount
-          shouldSuppressLimits={() => true}
-          onInterceptSend={onInterceptSend}
-          onSendChunk={onSendChunk}
-          sendButtonLabel="Send"
-        />,
-      );
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: '/help' } });
-      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-      await waitFor(() => {
-        expect(onInterceptSend).toHaveBeenCalledWith('/help');
-      });
-      expect(onSendChunk).not.toHaveBeenCalled();
-    });
-  });
-
   it('shows a locale send-failed banner instead of raw Error.message', async () => {
     const onSendChunk = vi.fn().mockRejectedValue(new Error('radio busy'));
     render(
@@ -1439,26 +1298,5 @@ describe('ChatComposer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Not connected — connect the radio and try again.');
-  });
-
-  it('keeps already-translated intercept errors (RRC preflight)', async () => {
-    const onInterceptSend = vi
-      .fn()
-      .mockRejectedValue(new Error('Nickname is too long (limit 32 bytes).'));
-    render(
-      <ChatComposer
-        protocol="reticulum"
-        viewKey="rrc:hub:general"
-        isConnected
-        allowOutbox={false}
-        onInterceptSend={onInterceptSend}
-        onSendChunk={vi.fn()}
-        sendButtonLabel="Send"
-      />,
-    );
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '/nick toolongname' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Nickname is too long (limit 32 bytes).');
   });
 });

@@ -20,7 +20,7 @@ const RAW_TIERS = [
   { name: 'dist', tier: 1 },
   { name: 'dist-electron', tier: 1 },
   { name: 'node_modules', tier: 2 },
-  { name: 'reticulum-sidecar/target', tier: 2 },
+  { name: 'ble-sidecar/target', tier: 2 },
 ];
 
 describe('clean-build', () => {
@@ -71,11 +71,11 @@ describe('clean-build', () => {
     const root = makeTempDir();
     const outside = makeTempRoot();
     try {
-      symlinkSync(outside, join(root, 'reticulum-sidecar'), 'dir');
+      symlinkSync(outside, join(root, 'ble-sidecar'), 'dir');
     } catch {
       return; // symlinks unavailable on this platform
     }
-    expect(() => resolvePaths(root, [{ name: 'reticulum-sidecar/target', tier: 2 }])).toThrow(
+    expect(() => resolvePaths(root, [{ name: 'ble-sidecar/target', tier: 2 }])).toThrow(
       /symlink ancestor/,
     );
   });
@@ -130,7 +130,7 @@ describe('clean-build', () => {
     printPlan(out, true, [{ name: 'node_modules' }], { install: true, sidecar: true });
     expect(lines.join('')).toContain('This will remove:');
     expect(lines.join('')).toContain('  - node_modules');
-    expect(lines.join('')).toContain('  - pnpm run reticulum:sidecar:build');
+    expect(lines.join('')).toContain('  - pnpm run ble:sidecar:build');
   });
 
   it('runCmd routes through the shell on win32 and not on other platforms', () => {
@@ -224,7 +224,7 @@ describe('clean-build', () => {
 
     expect(result.reinstalled).toBe(true);
     expect(result.removed.sort()).toEqual(['dist', 'node_modules']);
-    expect(calls).toEqual(['pnpm install', 'pnpm run reticulum:sidecar:build']);
+    expect(calls).toEqual(['pnpm install', 'pnpm run ble:sidecar:build']);
   });
 
   it('full clean throws RESTORE_FAILED when pnpm install fails, preserving removed state', async () => {
@@ -243,13 +243,13 @@ describe('clean-build', () => {
     const calls = [];
     const run = (cmd) => {
       calls.push(cmd.join(' '));
-      return cmd[0] === 'pnpm' && cmd[2] === 'reticulum:sidecar:build' ? 1 : 0;
+      return cmd[0] === 'pnpm' && cmd[2] === 'ble:sidecar:build' ? 1 : 0;
     };
 
     await expect(
       runClean(root, ['--full', '-y'], { stdin: process.stdin, stdout: silent, run }),
     ).rejects.toMatchObject({ code: 'RESTORE_FAILED', removed: ['node_modules'] });
-    expect(calls).toEqual(['pnpm install', 'pnpm run reticulum:sidecar:build']);
+    expect(calls).toEqual(['pnpm install', 'pnpm run ble:sidecar:build']);
   });
 
   it('does not reinstall when nothing existed to clean', async () => {

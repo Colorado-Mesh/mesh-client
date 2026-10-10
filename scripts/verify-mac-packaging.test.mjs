@@ -297,7 +297,7 @@ describe('verify-mac-packaging helpers', () => {
         calls.sidecar += 1;
         return { status: 0, text: '' };
       },
-      resolveSidecarPath: () => '/tmp/mesh-client-reticulum',
+      resolveSidecarPath: () => '/tmp/mesh-hub-ble',
     };
 
     expect(() =>
@@ -314,7 +314,7 @@ describe('verify-mac-packaging helpers', () => {
 
   it('assertMacCodeSignatureIfDeveloperId enforces deep strict, stapler, and sidecar', () => {
     const dir = mkdtempSync(join(tmpdir(), 'verify-mac-codesign-'));
-    const sidecarPath = join(dir, 'mesh-client-reticulum');
+    const sidecarPath = join(dir, 'mesh-hub-ble');
     writeFileSync(sidecarPath, 'x');
     const seen = /** @type {string[]} */ ([]);
     try {

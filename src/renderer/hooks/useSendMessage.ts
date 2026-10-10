@@ -1,7 +1,5 @@
 import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 
-import { useToast } from '../components/Toast';
 import {
   MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
   messageToDbRow,
@@ -24,7 +22,6 @@ import { nextMeshcoreMessageLocalOrder } from '../lib/meshcoreMessageOrder';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import type { SendResult } from '../lib/protocols/Protocol';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
-import { sendReticulumChatMessage } from '../lib/reticulum/sendReticulumChatMessage';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import { messageRecordToChatMessage } from '../lib/storeRecordAdapters';
@@ -171,42 +168,14 @@ export function useSendMessage(
   replyTo?: string,
   retryOfStoreId?: string,
 ) => string | undefined {
-  const { addToast } = useToast();
-  const { t } = useTranslation();
   return useCallback(
-    (
-      text: string,
-      channelIndex: number,
-      destination?: number,
-      replyTo?: string,
-      retryOfStoreId?: string,
-    ) => {
+    (text: string, channelIndex: number, destination?: number, replyTo?: string) => {
       if (!identityId) return;
       const identity = useIdentityStore.getState().identities[identityId];
       if (!identity) {
         console.warn('[useSendMessage] no identity for', identityId);
         return;
       }
-      // Reticulum: sidecar LXMF send (no ConnectionDriver handle).
-      if (identity.protocol.type === 'reticulum') {
-        return (
-          sendReticulumChatMessage({
-            identityId,
-            text,
-            channelIndex,
-            destination,
-            replyTo,
-            retryOfStoreId,
-            onNoPropagationNode: () => {
-              addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
-            },
-            onMissingLxmfDelivery: () => {
-              addToast(t('chatPanel.reticulumChatNeedsLxmfDelivery'), 'error');
-            },
-          }) ?? undefined
-        );
-      }
-
       const handle = connectionDriver.getHandle(identityId);
 
       // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).
@@ -459,6 +428,6 @@ export function useSendMessage(
       finishSend(handle);
       return provisionalId;
     },
-    [identityId, addToast, t],
+    [identityId],
   );
 }

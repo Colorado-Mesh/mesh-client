@@ -37,10 +37,6 @@ describe('advertisedTakStyle', () => {
     expect(advertisedTakStyle({ hw_model: 'Repeater' }, 'meshtastic')).toBe(TAK_PERSON_STYLE);
   });
 
-  it('draws infrastructure such as an RMAP interface as a relay installation', () => {
-    expect(advertisedTakStyle({ infrastructure: true }, 'reticulum')).toBe(TAK_RELAY_STYLE);
-  });
-
   it('prefers a known tracker role tag over everything else', () => {
     expect(advertisedTakStyle({ tracker_role: 'k9', hw_model: 'Repeater' }, 'meshcore')).toBe(
       TAK_TRACKER_ROLE_STYLES.k9,

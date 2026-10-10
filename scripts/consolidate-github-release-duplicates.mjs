@@ -18,7 +18,7 @@ async function main() {
     log: console.debug,
   });
   console.debug(
-    `[consolidate-github-release] https://github.com/Colorado-Mesh/mesh-client/releases/tag/${release.tag_name}`,
+    `[consolidate-github-release] https://github.com/charlottemeshtastic/mesh-client/releases/tag/${release.tag_name}`,
   );
 }
 

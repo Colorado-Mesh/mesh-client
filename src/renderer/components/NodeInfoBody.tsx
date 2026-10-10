@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/purity */
 import type { TFunction } from 'i18next';
 import { CircleX, Info, TriangleAlert } from 'lucide-react-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLatestTrackedPosition } from '@/renderer/hooks/useLatestTrackedPosition';
@@ -15,7 +15,6 @@ import {
 } from '../lib/coordUtils';
 import {
   diagnosticRowsToRoutingMap,
-  filterDiagnosticRowsForProtocol,
   getRoutingRowForNode,
 } from '../lib/diagnostics/diagnosticRows';
 import {
@@ -215,10 +214,7 @@ export default function NodeInfoBody({
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const protocolDiagnosticRows = useMemo(
-    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
-    [diagnosticRows, protocol],
-  );
+  const protocolDiagnosticRows = diagnosticRows;
   const routingRow = getRoutingRowForNode(protocolDiagnosticRows, node.node_id);
   const anomaly: NodeAnomaly | null = routingRow ? routingRowToNodeAnomaly(routingRow) : null;
   const nodePacketStats = useDiagnosticsStore((s) => s.packetStats.get(node.node_id));
@@ -914,10 +910,7 @@ function RFDiagnosticsSection({
   const getCuStats24h = useDiagnosticsStore((s) => s.getCuStats24h);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const protocolDiagnosticRows = useMemo(
-    () => filterDiagnosticRowsForProtocol(diagnosticRows, protocol),
-    [diagnosticRows, protocol],
-  );
+  const protocolDiagnosticRows = diagnosticRows;
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
   const anomaliesMap = diagnosticRowsToRoutingMap(protocolDiagnosticRows);
 

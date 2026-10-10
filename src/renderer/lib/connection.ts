@@ -3,6 +3,7 @@ import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { formatHostForSocket, formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
 
+import { isBlePeripheralConflictErrorMessage, isBleScanBusyErrorMessage } from './bleAdapterLease';
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import { connectGattWithScanBusyRetry } from './bleReconnectHelper';
 import {
@@ -16,11 +17,6 @@ import { notifyBlePrimaryRfLinkReady } from './meshcoreDualNobleBleInit';
 import { armMeshtasticLateConfigureRetryableSwallow } from './meshtastic/meshtasticConfigureRetry';
 import { sendMeshtasticPhoneApiDisconnect } from './meshtastic/meshtasticPhoneApiDisconnect';
 import { parseMeshtasticTcpAddress } from './parseMeshtasticTcpAddress';
-import {
-  isBlePeripheralConflictErrorMessage,
-  isBleScanBusyErrorMessage,
-} from './reticulum/reticulumBleAdapterLease';
-import { getReticulumBleBondDesyncActive } from './reticulum/reticulumBleBondDesync';
 import { SERIAL_OPEN_TIMEOUT_MS, withSerialTransportTimeout } from './serialPortRecovery';
 import {
   getPortSignature,
@@ -140,11 +136,9 @@ export async function createBleConnection(
     for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
       const attemptStartedAt = Date.now();
       try {
-        // Waits out short Reticulum BLE RNode yields instead of hard-failing;
+        // Waits out short BLE scan-busy windows instead of hard-failing;
         // peripheral conflict and other errors still fail immediately.
-        await connectGattWithScanBusyRetry(sessionId, peripheralId, {
-          shouldAbort: () => getReticulumBleBondDesyncActive(),
-        });
+        await connectGattWithScanBusyRetry(sessionId, peripheralId);
         notifyBlePrimaryRfLinkReady(sessionId);
         if (attempt > 1) {
           console.info(

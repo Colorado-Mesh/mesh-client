@@ -2,13 +2,12 @@ import { createContext, type ReactNode, useContext } from 'react';
 
 import type { MeshProtocol } from '../lib/types';
 import type { ProtocolRuntime } from './protocolRuntime';
-import type { MeshcoreRuntime, MeshtasticRuntime, ReticulumRuntime } from './runtimeTypes';
+import type { MeshcoreRuntime, MeshtasticRuntime } from './runtimeTypes';
 
 /** Per-protocol slots stay specific; `useRuntime` exposes the shared ProtocolRuntime surface. */
 export type RuntimeMap = Readonly<{
   meshtastic: MeshtasticRuntime;
   meshcore: MeshcoreRuntime;
-  reticulum: ReticulumRuntime;
 }>;
 
 const ProtocolRuntimeMapContext = createContext<RuntimeMap | null>(null);
@@ -37,7 +36,7 @@ export function useRuntime(protocol: MeshProtocol): ProtocolRuntime {
   }
   // Hook ReturnTypes are not assignable to ProtocolRuntime (connect/telemetry shapes).
   // Single active-path boundary — do not recast as MeshtasticRuntime in App.
-  return runtime as ProtocolRuntime;
+  return runtime as unknown as ProtocolRuntime;
 }
 
 export function useAllRuntimes(): RuntimeMap {

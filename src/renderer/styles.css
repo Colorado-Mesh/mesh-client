@@ -32,37 +32,38 @@
 
 @theme {
   /*
-   * Values from the Colorado Mesh style guide (Figma, node 17:4). lib/themeColors.ts applies the
-   * theme tokens below as inline styles on :root at boot, so a changed default must change in
-   * DEFAULT_THEME_COLORS too or this file appears to do nothing.
+   * Mesh Hub palette: Signature Orange #FFA31A on Off-Black #1B1B1B / Dark Charcoal #292929, with
+   * Pure White text and Light Charcoal #808080. lib/themeColors.ts applies the theme tokens below
+   * as inline styles on :root at boot, so a changed default must change in DEFAULT_THEME_COLORS
+   * too or this file appears to do nothing. The token names (brand-green and so on) are historical:
+   * they hold the accent, whatever its hue.
    */
-  --color-app-bg: #11151c; /* ink-950 */
-  --color-sidebar-active-bg: #212d40; /* ink-800 */
-  --color-brand-green: #67e8b4; /* meshtastic-500 */
+  --color-app-bg: #1b1b1b; /* ink-950, Off-Black */
+  --color-sidebar-active-bg: #333333; /* ink-800 */
+  --color-brand-green: #ffa31a; /* Signature Orange */
   --color-bright-green: var(--color-brand-green);
-  --color-readable-green: #047857; /* meshtastic-700 */
-  --color-deep-black: #19212d; /* ink-900 */
-  --color-secondary-dark: #364156; /* ink-700 */
-  --color-muted: #93a0b7; /* ink-400 */
+  --color-readable-green: #b35f00; /* orange fill under white text (4.6:1) */
+  --color-deep-black: #292929; /* ink-900, Dark Charcoal */
+  --color-secondary-dark: #424242; /* ink-700 */
+  --color-muted: #a3a3a3; /* ink-400 */
 
   /*
-   * Neutrals: the ink scale, from the Midnight Serenity palette. 950 Ink Black, 800 Deep Space Blue
-   * and 700 Charcoal Blue are the palette's swatches; 900 sits halfway between 950 and 800 in OKLCH,
-   * and the other steps keep Tailwind slate's lightness per step (so text contrast holds) with the
-   * palette's hue and chroma. Use ink-* for every neutral; slate, zinc and gray are rejected by
-   * source policy.
+   * Neutrals: the ink scale, Mesh Hub charcoal. 950 Off-Black #1B1B1B, 900 Dark Charcoal #292929,
+   * 500 Light Charcoal #808080 and 50 Pure White are the brand swatches; the steps between keep
+   * text and border contrast per step. Use ink-* for every neutral; slate, zinc and gray are
+   * rejected by source policy.
    */
-  --color-ink-50: #f9fafc;
-  --color-ink-100: #f2f5f9;
-  --color-ink-200: #e3e8f0;
-  --color-ink-300: #cdd4e2;
-  --color-ink-400: #93a0b7;
-  --color-ink-500: #65738c;
-  --color-ink-600: #48556a;
-  --color-ink-700: #364156;
-  --color-ink-800: #212d40;
-  --color-ink-900: #19212d;
-  --color-ink-950: #11151c;
+  --color-ink-50: #ffffff;
+  --color-ink-100: #f2f2f2;
+  --color-ink-200: #e0e0e0;
+  --color-ink-300: #c7c7c7;
+  --color-ink-400: #a3a3a3;
+  --color-ink-500: #808080;
+  --color-ink-600: #5c5c5c;
+  --color-ink-700: #424242;
+  --color-ink-800: #333333;
+  --color-ink-900: #292929;
+  --color-ink-950: #1b1b1b;
 
   /*
    * Protocol scales (100 / 300 / 500 base / 700 / 900), contrast-checked per tier on light and dark
@@ -79,11 +80,6 @@
   --color-meshcore-500: #00d3f2;
   --color-meshcore-700: #0e7490;
   --color-meshcore-900: #164e63;
-  --color-reticulum-100: #fef9c3;
-  --color-reticulum-300: #fef08a;
-  --color-reticulum-500: #facc15;
-  --color-reticulum-700: #a16207;
-  --color-reticulum-900: #713f12;
 
   /* Status, main tier (dots and icons). The light-background and dark-text tiers are still Tailwind
      steps until the designer's values land (docs/style-guide.md, Status). */
@@ -93,7 +89,7 @@
   --color-status-info: #818cf8;
 
   /*
-   * Type scale from the Colorado Mesh style guide (IBM Plex Sans / Mono), in rem so App > Appearance
+   * Type scale from the style guide (IBM Plex Sans / Mono), in rem so App > Appearance
    * > Text size scales everything. Readable text is 12px or larger (caption); 13px is the dense body,
    * 14px the standard body. The two smaller steps are for count pills and badge text only. Never use
    * px font sizes (text-[13px]).
@@ -148,16 +144,16 @@
     monospace;
   /* Chat incoming (channel): opaque border + rgba fill so the edge never
      color-mixes to a light/white ring on Chromium/Electron. */
-  --color-chat-incoming-bg: rgb(33 45 64 / 0.85);
-  --color-chat-incoming-border: #364156;
-  /* Own messages: readable (meshtastic-700) fill at 22%, accent (meshtastic-500) border at 25%. */
-  --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
-  --color-chat-outgoing-border: rgb(103 232 180 / 0.25);
+  --color-chat-incoming-bg: rgb(51 51 51 / 0.85);
+  --color-chat-incoming-border: #424242;
+  /* Own messages: readable orange fill at 22%, accent orange border at 25%. */
+  --color-chat-outgoing-bg: rgb(179 95 0 / 0.22);
+  --color-chat-outgoing-border: rgb(255 163 26 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
-  --color-message-actions-bar-bg: rgb(25 33 45 / 0);
+  --color-message-actions-bar-bg: rgb(41 41 41 / 0);
   /* Message action button hover color */
-  --color-message-action-button-hover: #93a0b7;
+  --color-message-action-button-hover: #a3a3a3;
 }
 
 /*
@@ -223,7 +219,7 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 .leaflet-container .leaflet-bar .leaflet-bar-part {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
   border-bottom-color: var(--color-ink-700, #364156);
-  color: var(--color-ink-200, #e3e8f0);
+  color: var(--color-ink-200, #e0e0e0);
 }
 .leaflet-container .leaflet-bar a:hover,
 .leaflet-container .leaflet-bar a:focus-visible,
@@ -233,11 +229,11 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 }
 .leaflet-container .leaflet-bar a.leaflet-disabled {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
-  color: var(--color-ink-500, #65738c);
+  color: var(--color-ink-500, #808080);
 }
 .leaflet-container .leaflet-control.leaflet-control-attribution {
   background-color: color-mix(in srgb, var(--color-deep-black) 80%, transparent);
-  color: var(--color-ink-300, #cdd4e2);
+  color: var(--color-ink-300, #c7c7c7);
 }
 .leaflet-container .leaflet-control-attribution a {
   color: var(--color-bright-green);
@@ -256,7 +252,7 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #48556a;
+  background: #5c5c5c;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
@@ -275,22 +271,15 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 }
 
 .cm-brand-mark-stroke {
-  stroke: var(--color-bright-green, #6ee7b7);
+  stroke: var(--color-bright-green, #ffa31a);
 }
 
 .cm-brand-mark-sun {
-  fill: var(--color-bright-green, #6ee7b7);
+  fill: var(--color-bright-green, #ffa31a);
 }
 
-/* Nomad page viewer: lighter thumbs so bars read on deep-black / secondary-dark. */
-.nomad-page-scroll {
-  scrollbar-gutter: stable;
-}
-.nomad-page-scroll::-webkit-scrollbar-thumb {
-  background: #65738c;
-}
-.nomad-page-scroll::-webkit-scrollbar-thumb:hover {
-  background: #93a0b7;
+.cm-brand-mark-core {
+  fill: var(--color-ink-50, #ffffff);
 }
 
 /* IBM Plex Sans (400, 500, 600) and Mono (400, 500): latin, latin-ext and cyrillic subsets,
@@ -439,73 +428,6 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* Nomad Micron pages: bundled Nerd Mono so FA/Nerd PUA icons render without an OS font.
-   Open width grows with ASCII/Micron content so the page scroll parent can dual-axis scroll.
-   Fit width (--fit-width) constrains to the viewer so prose wraps without horizontal scrolling.
-   Preserve padding spaces so Unicode/ASCII box borders stay aligned (HTML defaults collapse them). */
-@font-face {
-  font-family: MeshClientNomadMono;
-  src: url('./assets/fonts/MeshClientNomadMono.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-.nomad-micron-page {
-  width: max-content;
-  min-width: 100%;
-  white-space: pre;
-  font-family:
-    MeshClientNomadMono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-.nomad-micron-page--fit-width {
-  width: 100%;
-  max-width: 100%;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.nomad-micron-page--fit-width pre,
-.nomad-micron-page--fit-width code {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
-.nomad-micron-page .nomad-micron-media-figure {
-  margin: 0.5em 0;
-  width: 100%;
-  max-width: 100%;
-}
-.nomad-micron-page .nomad-micron-media {
-  display: inline-block;
-  max-width: 100%;
-  height: auto;
-  vertical-align: middle;
-}
-.nomad-micron-page .nomad-micron-media-notice:not([hidden]) {
-  display: block;
-  font-size: 0.85em;
-  opacity: 0.75;
-}
-/* Micron `` `FTxxxxxx` `` matching #!bg — hide on color-capable clients.
-   Matching elements also get aria-hidden="true" from the Micron renderer. */
-.nomad-micron-page .nomad-micron-fg-matches-bg {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-.nomad-micron-page .nomad-micron-collapsible {
-  margin: 0.25em 0;
-}
-.nomad-micron-page .nomad-micron-collapsible > summary {
-  cursor: pointer;
-  list-style-position: outside;
 }
 
 /* Message actions bar — use theme CSS custom property for background */

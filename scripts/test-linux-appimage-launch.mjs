@@ -3,7 +3,7 @@
  * CI smoke: launch the packaged Linux AppImage headlessly and prove it boots.
  *
  * The existing Linux packaging smoke (verify-linux-packaging.mjs,
- * test-linux-appimage-reticulum-sidecar.mjs) checks file structure, ELF headers,
+ * test-linux-appimage-ble-sidecar.mjs) checks file structure, ELF headers,
  * and sidecar staging but never *runs* the app. The Playwright E2E suite launches
  * the unpackaged dev build, not the shipped AppImage. This closes that gap: it
  * extracts the AppImage and launches its `AppRun` under Xvfb with a throwaway
@@ -37,7 +37,7 @@ import { fileURLToPath } from 'url';
 import {
   appImageNeedsUnsquashfsExtract,
   prepareAppImageExtractDir,
-} from './test-linux-appimage-reticulum-sidecar.mjs';
+} from './test-linux-appimage-ble-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');

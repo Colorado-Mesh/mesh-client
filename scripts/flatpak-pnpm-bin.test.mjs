@@ -9,7 +9,7 @@ import {
 } from './flatpakOfflinePnpmEnv.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
+const MANIFEST = path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml');
 
 describe('Flatpak pnpm standalone install', () => {
   it('copies pnpm-vendor/dist beside the wrapper binary (pnpm 11+ needs dist/pnpm.mjs)', () => {

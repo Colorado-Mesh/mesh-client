@@ -46,8 +46,8 @@ jobs:
 
   # Sidecar is built on bare Ubuntu runners (apt). The flathub-infra Flatpak container is a
   # minimal freedesktopsdk/sdk rootfs with no apt/dnf — host cargo builds cannot install deps there.
-  reticulum-sidecar:
-    name: Reticulum sidecar (${{ matrix.arch }})
+  ble-sidecar:
+    name: Bluetooth helper (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -64,34 +64,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-        run: bash scripts/clone-ratspeak-stack.sh
-
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           targets: ${{ matrix.cargo_target }}
 
-      - name: Install Reticulum sidecar Linux build deps
+      - name: Install Bluetooth helper Linux build deps
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
 
-      - name: Build Reticulum sidecar for Flatpak payload
-        working-directory: reticulum-sidecar
+      - name: Build Bluetooth helper for Flatpak payload
+        working-directory: ble-sidecar
         run: |
-          cargo build --release --target "${{ matrix.cargo_target }}" \
-            --features rns-stack,rns-ble,rns-rnode-tcp
+          cargo build --release --target "${{ matrix.cargo_target }}"
           install -Dm755 \
-            "target/${{ matrix.cargo_target }}/release/mesh-client-reticulum" \
-            "${GITHUB_WORKSPACE}/resources/reticulum-sidecar/mesh-client-reticulum"
+            "target/${{ matrix.cargo_target }}/release/mesh-hub-ble" \
+            "${GITHUB_WORKSPACE}/resources/ble-sidecar/mesh-hub-ble"
           # tar preserves Unix execute bits that raw artifact uploads discard.
-          tar -cf "${GITHUB_WORKSPACE}/mesh-client-reticulum-${{ matrix.arch }}.tar" \
-            -C "${GITHUB_WORKSPACE}/resources/reticulum-sidecar" mesh-client-reticulum
+          tar -cf "${GITHUB_WORKSPACE}/mesh-hub-ble-${{ matrix.arch }}.tar" \
+            -C "${GITHUB_WORKSPACE}/resources/ble-sidecar" mesh-hub-ble
 
       - uses: actions/upload-artifact@v7
         with:
-          name: mesh-client-reticulum-${{ matrix.arch }}
-          path: mesh-client-reticulum-${{ matrix.arch }}.tar
+          name: mesh-hub-ble-${{ matrix.arch }}
+          path: mesh-hub-ble-${{ matrix.arch }}.tar
           if-no-files-found: error
           retention-days: 1
 
@@ -101,7 +95,7 @@ jobs:
   # "Flatpak system operation Deploy not allowed for user".
   flatpak:
     name: Flatpak (${{ matrix.arch }})
-    needs: [reticulum-sidecar, schema-release-compare]
+    needs: [ble-sidecar, schema-release-compare]
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -122,15 +116,15 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: mesh-client-reticulum-${{ matrix.arch }}
+          name: mesh-hub-ble-${{ matrix.arch }}
           path: .sidecar-artifacts
 
-      - name: Restore Reticulum sidecar (preserve +x)
+      - name: Restore Bluetooth helper (preserve +x)
         run: |
-          mkdir -p resources/reticulum-sidecar
-          tar -xf ".sidecar-artifacts/mesh-client-reticulum-${{ matrix.arch }}.tar" \
-            -C resources/reticulum-sidecar
-          test -x resources/reticulum-sidecar/mesh-client-reticulum
+          mkdir -p resources/ble-sidecar
+          tar -xf ".sidecar-artifacts/mesh-hub-ble-${{ matrix.arch }}.tar" \
+            -C resources/ble-sidecar
+          test -x resources/ble-sidecar/mesh-hub-ble
 
       - name: Write schema upgrade installer notice
         env:
@@ -212,12 +206,12 @@ jobs:
           node scripts/write-flatpak-ci-build-info.mjs
 
       # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
-      # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.
+      # keep bundle arch-agnostic here to avoid io.github.charlottemeshtastic.MeshHub-aarch64-aarch64.flatpak.
       # upload-artifact: false — we upload once after smoke (+ optional -run{N} rename on dispatch).
       - uses: flatpak/flatpak-github-actions/flatpak-builder@401fe28a8384095fc1531b9d320b292f0ee45adb
         with:
-          bundle: org.coloradomesh.MeshClient.flatpak
-          manifest-path: org.coloradomesh.MeshClient.yml
+          bundle: io.github.charlottemeshtastic.MeshHub.flatpak
+          manifest-path: io.github.charlottemeshtastic.MeshHub.yml
           arch: ${{ matrix.arch }}
           branch: stable
           cache-key: flatpak-builder-${{ matrix.arch }}-${{ github.sha }}
@@ -226,14 +220,15 @@ jobs:
       - name: Smoke test Flatpak install
         run: |
           set -euo pipefail
-          flatpak install --assumeyes ./org.coloradomesh.MeshClient.flatpak
+          flatpak install --assumeyes ./io.github.charlottemeshtastic.MeshHub.flatpak
 
-          flatpak run --branch=stable --command=sh org.coloradomesh.MeshClient -c \
+          flatpak run --branch=stable --command=sh io.github.charlottemeshtastic.MeshHub -c \
             'test -x /app/lib/mesh-client/electron/electron;
-            test -x /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'
+            test -x /app/lib/mesh-client/resources/ble-sidecar/mesh-hub-ble'
 
           set +e
-          out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run --branch=stable org.coloradomesh.MeshClient 2>&1)
+          app_id=io.github.charlottemeshtastic.MeshHub
+          out=$(dbus-run-session xvfb-run -a timeout 20s flatpak run --branch=stable "$app_id" 2>&1)
           code=$?
           set -e
           printf '%s\n' "$out"
@@ -259,9 +254,9 @@ jobs:
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@v7
         with:
-          name: org.coloradomesh.MeshClient.flatpak-${{ matrix.arch }}.flatpak
+          name: io.github.charlottemeshtastic.MeshHub.flatpak-${{ matrix.arch }}.flatpak
           path: |
-            org.coloradomesh.MeshClient*.flatpak
+            io.github.charlottemeshtastic.MeshHub*.flatpak
           if-no-files-found: error
           retention-days: 30
 
@@ -288,7 +283,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: 'org.coloradomesh.MeshClient.flatpak-*.flatpak'
+          pattern: 'io.github.charlottemeshtastic.MeshHub.flatpak-*.flatpak'
           path: flatpak-dist
 
       - name: Flatten arch-suffixed bundles for release

@@ -12,16 +12,12 @@ import {
   awaitNetworkAck,
   isNetworkAckCancelledError,
   isPeerMecpNetworkAck,
-  MESHCORE_NETWORK_ACK_TIMEOUT_MS,
-  MESHTASTIC_NETWORK_ACK_TIMEOUT_MS,
   NETWORK_ACK_CANCELLED_KEY,
   NETWORK_ACK_FAILED_KEY,
   NETWORK_ACK_TIMEOUT_KEY,
-  networkAckTimeoutMs,
   readTransportVerdict,
 } from './networkAckAwait';
 import { useRelayCoverageStore } from './relayCoverage/relayCoverageStore';
-import { RETICULUM_RECEIPT_TIMEOUT_MS } from './reticulumOutboundReceipt';
 
 const IDENTITY = 'ack-test-identity';
 const OWN_NODE = 1;
@@ -118,14 +114,6 @@ describe('readTransportVerdict', () => {
   });
 });
 
-describe('networkAckTimeoutMs', () => {
-  it('maps each protocol to its timeout', () => {
-    expect(networkAckTimeoutMs('meshtastic')).toBe(MESHTASTIC_NETWORK_ACK_TIMEOUT_MS);
-    expect(networkAckTimeoutMs('meshcore')).toBe(MESHCORE_NETWORK_ACK_TIMEOUT_MS);
-    expect(networkAckTimeoutMs('reticulum')).toBe(RETICULUM_RECEIPT_TIMEOUT_MS);
-  });
-});
-
 describe('awaitNetworkAck', () => {
   beforeEach(() => {
     useMessageStore.setState({ messages: {} });
@@ -161,18 +149,6 @@ describe('awaitNetworkAck', () => {
       await expect(wait).rejects.toThrow('chatPanel.sendErrors.timeout');
     },
   );
-
-  it('reticulum: resolves on the LXMF receipt', async () => {
-    addMessage(IDENTITY, record({ id: 'lx-1' }));
-    const wait = awaitNetworkAck({
-      protocol: 'reticulum',
-      sendResult: 'lx-1',
-      payload: 'MECP/0/M01',
-      identityId: IDENTITY,
-    });
-    patch('lx-1', { status: 'acked' });
-    await expect(wait).resolves.toBeUndefined();
-  });
 
   it('meshtastic: follows a tempId → wire packet id rename', async () => {
     addMessage(IDENTITY, record({ id: '700' }));

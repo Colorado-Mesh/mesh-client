@@ -6,13 +6,12 @@ import type { ChatMessage } from './types';
 export type ChatLastReadSanitizeMessage = Pick<ChatMessage, 'channel' | 'timestamp'> & {
   to?: number | null;
   sender_id?: number;
-  reticulum_sender_hash?: string;
 };
 
 /** Max message timestamp per chat view key (`ch:N`, `dm:peer`). */
 export function maxMessageTimestampByViewKey(
   messages: readonly ChatLastReadSanitizeMessage[],
-  protocol: 'meshcore' | 'meshtastic' | 'reticulum' = 'meshtastic',
+  protocol: 'meshcore' | 'meshtastic' = 'meshtastic',
   ownNodeIds: ReadonlySet<number> = new Set(),
 ): Record<string, number> {
   const maxByKey: Record<string, number> = {};
@@ -24,7 +23,6 @@ export function maxMessageTimestampByViewKey(
               channel: msg.channel,
               to: msg.to ?? undefined,
               sender_id: msg.sender_id,
-              reticulum_sender_hash: msg.reticulum_sender_hash,
             },
             protocol,
             ownNodeIds,

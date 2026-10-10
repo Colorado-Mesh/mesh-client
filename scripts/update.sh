@@ -3,7 +3,7 @@ set -e
 
 LOCKFILE='pnpm-lock.yaml'
 
-# Opt-in: reclaim reticulum-sidecar/target after a successful rebuild.
+# Opt-in: reclaim ble-sidecar/target after a successful rebuild.
 # Prefer CLEAN_SIDECAR_TARGET=1; --clean-target also works via
 # `pnpm run update -- --clean-target`.
 CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"
@@ -93,7 +93,7 @@ update_rust_toolchain() {
     echo '  Prefer https://rustup.rs for CI parity, or upgrade via your package manager.'
     return 0
   fi
-  echo 'Rust not installed — skipping toolchain update and sidecar rebuild (optional; see docs/development-environment.md#reticulum-sidecar-optional).'
+  echo 'Rust not installed — skipping toolchain update and sidecar rebuild (optional; see docs/development-environment.md#ble-sidecar-optional).'
   return 0
 }
 
@@ -112,47 +112,27 @@ sync_flatpak_electron() {
   node scripts/sync-flatpak-electron.mjs
 }
 
-# Rebuild Reticulum sidecar after dependency/toolchain updates
-rebuild_reticulum_sidecar() {
-  if [ ! -f 'reticulum-sidecar/Cargo.toml' ]; then
+# Rebuild the Bluetooth helper after dependency/toolchain updates
+rebuild_ble_sidecar() {
+  if [ ! -f 'ble-sidecar/Cargo.toml' ]; then
     return 0
   fi
   if ! command -v cargo > /dev/null 2>&1; then
-    echo 'cargo not on PATH — skipping Reticulum sidecar rebuild.'
+    echo 'cargo not on PATH — skipping Bluetooth helper rebuild.'
     return 0
   fi
-  echo 'Preparing rsReticulum, rsLXMF, rsNomad, rsLXST, and lrgp-rs functionality check...'
-  local sidecar_dir='reticulum-sidecar'
-  # Paths match reticulum-sidecar/Cargo.toml (../.rsstack/* from the sidecar dir).
-  local rns_runtime='../.rsstack/rsReticulum/crates/rns-runtime/Cargo.toml'
-  local lxmf_core='../.rsstack/rsLXMF/crates/lxmf-core/Cargo.toml'
-  local nomad_core='../.rsstack/rsNomad/crates/nomad-core/Cargo.toml'
-  local lxst_telephony='../.rsstack/rsLXST/crates/lxst-telephony/Cargo.toml'
-  local lrgp_crate='../.rsstack/lrgp-rs/Cargo.toml'
-  bash scripts/clone-ratspeak-stack.sh
-  local missing_manifest=''
-  local manifest
-  for manifest in "${rns_runtime}" "${lxmf_core}" "${nomad_core}" "${lxst_telephony}" "${lrgp_crate}"; do
-    if [ ! -f "${sidecar_dir}/${manifest}" ]; then
-      missing_manifest="${sidecar_dir}/${manifest}"
-      break
-    fi
-  done
-  if [ -n "${missing_manifest}" ]; then
-    echo "Error: required rs stack manifest missing after preparation: ${missing_manifest}" >&2
-    return 1
-  fi
-  echo 'Checking rsReticulum, rsLXMF, rsNomad, rsLXST, and lrgp-rs via full-feature sidecar build...'
-  (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
+  local sidecar_dir='ble-sidecar'
+  echo 'Checking the Bluetooth helper via sidecar build...'
+  (cd "${sidecar_dir}" && cargo build --features gatt-ble)
   if [ "${CLEAN_SIDECAR_TARGET}" = '1' ]; then
-    echo 'CLEAN_SIDECAR_TARGET=1: removing reticulum-sidecar/target (next sidecar build will be cold)...'
+    echo 'CLEAN_SIDECAR_TARGET=1: removing ble-sidecar/target (next sidecar build will be cold)...'
     (cd "${sidecar_dir}" && cargo clean)
   fi
 }
 
-# Test hook: exercise rebuild_reticulum_sidecar with PATH stubs (no pnpm update).
+# Test hook: exercise rebuild_ble_sidecar with PATH stubs (no pnpm update).
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'rebuild-only' ]; then
-  rebuild_reticulum_sidecar
+  rebuild_ble_sidecar
   exit $?
 fi
 
@@ -179,7 +159,7 @@ warn_box() {
   echo ''
 }
 
-# Query GitHub PR state for ratspeak overlays (merged|open|closed|unknown).
+# Query GitHub PR state for watched upstream PRs (merged|open|closed|unknown).
 # Uses `gh` when available, otherwise unauthenticated api.github.com.
 github_pr_state() {
   local repo="$1" pr="$2"
@@ -276,146 +256,6 @@ if [ "${UPDATE_SH_TEST_HOOK:-}" = 'audit-ignores-only' ]; then
   exit 0
 fi
 
-# Warn when local Ratspeak overlays may be obsolete after upstream merges.
-# Keep patch basenames in sync with scripts/lib/ratspeak-overlay-apply-list.sh
-# and reticulum-sidecar/patches/*.patch / patches/README.md.
-check_ratspeak_patches() {
-  # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
-  local RATSPEAK_PATCH_ENTRIES=(
-    'rsReticulum-reply-file-query-metadata.patch|ratspeak/rsReticulum|26|rsReticulum ReplyFile / LinkClient query metadata|https://github.com/ratspeak/rsReticulum/pull/26'
-    'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
-    'rsReticulum-path-medium-slots.patch|ratspeak/rsReticulum||rsReticulum path-medium slots|'
-    'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
-    'rsReticulum-link-client-proof-budget.patch|ratspeak/rsReticulum||rsReticulum LinkClient proof-budget remaining-deadline|'
-    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum|20|rsReticulum BLE RNode pairing-transition debounce|https://github.com/ratspeak/rsReticulum/pull/20'
-    'rsReticulum-ble-rnode-bond-desync.patch|ratspeak/rsReticulum|21|rsReticulum BLE RNode bond-desync halt + bond-aware reconnect|https://github.com/ratspeak/rsReticulum/pull/21'
-    'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
-    'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
-    'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
-    'rsReticulum-announce-rebroadcast-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum announce rebroadcast exclude RF sinks (ratspeak/rsReticulum#24)|https://github.com/ratspeak/rsReticulum/issues/24'
-    'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
-    'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
-    'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'
-    'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
-    'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
-    'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF|6|rsLXMF PropagationNode policy setters|https://github.com/ratspeak/rsLXMF/pull/6'
-    'rsLXMF-propagation-node-deferred-messagestore-load.patch|ratspeak/rsLXMF||rsLXMF PropagationNode deferred messagestore load|'
-    'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
-    'rsLXMF-propagation-client-abort-transfer.patch|ratspeak/rsLXMF||rsLXMF PropagationClient abort_transfer for cancelled Sync|'
-    'rsLXMF-propagation-client-lrproof-diagnostics.patch|ratspeak/rsLXMF||rsLXMF PropagationClient LRPROOF establish diagnostics|'
-    'rsLXMF-propagation-client-request-resource.patch|ratspeak/rsLXMF||rsLXMF PropagationClient oversized /get request Resource (ratspeak/rsLXMF#8)|https://github.com/ratspeak/rsLXMF/issues/8'
-  )
-  local patches_dir='reticulum-sidecar/patches'
-  local has_ratspeak_warning=0
-
-  echo ''
-  echo 'Checking Ratspeak overlay patches (rsReticulum / rsLXMF)...'
-
-  if [ ! -d "${patches_dir}" ]; then
-    echo "  ${patches_dir} missing — skip."
-    return 0
-  fi
-
-  # Flag patch files not listed in RATSPEAK_PATCH_ENTRIES (same sync rule as WATCH_ENTRIES).
-  local known_basenames=()
-  local entry
-  for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
-    IFS='|' read -r patch_base _rest <<< "${entry}"
-    known_basenames+=("${patch_base}")
-  done
-  local patch_path
-  for patch_path in "${patches_dir}"/*.patch; do
-    [ -f "${patch_path}" ] || continue
-    local base
-    base="$(basename "${patch_path}")"
-    local found=0
-    local known
-    for known in "${known_basenames[@]}"; do
-      if [ "${known}" = "${base}" ]; then
-        found=1
-        break
-      fi
-    done
-    if [ "${found}" -eq 0 ]; then
-      echo -e "  ${YELLOW}Untracked overlay:${NC} ${base} — add to RATSPEAK_PATCH_ENTRIES in scripts/update.sh"
-      has_ratspeak_warning=1
-      HAS_WARNING=1
-    fi
-  done
-
-  for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
-    IFS='|' read -r patch_base repo pr label url <<< "${entry}"
-    local file="${patches_dir}/${patch_base}"
-    local patch_present=0
-    if [ -f "${file}" ]; then
-      patch_present=1
-    fi
-    if [ "${patch_present}" -eq 0 ] && [ -z "${pr}" ]; then
-      echo "  ${label}: patch file absent (${patch_base}) — already removed?"
-      continue
-    fi
-    if [ "${patch_present}" -eq 1 ] && [ -z "${pr}" ]; then
-      echo "  ${label}: local overlay present; no tracked PR — review sunset"
-      echo "    See reticulum-sidecar/patches/README.md (sunset when upstream lands)."
-      continue
-    fi
-    local state
-    state="$(github_pr_state "${repo}" "${pr}")"
-    case "${state}" in
-      merged)
-        if [ "${patch_present}" -eq 1 ]; then
-          warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
-          echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
-          echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
-          has_ratspeak_warning=1
-          HAS_WARNING=1
-        else
-          echo "  ${label}: patch absent and ${repo}#${pr} merged — drop entry from RATSPEAK_PATCH_ENTRIES."
-        fi
-        ;;
-      open)
-        if [ "${patch_present}" -eq 1 ]; then
-          echo "  ${label}: upstream PR still open — ${url}"
-        else
-          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR still open" "${url}"
-          echo "  Reason tracked: ${repo}#${pr} open but ${patch_base} missing — restore overlay or drop entry."
-          has_ratspeak_warning=1
-          HAS_WARNING=1
-        fi
-        ;;
-      closed)
-        # Still warn when the .patch is already gone so closed-without-merge stays visible
-        # until sunset is confirmed and the entry is dropped from RATSPEAK_PATCH_ENTRIES.
-        warn_box "${label} (Ratspeak overlay)" "local patch" "PR closed (not merged?)" "${url}"
-        if [ "${patch_present}" -eq 1 ]; then
-          echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
-        else
-          echo "  Reason tracked: ${repo}#${pr} closed without merge; ${patch_base} already absent —"
-          echo "    confirm sunset (or restore overlay), then drop entry from RATSPEAK_PATCH_ENTRIES."
-        fi
-        has_ratspeak_warning=1
-        HAS_WARNING=1
-        ;;
-      *)
-        # Unknown PR state (gh/network unavailable). Still warn when the tracked
-        # overlay file is missing so ratspeak-patches-only cannot report clean.
-        if [ "${patch_present}" -eq 0 ]; then
-          warn_box "${label} (Ratspeak overlay)" "patch absent" "PR state unknown" "${url}"
-          echo "  ${label}: ${patch_base} missing and could not query ${repo}#${pr} — restore overlay or verify sunset."
-          has_ratspeak_warning=1
-          HAS_WARNING=1
-        else
-          echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
-        fi
-        ;;
-    esac
-  done
-
-  if [ "${has_ratspeak_warning}" -eq 0 ]; then
-    echo '  Ratspeak overlay check complete (no merge-ready removals detected).'
-  fi
-}
-
 # GET GitHub API path (gh preferred, curl fallback). Body on stdout.
 # Exit 0 = body (may be empty), exit 2 = rate-limit payload detected (empty body).
 # Callers must handle exit 2 in the parent shell (command substitution drops side effects).
@@ -450,55 +290,10 @@ github_api_get() {
 
 warn_github_api_rate_limit_once() {
   if [[ "${GITHUB_API_RATE_LIMIT_WARNED:-0}" != '1' ]]; then
-    echo -e "  ${YELLOW}GitHub API rate limit:${NC} further Ratspeak upstream checks may be incomplete (retry later or use authenticated gh)."
+    echo -e "  ${YELLOW}GitHub API rate limit:${NC} further upstream checks may be incomplete (retry later or use authenticated gh)."
     GITHUB_API_RATE_LIMIT_WARNED=1
     HAS_WARNING=1
   fi
-}
-
-# Latest release summary: "tag|published_at|first_body_line|four" or empty.
-# four is 1 when the published release body mentions Four in a Row.
-# /releases/latest ignores drafts and prereleases (in-flight tags/main/RCs).
-github_latest_release_summary() {
-  local repo="$1"
-  local json=''
-  local api_rc=0
-  json="$(github_api_get "repos/${repo}/releases/latest")" || api_rc=$?
-  if [ "${api_rc}" -eq 2 ]; then
-    warn_github_api_rate_limit_once
-    echo ''
-    return 0
-  fi
-  if [ -z "${json}" ]; then
-    echo ''
-    return 0
-  fi
-  printf '%s' "${json}" | node -e '
-let s = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (c) => { s += c; });
-process.stdin.on("end", () => {
-  try {
-    const j = JSON.parse(s);
-    if (j.message === "Not Found" || (!j.tag_name && !j.name)) {
-      process.stdout.write("");
-      return;
-    }
-    const tag = String(j.tag_name || j.name || "").replace(/\|/g, "/");
-    const published = String(j.published_at || "").slice(0, 10);
-    const rawBody = String(j.body || "");
-    const body = rawBody.split(/\r?\n/).find((l) => l.trim()) || "";
-    const first = body
-      .replace(/[\u0000-\u001F\u007F]/g, "")
-      .replace(/\|/g, "/")
-      .slice(0, 120);
-    const four = /four[\s_-]*in[\s_-]*a[\s_-]*row/i.test(rawBody) ? "1" : "0";
-    process.stdout.write(`${tag}|${published}|${first}|${four}`);
-  } catch {
-    process.stdout.write("");
-  }
-});
-' 2> /dev/null || echo ''
 }
 
 # Latest commit SHA that touched path, or empty.
@@ -535,50 +330,6 @@ process.stdin.on("end", () => {
 ' 2> /dev/null || echo ''
 }
 
-# 1 if GitHub compare base...head mentions Four in a Row; else 0.
-github_compare_mentions_four_in_a_row() {
-  local repo="$1" base="$2" head="$3"
-  local json=''
-  local api_rc=0
-  json="$(github_api_get "repos/${repo}/compare/${base}...${head}")" || api_rc=$?
-  if [ "${api_rc}" -eq 2 ]; then
-    warn_github_api_rate_limit_once
-    echo '0'
-    return 0
-  fi
-  if [ -z "${json}" ]; then
-    echo '0'
-    return 0
-  fi
-  printf '%s' "${json}" | node -e '
-let s = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (c) => { s += c; });
-process.stdin.on("end", () => {
-  try {
-    const j = JSON.parse(s);
-    const files = Array.isArray(j.files) ? j.files : [];
-    const hay = files
-      .map((f) => `${f.filename || ""}\n${f.patch || ""}`)
-      .join("\n");
-    process.stdout.write(/four[\s_-]*in[\s_-]*a[\s_-]*row/i.test(hay) ? "1" : "0");
-  } catch {
-    process.stdout.write("0");
-  }
-});
-' 2> /dev/null || echo '0'
-}
-
-# Compare published release tags (strip a leading v; case-insensitive).
-release_refs_equal() {
-  node -e '
-const norm = (t) => String(t).trim().replace(/^v/i, "").toLowerCase();
-const a = norm(process.argv[1]);
-const b = norm(process.argv[2]);
-process.exit(a && b && a === b ? 0 : 1);
-' "$1" "$2" 2> /dev/null
-}
-
 # Compare git SHAs (lowercase hex; prefix match allowed).
 commit_shas_equal() {
   node -e '
@@ -590,23 +341,7 @@ process.exit(a === b || a.startsWith(b) || b.startsWith(a) ? 0 : 1);
 ' "$1" "$2" 2> /dev/null
 }
 
-# Curated release watch + known org repos (keep in sync when adopting new ratspeak libs).
-# Format: "owner/repo|stub-kind-or-empty|display-label|reviewed-ref"
-# reviewed-ref: last published GitHub Release tag we reviewed, or
-#   file:<path>@<sha> for repos without releases (vendored file commit).
-#   Empty = no published release expected yet; tags/main/RCs are ignored.
-# stub-kind: games → warn while mesh-client still has sidecar stubs only.
-# stub-kind: games-parity → warn only when a published release is newer than reviewed-ref.
-# (voice/games stubs cleared after lxst-telephony / lrgp-rs integration; empty stub = informational.)
-RATSPEAK_RELEASE_WATCH_ENTRIES=(
-  'ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0'
-  'ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1'
-  'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.33'
-  'ratspeak/LXMFace||LXMFace identicons (vendored in renderer)|file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b'
-  'ratspeak/Ratspeak||Ratspeak identity vault (vendored in sidecar)|file:crates/ratspeak-runtime/src/vault.rs@19e2a0d19202d4c7562adba79ac706ec352fdb86'
-)
-
-# Non-Ratspeak vendored upstreams (same file:<path>@<sha> reviewed-ref format).
+# Vendored upstreams (file:<path>@<sha> reviewed-ref format).
 # Keep in sync when re-vendoring MECP engine/languages from https://github.com/xiang-dev-1/MECP
 MECP_UPSTREAM_WATCH_ENTRIES=(
   'xiang-dev-1/MECP||MECP engine (vendored in renderer)|file:engine/src@1441c5d13bd777e8dac8e12567bbd144b1a73e16'
@@ -620,40 +355,8 @@ MECP_PR_WATCH_ENTRIES=(
   'xiang-dev-1/MECP|5|M16 medical supply drop|https://github.com/xiang-dev-1/MECP/pull/5'
 )
 
-RATSPEAK_KNOWN_ORG_REPOS=(
-  '.github'
-  'C6-Reticulum-ASM'
-  'LXMFace'
-  'Ratspeak'
-  'lrgp-py'
-  'lrgp-rs'
-  'microReticulum'
-  'ratkey'
-  'rathole'
-  'ratspeak-docs'
-  'ratspeak-handheld'
-  'ratspeak-website'
-  'revanity-go'
-  'rsCardputer'
-  'rsDeck'
-  'rsLXMF'
-  'rsLXMFLite'
-  'rsLXST'
-  'rsPager'
-  'rsReticulum'
-  'rsReticulumLite'
-)
-
-print_ratspeak_upstream_catalog() {
+print_upstream_catalog() {
   local entry
-  echo 'RATSPEAK_RELEASE_WATCH_ENTRIES:'
-  for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
-    echo "  ${entry}"
-  done
-  echo 'RATSPEAK_KNOWN_ORG_REPOS:'
-  for entry in "${RATSPEAK_KNOWN_ORG_REPOS[@]}"; do
-    echo "  ${entry}"
-  done
   echo 'MECP_UPSTREAM_WATCH_ENTRIES:'
   for entry in "${MECP_UPSTREAM_WATCH_ENTRIES[@]}"; do
     echo "  ${entry}"
@@ -664,7 +367,7 @@ print_ratspeak_upstream_catalog() {
   done
 }
 
-# Shared file:<path>@<sha> watch used by Ratspeak + MECP vendored upstreams.
+# Shared file:<path>@<sha> watch used by MECP vendored upstreams.
 # Returns: 0 = current/skipped, 2 = drift warning emitted, 1 = not a file: ref.
 check_vendored_file_watch_entry() {
   local repo="$1" label="$2" reviewed="$3"
@@ -767,135 +470,8 @@ check_mecp_prs() {
   fi
 }
 
-# Surface new Ratspeak library releases and brand-new org repos (stack floats via clone).
-# Warn only when a published GitHub Release (or vendored file commit) differs from reviewed-ref.
-check_ratspeak_upstream() {
-  local has_upstream_warning=0
-  local entry repo stub label reviewed summary tag published first four url
-  local file_spec file_path file_sha latest_sha short_pin short_latest cmp_four
-
-  echo ''
-  echo 'Checking Ratspeak upstream published releases and new org repos...'
-  echo '  (tags/main/RCs without a GitHub Release are ignored; rsReticulum/rsLXMF float via clone-ratspeak-stack.sh)'
-
-  for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
-    IFS='|' read -r repo stub label reviewed <<< "${entry}"
-    url="https://github.com/${repo}/releases"
-
-    if [[ "${reviewed}" == file:* ]]; then
-      local file_rc=0
-      check_vendored_file_watch_entry "${repo}" "${label}" "${reviewed}" || file_rc=$?
-      if [ "${file_rc}" -eq 2 ]; then
-        has_upstream_warning=1
-      fi
-      continue
-    fi
-
-    summary="$(github_latest_release_summary "${repo}")"
-    if [ -z "${summary}" ]; then
-      if [ -n "${reviewed}" ]; then
-        echo "  ${label}: no published GitHub release (reviewed ${reviewed})"
-      else
-        echo "  ${label}: no published GitHub release"
-      fi
-      continue
-    fi
-    IFS='|' read -r tag published first four <<< "${summary}"
-    if [ -n "${reviewed}" ] && release_refs_equal "${tag}" "${reviewed}"; then
-      echo "  ${label}: ${tag} (${published}; reviewed; current)"
-      continue
-    fi
-    echo "  ${label}: ${tag} (${published}) — ${first}"
-    warn_box "${label}" "${reviewed:-none}" "${tag}" "${url}"
-    if [ "${stub}" = 'voice' ] || [ "${stub}" = 'games' ]; then
-      echo "  Reason tracked: mesh-client still stubs this feature; review integrating ${repo} @ ${tag}"
-    elif [ "${stub}" = 'games-parity' ]; then
-      echo "  Reason tracked: compare Ratspeak Games tab with mesh-client:"
-      echo "    crates/ratspeak-tauri/src/commands/games.rs"
-      echo "    dashboard/static/js/games_tab.js"
-      echo "    docs/reticulum-games-parity.md"
-      cmp_four='0'
-      if [ "${four}" != '1' ] && [ -n "${reviewed}" ]; then
-        cmp_four="$(github_compare_mentions_four_in_a_row "${repo}" "${reviewed}" "${tag}")"
-      fi
-      if [ "${four}" = '1' ] || [ "${cmp_four}" = '1' ]; then
-        echo "  This published release includes Four in a Row — update Games UI + docs/reticulum-games-parity.md"
-      fi
-    else
-      echo "  Reason tracked: published release is newer than reviewed-ref ${reviewed:-none} — bump the pin after review"
-    fi
-    has_upstream_warning=1
-    HAS_WARNING=1
-  done
-
-  local repos_json=''
-  local repos_rc=0
-  repos_json="$(github_api_get 'orgs/ratspeak/repos?per_page=100&sort=created&direction=desc')" || repos_rc=$?
-  if [ "${repos_rc}" -eq 2 ]; then
-    warn_github_api_rate_limit_once
-  fi
-  if [ -z "${repos_json}" ]; then
-    echo '  Could not list ratspeak org repos (install gh or check network) — skip new-repo scan.'
-  else
-    local new_repos
-    new_repos="$(
-      printf '%s' "${repos_json}" | node -e '
-const known = new Set(process.argv.slice(2));
-let s = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (c) => { s += c; });
-process.stdin.on("end", () => {
-  try {
-    const repos = JSON.parse(s);
-    if (!Array.isArray(repos)) return;
-    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
-    for (const r of repos) {
-      const name = String(r.name || "");
-      const created = Date.parse(r.created_at || "");
-      if (!name || !Number.isFinite(created) || created < cutoff) continue;
-      if (known.has(name)) continue;
-      process.stdout.write(`${name}\t${String(r.created_at || "").slice(0, 10)}\t${r.html_url || ""}\n`);
-    }
-  } catch {
-    // ignore parse errors
-  }
-});
-' "${RATSPEAK_KNOWN_ORG_REPOS[@]}"
-    )"
-    if [ -n "${new_repos}" ]; then
-      while IFS=$'\t' read -r name created url; do
-        [ -n "${name}" ] || continue
-        warn_box "ratspeak/${name} (new org repo)" "unknown" "created ${created}" "${url}"
-        echo "  Reason tracked: created within ~90 days and not in RATSPEAK_KNOWN_ORG_REPOS — review for mesh-client use"
-        has_upstream_warning=1
-        HAS_WARNING=1
-      done <<< "${new_repos}"
-    else
-      echo '  No unfamiliar ratspeak org repos created in the last ~90 days.'
-    fi
-  fi
-
-  if [ "${has_upstream_warning}" -eq 0 ]; then
-    echo '  Ratspeak upstream watch complete (reviewed baselines current; no new-repo warnings).'
-  fi
-}
-
 if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-catalog-only' ]; then
-  print_ratspeak_upstream_catalog
-  exit 0
-fi
-
-# Test hook: exercise check_ratspeak_upstream (fake gh/curl via PATH).
-if [ "${UPDATE_SH_TEST_HOOK:-}" = 'upstream-check-only' ]; then
-  check_ratspeak_upstream
-  exit 0
-fi
-
-# Test hook: exercise check_ratspeak_patches (fake gh via PATH; cwd may supply patches/).
-if [ "${UPDATE_SH_TEST_HOOK:-}" = 'ratspeak-patches-only' ]; then
-  HAS_WARNING=0
-  check_ratspeak_patches
-  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
+  print_upstream_catalog
   exit 0
 fi
 
@@ -983,11 +559,11 @@ update_rust_toolchain
 NEW_RUSTC="$(get_rustc_version)"
 if [ -n "${OLD_RUSTC}" ] && [ -n "${NEW_RUSTC}" ] && [ "${OLD_RUSTC}" != "${NEW_RUSTC}" ]; then
   warn_box 'rustc (rustup/brew)' "${OLD_RUSTC}" "${NEW_RUSTC}" 'https://rustup.rs/'
-  echo '  Reason tracked: Reticulum sidecar toolchain — run pnpm run reticulum:sidecar:build if rebuild failed'
+  echo '  Reason tracked: Bluetooth helper toolchain — run pnpm run ble:sidecar:build if rebuild failed'
   HAS_WARNING=1
 fi
 
-rebuild_reticulum_sidecar
+rebuild_ble_sidecar
 
 # --- Detect and warn on watched pnpm packages ---
 for i in "${!KEYS[@]}"; do
@@ -1006,8 +582,6 @@ done
 
 check_pinned_majors
 check_audit_ignores
-check_ratspeak_patches
-check_ratspeak_upstream
 check_mecp_upstream
 check_mecp_prs
 

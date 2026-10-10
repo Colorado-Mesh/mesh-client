@@ -179,7 +179,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 **Queue badge stuck at `Q: 255/256`**:
 
 - Usually means the companion radio outbound queue is nearly full. Enable debug logging and export logs if the badge stays red for minutes with no traffic; look for `[useMeshcoreRuntime] high queue depth=`.
-- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel) or `raw[8]=0x18` (`RESP_CODE_STATS` framing leak). mesh-client treats those signatures as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge shows a stuck non-zero depth (e.g. `Q: 24/256` with `rawHex` ending in `000018`), upgrade to a build that includes this fix ([#600](https://github.com/Colorado-Mesh/mesh-client/issues/600)).
+- Some **HTTP/TCP** companions pad the legacy 7-byte STATS CORE frame to 9 bytes with `raw[7]=0` and `raw[8]=0xff` (padding sentinel) or `raw[8]=0x18` (`RESP_CODE_STATS` framing leak). mesh-client treats those signatures as 7-byte layout (`queue_len` at byte 6). If chat send/receive works but the badge shows a stuck non-zero depth (e.g. `Q: 24/256` with `rawHex` ending in `000018`), upgrade to a build that includes this fix ([#600](https://github.com/charlottemeshtastic/mesh-client/issues/600)).
 - On older builds, CORE stats could also be mis-parsed (false `Q: 255/256` with normal traffic).
 
 **Windows packaged updater: `Cannot find module 'semver'`**:
@@ -188,7 +188,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Windows packaged updater: `Cannot download … Mesh-client-Setup-….exe status:404` (crash dialog)**:
 
-- `latest.yml` asks for hyphenated Setup names. GitHub stored dotted names when CI uploaded spaced NSIS filenames (`Mesh-client Setup {version}.exe` → `Mesh-client.Setup.{version}.exe`). Download the installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) manually (dotted or hyphenated name). Repair steps for a published release: [release-process.md](release-process.md#repair-windows-updater-assets-on-an-already-published-release).
+- `latest.yml` asks for hyphenated Setup names. GitHub stored dotted names when CI uploaded spaced NSIS filenames (`Mesh-client Setup {version}.exe` → `Mesh-client.Setup.{version}.exe`). Download the installer from [GitHub Releases](https://github.com/charlottemeshtastic/mesh-client/releases) manually (dotted or hyphenated name). Repair steps for a published release: [release-process.md](release-process.md#repair-windows-updater-assets-on-an-already-published-release).
 
 **Retest checklist (after upgrading from a known-good build)**:
 

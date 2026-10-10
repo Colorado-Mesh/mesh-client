@@ -53,13 +53,15 @@ describe('precommit-tests skip', () => {
 describe('precommit-tests manifest-only fast path', () => {
   it('recognizes dependency manifests and the flatpak manifest the pnpm sync re-stages', () => {
     expect(isManifestOnlyCommit(['package.json', 'pnpm-lock.yaml'])).toBe(true);
-    expect(isManifestOnlyCommit(['package.json', 'org.coloradomesh.MeshClient.yml'])).toBe(true);
+    expect(
+      isManifestOnlyCommit(['package.json', 'io.github.charlottemeshtastic.MeshHub.yml']),
+    ).toBe(true);
     expect(
       isManifestOnlyCommit([
         'package.json',
         'pnpm-lock.yaml',
-        'org.coloradomesh.MeshClient.yml',
-        'flatpak/org.coloradomesh.MeshClient.metainfo.xml',
+        'io.github.charlottemeshtastic.MeshHub.yml',
+        'flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml',
       ]),
     ).toBe(true);
     expect(isManifestOnlyCommit(['package.json', 'src/main/index.ts'])).toBe(false);
@@ -143,7 +145,7 @@ describe('precommit-tests related planning', () => {
     expect(pickProjects(['src/architecture/sourcePolicy.test.ts'])).toEqual(['main']);
   });
 
-  it.each(['docs/reticulum-sidecar-ipc.md', 'reticulum-sidecar/src/api/mod.rs'])(
+  it.each(['docs/ble-sidecar-ipc.md', 'ble-sidecar/src/api/mod.rs'])(
     'runs the sidecar route/doc guard when only %s is staged',
     (input) => {
       const plan = planPrecommitTests([input]);
@@ -162,7 +164,7 @@ describe('precommit-tests related planning', () => {
   it('does not duplicate the sidecar route/doc guard', () => {
     expect(
       appendSidecarRouteDocsTestIfNeeded(
-        ['docs/reticulum-sidecar-ipc.md'],
+        ['docs/ble-sidecar-ipc.md'],
         [SIDECAR_ROUTE_DOCS_TEST_PATH],
       ),
     ).toEqual([SIDECAR_ROUTE_DOCS_TEST_PATH]);

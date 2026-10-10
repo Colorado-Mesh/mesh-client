@@ -8,7 +8,7 @@ published site, so rewrite them to GitHub URLs at build time instead of changing
 import posixpath
 import re
 
-REPO_BLOB_BASE = "https://github.com/Colorado-Mesh/mesh-client/blob/main/"
+REPO_BLOB_BASE = "https://github.com/charlottemeshtastic/mesh-client/blob/main/"
 
 _LINK_RE = re.compile(r"(\]\()([^)\s]+)((?:\s+\"[^\"]*\")?\))")
 _FENCE_RE = re.compile(r"^\s*(```|~~~)")

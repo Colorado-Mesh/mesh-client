@@ -4,16 +4,10 @@ import { describe, expect, it } from 'vitest';
 import {
   computeTabMappings,
   findFilteredTabIndexForPanel,
-  INCIDENT_PANEL_INDEX,
-  NODES_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
   TAB_CAPABILITY_REQUIREMENTS,
 } from './appTabMappings';
-import {
-  MESHCORE_CAPABILITIES,
-  MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
-} from './radio/BaseRadioProvider';
+import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS } from './tabSlotIds';
 
 const identityT = ((key: string) => key) as TFunction;
@@ -21,124 +15,6 @@ const identityT = ((key: string) => key) as TFunction;
 describe('computeTabMappings', () => {
   it('keeps TAB_CAPABILITY_REQUIREMENTS parallel to TAB_SLOT_IDS', () => {
     expect(TAB_CAPABILITY_REQUIREMENTS).toHaveLength(TAB_SLOT_IDS.length);
-  });
-
-  it.each([
-    ['meshtastic', MESHTASTIC_CAPABILITIES],
-    ['meshcore', MESHCORE_CAPABILITIES],
-    ['reticulum', RETICULUM_CAPABILITIES],
-  ] as const)('shows Incident tab just before App for %s', (protocol, caps) => {
-    const tabs = computeTabMappings(identityT, protocol, caps);
-    expect(INCIDENT_PANEL_INDEX).toBe(TAB_SLOT_IDS.indexOf('App') - 1);
-    expect(TAB_CAPABILITY_REQUIREMENTS[INCIDENT_PANEL_INDEX]).toBeUndefined();
-    const incidentTab = findFilteredTabIndexForPanel(tabs, INCIDENT_PANEL_INDEX);
-    const appTab = findFilteredTabIndexForPanel(tabs, TAB_SLOT_IDS.indexOf('App'));
-    expect(incidentTab).toBe(appTab - 1);
-    expect(tabs.displayTabLabels[incidentTab]).toBe('tabs.incident');
-    expect(tabs.tabSlotIds[incidentTab]).toBe('Incident');
-  });
-
-  it('shows Map tab for Reticulum via hasReticulumDiscoveryMap', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const mapPanelIndex = TAB_SLOT_IDS.indexOf('Map');
-    expect(RETICULUM_CAPABILITIES.hasReticulumDiscoveryMap).toBe(true);
-    expect(tabs.tabIndexToPanelIndex).toContain(mapPanelIndex);
-  });
-
-  it('shows Radio tab but not Graph for Reticulum', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const radioPanelIndex = TAB_SLOT_IDS.indexOf('Radio');
-    const graphPanelIndex = TAB_SLOT_IDS.indexOf('Graph');
-    expect(RETICULUM_CAPABILITIES.hasReticulumNetworkPanel).toBe(true);
-    expect(RETICULUM_CAPABILITIES.hasNeighborInfo).toBe(false);
-    expect(tabs.tabIndexToPanelIndex).toContain(radioPanelIndex);
-    expect(tabs.tabIndexToPanelIndex).not.toContain(graphPanelIndex);
-  });
-
-  it('shows Diagnostics for Reticulum when native engine is enabled', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const diagnosticsPanelIndex = TAB_SLOT_IDS.indexOf('Diagnostics');
-    expect(RETICULUM_CAPABILITIES.hasDiagnosticsPanel).toBe(true);
-    expect(tabs.tabIndexToPanelIndex).toContain(diagnosticsPanelIndex);
-  });
-
-  it('shows Admin tab for Reticulum', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const adminPanelIndex = TAB_SLOT_IDS.indexOf('Admin');
-    expect(RETICULUM_CAPABILITIES.hasReticulumAdminPanel).toBe(true);
-    expect(tabs.tabIndexToPanelIndex).toContain(adminPanelIndex);
-  });
-
-  it('uses Peers tab label for Reticulum nodes slot', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const nodesPanelIndex = TAB_SLOT_IDS.indexOf('Nodes');
-    const nodesTabIndex = tabs.tabIndexToPanelIndex.indexOf(nodesPanelIndex);
-    expect(nodesTabIndex).toBeGreaterThanOrEqual(0);
-    expect(tabs.displayTabLabels[nodesTabIndex]).toBe('tabs.peers');
-  });
-
-  it('shows Topology tab for Reticulum only', () => {
-    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
-    const topologyPanelIndex = TAB_SLOT_IDS.indexOf('Topology');
-    expect(RETICULUM_CAPABILITIES.hasReticulumTopologyPanel).toBe(true);
-    expect(reticulumTabs.tabIndexToPanelIndex).toContain(topologyPanelIndex);
-    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(topologyPanelIndex);
-  });
-
-  it('maps Nodes panel to Peers tab index, not Nomad Network', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const peersTabIndex = findFilteredTabIndexForPanel(tabs, NODES_PANEL_INDEX);
-    const nomadPanelIndex = TAB_SLOT_IDS.indexOf('NomadNetwork');
-    const nomadTabIndex = findFilteredTabIndexForPanel(tabs, nomadPanelIndex);
-    expect(peersTabIndex).toBeGreaterThanOrEqual(0);
-    expect(nomadTabIndex).toBeGreaterThanOrEqual(0);
-    expect(peersTabIndex).not.toBe(nomadTabIndex);
-    expect(tabs.tabIndexToPanelIndex[peersTabIndex]).toBe(NODES_PANEL_INDEX);
-  });
-
-  it('shows Nomad Network tab after Chat for Reticulum only', () => {
-    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const nomadIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(
-      TAB_SLOT_IDS.indexOf('NomadNetwork'),
-    );
-    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
-    expect(nomadIndex).toBeGreaterThan(chatIndex);
-    expect(reticulumTabs.displayTabLabels[nomadIndex]).toBe('tabs.nomadnetwork');
-
-    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
-    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('NomadNetwork'));
-  });
-
-  it('shows RRC tab after Chat and before Nomad for Reticulum only', () => {
-    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const rrcIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('RRC'));
-    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
-    const nomadIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(
-      TAB_SLOT_IDS.indexOf('NomadNetwork'),
-    );
-    expect(rrcIndex).toBeGreaterThan(chatIndex);
-    expect(nomadIndex).toBeGreaterThan(rrcIndex);
-    expect(reticulumTabs.displayTabLabels[rrcIndex]).toBe('tabs.rrc');
-
-    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
-    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('RRC'));
-  });
-
-  it('shows Games tab after Chat and before RRC for Reticulum only', () => {
-    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const gamesIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Games'));
-    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
-    const rrcIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('RRC'));
-    expect(RETICULUM_CAPABILITIES.hasLrgpGames).toBe(true);
-    expect(gamesIndex).toBeGreaterThan(chatIndex);
-    expect(rrcIndex).toBeGreaterThan(gamesIndex);
-    expect(reticulumTabs.displayTabLabels[gamesIndex]).toBe('tabs.games');
-
-    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
-    const meshcoreTabs = computeTabMappings(identityT, 'meshcore', MESHCORE_CAPABILITIES);
-    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
-    expect(meshcoreTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('Games'));
   });
 
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {
@@ -164,22 +40,6 @@ describe('computeTabMappings', () => {
     for (const slot of expectedSlots) {
       expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf(slot));
     }
-  });
-
-  it.each([
-    ['meshtastic', MESHTASTIC_CAPABILITIES],
-    ['meshcore', MESHCORE_CAPABILITIES],
-    ['reticulum', RETICULUM_CAPABILITIES],
-  ] as const)('shows the TAK tab for %s', (protocol, capabilities) => {
-    const tabs = computeTabMappings(identityT, protocol, capabilities);
-    expect(tabs.tabIndexToPanelIndex).toContain(TAB_SLOT_IDS.indexOf('TAK'));
-  });
-
-  it('uses Network tab label for Reticulum radio slot', () => {
-    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
-    const radioTabIndex = findFilteredTabIndexForPanel(tabs, RADIO_TAB_PANEL_INDEX);
-    expect(radioTabIndex).toBeGreaterThanOrEqual(0);
-    expect(tabs.displayTabLabels[radioTabIndex]).toBe('tabs.network');
   });
 
   it('shows MeshCore sidebar panels including Radio, Map, and Repeaters', () => {

@@ -14,7 +14,6 @@ import type { OutboxEntry } from '@/shared/electron-api.types';
 import { useChatOutbox } from './useChatOutbox';
 import {
   type EmergencyOutboxDrainTarget,
-  isChatOutboxSendAvailable,
   useEmergencyOutboxDrain,
 } from './useEmergencyOutboxDrain';
 
@@ -71,7 +70,7 @@ function drainsFor(
   sendFns: Partial<Record<MeshProtocol, EmergencyOutboxDrainTarget['sendFn']>>,
   available: Partial<Record<MeshProtocol, boolean>> = {},
 ): EmergencyOutboxDrainTarget[] {
-  return (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+  return (['meshtastic', 'meshcore'] as const).map((protocol) => ({
     protocol,
     isSendAvailable: available[protocol] ?? false,
     sendFn: sendFns[protocol] ?? vi.fn().mockResolvedValue(undefined),
@@ -101,26 +100,6 @@ describe('useEmergencyOutboxDrain', () => {
     vi.mocked(mockOutbox.remove).mockImplementation((id) => {
       stored = stored.filter((r) => r.id !== id);
       return Promise.resolve(undefined);
-    });
-  });
-
-  it('registers drain listeners for all three protocols', async () => {
-    renderHook(() => {
-      useEmergencyOutboxDrain({
-        drains: drainsFor({}, { meshtastic: true, meshcore: true, reticulum: true }),
-      });
-    });
-    await waitFor(() => {
-      expect(mockOutbox.list).toHaveBeenCalledTimes(3);
-    });
-    vi.mocked(mockOutbox.list).mockClear();
-    for (const p of ['meshtastic', 'meshcore', 'reticulum'] as const) {
-      requestChatOutboxDrain(p);
-    }
-    await waitFor(() => {
-      expect(new Set(vi.mocked(mockOutbox.list).mock.calls.map((c) => c[0]))).toEqual(
-        new Set(['meshtastic', 'meshcore', 'reticulum']),
-      );
     });
   });
 
@@ -215,15 +194,5 @@ describe('useEmergencyOutboxDrain', () => {
     });
     await new Promise((r) => setTimeout(r, 20));
     expect(sendFn).toHaveBeenCalledTimes(1);
-  });
-
-  it.each([
-    ['meshtastic', { state: { status: 'configured' }, mqttStatus: null }, true],
-    ['meshcore', { state: { status: 'stale' }, mqttStatus: null }, true],
-    ['meshtastic', { state: { status: 'disconnected' }, mqttStatus: 'connected' }, true],
-    ['meshcore', { state: { status: 'disconnected' }, mqttStatus: 'connected' }, false],
-    ['reticulum', { state: { status: 'disconnected' }, mqttStatus: null }, false],
-  ] as const)('isChatOutboxSendAvailable(%s, %j) → %s', (protocol, view, expected) => {
-    expect(isChatOutboxSendAvailable(protocol, view)).toBe(expected);
   });
 });

@@ -43,10 +43,7 @@ import {
   latestPositionHistoryPoint,
   resolveNodeMapPosition,
 } from '../lib/coordUtils';
-import {
-  filterDiagnosticRowsForProtocol,
-  getRoutingRowForNode,
-} from '../lib/diagnostics/diagnosticRows';
+import { getRoutingRowForNode } from '../lib/diagnostics/diagnosticRows';
 import { translateRoutingRowDescription } from '../lib/diagnostics/diagnosticsLabels';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { downloadBlob } from '../lib/downloadBlob';
@@ -252,10 +249,7 @@ export default function NodeListPanel({
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
-  const protocolDiagnosticRows = useMemo(
-    () => filterDiagnosticRowsForProtocol(diagnosticRows, mode),
-    [diagnosticRows, mode],
-  );
+  const protocolDiagnosticRows = diagnosticRows;
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy);
   const [listTab, setListTab] = useState<NodeListTab>('all');

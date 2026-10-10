@@ -13,13 +13,9 @@ export type ProtocolRecord<M, C = M> = ProtocolValues<M | C> & {
   meshcore: C;
 };
 
-/** Build a per-protocol map; pass `reticulum` when the third protocol needs a distinct value. */
-export function protocolRecord<M, C = M, R = C>(
-  meshtastic: M,
-  meshcore: C,
-  reticulum: R = meshcore as unknown as R,
-): ProtocolValues<M | C | R> {
-  return { meshtastic, meshcore, reticulum };
+/** Build a per-protocol map. */
+export function protocolRecord<M, C = M>(meshtastic: M, meshcore: C): ProtocolValues<M | C> {
+  return { meshtastic, meshcore };
 }
 
 /** Type-safe lookup without `protocol ===` ternaries in App. */

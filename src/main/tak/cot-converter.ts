@@ -25,7 +25,6 @@ const MAX_TRACKER_STALE_MS = 60 * 60 * 1000;
 const COT_UID_PREFIX: Record<MeshProtocol, string> = {
   meshtastic: 'MESH-',
   meshcore: 'MC-',
-  reticulum: 'RN-',
 };
 
 /** Every uid prefix this app writes; inbound CoT with one of these is our own node echoed back. */
@@ -34,7 +33,6 @@ export const COT_UID_PREFIXES: readonly string[] = Object.values(COT_UID_PREFIX)
 const PROTOCOL_LABEL: Record<MeshProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
-  reticulum: 'Reticulum',
 };
 
 /**
@@ -44,7 +42,6 @@ const PROTOCOL_LABEL: Record<MeshProtocol, string> = {
 const CALLSIGN_FIELD: Record<MeshProtocol, 'short_name' | 'long_name'> = {
   meshtastic: 'short_name',
   meshcore: 'long_name',
-  reticulum: 'long_name',
 };
 
 export type CotRelayNode = MeshNode & TakRelayExtras;

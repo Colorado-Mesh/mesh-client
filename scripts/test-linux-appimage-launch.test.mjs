@@ -3,7 +3,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { EM_AARCH64, EM_X86_64 } from './test-linux-appimage-reticulum-sidecar.mjs';
+import { EM_AARCH64, EM_X86_64 } from './test-linux-appimage-ble-sidecar.mjs';
 import {
   LOG_FILENAME,
   LaunchSmokeError,

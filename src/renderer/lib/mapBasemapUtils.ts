@@ -70,5 +70,5 @@ export interface MapOverlayColors {
 export function getMapOverlayColors(isDarkBasemap: boolean): MapOverlayColors {
   return isDarkBasemap
     ? { online: '#4ade80', stale: '#a78bfa', offline: '#65738c' }
-    : { online: '#15803d', stale: '#5b21b6', offline: '#364156' };
+    : { online: '#15803d', stale: '#5b21b6', offline: '#424242' };
 }

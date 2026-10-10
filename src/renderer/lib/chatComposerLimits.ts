@@ -8,9 +8,7 @@ import type { MeshProtocol } from './types';
 export const MESHTASTIC_PAYLOAD_LIMIT = 228;
 /** Conservative default when channel display name is unknown (≈160 − 25 − 2). */
 export const MESHCORE_PAYLOAD_LIMIT = 133;
-/** LXMF DM text limit for composer (sidecar handles wire encoding; no Meshtastic-style chunking). */
-export const RETICULUM_LXMF_PAYLOAD_LIMIT = 4096;
-/** Keep in sync with `ProtocolCapabilities.composerMaxChunks` for Meshtastic/Reticulum. */
+/** Keep in sync with `ProtocolCapabilities.composerMaxChunks` for Meshtastic. */
 export const MAX_CHUNKS = 9;
 
 /**
@@ -51,7 +49,6 @@ export interface ComposerLimitStatus {
 
 export function getChatPayloadLimit(protocol: MeshProtocol, override?: number): number {
   if (override != null) return override;
-  if (protocol === 'reticulum') return RETICULUM_LXMF_PAYLOAD_LIMIT;
   return protocol === 'meshcore' ? MESHCORE_PAYLOAD_LIMIT : MESHTASTIC_PAYLOAD_LIMIT;
 }
 
@@ -79,7 +76,6 @@ export function getComposerPayloadLimit(opts: {
 }): number {
   if (opts.payloadLimitOverride != null) return opts.payloadLimitOverride;
   if (opts.protocol === 'meshtastic') return MESHTASTIC_PAYLOAD_LIMIT;
-  if (opts.protocol === 'reticulum') return RETICULUM_LXMF_PAYLOAD_LIMIT;
   const ctx = opts.composerContext ?? 'channel';
   if (ctx === 'room') return getMeshcoreRoomPayloadLimit();
   if (ctx === 'dm') return getMeshcoreDmPayloadLimit();
@@ -99,7 +95,7 @@ export function getComposerWireOverhead(opts: {
       ? MESHTASTIC_REPLY_ID_WIRE_BYTES
       : 0;
   }
-  if (opts.protocol !== 'meshcore' || !opts.replyToSenderName?.trim()) return 0;
+  if (!opts.replyToSenderName?.trim()) return 0;
   const key = opts.replyKey;
   // Reuse the exact wire-format builders so normalized names and unsafe-name fallbacks cannot
   // drift from what actually goes out on the wire. Empty names return above without a prefix.

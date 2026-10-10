@@ -13,7 +13,7 @@ import {
   versionFromTrustedTag,
 } from './github-release-version.mjs';
 
-export const OWNER = 'Colorado-Mesh';
+export const OWNER = 'charlottemeshtastic';
 export const REPO = 'mesh-client';
 export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
 

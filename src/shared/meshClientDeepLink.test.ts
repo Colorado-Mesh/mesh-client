@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildLrgpGameSessionRoute,
-  buildLxmaContactUri,
-  buildLxmContactUri,
-  buildLxmGameSessionUri,
-  buildLxmIdentityUri,
   buildMeshcoreChannelAddUri,
   buildMeshcoreContactAddUri,
   classifyMeshClientDeepLink,
-  findLxmUrlInArgv,
+  findMeshDeepLinkInArgv,
   isForwardableMeshClientOpenUrl,
 } from './meshClientDeepLink';
 
@@ -20,65 +15,10 @@ const MESHCORE_DOC_CONTACT =
 const MESHCORE_DOC_CHANNEL =
   'meshcore://channel/add?name=Public&secret=8b3387e9c5cdea6ac9e5edbaa115cd72';
 /* eslint-enable no-secrets/no-secrets */
-const LXMA_DEST = 'a'.repeat(32);
-const LXMA_PUBKEY = 'b'.repeat(128);
 const MESHCORE_PUBKEY = 'c'.repeat(64);
 const CHANNEL_SECRET = 'd'.repeat(32);
 
 describe('meshClientDeepLink', () => {
-  it('builds and parses contact URIs', () => {
-    const hash = 'a'.repeat(32);
-    const uri = buildLxmContactUri(hash, 'Alice');
-    expect(uri).toContain('lxm://contact/');
-    const parsed = classifyMeshClientDeepLink(uri);
-    expect(parsed).toEqual({
-      kind: 'lxmContact',
-      destinationHash: hash,
-      name: 'Alice',
-    });
-  });
-
-  it('builds and parses identity URIs', () => {
-    const uri = buildLxmIdentityUri({
-      identityHash: 'b'.repeat(32),
-      lxmfHash: 'c'.repeat(32),
-      name: 'Me',
-    });
-    const parsed = classifyMeshClientDeepLink(uri);
-    expect(parsed.kind).toBe('lxmIdentity');
-    if (parsed.kind === 'lxmIdentity') {
-      expect(parsed.identityHash).toBe('b'.repeat(32));
-      expect(parsed.lxmfHash).toBe('c'.repeat(32));
-      expect(parsed.name).toBe('Me');
-    }
-  });
-
-  it('classifies opaque lxm:// blobs as paper messages', () => {
-    const blob = 'A'.repeat(48);
-    const uri = `lxm://${blob}`;
-    const parsed = classifyMeshClientDeepLink(uri);
-    expect(parsed).toEqual({ kind: 'lxmPaperMessage', uri });
-  });
-
-  it('rejects short non-contact lxm:// hosts as unknown (not paper)', () => {
-    const parsed = classifyMeshClientDeepLink('lxm://ABCDEFGHIJKLMNOP');
-    expect(parsed.kind).toBe('unknown');
-  });
-
-  it('does not treat contact/identity hosts as paper', () => {
-    expect(classifyMeshClientDeepLink(`lxm://contact/${'a'.repeat(32)}`).kind).toBe('lxmContact');
-    expect(classifyMeshClientDeepLink(`lxm://identity/${'b'.repeat(32)}`).kind).toBe('lxmIdentity');
-  });
-
-  it.each(['linux', 'darwin', 'win32'] as const)(
-    'finds lxm URL in argv on %s-style process.argv',
-    () => {
-      const url = `lxm://contact/${'d'.repeat(32)}`;
-      expect(findLxmUrlInArgv(['/app/mesh-client', url, '--flag'])).toBe(url);
-      expect(findLxmUrlInArgv(['/app/mesh-client'])).toBeUndefined();
-    },
-  );
-
   it('classifies bare Meshtastic channel payloads as forwardable', () => {
     const bare = `${'A'.repeat(40)}_-`;
     const parsed = classifyMeshClientDeepLink(bare);
@@ -89,45 +29,6 @@ describe('meshClientDeepLink', () => {
   it('forwards Meshtastic channel URLs and drops unrelated schemes', () => {
     expect(isForwardableMeshClientOpenUrl('https://meshtastic.org/e/#abc')).toBe(true);
     expect(isForwardableMeshClientOpenUrl('https://example.com')).toBe(false);
-  });
-
-  describe('lxma:// Columba contact', () => {
-    it('builds lowercase lxma URI and round-trips', () => {
-      const uri = buildLxmaContactUri(LXMA_DEST.toUpperCase(), LXMA_PUBKEY.toUpperCase());
-      expect(uri).toBe(`lxma://${LXMA_DEST}:${LXMA_PUBKEY}`);
-      expect(classifyMeshClientDeepLink(uri)).toEqual({
-        kind: 'lxmaContact',
-        destinationHash: LXMA_DEST,
-        publicKeyHex: LXMA_PUBKEY,
-      });
-    });
-
-    it('accepts case-insensitive scheme', () => {
-      const uri = `LXMA://${LXMA_DEST}:${LXMA_PUBKEY}`;
-      expect(classifyMeshClientDeepLink(uri).kind).toBe('lxmaContact');
-      expect(isForwardableMeshClientOpenUrl(uri)).toBe(true);
-    });
-
-    it('rejects wrong segment count, short dest, short pubkey', () => {
-      expect(classifyMeshClientDeepLink(`lxma://${LXMA_DEST}`).kind).toBe('unknown');
-      expect(classifyMeshClientDeepLink(`lxma://${LXMA_DEST}:${LXMA_PUBKEY}:extra`).kind).toBe(
-        'unknown',
-      );
-      expect(classifyMeshClientDeepLink(`lxma://${'a'.repeat(16)}:${LXMA_PUBKEY}`).kind).toBe(
-        'unknown',
-      );
-      expect(classifyMeshClientDeepLink(`lxma://${LXMA_DEST}:${'b'.repeat(64)}`).kind).toBe(
-        'unknown',
-      );
-      expect(classifyMeshClientDeepLink(`lxma://${LXMA_DEST}:${'b'.repeat(127)}`).kind).toBe(
-        'unknown',
-      );
-    });
-
-    it('throws on invalid build inputs', () => {
-      expect(() => buildLxmaContactUri('short', LXMA_PUBKEY)).toThrow(/destination hash/);
-      expect(() => buildLxmaContactUri(LXMA_DEST, 'ab')).toThrow(/public key/);
-    });
   });
 
   describe('meshcore:// contact/add', () => {
@@ -285,43 +186,25 @@ describe('meshClientDeepLink', () => {
     });
   });
 
-  describe('regressions', () => {
-    it('keeps lxmf:// and short hex as unknown (not lxma/meshcore)', () => {
-      // 32 hex can match the Meshtastic bare-payload heuristic; short hex must not.
-      expect(classifyMeshClientDeepLink('abcdef').kind).toBe('unknown');
-      expect(classifyMeshClientDeepLink(`lxmf://${'a'.repeat(32)}`).kind).toBe('unknown');
+  describe('findMeshDeepLinkInArgv', () => {
+    it('returns the first meshcore:// or meshtastic:// argument', () => {
+      expect(
+        findMeshDeepLinkInArgv(['/app/Mesh Hub', '--flag', `  ${MESHCORE_DOC_CHANNEL}  `]),
+      ).toBe(MESHCORE_DOC_CHANNEL);
+      expect(findMeshDeepLinkInArgv(['meshtastic://e/#abc'])).toBe('meshtastic://e/#abc');
     });
 
-    it('does not forward junk schemes', () => {
-      expect(isForwardableMeshClientOpenUrl('ftp://x')).toBe(false);
-      expect(isForwardableMeshClientOpenUrl('meshcore://other/path')).toBe(false);
+    it('ignores retired lxm:// links and unrelated arguments', () => {
+      expect(findMeshDeepLinkInArgv(['lxm://contact/' + 'a'.repeat(32), 'https://x'])).toBe(
+        undefined,
+      );
     });
   });
 
-  describe('lxmGameSession / lrgp', () => {
-    const SESSION = 'a'.repeat(16);
-
-    it('classifies lxm://game/<session> and lrgp:<session>', () => {
-      expect(classifyMeshClientDeepLink(`lxm://game/${SESSION}`)).toEqual({
-        kind: 'lxmGameSession',
-        sessionId: SESSION,
-      });
-      expect(classifyMeshClientDeepLink(`lrgp:${SESSION.toUpperCase()}`)).toEqual({
-        kind: 'lxmGameSession',
-        sessionId: SESSION,
-      });
-      expect(isForwardableMeshClientOpenUrl(`lrgp:${SESSION}`)).toBe(true);
-    });
-
-    it('rejects short or non-hex session ids', () => {
-      expect(classifyMeshClientDeepLink('lxm://game/abc').kind).toBe('unknown');
-      expect(classifyMeshClientDeepLink('lrgp:not-hex!!!!!!!!').kind).toBe('unknown');
-    });
-
-    it('builds routes and finds argv entries', () => {
-      expect(buildLxmGameSessionUri(SESSION)).toBe(`lxm://game/${SESSION}`);
-      expect(buildLrgpGameSessionRoute(SESSION)).toBe(`lrgp:${SESSION}`);
-      expect(findLxmUrlInArgv(['app', `lrgp:${SESSION}`, '--flag'])).toBe(`lrgp:${SESSION}`);
+  describe('regressions', () => {
+    it('does not forward junk schemes', () => {
+      expect(isForwardableMeshClientOpenUrl('ftp://x')).toBe(false);
+      expect(isForwardableMeshClientOpenUrl('meshcore://other/path')).toBe(false);
     });
   });
 });

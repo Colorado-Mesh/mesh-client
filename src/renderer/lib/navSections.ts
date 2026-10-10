@@ -7,15 +7,13 @@ import { TAB_SLOT_IDS, type TabIconSlotId, type TabSlotId } from './tabSlotIds';
  * panels as sub-tabs. Panel ids, labels and capability gating still come from `appTabMappings`;
  * this module only groups the visible tabs.
  */
-export type NavSectionId =
-  'chat' | 'network' | 'map' | 'nomad' | 'monitor' | 'device' | 'incident' | 'app';
+export type NavSectionId = 'chat' | 'network' | 'map' | 'monitor' | 'device' | 'incident' | 'app';
 
 /** Rail order, top to bottom. `incident` and `app` sit at the bottom of the rail. */
 export const NAV_SECTION_ORDER: readonly NavSectionId[] = [
   'chat',
   'network',
   'map',
-  'nomad',
   'monitor',
   'device',
   'incident',
@@ -33,31 +31,23 @@ export const NAV_SECTION_LABEL_KEYS: Record<NavSectionId, string> = {
   chat: 'tabs.chat',
   network: 'tabs.network',
   map: 'tabs.map',
-  nomad: 'tabs.nomadnetwork',
   monitor: 'shell.section.monitor',
   device: 'shell.section.device',
   incident: 'tabs.incident',
   app: 'tabs.app',
 };
 
-/**
- * Shorter visible text for the 72px rail where the full name truncates ("Nomad…"). The rail keeps
- * the full name as the button's accessible name and tooltip; the header shows it in full.
- */
-export const NAV_SECTION_RAIL_LABEL_KEYS: Partial<Record<NavSectionId, string>> = {
-  nomad: 'tabs.nomadShort',
-};
+/** Shorter visible text for the 72px rail where the full name would truncate. */
+export const NAV_SECTION_RAIL_LABEL_KEYS: Partial<Record<NavSectionId, string>> = {};
 
 /**
  * Panel slots per section, in sub-tab order. `Modules` is listed in both Network (MeshCore
  * Repeaters) and Device (Meshtastic module config); `navSectionForSlot` picks one by capability.
  */
 const SECTION_SLOT_ORDER: Record<NavSectionId, readonly TabSlotId[]> = {
-  chat: ['Chat', 'Rooms', 'RRC', 'Games'],
-  network: ['Nodes', 'Modules', 'Graph', 'Topology', 'Remote', 'TAK'],
+  chat: ['Chat', 'Rooms'],
+  network: ['Nodes', 'Modules', 'Graph', 'TAK'],
   map: ['Map'],
-  // Reticulum only: Nomad Network gets its own rail entry so it is not buried under Network.
-  nomad: ['NomadNetwork'],
   monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF'],
   device: ['Connection', 'Radio', 'Modules', 'Telemetry', 'Admin', 'Security'],
   incident: ['Incident'],

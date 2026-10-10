@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
 import {
@@ -191,16 +190,16 @@ describe('AppPanel: theme presets', () => {
         <AppPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const midnight = await screen.findByRole('button', { name: 'Midnight' });
-    const meshtastic = screen.getByRole('button', { name: 'Meshtastic' });
-    expect(midnight).toHaveAttribute('aria-pressed', 'true');
-    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    const charcoal = await screen.findByRole('button', { name: 'Charcoal' });
+    const signature = screen.getByRole('button', { name: 'Signature orange' });
+    expect(charcoal).toHaveAttribute('aria-pressed', 'true');
+    expect(signature).toHaveAttribute('aria-pressed', 'true');
 
     // Slate replaces the neutrals everywhere (every ink-* class) and keeps the accent.
     fireEvent.click(screen.getByRole('button', { name: 'Slate' }));
     expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
-    expect(midnight).toHaveAttribute('aria-pressed', 'false');
-    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    expect(charcoal).toHaveAttribute('aria-pressed', 'false');
+    expect(signature).toHaveAttribute('aria-pressed', 'true');
     const root = document.documentElement;
     expect(root.style.getPropertyValue('--color-ink-800')).toBe('#1e293b');
     expect(root.style.getPropertyValue('--color-app-bg')).toBe('#020617');
@@ -212,11 +211,11 @@ describe('AppPanel: theme presets', () => {
     expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
     expect(root.style.getPropertyValue('--color-brand-green')).toBe('#38bdf8');
 
-    fireEvent.click(midnight);
-    fireEvent.click(meshtastic);
+    fireEvent.click(charcoal);
+    fireEvent.click(signature);
     expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
     expect(localStorage.getItem('mesh-client:themeSurface')).toBeNull();
-    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#333333');
   });
 
   it('says so when an unreadable accent is put back to the default', async () => {
@@ -228,7 +227,7 @@ describe('AppPanel: theme presets', () => {
     const accentSwatches = await screen.findByRole('group', { name: /^Accent Primary/ });
     fireEvent.click(within(accentSwatches).getByRole('button', { name: 'Slate 950 #020617' }));
     expect(await screen.findByText(/too close to the app background to read/)).toBeInTheDocument();
-    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');
+    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#ffa31a');
   });
 });
 
@@ -294,80 +293,6 @@ describe('AppPanel: sound notification toggle', () => {
     });
     expect(checkbox).toBeChecked();
     expect(localStorage.getItem('mesh-client:notifMuted')).toBe('0');
-  });
-});
-
-describe('AppPanel: RRC unread all room messages toggle', () => {
-  const defaultProps = {
-    nodeCount: 0,
-    messageCount: 0,
-    channels: [] as { index: number; name: string }[],
-    myNodeNum: null as number | null,
-    onLocationFilterChange: vi.fn(),
-  };
-
-  beforeEach(() => {
-    localStorage.removeItem('mesh-client:appSettings');
-  });
-
-  it('shows the toggle only on the Reticulum protocol tab, checked by default', async () => {
-    const { unmount } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshtastic" />
-      </ToastProvider>,
-    );
-    expect(
-      screen.queryByRole('checkbox', { name: /RRC unread for all room messages/i }),
-    ).toBeNull();
-    unmount();
-
-    const { unmount: unmountMeshcore } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshcore" />
-      </ToastProvider>,
-    );
-    expect(
-      screen.queryByRole('checkbox', { name: /RRC unread for all room messages/i }),
-    ).toBeNull();
-    unmountMeshcore();
-
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="reticulum" />
-      </ToastProvider>,
-    );
-    const checkbox = await screen.findByRole('checkbox', {
-      name: /RRC unread for all room messages/i,
-    });
-    expect(checkbox).toBeChecked();
-  });
-
-  it('persists rrcUnreadAllRoomMessages false and remounts unchecked', async () => {
-    const { unmount } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="reticulum" />
-      </ToastProvider>,
-    );
-    const checkbox = await screen.findByRole('checkbox', {
-      name: /RRC unread for all room messages/i,
-    });
-    act(() => {
-      fireEvent.click(checkbox);
-    });
-    await waitFor(() => {
-      const raw = localStorage.getItem('mesh-client:appSettings');
-      expect(raw).toContain('"rrcUnreadAllRoomMessages":false');
-    });
-    unmount();
-
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="reticulum" />
-      </ToastProvider>,
-    );
-    expect(
-      await screen.findByRole('checkbox', { name: /RRC unread for all room messages/i }),
-    ).not.toBeChecked();
   });
 });
 
@@ -471,47 +396,6 @@ describe('AppPanel: support bundle exports', () => {
         expect.stringContaining('"capturedAt"'),
       );
     });
-  });
-});
-
-describe('AppPanel: Reticulum clear contacts danger zone', () => {
-  const defaultProps = {
-    nodeCount: 0,
-    messageCount: 0,
-    channels: [] as { index: number; name: string }[],
-    myNodeNum: null as number | null,
-    onLocationFilterChange: vi.fn(),
-  };
-
-  it('shows clear-all contacts only on the Reticulum tab when sidecar is ready', async () => {
-    const { rerender } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshtastic" reticulumSidecarReady />
-      </ToastProvider>,
-    );
-
-    fireEvent.click(screen.getByText('Destructive actions'));
-    expect(screen.queryByRole('button', { name: /Clear All Contacts/i })).not.toBeInTheDocument();
-
-    rerender(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="reticulum" reticulumSidecarReady />
-      </ToastProvider>,
-    );
-
-    fireEvent.click(screen.getByText('Destructive actions'));
-    expect(await screen.findByRole('button', { name: /Clear All Contacts \(0\)/i })).toBeEnabled();
-  });
-
-  it('disables clear-all contacts when the sidecar is not ready', async () => {
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="reticulum" reticulumSidecarReady={false} />
-      </ToastProvider>,
-    );
-
-    fireEvent.click(screen.getByText('Destructive actions'));
-    expect(await screen.findByRole('button', { name: /Clear All Contacts \(0\)/i })).toBeDisabled();
   });
 });
 
@@ -642,76 +526,6 @@ describe('AppPanel: Clear All Nodes success toast', () => {
       await screen.findByText('Clear All Nodes (3) completed successfully.'),
     ).toBeInTheDocument();
     expect(window.electronAPI.db.clearNodes).toHaveBeenCalled();
-  });
-});
-
-describe('AppPanel: Protocols section (#1124)', () => {
-  const defaultProps = {
-    protocol: 'meshtastic' as const,
-    nodeCount: 0,
-    messageCount: 0,
-    channels: [] as { index: number; name: string }[],
-    myNodeNum: null as number | null,
-    onLocationFilterChange: vi.fn(),
-  };
-
-  beforeEach(() => {
-    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
-    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
-  });
-
-  it('enables every protocol by default', () => {
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} />
-      </ToastProvider>,
-    );
-    for (const name of ['Meshtastic', 'MeshCore', 'Reticulum']) {
-      const box = screen.getByRole('checkbox', { name: `Enable ${name}` });
-      expect(box).toBeChecked();
-      expect(box).toBeEnabled();
-    }
-  });
-
-  it('persists hidden protocols, reports them, and keeps the last one enabled', async () => {
-    const onHiddenProtocolsChange = vi.fn();
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} onHiddenProtocolsChange={onHiddenProtocolsChange} />
-      </ToastProvider>,
-    );
-    expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith([]);
-
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Enable MeshCore' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Enable Reticulum' }));
-
-    await waitFor(() => {
-      expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith(['meshcore', 'reticulum']);
-    });
-    const stored = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as {
-      hiddenProtocols?: string[];
-    };
-    expect(stored.hiddenProtocols).toEqual(['meshcore', 'reticulum']);
-
-    const last = screen.getByRole('checkbox', { name: 'Enable Meshtastic' });
-    expect(last).toBeChecked();
-    expect(last).toBeDisabled();
-  });
-
-  it('has no axe violations with one protocol left enabled', async () => {
-    localStorage.setItem(
-      APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ hiddenProtocols: ['meshcore', 'reticulum'] }),
-    );
-    const { container } = render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} />
-      </ToastProvider>,
-    );
-    await act(async () => {});
-    hydrateAxeThemeColors(container);
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
   });
 });
 

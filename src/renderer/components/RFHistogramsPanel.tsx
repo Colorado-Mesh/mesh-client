@@ -68,27 +68,27 @@ function HistogramChart({
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#424242" />
         <XAxis
           dataKey="label"
-          tick={{ fill: '#93a0b7', fontSize: 11 }}
+          tick={{ fill: '#a3a3a3', fontSize: 11 }}
           label={{
             value: xlabel,
             position: 'insideBottom',
             offset: -12,
-            fill: '#93a0b7',
+            fill: '#a3a3a3',
             fontSize: 11,
           }}
         />
-        <YAxis tick={{ fill: '#93a0b7', fontSize: 11 }} allowDecimals={false} width={32} />
+        <YAxis tick={{ fill: '#a3a3a3', fontSize: 11 }} allowDecimals={false} width={32} />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#212d40',
-            border: '1px solid #364156',
+            backgroundColor: '#333333',
+            border: '1px solid #424242',
             borderRadius: 6,
           }}
-          labelStyle={{ color: '#e3e8f0' }}
-          itemStyle={{ color: '#93a0b7' }}
+          labelStyle={{ color: '#e0e0e0' }}
+          itemStyle={{ color: '#a3a3a3' }}
           formatter={(value) => [value as number, 'Nodes']}
         />
         <Bar dataKey="count" fill={color} radius={[3, 3, 0, 0]} />

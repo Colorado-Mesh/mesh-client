@@ -1,14 +1,15 @@
-import type { RrcChatMessage } from '@/shared/rrc-types';
-
 import type { AudibleChatNotification } from './chatUnreadCounts';
 import { chatNotificationTag, showChatDesktopNotification } from './desktopNotification';
 import i18n from './i18n';
 import type { MeshProtocol } from './types';
 
 /** Where a desktop chat notification click should land. */
-export type ChatNotificationTarget =
-  | { kind: 'chat'; protocol: MeshProtocol; dmPeer: number | null; channel: number | null }
-  | { kind: 'rrc'; room: string; hubHash: string | null };
+export interface ChatNotificationTarget {
+  kind: 'chat';
+  protocol: MeshProtocol;
+  dmPeer: number | null;
+  channel: number | null;
+}
 
 /** Map a muted-view key (`dm:<peer>` / `ch:<index>`) to a chat navigation target. */
 export function chatNotificationTargetFromViewKey(
@@ -26,25 +27,6 @@ export function chatNotificationTargetFromViewKey(
     dmPeer: kind === 'dm' && valid ? value : null,
     channel: kind === 'ch' && valid ? value : null,
   };
-}
-
-export interface RrcNotificationFocusActions {
-  setFocusedHub: (hash: string | null) => void;
-  setActiveRoom: (room: string | null, hubHash?: string) => void;
-}
-
-/**
- * Land on the hub the line arrived on, not whichever hub is focused when the user clicks
- * (it may have changed while the window was in the background).
- */
-export function focusRrcNotificationTarget(
-  target: Extract<ChatNotificationTarget, { kind: 'rrc' }>,
-  rrc: RrcNotificationFocusActions,
-): void {
-  if (target.hubHash) rrc.setFocusedHub(target.hubHash);
-  if (target.room === '[hub]') return;
-  if (target.hubHash) rrc.setActiveRoom(target.room, target.hubHash);
-  else rrc.setActiveRoom(target.room);
 }
 
 function openFromNotification(
@@ -77,32 +59,11 @@ export function notifyInactiveChat({
   const target = chatNotificationTargetFromViewKey(protocol, viewKey);
   showChatDesktopNotification({
     title:
-      target.kind === 'chat' && target.dmPeer != null
+      target.dmPeer != null
         ? i18n.t('chatPanel.notificationDmTitle', { sender })
         : i18n.t('chatPanel.notificationMessageTitle', { sender }),
     body: message.payload,
     tag: chatNotificationTag(protocol, viewKey),
-    onClick: () => {
-      openFromNotification(target, onOpen);
-    },
-  });
-}
-
-export interface NotifyInactiveRrcArgs {
-  message: RrcChatMessage;
-  room: string;
-  hubHash: string | null;
-  onOpen: (target: ChatNotificationTarget) => void;
-}
-
-/** Silent OS notification for an RRC line; click focuses the window and opens the room. */
-export function notifyInactiveRrc({ message, room, hubHash, onOpen }: NotifyInactiveRrcArgs): void {
-  const sender = message.nickname || message.sender_hash?.slice(0, 12) || '?';
-  const target: ChatNotificationTarget = { kind: 'rrc', room, hubHash };
-  showChatDesktopNotification({
-    title: i18n.t('chatPanel.notificationRrcTitle', { sender, room }),
-    body: message.body,
-    tag: chatNotificationTag('rrc', `${hubHash ?? ''}:${room}`),
     onClick: () => {
       openFromNotification(target, onOpen);
     },

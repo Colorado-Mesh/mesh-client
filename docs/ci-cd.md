@@ -150,9 +150,9 @@ A matrix builds **x86_64** and **aarch64** in parallel. Both use the same privil
 
 1. **`schema-release-compare`** — same compare as Build Binaries / Release; uploads `READ-ME-FIRST-flatpak.md` and feeds `write-schema-upgrade-notice.mjs` so bumped schemas embed `SCHEMA-UPGRADE.txt` under Flatpak `resources/`
 2. Builds the Reticulum sidecar on bare Ubuntu runners, then generates `flatpak/generated-sources.json` via `flatpak-node-generator`
-3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `org.coloradomesh.MeshClient.yml` with offline pnpm sources
-4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `org.coloradomesh.MeshClient-run{N}.flatpak`
-5. Uploads `org.coloradomesh.MeshClient.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
+3. Stamps CI build info (`test` on dispatch / `release` on tag), builds from `io.github.charlottemeshtastic.MeshHub.yml` with offline pnpm sources
+4. Smoke-installs the unstamped local bundle; on **dispatch only**, renames to `io.github.charlottemeshtastic.MeshHub-run{N}.flatpak`
+5. Uploads `io.github.charlottemeshtastic.MeshHub.flatpak-{x86_64,aarch64}.flatpak` artifacts (file basename stamped on test builds) plus per-arch `flatpak-schema-warning-*`
 
 On **version tag pushes**, a `publish` job waits for the Electron `prepare-github-release` draft (`ci-wait-github-draft-release.mjs`), then attaches both **clean-named** bundles with `ci-upload-release-assets.mjs` (never creates a release). aarch64 is the primary ARM Linux install path (release `build.yaml` only produces x86_64 AppImage/deb/rpm).
 
@@ -369,7 +369,7 @@ Canonical JSON lives at [`.github/rulesets/main-merge-queue.json`](../.github/ru
 
 ```bash
 # Update live ruleset from canonical JSON
-gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
+gh api repos/charlottemeshtastic/mesh-client/rulesets/20821455 \
   --method PUT \
   --input .github/rulesets/main-merge-queue.json
 ```
@@ -466,8 +466,8 @@ To test sidecar staging or compare cold and warm cache timings without building 
 | Workflow       | When                       | Filename stamp                                                                                                                                                                                                                            |
 | -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client-Setup-5.26.0-run214.exe`) |
-| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `org.coloradomesh.MeshClient-run{N}.flatpak`, then upload                                                                                                                                                   |
-| `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak` (no `-run{N}`)                                                                                                                                                                                |
+| `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `io.github.charlottemeshtastic.MeshHub-run{N}.flatpak`, then upload                                                                                                                                         |
+| `flatpak.yaml` | tag `v*` (release publish) | Clean `io.github.charlottemeshtastic.MeshHub.flatpak` (no `-run{N}`)                                                                                                                                                                      |
 | `release.yaml` | tag publish                | Clean electron-builder names (no rename step)                                                                                                                                                                                             |
 
 `packaging-smoke` on Build Binaries downloads **stamped** names (Windows Setup matcher accepts default or `-run{N}`). Flatpak smoke always uses the unstamped local path **before** rename. Manual Flatpak runs use Actions run title **`Build Flatpak (no release)`**; tag runs use **`Build Flatpak`**.

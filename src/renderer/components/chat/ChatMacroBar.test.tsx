@@ -81,7 +81,7 @@ function renderComposer(onSendChunk = vi.fn().mockResolvedValue(undefined)) {
     <>
       <ShortcutHost />
       <ChatComposer
-        protocol="reticulum"
+        protocol="meshtastic"
         viewKey="dm:abc"
         isConnected
         allowOutbox={false}

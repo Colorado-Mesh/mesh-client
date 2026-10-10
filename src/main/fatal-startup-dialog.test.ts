@@ -31,7 +31,7 @@ describe('formatDatabaseSchemaTooNewMessage', () => {
     expect(message).toContain('1.2.3-test');
     expect(message).toContain('schema version 36');
     expect(message).toContain('/tmp/mesh-client/mesh-client.log');
-    expect(message).toContain('latest Mesh-Client release');
+    expect(message).toContain('latest Mesh Hub release');
   });
 });
 

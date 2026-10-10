@@ -12,7 +12,7 @@ describe('AppAboutSection', () => {
 
     expect(container.querySelector('svg.cm-brand-mark')).not.toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getAllByRole('link')).toHaveLength(3);
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('has no axe violations', async () => {

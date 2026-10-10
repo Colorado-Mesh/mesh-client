@@ -37,11 +37,6 @@ import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } f
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
 import { getProtocolRegistration } from './protocols/protocolRegistry';
-import {
-  buildReticulumDiagnosticSnapshotSync,
-  fetchReticulumDiagnosticSnapshot,
-  type ReticulumDiagnosticSidecarSnapshot,
-} from './reticulum/reticulumDiagnosticSnapshot';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordToMeshNode } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshProtocol, MQTTStatus } from './types';
@@ -145,12 +140,7 @@ export type DebugSnapshotWarningCode =
   | 'chatPanelFrozen'
   | 'connectedNoPrimaryMessages'
   | 'windowHiddenOnChat'
-  | 'lastReadSuppressesChannelUnread'
-  | 'sidecarNotRunning';
-
-export interface DebugReticulumSnapshot extends ReticulumDiagnosticSidecarSnapshot {
-  bucket: DebugIdentityBucketSnapshot;
-}
+  | 'lastReadSuppressesChannelUnread';
 
 export interface DebugSnapshotWarning {
   code: DebugSnapshotWarningCode;
@@ -164,7 +154,6 @@ export interface DebugSnapshot {
   sessionSummary: {
     meshtastic: DebugSessionSummary;
     meshcore: DebugSessionSummary;
-    reticulum: DebugSessionSummary;
   };
   activeTab: DebugActiveTabSummary;
   storedProtocol: MeshProtocol;
@@ -172,7 +161,6 @@ export interface DebugSnapshot {
   ui: ReturnType<typeof getDebugSnapshotUiContext>;
   meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
-  reticulum: DebugReticulumSnapshot;
   /** Main-process uptime / heartbeat age (export path only). */
   mainLiveness?: RendererLivenessSnapshot | null;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
@@ -524,43 +512,11 @@ function analyzeProtocolBucket(
   return warnings;
 }
 
-function analyzeReticulumSnapshot(reticulum: DebugReticulumSnapshot): DebugSnapshotWarning[] {
-  const warnings = analyzeProtocolBucket('reticulum', reticulum.bucket);
-  const identityConfigured = reticulum.stack?.identityStatus?.configured === true;
-  const hasLocalData =
-    reticulum.bucket.hydrationSlotMessageCount > 0 || reticulum.bucket.uiStoreMessageCount > 0;
-  const expectsSidecar = identityConfigured || hasLocalData || reticulum.bucket.liveSession;
-
-  if (!reticulum.sidecar.running && expectsSidecar) {
-    warnings.push({
-      code: 'sidecarNotRunning',
-      protocol: 'reticulum',
-      detail: reticulum.sidecar.lastError ?? 'Reticulum sidecar is not running',
-    });
-  }
-
-  return warnings;
-}
-
-function buildReticulumSnapshot(
-  sidecarSnapshot: ReticulumDiagnosticSidecarSnapshot,
-): DebugReticulumSnapshot {
-  return {
-    bucket: buildProtocolBucketSnapshot('reticulum'),
-    ...sidecarSnapshot,
-  };
-}
-
 function activeTabSummaryForProtocol(
   protocol: MeshProtocol,
-  snap: Pick<DebugSnapshot, 'meshtastic' | 'meshcore' | 'reticulum'>,
+  snap: Pick<DebugSnapshot, 'meshtastic' | 'meshcore'>,
 ): DebugActiveTabSummary {
-  const bucket =
-    protocol === 'reticulum'
-      ? snap.reticulum.bucket
-      : protocol === 'meshcore'
-        ? snap.meshcore
-        : snap.meshtastic;
+  const bucket = protocol === 'meshcore' ? snap.meshcore : snap.meshtastic;
   return {
     protocol,
     uiStoreIdentityId: bucket.uiStoreIdentityId,
@@ -581,12 +537,9 @@ function buildMeshtasticBucketSnapshot(): DebugMeshtasticBucketSnapshot {
   };
 }
 
-function buildDebugSnapshotBase(
-  reticulumSidecar: ReticulumDiagnosticSidecarSnapshot,
-): Omit<DebugSnapshot, 'warnings'> {
+function buildDebugSnapshotBase(): Omit<DebugSnapshot, 'warnings'> {
   const meshtastic = buildMeshtasticBucketSnapshot();
   const meshcore = buildProtocolBucketSnapshot('meshcore');
-  const reticulum = buildReticulumSnapshot(reticulumSidecar);
   const ui = getDebugSnapshotUiContext();
   const storedProtocol = getStoredMeshProtocol();
 
@@ -596,19 +549,16 @@ function buildDebugSnapshotBase(
     sessionSummary: {
       meshtastic: toSessionSummary(meshtastic),
       meshcore: toSessionSummary(meshcore),
-      reticulum: toSessionSummary(reticulum.bucket),
     },
     activeTab: activeTabSummaryForProtocol(ui.activeProtocol, {
       meshtastic,
       meshcore,
-      reticulum,
     }),
     storedProtocol,
     windowHidden: typeof document !== 'undefined' ? document.hidden : false,
     ui,
     meshtastic,
     meshcore,
-    reticulum,
   };
 }
 
@@ -619,7 +569,6 @@ export function analyzeDebugSnapshot(
   const warnings: DebugSnapshotWarning[] = [
     ...analyzeProtocolBucket('meshtastic', snap.meshtastic),
     ...analyzeProtocolBucket('meshcore', snap.meshcore),
-    ...analyzeReticulumSnapshot(snap.reticulum),
   ];
 
   const { ui } = snap;
@@ -644,18 +593,17 @@ export function analyzeDebugSnapshot(
   return warnings;
 }
 
-/** Renderer-side support snapshot (sync — sidecar APIs omitted; use buildDebugSnapshotAsync for exports). */
+/** Renderer-side support snapshot (sync — use buildDebugSnapshotAsync for exports). */
 export function buildDebugSnapshot(): DebugSnapshot {
-  const base = buildDebugSnapshotBase(buildReticulumDiagnosticSnapshotSync());
+  const base = buildDebugSnapshotBase();
   return {
     ...base,
     warnings: analyzeDebugSnapshot(base),
   };
 }
 
-/** Full support snapshot including live Reticulum sidecar state for GitHub/developer bundles. */
+/** Full support snapshot for GitHub/developer bundles. */
 export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
-  const reticulumSidecar = await fetchReticulumDiagnosticSnapshot();
   try {
     const map = await window.electronAPI.mqtt.getChannelNameToIndex();
     setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
@@ -668,7 +616,7 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   } catch (e: unknown) {
     console.warn('[debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
   }
-  const base = buildDebugSnapshotBase(reticulumSidecar);
+  const base = buildDebugSnapshotBase();
   const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
   return {
     ...base,

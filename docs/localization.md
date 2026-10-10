@@ -47,8 +47,8 @@ Most translations in Mesh-Client are initially machine-generated using [MyMemory
 
 If you find a mistranslation or an awkward phrasing:
 
-1. Go to the [Mesh-Client Issues](https://github.com/Colorado-Mesh/mesh-client/issues) page.
-2. Open a new [Translation Error](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) issue.
+1. Go to the [Mesh-Client Issues](https://github.com/charlottemeshtastic/mesh-client/issues) page.
+2. Open a new [Translation Error](https://github.com/charlottemeshtastic/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) issue.
 3. Provide the current text and your suggested correction.
 
 ### Adding a New Language
@@ -56,7 +56,7 @@ If you find a mistranslation or an awkward phrasing:
 If you would like to help us add support for a new language:
 
 1. Check existing issues to see if someone is already working on it.
-2. Open a [Feature Request](https://github.com/Colorado-Mesh/mesh-client/issues/new?template=feature_request.md) specifically for the new language.
+2. Open a [Feature Request](https://github.com/charlottemeshtastic/mesh-client/issues/new?template=feature_request.md) specifically for the new language.
 3. We will help you set up the initial locale files and guide you through the translation process.
 
 ---

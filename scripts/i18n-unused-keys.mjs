@@ -32,50 +32,13 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'appPanel.themePreset.', leafKeys: true },
   { prefix: 'diagnosticsPanel.foreignLoraProximitySnippet.', leafKeys: true },
   { prefix: 'diagnosticsPanel.routingPort.', leafKeys: true },
-  { prefix: 'diagnosticsPanel.reticulum.action.', leafKeys: true },
-  { prefix: 'diagnosticsPanel.reticulum.audit.', leafKeys: true },
-  { prefix: 'diagnosticsPanel.reticulum.remedy.', leafKeys: true },
-  { prefix: 'diagnosticsPanel.reticulum.runtime.', leafKeys: true },
-  { prefix: 'connectionPanel.reticulumInterfaces.status.', leafKeys: true },
-  { prefix: 'connectionPanel.reticulumInterfaces.modeOption.', leafKeys: true },
-  { prefix: 'connectionPanel.reticulumInterfaces.modeDescriptions.', leafKeys: true },
-  { prefix: 'connectionPanel.reticulumInterfaces.defaultHubRegion.', leafKeys: true },
-  // Purpose text and generic form fields are keyed off the shared interface
-  // catalog (src/shared/reticulumInterfaceCatalog.json), so no literal appears in src/.
-  // `purpose.` is alwaysActive: the key is composed in reticulumInterfaceHelp.ts and
-  // handed to callers as a value, so there is no `t(...)` template site to detect.
-  {
-    prefix: 'connectionPanel.reticulumInterfaces.purpose.',
-    leafKeys: true,
-    alwaysActive: true,
-  },
-  { prefix: 'connectionPanel.reticulumInterfaces.field.', leafKeys: true },
-  { prefix: 'connectionPanel.reticulumInterfaces.fieldOption.', leafKeys: true },
   // Composed in gattBleErrorI18nKey() then passed to t(key) — no template site to detect.
   {
     prefix: 'connectionPanel.errors.ble.',
     leafKeys: true,
     alwaysActive: true,
   },
-  { prefix: 'reticulumPropagation.nodeStatus.', leafKeys: true },
   { prefix: 'connectionPanel.bleOwner.', leafKeys: true },
-  { prefix: 'reticulumMap.filter.', leafKeys: true },
-  { prefix: 'reticulumMap.empty.', leafKeys: true },
-  { prefix: 'rrc.status.', leafKeys: true },
-  { prefix: 'rrc.slash.', leafKeys: true },
-  { prefix: 'reticulumRemote.sections.', leafKeys: true },
-  { prefix: 'reticulumRemote.pathCapability.speed.', leafKeys: true },
-  { prefix: 'reticulumRemote.shell.status.', leafKeys: true },
-  { prefix: 'reticulumRemote.transfer.kind.', leafKeys: true },
-  { prefix: 'reticulumRemote.transfer.status.', leafKeys: true },
-  { prefix: 'reticulumRemote.settings.inboundMode.', leafKeys: true },
-  { prefix: 'reticulumRemote.settings.decision.', leafKeys: true },
-  { prefix: 'gamesPanel.apps.', leafKeys: true },
-  { prefix: 'gamesPanel.chess.promoteTo.', leafKeys: true },
-  { prefix: 'gamesPanel.delivery.', leafKeys: true },
-  { prefix: 'gamesPanel.status.', leafKeys: true },
-  { prefix: 'gamesPanel.filters.', leafKeys: true },
-  { prefix: 'gamesPanel.chess.pieceNames.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {
@@ -118,14 +81,7 @@ function collectDynamicTabKeys(enKeys) {
   const slotMatch = src.match(/export const TAB_SLOT_IDS = \[([\s\S]*?)\] as const/);
   if (!slotMatch) return new Set();
   const slots = [...slotMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1].toLowerCase());
-  const used = new Set([
-    'tabs.nomadnetwork',
-    'tabs.contacts',
-    'tabs.peers',
-    'tabs.repeaters',
-    'tabs.rooms',
-    'tabs.network',
-  ]);
+  const used = new Set(['tabs.contacts', 'tabs.repeaters', 'tabs.rooms', 'tabs.network']);
   for (const slot of slots) {
     const key = `tabs.${slot}`;
     if (enKeys.has(key)) used.add(key);

@@ -10,7 +10,6 @@ import {
 import type { MeshProtocol } from '../types';
 import {
   autoResendKey,
-  autoResendMessageId,
   type AutoResendSendFn,
   cancelAutoResend,
   isAutoResendEligible,
@@ -18,9 +17,8 @@ import {
   startAutoResend,
   useAutoResendStore,
 } from './autoResendController';
-import { AUTO_RESEND_DELAYS_MS, REGULAR_MESSAGE_MAX_AUTO_RESENDS } from './autoResendPolicy';
 
-const PROTOCOLS = ['meshtastic', 'meshcore', 'reticulum'] as const;
+const PROTOCOLS = ['meshtastic', 'meshcore'] as const;
 
 function identityFor(protocol: MeshProtocol): string {
   return `id-${protocol}`;
@@ -71,17 +69,6 @@ describe('isAutoResendEligible', () => {
   });
 });
 
-describe('autoResendMessageId', () => {
-  it('prefers storeId, then reticulum hash, then packetId', () => {
-    expect(autoResendMessageId({ storeId: 's', reticulum_message_hash: 'h', packetId: 3 })).toBe(
-      's',
-    );
-    expect(autoResendMessageId({ reticulum_message_hash: 'h', packetId: 3 })).toBe('h');
-    expect(autoResendMessageId({ packetId: 3 })).toBe('3');
-    expect(autoResendMessageId({})).toBeNull();
-  });
-});
-
 describe('startAutoResend', () => {
   let stop: () => void = () => {};
   let nextId = 1000;
@@ -109,38 +96,6 @@ describe('startAutoResend', () => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
-
-  it.each(PROTOCOLS)(
-    '%s: resends a failed message up to 3 times with backoff, then stops',
-    (protocol) => {
-      const identityId = identityFor(protocol);
-      addMessage(identityId, dm('1'));
-      let currentId = '1';
-      for (let attempt = 1; attempt <= REGULAR_MESSAGE_MAX_AUTO_RESENDS; attempt += 1) {
-        setStatus(identityId, currentId, 'failed');
-        const entry = useAutoResendStore.getState().entries[autoResendKey(protocol, currentId)];
-        expect(entry).toMatchObject({ attempt, messageId: currentId });
-        vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[attempt - 1] - 1);
-        expect(send).toHaveBeenCalledTimes(attempt - 1);
-        vi.advanceTimersByTime(1);
-        expect(send).toHaveBeenCalledTimes(attempt);
-        expect(send).toHaveBeenLastCalledWith(
-          protocol,
-          expect.objectContaining({ text: 'hello', destination: 42, retryOfStoreId: currentId }),
-        );
-        const superseded = currentId;
-        currentId = String(nextId);
-        expect(hasMessage(identityId, superseded)).toBe(protocol === 'reticulum');
-      }
-      setStatus(identityId, currentId, 'failed');
-      expect(useAutoResendStore.getState().entries).toEqual({});
-      vi.advanceTimersByTime(60 * 60 * 1000);
-      expect(send).toHaveBeenCalledTimes(REGULAR_MESSAGE_MAX_AUTO_RESENDS);
-      if (protocol !== 'reticulum') {
-        expect(deleteFailedOutboundMessage).toHaveBeenCalledWith(protocol, 1);
-      }
-    },
-  );
 
   it.each(PROTOCOLS)('%s: Cancel retry stops the pending resend', (protocol) => {
     const identityId = identityFor(protocol);

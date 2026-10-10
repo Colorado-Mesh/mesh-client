@@ -175,7 +175,6 @@ function fireAlert(
       channel: msg.channelIndex,
       to: msg.to,
       sender_id: msg.from,
-      reticulum_sender_hash: msg.reticulumSenderHash,
     },
     slice.protocol,
     slice.ownNodeIds,
@@ -333,7 +332,6 @@ async function processNewMessages(
 export function useMecpAlertWatcher(
   meshtastic: MecpWatcherProtocolSlice,
   meshcore: MecpWatcherProtocolSlice,
-  reticulum: MecpWatcherProtocolSlice,
 ): void {
   const seenRef = useRef<Set<string> | null>(null);
   const alertedRef = useRef<Set<string>>(new Set());
@@ -345,7 +343,7 @@ export function useMecpAlertWatcher(
   useEffect(() => {
     if (seededRef.current) return;
     const seed = new Set<string>();
-    for (const slice of [meshtastic, meshcore, reticulum]) {
+    for (const slice of [meshtastic, meshcore]) {
       for (const msg of slice.messages) {
         seed.add(messageDedupKey(slice.protocol, msg.id));
         seedIncidentFromHistory(slice, msg);
@@ -353,7 +351,7 @@ export function useMecpAlertWatcher(
     }
     seenRef.current = seed;
     seededRef.current = true;
-  }, [meshtastic, meshcore, reticulum]);
+  }, [meshtastic, meshcore]);
 
   useEffect(() => {
     const seen = seenRef.current;
@@ -363,7 +361,6 @@ export function useMecpAlertWatcher(
     void (async () => {
       await processNewMessages(seen, alerted, inFlight, meshtastic);
       await processNewMessages(seen, alerted, inFlight, meshcore);
-      await processNewMessages(seen, alerted, inFlight, reticulum);
     })();
-  }, [meshtastic.messages, meshcore.messages, reticulum.messages, meshtastic, meshcore, reticulum]);
+  }, [meshtastic.messages, meshcore.messages, meshtastic, meshcore]);
 }

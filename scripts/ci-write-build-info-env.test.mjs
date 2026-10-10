@@ -27,7 +27,7 @@ describe('buildMeshClientBuildInfoPayload', () => {
         runNumber: '1842',
         sha: 'abcdef0123456789',
         serverUrl: 'https://github.com',
-        repository: 'Colorado-Mesh/mesh-client',
+        repository: 'charlottemeshtastic/mesh-client',
       }),
     ).toEqual({
       channel: 'test',
@@ -35,7 +35,7 @@ describe('buildMeshClientBuildInfoPayload', () => {
       runId: '123',
       runNumber: 1842,
       sha: 'abcdef0',
-      runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/123',
+      runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/123',
     });
   });
 
@@ -47,12 +47,12 @@ describe('buildMeshClientBuildInfoPayload', () => {
         runId: '9',
         runNumber: 1,
         sha: 'deadbeef',
-        repository: 'Colorado-Mesh/mesh-client',
+        repository: 'charlottemeshtastic/mesh-client',
       }),
     ).toMatchObject({
       channel: 'release',
       tag: 'v5.26.0',
-      runUrl: 'https://github.com/Colorado-Mesh/mesh-client/actions/runs/9',
+      runUrl: 'https://github.com/charlottemeshtastic/mesh-client/actions/runs/9',
     });
   });
 
@@ -96,7 +96,7 @@ describe('writeBuildInfoEnv', () => {
       GITHUB_RUN_NUMBER: '7',
       GITHUB_SHA: 'abcdef0123456789',
       GITHUB_SERVER_URL: 'https://github.com',
-      GITHUB_REPOSITORY: 'Colorado-Mesh/mesh-client',
+      GITHUB_REPOSITORY: 'charlottemeshtastic/mesh-client',
     });
 
     expect(payload.channel).toBe('test');
@@ -120,7 +120,7 @@ describe('writeBuildInfoEnv', () => {
         GITHUB_RUN_ID: '1',
         GITHUB_RUN_NUMBER: '1',
         GITHUB_SHA: 'abc',
-        GITHUB_REPOSITORY: 'Colorado-Mesh/mesh-client',
+        GITHUB_REPOSITORY: 'charlottemeshtastic/mesh-client',
       },
       { packageJsonPath: pkgPath },
     );

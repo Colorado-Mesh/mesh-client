@@ -1,22 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
-import { ColoradoMeshMark } from './ColoradoMeshMark';
+import { MeshHubMark } from './MeshHubMark';
 
 const COMMUNITY_LINKS = [
   {
-    href: 'https://discord.com/invite/McChKR5NpS',
-    labelKey: 'common.discord',
-    titleKey: 'app.footerDiscordTitle',
-  },
-  {
-    href: 'https://github.com/Colorado-Mesh/mesh-client',
+    href: 'https://github.com/charlottemeshtastic/mesh-client',
     labelKey: 'common.github',
     titleKey: 'app.footerGithubTitle',
-  },
-  {
-    href: 'https://coloradomesh.org/',
-    labelKey: 'common.website',
-    titleKey: 'app.footerWebsiteTitle',
   },
 ] as const;
 
@@ -33,7 +23,7 @@ export function AppAboutSection() {
       </h3>
       <div className="flex items-center gap-4">
         <div className="border-ink-800 flex shrink-0 items-center justify-center rounded-lg border p-2">
-          <ColoradoMeshMark />
+          <MeshHubMark />
         </div>
         <div className="min-w-0 space-y-1 text-sm">
           <p className="text-ink-200 font-semibold">{t('app.brandName')}</p>

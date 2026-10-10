@@ -36,7 +36,7 @@ jobs:
           echo "include=$include" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Stage Reticulum ${{ matrix.platform }} ${{ matrix.arch }}
+    name: Stage Bluetooth helper ${{ matrix.platform }} ${{ matrix.arch }}
     needs: matrix
     runs-on: ${{ matrix.os }}
     strategy:
@@ -58,29 +58,26 @@ jobs:
       # Swatinem/rust-cache v2.9.2; isolate packaging from the validation workflow.
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
-          workspaces: reticulum-sidecar -> target
+          workspaces: ble-sidecar -> target
           key: packaging-${{ matrix.target }}
           cache-bin: false
           cache-workspace-crates: false
       # Each OS runs host tests once, in its native architecture job.
       - name: Build and stage sidecar
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
         run: >-
-          node scripts/build-reticulum-sidecar-release.mjs
+          node scripts/build-ble-sidecar-release.mjs
           --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
           ${{ !matrix.run_tests && '--skip-tests' || '' }}
-      - name: Archive sidecar and source revisions
+      - name: Archive sidecar
         shell: bash
         env:
           SIDECAR: ${{ matrix.platform }}-${{ matrix.arch }}
         run: |
-          cp .rsstack/RESOLVED_SHAS.txt "resources/reticulum-sidecar/staged/$SIDECAR/RESOLVED_SHAS.txt"
-          tar -cf "sidecar-$SIDECAR.tar" -C resources/reticulum-sidecar/staged "$SIDECAR"
+          tar -cf "sidecar-$SIDECAR.tar" -C resources/ble-sidecar/staged "$SIDECAR"
       - name: Upload staged sidecar
         uses: actions/upload-artifact@v7
         with:
-          name: ci-reticulum-staged-${{ matrix.platform }}-${{ matrix.arch }}
+          name: ci-ble-staged-${{ matrix.platform }}-${{ matrix.arch }}
           path: sidecar-${{ matrix.platform }}-${{ matrix.arch }}.tar
           if-no-files-found: error
           retention-days: 7

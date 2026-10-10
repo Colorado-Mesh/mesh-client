@@ -7,9 +7,7 @@ import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types'
 
 import {
   type BeaconCancelDeps,
-  beaconCancelToNodeForMessage,
   resetBeaconCancelInFlightForTests,
-  resolveBeaconCancelRoute,
   resolveIncidentWithBeaconCancel,
   shouldTransmitBeaconCancel,
 } from './beaconCancel';
@@ -145,41 +143,6 @@ describe('resolveIncidentWithBeaconCancel', () => {
     warn.restore();
   });
 
-  it('does not queue a DM-only cancel that has no destination', async () => {
-    const incident = ingest('MECP/0/B01', '42', {
-      localOrigin: true,
-      protocol: 'reticulum',
-    });
-    const warn = mockConsoleWarn();
-    const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
-    await expect(
-      resolveIncidentWithBeaconCancel(incident, new Set(), deps(queueOutbox), () => true),
-    ).resolves.toBe('cancel-failed');
-    expect(queueOutbox).not.toHaveBeenCalled();
-    expect(useIncidentStore.getState().incidents[incident.id].status).toBe('open');
-    warn.restore();
-  });
-
-  it('repeats a unicast destination on the cancel', async () => {
-    const incident = ingest('MECP/0/B01', '42', {
-      localOrigin: true,
-      protocol: 'reticulum',
-      beaconCancelToNode: 7,
-    });
-    const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
-    await resolveIncidentWithBeaconCancel(incident, new Set(), deps(queueOutbox), () => true);
-    expect(queueOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        protocol: 'reticulum',
-        viewKey: 'dm:7',
-        toNode: 7,
-        channel: 2,
-        payload: 'MECP/0/B03',
-        priority: 'emergency',
-      }),
-    );
-  });
-
   it("receiving a B03 still clears the sender's beacon without resolving it", () => {
     const incident = ingest('MECP/0/B01 M01', '7');
     expect(incident.beaconActive).toBe(true);
@@ -209,26 +172,5 @@ describe('resolveIncidentWithBeaconCancel', () => {
       receivedAt: 3_000,
     });
     expect(useIncidentStore.getState().incidents[other.id].beaconActive).toBe(true);
-  });
-});
-
-describe('beacon cancel routing helpers', () => {
-  it('keeps channel floods as broadcasts and repeats unicast destinations', () => {
-    expect(beaconCancelToNodeForMessage('meshtastic', 0xffffffff)).toBeNull();
-    expect(beaconCancelToNodeForMessage('meshcore', 0)).toBeNull();
-    expect(beaconCancelToNodeForMessage('meshtastic', 15)).toBe(15);
-    expect(beaconCancelToNodeForMessage('reticulum', 0)).toBeNull();
-    expect(beaconCancelToNodeForMessage('reticulum', 9)).toBe(9);
-    expect(
-      resolveBeaconCancelRoute(
-        {
-          protocol: 'meshcore',
-          protocolsSeen: ['meshtastic', 'meshcore'],
-          channel: '4',
-          beaconCancelToNode: undefined,
-        },
-        () => false,
-      ),
-    ).toEqual({ protocol: 'meshtastic', channel: 4, toNode: null, viewKey: 'ch:4' });
   });
 });

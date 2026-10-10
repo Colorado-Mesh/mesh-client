@@ -48,13 +48,12 @@ export function dismissedDmTabsStorageKey(protocol: MeshProtocol): string {
  */
 export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   const key = openDmTabsStorageKey(protocol);
-  const normalizeTabId = (id: number): number => (protocol === 'reticulum' ? id >>> 0 : id);
   const normalizeList = (parsed: number[]): number[] => {
     const out: number[] = [];
     const seen = new Set<number>();
     for (const id of parsed) {
       if (typeof id !== 'number' || !Number.isFinite(id)) continue;
-      const normalized = normalizeTabId(id);
+      const normalized = id;
       if (seen.has(normalized)) continue;
       seen.add(normalized);
       out.push(normalized);
@@ -88,10 +87,7 @@ export function loadOpenDmTabsInitial(protocol: MeshProtocol): number[] {
   return [];
 }
 
-/**
- * Last-focused DM node id for this protocol (null if missing/invalid).
- * Reticulum normalizes with `>>> 0` like open tabs.
- */
+/** Last-focused DM node id for this protocol (null if missing/invalid). */
 export function loadActiveDmInitial(protocol: MeshProtocol): number | null {
   const key = activeDmStorageKey(protocol);
   try {
@@ -99,7 +95,7 @@ export function loadActiveDmInitial(protocol: MeshProtocol): number | null {
     if (raw == null || raw === '') return null;
     const parsed = Number(raw);
     if (!Number.isFinite(parsed)) return null;
-    return protocol === 'reticulum' ? parsed >>> 0 : parsed;
+    return parsed;
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] loadActiveDmInitial failed ' + errLikeToLogString(e));
     return null;
@@ -114,8 +110,7 @@ export function saveActiveDm(protocol: MeshProtocol, nodeId: number | null): voi
       localStorage.removeItem(key);
       return;
     }
-    const normalized = protocol === 'reticulum' ? nodeId >>> 0 : nodeId;
-    localStorage.setItem(key, String(normalized));
+    localStorage.setItem(key, String(nodeId));
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] saveActiveDm failed ' + errLikeToLogString(e));
   }
@@ -576,7 +571,6 @@ export function subscribePersistedLastRead(listener: (protocol: MeshProtocol) =>
 }
 
 const MESHCORE_LAST_READ_SANITIZED_KEY = 'mesh-client:lastReadSanitized:meshcore';
-const RETICULUM_LAST_READ_SANITIZED_KEY = 'mesh-client:lastReadSanitized:reticulum';
 
 export function roomsLastReadStorageKey(): string {
   return 'mesh-client:roomsLastRead:meshcore';
@@ -688,28 +682,6 @@ export function getSanitizedMeshcoreChatLastRead(
   return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
 }
 
-/** Clamp Reticulum LXMF chat last-read watermarks that exceed message times or client clock. */
-export function sanitizeReticulumChatLastRead(
-  persisted: Readonly<Record<string, number>>,
-  messages: readonly ChatLastReadSanitizeMessage[],
-  ownNodeIds: ReadonlySet<number> = new Set(),
-): Record<string, number> {
-  const maxByKey = maxMessageTimestampByViewKey(messages, 'reticulum', ownNodeIds);
-  return sanitizeViewKeyLastRead(persisted, maxByKey);
-}
-
-/** Ongoing sanitize for Reticulum LXMF chat lastRead (sidebar/tray badges). */
-export function getSanitizedReticulumChatLastRead(
-  messages: readonly ChatLastReadSanitizeMessage[],
-  ownNodeIds: ReadonlySet<number>,
-): Record<string, number> {
-  return sanitizeReticulumChatLastRead(
-    loadPersistedLastReadInitial('reticulum'),
-    messages,
-    ownNodeIds,
-  );
-}
-
 /** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureMeshcoreChatLastReadSanitized(
   messages: readonly ChatLastReadSanitizeMessage[],
@@ -731,34 +703,6 @@ export function ensureMeshcoreChatLastReadSanitized(
   } catch (e) {
     console.debug(
       '[chatPanelProtocolStorage] set meshcore lastRead sanitized flag failed ' +
-        errLikeToLogString(e),
-    );
-  }
-  return sanitized;
-}
-
-/** Persist Reticulum chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
-export function ensureReticulumChatLastReadSanitized(
-  messages: readonly ChatLastReadSanitizeMessage[],
-  ownNodeIds: ReadonlySet<number>,
-): Record<string, number> {
-  const loaded = loadPersistedLastReadInitial('reticulum');
-  const sanitized = sanitizeReticulumChatLastRead(loaded, messages, ownNodeIds);
-  if (sanitized !== loaded) {
-    try {
-      localStorage.setItem(lastReadStorageKey('reticulum'), JSON.stringify(sanitized));
-    } catch (e) {
-      console.debug(
-        '[chatPanelProtocolStorage] persist sanitized reticulum lastRead failed ' +
-          errLikeToLogString(e),
-      );
-    }
-  }
-  try {
-    localStorage.setItem(RETICULUM_LAST_READ_SANITIZED_KEY, '1');
-  } catch (e) {
-    console.debug(
-      '[chatPanelProtocolStorage] set reticulum lastRead sanitized flag failed ' +
         errLikeToLogString(e),
     );
   }

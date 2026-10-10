@@ -15,15 +15,14 @@ const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-cyan-700': '#0e7490',
   'bg-meshtastic-700': '#047857',
   'bg-meshcore-700': '#0e7490',
-  'bg-reticulum-700': '#a16207',
   'bg-orange-700': '#c2410c',
   'bg-orange-800': '#9a3412',
 };
 
 const AXE_TEXT_CLASS_TO_CSS: Record<string, string> = {
-  'text-ink-300': '#cdd4e2',
+  'text-ink-300': '#c7c7c7',
   'text-white': '#ffffff',
-  'text-app-bg': '#11151c',
+  'text-app-bg': '#1b1b1b',
 };
 
 const DEFAULT_HEX_BY_CSS_VAR: Record<string, string> = Object.fromEntries(

@@ -95,49 +95,6 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     requireWarnOrError: true,
   },
   {
-    id: 'reticulum-sidecar',
-    patterns: [
-      /\[reticulumSidecarWatchdog\] (?:hung poll failure|restarting hung sidecar|hung restart failed)/i,
-      /\[ReticulumIPC\] (?:start|stop) failed:/i,
-      /\[ReticulumSidecar\] (?:voice )?ws (?:error|bridge unavailable):/i,
-      /\[useReticulumRuntime\] (?:stack restart|stack_restart_requested) failed/i,
-    ],
-    severity: 'warning',
-    protocols: ['reticulum'],
-    requireWarnOrError: true,
-  },
-  {
-    id: 'reticulum-delivery',
-    patterns: [
-      /\[ReticulumSidecar\].*LXMF path request budget exhausted; marking outbound failed/i,
-      /\[ReticulumSidecar\].*LXMF outbound delivery failed/i,
-      /\[reticulumPropagationStore\] sync\s/i,
-      /\[ReticulumSidecar\].*opportunistic LXMF decrypt failed/i,
-    ],
-    severity: 'warning',
-    protocols: ['reticulum'],
-    requireWarnOrError: true,
-  },
-  {
-    id: 'reticulum-backpressure',
-    patterns: [
-      /\[ReticulumSidecar\].*LXMF outbound backchannel saturated/i,
-      /\[ReticulumSidecar\].*LXMF inbound raw channel full/i,
-      /\[ReticulumSidecar\].*websocket (?:event )?subscriber lagged; (?:some events|frames) dropped/i,
-      /\[ReticulumSidecar\].*(?:voice )?ws message exceeded.*byte cap, dropping/i,
-      /\[ReticulumSidecar\].*failed to queue path request for LXMF delivery \(transport channel full\)/i,
-    ],
-    severity: 'warning',
-    protocols: ['reticulum'],
-    requireWarnOrError: true,
-  },
-  {
-    id: 'firmware-flash',
-    patterns: [/\[nrf52DfuFlasher\] sendFirmware stalled/i, /\[esp32Flasher\] writeFlash stalled/i],
-    severity: 'warning',
-    requireWarnOrError: true,
-  },
-  {
     id: 'ble-connection',
     patterns: [
       /connectAsync timed out/i,
@@ -333,19 +290,6 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     ],
     severity: 'warning',
     protocols: ['meshcore'],
-    requireWarnOrError: true,
-  },
-  {
-    id: 'reticulum-nomad-hosting',
-    patterns: [
-      /\[nomad-serving\]/i,
-      /\[NomadHosting\]/i,
-      /nomad.*content source (?:unavailable|missing)/i,
-      /failed to restore Nomad serving/i,
-      /nomad serving watcher/i,
-    ],
-    severity: 'warning',
-    protocols: ['reticulum'],
     requireWarnOrError: true,
   },
 ];

@@ -28,9 +28,9 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import {
-  assertBundledReticulumSidecarInBundle,
+  assertBundledBleSidecarInBundle,
   resolveBundledSidecarPath,
-} from './assert-bundled-reticulum-sidecar.mjs';
+} from './assert-bundled-ble-sidecar.mjs';
 import {
   MACOS_DMG_NOTICE_NAME,
   stageMacosInstallNoticeReleaseAsset,
@@ -542,7 +542,7 @@ function validateAppBundle(bundleRoot, sourceLabel, expectedArch) {
   assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
   assertMacMinimumSystemVersion(bundleRoot, label);
   assertBundleMatchesExpectedArch(bundleRoot, label, expectedArch);
-  assertBundledReticulumSidecarInBundle({
+  assertBundledBleSidecarInBundle({
     label: `bundled Reticulum sidecar in ${label}`,
     platform: 'darwin',
     bundleRoot,

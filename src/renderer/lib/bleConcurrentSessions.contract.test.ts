@@ -85,30 +85,8 @@ describe('BLE concurrent sessions (mocked electronAPI)', () => {
         acquireScan: vi.fn(() => Promise.resolve({ ok: true as const, ...emptyState() })),
         releaseScan: vi.fn(() => Promise.resolve(emptyState())),
         assertCanConnect: vi.fn(() => Promise.resolve(emptyState())),
-        suspendForReticulumBleConnect: vi.fn(() => Promise.resolve(emptyState())),
       },
     };
-  });
-
-  it('allows three profiles on distinct MACs (meshtastic, meshcore, reticulum)', async () => {
-    await expect(
-      window.electronAPI.connectGatt('meshtastic', 'AA:BB:CC:DD:EE:01'),
-    ).resolves.toEqual({ ok: true });
-    await expect(window.electronAPI.connectGatt('meshcore', 'AA:BB:CC:DD:EE:02')).resolves.toEqual({
-      ok: true,
-    });
-    await expect(
-      window.electronAPI.bleCoexistence.register('AA:BB:CC:DD:EE:03', 'reticulum'),
-    ).resolves.toMatchObject({
-      connections: expect.arrayContaining([
-        expect.objectContaining({ mac: 'aa:bb:cc:dd:ee:03', owner: 'reticulum' }),
-      ]),
-    });
-
-    await expect(window.electronAPI.isGattConnected('meshtastic')).resolves.toBe(true);
-    await expect(window.electronAPI.isGattConnected('meshcore')).resolves.toBe(true);
-    const state = await window.electronAPI.bleCoexistence.getState();
-    expect(state.connections).toHaveLength(3);
   });
 
   it('rejects same-MAC conflict across LoRa GATT sessions', async () => {

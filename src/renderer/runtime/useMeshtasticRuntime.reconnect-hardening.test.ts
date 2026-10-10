@@ -312,19 +312,6 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(prepareBody).toContain('meshtasticRfReconnectRef.current.cancel()');
   });
 
-  it('coalesces reconnect attempt schedules via scheduleOwner', () => {
-    expect(SOURCE).toContain('scheduleMeshtasticReconnectAttempt');
-    expect(SOURCE).toContain('meshtasticRfReconnectRef');
-    const scheduleBody = extractUseCallbackBody(SOURCE, 'scheduleMeshtasticReconnectAttempt');
-    expect(scheduleBody).toContain('scheduleOwner');
-    expect(scheduleBody).toContain('getReticulumBleBondDesyncActive()');
-    expect(scheduleBody).toContain('meshtasticRfReconnectRef.current.cancel()');
-    expect(scheduleBody).toContain('attemptReconnectRef.current()');
-    expect(SOURCE).toMatch(
-      /useLayoutEffect\(\(\) => \{\s*scheduleMeshtasticReconnectAttemptRef\.current = scheduleMeshtasticReconnectAttempt;\s*\}, \[scheduleMeshtasticReconnectAttempt\]\)/,
-    );
-  });
-
   it('attemptReconnect clears stuck reconnecting UI when delay aborts', () => {
     expect(ATTEMPT_RUNNER).toMatch(
       /delayResult === 'aborted'[\s\S]*?!deps\.isReconnecting\.get\(\)[\s\S]*?setDisconnectedUi/,

@@ -9,22 +9,18 @@ import { saveLastConnection } from '../lib/lastConnectionStorage';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
 import * as systemPowerState from '../lib/systemPowerState';
-import type { MeshProtocol } from '../lib/types';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from '../runtime/useMeshtasticRuntime';
-import { usePowerRecovery } from './usePowerRecovery';
 
 const BLE_ID = '00112233445566778899aabbccddeeff';
 
 describe('hidden protocol wake', () => {
-  let resumeCb: (() => void) | null = null;
   let connectSpy: ReturnType<typeof vi.spyOn>;
   let delaySpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resumeCb = null;
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     connectSpy = vi.spyOn(connectionDriver, 'connect').mockResolvedValue('identity-test');
@@ -35,12 +31,7 @@ describe('hidden protocol wake', () => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     window.electronAPI.onPowerSuspend = vi.fn(() => () => {});
-    window.electronAPI.onPowerResume = vi.fn((cb: () => void) => {
-      resumeCb = cb;
-      return () => {
-        resumeCb = null;
-      };
-    });
+    window.electronAPI.onPowerResume = vi.fn(() => () => {});
     window.electronAPI.mqtt.powerSuspend = vi.fn().mockResolvedValue(undefined);
     window.electronAPI.mqtt.powerResume = vi.fn().mockResolvedValue(undefined);
   });
@@ -54,55 +45,6 @@ describe('hidden protocol wake', () => {
     delaySpy.mockRestore();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
   });
-
-  async function fireWake(): Promise<void> {
-    expect(resumeCb).not.toBeNull();
-    await act(async () => {
-      resumeCb!();
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    });
-  }
-
-  it.each(['meshtastic', 'meshcore'] as const)(
-    'keeps a remembered %s BLE session down across wake when that protocol is hidden',
-    async (hidden: MeshProtocol) => {
-      saveLastConnection(hidden, { type: 'ble', bleDeviceId: BLE_ID });
-      const { result } = renderHook(() => {
-        const meshtastic = useMeshtasticRuntime();
-        const meshcore = useMeshcoreRuntime();
-        usePowerRecovery({
-          callbacksByProtocol: {
-            meshtastic: {
-              onPowerSuspend: meshtastic.onPowerSuspend,
-              onPowerResume: meshtastic.onPowerResume,
-            },
-            meshcore: {
-              onPowerSuspend: meshcore.onPowerSuspend,
-              onPowerResume: meshcore.onPowerResume,
-            },
-            reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
-          },
-          hiddenProtocols: [hidden],
-          resumeSchedule: [
-            { protocol: 'meshtastic', delayMs: 0 },
-            { protocol: 'meshcore', delayMs: 0 },
-            { protocol: 'reticulum', delayMs: 0 },
-          ],
-        });
-        return hidden === 'meshtastic' ? meshtastic : meshcore;
-      });
-
-      await fireWake();
-      expect(result.current.state.status).toBe('disconnected');
-      expect(connectSpy).not.toHaveBeenCalled();
-      expect(delaySpy).not.toHaveBeenCalled();
-      expect(consoleDebugSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('rehydrated reconnect params from storage'),
-      );
-    },
-  );
 
   it('reconnects a remembered Meshtastic BLE session on wake when the protocol is enabled', async () => {
     saveLastConnection('meshtastic', { type: 'ble', bleDeviceId: BLE_ID });

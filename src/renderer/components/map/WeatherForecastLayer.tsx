@@ -20,12 +20,11 @@ import {
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 /** Dark pill behind the temperature label (canvas/divIcon cannot read CSS custom properties). */
-const LABEL_BG = '#11151c';
+const LABEL_BG = '#1b1b1b';
 
 const PROTOCOL_NAME_KEYS: Readonly<Record<MeshProtocol, string>> = {
   meshtastic: 'weatherForecast.protocol.meshtastic',
   meshcore: 'weatherForecast.protocol.meshcore',
-  reticulum: 'weatherForecast.protocol.reticulum',
 };
 
 export interface WeatherForecastLayerProps {

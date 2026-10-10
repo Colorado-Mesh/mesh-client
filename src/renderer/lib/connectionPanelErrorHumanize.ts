@@ -8,16 +8,16 @@ import {
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
 import {
+  bleOwnerI18nKey,
+  isBlePeripheralConflictErrorMessage,
+  isBleScanBusyErrorMessage,
+} from './bleAdapterLease';
+import {
   extractGattBleErrorCode,
   gattBleErrorI18nKey,
   isMeshcoreSetupAbortError,
 } from './bleConnectErrors';
 import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
-import {
-  bleOwnerI18nKey,
-  isBlePeripheralConflictErrorMessage,
-  isBleScanBusyErrorMessage,
-} from './reticulum/reticulumBleAdapterLease';
 
 export function hostFromAddressInput(address: string): string {
   const raw = address.trim();
@@ -274,31 +274,4 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
     });
   }
   return msg;
-}
-
-export function humanizeReticulumSidecarError(err: unknown, t: TFunction): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (msg.includes('RETICULUM_CARGO_MISSING') || /cargo.*not found/i.test(msg)) {
-    return t('connectionPanel.reticulumSidecarCargoMissing');
-  }
-  if (
-    msg.includes('RETICULUM_RNS_PATCH_MISSING') ||
-    msg.includes('RETICULUM_RNS_PATCH_APPLY_FAILED')
-  ) {
-    return t('connectionPanel.reticulumSidecarPatchMissing');
-  }
-  if (msg.includes('RETICULUM_SIDECAR_BUNDLED_MISSING')) {
-    return t('connectionPanel.reticulumSidecarBundledMissing');
-  }
-  if (
-    msg.includes('RETICULUM_SIDECAR') ||
-    msg.includes('sidecar binary not found') ||
-    msg.includes('RETICULUM_CARGO_BUILD_FAILED')
-  ) {
-    if (msg.includes('RETICULUM_CARGO_BUILD_FAILED')) {
-      return t('connectionPanel.reticulumSidecarStartFailed', { message: msg });
-    }
-    return t('connectionPanel.reticulumSidecarMissing');
-  }
-  return t('connectionPanel.reticulumSidecarStartFailed', { message: msg });
 }

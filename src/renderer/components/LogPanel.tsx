@@ -110,43 +110,19 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[IpcSidecarGattConnection:meshcore]')
     );
   }
-  if (protocol === 'reticulum') {
-    return (
-      entry.source.includes('reticulum') ||
-      entry.message.includes('[ReticulumSidecar]') ||
-      entry.message.includes('[ReticulumNetworkPanel]') ||
-      entry.message.includes('[IdentitySlotsSection]') ||
-      entry.message.includes('[useReticulumRuntime]') ||
-      entry.message.includes('[useReticulumSidecarApi]') ||
-      entry.message.includes('[ReticulumIPC]') ||
-      entry.message.includes('[Reticulum]') ||
-      entry.message.includes('[reticulumSidecarReads]') ||
-      entry.message.includes('[IPC] reticulum')
-    );
-  }
   // No protocol: show all device entries (fallback)
   return (
     entry.source === 'sdk' ||
     entry.source.includes('meshtastic') ||
     entry.source.includes('meshcore') ||
-    entry.source.includes('reticulum') ||
     entry.message.includes('[useMeshtasticRuntime]') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshcoreRuntime]') ||
     entry.message.includes('[meshcoreConnSideEffects]') ||
-    entry.message.includes('[useReticulumRuntime]') ||
     entry.message.includes('[TransportSidecarGatt]') ||
     entry.message.includes('[GATT]') ||
     entry.message.includes('[GATT:') ||
     entry.message.includes('[MeshCore MQTT]') ||
-    entry.message.includes('[ReticulumSidecar]') ||
-    entry.message.includes('[ReticulumNetworkPanel]') ||
-    entry.message.includes('[IdentitySlotsSection]') ||
-    entry.message.includes('[ReticulumIPC]') ||
-    entry.message.includes('[Reticulum]') ||
-    entry.message.includes('[reticulumSidecarReads]') ||
-    entry.message.includes('[useReticulumSidecarApi]') ||
-    entry.message.includes('[IPC] reticulum') ||
     entry.message.includes('[BLE:') ||
     entry.message.includes('[BLE:meshcore]') ||
     entry.message.includes('[IpcSidecarGattConnection:')
@@ -178,7 +154,7 @@ export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProto
 
 /** True when the line belongs to a protocol other than the active tab. */
 export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProtocol): boolean {
-  for (const p of ['meshtastic', 'meshcore', 'reticulum'] as MeshProtocol[]) {
+  for (const p of ['meshtastic', 'meshcore'] as MeshProtocol[]) {
     if (p === activeProtocol) continue;
     if (isDeviceEntry(entry, p)) return true;
     if (isProtocolExclusiveAppEntry(entry, p)) return true;
@@ -186,16 +162,12 @@ export function isOwnedByOtherProtocol(entry: LogEntry, activeProtocol: MeshProt
   return false;
 }
 
-/** App log lines for the active protocol tab (or dual/triple fallback when unset). */
+/** App log lines for the active protocol tab (or dual fallback when unset). */
 export function isAppLogEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
   if (protocol) {
     return !isDeviceEntry(entry, protocol) && !isOwnedByOtherProtocol(entry, protocol);
   }
-  return (
-    !isDeviceEntry(entry, 'meshtastic') &&
-    !isDeviceEntry(entry, 'meshcore') &&
-    !isDeviceEntry(entry, 'reticulum')
-  );
+  return !isDeviceEntry(entry, 'meshtastic') && !isDeviceEntry(entry, 'meshcore');
 }
 
 function formatEntry(entry: LogEntry): string {
@@ -246,12 +218,6 @@ export default function LogPanel({
   const atBottomRef = useRef(true);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
-
-  useEffect(() => {
-    if (protocol === 'reticulum') {
-      setLogSource('device');
-    }
-  }, [protocol]);
 
   useEffect(() => {
     let off: (() => void) | null = null;

@@ -1,19 +1,12 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { MeshNode } from '@/renderer/lib/types';
-
-vi.mock('@/renderer/lib/gpsSource', () => ({
-  readStoredStaticGps: vi.fn(() => null),
-}));
-
-import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import { TAK_NODE_REFRESH_MS, TAK_NODE_SCAN_INTERVAL_MS } from '@/renderer/lib/takNodeFeed';
-import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
+import type { MeshNode } from '@/renderer/lib/types';
 import { isTakSinkActive } from '@/renderer/stores/takSinkStore';
 import { clearTakTrackerFixes, recordTakTrackerFix } from '@/renderer/stores/takTrackerStore';
 
-import { type TakReticulumSelfIdentity, useTakNodeReplicator } from './useTakNodeReplicator';
+import { useTakNodeReplicator } from './useTakNodeReplicator';
 
 const NOW_MS = Date.UTC(2026, 8, 1, 12, 0, 0);
 const NOW_SEC = NOW_MS / 1000;
@@ -36,27 +29,24 @@ function node(id: number, overrides: Partial<MeshNode> = {}): MeshNode {
 function nodesByProtocol(
   meshtastic: MeshNode[] = [],
   meshcore: MeshNode[] = [],
-): Record<'meshtastic' | 'meshcore' | 'reticulum', Map<number, MeshNode>> {
+): Record<'meshtastic' | 'meshcore', Map<number, MeshNode>> {
   return {
     meshtastic: new Map(meshtastic.map((n) => [n.node_id, n])),
     meshcore: new Map(meshcore.map((n) => [n.node_id, n])),
-    reticulum: new Map(),
   };
 }
 
 interface Props {
   active: boolean;
   nodes: ReturnType<typeof nodesByProtocol>;
-  reticulumSelf?: TakReticulumSelfIdentity | null;
 }
 
 function renderReplicator(initial: Props) {
   return renderHook(
-    ({ active, nodes, reticulumSelf }: Props) => {
+    ({ active, nodes }: Props) => {
       useTakNodeReplicator({
         active,
         nodesByProtocol: nodes,
-        reticulumSelf: reticulumSelf ?? null,
       });
     },
     { initialProps: initial },
@@ -73,8 +63,6 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW_MS);
   pushNodeUpdates().mockClear();
-  vi.mocked(readStoredStaticGps).mockReturnValue(null);
-  useReticulumDiscoveryMapStore.getState().clear();
 });
 
 afterEach(() => {
@@ -147,51 +135,6 @@ describe('useTakNodeReplicator', () => {
       vi.advanceTimersByTime(TAK_NODE_REFRESH_MS * 2);
     });
     expect(pushNodeUpdates()).not.toHaveBeenCalled();
-  });
-
-  it('includes RMAP-discovered stations with coordinates', () => {
-    useReticulumDiscoveryMapStore.getState().setDiscovered([
-      {
-        discovery_hash: 'ab'.repeat(32),
-        transport_id: 'cd'.repeat(16),
-        discovery_name: 'Peak',
-        interface_type: 'RNodeInterface',
-        latitude: 40.1,
-        longitude: -105.3,
-        height: 3000,
-        transport_enabled: true,
-        hops: 2,
-        stamp_value: 0,
-        discovered: NOW_SEC - 100,
-        last_heard: NOW_SEC - 100,
-        heard_count: 1,
-        status: 'available',
-        has_coordinates: true,
-      },
-    ]);
-    renderReplicator({ active: true, nodes: nodesByProtocol() });
-    expect(pushedKeys()).toEqual([[`reticulum:${0xabababababab >>> 0}`]]);
-  });
-
-  it('sends our Reticulum position only when static GPS is set', () => {
-    const self = { nodeId: 55, name: 'Base' };
-    const nodes = nodesByProtocol();
-    const { rerender } = renderReplicator({ active: true, nodes, reticulumSelf: self });
-    expect(pushNodeUpdates()).not.toHaveBeenCalled();
-
-    vi.mocked(readStoredStaticGps).mockReturnValue({ lat: 39.95, lon: -105.25 });
-    rerender({ active: false, nodes, reticulumSelf: self });
-    rerender({ active: true, nodes, reticulumSelf: self });
-    const sent = pushNodeUpdates().mock.calls[0]?.[0];
-    expect(sent).toEqual([
-      expect.objectContaining({
-        node_id: 55,
-        protocol: 'reticulum',
-        latitude: 39.95,
-        longitude: -105.25,
-        long_name: 'Base',
-      }),
-    ]);
   });
 
   it('splits large sends into batches the IPC handler accepts', () => {

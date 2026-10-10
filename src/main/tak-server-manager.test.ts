@@ -363,18 +363,6 @@ describe('TakServerManager multi-protocol node cache', () => {
     vi.useRealTimers();
   });
 
-  it('keeps nodes with the same id from different protocols apart', () => {
-    const manager = new TakServerManager();
-    const position = { latitude: 39.7, longitude: -105.0, last_heard: 100 };
-    manager.onNodeUpdate({ node_id: 42, ...position });
-    manager.onNodeUpdate({ node_id: 42, protocol: 'meshcore', ...position });
-    manager.onNodeUpdate({ node_id: 42, protocol: 'reticulum', ...position });
-
-    const socket = connectMockClient(manager);
-
-    expect(writtenUids(socket).sort()).toEqual(['MC-42', 'MESH-42', 'RN-42']);
-  });
-
   it('evicts the least recently updated node, whatever unit its last_heard uses', () => {
     const manager = new TakServerManager();
     const internals = manager as unknown as { nodeCache: Map<string, unknown> };
@@ -540,19 +528,6 @@ describe('TakServerManager remote relay', () => {
     expect(manager.getStatus().running).toBe(false);
     expect(saveTakRemoteSettings).toHaveBeenCalledWith(SETTINGS);
     expect(remoteClients[0]?.start).toHaveBeenCalled();
-  });
-
-  it('streams node updates to the relay once it is connected', () => {
-    const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
-    const remote = remoteClients[0];
-
-    manager.onNodeUpdate({ node_id: 1, protocol: 'meshcore', ...POSITION });
-    expect(remote.written).toEqual([]);
-
-    remote.connected = true;
-    manager.onNodeUpdate({ node_id: 2, protocol: 'reticulum', ...POSITION });
-    expect(uids(remote.written)).toEqual(['RN-2']);
   });
 
   it('flushes nodes cached within the CoT stale window when the relay connects', () => {

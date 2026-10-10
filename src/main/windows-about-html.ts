@@ -6,9 +6,8 @@
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { escapeXmlAttr } from '../shared/xmlEscape';
 
-const ABOUT_URL_WEBSITE = 'https://coloradomesh.org/';
-const ABOUT_URL_GITHUB = 'https://github.com/Colorado-Mesh/mesh-client';
-const ABOUT_URL_DISCORD = 'https://discord.com/invite/McChKR5NpS';
+const ABOUT_URL_GITHUB = 'https://github.com/charlottemeshtastic/mesh-client';
+const ABOUT_URL_UPSTREAM = 'https://github.com/Colorado-Mesh/mesh-client';
 
 export function escapeHtmlText(s: string): string {
   return escapeXmlAttr(s);
@@ -44,12 +43,11 @@ export function buildWindowsAboutDocumentHtml(appName: string, version: string):
   <h1>${title}</h1>
   <div class="ver">Version ${ver}</div>
   <p>${escapeHtmlText(APP_ABOUT_TAGLINE)}</p>
-  <p>License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Reticulum sidecar binary. &middot; Author: Colorado Mesh</p>
+  <p>License: GPL-3.0-or-later (application code). AGPL-3.0-or-later applies to the bundled Bluetooth helper binary. &middot; Based on mesh-client by Colorado Mesh</p>
   <div class="actions" role="group" aria-label="About actions">
     <button type="button" class="close-btn" onclick="window.close()" aria-label="Close About window">Close</button>
-    <a class="action-btn" role="button" href="${ABOUT_URL_WEBSITE}" aria-label="Open Colorado Mesh website">Website</a>
     <a class="action-btn" role="button" href="${ABOUT_URL_GITHUB}" aria-label="Open GitHub repository">GitHub</a>
-    <a class="action-btn" role="button" href="${ABOUT_URL_DISCORD}" aria-label="Open Discord invite">Discord</a>
+    <a class="action-btn" role="button" href="${ABOUT_URL_UPSTREAM}" aria-label="Open upstream mesh-client project">Upstream</a>
   </div>
 </body></html>`;
 }

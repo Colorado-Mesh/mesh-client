@@ -1,77 +1,16 @@
 /**
- * Apply classified mesh-client deep links (lxma / meshcore / lxm contact) to stores.
+ * Apply classified deep links (meshcore contact / channel) to stores.
  * Used by MeshClientDeepLinkHost and in-app QrIngestControl handlers.
  */
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
-import { ingestReticulumLxmfPayloadWithSideEffects } from '@/renderer/lib/ingest/reticulumIngest';
 import { pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
-import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
-import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxmfSendResponse';
-import { registerReticulumKnownIdentity } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
 import { hexToBytesExact } from '@/shared/hexBytes';
 import type { MeshClientDeepLink } from '@/shared/meshClientDeepLink';
-import { paperErrorToI18n } from '@/shared/reticulumPaperErrors';
 
 export type DeepLinkApplyResult =
   | { ok: true; kind: MeshClientDeepLink['kind']; deferred?: boolean }
   | { ok: false; errorKey: string; detail?: string };
-
-/** Import Columba lxma:// contact: register pubkey then SQLite saved contact. */
-export async function applyLxmaContactImport(opts: {
-  destinationHash: string;
-  publicKeyHex: string;
-  displayName?: string | null;
-}): Promise<DeepLinkApplyResult> {
-  const reg = await registerReticulumKnownIdentity(opts.destinationHash, opts.publicKeyHex);
-  if (!reg.ok) {
-    return {
-      ok: false,
-      errorKey: 'qrIngest.lxmaRegisterFailed',
-      detail: reg.error,
-    };
-  }
-  try {
-    await window.electronAPI.db.upsertReticulumDestination({
-      destination_hash: opts.destinationHash,
-      display_name: opts.displayName ?? null,
-      last_heard: Math.floor(Date.now() / 1000),
-      is_contact: true,
-    });
-    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
-      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
-    });
-    return { ok: true, kind: 'lxmaContact' };
-  } catch (err) {
-    console.error('[applyLxmaContactImport] upsert failed: ' + errLikeToLogString(err));
-    return { ok: false, errorKey: 'qrIngest.contactImportFailed' };
-  }
-}
-
-/** Import mesh-client / legacy lxm://contact (History stamp; not necessarily saved contact). */
-export async function applyLxmContactImport(opts: {
-  destinationHash: string;
-  name?: string | null;
-  asSavedContact?: boolean;
-}): Promise<DeepLinkApplyResult> {
-  try {
-    await window.electronAPI.db.upsertReticulumDestination({
-      destination_hash: opts.destinationHash,
-      display_name: opts.name ?? null,
-      last_heard: Math.floor(Date.now() / 1000),
-      ...(opts.asSavedContact ? { is_contact: true } : {}),
-    });
-    void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(() => {
-      // catch-no-log-ok rate-limit rethrow from peer store — already debug-logged
-    });
-    return { ok: true, kind: 'lxmContact' };
-  } catch (err) {
-    console.error('[applyLxmContactImport] upsert failed: ' + errLikeToLogString(err));
-    return { ok: false, errorKey: 'qrIngest.contactImportFailed' };
-  }
-}
 
 export interface MeshcoreContactApplyDeps {
   /** Persist to SQLite (+ optional radio). Returns false on failure. */
@@ -143,36 +82,5 @@ export async function applyMeshcoreChannelAdd(
   } catch (err) {
     console.error('[applyMeshcoreChannelAdd] failed: ' + errLikeToLogString(err));
     return { ok: false, errorKey: 'qrIngest.meshcoreChannelImportFailed' };
-  }
-}
-
-/** Ingest encrypted LXMF paper `lxm://` URI via sidecar (decrypt → Chat). */
-export async function applyLxmPaperIngest(opts: { uri: string }): Promise<DeepLinkApplyResult> {
-  try {
-    const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/paper/ingest', {
-      uri: opts.uri,
-    })) as {
-      ok?: boolean;
-      error?: string;
-      message?: unknown;
-    };
-    if (res.ok === true) {
-      const lxmfPayload = extractLxmfPayloadFromSendResponse(res);
-      if (lxmfPayload) {
-        const identityId =
-          getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
-        ingestReticulumLxmfPayloadWithSideEffects(identityId, lxmfPayload);
-      }
-      return { ok: true, kind: 'lxmPaperMessage' };
-    }
-    const code = typeof res.error === 'string' ? res.error : '';
-    return {
-      ok: false,
-      errorKey: paperErrorToI18n(code, 'ingest'),
-      detail: code || undefined,
-    };
-  } catch (err) {
-    console.error('[applyLxmPaperIngest] failed: ' + errLikeToLogString(err));
-    return { ok: false, errorKey: 'qrIngest.paperIngestFailed' };
   }
 }

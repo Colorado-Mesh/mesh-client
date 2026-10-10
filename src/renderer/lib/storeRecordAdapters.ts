@@ -4,19 +4,11 @@ import {
   MESHTASTIC_BROADCAST_NODE_NUM,
 } from '@/shared/nodeNameUtils';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
-import { parseReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
-import { isAllowedReticulumReceivedVia } from '@/shared/reticulumMessageTransport';
 
-import type { MessageRecord, MessageTransport } from '../stores/messageStore';
+import type { MessageRecord } from '../stores/messageStore';
 import type { NodeRecord } from '../stores/nodeStore';
 import type { NeighborInfoEvent, TraceRouteEvent, WaypointEvent } from './protocols/Protocol';
-import {
-  firstGraphemeCluster,
-  isReactionPickerEmojiGlyph,
-  normalizeReactionEmoji,
-} from './reactions';
-import { registerReticulumDestinationHash, reticulumHashToNodeId } from './reticulum/destHash';
-import { computeReticulumMessageHash } from './reticulum/messageHash';
+import { normalizeReactionEmoji } from './reactions';
 import type {
   ChatMessage,
   MeshNeighbor,
@@ -33,23 +25,9 @@ export interface ChatReactionRow {
   id?: number;
 }
 
-/** Detect Reticulum LXMF tapback rows rehydrated from SQLite (emoji-only payload + parent hash). */
-export function isReticulumTapbackDbRow(row: {
-  reply_to_hash?: string | null;
-  payload: string;
-}): boolean {
-  if (!row.reply_to_hash) return false;
-  const trimmed = row.payload.trim();
-  if (!trimmed) return false;
-  const glyph = firstGraphemeCluster(trimmed);
-  if (!glyph || glyph !== trimmed) return false;
-  return isReactionPickerEmojiGlyph(glyph);
-}
-
-/** Parent key for grouping tapbacks (Meshtastic packet id or Reticulum message hash). */
+/** Parent key for grouping tapbacks (Meshtastic packet id). */
 export function reactionParentKeyFromChatMessage(msg: ChatMessage): string | number | undefined {
   if (msg.emoji == null) return undefined;
-  if (msg.reticulum_reply_to_hash) return msg.reticulum_reply_to_hash;
   if (msg.replyId != null) return msg.replyId;
   return undefined;
 }
@@ -59,7 +37,6 @@ export function reactionLookupKeysForParentMessage(msg: ChatMessage): (string | 
   const keys = new Set<string | number>();
   if (msg.packetId != null) keys.add(msg.packetId);
   keys.add(msg.timestamp);
-  if (msg.reticulum_message_hash) keys.add(msg.reticulum_message_hash);
   return [...keys];
 }
 
@@ -103,7 +80,6 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
   const reactionScalar = record.tapback
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
     : undefined;
-  const reticulumReplyHash = record.reticulumReplyToHash;
   const rxHops = record.rxHops ?? record.hopCount;
   return {
     ...(packetId != null ? { id: packetId } : {}),
@@ -122,12 +98,8 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     isHistory: record.isHistory,
     error: record.error,
     to,
-    ...(record.reticulumSenderHash ? { reticulum_sender_hash: record.reticulumSenderHash } : {}),
-    ...(record.reticulumMessageHash ? { reticulum_message_hash: record.reticulumMessageHash } : {}),
-    ...(reticulumReplyHash ? { reticulum_reply_to_hash: reticulumReplyHash } : {}),
     ...(reactionScalar != null ? { emoji: reactionScalar } : {}),
-    replyId:
-      reticulumReplyHash == null && record.replyTo != null ? Number(record.replyTo) : undefined,
+    replyId: record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
     ...(rxHops != null ? { rxHops } : {}),
@@ -135,19 +107,6 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
     ...(record.channelKey ? { channelKey: record.channelKey } : {}),
     ...(record.radioNodeId != null ? { radioNodeId: record.radioNodeId } : {}),
-    ...(record.reticulumDeliveryMethod
-      ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
-      : {}),
-    ...(record.reticulumAttachmentPath
-      ? { reticulumAttachmentPath: record.reticulumAttachmentPath }
-      : {}),
-    ...(record.reticulumAttachmentKind
-      ? { reticulumAttachmentKind: record.reticulumAttachmentKind }
-      : {}),
-    ...(record.reticulumAudioMode != null ? { reticulumAudioMode: record.reticulumAudioMode } : {}),
-    ...(record.reticulumAudioDurationSec != null
-      ? { reticulumAudioDurationSec: record.reticulumAudioDurationSec }
-      : {}),
   };
 }
 
@@ -202,9 +161,6 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     key_manually_verified: record.keyManuallyVerified,
     has_xeddsa_signed: record.hasXeddsaSigned,
     ...(record.publicKeyHex ? { public_key_hex: record.publicKeyHex } : {}),
-    ...(record.reticulumDestinationHash
-      ? { reticulum_destination_hash: record.reticulumDestinationHash }
-      : {}),
   };
 }
 
@@ -253,7 +209,6 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.numPacketsTx === b.numPacketsTx &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
     a.publicKeyHex === b.publicKeyHex &&
-    a.reticulumDestinationHash === b.reticulumDestinationHash &&
     a.lightningStrikeCount1h === b.lightningStrikeCount1h &&
     a.lightningDistanceKm === b.lightningDistanceKm &&
     a.pm25Standard === b.pm25Standard &&
@@ -354,7 +309,6 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     publicKeyHex: node.public_key_hex,
     keyManuallyVerified: node.key_manually_verified,
     hasXeddsaSigned: node.has_xeddsa_signed,
-    reticulumDestinationHash: node.reticulum_destination_hash,
   };
 }
 
@@ -409,7 +363,6 @@ export function traceRouteEventsToResultsMap(
 export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
   const id =
     msg.storeId ??
-    msg.reticulum_message_hash ??
     (msg.packetId != null
       ? String(msg.packetId)
       : `${msg.sender_id}-${msg.timestamp}-${msg.channel}`);
@@ -432,81 +385,13 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     isHistory: msg.isHistory,
     error: msg.error,
     tapback: msg.emoji != null ? true : undefined,
-    replyTo: msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined),
+    replyTo: msg.replyId != null ? String(msg.replyId) : undefined,
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
     ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
     ...(msg.viaStoreForward ? { viaStoreForward: true } : {}),
-    ...(msg.reticulum_message_hash ? { reticulumMessageHash: msg.reticulum_message_hash } : {}),
-    ...(msg.reticulum_sender_hash ? { reticulumSenderHash: msg.reticulum_sender_hash } : {}),
-    ...(msg.reticulum_reply_to_hash ? { reticulumReplyToHash: msg.reticulum_reply_to_hash } : {}),
     ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
     ...(msg.channelKey ? { channelKey: msg.channelKey } : {}),
     ...(msg.radioNodeId != null ? { radioNodeId: msg.radioNodeId } : {}),
-  };
-}
-
-export function reticulumDbRowToMessageRecord(row: {
-  sender_id: string;
-  sender_name?: string | null;
-  payload: string;
-  timestamp: number;
-  to_hash?: string | null;
-  reply_to_hash?: string | null;
-  message_hash?: string | null;
-  received_via?: string | null;
-  delivery_status?: string | null;
-  delivery_method?: string | null;
-  attachment_path?: string | null;
-  audio_mode?: number | null;
-  audio_duration_sec?: number | null;
-}): MessageRecord {
-  const from = reticulumHashToNodeId(row.sender_id);
-  registerReticulumDestinationHash(from, row.sender_id);
-  const messageHash =
-    row.message_hash ?? computeReticulumMessageHash(row.sender_id, row.timestamp, row.payload);
-  const isTapback = isReticulumTapbackDbRow(row);
-  const receivedVia: MessageTransport | undefined =
-    typeof row.received_via === 'string' && isAllowedReticulumReceivedVia(row.received_via)
-      ? (row.received_via as MessageTransport)
-      : undefined;
-  const deliveryMethod = parseReticulumDeliveryMethod(row.delivery_method);
-  const status: MessageRecord['status'] =
-    row.delivery_status === 'failed'
-      ? 'failed'
-      : row.delivery_status === 'sending' ||
-          row.delivery_status === 'pending' ||
-          row.delivery_status === 'queued'
-        ? 'sending'
-        : 'acked';
-  return {
-    id: messageHash,
-    from,
-    senderName: row.sender_name ?? row.sender_id.slice(0, 12),
-    to: row.to_hash ? reticulumHashToNodeId(row.to_hash) : 0,
-    payload: row.payload,
-    channelIndex: 0,
-    timestamp: row.timestamp,
-    status,
-    reticulumMessageHash: messageHash,
-    reticulumSenderHash: row.sender_id,
-    ...(isTapback
-      ? { tapback: true, reticulumReplyToHash: row.reply_to_hash! }
-      : row.reply_to_hash
-        ? { reticulumReplyToHash: row.reply_to_hash }
-        : {}),
-    ...(receivedVia ? { receivedVia } : {}),
-    ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
-    ...(row.attachment_path ? { reticulumAttachmentPath: row.attachment_path } : {}),
-    ...(row.attachment_path &&
-    (row.audio_mode != null ||
-      row.attachment_path.toLowerCase().endsWith('.ogg') ||
-      /^\[voice:/i.test(row.payload))
-      ? { reticulumAttachmentKind: 'audio' as const }
-      : {}),
-    ...(row.audio_mode != null ? { reticulumAudioMode: row.audio_mode } : {}),
-    ...(row.audio_duration_sec != null
-      ? { reticulumAudioDurationSec: row.audio_duration_sec }
-      : {}),
   };
 }

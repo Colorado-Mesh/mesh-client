@@ -8,7 +8,7 @@
 /** Repo-relative path of the feed (pre-commit warning + file validation test key on this). */
 export const SERVICE_ANNOUNCEMENT_FEED_REPO_PATH = 'announcements/announcements.json';
 
-export const SERVICE_ANNOUNCEMENT_FEED_URL = `https://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/${SERVICE_ANNOUNCEMENT_FEED_REPO_PATH}`;
+export const SERVICE_ANNOUNCEMENT_FEED_URL = `https://raw.githubusercontent.com/charlottemeshtastic/mesh-client/main/${SERVICE_ANNOUNCEMENT_FEED_REPO_PATH}`;
 
 export const SERVICE_ANNOUNCEMENT_SCHEMA_VERSION = 1;
 export const SERVICE_ANNOUNCEMENT_MAX_ENTRIES = 20;

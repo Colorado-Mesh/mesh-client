@@ -4,12 +4,10 @@ import type {
   SettingsSearchSurface,
 } from '../settingsSearch';
 
-// The Radio slot renders ReticulumNetworkPanel instead of RadioPanel when this flag is set.
-const showsRadioPanel = (ctx: SettingsSearchContext) => !ctx.capabilities.hasReticulumNetworkPanel;
 // RadioPanel picks its MeshCore vs Meshtastic blocks by the companion contact-management props.
 const isCompanion = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasCompanionContactManagementConfig;
-const hasMeshtasticLora = (ctx: SettingsSearchContext) => showsRadioPanel(ctx) && !isCompanion(ctx);
+const hasMeshtasticLora = (ctx: SettingsSearchContext) => !isCompanion(ctx);
 const hasChannelConfig = (ctx: SettingsSearchContext) => ctx.capabilities.hasChannelConfig;
 const hasDeviceRole = (ctx: SettingsSearchContext) => ctx.capabilities.hasDeviceRoleConfig;
 const hasFullPosition = (ctx: SettingsSearchContext) => ctx.capabilities.hasFullPositionConfig;
@@ -40,7 +38,7 @@ const radioEntries: readonly SettingSearchEntry[] = [
     slot: 'Radio',
     labelKey: 'radioPanel.importConfigJson',
     keywords: ['import', 'json', 'config', 'backup', 'restore'],
-    visible: (ctx) => showsRadioPanel(ctx) && ctx.capabilities.hasJsonRadioConfigImport,
+    visible: (ctx) => ctx.capabilities.hasJsonRadioConfigImport,
   },
   {
     id: 'radio.lockdown.passphrase',
@@ -56,7 +54,6 @@ const radioEntries: readonly SettingSearchEntry[] = [
     slot: 'Radio',
     labelKey: USER,
     keywords: ['owner', 'identity', 'name'],
-    visible: showsRadioPanel,
   },
   {
     id: 'radio.user.longName',
@@ -538,7 +535,6 @@ const radioEntries: readonly SettingSearchEntry[] = [
     slot: 'Radio',
     labelKey: POSITION,
     keywords: ['gps', 'position', 'location'],
-    visible: showsRadioPanel,
   },
   {
     id: 'radio.position.broadcastInterval',
@@ -610,7 +606,6 @@ const radioEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.sendPositionToDevice',
     sectionKey: POSITION,
     keywords: ['latitude', 'longitude', 'altitude', 'coordinates', 'fixed'],
-    visible: showsRadioPanel,
   },
 
   // Power

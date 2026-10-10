@@ -7,18 +7,15 @@ import {
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import type { Protocol } from './protocols/Protocol';
-import { reticulumProtocol } from './protocols/ReticulumProtocol';
 import { type IdentityId, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from './types';
 
 /** Stable identity bucket for SQLite hydration before the first RF connect. */
 export const OFFLINE_MESHTASTIC_IDENTITY_ID = 'offline-meshtastic' as IdentityId;
 export const OFFLINE_MESHCORE_IDENTITY_ID = 'offline-meshcore' as IdentityId;
-export const OFFLINE_RETICULUM_IDENTITY_ID = 'offline-reticulum' as IdentityId;
 
 export const OFFLINE_IDENTITY_BY_PROTOCOL: Record<MeshProtocol, IdentityId> = {
   meshtastic: OFFLINE_MESHTASTIC_IDENTITY_ID,
   meshcore: OFFLINE_MESHCORE_IDENTITY_ID,
-  reticulum: OFFLINE_RETICULUM_IDENTITY_ID,
 };
 
 /** Resolved at call time: protocol modules import this file transitively (circular import). */
@@ -26,7 +23,6 @@ function offlineProtocolAdapter(protocol: MeshProtocol): Protocol {
   const adapters: Record<MeshProtocol, Protocol> = {
     meshtastic: meshtasticProtocol,
     meshcore: meshcoreProtocol,
-    reticulum: reticulumProtocol,
   };
   return adapters[protocol];
 }

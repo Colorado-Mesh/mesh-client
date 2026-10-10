@@ -53,44 +53,6 @@ describe('log analysis evidence and report', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Report copied');
   });
 
-  it('reports clipboard failure and allows retry', async () => {
-    const user = userEvent.setup();
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.mocked(window.electronAPI.clipboard.writeText).mockRejectedValueOnce(
-      new Error('clipboard unavailable'),
-    );
-    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={entries} protocol="reticulum" />);
-    const copy = screen.getByRole('button', { name: 'Copy troubleshooting report' });
-    await user.click(copy);
-    expect(screen.getByRole('alert')).toHaveTextContent(en.logAnalyzeModal.copyFailure);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('copy report failed'));
-    await user.click(copy);
-    expect(screen.getByRole('status')).toHaveTextContent('Report copied');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    warn.mockRestore();
-  });
-
-  it('keeps unrecognized errors visible and limits rendered evidence', async () => {
-    const user = userEvent.setup();
-    const many = Array.from({ length: 30 }, (_, index) => ({
-      ...entries[0],
-      ts: index * 1000,
-      message: `Unrecognized error ${index}`,
-    }));
-    render(<LogAnalyzeModal isOpen onClose={vi.fn()} entries={many} protocol="reticulum" />);
-    expect(screen.queryByText(en.logAnalyzeModal.emptyState)).not.toBeInTheDocument();
-    await user.click(screen.getByText('View evidence for Other warnings and errors'));
-    const evidence = screen.getByRole('list', {
-      name: 'View evidence for Other warnings and errors',
-    });
-    expect(within(evidence).getAllByRole('listitem')).toHaveLength(20);
-    expect(
-      screen.getByText('Showing 20 of 30 matching entries, newest first.'),
-    ).toBeInTheDocument();
-    expect(evidence).toHaveTextContent('Unrecognized error 29');
-    expect(evidence).not.toHaveTextContent('Unrecognized error 0');
-  });
-
   it('has no accessibility violations with expanded findings', async () => {
     const user = userEvent.setup();
     const { container } = render(

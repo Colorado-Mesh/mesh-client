@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import {
   DroneReportCard,
-  RncpControlChip,
   SignalReportChip,
 } from '@/renderer/components/chat/ChatStructuredPayloads';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
@@ -20,7 +19,6 @@ import {
 } from '@/renderer/lib/meshcoreGifWire';
 import { parseSignalReport } from '@/renderer/lib/signalReportParse';
 import { isLikelyDirectImageUrl } from '@/shared/chatDirectImageUrl';
-import { classifyRncpControlBody, stripRncpSentinels } from '@/shared/rncpRequestEnable';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -260,8 +258,6 @@ export interface ChatPayloadTextProps {
   loadLinkPreviews?: boolean;
   /** Fired when async link-preview content mounts and row height may have grown. */
   onContentResize?: () => void;
-  /** Active protocol supports rncp; otherwise rncp sentinel text is shown verbatim. */
-  rncpControlEnabled?: boolean;
 }
 
 /**
@@ -274,7 +270,6 @@ export function ChatPayloadText({
   query,
   loadLinkPreviews = true,
   onContentResize,
-  rncpControlEnabled = false,
 }: ChatPayloadTextProps) {
   const { t } = useTranslation();
   const gifId = parseMeshcoreGifId(text);
@@ -285,39 +280,34 @@ export function ChatPayloadText({
       </div>
     );
   }
-  const rncpKind = rncpControlEnabled ? classifyRncpControlBody(text) : null;
-  if (!rncpKind) {
-    const droneReport = parseDroneReport(text);
-    if (droneReport) {
-      return (
-        <div>
-          <DroneReportCard report={droneReport} onContentResize={onContentResize} />
-        </div>
-      );
-    }
-    const location = parseLocationMessage(text);
-    if (location) {
-      return (
-        <div>
-          <LocationCard
-            lat={location.lat}
-            lon={location.lon}
-            mapUrl={location.mapUrl}
-            query={query}
-            onContentResize={onContentResize}
-          />
-        </div>
-      );
-    }
+  const droneReport = parseDroneReport(text);
+  if (droneReport) {
+    return (
+      <div>
+        <DroneReportCard report={droneReport} onContentResize={onContentResize} />
+      </div>
+    );
   }
-  const displayText = rncpKind ? stripRncpSentinels(text) : text;
-  const signalReport = rncpKind ? null : parseSignalReport(text);
-  const segments = parseChatMentionSegments(displayText);
+  const location = parseLocationMessage(text);
+  if (location) {
+    return (
+      <div>
+        <LocationCard
+          lat={location.lat}
+          lon={location.lon}
+          mapUrl={location.mapUrl}
+          query={query}
+          onContentResize={onContentResize}
+        />
+      </div>
+    );
+  }
+  const signalReport = parseSignalReport(text);
+  const segments = parseChatMentionSegments(text);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
 
   return (
     <div>
-      {rncpKind && <RncpControlChip kind={rncpKind} />}
       <div>
         {segments.map((seg, i) =>
           seg.kind === 'mention' ? (

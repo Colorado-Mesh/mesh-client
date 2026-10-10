@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import yaml from 'js-yaml';
 import { afterEach, describe, expect, it } from 'vitest';
-import { stagedSidecarPath } from './reticulum-sidecar-staging.mjs';
+import { stagedSidecarPath } from './ble-sidecar-staging.mjs';
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const sidecars = read('.github/workflows/packaging-sidecars.yaml');
@@ -41,7 +41,7 @@ describe('packaging sidecar workflow gates', () => {
     expect(cache).toBeGreaterThan(toolchain);
     expect(build).toBeGreaterThan(cache);
     expect(steps[cache].with).toMatchObject({
-      workspaces: 'reticulum-sidecar -> target',
+      workspaces: 'ble-sidecar -> target',
       key: 'packaging-${{ matrix.target }}',
       'cache-bin': false,
       'cache-workspace-crates': false,
@@ -49,9 +49,9 @@ describe('packaging sidecar workflow gates', () => {
     expect(steps[cache].with['shared-key']).toBeUndefined();
     expect(steps[cache].with['cache-on-failure']).toBeUndefined();
     expect(steps[build].if).toBeUndefined();
-    expect(steps[build].run).toContain('node scripts/build-reticulum-sidecar-release.mjs');
+    expect(steps[build].run).toContain('node scripts/build-ble-sidecar-release.mjs');
     expect(steps[build].run).toContain("${{ !matrix.run_tests && '--skip-tests' || '' }}");
-    expect(steps[build].env.WORKSPACE_ROOT).toBe('${{ github.workspace }}/.rsstack');
+    expect(steps[build].env).toBeUndefined();
   });
 
   it('allows isolated sidecar builds with the same platform input as reusable packaging', () => {
@@ -76,7 +76,7 @@ describe('packaging sidecar workflow gates', () => {
     if (file === 'release') expect(job).toContain("needs.sidecars.result == 'success'");
     expect(job).toContain('uses: ./.github/actions/download-packaging-sidecars');
     expect(job).toContain('platform: ${{ matrix.sidecar_platform }}');
-    expect(job).not.toMatch(/build-reticulum-sidecar-release|continue-on-error:/);
+    expect(job).not.toMatch(/build-ble-sidecar-release|continue-on-error:/);
     for (const smoke of [
       'macOS packaging',
       'Linux packaging',
@@ -102,18 +102,18 @@ describe('packaging sidecar workflow gates', () => {
     expect(sidecars).not.toMatch(/continue-on-error:/);
   });
 
-  it('downloads only this run’s staged Reticulum binaries and requires both architectures', () => {
-    expect(download).toContain('pattern: ci-reticulum-staged-${{ inputs.platform }}-*');
+  it('downloads only this run’s staged Bluetooth helper binaries and requires both architectures', () => {
+    expect(download).toContain('pattern: ci-ble-staged-${{ inputs.platform }}-*');
     expect(download).toContain('merge-multiple: true');
     expect(download).not.toMatch(/run-id:|github-token:|repository:|continue-on-error:/);
     expect(download).toContain(
-      'node scripts/verify-reticulum-sidecar-staged.mjs --platform "$SIDECAR_PLATFORM"',
+      'node scripts/verify-ble-sidecar-staged.mjs --platform "$SIDECAR_PLATFORM"',
     );
     expect(sidecars).toContain('if-no-files-found: error');
-    expect(sidecars).toContain('name: Stage Reticulum ${{ matrix.platform }} ${{ matrix.arch }}');
     expect(sidecars).toContain(
-      'name: ci-reticulum-staged-${{ matrix.platform }}-${{ matrix.arch }}',
+      'name: Stage Bluetooth helper ${{ matrix.platform }} ${{ matrix.arch }}',
     );
+    expect(sidecars).toContain('name: ci-ble-staged-${{ matrix.platform }}-${{ matrix.arch }}');
   });
 
   it('prefixes Build Binaries installer artifacts with test- and keeps Release unprefixed', () => {
@@ -126,8 +126,8 @@ describe('packaging sidecar workflow gates', () => {
       expect(release).toContain(`artifact: mesh-client-${os}-\${{ github.sha }}`);
       expect(release).not.toContain(`test-mesh-client-${os}-`);
     }
-    expect(build).toContain('name: Stage Reticulum');
-    expect(release).toContain('name: Stage Reticulum');
+    expect(build).toContain('name: Stage Bluetooth helper');
+    expect(release).toContain('name: Stage Bluetooth helper');
     expect(build).toContain('name: Package ${{ matrix.sidecar_platform }}');
   });
 });
@@ -140,15 +140,14 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-sidecar-archive-'));
   fixtures.push(root);
-  for (const dir of ['scripts', '.rsstack', '.sidecar-artifacts']) mkdirSync(path.join(root, dir));
+  for (const dir of ['scripts', '.sidecar-artifacts']) mkdirSync(path.join(root, dir));
   for (const file of [
-    'verify-reticulum-sidecar-staged.mjs',
-    'reticulum-sidecar-staging.mjs',
+    'verify-ble-sidecar-staged.mjs',
+    'ble-sidecar-staging.mjs',
     'resolve-release-matrix.mjs',
   ]) {
     copyFileSync(new URL(file, import.meta.url), path.join(root, 'scripts', file));
   }
-  writeFileSync(path.join(root, '.rsstack/RESOLVED_SHAS.txt'), 'rsNomad abc123\n');
   return root;
 }
 
@@ -163,7 +162,7 @@ function bash(root, source, env = {}) {
 function verify(root, platform) {
   return spawnSync(
     process.execPath,
-    [path.join(root, 'scripts/verify-reticulum-sidecar-staged.mjs'), '--platform', platform],
+    [path.join(root, 'scripts/verify-ble-sidecar-staged.mjs'), '--platform', platform],
     { encoding: 'utf8' },
   );
 }
@@ -202,41 +201,35 @@ describe.skipIf(process.platform === 'win32')('matrix resolver shell steps', () 
 
 // The archive harness uses POSIX bash; real Windows packaging is covered by CI smoke jobs.
 describe.skipIf(process.platform === 'win32')('staged sidecar archive handoff', () => {
-  it.each(['win32', 'linux', 'darwin'])(
-    'restores both %s architectures and source revisions',
-    (platform) => {
-      const root = fixture();
-      for (const arch of ['x64', 'arm64']) {
-        const binary = stagedSidecarPath(root, platform, arch);
-        mkdirSync(path.dirname(binary), { recursive: true });
-        writeFileSync(binary, Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77));
-        chmodSync(binary, 0o755);
-        const result = bash(root, runBlock(sidecars, 'Archive sidecar and source revisions'), {
-          SIDECAR: `${platform}-${arch}`,
-        });
-        expect(result.status, result.stderr).toBe(0);
-        const name = `sidecar-${platform}-${arch}.tar`;
-        copyFileSync(path.join(root, name), path.join(root, '.sidecar-artifacts', name));
-      }
-      rmSync(path.join(root, 'resources'), { recursive: true });
-      const restored = bash(root, runBlock(download, 'Restore staged sidecars'));
-      expect(restored.status, restored.stderr).toBe(0);
-      const checked = verify(root, platform);
-      expect(checked.status, checked.stderr).toBe(0);
-      for (const arch of ['x64', 'arm64']) {
-        const binary = stagedSidecarPath(root, platform, arch);
-        expect(
-          readFileSync(binary).equals(Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77)),
-        ).toBe(true);
-        expect(statSync(binary).mode & 0o111).toBe(0o111);
-        expect(readFileSync(path.join(path.dirname(binary), 'RESOLVED_SHAS.txt'), 'utf8')).toBe(
-          'rsNomad abc123\n',
-        );
-      }
-      rmSync(stagedSidecarPath(root, platform, 'arm64'));
-      expect(verify(root, platform).status).not.toBe(0);
-    },
-  );
+  it.each(['win32', 'linux', 'darwin'])('restores both %s architectures', (platform) => {
+    const root = fixture();
+    for (const arch of ['x64', 'arm64']) {
+      const binary = stagedSidecarPath(root, platform, arch);
+      mkdirSync(path.dirname(binary), { recursive: true });
+      writeFileSync(binary, Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77));
+      chmodSync(binary, 0o755);
+      const result = bash(root, runBlock(sidecars, 'Archive sidecar'), {
+        SIDECAR: `${platform}-${arch}`,
+      });
+      expect(result.status, result.stderr).toBe(0);
+      const name = `sidecar-${platform}-${arch}.tar`;
+      copyFileSync(path.join(root, name), path.join(root, '.sidecar-artifacts', name));
+    }
+    rmSync(path.join(root, 'resources'), { recursive: true });
+    const restored = bash(root, runBlock(download, 'Restore staged sidecars'));
+    expect(restored.status, restored.stderr).toBe(0);
+    const checked = verify(root, platform);
+    expect(checked.status, checked.stderr).toBe(0);
+    for (const arch of ['x64', 'arm64']) {
+      const binary = stagedSidecarPath(root, platform, arch);
+      expect(readFileSync(binary).equals(Buffer.alloc(1024 * 1024, arch === 'x64' ? 33 : 77))).toBe(
+        true,
+      );
+      expect(statSync(binary).mode & 0o111).toBe(0o111);
+    }
+    rmSync(stagedSidecarPath(root, platform, 'arm64'));
+    expect(verify(root, platform).status).not.toBe(0);
+  });
 
   it('fails extraction when no sidecar artifacts were downloaded', () => {
     const result = bash(fixture(), runBlock(download, 'Restore staged sidecars'));

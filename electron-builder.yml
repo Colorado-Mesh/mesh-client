@@ -1,9 +1,5 @@
-appId: com.mesh-client.app
-productName: Mesh-client
-protocols:
-  - name: Mesh Client LXMF
-    schemes:
-      - lxm
+appId: io.github.charlottemeshtastic.meshhub
+productName: Mesh Hub
 directories:
   buildResources: resources
   output: release
@@ -14,19 +10,19 @@ files:
   - package.json
 asarUnpack:
   - 'node_modules/systeminformation/**/*'
-  # Native BLE moved to reticulum-sidecar (btleplug); @stoprocent/noble removed.
+  # Native BLE lives in the ble-sidecar helper (btleplug); @stoprocent/noble removed.
 publish:
   provider: github
-  owner: Colorado-Mesh
+  owner: charlottemeshtastic
   repo: mesh-client
   # Keep GitHub Releases as drafts until a maintainer publishes manually.
   releaseType: draft
 beforePack: scripts/electron-builder-before-pack.mjs
 extraResources:
-  - from: resources/icons/win/colorado-mesh.ico
-    to: colorado-mesh.ico
-  - from: resources/reticulum-sidecar
-    to: reticulum-sidecar
+  - from: resources/icons/win/mesh-hub.ico
+    to: mesh-hub.ico
+  - from: resources/ble-sidecar
+    to: ble-sidecar
     filter:
       - '**/*'
   - from: resources/icons/linux/256x256.png
@@ -48,11 +44,10 @@ mac:
   # Hardened runtime improves tamper resistance; required for notarized distribution.
   hardenedRuntime: true
   preAutoEntitlements: true
-  helperBundleId: com.mesh-client.app.helper
+  helperBundleId: io.github.charlottemeshtastic.meshhub.helper
   extendInfo:
-    NSBluetoothAlwaysUsageDescription: 'Mesh-client needs Bluetooth to communicate with Meshtastic devices.'
-    NSMicrophoneUsageDescription: 'Mesh-client needs the microphone for Reticulum LXST voice calls.'
-    NSCameraUsageDescription: 'Mesh-client needs the camera to scan QR codes for channel and contact sharing.'
+    NSBluetoothAlwaysUsageDescription: 'Mesh Hub needs Bluetooth to communicate with Meshtastic and MeshCore devices.'
+    NSCameraUsageDescription: 'Mesh Hub needs the camera to scan QR codes for channel and contact sharing.'
   target:
     - dmg
     - zip
@@ -97,11 +92,11 @@ linux:
   icon: resources/icons/linux/
   desktop:
     entry:
-      StartupWMClass: 'com.mesh-client.app'
+      StartupWMClass: 'io.github.charlottemeshtastic.meshhub'
       Categories: 'Utility;Network;'
   extraResources:
     - from: ./copyright
-      to: usr/share/doc/mesh-client/copyright
+      to: usr/share/doc/mesh-hub/copyright
 deb:
 rpm:
 win:
@@ -110,7 +105,7 @@ win:
       arch:
         - x64
         - arm64
-  icon: resources/icons/win/colorado-mesh.ico
+  icon: resources/icons/win/mesh-hub.ico
 nsis:
   buildUniversalInstaller: false
   # WoA: Nsis7z cannot reliably extract ARM64 LZMA app-arm64.7z (main exe missing).

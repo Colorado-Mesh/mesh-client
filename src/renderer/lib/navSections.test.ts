@@ -8,13 +8,8 @@ import {
   findTabIndexForSlot,
   NAV_SECTION_ORDER,
   navSectionForSlot,
-  resolveSectionTargetTab,
 } from './navSections';
-import {
-  MESHCORE_CAPABILITIES,
-  MESHTASTIC_CAPABILITIES,
-  RETICULUM_CAPABILITIES,
-} from './radio/BaseRadioProvider';
+import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS } from './tabSlotIds';
 
 const identityT = ((key: string) => key) as TFunction;
@@ -22,7 +17,6 @@ const identityT = ((key: string) => key) as TFunction;
 const PROTOCOLS = [
   ['meshtastic', MESHTASTIC_CAPABILITIES],
   ['meshcore', MESHCORE_CAPABILITIES],
-  ['reticulum', RETICULUM_CAPABILITIES],
 ] as const;
 
 function slotsBySection(protocol: (typeof PROTOCOLS)[number]) {
@@ -77,20 +71,6 @@ describe('computeNavSections', () => {
     });
   });
 
-  it('places Reticulum-only panels in Chat and Network, with Nomad Network on the rail', () => {
-    const sections = slotsBySection(PROTOCOLS[2]);
-    expect(sections.chat).toEqual(expect.arrayContaining(['Chat', 'RRC', 'Games']));
-    expect(sections.network).toEqual(expect.arrayContaining(['Nodes', 'Topology', 'Remote']));
-    expect(sections.nomad).toEqual(['NomadNetwork']);
-    expect(sections.network).not.toContain('NomadNetwork');
-    expect(sections.device).toContain('Radio');
-  });
-
-  it('shows no Nomad rail entry on protocols without Nomad Network', () => {
-    expect(slotsBySection(PROTOCOLS[0]).nomad).toBeUndefined();
-    expect(slotsBySection(PROTOCOLS[1]).nomad).toBeUndefined();
-  });
-
   it('keeps Meshtastic Modules in Device', () => {
     const sections = slotsBySection(PROTOCOLS[0]);
     expect(sections.device).toContain('Modules');
@@ -121,20 +101,5 @@ describe('section lookups', () => {
     expect(graphTab).toBeGreaterThanOrEqual(0);
     expect(findNavSectionForTab(sections, graphTab)?.id).toBe('network');
     expect(findNavSectionForTab(sections, 999)).toBeUndefined();
-  });
-
-  it('returns -1 for slots hidden on the protocol', () => {
-    expect(findTabIndexForSlot(mappings, 'RRC')).toBe(-1);
-  });
-
-  it('reopens the last panel shown in a section, else the first tab', () => {
-    const monitor = sections.find((s) => s.id === 'monitor');
-    if (!monitor) throw new Error('monitor section missing');
-    const sniffer = monitor.tabs.find((tab) => tab.slot === 'Sniffer');
-    expect(resolveSectionTargetTab(monitor, sniffer?.panelIndex)).toBe(sniffer?.tabIndex);
-    expect(resolveSectionTargetTab(monitor, undefined)).toBe(monitor.tabs[0]?.tabIndex);
-    expect(resolveSectionTargetTab(monitor, TAB_SLOT_IDS.indexOf('RRC'))).toBe(
-      monitor.tabs[0]?.tabIndex,
-    );
   });
 });

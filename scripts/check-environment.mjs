@@ -445,7 +445,7 @@ function checkRustClippy() {
     status: 'warn',
     severity: 'optional',
     label: 'cargo clippy not ready (optional)',
-    hint: 'cd reticulum-sidecar once — rust-toolchain.toml installs clippy/rustfmt/llvm-tools-preview via rustup',
+    hint: 'cd ble-sidecar once — rust-toolchain.toml installs clippy/rustfmt/llvm-tools-preview via rustup',
   };
 }
 
@@ -465,7 +465,7 @@ function checkCargoLlvmCov() {
     status: 'warn',
     severity: 'optional',
     label: 'cargo llvm-cov not found (optional)',
-    hint: 'cargo install cargo-llvm-cov — for pnpm run reticulum:sidecar:coverage (CI enforces threshold in tests.yaml)',
+    hint: 'cargo install cargo-llvm-cov — for pnpm run ble:sidecar:coverage (CI enforces threshold in tests.yaml)',
   };
 }
 

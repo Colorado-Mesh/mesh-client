@@ -138,7 +138,6 @@ export function resolveMecpRebroadcastTargets(
   if (candidate.isHistory || candidate.viaStoreForward) return [];
   const via = candidate.receivedVia ?? 'rf';
   if (via === 'mqtt') return [];
-  if (candidate.protocol !== 'meshtastic' && candidate.protocol !== 'meshcore') return [];
 
   const targets: MecpRebroadcastSendTarget[] = [];
   for (const rule of rules) {

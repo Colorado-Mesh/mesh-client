@@ -19,7 +19,6 @@ import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEch
 import { notifyBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
 import { createSerializedWritableStream } from '../../meshtastic/meshtasticTransportLossDetection';
 import { parseTcpAddress } from '../../parseTcpAddress';
-import { getReticulumBleBondDesyncActive } from '../../reticulum/reticulumBleBondDesync';
 import { openSerialPortWithTimeout } from '../../serialPortRecovery';
 import { persistSerialPortIdentity, selectGrantedSerialPort } from '../../serialPortSignature';
 import { MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS } from '../../timeConstants';
@@ -370,9 +369,7 @@ class IpcSidecarGattConnection {
 
       try {
         await withTimeout(
-          connectGattWithScanBusyRetry(sessionId, this.peripheralId, {
-            shouldAbort: () => getReticulumBleBondDesyncActive(),
-          }),
+          connectGattWithScanBusyRetry(sessionId, this.peripheralId),
           GATT_IPC_CONNECT_TIMEOUT_MS,
           'MeshCore BLE IPC open',
         );

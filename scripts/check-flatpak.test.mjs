@@ -16,7 +16,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 describe('manifestCiBuildInfoExportViolations', () => {
   it('accepts the real Flatpak manifest', () => {
     const doc = yaml.load(
-      fs.readFileSync(path.join(ROOT, 'org.coloradomesh.MeshClient.yml'), 'utf8'),
+      fs.readFileSync(path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml'), 'utf8'),
     );
     expect(manifestCiBuildInfoExportViolations(doc, 'manifest')).toEqual([]);
   });
@@ -99,22 +99,22 @@ describe('flatpakWorkflowSidecarExecutableContractViolations', () => {
   it('rejects raw binary upload and test -f smoke', () => {
     const doc = {
       jobs: {
-        'reticulum-sidecar': {
+        'ble-sidecar': {
           steps: [
             {
-              run: 'install -Dm755 target/release/mesh-client-reticulum resources/reticulum-sidecar/mesh-client-reticulum',
+              run: 'install -Dm755 target/release/mesh-hub-ble resources/ble-sidecar/mesh-hub-ble',
             },
             {
               uses: 'actions/upload-artifact@v7',
-              with: { path: 'resources/reticulum-sidecar/mesh-client-reticulum' },
+              with: { path: 'resources/ble-sidecar/mesh-hub-ble' },
             },
           ],
         },
         flatpak: {
           steps: [
             {
-              run: `flatpak run --command=sh org.coloradomesh.MeshClient -c '
-            test -f /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum'`,
+              run: `flatpak run --command=sh io.github.charlottemeshtastic.MeshHub -c '
+            test -f /app/lib/mesh-client/resources/ble-sidecar/mesh-hub-ble'`,
             },
           ],
         },
@@ -132,16 +132,20 @@ describe('flatpakWorkflowSidecarExecutableContractViolations', () => {
 
 describe('manifest Reticulum sidecar executable bit', () => {
   it('requires chmod 755 after resources copy in the real manifest', () => {
-    const manifest = fs.readFileSync(path.join(ROOT, 'org.coloradomesh.MeshClient.yml'), 'utf8');
-    expect(manifest).toContain(
-      'chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
+    const manifest = fs.readFileSync(
+      path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml'),
+      'utf8',
     );
+    expect(manifest).toContain('chmod 755 /app/lib/mesh-client/resources/ble-sidecar/mesh-hub-ble');
   });
 });
 
 describe('Electron archive sources', () => {
   it('keep strip-components: 0 in the real manifest', () => {
-    const manifest = fs.readFileSync(path.join(ROOT, 'org.coloradomesh.MeshClient.yml'), 'utf8');
+    const manifest = fs.readFileSync(
+      path.join(ROOT, 'io.github.charlottemeshtastic.MeshHub.yml'),
+      'utf8',
+    );
     const blocks = manifest
       .split(/^\s*- type: archive\s*$/m)
       .filter((block) => /electron-v[\d.]+-linux-(?:x64|arm64)\.zip/.test(block));

@@ -1,6 +1,6 @@
 /**
  * electron-builder beforePack hook — copy the staged per-arch Reticulum sidecar into
- * resources/reticulum-sidecar/ so extraResources bundles the correct binary.
+ * resources/ble-sidecar/ so extraResources bundles the correct binary.
  * Also attaches SCHEMA-UPGRADE.txt when CI wrote a schema-bump notice.
  */
 import { copyFileSync, existsSync, mkdirSync, statSync } from 'fs';
@@ -10,7 +10,7 @@ import {
   MIN_SIDECAR_BYTES,
   packSidecarResourcePath,
   resolveStagedSidecarPathForPackContext,
-} from './reticulum-sidecar-staging.mjs';
+} from './ble-sidecar-staging.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -28,7 +28,7 @@ export default async function beforePack(context) {
   const stagedPath = resolveStagedSidecarPathForPackContext(projectRoot, platform, context.arch);
   if (!existsSync(stagedPath)) {
     throw new Error(
-      `[beforePack] Staged Reticulum sidecar missing for ${platform} arch ${context.arch}: ${stagedPath}. Run node scripts/build-reticulum-sidecar-release.mjs --platform ${platform} before dist.`,
+      `[beforePack] Staged Reticulum sidecar missing for ${platform} arch ${context.arch}: ${stagedPath}. Run node scripts/build-ble-sidecar-release.mjs --platform ${platform} before dist.`,
     );
   }
 

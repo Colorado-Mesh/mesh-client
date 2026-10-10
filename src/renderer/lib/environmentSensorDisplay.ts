@@ -16,7 +16,7 @@ export function isMapSensorMetric(value: unknown): value is MapSensorMetric {
 export const SENSOR_LAYER_MAX_AGE_MS = MS_PER_DAY;
 
 /** Leaflet path colors (canvas renderer cannot read CSS custom properties). */
-export const SENSOR_COLOR_NEUTRAL = '#93a0b7';
+export const SENSOR_COLOR_NEUTRAL = '#a3a3a3';
 const SENSOR_COLOR_COLD = '#60a5fa';
 const SENSOR_COLOR_COOL = '#22d3ee';
 const SENSOR_COLOR_MILD = '#4ade80';

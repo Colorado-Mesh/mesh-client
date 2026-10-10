@@ -5,7 +5,6 @@ import type { RfConnectAutomaticFn, RfConnectFn } from '../lib/rfConnectionTypes
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
 import { getMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getMeshtasticSession } from '../lib/sessions/meshtasticSession';
-import { getReticulumSession } from '../lib/sessions/reticulumSession';
 import type { ConnectionType, DeviceState, MeshProtocol, MQTTStatus } from '../lib/types';
 import { useConnect } from './useConnect';
 import { useConnectionByProtocol } from './useConnectionByProtocol';
@@ -44,7 +43,7 @@ function deviceStateFromConnection(conn: ReturnType<typeof useConnectionByProtoc
 /**
  * RF connect: MeshCore uses the runtime session `connect()` (full success path including TCP
  * burst-complete deferred reconnect). Meshtastic keeps prepare → ConnectionDriver → attach
- * ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375)).
+ * ([#375](https://github.com/charlottemeshtastic/mesh-client/issues/375)).
  */
 export function useProtocolConnect(): (
   protocol: MeshProtocol,
@@ -66,11 +65,6 @@ export function useProtocolConnect(): (
         // that skipped session params + TCP deferred-reconnect after #792 / burst-complete).
         const mcType = meshcoreConnectionType(type);
         await getMeshcoreSession().connect(mcType, httpAddress, blePeripheralId);
-        return;
-      }
-
-      if (protocol === 'reticulum') {
-        await getReticulumSession().connect();
         return;
       }
 
@@ -98,8 +92,6 @@ export function useProtocolDisconnect() {
   return useCallback(async (protocol: MeshProtocol) => {
     if (protocol === 'meshcore') {
       await getMeshcoreSession().finalizeDriverDisconnect({ disconnectDriver: true });
-    } else if (protocol === 'reticulum') {
-      await getReticulumSession().finalizeDriverDisconnect();
     } else {
       await getMeshtasticSession().finalizeDriverDisconnect({ disconnectDriver: true });
     }
@@ -129,9 +121,6 @@ export function useProtocolConnectionActions(protocol: MeshProtocol): ProtocolCo
           httpAddress,
           lastSerialPortId ?? null,
         );
-      }
-      if (protocol === 'reticulum') {
-        return getReticulumSession().connectAutomatic();
       }
       return getMeshtasticSession().connectAutomatic(
         type,

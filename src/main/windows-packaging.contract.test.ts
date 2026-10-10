@@ -112,8 +112,8 @@ describe('Windows packaging (contract)', () => {
     expect(verifyScript).toContain('win-setup-installer-names');
     expect(verifyScript).toContain('assert-update-yml-artifacts');
     expect(verifyScript).toContain("requiredFiles: ['latest.yml']");
-    expect(verifyScript).toContain('reticulum-sidecar');
-    expect(verifyScript).toContain('assertBundledReticulumSidecarInBundle');
+    expect(verifyScript).toContain('ble-sidecar');
+    expect(verifyScript).toContain('assertBundledBleSidecarInBundle');
     expect(verifyScript).not.toContain('resedit');
 
     const setupNamesScript = readFileSync(
@@ -147,7 +147,7 @@ describe('Windows packaging (contract)', () => {
     );
     expect(installScript).toContain('--arch x64');
     expect(installScript).toContain('--probe-7z');
-    expect(installScript).toContain('assertBundledReticulumSidecarInBundle');
+    expect(installScript).toContain('assertBundledBleSidecarInBundle');
     expect(installScript).toContain('/LOG=');
     expect(installScript).toContain('find-nsis-app-archive.mjs');
     expect(installScript).toContain("dumpDir('release dir (installer missing)'");
@@ -373,17 +373,13 @@ describe('Windows packaging (contract)', () => {
     expect(releaseWorkflowMacUpload).toContain('release/mac-x64/**/*.zip');
 
     const sidecarWorkflow = readFileSync(
-      join(REPO_ROOT, '.github', 'workflows', 'reticulum-sidecar.yaml'),
+      join(REPO_ROOT, '.github', 'workflows', 'ble-sidecar.yaml'),
       'utf-8',
     );
     expect(sidecarWorkflow).toContain('target: x86_64-apple-darwin');
-    expect(sidecarWorkflow).toContain('mesh-client-reticulum-macos-x64');
-    expect(sidecarWorkflow).toContain('mesh-client-reticulum-rns-macos-x64');
+    expect(sidecarWorkflow).toContain('mesh-hub-ble-macos-x64');
 
-    const staging = readFileSync(
-      join(REPO_ROOT, 'scripts', 'reticulum-sidecar-staging.mjs'),
-      'utf-8',
-    );
+    const staging = readFileSync(join(REPO_ROOT, 'scripts', 'ble-sidecar-staging.mjs'), 'utf-8');
     expect(staging).toContain("cargoTarget: 'x86_64-apple-darwin'");
     expect(staging).toContain("archKey: 'x64'");
 
@@ -406,7 +402,7 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'actions', 'download-packaging-sidecars', 'action.yaml'),
       'utf-8',
     );
-    expect(downloadSidecars).toContain('verify-reticulum-sidecar-staged.mjs');
+    expect(downloadSidecars).toContain('verify-ble-sidecar-staged.mjs');
     for (const workflowName of ['build.yaml', 'release.yaml'] as const) {
       const workflow = readFileSync(join(REPO_ROOT, '.github', 'workflows', workflowName), 'utf-8');
       expect(workflow).toContain('packaging-smoke:');
@@ -415,7 +411,7 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('label: Linux packaging');
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
-      expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
+      expect(workflow).toContain('node scripts/test-linux-appimage-ble-sidecar.mjs');
       expect(workflow).toContain('bash scripts/ci-install-linux-appimage-smoke-deps.sh');
       expect(workflow).not.toContain('libatk-bridge2.0-0t64');
       const launchSmoke = workflow.slice(

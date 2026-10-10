@@ -41,14 +41,4 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     nameTextClass: 'text-meshcore-500',
     unreadBadgeFillClass: 'bg-meshcore-700 text-white',
   },
-  reticulum: {
-    displayName: 'Reticulum',
-    monogram: 'RN',
-    ariaSwitchKey: 'aria.switchToReticulum',
-    ariaSwitchWithUnreadKey: 'aria.switchToReticulumWithUnread',
-    railActiveClass:
-      'bg-reticulum-500/15 text-reticulum-500 ring-[1.5px] ring-inset ring-reticulum-500',
-    nameTextClass: 'text-reticulum-500',
-    unreadBadgeFillClass: 'bg-reticulum-700 text-white',
-  },
 };

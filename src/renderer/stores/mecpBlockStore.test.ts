@@ -18,11 +18,6 @@ describe('mecpBlockStore', () => {
     expect(isMecpSenderBlocked('meshtastic', '9')).toBe(false);
   });
 
-  it('falls back to the sender id as the label', () => {
-    useMecpBlockStore.getState().block('reticulum', '42', '  ');
-    expect(useMecpBlockStore.getState().blocked['reticulum:42']?.label).toBe('42');
-  });
-
   it('caps the list, dropping the oldest entries', () => {
     const blocked: Record<
       string,

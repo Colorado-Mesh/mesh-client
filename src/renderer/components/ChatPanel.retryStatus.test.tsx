@@ -94,7 +94,7 @@ describe('ChatPanel retry status controls', () => {
     vi.mocked(mockOutbox.updateStatus).mockResolvedValue(undefined);
     vi.mocked(mockOutbox.remove).mockClear();
     vi.mocked(mockOutbox.remove).mockResolvedValue(undefined);
-    for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+    for (const protocol of ['meshtastic', 'meshcore'] as const) {
       localStorage.removeItem(openDmTabsStorageKey(protocol));
       localStorage.removeItem(activeDmStorageKey(protocol));
     }

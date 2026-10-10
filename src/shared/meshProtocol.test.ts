@@ -8,23 +8,25 @@ import {
 } from './meshProtocol';
 
 describe('meshProtocol', () => {
-  it('REGISTERED_MESH_PROTOCOLS includes meshtastic, meshcore, and reticulum', () => {
-    expect(REGISTERED_MESH_PROTOCOLS).toEqual(['meshtastic', 'meshcore', 'reticulum']);
+  it('registers Meshtastic and MeshCore only', () => {
+    expect(REGISTERED_MESH_PROTOCOLS).toEqual(['meshtastic', 'meshcore']);
   });
 
-  it('isMeshProtocol narrows known protocols', () => {
+  it('isMeshProtocol narrows known protocols and rejects retired or unknown ones', () => {
     expect(isMeshProtocol('meshtastic')).toBe(true);
-    expect(isMeshProtocol('reticulum')).toBe(true);
-    expect(isMeshProtocol('unknown')).toBe(false);
+    expect(isMeshProtocol('meshcore')).toBe(true);
+    expect(isMeshProtocol('reticulum')).toBe(false);
+    expect(isMeshProtocol('')).toBe(false);
+  });
+
+  it('meshProtocolSqlInList matches registered protocols', () => {
+    expect(meshProtocolSqlInList()).toBe("'meshtastic','meshcore'");
   });
 
   it('MESH_PROTOCOL_SET matches registered list', () => {
     for (const p of REGISTERED_MESH_PROTOCOLS) {
       expect(MESH_PROTOCOL_SET.has(p)).toBe(true);
     }
-  });
-
-  it('meshProtocolSqlInList matches registered protocols', () => {
-    expect(meshProtocolSqlInList()).toBe("'meshtastic','meshcore','reticulum'");
+    expect(MESH_PROTOCOL_SET.size).toBe(REGISTERED_MESH_PROTOCOLS.length);
   });
 });

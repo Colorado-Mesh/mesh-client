@@ -10,9 +10,6 @@ import {
   findMeshtasticParentMessageForReply,
   findParentMessageForReply,
 } from '@/renderer/lib/replyPreview';
-import { normalizeReticulumNodeId, reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
-import { canonicalizeReticulumChatDmNodeId } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
-import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import { reactionParentKeyFromChatMessage } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { isHiddenWeatherPost } from '@/renderer/stores/weatherFilterStore';
@@ -44,7 +41,7 @@ export interface ChatUnreadChannelOptions {
 
 /** Persisted last-read / unread view key (`ch:N` or `dm:peer`). */
 export function chatViewKeyForMessage(
-  msg: Pick<ChatMessage, 'channel' | 'to' | 'sender_id' | 'reticulum_sender_hash'>,
+  msg: Pick<ChatMessage, 'channel' | 'to' | 'sender_id'>,
   protocol: MeshProtocol,
   ownNodeIds: ReadonlySet<number>,
   dmOptions?: ChatUnreadDmOptions,
@@ -61,44 +58,9 @@ export function resolveChatDmPeer(
   options?: ChatUnreadDmOptions,
 ): number | undefined {
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return undefined;
-  if (protocol === 'reticulum' && reticulumUnsetDmTo(msg.to) && msg.reticulum_sender_hash) {
-    const isOwn = (id: number) => {
-      const normalized = normalizeReticulumNodeId(id);
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalized) return true;
-      }
-      return false;
-    };
-    const senderFromHash = Number.parseInt(
-      msg.reticulum_sender_hash.replace(/[^0-9a-f]/gi, '').slice(0, 12) || '0',
-      16,
-    );
-    const senderId = (Number.isFinite(senderFromHash) ? senderFromHash : 0) >>> 0;
-    if (senderId > 0 && !isOwn(senderId) && !isOwn(msg.sender_id)) {
-      const peerU32 = canonicalizeReticulumChatDmNodeId(senderId);
-      if (options?.excludeDmPeer?.(peerU32)) return undefined;
-      return peerU32;
-    }
-  }
-  const effectiveTo = protocol === 'reticulum' && msg.to === 0 ? undefined : msg.to;
-  const isOwn = (id: number) => {
-    if (protocol === 'reticulum') {
-      const normalized = normalizeReticulumNodeId(id);
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalized) return true;
-      }
-      return false;
-    }
-    return ownNodeIds.has(id);
-  };
-  if (effectiveTo == null) {
-    if (protocol === 'reticulum' && msg.to === 0 && msg.sender_id > 0 && !isOwn(msg.sender_id)) {
-      const peerU32 = canonicalizeReticulumChatDmNodeId(msg.sender_id >>> 0);
-      if (options?.excludeDmPeer?.(peerU32)) return undefined;
-      return peerU32;
-    }
-    return undefined;
-  }
+  const effectiveTo = msg.to;
+  const isOwn = (id: number) => ownNodeIds.has(id);
+  if (effectiveTo == null) return undefined;
   let peer: number | undefined;
   if (isOwn(msg.sender_id) && !isOwn(effectiveTo)) peer = effectiveTo;
   else if (isOwn(effectiveTo) && !isOwn(msg.sender_id)) peer = msg.sender_id;
@@ -111,40 +73,9 @@ export function resolveChatDmPeer(
   ) {
     peer = msg.sender_id;
   }
-  if (peer === undefined && protocol === 'reticulum') {
-    const fromU = msg.sender_id >>> 0;
-    const toU = effectiveTo >>> 0;
-    const isOwnU32 = (id: number) => {
-      for (const own of ownNodeIds) {
-        if (normalizeReticulumNodeId(own) === normalizeReticulumNodeId(id)) return true;
-      }
-      return false;
-    };
-    if (msg.reticulum_sender_hash && fromU !== toU) {
-      const senderFromHash = reticulumHashToNodeId(msg.reticulum_sender_hash) >>> 0;
-      // Prefer the hash-backed sender as the peer. When own is still unknown, treating `to`
-      // as the peer opens a sticky self-DM on launch (inbound hydrate before identity).
-      if (senderFromHash === fromU) {
-        if (!isOwnU32(fromU)) {
-          peer = fromU;
-        } else if (!isOwnU32(toU)) {
-          peer = toU;
-        }
-      } else if (!isOwnU32(fromU)) {
-        peer = fromU;
-      }
-    } else if (fromU > 0 && !isOwnU32(fromU)) {
-      peer = fromU;
-    } else if (toU > 0 && !isOwnU32(toU)) {
-      peer = toU;
-    }
-  }
   if (peer === undefined) return undefined;
   if (protocol === 'meshtastic' && isMeshtasticBroadcastNodeNum(peer)) return undefined;
-  let peerU32 = peer >>> 0;
-  if (protocol === 'reticulum') {
-    peerU32 = canonicalizeReticulumChatDmNodeId(peerU32);
-  }
+  const peerU32 = peer >>> 0;
   if (options?.excludeDmPeer?.(peerU32)) return undefined;
   return peerU32;
 }
@@ -314,44 +245,19 @@ export function totalUnreadCount(
     nowMs,
   );
   let total = 0;
-  // Reticulum chat is DM-only; channel-indexed rows must not inflate the badge.
-  if (protocol !== 'reticulum') {
-    for (const n of channel.values()) total += n;
-  }
+  for (const n of channel.values()) total += n;
   for (const n of dm.values()) total += n;
   return total;
 }
 
-const RETICULUM_OPERATIONAL_STATUSES = new Set(['connected', 'configured', 'stale']);
-
-/** Reticulum LXMF chat unread for sidebar/tray badges. */
-export function computeReticulumChatUnread(
-  messages: readonly ChatMessage[],
-  connectionStatus: string | undefined,
-  persistedLastRead: Readonly<Record<string, number>>,
-  ownNodeIds: ReadonlySet<number>,
-): number {
-  if (!connectionStatus || !RETICULUM_OPERATIONAL_STATUSES.has(connectionStatus)) return 0;
-  if (messages.length === 0) return 0;
-  return totalUnreadCount(messages, persistedLastRead, ownNodeIds, 'reticulum');
-}
-
-/**
- * Unread counts for the top protocol switcher.
- * Reticulum includes RRC so inactive-protocol RRC traffic badges the Reticulum pill;
- * Chat sidebar must keep using chat-only totals (not this map).
- */
+/** Unread counts for the top protocol switcher. */
 export function buildProtocolSwitcherUnreadByProtocol(
   meshtasticChatUnread: number,
   meshcoreChatUnread: number,
-  reticulumChatUnread: number,
-  rrcUnread: number,
-  gamesUnread = 0,
 ): Record<MeshProtocol, number> {
   return {
     meshtastic: meshtasticChatUnread,
     meshcore: meshcoreChatUnread,
-    reticulum: reticulumChatUnread + rrcUnread + gamesUnread,
   };
 }
 

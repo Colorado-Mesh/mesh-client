@@ -34,14 +34,10 @@ import {
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
-import {
-  meshcoreRawPacketSenderColumnText,
-  reticulumDestinationColumnText,
-} from '../lib/nodeLongNameOrHex';
+import { meshcoreRawPacketSenderColumnText } from '../lib/nodeLongNameOrHex';
 import {
   type MeshtasticRawPacketEntry,
   rawPacketVirtualizerKey,
-  type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
 import {
   DEFAULT_RAW_PACKET_SORT,
@@ -50,10 +46,7 @@ import {
   type RawPacketSortState,
   sortMeshcorePackets,
   sortMeshtasticPackets,
-  sortReticulumPackets,
 } from '../lib/rawPacketLogSort';
-import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
-import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 import { RawPacketPathChain } from './RawPacketPathChain';
 import { INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
@@ -237,14 +230,6 @@ function FilterChip({
       {label}
     </button>
   );
-}
-
-function formatReticulumDestinationLabel(
-  destinationHash: string | null | undefined,
-  getNodeLabel: (nodeId: number) => string,
-): string | null {
-  if (typeof reticulumDestinationColumnText !== 'function') return null;
-  return reticulumDestinationColumnText(destinationHash, getNodeLabel, reticulumHashToNodeId);
 }
 
 function formatTs(ts: number): string {
@@ -522,111 +507,6 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   );
 }
 
-function ReticulumExpandedDetails({
-  p,
-  getNodeLabel,
-}: {
-  p: ReticulumRawPacketEntry;
-  getNodeLabel: (nodeId: number) => string;
-}) {
-  const { t } = useTranslation();
-  const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
-  return (
-    <div className="text-2xs text-ink-400 mb-2 space-y-0.5">
-      <p>
-        <span className="text-muted">{t('rawPacketLog.reticulum.direction')}:</span>{' '}
-        {p.direction.toUpperCase()}
-        {' · '}
-        <span className="text-muted">{t('rawPacketLog.reticulum.interface')}:</span>{' '}
-        {p.interfaceName}
-      </p>
-      <p>
-        <span className="text-muted">{t('rawPacketLog.reticulum.packetType')}:</span>{' '}
-        {formatReticulumWireEnumLabel(p.packetType)}
-        {' · '}
-        <span className="text-muted">{t('rawPacketLog.reticulum.headerType')}:</span>{' '}
-        {formatReticulumWireEnumLabel(p.headerType)}
-      </p>
-      {p.destinationHash ? (
-        <p>
-          <span className="text-muted">{t('rawPacketLog.reticulum.destination')}:</span>{' '}
-          {destinationLabel ?? p.destinationHash.slice(0, 16)}
-        </p>
-      ) : null}
-      {(p.rssi != null || p.snr != null) && (
-        <p>
-          {p.rssi != null ? `RSSI ${p.rssi.toFixed(1)}` : null}
-          {p.rssi != null && p.snr != null ? ' · ' : null}
-          {p.snr != null ? `SNR ${p.snr.toFixed(1)}` : null}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ReticulumRow({
-  p,
-  getNodeLabel,
-}: {
-  p: ReticulumRawPacketEntry;
-  getNodeLabel: (nodeId: number) => string;
-}) {
-  const { t } = useTranslation();
-  const typeLabel = formatReticulumWireEnumLabel(p.packetType);
-  const dirLabel =
-    p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
-  const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
-  const relativeTime = formatRawPacketRelativeTime(p.ts, t);
-  const absoluteTime = formatTs(p.ts);
-  const directionTooltip =
-    p.direction === 'tx'
-      ? t('rawPacketLog.filterChipTxTooltip')
-      : t('rawPacketLog.filterChipRxTooltip');
-  return (
-    <>
-      <span
-        className="text-muted text-2xs w-18 shrink-0 tabular-nums"
-        title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
-      >
-        {relativeTime}
-      </span>
-      <span
-        className={`text-2xs w-9 shrink-0 rounded px-1 text-center ${
-          p.direction === 'tx'
-            ? 'bg-indigo-900/60 text-indigo-200'
-            : 'bg-emerald-900/60 text-emerald-200'
-        }`}
-        title={directionTooltip}
-      >
-        {dirLabel}
-      </span>
-      <PacketTypeBadge
-        label={typeLabel}
-        className="bg-ink-700 text-ink-200 min-w-0 flex-1 truncate"
-        tooltip={t('rawPacketLog.payloadTypeTooltip', { type: typeLabel })}
-      />
-      <span
-        className="text-muted text-2xs min-w-0 flex-1 truncate"
-        title={t('rawPacketLog.colDetailsTooltip')}
-      >
-        {p.interfaceName}
-        {destinationLabel ? ` · ${destinationLabel}` : ''}
-      </span>
-      <span
-        className="text-muted text-2xs w-22 shrink-0 text-right tabular-nums"
-        title={
-          p.snr != null && p.rssi != null
-            ? t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })
-            : t('rawPacketLog.colSnrTooltip')
-        }
-      >
-        {p.snr != null ? p.snr.toFixed(1) : t('common.emDash')}
-        {p.rssi != null ? ` / ${p.rssi}` : ''}
-      </span>
-    </>
-  );
-}
-
 interface MeshcoreProps {
   variant: 'meshcore';
   packets: RxPacketEntry[];
@@ -649,18 +529,11 @@ interface MeshtasticProps {
   onNodeClick?: (nodeId: number) => void;
 }
 
-interface ReticulumProps {
-  variant: 'reticulum';
-  packets: ReticulumRawPacketEntry[];
-  onClear: () => void;
-  getNodeLabel: (nodeId: number) => string;
-}
-
-type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
+type Props = MeshcoreProps | MeshtasticProps;
 
 export default function RawPacketLogPanel(props: Props) {
   const { variant, packets, onClear, getNodeLabel } = props;
-  const onNodeClick = variant === 'reticulum' ? undefined : props.onNodeClick;
+  const onNodeClick = props.onNodeClick;
   const onPing = variant === 'meshcore' ? props.onPing : undefined;
   const getNodeHwModel = variant === 'meshcore' ? props.getNodeHwModel : undefined;
   const pubKeyByNodeId = variant === 'meshcore' ? props.pubKeyByNodeId : undefined;
@@ -773,28 +646,7 @@ export default function RawPacketLogPanel(props: Props) {
     [t],
   );
 
-  const reticulumChipDefs = useMemo(
-    () => [
-      {
-        id: 'rx',
-        label: t('rawPacketLog.filterChipRx'),
-        tooltip: t('rawPacketLog.filterChipRxTooltip'),
-      },
-      {
-        id: 'tx',
-        label: t('rawPacketLog.filterChipTx'),
-        tooltip: t('rawPacketLog.filterChipTxTooltip'),
-      },
-    ],
-    [t],
-  );
-
-  const chipDefs =
-    variant === 'meshcore'
-      ? meshcoreChipDefs
-      : variant === 'reticulum'
-        ? reticulumChipDefs
-        : meshtasticChipDefs;
+  const chipDefs = variant === 'meshcore' ? meshcoreChipDefs : meshtasticChipDefs;
 
   const matchesMeshcoreChips = useCallback(
     (p: RxPacketEntry) => {
@@ -820,14 +672,6 @@ export default function RawPacketLogPanel(props: Props) {
         if (chip === 'local' && p.isLocal) return true;
       }
       return false;
-    },
-    [activeChips],
-  );
-
-  const matchesReticulumChips = useCallback(
-    (p: ReticulumRawPacketEntry) => {
-      if (activeChips.size === 0) return true;
-      return activeChips.has(p.direction);
     },
     [activeChips],
   );
@@ -860,34 +704,6 @@ export default function RawPacketLogPanel(props: Props) {
       }
       return sortMeshcorePackets(rows, sort);
     }
-    if (variant === 'reticulum') {
-      const list =
-        isPaused && pausedPackets != null ? (pausedPackets as ReticulumRawPacketEntry[]) : packets;
-      let rows = list;
-      if (filter.trim()) {
-        rows = rows.filter((p) => {
-          const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
-          if (p.destinationHash) {
-            registerReticulumDestinationHash(
-              reticulumHashToNodeId(p.destinationHash),
-              p.destinationHash,
-            );
-          }
-          return (
-            p.interfaceName.toLowerCase().includes(f) ||
-            (p.packetType ?? '').toLowerCase().includes(f) ||
-            (p.destinationHash ?? '').toLowerCase().includes(f) ||
-            (destinationLabel ?? '').toLowerCase().includes(f) ||
-            p.direction.includes(f) ||
-            toHex(p.raw).includes(f)
-          );
-        });
-      }
-      if (activeChips.size > 0) {
-        rows = rows.filter((p) => matchesReticulumChips(p));
-      }
-      return sortReticulumPackets(rows, sort);
-    }
     const list =
       isPaused && pausedPackets != null ? (pausedPackets as MeshtasticRawPacketEntry[]) : packets;
     let rows = list;
@@ -916,7 +732,6 @@ export default function RawPacketLogPanel(props: Props) {
     sort,
     matchesMeshcoreChips,
     matchesMeshtasticChips,
-    matchesReticulumChips,
   ]);
 
   const expandedIndex = useMemo(() => {
@@ -1044,10 +859,6 @@ export default function RawPacketLogPanel(props: Props) {
         <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.transportLegendHint')}
         </p>
-      ) : variant === 'reticulum' ? (
-        <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
-          {t('rawPacketLog.reticulum.legendHint')}
-        </p>
       ) : (
         <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.meshtasticLegendHint')}
@@ -1156,7 +967,7 @@ export default function RawPacketLogPanel(props: Props) {
                 />
               </span>
             </>
-          ) : variant === 'meshtastic' ? (
+          ) : (
             <>
               <span className={`${RAW_PACKET_NAME_COL} shrink-0`}>
                 <ColumnHeaderLabel
@@ -1179,21 +990,6 @@ export default function RawPacketLogPanel(props: Props) {
                 onSort={handleSortColumn}
                 className="w-8 shrink-0 text-center"
                 tooltip={t('rawPacketLog.colHbTooltip')}
-              />
-            </>
-          ) : (
-            <>
-              <ColumnHeaderLabel
-                label={t('rawPacketLog.reticulum.direction')}
-                tooltip={t('rawPacketLog.colDirectionTooltip')}
-              />
-              <SortableColumnHeader
-                label={t('rawPacketLog.colType')}
-                column="type"
-                sort={sort}
-                onSort={handleSortColumn}
-                className="min-w-0 flex-1"
-                tooltip={t('rawPacketLog.colTypeTooltip')}
               />
             </>
           )}
@@ -1236,15 +1032,11 @@ export default function RawPacketLogPanel(props: Props) {
                 const hexRaw =
                   variant === 'meshcore'
                     ? toHex((filtered as RxPacketEntry[])[vi.index].raw)
-                    : variant === 'reticulum'
-                      ? toHex((filtered as ReticulumRawPacketEntry[])[vi.index].raw)
-                      : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
+                    : toHex((filtered as MeshtasticRawPacketEntry[])[vi.index].raw);
                 const byteLen =
                   variant === 'meshcore'
                     ? (filtered as RxPacketEntry[])[vi.index].raw.length
-                    : variant === 'reticulum'
-                      ? (filtered as ReticulumRawPacketEntry[])[vi.index].raw.length
-                      : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
+                    : (filtered as MeshtasticRawPacketEntry[])[vi.index].raw.length;
 
                 const toggleExpand = () => {
                   if (!isExpanded && rowKey) {
@@ -1304,28 +1096,19 @@ export default function RawPacketLogPanel(props: Props) {
                         ) : null}
                         {onNodeClick &&
                         (variant === 'meshcore' || variant === 'meshtastic') &&
-                        (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
-                          ?.fromNodeId != null ? (
+                        filtered[vi.index]?.fromNodeId != null ? (
                           <button
                             type="button"
                             className="text-ink-400 hover:bg-ink-700 hover:text-ink-200 rounded p-0.5"
                             aria-label={t('rawPacketLog.jumpToNode', {
-                              name: getNodeLabel(
-                                (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
-                                  .fromNodeId!,
-                              ),
+                              name: getNodeLabel(filtered[vi.index].fromNodeId!),
                             })}
                             title={t('rawPacketLog.jumpToNodeTooltip', {
-                              name: getNodeLabel(
-                                (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
-                                  .fromNodeId!,
-                              ),
+                              name: getNodeLabel(filtered[vi.index].fromNodeId!),
                             })}
                             onClick={(e) => {
                               e.stopPropagation();
-                              const nodeId = (
-                                filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[]
-                              )[vi.index].fromNodeId;
+                              const nodeId = filtered[vi.index].fromNodeId;
                               if (nodeId != null) onNodeClick(nodeId);
                             }}
                           >
@@ -1346,11 +1129,6 @@ export default function RawPacketLogPanel(props: Props) {
                             pubKeyByNodeId={pubKeyByNodeId}
                             pathCandidates={pathCandidates}
                             onNodeClick={onNodeClick}
-                          />
-                        ) : variant === 'reticulum' ? (
-                          <ReticulumRow
-                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
-                            getNodeLabel={getNodeLabel}
                           />
                         ) : (
                           <MeshtasticRow
@@ -1378,12 +1156,6 @@ export default function RawPacketLogPanel(props: Props) {
                         {variant === 'meshtastic' && (
                           <MeshtasticExpandedDetails
                             p={(filtered as MeshtasticRawPacketEntry[])[vi.index]}
-                          />
-                        )}
-                        {variant === 'reticulum' && (
-                          <ReticulumExpandedDetails
-                            p={(filtered as ReticulumRawPacketEntry[])[vi.index]}
-                            getNodeLabel={getNodeLabel}
                           />
                         )}
                         <p className="text-muted text-2xs mb-1">

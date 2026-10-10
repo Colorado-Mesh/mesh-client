@@ -1,4 +1,4 @@
-import { FileDown, MapPin, Plane, Settings, Signal } from 'lucide-react-motion';
+import { MapPin, Plane, Signal } from 'lucide-react-motion';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,13 +11,11 @@ import {
 } from '@/renderer/lib/droneReportParse';
 import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import { haversineDistanceKm } from '@/renderer/lib/nodeStatus';
-import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
 import {
   type ParsedSignalReport,
   type SignalQuality,
   signalQualityFromSnr,
 } from '@/renderer/lib/signalReportParse';
-import type { RncpControlKind } from '@/shared/rncpRequestEnable';
 
 const SIGNAL_QUALITY_CLASS: Record<SignalQuality, string> = {
   good: 'text-green-400',
@@ -65,37 +63,6 @@ export function SignalReportChip({ report }: Readonly<{ report: ParsedSignalRepo
           {part.text}
         </span>
       ))}
-    </div>
-  );
-}
-
-/** Settings-search anchor for Remote → Settings → Inbound file offers. */
-const RNCP_INBOUND_SETTING = { slot: 'Remote', id: 'remote.inbound.mode' } as const;
-
-export function RncpControlChip({ kind }: Readonly<{ kind: RncpControlKind }>) {
-  const { t } = useTranslation();
-  const label =
-    kind === 'requestEnable'
-      ? t('chatPayload.rncpControl.requestEnable')
-      : t('chatPayload.rncpControl.receiveDestShare');
-  return (
-    <div
-      className="rounded-badge mb-1 inline-flex max-w-full items-center gap-1.5 border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-100"
-      data-testid="rncp-control-chip"
-    >
-      <FileDown aria-hidden className="h-3.5 w-3.5 shrink-0" />
-      <span className="truncate">{label}</span>
-      <button
-        type="button"
-        className="ml-1 inline-flex shrink-0 items-center gap-1 rounded text-cyan-300 underline hover:text-cyan-200"
-        aria-label={t('chatPayload.rncpControl.openSettings')}
-        onClick={() => {
-          requestOpenSetting(RNCP_INBOUND_SETTING);
-        }}
-      >
-        <Settings aria-hidden className="h-3 w-3" />
-        {t('chatPayload.rncpControl.openSettingsShort')}
-      </button>
     </div>
   );
 }

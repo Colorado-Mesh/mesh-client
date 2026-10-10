@@ -17,20 +17,20 @@ describe('SignalBars', () => {
     const rects = container.querySelectorAll('rect');
     expect(rects[0].getAttribute('fill')).toBe('#4ade80');
     expect(rects[1].getAttribute('fill')).toBe('#4ade80');
-    expect(rects[2].getAttribute('fill')).toBe('#364156');
+    expect(rects[2].getAttribute('fill')).toBe('#424242');
   });
 
   it('renders grey bars when noData', () => {
     const { container } = render(<SignalBars noData />);
     const rects = container.querySelectorAll('rect');
     for (const rect of rects) {
-      expect(rect.getAttribute('fill')).toBe('#48556a');
+      expect(rect.getAttribute('fill')).toBe('#5c5c5c');
     }
   });
 
   it('treats null rssi as no data', () => {
     const { container } = render(<SignalBars rssi={null} />);
     const rects = container.querySelectorAll('rect');
-    expect(rects[0].getAttribute('fill')).toBe('#48556a');
+    expect(rects[0].getAttribute('fill')).toBe('#5c5c5c');
   });
 });

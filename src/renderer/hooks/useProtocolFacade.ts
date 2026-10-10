@@ -16,7 +16,6 @@ export interface ProtocolFacade {
   protocol: MeshProtocol;
   focusedIdentityId: IdentityId | null;
   identityIdByProtocol: Record<MeshProtocol, IdentityId | null>;
-  reticulumIdentityId: IdentityId | null;
   capabilities: ProtocolCapabilities;
   connection: ProtocolConnectionActions;
   connectionView: ReturnType<typeof useConnectionView>;
@@ -36,7 +35,6 @@ export function useProtocolFacade(
   connectionPrebuilt: ConnectionActionsByProtocol,
 ): ProtocolFacade {
   const { identityIdByProtocol, focusedIdentityId, capabilities } = useActiveMeshIdentity(protocol);
-  const reticulumIdentityId = identityIdByProtocol.reticulum;
   const connection = connectionPrebuilt[protocol];
   const connectionView = useConnectionView(focusedIdentityId);
   const queue = useConnectionQueue(focusedIdentityId);
@@ -49,7 +47,6 @@ export function useProtocolFacade(
       protocol,
       focusedIdentityId,
       identityIdByProtocol,
-      reticulumIdentityId,
       capabilities,
       connection,
       connectionView,
@@ -62,7 +59,6 @@ export function useProtocolFacade(
       protocol,
       focusedIdentityId,
       identityIdByProtocol,
-      reticulumIdentityId,
       capabilities,
       connection,
       connectionView,

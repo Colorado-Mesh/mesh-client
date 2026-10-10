@@ -33,12 +33,6 @@ describe('slotBadge', () => {
     expect(slotBadge('Chat', {})).toBeNull();
     expect(slotBadge('Chat', { Chat: 0 })).toBeNull();
   });
-
-  it('tags Remote as pending and Incident as incident', () => {
-    expect(slotBadge('Chat', { Chat: 3 })).toEqual({ count: 3, tone: 'unread' });
-    expect(slotBadge('Remote', { Remote: 2 })).toEqual({ count: 2, tone: 'pending' });
-    expect(slotBadge('Incident', { Incident: 1 })).toEqual({ count: 1, tone: 'incident' });
-  });
 });
 
 describe('sectionBadge', () => {
@@ -51,17 +45,6 @@ describe('sectionBadge', () => {
 
   it('ignores counts for tabs outside the section', () => {
     expect(sectionBadge(section(['Map']), { Chat: 4 })).toBeNull();
-  });
-
-  it('prefers the unread tone over pending offers', () => {
-    expect(sectionBadge(section(['Nodes', 'Remote', 'RRC']), { Remote: 1, RRC: 2 })).toEqual({
-      count: 3,
-      tone: 'unread',
-    });
-    expect(sectionBadge(section(['Nodes', 'Remote']), { Remote: 1 })).toEqual({
-      count: 1,
-      tone: 'pending',
-    });
   });
 });
 
@@ -76,21 +59,6 @@ describe('formatBadgeCount', () => {
 describe('navBadgeAriaLabel', () => {
   it('returns the plain label without a badge', () => {
     expect(navBadgeAriaLabel(t, 'Chat', null)).toBe('Chat');
-  });
-
-  it('uses the unread, incident and pending-offer strings', () => {
-    expect(navBadgeAriaLabel(t, 'Chat', { count: 120, tone: 'unread' })).toBe(
-      'aria.tabWithUnread:{"label":"Chat","count":"99+"}',
-    );
-    expect(navBadgeAriaLabel(t, 'Incident', { count: 2, tone: 'incident' })).toBe(
-      'aria.tabWithOpenIncidents:{"label":"Incident","count":"2"}',
-    );
-    expect(navBadgeAriaLabel(t, 'Remote', { count: 2, tone: 'pending' })).toBe(
-      'shell.navBadgeDetail:{"label":"Remote","detail":"reticulumRemote.transfer.pendingOffersBadgeAria:{\\"count\\":2}"}',
-    );
-    expect(navBadgeAriaLabel(t, 'Remote', { count: 150, tone: 'pending' })).toContain(
-      'pendingOffersBadgeAriaCapped',
-    );
   });
 });
 

@@ -7,7 +7,6 @@ import {
   CornerUpLeft,
   Info,
   MapPin,
-  Mic,
   Send,
   Smile,
   TriangleAlert,
@@ -42,7 +41,6 @@ import {
   resolveChatMacroSize,
   useChatMacrosStore,
 } from '@/renderer/stores/chatMacrosStore';
-import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 import { touch } from '@/shared/touch';
 
@@ -79,7 +77,6 @@ import {
 import { isMeshcoreSendTooFast, recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { useRadioProvider } from '../lib/radio/providerFactory';
-import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickComplete';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { ChatMacroBar } from './chat/ChatMacroBar';
 import { EditMacrosDialog } from './chat/EditMacrosDialog';
@@ -156,8 +153,6 @@ declare global {
 
 export interface ChatComposerSendOpts {
   replyId?: number;
-  /** Reticulum ratspeak.chat.v2 reply target (LXMF message hash). */
-  replyHash?: string;
   chunkIndex?: number;
   /**
    * MeshCore: flood-scope hashtag for this send only (applied then radio default restored).
@@ -198,8 +193,6 @@ export interface ChatComposerProps {
   onSendChunk: (text: string, opts?: ChatComposerSendOpts) => Promise<void>;
   /** Called after a successful send (e.g. clear unread divider). */
   onSendSuccess?: () => void;
-  /** Use LXMF message hash for reply threading (Reticulum). */
-  lxmfReplyHashReplies?: boolean;
   /** MeshCore: show per-channel flood-scope override control (remembered per viewKey). */
   showFloodScopeOverride?: boolean;
   /** Channel preferences use radio/channel identity. Null waits for discovery. */
@@ -218,26 +211,24 @@ export interface ChatComposerProps {
   resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
   /**
    * Meshtastic dual-send: after the text location message, send a Waypoint packet.
-   * Omitted / no-op for MeshCore and Reticulum. Channel is closed over by ChatPanel.
+   * Omitted / no-op for MeshCore. Channel is closed over by ChatPanel.
    */
   onSendLocationWaypoint?: (lat: number, lon: number) => Promise<void>;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
-  /** When set, renders a mic button that triggers voice memo recording. */
-  onVoiceMemo?: () => void;
   /** Extra compose action rendered in the action row, before the Send button. */
   actionSlot?: ReactNode;
   className?: string;
   /**
    * When provided and returns true, ChatComposer clears the draft and skips split/send
-   * (RRC slash commands handled by the panel).
+   * (slash commands handled by the panel).
    */
   onInterceptSend?: (text: string) => Promise<boolean>;
-  /** Count approaching/warn using UTF-8 wire bytes (RRC hub body limits). */
+  /** Count approaching/warn using UTF-8 wire bytes. */
   useWireByteCount?: boolean;
-  /** Hide split/overMax chrome for this draft (RRC slash bypass). */
+  /** Hide split/overMax chrome for this draft (slash-command bypass). */
   shouldSuppressLimits?: (text: string) => boolean;
   /**
-   * Alternate @mention completion (RRC IRC nicks). When set, replaces MeshNode lookup
+   * Alternate @mention completion. When set, replaces MeshNode lookup
    * and default `@[name] ` insert format.
    */
   mentionAdapter?: {
@@ -246,7 +237,7 @@ export interface ChatComposerProps {
     formatInsert: (name: string) => string;
   };
   /**
-   * When `token` changes, replace the composer input (e.g. RRC nicklist → `/msg nick `).
+   * When `token` changes, replace the composer input.
    */
   composeSeed?: { text: string; token: number } | null;
   /** F1–F12 macro bar and shortcuts (default on). */
@@ -276,7 +267,6 @@ export function ChatComposer({
   queueOutbox: queueOutboxProp,
   onSendChunk,
   onSendSuccess,
-  lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
   floodScopePresets = [],
   floodScopeStorageKey,
@@ -284,7 +274,6 @@ export function ChatComposer({
   resolveShareLocation,
   onSendLocationWaypoint,
   textareaRef,
-  onVoiceMemo,
   actionSlot,
   className,
   onInterceptSend,
@@ -304,12 +293,6 @@ export function ChatComposer({
   const counterLiveId = useId();
   const floodScopeListboxId = useId();
   const floodScopeCustomInputId = useId();
-  const memoPhase = useReticulumVoiceMemoStore((s) => s.phase);
-  const memoRecordingActive =
-    memoPhase === 'recording' ||
-    memoPhase === 'starting' ||
-    memoPhase === 'stopping' ||
-    memoPhase === 'ready';
   const macroToolbarInline = useChatMacrosStore(
     (s) => showMacros && !s.collapsed && resolveChatMacroSize(s.size) === 'small',
   );
@@ -340,10 +323,6 @@ export function ChatComposer({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionTriggerPos, setMentionTriggerPos] = useState(0);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
-  /** RRC Tab cycle: original `@` query while cycling through matches. */
-  const [mentionCyclePrefix, setMentionCyclePrefix] = useState<string | null>(null);
-  const [mentionInsertedNickLen, setMentionInsertedNickLen] = useState(0);
-  const [mentionTabCycleIndex, setMentionTabCycleIndex] = useState(-1);
   const [meshcoreFastSendWarn, setMeshcoreFastSendWarn] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -363,12 +342,6 @@ export function ChatComposer({
     setFloodScopeCustomEditing(false);
     setFloodScopeCustomDraft('');
     setFloodScopeCustomError(null);
-  }, []);
-
-  const clearMentionCycle = useCallback(() => {
-    setMentionCyclePrefix(null);
-    setMentionInsertedNickLen(0);
-    setMentionTabCycleIndex(-1);
   }, []);
 
   const persistFloodScopeOverride = useCallback(
@@ -451,13 +424,7 @@ export function ChatComposer({
       ? undefined
       : protocol === 'meshtastic'
         ? replyTo.packetId
-        : lxmfReplyHashReplies
-          ? undefined
-          : (replyTo.packetId ?? replyTo.timestamp);
-  const reticulumReplyHash =
-    lxmfReplyHashReplies && replyTo?.reticulum_message_hash
-      ? replyTo.reticulum_message_hash
-      : undefined;
+        : (replyTo.packetId ?? replyTo.timestamp);
 
   const suppressLimits = shouldSuppressLimits?.(input) ?? false;
 
@@ -560,35 +527,29 @@ export function ChatComposer({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft and mention UI on tab switch
     setMentionQuery(null);
     setChatActionError(null);
-    clearMentionCycle();
     // Clear any lingering fast-send advisory when switching chat views.
     if (meshcoreFastSendWarnTimerRef.current) {
       clearTimeout(meshcoreFastSendWarnTimerRef.current);
       meshcoreFastSendWarnTimerRef.current = null;
     }
     setMeshcoreFastSendWarn(false);
-  }, [viewKey, protocol, showFloodScopeOverride, clearMentionCycle]);
+  }, [viewKey, protocol, showFloodScopeOverride]);
 
-  // Apply nicklist `/msg` seeds without an effect (avoids set-state-in-effect).
+  // Apply compose seeds without an effect (avoids set-state-in-effect).
   const [appliedComposeSeedToken, setAppliedComposeSeedToken] = useState<number | null>(null);
   if (composeSeed && composeSeed.token !== appliedComposeSeedToken) {
     setAppliedComposeSeedToken(composeSeed.token);
     setInput(composeSeed.text);
     setMentionQuery(null);
     setChatActionError(null);
-    setMentionCyclePrefix(null);
-    setMentionInsertedNickLen(0);
-    setMentionTabCycleIndex(-1);
   }
 
   const mentionCandidates = useMemo(() => {
     if (mentionQuery == null) return [];
-    const queryForBuild =
-      mentionAdapter && mentionCyclePrefix != null ? mentionCyclePrefix : mentionQuery;
     return mentionAdapter
-      ? mentionAdapter.buildCandidates(queryForBuild)
+      ? mentionAdapter.buildCandidates(mentionQuery)
       : buildMentionCandidates(nodes, protocol, mentionQuery);
-  }, [mentionQuery, mentionCyclePrefix, mentionAdapter, nodes, protocol]);
+  }, [mentionQuery, mentionAdapter, nodes, protocol]);
 
   const insertMention = useCallback(
     (name: string) => {
@@ -601,14 +562,13 @@ export function ChatComposer({
       if (newVal.length > maxInputLength) return;
       setInput(newVal);
       setMentionQuery(null);
-      clearMentionCycle();
       requestAnimationFrame(() => {
         const newCursor = mentionTriggerPos + insert.length;
         textarea?.focus();
         textarea?.setSelectionRange(newCursor, newCursor);
       });
     },
-    [clearMentionCycle, maxInputLength, mentionAdapter, mentionTriggerPos, mentionQuery],
+    [maxInputLength, mentionAdapter, mentionTriggerPos, mentionQuery],
   );
 
   const clearSentDraft = useCallback(
@@ -774,7 +734,6 @@ export function ChatComposer({
         const sendChunk = () =>
           onSendChunk(textsToSend[i], {
             replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
-            replyHash: i === 0 ? reticulumReplyHash : undefined,
             chunkIndex: i,
             floodScopeOverride:
               floodScopeOverride === FLOOD_SCOPE_OVERRIDE_UNSCOPED
@@ -853,7 +812,6 @@ export function ChatComposer({
     queueOutbox,
     replyTo,
     replyKey,
-    reticulumReplyHash,
     sending,
     t,
     variant,
@@ -1113,42 +1071,6 @@ export function ChatComposer({
           setMentionSelectedIdx((i) => Math.max(0, i - 1));
           return;
         }
-        if (e.key === 'Tab' && mentionAdapter) {
-          e.preventDefault();
-          const cycling = mentionCyclePrefix != null;
-          const prefix = cycling ? mentionCyclePrefix : mentionQuery;
-          const names = mentionAdapter.buildCandidates(prefix).map((c) => c.name);
-          if (names.length === 0) return;
-          const nextIdx = nextRrcNickCompleteIndex(
-            names,
-            cycling ? mentionTabCycleIndex : -1,
-            e.shiftKey,
-          );
-          if (nextIdx < 0) return;
-          const nick = names[nextIdx];
-          if (!nick) return;
-          const replaceLen = cycling ? mentionInsertedNickLen : mentionQuery.length;
-          const { text, caret } = insertRrcNickMention(
-            inputValueRef.current,
-            mentionTriggerPos,
-            replaceLen,
-            nick,
-          );
-          if (text.length > maxInputLength) return;
-          if (!cycling) setMentionCyclePrefix(mentionQuery);
-          setMentionInsertedNickLen(nick.length);
-          setMentionTabCycleIndex(nextIdx);
-          setMentionSelectedIdx(nextIdx);
-          setInput(text);
-          // Keep the list open while Tab/Shift+Tab cycles (do not clear mentionQuery).
-          setMentionQuery(nick);
-          requestAnimationFrame(() => {
-            const textarea = inputRef.current;
-            textarea?.focus();
-            textarea?.setSelectionRange(caret, caret);
-          });
-          return;
-        }
         if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
           e.preventDefault();
           const candidate = mentionCandidates[mentionSelectedIdx];
@@ -1161,19 +1083,7 @@ export function ChatComposer({
         void handleSend();
       }
     },
-    [
-      handleSend,
-      insertMention,
-      maxInputLength,
-      mentionAdapter,
-      mentionCandidates,
-      mentionCyclePrefix,
-      mentionInsertedNickLen,
-      mentionQuery,
-      mentionSelectedIdx,
-      mentionTabCycleIndex,
-      mentionTriggerPos,
-    ],
+    [handleSend, insertMention, mentionCandidates, mentionQuery, mentionSelectedIdx],
   );
 
   useEffect(() => {
@@ -1478,7 +1388,6 @@ export function ChatComposer({
               const val = e.target.value;
               setInput(val);
               setChatActionError(null);
-              clearMentionCycle();
               if (mentionAdapter) {
                 const caret = e.target.selectionStart ?? val.length;
                 const at = mentionAdapter.findAtCaret(val, caret);
@@ -1795,13 +1704,6 @@ export function ChatComposer({
           </div>
         ) : (
           <div className="flex items-center gap-1">
-            {onVoiceMemo != null && !sending && (memoRecordingActive || !input.trim()) && (
-              <VoiceMemoComposerButton
-                onVoiceMemo={onVoiceMemo}
-                disabled={disabled}
-                idleClassName={emojiButtonClass}
-              />
-            )}
             <button
               type="button"
               onMouseDown={(e) => {
@@ -1904,59 +1806,5 @@ export function ChatComposer({
         </ComposerAmberCallout>
       )}
     </div>
-  );
-}
-
-function VoiceMemoComposerButton({
-  onVoiceMemo,
-  disabled,
-  idleClassName,
-}: {
-  onVoiceMemo: () => void;
-  disabled?: boolean;
-  /** Same chrome as emoji / location / GIF composer controls. */
-  idleClassName: string;
-}) {
-  const { t } = useTranslation();
-  const phase = useReticulumVoiceMemoStore((s) => s.phase);
-  const elapsedSec = useReticulumVoiceMemoStore((s) => s.elapsedSec);
-  const recording = phase === 'recording' || phase === 'starting';
-  const sendMode = recording || phase === 'ready';
-  const busy = phase === 'starting' || phase === 'stopping' || phase === 'sending';
-  return (
-    <HelpTooltip
-      text={
-        sendMode ? t('chatPanel.voiceMemo.sendTooltip') : t('chatPanel.voiceMemo.recordTooltip')
-      }
-      className="shrink-0"
-      nonFocusableWrapper
-    >
-      <button
-        type="button"
-        aria-label={
-          recording && elapsedSec > 0
-            ? t('chatPanel.voiceMemo.sendAriaWithElapsed', { seconds: elapsedSec })
-            : sendMode
-              ? t('chatPanel.voiceMemo.sendAria')
-              : t('chatPanel.voiceMemo.recordAria')
-        }
-        onClick={onVoiceMemo}
-        disabled={disabled || busy}
-        className={
-          recording
-            ? 'rounded-xl border border-red-500/60 bg-red-600/80 px-2.5 py-2.5 text-white transition-colors hover:bg-red-500 disabled:opacity-50'
-            : idleClassName
-        }
-      >
-        <span className="flex items-center gap-1">
-          <Mic aria-hidden className="h-4 w-4" size={16} />
-          {recording && elapsedSec > 0 ? (
-            <span className="text-xs tabular-nums" aria-hidden>
-              {elapsedSec}s
-            </span>
-          ) : null}
-        </span>
-      </button>
-    </HelpTooltip>
   );
 }

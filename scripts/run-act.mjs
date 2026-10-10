@@ -74,15 +74,15 @@ export const ACT_TARGETS = {
     workflow: '.github/workflows/build.yaml',
     job: 'build',
   },
-  'reticulum-sidecar': [
+  'ble-sidecar': [
     {
       event: 'workflow_dispatch',
-      workflow: '.github/workflows/reticulum-sidecar.yaml',
+      workflow: '.github/workflows/ble-sidecar.yaml',
       job: 'build',
     },
     {
       event: 'workflow_dispatch',
-      workflow: '.github/workflows/reticulum-sidecar.yaml',
+      workflow: '.github/workflows/ble-sidecar.yaml',
       job: 'build-rns-stack',
     },
   ],
@@ -90,7 +90,7 @@ export const ACT_TARGETS = {
     {
       event: 'workflow_dispatch',
       workflow: '.github/workflows/flatpak.yaml',
-      job: 'reticulum-sidecar',
+      job: 'ble-sidecar',
     },
     {
       event: 'workflow_dispatch',
@@ -126,19 +126,19 @@ export const NATIVE_TARGETS = {
     {
       name: 'Validate desktop file',
       command: 'desktop-file-validate',
-      args: ['flatpak/org.coloradomesh.MeshClient.desktop'],
+      args: ['flatpak/io.github.charlottemeshtastic.MeshHub.desktop'],
       optionalTool: 'desktop-file-validate',
     },
     {
       name: 'Validate metainfo',
       command: 'appstreamcli',
-      args: ['validate', '--no-net', 'flatpak/org.coloradomesh.MeshClient.metainfo.xml'],
+      args: ['validate', '--no-net', 'flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml'],
       optionalTool: 'appstreamcli',
     },
   ],
   tests: [{ name: 'Coverage', command: 'pnpm', args: ['run', 'test:coverage'] }],
   'build-linux': [{ name: 'Linux dist', command: 'pnpm', args: ['run', 'dist:linux'] }],
-  'reticulum-sidecar': [
+  'ble-sidecar': [
     {
       name: 'Reticulum sidecar tests (stub)',
       command: 'cargo',
@@ -387,8 +387,7 @@ export function runNativeStep(step, options = {}) {
     return 0;
   }
 
-  const cwd =
-    options.cwd ?? (step.command === 'cargo' ? join(repoRoot, 'reticulum-sidecar') : repoRoot);
+  const cwd = options.cwd ?? (step.command === 'cargo' ? join(repoRoot, 'ble-sidecar') : repoRoot);
   const args = step.args ?? [];
   console.log(`$ ${step.command} ${args.join(' ')}`.trim());
 
@@ -526,7 +525,7 @@ Targets:
   ci                 CI work jobs (quality, lint, typecheck, app-build, policy-scanners)
   tests              Tests workflow (coverage)
   build-linux        build.yaml ubuntu-latest leg (dist:linux)
-  reticulum-sidecar  Reticulum sidecar Linux jobs
+  ble-sidecar  Reticulum sidecar Linux jobs
   flatpak            Flatpak x86_64 path (docker mode only)
   pull-images        docker pull act platform + Flatpak images (docker mode)
   list               List docker or native targets

@@ -243,19 +243,6 @@ describe('useHostLinkMeter', () => {
     expect(result.current.kind).toBeNull();
   });
 
-  it('hides meter for reticulum protocol', () => {
-    const { result } = renderHook(() =>
-      useHostLinkMeter({
-        protocol: 'reticulum',
-        connectionType: 'ble',
-        status: 'configured',
-        hostAddress: null,
-        platform: 'darwin',
-      }),
-    );
-    expect(result.current.kind).toBeNull();
-  });
-
   it('hides meter while connecting', () => {
     const { result } = renderHook(() =>
       useHostLinkMeter({

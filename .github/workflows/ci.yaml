@@ -42,7 +42,7 @@ jobs:
           filters: |
             flatpak:
               - 'flatpak/**'
-              - 'org.coloradomesh.MeshClient.yml'
+              - 'io.github.charlottemeshtastic.MeshHub.yml'
               - '.npmrc'
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -157,10 +157,10 @@ jobs:
         run: sudo apt-get install -y desktop-file-utils appstream
 
       - name: Validate desktop file
-        run: desktop-file-validate flatpak/org.coloradomesh.MeshClient.desktop
+        run: desktop-file-validate flatpak/io.github.charlottemeshtastic.MeshHub.desktop
 
       - name: Validate metainfo
-        run: appstreamcli validate --no-net flatpak/org.coloradomesh.MeshClient.metainfo.xml
+        run: appstreamcli validate --no-net flatpak/io.github.charlottemeshtastic.MeshHub.metainfo.xml
 
   # Cheap always-on check:* scanners (pre-commit / release). Blocks --no-verify / web edits.
   policy-scanners:

@@ -88,7 +88,7 @@ jobs:
           if [ "${PUSH}" != 'true' ]; then
             echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) lacks push on ${REPO}."
             echo 'Grant Contents+Pull requests+Workflows write on this repo,'
-            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo charlottemeshtastic/mesh-client'
             exit 1
           fi
 
@@ -97,7 +97,7 @@ jobs:
           if ! gh api -X POST "repos/${REPO}/git/refs" -f ref="${PROBE_REF}" -f sha="${MAIN_SHA}" >/dev/null; then
             echo "::error::RELEASE_PUSH_TOKEN (${LOGIN}) cannot create refs on ${REPO} (Contents write)."
             echo 'Grant Contents+Pull requests+Workflows write on this repo,'
-            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo Colorado-Mesh/mesh-client'
+            echo 'then: gh secret set RELEASE_PUSH_TOKEN --repo charlottemeshtastic/mesh-client'
             exit 1
           fi
           gh api -X DELETE "repos/${REPO}/git/refs/${PROBE_REF#refs/}" >/dev/null

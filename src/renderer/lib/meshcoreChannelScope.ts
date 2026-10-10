@@ -26,7 +26,7 @@ export function meshcoreScopeOverrideFromQr(regionScope?: string): string {
   return isValidMeshcoreFloodScopeHashtag(normalized) ? normalized : '';
 }
 
-/** Named scopes use the standard field; explicit Unscoped is a Mesh Client extension. */
+/** Named scopes use the standard field; explicit Unscoped is a Mesh Hub extension. */
 export function meshcoreScopeOverrideForQr(override: string): {
   regionScope?: string;
   unscoped?: boolean;

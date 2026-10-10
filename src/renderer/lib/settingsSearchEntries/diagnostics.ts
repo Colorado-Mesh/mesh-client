@@ -5,14 +5,12 @@ import type {
 } from '../settingsSearch';
 
 // DiagnosticsPanel renders its LoRa settings card only for hop-count protocols, MQTT rows only
-// with MQTT hybrid, and the ping card only with Reticulum-native diagnostics.
+// with MQTT hybrid.
 const hasLoRaDiagnostics = (ctx: SettingsSearchContext) => ctx.capabilities.hasHopCount;
 const hasLoRaMqttControls = (ctx: SettingsSearchContext) =>
   ctx.capabilities.hasHopCount && ctx.capabilities.hasMqttHybrid;
-const hasPing = (ctx: SettingsSearchContext) => ctx.capabilities.hasReticulumNativeDiagnostics;
 
 const DISPLAY = 'diagnosticsPanel.displaySettings';
-const PING = 'diagnosticsPing.title';
 
 const diagnosticsEntries: readonly SettingSearchEntry[] = [
   {
@@ -21,30 +19,6 @@ const diagnosticsEntries: readonly SettingSearchEntry[] = [
     labelKey: 'diagnosticsPanel.exportJson',
     sectionKey: 'diagnosticsPanel.networkDiagnosticsTitle',
     keywords: ['export', 'download', 'json', 'report'],
-  },
-  {
-    id: 'diagnostics.ping.destination',
-    slot: 'Diagnostics',
-    labelKey: 'diagnosticsPing.hashLabel',
-    sectionKey: PING,
-    keywords: ['ping', 'rtt', 'latency', 'destination hash', 'probe'],
-    visible: hasPing,
-  },
-  {
-    id: 'diagnostics.ping.interval',
-    slot: 'Diagnostics',
-    labelKey: 'diagnosticsPing.intervalLabel',
-    sectionKey: PING,
-    keywords: ['ping', 'interval', 'seconds'],
-    visible: hasPing,
-  },
-  {
-    id: 'diagnostics.ping.runOnce',
-    slot: 'Diagnostics',
-    labelKey: 'diagnosticsPing.runOnce',
-    sectionKey: PING,
-    keywords: ['ping', 'single', 'probe'],
-    visible: hasPing,
   },
   {
     id: 'diagnostics.display.congestionHalos',
@@ -120,10 +94,7 @@ const diagnosticsEntries: readonly SettingSearchEntry[] = [
 
 export const diagnosticsSurface: SettingsSearchSurface = {
   entries: diagnosticsEntries,
-  files: [
-    { path: 'src/renderer/components/DiagnosticsPanel.tsx', sweepAllKeys: true },
-    { path: 'src/renderer/components/DiagnosticsPingPanel.tsx', sweepAllKeys: true },
-  ],
+  files: [{ path: 'src/renderer/components/DiagnosticsPanel.tsx', sweepAllKeys: true }],
   exempt: {
     'diagnosticsPanel.*Help': 'help text beside an indexed control',
     'diagnosticsPanel.*Hint': 'help text or tooltip beside an indexed control or action',
@@ -136,7 +107,6 @@ export const diagnosticsSurface: SettingsSearchSurface = {
       'field label and accessible name of the indexed stale-row age',
     'diagnosticsPanel.exportJsonAria': 'accessible name of the indexed export button',
     'diagnosticsPanel.docsLink': 'external documentation link',
-    'diagnosticsPanel.reticulum.sectionTitle': 'heading of the Reticulum findings list, no control',
     'diagnosticsPanel.restoredSessionBanner': 'transient restored-session banner text',
     'diagnosticsPanel.stopRestoringOnLaunch':
       'one-shot action in the transient restored-session banner',
@@ -180,14 +150,5 @@ export const diagnosticsSurface: SettingsSearchSurface = {
     'diagnosticsPanel.noDiagnosticsHealthy': 'empty state of the findings list',
     'diagnosticsPanel.scopeSubtitle': 'subtitle of the congestion attribution block',
     'meshCongestion.routingAnomalies': 'routing stress banner, not a control',
-    'diagnosticsPing.reticulumHint': 'help text under the indexed ping card',
-    'diagnosticsPing.hashPlaceholder': 'placeholder of the indexed destination hash',
-    'diagnosticsPing.hashAria': 'accessible name of the indexed destination hash',
-    'diagnosticsPing.intervalAria': 'accessible name of the indexed ping interval',
-    'diagnosticsPing.start': 'start button of the indexed ping card',
-    'diagnosticsPing.stop': 'stop button of the indexed ping card',
-    'diagnosticsPing.col*': 'ping result table column headers',
-    'diagnosticsPing.rttMs': 'ping result value',
-    'diagnosticsPing.status*': 'ping result status text',
   },
 };
