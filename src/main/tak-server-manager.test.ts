@@ -86,6 +86,7 @@ vi.mock('./tak/style-settings', () => ({
 import type { TAKClientInfo, TAKContact, TAKContactsUpdate } from '../shared/tak-types';
 import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
+import { COT_FRAME_MAX_BYTES } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
@@ -723,6 +724,21 @@ describe('TakServerManager inbound CoT from local clients', () => {
     ]);
     expect(manager.getConnectedClients()[0]?.callsign).toBe('VIPER');
     expect(updated).toHaveLength(1);
+  });
+
+  it('disconnects a client before parsing an oversized complete CoT event', () => {
+    const manager = new TakServerManager();
+    const socket = connectClient(manager);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    socket.emit(
+      'data',
+      Buffer.from(`<event uid="ANDROID-1">${'x'.repeat(COT_FRAME_MAX_BYTES)}</event>`),
+    );
+
+    expect(socket.destroy).toHaveBeenCalledOnce();
+    expect(manager.getContacts()).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('oversized CoT event'));
   });
 
   const PING =

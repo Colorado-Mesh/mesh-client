@@ -5,7 +5,7 @@ import tls from 'tls';
 import type { TAKRemoteStatus } from '../../shared/tak-types';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { sanitizeLogMessage } from '../log-service';
-import { CotFramer, parseCotEvent } from './cot-parser';
+import { CotFramer, CotFrameTooLargeError, parseCotEvent } from './cot-parser';
 import type { TakRemoteCredentials } from './remote-credentials';
 import { tlsConnectHost } from './remote-settings';
 
@@ -235,7 +235,19 @@ export class TakRemoteClient extends EventEmitter {
         head = null;
       }
       const now = Date.now();
-      for (const frame of framer.push(data)) {
+      let frames: string[];
+      try {
+        frames = framer.push(data);
+      } catch (err) {
+        if (!(err instanceof CotFrameTooLargeError)) throw err;
+        lastError = err.message;
+        console.warn(
+          `[TakRemote] ${sanitizeLogMessage(host)}:${port} sent an oversized CoT event; disconnecting`,
+        );
+        socket.destroy();
+        return;
+      }
+      for (const frame of frames) {
         const contact = parseCotEvent(frame, 'remote', now);
         if (contact) this.emit('cot', contact);
       }
