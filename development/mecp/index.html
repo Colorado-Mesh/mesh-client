@@ -2479,8 +2479,10 @@
 </ul>
 <h2 id="send-path">Send path<a class="headerlink" href="#send-path" title="Permanent link">&para;</a></h2>
 <ul>
-<li>App → MECP → <strong>Show MECP button in Chat</strong> (default <strong>off</strong>) gates the Chat MECP compose control</li>
-<li>When enabled: red <strong>Siren</strong> icon button in the composer action row (<code>ChatComposer</code> <code>actionSlot</code>, next to share-location, left of Send; hidden in Starred) → <code>MecpComposeModal</code> (defaults: ROUTINE + Drill category, no codes selected) → encode → <code>sendEmergencyText</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/emergencySend.ts"><code>emergencySend.ts</code></a>) → emergency outbox row → immediate drain through <code>useSendMessage</code> (follows open DM/channel)</li>
+<li>App → MECP → <strong>Show MECP buttons in Chat</strong> (default <strong>off</strong>) gates the Chat MECP compose control</li>
+<li>When enabled: red <strong>Siren</strong> (request/report) and blue <strong>ShieldCheck</strong> (response) buttons in the composer action row (<code>ChatComposer</code> <code>actionSlot</code>, left of Send; hidden in Starred) → <code>MecpComposeModal</code> → encode → <code>sendEmergencyText</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/emergencySend.ts"><code>emergencySend.ts</code></a>) → emergency outbox row → immediate drain through <code>useSendMessage</code> (targets the queued DM/channel). Requests open on Drill; responses open on Response. Both default to ROUTINE with no selected codes. Each opening starts a fresh compose session.</li>
+<li><code>mecpComposeRoles.ts</code> filters the shared upstream language packs for UI shortcuts: request/report omits R, H and B02; response offers R/H, position, coordination, drills, M14/M15 search results, T10 shelter and B02 beacon acknowledgement. B01/B03 remain with the originator. <strong>Show all MECP codes</strong> exposes the complete pack without dropping selected codes. These profiles do not add wire fields, fork translations or change received-message severity colors.</li>
+<li>MeshCore emergency outbox sends use the destination channel’s saved scope and restore the radio-wide default. Retries use the current channel preference; explicit Unscoped stays unscoped even when the radio default is regional.</li>
 <li><strong>Retry until acknowledged:</strong> every report is queued in the chat outbox with <code>priority: 'emergency'</code> and stays there until the <strong>network acknowledges</strong> it — no 24h drain cutoff, no attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See <a href="../emcomm/#ws2--emergency-priority-outbox">emcomm.md — WS2</a></li>
 <li><strong>What counts as acknowledged</strong> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/networkAckAwait.ts"><code>networkAckAwait.ts</code></a> <code>awaitNetworkAck</code>), any one of:</li>
 <li>Meshtastic: device <code>acked</code> (routing ACK on a DM, implicit ACK / rebroadcast heard on a channel) or MQTT publish <code>acked</code></li>
@@ -2532,7 +2534,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 13:15:11 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 10, 2026 17:38:24 UTC">October 10, 2026</span>
   </span>
 
     
