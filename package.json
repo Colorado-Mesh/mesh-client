@@ -160,6 +160,7 @@
     "emoji-picker-element": "^1.29.1",
     "esptool-js": "^0.6.1",
     "i18next": "^26.4.2",
+    "ip-address": "^10.3.1",
     "js-md5": "^0.8.3",
     "jsqr": "^1.4.0",
     "jszip": "^3.10.2",

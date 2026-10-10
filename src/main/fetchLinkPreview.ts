@@ -1,16 +1,11 @@
 import dns from 'node:dns/promises';
+import type { LookupFunction } from 'node:net';
 
+import { Address4, Address6 } from 'ip-address';
 import { Agent, fetch as undiciFetch } from 'undici';
 
 import { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
-import {
-  isLinkLocalIpv6,
-  isLocalConnectHost,
-  isLoopbackHost,
-  isPrivateNetworkHost,
-  isUniqueLocalIpv6,
-  stripConnectHostBrackets,
-} from '../shared/connectHost';
+import { stripConnectHostBrackets } from '../shared/connectHost';
 import {
   baseMimeFromContentType,
   bufferToRasterImageDataUrl,
@@ -155,30 +150,28 @@ async function lookupHostname(hostname: string): Promise<string> {
   }
 }
 
+function isGlobalIpAddress(address: string): boolean {
+  const bare = stripConnectHostBrackets(address.trim());
+  if (Address4.isValid(bare)) return new Address4(bare).isGlobal();
+  if (Address6.isValid(bare)) return new Address6(bare).isGlobal();
+  return false;
+}
+
 /** Single DNS resolution used for both block checks and pinned connect (avoids lookup TOCTOU). */
 async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
   const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
   if (isBlockedHostname(bare)) {
     throw new Error('blocked hostname');
   }
-  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) {
-    throw new Error('blocked hostname');
-  }
-  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) {
-    throw new Error('blocked hostname');
-  }
 
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
+  if (Address6.isValid(bare)) {
+    if (!isGlobalIpAddress(bare)) throw new Error('blocked hostname');
     return bare;
   }
+  if (bare.includes(':')) throw new Error('invalid IP address');
 
-  const address = await lookupHostname(bare);
-  if (
-    isLoopbackHost(address) ||
-    isPrivateNetworkHost(address) ||
-    isUniqueLocalIpv6(address) ||
-    isLinkLocalIpv6(address)
-  ) {
+  const address = stripConnectHostBrackets(await lookupHostname(bare));
+  if (!isGlobalIpAddress(address)) {
     throw new Error('blocked resolved address');
   }
   return address;
@@ -189,14 +182,28 @@ function defaultConnectPort(url: URL): number {
   return url.protocol === 'http:' ? 80 : 443;
 }
 
+function pinnedLookup(address: string): LookupFunction {
+  const family = Address4.isValid(address) ? 4 : 6;
+  return (_hostname, options, callback) => {
+    if (options.all) {
+      callback(null, [{ address, family }]);
+      return;
+    }
+    callback(null, address, family);
+  };
+}
+
 async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
   const url = new URL(urlString);
   const address = await resolvePinnedPreviewAddress(url.hostname);
+  const hostname = stripConnectHostBrackets(url.hostname);
+  const servername =
+    Address4.isValid(hostname) || Address6.isValid(hostname) ? undefined : hostname;
   const agent = new Agent({
     connect: {
-      host: address,
+      lookup: pinnedLookup(address),
       port: defaultConnectPort(url),
-      servername: url.hostname,
+      servername,
     },
   });
   try {
