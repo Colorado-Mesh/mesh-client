@@ -7017,7 +7017,7 @@
     "deletePack": "Delete {{pack}} pack",
     "downloadPack": "Download {{pack}} pack",
     "delete": "Delete",
-    "onlinePrivacy": "Online translation sends the selected message text to your configured LibreTranslate server only when you choose Translate online. Automatic translation always stays offline.",
+    "onlinePrivacy": "Online translation sends the selected message text to your configured LibreTranslate server only when you choose Translate online. Automatic translation always stays offline. HTTP is allowed only for localhost and loopback addresses; all other servers must use HTTPS.",
     "serverUrl": "LibreTranslate server URL",
     "apiKey": "API key (optional)",
     "savedKey": "An API key is saved securely. A blank field keeps it only for the same server URL.",

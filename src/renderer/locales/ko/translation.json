@@ -6993,7 +6993,7 @@
     "deletePack": "{{pack}} 팩 삭제",
     "downloadPack": "{{pack}} 팩 다운로드",
     "delete": "삭제",
-    "onlinePrivacy": "온라인 번역은 온라인 번역을 선택한 경우에만 선택한 메시지 텍스트를 구성된 LibreTranslate 서버로 전송합니다. 자동 번역은 항상 오프라인으로 유지됩니다.",
+    "onlinePrivacy": "온라인 번역은 온라인 번역을 선택한 경우에만 선택한 메시지 텍스트를 구성된 LibreTranslate 서버로 전송합니다. 자동 번역은 항상 오프라인으로 유지됩니다. HTTP는 localhost와 루프백 주소에만 허용되며 다른 모든 서버는 HTTPS를 사용해야 합니다.",
     "serverUrl": "LibreTranslate 서버 URL",
     "apiKey": "API 키 (선택 사항)",
     "savedKey": "API 키가 안전하게 저장됩니다. 빈 필드는 동일한 서버 URL에 대해서만 유지됩니다.",

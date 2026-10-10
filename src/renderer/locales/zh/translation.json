@@ -6993,7 +6993,7 @@
     "deletePack": "删除{{pack}}包",
     "downloadPack": "下载{{pack}}包",
     "delete": "删除",
-    "onlinePrivacy": "只有当您选择在线翻译时，在线翻译才会将所选的消息文本发送到您配置的LibreTranslate服务器。自动翻译始终保持离线状态。",
+    "onlinePrivacy": "只有当您选择在线翻译时，在线翻译才会将所选的消息文本发送到您配置的LibreTranslate服务器。自动翻译始终保持离线状态。HTTP仅允许用于localhost和环回地址；其他所有服务器都必须使用HTTPS。",
     "serverUrl": "LibreTranslate服务器URL",
     "apiKey": "API 密钥（可选）",
     "savedKey": "API密钥已安全保存。空白字段仅用于相同的服务器URL。",

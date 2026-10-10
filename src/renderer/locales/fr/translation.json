@@ -6993,7 +6993,7 @@
     "deletePack": "Supprimer {{pack}} pack",
     "downloadPack": "Télécharger {{pack}} pack",
     "delete": "Effacer",
-    "onlinePrivacy": "La traduction en ligne envoie le texte du message sélectionné à votre serveur LibreTranslate configuré uniquement lorsque vous choisissez Traduire en ligne. La traduction automatique reste toujours hors ligne.",
+    "onlinePrivacy": "La traduction en ligne envoie le texte du message sélectionné à votre serveur LibreTranslate configuré uniquement lorsque vous choisissez Traduire en ligne. La traduction automatique reste toujours hors ligne. HTTP est autorisé uniquement pour localhost et les adresses de bouclage ; tous les autres serveurs doivent utiliser HTTPS.",
     "serverUrl": "URL du serveur LibreTranslate",
     "apiKey": "Clé API (facultative)",
     "savedKey": "Une clé API est enregistrée en toute sécurité. Un champ vide le conserve uniquement pour la même URL de serveur.",

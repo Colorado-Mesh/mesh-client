@@ -49,8 +49,9 @@ The renderer store keeps 200 results in memory and rejects stale status/inferenc
 Auto-translation runs only for mounted incoming prose, skips read languages and uncertain
 language detection, and never falls back online. Original wire text and stored messages are
 unchanged. `AppTranslationSection` owns its settings separately from AppPanel's snapshot save.
-LibreTranslate requires explicit manual selection, a validated HTTP(S) URL, bounded replies,
-and an encrypted API key (unavailable when the OS key store cannot safely encrypt).
+LibreTranslate requires explicit manual selection, HTTPS for every non-loopback server, bounded
+replies, and an encrypted API key (unavailable when the OS key store cannot safely encrypt).
+Cleartext HTTP is accepted only for canonical `localhost` and literal loopback addresses.
 
 Run `node scripts/translation-smoke.mjs` manually for real French → English → German inference;
 `--extended` also checks Indonesian → English → Japanese with tiny/separate-vocabulary packs.

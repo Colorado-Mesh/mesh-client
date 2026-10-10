@@ -7107,7 +7107,7 @@
     "deletePack": "Usuń pakiet {{pack}}",
     "downloadPack": "Pobierz pakiet {{pack}}",
     "delete": "Delete",
-    "onlinePrivacy": "Tłumaczenie online wysyła wybrany tekst wiadomości na skonfigurowany serwer LibreTranslate tylko wtedy, gdy wybierzesz opcję Tłumacz online. Tłumaczenie automatyczne zawsze pozostaje offline.",
+    "onlinePrivacy": "Tłumaczenie online wysyła wybrany tekst wiadomości na skonfigurowany serwer LibreTranslate tylko wtedy, gdy wybierzesz opcję Tłumacz online. Tłumaczenie automatyczne zawsze pozostaje offline. Protokół HTTP jest dozwolony tylko dla hosta localhost i adresów pętli zwrotnej; pozostałe serwery muszą używać protokołu HTTPS.",
     "serverUrl": "Adres URL serwera LibreTranslate",
     "apiKey": "Klucz API (opcjonalnie)",
     "savedKey": "Klucz API jest bezpiecznie zapisywany. Puste pole zachowuje go tylko dla tego samego adresu URL serwera.",

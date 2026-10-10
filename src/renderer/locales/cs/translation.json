@@ -7058,7 +7058,7 @@
     "deletePack": "Smazat {{pack}} balíček",
     "downloadPack": "Stáhnout {{pack}} balíček",
     "delete": "Odstranit",
-    "onlinePrivacy": "Online překlad odešle vybraný text zprávy na váš nakonfigurovaný server LibreTranslate pouze tehdy, když zvolíte Přeložit online. Automatický překlad vždy zůstane offline.",
+    "onlinePrivacy": "Online překlad odešle vybraný text zprávy na váš nakonfigurovaný server LibreTranslate pouze tehdy, když zvolíte Přeložit online. Automatický překlad vždy zůstane offline. HTTP je povoleno pouze pro localhost a adresy zpětné smyčky; všechny ostatní servery musí používat HTTPS.",
     "serverUrl": "Adresa URL serveru LibreTranslate",
     "apiKey": "API klíč (volitelné)",
     "savedKey": "Klíč API je bezpečně uložen. Prázdné pole jej uchovává pouze pro stejnou adresu URL serveru.",

@@ -6993,7 +6993,7 @@
     "deletePack": "Verwijder het {{pack}} -pakket",
     "downloadPack": "Download het {{pack}} -pakket",
     "delete": "Verwijderen",
-    "onlinePrivacy": "Online vertaling verzendt de geselecteerde berichttekst alleen naar uw geconfigureerde LibreTranslate-server wanneer u Online vertalen kiest. Automatische vertaling blijft altijd offline.",
+    "onlinePrivacy": "Online vertaling verzendt de geselecteerde berichttekst alleen naar uw geconfigureerde LibreTranslate-server wanneer u Online vertalen kiest. Automatische vertaling blijft altijd offline. HTTP is alleen toegestaan voor localhost en loopback-adressen; alle andere servers moeten HTTPS gebruiken.",
     "serverUrl": "LibreTranslate server-URL",
     "apiKey": "API-sleutel (optioneel)",
     "savedKey": "Een API-sleutel wordt veilig opgeslagen. Een leeg veld bewaart het alleen voor dezelfde server-URL.",
