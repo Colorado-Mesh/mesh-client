@@ -904,7 +904,8 @@
       "noise": "騒音 {{noise}} dBm",
       "path": "パス: {{path}}",
       "hops_one": "{{count}} ホップ",
-      "hops_other": "{{count}} ホップ"
+      "hops_other": "{{count}} ホップ",
+      "place": "開始： {{place}}"
     },
     "firmwareBot": {
       "label": "ボットの返信",
@@ -959,6 +960,10 @@
         "title": "コマンド",
         "diagTitle": "診断コマンド"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCoreヘルスチェックコード",
+      "tooltip": "MeshCoreヘルスチェックのテストコード。送信者のメッシュの観察者は、どちらがそれを受け取ったかを報告します。"
     }
   },
   "common": {

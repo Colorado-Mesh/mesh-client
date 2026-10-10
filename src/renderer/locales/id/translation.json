@@ -904,7 +904,8 @@
       "noise": "Kebisingan {{noise}} dBm",
       "path": "Jalur: {{path}}",
       "hops_one": "{{count}} hop",
-      "hops_other": "{{count}} hop"
+      "hops_other": "{{count}} hop",
+      "place": "Dari: {{place}}"
     },
     "firmwareBot": {
       "label": "Balasan bot",
@@ -959,6 +960,10 @@
         "title": "Perintah",
         "diagTitle": "Perintah diagnostik"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Kode Pemeriksaan Kesehatan",
+      "tooltip": "Kode tes untuk MeshCore Pemeriksaan Kesehatan. Pengamat pada laporan mesh pengirim yang mana dari mereka yang menerimanya."
     }
   },
   "common": {

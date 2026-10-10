@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { Bot, FileDown, MapPin, Plane, Settings, Signal } from 'lucide-react-motion';
+import { Activity, Bot, FileDown, MapPin, Plane, Settings, Signal } from 'lucide-react-motion';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,11 +53,15 @@ export function SignalReportChip({ report }: Readonly<{ report: ParsedSignalRepo
     });
   }
   if (parts.length === 0) return null;
+  const titleLines = [
+    report.place ? t('chatPayload.signalReport.place', { place: report.place }) : null,
+    report.path ? t('chatPayload.signalReport.path', { path: report.path }) : null,
+  ].filter((line): line is string => line != null);
   return (
     <div
       role="group"
       aria-label={t('chatPayload.signalReport.label')}
-      title={report.path ? t('chatPayload.signalReport.path', { path: report.path }) : undefined}
+      title={titleLines.length > 0 ? titleLines.join('\n') : undefined}
       className="rounded-badge border-ink-700 bg-ink-900 text-ink-200 mt-1 inline-flex max-w-full flex-wrap items-center gap-x-2 border px-2 py-0.5 text-xs"
       data-testid="signal-report-chip"
     >
@@ -67,6 +71,24 @@ export function SignalReportChip({ report }: Readonly<{ report: ParsedSignalRepo
           {part.text}
         </span>
       ))}
+    </div>
+  );
+}
+
+/** Label for a MeshCore Health Check test code (no instance link: each community runs its own). */
+export function HealthCheckCodeChip({ code }: Readonly<{ code: string }>) {
+  const { t } = useTranslation();
+  return (
+    <div
+      role="group"
+      aria-label={t('chatPayload.healthCheck.label')}
+      title={t('chatPayload.healthCheck.tooltip')}
+      className="rounded-badge border-ink-700 bg-ink-900 text-ink-200 mt-1 inline-flex max-w-full items-center gap-x-2 border px-2 py-0.5 text-xs"
+      data-testid="health-check-code-chip"
+      data-code={code}
+    >
+      <Activity aria-hidden className="h-3.5 w-3.5 shrink-0" />
+      <span>{t('chatPayload.healthCheck.label')}</span>
     </div>
   );
 }

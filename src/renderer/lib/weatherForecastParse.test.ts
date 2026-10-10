@@ -161,6 +161,94 @@ describe('parseWeatherForecastPost: meshcoreBot', () => {
     expect(p?.highLow).toEqual({ high: 24, low: 13 });
     expect(p?.tempUnit).toBe('C');
   });
+
+  it('parses a place-period header with no colon between place and period', () => {
+    const p = parseWeatherForecastPost(
+      'Loveland Overnight: 🌙Mostly Clear 52°F SW@1 29%RH Vis:10mi | Sat: ☀️Sunny H:85°F SSW@3',
+    );
+    expect(p).toMatchObject({
+      profileId: 'meshcoreBot',
+      locationSource: 'placeName',
+      place: { name: 'Loveland', qualifiers: [] },
+      period: 'Overnight',
+      tempValue: 52,
+      tempUnit: 'F',
+      summary: 'Overnight: Mostly Clear 52°F SW@1 29%RH Vis:10mi',
+    });
+    expect(p?.segments).toHaveLength(2);
+    expect(p?.highLow).toBeUndefined();
+  });
+
+  it.each([
+    [
+      'Aurora This Afternoon: ☀️Sunny 84°F S@12 10%RH Vis:10mi P:Avg | Tonight: 🌙Mostly Clear L:54°F SSW@9',
+      'Aurora',
+      'This Afternoon',
+      84,
+    ],
+    [
+      'Jefferson Co Tonight: 🌙Mostly Clear 53°F SW@9 13%RH Vis:10mi | Sat: ☀️Sunny H:82°F SW@8',
+      'Jefferson Co',
+      'Tonight',
+      53,
+    ],
+    ['Fort Collins Tomorrow Night: ☁️Cloudy 40°F', 'Fort Collins', 'Tomorrow Night', 40],
+    ['Bergen Today: 🌧️Rain 9°C SW@20 Vis:5km', 'Bergen', 'Today', 9],
+  ])('parses place-period header %#', (text, name, period, temp) => {
+    expect(parseWeatherForecastPost(text)).toMatchObject({
+      profileId: 'meshcoreBot',
+      place: { name },
+      period,
+      tempValue: temp,
+    });
+  });
+
+  it('fills highLow from H:/L: markers only when both are present', () => {
+    const p = parseWeatherForecastPost(
+      'Aurora Tonight: 🌙Mostly Clear 56°F SSW@10 Vis:10mi | Sat: ☀️Sunny H:82°F SSW@7 | Sat Night: ☁️Mostly Cloudy L:59°F',
+    );
+    expect(p?.highLow).toEqual({ high: 82, low: 59 });
+    expect(p?.segments).toHaveLength(3);
+  });
+
+  it('keeps the Place: Period: path when the place ends in a period-like word', () => {
+    const p = parseWeatherForecastPost('Fort Sun: Today: ⛅Partly cloudy 18°C W12');
+    expect(p).toMatchObject({ place: { name: 'Fort Sun' }, period: 'Today', tempValue: 18 });
+  });
+});
+
+describe('parseWeatherForecastPost: asciiBox', () => {
+  it('parses a boxed current-conditions post', () => {
+    const p = parseWeatherForecastPost(
+      '+-----------WEATHER------------+\n| Aurora: 87°F                 |\n| Broken clouds                |\n+------------------------------+',
+    );
+    expect(p).toMatchObject({
+      profileId: 'asciiBox',
+      locationSource: 'placeName',
+      place: { name: 'Aurora' },
+      period: 'Now',
+      tempValue: 87,
+      tempUnit: 'F',
+      summary: 'Broken clouds',
+      segments: ['Broken clouds'],
+    });
+  });
+
+  it('parses Celsius and a qualified place', () => {
+    const p = parseWeatherForecastPost(
+      '+---WEATHER---+\n| Lyon, FR: 21°C |\n| Clear sky |\n+-------------+',
+    );
+    expect(p).toMatchObject({
+      profileId: 'asciiBox',
+      place: { name: 'Lyon', qualifiers: ['FR'] },
+      tempValue: 21,
+      tempUnit: 'C',
+    });
+  });
+
+  it('rejects a box without a temperature row', () => {
+    expect(parseWeatherForecastPost('+---WEATHER---+\n| Aurora |\n+------+')).toBeNull();
+  });
 });
 
 describe('parseWeatherForecastPost: meshing-around', () => {

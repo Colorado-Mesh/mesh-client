@@ -904,7 +904,8 @@
       "noise": "소음 {{noise}}dBm",
       "path": "경로: {{path}}",
       "hops_one": "{{count}} 홉",
-      "hops_other": "{{count}} 홉"
+      "hops_other": "{{count}} 홉",
+      "place": "보낸 사람: {{place}}"
     },
     "firmwareBot": {
       "label": "봇 답글",
@@ -959,6 +960,10 @@
         "title": "명령",
         "diagTitle": "진단 명령"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore 건강 검진 코드",
+      "tooltip": "MeshCore 상태 점검을 위한 테스트 코드. 발신자의 메시에 대한 관찰자가 어느 쪽이 수신했는지 보고합니다."
     }
   },
   "common": {

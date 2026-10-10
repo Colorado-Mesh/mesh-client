@@ -7,6 +7,7 @@ import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import {
   DroneReportCard,
   FirmwareBotReplyCard,
+  HealthCheckCodeChip,
   RncpControlChip,
   SignalReportChip,
 } from '@/renderer/components/chat/ChatStructuredPayloads';
@@ -17,6 +18,8 @@ import {
   parseFirmwareBotReply,
   stripFirmwareBotRequestToken,
 } from '@/renderer/lib/firmwareBotReplyParse';
+import { parseHealthCheckCode } from '@/renderer/lib/healthCheckCode';
+import { isHumanSignalSource, parseHopReport } from '@/renderer/lib/hopReportParse';
 import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import {
   meshcoreGiphyMediaUrl,
@@ -318,10 +321,12 @@ export function ChatPayloadText({
       );
     }
   }
-  const signalReport = rncpKind ? null : parseSignalReport(text);
+  const signalReport = rncpKind ? null : (parseSignalReport(text) ?? parseHopReport(text));
+  const botSignalReport = signalReport && !isHumanSignalSource(signalReport.source);
   const firmwareBotReply = rncpKind ? null : parseFirmwareBotReply(text);
+  const healthCheckCode = rncpKind ? null : parseHealthCheckCode(text);
   let displayText = rncpKind ? stripRncpSentinels(text) : text;
-  if (!rncpKind && (senderIsBot || signalReport || firmwareBotReply)) {
+  if (!rncpKind && (senderIsBot || botSignalReport || firmwareBotReply)) {
     displayText = stripFirmwareBotRequestToken(displayText).body;
   }
   const segments = parseChatMentionSegments(displayText);
@@ -369,6 +374,7 @@ export function ChatPayloadText({
       </div>
       {signalReport && <SignalReportChip report={signalReport} />}
       {firmwareBotReply && <FirmwareBotReplyCard reply={firmwareBotReply} />}
+      {healthCheckCode && <HealthCheckCodeChip code={healthCheckCode} />}
       {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (

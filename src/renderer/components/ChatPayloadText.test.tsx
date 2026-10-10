@@ -256,8 +256,35 @@ describe('ChatPayloadText', () => {
       expect(screen.getByLabelText('Mention bob')).toBeInTheDocument();
     });
 
-    it('leaves ordinary hop chat alone', () => {
+    it('adds a hop chip to a typed hop report with the place in the tooltip', () => {
       render(<ChatPayloadText text="3 hops to Firestone" query="" />);
+      expect(screen.getByText('3 hops to Firestone')).toBeInTheDocument();
+      const chip = screen.getByRole('group', { name: 'Signal report' });
+      expect(chip).toHaveTextContent('3 hops');
+      expect(chip).toHaveAttribute('title', 'From: Firestone');
+    });
+
+    it('adds a chip to a client ack line with SNR, RSSI and path', () => {
+      render(
+        <ChatPayloadText
+          text=", ack: SNR 12.2 dB, RSSI -41 dBm, 9 hops via F8F9, D4D4, E2B7"
+          query=""
+        />,
+      );
+      const chip = screen.getByRole('group', { name: 'Signal report' });
+      expect(chip).toHaveTextContent('9 hops');
+      expect(chip).toHaveTextContent('SNR 12.2 dB');
+      expect(chip).toHaveTextContent('RSSI -41 dBm');
+      expect(chip).toHaveAttribute('title', 'Path: F8F9, D4D4, E2B7');
+    });
+
+    it('does not strip a request token from a typed hop report', () => {
+      render(<ChatPayloadText text="[1a2b] 6 hops to Parker" query="" />);
+      expect(screen.getByText('[1a2b] 6 hops to Parker')).toBeInTheDocument();
+    });
+
+    it('leaves non-hop chat alone', () => {
+      render(<ChatPayloadText text="6 here. i win" query="" />);
       expect(screen.queryByTestId('signal-report-chip')).toBeNull();
     });
 
@@ -268,6 +295,27 @@ describe('ChatPayloadText', () => {
           query=""
         />,
       );
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe('MeshCore Health Check codes', () => {
+    it('labels a code without linking to any instance', () => {
+      render(<ChatPayloadText text="MHC-3163e6" query="" />);
+      expect(screen.getByText('MHC-3163e6')).toBeInTheDocument();
+      const chip = screen.getByRole('group', { name: 'MeshCore Health Check code' });
+      expect(chip).toHaveAttribute('data-code', 'MHC-3163E6');
+      expect(screen.queryByRole('link')).toBeNull();
+    });
+
+    it('ignores codes inside other text', () => {
+      render(<ChatPayloadText text="see MHC-ABCDEF" query="" />);
+      expect(screen.queryByTestId('health-check-code-chip')).toBeNull();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = render(<ChatPayloadText text="MHC-BBFDA0" query="" />);
       hydrateAxeThemeColors(document.documentElement);
       expect(await axe(container)).toHaveNoViolations();
     });

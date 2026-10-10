@@ -940,7 +940,8 @@
       "hops_one": "{{count}} перехід",
       "hops_few": "{{count}} переходи",
       "hops_many": "{{count}} переходів",
-      "hops_other": "{{count}} переходу"
+      "hops_other": "{{count}} переходу",
+      "place": "Від: {{place}}"
     },
     "firmwareBot": {
       "label": "Відповідь бота",
@@ -997,6 +998,10 @@
         "title": "Команди",
         "diagTitle": "Діагностичні команди"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Код перевірки здоров'я",
+      "tooltip": "Код тесту для MeshCore Health Check. Спостерігачі на сітчастому звіті відправника, хто з них його отримав."
     }
   },
   "common": {

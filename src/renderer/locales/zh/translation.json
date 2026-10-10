@@ -904,7 +904,8 @@
       "noise": "噪声 {{noise}} dBm",
       "path": "路径：{{path}}",
       "hops_one": "{{count}}跳",
-      "hops_other": "{{count}}跳"
+      "hops_other": "{{count}}跳",
+      "place": "发件人： {{place}}"
     },
     "firmwareBot": {
       "label": "机器人回复",
@@ -959,6 +960,10 @@
         "title": "命令",
         "diagTitle": "诊断命令"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore健康检查代码",
+      "tooltip": "MeshCore健康检查的测试代码。发件人网格上的观察者报告他们中的哪一个收到了它。"
     }
   },
   "common": {

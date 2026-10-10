@@ -925,7 +925,8 @@
       "hops_one": "{{count}} skok",
       "hops_few": "{{count}} skoky",
       "hops_many": "{{count}} skoků",
-      "hops_other": "{{count}} skoků"
+      "hops_other": "{{count}} skoků",
+      "place": "Od: {{place}}"
     },
     "firmwareBot": {
       "label": "Odpověď robota",
@@ -981,6 +982,10 @@
         "title": "Příkazy",
         "diagTitle": "Diagnostické příkazy"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Kód zdravotní kontroly",
+      "tooltip": "Kód testu pro zdravotní prohlídku MeshCore. Pozorovatelé na síti odesílatele hlásí, který z nich ji obdržel."
     }
   },
   "common": {

@@ -940,7 +940,8 @@
       "hops_one": "{{count}} переход",
       "hops_few": "{{count}} перехода",
       "hops_many": "{{count}} переходов",
-      "hops_other": "{{count}} перехода"
+      "hops_other": "{{count}} перехода",
+      "place": "От: {{place}}"
     },
     "firmwareBot": {
       "label": "Ответ бота",
@@ -997,6 +998,10 @@
         "title": "Команды",
         "diagTitle": "Диагностические команды"
       }
+    },
+    "healthCheck": {
+      "label": "MeshCore Код проверки здоровья",
+      "tooltip": "Код теста для проверки работоспособности MeshCore. Наблюдатели на сетке отправителя сообщают, кто из них ее получил."
     }
   },
   "common": {

@@ -13,11 +13,20 @@
  *   `ack @[bob] | 01,5f (2 hops) | SNR: 15 dB | RSSI: -120 dBm | Received at: 21:25:45`
  */
 
-export type SignalReportSource = 'meshMonitor' | 'firmwareBot' | 'meshcoreBot';
+export type SignalReportSource =
+  | 'meshMonitor'
+  | 'firmwareBot'
+  | 'meshcoreBot'
+  /** Person-sent client ack line (`hopReportParse.ts`); never marks the sender as a bot. */
+  | 'clientAck'
+  /** Person-typed `N hops to <place>` report (`hopReportParse.ts`); never marks a bot. */
+  | 'hopReport';
 
 export interface ParsedSignalReport {
   source: SignalReportSource;
   hops?: number;
+  /** Where the reporter is, as typed (`hopReport` only). */
+  place?: string;
   direct?: boolean;
   snr?: number;
   rssi?: number;

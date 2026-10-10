@@ -4,7 +4,9 @@
  * Profiles:
  * - `nwsPipe`: `Place | NWS forecast` / `Period: 59°F Cond | wind | precip N%` / `Issued ...`
  * - `meshcoreBot` (agessaman/meshcore-bot `wx` / `gwx` / scheduled):
- *   `City, ST: Period: 🌙Cond 52°F NW8 🌦️20% | Period: ☀️Cond 75°/52°`
+ *   `City, ST: Period: 🌙Cond 52°F NW8 🌦️20% | Period: ☀️Cond 75°/52°`, or with the period
+ *   in the label: `City Period: 🌙Cond 52°F SW@1 Vis:10mi | Sat: ☀️Cond H:85°F`
+ * - `asciiBox`: `+---WEATHER---+` / `| City: 87°F |` / `| Cond |` / `+---+`
  * - `meshingAroundMeteo` (SpudGunMan/meshing-around, Open-Meteo):
  *   `Today, Cond: Clear sky. High: 75F, with a low of 52F. ...`
  * - `meshingAroundNoaa` (meshing-around, NOAA with abbreviations):
@@ -14,7 +16,7 @@
  */
 
 export type WeatherForecastProfileId =
-  'nwsPipe' | 'meshcoreBot' | 'meshingAroundMeteo' | 'meshingAroundNoaa';
+  'nwsPipe' | 'meshcoreBot' | 'meshingAroundMeteo' | 'meshingAroundNoaa' | 'asciiBox';
 
 export type WeatherForecastLocationSource = 'placeName' | 'requester';
 
@@ -259,32 +261,102 @@ function parseMeshingAroundMeteo(lines: string[]): ParsedWeatherForecast | null 
 /** Matched against whitespace-collapsed text. */
 const PERIOD_WORD_RE =
   /^(?:now|today|tonight|this \w+|overnight|tomorrow|tomorrow night|(?:mon|tues?|wed(?:nes)?|thu(?:rs)?|fri|sat(?:ur)?|sun)(?:day)?(?: night)?|late \w+)$/i;
+/** `Loveland Overnight:` style header: place and period share the label, no colon between. */
+const PLACE_PERIOD_RE =
+  /^(?<place>.+?)\s+(?<period>now|today|tonight|this \w+|overnight|tomorrow(?: night)?|(?:mon|tues?|wed(?:nes)?|thu(?:rs)?|fri|sat(?:ur)?|sun)(?:day)?(?: night)?|late \w+)$/i;
 const MESHCORE_BOT_RE = /^(?<place>[^:\n|]{2,80}):\s*(?<body>[\s\S]+)$/;
 const MESHCORE_SEGMENT_RE = /^(?<period>[^:|]{1,40}):\s*(?<rest>.+)$/;
+const SEGMENT_HIGH_RE = /\bH: *(-?\d{1,3}) *°/;
+const SEGMENT_LOW_RE = /\bL: *(-?\d{1,3}) *°/;
+
+/** First `H:85°` and `L:52°` across segments; null unless both are present. */
+function segmentHighLow(segments: readonly string[]): { high: number; low: number } | null {
+  let high: number | undefined;
+  let low: number | undefined;
+  for (const seg of segments) {
+    const h = SEGMENT_HIGH_RE.exec(seg);
+    const l = SEGMENT_LOW_RE.exec(seg);
+    if (high == null && h) high = Number(h[1]);
+    if (low == null && l) low = Number(l[1]);
+  }
+  return high != null && low != null ? { high, low } : null;
+}
 
 function parseMeshcoreBot(text: string): ParsedWeatherForecast | null {
   const m = MESHCORE_BOT_RE.exec(text);
   if (!m?.groups) return null;
-  const placeLabel = m.groups.place.trim();
-  if (PERIOD_WORD_RE.test(stripEmoji(placeLabel).replace(/\s+/g, ' '))) return null;
+  let placeLabel = m.groups.place.trim();
+  const normalizedLabel = stripEmoji(placeLabel).replace(/\s+/g, ' ');
+  if (PERIOD_WORD_RE.test(normalizedLabel)) return null;
   const segments = m.groups.body
     .split(/\s+\|\s+|\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
-  const first = segments.length > 0 ? MESHCORE_SEGMENT_RE.exec(segments[0]) : null;
-  if (!first?.groups) return null;
-  const temp = parseDegreeTemp(first.groups.rest);
+  if (segments.length === 0) return null;
+  let period: string;
+  let firstRest: string;
+  const first = MESHCORE_SEGMENT_RE.exec(segments[0]);
+  const firstHasPeriod =
+    first?.groups != null &&
+    PERIOD_WORD_RE.test(stripEmoji(first.groups.period).replace(/\s+/g, ' '));
+  const placePeriod = firstHasPeriod ? null : PLACE_PERIOD_RE.exec(normalizedLabel);
+  if (placePeriod?.groups) {
+    placeLabel = placePeriod.groups.place;
+    period = placePeriod.groups.period;
+    firstRest = segments[0];
+    segments[0] = `${period}: ${segments[0]}`;
+  } else {
+    if (!first?.groups) return null;
+    period = first.groups.period.trim();
+    firstRest = first.groups.rest;
+  }
+  const temp = parseDegreeTemp(firstRest);
   if (!temp) return null;
   const place = parsePlaceLabel(placeLabel);
   if (!place) return null;
+  const highLow = temp.highLow ?? segmentHighLow(segments);
   return {
     profileId: 'meshcoreBot',
     locationSource: 'placeName',
     place,
-    period: first.groups.period.trim(),
+    period,
     ...temp,
+    ...(highLow ? { highLow } : {}),
     summary: stripEmoji(segments[0]),
     segments: segments.map(stripEmoji),
+    hasAlerts: false,
+  };
+}
+
+// ─── asciiBox ───────────────────────────────────────────────────────────────
+
+const ASCII_BOX_HEADER_RE = /^\+-+\s*WEATHER\s*-+\+$/i;
+const ASCII_BOX_ROW_RE = /^\|\s*(.*?)\s*\|$/;
+const ASCII_BOX_PLACE_RE = /^(?<place>[^:]{2,60}):\s*(?<rest>.+)$/;
+
+function parseAsciiBox(lines: string[]): ParsedWeatherForecast | null {
+  if (!ASCII_BOX_HEADER_RE.test(lines[0])) return null;
+  const rows: string[] = [];
+  for (const line of lines.slice(1)) {
+    const row = ASCII_BOX_ROW_RE.exec(line);
+    if (row?.[1]) rows.push(row[1]);
+  }
+  if (rows.length === 0) return null;
+  const head = ASCII_BOX_PLACE_RE.exec(rows[0]);
+  if (!head?.groups) return null;
+  const temp = parseDegreeTemp(head.groups.rest);
+  if (!temp) return null;
+  const place = parsePlaceLabel(head.groups.place);
+  if (!place) return null;
+  const segments = rows.slice(1).map(stripEmoji).filter(Boolean);
+  return {
+    profileId: 'asciiBox',
+    locationSource: 'placeName',
+    place,
+    period: 'Now',
+    ...temp,
+    summary: segments[0] ?? stripEmoji(rows[0]),
+    segments: segments.length > 0 ? segments : [stripEmoji(rows[0])],
     hasAlerts: false,
   };
 }
@@ -338,6 +410,7 @@ export function parseWeatherForecastPost(raw: string): ParsedWeatherForecast | n
   return (
     parseNwsPipe(lines, part) ??
     parseMeshingAroundMeteo(lines) ??
+    parseAsciiBox(lines) ??
     parseMeshcoreBot(text) ??
     parseMeshingAroundNoaa(lines)
   );
