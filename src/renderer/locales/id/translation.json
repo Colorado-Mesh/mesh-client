@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Kode Pemeriksaan Kesehatan",
       "tooltip": "Kode tes untuk MeshCore Pemeriksaan Kesehatan. Pengamat pada laporan mesh pengirim yang mana dari mereka yang menerimanya."
+    },
+    "remoteContent": {
+      "load": "Muat konten jarak jauh dari {{host}}"
     }
   },
   "common": {

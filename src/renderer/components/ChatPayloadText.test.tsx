@@ -27,8 +27,12 @@ describe('ChatPayloadText', () => {
     expect(screen.getByText(/hello world/)).toBeInTheDocument();
   });
 
-  it('renders MeshCore Open g:GIFID wire as inline GIF', () => {
+  it('loads a MeshCore Open g:GIFID only after destination consent', () => {
     render(<ChatPayloadText text="g:a5viI92PAF89q" query="" />);
+    expect(screen.queryByRole('img', { name: 'GIF' })).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load remote content from media.giphy.com' }),
+    );
     const img = screen.getByRole('img', { name: 'GIF' });
     expect(img).toHaveAttribute('src', 'https://media.giphy.com/media/a5viI92PAF89q/giphy.gif');
     expect(screen.getByRole('link')).toHaveAttribute(
@@ -37,7 +41,26 @@ describe('ChatPayloadText', () => {
     );
   });
 
-  it('renders shared location OSM messages as a LocationCard', () => {
+  it('requires fresh consent when a Giphy resource changes', () => {
+    const { rerender } = render(<ChatPayloadText text="g:a5viI92PAF89q" query="" />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load remote content from media.giphy.com' }),
+    );
+    expect(screen.getByRole('img', { name: 'GIF' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('a5viI92PAF89q'),
+    );
+
+    rerender(
+      <ChatPayloadText text="https://giphy.com/gifs/another-title-Kx82Lvb7wcYNO" query="" />,
+    );
+    expect(screen.queryByRole('img', { name: 'GIF' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Load remote content from media.giphy.com' }),
+    ).toBeInTheDocument();
+  });
+
+  it('loads shared location tiles only after destination consent', () => {
     render(
       <ChatPayloadText
         text={
@@ -51,6 +74,12 @@ describe('ChatPayloadText', () => {
     expect(screen.getByRole('link', { name: 'Open in Maps' })).toHaveAttribute(
       'href',
       'https://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903',
+    );
+    expect(screen.queryByRole('img', { name: 'Shared location map tile' })).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Load remote content from [abc]\.tile\.openstreetmap\.org/,
+      }),
     );
     const tile = screen.getByRole('img', { name: 'Shared location map tile' });
     expect(tile.getAttribute('src')).toContain('mesh-tiles://osm/');
@@ -100,6 +129,10 @@ describe('ChatPayloadText', () => {
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', 'https://example.com');
     expect(link).toHaveAttribute('target', '_blank');
+    expect(
+      screen.getByRole('button', { name: 'Load remote content from example.com' }),
+    ).toBeInTheDocument();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('shows preview card when fetch returns metadata', async () => {
@@ -109,6 +142,7 @@ describe('ChatPayloadText', () => {
       image: 'https://example.com/img.png',
     });
     render(<ChatPayloadText text="see https://example.com" query="" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from example.com' }));
     await waitFor(() => {
       expect(screen.getByText('Example Site')).toBeInTheDocument();
       expect(screen.getByText('A great example')).toBeInTheDocument();
@@ -123,6 +157,10 @@ describe('ChatPayloadText', () => {
       kind: 'image',
     });
     render(<ChatPayloadText text="https://cdn.example.com/photo.jpg" query="" />);
+    expect(screen.queryByRole('img', { name: 'Image: photo.jpg' })).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load remote content from cdn.example.com' }),
+    );
     await waitFor(() => {
       const img = screen.getByRole('img', { name: 'Image: photo.jpg' });
       expect(img).toHaveAttribute('src', 'data:image/jpeg;base64,abc');
@@ -144,6 +182,10 @@ describe('ChatPayloadText', () => {
     const { container } = render(
       <ChatPayloadText text="https://www.youtube.com/watch?v=dQw4w9WgXcQ" query="" />,
     );
+    expect(mockFetch).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load remote content from www.youtube.com' }),
+    );
     await waitFor(() => {
       expect(screen.getByText('Never Gonna Give You Up')).toBeInTheDocument();
       expect(screen.getByText('Rick Astley')).toBeInTheDocument();
@@ -157,6 +199,8 @@ describe('ChatPayloadText', () => {
   it('hides preview card when fetch returns null', async () => {
     mockFetch.mockResolvedValue(null);
     render(<ChatPayloadText text="see https://example.com" query="" />);
+    expect(mockFetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from example.com' }));
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('https://example.com');
     });
@@ -166,6 +210,7 @@ describe('ChatPayloadText', () => {
   it('shows no image element when preview has no image', async () => {
     mockFetch.mockResolvedValue({ title: 'No Image', description: 'text only' });
     const { container } = render(<ChatPayloadText text="https://example.com" query="" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from example.com' }));
     await waitFor(() => {
       expect(screen.getByText('No Image')).toBeInTheDocument();
     });
@@ -175,6 +220,9 @@ describe('ChatPayloadText', () => {
   it('calls fetch for each unique URL in a message', async () => {
     mockFetch.mockResolvedValue(null);
     render(<ChatPayloadText text="go to https://example.com and https://other.org" query="" />);
+    expect(mockFetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from example.com' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from other.org' }));
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
@@ -188,6 +236,7 @@ describe('ChatPayloadText', () => {
     render(
       <ChatPayloadText text="see https://example.com" query="" onContentResize={onContentResize} />,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Load remote content from example.com' }));
     await waitFor(() => {
       expect(screen.getByText('Example Site')).toBeInTheDocument();
     });
@@ -201,6 +250,9 @@ describe('ChatPayloadText', () => {
       kind: 'image',
     });
     render(<ChatPayloadText text="https://cdn.example.com/media/abc123" query="" />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load remote content from cdn.example.com' }),
+    );
     await waitFor(() => {
       expect(screen.getByRole('img', { name: 'Image: abc123' })).toBeInTheDocument();
     });
@@ -223,6 +275,16 @@ describe('ChatPayloadText', () => {
       );
       expect(screen.getByRole('link', { name: 'Open pilot location' })).toBeInTheDocument();
       expect(screen.getByText(/^Pilot .* from drone$/)).toBeInTheDocument();
+      expect(screen.queryByRole('img', { name: 'Drone detection map tile' })).toBeNull();
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /Load remote content from [abc]\.tile\.openstreetmap\.org/,
+        }),
+      );
+      expect(screen.getByRole('img', { name: 'Drone detection map tile' })).toHaveAttribute(
+        'src',
+        expect.stringContaining('mesh-tiles://osm/'),
+      );
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -443,6 +505,13 @@ describe('ChatPayloadText', () => {
     await waitFor(() => {
       expect(screen.getByRole('link')).toHaveAttribute('href', 'https://example.com');
     });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('never offers or fetches a cleartext link preview', () => {
+    render(<ChatPayloadText text="see http://example.com" query="" />);
+    expect(screen.getByRole('link')).toHaveAttribute('href', 'http://example.com');
+    expect(screen.queryByRole('button')).toBeNull();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });

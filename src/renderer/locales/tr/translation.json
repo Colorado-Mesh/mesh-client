@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Sağlık Kontrolü kodu",
       "tooltip": "MeshCore Sağlamlık Denetimi için test kodu. Gönderenin mesh'indeki gözlemciler, hangisinin aldığını bildirir."
+    },
+    "remoteContent": {
+      "load": "{{host}} 'dan uzak içerik yükleyin"
     }
   },
   "common": {
