@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Termasuk snapshot debug dan file log dalam satu zip. Aman untuk dilampirkan ke masalah GitHub publik.",
     "exportForDeveloper": "Ekspor paket dukungan untuk pengembang",
     "exportForDeveloperButton": "Ekspor untuk Pengembang",
-    "exportForDeveloperWarning": "Termasuk database lengkap Anda, yang mungkin berisi kata sandi yang disimpan (kredensial ruang MeshCore, pengaturan MQTT, dll.). Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
+    "exportForDeveloperWarning": "Termasuk database lengkap dan log audit darurat MECP Anda, yang mungkin berisi kata sandi tersimpan, teks pesan, pengenal pengirim dan kanal, serta detail lokasi. Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
     "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Hapus semua kontak LXMF",

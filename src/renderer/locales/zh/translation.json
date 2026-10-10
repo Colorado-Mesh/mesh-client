@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "在一个 zip 中包含调试快照和日志文件。可以安全地附加到公共 GitHub 问题。",
     "exportForDeveloper": "为开发人员导出支持包",
     "exportForDeveloperButton": "为开发者导出",
-    "exportForDeveloperWarning": "包括您的完整数据库，其中可能包含保存的密码（MeshCore 房间凭据、MQTT 设置等）。仅与维护者私下共享此捆绑包 - 切勿在公共 GitHub 上共享。",
+    "exportForDeveloperWarning": "包括您的完整数据库和MECP紧急审计日志，其中可能包含保存的密码、消息文本、发送者和频道标识符以及位置详情。仅与维护者私下共享此捆绑包，切勿在公共GitHub上共享。",
     "exportSupportBundleFailed": "无法导出支持包：{{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "清除所有LXMF联系人",

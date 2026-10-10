@@ -37,7 +37,7 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 
 - File: `mecp-received.log` (+ `.1` size rotate) under Electron `userData` — **not** session `mesh-client.log`
 - IPC: `mecp:appendReceived`, `mecp:exportReceivedLog` (Save dialog)
-- Included in support bundles
+- Included only in private developer support bundles; omitted from public-safe GitHub reports
 - App → MECP section: **Export MECP log** (Save dialog) alongside RF bridge settings and a link to upstream docs
 - Lines from blocked senders carry `"blocked": true` (validated as optional boolean in `isValidMecpAppendPayload`)
 

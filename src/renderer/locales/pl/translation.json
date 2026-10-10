@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Zawiera migawkę debugowania i pliki dziennika w jednym zip. Bezpieczne dołączanie do publicznych problemów GitHub.",
     "exportForDeveloper": "Eksportuj pakiet wsparcia dla programisty",
     "exportForDeveloperButton": "Eksport dla programisty",
-    "exportForDeveloperWarning": "Obejmuje pełną bazę danych, która może zawierać zapisane hasła (dane logowania do pokoju MeshCore, ustawienia MQTT itp.). Udostępnij ten pakiet prywatnie tylko opiekunom — nigdy w publicznym GitHub.",
+    "exportForDeveloperWarning": "Obejmuje pełną bazę danych i dzienniki audytu alarmów MECP, które mogą zawierać zapisane hasła, treść wiadomości, identyfikatory nadawcy i kanału oraz dane lokalizacji. Udostępnij ten pakiet prywatnie tylko opiekunom — nigdy w publicznym GitHub.",
     "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Wyczyść wszystkie kontakty LXMF",

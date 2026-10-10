@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Hata ayıklama anlık görüntüsünü ve günlük dosyalarını tek bir zip dosyasında içerir. Herkese açık GitHub sorunlarına eklemek güvenlidir.",
     "exportForDeveloper": "Geliştirici için destek paketini dışa aktarın",
     "exportForDeveloperButton": "Geliştirici için Dışa Aktarma",
-    "exportForDeveloperWarning": "Kaydedilmiş şifreleri (MeshCore oda kimlik bilgileri, MQTT ayarları vb.) içerebilecek tam veritabanınızı içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
+    "exportForDeveloperWarning": "Kaydedilmiş şifreleri, mesaj metnini, gönderen ve kanal kimliklerini ve konum ayrıntılarını içerebilecek tam veritabanınızı ve MECP acil durum denetim günlüklerini içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
     "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Tüm LXMF kişilerini temizle",

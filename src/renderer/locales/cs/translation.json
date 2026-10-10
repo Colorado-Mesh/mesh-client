@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Zahrnuje snímek ladění a soubory protokolu v jednom zipu. Bezpečné připojení k veřejným problémům GitHub.",
     "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
     "exportForDeveloperButton": "Export pro vývojáře",
-    "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
+    "exportForDeveloperWarning": "Zahrnuje úplnou databázi a nouzové auditní protokoly MECP, které mohou obsahovat uložená hesla, text zpráv, identifikátory odesílatelů a kanálů a údaje o poloze. Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
     "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Vymazat všechny kontakty LXMF",
