@@ -686,7 +686,7 @@ fi
 # Fresh clones (Cut release, release preflight) have no .rsstack/ yet; check:rust-licenses
 # needs the Ratspeak path deps resolved before cargo metadata can run.
 echo "Provisioning Ratspeak stack (.rsstack/)..."
-if ! bash scripts/clone-ratspeak-stack.sh; then
+if ! MESH_CLIENT_BUILD_CHANNEL=release bash scripts/clone-ratspeak-stack.sh; then
   print_error "Ratspeak stack clone failed (scripts/clone-ratspeak-stack.sh)."
   exit 1
 fi

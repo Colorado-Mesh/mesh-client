@@ -40,6 +40,7 @@ export RS_LXMF_DIR="${LXMF_DIR}"
 # or a release-channel build.
 ALLOW_LOCAL_OVERRIDE="${MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE:-}"
 
+# Reject malformed reviewed pins before any network or checkout operation.
 validate_pin() {
   local value="$1" label="$2"
   if [[ ! "${value}" =~ ^[0-9a-f]{40}$ ]]; then
@@ -48,6 +49,7 @@ validate_pin() {
   fi
 }
 
+# Select the reviewed pin unless an explicitly permitted local bisect override is supplied.
 select_ref() {
   local env_name="$1" pin="$2" label="$3" supplied
   supplied="${!env_name:-}"

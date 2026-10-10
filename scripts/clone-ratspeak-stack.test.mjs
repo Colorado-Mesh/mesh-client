@@ -76,6 +76,7 @@ function createLocalRemote({ defaultBranch = 'main', pinTag = null, contents = '
   return { remote, tipSha, pinSha };
 }
 
+/** Source the clone script and invoke ensure_repo against an isolated fixture checkout. */
 function runEnsureRepo({
   remoteUrl,
   destDir,
@@ -108,6 +109,7 @@ function runEnsureRepo({
   );
 }
 
+/** Source the clone script with sanitized release-policy environment variables. */
 function sourceCloneScript(env = {}) {
   return execFileSync(
     'bash',
