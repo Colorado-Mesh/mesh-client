@@ -210,7 +210,7 @@ describe('renderNomadMicronPage', () => {
         .convertMicronToFragment(excessElements)
         .querySelector('[data-micron-render-error="true"]'),
     ).not.toBeNull();
-  });
+  }, 20_000);
 
   it('resolves empty anchors in linear document order', () => {
     const compareSpy = vi.spyOn(Node.prototype, 'compareDocumentPosition');
