@@ -9,12 +9,14 @@ import {
   assertDualArchMacArchives,
   assertDmgInstallNotice,
   assertLipoArchsMatch,
-  assertMacCodeSignatureIfDeveloperId,
+  assertMacCodeSignature,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   classifyMacArchiveArch,
+  collectArchives,
   expectedLipoArchsForMacArch,
   isDeveloperIdApplicationAuthority,
+  resolveMacSignatureOptions,
   resolveExpectedMacArch,
   VerificationFailure,
   fail,
@@ -41,6 +43,7 @@ const ADHOC_CODESIGN_DV = [
 ].join('\n');
 
 const UNSIGNED_CODESIGN_DV = '/tmp/Mesh-client.app: code object is not signed at all\n';
+const WRONG_TEAM_CODESIGN_DV = DEVELOPER_ID_CODESIGN_DV.replaceAll('ABCD123456', 'ZYXW987654');
 
 describe('verify-mac-packaging helpers', () => {
   it('fail throws VerificationFailure for finally detach cleanup', () => {
@@ -68,6 +71,23 @@ describe('verify-mac-packaging helpers', () => {
       writeFileSync(medium, 'abc');
       writeFileSync(large, 'abcdefgh');
       expect(pickPrimaryArchive([small, large, medium])).toBe(large);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('collectArchives includes both root and nested artifacts eligible for upload', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-archives-'));
+    const nestedDir = join(dir, 'mac-stale');
+    const rootArchive = join(dir, 'Mesh-client-x64.dmg');
+    const nestedArchive = join(nestedDir, 'Mesh-client-arm64.dmg');
+    try {
+      mkdirSync(nestedDir);
+      writeFileSync(rootArchive, 'root');
+      writeFileSync(nestedArchive, 'nested');
+      expect(collectArchives(dir, '.dmg')).toEqual(
+        [rootArchive, nestedArchive].sort((a, b) => a.localeCompare(b)),
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -276,12 +296,36 @@ describe('verify-mac-packaging helpers', () => {
 
   it('isDeveloperIdApplicationAuthority detects Developer ID Application lines', () => {
     expect(isDeveloperIdApplicationAuthority(DEVELOPER_ID_CODESIGN_DV)).toBe(true);
+    expect(
+      isDeveloperIdApplicationAuthority(
+        DEVELOPER_ID_CODESIGN_DV.replace('TeamIdentifier=ABCD123456', 'TeamIdentifier=ZYXW987654'),
+      ),
+    ).toBe(false);
     expect(isDeveloperIdApplicationAuthority(ADHOC_CODESIGN_DV)).toBe(false);
     expect(isDeveloperIdApplicationAuthority(UNSIGNED_CODESIGN_DV)).toBe(false);
     expect(isDeveloperIdApplicationAuthority('')).toBe(false);
   });
 
-  it('assertMacCodeSignatureIfDeveloperId skips unsigned and ad-hoc displays', () => {
+  it('resolveMacSignatureOptions requires a valid team for required policy', () => {
+    expect(resolveMacSignatureOptions({})).toEqual({ policy: 'optional' });
+    expect(
+      resolveMacSignatureOptions({
+        MESH_CLIENT_MAC_SIGNATURE_POLICY: 'required',
+        MESH_CLIENT_EXPECTED_MAC_TEAM_ID: 'ABCD123456',
+      }),
+    ).toEqual({ policy: 'required', expectedTeamId: 'ABCD123456' });
+    expect(() =>
+      resolveMacSignatureOptions({ MESH_CLIENT_MAC_SIGNATURE_POLICY: 'required' }),
+    ).toThrow(/needs MESH_CLIENT_EXPECTED_MAC_TEAM_ID/);
+    expect(() =>
+      resolveMacSignatureOptions({
+        MESH_CLIENT_MAC_SIGNATURE_POLICY: 'required',
+        MESH_CLIENT_EXPECTED_MAC_TEAM_ID: 'bad-team',
+      }),
+    ).toThrow(/10-character Apple team identifier/);
+  });
+
+  it('assertMacCodeSignature skips unsigned and ad-hoc displays only in optional mode', () => {
     const calls = { deep: 0, staple: 0, sidecar: 0 };
     const skipDeps = {
       readDisplay: () => ({ status: 1, text: UNSIGNED_CODESIGN_DV }),
@@ -301,40 +345,67 @@ describe('verify-mac-packaging helpers', () => {
     };
 
     expect(() =>
-      assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'unsigned', skipDeps),
+      assertMacCodeSignature('/tmp/Mesh-client.app', 'unsigned', { policy: 'optional' }, skipDeps),
     ).not.toThrow();
     expect(() =>
-      assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'adhoc', {
-        ...skipDeps,
-        readDisplay: () => ({ status: 0, text: ADHOC_CODESIGN_DV }),
-      }),
+      assertMacCodeSignature(
+        '/tmp/Mesh-client.app',
+        'adhoc',
+        { policy: 'optional' },
+        {
+          ...skipDeps,
+          readDisplay: () => ({ status: 0, text: ADHOC_CODESIGN_DV }),
+        },
+      ),
     ).not.toThrow();
     expect(calls).toEqual({ deep: 0, staple: 0, sidecar: 0 });
+
+    expect(() =>
+      assertMacCodeSignature(
+        '/tmp/Mesh-client.app',
+        'unsigned-release',
+        { policy: 'required', expectedTeamId: 'ABCD123456' },
+        skipDeps,
+      ),
+    ).toThrow(/not signed by the required Developer ID Application identity/);
+    expect(() =>
+      assertMacCodeSignature(
+        '/tmp/Mesh-client.app',
+        'wrong-team',
+        { policy: 'required', expectedTeamId: 'ABCD123456' },
+        { ...skipDeps, readDisplay: () => ({ status: 0, text: WRONG_TEAM_CODESIGN_DV }) },
+      ),
+    ).toThrow(/Developer ID team ZYXW987654 does not match ABCD123456/);
   });
 
-  it('assertMacCodeSignatureIfDeveloperId enforces deep strict, stapler, and sidecar', () => {
+  it('assertMacCodeSignature enforces deep strict, stapler, and the sidecar identity', () => {
     const dir = mkdtempSync(join(tmpdir(), 'verify-mac-codesign-'));
     const sidecarPath = join(dir, 'mesh-client-reticulum');
     writeFileSync(sidecarPath, 'x');
     const seen = /** @type {string[]} */ ([]);
     try {
       expect(() =>
-        assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'signed', {
-          readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
-          verifyDeepStrict: (target) => {
-            seen.push(`deep:${target}`);
-            return { status: 0, text: 'valid on disk\n' };
+        assertMacCodeSignature(
+          '/tmp/Mesh-client.app',
+          'signed',
+          { policy: 'required', expectedTeamId: 'ABCD123456' },
+          {
+            readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
+            verifyDeepStrict: (target) => {
+              seen.push(`deep:${target}`);
+              return { status: 0, text: 'valid on disk\n' };
+            },
+            staplerValidate: (target) => {
+              seen.push(`staple:${target}`);
+              return { status: 0, text: 'The validate action worked!\n' };
+            },
+            verifyStrict: (target) => {
+              seen.push(`sidecar:${target}`);
+              return { status: 0, text: 'valid on disk\n' };
+            },
+            resolveSidecarPath: () => sidecarPath,
           },
-          staplerValidate: (target) => {
-            seen.push(`staple:${target}`);
-            return { status: 0, text: 'The validate action worked!\n' };
-          },
-          verifyStrict: (target) => {
-            seen.push(`sidecar:${target}`);
-            return { status: 0, text: 'valid on disk\n' };
-          },
-          resolveSidecarPath: () => sidecarPath,
-        }),
+        ),
       ).not.toThrow();
       expect(seen).toEqual([
         'deep:/tmp/Mesh-client.app',
@@ -343,37 +414,70 @@ describe('verify-mac-packaging helpers', () => {
       ]);
 
       expect(() =>
-        assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'broken', {
-          readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
-          verifyDeepStrict: () => ({
-            status: 1,
-            text: 'invalid signature (code or signature have been modified)\n',
-          }),
-          staplerValidate: () => ({ status: 0, text: '' }),
-          verifyStrict: () => ({ status: 0, text: '' }),
-          resolveSidecarPath: () => sidecarPath,
-        }),
+        assertMacCodeSignature(
+          '/tmp/Mesh-client.app',
+          'broken',
+          { policy: 'required', expectedTeamId: 'ABCD123456' },
+          {
+            readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
+            verifyDeepStrict: () => ({
+              status: 1,
+              text: 'invalid signature (code or signature have been modified)\n',
+            }),
+            staplerValidate: () => ({ status: 0, text: '' }),
+            verifyStrict: () => ({ status: 0, text: '' }),
+            resolveSidecarPath: () => sidecarPath,
+          },
+        ),
       ).toThrow(/codesign --verify --deep --strict failed/);
 
       expect(() =>
-        assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'unstapled', {
-          readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
-          verifyDeepStrict: () => ({ status: 0, text: '' }),
-          staplerValidate: () => ({ status: 1, text: 'Error: no ticket\n' }),
-          verifyStrict: () => ({ status: 0, text: '' }),
-          resolveSidecarPath: () => sidecarPath,
-        }),
+        assertMacCodeSignature(
+          '/tmp/Mesh-client.app',
+          'unstapled',
+          { policy: 'required', expectedTeamId: 'ABCD123456' },
+          {
+            readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
+            verifyDeepStrict: () => ({ status: 0, text: '' }),
+            staplerValidate: () => ({ status: 1, text: 'Error: no ticket\n' }),
+            verifyStrict: () => ({ status: 0, text: '' }),
+            resolveSidecarPath: () => sidecarPath,
+          },
+        ),
       ).toThrow(/stapler validate failed/);
 
       expect(() =>
-        assertMacCodeSignatureIfDeveloperId('/tmp/Mesh-client.app', 'bad-sidecar', {
-          readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
-          verifyDeepStrict: () => ({ status: 0, text: '' }),
-          staplerValidate: () => ({ status: 0, text: '' }),
-          verifyStrict: () => ({ status: 1, text: 'code object is not signed at all\n' }),
-          resolveSidecarPath: () => sidecarPath,
-        }),
+        assertMacCodeSignature(
+          '/tmp/Mesh-client.app',
+          'bad-sidecar',
+          { policy: 'required', expectedTeamId: 'ABCD123456' },
+          {
+            readDisplay: () => ({ status: 0, text: DEVELOPER_ID_CODESIGN_DV }),
+            verifyDeepStrict: () => ({ status: 0, text: '' }),
+            staplerValidate: () => ({ status: 0, text: '' }),
+            verifyStrict: () => ({ status: 1, text: 'code object is not signed at all\n' }),
+            resolveSidecarPath: () => sidecarPath,
+          },
+        ),
       ).toThrow(/sidecar codesign --verify --strict failed/);
+
+      expect(() =>
+        assertMacCodeSignature(
+          '/tmp/Mesh-client.app',
+          'wrong-sidecar-team',
+          { policy: 'required', expectedTeamId: 'ABCD123456' },
+          {
+            readDisplay: (target) => ({
+              status: 0,
+              text: target === sidecarPath ? WRONG_TEAM_CODESIGN_DV : DEVELOPER_ID_CODESIGN_DV,
+            }),
+            verifyDeepStrict: () => ({ status: 0, text: '' }),
+            staplerValidate: () => ({ status: 0, text: '' }),
+            verifyStrict: () => ({ status: 0, text: '' }),
+            resolveSidecarPath: () => sidecarPath,
+          },
+        ),
+      ).toThrow(/sidecar Developer ID team ZYXW987654 does not match ABCD123456/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
