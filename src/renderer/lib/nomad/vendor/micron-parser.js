@@ -41,6 +41,7 @@ class MicronRenderLimitError extends Error {
   }
 }
 
+/** Increment one render-work counter and fail closed when its fixed ceiling is exceeded. */
 function consumeBudget(state, key, amount = 1) {
   const budget = state?.budget;
   if (!budget) return;
@@ -50,6 +51,7 @@ function consumeBudget(state, key, amount = 1) {
   }
 }
 
+/** Validate raw source dimensions and create the counters shared by one render operation. */
 function createRenderBudget(markup) {
   if (markup.length > MICRON_RENDER_LIMITS.sourceChars) {
     throw new MicronRenderLimitError('sourceChars');
@@ -81,6 +83,7 @@ function createRenderBudget(markup) {
   };
 }
 
+/** Build the inert fragment shown when remote Micron content exceeds a rendering limit. */
 function createRenderLimitNotice() {
   const template = document.createElement('template');
   template.innerHTML = MICRON_RENDER_LIMIT_HTML;
