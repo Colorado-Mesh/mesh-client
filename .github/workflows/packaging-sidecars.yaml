@@ -24,7 +24,8 @@ jobs:
     outputs:
       include: ${{ steps.matrix.outputs.include }}
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ github.sha }}
       - name: Resolve sidecar matrix
@@ -44,7 +45,8 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ github.sha }}
       - name: Install Linux sidecar build dependencies
@@ -78,7 +80,8 @@ jobs:
           cp .rsstack/RESOLVED_SHAS.txt "resources/reticulum-sidecar/staged/$SIDECAR/RESOLVED_SHAS.txt"
           tar -cf "sidecar-$SIDECAR.tar" -C resources/reticulum-sidecar/staged "$SIDECAR"
       - name: Upload staged sidecar
-        uses: actions/upload-artifact@v7
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ci-reticulum-staged-${{ matrix.platform }}-${{ matrix.arch }}
           path: sidecar-${{ matrix.platform }}-${{ matrix.arch }}.tar

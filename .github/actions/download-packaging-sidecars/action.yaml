@@ -7,7 +7,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/download-artifact@v7
+    # actions/download-artifact v7.0.0
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         pattern: ci-reticulum-staged-${{ inputs.platform }}-*
         path: .sidecar-artifacts

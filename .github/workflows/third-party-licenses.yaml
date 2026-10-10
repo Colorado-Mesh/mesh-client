@@ -29,8 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # persist-credentials: false avoids Duplicate Authorization when CPR
-      # configures its own http.*.extraheader (actions/checkout@v6 default helper).
-      - uses: actions/checkout@v6
+      # configures its own http.*.extraheader (the checkout action's default helper).
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: main
           persist-credentials: false
@@ -39,7 +40,8 @@ jobs:
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        # actions/setup-node v6.5.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '22'
           cache: 'pnpm'
