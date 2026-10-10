@@ -324,6 +324,55 @@ describe('CI workflow contracts', () => {
     expect(read('.github/workflows/release.yaml')).toContain('assert-win-setup-installers.mjs');
   });
 
+  it('requires macOS signing and notarization for every release path', () => {
+    const workflow = load(read('.github/workflows/release.yaml'));
+    const releaseSteps = workflow.jobs.release.steps;
+    const secretGate = releaseSteps.find((step) => step.name === 'Validate macOS signing secrets');
+    expect(secretGate.if).toBe("matrix.os == 'macos-latest'");
+    expect(secretGate.if).not.toContain('github.event_name');
+
+    const completeSecrets = {
+      ...process.env,
+      CSC_LINK: 'certificate',
+      CSC_KEY_PASSWORD: 'password',
+      APPLE_ID: 'developer@example.com',
+      APPLE_APP_SPECIFIC_PASSWORD: 'app-password',
+      APPLE_TEAM_ID: 'ABCD123456',
+    };
+    expect(spawnSync('bash', ['-c', secretGate.run], { env: completeSecrets }).status).toBe(0);
+    for (const required of [
+      'CSC_LINK',
+      'CSC_KEY_PASSWORD',
+      'APPLE_ID',
+      'APPLE_APP_SPECIFIC_PASSWORD',
+      'APPLE_TEAM_ID',
+    ]) {
+      expect(
+        spawnSync('bash', ['-c', secretGate.run], {
+          env: { ...completeSecrets, [required]: '' },
+        }).status,
+        required,
+      ).not.toBe(0);
+    }
+
+    const build = releaseSteps.find((step) => step.name === 'Build packages');
+    expect(build.env.MESH_CLIENT_MAC_SIGNATURE_POLICY).toContain("&& 'required' || 'optional'");
+    expect(build.env.MESH_CLIENT_EXPECTED_MAC_TEAM_ID).toContain('secrets.APPLE_TEAM_ID');
+
+    const smoke = workflow.jobs['packaging-smoke'].steps.find(
+      (step) => step.name === 'Run packaging smoke test',
+    );
+    expect(smoke.env.MESH_CLIENT_MAC_SIGNATURE_POLICY).toContain("&& 'required' || 'optional'");
+    expect(smoke.env.MESH_CLIENT_EXPECTED_MAC_TEAM_ID).toContain('secrets.APPLE_TEAM_ID');
+    const localPublish = JSON.parse(read('package.json')).scripts['dist:mac:publish'];
+    expect(localPublish).toContain('electron-builder --mac --x64 --arm64 --publish never');
+    expect(localPublish).not.toContain('--publish always');
+    expect(localPublish).toContain('MESH_CLIENT_MAC_SIGNATURE_POLICY=required');
+    expect(localPublish.indexOf('verify-mac-packaging.mjs')).toBeLessThan(
+      localPublish.indexOf('ci-upload-release-assets.mjs'),
+    );
+  });
+
   it('pins checkout and removes persisted credentials before running repository code', () => {
     expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(7);
     expect(testsWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(

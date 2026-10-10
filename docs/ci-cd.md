@@ -505,7 +505,7 @@ Post-build smoke tests:
   - **Squirrel / Mantle / ReactiveObjC** framework symlinks and binaries (7-Zip flattening breaks Squirrel at launch)
   - Staged **`00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt`** uploaded beside macOS ZIP/DMG on GitHub Releases
   - Thin **MacOS launcher** + full **Electron Framework** binary sizes; bundled **Reticulum sidecar** present
-  - **Developer ID–signed builds only:** `codesign --verify --deep --strict` on the finished `.app` (DMG mount / ZIP extract / on-disk), `xcrun stapler validate` (stapled notarization ticket), and `codesign --verify --strict` on the bundled Reticulum sidecar. Unsigned or ad-hoc (non–Developer ID) local `dist:mac` builds skip this gate.
+  - **Developer ID–signed builds:** `codesign --verify --deep --strict` on the finished `.app` (DMG mount / ZIP extract / on-disk), `xcrun stapler validate` (stapled notarization ticket), and Developer ID plus `codesign --verify --strict` checks on the bundled Reticulum sidecar. Unsigned or ad-hoc local `dist:mac` builds use optional mode; release workflow jobs and `dist:mac:publish` require the exact `APPLE_TEAM_ID` for both binaries before any upload.
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)
   - Optional signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is passed through from workflow secrets on `macos-latest`; layout checks do not require them, but signed CI builds must pass the codesign/stapler gate above
 - `scripts/test-linux-appimage-reticulum-sidecar.mjs` — x64 uses `--appimage-extract`; arm64 on x64 runners uses `unsquashfs` for cross-arch extract

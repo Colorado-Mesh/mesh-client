@@ -9,7 +9,8 @@
  * Local dist:mac path: validates on-disk .app plus every ZIP extract and DMG mount.
  *
  * Developer ID–signed builds also run codesign --verify --deep --strict, stapler validate,
- * and sidecar codesign --verify --strict. Unsigned local builds skip that gate.
+ * and sidecar codesign --verify --strict. Release builds set an explicit required policy;
+ * unsigned local builds use the explicit optional policy.
  */
 import { spawnSync } from 'node:child_process';
 import {
@@ -64,6 +65,7 @@ const MIN_LAUNCHER_BYTES = 1024;
 const MIN_FRAMEWORK_BYTES = 50 * 1024 * 1024;
 const MIN_DMG_BYTES = 1024 * 1024;
 const MIN_ZIP_BYTES = 1024 * 1024;
+const MAC_SIGNATURE_POLICIES = new Set(['optional', 'required']);
 
 /** Expected validation failure — printed without a stack trace at top level. */
 class VerificationFailure extends Error {}
@@ -127,7 +129,7 @@ function collectArchives(dir, ext) {
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile() && entry.name.endsWith(ext)) {
-        if (scanDir === releaseDir) {
+        if (scanDir === dir) {
           rootMatches.push(full);
         } else {
           nestedMatches.push(full);
@@ -137,7 +139,7 @@ function collectArchives(dir, ext) {
   }
 
   walk(dir);
-  return rootMatches.length > 0 ? rootMatches : nestedMatches;
+  return [...rootMatches, ...nestedMatches].sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -423,12 +425,54 @@ function assertMacMinimumSystemVersion(bundleRoot, label) {
 }
 
 /**
- * True when `codesign -dv` output shows a Developer ID Application authority.
- * Unsigned / ad-hoc local builds must not trip the release signature gate.
+ * Returns the consistent Developer ID Application team from `codesign -dv` output.
+ * @param {string} codesignDvText combined stdout+stderr from `codesign -dv`
+ * @returns {string | null}
+ */
+function getDeveloperIdApplicationTeamId(codesignDvText) {
+  const text = String(codesignDvText ?? '');
+  const authority = text.match(/^Authority=Developer ID Application: .+ \(([A-Z0-9]{10})\)$/m);
+  const teamIdentifier = text.match(/^TeamIdentifier=([A-Z0-9]{10})$/m);
+  if (!authority || !teamIdentifier || authority[1] !== teamIdentifier[1]) return null;
+  return authority[1];
+}
+
+/**
+ * True when `codesign -dv` output has a consistent Developer ID Application team.
  * @param {string} codesignDvText combined stdout+stderr from `codesign -dv`
  */
 function isDeveloperIdApplicationAuthority(codesignDvText) {
-  return /Authority=Developer ID Application:/m.test(String(codesignDvText ?? ''));
+  return getDeveloperIdApplicationTeamId(codesignDvText) !== null;
+}
+
+/** @typedef {'optional' | 'required'} MacSignaturePolicy */
+/** @typedef {{ policy: MacSignaturePolicy, expectedTeamId?: string }} MacSignatureOptions */
+
+/**
+ * Resolves the explicit package-signature policy used by local and release verification.
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {MacSignatureOptions}
+ */
+function resolveMacSignatureOptions(env = process.env) {
+  const policy = String(env.MESH_CLIENT_MAC_SIGNATURE_POLICY ?? 'optional').trim();
+  if (!MAC_SIGNATURE_POLICIES.has(policy)) {
+    fail(`Invalid MESH_CLIENT_MAC_SIGNATURE_POLICY: ${policy || '(empty)'}`);
+  }
+
+  const expectedTeamId = String(
+    env.MESH_CLIENT_EXPECTED_MAC_TEAM_ID ?? env.APPLE_TEAM_ID ?? '',
+  ).trim();
+  if (expectedTeamId && !/^[A-Z0-9]{10}$/.test(expectedTeamId)) {
+    fail('MESH_CLIENT_EXPECTED_MAC_TEAM_ID must be a 10-character Apple team identifier');
+  }
+  if (policy === 'required' && !expectedTeamId) {
+    fail('Required macOS signature verification needs MESH_CLIENT_EXPECTED_MAC_TEAM_ID');
+  }
+
+  return {
+    policy: /** @type {MacSignaturePolicy} */ (policy),
+    ...(expectedTeamId ? { expectedTeamId } : {}),
+  };
 }
 
 /**
@@ -453,14 +497,41 @@ function captureCommand(command, args) {
  */
 
 /**
+ * Returns the verified Developer ID team, or null only when optional policy permits unsigned input.
+ * @param {{ status: number | null, text: string, error?: Error }} display
+ * @param {string} label
+ * @param {MacSignatureOptions} options
+ * @returns {string | null}
+ */
+function assertExpectedDeveloperId(display, label, options) {
+  if (display.error) {
+    fail(`${label} codesign -dv failed to start: ${display.error.message}`);
+  }
+
+  const teamId = display.status === 0 ? getDeveloperIdApplicationTeamId(display.text) : null;
+  if (!teamId) {
+    if (options.policy === 'required') {
+      fail(`${label} is not signed by the required Developer ID Application identity`);
+    }
+    return null;
+  }
+  if (options.expectedTeamId && teamId !== options.expectedTeamId) {
+    fail(`${label} Developer ID team ${teamId} does not match ${options.expectedTeamId}`);
+  }
+  return teamId;
+}
+
+/**
  * When the bundle is Developer ID signed (release / signed CI), require
  * `codesign --verify --deep --strict` + stapled notarization ticket + sidecar strict verify.
- * Unsigned local `dist:mac` builds skip this gate.
+ * Required policy also enforces the expected team on the app and sidecar. Unsigned local
+ * `dist:mac` builds use optional policy and skip this gate.
  * @param {string} bundleRoot
  * @param {string} label
+ * @param {MacSignatureOptions} options
  * @param {MacCodeSignatureDeps} [deps]
  */
-function assertMacCodeSignatureIfDeveloperId(bundleRoot, label, deps = {}) {
+function assertMacCodeSignature(bundleRoot, label, options, deps = {}) {
   const readDisplay =
     deps.readDisplay ??
     ((targetPath) => captureCommand('codesign', ['-dv', '--verbose=2', targetPath]));
@@ -479,12 +550,8 @@ function assertMacCodeSignatureIfDeveloperId(bundleRoot, label, deps = {}) {
     deps.resolveSidecarPath ?? ((root) => resolveBundledSidecarPath('darwin', root));
 
   const display = readDisplay(bundleRoot);
-  if (display.error) {
-    fail(`${label} codesign -dv failed to start: ${display.error.message}`);
-  }
-  if (!isDeveloperIdApplicationAuthority(display.text)) {
-    return;
-  }
+  const appTeamId = assertExpectedDeveloperId(display, label, options);
+  if (!appTeamId) return;
 
   const deep = verifyDeepStrict(bundleRoot);
   if (deep.error || deep.status !== 0) {
@@ -510,6 +577,11 @@ function assertMacCodeSignatureIfDeveloperId(bundleRoot, label, deps = {}) {
   if (!sidecarPath || !existsSync(sidecarPath)) {
     fail(`${label} missing Reticulum sidecar for codesign check: ${sidecarPath ?? '(null)'}`);
   }
+  const sidecarDisplay = readDisplay(sidecarPath);
+  assertExpectedDeveloperId(sidecarDisplay, `${label} sidecar`, {
+    policy: 'required',
+    expectedTeamId: options.expectedTeamId ?? appTeamId,
+  });
   const sidecar = verifyStrict(sidecarPath);
   if (sidecar.error || sidecar.status !== 0) {
     fail(
@@ -523,8 +595,13 @@ function assertMacCodeSignatureIfDeveloperId(bundleRoot, label, deps = {}) {
   }
 }
 
-/** @param {string} bundleRoot @param {string} sourceLabel @param {ExpectedMacArch} expectedArch */
-function validateAppBundle(bundleRoot, sourceLabel, expectedArch) {
+/**
+ * @param {string} bundleRoot
+ * @param {string} sourceLabel
+ * @param {ExpectedMacArch} expectedArch
+ * @param {MacSignatureOptions} signatureOptions
+ */
+function validateAppBundle(bundleRoot, sourceLabel, expectedArch, signatureOptions) {
   const bundleName = path.basename(bundleRoot);
   const label = `${sourceLabel} ${bundleName}`;
   const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
@@ -548,7 +625,7 @@ function validateAppBundle(bundleRoot, sourceLabel, expectedArch) {
     bundleRoot,
     fail,
   });
-  assertMacCodeSignatureIfDeveloperId(bundleRoot, label);
+  assertMacCodeSignature(bundleRoot, label, signatureOptions);
 }
 
 /** @param {string} bundleRoot @returns {boolean} */
@@ -650,7 +727,9 @@ function detachDmgMount(mountDir) {
   }
 }
 
+/** Verifies every on-disk and archived macOS package under the release directory. */
 function main() {
+  const signatureOptions = resolveMacSignatureOptions();
   stageMacosInstallNoticeReleaseAsset(releaseDir);
   /** @type {string | null} */
   let zipExtractDir = null;
@@ -694,7 +773,7 @@ function main() {
     for (const bundle of onDiskBundles.filter((candidate) => isCompleteAppBundle(candidate))) {
       const parent = path.basename(path.dirname(bundle));
       const expectedArch = resolveExpectedMacArch(bundle);
-      validateAppBundle(bundle, `direct:${parent}`, expectedArch);
+      validateAppBundle(bundle, `direct:${parent}`, expectedArch, signatureOptions);
       validatedSources.push(`direct:${parent}/${path.basename(bundle)}`);
     }
 
@@ -703,7 +782,7 @@ function main() {
       const zipLabel = `zip:${path.basename(zipPath)}`;
       const expectedArch = resolveExpectedMacArch(zipPath);
       const zipBundle = extractZipToTemp(zipPath, zipExtractDir);
-      validateAppBundle(zipBundle, zipLabel, expectedArch);
+      validateAppBundle(zipBundle, zipLabel, expectedArch, signatureOptions);
       validatedSources.push(zipLabel);
     }
 
@@ -711,7 +790,7 @@ function main() {
       const dmgLabel = `dmg:${path.basename(dmgPath)}`;
       const expectedArch = resolveExpectedMacArch(dmgPath);
       mountDmgAndValidate(dmgPath, dmgMountDir, (dmgBundle) => {
-        validateAppBundle(dmgBundle, dmgLabel, expectedArch);
+        validateAppBundle(dmgBundle, dmgLabel, expectedArch, signatureOptions);
         validatedSources.push(dmgLabel);
       });
     }
@@ -770,7 +849,7 @@ export {
   assertDualArchMacArchives,
   assertFrameworkSymlinks,
   assertLipoArchsMatch,
-  assertMacCodeSignatureIfDeveloperId,
+  assertMacCodeSignature,
   assertMacMinimumSystemVersion,
   assertSiblingFrameworkSymlinks,
   classifyMacArchiveArch,
@@ -783,6 +862,7 @@ export {
   isDeveloperIdApplicationAuthority,
   pickPrimaryArchive,
   resolveExpectedMacArch,
+  resolveMacSignatureOptions,
   SIBLING_FRAMEWORKS,
   VerificationFailure,
 };

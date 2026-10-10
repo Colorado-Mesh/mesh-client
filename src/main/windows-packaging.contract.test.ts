@@ -329,7 +329,7 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain("lipo', ['-archs'");
     expect(macVerify).toContain('stageMacosInstallNoticeReleaseAsset');
     expect(macVerify).toContain('Squirrel.framework');
-    expect(macVerify).toContain('assertMacCodeSignatureIfDeveloperId');
+    expect(macVerify).toContain('assertMacCodeSignature');
     expect(macVerify).toContain('isDeveloperIdApplicationAuthority');
     expect(macVerify).toContain("codesign', ['--verify', '--deep', '--strict'");
     expect(macVerify).toContain("stapler', 'validate'");
@@ -353,8 +353,12 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain("assertDualArchMacArchives(zipArchives, '.zip')");
     expect(macVerify).toMatch(/for \(const zipPath of zipArchives\)/);
     expect(macVerify).toMatch(/for \(const dmgPath of dmgArchives\)[\s\S]*mountDmgAndValidate/);
-    expect(macVerify).toMatch(/validateAppBundle\(zipBundle, zipLabel, expectedArch\)/);
-    expect(macVerify).toMatch(/validateAppBundle\(dmgBundle, dmgLabel, expectedArch\)/);
+    expect(macVerify).toMatch(
+      /validateAppBundle\(zipBundle, zipLabel, expectedArch, signatureOptions\)/,
+    );
+    expect(macVerify).toMatch(
+      /validateAppBundle\(dmgBundle, dmgLabel, expectedArch, signatureOptions\)/,
+    );
 
     const buildWorkflow = readFileSync(
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
