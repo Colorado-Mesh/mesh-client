@@ -3,8 +3,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import DOMPurify from 'dompurify';
 import { describe, expect, it, vi } from 'vitest';
 
+import { renderRrcFormattedBodyHtml } from '../rrcFormattedBody';
 import {
   bindNomadMicronMedia,
   bindNomadMicronPartials,
@@ -15,6 +17,8 @@ import {
   isNomadMediaPath,
   isNomadMicronPage,
   loadNomadMicronPartial,
+  MICRON_RENDER_LIMITS,
+  MicronParser,
   mountNomadMicronHtml,
   NOMAD_MICRON_MEDIA_FETCH_CONCURRENCY,
   nomadPageRequestDataEquals,
@@ -92,17 +96,153 @@ describe('renderNomadMicronPage', () => {
     expect(html.toLowerCase()).not.toContain('<script');
   });
 
-  it('draws a character divider long enough to fill an ultrawide page', () => {
+  it('draws character dividers with bounded CSS instead of repeated text', () => {
     const html = renderNomadMicronPage(['-=', 'text'].join('\n'));
     const container = document.createElement('div');
     mountNomadMicronHtml(container, html);
-    const divider = Array.from(container.querySelectorAll('div')).find((el) =>
-      /^=+$/.test(el.textContent),
-    );
-    // 250 characters stopped at about 1,460px on an ultrawide window; the box clips the excess.
-    expect(divider?.textContent.length).toBeGreaterThanOrEqual(2000);
-    expect(divider?.style.overflow).toBe('hidden');
+    const divider = container.querySelector<HTMLElement>('.nomad-micron-divider');
+    expect(divider?.textContent).toBe('');
+    expect(divider?.getAttribute('role')).toBe('separator');
     expect(divider?.style.width).toBe('100%');
+    expect(divider?.style.borderTopStyle).toBe('solid');
+    expect(divider?.style.borderTopWidth).toBe('1px');
+  });
+
+  it('rejects a maximum-size divider page before building amplified output', () => {
+    const attack = '-=\n'.repeat(Math.floor(MICRON_RENDER_LIMITS.sourceChars / 3));
+    const html = renderNomadMicronPage(attack);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+
+    expect(container.querySelector('[data-micron-render-error="true"]')).not.toBeNull();
+    expect(container.querySelector('.nomad-micron-divider')).toBeNull();
+    expect(html.length).toBeLessThan(256);
+  });
+
+  it('enforces exact source, line-count, line-length, and nesting boundaries', () => {
+    const exactSource = `${'x'.repeat(MICRON_RENDER_LIMITS.lineChars - 1)}\n`.repeat(
+      MICRON_RENDER_LIMITS.sourceChars / MICRON_RENDER_LIMITS.lineChars,
+    );
+    expect(exactSource).toHaveLength(MICRON_RENDER_LIMITS.sourceChars);
+    expect(renderNomadMicronPage(exactSource)).not.toContain('data-micron-render-error');
+    expect(renderNomadMicronPage(`${exactSource}x`)).toContain('data-micron-render-error');
+
+    const exactLines = Array(MICRON_RENDER_LIMITS.sourceLines).fill('#').join('\n');
+    expect(renderNomadMicronPage(exactLines)).not.toContain('data-micron-render-error');
+    expect(renderNomadMicronPage(`${exactLines}\n#`)).toContain('data-micron-render-error');
+
+    expect(renderNomadMicronPage('x'.repeat(MICRON_RENDER_LIMITS.lineChars))).not.toContain(
+      'data-micron-render-error',
+    );
+    expect(renderNomadMicronPage('x'.repeat(MICRON_RENDER_LIMITS.lineChars + 1))).toContain(
+      'data-micron-render-error',
+    );
+
+    expect(
+      renderNomadMicronPage(`${'>'.repeat(MICRON_RENDER_LIMITS.nestingDepth)} heading`),
+    ).not.toContain('data-micron-render-error');
+    expect(
+      renderNomadMicronPage(`${'>'.repeat(MICRON_RENDER_LIMITS.nestingDepth + 1)} heading`),
+    ).toContain('data-micron-render-error');
+    expect(
+      renderNomadMicronPage(`${'<'.repeat(MICRON_RENDER_LIMITS.nestingDepth + 1)}text`),
+    ).toContain('data-micron-render-error');
+  });
+
+  it('caps table rows, columns, and total cells before mounting the table', () => {
+    const allowedRows = [
+      '`t',
+      'Name',
+      '---',
+      ...Array.from({ length: MICRON_RENDER_LIMITS.tableRows }, (_, index) => `row ${index}`),
+      '`t',
+    ].join('\n');
+    expect(renderNomadMicronPage(allowedRows)).not.toContain('data-micron-render-error');
+
+    const excessRows = allowedRows.replace('\n`t', '\none too many\n`t');
+    expect(renderNomadMicronPage(excessRows)).toContain('data-micron-render-error');
+
+    const excessColumns = `${Array(MICRON_RENDER_LIMITS.tableColumns + 1)
+      .fill('h')
+      .join('|')}\n${Array(MICRON_RENDER_LIMITS.tableColumns + 1)
+      .fill('---')
+      .join('|')}`;
+    expect(renderNomadMicronPage(['`t', excessColumns, '`t'].join('\n'))).toContain(
+      'data-micron-render-error',
+    );
+
+    const cellsPerRow = 64;
+    const totalCellOverflow = [
+      '`t',
+      Array(cellsPerRow).fill('h').join('|'),
+      Array(cellsPerRow).fill('---').join('|'),
+      ...Array.from({ length: 64 }, () => Array(cellsPerRow).fill('x').join('|')),
+      '`t',
+    ].join('\n');
+    expect(renderNomadMicronPage(totalCellOverflow)).toContain('data-micron-render-error');
+  });
+
+  it('applies the same budgets to complex markup and direct fragment conversion', () => {
+    const complex = '\u2603'.repeat(MICRON_RENDER_LIMITS.lineChars);
+    expect(renderNomadMicronPage(complex)).toContain('data-micron-render-error');
+
+    const parser = new MicronParser();
+    const fragment = parser.convertMicronToFragment('x'.repeat(MICRON_RENDER_LIMITS.lineChars + 1));
+    expect(fragment.querySelector('[data-micron-render-error="true"]')).not.toBeNull();
+    expect(fragment.childElementCount).toBe(1);
+  });
+
+  it('counts the returned root in the exact element boundary for HTML and fragments', () => {
+    const exactElements = '\n'.repeat(MICRON_RENDER_LIMITS.elements - 2);
+    const html = renderNomadMicronPage(exactElements);
+    const mounted = document.createElement('div');
+    mountNomadMicronHtml(mounted, html);
+    expect(mounted.querySelectorAll('*')).toHaveLength(MICRON_RENDER_LIMITS.elements);
+
+    const parser = new MicronParser();
+    const fragment = parser.convertMicronToFragment(exactElements);
+    expect(fragment.querySelectorAll('*')).toHaveLength(MICRON_RENDER_LIMITS.elements);
+
+    const excessElements = `${exactElements}\n`;
+    expect(renderNomadMicronPage(excessElements)).toContain('data-micron-render-error');
+    expect(
+      parser
+        .convertMicronToFragment(excessElements)
+        .querySelector('[data-micron-render-error="true"]'),
+    ).not.toBeNull();
+  });
+
+  it('resolves empty anchors in linear document order', () => {
+    const compareSpy = vi.spyOn(Node.prototype, 'compareDocumentPosition');
+    try {
+      const markup = `${Array(3_000).fill('> a').join('\n')}\n${Array(3_000)
+        .fill('`[#]')
+        .join('')}`;
+      const html = renderNomadMicronPage(markup);
+      expect(html).not.toContain('data-micron-render-error');
+      // DOMPurify/jsdom performs linear document-position checks internally; the parser must not
+      // reintroduce the prior 9,000,000-comparison links × headings scan.
+      expect(compareSpy.mock.calls.length).toBeLessThan(10_000);
+    } finally {
+      compareSpy.mockRestore();
+    }
+  });
+
+  it('coalesces same-style output before invoking the sanitizer', () => {
+    const sanitizeSpy = vi.spyOn(DOMPurify, 'sanitize');
+    try {
+      const html = renderNomadMicronPage('a`Z'.repeat(4_000));
+      expect(html).not.toContain('data-micron-render-error');
+      expect(sanitizeSpy.mock.calls.length).toBeLessThanOrEqual(3);
+    } finally {
+      sanitizeSpy.mockRestore();
+    }
+  });
+
+  it('applies the same safe rejection to formatted RRC bodies', () => {
+    const html = renderRrcFormattedBodyHtml('x'.repeat(MICRON_RENDER_LIMITS.lineChars + 1));
+    expect(html).toContain('data-micron-render-error="true"');
+    expect(html).not.toContain('x'.repeat(64));
   });
 
   it('renders Micron tables as HTML table elements', () => {
@@ -199,6 +339,24 @@ describe('loadNomadMicronPartial', () => {
         fetchPage: vi.fn().mockResolvedValue({ ok: false, error: 'not_found' }),
       }),
     ).rejects.toThrow('not_found');
+  });
+
+  it('returns only the safe render rejection for an oversized partial', async () => {
+    const result = await loadNomadMicronPartial({
+      destination: ':/page/large.mu',
+      fields: [],
+      signal: null,
+      defaultPagePath: '/page/index.mu',
+      selectedHash: 'd'.repeat(32),
+      formContainer: null,
+      fetchPage: vi.fn().mockResolvedValue({
+        ok: true,
+        content: 'x'.repeat(MICRON_RENDER_LIMITS.lineChars + 1),
+      }),
+    });
+
+    expect(result.markup).toContain('data-micron-render-error="true"');
+    expect(result.markup).not.toContain('x'.repeat(64));
   });
 });
 

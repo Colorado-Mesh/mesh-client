@@ -11,26 +11,88 @@
  * ESM adaptation: import DOMPurify instead of expecting a browser global.
  * Local delta: markup-building innerHTML writes go through setSanitizedHtml() so page text is
  * sanitized at the sink, not only in the whole-document pass at the end of convertMicronToHtml.
- * Local delta: character dividers repeat MICRON_DIVIDER_REPEAT times (upstream 250), so they fill
- * an ultrawide page.
+ * Local delta: character dividers render as bounded CSS separators instead of repeated text.
+ * Local delta: both renderer entry points enforce fixed source, structure, work, and output limits.
  */
 import DOMPurify from 'dompurify';
 
 const MICRON_PURIFY_CONFIG = { USE_PROFILES: { html: true } };
 
-/**
- * Characters in a `-x` divider. Its box is 100% wide and clips the excess, so this only has to
- * cover the widest page at the smallest text size: an 8K-wide window at about 4px per character.
- * Upstream's 250 stopped at about 1,460px.
- */
-const MICRON_DIVIDER_REPEAT = 2000;
+export const MICRON_RENDER_LIMITS = Object.freeze({
+  sourceChars: 256 * 1024,
+  sourceLines: 16_384,
+  lineChars: 16_384,
+  outputHtmlChars: 2 * 1024 * 1024,
+  elements: 16_384,
+  nestingDepth: 64,
+  tableRows: 512,
+  tableColumns: 64,
+  tableCells: 4_096,
+  operations: 2 * 1024 * 1024,
+});
+
+const MICRON_RENDER_LIMIT_HTML =
+  '<p class="nomad-micron-render-error" data-micron-render-error="true" role="alert">Page exceeds safe rendering limits.</p>';
+
+class MicronRenderLimitError extends Error {
+  constructor(limit) {
+    super(`Micron render limit exceeded: ${limit}`);
+    this.name = 'MicronRenderLimitError';
+  }
+}
+
+function consumeBudget(state, key, amount = 1) {
+  const budget = state?.budget;
+  if (!budget) return;
+  budget[key] += amount;
+  if (budget[key] > MICRON_RENDER_LIMITS[key]) {
+    throw new MicronRenderLimitError(key);
+  }
+}
+
+function createRenderBudget(markup) {
+  if (markup.length > MICRON_RENDER_LIMITS.sourceChars) {
+    throw new MicronRenderLimitError('sourceChars');
+  }
+
+  let sourceLines = 1;
+  let lineChars = 0;
+  for (let i = 0; i < markup.length; i++) {
+    if (markup[i] === '\n') {
+      sourceLines++;
+      lineChars = 0;
+      if (sourceLines > MICRON_RENDER_LIMITS.sourceLines) {
+        throw new MicronRenderLimitError('sourceLines');
+      }
+    } else {
+      lineChars++;
+      if (lineChars > MICRON_RENDER_LIMITS.lineChars) {
+        throw new MicronRenderLimitError('lineChars');
+      }
+    }
+  }
+
+  return {
+    operations: markup.length,
+    // Both public entry points return a root element around rendered page content.
+    elements: 1,
+    outputHtmlChars: 0,
+    tableCells: 0,
+  };
+}
+
+function createRenderLimitNotice() {
+  const template = document.createElement('template');
+  template.innerHTML = MICRON_RENDER_LIMIT_HTML;
+  return template.content;
+}
 
 /**
  * Assign parser-generated markup (Mu-mws/Mu-mnt spans wrapping raw page text) as HTML.
  * The wrappers interpolate `<`, `>` and `&` from the page unescaped, so anything a page or the
  * in-app editor supplies is sanitized here before it becomes DOM.
  */
-function setSanitizedHtml(element, markup, append = false) {
+function setSanitizedHtml(element, markup) {
   let safe;
   try {
     safe = DOMPurify.sanitize(markup, MICRON_PURIFY_CONFIG);
@@ -38,11 +100,7 @@ function setSanitizedHtml(element, markup, append = false) {
     console.warn('[micron-parser] DOMPurify.sanitize failed; dropping markup', error);
     safe = '';
   }
-  if (append) {
-    element.innerHTML += safe;
-  } else {
-    element.innerHTML = safe;
-  }
+  element.innerHTML = safe;
 }
 
 class MicronParser {
@@ -149,30 +207,27 @@ class MicronParser {
       .toLowerCase();
   }
 
-  static _resolveEmptyAnchors(root) {
+  static _resolveEmptyAnchors(root, state = null) {
     if (!root || typeof root.querySelectorAll !== 'function') return;
-    const links = root.querySelectorAll('a[href="#"]');
-    if (!links.length) return;
-    const headers = Array.from(root.querySelectorAll('.micron-header-anchor'));
-    if (!headers.length) return;
-    for (const a of links) {
-      for (const h of headers) {
-        if (!h.id) continue;
-        const rel = a.compareDocumentPosition(h);
-        if (rel & Node.DOCUMENT_POSITION_FOLLOWING) {
-          a.href = '#' + h.id;
-          a.title = a.href;
-          break;
-        }
+    const candidates = Array.from(root.querySelectorAll('a[href="#"], .micron-header-anchor'));
+    let nextHeader = null;
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      consumeBudget(state, 'operations');
+      const candidate = candidates[i];
+      if (candidate.classList.contains('micron-header-anchor')) {
+        if (candidate.id) nextHeader = candidate;
+      } else if (nextHeader) {
+        candidate.href = '#' + nextHeader.id;
+        candidate.title = candidate.href;
       }
     }
   }
 
-  parseHeaderTags(markup) {
+  parseHeaderTags(markup, parsedLines = null) {
     let pageFg = null;
     let pageBg = null;
 
-    const lines = markup.split('\n');
+    const lines = parsedLines || markup.split('\n');
 
     for (let line of lines) {
       const trimmedLine = line.trim();
@@ -204,130 +259,154 @@ class MicronParser {
   }
 
   convertMicronToHtml(markup) {
-    let html = '';
-
-    // parse header tags for page-level color defaults
-    const headerColors = this.parseHeaderTags(markup);
-
-    const plainStyle = this.SELECTED_STYLES?.plain || {
-      fg: this.DEFAULT_FG_DARK,
-      bg: this.DEFAULT_BG,
-    };
-    const defaultFg = headerColors.fg || plainStyle.fg;
-    const defaultBg = headerColors.bg || this.DEFAULT_BG;
-
-    let state = {
-      literal: false,
-      depth: 0,
-      fg_color: defaultFg,
-      bg_color: defaultBg,
-      formatting: {
-        bold: false,
-        underline: false,
-        italic: false,
-        strikethrough: false,
-      },
-      default_align: 'left',
-      align: 'left',
-      default_fg: defaultFg,
-      default_bg: defaultBg,
-      radio_groups: {},
-      table_mode: false,
-      table_buffer: [],
-      table_align: null,
-      table_maxwidth: this.MAX_TABLE_WIDTH,
-      collapsible_stack: [],
-    };
-
-    const lines = markup.split('\n');
-
-    const tempContainer = document.createElement('div');
-    if (defaultFg && defaultFg !== 'default') {
-      tempContainer.style.color = this.colorToCss(defaultFg);
-    }
-    if (defaultBg && defaultBg !== 'default') {
-      tempContainer.style.backgroundColor = this.colorToCss(defaultBg);
-    }
-
-    for (let line of lines) {
-      const lineOutput = this.parseLine(line, state);
-      this._appendLineOutput(tempContainer, lineOutput, state);
-    }
-
-    MicronParser._resolveEmptyAnchors(tempContainer);
-
-    const hasContainerStyle =
-      (defaultFg && defaultFg !== 'default') || (defaultBg && defaultBg !== 'default');
-    html = hasContainerStyle ? tempContainer.outerHTML : tempContainer.innerHTML;
-
     try {
-      return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+      const budget = createRenderBudget(markup);
+      const lines = markup.split('\n');
+      let html = '';
+
+      // parse header tags for page-level color defaults
+      const headerColors = this.parseHeaderTags(markup, lines);
+
+      const plainStyle = this.SELECTED_STYLES?.plain || {
+        fg: this.DEFAULT_FG_DARK,
+        bg: this.DEFAULT_BG,
+      };
+      const defaultFg = headerColors.fg || plainStyle.fg;
+      const defaultBg = headerColors.bg || this.DEFAULT_BG;
+
+      let state = {
+        literal: false,
+        depth: 0,
+        fg_color: defaultFg,
+        bg_color: defaultBg,
+        formatting: {
+          bold: false,
+          underline: false,
+          italic: false,
+          strikethrough: false,
+        },
+        default_align: 'left',
+        align: 'left',
+        default_fg: defaultFg,
+        default_bg: defaultBg,
+        radio_groups: {},
+        table_mode: false,
+        table_buffer: [],
+        table_align: null,
+        table_maxwidth: this.MAX_TABLE_WIDTH,
+        collapsible_stack: [],
+        budget,
+      };
+
+      const tempContainer = document.createElement('div');
+      if (defaultFg && defaultFg !== 'default') {
+        tempContainer.style.color = this.colorToCss(defaultFg);
+      }
+      if (defaultBg && defaultBg !== 'default') {
+        tempContainer.style.backgroundColor = this.colorToCss(defaultBg);
+      }
+
+      for (let line of lines) {
+        const lineOutput = this.parseLine(line, state);
+        this._appendLineOutput(tempContainer, lineOutput, state);
+      }
+
+      MicronParser._resolveEmptyAnchors(tempContainer, state);
+
+      const hasContainerStyle =
+        (defaultFg && defaultFg !== 'default') || (defaultBg && defaultBg !== 'default');
+      html = hasContainerStyle ? tempContainer.outerHTML : tempContainer.innerHTML;
+      if (html.length > MICRON_RENDER_LIMITS.outputHtmlChars) {
+        throw new MicronRenderLimitError('outputHtmlChars');
+      }
+
+      try {
+        const sanitized = DOMPurify.sanitize(html, MICRON_PURIFY_CONFIG);
+        if (sanitized.length > MICRON_RENDER_LIMITS.outputHtmlChars) {
+          throw new MicronRenderLimitError('outputHtmlChars');
+        }
+        return sanitized;
+      } catch (error) {
+        if (error instanceof MicronRenderLimitError) throw error;
+        console.warn(
+          'DOMPurify is not installed. Include it above micron-parser.js or run npm install dompurify ',
+          error,
+        );
+        return `<p style="color: red;"> ⚠ DOMPurify is not installed. Include it above micron-parser.js or run npm install dompurify </p>`;
+      }
     } catch (error) {
-      console.warn(
-        'DOMPurify is not installed. Include it above micron-parser.js or run npm install dompurify ',
-        error,
-      );
-      return `<p style="color: red;"> ⚠ DOMPurify is not installed. Include it above micron-parser.js or run npm install dompurify </p>`;
+      if (error instanceof MicronRenderLimitError) return MICRON_RENDER_LIMIT_HTML;
+      throw error;
     }
   }
 
   convertMicronToFragment(markup) {
-    // Create a fragment to hold all the Micron output
-    const fragment = document.createDocumentFragment();
+    try {
+      const budget = createRenderBudget(markup);
+      const lines = markup.split('\n');
+      // Create a fragment to hold all the Micron output
+      const fragment = document.createDocumentFragment();
 
-    const headerColors = this.parseHeaderTags(markup);
+      const headerColors = this.parseHeaderTags(markup, lines);
 
-    const plainStyle = this.SELECTED_STYLES?.plain || {
-      fg: this.DEFAULT_FG_DARK,
-      bg: this.DEFAULT_BG,
-    };
-    const defaultFg = headerColors.fg || plainStyle.fg;
-    const defaultBg = headerColors.bg || this.DEFAULT_BG;
+      const plainStyle = this.SELECTED_STYLES?.plain || {
+        fg: this.DEFAULT_FG_DARK,
+        bg: this.DEFAULT_BG,
+      };
+      const defaultFg = headerColors.fg || plainStyle.fg;
+      const defaultBg = headerColors.bg || this.DEFAULT_BG;
 
-    let state = {
-      literal: false,
-      depth: 0,
-      fg_color: defaultFg,
-      bg_color: defaultBg,
-      formatting: {
-        bold: false,
-        underline: false,
-        italic: false,
-        strikethrough: false,
-      },
-      default_align: 'left',
-      align: 'left',
-      default_fg: defaultFg,
-      default_bg: defaultBg,
-      radio_groups: {},
-      table_mode: false,
-      table_buffer: [],
-      table_align: null,
-      table_maxwidth: this.MAX_TABLE_WIDTH,
-      collapsible_stack: [],
-    };
+      let state = {
+        literal: false,
+        depth: 0,
+        fg_color: defaultFg,
+        bg_color: defaultBg,
+        formatting: {
+          bold: false,
+          underline: false,
+          italic: false,
+          strikethrough: false,
+        },
+        default_align: 'left',
+        align: 'left',
+        default_fg: defaultFg,
+        default_bg: defaultBg,
+        radio_groups: {},
+        table_mode: false,
+        table_buffer: [],
+        table_align: null,
+        table_maxwidth: this.MAX_TABLE_WIDTH,
+        collapsible_stack: [],
+        budget,
+      };
 
-    // create container div for page-level colors
-    const container = document.createElement('div');
-    if (defaultFg && defaultFg !== 'default') {
-      container.style.color = this.colorToCss(defaultFg);
+      // create container div for page-level colors
+      const container = document.createElement('div');
+      if (defaultFg && defaultFg !== 'default') {
+        container.style.color = this.colorToCss(defaultFg);
+      }
+      if (defaultBg && defaultBg !== 'default') {
+        container.style.backgroundColor = this.colorToCss(defaultBg);
+      }
+
+      for (let line of lines) {
+        line = DOMPurify.sanitize(line, MICRON_PURIFY_CONFIG);
+        const lineOutput = this.parseLine(line, state);
+        this._appendLineOutput(container, lineOutput, state);
+      }
+
+      MicronParser._resolveEmptyAnchors(container, state);
+
+      if (container.outerHTML.length > MICRON_RENDER_LIMITS.outputHtmlChars) {
+        throw new MicronRenderLimitError('outputHtmlChars');
+      }
+
+      fragment.appendChild(container);
+      return fragment;
+    } catch (error) {
+      if (error instanceof MicronRenderLimitError) return createRenderLimitNotice();
+      throw error;
     }
-    if (defaultBg && defaultBg !== 'default') {
-      container.style.backgroundColor = this.colorToCss(defaultBg);
-    }
-
-    const lines = markup.split('\n');
-
-    for (let line of lines) {
-      line = DOMPurify.sanitize(line, { USE_PROFILES: { html: true } });
-      const lineOutput = this.parseLine(line, state);
-      this._appendLineOutput(container, lineOutput, state);
-    }
-
-    MicronParser._resolveEmptyAnchors(container);
-
-    fragment.appendChild(container);
-    return fragment;
   }
 
   _closeCollapsiblesToDepth(state, depth) {
@@ -346,6 +425,8 @@ class MicronParser {
         : container;
     if (lineOutput && lineOutput.length > 0) {
       for (let el of lineOutput) {
+        consumeBudget(state, 'elements', 1 + el.querySelectorAll('*').length);
+        consumeBudget(state, 'outputHtmlChars', el.outerHTML.length);
         parent.appendChild(el);
         if (el._micronCollapsibleDepth != null) {
           if (!state.collapsible_stack) state.collapsible_stack = [];
@@ -359,11 +440,14 @@ class MicronParser {
     } else if (lineOutput && lineOutput.length === 0) {
       // skip
     } else {
+      consumeBudget(state, 'elements');
+      consumeBudget(state, 'outputHtmlChars', 4);
       parent.appendChild(document.createElement('br'));
     }
   }
 
   parseLine(line, state) {
+    consumeBudget(state, 'operations', line.length + 1);
     if (line.length > 0) {
       if (line === '`=') {
         state.literal = !state.literal;
@@ -399,6 +483,9 @@ class MicronParser {
       }
 
       if (state.table_mode) {
+        if (state.table_buffer.length >= MICRON_RENDER_LIMITS.tableRows + 2) {
+          throw new MicronRenderLimitError('tableRows');
+        }
         state.table_buffer.push(line);
         return [];
       }
@@ -432,14 +519,22 @@ class MicronParser {
         } else if (line.startsWith('`(')) {
           return this.parseImage(line.slice(2), state) || [];
         } else if (line[0] === '<') {
+          const closers = line.match(/^<+/)?.[0].length || 0;
+          if (closers > MICRON_RENDER_LIMITS.nestingDepth) {
+            throw new MicronRenderLimitError('nestingDepth');
+          }
           this._closeCollapsiblesToDepth(state, 0);
           state.depth = 0;
-          if (line.length === 1) return [];
-          return this.parseLine(line.slice(1), state);
+          line = line.slice(closers);
+          if (line.length === 0) return [];
+          return this.parseLine(line, state);
         } else if (line[0] === '>') {
           let i = 0;
           while (i < line.length && line[i] === '>') {
             i++;
+          }
+          if (i > MICRON_RENDER_LIMITS.nestingDepth) {
+            throw new MicronRenderLimitError('nestingDepth');
           }
           state.depth = i;
           this._closeCollapsiblesToDepth(state, i);
@@ -519,20 +614,12 @@ class MicronParser {
             return [hr];
           }
 
-          let dividerChar = '─';
-          if (line.length === 2) {
-            const candidate = Array.from(line)[1];
-            if (candidate && candidate.codePointAt(0) >= 32) {
-              dividerChar = candidate;
-            }
-          }
-          const repeated = dividerChar.repeat(MICRON_DIVIDER_REPEAT);
-
           const div = document.createElement('div');
-          div.textContent = repeated;
+          div.className = 'nomad-micron-divider';
+          div.setAttribute('role', 'separator');
           div.style.width = '100%';
-          div.style.whiteSpace = 'nowrap';
-          div.style.overflow = 'hidden';
+          div.style.borderTop = '1px solid currentColor';
+          div.style.margin = '0.5em 0';
           div.style.color = this.colorToCss(state.fg_color);
           if (state.bg_color !== state.default_bg && state.bg_color !== 'default') {
             div.style.backgroundColor = this.colorToCss(state.bg_color);
@@ -621,19 +708,23 @@ class MicronParser {
   appendOutput(container, parts, state) {
     let currentSpan = null;
     let currentStyle = null;
+    let currentMarkup = [];
 
     const flushSpan = () => {
       if (currentSpan) {
+        setSanitizedHtml(currentSpan, currentMarkup.join(''));
         if (currentStyle && currentStyle.bg !== state.default_bg && currentStyle.bg !== 'default') {
           currentSpan.style.display = 'inline-block';
         }
         container.appendChild(currentSpan);
         currentSpan = null;
         currentStyle = null;
+        currentMarkup = [];
       }
     };
 
     for (let p of parts) {
+      consumeBudget(state, 'operations');
       if (typeof p === 'string') {
         let span = document.createElement('span');
         setSanitizedHtml(span, p);
@@ -648,7 +739,7 @@ class MicronParser {
           this.applyStyleToElement(currentSpan, styleSpec, state.default_bg);
           currentStyle = styleSpec;
         }
-        setSanitizedHtml(currentSpan, text, true);
+        currentMarkup.push(text);
       } else if (p && typeof p === 'object') {
         // field, checkbox, radio, link, anchor
         flushSpan();
@@ -835,12 +926,13 @@ class MicronParser {
   }
 
   makeOutput(state, line, preEscape = false) {
+    consumeBudget(state, 'operations', line.length + 1);
     if (state.literal) {
       if (line === '\\`=') {
         line = '`=';
       }
       if (this.enableForceMonospace) {
-        return [[this.stateToStyle(state), this.splitAtSpaces(line)]];
+        return [[this.stateToStyle(state), this.splitAtSpaces(line, state)]];
       } else {
         return [[this.stateToStyle(state), line]];
       }
@@ -855,7 +947,7 @@ class MicronParser {
     const flushPart = () => {
       if (part.length > 0) {
         if (this.enableForceMonospace) {
-          output.push([this.stateToStyle(state), this.splitAtSpaces(part)]);
+          output.push([this.stateToStyle(state), this.splitAtSpaces(part, state)]);
         } else {
           output.push([this.stateToStyle(state), part]);
         }
@@ -1042,7 +1134,7 @@ class MicronParser {
     // end of line
     if (part.length > 0) {
       if (this.enableForceMonospace) {
-        output.push([this.stateToStyle(state), this.splitAtSpaces(part)]);
+        output.push([this.stateToStyle(state), this.splitAtSpaces(part, state)]);
       } else {
         output.push([this.stateToStyle(state), part]);
       }
@@ -1164,7 +1256,7 @@ class MicronParser {
 
     // Apply forceMonospace
     if (this.enableForceMonospace) {
-      link_label = this.splitAtSpaces(link_label);
+      link_label = this.splitAtSpaces(link_label, state);
     }
 
     let style = this.stateToStyle(state);
@@ -1690,16 +1782,30 @@ class MicronParser {
 
   renderTable(lines, state) {
     if (lines.length < 2) return null;
+    if (lines.length - 2 > MICRON_RENDER_LIMITS.tableRows) {
+      throw new MicronRenderLimitError('tableRows');
+    }
 
-    const headerCells = this._parseTableRow(lines[0]);
-    const alignments = this._parseTableAlignments(lines[1]);
+    const headerCells = this._parseTableRow(lines[0], state);
+    const alignments = this._parseTableAlignments(lines[1], state);
+    if (
+      headerCells.length > MICRON_RENDER_LIMITS.tableColumns ||
+      alignments.length > MICRON_RENDER_LIMITS.tableColumns
+    ) {
+      throw new MicronRenderLimitError('tableColumns');
+    }
+    consumeBudget(state, 'tableCells', headerCells.length);
     while (alignments.length < headerCells.length) alignments.push('left');
 
     const dataRows = [];
     for (let i = 2; i < lines.length; i++) {
-      let cells = this._parseTableRow(lines[i]);
+      let cells = this._parseTableRow(lines[i], state);
+      if (cells.length > MICRON_RENDER_LIMITS.tableColumns) {
+        throw new MicronRenderLimitError('tableColumns');
+      }
       while (cells.length < headerCells.length) cells.push('');
       cells = cells.slice(0, headerCells.length);
+      consumeBudget(state, 'tableCells', cells.length);
       dataRows.push(cells);
     }
 
@@ -1769,7 +1875,8 @@ class MicronParser {
     state.formatting = snap.formatting;
   }
 
-  _parseTableRow(line) {
+  _parseTableRow(line, state = null) {
+    consumeBudget(state, 'operations', line.length + 1);
     line = line.trim();
     if (line.startsWith('|')) line = line.slice(1);
     if (line.endsWith('|')) line = line.slice(0, -1);
@@ -1790,8 +1897,8 @@ class MicronParser {
     return cells;
   }
 
-  _parseTableAlignments(line) {
-    const cells = this._parseTableRow(line);
+  _parseTableAlignments(line, state = null) {
+    const cells = this._parseTableRow(line, state);
     return cells.map((c) => {
       c = c.trim();
       if (c.startsWith(':') && c.endsWith(':')) return 'center';
@@ -1800,16 +1907,18 @@ class MicronParser {
     });
   }
 
-  splitAtSpaces(line) {
+  splitAtSpaces(line, state = null) {
+    consumeBudget(state, 'operations', line.length + 1);
     let out = '';
     const wordArr = line.split(/(?<= )/g);
     for (const word of wordArr) {
-      out += this.wrapWord(word);
+      out += this.wrapWord(word, state);
     }
     return out;
   }
 
-  wrapWord(word) {
+  wrapWord(word, state = null) {
+    consumeBudget(state, 'operations', word.length + 1);
     if (word.length === 0) return '';
     let needsWrap = false;
     for (let i = 0; i < word.length; i++) {
