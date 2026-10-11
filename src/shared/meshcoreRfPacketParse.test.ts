@@ -39,6 +39,20 @@ describe('parseMeshCoreRfPacket', () => {
     expect(p.advert).not.toBeNull();
     expect(p.advert!.publicKey.length).toBe(32);
     expect(p.advert!.name.length).toBeGreaterThan(0);
+    expect(p.advert!.latitudeDeg).toBe(40.04372);
+    expect(p.advert!.longitudeDeg).toBe(-105.26059);
+  });
+
+  it('decodes signed advert microdegrees from a capture with a nonzero buffer offset', () => {
+    const buffer = new Uint8Array(3 + 111);
+    const raw = buffer.subarray(3);
+    raw[0] = 0x11;
+    raw[102] = 0x10;
+    // -33.868820, +151.209296 in signed little-endian microdegrees.
+    raw.set([0xec, 0x33, 0xfb, 0xfd, 0x50, 0x45, 0x03, 0x09], 103);
+    const parsed = parseMeshCoreRfPacket(raw);
+    expect(parsed.ok && parsed.advert?.latitudeDeg).toBe(-33.86882);
+    expect(parsed.ok && parsed.advert?.longitudeDeg).toBe(151.209296);
   });
 
   it('reads transport codes on TRANSPORT_FLOOD + TRACE layout', () => {

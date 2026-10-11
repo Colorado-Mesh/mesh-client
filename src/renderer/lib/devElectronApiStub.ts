@@ -23,6 +23,11 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
   let nextOutboxId = 1;
 
   return {
+    beacon: {
+      connect: async () => ({ ok: false, error: 'Open Mesh Client to connect a Beacon feed.' }),
+      disconnect: noopAsync,
+      onUpdate: noopUnsub,
+    },
     db: {
       saveMessage: noopAsync,
       getMessages: async () => [],

@@ -17,11 +17,13 @@ Developer reference for wilderness / no-WAN basemap caching. Human QA: [troubles
 
 ## Behavior invariants
 
-- **Cache-on-view:** online `mesh-tiles:` misses fetch OSM/Carto with timeout, then `putCachedTile`. Offline miss → 404 (blank tile).
-- **Region download:** estimate → confirm → job with concurrency; pauses when `net.isOnline()` is false; resumes after ~60s stable online. Cancel combines job abort with per-tile fetch timeout (`AbortSignal.any`).
+- **Cache-on-view:** online `mesh-tiles:` misses fetch OSM/USGS with timeout, then `putCachedTile`. Offline miss → 404 (blank tile).
+- **Region download:** USGS Topo only; OpenStreetMap standard tiles prohibit bulk download and prefetch, so both `osm` and `dark` disable download/auto-cache controls and the main-process downloader rejects requests before starting a job. For permitted sources: estimate → confirm → job with concurrency; pauses when `net.isOnline()` is false; resumes after ~60s stable online. Cancel combines job abort with per-tile fetch timeout (`AbortSignal.any`).
 - **Basemaps:** allowlist is `osm`, `dark`, `usgs-topo` (`OFFLINE_MAP_BASEMAP_IDS`); unknown ids are rejected by the protocol, cache, and IPC. Attribution strings live in `BASEMAP_ATTRIBUTIONS`.
 - **USGS topo:** remote is the National Map ArcGIS `USGSTopo/MapServer/tile/{z}/{y}/{x}` (row before column — `buildRemoteTileUrl` swaps; `mesh-tiles:` URLs stay `{z}/{x}/{y}`). US coverage only; cached tiles stop at z16 (`USGS_TOPO_MAX_NATIVE_ZOOM` → Leaflet `maxNativeZoom`), so region downloads above z16 count as failed tiles. Tiles are JPEG stored under a `.png` cache filename (Chromium sniffs image bytes). No retina variant.
-- **Retina:** CARTO dark `@2x` only when the renderer passes `retina: true` (`devicePixelRatio > 1`). OSM ignores retina. Cache keys include `@2x` filename when set.
+- **Dark OpenStreetMap:** `dark` uses the canonical `https://tile.openstreetmap.org/{z}/{x}/{y}.png` raster source with a tile-only CSS filter (`mesh-basemap-dark`). Labels stay in the raster tiles; markers, trails, attribution, and controls are not filtered. No API key or extra map engine is needed. Normal viewport caching is retained. See the [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+- **Source changes:** the dark URL includes `?source=osm-v1` to bypass Chromium's old CARTO image cache. Dark disk tiles live under `dark/osm-v1/`, so cached CARTO key-error images cannot be reused. Existing files and saved-region metadata are retained and remain subject to the normal cache limit. Existing dark regions need to be viewed online to fill the replacement source.
+- **Retina:** current sources have no `@2x` variant. Legacy retina URLs remain parseable, but new UI requests use standard tiles.
 - **Caps:** single-job estimate must stay ≤ `OFFLINE_MAP_MAX_ESTIMATE_BYTES` (= 50% of `TILE_CACHE_MAX_BYTES`, ~1 GiB LRU) and ≤ `OFFLINE_MAP_MAX_TILES` so a completed region is not immediately LRU-evicted.
 - **Manifest:** atomic write (temp + rename); serialized `mutateManifest`; in-memory byte/source counts (single-flight `ensureStats`); full tree scan only when over budget for eviction (shared in-flight pass down to ~90% low-water); debounced source-stat persist.
 - **IPC validation:** finite lat/lon (lat ∈ [-90,90], \|lon\| ≤ 360), finite zooms; reject inverted north/south.

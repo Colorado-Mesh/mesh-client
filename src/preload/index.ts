@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { BeaconConnectRequest, BeaconConnectResult, BeaconFeedUpdate } from '../shared/beacon';
 import type {
   BlePeripheralOwner,
   BleScanOwner,
@@ -76,6 +77,18 @@ async function unwrapReticulumProxy<T = unknown>(result: Promise<unknown>): Prom
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  beacon: {
+    connect: (request: BeaconConnectRequest) =>
+      ipcRenderer.invoke('beacon:connect', request) as Promise<BeaconConnectResult>,
+    disconnect: () => ipcRenderer.invoke('beacon:disconnect') as Promise<void>,
+    onUpdate: (callback: (update: BeaconFeedUpdate) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, update: BeaconFeedUpdate): void => {
+        callback(update);
+      };
+      ipcRenderer.on('beacon:update', handler);
+      return () => ipcRenderer.removeListener('beacon:update', handler);
+    },
+  },
   translation: {
     getStatus: () => ipcRenderer.invoke('translation:getStatus'),
     setEnabled: (enabled: boolean) => ipcRenderer.invoke('translation:setEnabled', enabled),

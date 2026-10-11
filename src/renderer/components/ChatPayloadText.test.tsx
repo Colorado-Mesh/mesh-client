@@ -78,7 +78,7 @@ describe('ChatPayloadText', () => {
     expect(screen.queryByRole('img', { name: 'Shared location map tile' })).toBeNull();
     fireEvent.click(
       screen.getByRole('button', {
-        name: /Load remote content from [abc]\.tile\.openstreetmap\.org/,
+        name: 'Load remote content from tile.openstreetmap.org',
       }),
     );
     const tile = screen.getByRole('img', { name: 'Shared location map tile' });
@@ -278,7 +278,7 @@ describe('ChatPayloadText', () => {
       expect(screen.queryByRole('img', { name: 'Drone detection map tile' })).toBeNull();
       fireEvent.click(
         screen.getByRole('button', {
-          name: /Load remote content from [abc]\.tile\.openstreetmap\.org/,
+          name: 'Load remote content from tile.openstreetmap.org',
         }),
       );
       expect(screen.getByRole('img', { name: 'Drone detection map tile' })).toHaveAttribute(

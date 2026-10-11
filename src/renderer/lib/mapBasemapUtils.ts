@@ -14,6 +14,8 @@ export interface MapBasemapConfig {
   url: string;
   attribution: string;
   isDark: boolean;
+  /** Applied to tile images only, preserving normal marker, packet, and control colors. */
+  tileClassName?: string;
   /** Highest zoom the tile source serves; Leaflet overzooms above it. */
   maxNativeZoom?: number;
 }
@@ -24,6 +26,7 @@ export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
     url: MESH_TILES_URL_TEMPLATES.dark,
     attribution: BASEMAP_ATTRIBUTIONS.dark,
     isDark: true,
+    tileClassName: 'mesh-basemap-dark',
   },
   osm: {
     id: 'osm',

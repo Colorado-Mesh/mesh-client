@@ -6,6 +6,7 @@ import {
   meshTilesUserAgent,
   type OfflineMapBasemapId,
   OSM_TILE_HTTP_REFERRER,
+  supportsOfflineMapDownload,
 } from '@/shared/offlineMaps/basemapRegistry';
 import {
   enumerateRegionTiles,
@@ -31,7 +32,7 @@ export interface OfflineMapsEstimateRequest {
   minZoom: number;
   maxZoom: number;
   basemapId: OfflineMapBasemapId;
-  /** CARTO `@2x` only; ignored for OSM. */
+  /** Legacy flag; current basemap sources do not serve retina variants. */
   retina?: boolean;
 }
 
@@ -127,6 +128,9 @@ export class OfflineMapsDownloader {
   }
 
   start(req: OfflineMapsDownloadRequest): string {
+    if (!supportsOfflineMapDownload(req.basemapId)) {
+      throw new Error('This basemap permits viewport caching only, not region downloads');
+    }
     const estimate = this.estimate(req);
     if (!estimate.withinCaps) {
       throw new Error('Region exceeds offline download caps');
@@ -293,13 +297,12 @@ export class OfflineMapsDownloader {
 
   private async fetchOne(job: ActiveJob, tile: WebMercatorTile): Promise<void> {
     if (job.cancelled) return;
-    const retina = job.request.basemapId === 'dark' && job.request.retina === true;
     const coords = {
       basemapId: job.request.basemapId,
       z: tile.z,
       x: tile.x,
       y: tile.y,
-      retina,
+      retina: false,
     };
     const existing = await this.deps.cache.getCachedTile(coords);
     if (existing) {
@@ -308,10 +311,7 @@ export class OfflineMapsDownloader {
       return;
     }
 
-    const url = buildRemoteTileUrl(job.request.basemapId, tile.z, tile.x, tile.y, {
-      retina,
-      subdomainIndex: (tile.x + tile.y) % 4,
-    });
+    const url = buildRemoteTileUrl(job.request.basemapId, tile.z, tile.x, tile.y);
     try {
       const res = await this.fetchImpl(url, {
         headers: {

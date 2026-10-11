@@ -14,6 +14,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** Keep in sync with DYNAMIC_T_PREFIXES in check-i18n.mjs */
 export const DYNAMIC_T_PREFIXES = [
   { prefix: 'chatPanel.fetchStoreForwardHistoryError.', leafKeys: true },
+  { prefix: 'liveTraffic.regions.', leafKeys: true },
+  { prefix: 'liveTraffic.connectionState.', leafKeys: true },
+  { prefix: 'liveTraffic.kinds.', leafKeys: true },
+  { prefix: 'liveTraffic.sources.', leafKeys: true },
+  { prefix: 'liveTraffic.routeStatus.', leafKeys: true },
+  { prefix: 'liveTraffic.beacon.status.', leafKeys: true },
   { prefix: 'radioPanel.deviceRoles.', suffixes: ['label', 'description'] },
   { prefix: 'radioPanel.regions.', suffixes: ['label'] },
   { prefix: 'radioPanel.modemPresets.', suffixes: ['label'] },

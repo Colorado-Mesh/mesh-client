@@ -26,6 +26,11 @@ function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
 /** Full typed electronAPI stub for renderer-ui tests (extracted from setup for reuse). */
 export function createElectronAPIMock(): ElectronAPI {
   return {
+    beacon: {
+      connect: vi.fn().mockResolvedValue({ ok: true }),
+      disconnect: vi.fn().mockResolvedValue(undefined),
+      onUpdate: vi.fn().mockReturnValue(() => {}),
+    },
     translation: {
       getStatus: vi.fn().mockResolvedValue({
         enabled: false,

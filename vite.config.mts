@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 import { appChunkBudgetPlugin } from './scripts/app-chunk-budget.mjs';
+import { beaconPreviewPlugin } from './scripts/beacon-preview-plugin.mjs';
 
 /** Emscripten glue fetches `orlp-ed25519.wasm` relative to the page; it is not inlined by Vite. */
 const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
@@ -47,7 +48,13 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
   };
 }
 export default defineConfig({
-  plugins: [tailwindcss(), react(), meshcoreOrlpWasmPlugin(), appChunkBudgetPlugin()],
+  plugins: [
+    tailwindcss(),
+    react(),
+    meshcoreOrlpWasmPlugin(),
+    appChunkBudgetPlugin(),
+    beaconPreviewPlugin(),
+  ],
   worker: {
     format: 'es',
   },

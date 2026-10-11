@@ -1,5 +1,6 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type { BeaconFeedApi } from './beacon';
 import type {
   EnvironmentReading,
   EnvironmentTelemetryRow,
@@ -374,6 +375,7 @@ export type BleCoexistenceAcquireScanResult =
   | ({ ok: false; code: 'scan_busy'; owner: BleScanOwner } & BleCoexistenceState);
 
 export interface ElectronAPI {
+  beacon: BeaconFeedApi;
   translation: TranslationAPI;
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
@@ -1111,7 +1113,7 @@ export interface ElectronAPI {
       minZoom: number;
       maxZoom: number;
       basemapId: OfflineMapBasemapId;
-      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      /** Legacy flag; current basemap sources do not serve retina variants. */
       retina?: boolean;
     }) => Promise<{ tileCount: number; sizeEstimateBytes: number; withinCaps: boolean }>;
     download: (req: {
@@ -1119,7 +1121,7 @@ export interface ElectronAPI {
       minZoom: number;
       maxZoom: number;
       basemapId: OfflineMapBasemapId;
-      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      /** Legacy flag; current basemap sources do not serve retina variants. */
       retina?: boolean;
     }) => Promise<{ jobId: string }>;
     cancel: (jobId: string) => Promise<{ cancelled: boolean }>;

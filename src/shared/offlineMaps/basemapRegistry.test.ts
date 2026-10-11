@@ -9,6 +9,7 @@ import {
   MESH_TILES_URL_TEMPLATES,
   meshTilesUserAgent,
   OFFLINE_MAP_BASEMAP_IDS,
+  supportsOfflineMapDownload,
 } from './basemapRegistry';
 
 describe('basemapRegistry', () => {
@@ -33,33 +34,31 @@ describe('basemapRegistry', () => {
     }
   });
 
-  it('builds allowlisted remote URLs without caller host', () => {
-    expect(buildRemoteTileUrl('osm', 14, 1, 2)).toMatch(
-      /^https:\/\/[abc]\.tile\.openstreetmap\.org\/14\/1\/2\.png$/,
-    );
-    expect(buildRemoteTileUrl('dark', 14, 1, 2, { retina: true })).toMatch(
-      /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\/dark_all\/14\/1\/2@2x\.png$/,
-    );
+  it('uses the canonical key-free OSM source for both styles without retina or subdomains', () => {
+    for (const id of ['osm', 'dark'] as const) {
+      expect(buildRemoteTileUrl(id, 14, 1, 2)).toBe('https://tile.openstreetmap.org/14/1/2.png');
+    }
   });
 
-  it('builds USGS topo URLs in ArcGIS z/y/x order and ignores retina', () => {
+  it('limits prefetching to providers that permit region downloads', () => {
+    expect(supportsOfflineMapDownload('osm')).toBe(false);
+    expect(supportsOfflineMapDownload('dark')).toBe(false);
+    expect(supportsOfflineMapDownload('usgs-topo')).toBe(true);
+  });
+
+  it('builds USGS topo URLs in ArcGIS z/y/x order', () => {
     expect(buildRemoteTileUrl('usgs-topo', 14, 1, 2)).toBe(
-      'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/14/2/1',
-    );
-    expect(buildRemoteTileUrl('usgs-topo', 14, 1, 2, { retina: true, subdomainIndex: 3 })).toBe(
       'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/14/2/1',
     );
   });
 
   it('exposes mesh-tiles leaflet templates and concrete URLs', () => {
     expect(MESH_TILES_URL_TEMPLATES.osm).toBe('mesh-tiles://osm/{z}/{x}/{y}.png');
-    expect(MESH_TILES_URL_TEMPLATES.dark).toBe('mesh-tiles://dark/{z}/{x}/{y}{r}.png');
+    expect(MESH_TILES_URL_TEMPLATES.dark).toBe('mesh-tiles://dark/{z}/{x}/{y}.png?source=osm-v1');
     expect(MESH_TILES_URL_TEMPLATES['usgs-topo']).toBe('mesh-tiles://usgs-topo/{z}/{x}/{y}.png');
     expect(buildMeshTilesUrl('osm', 14, 1, 2)).toBe('mesh-tiles://osm/14/1/2.png');
-    expect(buildMeshTilesUrl('dark', 14, 1, 2, true)).toBe('mesh-tiles://dark/14/1/2@2x.png');
-    expect(buildMeshTilesUrl('usgs-topo', 14, 1, 2, true)).toBe(
-      'mesh-tiles://usgs-topo/14/1/2.png',
-    );
+    expect(buildMeshTilesUrl('dark', 14, 1, 2)).toBe('mesh-tiles://dark/14/1/2.png?source=osm-v1');
+    expect(buildMeshTilesUrl('usgs-topo', 14, 1, 2)).toBe('mesh-tiles://usgs-topo/14/1/2.png');
   });
 
   it('attributes USGS for the topo basemap', () => {

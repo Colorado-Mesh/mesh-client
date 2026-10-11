@@ -51,6 +51,24 @@ describe('OfflineMapsDownloader', () => {
 
   const tinyBounds = { north: 40.001, south: 40.0, east: -105.0, west: -105.001 };
 
+  it.each(['osm', 'dark'] as const)(
+    'rejects %s prefetch before starting a job or fetching',
+    (basemapId) => {
+      const fetchImpl = vi.fn();
+      const { downloader } = makeDownloader(fetchImpl);
+      expect(() =>
+        downloader.start({
+          bounds: tinyBounds,
+          minZoom: 14,
+          maxZoom: 14,
+          basemapId,
+        }),
+      ).toThrow('viewport caching only');
+      expect(downloader.listActive()).toEqual([]);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
+
   it('completes a small region download', async () => {
     const png = Buffer.from([1, 2, 3, 4]);
     const fetchImpl = vi.fn(() => Promise.resolve(new Response(png, { status: 200 })));
@@ -59,7 +77,7 @@ describe('OfflineMapsDownloader', () => {
       bounds: tinyBounds,
       minZoom: 14,
       maxZoom: 14,
-      basemapId: 'osm',
+      basemapId: 'usgs-topo',
     });
     expect(est.withinCaps).toBe(true);
     expect(est.tileCount).toBeGreaterThan(0);
@@ -67,7 +85,7 @@ describe('OfflineMapsDownloader', () => {
       bounds: tinyBounds,
       minZoom: 14,
       maxZoom: 14,
-      basemapId: 'osm',
+      basemapId: 'usgs-topo',
     });
     await vi.waitFor(() => {
       expect(onDone).toHaveBeenCalled();
@@ -90,7 +108,7 @@ describe('OfflineMapsDownloader', () => {
       bounds: tinyBounds,
       minZoom: 10,
       maxZoom: 12,
-      basemapId: 'osm',
+      basemapId: 'usgs-topo',
     });
     expect(downloader.cancel(jobId)).toBe(true);
     await vi.waitFor(() => {
@@ -107,7 +125,7 @@ describe('OfflineMapsDownloader', () => {
       bounds: tinyBounds,
       minZoom: 14,
       maxZoom: 14,
-      basemapId: 'osm',
+      basemapId: 'usgs-topo',
     });
     await vi.waitFor(() => {
       expect(onProgress.mock.calls.some((c) => (c[0] as { paused: boolean }).paused)).toBe(true);
@@ -127,7 +145,7 @@ describe('OfflineMapsDownloader', () => {
       bounds: tinyBounds,
       minZoom: 14,
       maxZoom: 14,
-      basemapId: 'osm',
+      basemapId: 'usgs-topo',
     });
     await vi.waitFor(() => {
       expect(onProgress.mock.calls.some((c) => (c[0] as { paused: boolean }).paused)).toBe(true);

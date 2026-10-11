@@ -279,6 +279,8 @@ export interface MeshCoreStatsResponse<TData> {
 }
 
 export interface RxPacketEntry {
+  /** Capture provenance; absent on legacy entries whose receiver cannot be assumed. */
+  source?: 'rf' | 'mqtt';
   ts: number;
   snr: number;
   rssi: number;

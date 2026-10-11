@@ -7,7 +7,9 @@ import L from 'leaflet';
 import { Download } from 'lucide-react-motion';
 import {
   Fragment,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -34,10 +36,12 @@ import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { routeWeightToColor, routeWeightToStroke } from '../lib/routeWeightUtils';
 import type { MeshNode, MeshProtocol, MeshWaypoint, NodeAnomaly } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
@@ -488,6 +492,9 @@ function LoRaMapLayerRows({
 // ─── MapPanel ─────────────────────────────────────────────────────────────────
 
 interface Props {
+  /** Keep the view controller and regional session while its map DOM is unmounted. */
+  active?: boolean;
+  isCurrentProtocol?: boolean;
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
   locationFilter: LocationFilter;
@@ -505,9 +512,73 @@ interface Props {
   onForecastSenderClick?: (protocol: MeshProtocol, senderId: number) => void;
   protocol?: MeshProtocol;
   useFahrenheit?: boolean;
+  meshcorePackets?: readonly RxPacketEntry[];
+  meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
+  pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
 
-export default function MapPanel({
+const LiveTrafficPanel = lazy(() => import('./map/LiveTrafficPanel'));
+
+export default function MapPanel(props: Props) {
+  const { t } = useTranslation();
+  const active = props.active ?? true;
+  const isCurrentProtocol = props.isCurrentProtocol ?? true;
+  const [traffic, setTraffic] = useState(false);
+  const [trafficVisited, setTrafficVisited] = useState(false);
+  useEffect(
+    () =>
+      useMapViewportStore.subscribe((next, previous) => {
+        if (isCurrentProtocol && next.pendingFocus && next.pendingFocus !== previous.pendingFocus) {
+          // Existing map actions belong to the overview, whose controller consumes the focus.
+          setTraffic(false);
+        }
+      }),
+    [isCurrentProtocol],
+  );
+  const supportsTraffic =
+    props.meshcorePackets !== undefined || props.meshtasticPackets !== undefined;
+  if (!supportsTraffic) return active ? <OverviewMapPanel {...props} /> : null;
+  return (
+    <div hidden={!active} className={active ? 'flex h-full min-h-0 flex-col gap-2' : 'hidden'}>
+      <div className="flex shrink-0 gap-1" role="group" aria-label={t('liveTraffic.mapModes')}>
+        {[false, true].map((isTraffic) => (
+          <button
+            key={String(isTraffic)}
+            type="button"
+            aria-label={t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
+            aria-pressed={traffic === isTraffic}
+            onClick={() => {
+              setTraffic(isTraffic);
+              if (isTraffic) setTrafficVisited(true);
+            }}
+            className={`rounded-control text-label px-3 py-1.5 font-medium ${traffic === isTraffic ? 'bg-brand-green text-app-bg' : 'bg-deep-black text-ink-300 hover:bg-ink-800'}`}
+          >
+            {t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
+          </button>
+        ))}
+      </div>
+      <div className="min-h-0 flex-1">
+        {(traffic || trafficVisited) && (
+          <Suspense fallback={<div className="text-muted p-4">{t('app.loadingApp')}</div>}>
+            <LiveTrafficPanel
+              active={active && traffic}
+              nodes={props.nodes}
+              myNodeNum={props.myNodeNum}
+              ourPosition={props.ourPosition}
+              meshcorePackets={props.meshcorePackets}
+              meshtasticPackets={props.meshtasticPackets}
+              pubKeyByNodeId={props.pubKeyByNodeId}
+              onNodeClick={props.onNodeClick}
+            />
+          </Suspense>
+        )}
+        {active && !traffic && <OverviewMapPanel {...props} />}
+      </div>
+    </div>
+  );
+}
+
+function OverviewMapPanel({
   nodes,
   myNodeNum,
   locationFilter,

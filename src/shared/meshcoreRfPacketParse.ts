@@ -136,10 +136,10 @@ function readU32LE(u8: Uint8Array, offset: number): number {
   return v.getUint32(0, true);
 }
 
-function readF32LE(u8: Uint8Array, offset: number): number | null {
+function readCoordinateLE(u8: Uint8Array, offset: number): number | null {
   if (offset + 4 > u8.length) return null;
   const v = new DataView(u8.buffer, u8.byteOffset + offset, 4);
-  return v.getFloat32(0, true);
+  return v.getInt32(0, true) / 1_000_000;
 }
 
 function utf8Slice(u8: Uint8Array, start: number): string {
@@ -155,7 +155,7 @@ function utf8Slice(u8: Uint8Array, start: number): string {
 
 /**
  * Parse ADVERT inner payload starting at `inner` (first byte = pubkey start).
- * Layout: pubkey 32, timestamp LE 4, signature 64, flags 1, optional lat/lon f32 LE, name UTF-8.
+ * Layout: pubkey 32, timestamp LE 4, signature 64, flags 1, optional lat/lon signed microdegrees LE, name UTF-8.
  */
 export function parseMeshCoreAdvertInner(inner: Uint8Array): MeshCoreAdvertParsed | null {
   const minCore = 32 + 4 + 64 + 1;
@@ -174,8 +174,8 @@ export function parseMeshCoreAdvertInner(inner: Uint8Array): MeshCoreAdvertParse
   let latitudeDeg: number | null = null;
   let longitudeDeg: number | null = null;
   if (hasLocation) {
-    const la = readF32LE(inner, o);
-    const lo = readF32LE(inner, o + 4);
+    const la = readCoordinateLE(inner, o);
+    const lo = readCoordinateLE(inner, o + 4);
     o += 8;
     latitudeDeg = la != null && Number.isFinite(la) ? la : null;
     longitudeDeg = lo != null && Number.isFinite(lo) ? lo : null;

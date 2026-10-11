@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtempSync } from 'fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -54,6 +54,37 @@ describe('tile-cache', () => {
     const reloaded = createTileCache(root);
     const again = await reloaded.listCachedStats();
     expect(again.tileCount).toBe(1);
+  });
+
+  it('isolates new dark tiles from cached CARTO errors without deleting old regions or files', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-tile-cache-'));
+    roots.push(root);
+    const legacyDir = path.join(root, 'tile-cache', 'dark', '3', '1');
+    mkdirSync(legacyDir, { recursive: true });
+    const oldTile = path.join(legacyDir, '2.png');
+    writeFileSync(oldTile, 'CARTO API KEY REQUIRED');
+    const cache = createTileCache(root);
+    const region = {
+      id: 'saved-dark-region',
+      basemapId: 'dark' as const,
+      bounds: { north: 40, south: 39, east: -104, west: -105 },
+      minZoom: 3,
+      maxZoom: 3,
+      completedAt: 1,
+      tileCount: 1,
+    };
+    await cache.mutateManifest((m) => {
+      m.regions.push(region);
+    });
+    const coords = { basemapId: 'dark' as const, z: 3, x: 1, y: 2 };
+    expect(await cache.getCachedTile(coords)).toBeNull();
+    const freshTile = Buffer.from('OSM tile');
+    await cache.putCachedTile(coords, freshTile);
+    expect(await cache.getCachedTile(coords)).toEqual(freshTile);
+    expect(readFileSync(oldTile, 'utf8')).toBe('CARTO API KEY REQUIRED');
+    expect((await cache.readManifest()).regions).toEqual([region]);
+    expect((await cache.listCachedStats()).tileCount).toBe(2);
+    expect(await createTileCache(root).getCachedTile(coords)).toEqual(freshTile);
   });
 
   it('evicts oldest tiles when over the byte budget', async () => {
