@@ -3074,7 +3074,7 @@
 <p>The version written into MetaInfo always comes from <code>package.json</code> after <code>pnpm version</code> (never from <code>pnpm version</code> stdout).</p>
 <hr />
 <h2 id="macos-code-signing-and-notarization">macOS code signing and notarization<a class="headerlink" href="#macos-code-signing-and-notarization" title="Permanent link">&para;</a></h2>
-<p>Official macOS release artifacts are <strong>Developer ID signed</strong> and <strong>notarized</strong> when repository secrets are configured. <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/electron-builder.yml"><code>electron-builder.yml</code></a> sets <code>hardenedRuntime: true</code> and <code>notarize: true</code>; electron-builder skips notarization automatically when no signing certificate is available (local/fork builds).</p>
+<p>Official macOS release artifacts require <strong>Developer ID signing</strong> and <strong>notarization</strong>. <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/electron-builder.yml"><code>electron-builder.yml</code></a> sets <code>hardenedRuntime: true</code> and <code>notarize: true</code>; unsigned local/fork builds remain available.</p>
 <h3 id="required-github-actions-secrets">Required GitHub Actions secrets<a class="headerlink" href="#required-github-actions-secrets" title="Permanent link">&para;</a></h3>
 <p>Configure secrets under the named <strong>Settings → Environments</strong> boundary, not at repository scope:</p>
 <table>
@@ -3094,7 +3094,12 @@
 <tr>
 <td><strong><code>release-cut</code></strong></td>
 <td><code>RELEASE_CUT_TOKEN</code></td>
-<td><code>main</code>; required maintainer approval for release cuts and license-update PRs</td>
+<td><code>main</code>; required maintainer approval for release cuts</td>
+</tr>
+<tr>
+<td><strong><code>license-automation</code></strong></td>
+<td>Optional <code>LICENSE_PR_TOKEN</code></td>
+<td><code>main</code>; license-document maintenance only, with no release authority</td>
 </tr>
 <tr>
 <td><strong><code>release-repair</code></strong></td>
@@ -3105,7 +3110,7 @@
 </table>
 <p><code>release.yaml</code> alone receives the Apple/CSC credentials, and only its <strong><code>macos-latest</code></strong> matrix leg uses them. <code>build.yaml</code> never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. The one-time <code>migrate-release-secrets.yaml</code> workflow verifies the live environment policies and protected-tag ruleset before moving credentials, deletes the six legacy repository-wide secrets, and removes itself after success. No release credential should remain repository-scoped.</p>
 <h3 id="partial-secret-validation">Partial-secret validation<a class="headerlink" href="#partial-secret-validation" title="Permanent link">&para;</a></h3>
-<p>Before the macOS build step, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/release.yaml"><code>release.yaml</code></a> runs <strong>Validate macOS signing secrets</strong> when <code>CSC_LINK</code> is non-empty on tag releases. If any of <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, or <code>APPLE_TEAM_ID</code> is missing, the job <strong>fails early</strong> with a clear list — avoids a signed-but-unnotarized upload that Gatekeeper would reject.</p>
+<p>Before every official Electron macOS release build, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/release.yaml"><code>release.yaml</code></a> runs <strong>Validate macOS signing secrets</strong>. If any of <code>CSC_LINK</code>, <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, or <code>APPLE_TEAM_ID</code> is missing, the job <strong>fails early</strong> with a clear list.</p>
 <p>Fork workflows and local <code>pnpm run dist:mac</code> without these env vars produce <strong>unsigned</strong> <code>.dmg</code> / <code>.zip</code> bundles (still validated by <code>verify-mac-packaging.mjs</code>). See <a href="../ci-cd/#macos-packaging-verify-verify-mac-packagingmjs">CI/CD — macOS packaging verify</a>.</p>
 <hr />
 <h2 id="manual-verification-optional">Manual verification (optional)<a class="headerlink" href="#manual-verification-optional" title="Permanent link">&para;</a></h2>
@@ -3336,7 +3341,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 14:24:34 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 18:13:08 UTC">October 11, 2026</span>
   </span>
 
     
