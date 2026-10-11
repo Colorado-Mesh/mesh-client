@@ -1413,6 +1413,7 @@ export default function NomadNetworkPanel({
                         : pageContent
                     }
                     defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+                    pagePath={pagePath}
                     selectedHash={selectedHash}
                     fitWidth={pageFitWidth}
                     onNavigate={handleMicronNavigate}

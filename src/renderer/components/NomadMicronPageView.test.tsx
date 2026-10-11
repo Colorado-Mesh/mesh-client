@@ -10,6 +10,7 @@ const LXMF_HASH = '368f994c056de0d8882855eb0d627497';
 describe('NomadMicronPageView', () => {
   const defaultProps = {
     defaultPagePath: '/page/index.mu',
+    pagePath: '/page/index.mu',
     selectedHash: 'abc1234567890abcdef1234567890ab',
     onNavigate: vi.fn(),
     onDownloadFile: vi.fn(),
@@ -199,6 +200,59 @@ describe('NomadMicronPageView', () => {
     );
   });
 
+  it('restarts the page controller on same-content navigation and ignores the old result', async () => {
+    let resolveOld: ((value: { ok: boolean; content: string }) => void) | undefined;
+    let resolveCurrent: ((value: { ok: boolean; content: string }) => void) | undefined;
+    const onFetchPartial = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ ok: boolean; content: string }>((resolve) => {
+            resolveOld = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ ok: boolean; content: string }>((resolve) => {
+            resolveCurrent = resolve;
+          }),
+      );
+    const markup = '`{:/page/partial.mu}';
+    const { rerender } = render(
+      <NomadMicronPageView
+        {...defaultProps}
+        pagePath="/page/first.mu"
+        onFetchPartial={onFetchPartial}
+        content={markup}
+      />,
+    );
+    await vi.waitFor(() => {
+      expect(onFetchPartial).toHaveBeenCalledTimes(1);
+    });
+
+    const nextHash = 'd'.repeat(32);
+    rerender(
+      <NomadMicronPageView
+        {...defaultProps}
+        selectedHash={nextHash}
+        pagePath="/page/second.mu"
+        onFetchPartial={onFetchPartial}
+        content={markup}
+      />,
+    );
+    await vi.waitFor(() => {
+      expect(onFetchPartial).toHaveBeenCalledTimes(2);
+    });
+    resolveOld?.({ ok: true, content: 'STALE_PARTIAL' });
+    resolveCurrent?.({ ok: true, content: 'CURRENT_PARTIAL' });
+    await vi.waitFor(() => {
+      const text = document.querySelector('.nomad-micron-page')?.textContent ?? '';
+      expect(text).toContain('CURRENT_PARTIAL');
+      expect(text).not.toContain('STALE_PARTIAL');
+    });
+    expect(onFetchPartial).toHaveBeenLastCalledWith(nextHash, '/page/partial.mu', undefined);
+  });
+
   it('navigates links that appear inside loaded partial markup', async () => {
     const onNavigate = vi.fn();
     const onFetchPartial = vi.fn().mockResolvedValue({
@@ -269,6 +323,57 @@ describe('NomadMicronPageView', () => {
       expect(img?.getAttribute('src') ?? '').toMatch(/^data:image\/webp;base64,/);
     });
     expect(onFetchMedia).toHaveBeenCalledWith(defaultProps.selectedHash, '/media/inner.webp');
+  });
+
+  it('keeps existing partial media live when a parent refresh fails', async () => {
+    vi.useFakeTimers();
+    let unmount: (() => void) | undefined;
+    try {
+      let partialCalls = 0;
+      const onFetchPartial = vi.fn(() => {
+        partialCalls += 1;
+        return partialCalls === 1
+          ? Promise.resolve({ ok: true, content: '`(Inner`a=c`:/media/inner.webp)' })
+          : Promise.reject(new Error('refresh_failed'));
+      });
+      let resolveMedia:
+        ((value: { ok: boolean; content_base64: string; file_name: string }) => void) | undefined;
+      const onFetchMedia = vi.fn(
+        () =>
+          new Promise<{ ok: boolean; content_base64: string; file_name: string }>((resolve) => {
+            resolveMedia = resolve;
+          }),
+      );
+      const rendered = render(
+        <NomadMicronPageView
+          {...defaultProps}
+          onFetchPartial={onFetchPartial}
+          onFetchMedia={onFetchMedia}
+          content="`{:/page/partial.mu`1}"
+        />,
+      );
+      unmount = rendered.unmount;
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onFetchPartial).toHaveBeenCalledTimes(1);
+      expect(onFetchMedia).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(onFetchPartial).toHaveBeenCalledTimes(2);
+      expect(document.querySelector('[data-partial-error="refresh_failed"]')).not.toBeNull();
+
+      resolveMedia?.({
+        ok: true,
+        content_base64: 'UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=',
+        file_name: 'inner.webp',
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(
+        document.querySelector<HTMLImageElement>('.nomad-micron-media')?.getAttribute('src') ?? '',
+      ).toMatch(/^data:image\/webp;base64,/);
+    } finally {
+      unmount?.();
+      vi.useRealTimers();
+    }
   });
 
   it('shows alt notice when onFetchMedia fails', async () => {
