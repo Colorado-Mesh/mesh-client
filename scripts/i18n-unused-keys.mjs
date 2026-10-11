@@ -14,7 +14,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** Keep in sync with DYNAMIC_T_PREFIXES in check-i18n.mjs */
 export const DYNAMIC_T_PREFIXES = [
   { prefix: 'chatPanel.fetchStoreForwardHistoryError.', leafKeys: true },
-  { prefix: 'liveTraffic.regions.', leafKeys: true },
   { prefix: 'liveTraffic.connectionState.', leafKeys: true },
   { prefix: 'liveTraffic.kinds.', leafKeys: true },
   { prefix: 'liveTraffic.sources.', leafKeys: true },

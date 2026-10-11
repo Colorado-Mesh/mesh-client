@@ -13,7 +13,6 @@ import {
   filterLiveTrafficEvents,
   LIVE_TRAFFIC_MAX_AGE_MS,
   LIVE_TRAFFIC_MAX_PACKETS,
-  LIVE_TRAFFIC_REGIONS,
   pointInLiveTrafficBounds,
 } from './liveTrafficModel';
 
@@ -724,9 +723,9 @@ describe('traffic bounds, lifetime, and scope', () => {
       4,
       NOW,
     );
-    const colorado = LIVE_TRAFFIC_REGIONS.find((region) => region.id === 'colorado')!.bounds!;
-    expect(filterLiveTrafficEvents(events, { bounds: colorado })).toHaveLength(3);
-    expect(filterLiveTrafficEvents(events, { bounds: colorado, scope: 'scoped' })).toHaveLength(2);
+    const bounds = { south: 39, north: 40, west: -106, east: -104 };
+    expect(filterLiveTrafficEvents(events, { bounds })).toHaveLength(3);
+    expect(filterLiveTrafficEvents(events, { bounds, scope: 'scoped' })).toHaveLength(2);
     expect(
       filterLiveTrafficEvents(events, { scope: 0 }).map((event) => event.returnScopeCode),
     ).toEqual([255]);

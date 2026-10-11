@@ -7195,11 +7195,7 @@
     "resume": "Wznów",
     "region": "Obszar mapy",
     "regions": {
-      "all": "Wszystkie regiony",
-      "colorado": "Kolorado",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Bieżący widok mapy"
+      "all": "Wszystkie regiony"
     },
     "transportScope": "Kod transportowy",
     "scopeHint": "Filtruj według zaobserwowanych kodów transportowych pakietów lub wpisz scoped albo unscoped. Kody dotyczą poszczególnych pakietów i nie zmieniają ustawień radia.",
@@ -7220,7 +7216,6 @@
     "speedNormal": "1×",
     "speedFast": "2×",
     "basemap": "Styl mapy",
-    "fitRegion": "Dopasuj widok do wybranego regionu",
     "darkMap": "Ciemny",
     "streetMap": "Ulice",
     "topographicMap": "USGS topo",
@@ -7314,6 +7309,11 @@
     "reports_few": "{{count}} raporty",
     "reports_many": "{{count}} raportów",
     "additionalLinks_few": "{{count}} dodatkowe połączenia",
-    "additionalLinks_many": "{{count}} dodatkowych połączeń"
+    "additionalLinks_many": "{{count}} dodatkowych połączeń",
+    "areas": {
+      "all": "Cały ruch",
+      "viewport": "Bieżący obszar mapy"
+    },
+    "fitTraffic": "Dopasuj widok do ruchu"
   }
 }

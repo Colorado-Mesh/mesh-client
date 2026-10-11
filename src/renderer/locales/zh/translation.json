@@ -7081,11 +7081,7 @@
     "resume": "继续",
     "region": "地图区域",
     "regions": {
-      "all": "所有区域",
-      "colorado": "科罗拉多",
-      "front-range": "前山地带",
-      "viewport": "当前显示区域",
-      "western-slope": "西坡地区"
+      "all": "所有区域"
     },
     "transportScope": "传输代码",
     "scopeHint": "按观测到的数据包传输代码筛选，或输入 scoped（已指定范围）或 unscoped（未指定范围）。代码属于各个数据包，不会更改无线电设备的设置。",
@@ -7105,7 +7101,6 @@
     "speedFast": "2×",
     "speedNormal": "1×",
     "mapAria": "实时数据包流量图",
-    "fitRegion": "显示整个所选区域",
     "darkMap": "深色",
     "basemap": "地图样式",
     "streetMap": "街道地图",
@@ -7192,6 +7187,11 @@
       "reconnecting": "正在重新连接",
       "disconnected": "已断开连接",
       "error": "连接错误"
-    }
+    },
+    "areas": {
+      "all": "全部流量",
+      "viewport": "当前地图区域"
+    },
+    "fitTraffic": "缩放至流量范围"
   }
 }

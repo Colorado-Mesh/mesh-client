@@ -7081,11 +7081,7 @@
     "resume": "Hervatten",
     "region": "Kaartgebied",
     "regions": {
-      "all": "Alle regio’s",
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "viewport": "Huidig kaartbeeld",
-      "western-slope": "Western Slope"
+      "all": "Alle regio’s"
     },
     "scopeHint": "Filter op waargenomen transportcodes van pakketten of voer scoped of unscoped in. De codes gelden per pakket en wijzigen de radio-instellingen niet.",
     "transportScope": "Transportcode",
@@ -7108,7 +7104,6 @@
     "darkMap": "Donker",
     "streetMap": "Straten",
     "basemap": "Kaartstijl",
-    "fitRegion": "Geselecteerde regio passend weergeven",
     "waitingHint": "Verbind een radio om live verkeer te zien.",
     "topographicMap": "USGS topo",
     "waiting": "Wachten op pakketwaarnemingen",
@@ -7192,6 +7187,11 @@
       "reconnecting": "Opnieuw verbinding maken",
       "disconnected": "Verbinding verbroken",
       "error": "Verbindingsfout"
-    }
+    },
+    "areas": {
+      "all": "Al het verkeer",
+      "viewport": "Huidig kaartgebied"
+    },
+    "fitTraffic": "Verkeer in beeld brengen"
   }
 }

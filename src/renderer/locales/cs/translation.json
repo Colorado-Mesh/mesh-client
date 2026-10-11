@@ -7146,11 +7146,7 @@
     "resume": "Pokračovat",
     "region": "Oblast mapy",
     "regions": {
-      "colorado": "Colorado",
-      "all": "Všechny regiony",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Aktuální výřez mapy"
+      "all": "Všechny regiony"
     },
     "transportScope": "Transportní kód",
     "scopeHint": "Filtrujte podle pozorovaných transportních kódů paketů nebo zadejte scoped či unscoped. Kódy platí pro jednotlivé pakety a nemění nastavení rádia.",
@@ -7170,7 +7166,6 @@
     "speedNormal": "1×",
     "speedFast": "2×",
     "mapAria": "Mapa provozu paketů v reálném čase",
-    "fitRegion": "Přizpůsobit vybrané oblasti",
     "basemap": "Styl mapy",
     "darkMap": "Tmavý",
     "streetMap": "Ulice",
@@ -7265,6 +7260,11 @@
     "reports_few": "{{count}} hlášení",
     "reports_many": "{{count}} hlášení",
     "additionalLinks_few": "{{count}} další spojení",
-    "additionalLinks_many": "{{count}} dalšího spojení"
+    "additionalLinks_many": "{{count}} dalšího spojení",
+    "areas": {
+      "all": "Veškerý provoz",
+      "viewport": "Aktuální oblast mapy"
+    },
+    "fitTraffic": "Přizpůsobit provozu"
   }
 }

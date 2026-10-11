@@ -7081,11 +7081,7 @@
     "resume": "Fortsetzen",
     "region": "Kartenausschnitt",
     "regions": {
-      "all": "Alle Regionen",
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Aktueller Kartenausschnitt"
+      "all": "Alle Regionen"
     },
     "transportScope": "Transportcode",
     "scopeHint": "Filtere nach beobachteten Transportcodes der Pakete oder gib scoped oder unscoped ein. Die Codes gelten für einzelne Pakete und ändern keine Funkgeräteeinstellungen.",
@@ -7105,7 +7101,6 @@
     "speedNormal": "1×",
     "speedFast": "2×",
     "mapAria": "Live-Paketverkehrskarte",
-    "fitRegion": "Ausgewählte Region einpassen",
     "basemap": "Kartenstil",
     "streetMap": "Straßen",
     "darkMap": "Dunkel",
@@ -7192,6 +7187,11 @@
       "disconnected": "Nicht verbunden",
       "error": "Verbindungsfehler"
     },
-    "zoomControls": "Kartenzoom"
+    "zoomControls": "Kartenzoom",
+    "areas": {
+      "all": "Gesamter Verkehr",
+      "viewport": "Aktueller Kartenausschnitt"
+    },
+    "fitTraffic": "Verkehr einpassen"
   }
 }

@@ -71,32 +71,6 @@ export interface LiveTrafficBounds {
   east: number;
 }
 
-export interface LiveTrafficRegion {
-  id: 'all' | 'colorado' | 'front-range' | 'western-slope';
-  label: string;
-  bounds: LiveTrafficBounds | null;
-}
-
-/** Geographic viewing presets; these do not configure a radio's flood scope. */
-export const LIVE_TRAFFIC_REGIONS: readonly LiveTrafficRegion[] = [
-  { id: 'all', label: 'All regions', bounds: null },
-  {
-    id: 'colorado',
-    label: 'Colorado',
-    bounds: { south: 36.99, west: -109.06, north: 41.01, east: -102.04 },
-  },
-  {
-    id: 'front-range',
-    label: 'Front Range',
-    bounds: { south: 37, west: -106, north: 41.01, east: -103.8 },
-  },
-  {
-    id: 'western-slope',
-    label: 'Western Slope',
-    bounds: { south: 36.99, west: -109.06, north: 41.01, east: -106 },
-  },
-];
-
 export interface LiveTrafficNodeIndex {
   points: ReadonlyMap<number, LiveTrafficPoint>;
   /** Sender identity is useful even when the contact has never shared a location. */

@@ -7076,11 +7076,7 @@
     "resume": "Resume",
     "region": "Map area",
     "regions": {
-      "all": "All regions",
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Current viewport"
+      "all": "All regions"
     },
     "transportScope": "Transport code",
     "scopeHint": "Filter observed packet transport codes, or enter scoped or unscoped. Codes are packet-specific and do not configure the radio.",
@@ -7100,7 +7096,6 @@
     "speedNormal": "1×",
     "speedFast": "2×",
     "mapAria": "Live packet traffic map",
-    "fitRegion": "Fit selected region",
     "basemap": "Map style",
     "darkMap": "Dark",
     "streetMap": "Streets",
@@ -7194,6 +7189,11 @@
       "reconnecting": "Reconnecting",
       "disconnected": "Disconnected",
       "error": "Connection error"
-    }
+    },
+    "areas": {
+      "all": "All traffic",
+      "viewport": "Current map area"
+    },
+    "fitTraffic": "Fit traffic"
   }
 }

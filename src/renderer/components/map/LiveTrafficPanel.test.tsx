@@ -184,6 +184,119 @@ afterEach(async () => {
 });
 
 describe('LiveTrafficPanel', () => {
+  describe.each(['meshcore', 'meshtastic'] as const)('%s local map area', (protocol) => {
+    const localPackets =
+      protocol === 'meshcore' ? { meshcorePackets: [] } : { meshtasticPackets: [] };
+
+    it('offers worldwide map areas and fits nodes outside Colorado', async () => {
+      const directory = new Map([
+        [1, node(1, -33.87, 151.21)],
+        [2, node(2, -33.81, 151.05)],
+      ]);
+      await renderPanel(<LiveTrafficPanel nodes={directory} myNodeNum={1} {...localPackets} />);
+      const area = screen.getByRole('combobox', { name: 'liveTraffic.region' });
+      expect(area).toHaveValue('all');
+      expect(
+        within(area)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['liveTraffic.areas.all', 'liveTraffic.areas.viewport']);
+      expect(map.fitBounds).toHaveBeenLastCalledWith(
+        [
+          [-33.87, 151.21],
+          [-33.81, 151.05],
+        ],
+        expect.objectContaining({ maxZoom: 10 }),
+      );
+      expect(feedRequest).toHaveBeenLastCalledWith(false, 'beacon', true);
+    });
+
+    it('fits the configured location when no other node has a position', async () => {
+      await renderPanel(
+        <LiveTrafficPanel
+          nodes={new Map()}
+          myNodeNum={1}
+          ourPosition={{ lat: 59.33, lon: 18.07, source: 'static' }}
+          {...localPackets}
+        />,
+      );
+      expect(map.fitBounds).toHaveBeenLastCalledWith(
+        [[59.33, 18.07]],
+        expect.objectContaining({ maxZoom: 10 }),
+      );
+    });
+
+    it('starts with a world view without a location, then fits arriving nodes once', async () => {
+      const view = await renderPanel(
+        <LiveTrafficPanel nodes={new Map([[1, node(1, 0, 0)]])} myNodeNum={1} {...localPackets} />,
+      );
+      expect(mapContainer.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ center: [20, 0], zoom: 2 }),
+      );
+      expect(map.fitBounds).not.toHaveBeenCalled();
+      const directory = new Map([[1, node(1, 35.68, 139.69)]]);
+      view.rerender(<LiveTrafficPanel nodes={directory} myNodeNum={1} {...localPackets} />);
+      expect(map.fitBounds).toHaveBeenLastCalledWith(
+        [[35.68, 139.69]],
+        expect.objectContaining({ maxZoom: 10 }),
+      );
+      const fittingCalls = map.fitBounds.mock.calls.length;
+      directory.set(2, node(2, 35.7, 139.7));
+      view.rerender(
+        <LiveTrafficPanel nodes={new Map(directory)} myNodeNum={1} {...localPackets} />,
+      );
+      expect(map.fitBounds).toHaveBeenCalledTimes(fittingCalls);
+    });
+
+    it('filters local packets by any visible area without moving the map', async () => {
+      const directory = new Map([
+        [1, node(1, -33.87, 151.21)],
+        [2, node(2, -33.81, 151.05)],
+        [3, node(3, -33.79, 151.1)],
+        [4, node(4, -33.8, 151.15)],
+      ]);
+      const view = await renderPanel(
+        <LiveTrafficPanel
+          nodes={directory}
+          myNodeNum={1}
+          meshcorePackets={protocol === 'meshcore' ? [meshcorePacket(Date.now())] : undefined}
+          meshtasticPackets={protocol === 'meshtastic' ? [packet(Date.now())] : undefined}
+        />,
+      );
+      expect(latestCanvas().events).toHaveLength(1);
+      const fittingCalls = map.fitBounds.mock.calls.length;
+      const area = screen.getByRole('combobox', { name: 'liveTraffic.region' });
+      // The mocked viewport is in North America, outside this Australian network.
+      fireEvent.change(area, { target: { value: 'viewport' } });
+      expect(latestCanvas().events).toHaveLength(0);
+      expect(map.fitBounds).toHaveBeenCalledTimes(fittingCalls);
+      fireEvent.change(area, { target: { value: 'all' } });
+      expect(latestCanvas().events).toHaveLength(1);
+      view.unmount();
+    });
+  });
+
+  it.each(['beacon', 'corescope'] as const)(
+    'keeps %s server regions separate from map areas',
+    async (provider) => {
+      beaconFeed.regions = [{ slug: 'sydney', name: 'Sydney' }];
+      await renderPanel(<LiveTrafficPanel nodes={nodes} myNodeNum={1} meshcorePackets={[]} />);
+      fireEvent.change(screen.getByRole('combobox', { name: 'liveTraffic.trafficSource' }), {
+        target: { value: provider },
+      });
+      const area = screen.getByRole('combobox', { name: 'liveTraffic.region' });
+      const serverRegion = screen.getByRole('combobox', { name: 'liveTraffic.beacon.region' });
+      expect(within(area).queryByRole('option', { name: 'Sydney' })).toBeNull();
+      fireEvent.change(serverRegion, { target: { value: 'sydney' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.beacon.connect' }));
+        await Promise.resolve();
+      });
+      expect(beaconFeed.connect).toHaveBeenCalledWith(expect.any(String), 'sydney');
+      expect(area).toHaveValue('all');
+    },
+  );
+
   it.each(['meshcore', 'meshtastic'] as const)(
     'reuses the %s node index across fresh packet buffers and equivalent receiver positions',
     async (protocol) => {
@@ -301,12 +414,10 @@ describe('LiveTrafficPanel', () => {
       />,
     );
     fireEvent.change(screen.getByRole('combobox', { name: 'liveTraffic.region' }), {
-      target: { value: 'western-slope' },
+      target: { value: 'viewport' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.filters' }));
-    const western = latestCanvas().events;
-    expect(western.length).toBeGreaterThan(0);
-    expect(western).toHaveLength(1);
+    expect(latestCanvas().events).toHaveLength(1);
     fireEvent.change(screen.getByRole('combobox', { name: 'liveTraffic.transportScope' }), {
       target: { value: '0xc010' },
     });
@@ -538,7 +649,9 @@ describe('LiveTrafficPanel', () => {
     expect(screen.getByRole('combobox', { name: 'liveTraffic.beacon.region' })).toHaveValue(
       'front-range',
     );
-    expect(screen.queryByRole('option', { name: 'liveTraffic.regions.colorado' })).toBeNull();
+    expect(
+      within(screen.getByRole('combobox', { name: 'liveTraffic.region' })).getAllByRole('option'),
+    ).toHaveLength(2);
   });
 
   it('caps markers after viewport filtering and prioritizes visible active nodes', async () => {
@@ -844,7 +957,7 @@ describe('LiveTrafficPanel', () => {
     const { rerender } = await renderPanel(
       <LiveTrafficPanel nodes={directory} myNodeNum={1} meshtasticPackets={[first]} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.fitRegion' }));
+    fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.fitTraffic' }));
     expect(map.fitBounds.mock.calls.at(-1)?.[0]).toEqual(
       expect.arrayContaining([
         [39.7392, -104.9903],
