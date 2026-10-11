@@ -4419,7 +4419,7 @@
 <h3 id="reporting-bugs-export-for-github-app-tab">Reporting bugs: <strong>Export for GitHub</strong> (App tab)<a class="headerlink" href="#reporting-bugs-export-for-github-app-tab" title="Permanent link">&para;</a></h3>
 <p>Before opening a GitHub issue, use <strong>App → Support / Bug reports → Export for GitHub</strong>. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes <strong>Reticulum</strong> sidecar status, interface diagnostics, and config audit when the stack was running at export time (<code>reticulum</code> section in <code>debug-snapshot.json</code>; <code>[ReticulumSidecar]</code> lines in the log).</p>
 <p>Open <code>manifest.json</code> first when triaging: <code>appVersion</code> is package semver; <strong><code>buildChannel</code></strong> is <code>test</code> (Build Binaries / Flatpak no-release), <code>release</code> (official Release or Flatpak tag), or <code>local</code> (unmarked local dist). For CI builds, <code>buildInfo.runUrl</code> links to the exact GitHub Actions run — do not assume <code>appVersion</code> alone means an official release. Test-build downloadable installers include <code>-run{N}</code> in the filename; if the filename and <code>runUrl</code> disagree, trust <code>runUrl</code> / the <code>[Startup] runtime … run=</code> log line.</p>
-<p><strong>Do not attach Export for Developer or <code>mesh-client.db</code> to public GitHub issues.</strong> The developer bundle includes your SQLite database, which may contain <strong>saved passwords</strong> (MeshCore room/repeater credentials, MQTT settings, etc.). It may also include <strong>Reticulum</strong> rnsd config and sidecar stack state under <code>reticulum/</code> — share only via a <strong>private channel</strong> when a maintainer requests <strong>Export for Developer</strong>.</p>
+<p><strong>Do not attach Export for Developer or <code>mesh-client.db</code> to public GitHub issues.</strong> The developer bundle includes your SQLite database, which may contain <strong>saved passwords</strong> (MeshCore room/repeater credentials, MQTT settings, etc.), plus MECP emergency audit logs that may contain message text, sender/channel identifiers, and location details. It may also include <strong>Reticulum</strong> rnsd config and sidecar stack state under <code>reticulum/</code> — share only via a <strong>private channel</strong> when a maintainer requests <strong>Export for Developer</strong>.</p>
 <p>Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:</p>
 <table>
 <thead>
@@ -4500,7 +4500,7 @@
 </tr>
 </tbody>
 </table>
-<p>Zip contents also include <strong><code>mesh-client.log.1</code></strong> when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). When present, support bundles also include <strong><code>mecp-received.log</code></strong> / <strong><code>mecp-received.log.1</code></strong> (durable MECP emergency audit trail — separate from the session app log).</p>
+<p>Zip contents also include <strong><code>mesh-client.log.1</code></strong> when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). Only the private developer bundle includes <strong><code>mecp-received.log</code></strong> / <strong><code>mecp-received.log.1</code></strong> (durable MECP emergency audit trail — separate from the session app log); the public-safe GitHub report always omits them.</p>
 <p>The top-level <strong><code>legend</code></strong> explains that ids like <code>offline-meshcore</code> are <strong>internal hydration-slot store keys</strong>, not “disconnected.” When connect reuses that slot (<code>hydrationSlotIsLiveSession: true</code>), the id still contains <code>offline-</code> while BLE/MQTT are up — that is <strong>expected</strong>.</p>
 <p><strong>Per-protocol bucket fields</strong> (under <code>meshtastic</code> / <code>meshcore</code>; Reticulum uses <code>reticulum.bucket</code> with the same shape):</p>
 <ul>
@@ -5316,7 +5316,7 @@
 <li>Windows: <code>%APPDATA%\mesh-client\mecp-received.log</code></li>
 <li>Linux: <code>~/.config/mesh-client/mecp-received.log</code></li>
 </ul>
-<p>Use <strong>App → MECP → Export MECP log</strong>, or open a GitHub/Developer support bundle (includes the file when non-empty). Developer reference: <a href="../development/mecp/"><code>docs/development/mecp.md</code></a>.</p>
+<p>Use <strong>App → MECP → Export MECP log</strong>, or open a private Developer support bundle (includes the file when non-empty). Public-safe GitHub support bundles omit MECP logs. Developer reference: <a href="../development/mecp/"><code>docs/development/mecp.md</code></a>.</p>
 <p><strong>MAYDAY/URGENT alerts ignore mute</strong></p>
 <p>Default Web Audio tones (<code>chatNotifications.ts</code> profiles; overrideable in <strong>App → Notifications</strong>):</p>
 <table>
@@ -5389,7 +5389,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 17:51:05 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:20:39 UTC">October 11, 2026</span>
   </span>
 
     
