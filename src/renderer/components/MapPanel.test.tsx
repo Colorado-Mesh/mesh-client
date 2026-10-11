@@ -5,13 +5,28 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { installDevElectronApiStubIfNeeded } from '../lib/devElectronApiStub';
+import type { OurPosition } from '../lib/gpsSource';
 import { MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import type { PathRecord } from '../lib/pathHistoryTypes';
+import type { MeshNode } from '../lib/types';
 import { useMapLayerStore } from '../stores/mapLayerStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useWeatherForecastStore } from '../stores/weatherForecastStore';
 import MapPanel from './MapPanel';
+
+vi.mock('./map/LiveTrafficPanel', () => ({
+  default: ({
+    active = true,
+    ourPosition,
+  }: {
+    active?: boolean;
+    ourPosition?: OurPosition | null;
+  }) =>
+    active ? (
+      <div data-testid="live-traffic-panel" data-position={JSON.stringify(ourPosition)} />
+    ) : null,
+}));
 
 const {
   leafletIconMock,
@@ -50,9 +65,21 @@ const mapViewportStoreState = {
     mapViewportStoreState.pendingFocus = null;
   }),
 };
+type MapViewportSnapshot = typeof mapViewportStoreState;
+const mapViewportSubscribers = new Set<
+  (next: MapViewportSnapshot, previous: MapViewportSnapshot) => void
+>();
 
 vi.mock('../stores/mapViewportStore', () => ({
-  useMapViewportStore: (selector: (s: unknown) => unknown) => selector(mapViewportStoreState),
+  useMapViewportStore: Object.assign(
+    (selector: (s: unknown) => unknown) => selector(mapViewportStoreState),
+    {
+      subscribe: (listener: (next: MapViewportSnapshot, previous: MapViewportSnapshot) => void) => {
+        mapViewportSubscribers.add(listener);
+        return () => mapViewportSubscribers.delete(listener);
+      },
+    },
+  ),
 }));
 
 // Leaflet doesn't work in jsdom — mock react-leaflet
@@ -118,6 +145,68 @@ describe('MapPanel accessibility', () => {
     polylineMock.mockClear();
     tileLayerMock.mockClear();
     mockMapInstance.flyTo.mockClear();
+  });
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'opens traffic mode for %s and returns to the overview',
+    async (protocol) => {
+      const user = userEvent.setup();
+      render(
+        <MapPanel
+          nodes={new Map()}
+          myNodeNum={1}
+          locationFilter={defaultFilter}
+          protocol={protocol}
+          meshcorePackets={protocol === 'meshcore' ? [] : undefined}
+          meshtasticPackets={protocol === 'meshtastic' ? [] : undefined}
+        />,
+      );
+      expect(screen.queryByTestId('live-traffic-panel')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Live traffic' }));
+      expect(await screen.findByTestId('live-traffic-panel')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Overview' }));
+      expect(screen.queryByTestId('live-traffic-panel')).toBeNull();
+      expect(screen.getByTestId('map-container')).toBeInTheDocument();
+    },
+  );
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'restores %s traffic mode after leaving the map without keeping its map DOM alive',
+    async (protocol) => {
+      const user = userEvent.setup();
+      const props = {
+        nodes: new Map<number, MeshNode>(),
+        myNodeNum: 1,
+        locationFilter: defaultFilter,
+        protocol,
+        meshcorePackets: protocol === 'meshcore' ? [] : undefined,
+        meshtasticPackets: protocol === 'meshtastic' ? [] : undefined,
+      };
+      const view = render(<MapPanel {...props} />);
+      await user.click(screen.getByRole('button', { name: 'Live traffic' }));
+      expect(await screen.findByTestId('live-traffic-panel')).toBeInTheDocument();
+      view.rerender(<MapPanel {...props} active={false} />);
+      expect(screen.queryByTestId('live-traffic-panel')).toBeNull();
+      expect(screen.queryByTestId('map-container')).toBeNull();
+      view.rerender(<MapPanel {...props} active />);
+      expect(screen.getByRole('button', { name: 'Live traffic' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByTestId('live-traffic-panel')).toBeInTheDocument();
+    },
+  );
+
+  it('keeps traffic controls absent when packet inputs are unsupported', () => {
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        protocol="reticulum"
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Live traffic' })).toBeNull();
   });
 
   it('draws no basemap on the plain-browser dev bridge, where every tile would fail', () => {
@@ -559,6 +648,51 @@ describe('MapFocusController', () => {
     mapViewportStoreState.pendingFocus = null;
     mockMapInstance.flyTo.mockClear();
   });
+
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'returns %s live traffic to the overview for an existing Show on map request',
+    async (protocol) => {
+      const user = userEvent.setup();
+      const ourPosition: OurPosition = { lat: 39.7, lon: -105, source: 'static' };
+      render(
+        <MapPanel
+          nodes={new Map()}
+          myNodeNum={1}
+          locationFilter={defaultFilter}
+          protocol={protocol}
+          ourPosition={ourPosition}
+          meshcorePackets={protocol === 'meshcore' ? [] : undefined}
+          meshtasticPackets={protocol === 'meshtastic' ? [] : undefined}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Live traffic' }));
+      expect(await screen.findByTestId('live-traffic-panel')).toHaveAttribute(
+        'data-position',
+        JSON.stringify(ourPosition),
+      );
+      act(() => {
+        const previous = { ...mapViewportStoreState };
+        mapViewportStoreState.pendingFocus = {
+          nodeId: 9,
+          lat: 40.12,
+          lon: -105.34,
+          zoom: 14,
+        };
+        for (const subscriber of mapViewportSubscribers) {
+          subscriber(mapViewportStoreState, previous);
+        }
+      });
+      expect(screen.queryByTestId('live-traffic-panel')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Overview' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(mockMapInstance.flyTo).toHaveBeenCalledWith([40.12, -105.34], 14, {
+        duration: 0.5,
+      });
+      expect(mapViewportStoreState.pendingFocus).toBeNull();
+    },
+  );
 
   it('flies to pending focus coordinates', () => {
     mapViewportStoreState.pendingFocus = { nodeId: 9, lat: 40.12, lon: -105.34, zoom: 14 };

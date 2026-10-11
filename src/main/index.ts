@@ -132,6 +132,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
@@ -3642,6 +3643,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 });
 
 registerGeoIpcHandlers();
+registerBeaconIpcHandlers();
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
 const disposeTranslation = registerTranslationHandlers({

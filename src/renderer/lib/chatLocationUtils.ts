@@ -218,7 +218,7 @@ export function buildStaticTileUrl(lat: number, lon: number, zoom = 14): string 
 /** Exact remote host contacted by the OSM cache-miss path for a static chat tile. */
 export function buildStaticTileDestinationHost(lat: number, lon: number, zoom = 14): string {
   const { x, y, z } = latLonToTile(lat, lon, zoom);
-  return new URL(buildRemoteTileUrl('osm', z, x, y, { subdomainIndex: (x + y) % 4 })).hostname;
+  return new URL(buildRemoteTileUrl('osm', z, x, y)).hostname;
 }
 
 function formatCoord(n: number): string {

@@ -1260,7 +1260,6 @@ function AppContent() {
     activeRuntime.state.myNodeNum,
   );
   const activeOurPosition = asOurPosition(activeRuntime.ourPosition);
-  const activeWaypoints = asWaypointMap(activeRuntime.waypoints);
   const activeTelemetry = asTelemetryPoints(activeRuntime.telemetry);
   const activeSignalTelemetry = asTelemetryPoints(activeRuntime.signalTelemetry);
   const activeEnvironmentTelemetry = asEnvironmentTelemetryPoints(
@@ -2770,6 +2769,14 @@ function AppContent() {
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
+  const [visitedMapProtocols, setVisitedMapProtocols] = useState<ReadonlySet<MeshProtocol>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    if (activePanelIndex !== MAP_TAB_PANEL_INDEX || visitedMapProtocols.has(protocol)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- retain lightweight per-protocol map controllers after a visit
+    setVisitedMapProtocols((previous) => new Set(previous).add(protocol));
+  }, [activePanelIndex, protocol, visitedMapProtocols]);
 
   useEffect(() => {
     if (activePanelIndex === 1) {
@@ -4868,7 +4875,8 @@ function AppContent() {
                         hidden={activePanelIndex !== MAP_TAB_PANEL_INDEX}
                         className="h-full w-full min-w-0"
                       >
-                        {activePanelIndex === MAP_TAB_PANEL_INDEX ? (
+                        {activePanelIndex === MAP_TAB_PANEL_INDEX ||
+                        visitedMapProtocols.size > 0 ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <div
@@ -4879,7 +4887,7 @@ function AppContent() {
                                 }
                               >
                                 <div className="h-full min-h-0 min-w-0">
-                                  {protocol === 'reticulum' &&
+                                  {activePanelIndex === MAP_TAB_PANEL_INDEX &&
                                   capabilities.hasReticulumDiscoveryMap ? (
                                     <ReticulumMapPanel
                                       stackConfigured={
@@ -4902,49 +4910,88 @@ function AppContent() {
                                         }
                                       }}
                                     />
-                                  ) : capabilities.hasFullPositionConfig ||
-                                    capabilities.nodeListTabUsesContactsLabel ? (
-                                    <MapPanel
-                                      nodes={nodesForUi}
-                                      myNodeNum={activeSelfNodeNum}
-                                      locationFilter={locationFilter}
-                                      ourPosition={activeOurPosition}
-                                      onLocateMe={
-                                        capabilities.hasFullPositionConfig
-                                          ? () =>
-                                              meshtasticPanelActions
-                                                .refreshOurPosition()
-                                                .then((p) =>
-                                                  p ? { lat: p.lat, lon: p.lon } : null,
-                                                )
-                                          : undefined
-                                      }
-                                      waypoints={activeWaypoints}
-                                      onSendWaypoint={
-                                        capabilities.hasFullPositionConfig
-                                          ? meshtasticPanelActions.sendWaypoint
-                                          : undefined
-                                      }
-                                      onDeleteWaypoint={
-                                        capabilities.hasFullPositionConfig
-                                          ? meshtasticPanelActions.deleteWaypoint
-                                          : undefined
-                                      }
-                                      onNodeClick={(nodeId) => {
-                                        selectNodeFrom('map', nodeId);
-                                      }}
-                                      onForecastSenderClick={(senderProtocol, senderId) => {
-                                        if (
-                                          senderProtocol === protocol ||
-                                          meshcoreUiNodes.has(senderId)
-                                        ) {
-                                          selectNodeFrom('map', senderId);
-                                        }
-                                      }}
-                                      protocol={protocol}
-                                      useFahrenheit={useFahrenheit}
-                                    />
                                   ) : null}
+                                  {(['meshtastic', 'meshcore'] as const).map((mapProtocol) => {
+                                    const mapCapabilities = selectByProtocol(
+                                      capabilitiesByProtocol,
+                                      mapProtocol,
+                                    );
+                                    const active =
+                                      activePanelIndex === MAP_TAB_PANEL_INDEX &&
+                                      protocol === mapProtocol;
+                                    if (
+                                      !enabledProtocols.includes(mapProtocol) ||
+                                      (!active && !visitedMapProtocols.has(mapProtocol)) ||
+                                      !(
+                                        mapCapabilities.hasFullPositionConfig ||
+                                        mapCapabilities.nodeListTabUsesContactsLabel
+                                      )
+                                    )
+                                      return null;
+                                    const mapRuntime = runtimes[mapProtocol];
+                                    return (
+                                      <MapPanel
+                                        key={mapProtocol}
+                                        active={active}
+                                        isCurrentProtocol={protocol === mapProtocol}
+                                        nodes={selectByProtocol(uiNodesByProtocol, mapProtocol)}
+                                        myNodeNum={asNumericNodeId(
+                                          mapRuntime.selfNodeId,
+                                          mapRuntime.state.myNodeNum,
+                                        )}
+                                        meshcorePackets={
+                                          mapCapabilities.nodeListTabUsesContactsLabel
+                                            ? meshcoreRuntime.rawPackets
+                                            : undefined
+                                        }
+                                        meshtasticPackets={
+                                          mapCapabilities.hasFullPositionConfig
+                                            ? meshtasticRuntime.rawPackets
+                                            : undefined
+                                        }
+                                        pubKeyByNodeId={
+                                          mapCapabilities.nodeListTabUsesContactsLabel
+                                            ? meshcoreSnifferPubKeyByNodeId
+                                            : undefined
+                                        }
+                                        locationFilter={locationFilter}
+                                        ourPosition={asOurPosition(mapRuntime.ourPosition)}
+                                        onLocateMe={
+                                          mapCapabilities.hasFullPositionConfig
+                                            ? () =>
+                                                meshtasticPanelActions
+                                                  .refreshOurPosition()
+                                                  .then((p) =>
+                                                    p ? { lat: p.lat, lon: p.lon } : null,
+                                                  )
+                                            : undefined
+                                        }
+                                        waypoints={asWaypointMap(mapRuntime.waypoints)}
+                                        onSendWaypoint={
+                                          mapCapabilities.hasFullPositionConfig
+                                            ? meshtasticPanelActions.sendWaypoint
+                                            : undefined
+                                        }
+                                        onDeleteWaypoint={
+                                          mapCapabilities.hasFullPositionConfig
+                                            ? meshtasticPanelActions.deleteWaypoint
+                                            : undefined
+                                        }
+                                        onNodeClick={(nodeId) => {
+                                          selectNodeFrom('map', nodeId);
+                                        }}
+                                        onForecastSenderClick={(senderProtocol, senderId) => {
+                                          if (
+                                            senderProtocol === mapProtocol ||
+                                            meshcoreUiNodes.has(senderId)
+                                          )
+                                            selectNodeFrom('map', senderId);
+                                        }}
+                                        protocol={mapProtocol}
+                                        useFahrenheit={useFahrenheit}
+                                      />
+                                    );
+                                  })}
                                 </div>
                                 {nodeDetailPaneOnMap && renderNodeDetail('pane')}
                                 {peerDetailPaneOnMap && renderPeerDetail('pane')}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
@@ -21,7 +21,9 @@ vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="map-container">{children}</div>
   ),
-  TileLayer: () => null,
+  TileLayer: ({ url, className }: { url: string; className?: string }) => (
+    <div data-testid="basemap-tiles" data-url={url} className={className} />
+  ),
   useMap: () => mapInstance,
 }));
 
@@ -75,11 +77,24 @@ describe('MeshMapShell', () => {
     mapInstance.setView.mockClear();
     flyMapToBoundsMock.mockClear();
     useMapLayerStore.setState({
+      basemapId: 'osm',
       showIncidents: true,
       showMgrsGrid: false,
       showWeatherForecasts: true,
       layersPanelOpen: false,
     });
+  });
+
+  it('applies the dark OSM tint to tiles without styling map overlays', () => {
+    useMapLayerStore.setState({ basemapId: 'dark' });
+    renderShell();
+    expect(screen.getByTestId('basemap-tiles')).toHaveClass('mesh-basemap-dark');
+    expect(screen.getByTestId('basemap-tiles')).toHaveAttribute(
+      'data-url',
+      'mesh-tiles://dark/{z}/{x}/{y}.png?source=osm-v1',
+    );
+    expect(screen.getByTestId('map-container')).not.toHaveClass('mesh-basemap-dark');
+    expect(screen.getByTestId('incident-layer')).not.toHaveClass('mesh-basemap-dark');
   });
 
   it('mounts the weather forecast layer behind its toggle and forwards sender clicks', () => {
@@ -99,7 +114,9 @@ describe('MeshMapShell', () => {
     expect(screen.getByTestId('incident-layer')).toBeInTheDocument();
     expect(screen.queryByTestId('mgrs-layer')).not.toBeInTheDocument();
 
-    useMapLayerStore.setState({ showIncidents: false, showMgrsGrid: true });
+    act(() => {
+      useMapLayerStore.setState({ showIncidents: false, showMgrsGrid: true });
+    });
     rerender(
       <MeshMapShell
         ariaLabel="Test map"

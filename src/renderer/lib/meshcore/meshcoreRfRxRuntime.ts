@@ -408,6 +408,7 @@ function buildMeshcoreRfRawPacketEntry(
   rawU8: Uint8Array,
 ): RxPacketEntry {
   return {
+    source: 'rf',
     ts: now,
     snr,
     rssi,

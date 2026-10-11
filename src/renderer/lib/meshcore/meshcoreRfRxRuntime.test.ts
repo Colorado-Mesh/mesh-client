@@ -90,6 +90,13 @@ describe('handleMeshcoreRfRx', () => {
     vi.restoreAllMocks();
   });
 
+  it('marks sniffer captures as local RF observations for map receiver provenance', () => {
+    const { deps, rawPackets } = makeDeps();
+    handleMeshcoreRfRx({ lastSnr: 4, lastRssi: -70, raw: Uint8Array.from([0x15, 0]) }, deps);
+    expect(rawPackets).toHaveLength(1);
+    expect(rawPackets[0]).toMatchObject({ source: 'rf', snr: 4, rssi: -70 });
+  });
+
   it('updates a known Meshtastic-class node last_heard/snr/rssi from the node map', () => {
     const nodes = new Map<number, MeshNode>([[2, makeNode(2, { last_heard: 100 })]]);
     const { deps } = makeDeps({

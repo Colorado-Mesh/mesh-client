@@ -108,10 +108,7 @@ export function createMeshTilesProtocolHandler(
       return emptyResponse(404);
     }
 
-    const remoteUrl = buildRemoteTileUrl(parsed.basemapId, parsed.z, parsed.x, parsed.y, {
-      retina: parsed.retina,
-      subdomainIndex: (parsed.x + parsed.y) % 4,
-    });
+    const remoteUrl = buildRemoteTileUrl(parsed.basemapId, parsed.z, parsed.x, parsed.y);
 
     try {
       const res = await fetchImpl(remoteUrl, {

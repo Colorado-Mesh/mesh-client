@@ -171,6 +171,7 @@ export function MeshMapShell({
             key={basemapId}
             url={basemap.url}
             attribution={basemap.attribution}
+            className={basemap.tileClassName}
             maxNativeZoom={basemap.maxNativeZoom}
             keepBuffer={1}
             updateWhenIdle

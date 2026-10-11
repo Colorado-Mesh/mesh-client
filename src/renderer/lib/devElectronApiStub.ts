@@ -24,6 +24,11 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
   const secureSecrets = new Map<string, string>();
 
   return {
+    beacon: {
+      connect: async () => ({ ok: false, error: 'Open Mesh Client to connect a Beacon feed.' }),
+      disconnect: noopAsync,
+      onUpdate: noopUnsub,
+    },
     db: {
       saveMessage: noopAsync,
       getMessages: async () => [],

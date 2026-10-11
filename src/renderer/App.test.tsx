@@ -106,6 +106,7 @@ const {
   lastChatPanelProps,
   lastConnectionPanelProps,
   lastMapPanelProps,
+  mapPanelPropsByProtocol,
   lastNodeDetailModalProps,
   lastNodeListPanelProps,
   reticulumRefreshMessagesFromDb,
@@ -292,6 +293,7 @@ const {
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
   lastConnectionPanelProps: { current: null as null | Record<string, unknown> },
   lastMapPanelProps: { current: null as null | Record<string, unknown> },
+  mapPanelPropsByProtocol: new Map<string, Record<string, unknown>>(),
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
@@ -312,6 +314,7 @@ beforeEach(() => {
   lastChatPanelProps.current = null;
   lastConnectionPanelProps.current = null;
   lastMapPanelProps.current = null;
+  mapPanelPropsByProtocol.clear();
   lastNodeDetailModalProps.current = null;
   lastNodeListPanelProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
@@ -509,7 +512,10 @@ vi.mock('./lazyTabPanels', () => ({
   GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
   MapPanel: (props: Record<string, unknown>) => {
     lastMapPanelProps.current = props;
-    return null;
+    mapPanelPropsByProtocol.set(String(props.protocol), props);
+    return (
+      <div data-testid={`map-panel-${String(props.protocol)}`} data-active={String(props.active)} />
+    );
   },
   ModulePanel: () => null,
   PacketDistributionPanel: () => <div data-testid="packet-distribution-mock">dist</div>,
@@ -674,6 +680,90 @@ describe('legacy hook mount invariant', () => {
     // Pre-dedupe App mounted useMeshtasticRuntime 3× (App + two connection wrappers). Allow one re-render.
     expect(useDeviceMock.mock.calls.length).toBeLessThan(3);
     expect(useMeshCoreMock.mock.calls.length).toBeLessThan(3);
+  });
+});
+
+describe('map navigation sessions', () => {
+  it('retains visited maps across Chat and protocol switches with their own runtime inputs', async () => {
+    const meshtasticRuntime = {
+      ...createDeviceMock(),
+      selfNodeId: 11,
+      ourPosition: { lat: 40, lon: -105, source: 'device' },
+    };
+    const meshcoreRuntime = {
+      ...createMeshCoreMock(),
+      selfNodeId: 22,
+      ourPosition: { lat: 41, lon: -106, source: 'static' },
+    };
+    useDeviceMock.mockReturnValue(meshtasticRuntime);
+    useMeshCoreMock.mockReturnValue(meshcoreRuntime);
+    const app = renderApp();
+    expect(screen.queryByTestId('map-panel-meshtastic')).toBeNull();
+    expect(screen.queryByTestId('map-panel-meshcore')).toBeNull();
+
+    openPanel(/^Map/);
+    const meshtasticMap = await screen.findByTestId('map-panel-meshtastic');
+    const meshtasticNodes = mapPanelPropsByProtocol.get('meshtastic')?.nodes;
+    expect(mapPanelPropsByProtocol.get('meshtastic')).toMatchObject({
+      active: true,
+      isCurrentProtocol: true,
+      myNodeNum: 11,
+      ourPosition: meshtasticRuntime.ourPosition,
+      meshcorePackets: undefined,
+    });
+    expect(mapPanelPropsByProtocol.get('meshtastic')?.meshtasticPackets).toBe(
+      meshtasticRuntime.rawPackets,
+    );
+
+    openPanel(/^Chat/);
+    expect(screen.getByTestId('map-panel-meshtastic')).toBe(meshtasticMap);
+    expect(meshtasticMap).toHaveAttribute('data-active', 'false');
+    expect(meshtasticMap).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to MeshCore' }));
+    openPanel(/^Map/);
+    const meshcoreMap = await screen.findByTestId('map-panel-meshcore');
+    const meshcoreNodes = mapPanelPropsByProtocol.get('meshcore')?.nodes;
+    expect(meshcoreNodes).not.toBe(meshtasticNodes);
+    expect(screen.getByTestId('map-panel-meshtastic')).toBe(meshtasticMap);
+    expect(mapPanelPropsByProtocol.get('meshtastic')).toMatchObject({
+      active: false,
+      isCurrentProtocol: false,
+      myNodeNum: 11,
+      ourPosition: meshtasticRuntime.ourPosition,
+    });
+    expect(mapPanelPropsByProtocol.get('meshtastic')?.nodes).toBe(meshtasticNodes);
+    expect(mapPanelPropsByProtocol.get('meshcore')).toMatchObject({
+      active: true,
+      isCurrentProtocol: true,
+      myNodeNum: 22,
+      ourPosition: meshcoreRuntime.ourPosition,
+      meshtasticPackets: undefined,
+    });
+    expect(mapPanelPropsByProtocol.get('meshcore')?.meshcorePackets).toBe(
+      meshcoreRuntime.rawPackets,
+    );
+
+    openPanel(/^Chat/);
+    expect(screen.getByTestId('map-panel-meshcore')).toBe(meshcoreMap);
+    expect(meshcoreMap).toHaveAttribute('data-active', 'false');
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to Meshtastic' }));
+    openPanel(/^Map/);
+    expect(screen.getByTestId('map-panel-meshtastic')).toBe(meshtasticMap);
+    expect(meshtasticMap).toHaveAttribute('data-active', 'true');
+    expect(screen.getByTestId('map-panel-meshcore')).toBe(meshcoreMap);
+    expect(mapPanelPropsByProtocol.get('meshcore')).toMatchObject({
+      active: false,
+      isCurrentProtocol: false,
+      myNodeNum: 22,
+      ourPosition: meshcoreRuntime.ourPosition,
+    });
+    expect(mapPanelPropsByProtocol.get('meshcore')?.nodes).toBe(meshcoreNodes);
+    expect(mapPanelPropsByProtocol.get('meshtastic')?.nodes).toBe(meshtasticNodes);
+
+    app.unmount();
+    expect(meshtasticMap).not.toBeInTheDocument();
+    expect(meshcoreMap).not.toBeInTheDocument();
   });
 });
 

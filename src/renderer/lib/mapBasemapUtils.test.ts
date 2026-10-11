@@ -11,11 +11,14 @@ describe('mapBasemapUtils', () => {
   it('defines dark and osm basemaps', () => {
     expect(MAP_BASEMAPS.dark.isDark).toBe(true);
     expect(MAP_BASEMAPS.osm.isDark).toBe(false);
+    expect(MAP_BASEMAPS.dark.tileClassName).toBe('mesh-basemap-dark');
+    expect(MAP_BASEMAPS.osm.tileClassName).toBeUndefined();
+    expect(MAP_BASEMAPS.dark.attribution).not.toContain('CARTO');
   });
 
   it('uses mesh-tiles URL templates for offline cache', () => {
     expect(MAP_BASEMAPS.osm.url).toBe('mesh-tiles://osm/{z}/{x}/{y}.png');
-    expect(MAP_BASEMAPS.dark.url).toBe('mesh-tiles://dark/{z}/{x}/{y}{r}.png');
+    expect(MAP_BASEMAPS.dark.url).toBe('mesh-tiles://dark/{z}/{x}/{y}.png?source=osm-v1');
     expect(MAP_BASEMAPS['usgs-topo'].url).toBe('mesh-tiles://usgs-topo/{z}/{x}/{y}.png');
   });
 

@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import {
+  DARK_BASEMAP_CACHE_REVISION,
   isOfflineMapBasemapId,
   type OfflineMapBasemapId,
 } from '@/shared/offlineMaps/basemapRegistry';
@@ -95,6 +96,7 @@ export class TileCache {
     return path.join(
       this.rootDir,
       c.basemapId,
+      ...(c.basemapId === 'dark' ? [DARK_BASEMAP_CACHE_REVISION] : []),
       String(c.z),
       String(c.x),
       tileFileName(c.y, c.retina === true),

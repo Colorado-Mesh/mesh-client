@@ -148,6 +148,7 @@ nav:
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
           - Offline maps: development/offline-maps.md
+          - Live packet map: development/live-packet-map.md
           - Settings search: development/settings-search.md
   - Project:
       - License: license.md

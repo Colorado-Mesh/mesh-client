@@ -205,6 +205,11 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   outline-color: var(--color-brand-green);
 }
 
+.mesh-basemap-dark .leaflet-tile {
+  /* Apply only to OSM tile pixels: node markers, packet trails and controls keep their colors. */
+  filter: grayscale(1) invert(1) brightness(0.82) contrast(0.9);
+}
+
 /* Leaflet container needs explicit height */
 .leaflet-container {
   width: 100%;
@@ -533,4 +538,18 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 
 .message-action-star.starred:hover {
   color: #fef08a;
+}
+
+/* Traffic labels stay subordinate to the packet animation, especially on the Front Range. */
+.leaflet-tooltip.live-traffic-label {
+  background: var(--color-ink-950);
+  color: var(--color-ink-200);
+  border: 1px solid var(--color-ink-700);
+  box-shadow: none;
+  font-size: 0.75rem;
+  padding: 2px 5px;
+}
+
+.leaflet-tooltip-top.live-traffic-label::before {
+  border-top-color: var(--color-ink-700);
 }

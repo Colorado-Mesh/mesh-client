@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
+import { supportsOfflineMapDownload } from '@/shared/offlineMaps/basemapRegistry';
 import { OFFLINE_MAP_MAX_ZOOM } from '@/shared/offlineMaps/tileMath';
 
 const AUTO_CACHE_KEY = 'mesh-client:offlineMapsAutoCache';
@@ -79,11 +80,7 @@ export function OfflineMapsSection() {
     progressRef.current = progress;
   }, [progress]);
 
-  const downloadRetina =
-    basemapId === 'dark' &&
-    typeof window !== 'undefined' &&
-    typeof window.devicePixelRatio === 'number' &&
-    window.devicePixelRatio > 1;
+  const downloadSupported = supportsOfflineMapDownload(basemapId);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -129,7 +126,7 @@ export function OfflineMapsSection() {
   }, [refreshStatus, t]);
 
   useEffect(() => {
-    if (!autoCache || !viewport) return;
+    if (!downloadSupported || !autoCache || !viewport) return;
     if (progressRef.current != null) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const z = Math.floor(viewport.zoom);
@@ -138,7 +135,6 @@ export function OfflineMapsSection() {
       viewport.center[0].toFixed(4),
       viewport.center[1].toFixed(4),
       String(z),
-      downloadRetina ? '2x' : '1x',
     ].join(':');
     if (lastAutoCacheKeyRef.current === key) return;
     const timer = setTimeout(() => {
@@ -151,7 +147,6 @@ export function OfflineMapsSection() {
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
             basemapId,
-            retina: downloadRetina || undefined,
           });
           if (!est.withinCaps || est.tileCount > 500) return;
           lastAutoCacheKeyRef.current = key;
@@ -160,7 +155,6 @@ export function OfflineMapsSection() {
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
             basemapId,
-            retina: downloadRetina || undefined,
           });
         } catch (e: unknown) {
           console.debug('[OfflineMaps] auto-cache skipped ' + errLikeToLogString(e));
@@ -170,9 +164,10 @@ export function OfflineMapsSection() {
     return () => {
       clearTimeout(timer);
     };
-  }, [autoCache, viewport, basemapId, downloadRetina]);
+  }, [autoCache, viewport, basemapId, downloadSupported]);
 
   const startEstimate = async () => {
+    if (!downloadSupported) return;
     setEstimating(true);
     setConfirm(null);
     setStatusLine(null);
@@ -190,7 +185,6 @@ export function OfflineMapsSection() {
         minZoom,
         maxZoom,
         basemapId,
-        retina: downloadRetina || undefined,
       });
       if (!est.withinCaps) {
         setStatusLine(t('mapPanel.offlineMaps.tooLarge'));
@@ -212,14 +206,13 @@ export function OfflineMapsSection() {
   };
 
   const confirmDownload = async () => {
-    if (!confirm) return;
+    if (!confirm || !downloadSupported) return;
     try {
       const { jobId } = await window.electronAPI.offlineMaps.download({
         bounds: confirm.bounds,
         minZoom: confirm.minZoom,
         maxZoom: confirm.maxZoom,
         basemapId,
-        retina: downloadRetina || undefined,
       });
       setProgress({ jobId, completed: 0, total: confirm.tileCount, failed: 0, paused: false });
       setConfirm(null);
@@ -256,7 +249,8 @@ export function OfflineMapsSection() {
       <label className="text-2xs text-ink-400 flex items-center gap-1.5">
         <input
           type="checkbox"
-          checked={autoCache}
+          checked={downloadSupported && autoCache}
+          disabled={!downloadSupported}
           aria-label={t('mapPanel.offlineMaps.autoCacheAria')}
           onChange={(e) => {
             const on = e.target.checked;
@@ -266,10 +260,13 @@ export function OfflineMapsSection() {
         />
         {t('mapPanel.offlineMaps.autoCache')}
       </label>
+      {!downloadSupported ? (
+        <p className="text-2xs text-ink-400">{t('mapPanel.offlineMaps.viewCacheOnly')}</p>
+      ) : null}
       <button
         type="button"
         aria-label={t('mapPanel.offlineMaps.downloadAria')}
-        disabled={estimating || progress != null}
+        disabled={!downloadSupported || estimating || progress != null}
         className="bg-secondary-dark border-ink-600 text-ink-200 hover:border-ink-500 w-full rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50"
         onClick={() => {
           void startEstimate();
@@ -277,7 +274,7 @@ export function OfflineMapsSection() {
       >
         {estimating ? t('mapPanel.offlineMaps.estimating') : t('mapPanel.offlineMaps.downloadView')}
       </button>
-      {confirm ? (
+      {confirm && downloadSupported ? (
         <div className="text-2xs text-ink-300 space-y-1">
           <p>
             {t('mapPanel.offlineMaps.confirm', {
