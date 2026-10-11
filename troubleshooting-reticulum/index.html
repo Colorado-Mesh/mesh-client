@@ -3375,11 +3375,11 @@
 <p><strong>Cause</strong>: Full-stack (<code>rns-stack</code>) dev builds call <code>register_packet_tap</code> in the sidecar, but that API lives in a local rsReticulum overlay (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/rsReticulum-packet-tap.patch"><code>reticulum-sidecar/patches/rsReticulum-packet-tap.patch</code></a>) until <a href="https://github.com/ratspeak/rsReticulum/pull/10">ratspeak/rsReticulum#10</a> merges. CI applies overlays via <code>clone-ratspeak-stack.sh</code>; a <code>.rsstack/rsReticulum</code> checkout without the overlay fails to compile.</p>
 <p><strong>Fix</strong> (canonical recover path):</p>
 <ol>
-<li>From mesh-client repo root, re-float the <code>.rsstack/</code> workspace and re-apply overlays:
+<li>From mesh-client repo root, restore the reviewed <code>.rsstack/</code> pins and re-apply overlays:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/clone-ratspeak-stack.sh
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
 </code></pre></div>
-   <code>clone-ratspeak-stack.sh</code> floats <code>rsReticulum</code> / <code>rsLXMF</code> / <code>rsNomad</code> to <code>origin/main</code> (override with <code>RS_*_REF</code> for bisect) and fails if an overlay will not apply.</li>
+   <code>clone-ratspeak-stack.sh</code> requires the reviewed full SHAs in <code>reticulum-sidecar/ratspeak-stack-pins.env</code>, verifies each one was served by its expected origin, and fails if an overlay will not apply. A local bisect override requires <code>MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1</code>; CI and release builds reject it.</li>
 <li>If the <code>.rsstack/</code> checkouts already exist and you only need overlays: <code>./scripts/ensure-rsReticulum-patches.sh</code> then <code>pnpm run reticulum:sidecar:build</code>.</li>
 <li><strong>Manual apply</strong> (single overlay):
    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>-C<span class="w"> </span>.rsstack/rsReticulum<span class="w"> </span>apply<span class="w"> </span>../../reticulum-sidecar/patches/rsReticulum-packet-tap.patch
@@ -3574,7 +3574,7 @@
 <p><strong>Cause</strong>: Older <code>LinkClient</code> always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all <code>nomadnetwork.node</code> announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).</p>
 <p><strong>Fix</strong>:</p>
 <ol>
-<li>Ensure <code>.rsstack/rsReticulum</code> is on floated <code>origin/main</code> — handler-free <code>resolve_destination_on_transport</code> in <code>crates/rns-runtime/src/link_client.rs</code> supersedes the retired <code>rsReticulum-link-client-nomad</code> overlay (see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md">patches/README.md</a>).</li>
+<li>Run <code>./scripts/clone-ratspeak-stack.sh</code> and ensure <code>.rsstack/rsReticulum</code> is on the reviewed <code>RS_RETICULUM_PIN</code> — handler-free <code>resolve_destination_on_transport</code> in <code>crates/rns-runtime/src/link_client.rs</code> supersedes the retired <code>rsReticulum-link-client-nomad</code> overlay (see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md">patches/README.md</a>).</li>
 <li>Rebuild sidecar: <code>pnpm run reticulum:sidecar:build</code>, restart stack.</li>
 <li>Prefer low-hop nodes while testing; hop count is shown in the Nomad list.</li>
 <li>Match the humanized message to the table above — <code>path_timeout</code> / high hops often mean RF reachability limits, not a mesh-client bug.</li>
@@ -3974,7 +3974,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 18:55:39 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:26 UTC">October 11, 2026</span>
   </span>
 
     

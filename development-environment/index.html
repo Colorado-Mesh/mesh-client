@@ -4028,7 +4028,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
 </code></pre></div>
 <p>This writes <code>reticulum-sidecar/target/debug/mesh-client-reticulum</code> (macOS/Linux) or <code>.exe</code> on Windows.</p>
-<p><strong>First-time / recover the stack workspace:</strong> from the mesh-client repo root, run <code>./scripts/clone-ratspeak-stack.sh</code>. That script clones (or updates) the repo-local <code>.rsstack/</code> workspace checkouts <code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, and <code>lrgp-rs</code>, floats each to <strong><code>origin/main</code></strong> by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect only, set <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code> to a SHA or ref before running the clone script — CI and normal updates never pin Ratspeak SHAs.</p>
+<p><strong>First-time / recover the stack workspace:</strong> from the mesh-client repo root, run <code>./scripts/clone-ratspeak-stack.sh</code>. That script clones (or updates) the repo-local <code>.rsstack/</code> workspace checkouts <code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, and <code>lrgp-rs</code> at the reviewed full SHAs in <code>reticulum-sidecar/ratspeak-stack-pins.env</code>, verifies each checkout, and then applies mesh-client overlays (fails if a pin cannot be fetched or a patch will not apply). For a local bisect only, set the relevant <code>RS_*_REF</code> plus <code>MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1</code>; CI and release-channel builds reject overrides.</p>
 <p>When those <code>.rsstack/</code> checkouts already exist, <code>pnpm run reticulum:sidecar:build</code> applies required overlays via <code>scripts/ensure-rsReticulum-patches.sh</code> before compiling with <code>rns-stack,rns-ble,rns-rnode-tcp</code>. See <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a> for overlay details.</p>
 <p><strong>First run in Electron dev:</strong> <strong>Reticulum</strong> → <strong>Connection</strong> → <strong>Start stack</strong> will run <code>cargo build</code> automatically if that binary is missing (first compile can take a few minutes). Pre-build with the command above to avoid waiting on the first click.</p>
 <h4 id="run-and-verify">Run and verify<a class="headerlink" href="#run-and-verify" title="Permanent link">&para;</a></h4>
@@ -5227,7 +5227,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 10, 2026 22:17:40 UTC">October 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:26 UTC">October 11, 2026</span>
   </span>
 
     
