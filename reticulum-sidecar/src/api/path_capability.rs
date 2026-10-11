@@ -188,10 +188,12 @@ impl PathCapabilityStore {
     ) -> Option<ConsumedPathCapability> {
         let token = single_header(headers, CAPABILITY_HEADER)
             .and_then(|bytes| std::str::from_utf8(bytes).ok())?;
-        let Ok(mut grants) = self.inner.grants.lock() else {
-            return None;
+        let grant = {
+            let Ok(mut grants) = self.inner.grants.lock() else {
+                return None;
+            };
+            grants.remove(token)?
         };
-        let grant = grants.remove(token)?;
         let Ok(body) = normalize_capability_body(operation, body) else {
             return None;
         };
