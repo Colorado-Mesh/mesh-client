@@ -2388,7 +2388,7 @@
   ui &lt;--&gt;|electronAPI| IPC
   IPC &lt;--&gt;|127.0.0.1| Bin</code></pre>
 <p>The renderer <strong>must not</strong> call the sidecar URL directly (sandbox). All HTTP/WS goes through main-process <code>reticulum:proxyGet</code> / <code>proxyPost</code> / <code>proxyPut</code> / <code>proxyDelete</code>. Paths must start with <code>/api/v1/</code>. Full route list: <a href="../reticulum-sidecar-ipc/">reticulum-sidecar-ipc.md</a>.</p>
-<p><strong>Listen-first connect:</strong> The sidecar binds HTTP first, then <code>attach_live</code> brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is <code>GET /api/v1/status</code> with <code>status: "ok"</code> — not <code>rns_ready</code> / <code>lxmf_ready</code>. <code>useReticulumRuntime</code> marks connection <strong>configured</strong> once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches <code>RETICULUM_CONFIGURED_EVENT</code>. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with <code>requires live rns-stack sidecar</code> until the bridge is up. <strong>Cancel</strong> / stop does not wait on cargo or BLE. LoRa Meshtastic/MeshCore may call <code>ensureForBle()</code> so GATT is available without a Reticulum UI Start. Renderer LXMF/RRC proxy sends use a <strong>15 s</strong> IPC deadline (<code>RETICULUM_IPC_SEND_TIMEOUT_MS</code>).</p>
+<p><strong>Listen-first connect:</strong> The sidecar binds HTTP first, then <code>attach_live</code> brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is an authenticated <code>GET /api/v1/status</code> with <code>status: "ok"</code> — not <code>rns_ready</code> / <code>lxmf_ready</code>. Electron creates a fresh 256-bit bearer credential per process, delivers it only through stdin, and attaches it to every HTTP and WebSocket request. <code>useReticulumRuntime</code> marks connection <strong>configured</strong> once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches <code>RETICULUM_CONFIGURED_EVENT</code>. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with <code>requires live rns-stack sidecar</code> until the bridge is up. <strong>Cancel</strong> / stop does not wait on cargo or BLE. LoRa Meshtastic/MeshCore may call <code>ensureForBle()</code> so GATT is available without a Reticulum UI Start. Renderer LXMF/RRC proxy sends use a <strong>15 s</strong> IPC deadline (<code>RETICULUM_IPC_SEND_TIMEOUT_MS</code>).</p>
 <h3 id="ownership-rns-vs-lxmf-client-vs-mesh-client-policy">Ownership: RNS vs LXMF client vs mesh-client policy<a class="headerlink" href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" title="Permanent link">&para;</a></h3>
 <p>Reticulum is not one blob that “does everything automatically.” Before adding sidecar or UI automation, classify the work:</p>
 <pre class="mermaid"><code>flowchart TB
@@ -2498,8 +2498,10 @@
 <p><strong>Electron dev:</strong> <strong>Start stack</strong> auto-runs <code>cargo build</code> when the debug binary is missing, when <code>reticulum-sidecar/src/**/*.rs</code> or <code>Cargo.toml</code> is newer than the binary, or when a stub binary is present but the full <code>.rsstack/</code> workspace exists. First compile can take several minutes — pre-build with the command above.</p>
 <p><strong>Run sidecar alone:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:dev
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:19437/api/v1/status
 </code></pre></div>
+<p>The development launcher generates a fresh API credential and delivers it only over the
+sidecar's stdin. Use Electron's Reticulum UI and main-process proxy for API diagnostics; the raw
+localhost API intentionally rejects unauthenticated <code>curl</code> requests.</p>
 <p>CI matrix (stub + full stack): <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/reticulum-sidecar.yaml"><code>.github/workflows/reticulum-sidecar.yaml</code></a>. Flatpak release builds bundle the full-stack binary into <code>resources/reticulum-sidecar/</code>.</p>
 <p>Patch overlays (packet tap, AutoInterface utun, discovery-announce-egress, rsLXMF policy-setters, …): <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a>.</p>
 <hr />
@@ -2615,7 +2617,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:26 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:44 UTC">October 11, 2026</span>
   </span>
 
     
