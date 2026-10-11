@@ -3086,7 +3086,7 @@
 <tr>
 <td><code>third-party-licenses.yaml</code></td>
 <td>Path-filtered push to <code>main</code></td>
-<td>After maintainer approval, regenerate licenses and open a PR via protected <code>RELEASE_CUT_TOKEN</code></td>
+<td>Regenerate licenses and open a documentation PR using license-only automation</td>
 </tr>
 </tbody>
 </table>
@@ -3208,7 +3208,7 @@ budgets live in
 <li>Regenerate <code>docs/third-party-licenses.md</code> (<code>pnpm run docs:licenses</code>)</li>
 <li>Open a PR via <code>peter-evans/create-pull-request</code> when the file changed (branch <code>chore/third-party-licenses-&lt;run_id&gt;</code>)</li>
 </ol>
-<p><strong>Secret:</strong> the protected <code>release-cut</code> environment exposes <strong><code>RELEASE_CUT_TOKEN</code></strong> only to the <code>main</code> branch after required maintainer approval. The token needs <strong>contents</strong>, <strong>workflows</strong>, and <strong>pull requests</strong> write. Default <code>GITHUB_TOKEN</code> PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to <code>main</code> remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before <code>create-pull-request</code> so a token missing write access fails with a clear error instead of a git 403.</p>
+<p><strong>Authority:</strong> the <code>license-automation</code> environment accepts only <code>main</code> and has no release approval requirement. The job uses <code>GITHUB_TOKEN</code> with Contents and Pull requests write to open a PR restricted to <code>docs/third-party-licenses.md</code>. It has no release, signing, or release-cut credentials and does not create tags or releases. An optional environment secret <code>LICENSE_PR_TOKEN</code> can supply a dedicated Contents and Pull requests write token so required PR checks run automatically. With the default <code>GITHUB_TOKEN</code>, GitHub suppresses those workflow events; a maintainer must start the required checks before merging the documentation PR. Direct pushes to <code>main</code> remain blocked by the merge-queue ruleset.</p>
 <hr />
 <h2 id="docs-docsyml">Docs (<code>docs.yml</code>)<a class="headerlink" href="#docs-docsyml" title="Permanent link">&para;</a></h2>
 <p>Builds the documentation site with <code>mkdocs build --strict</code> on pull requests that touch <code>docs/**</code>, <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>mkdocs.yml</code>, or the MkDocs scripts. On every push to <code>main</code> it builds the site the same way and deploys it to GitHub Pages:</p>
@@ -3472,7 +3472,7 @@ budgets live in
 <ul>
 <li><strong>Repository admins</strong> (<code>RepositoryRole</code> id 5) — emergency hotfixes and local <code>pnpm run release</code> (direct push of bump commit + tag to <code>main</code>)</li>
 </ul>
-<p>GitHub Actions <strong>cannot</strong> be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/third-party-licenses.yaml"><code>third-party-licenses.yaml</code></a> therefore opens a PR via the reviewer-gated <code>release-cut</code> environment's <code>RELEASE_CUT_TOKEN</code> instead of pushing to <code>main</code>.</p>
+<p>GitHub Actions <strong>cannot</strong> be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/third-party-licenses.yaml"><code>third-party-licenses.yaml</code></a> therefore opens a documentation PR through the separate, main-only <code>license-automation</code> environment instead of pushing to <code>main</code> or using release credentials.</p>
 <p><strong>Pull request gate:</strong> one approving review, <strong>dismiss stale reviews on push</strong>, and <strong>require last push approval</strong> so an approved PR cannot enter the merge queue after unreviewed follow-up commits.</p>
 <h3 id="applying--updating-the-ruleset">Applying / updating the ruleset<a class="headerlink" href="#applying--updating-the-ruleset" title="Permanent link">&para;</a></h3>
 <p>Canonical JSON lives at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/rulesets/main-merge-queue.json"><code>.github/rulesets/main-merge-queue.json</code></a> (live ruleset id <strong>20821455</strong>). Vitest contract: <code>scripts/main-merge-queue-ruleset.test.mjs</code> (pinned checks + review gates). After changing the JSON, <strong>PUT the live ruleset</strong> or drift will remain until someone syncs:</p>
@@ -3662,7 +3662,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 14:24:34 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 15:28:23 UTC">October 11, 2026</span>
   </span>
 
     
