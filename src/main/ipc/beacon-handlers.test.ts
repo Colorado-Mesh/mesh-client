@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { EventEmitter } from 'node:events';
 
+import type { Event, WebContentsDidStartNavigationEventParams } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BeaconFeedUpdate } from '../../shared/beacon';
@@ -108,7 +109,7 @@ describe('Beacon IPC ownership', () => {
     expect(first.listenerCount('destroyed')).toBe(0);
   });
 
-  it.each(['destroyed', 'did-start-navigation', 'render-process-gone'])(
+  it.each(['destroyed', 'render-process-gone'])(
     'cleans up on %s without retaining listeners',
     async (event) => {
       const sender = new Sender(1);
@@ -117,6 +118,37 @@ describe('Beacon IPC ownership', () => {
       expect(harness.clients[0].disconnect).toHaveBeenCalledOnce();
       expect(sender.listenerCount('destroyed')).toBe(0);
       expect(sender.listenerCount('did-start-navigation')).toBe(0);
+      expect(sender.listenerCount('render-process-gone')).toBe(0);
+    },
+  );
+
+  it.each([
+    { isMainFrame: true, isSameDocument: false, disconnected: true },
+    { isMainFrame: true, isSameDocument: true, disconnected: false },
+    { isMainFrame: false, isSameDocument: false, disconnected: false },
+    { isMainFrame: false, isSameDocument: true, disconnected: false },
+  ])(
+    'only disposes on a main-frame document navigation: $isMainFrame/$isSameDocument',
+    async ({ isMainFrame, isSameDocument, disconnected }) => {
+      const sender = new Sender(1);
+      await handler('beacon:connect')({ sender }, request);
+      const details: Event<WebContentsDidStartNavigationEventParams> = {
+        url: 'file:///mesh-client/index.html',
+        isMainFrame,
+        isSameDocument,
+        frame: null,
+        preventDefault: vi.fn(),
+        defaultPrevented: false,
+      };
+      sender.emit('did-start-navigation', details);
+      expect(harness.clients[0].disconnect).toHaveBeenCalledTimes(disconnected ? 1 : 0);
+      for (const event of ['destroyed', 'did-start-navigation', 'render-process-gone']) {
+        expect(sender.listenerCount(event)).toBe(disconnected ? 0 : 1);
+      }
+      const update = { type: 'status' as const, status: 'live' as const };
+      harness.clients[0].update(update);
+      if (disconnected) expect(sender.send).not.toHaveBeenCalled();
+      else expect(sender.send).toHaveBeenCalledWith('beacon:update', update);
     },
   );
 

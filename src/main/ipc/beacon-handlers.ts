@@ -1,4 +1,9 @@
-import { ipcMain, type WebContents } from 'electron';
+import {
+  type Event,
+  ipcMain,
+  type WebContents,
+  type WebContentsDidStartNavigationEventParams,
+} from 'electron';
 
 import { BeaconFeedClient, parseBeaconConnectRequest } from '../beacon-feed';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -29,8 +34,8 @@ export function registerBeaconIpcHandlers(): void {
       const onDestroyed = (): void => {
         disconnect(sender);
       };
-      const onNavigate = (): void => {
-        disconnect(sender);
+      const onNavigate = (details: Event<WebContentsDidStartNavigationEventParams>): void => {
+        if (details.isMainFrame && !details.isSameDocument) disconnect(sender);
       };
       const dispose = (): void => {
         sender.removeListener('destroyed', onDestroyed);

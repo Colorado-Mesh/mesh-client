@@ -327,6 +327,28 @@ describe('BeaconFeedClient lifecycle and bounded public data', () => {
     expect(dependencies.openSocket).not.toHaveBeenCalled();
   });
 
+  it('keeps Beacon backoff until its subscription acknowledgement, not a pong', async () => {
+    const { client, sockets, dependencies } = harness();
+    await client.connect(request);
+    sockets[0].emit('open');
+    sockets[0].emit('close');
+    await vi.advanceTimersByTimeAsync(1000);
+    sockets[1].emit('open');
+    sockets[1].emit('pong');
+    sockets[1].emit('close');
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(dependencies.openSocket).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    sockets[2].emit('open');
+    message(sockets[2], { type: 'subscribed', id: 'map-feed' });
+    sockets[2].emit('close');
+    await vi.advanceTimersByTimeAsync(999);
+    expect(dependencies.openSocket).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(dependencies.openSocket).toHaveBeenCalledTimes(4);
+    client.disconnect();
+  });
+
   it('rejects a stale region rather than letting Beacon silently subscribe to every region', async () => {
     const { client, dependencies } = harness();
     await expect(client.connect({ ...request, region: 'another-region' })).rejects.toThrow(
@@ -433,6 +455,64 @@ describe('CoreScope through the shared secure feed lifecycle', () => {
     client.disconnect();
     message(sockets[1], { type: 'packet', data: { observer_id: 'aa' } });
     expect(updates.filter((update) => update.type === 'packet')).toHaveLength(0);
+  });
+
+  it.each(['packet', 'pong'] as const)(
+    'backs off repeated socket upgrades until a healthy current-socket %s',
+    async (healthSignal) => {
+      const { client, dependencies, sockets } = coreHarness();
+      const packet = { type: 'packet', data: { hash: 'abcd', observer_id: 'aa' } };
+      await client.connect(coreRequest);
+      for (const [index, delay] of [1000, 2000, 4000].entries()) {
+        const socket = sockets[index];
+        socket.emit('open');
+        socket.emit('message', Buffer.from('{bad'), false);
+        socket.emit('message', Buffer.from(JSON.stringify(packet)), true);
+        message(socket, { type: 'heartbeat' });
+        message(socket, { type: 'packet', data: null });
+        message(socket, { type: 'packet', data: { hash: 'filtered', observer_id: 'bb' } });
+        if (index > 0) {
+          sockets[index - 1].emit('pong');
+          message(sockets[index - 1], packet);
+        }
+        socket.emit('close');
+        await vi.advanceTimersByTimeAsync(delay - 1);
+        expect(dependencies.openSocket).toHaveBeenCalledTimes(index + 1);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(dependencies.openSocket).toHaveBeenCalledTimes(index + 2);
+      }
+
+      const healthy = sockets[3];
+      healthy.emit('open');
+      if (healthSignal === 'pong') healthy.emit('pong');
+      else message(healthy, packet);
+      healthy.emit('close');
+      await vi.advanceTimersByTimeAsync(999);
+      expect(dependencies.openSocket).toHaveBeenCalledTimes(4);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(dependencies.openSocket).toHaveBeenCalledTimes(5);
+      client.disconnect();
+    },
+  );
+
+  it('ignores health signals from a replaced connection generation', async () => {
+    const { client, dependencies, sockets } = coreHarness();
+    await client.connect(coreRequest);
+    const stale = sockets[0];
+    stale.emit('open');
+    await client.connect(coreRequest);
+    sockets[1].emit('open');
+    sockets[1].emit('close');
+    await vi.advanceTimersByTimeAsync(1000);
+    sockets[2].emit('open');
+    stale.emit('pong');
+    message(stale, { type: 'packet', data: { hash: 'abcd', observer_id: 'aa' } });
+    sockets[2].emit('close');
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(dependencies.openSocket).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(dependencies.openSocket).toHaveBeenCalledTimes(4);
+    client.disconnect();
   });
 
   it('applies the same preparse budget to malformed CoreScope broadcasts', async () => {

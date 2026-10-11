@@ -354,7 +354,6 @@ export class BeaconFeedClient {
       if (generation !== this.generation || socket !== this.socket) return;
       if (coreScope) {
         // CoreScope broadcasts immediately; it has no subscription request or acknowledgement.
-        this.retry = 0;
         this.emit({ type: 'status', status: 'live' });
       } else {
         socket.send(
@@ -394,7 +393,9 @@ export class BeaconFeedClient {
       }, PING_INTERVAL_MS);
     });
     socket.on('pong', () => {
+      if (generation !== this.generation || socket !== this.socket) return;
       alive = true;
+      if (coreScope) this.retry = 0;
     });
     socket.on('message', (data, isBinary) => {
       if (generation !== this.generation || socket !== this.socket || isBinary) return;
@@ -454,7 +455,11 @@ export class BeaconFeedClient {
       if (controlOnly) return;
       if (coreScope) {
         const packet = coreScopePacket(message, request.region, this.observerRegions);
-        if (packet) this.emitTraffic({ type: 'packet', packet });
+        if (packet) {
+          // An upgrade alone is not healthy: preserve backoff across open/close loops.
+          this.retry = 0;
+          this.emitTraffic({ type: 'packet', packet });
+        }
         return;
       }
       if (message.type === 'event' && message.event === 'channelMessage') {
