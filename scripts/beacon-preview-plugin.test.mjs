@@ -1,9 +1,12 @@
 import { EventEmitter } from 'node:events';
+import { readFileSync } from 'node:fs';
 
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   attachBeaconPreviewPeer,
+  BEACON_FEED_MODULE,
+  BEACON_PREVIEW_PATH,
   beaconPreviewPlugin,
   isBeaconPreviewRequestAllowed,
 } from './beacon-preview-plugin.mjs';
@@ -34,6 +37,42 @@ function send(socket, message) {
 describe('Beacon development preview plugin', () => {
   it('is only active for the development server', () => {
     expect(beaconPreviewPlugin().apply).toBe('serve');
+  });
+
+  it('keeps TypeScript sources out of the Vite config bundle', () => {
+    const source = readFileSync(new URL('./beacon-preview-plugin.mjs', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/^import[^;]*from\s+['"][^'"]*\.ts['"]/m);
+  });
+
+  it('loads the native feed through the dev server only for accepted upgrades', async () => {
+    const httpServer = new EventEmitter();
+    httpServer.address = () => ({ port: 5173 });
+    const ssrLoadModule = vi.fn().mockRejectedValueOnce(new Error('transform failed'));
+    beaconPreviewPlugin().configureServer({ httpServer, ssrLoadModule });
+    const [upgrade] = httpServer.listeners('upgrade');
+    const rawSocket = () => ({ end: vi.fn(), destroyed: false });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const rejected = rawSocket();
+    await upgrade(
+      { ...request('https://example.com'), url: BEACON_PREVIEW_PATH },
+      rejected,
+      Buffer.alloc(0),
+    );
+    expect(rejected.end).toHaveBeenCalledWith(expect.stringContaining('403'));
+    expect(ssrLoadModule).not.toHaveBeenCalled();
+
+    const failed = rawSocket();
+    await upgrade({ ...request(), url: BEACON_PREVIEW_PATH }, failed, Buffer.alloc(0));
+    expect(ssrLoadModule).toHaveBeenCalledWith(BEACON_FEED_MODULE);
+    expect(failed.end).toHaveBeenCalledWith(expect.stringContaining('500'));
+
+    ssrLoadModule.mockResolvedValue({ BeaconFeedClient: vi.fn() });
+    const closed = { ...rawSocket(), destroyed: true };
+    await upgrade({ ...request(), url: BEACON_PREVIEW_PATH }, closed, Buffer.alloc(0));
+    expect(ssrLoadModule).toHaveBeenCalledTimes(2);
+    expect(closed.end).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it('requires an exact same-origin loopback request on the active server port', () => {

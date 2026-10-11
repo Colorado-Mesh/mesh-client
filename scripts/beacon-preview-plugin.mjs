@@ -1,8 +1,15 @@
+import { fileURLToPath } from 'node:url';
+
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { BeaconFeedClient } from '../src/main/beacon-feed.ts';
-
 export const BEACON_PREVIEW_PATH = '/__mesh-client-beacon-preview';
+/**
+ * Loaded through the dev server, not a static import: the Vite config loader would otherwise
+ * bundle the TypeScript source tree as CommonJS (unsupported by `configLoader: 'native'`).
+ */
+export const BEACON_FEED_MODULE = fileURLToPath(
+  new URL('../src/main/beacon-feed.ts', import.meta.url),
+);
 const LOOPBACK_NAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
@@ -132,7 +139,15 @@ export function beaconPreviewPlugin() {
       if (!server.httpServer) return;
       const webSocketServer = new WebSocketServer({ noServer: true, maxPayload: 4096 });
       const peers = new Map();
-      webSocketServer.on('connection', (socket) => {
+      let feedModule;
+      const loadFeedModule = () => {
+        feedModule ??= server.ssrLoadModule(BEACON_FEED_MODULE).catch((error) => {
+          feedModule = undefined;
+          throw error;
+        });
+        return feedModule;
+      };
+      webSocketServer.on('connection', (socket, _request, BeaconFeedClient) => {
         const cleanup = attachBeaconPreviewPeer(
           socket,
           (onUpdate) => new BeaconFeedClient(onUpdate),
@@ -140,7 +155,7 @@ export function beaconPreviewPlugin() {
         peers.set(socket, cleanup);
         socket.once('close', () => peers.delete(socket));
       });
-      const upgrade = (request, socket, head) => {
+      const upgrade = async (request, socket, head) => {
         if (request.url !== BEACON_PREVIEW_PATH) return;
         const address = server.httpServer.address();
         if (
@@ -155,8 +170,17 @@ export function beaconPreviewPlugin() {
           socket.end('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
           return;
         }
+        let BeaconFeedClient;
+        try {
+          ({ BeaconFeedClient } = await loadFeedModule());
+        } catch (error) {
+          console.error('[beacon-preview] failed to load Beacon feed module', error);
+          socket.end('HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n');
+          return;
+        }
+        if (socket.destroyed) return;
         webSocketServer.handleUpgrade(request, socket, head, (peer) => {
-          webSocketServer.emit('connection', peer, request);
+          webSocketServer.emit('connection', peer, request, BeaconFeedClient);
         });
       };
       server.httpServer.on('upgrade', upgrade);
