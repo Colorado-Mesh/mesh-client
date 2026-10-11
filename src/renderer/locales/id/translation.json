@@ -471,7 +471,11 @@
       "empty": "Tidak ada node yang diblokir.",
       "unblockAria": "Buka blokiran {{node}}",
       "unblockFailed": "Tidak dapat membuka blokir simpul itu."
-    }
+    },
+    "updatesSection": "Pembaruan",
+    "autoUpdateDownload": "Unduh pembaruan secara otomatis",
+    "autoUpdateDownloadDesc": "Mengunduh pembaruan terbaru di latar belakang setelah setiap pemeriksaan. Ketika mati, pembaruan masih terdeteksi tetapi hanya diunduh ketika Anda menekan tombol Unduh — berguna ketika manajer paket menangani instalasi.",
+    "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -28,6 +28,16 @@ const ELECTRON_UPDATER_PATH = cjsRequire.resolve('electron-updater');
 const harness = vi.hoisted(() => {
   type Listener = (info?: unknown) => void;
   const listeners = new Map<string, Listener[]>();
+  /** In-memory `app_settings` KV backing the mocked database (auto-download toggle etc.). */
+  const appSettings = new Map<string, string>();
+  const getDatabase = vi.fn(() => ({
+    prepareOnce: () => ({
+      get: (key: string) => {
+        const value = appSettings.get(key);
+        return value === undefined ? undefined : { value };
+      },
+    }),
+  }));
   return {
     listeners,
     autoUpdater: {
@@ -47,6 +57,8 @@ const harness = vi.hoisted(() => {
     isPackaged: true,
     isOnline: true,
     electronUpdaterMissing: false,
+    appSettings,
+    getDatabase,
   };
 });
 
@@ -68,6 +80,10 @@ vi.mock('electron', () => ({
   net: {
     isOnline: () => harness.isOnline,
   },
+}));
+
+vi.mock('./database', () => ({
+  getDatabase: () => harness.getDatabase(),
 }));
 
 vi.mock('./log-service', async () => {
@@ -167,6 +183,8 @@ beforeEach(() => {
   harness.isPackaged = true;
   harness.isOnline = true;
   harness.electronUpdaterMissing = false;
+  harness.appSettings.clear();
+  harness.getDatabase.mockClear();
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'debug').mockImplementation(() => {});
@@ -188,6 +206,76 @@ describe('updater behavior (electron-updater path)', () => {
       expect(harness.autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     },
   );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'disables auto-download when the App → Updates toggle is off on %s',
+    (platform) => {
+      harness.appSettings.set('autoUpdateDownloadEnabled', '0');
+      setup(platform);
+      expect(harness.autoUpdater.autoDownload).toBe(false);
+      expect(harness.autoUpdater.autoInstallOnAppQuit).toBe(false);
+    },
+  );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'still announces an available update without downloading when auto-download is off on %s',
+    async (platform) => {
+      harness.appSettings.set('autoUpdateDownloadEnabled', '0');
+      setup(platform);
+      let autoDownloadAtCheck: boolean | undefined;
+      harness.autoUpdater.checkForUpdates.mockImplementationOnce(() => {
+        autoDownloadAtCheck = harness.autoUpdater.autoDownload;
+        return Promise.resolve({ updateInfo: { version: '9.9.9' } });
+      });
+      await handler('update:check')(trustedEvent);
+      expect(harness.autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+      expect(autoDownloadAtCheck).toBe(false);
+      expect(harness.autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+
+      emitUpdaterEvent('update-available', { version: '9.9.9' });
+      expect(harness.send).toHaveBeenCalledWith('update:available', {
+        version: '9.9.9',
+        releaseUrl: 'https://github.com/Colorado-Mesh/mesh-client/releases/tag/v9.9.9',
+        isPackaged: true,
+        isMac: platform === 'darwin',
+      });
+    },
+  );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'manual update:download still downloads when auto-download is off on %s',
+    async (platform) => {
+      harness.appSettings.set('autoUpdateDownloadEnabled', '0');
+      setup(platform);
+      await handler('update:download')(trustedEvent);
+      expect(harness.autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('re-reads the auto-download toggle before each check so a runtime change applies without restart', async () => {
+    harness.appSettings.set('autoUpdateDownloadEnabled', '0');
+    setup('darwin');
+    expect(harness.autoUpdater.autoDownload).toBe(false);
+
+    let autoDownloadAtCheck: boolean | undefined;
+    harness.autoUpdater.checkForUpdates.mockImplementation(() => {
+      autoDownloadAtCheck = harness.autoUpdater.autoDownload;
+      return Promise.resolve(undefined);
+    });
+
+    harness.appSettings.set('autoUpdateDownloadEnabled', '1');
+    await handler('update:check')(trustedEvent);
+    expect(autoDownloadAtCheck).toBe(true);
+
+    harness.appSettings.set('autoUpdateDownloadEnabled', '0');
+    await handler('update:check')(trustedEvent);
+    expect(autoDownloadAtCheck).toBe(false);
+  });
+
+  it('defaults to auto-download when the toggle is unset', () => {
+    setup('darwin');
+    expect(harness.autoUpdater.autoDownload).toBe(true);
+  });
 
   it.each(['darwin', 'win32', 'linux'] as const)(
     'installs only via update:install, forcing run-after-restart, on %s',

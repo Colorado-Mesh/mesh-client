@@ -471,7 +471,11 @@
       "empty": "Sem nós bloqueados.",
       "unblockAria": "Desbloquear {{node}}",
       "unblockFailed": "Não foi possível desbloquear esse nó."
-    }
+    },
+    "updatesSection": "Atualizações",
+    "autoUpdateDownload": "Baixar atualizações automaticamente",
+    "autoUpdateDownloadDesc": "Faz o download da atualização mais recente em segundo plano após cada verificação. Quando desligado, as atualizações ainda são detectadas, mas só são baixadas quando você pressiona o botão Download — útil quando um gerenciador de pacotes lida com a instalação.",
+    "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática."
   },
   "aria": {
     "closeDialog": "Fechar janela",

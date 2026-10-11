@@ -507,6 +507,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     // Missing allowlist entries fail silently, so pin the Reticulum keys explicitly.
     expect(INDEX_SOURCE).toContain("'reticulumAutostart'");
     expect(INDEX_SOURCE).toContain("'reticulumAutoResendOnAnnounce'");
+    expect(INDEX_SOURCE).toContain("'autoUpdateDownloadEnabled'");
     expect(INDEX_SOURCE).toContain("'reticulumLastSelfLxmfHash'");
     expect(INDEX_SOURCE).toContain("'use24HourTime'");
     expect(INDEX_SOURCE).toContain('MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX');
@@ -568,6 +569,7 @@ describe('Persistent app settings IPC (source contract)', () => {
         'storeForwardAutoFetchHistory',
         'reticulumAutostart',
         'reticulumAutoResendOnAnnounce',
+        'autoUpdateDownloadEnabled',
         'meshtasticConfigureTargetNodeNum',
         'meshtasticLastRfSelfNodeId',
         'meshtasticOwnNodeNumsByPublicKey',

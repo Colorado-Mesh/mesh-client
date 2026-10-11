@@ -471,7 +471,11 @@
       "empty": "Nessun nodo bloccato.",
       "unblockAria": "Sblocca {{node}}",
       "unblockFailed": "Impossibile sbloccare quel nodo."
-    }
+    },
+    "updatesSection": "Aggiornamenti",
+    "autoUpdateDownload": "Scarica automaticamente gli aggiornamenti",
+    "autoUpdateDownloadDesc": "Scarica l'ultimo aggiornamento in background dopo ogni controllo. Quando è spento, gli aggiornamenti vengono ancora rilevati ma scaricati solo quando si preme il pulsante Download, utile quando un gestore di pacchetti gestisce l'installazione.",
+    "autoUpdateDownloadSaveFailed": "Impossibile salvare l'impostazione di download dell'aggiornamento automatico."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

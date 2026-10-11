@@ -77,6 +77,12 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcorePathHashMode: 0 as 0 | 1 | 2,
   /** Start Reticulum sidecar automatically when opening the Reticulum tab. */
   reticulumAutostart: false,
+  /**
+   * When true (default), packaged builds download update artifacts in the background after each
+   * check. When false, updates are still checked but only downloaded on an explicit "Download".
+   * Lets package-manager deployments own the artifact.
+   */
+  autoUpdateDownloadEnabled: true,
   /** Retry failed LXMF messages to a peer when that peer announces. */
   reticulumAutoResendOnAnnounce: false,
   /**

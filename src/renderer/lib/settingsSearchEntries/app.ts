@@ -13,6 +13,7 @@ const hasDestinationRetention = (ctx: SettingsSearchContext) =>
 
 const DANGER = 'appPanel.dangerZoneSection';
 const RETENTION = 'appPanel.retentionLimitsHeading';
+const UPDATES = 'appPanel.updatesSection';
 
 const appEntries: readonly SettingSearchEntry[] = [
   {
@@ -311,6 +312,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     labelKey: 'appPanel.use24HourTime',
     sectionKey: 'appPanel.appearanceSection',
     keywords: ['clock', 'time format'],
+  },
+  {
+    id: 'app.updates.autoDownload',
+    slot: 'App',
+    labelKey: 'appPanel.autoUpdateDownload',
+    sectionKey: UPDATES,
+    keywords: ['update', 'updater', 'auto-download', 'package manager', 'install'],
   },
   {
     id: 'app.appearance.fontSize',
