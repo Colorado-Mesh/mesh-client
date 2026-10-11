@@ -986,9 +986,6 @@
     "healthCheck": {
       "label": "MeshCore Kód zdravotní kontroly",
       "tooltip": "Kód testu pro zdravotní prohlídku MeshCore. Pozorovatelé na síti odesílatele hlásí, který z nich ji obdržel."
-    },
-    "remoteContent": {
-      "load": "Načíst vzdálený obsah z {{host}}"
     }
   },
   "common": {

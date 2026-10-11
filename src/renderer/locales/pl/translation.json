@@ -1002,9 +1002,6 @@
     "healthCheck": {
       "label": "MeshCore Kod kontroli stanu zdrowia",
       "tooltip": "Kod testowy do kontroli zdrowia MeshCore. Obserwatorzy na siatce nadawcy zgłaszają, który z nich ją otrzymał."
-    },
-    "remoteContent": {
-      "load": "Załaduj zdalną zawartość z {{host}}"
     }
   },
   "common": {

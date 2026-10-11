@@ -3,13 +3,8 @@ import { Activity, Bot, FileDown, MapPin, Plane, Settings, Signal } from 'lucide
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { RemoteContentGate } from '@/renderer/components/chat/RemoteContentGate';
 import { getDistanceUnit } from '@/renderer/lib/appSettingsStorage';
-import {
-  buildOsmMapUrl,
-  buildStaticTileDestinationHost,
-  buildStaticTileUrl,
-} from '@/renderer/lib/chatLocationUtils';
+import { buildOsmMapUrl, buildStaticTileUrl } from '@/renderer/lib/chatLocationUtils';
 import {
   type DroneReportCoords,
   formatDroneDistance,
@@ -176,23 +171,18 @@ export function DroneReportCard({
       data-testid="drone-report-card"
     >
       {center && tileUrl && !tileFailed && (
-        <RemoteContentGate
+        <img
           key={tileUrl}
-          destinationHost={buildStaticTileDestinationHost(center.lat, center.lon)}
-          onContentResize={onContentResize}
-        >
-          <img
-            src={tileUrl}
-            alt={t('chatPayload.droneReport.tileAlt')}
-            className="h-32 w-full rounded object-cover"
-            onLoad={() => {
-              onContentResize?.();
-            }}
-            onError={() => {
-              setTileFailed(true);
-            }}
-          />
-        </RemoteContentGate>
+          src={tileUrl}
+          alt={t('chatPayload.droneReport.tileAlt')}
+          className="h-32 w-full rounded object-cover"
+          onLoad={() => {
+            onContentResize?.();
+          }}
+          onError={() => {
+            setTileFailed(true);
+          }}
+        />
       )}
       <div className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-cyan-100">
         <Plane aria-hidden className="h-4 w-4 shrink-0" />
