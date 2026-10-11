@@ -85,6 +85,24 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(storage.list()).toHaveLength(0);
   });
 
+  it('removes a backup during a keyring outage without failing on index metadata', async () => {
+    const storage = makeStorage();
+    await storage.save({
+      id: 42,
+      publicKey: new Uint8Array(4),
+      privateKey: new Uint8Array(4),
+    });
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValueOnce({
+      available: true,
+      persistent: false,
+      verified: true,
+    });
+
+    await expect(storage.remove(42)).resolves.toBeUndefined();
+    expect(storage.has(42)).toBe(false);
+    expect(storage.list()).toEqual([]);
+  });
+
   it('rebuildIndexFromSlots recovers entries when the index is missing', async () => {
     const storage = makeStorage('nodeId');
     await storage.save({

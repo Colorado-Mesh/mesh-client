@@ -136,7 +136,9 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       publicKeyB64: e.publicKeyB64,
       backedUpAt: e.backedUpAt,
     }));
-    await setSecureSecret(indexSecretKey(), JSON.stringify(raw), true);
+    // The index has no private key material; removal and startup repair must
+    // still work when OS-backed key storage is temporarily unavailable.
+    await setSecureSecret(indexSecretKey(), JSON.stringify(raw));
     localStorage.removeItem(indexKey);
   }
 

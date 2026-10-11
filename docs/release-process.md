@@ -125,7 +125,7 @@ Configure secrets under the named **Settings → Environments** boundary, not at
 
 ### Partial-secret validation
 
-Before every official macOS tag build, [`release.yaml`](../.github/workflows/release.yaml) runs **Validate macOS signing secrets**. If any of `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, or `APPLE_TEAM_ID` is missing, the job **fails early** with a clear list.
+Before every official Electron macOS release build, [`release.yaml`](../.github/workflows/release.yaml) runs **Validate macOS signing secrets**. If any of `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, or `APPLE_TEAM_ID` is missing, the job **fails early** with a clear list.
 
 Fork workflows and local `pnpm run dist:mac` without these env vars produce **unsigned** `.dmg` / `.zip` bundles (still validated by `verify-mac-packaging.mjs`). See [CI/CD — macOS packaging verify](ci-cd.md#macos-packaging-verify-verify-mac-packagingmjs).
 

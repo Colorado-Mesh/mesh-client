@@ -739,7 +739,13 @@ fn publish_file_without_replacing(source: &Path, destination: &Path) -> Result<(
         Ok(()) => Ok(()),
         Err(mut error) => {
             error.path.disable_cleanup(true);
-            Err(format!("publish RNCP destination: {}", error.error))
+            // Some volumes support the copy above but neither no-replace
+            // rename nor hard links. Keep the offer pending rather than
+            // claiming that an unpublished destination was saved.
+            Err(format!(
+                "RNCP destination not published; save folder cannot complete safe no-clobber publication: {}",
+                error.error
+            ))
         }
     }
 }
@@ -936,6 +942,25 @@ mod tests {
         publish_file_without_replacing(&promotion, &final_path).expect("atomic publication");
         assert_eq!(fs::read(&final_path).expect("promoted"), b"payload");
         assert_eq!(fs::read(&staged).expect("stage retained"), b"payload");
+    }
+
+    #[test]
+    fn failed_no_clobber_publication_keeps_the_complete_promotion_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let promotion = promotion_path(dir.path(), &Uuid::new_v4().to_string());
+        fs::write(&promotion, b"complete payload").expect("promotion");
+        let invalid_parent = dir.path().join("not-a-directory");
+        fs::write(&invalid_parent, b"occupied").expect("invalid parent");
+        let final_path = invalid_parent.join("payload.bin");
+
+        let error = publish_file_without_replacing(&promotion, &final_path)
+            .expect_err("publication must fail without a valid destination");
+        assert!(error.contains("RNCP destination not published"));
+        assert_eq!(
+            fs::read(&promotion).expect("promotion retained"),
+            b"complete payload"
+        );
+        assert!(!final_path.exists());
     }
 
     #[test]
