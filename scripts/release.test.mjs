@@ -153,8 +153,11 @@ describe('release.sh full-suite gate', () => {
 
   it('provisions .rsstack/ before any release check whose script needs it', () => {
     // Cut release runs on a fresh clone with no .rsstack/; a warm local checkout hides this.
-    const cloneIdx = script.search(/^\s*if ! bash scripts\/clone-ratspeak-stack\.sh; then\s*$/m);
+    const cloneCommand =
+      'if ! MESH_CLIENT_BUILD_CHANNEL=release bash scripts/clone-ratspeak-stack.sh; then';
+    const cloneIdx = script.indexOf(cloneCommand);
     expect(cloneIdx).toBeGreaterThanOrEqual(0);
+    expect(script).not.toMatch(/^\s*if ! bash scripts\/clone-ratspeak-stack\.sh; then\s*$/m);
 
     const consumers = [];
     for (const match of script.matchAll(/^\s*if ! pnpm run ([\w:-]+)/gm)) {

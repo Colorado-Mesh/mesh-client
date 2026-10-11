@@ -767,7 +767,7 @@ check_mecp_prs() {
   fi
 }
 
-# Surface new Ratspeak library releases and brand-new org repos (stack floats via clone).
+# Surface new Ratspeak library releases and brand-new org repos for reviewed pin updates.
 # Warn only when a published GitHub Release (or vendored file commit) differs from reviewed-ref.
 check_ratspeak_upstream() {
   local has_upstream_warning=0
@@ -776,7 +776,7 @@ check_ratspeak_upstream() {
 
   echo ''
   echo 'Checking Ratspeak upstream published releases and new org repos...'
-  echo '  (tags/main/RCs without a GitHub Release are ignored; rsReticulum/rsLXMF float via clone-ratspeak-stack.sh)'
+  echo '  (tags/main/RCs without a GitHub Release are ignored; update reviewed pins through a dependency PR)'
 
   for entry in "${RATSPEAK_RELEASE_WATCH_ENTRIES[@]}"; do
     IFS='|' read -r repo stub label reviewed <<< "${entry}"
