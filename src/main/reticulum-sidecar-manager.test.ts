@@ -237,16 +237,24 @@ describe('ReticulumSidecarManager', () => {
     const spawnEnv = spawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv | undefined;
     expect(spawnEnv?.RUST_LOG).toBe(SIDECAR_DEFAULT_RUST_LOG);
     expect(spawnMock.mock.calls[0]?.[2]?.stdio).toEqual(['pipe', 'pipe', 'pipe']);
-    const bootstrap = String(proc.stdin.end.mock.calls[0]?.[0]);
-    const token = bootstrap.trimEnd();
-    expect(Buffer.from(token, 'base64url')).toHaveLength(32);
-    expect(JSON.stringify(spawnMock.mock.calls[0]?.[1])).not.toContain(token);
-    expect(JSON.stringify(spawnEnv)).not.toContain(token);
+    const bootstrap = JSON.parse(String(proc.stdin.end.mock.calls[0]?.[0])) as {
+      auth_token: string;
+      capability_issuer_token: string;
+      capability_session_id: string;
+    };
+    expect(Buffer.from(bootstrap.auth_token, 'base64url')).toHaveLength(32);
+    expect(Buffer.from(bootstrap.capability_issuer_token, 'base64url')).toHaveLength(32);
+    expect(Buffer.from(bootstrap.capability_session_id, 'base64url')).toHaveLength(16);
+    expect(new Set(Object.values(bootstrap))).toHaveLength(3);
+    expect(JSON.stringify(spawnMock.mock.calls[0]?.[1])).not.toContain(bootstrap.auth_token);
+    expect(JSON.stringify(spawnEnv)).not.toContain(bootstrap.auth_token);
+    expect(JSON.stringify(spawnEnv)).not.toContain(bootstrap.capability_issuer_token);
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       expect.stringMatching(/\/api\/v1\/status$/),
-      expect.objectContaining({ headers: { Authorization: `Bearer ${token}` } }),
+      expect.objectContaining({ headers: { Authorization: `Bearer ${bootstrap.auth_token}` } }),
     );
-    expect(JSON.stringify(first)).not.toContain(token);
+    expect(JSON.stringify(first)).not.toContain(bootstrap.auth_token);
+    expect(JSON.stringify(first)).not.toContain(bootstrap.capability_issuer_token);
 
     await manager.stop();
 
@@ -483,6 +491,18 @@ describe('ReticulumSidecarManager', () => {
     (manager as unknown as { authToken: string }).authToken = 'test-sidecar-token';
   }
 
+  function setRunningWithPathCapabilities(manager: ReticulumSidecarManager, port = 59477): void {
+    setRunning(manager, port);
+    const internal = manager as unknown as {
+      proc: unknown;
+      capabilityIssuerToken: string;
+      capabilitySessionId: string;
+    };
+    internal.proc = mockSidecarProc();
+    internal.capabilityIssuerToken = 'test-capability-issuer';
+    internal.capabilitySessionId = 'test-capability-session';
+  }
+
   it('proxyGet rejects when sidecar is not running', async () => {
     const manager = new ReticulumSidecarManager();
     await expect(manager.proxyGet('/api/v1/status')).rejects.toThrow('not running');
@@ -541,6 +561,83 @@ describe('ReticulumSidecarManager', () => {
         body: JSON.stringify(payload),
       }),
     );
+  });
+
+  it('mints and consumes a picker capability without exposing the issuer to the operation', async () => {
+    const payload = { destination_hash: 'aa'.repeat(16), path: '/tmp/send.txt' };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        body: undefined,
+        text: () => Promise.resolve(JSON.stringify({ ok: true, capability: 'one-use-cap' })),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        body: undefined,
+        text: () => Promise.resolve(JSON.stringify({ ok: true })),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    const manager = new ReticulumSidecarManager();
+    setRunningWithPathCapabilities(manager);
+
+    await manager.proxyPostWithPathCapability('rncp_send', '/api/v1/rncp/send', payload);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://127.0.0.1:59477/api/v1/internal/path-capabilities',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-sidecar-token',
+          'Content-Type': 'application/json',
+          'x-mesh-capability-issuer': 'test-capability-issuer',
+        },
+        body: JSON.stringify({ operation: 'rncp_send', body: payload }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://127.0.0.1:59477/api/v1/rncp/send',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-sidecar-token',
+          'Content-Type': 'application/json',
+          'x-mesh-path-capability': 'one-use-cap',
+        },
+        body: JSON.stringify(payload),
+      }),
+    );
+    expect(JSON.stringify(fetchMock.mock.calls[1])).not.toContain('test-capability-issuer');
+  });
+
+  it('does not consume a capability after the sidecar process session changes', async () => {
+    const manager = new ReticulumSidecarManager();
+    setRunningWithPathCapabilities(manager);
+    const fetchMock = vi.fn().mockImplementation(() => {
+      (manager as unknown as { capabilitySessionId: string }).capabilitySessionId = 'replacement';
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        body: undefined,
+        text: () => Promise.resolve(JSON.stringify({ ok: true, capability: 'stale-cap' })),
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      manager.proxyPostWithPathCapability('rncp_send', '/api/v1/rncp/send', {
+        destination_hash: 'aa'.repeat(16),
+        path: '/tmp/send.txt',
+      }),
+    ).rejects.toThrow(/session changed/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('soft stack restart via proxyPost does not SIGTERM the sidecar process', async () => {

@@ -145,7 +145,9 @@ function createManagerStub() {
       .mockReturnValue({ running: true, port: 8080, pid: 123 }),
     proxyGet: vi.fn().mockResolvedValue({ ok: true }),
     proxyPost: vi.fn().mockResolvedValue({ ok: true }),
+    proxyPostWithPathCapability: vi.fn().mockResolvedValue({ ok: true }),
     proxyPut: vi.fn().mockResolvedValue({ ok: true }),
+    proxyPutWithPathCapability: vi.fn().mockResolvedValue({ ok: true }),
     proxyDelete: vi.fn().mockResolvedValue({ ok: true }),
     on: vi.fn(),
   };
@@ -540,14 +542,16 @@ describe('registerReticulumIpcHandlers', () => {
 
     it('setNomadContentSource applies picker-backed paths via sidecar', async () => {
       isAllowedNomadContentSourcePathMock.mockReturnValue(true);
-      manager.proxyPut.mockResolvedValueOnce({
+      manager.proxyPutWithPathCapability.mockResolvedValueOnce({
         ok: true,
         serving: { content_source: '/tmp/site' },
       });
       const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
-      expect(manager.proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
-        path: '/tmp/site',
-      });
+      expect(manager.proxyPutWithPathCapability).toHaveBeenCalledWith(
+        'nomad_content_source',
+        '/api/v1/nomadnetwork/serving/content-source',
+        { path: '/tmp/site' },
+      );
       expect(result).toEqual({ ok: true, serving: { content_source: '/tmp/site' } });
     });
 
@@ -616,10 +620,14 @@ describe('registerReticulumIpcHandlers', () => {
         destination_hash: 'aa'.repeat(16),
         path: '/tmp/send.txt',
       });
-      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/send', {
-        destination_hash: 'aa'.repeat(16),
-        path: '/tmp/send.txt',
-      });
+      expect(manager.proxyPostWithPathCapability).toHaveBeenCalledWith(
+        'rncp_send',
+        '/api/v1/rncp/send',
+        {
+          destination_hash: 'aa'.repeat(16),
+          path: '/tmp/send.txt',
+        },
+      );
     });
 
     it('rncpFetch allows an omitted save_path (sidecar default)', async () => {
@@ -643,6 +651,24 @@ describe('registerReticulumIpcHandlers', () => {
       });
       expect(result).toEqual({ ok: false, error: 'save_path_not_from_picker' });
       expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('rncpFetch uses a one-use capability for a picker-backed save_path', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(true);
+      await handlers.get('reticulum:rncpFetch')?.(event, {
+        destination_hash: 'aa'.repeat(16),
+        remote_path: '/remote/file.txt',
+        save_path: '/tmp/recv',
+      });
+      expect(manager.proxyPostWithPathCapability).toHaveBeenCalledWith(
+        'rncp_fetch',
+        '/api/v1/rncp/fetch',
+        {
+          destination_hash: 'aa'.repeat(16),
+          remote_path: '/remote/file.txt',
+          save_path: '/tmp/recv',
+        },
+      );
     });
 
     it('setRncpListener rejects enabled without save_dir', async () => {
@@ -696,15 +722,19 @@ describe('registerReticulumIpcHandlers', () => {
         allowed: ['aa'.repeat(16)],
         blocked: ['bb'.repeat(16)],
       });
-      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/listener', {
-        enabled: true,
-        save_dir: '/tmp/recv',
-        allow_fetch: true,
-        fetch_jail: '/tmp/recv',
-        overwrite: true,
-        allowed: ['aa'.repeat(16)],
-        blocked: ['bb'.repeat(16)],
-      });
+      expect(manager.proxyPostWithPathCapability).toHaveBeenCalledWith(
+        'rncp_listener',
+        '/api/v1/rncp/listener',
+        {
+          enabled: true,
+          save_dir: '/tmp/recv',
+          allow_fetch: true,
+          fetch_jail: '/tmp/recv',
+          overwrite: true,
+          allowed: ['aa'.repeat(16)],
+          blocked: ['bb'.repeat(16)],
+        },
+      );
     });
 
     it('proxyPost rejects picker-gated rncp mutation paths', async () => {

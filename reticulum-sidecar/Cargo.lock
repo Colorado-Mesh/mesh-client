@@ -1764,6 +1764,7 @@ dependencies = [
  "rns-transport",
  "rns-wire",
  "rusqlite",
+ "same-file",
  "serde",
  "serde_json",
  "serde_urlencoded",

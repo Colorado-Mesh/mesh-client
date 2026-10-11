@@ -51,10 +51,24 @@ const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** App is exiting: skip the BLE detach drain and SIGKILL quickly so quit stays responsive. */
 const QUIT_STOP_GRACE_MS = 750;
 const SIDECAR_AUTH_TOKEN_BYTES = 32;
+const SIDECAR_CAPABILITY_ISSUER_TOKEN_BYTES = 32;
+const SIDECAR_CAPABILITY_SESSION_ID_BYTES = 16;
+const PATH_CAPABILITY_MINT_PATH = '/api/v1/internal/path-capabilities';
+
+export type ReticulumPathCapabilityOperation =
+  'rncp_send' | 'rncp_fetch' | 'rncp_listener' | 'nomad_content_source';
 
 /** Generate the per-process bearer credential delivered through the child's private stdin. */
 export function createReticulumSidecarAuthToken(): string {
   return randomBytes(SIDECAR_AUTH_TOKEN_BYTES).toString('base64url');
+}
+
+function createReticulumSidecarCapabilityIssuerToken(): string {
+  return randomBytes(SIDECAR_CAPABILITY_ISSUER_TOKEN_BYTES).toString('base64url');
+}
+
+function createReticulumSidecarCapabilitySessionId(): string {
+  return randomBytes(SIDECAR_CAPABILITY_SESSION_ID_BYTES).toString('base64url');
 }
 
 function sidecarAuthorizationHeaders(
@@ -193,6 +207,8 @@ async function pollSidecarHealth(
 export class ReticulumSidecarManager extends EventEmitter {
   private proc: ChildProcess | null = null;
   private authToken: string | null = null;
+  private capabilityIssuerToken: string | null = null;
+  private capabilitySessionId: string | null = null;
   private ws: { close: () => void } | null = null;
   private voiceWs: { close: () => void } | null = null;
   private wsPort = 0;
@@ -254,6 +270,20 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error('Reticulum sidecar authentication is unavailable');
     }
     return this.authToken;
+  }
+
+  private requireCapabilityIssuerToken(): string {
+    if (!this.capabilityIssuerToken) {
+      throw new Error('Reticulum sidecar picker capability issuer is unavailable');
+    }
+    return this.capabilityIssuerToken;
+  }
+
+  private requireCapabilitySessionId(): string {
+    if (!this.capabilitySessionId) {
+      throw new Error('Reticulum sidecar picker capability session is unavailable');
+    }
+    return this.capabilitySessionId;
   }
 
   private authHeaders(headers: Record<string, string> = {}): Record<string, string> {
@@ -432,6 +462,8 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.clearSidecarTrackers();
     this.bleOnly = false;
     this.authToken = null;
+    this.capabilityIssuerToken = null;
+    this.capabilitySessionId = null;
     this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
   }
@@ -557,7 +589,11 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (bleOnly) args.push('--ble-only');
 
     const authToken = createReticulumSidecarAuthToken();
+    const capabilityIssuerToken = createReticulumSidecarCapabilityIssuerToken();
+    const capabilitySessionId = createReticulumSidecarCapabilitySessionId();
     this.authToken = authToken;
+    this.capabilityIssuerToken = capabilityIssuerToken;
+    this.capabilitySessionId = capabilitySessionId;
     let proc: ChildProcess;
     try {
       proc = spawn(binary, args, {
@@ -566,17 +602,23 @@ export class ReticulumSidecarManager extends EventEmitter {
       });
     } catch (error) {
       this.authToken = null;
+      this.capabilityIssuerToken = null;
+      this.capabilitySessionId = null;
       throw error;
     }
     if (!proc.stdin) {
       this.authToken = null;
+      this.capabilityIssuerToken = null;
+      this.capabilitySessionId = null;
       proc.kill('SIGKILL');
       throw new Error('Reticulum sidecar authentication pipe is unavailable');
     }
     proc.stdin.on('error', () => {
       // catch-no-log-ok: an early child exit may close stdin before end() flushes.
     });
-    proc.stdin.end(`${authToken}\n`);
+    proc.stdin.end(
+      `${JSON.stringify({ auth_token: authToken, capability_issuer_token: capabilityIssuerToken, capability_session_id: capabilitySessionId })}\n`,
+    );
     this.proc = proc;
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
@@ -640,6 +682,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       this.stopWatchdog();
       this.proc = null;
       this.authToken = null;
+      this.capabilityIssuerToken = null;
+      this.capabilitySessionId = null;
       this.bleOnly = false;
       this.stackSessionTracker.recordStop();
       this.clearSidecarTrackers();
@@ -947,6 +991,80 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     if (!res.ok) {
       throw new Error(`sidecar POST ${normalized} failed: ${res.status}`);
+    }
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+    return text ? (JSON.parse(text) as unknown) : {};
+  }
+
+  async proxyPostWithPathCapability(
+    operation: ReticulumPathCapabilityOperation,
+    apiPath: string,
+    body: unknown,
+  ): Promise<unknown> {
+    return this.proxyWithPathCapability('POST', operation, apiPath, body);
+  }
+
+  async proxyPutWithPathCapability(
+    operation: ReticulumPathCapabilityOperation,
+    apiPath: string,
+    body: unknown,
+  ): Promise<unknown> {
+    return this.proxyWithPathCapability('PUT', operation, apiPath, body);
+  }
+
+  private async proxyWithPathCapability(
+    method: 'POST' | 'PUT',
+    operation: ReticulumPathCapabilityOperation,
+    apiPath: string,
+    body: unknown,
+  ): Promise<unknown> {
+    const status = this._status;
+    const proc = this.proc;
+    if (!status.running || status.port <= 0 || !proc) {
+      throw new Error('Reticulum sidecar is not running');
+    }
+    const normalized = assertReticulumProxyPath(apiPath);
+    assertProxyBodySize(body);
+    const authToken = this.requireAuthToken();
+    const capabilityIssuerToken = this.requireCapabilityIssuerToken();
+    const capabilitySessionId = this.requireCapabilitySessionId();
+    const payload = body ?? {};
+    const mintRes = await fetch(`http://127.0.0.1:${status.port}${PATH_CAPABILITY_MINT_PATH}`, {
+      method: 'POST',
+      headers: sidecarAuthorizationHeaders(authToken, {
+        'Content-Type': 'application/json',
+        'x-mesh-capability-issuer': capabilityIssuerToken,
+      }),
+      body: JSON.stringify({ operation, body: payload }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const mintText = await readResponseTextUpTo(mintRes, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+    const mintBody = mintText
+      ? (JSON.parse(mintText) as { ok?: boolean; capability?: unknown; error?: string })
+      : {};
+    if (!mintRes.ok || mintBody.ok !== true || typeof mintBody.capability !== 'string') {
+      throw new Error(mintBody.error || `sidecar picker capability mint failed: ${mintRes.status}`);
+    }
+    if (
+      this.proc !== proc ||
+      this._status.port !== status.port ||
+      this.authToken !== authToken ||
+      this.capabilityIssuerToken !== capabilityIssuerToken ||
+      this.capabilitySessionId !== capabilitySessionId
+    ) {
+      throw new Error('Reticulum sidecar picker capability session changed');
+    }
+    const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
+      method,
+      headers: sidecarAuthorizationHeaders(authToken, {
+        'Content-Type': 'application/json',
+        'x-mesh-path-capability': mintBody.capability,
+      }),
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      throw new Error(`sidecar ${method} ${normalized} failed: ${res.status}`);
     }
     const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
     return text ? (JSON.parse(text) as unknown) : {};

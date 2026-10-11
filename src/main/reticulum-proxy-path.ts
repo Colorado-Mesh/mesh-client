@@ -3,6 +3,7 @@ import { nomadPageProxyTimeoutMsFromApiPath } from '../shared/reticulumNomadTime
 
 /** Allowed Reticulum sidecar HTTP paths for renderer IPC proxy. */
 const RETICULUM_PROXY_PATH_PREFIX = '/api/v1/';
+const RETICULUM_INTERNAL_PATH_PREFIX = '/api/v1/internal/';
 
 /** Destructive system route — only via dedicated factoryReset IPC. */
 export const RETICULUM_FACTORY_RESET_PATH = '/api/v1/system/factory-reset';
@@ -85,6 +86,12 @@ export function assertReticulumProxyPath(
   }
   if (normalized.includes('..') || normalized.includes('\\') || normalized.includes('\0')) {
     throw new Error('Reticulum proxy path contains invalid segments');
+  }
+  if (
+    normalized === RETICULUM_INTERNAL_PATH_PREFIX.slice(0, -1) ||
+    normalized.startsWith(RETICULUM_INTERNAL_PATH_PREFIX)
+  ) {
+    throw new Error('Reticulum internal routes are unavailable through the generic proxy');
   }
   // Destructive system routes must use dedicated IPC (confirmation + audit), not the generic proxy.
   if (normalized === RETICULUM_FACTORY_RESET_PATH && !opts?.allowFactoryReset) {

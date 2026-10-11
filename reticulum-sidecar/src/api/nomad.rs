@@ -1,9 +1,14 @@
 use std::sync::Arc;
 
-use axum::Json;
 use axum::extract::{Path, Query, State};
-use serde::Deserialize;
+use axum::http::HeaderMap;
+use axum::response::{IntoResponse, Response};
+use axum::{Extension, Json};
+use serde::{Deserialize, Serialize};
 
+use crate::api::path_capability::{
+    PathCapabilityOperation, PathCapabilityStore, capability_denied,
+};
 use crate::stack::StackHandle;
 
 #[derive(Debug, Deserialize)]
@@ -294,7 +299,7 @@ pub async fn delete_nomad_serving_file(
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NomadServingContentSourceBody {
     /// Absolute directory path of the watched Nomad content folder.
     pub path: String,
@@ -302,11 +307,27 @@ pub struct NomadServingContentSourceBody {
 
 pub async fn put_nomad_serving_content_source(
     State(stack): State<Arc<StackHandle>>,
+    Extension(capabilities): Extension<PathCapabilityStore>,
+    headers: HeaderMap,
     Json(body): Json<NomadServingContentSourceBody>,
-) -> Json<serde_json::Value> {
-    match stack.set_nomad_content_source(body.path).await {
-        Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })),
-        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+) -> Response {
+    let capability_body =
+        serde_json::to_value(&body).expect("Nomad content-source body serializes");
+    let Some(capability) = capabilities.consume(
+        &headers,
+        PathCapabilityOperation::NomadContentSource,
+        &capability_body,
+    ) else {
+        return capability_denied().into_response();
+    };
+    if !capability.still_matches() {
+        return capability_denied().into_response();
+    }
+    let result = stack.set_nomad_content_source(body.path).await;
+    drop(capability);
+    match result {
+        Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })).into_response(),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })).into_response(),
     }
 }
 

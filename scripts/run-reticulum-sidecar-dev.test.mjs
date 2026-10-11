@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { expect, it } from 'vitest';
 
-import { superviseChild } from './run-reticulum-sidecar-dev.mjs';
+import { createSidecarBootstrap, superviseChild } from './run-reticulum-sidecar-dev.mjs';
 
 class MockProcess extends EventEmitter {
   pid = 1234;
@@ -45,4 +45,15 @@ it('superviseChild preserves an ordinary child exit code', () => {
   expect(hostProcess.kills).toEqual([]);
   expect(hostProcess.listenerCount('SIGINT')).toBe(0);
   expect(hostProcess.listenerCount('SIGTERM')).toBe(0);
+});
+
+it('creates distinct random credentials for sidecar auth and picker capabilities', () => {
+  const first = createSidecarBootstrap();
+  const second = createSidecarBootstrap();
+
+  expect(Buffer.from(first.auth_token, 'base64url')).toHaveLength(32);
+  expect(Buffer.from(first.capability_issuer_token, 'base64url')).toHaveLength(32);
+  expect(Buffer.from(first.capability_session_id, 'base64url')).toHaveLength(16);
+  expect(new Set(Object.values(first))).toHaveLength(3);
+  expect(second).not.toEqual(first);
 });

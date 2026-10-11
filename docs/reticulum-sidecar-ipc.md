@@ -5,13 +5,24 @@ HTTP + WebSocket on `127.0.0.1` (ephemeral port in production; default dev port 
 Aligned with [Ratspeak](https://github.com/ratspeak/Ratspeak) `ratspeak-tauri` commands — not meshchat aiohttp.
 
 The sidecar accepts only explicit IPv4 or IPv6 loopback listen addresses. Electron main creates a
-new 256-bit bearer credential for each process and sends it as a single base64url line over the
-child's stdin before polling health. The credential is never passed in argv, environment variables,
-URLs, status responses, or logs. Every HTTP route and WebSocket upgrade requires
+new 256-bit bearer credential, a separate 256-bit picker-capability issuer credential, and a
+128-bit process-session identifier for each process. It sends them as one JSON line over the child's
+stdin before polling health. These values are never passed in argv, environment variables, URLs,
+status responses, or logs. Every HTTP route and WebSocket upgrade requires
 `Authorization: Bearer <credential>`.
 
 Electron main validates proxy paths (they must start with `/api/v1/` and contain no `..` segments)
-and adds the credential. The renderer never receives it.
+and adds the credential. `/api/v1/internal/*` is blocked from the generic renderer proxy. The
+renderer never receives any sidecar credential.
+
+Filesystem mutations selected through native pickers use an additional one-use capability. Main
+mints it through `/api/v1/internal/path-capabilities` with the private issuer credential, binding the
+grant to the exact operation, canonical JSON body, canonical file/directory identity, and current
+process session. The capability expires after 30 seconds and is removed before validation, so a
+failed or successful attempt cannot be replayed. RNCP send, RNCP fetch with `save_path`, RNCP
+listener enable, and Nomad content-source changes fail with HTTP 403
+`picker_capability_denied` when the capability is missing or invalid. Fetches using the sidecar
+default destination and listener disable do not carry a local path and therefore do not require one.
 
 ## REST
 
@@ -223,7 +234,7 @@ Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/
 | GET    | `/api/v1/nomadnetwork/media/{hash}?path=…`    | optional `force_path_refresh=true`, `identify=true`                            | Inline page media (e.g. images) fetched from a remote node; `{ ok: false, error }` without the live `rns-stack`                                                                |
 | GET    | `/api/v1/nomadnetwork/serving`                |                                                                                | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`)                                                             |
 | PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }`                                                   | `{ ok, serving }`                                                                                                                                                              |
-| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`                                                             | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running                                                               |
+| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`                                                             | `{ ok, serving }` — set picker-capability-bound watched folder (site root or pages dir); required before start; restarts host if running                                       |
 | GET    | `/api/v1/nomadnetwork/serving/pages`          |                                                                                | `{ ok, pages: [] }` — My Pages list; pages can also be edited on disk in the watched folder                                                                                    |
 | PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`                                                            | `{ ok }` — My Pages **New page** / **Edit** (`MicronPageEditor`)                                                                                                               |
 | DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                                                                                | `{ ok }` — My Pages **Delete**                                                                                                                                                 |
@@ -261,7 +272,7 @@ Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`,
 
 ### Remote — rnsh (shell) and rncp (file transfer)
 
-Stock Reticulum utility clients hosted by the sidecar. Paths are filesystem paths only (never file bytes in JSON). Electron gates `rncp.send` / `rncp.fetch` / `rncp.listener` mutations behind picker-allowlisted IPC (`electronAPI.reticulum.rncp.*`).
+Stock Reticulum utility clients hosted by the sidecar. Paths are filesystem paths only (never file bytes in JSON). Electron gates `rncp.send` / `rncp.fetch` / `rncp.listener` mutations behind picker-allowlisted IPC (`electronAPI.reticulum.rncp.*`) and the sidecar independently requires body/path/session-bound capabilities for mutations that carry local paths.
 
 | Method | Path                             | Body / notes                                                                        | Response                                                                                         |
 | ------ | -------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |

@@ -55,6 +55,7 @@ uuid = { version = "1", features = ["v4"] }
 hex = "0.4"
 sha2 = "0.10"
 subtle = "2"
+same-file = "1"
 tempfile = "3"
 # Always on: stub builds compile `nomad_file` metadata helpers (Resource name msgpack).
 rmpv = "1"
