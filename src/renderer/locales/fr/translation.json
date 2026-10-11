@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Code du bilan de santé",
       "tooltip": "Code de test pour MeshCore Bilan de santé. Les observateurs sur le maillage de l'expéditeur signalent lequel d'entre eux l'a reçu."
-    },
-    "remoteContent": {
-      "load": "Charger du contenu distant à partir de {{host}}"
     }
   },
   "common": {

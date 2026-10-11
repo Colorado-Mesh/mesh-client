@@ -900,9 +900,6 @@
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
-    "remoteContent": {
-      "load": "Load remote content from {{host}}"
-    },
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Open on Giphy",
     "directImage": "Image: {{name}}",

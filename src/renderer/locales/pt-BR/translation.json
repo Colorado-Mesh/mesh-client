@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Código de verificação de integridade",
       "tooltip": "Código de teste para MeshCore Verificação de saúde. Observadores na malha do remetente relatam qual deles o recebeu."
-    },
-    "remoteContent": {
-      "load": "Carregar conteúdo remoto de {{host}}"
     }
   },
   "common": {

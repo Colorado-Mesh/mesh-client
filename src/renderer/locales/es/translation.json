@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Código de comprobación de estado",
       "tooltip": "Código de prueba para MeshCore Comprobación de estado. Los observadores en la malla del remitente informan cuál de ellos lo recibió."
-    },
-    "remoteContent": {
-      "load": "Cargar contenido remoto desde {{host}}"
     }
   },
   "common": {

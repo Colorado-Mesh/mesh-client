@@ -1002,9 +1002,6 @@
     "healthCheck": {
       "label": "MeshCore Код перевірки здоров'я",
       "tooltip": "Код тесту для MeshCore Health Check. Спостерігачі на сітчастому звіті відправника, хто з них його отримав."
-    },
-    "remoteContent": {
-      "load": "Завантажити віддалений вміст з {{host}}"
     }
   },
   "common": {
