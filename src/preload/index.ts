@@ -1127,6 +1127,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     status: (): Promise<{ available: boolean; persistent: boolean }> =>
       ipcRenderer.invoke('secureSecrets:status'),
     list: (): Promise<string[]> => ipcRenderer.invoke('secureSecrets:list'),
+    getAll: (): Promise<Record<string, string>> => ipcRenderer.invoke('secureSecrets:getAll'),
     get: (key: string): Promise<string | null> => ipcRenderer.invoke('secureSecrets:get', key),
     set: (
       key: string,

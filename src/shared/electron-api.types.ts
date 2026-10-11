@@ -1202,6 +1202,7 @@ export interface ElectronAPI {
   secureSecrets: {
     status: () => Promise<{ available: boolean; persistent: boolean }>;
     list: () => Promise<string[]>;
+    getAll: () => Promise<Record<string, string>>;
     get: (key: string) => Promise<string | null>;
     set: (
       key: string,

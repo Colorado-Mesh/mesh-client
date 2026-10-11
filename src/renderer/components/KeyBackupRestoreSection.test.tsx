@@ -124,4 +124,45 @@ describe('KeyBackupRestoreSection', () => {
     });
     expect(localStorage.getItem(meshcoreKeyBackupStorageKey(0xabc))).toBeNull();
   });
+
+  it('reports backup removal failures and keeps the backup available', async () => {
+    const user = userEvent.setup();
+    const nodeKey = 0x321;
+    await saveMeshtasticDmKeyBackup({
+      nodeNum: nodeKey,
+      publicKey: new Uint8Array(32).fill(1),
+      privateKey: new Uint8Array(32).fill(2),
+      nodeLabel: 'Keep Me',
+    });
+    vi.mocked(window.electronAPI.secureSecrets.remove).mockRejectedValueOnce(
+      new Error('secure delete failed'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <KeyBackupRestoreSection
+        protocol="meshtastic"
+        disabled={false}
+        safeStorageAvailable
+        localNodeKey={nodeKey}
+        localNodeLabel="Keep Me"
+        canBackup
+        onMeshtasticRestore={vi.fn()}
+        onMeshcoreRestore={vi.fn()}
+        onMeshtasticBackup={vi.fn()}
+        onMeshcoreBackup={vi.fn()}
+        addToast={addToast}
+      />,
+    );
+
+    await screen.findByText('Backup saved for Keep Me');
+    await user.click(screen.getByRole('button', { name: 'Remove backup' }));
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove backup' });
+    await user.click(removeButtons[removeButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('Failed: secure delete failed', 'error');
+    });
+    expect(screen.getByText('Backup saved for Keep Me')).toBeInTheDocument();
+    warn.mockRestore();
+  });
 });

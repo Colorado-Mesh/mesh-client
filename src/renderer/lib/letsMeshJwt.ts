@@ -62,6 +62,16 @@ const DEVICE_SIGNING_HOST_WS_PATHS: Record<string, '/ws' | '/mqtt'> = {
 };
 
 const DEVICE_SIGNING_HOSTS = new Set(Object.keys(DEVICE_SIGNING_HOST_WS_PATHS));
+let identityMutationQueue: Promise<void> = Promise.resolve();
+
+function runIdentityMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = identityMutationQueue.then(operation, operation);
+  identityMutationQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 export function isLetsMeshSettings(server: string): boolean {
   return DEVICE_SIGNING_HOSTS.has(server.trim());
@@ -111,40 +121,42 @@ export async function syncMeshcoreActiveIdentityFromBackup(
  *
  * @returns true if storage was updated or already held this pubkey.
  */
-export function tryPersistMeshcorePublicKeyFromRadio(
+export async function tryPersistMeshcorePublicKeyFromRadio(
   publicKey: Uint8Array | null | undefined,
-): boolean {
+): Promise<boolean> {
   if (publicKey?.length !== MESHCORE_PUBLIC_KEY_LENGTH) return false;
   const pubHex = meshcorePubKeyBytesToHexLower(publicKey);
   if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubHex)) return false;
 
-  try {
-    const existing = readMeshcoreIdentity();
-    const existingPub = normalizePublicKeyHex(existing?.public_key);
-    const pubkeyChanged = existingPub !== null && existingPub !== pubHex;
+  return runIdentityMutation(async () => {
+    try {
+      const existing = readMeshcoreIdentity();
+      const existingPub = normalizePublicKeyHex(existing?.public_key);
+      const pubkeyChanged = existingPub !== null && existingPub !== pubHex;
 
-    if (existingPub === pubHex && existing?.public_key) {
+      if (existingPub === pubHex && existing?.public_key) {
+        window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+        return true;
+      }
+
+      if (pubkeyChanged) {
+        await removeSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+        localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+      }
+
+      localStorage.setItem(
+        MESHCORE_IDENTITY_STORAGE_KEY,
+        JSON.stringify({ public_key: Array.from(publicKey) }),
+      );
       window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
       return true;
+    } catch (err) {
+      console.warn(
+        '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
+      );
+      return false;
     }
-
-    if (pubkeyChanged) {
-      localStorage.removeItem(MESHCORE_ENC_PK_KEY);
-      void removeSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
-    }
-
-    localStorage.setItem(
-      MESHCORE_IDENTITY_STORAGE_KEY,
-      JSON.stringify({ public_key: Array.from(publicKey) }),
-    );
-    window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
-    return true;
-  } catch (err) {
-    console.warn(
-      '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
-    );
-    return false;
-  }
+  });
 }
 
 /** True when active MQTT identity cache has both public and private key material. */
@@ -182,23 +194,38 @@ export async function tryPersistMeshcoreIdentityFromRadioExport(
   ) {
     return false;
   }
-  try {
-    const privArray = Array.from(privateKeyBytes);
-    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify(privArray));
-    localStorage.setItem(
-      MESHCORE_IDENTITY_STORAGE_KEY,
-      JSON.stringify({ public_key: Array.from(publicKey) }),
-    );
-    localStorage.removeItem(MESHCORE_ENC_PK_KEY);
-    window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
-    return true;
-  } catch (err) {
-    // Still return false (no partial identity write); log for safeStorage / quota / private mode.
-    console.warn(
-      '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
-    );
-    return false;
-  }
+  return runIdentityMutation(async () => {
+    const previousSecret = getCachedSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+    try {
+      const privArray = Array.from(privateKeyBytes);
+      await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify(privArray));
+      try {
+        localStorage.setItem(
+          MESHCORE_IDENTITY_STORAGE_KEY,
+          JSON.stringify({ public_key: Array.from(publicKey) }),
+        );
+      } catch (metadataError) {
+        if (previousSecret == null) await removeSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+        else await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, previousSecret);
+        throw metadataError;
+      }
+      try {
+        localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+      } catch (legacyCleanupError) {
+        console.warn(
+          '[letsMeshJwt] legacy identity cleanup failed ' + errLikeToLogString(legacyCleanupError),
+        );
+      }
+      window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+      return true;
+    } catch (err) {
+      // Still return false (no partial identity write); log for safeStorage / quota / private mode.
+      console.warn(
+        '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
+      );
+      return false;
+    }
+  });
 }
 
 /** Returns true if the boot-hydrated secure store contains a private key. */

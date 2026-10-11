@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
 import {
@@ -134,6 +134,28 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(migrated).toBe(true);
     expect(localStorage.getItem(legacyKey)).toBeNull();
     expect(storage.has(99)).toBe(true);
+  });
+
+  it('retries an interrupted single-slot migration instead of trusting its intermediate slot', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const legacyPayload = JSON.stringify({
+      publicKey: Buffer.from([1, 2, 3, 4]).toString('base64'),
+      privateKey: Buffer.from([5, 6, 7, 8]).toString('base64'),
+    });
+    localStorage.setItem(legacyKey, `enc:${legacyPayload}`);
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(
+      new Error('regular payload save failed'),
+    );
+    const storage = makeStorage('nodeNum', 'meshtastic');
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).rejects.toThrow(
+      'regular payload save failed',
+    );
+    expect(localStorage.getItem(legacyKey)).not.toBeNull();
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).resolves.toBe(true);
+    expect(localStorage.getItem(legacyKey)).toBeNull();
+    expect((await storage.load(99))?.payload.id).toBe(99);
   });
 
   it('migrateLegacySingleSlot is a no-op when a backup already exists for the id', async () => {

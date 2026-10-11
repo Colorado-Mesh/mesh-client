@@ -86,10 +86,9 @@ export async function removeSecureSecret(key: string): Promise<void> {
 
 async function hydrateExistingSecrets(): Promise<void> {
   cache.clear();
-  const keys = await window.electronAPI.secureSecrets.list();
-  for (const key of keys) {
-    const value = await window.electronAPI.secureSecrets.get(key);
-    if (value != null) cache.set(key, value);
+  const values = await window.electronAPI.secureSecrets.getAll();
+  for (const [key, value] of Object.entries(values)) {
+    cache.set(key, value);
   }
 }
 

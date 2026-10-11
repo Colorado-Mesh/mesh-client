@@ -16,6 +16,7 @@ import type { MeshProtocol, MQTTSettings } from '@/renderer/lib/types';
 
 const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
 export const MQTT_SETTINGS_PERSIST_DEBOUNCE_MS = 100;
+const pendingMqttSecretWrites = new Map<string, Promise<void>>();
 
 export function getMqttSettingsStorageKey(protocol: MeshProtocol): string {
   return protocol === 'meshcore' ? MESHCORE_MQTT_SETTINGS_KEY : MESHTASTIC_MQTT_SETTINGS_KEY;
@@ -31,17 +32,33 @@ export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings
   const secretKey =
     key === MESHCORE_MQTT_SETTINGS_KEY ? MESHCORE_MQTT_SECRET_KEY : MESHTASTIC_MQTT_SECRET_KEY;
   const serialized = JSON.stringify(settings);
-  if (getCachedSecureSecret(secretKey) === serialized) {
+  const previous = pendingMqttSecretWrites.get(secretKey);
+  if (!previous && getCachedSecureSecret(secretKey) === serialized) {
     localStorage.removeItem(key);
     return;
   }
-  void setSecureSecret(secretKey, serialized)
-    .then(() => {
-      localStorage.removeItem(key);
-    })
+  const operation = previous
+    ? previous
+        .catch(() => undefined)
+        .then(async () => {
+          if (getCachedSecureSecret(secretKey) !== serialized) {
+            await setSecureSecret(secretKey, serialized);
+          }
+          localStorage.removeItem(key);
+        })
+    : setSecureSecret(secretKey, serialized).then(() => {
+        localStorage.removeItem(key);
+      });
+  const tracked = operation
     .catch((error: unknown) => {
       console.warn('[useProtocolMqttSettings] secure persist failed ' + errLikeToLogString(error));
+    })
+    .finally(() => {
+      if (pendingMqttSecretWrites.get(secretKey) === tracked) {
+        pendingMqttSecretWrites.delete(secretKey);
+      }
     });
+  pendingMqttSecretWrites.set(secretKey, tracked);
 }
 
 export function flushPendingMqttSave(

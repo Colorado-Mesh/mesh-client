@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   loadMeshtasticMqttManualChannelPsksFromStorage,
@@ -78,7 +78,28 @@ describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
     };
     expect(recovered.channelPsks).toEqual([`LongFast@0=${KEY_B}`, `TGIFMESH@1=${KEY_B}`]);
     expect(recovered.autoLaunch).toBeUndefined();
-    expect(localStorage.getItem(RECOVERY_FLAG)).toBe('1');
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(RECOVERY_FLAG)).toBe('1');
+    });
+  });
+
+  it('leaves recovery retryable when the secure write fails', async () => {
+    await setSecureSecret(
+      MESHCORE_MQTT_SECRET_KEY,
+      JSON.stringify({ channelPsks: [`Retry=${KEY_B}`] }),
+    );
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(
+      new Error('secure write failed'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    loadMeshtasticMqttManualChannelPsksFromStorage();
+
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalled();
+    });
+    expect(localStorage.getItem(RECOVERY_FLAG)).toBeNull();
+    warn.mockRestore();
   });
 
   it('prefers the meshtastic secure secret when channelPsks already exist', async () => {

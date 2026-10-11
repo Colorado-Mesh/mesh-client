@@ -60,7 +60,7 @@ export function createMeshcorePerNodeCredentialStorage<T>(
     for (const key of listCachedSecureSecretKeys(config.securePrefix)) {
       const idStr = key.slice(config.securePrefix.length);
       const nodeId = Number.parseInt(idStr, 10);
-      if (!Number.isFinite(nodeId) || nodeId < 0) continue;
+      if (!Number.isFinite(nodeId) || nodeId < 0 || String(nodeId >>> 0) !== idStr) continue;
       const value = getCachedSecureSecret(key);
       const cred = config.parseValue(value);
       if (cred) out.set(nodeId >>> 0, cred);

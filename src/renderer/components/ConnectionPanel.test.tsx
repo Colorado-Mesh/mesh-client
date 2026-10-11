@@ -2819,4 +2819,25 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     expect(screen.queryByRole('option', { name: 'Saved: National' })).toBeNull();
     expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toBe('[]');
   });
+
+  it('restores the last persisted profile list when a save fails', async () => {
+    const user = userEvent.setup();
+    renderPanel('disconnected');
+    await user.selectOptions(presetSelect(), 'profile:nwi');
+    await screen.findByRole('button', { name: 'Delete MQTT profile NW Indiana' });
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(
+      new Error('profile save failed'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await user.click(screen.getByRole('button', { name: 'Delete MQTT profile NW Indiana' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Saved: NW Indiana' })).toBeInTheDocument();
+    });
+    expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toBe(
+      JSON.stringify(storedProfiles),
+    );
+    warn.mockRestore();
+  });
 });

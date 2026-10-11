@@ -27,6 +27,7 @@ function installSecureSecretApi(): void {
   window.electronAPI.secureSecrets = {
     status: vi.fn().mockResolvedValue({ available: true, persistent: true }),
     list: vi.fn(() => Promise.resolve([...secureValues.keys()])),
+    getAll: vi.fn(() => Promise.resolve(Object.fromEntries(secureValues))),
     get: vi.fn((key: string) => Promise.resolve(secureValues.get(key) ?? null)),
     set: vi.fn((key: string, value: string) => {
       secureValues.set(key, value);
@@ -212,6 +213,19 @@ describe('secureSecretStorage migrations', () => {
     expect(localStorage.getItem('mesh-client:mqttSettings:meshcore')).toContain(
       'must-not-be-erased',
     );
+  });
+
+  it('hydrates many secure values through one batch IPC request', async () => {
+    for (let id = 0; id < 150; id += 1) {
+      secureValues.set(meshcoreRepeaterSecretKey(id), `credential-${id}`);
+    }
+
+    await initializeSecureSecrets();
+
+    expect(window.electronAPI.secureSecrets.getAll).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.secureSecrets.list).not.toHaveBeenCalled();
+    expect(window.electronAPI.secureSecrets.get).not.toHaveBeenCalled();
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(149))).toBe('credential-149');
   });
 
   it('routes pre-split MeshCore MQTT settings before secret migration', async () => {

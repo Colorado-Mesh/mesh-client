@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyMqttProfile,
@@ -16,7 +16,11 @@ import {
   renameMqttProfile,
   saveMqttProfiles,
 } from './mqttProfiles';
-import { resetSecureSecretCacheForTests } from './secureSecretStorage';
+import {
+  getCachedSecureSecret,
+  MQTT_PROFILES_SECRET_KEY,
+  resetSecureSecretCacheForTests,
+} from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 const base: MQTTSettings = {
@@ -34,6 +38,7 @@ describe('mqttProfiles', () => {
   beforeEach(() => {
     localStorage.clear();
     resetSecureSecretCacheForTests();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
   });
 
   it('creates, renames and deletes, surviving a save-and-load round trip', async () => {
@@ -50,6 +55,45 @@ describe('mqttProfiles', () => {
     loaded = loadMqttProfiles();
     expect(loaded.map((p) => p.id)).toEqual(['b']);
     expect(localStorage.getItem(MQTT_PROFILES_STORAGE_KEY)).not.toContain('large4cats');
+  });
+
+  it('restores the previous password map when metadata persistence fails', async () => {
+    const original = createMqttProfile([], 'Original', base, 'original');
+    await saveMqttProfiles(original);
+    const previousPasswords = getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY);
+    const previousMetadata = localStorage.getItem(MQTT_PROFILES_STORAGE_KEY);
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementationOnce(() => {
+      throw new Error('metadata write failed');
+    });
+
+    await expect(saveMqttProfiles([])).rejects.toThrow('metadata write failed');
+
+    setItem.mockRestore();
+    expect(getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY)).toBe(previousPasswords);
+    expect(localStorage.getItem(MQTT_PROFILES_STORAGE_KEY)).toBe(previousMetadata);
+  });
+
+  it('serializes overlapping saves so the latest requested list wins', async () => {
+    let releaseFirst:
+      ((value: { available: boolean; persistent: boolean; verified: boolean }) => void) | undefined;
+    vi.mocked(window.electronAPI.secureSecrets.set).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseFirst = resolve;
+        }),
+    );
+    const first = createMqttProfile([], 'First', base, 'first');
+    const second = createMqttProfile([], 'Second', base, 'second');
+
+    const firstSave = saveMqttProfiles(first);
+    const secondSave = saveMqttProfiles(second);
+    await vi.waitFor(() => {
+      expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledTimes(1);
+    });
+    releaseFirst?.({ available: true, persistent: true, verified: true });
+    await Promise.all([firstSave, secondSave]);
+
+    expect(loadMqttProfiles().map((profile) => profile.id)).toEqual(['second']);
   });
 
   it('ignores blank names and trims long ones', () => {

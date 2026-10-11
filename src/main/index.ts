@@ -3709,6 +3709,12 @@ ipcMain.handle('secureSecrets:list', (event) => {
   return secureSecretStore.list();
 });
 
+ipcMain.handle('secureSecrets:getAll', (event) => {
+  assertIpcSender(event, 'secureSecrets:getAll');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.getAll();
+});
+
 ipcMain.handle('secureSecrets:get', (event, key: unknown) => {
   assertIpcSender(event, 'secureSecrets:get');
   secureSecretIpcRateLimit.checkOrThrow();

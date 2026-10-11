@@ -226,14 +226,19 @@ export function KeyBackupRestoreSection({
 
   const handleRemove = useCallback(
     async (nodeKey: number) => {
-      if (protocol === 'meshtastic') {
-        await deleteMeshtasticDmKeyBackup(nodeKey);
-      } else {
-        await deleteMeshcoreKeyBackup(nodeKey);
+      try {
+        if (protocol === 'meshtastic') {
+          await deleteMeshtasticDmKeyBackup(nodeKey);
+        } else {
+          await deleteMeshcoreKeyBackup(nodeKey);
+        }
+        addToast(t('securityPanel.backupRemoved'), 'success');
+        setRemoveConfirmKey(null);
+        refreshStatus();
+      } catch (err) {
+        console.warn('[KeyBackupRestoreSection] remove ' + errLikeToLogString(err));
+        addToast(t('securityPanel.failed', { message: keyBackupFailureMessage(err, t) }), 'error');
       }
-      addToast(t('securityPanel.backupRemoved'), 'success');
-      setRemoveConfirmKey(null);
-      refreshStatus();
     },
     [protocol, addToast, t, refreshStatus],
   );

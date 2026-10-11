@@ -257,6 +257,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     secureSecrets: {
       status: async () => ({ available: true, persistent: false }),
       list: async () => [...secureSecrets.keys()],
+      getAll: async () => Object.fromEntries(secureSecrets),
       get: async (key: string) => secureSecrets.get(key) ?? null,
       set: async (key: string, value: string) => {
         secureSecrets.set(key, value);

@@ -2576,7 +2576,7 @@ export function useMeshcoreRuntime() {
 
         const myNodeId = pubkeyToNodeId(info.publicKey);
         persistMeshcoreSelfNodeId(myNodeId);
-        tryPersistMeshcorePublicKeyFromRadio(info.publicKey);
+        void tryPersistMeshcorePublicKeyFromRadio(info.publicKey);
         const transportType = meshcoreConnectTypeRef.current;
         // Latch session readiness after self-info (reconnect / FIN races), but keep UI status at
         // `connected` until the contacts dump settles. Promoting `configured` early starts App

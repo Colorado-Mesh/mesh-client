@@ -257,10 +257,22 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
    * Meshtastic-only hook — throws on decrypt/parse failure so the caller can log with its own tag.
    */
   async function migrateLegacySingleSlot(legacyKey: string, id: number): Promise<boolean> {
-    if (has(id)) return false;
     const legacy = localStorage.getItem(legacyKey);
     if (!legacy) return false;
     if (protocol !== 'meshtastic') return false;
+    const existing = getCachedSecureSecret(secretKey(id));
+    if (existing) {
+      try {
+        parsePayload(existing);
+        await ensureIndex();
+        localStorage.removeItem(legacyKey);
+        return true;
+      } catch {
+        // A prior interrupted single-slot migration leaves the legacy shape in this final slot.
+        // Re-run the conversion below so it becomes a regular indexed backup payload.
+        // catch-no-log-ok Expected intermediate migration shape; the conversion below validates it.
+      }
+    }
     const migrated = await migrateLegacyBackupCiphertext(
       'meshtastic',
       normalizeId(id),

@@ -189,6 +189,7 @@ describe('secure-secret IPC contract (source contract)', () => {
   it.each([
     'secureSecrets:status',
     'secureSecrets:list',
+    'secureSecrets:getAll',
     'secureSecrets:get',
     'secureSecrets:set',
     'secureSecrets:remove',
@@ -535,6 +536,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'mqtt:publishMeshcorePacketLog',
     'secureSecrets:status',
     'secureSecrets:list',
+    'secureSecrets:getAll',
     'secureSecrets:get',
     'secureSecrets:set',
     'secureSecrets:remove',
@@ -736,6 +738,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     for (const channel of [
       'secureSecrets:status',
       'secureSecrets:list',
+      'secureSecrets:getAll',
       'secureSecrets:get',
       'secureSecrets:set',
       'secureSecrets:remove',

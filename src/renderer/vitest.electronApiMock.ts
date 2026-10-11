@@ -298,6 +298,7 @@ export function createElectronAPIMock(): ElectronAPI {
     secureSecrets: {
       status: vi.fn().mockResolvedValue({ available: true, persistent: true }),
       list: vi.fn(() => Promise.resolve([...secureSecrets.keys()])),
+      getAll: vi.fn(() => Promise.resolve(Object.fromEntries(secureSecrets))),
       get: vi.fn((key: string) => Promise.resolve(secureSecrets.get(key) ?? null)),
       set: vi.fn((key: string, value: string) => {
         secureSecrets.set(key, value);

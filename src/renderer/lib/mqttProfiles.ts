@@ -46,6 +46,7 @@ export function normalizeMqttProfileName(name: string): string {
 }
 
 type StoredMqttProfile = Omit<MqttProfile, 'password'>;
+let mqttProfileSaveQueue: Promise<void> = Promise.resolve();
 
 function isStoredMqttProfile(v: unknown): v is StoredMqttProfile {
   if (!v || typeof v !== 'object') return false;
@@ -89,7 +90,8 @@ export function loadMqttProfiles(): MqttProfile[] {
   return [];
 }
 
-export async function saveMqttProfiles(profiles: readonly MqttProfile[]): Promise<void> {
+async function saveMqttProfilesNow(profiles: readonly MqttProfile[]): Promise<void> {
+  const previousPasswords = getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY);
   try {
     const limited = profiles.slice(0, MQTT_PROFILES_MAX);
     const passwords = Object.fromEntries(limited.map((profile) => [profile.id, profile.password]));
@@ -113,9 +115,22 @@ export async function saveMqttProfiles(profiles: readonly MqttProfile[]): Promis
       ),
     );
   } catch (e) {
+    try {
+      if (previousPasswords == null) await removeSecureSecret(MQTT_PROFILES_SECRET_KEY);
+      else await setSecureSecret(MQTT_PROFILES_SECRET_KEY, previousPasswords);
+    } catch (rollbackError) {
+      console.warn('[mqttProfiles] password rollback failed ' + errLikeToLogString(rollbackError));
+    }
     console.debug('[mqttProfiles] save failed ' + errLikeToLogString(e));
     throw e instanceof Error ? e : new Error(String(e));
   }
+}
+
+export function saveMqttProfiles(profiles: readonly MqttProfile[]): Promise<void> {
+  const snapshot = profiles.map((profile) => ({ ...profile }));
+  const operation = mqttProfileSaveQueue.then(() => saveMqttProfilesNow(snapshot));
+  mqttProfileSaveQueue = operation.catch(() => undefined);
+  return operation;
 }
 
 function pickProfileFields(src: MqttProfileFields): MqttProfileFields {

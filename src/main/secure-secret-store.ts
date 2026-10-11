@@ -121,10 +121,24 @@ function strongStorageAvailable(): boolean {
   }
 }
 
+function basicTextStorageSelected(): boolean {
+  try {
+    return (
+      safeStorage.isEncryptionAvailable() &&
+      safeStorage.getSelectedStorageBackend?.() === 'basic_text'
+    );
+  } catch {
+    // catch-no-log-ok storage backend probing is intentionally fail-closed
+    return false;
+  }
+}
+
 /**
  * Main-process-only credential service. Durable values are encrypted by an OS-backed
  * safeStorage backend before SQLite sees them. When no confidential backend exists,
- * values remain process-memory-only and stale durable values are removed.
+ * values remain process-memory-only. Durable values are preserved through temporary keyring
+ * outages, but ciphertext created by Electron's explicitly insecure `basic_text` backend is
+ * removed before a session-only replacement is accepted.
  */
 export class SecureSecretStore {
   private readonly session = new Map<string, string>();
@@ -141,7 +155,9 @@ export class SecureSecretStore {
     assertSecretValue(value);
 
     if (!strongStorageAvailable()) {
-      this.db().prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
+      if (basicTextStorageSelected()) {
+        this.db().prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
+      }
       this.session.set(key, value);
       return { available: true, persistent: false, verified: this.session.get(key) === value };
     }
@@ -197,6 +213,15 @@ export class SecureSecretStore {
       if (typeof row.key === 'string' && SECRET_KEY_PATTERN.test(row.key)) keys.add(row.key);
     }
     return [...keys].sort();
+  }
+
+  getAll(): Record<string, string> {
+    const values: Record<string, string> = {};
+    for (const key of this.list()) {
+      const value = this.get(key);
+      if (value != null) values[key] = value;
+    }
+    return values;
   }
 
   /** Import the one historical encrypted MeshCore identity shape into its fixed destination. */

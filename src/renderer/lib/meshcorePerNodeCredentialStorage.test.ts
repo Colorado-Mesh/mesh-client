@@ -58,6 +58,7 @@ describe('createMeshcorePerNodeCredentialStorage', () => {
 
   it('skips invalid keys and unparseable values when reading map', async () => {
     await setSecureSecret('meshcore:repeater:10', JSON.stringify({ secret: 'ok' }));
+    await setSecureSecret('meshcore:repeater:010', JSON.stringify({ secret: 'shadow' }));
     await setSecureSecret('meshcore:repeater:bad', JSON.stringify({ secret: 'skip' }));
     await setSecureSecret('meshcore:repeater:11', '');
     const storage = createTestStorage();
