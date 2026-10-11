@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Windows'ta, radyoyu buradan seçin ve ekranında gösterilen PIN'İ girin. mesh-client sizin için eşleştirir, böylece Windows Ayarları'nda eşleştirmeniz gerekmez. Önce telefonunuzdaki MeshCore uygulamasını kapatın; radyo aynı anda yalnızca bir Bluetooth bağlantısını kabul eder.",
     "stageEnterPinWindows": "Windows ile eşleştirmek için radyonuzda gösterilen PIN KODUNU GİRİN",
     "stagePairingWindows": "Windows ile eşleştiriliyor…",
-    "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın."
+    "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın.",
+    "mqttPacketTooLarge": "Aracı, {{limit}} baytlık güvenlik sınırından büyük bir MQTT paketi gönderdi; otomatik yeniden bağlanma devre dışı."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "Kayıt yanıtının sertifikası yok",
       "enrollTooLarge": "Kayıt yanıtı çok büyük",
       "enrollKeyMismatch": "Sunucu farklı bir anahtar için bir sertifika döndürdü",
-      "enrollBusy": "Geçerli sertifika içe aktarma işleminin tamamlanmasını bekleyin"
+      "enrollBusy": "Geçerli sertifika içe aktarma işleminin tamamlanmasını bekleyin",
+      "frameTooLarge": "CoT olayı {{max}} baytı aşıyor"
     },
     "remoteUseTls": "TLS kullanın (önerilir)",
     "remotePlainTcpWarning": "Düz TCP şifrelenmemiştir: ağ yolundaki herkes aktarılan konumları okuyabilir. Sertifikalar kullanılmaz ve açılışta bağlantı kapalı kalır.",
@@ -7161,7 +7163,11 @@
         "live": "Canlı bölgesel akış",
         "reconnecting": "Yeniden bağlanılıyor…",
         "disconnected": "Bağlanmak için bir Beacon harita URL’si seçin.",
-        "error": "Bağlantı kurulamıyor."
+        "error": "Bağlantı kurulamıyor.",
+        "feedOpenFailed": "Bölgesel harita akışı açılamadı.",
+        "refreshing": "Akış kesintisinden sonra bölgesel harita yenileniyor.",
+        "connectionInterrupted": "Bölgesel harita bağlantısı kesildi.",
+        "publicHttpsRejected": "Bu herkese açık HTTPS bölgesel haritası açılamadı."
       },
       "preset": "Bölgesel Beacon haritası",
       "custom": "Özel URL"

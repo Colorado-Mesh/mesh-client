@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Op Windows selecteert u hier de radio en voert u de PINCODE in die op het scherm wordt weergegeven. mesh-client koppelt deze voor u, zodat u deze niet hoeft te koppelen in Windows-instellingen. Sluit eerst de MeshCore-app op je telefoon; de radio accepteert slechts één Bluetooth-verbinding tegelijk.",
     "stageEnterPinWindows": "Voer de PINCODE in die op uw radio wordt weergegeven om deze met Windows te koppelen",
     "stagePairingWindows": "Koppelen met Windows...",
-    "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op."
+    "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op.",
+    "mqttPacketTooLarge": "De broker stuurde een MQTT-pakket groter dan de veiligheidsgrens van {{limit}} bytes; automatisch opnieuw verbinden is uitgeschakeld."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "Het inschrijvingsantwoord heeft geen certificaat",
       "enrollTooLarge": "De inschrijvingsreactie is te groot",
       "enrollKeyMismatch": "De server heeft een certificaat geretourneerd voor een andere sleutel",
-      "enrollBusy": "Wacht tot de huidige certificaatimport is voltooid"
+      "enrollBusy": "Wacht tot de huidige certificaatimport is voltooid",
+      "frameTooLarge": "CoT-gebeurtenis overschrijdt {{max}} bytes"
     },
     "remoteUseTls": "Gebruik TLS (aanbevolen)",
     "remotePlainTcpWarning": "Gewone TCP is onversleuteld: iedereen op het netwerkpad kan de doorgegeven posities lezen. Certificaten worden niet gebruikt en de verbinding bij de lancering blijft uit.",
@@ -7161,7 +7163,11 @@
         "live": "Live regionale feed",
         "reconnecting": "Opnieuw verbinding maken…",
         "disconnected": "Kies de URL van een Beacon-kaart om te verbinden.",
-        "error": "Kan geen verbinding maken."
+        "error": "Kan geen verbinding maken.",
+        "feedOpenFailed": "De regionale kaartfeed kon niet worden geopend.",
+        "refreshing": "De regionale kaart wordt vernieuwd na een onderbreking van de feed.",
+        "connectionInterrupted": "Verbinding met de regionale kaart onderbroken.",
+        "publicHttpsRejected": "Deze openbare HTTPS-regionale kaart kon niet worden geopend."
       },
       "custom": "Eigen URL",
       "preset": "Regionale Beacon-kaart"

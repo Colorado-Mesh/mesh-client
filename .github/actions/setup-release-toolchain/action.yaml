@@ -22,12 +22,16 @@ runs:
     - name: Install flatpak-node-generator
       shell: bash
       run: |
+        python3 -m pip install --require-hashes --only-binary=:all: \
+          -r scripts/requirements-flatpak-generator.txt
         # Keep pin in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+        # --no-deps: runtime deps come only from the hash-locked requirements file.
+        # --no-build-isolation: poetry-core is that hash-locked build backend.
         COMMIT=$(node --input-type=module -e "
           import { FLATPAK_NODE_GENERATOR_COMMIT } from './scripts/flatpakPnpmStoreVersion.mjs';
           process.stdout.write(FLATPAK_NODE_GENERATOR_COMMIT);
         ")
-        pip3 install --force-reinstall --no-cache-dir \
+        pip3 install --force-reinstall --no-cache-dir --no-deps --no-build-isolation \
           "git+https://github.com/flatpak/flatpak-builder-tools@${COMMIT}#subdirectory=node"
 
     # Install this last: flatpak-node-generator also depends on PyYAML, and its

@@ -712,7 +712,7 @@ export default function ConnectionPanel({
       setMqttError(
         protocol === 'meshcore'
           ? translateMeshcoreUserMessage(t, meshcoreMqttUserFacingHint(error))
-          : meshtasticMqttErrorUserHint(error),
+          : meshtasticMqttErrorUserHint(error, t),
       );
     });
   }, [protocol, t]);

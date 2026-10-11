@@ -17,6 +17,7 @@ const repositorySecretNames = [
   'CSC_KEY_PASSWORD',
   'CSC_LINK',
   'RELEASE_PUSH_TOKEN',
+  'RELEASE_CUT_TOKEN',
 ];
 const tempDirs = [];
 
@@ -63,6 +64,18 @@ describe('privileged workflow boundaries', () => {
       'packaging-smoke',
     ]) {
       expect(workflow.jobs[job].environment, job).toBe('release');
+    }
+    for (const jobName of ['resolve-release-matrix', 'release', 'sidecars']) {
+      const job = workflow.jobs[jobName];
+      const needs = Array.isArray(job.needs) ? job.needs : [job.needs];
+      expect(needs, jobName).toEqual(
+        expect.arrayContaining(['authorize-release', 'prepare-github-release']),
+      );
+      const condition = String(job.if);
+      expect(condition, jobName).toContain("needs.authorize-release.result == 'success'");
+      expect(condition, jobName).toContain("needs.prepare-github-release.result == 'success'");
+      expect(condition, jobName).not.toContain('!cancelled()');
+      expect(condition, jobName).not.toContain("!= 'failure'");
     }
   });
 
@@ -281,5 +294,25 @@ exit 1`);
     expect(ruleset.bypass_actors).toEqual([
       { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' },
     ]);
+  });
+
+  it('requires the committed main merge queue ruleset before secret migration', () => {
+    const ruleset = JSON.parse(read('.github/rulesets/main-merge-queue.json'));
+    expect(ruleset).toMatchObject({
+      name: 'main merge queue',
+      target: 'branch',
+      enforcement: 'active',
+      conditions: { ref_name: { include: ['refs/heads/main'], exclude: [] } },
+    });
+    expect(ruleset.bypass_actors).toEqual([
+      { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' },
+    ]);
+    const source = read('.github/workflows/migrate-release-secrets.yaml');
+    expect(source).toContain('main merge queue');
+    expect(source).toContain('The active main merge queue ruleset is missing.');
+    expect(source).toContain('.github/rulesets/main-merge-queue.json');
+    expect(source).toContain('.conditions.ref_name.exclude');
+    expect(source).toContain('RELEASE_CUT_TOKEN');
+    expect(source).not.toMatch(/--method\s+(POST|PUT|PATCH)/);
   });
 });

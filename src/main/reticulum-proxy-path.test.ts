@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('electron', () => ({
+  dialog: { showOpenDialog: vi.fn() },
+}));
 
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 
@@ -29,15 +33,41 @@ describe('assertReticulumProxyPath', () => {
 
   it('rejects traversal segments', () => {
     expect(() => assertReticulumProxyPath('/api/v1/../system/factory-reset')).toThrow(
-      /invalid segments/,
+      /must start with/,
     );
     expect(() => assertReticulumProxyPath('/api/v1/%2e%2e/system/factory-reset')).toThrow(
+      /must start with/,
+    );
+    expect(() => assertReticulumProxyPath('/api/v1/%252e%252e/system/factory-reset')).toThrow(
+      /must start with/,
+    );
+  });
+
+  it('rejects dot-segment aliases after URL normalization', () => {
+    expect(() => assertReticulumProxyPath('/api/v1/voice/./audio')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/voice/%2e/audio')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/system/./factory-reset')).toThrow(
+      /factoryReset/,
+    );
+    expect(() => assertReticulumProxyPath('//evil.example/api/v1/peers')).toThrow(
       /invalid segments/,
     );
   });
 
-  it('rejects paths with fragments in the path segment', () => {
-    expect(assertReticulumProxyPath('/api/v1/peers#frag')).toBe('/api/v1/peers#frag');
+  it('drops fragments and trailing slashes from the forwarded path', () => {
+    expect(assertReticulumProxyPath('/api/v1/peers#frag')).toBe('/api/v1/peers');
+    expect(assertReticulumProxyPath('/api/v1/peers/')).toBe('/api/v1/peers');
+  });
+
+  it('rejects query and percent-encoded aliases of dedicated routes', () => {
+    expect(() => assertReticulumProxyPath('/api/v1/voice/audio?x=1')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/voice/%61udio')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/rncp/%73end')).toThrow(/rncpSend/);
+    expect(() => assertReticulumProxyPath('/api/v1/voice/memo/%73tart')).toThrow(/voiceMemo/);
+    expect(() => assertReticulumProxyPath('/api/v1/games/%73tatus')).toThrow(/games/);
+    expect(() => assertReticulumProxyPath('/api/v1/nomadnetwork/%73erving/content-source')).toThrow(
+      /setNomadContentSource/,
+    );
   });
 
   it('rejects factory-reset on the generic proxy path', () => {

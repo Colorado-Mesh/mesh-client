@@ -35,6 +35,20 @@ beforeEach(() => {
 });
 
 describe('BeaconConnectionControls presets', () => {
+  it('translates a regional feed status code and hides the raw code', () => {
+    render(<BeaconConnectionControls feed={{ ...feed(), error: 'refreshing' }} />);
+    expect(screen.getByRole('status').textContent).toBe('liveTraffic.beacon.status.refreshing');
+  });
+
+  it('uses the generic status when the feed error is not a known code', () => {
+    render(
+      <BeaconConnectionControls
+        feed={{ ...feed(), error: 'Could not open the regional map feed.' }}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('liveTraffic.beacon.status.error');
+  });
+
   it('defaults to Colorado without starting a connection', () => {
     const service = feed();
     render(<BeaconConnectionControls feed={service} />);

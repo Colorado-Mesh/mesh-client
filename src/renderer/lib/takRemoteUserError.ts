@@ -193,6 +193,11 @@ export const TAK_REMOTE_USER_ERROR_SPECS: readonly TakRemoteUserErrorSpec[] = [
     en: 'Wait for the certificate import to finish before removing certificates',
     wire: ['Wait for the certificate import to finish before removing certificates'],
   },
+  {
+    key: 'takServerPanel.remoteErrors.frameTooLarge',
+    en: 'CoT event exceeds {{max}} bytes',
+    wire: ['CoT event exceeds {{max}} bytes'],
+  },
 ];
 
 interface CompiledWire {

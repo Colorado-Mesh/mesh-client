@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Wählen Sie unter Windows das Radio hier aus und geben Sie die auf dem Bildschirm angezeigte PIN ein. mesh-client koppelt es für Sie, sodass Sie es nicht in den Windows-Einstellungen koppeln müssen. Schließen Sie zuerst die MeshCore-App auf Ihrem Telefon; das Radio akzeptiert jeweils nur eine Bluetooth-Verbindung.",
     "stageEnterPinWindows": "Geben Sie die auf Ihrem Radio angezeigte PIN ein, um sie mit Windows zu koppeln",
     "stagePairingWindows": "Wird mit Windows gekoppelt...",
-    "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu."
+    "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu.",
+    "mqttPacketTooLarge": "Der Broker hat ein MQTT-Paket gesendet, das größer als das Sicherheitslimit von {{limit}} Byte ist; die automatische Wiederverbindung ist deaktiviert."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "Die Einschreibungsantwort hat kein Zertifikat",
       "enrollTooLarge": "Die Einschreibungsantwort ist zu groß",
       "enrollKeyMismatch": "Der Server gab ein Zertifikat für einen anderen Schlüssel zurück",
-      "enrollBusy": "Warten Sie, bis der aktuelle Zertifikatsimport abgeschlossen ist"
+      "enrollBusy": "Warten Sie, bis der aktuelle Zertifikatsimport abgeschlossen ist",
+      "frameTooLarge": "CoT-Ereignis überschreitet {{max}} Bytes"
     },
     "remoteUseTls": "TLS (empfohlen)",
     "remotePlainTcpWarning": "Plain TCP ist unverschlüsselt: Jeder auf dem Netzwerkpfad kann die weitergeleiteten Positionen lesen. Zertifikate werden nicht verwendet, und die Verbindung bei der Markteinführung bleibt ausgeschaltet.",
@@ -7161,7 +7163,11 @@
         "reconnecting": "Verbindung wird wiederhergestellt…",
         "connecting": "Verbindung zu regionalen Beobachtern wird hergestellt…",
         "error": "Verbindung nicht möglich.",
-        "disconnected": "Wähle die URL einer Beacon-Karte zum Verbinden."
+        "disconnected": "Wähle die URL einer Beacon-Karte zum Verbinden.",
+        "feedOpenFailed": "Der regionale Kartenfeed konnte nicht geöffnet werden.",
+        "refreshing": "Der regionale Kartenfeed wird nach einer Unterbrechung aktualisiert.",
+        "connectionInterrupted": "Verbindung zur regionalen Karte unterbrochen.",
+        "publicHttpsRejected": "Diese öffentliche HTTPS-Regionalkarte konnte nicht geöffnet werden."
       },
       "preset": "Regionale Beacon-Karte",
       "custom": "Eigene URL"

@@ -18,6 +18,8 @@ export function isMeshcoreRepeaterCliDangerCommand(command: string): boolean {
   // These setters consume the remainder as data, even when it contains a destructive verb.
   if (/^set (?:name|owner\.info|guest\.password) /.test(trimmed) && !/[\r\n]/.test(trimmed))
     return false;
+  // A flood-scope label, not a destructive verb, even when the name contains one.
+  if (/^region default \S+$/.test(trimmed) && !/[\r\n]/.test(trimmed)) return false;
   if (MESHCORE_REPEATER_CLI_CONFIRM_COMMANDS.has(trimmed)) return true;
   return MESHCORE_REPEATER_CLI_DANGER_PATTERN.test(trimmed);
 }

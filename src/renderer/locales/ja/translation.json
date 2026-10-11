@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Windowsでは、ここでラジオを選択し、画面に表示されているPINを入力します。mesh-clientがペアリングするため、Windows設定でペアリングする必要はありません。最初にスマートフォンのMeshCoreアプリを閉じます。ラジオは一度に1つのBluetooth接続のみを受け入れます。",
     "stageEnterPinWindows": "ラジオに表示されている暗証番号を入力して、Windowsとペアリングします",
     "stagePairingWindows": "Windowsとペアリングしています…",
-    "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。"
+    "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。",
+    "mqttPacketTooLarge": "ブローカーが安全上限の {{limit}} バイトを超える MQTT パケットを送信したため、自動再接続は無効です。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "登録応答に証明書がありません",
       "enrollTooLarge": "登録応答が大きすぎます",
       "enrollKeyMismatch": "サーバーが別のキーの証明書を返しました",
-      "enrollBusy": "現在の証明書のインポートが完了するまで待ちます"
+      "enrollBusy": "現在の証明書のインポートが完了するまで待ちます",
+      "frameTooLarge": "CoT イベントが {{max}} バイトを超えています"
     },
     "remoteUseTls": "TLSを使用する（推奨）",
     "remotePlainTcpWarning": "プレーンTCPは暗号化されていません。ネットワークパス上の誰でも中継された位置を読み取ることができます。証明書は使用されず、ローンチ時の接続はオフのままです。",
@@ -7161,7 +7163,11 @@
         "live": "地域のライブフィード",
         "reconnecting": "再接続中…",
         "disconnected": "接続する Beacon マップの URL を選択してください。",
-        "error": "接続できません。"
+        "error": "接続できません。",
+        "feedOpenFailed": "地域マップのフィードを開けませんでした。",
+        "refreshing": "フィード中断後に地域マップを更新しています。",
+        "connectionInterrupted": "地域マップの接続が中断されました。",
+        "publicHttpsRejected": "この公開 HTTPS 地域マップを開けませんでした。"
       },
       "preset": "地域の Beacon マップ",
       "custom": "カスタム URL"

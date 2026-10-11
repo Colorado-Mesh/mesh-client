@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Su Windows, seleziona la radio qui e inserisci il PIN mostrato sullo schermo. mesh-client lo accoppia per te, quindi non è necessario accoppiarlo in Impostazioni di Windows. Chiudi prima l'app MeshCore sul telefono; la radio accetta solo una connessione Bluetooth alla volta.",
     "stageEnterPinWindows": "Inserisci il PIN visualizzato sulla radio per associarlo a Windows",
     "stagePairingWindows": "Accoppiamento con Windows...",
-    "meshtasticSilentAfterConfigure": "Connesso alla radio, ma ha smesso di inviare traffico mesh dopo la configurazione. Riconnettersi automaticamente. Se questo continua ad accadere, controllare la connessione di rete della radio o riavviarla."
+    "meshtasticSilentAfterConfigure": "Connesso alla radio, ma ha smesso di inviare traffico mesh dopo la configurazione. Riconnettersi automaticamente. Se questo continua ad accadere, controllare la connessione di rete della radio o riavviarla.",
+    "mqttPacketTooLarge": "Il broker ha inviato un pacchetto MQTT più grande del limite di sicurezza di {{limit}} byte; la riconnessione automatica è disattivata."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "La risposta di iscrizione non ha certificato",
       "enrollTooLarge": "La risposta di iscrizione è troppo grande",
       "enrollKeyMismatch": "Il server ha restituito un certificato per una chiave diversa",
-      "enrollBusy": "Attendi il completamento dell'importazione del certificato corrente"
+      "enrollBusy": "Attendi il completamento dell'importazione del certificato corrente",
+      "frameTooLarge": "L'evento CoT supera {{max}} byte"
     },
     "remoteUseTls": "Usa TLS (consigliato)",
     "remotePlainTcpWarning": "Il TCP normale non è crittografato: chiunque sul percorso di rete può leggere le posizioni inoltrate. I certificati non vengono utilizzati e la connessione al lancio rimane disattivata.",
@@ -7161,7 +7163,11 @@
         "connecting": "Connessione agli osservatori regionali…",
         "reconnecting": "Riconnessione…",
         "error": "Impossibile connettersi.",
-        "disconnected": "Scegli l’URL di una mappa Beacon per collegarti."
+        "disconnected": "Scegli l’URL di una mappa Beacon per collegarti.",
+        "feedOpenFailed": "Impossibile aprire il feed della mappa regionale.",
+        "refreshing": "Aggiornamento della mappa regionale dopo un'interruzione del feed.",
+        "connectionInterrupted": "Connessione alla mappa regionale interrotta.",
+        "publicHttpsRejected": "Impossibile aprire questa mappa regionale HTTPS pubblica."
       },
       "preset": "Mappa Beacon regionale",
       "custom": "URL personalizzato"

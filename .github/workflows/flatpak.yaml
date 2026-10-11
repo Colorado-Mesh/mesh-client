@@ -160,11 +160,15 @@ jobs:
 
       - name: Generate offline pnpm sources
         run: |
+          python3 -m pip install --require-hashes --only-binary=:all: \
+            -r scripts/requirements-flatpak-generator.txt
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           # ac5a296a+: YAML storeDir: for pnpm v11 (storeDir= breaks pnpm-workspace.yaml).
           # --force-reinstall: image may preinstall flatpak_node_generator==0.1.0; same
           # version makes plain pip install a no-op (leaves storeDir= generator).
-          pip3 install --force-reinstall --no-cache-dir \
+          # --no-deps: runtime deps come only from the hash-locked requirements file.
+          # --no-build-isolation: poetry-core is that hash-locked build backend.
+          pip3 install --force-reinstall --no-cache-dir --no-deps --no-build-isolation \
             "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
           # GitHub github.com/.../raw/... 404s; skip Playwright browser zips (Electron E2E).
           node scripts/patch-flatpak-node-generator-playwright.mjs

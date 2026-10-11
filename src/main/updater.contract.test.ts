@@ -278,6 +278,22 @@ describe('updater behavior (electron-updater path)', () => {
   });
 
   it.each(['darwin', 'win32', 'linux'] as const)(
+    'turns auto-download off for a non-1 value or a database read error on %s',
+    (platform) => {
+      harness.appSettings.set('autoUpdateDownloadEnabled', 'yes');
+      setup(platform);
+      expect(harness.autoUpdater.autoDownload).toBe(false);
+
+      harness.appSettings.clear();
+      harness.getDatabase.mockImplementationOnce(() => {
+        throw new Error('db down');
+      });
+      setup(platform);
+      expect(harness.autoUpdater.autoDownload).toBe(false);
+    },
+  );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
     'installs only via update:install, forcing run-after-restart, on %s',
     (platform) => {
       setup(platform);

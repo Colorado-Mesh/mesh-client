@@ -48,4 +48,14 @@ describe('meshtasticMqttErrorUserHint', () => {
     expect(meshtasticMqttErrorUserHint('connack timeout')).toBe('connack timeout');
     expect(meshtasticMqttErrorUserHint('certificate has expired')).toBe('certificate has expired');
   });
+
+  it('translates the packet size limit when a translator is provided', () => {
+    const t = (key: string, options?: Record<string, string>) => `${key}:${options?.limit ?? ''}`;
+    expect(
+      meshtasticMqttErrorUserHint(
+        'Broker sent an MQTT packet larger than the 1048576-byte safety limit; automatic reconnect is disabled.',
+        t,
+      ),
+    ).toBe('connectionPanel.mqttPacketTooLarge:1048576');
+  });
 });

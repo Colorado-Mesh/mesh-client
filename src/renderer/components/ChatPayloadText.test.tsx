@@ -60,7 +60,6 @@ describe('ChatPayloadText', () => {
           '📍 Shared location: 39.7392, -104.9903\nhttps://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
         }
         query=""
-        loadLinkPreviews={false}
       />,
     );
     expect(screen.getByText(/39\.7392, -104\.9903/)).toBeInTheDocument();
@@ -86,7 +85,6 @@ describe('ChatPayloadText', () => {
             'https://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
           }
           query=""
-          loadLinkPreviews={false}
         />,
       );
       expect(screen.queryByRole('img', { name: 'Shared location map tile' })).toBeNull();
@@ -103,7 +101,6 @@ describe('ChatPayloadText', () => {
           '📍 Shared location: 39.7392, -104.9903\nhttps://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
         }
         query=""
-        loadLinkPreviews={false}
       />,
     );
     hydrateAxeThemeColors(document.documentElement);
@@ -118,12 +115,6 @@ describe('ChatPayloadText', () => {
     expect(link).toHaveAttribute('target', '_blank');
     expect(screen.queryByRole('button', { name: /Load remote content/ })).toBeNull();
     expect(mockFetch).toHaveBeenCalledWith('https://example.com');
-  });
-
-  it('keeps the history preview opt-out', () => {
-    render(<ChatPayloadText text="https://example.com" query="" loadLinkPreviews={false} />);
-    expect(mockFetch).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: /Load remote content/ })).toBeNull();
   });
 
   it('does not fetch HTTP links automatically', () => {
@@ -436,9 +427,7 @@ describe('ChatPayloadText', () => {
     it('hides the request sentinel and shows a chip that opens Remote settings', () => {
       const listener = vi.fn();
       const unsubscribe = subscribeOpenSettingRequests(listener);
-      render(
-        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
-      );
+      render(<ChatPayloadText text={REQUEST} query="" rncpControlEnabled />);
       expect(screen.getByText('File-receive request')).toBeInTheDocument();
       expect(screen.getByText(/Please enable file receiving/)).toBeInTheDocument();
       expect(screen.queryByText(/mesh-client:request-rncp-receive/)).toBeNull();
@@ -448,14 +437,14 @@ describe('ChatPayloadText', () => {
     });
 
     it('keeps the plain hash line on a destination share', () => {
-      render(<ChatPayloadText text={SHARE} query="" loadLinkPreviews={false} rncpControlEnabled />);
+      render(<ChatPayloadText text={SHARE} query="" rncpControlEnabled />);
       expect(screen.getByText('Shared file-receive destination')).toBeInTheDocument();
       expect(screen.getByText(new RegExp(HASH))).toBeInTheDocument();
       expect(screen.queryByText(/mesh-client:rncp-receive-dest/)).toBeNull();
     });
 
     it('shows the message unchanged without a chip when rncp is unsupported', () => {
-      render(<ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />);
+      render(<ChatPayloadText text={REQUEST} query="" />);
       expect(screen.queryByText('File-receive request')).toBeNull();
       expect(
         screen.queryByRole('button', { name: 'Open Remote inbound file settings' }),
@@ -464,20 +453,10 @@ describe('ChatPayloadText', () => {
     });
 
     it('has no axe violations', async () => {
-      const { container } = render(
-        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
-      );
+      const { container } = render(<ChatPayloadText text={REQUEST} query="" rncpControlEnabled />);
       hydrateAxeThemeColors(document.documentElement);
       expect(await axe(container)).toHaveNoViolations();
     });
-  });
-
-  it('skips link preview fetch when loadLinkPreviews is false', async () => {
-    render(<ChatPayloadText text="see https://example.com" query="" loadLinkPreviews={false} />);
-    await waitFor(() => {
-      expect(screen.getByRole('link')).toHaveAttribute('href', 'https://example.com');
-    });
-    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('never offers or fetches a cleartext link preview', () => {

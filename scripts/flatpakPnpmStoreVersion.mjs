@@ -21,11 +21,15 @@ export const FLATPAK_NODE_GENERATOR_GIT = `git+https://github.com/flatpak/flatpa
  * `flatpak_node_generator==0.1.0`. Upstream keeps that version pinned across commits, so
  * plain `pip install git+…@ac5a296` is a no-op and leaves the older `storeDir=` generator.
  * Fallback: `--force-reinstall` (and `--no-cache-dir` so a stale wheel cannot win).
+ * `--no-build-isolation` uses the hash-locked poetry-core already installed from
+ * scripts/requirements-flatpak-generator.txt instead of fetching an unconstrained build dep.
  */
 export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS = [
   'install',
   '--force-reinstall',
   '--no-cache-dir',
+  '--no-deps',
+  '--no-build-isolation',
   FLATPAK_NODE_GENERATOR_GIT,
 ];
 
@@ -549,6 +553,7 @@ export function flatpakWorkflowGeneratorInstallViolations(
     const missing = [];
     if (!/--force-reinstall\b/.test(cmd)) missing.push('--force-reinstall');
     if (!/--no-cache-dir\b/.test(cmd)) missing.push('--no-cache-dir');
+    if (!/--no-build-isolation\b/.test(cmd)) missing.push('--no-build-isolation');
     if (missing.length === 0) continue;
     violations.push({
       file: fileRel,

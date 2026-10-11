@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { isLxmfRecentApiPath } from './reticulumLxmfRecentPath';
 
 const HANDLERS_SOURCE = readFileSync(join(__dirname, 'reticulum-handlers.ts'), 'utf-8');
+const PROXY_PATH_SOURCE = readFileSync(join(__dirname, '../reticulum-proxy-path.ts'), 'utf-8');
 const SIDECAR_STACK_SOURCE = readFileSync(
   join(__dirname, '../../../reticulum-sidecar/src/stack/mod.rs'),
   'utf-8',
@@ -79,7 +80,8 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     expect(HANDLERS_SOURCE).toMatch(/max:\s*2000/);
     expect(HANDLERS_SOURCE).toContain("label: 'reticulum:voiceSendAudio'");
     expect(HANDLERS_SOURCE).toContain('reticulumVoiceAudioIpcRateLimit.checkOrThrow()');
-    expect(HANDLERS_SOURCE).toContain('voice PCM ingest requires reticulum:voiceSendAudio');
+    expect(HANDLERS_SOURCE).toContain('assertReticulumProxyPath');
+    expect(PROXY_PATH_SOURCE).toContain('voice PCM ingest requires reticulum:voiceSendAudio');
     expect(HANDLERS_SOURCE).toContain('VOICE_AUDIO_API_PATH');
     const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
     expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceSendAudio'");
@@ -91,7 +93,8 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoSendAudio'");
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoStop'");
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:voiceMemoCancel'");
-    expect(HANDLERS_SOURCE).toContain('voice memo requires reticulum:voiceMemo* IPC channels');
+    expect(HANDLERS_SOURCE).toContain('assertReticulumProxyPath');
+    expect(PROXY_PATH_SOURCE).toContain('voice memo requires reticulum:voiceMemo* IPC channels');
     const preload = readFileSync(join(__dirname, '../../preload/index.ts'), 'utf-8');
     expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoStart'");
     expect(preload).toContain("ipcRenderer.invoke('reticulum:voiceMemoSendAudio'");
@@ -105,7 +108,8 @@ describe('reticulum proxy rate limit + 100k peer ceilings (source contract)', ()
       /const reticulumGamesIpcRateLimit = createIpcRateLimiter\(\{\s*max:\s*600,[\s\S]*?label:\s*'reticulum:games'/,
     );
     expect(HANDLERS_SOURCE).toContain('reticulumGamesIpcRateLimit.checkOrThrow()');
-    expect(HANDLERS_SOURCE).toContain('LRGP games require reticulum:games* IPC channels');
+    expect(HANDLERS_SOURCE).toContain('assertReticulumProxyPath');
+    expect(PROXY_PATH_SOURCE).toContain('LRGP games require reticulum:games* IPC channels');
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesStatus'");
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesAction'");
     expect(HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:gamesDeleteSession'");

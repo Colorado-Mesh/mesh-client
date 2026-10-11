@@ -117,8 +117,8 @@ jobs:
         run: node scripts/ci-patch-draft-release-schema-note.mjs
 
   resolve-release-matrix:
-    needs: prepare-github-release
-    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
+    needs: [authorize-release, prepare-github-release]
+    if: ${{ needs.authorize-release.result == 'success' && needs.prepare-github-release.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -141,7 +141,11 @@ jobs:
 
   sidecars:
     name: Stage Reticulum
-    needs: resolve-release-matrix
+    needs: [authorize-release, prepare-github-release, resolve-release-matrix]
+    if: >-
+      ${{ needs.authorize-release.result == 'success'
+      && needs.prepare-github-release.result == 'success'
+      && needs.resolve-release-matrix.result == 'success' }}
     permissions:
       contents: read
     uses: ./.github/workflows/packaging-sidecars.yaml
@@ -149,8 +153,18 @@ jobs:
       platforms: all
 
   release:
-    needs: [schema-release-compare, prepare-github-release, resolve-release-matrix, sidecars]
-    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' && needs.sidecars.result == 'success' }}
+    needs:
+      [
+        authorize-release,
+        schema-release-compare,
+        prepare-github-release,
+        resolve-release-matrix,
+        sidecars,
+      ]
+    if: >-
+      ${{ needs.authorize-release.result == 'success'
+      && needs.prepare-github-release.result == 'success'
+      && needs.sidecars.result == 'success' }}
     runs-on: ${{ matrix.os }}
     environment: release
     defaults:
