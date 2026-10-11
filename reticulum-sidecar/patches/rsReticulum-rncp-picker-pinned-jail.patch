@@ -1,0 +1,120 @@
+diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
+index e9378cb6..30b97b21 100644
+--- a/crates/rns-runtime/src/rncp.rs
++++ b/crates/rns-runtime/src/rncp.rs
+@@ -149,6 +149,9 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+     }
+     match jail {
+         Some(jail_dir) => {
++            if is_picker_pinned_path(jail_dir) {
++                return resolve_under_picker_pin(jail_dir, path_str);
++            }
+             let jail_canonical =
+                 std::fs::canonicalize(jail_dir).map_err(|e| format!("jail canonicalize: {e}"))?;
+             // canonicalize resolves symlinks (macOS `/var` → `/private/var`)
+@@ -170,6 +173,50 @@ fn resolve_fetch_path(jail: Option<&Path>, data: &[u8]) -> Result<PathBuf, Strin
+     }
+ }
+ 
++/// Handle-derived roots (`/proc/self/fd` on Linux and `/.vol` on macOS) must
++/// remain in the returned path. Canonicalizing one turns it back into the
++/// mutable pathname that the native picker was intended to replace.
++fn is_picker_pinned_path(path: &Path) -> bool {
++    #[cfg(any(target_os = "linux", target_os = "macos"))]
++    let text = path.to_string_lossy();
++    #[cfg(target_os = "linux")]
++    if text.starts_with("/proc/self/fd/") {
++        return true;
++    }
++    #[cfg(target_os = "macos")]
++    if text.starts_with("/.vol/") {
++        return true;
++    }
++    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
++    let _ = path;
++    false
++}
++
++fn resolve_under_picker_pin(jail: &Path, requested: &str) -> Result<PathBuf, String> {
++    use std::path::Component;
++
++    let requested = Path::new(requested);
++    if requested.is_absolute() {
++        return Err("outside fetch jail".into());
++    }
++    let mut resolved = jail.to_path_buf();
++    for component in requested.components() {
++        let Component::Normal(name) = component else {
++            return Err("outside fetch jail".into());
++        };
++        resolved.push(name);
++        let metadata =
++            std::fs::symlink_metadata(&resolved).map_err(|error| format!("not found: {error}"))?;
++        if metadata.file_type().is_symlink() {
++            return Err("outside fetch jail".into());
++        }
++    }
++    if !resolved.is_file() {
++        return Err("not found: requested path is not a file".into());
++    }
++    Ok(resolved)
++}
++
+ pub struct RncpListenerConfig {
+     pub identity: Identity,
+     pub app_name: String,
+@@ -1513,6 +1560,21 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+ mod tests {
+     use super::*;
+ 
++    #[cfg(target_os = "linux")]
++    fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
++        use std::os::fd::AsRawFd;
++        let _ = dir;
++        PathBuf::from(format!("/proc/self/fd/{}", handle.as_raw_fd()))
++    }
++
++    #[cfg(target_os = "macos")]
++    fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
++        use std::os::unix::fs::MetadataExt;
++        let _ = dir;
++        let metadata = handle.metadata().unwrap();
++        PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
++    }
++
+     #[test]
+     fn metadata_roundtrip() {
+         let packed = pack_metadata("hello.txt");
+@@ -1605,4 +1667,32 @@ mod tests {
+     fn successful_rncp_send_retains_python_receiver_settlement_window() {
+         assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
+     }
++
++    #[cfg(any(target_os = "linux", target_os = "macos"))]
++    #[test]
++    fn fetch_sink_keeps_handle_alias_after_selected_root_is_replaced() {
++        let unique = std::time::SystemTime::now()
++            .duration_since(std::time::UNIX_EPOCH)
++            .unwrap()
++            .as_nanos();
++        let dir = std::env::temp_dir().join(format!(
++            "rns-rncp-picker-pin-{}-{unique}",
++            std::process::id()
++        ));
++        let selected = dir.join("selected");
++        let moved = dir.join("moved");
++        std::fs::create_dir(&dir).unwrap();
++        std::fs::create_dir(&selected).unwrap();
++        std::fs::write(selected.join("served.txt"), b"picked").unwrap();
++        let handle = std::fs::File::open(&selected).unwrap();
++        let alias = pinned_dir_alias(&selected, &handle);
++
++        std::fs::rename(&selected, &moved).unwrap();
++        std::fs::create_dir(&selected).unwrap();
++        std::fs::write(selected.join("served.txt"), b"replacement").unwrap();
++
++        let resolved = resolve_fetch_path(Some(&alias), b"served.txt").unwrap();
++        assert_eq!(std::fs::read(resolved).unwrap(), b"picked");
++        std::fs::remove_dir_all(&dir).unwrap();
++    }
+ }

@@ -8,6 +8,7 @@ mod identity;
 mod interfaces;
 mod lxmf;
 mod nomad;
+pub(crate) mod path_capability;
 mod path_medium;
 mod propagation;
 mod remote;
@@ -32,8 +33,17 @@ use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 
 use crate::stack::StackHandle;
 
-pub fn router(stack: Arc<StackHandle>, auth_token: String) -> Result<Router, String> {
+pub fn router(
+    stack: Arc<StackHandle>,
+    auth_token: String,
+    capability_issuer_token: String,
+    capability_session_id: String,
+) -> Result<Router, String> {
     let auth = auth::ApiAuth::try_new(auth_token)?;
+    let path_capabilities = path_capability::PathCapabilityStore::try_new(
+        capability_issuer_token,
+        capability_session_id,
+    )?;
     Ok(Router::new()
         .route("/api/v1/status", get(status::status))
         .route("/api/v1/app/info", get(status::app_info))
@@ -305,6 +315,10 @@ pub fn router(stack: Arc<StackHandle>, auth_token: String) -> Result<Router, Str
             put(nomad::put_nomad_serving_content_source),
         )
         .route(
+            "/api/v1/internal/path-capabilities",
+            post(path_capability::mint_path_capability),
+        )
+        .route(
             "/api/v1/rrc/hubs",
             get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub),
         )
@@ -393,6 +407,7 @@ pub fn router(stack: Arc<StackHandle>, auth_token: String) -> Result<Router, Str
         .route("/ws/voice", get(ws::ws_voice_handler))
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(localhost_cors_layer())
+        .layer(axum::Extension(path_capabilities))
         .with_state(stack)
         // Last layer is outermost: every HTTP route and WebSocket upgrade authenticates first.
         .layer(middleware::from_fn_with_state(

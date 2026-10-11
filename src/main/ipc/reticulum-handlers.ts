@@ -709,7 +709,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPut(NOMAD_CONTENT_SOURCE_API_PATH, { path: pathVal });
+      return await m.proxyPutWithPathCapability(
+        'nomad_content_source',
+        NOMAD_CONTENT_SOURCE_API_PATH,
+        { path: pathVal },
+      );
     } catch (err) {
       logReticulumProxyFailure('setNomadContentSource', err, NOMAD_CONTENT_SOURCE_API_PATH);
       throw err;
@@ -799,7 +803,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost('/api/v1/rncp/send', {
+      return await m.proxyPostWithPathCapability('rncp_send', '/api/v1/rncp/send', {
         destination_hash: destinationHash,
         path: filePath,
       });
@@ -843,11 +847,14 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost('/api/v1/rncp/fetch', {
+      const body = {
         destination_hash: destinationHash,
         remote_path: remotePath,
         save_path: savePath,
-      });
+      };
+      return savePath == null
+        ? await m.proxyPost('/api/v1/rncp/fetch', body)
+        : await m.proxyPostWithPathCapability('rncp_fetch', '/api/v1/rncp/fetch', body);
     } catch (err) {
       logReticulumProxyFailure('rncpFetch', err, '/api/v1/rncp/fetch');
       throw err;
@@ -882,7 +889,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       : [];
     try {
       const m = ensureManager();
-      return await m.proxyPost('/api/v1/rncp/listener', {
+      const body = {
         enabled,
         save_dir: saveDir,
         allow_fetch: allowFetch,
@@ -890,7 +897,10 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         overwrite: o.overwrite === true,
         allowed,
         blocked,
-      });
+      };
+      return enabled
+        ? await m.proxyPostWithPathCapability('rncp_listener', '/api/v1/rncp/listener', body)
+        : await m.proxyPost('/api/v1/rncp/listener', body);
     } catch (err) {
       logReticulumProxyFailure('setRncpListener', err, '/api/v1/rncp/listener');
       throw err;

@@ -28,12 +28,15 @@ describe('ratspeak overlay apply list', () => {
     const list = readFileSync(listPath, 'utf8');
     expect(list).toContain('RS_RETICULUM_APPLY_SCRIPTS');
     expect(list).toContain('RS_LXMF_APPLY_SCRIPTS');
+    expect(list).toContain('RS_NOMAD_APPLY_SCRIPTS');
     expect(list).toContain('apply_ratspeak_rns_overlays');
     expect(list).toContain('apply-rsReticulum-path-medium-slots.sh');
     expect(list).toContain('apply-rsReticulum-announce-rebroadcast-exclude-rf.sh');
     expect(list).toContain('apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh');
     expect(list).toContain('apply-rsReticulum-response-resource-window-fast.sh');
+    expect(list).toContain('apply-rsReticulum-rncp-picker-pinned-jail.sh');
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
+    expect(list).toContain('apply-rsNomad-picker-pinned-roots.sh');
   });
 
   it('does not ship sunset pathless-link or lxmf link-attached-tx overlays', () => {
@@ -86,7 +89,7 @@ describe('ratspeak overlay apply list', () => {
   it('patch basenames in update.sh match apply-list overlays', () => {
     const list = readFileSync(listPath, 'utf8');
     const update = readFileSync(updatePath, 'utf8');
-    const applyNames = [...list.matchAll(/apply-(rs(?:Reticulum|LXMF)-[a-z0-9-]+)\.sh/g)].map(
+    const applyNames = [...list.matchAll(/apply-(rs(?:Reticulum|LXMF|Nomad)-[a-z0-9-]+)\.sh/g)].map(
       (m) => `${m[1]}.patch`,
     );
     expect(applyNames.length).toBeGreaterThanOrEqual(10);

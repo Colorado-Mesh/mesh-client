@@ -8,6 +8,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib/ratspeak-overlay-apply-list.sh"
 RNS_DIR="${RS_RETICULUM_DIR:-${REPO_ROOT}/.rsstack/rsReticulum}"
 LXMF_DIR="${RS_LXMF_DIR:-${REPO_ROOT}/.rsstack/rsLXMF}"
+NOMAD_DIR="${RS_NOMAD_DIR:-${REPO_ROOT}/.rsstack/rsNomad}"
 
 if [[ ! -d "${RNS_DIR}/.git" ]]; then
   echo "rsReticulum not found at ${RNS_DIR}; skipping overlay apply (stub build)"
@@ -22,3 +23,10 @@ if [[ ! -d "${LXMF_DIR}/.git" ]]; then
 fi
 
 apply_ratspeak_lxmf_overlays "${SCRIPT_DIR}"
+
+if [[ ! -d "${NOMAD_DIR}/.git" ]]; then
+  echo "rsNomad not found at ${NOMAD_DIR}; skipping nomad overlay apply"
+  exit 0
+fi
+
+apply_ratspeak_nomad_overlays "${SCRIPT_DIR}"

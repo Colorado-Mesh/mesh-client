@@ -8,6 +8,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 const cloneScriptPath = fileURLToPath(new URL('./clone-ratspeak-stack.sh', import.meta.url));
 const cloneScript = readFileSync(cloneScriptPath, 'utf8');
+const ensureScriptPath = fileURLToPath(new URL('./ensure-rsReticulum-patches.sh', import.meta.url));
+const ensureScript = readFileSync(ensureScriptPath, 'utf8');
 const localGitEnvVars = execFileSync('git', ['rev-parse', '--local-env-vars'], {
   encoding: 'utf8',
 })
@@ -403,17 +405,22 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(out).toContain(`SHA=${tipSha}`);
   });
 
-  it('applies rsReticulum and rsLXMF overlays after checkout via shared list', () => {
+  it('applies rsReticulum, rsLXMF, and rsNomad overlays after checkout via shared list', () => {
     expect(cloneScript).toContain('apply_ratspeak_rns_overlays');
     expect(cloneScript).toContain('apply_ratspeak_lxmf_overlays');
+    expect(cloneScript).toContain('apply_ratspeak_nomad_overlays');
     const rnsEnsure = cloneScript.indexOf('ensure_repo "${RNS_DIR}"');
     const rnsApply = cloneScript.indexOf('apply_ratspeak_rns_overlays');
     const lxmfEnsure = cloneScript.indexOf('ensure_repo "${LXMF_DIR}"');
     const lxmfApply = cloneScript.indexOf('apply_ratspeak_lxmf_overlays');
+    const nomadEnsure = cloneScript.indexOf('ensure_repo "${NOMAD_DIR}"');
+    const nomadApply = cloneScript.indexOf('apply_ratspeak_nomad_overlays');
     expect(rnsEnsure).toBeGreaterThanOrEqual(0);
     expect(rnsApply).toBeGreaterThan(rnsEnsure);
     expect(lxmfEnsure).toBeGreaterThan(rnsApply);
     expect(lxmfApply).toBeGreaterThan(lxmfEnsure);
+    expect(nomadEnsure).toBeGreaterThan(lxmfApply);
+    expect(nomadApply).toBeGreaterThan(nomadEnsure);
 
     const listPath = fileURLToPath(
       new URL('./lib/ratspeak-overlay-apply-list.sh', import.meta.url),
@@ -422,5 +429,12 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(listScript).toContain('apply-rsReticulum-packet-tap.sh');
     expect(listScript).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
     expect(listScript).toContain('apply-rsLXMF-propagation-node-deferred-messagestore-load.sh');
+    expect(listScript).toContain('apply-rsNomad-picker-pinned-roots.sh');
+
+    expect(ensureScript).toContain('NOMAD_DIR="${RS_NOMAD_DIR:-${REPO_ROOT}/.rsstack/rsNomad}"');
+    expect(ensureScript).toContain('apply_ratspeak_nomad_overlays');
+    expect(ensureScript.indexOf('apply_ratspeak_nomad_overlays')).toBeGreaterThan(
+      ensureScript.indexOf('apply_ratspeak_lxmf_overlays'),
+    );
   });
 });

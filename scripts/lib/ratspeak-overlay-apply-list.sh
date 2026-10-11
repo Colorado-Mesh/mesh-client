@@ -18,6 +18,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
   apply-rsReticulum-ble-rnode-host-rssi-cache.sh
   apply-rsReticulum-response-resource-window-fast.sh
+  apply-rsReticulum-rncp-picker-pinned-jail.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(
@@ -29,6 +30,10 @@ RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-propagation-client-abort-transfer.sh
   apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
   apply-rsLXMF-propagation-client-request-resource.sh
+)
+
+RS_NOMAD_APPLY_SCRIPTS=(
+  apply-rsNomad-picker-pinned-roots.sh
 )
 
 apply_ratspeak_rns_overlays() {
@@ -43,6 +48,14 @@ apply_ratspeak_lxmf_overlays() {
   local script_dir="$1"
   local s
   for s in "${RS_LXMF_APPLY_SCRIPTS[@]}"; do
+    "${script_dir}/${s}"
+  done
+}
+
+apply_ratspeak_nomad_overlays() {
+  local script_dir="$1"
+  local s
+  for s in "${RS_NOMAD_APPLY_SCRIPTS[@]}"; do
     "${script_dir}/${s}"
   done
 }

@@ -49,6 +49,18 @@ describe('assertReticulumProxyPath', () => {
       assertReticulumProxyPath('/api/v1/system/factory-reset', { allowFactoryReset: true }),
     ).toBe('/api/v1/system/factory-reset');
   });
+
+  it('blocks internal routes in plain, query, and encoded forms', () => {
+    expect(() => assertReticulumProxyPath('/api/v1/internal/path-capabilities')).toThrow(
+      /internal routes/,
+    );
+    expect(() =>
+      assertReticulumProxyPath('/api/v1/internal/path-capabilities?operation=rncp_send'),
+    ).toThrow(/internal routes/);
+    expect(() => assertReticulumProxyPath('/api/v1/%69nternal/path-capabilities')).toThrow(
+      /internal routes/,
+    );
+  });
 });
 
 describe('reticulumProxyGetTimeoutMs', () => {

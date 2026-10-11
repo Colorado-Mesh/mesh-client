@@ -31,6 +31,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
+use serde::Deserialize;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
 use tracing::{error, info};
@@ -85,7 +86,14 @@ fn loopback_socket_addr(host: &str, port: u16) -> Result<SocketAddr, String> {
     Ok(SocketAddr::new(ip, port))
 }
 
-async fn read_auth_token_from_stdin() -> Result<String, String> {
+#[derive(Deserialize)]
+struct SidecarBootstrap {
+    auth_token: String,
+    capability_issuer_token: String,
+    capability_session_id: String,
+}
+
+async fn read_bootstrap_from_stdin() -> Result<SidecarBootstrap, String> {
     let mut line = String::new();
     let mut reader = BufReader::new(tokio::io::stdin());
     let bytes = reader
@@ -104,7 +112,7 @@ async fn read_auth_token_from_stdin() -> Result<String, String> {
     if line.is_empty() || line.contains(['\r', '\n']) {
         return Err("invalid sidecar authentication bootstrap".to_string());
     }
-    Ok(line)
+    serde_json::from_str(&line).map_err(|_| "invalid sidecar authentication bootstrap".to_string())
 }
 
 fn run_validate_config(config_dir: &Path, json: bool) -> ExitCode {
@@ -185,8 +193,8 @@ async fn main() -> ExitCode {
         }
     };
 
-    let auth_token = match read_auth_token_from_stdin().await {
-        Ok(token) => token,
+    let bootstrap = match read_bootstrap_from_stdin().await {
+        Ok(bootstrap) => bootstrap,
         Err(e) => {
             error!(error = %e, "sidecar authentication bootstrap failed");
             return ExitCode::from(1);
@@ -208,7 +216,12 @@ async fn main() -> ExitCode {
     // Persist + HTTP shell first — do not await live RNS/BLE before binding.
     let stack = Arc::new(Box::pin(StackHandle::bootstrap(config_dir, storage_dir, event_tx)).await);
 
-    let app = match api::router(stack.clone(), auth_token) {
+    let app = match api::router(
+        stack.clone(),
+        bootstrap.auth_token,
+        bootstrap.capability_issuer_token,
+        bootstrap.capability_session_id,
+    ) {
         Ok(app) => app,
         Err(e) => {
             error!(error = %e, "sidecar authentication bootstrap rejected");

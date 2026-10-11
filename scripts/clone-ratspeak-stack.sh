@@ -33,6 +33,7 @@ LRGP_DIR="${WORKSPACE_ROOT}/lrgp-rs"
 # So apply-*.sh targets the same siblings as this script (WORKSPACE_ROOT may differ from ..).
 export RS_RETICULUM_DIR="${RNS_DIR}"
 export RS_LXMF_DIR="${LXMF_DIR}"
+export RS_NOMAD_DIR="${NOMAD_DIR}"
 
 # Normal, CI, update, and release builds use the reviewed manifest. A developer
 # may opt into one or more local bisect refs with
@@ -225,6 +226,8 @@ apply_ratspeak_lxmf_overlays "${SCRIPT_DIR}"
 ensure_repo "${NOMAD_DIR}" 'https://github.com/Colorado-Mesh/rsNomad.git' \
   "${RS_NOMAD_REF}" 'rsNomad' "${RS_NOMAD_PIN}"
 nomad_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_NOMAD_REF}" "${RS_NOMAD_PIN}")"
+
+apply_ratspeak_nomad_overlays "${SCRIPT_DIR}"
 
 # rsLXST (LXST telephony) — required for rns-stack voice.
 ensure_repo "${LXST_DIR}" 'https://github.com/ratspeak/rsLXST.git' \

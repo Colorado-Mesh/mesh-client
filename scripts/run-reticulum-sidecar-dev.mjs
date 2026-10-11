@@ -29,9 +29,17 @@ export function superviseChild(child, hostProcess = process) {
   });
 }
 
+export function createSidecarBootstrap() {
+  return {
+    auth_token: randomBytes(32).toString('base64url'),
+    capability_issuer_token: randomBytes(32).toString('base64url'),
+    capability_session_id: randomBytes(16).toString('base64url'),
+  };
+}
+
 export function run() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-  const token = randomBytes(32).toString('base64url');
+  const bootstrap = createSidecarBootstrap();
   const child = spawn(
     'cargo',
     ['run', '--features', 'rns-stack,rns-ble,rns-rnode-tcp', '--', '--headless', '--port', '19437'],
@@ -44,7 +52,7 @@ export function run() {
   child.stdin.on('error', () => {
     // The child reports its own startup failure; never log the credential or pipe payload.
   });
-  child.stdin.end(`${token}\n`);
+  child.stdin.end(`${JSON.stringify(bootstrap)}\n`);
   superviseChild(child);
 }
 
