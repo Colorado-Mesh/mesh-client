@@ -2,16 +2,19 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { isMeshProtocol } from '../../shared/meshProtocol';
 import {
   DEFAULT_TAK_STYLE_SETTINGS,
   isTakIconsetPath,
   TAK_MATCH_OPS,
+  TAK_NODE_KINDS,
   TAK_TEAM_COLORS,
   TAK_TEAM_ROLES,
   TAK_UNIT_FILTER_PATTERN_MAX_LEN,
   TAK_UNIT_FILTER_PATTERNS_MAX,
   TAK_UNIT_FILTERS_MAX,
   type TakMatchOp,
+  type TakNodeKind,
   type TakStyleSettings,
   type TakUnitFilter,
   type TakUnitStyle,
@@ -88,13 +91,26 @@ function parseFilter(raw: unknown): TakUnitFilter {
     const trimmed = p.trim();
     if (trimmed) patterns.push(trimmed);
   }
-  return {
+  const filter: TakUnitFilter = {
     enabled: f.enabled,
     op: f.op as TakMatchOp,
     patterns,
     stripMatch: f.stripMatch,
     style: parseStyle(f.style),
   };
+  if (f.nodeKind !== undefined) {
+    if (typeof f.nodeKind !== 'string' || !TAK_NODE_KINDS.includes(f.nodeKind as TakNodeKind)) {
+      fail('nodeKind is not a known node kind');
+    }
+    filter.nodeKind = f.nodeKind as TakNodeKind;
+  }
+  if (f.protocol !== undefined) {
+    if (typeof f.protocol !== 'string' || !isMeshProtocol(f.protocol)) {
+      fail('protocol is not a known mesh protocol');
+    }
+    filter.protocol = f.protocol;
+  }
+  return filter;
 }
 
 /** Validate untrusted settings, keeping only known fields. Throws on anything malformed. */

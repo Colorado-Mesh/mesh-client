@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  advertisedNodeKind,
   advertisedTakStyle,
   TAK_PERSON_STYLE,
   TAK_RELAY_STYLE,
@@ -49,5 +50,37 @@ describe('advertisedTakStyle', () => {
 
   it('falls back from an unknown tracker role tag', () => {
     expect(advertisedTakStyle({ tracker_role: 'zz' }, 'meshcore')).toBe(TAK_PERSON_STYLE);
+  });
+});
+
+describe('advertisedNodeKind', () => {
+  it.each([
+    ['Chat', 'companion'],
+    ['Repeater', 'repeater'],
+    ['Room', 'room'],
+    ['Sensor', 'sensor'],
+  ] as const)('classifies a MeshCore %s advert as %s', (hw_model, kind) => {
+    expect(advertisedNodeKind({ hw_model }, 'meshcore')).toBe(kind);
+  });
+
+  it.each([
+    [0, 'companion'],
+    [2, 'repeater'],
+    [4, 'repeater'],
+    [6, 'sensor'],
+  ] as const)('classifies Meshtastic role %i as %s', (role, kind) => {
+    expect(advertisedNodeKind({ role }, 'meshtastic')).toBe(kind);
+  });
+
+  it('classifies infrastructure as a repeater and a tracker fix as a tracker', () => {
+    expect(advertisedNodeKind({ infrastructure: true }, 'reticulum')).toBe('repeater');
+    expect(advertisedNodeKind({ hw_model: 'Chat', tracker_role: 'k9' }, 'meshcore')).toBe(
+      'tracker',
+    );
+    expect(advertisedNodeKind({ tracker_role: 'nonsense' }, 'meshcore')).toBe('companion');
+  });
+
+  it('does not read a MeshCore advert type on another protocol', () => {
+    expect(advertisedNodeKind({ hw_model: 'Repeater' }, 'meshtastic')).toBe('companion');
   });
 });
