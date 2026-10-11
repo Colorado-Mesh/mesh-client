@@ -2,6 +2,7 @@
 export const MC_RESP_OK = 0;
 export const MC_RESP_ERR = 1;
 export const MC_RESP_SENT = 6;
+export const MC_RESP_NO_MORE_MESSAGES = 10;
 
 /** meshcore.js PushCodes */
 export const MC_PUSH_LOGIN_SUCCESS = 0x85;
