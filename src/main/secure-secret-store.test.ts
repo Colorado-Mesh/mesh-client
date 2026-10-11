@@ -138,7 +138,7 @@ describe('SecureSecretStore', () => {
     }
   });
 
-  it('deletes stale durable ciphertext only for the explicit basic_text backend', () => {
+  it('preserves protected ciphertext when the backend falls back to basic_text', () => {
     const { db, store } = createStore();
     try {
       store.set('mqtt:meshcore', 'old-value');
@@ -147,11 +147,33 @@ describe('SecureSecretStore', () => {
       expect(store.get('mqtt:meshcore')).toBe('new-session-value');
       expect(
         db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
-      ).toBeUndefined();
+      ).toBeDefined();
+      safeStorageHarness.backend = 'keychain';
+      expect(new SecureSecretStore(() => db).get('mqtt:meshcore')).toBe('old-value');
     } finally {
       db.close();
     }
   });
+
+  it.each(['basic_text', 'unavailable'])(
+    'rejects a required durable write before changing data on %s',
+    (backend) => {
+      const { db, store } = createStore();
+      try {
+        store.set('backup:meshcore:1', 'existing');
+        safeStorageHarness.backend = backend;
+        safeStorageHarness.available = backend !== 'unavailable';
+        expect(() => store.set('backup:meshcore:1', 'replacement', true)).toThrow(
+          'OS key storage unavailable',
+        );
+        safeStorageHarness.backend = 'keychain';
+        safeStorageHarness.available = true;
+        expect(store.get('backup:meshcore:1')).toBe('existing');
+      } finally {
+        db.close();
+      }
+    },
+  );
 
   it('gets all readable values in one snapshot and omits unavailable durable rows', () => {
     const { db, store } = createStore();

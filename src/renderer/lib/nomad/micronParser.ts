@@ -175,6 +175,8 @@ export function bindNomadMicronPartials(
   options: {
     rootResourceKey?: string | null;
     resolveResourceKey?: (info: MicronPartialInfo) => string | null;
+    /** Display a safe notice when content or refresh work is incomplete. */
+    onPaused?: () => void;
   } = {},
 ): MicronPartialCleanup {
   const limits = NOMAD_MICRON_PARTIAL_LIMITS;
@@ -204,6 +206,7 @@ export function bindNomadMicronPartials(
     if (binding.disposed) return;
     const message = error instanceof Error ? error.message : String(error);
     binding.element.setAttribute('data-partial-error', message);
+    options.onPaused?.();
     binding.element.dispatchEvent(
       new CustomEvent('partial-error', {
         bubbles: true,
@@ -235,8 +238,9 @@ export function bindNomadMicronPartials(
     }
   };
 
-  const stop = () => {
+  const stop = (notify = false) => {
     if (stopped) return;
+    if (notify) options.onPaused?.();
     stopped = true;
     queue.splice(0);
     for (const binding of Array.from(bindings.values())) {
@@ -244,7 +248,12 @@ export function bindNomadMicronPartials(
     }
   };
 
-  const lifetimeTimer = setTimeout(stop, limits.maxLifetimeMs);
+  const lifetimeTimer = setTimeout(() => {
+    const incomplete = Array.from(bindings.values()).some(
+      (binding) => binding.interval != null || binding.loading || binding.queued,
+    );
+    stop(incomplete);
+  }, limits.maxLifetimeMs);
 
   const resultSourceBytes = (result: NomadMicronBoundPartialResult): number => {
     if (
@@ -397,12 +406,13 @@ export function bindNomadMicronPartials(
     for (const element of elements) {
       if (depth > limits.maxDepth) {
         element.setAttribute('data-partial-error', 'partial_depth_limit');
+        options.onPaused?.();
         continue;
       }
       admittedPartials += 1;
       if (admittedPartials > limits.maxPartials) {
         element.setAttribute('data-partial-error', 'partial_count_limit');
-        stop();
+        stop(true);
         return;
       }
       const info = readPartial(element);
@@ -430,6 +440,7 @@ export function bindNomadMicronPartials(
       if (Number.isFinite(info.refresh) && info.refresh >= 1) {
         if (refreshTimers >= limits.maxRefreshTimers) {
           element.setAttribute('data-partial-refresh-error', 'partial_timer_limit');
+          options.onPaused?.();
         } else {
           refreshTimers += 1;
           binding.interval = setInterval(() => {

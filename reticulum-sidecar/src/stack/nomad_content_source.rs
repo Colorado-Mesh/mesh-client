@@ -205,7 +205,20 @@ pub fn resolve_pinned_content_roots(
     if external.as_os_str().is_empty() {
         return Err(ContentSourceError::Required);
     }
-    let layout = detect_layout(external)?;
+    // A pinned pages selection has an explicitly pinned parent. Handle-derived
+    // paths do not retain the selected folder's name, so detecting an empty
+    // `pages` directory again would reject the layout already authorized by the picker.
+    let layout = if pinned_content_root.is_some() {
+        if !external.is_dir() {
+            return Err(ContentSourceError::NotDirectory);
+        }
+        if fs::read_dir(external).is_err() {
+            return Err(ContentSourceError::Unreadable);
+        }
+        NomadContentLayout::PagesDir
+    } else {
+        detect_layout(external)?
+    };
     match layout {
         NomadContentLayout::SiteRoot => {
             let pages_dir = external.join("pages");
@@ -275,6 +288,23 @@ mod tests {
         let err = resolve_content_roots(Path::new("")).unwrap_err();
         assert_eq!(err, ContentSourceError::Required);
         assert_eq!(err.as_str(), "content_source_required");
+    }
+
+    #[test]
+    fn empty_pinned_pages_alias_retains_authorized_layout() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let alias = dir.path().join("handle-alias");
+        fs::create_dir(&alias).expect("empty pages");
+        assert_eq!(
+            detect_layout(&alias),
+            Err(ContentSourceError::InvalidLayout)
+        );
+        let roots = resolve_pinned_content_roots(&alias, Some(dir.path())).expect("pinned pages");
+        assert_eq!(roots.layout, NomadContentLayout::PagesDir);
+        assert_eq!(roots.pages_dir, alias);
+        assert_eq!(roots.files_dir, dir.path().join("files"));
+        fs::write(roots.pages_dir.join("index.mu"), b"> welcome").expect("default page");
+        assert!(roots.pages_dir.join("index.mu").is_file());
     }
 
     #[test]

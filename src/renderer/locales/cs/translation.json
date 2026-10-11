@@ -50,7 +50,9 @@
     "takRemoteConnecting": "vzdálené připojení",
     "takRemoteError": "chyba vzdáleného připojení",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Uložená nastavení se nepodařilo načíst",
+    "savedSettingsRecovery": "Vaše uložená data byla zachována. Zkontrolujte, zda je systémová klíčenka k dispozici, nebo chvíli počkejte a zkuste to znovu."
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",
@@ -1033,7 +1035,8 @@
     "copied": "Zkopírováno",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Zjištěno jako robot ze svých automatických odpovědí"
+    "botBadgeTooltip": "Zjištěno jako robot ze svých automatických odpovědí",
+    "retry": "Zkusit znovu"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -3852,7 +3855,8 @@
     "unfavoriteSiteAria": "Odebrat {{name}} z oblíbených",
     "favoriteAddedToast": "Přidáno {{name}} k oblíbeným",
     "favoriteRemovedToast": "Odebráno {{name}} z oblíbených",
-    "favoriteFailedToast": "Nelze aktualizovat oblíbenou položku pro {{name}}. Je Reticulum spuštěno?"
+    "favoriteFailedToast": "Nelze aktualizovat oblíbenou položku pro {{name}}. Je Reticulum spuštěno?",
+    "partialsPaused": "Některý obsah stránky se nepodařilo načíst nebo obnovit. Znovu načtěte stránku a zkuste to znovu."
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -7089,6 +7093,7 @@
     "downloadSize": "Stáhnout ({{size}})",
     "readLanguagesHint": "Zprávy v těchto jazycích nejsou nikdy přeloženy automaticky. Jazyk vybraný v části Přeložit do se vždy počítá jako jazyk, který čtete.",
     "pivotHint": "Balíček pokrývá jeden směr překladu, například z francouzštiny do angličtiny. Jiné jazykové páry jsou přeloženy do angličtiny: Francouzština do němčiny potřebuje francouzskou → angličtinu a anglickou → němčinu. Pro překlad do angličtiny stačí pouze jeden balíček.",
-    "hideTranslation": "Skrýt překlad"
+    "hideTranslation": "Skrýt překlad",
+    "secureUrlRequired": "Online překlad je pozastaven. Váš server a uložený klíč byly zachovány; pro obnovení použijte adresu URL https."
   }
 }

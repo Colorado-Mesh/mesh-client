@@ -200,6 +200,31 @@ describe('NomadMicronPageView', () => {
     );
   });
 
+  it('shows partial failure feedback and reloads with a fresh request', async () => {
+    const onFetchPartial = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValue({ ok: true, content: 'RECOVERED_PARTIAL' });
+    const { getByRole, queryByRole } = render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onFetchPartial={onFetchPartial}
+        content="`{:/page/partial.mu}"
+      />,
+    );
+    await vi.waitFor(() => {
+      expect(getByRole('status')).toBeInTheDocument();
+    });
+    fireEvent.click(getByRole('button'));
+    await vi.waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain(
+        'RECOVERED_PARTIAL',
+      );
+    });
+    expect(onFetchPartial).toHaveBeenCalledTimes(2);
+    expect(queryByRole('status')).toBeNull();
+  });
+
   it('restarts the page controller on same-content navigation and ignores the old result', async () => {
     let resolveOld: ((value: { ok: boolean; content: string }) => void) | undefined;
     let resolveCurrent: ((value: { ok: boolean; content: string }) => void) | undefined;

@@ -42,6 +42,24 @@ describe('App translation settings', () => {
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
+  it('shows the saved insecure LibreTranslate URL warning while translation is disabled', async () => {
+    const status = translationStatus(false);
+    status.enabled = false;
+    status.libre = {
+      enabled: false,
+      url: 'http://old-server.example',
+      hasApiKey: true,
+      needsSecureUrl: true,
+    };
+    resetTranslation(status);
+
+    render(<AppTranslationSection />);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'chatTranslation.secureUrlRequired',
+    );
+    expect(screen.getByRole('button', { name: 'chatTranslation.enable' })).toBeInTheDocument();
+  });
   it('disables auto without complete packs and handles downloads, progress, cancel, delete and remove all', async () => {
     const api = resetTranslation(translationStatus(false));
     let progress!: (value: TranslationProgress) => void;

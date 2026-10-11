@@ -1207,6 +1207,7 @@ export interface ElectronAPI {
     set: (
       key: string,
       value: string,
+      requirePersistent?: boolean,
     ) => Promise<{ available: boolean; persistent: boolean; verified: boolean }>;
     remove: (key: string) => Promise<void>;
     migrateLegacyIdentityCiphertext: (
