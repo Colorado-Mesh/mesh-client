@@ -1,13 +1,14 @@
 import type { NomadPageRequestData } from '@/shared/nomad-types';
 
 import MicronParser, {
+  MICRON_RENDER_LIMITS,
   type MicronPartialCleanup,
   type MicronPartialFetchResult,
   type MicronPartialInfo,
 } from './vendor/micron-parser.js';
 
 export type { MicronPartialCleanup, MicronPartialFetchResult, MicronPartialInfo };
-export { MicronParser };
+export { MICRON_RENDER_LIMITS, MicronParser };
 
 export const DEFAULT_NOMAD_NODE_PAGE_PATH = '/page/index.mu';
 

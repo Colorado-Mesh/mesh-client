@@ -457,7 +457,9 @@ When **browsing** remote Nomad nodes (not hosting), the Micron viewer keeps two 
 | Page (Micron source)         | `nomadPageCache.ts`  | 128 entries | **256 KiB** text                   | Viewer **Clear page and image caches**, **Close page viewer**, or process restart |
 | Image (`/media` WebP base64) | `nomadImageCache.ts` | 128 entries | **2 MiB** base64 (~1.5 MiB binary) | Same as page cache                                                                |
 
-**Not persisted** to disk or SQLite — quitting the app or a full renderer reload drops both. Oversized pages or images are still shown when fetched, but are **not** stored in the LRU (so the next visit pays the mesh cost again). `force_path_refresh` / announce-retry loads bypass the image LRU so a forced path refresh still hits the network. Host-side conversion cache in rsNomad (`NomadNodeConfig.media_cache`) is separate and only applies when **this** node is serving `/media`.
+**Not persisted** to disk or SQLite — quitting the app or a full renderer reload drops both. Top-level page source is displayed up to the same 256 KiB cap; larger source is truncated and marked in the viewer. Images above their per-entry cap can still be shown when fetched but are **not** stored in the LRU, so the next visit pays the mesh cost again. `force_path_refresh` / announce-retry loads bypass the image LRU so a forced path refresh still hits the network. Host-side conversion cache in rsNomad (`NomadNodeConfig.media_cache`) is separate and only applies when **this** node is serving `/media`.
+
+Micron rendering also has fixed complexity limits for every surface, including fetched partials, editor previews, and formatted RRC messages. Pages that exceed the source, line, output, element, nesting, table, or parser-work budget show a **Page exceeds safe rendering limits** notice instead of partial content. This prevents a small page from expanding into an unsafe amount of browser work.
 
 Toolbar **⌀** clears both LRUs without closing the viewer; **✕** closes the viewer and also clears them.
 

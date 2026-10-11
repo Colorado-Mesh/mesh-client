@@ -16,6 +16,19 @@ export type MicronPartialCleanup = (() => void) & {
   reload?: (predicate?: (info: MicronPartialInfo) => boolean) => void;
 };
 
+export declare const MICRON_RENDER_LIMITS: Readonly<{
+  sourceChars: number;
+  sourceLines: number;
+  lineChars: number;
+  outputHtmlChars: number;
+  elements: number;
+  nestingDepth: number;
+  tableRows: number;
+  tableColumns: number;
+  tableCells: number;
+  operations: number;
+}>;
+
 export default class MicronParser {
   constructor(darkTheme?: boolean, enableForceMonospace?: boolean);
   convertMicronToHtml(markup: string): string;
