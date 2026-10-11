@@ -26,6 +26,7 @@ pub(super) const MAX_PENDING_BYTES_PER_IDENTITY: u64 = 50 * 1024 * 1024;
 enum Phase {
     Writing,
     Pending,
+    Promoting,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,6 +63,8 @@ struct State {
     manifest: Manifest,
     #[cfg(test)]
     fail_manifest_persist_after: Cell<Option<usize>>,
+    #[cfg(test)]
+    fail_destination_replace: Cell<bool>,
 }
 
 #[derive(Clone)]
@@ -300,16 +303,39 @@ impl State {
         let staged_path = self.checked_stage_path(&entry)?;
         let final_path = final_path(&self.save_dir, &entry.file_name, overwrite)?;
         if overwrite && final_path.exists() {
-            fs::remove_file(&final_path)
-                .map_err(|e| format!("remove overwritten RNCP file: {e}"))?;
+            let promotion_path = promotion_path(&self.save_dir, transfer_id);
+            self.set_phase(transfer_id, Phase::Promoting)?;
+
+            let replacement = (|| {
+                install_staged_file(&staged_path, &promotion_path, &self.save_dir)?;
+                self.replace_destination(&promotion_path, &final_path)?;
+                if let Err(error) = sync_dir(&self.save_dir) {
+                    tracing::warn!("sync committed RNCP replacement failed: {error}");
+                }
+                Ok::<(), String>(())
+            })();
+            if let Err(error) = replacement {
+                if let Err(cleanup_error) = remove_owned_regular_file(&promotion_path) {
+                    tracing::warn!("remove failed RNCP promotion temp failed: {cleanup_error}");
+                }
+                if let Err(sync_error) = sync_dir(&self.save_dir) {
+                    tracing::warn!("sync failed RNCP promotion rollback failed: {sync_error}");
+                }
+                if let Err(phase_error) = self.set_phase(transfer_id, Phase::Pending) {
+                    tracing::warn!("persist RNCP promotion rollback failed: {phase_error}");
+                }
+                return Err(error);
+            }
+        } else {
+            install_staged_file(&staged_path, &final_path, &self.save_dir)?;
         }
-        install_staged_file(&staged_path, &final_path, &self.save_dir)?;
+
         self.remove_manifest_entry(transfer_id);
         if let Err(error) = self.persist_manifest() {
-            self.manifest.entries.push(entry.clone());
-            let _ = fs::remove_file(&final_path);
-            let _ = sync_dir(&self.save_dir);
-            return Err(error);
+            // The destination replacement is already committed. A stale
+            // on-disk manifest entry is safe: startup recovery removes only
+            // application-owned stage/temp files and preserves final_path.
+            tracing::warn!("persist committed RNCP promotion failed: {error}");
         }
         if let Err(error) = remove_owned_regular_file(&staged_path) {
             tracing::warn!("remove committed RNCP stage failed: {error}");
@@ -346,9 +372,13 @@ impl State {
     fn cleanup(&mut self) -> Result<(), String> {
         for entry in &self.manifest.entries {
             remove_owned_regular_file(&self.data_dir.join(&entry.staged_name))?;
+            if entry.phase == Phase::Promoting {
+                remove_owned_regular_file(&promotion_path(&self.save_dir, &entry.transfer_id))?;
+            }
         }
         cleanup_opaque_stage_files(&self.data_dir)?;
         sync_dir(&self.data_dir)?;
+        sync_dir(&self.save_dir)?;
         self.manifest = Manifest::empty();
         self.persist_manifest()
     }
@@ -399,6 +429,38 @@ impl State {
         self.manifest
             .entries
             .retain(|entry| entry.transfer_id != transfer_id);
+    }
+
+    fn set_phase(&mut self, transfer_id: &str, phase: Phase) -> Result<(), String> {
+        let entry = self
+            .manifest
+            .entries
+            .iter_mut()
+            .find(|entry| entry.transfer_id == transfer_id)
+            .ok_or_else(|| "RNCP staging manifest entry disappeared".to_string())?;
+        let previous = entry.phase;
+        entry.phase = phase;
+        if let Err(error) = self.persist_manifest() {
+            if let Some(entry) = self
+                .manifest
+                .entries
+                .iter_mut()
+                .find(|entry| entry.transfer_id == transfer_id)
+            {
+                entry.phase = previous;
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)] // `self` owns the test-only replacement fault injector.
+    fn replace_destination(&self, source: &Path, destination: &Path) -> Result<(), String> {
+        #[cfg(test)]
+        if self.fail_destination_replace.replace(false) {
+            return Err("injected RNCP destination replacement failure".into());
+        }
+        replace_promoted_file(source, destination)
     }
 
     fn persist_manifest(&self) -> Result<(), String> {
@@ -473,6 +535,9 @@ fn initialize(save_dir: PathBuf) -> Result<State, String> {
     if marker_valid {
         for entry in &manifest.entries {
             remove_owned_regular_file(&data_dir.join(&entry.staged_name))?;
+            if entry.phase == Phase::Promoting {
+                remove_owned_regular_file(&promotion_path(&save_dir, &entry.transfer_id))?;
+            }
         }
         // Exact UUID stage names are also application-owned. Clean any that
         // were sealed after the old manifest was synced but before its phase
@@ -490,6 +555,8 @@ fn initialize(save_dir: PathBuf) -> Result<State, String> {
         manifest: Manifest::empty(),
         #[cfg(test)]
         fail_manifest_persist_after: Cell::new(None),
+        #[cfg(test)]
+        fail_destination_replace: Cell::new(false),
     };
     state.persist_manifest()?;
     Ok(state)
@@ -585,12 +652,16 @@ fn validate_remote_filename(name: &str) -> Result<String, String> {
 fn validate_staged_name(name: &str, transfer_id: &str, phase: Phase) -> Result<(), String> {
     let suffix = match phase {
         Phase::Writing => ".write",
-        Phase::Pending => ".part",
+        Phase::Pending | Phase::Promoting => ".part",
     };
     if name != format!("{transfer_id}{suffix}") {
         return Err("RNCP staging manifest has an invalid staged name".into());
     }
     Ok(())
+}
+
+fn promotion_path(save_dir: &Path, transfer_id: &str) -> PathBuf {
+    save_dir.join(format!(".mesh-rncp-{transfer_id}.promote"))
 }
 
 fn final_path(save_dir: &Path, file_name: &str, overwrite: bool) -> Result<PathBuf, String> {
@@ -635,11 +706,52 @@ fn ensure_safe_dir(path: &Path) -> Result<(), String> {
 }
 
 fn replace_file(source: &Path, destination: &Path) -> Result<(), String> {
-    #[cfg(windows)]
-    if destination.exists() {
-        remove_owned_regular_file(destination)?;
+    atomic_replace_file(source, destination)
+        .map_err(|e| format!("replace RNCP staging manifest: {e}"))
+}
+
+fn replace_promoted_file(source: &Path, destination: &Path) -> Result<(), String> {
+    atomic_replace_file(source, destination).map_err(|e| format!("replace RNCP destination: {e}"))
+}
+
+#[cfg(not(windows))]
+fn atomic_replace_file(source: &Path, destination: &Path) -> io::Result<()> {
+    fs::rename(source, destination)
+}
+
+#[cfg(windows)]
+fn atomic_replace_file(source: &Path, destination: &Path) -> io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use std::ptr;
+    use windows_sys::Win32::Storage::FileSystem::{REPLACEFILE_WRITE_THROUGH, ReplaceFileW};
+
+    if !destination.exists() {
+        return fs::rename(source, destination);
     }
-    fs::rename(source, destination).map_err(|e| format!("replace RNCP staging manifest: {e}"))
+
+    let source: Vec<u16> = source.as_os_str().encode_wide().chain(Some(0)).collect();
+    let destination: Vec<u16> = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
+    // SAFETY: both paths are valid, nul-terminated UTF-16 buffers for the
+    // duration of the call; the optional backup and metadata pointers are null.
+    let replaced = unsafe {
+        ReplaceFileW(
+            destination.as_ptr(),
+            source.as_ptr(),
+            ptr::null(),
+            REPLACEFILE_WRITE_THROUGH,
+            ptr::null(),
+            ptr::null(),
+        )
+    };
+    if replaced == 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 fn create_private_file(path: &Path) -> Result<File, String> {
@@ -873,6 +985,101 @@ mod tests {
             .expect("manifest")
             .expect("present");
         assert!(manifest.entries.is_empty());
+    }
+
+    #[tokio::test]
+    async fn failed_overwrite_replacement_preserves_original_and_pending_offer() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let destination = dir.path().join("payload.bin");
+        fs::write(&destination, b"original").expect("existing destination");
+        let staging = RncpStaging::open(dir.path().to_path_buf())
+            .await
+            .expect("staging");
+        let StoreOutcome::Pending { transfer_id, .. } = staging
+            .store(
+                [21; 32],
+                [22; 16],
+                "payload.bin".into(),
+                Arc::from(&b"replacement"[..]),
+                true,
+                true,
+            )
+            .await
+            .expect("store")
+        else {
+            panic!("expected pending")
+        };
+
+        let mut state = staging.inner.lock().expect("state");
+        state.fail_destination_replace.set(true);
+        let error = state
+            .accept(&transfer_id, true)
+            .expect_err("injected replacement failure");
+
+        assert_eq!(error, "injected RNCP destination replacement failure");
+        assert_eq!(
+            fs::read(&destination).expect("original retained"),
+            b"original"
+        );
+        assert!(!promotion_path(dir.path(), &transfer_id).exists());
+        let entry = state
+            .manifest
+            .entries
+            .iter()
+            .find(|entry| entry.transfer_id == transfer_id)
+            .expect("pending entry retained");
+        assert_eq!(entry.phase, Phase::Pending);
+        assert!(state.checked_stage_path(entry).is_ok());
+    }
+
+    #[tokio::test]
+    async fn committed_overwrite_survives_manifest_cleanup_failure_and_recovery() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let destination = dir.path().join("payload.bin");
+        fs::write(&destination, b"original").expect("existing destination");
+        let staging = RncpStaging::open(dir.path().to_path_buf())
+            .await
+            .expect("staging");
+        let StoreOutcome::Pending { transfer_id, .. } = staging
+            .store(
+                [23; 32],
+                [24; 16],
+                "payload.bin".into(),
+                Arc::from(&b"replacement"[..]),
+                true,
+                true,
+            )
+            .await
+            .expect("store")
+        else {
+            panic!("expected pending")
+        };
+
+        {
+            let mut state = staging.inner.lock().expect("state");
+            // Persisting Promoting succeeds; removing the committed entry fails.
+            state.fail_manifest_persist_after.set(Some(1));
+            state
+                .accept(&transfer_id, true)
+                .expect("committed replacement");
+            assert!(state.manifest.entries.is_empty());
+            let persisted = read_manifest(&state.manifest_path)
+                .expect("manifest")
+                .expect("present");
+            assert_eq!(persisted.entries.len(), 1);
+            assert_eq!(persisted.entries[0].phase, Phase::Promoting);
+        }
+
+        assert_eq!(fs::read(&destination).expect("replacement"), b"replacement");
+        drop(staging);
+        RncpStaging::reconcile(dir.path().to_path_buf())
+            .await
+            .expect("reconcile");
+        assert_eq!(
+            fs::read(&destination).expect("replacement retained"),
+            b"replacement"
+        );
+        assert!(!promotion_path(dir.path(), &transfer_id).exists());
     }
 
     #[tokio::test]
