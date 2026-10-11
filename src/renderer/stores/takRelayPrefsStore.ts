@@ -11,12 +11,18 @@ export interface TakRelayIdentityPrefs {
   trackerChannels: number[];
   /** Channel index to the TAK GeoChat room its messages are mirrored into. */
   chatBridges: Record<number, string>;
+  /** Bridged channels that TAK clients may send to; a message in the room goes out on the mesh. */
+  chatSendChannels: number[];
 }
 
 /** MeshCore channel slots are a single byte. */
 const MAX_CHANNEL_INDEX = 255;
 
-const EMPTY_PREFS: TakRelayIdentityPrefs = { trackerChannels: [], chatBridges: {} };
+const EMPTY_PREFS: TakRelayIdentityPrefs = {
+  trackerChannels: [],
+  chatBridges: {},
+  chatSendChannels: [],
+};
 
 function isChannelIndex(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_CHANNEL_INDEX;
@@ -40,7 +46,11 @@ function sanitizePrefs(raw: unknown): Record<IdentityId, TakRelayIdentityPrefs> 
         if (trimmed) chatBridges[idx] = trimmed;
       }
     }
-    out[identityId] = { trackerChannels, chatBridges };
+    // Sending needs a bridged room, so a stale opt-in for an unbridged channel is dropped.
+    const chatSendChannels = Array.isArray(v.chatSendChannels)
+      ? [...new Set(v.chatSendChannels.filter(isChannelIndex))].filter((c) => c in chatBridges)
+      : [];
+    out[identityId] = { trackerChannels, chatBridges, chatSendChannels };
   }
   return out;
 }
@@ -48,8 +58,10 @@ function sanitizePrefs(raw: unknown): Record<IdentityId, TakRelayIdentityPrefs> 
 interface TakRelayPrefsState {
   byIdentity: Record<IdentityId, TakRelayIdentityPrefs>;
   setTrackerChannel: (identityId: IdentityId, channel: number, enabled: boolean) => void;
-  /** Empty room removes the bridge. */
+  /** Empty room removes the bridge, and with it the channel's send opt-in. */
   setChatBridge: (identityId: IdentityId, channel: number, room: string) => void;
+  /** Let TAK clients send to a bridged channel. Ignored while the channel has no room. */
+  setChatSend: (identityId: IdentityId, channel: number, enabled: boolean) => void;
 }
 
 export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
@@ -77,7 +89,28 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
             Object.entries(prev.chatBridges).filter(([key]) => Number(key) !== channel),
           ) as Record<number, string>;
           if (trimmed) chatBridges[channel] = trimmed;
-          return { byIdentity: { ...s.byIdentity, [identityId]: { ...prev, chatBridges } } };
+          const chatSendChannels = trimmed
+            ? prev.chatSendChannels
+            : prev.chatSendChannels.filter((c) => c !== channel);
+          return {
+            byIdentity: {
+              ...s.byIdentity,
+              [identityId]: { ...prev, chatBridges, chatSendChannels },
+            },
+          };
+        });
+      },
+      setChatSend: (identityId, channel, enabled) => {
+        if (!isChannelIndex(channel)) return;
+        set((s) => {
+          const prev = s.byIdentity[identityId] ?? EMPTY_PREFS;
+          const allowed = enabled && Boolean(prev.chatBridges[channel]);
+          const has = prev.chatSendChannels.includes(channel);
+          if (has === allowed) return s;
+          const chatSendChannels = allowed
+            ? [...prev.chatSendChannels, channel].sort((a, b) => a - b)
+            : prev.chatSendChannels.filter((c) => c !== channel);
+          return { byIdentity: { ...s.byIdentity, [identityId]: { ...prev, chatSendChannels } } };
         });
       },
     }),

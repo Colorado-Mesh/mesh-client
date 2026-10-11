@@ -77,6 +77,7 @@ import type {
   TAKContactsUpdate,
   TAKEnrollmentRequest,
   TAKGeochatMessage,
+  TAKInboundChat,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1421,6 +1422,11 @@ export interface ElectronAPI {
     getContacts: () => Promise<TAKContact[]>;
     /** Batched contact changes, at most about once per second. */
     onContacts: (cb: (update: TAKContactsUpdate) => void) => () => void;
+    /**
+     * A GeoChat message a local TAK client sent. The renderer sends it on the mesh only when its
+     * room is bridged to a channel that allows sending.
+     */
+    onInboundChat: (cb: (message: TAKInboundChat) => void) => () => void;
     /** Start (or restart) the relay to a remote TAK server; saves the settings. */
     remoteStart: (settings: TAKRemoteSettings) => Promise<void>;
     remoteStop: () => Promise<void>;

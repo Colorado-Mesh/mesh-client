@@ -213,6 +213,18 @@ export interface TAKGeochatMessage {
   longitude?: number;
 }
 
+/** A GeoChat message a local TAK client sent to the server, for the mesh channel bridge. */
+export interface TAKInboundChat {
+  /** GeoChat room (chatroom) the client addressed. */
+  room: string;
+  senderCallsign: string;
+  text: string;
+  /** Server-side id of the client connection that sent it. */
+  clientId: string;
+  /** When the server received it, epoch milliseconds. */
+  timeMs: number;
+}
+
 export const TAK_GEOCHAT_TEXT_MAX_LEN = 1024;
 export const TAK_GEOCHAT_ROOM_MAX_LEN = 64;
 export const TAK_GEOCHAT_CALLSIGN_MAX_LEN = 64;

@@ -36,6 +36,16 @@ describe('buildGeochatCot', () => {
     expect(cot).not.toContain('<b>');
   });
 
+  it('uses a given sender uid in place of the callsign-derived one', () => {
+    const cot = buildGeochatCot(MSG, NOW, 'msg-1', 'ANDROID-1');
+    expect(cot).toContain('uid="GeoChat.ANDROID-1.Mesh Ops.msg-1"');
+    expect(cot).toContain('<chatgrp uid0="ANDROID-1" uid1="Mesh Ops" id="Mesh Ops"/>');
+    expect(cot).toContain('<link uid="ANDROID-1" type="a-f-G-U-C" relation="p-p"/>');
+    expect(cot).toContain('source="BAO.F.ATAK.ANDROID-1"');
+    expect(cot).not.toContain('MESHCHAT-');
+    expect(buildGeochatCot(MSG, NOW, 'msg-1', 'a"b')).toContain('uid0="a&quot;b"');
+  });
+
   it('gives each callsign a stable sender uid', () => {
     expect(geochatSenderUid('Bob')).toBe(geochatSenderUid('Bob'));
     expect(geochatSenderUid('Bob')).not.toBe(geochatSenderUid('Alice'));

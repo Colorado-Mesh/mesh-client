@@ -72,6 +72,21 @@ describe('TakChannelRelaySection', () => {
     expect(screen.getByLabelText('GeoChat room for Public')).toBeInTheDocument();
   });
 
+  it('offers the TAK send opt-in only for a channel with a room', async () => {
+    const user = userEvent.setup();
+    useTakRelayPrefsStore.getState().setChatBridge(ID, 2, 'SAR Team');
+    render(<Section />);
+    expect(screen.queryByLabelText('Let TAK devices send to Public')).toBeNull();
+    const send = screen.getByLabelText('Let TAK devices send to #sar');
+    expect(send).not.toBeChecked();
+
+    await user.click(send);
+    expect(getTakRelayPrefs(ID).chatSendChannels).toEqual([2]);
+    expect(screen.getByLabelText('Let TAK devices send to #sar')).toBeChecked();
+    await user.click(screen.getByLabelText('Let TAK devices send to #sar'));
+    expect(getTakRelayPrefs(ID).chatSendChannels).toEqual([]);
+  });
+
   it('shows the empty text without channels', () => {
     render(
       <TakChannelRelaySection

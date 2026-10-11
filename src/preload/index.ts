@@ -55,6 +55,7 @@ import type {
   TAKContactsUpdate,
   TAKEnrollmentRequest,
   TAKGeochatMessage,
+  TAKInboundChat,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1345,6 +1346,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('tak:contacts', handler);
       return () => ipcRenderer.off('tak:contacts', handler);
+    },
+    onInboundChat: (cb: (message: TAKInboundChat) => void): (() => void) => {
+      const handler = (_: unknown, message: TAKInboundChat) => {
+        cb(message);
+      };
+      ipcRenderer.on('tak:inboundChat', handler);
+      return () => ipcRenderer.off('tak:inboundChat', handler);
     },
     remoteStart: (settings: TAKRemoteSettings): Promise<void> =>
       ipcRenderer.invoke('tak:remoteStart', settings),

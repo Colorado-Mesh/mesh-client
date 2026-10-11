@@ -323,7 +323,7 @@ export default function TakServerPanel({
         channels={meshtasticChannels}
         showTrackers={meshtasticCaps.hasTakTrackerChannels}
         title={t('takServerPanel.channelRelayTitleMeshtastic')}
-        description={t('takServerPanel.channelRelayDescMeshtastic')}
+        description={t('takServerPanel.channelRelayHelpMeshtastic')}
         emptyText={t('takServerPanel.channelRelayNoChannelsMeshtastic')}
         anchorId="tak.channelRelay.meshtastic"
       />
@@ -333,7 +333,7 @@ export default function TakServerPanel({
         channels={meshcoreChannels}
         showTrackers={meshcoreCaps.hasTakTrackerChannels}
         title={t('takServerPanel.channelRelayTitle')}
-        description={t('takServerPanel.channelRelayDesc')}
+        description={t('takServerPanel.channelRelayHelp')}
         emptyText={t('takServerPanel.channelRelayNoChannels')}
         anchorId="tak.channelRelay.trackers"
       />

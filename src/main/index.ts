@@ -389,6 +389,11 @@ function attachTakForwarders(manager: TakServerManager): void {
     if (mainWindow) mainWindow.webContents.send('tak:clientUpdated', client);
     else console.debug('[main] tak:clientUpdated dropped (mainWindow not ready)');
   });
+  // Dropped while the window is down: a chat message must not be sent on the mesh late.
+  manager.on('client-chat', (message) => {
+    if (mainWindow) mainWindow.webContents.send('tak:inboundChat', message);
+    else console.debug('[main] tak:inboundChat dropped (mainWindow not ready)');
+  });
   // The renderer re-reads tak:getContacts on mount, so a dropped batch is recovered there.
   manager.on('contacts', (update) => {
     if (mainWindow) mainWindow.webContents.send('tak:contacts', update);

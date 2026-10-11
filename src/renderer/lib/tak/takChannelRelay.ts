@@ -8,6 +8,7 @@ import { recordTakTrackerFix } from '../../stores/takTrackerStore';
 import { parseMt1Payload } from '../meshcore/mt1Tracker';
 import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { ChatMessage, IdentityId } from '../types';
+import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
 
 export interface TakChannelMessage {
@@ -28,6 +29,8 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   const room = getTakRelayPrefs(identityId).chatBridges[msg.channelIndex];
   const text = msg.text.trim().slice(0, TAK_GEOCHAT_TEXT_MAX_LEN);
   const sender = msg.senderName.trim().slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN);
+  // A TAK client's own message heard back off the mesh: the clients already have it.
+  if (room && text && consumeTakEcho(identityId, msg.channelIndex, text)) return;
   if (room && text && sender) {
     pushTakGeochat({
       room,
@@ -44,7 +47,8 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
 /**
  * Hand one newly heard MeshCore channel message to the TAK relay: a `!MT1` fix on a tracker
  * channel becomes a marker, and a message on a bridged channel is mirrored into its GeoChat room.
- * Does nothing unless a TAK sink is up and the user enabled the channel; never transmits on RF.
+ * Does nothing unless a TAK sink is up and the user enabled the channel. This direction never
+ * transmits on RF; TAK-to-mesh sending is `relayTakChatToMesh`.
  */
 export function relayMeshcoreChannelToTak(identityId: IdentityId, msg: TakChannelMessage): void {
   if (!isTakSinkActive()) return;
@@ -61,7 +65,7 @@ export function relayMeshcoreChannelToTak(identityId: IdentityId, msg: TakChanne
 
 /**
  * Mirror one newly heard Meshtastic channel message (RF or MQTT) into the GeoChat room bridged to
- * its channel. Skips DMs, reactions and history replay; never transmits on RF.
+ * its channel. Skips DMs, reactions and history replay. This direction never transmits on RF.
  */
 export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessage): void {
   if (!isTakSinkActive()) return;
