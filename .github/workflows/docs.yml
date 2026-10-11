@@ -65,9 +65,14 @@ jobs:
       - run: 'python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt'
       - run: node scripts/prepare-mkdocs.mjs
       - run: mkdocs build --strict
+      # Git over HTTPS to github.com needs Basic base64(x-access-token:TOKEN).
       - name: Publish docs
         env:
-          GIT_CONFIG_COUNT: '1'
-          GIT_CONFIG_KEY_0: http.https://github.com/.extraheader
-          GIT_CONFIG_VALUE_0: 'AUTHORIZATION: bearer ${{ secrets.GITHUB_TOKEN }}'
-        run: mkdocs gh-deploy --force
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::${header}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0='http.https://github.com/.extraheader'
+          export GIT_CONFIG_VALUE_0="$header"
+          mkdocs gh-deploy --force
