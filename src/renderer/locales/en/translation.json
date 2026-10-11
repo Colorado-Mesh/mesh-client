@@ -168,7 +168,7 @@
     "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues.",
     "exportForDeveloper": "Export support bundle for developer",
     "exportForDeveloperButton": "Export for Developer",
-    "exportForDeveloperWarning": "Includes your full database, which may contain saved passwords (MeshCore room credentials, MQTT settings, etc.). Share this bundle privately with maintainers only — never on public GitHub.",
+    "exportForDeveloperWarning": "Includes your full database and MECP emergency audit logs, which may contain saved passwords, message text, sender and channel identifiers, and location details. Share this bundle privately with maintainers only — never on public GitHub.",
     "exportSupportBundleFailed": "Could not export support bundle: {{message}}",
     "appearanceSection": "Appearance",
     "colorScheme": "Color scheme",

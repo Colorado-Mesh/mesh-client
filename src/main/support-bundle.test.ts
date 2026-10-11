@@ -288,21 +288,44 @@ describe('buildSupportBundleZip', () => {
   }
 
   it('github bundle includes snapshot and log but not db', async () => {
+    const mecpSentinel = 'MECP/0/M01 private-location sender-123';
+    await fs.promises.writeFile(path.join(workDir, 'mecp-received.log'), mecpSentinel, 'utf8');
+    await fs.promises.writeFile(
+      path.join(workDir, 'mecp-received.log.1'),
+      `${mecpSentinel}-rotated`,
+      'utf8',
+    );
     const dest = path.join(workDir, 'github.zip');
     const snapshot = JSON.stringify({ capturedAt: '2026-01-01T00:00:00.000Z' }, null, 2);
 
     await buildSupportBundleZip(dest, 'github', snapshot);
 
     const names = await zipEntryNames(dest);
+    expect(names.sort()).toEqual(
+      ['README.txt', 'debug-snapshot.json', 'manifest.json', 'mesh-client.log'].sort(),
+    );
     expect(names).toContain('debug-snapshot.json');
     expect(names).toContain('mesh-client.log');
     expect(names).toContain('manifest.json');
     expect(names).toContain('README.txt');
     expect(names).not.toContain('mesh-client.db');
+    expect(names).not.toContain('mecp-received.log');
+    expect(names).not.toContain('mecp-received.log.1');
     expect(exportDatabase).not.toHaveBeenCalled();
+
+    const zip = await JSZip.loadAsync(await fs.promises.readFile(dest));
+    const publicContents = await Promise.all(
+      names.map(async (name) => zip.file(name)?.async('string') ?? ''),
+    );
+    expect(publicContents.join('\n')).not.toContain(mecpSentinel);
+    expect(await zip.file('README.txt')!.async('string')).not.toContain('mecp-received.log');
   });
 
   it('developer bundle includes db after exportDatabase', async () => {
+    const mecpCurrent = 'MECP/0/M01 private current emergency';
+    const mecpRotated = 'MECP/1/H01 private rotated emergency';
+    await fs.promises.writeFile(path.join(workDir, 'mecp-received.log'), mecpCurrent, 'utf8');
+    await fs.promises.writeFile(path.join(workDir, 'mecp-received.log.1'), mecpRotated, 'utf8');
     const dest = path.join(workDir, 'developer.zip');
     const snapshot = JSON.stringify({ capturedAt: '2026-01-01T00:00:00.000Z' }, null, 2);
     exportDatabase.mockImplementation((destPath: string) => {
@@ -314,12 +337,19 @@ describe('buildSupportBundleZip', () => {
 
     const names = await zipEntryNames(dest);
     expect(names).toContain('mesh-client.db');
+    expect(names).toContain('mecp-received.log');
+    expect(names).toContain('mecp-received.log.1');
     expect(exportDatabase).toHaveBeenCalledOnce();
 
     const buf = await fs.promises.readFile(dest);
     const zip = await JSZip.loadAsync(buf);
     const dbBytes = await zip.file('mesh-client.db')!.async('nodebuffer');
     expect(dbBytes.toString('utf8')).toBe('sqlite-bytes');
+    expect(await zip.file('mecp-received.log')!.async('string')).toBe(mecpCurrent);
+    expect(await zip.file('mecp-received.log.1')!.async('string')).toBe(mecpRotated);
+    const readme = await zip.file('README.txt')!.async('string');
+    expect(readme).toContain('PRIVATE USE ONLY');
+    expect(readme).toContain('MECP audit logs may contain emergency message text');
   });
 
   it('developer bundle includes reticulum artifacts when present on disk', async () => {

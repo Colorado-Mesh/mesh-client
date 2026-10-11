@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Inclusief debug-snapshot en logbestanden in één zip. Veilig om toe te voegen aan openbare GitHub-problemen.",
     "exportForDeveloper": "Ondersteuningsbundel exporteren voor ontwikkelaar",
     "exportForDeveloperButton": "Exporteren voor ontwikkelaar",
-    "exportForDeveloperWarning": "Omvat uw volledige database, die mogelijk opgeslagen wachtwoorden bevat (MeshCore-ruimtegegevens, MQTT-instellingen, enz.). Deel deze bundel alleen privé met beheerders, nooit op openbare GitHub.",
+    "exportForDeveloperWarning": "Bevat uw volledige database en MECP-noodlogboeken, die opgeslagen wachtwoorden, berichttekst, afzender- en kanaal-ID’s en locatiegegevens kunnen bevatten. Deel deze bundel alleen privé met beheerders, nooit op openbare GitHub.",
     "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Alle LXMF-contacten wissen",

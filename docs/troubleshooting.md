@@ -37,7 +37,7 @@ Before opening a GitHub issue, use **App → Support / Bug reports → Export fo
 
 Open `manifest.json` first when triaging: `appVersion` is package semver; **`buildChannel`** is `test` (Build Binaries / Flatpak no-release), `release` (official Release or Flatpak tag), or `local` (unmarked local dist). For CI builds, `buildInfo.runUrl` links to the exact GitHub Actions run — do not assume `appVersion` alone means an official release. Test-build downloadable installers include `-run{N}` in the filename; if the filename and `runUrl` disagree, trust `runUrl` / the `[Startup] runtime … run=` log line.
 
-**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). It may also include **Reticulum** rnsd config and sidecar stack state under `reticulum/` — share only via a **private channel** when a maintainer requests **Export for Developer**.
+**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.), plus MECP emergency audit logs that may contain message text, sender/channel identifiers, and location details. It may also include **Reticulum** rnsd config and sidecar stack state under `reticulum/` — share only via a **private channel** when a maintainer requests **Export for Developer**.
 
 Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:
 
@@ -63,7 +63,7 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 | `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
 | `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
 
-Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). When present, support bundles also include **`mecp-received.log`** / **`mecp-received.log.1`** (durable MECP emergency audit trail — separate from the session app log).
+Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). Only the private developer bundle includes **`mecp-received.log`** / **`mecp-received.log.1`** (durable MECP emergency audit trail — separate from the session app log); the public-safe GitHub report always omits them.
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
@@ -1140,7 +1140,7 @@ Inbound MECP messages are appended to a durable audit file under the app `userDa
 - Windows: `%APPDATA%\mesh-client\mecp-received.log`
 - Linux: `~/.config/mesh-client/mecp-received.log`
 
-Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Developer reference: [`docs/development/mecp.md`](development/mecp.md).
+Use **App → MECP → Export MECP log**, or open a private Developer support bundle (includes the file when non-empty). Public-safe GitHub support bundles omit MECP logs. Developer reference: [`docs/development/mecp.md`](development/mecp.md).
 
 **MAYDAY/URGENT alerts ignore mute**
 

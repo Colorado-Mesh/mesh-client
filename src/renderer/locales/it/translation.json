@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Include snapshot di debug e file di registro in un unico zip. Sicuro da allegare ai problemi pubblici di GitHub.",
     "exportForDeveloper": "Esporta pacchetto di supporto per sviluppatore",
     "exportForDeveloperButton": "Esporta per sviluppatore",
-    "exportForDeveloperWarning": "Include il database completo, che può contenere password salvate (credenziali della sala MeshCore, impostazioni MQTT, ecc.). Condividi questo pacchetto in privato solo con i manutentori, mai su GitHub pubblico.",
+    "exportForDeveloperWarning": "Include il database completo e i registri di controllo delle emergenze MECP, che possono contenere password salvate, testo dei messaggi, identificatori di mittente e canale e dettagli sulla posizione. Condividi questo pacchetto in privato solo con i manutentori, mai su GitHub pubblico.",
     "exportSupportBundleFailed": "Impossibile esportare il pacchetto di supporto: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Cancella tutti i contatti LXMF",

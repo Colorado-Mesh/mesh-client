@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Inclui instantâneo de depuração e arquivos de log em um zip. É seguro anexar a problemas públicos do GitHub.",
     "exportForDeveloper": "Exportar pacote de suporte para desenvolvedor",
     "exportForDeveloperButton": "Exportar para desenvolvedor",
-    "exportForDeveloperWarning": "Inclui seu banco de dados completo, que pode conter senhas salvas (credenciais de sala MeshCore, configurações MQTT, etc.). Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
+    "exportForDeveloperWarning": "Inclui seu banco de dados completo e os logs de auditoria de emergência MECP, que podem conter senhas salvas, texto de mensagens, identificadores de remetente e canal e detalhes de localização. Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
     "exportSupportBundleFailed": "Não foi possível exportar o pacote de suporte: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Limpar todos os contatos LXMF",

@@ -76,7 +76,7 @@ Node IDs can be spoofed, especially on Meshtastic, so blocking stops casual abus
 
 ## Durable audit log
 
-Every inbound MECP report is appended to `mecp-received.log` in the app data folder (separate from the session app log, rotated to `mecp-received.log.1`). Export it from **App → MECP → Export MECP log**. It is also included in support bundles.
+Every inbound MECP report is appended to `mecp-received.log` in the app data folder (separate from the session app log, rotated to `mecp-received.log.1`). Export it from **App → MECP → Export MECP log**. The logs are included only in the private developer support bundle, never in the public-safe GitHub report.
 
 ## RF rebroadcast (bridge)
 

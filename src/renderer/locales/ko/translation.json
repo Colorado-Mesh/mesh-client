@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "하나의 zip에 디버그 스냅샷과 로그 파일이 포함되어 있습니다. 공개 GitHub 문제에 첨부해도 안전합니다.",
     "exportForDeveloper": "개발자용 지원 번들 내보내기",
     "exportForDeveloperButton": "개발자용으로 내보내기",
-    "exportForDeveloperWarning": "저장된 비밀번호(MeshCore 룸 자격 증명, MQTT 설정 등)가 포함될 수 있는 전체 데이터베이스를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
+    "exportForDeveloperWarning": "저장된 비밀번호, 메시지 텍스트, 발신자와 채널 식별자, 위치 세부 정보가 포함될 수 있는 전체 데이터베이스와 MECP 비상 감사 로그를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
     "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "모든 LXMF 연락처 지우기",
