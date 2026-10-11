@@ -5,6 +5,7 @@ import {
   getCachedSecureSecret,
   removeSecureSecret,
   resetSecureSecretCacheForTests,
+  setSecureSecret,
 } from './secureSecretStorage';
 
 describe('createEncryptedKeyBackupStorage', () => {
@@ -158,11 +159,68 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect((await storage.load(99))?.payload.id).toBe(99);
   });
 
-  it('migrateLegacySingleSlot is a no-op when a backup already exists for the id', async () => {
-    const storage = makeStorage();
-    await storage.save({ id: 99, publicKey: new Uint8Array(4), privateKey: new Uint8Array(4) });
-    localStorage.setItem('test:legacy-key-backup', 'enc:{}');
-    const migrated = await storage.migrateLegacySingleSlot('test:legacy-key-backup', 99);
-    expect(migrated).toBe(false);
+  it('reconciles stale index metadata before removing an equivalent legacy slot', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const publicKey = new Uint8Array([1, 2, 3, 4]);
+    const privateKey = new Uint8Array([5, 6, 7, 8]);
+    const storage = makeStorage('nodeNum', 'meshtastic');
+    await storage.save({ id: 99, publicKey, privateKey, nodeLabel: 'Current' });
+    const current = (await storage.load(99))?.payload;
+    expect(current).toBeDefined();
+    await setSecureSecret(
+      'backup-index:meshtastic',
+      JSON.stringify([
+        {
+          nodeNum: 99,
+          nodeLabel: 'Stale',
+          publicKeyB64: Buffer.from([9, 9, 9, 9]).toString('base64'),
+          backedUpAt: 1,
+        },
+      ]),
+    );
+    localStorage.setItem(
+      legacyKey,
+      `enc:${JSON.stringify({
+        publicKey: Buffer.from(publicKey).toString('base64'),
+        privateKey: Buffer.from(privateKey).toString('base64'),
+      })}`,
+    );
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).resolves.toBe(true);
+
+    expect(localStorage.getItem(legacyKey)).toBeNull();
+    expect(storage.list()).toEqual([
+      {
+        id: 99,
+        nodeLabel: 'Current',
+        publicKeyB64: current?.publicKey,
+        backedUpAt: current?.backedUpAt,
+      },
+    ]);
+  });
+
+  it('preserves both backups when an existing slot has a different key pair', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const storage = makeStorage('nodeNum', 'meshtastic');
+    await storage.save({
+      id: 99,
+      publicKey: new Uint8Array([1, 2, 3, 4]),
+      privateKey: new Uint8Array([5, 6, 7, 8]),
+    });
+    const existing = getCachedSecureSecret('backup:meshtastic:99');
+    localStorage.setItem(
+      legacyKey,
+      `enc:${JSON.stringify({
+        publicKey: Buffer.from([9, 9, 9, 9]).toString('base64'),
+        privateKey: Buffer.from([8, 8, 8, 8]).toString('base64'),
+      })}`,
+    );
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).rejects.toThrow(
+      /conflicting legacy backup/,
+    );
+
+    expect(localStorage.getItem(legacyKey)).not.toBeNull();
+    expect(getCachedSecureSecret('backup:meshtastic:99')).toBe(existing);
   });
 });

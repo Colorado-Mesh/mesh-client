@@ -262,15 +262,33 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     if (protocol !== 'meshtastic') return false;
     const existing = getCachedSecureSecret(secretKey(id));
     if (existing) {
+      let existingPayload: EncryptedKeyBackupPayload | null = null;
       try {
-        parsePayload(existing);
-        await ensureIndex();
-        localStorage.removeItem(legacyKey);
-        return true;
+        existingPayload = parsePayload(existing);
       } catch {
         // A prior interrupted single-slot migration leaves the legacy shape in this final slot.
         // Re-run the conversion below so it becomes a regular indexed backup payload.
         // catch-no-log-ok Expected intermediate migration shape; the conversion below validates it.
+      }
+      if (existingPayload) {
+        const verified = await migrateLegacyBackupCiphertext(
+          'meshtastic',
+          normalizeId(id),
+          'meshtastic-single',
+          legacy,
+        );
+        if (!verified) return false;
+        const verifiedExisting = getCachedSecureSecret(secretKey(id));
+        if (!verifiedExisting) return false;
+        const payload = parsePayload(verifiedExisting);
+        await upsertIndexEntry({
+          id: normalizeId(payload.id),
+          nodeLabel: payload.nodeLabel,
+          publicKeyB64: payload.publicKey,
+          backedUpAt: payload.backedUpAt,
+        });
+        localStorage.removeItem(legacyKey);
+        return true;
       }
     }
     const migrated = await migrateLegacyBackupCiphertext(

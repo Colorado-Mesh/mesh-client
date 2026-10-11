@@ -349,12 +349,9 @@ async function migrateBackupSlots(
     if (!Number.isFinite(id) || id < 0) continue;
     const ciphertext = localStorage.getItem(storageKey);
     if (!ciphertext) continue;
-    const key = keyBackupSecretKey(protocol, id);
-    if (!cache.has(key)) {
-      const migrated = await migrateLegacyBackupCiphertext(protocol, id, 'per-node', ciphertext);
-      if (!migrated) {
-        throw new Error('secure secret migration: legacy backup verification failed');
-      }
+    const migrated = await migrateLegacyBackupCiphertext(protocol, id, 'per-node', ciphertext);
+    if (!migrated) {
+      throw new Error('secure secret migration: legacy backup verification failed');
     }
     localStorage.removeItem(storageKey);
   }

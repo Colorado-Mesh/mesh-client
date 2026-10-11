@@ -67,7 +67,11 @@ function assertByteArray(value: unknown, lengths: readonly number[], kind: strin
   }
 }
 
-function assertBase64Key(value: unknown, lengths: readonly number[], kind: string): void {
+function assertBase64Key(
+  value: unknown,
+  lengths: readonly number[],
+  kind: string,
+): asserts value is string {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`secureSecrets: invalid legacy ${kind}`);
   }
@@ -86,7 +90,7 @@ function assertLegacyBackupPayload(
   protocol: LegacyBackupProtocol,
   id: number,
   format: LegacyBackupFormat,
-): void {
+): { publicKey: string; privateKey: string } {
   const parsed = parseLegacyObject(plaintext, 'backup');
   const privateLengths = protocol === 'meshcore' ? [32, 64] : [32];
   assertBase64Key(parsed.publicKey, [32], 'backup public key');
@@ -96,7 +100,7 @@ function assertLegacyBackupPayload(
     if (protocol !== 'meshtastic') {
       throw new Error('secureSecrets: invalid legacy backup format');
     }
-    return;
+    return { publicKey: parsed.publicKey, privateKey: parsed.privateKey };
   }
 
   const idField = protocol === 'meshcore' ? 'nodeId' : 'nodeNum';
@@ -109,6 +113,7 @@ function assertLegacyBackupPayload(
   ) {
     throw new Error('secureSecrets: invalid legacy backup metadata');
   }
+  return { publicKey: parsed.publicKey, privateKey: parsed.privateKey };
 }
 
 function strongStorageAvailable(): boolean {
@@ -163,21 +168,21 @@ export class SecureSecretStore {
     }
 
     const ciphertext = safeStorage.encryptString(value).toString('base64');
-    this.db()
-      .prepareOnce(
+    const db = this.db();
+    db.transaction(() => {
+      db.prepareOnce(
         'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
-      )
-      .run(key, ciphertext, Date.now());
-    const row = this.db()
-      .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
-      .get(key) as { ciphertext?: unknown } | undefined;
-    const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
-    const verified =
-      stored.length > 0 && safeStorage.decryptString(Buffer.from(stored, 'base64')) === value;
-    if (!verified) {
-      this.db().prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
-      throw new Error('secureSecrets: persistence verification failed');
-    }
+      ).run(key, ciphertext, Date.now());
+      const row = db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get(key) as
+        { ciphertext?: unknown } | undefined;
+      const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
+      if (
+        stored.length === 0 ||
+        safeStorage.decryptString(Buffer.from(stored, 'base64')) !== value
+      ) {
+        throw new Error('secureSecrets: persistence verification failed');
+      }
+    })();
     this.session.delete(key);
     return { available: true, persistent: true, verified: true };
   }
@@ -255,8 +260,20 @@ export class SecureSecretStore {
     }
     const normalizedId = Number(id);
     const plaintext = decryptLegacyCiphertext(ciphertext);
-    assertLegacyBackupPayload(plaintext, protocol, normalizedId, format);
-    return this.set(`backup:${protocol}:${String(normalizedId)}`, plaintext);
+    const legacyKeys = assertLegacyBackupPayload(plaintext, protocol, normalizedId, format);
+    const key = `backup:${protocol}:${String(normalizedId)}`;
+    const existing = this.get(key);
+    if (existing != null) {
+      const existingKeys = assertLegacyBackupPayload(existing, protocol, normalizedId, 'per-node');
+      if (
+        existingKeys.publicKey !== legacyKeys.publicKey ||
+        existingKeys.privateKey !== legacyKeys.privateKey
+      ) {
+        throw new Error('secureSecrets: conflicting legacy backup');
+      }
+      return { ...this.status(), verified: true };
+    }
+    return this.set(key, plaintext);
   }
 }
 

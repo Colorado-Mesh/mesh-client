@@ -54,7 +54,26 @@ function installSecureSecretApi(): void {
         const decoded = Buffer.from(ciphertext, 'base64')
           .toString('utf8')
           .replace(/^protected:/, '');
-        secureValues.set(keyBackupSecretKey(protocol, id), decoded);
+        const key = keyBackupSecretKey(protocol, id);
+        const existing = secureValues.get(key);
+        if (existing != null) {
+          const existingPayload = JSON.parse(existing) as {
+            publicKey?: unknown;
+            privateKey?: unknown;
+          };
+          const candidatePayload = JSON.parse(decoded) as {
+            publicKey?: unknown;
+            privateKey?: unknown;
+          };
+          if (
+            existingPayload.publicKey !== candidatePayload.publicKey ||
+            existingPayload.privateKey !== candidatePayload.privateKey
+          ) {
+            return Promise.reject(new Error('secureSecrets: conflicting legacy backup'));
+          }
+        } else {
+          secureValues.set(key, decoded);
+        }
         return Promise.resolve({ available: true, persistent: true, verified: true });
       },
     ),
@@ -274,5 +293,30 @@ describe('secureSecretStorage migrations', () => {
       'legacy backup verification failed',
     );
     expect(localStorage.getItem(storageKey)).toBe('legacy-ciphertext');
+  });
+
+  it('preserves a legacy backup when the secure slot contains a different key pair', async () => {
+    const id = 22;
+    const storageKey = `mesh-client:meshtastic-dm-key-backup:${String(id)}`;
+    const existing = JSON.stringify({
+      protocol: 'meshtastic',
+      nodeNum: id,
+      publicKey: Buffer.alloc(32, 1).toString('base64'),
+      privateKey: Buffer.alloc(32, 2).toString('base64'),
+      backedUpAt: 2,
+    });
+    const legacy = JSON.stringify({
+      protocol: 'meshtastic',
+      nodeNum: id,
+      publicKey: Buffer.alloc(32, 3).toString('base64'),
+      privateKey: Buffer.alloc(32, 4).toString('base64'),
+      backedUpAt: 1,
+    });
+    secureValues.set(keyBackupSecretKey('meshtastic', id), existing);
+    localStorage.setItem(storageKey, Buffer.from(`protected:${legacy}`, 'utf8').toString('base64'));
+
+    await expect(initializeSecureSecretsFailClosed()).rejects.toThrow(/conflicting legacy backup/);
+    expect(localStorage.getItem(storageKey)).not.toBeNull();
+    expect(secureValues.get(keyBackupSecretKey('meshtastic', id))).toBe(existing);
   });
 });

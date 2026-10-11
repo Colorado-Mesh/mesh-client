@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { safeStorage } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const safeStorageHarness = vi.hoisted(() => ({
@@ -105,6 +106,38 @@ describe('SecureSecretStore', () => {
     }
   });
 
+  it('rolls back a replacement when read-back verification fails', () => {
+    const { db, store } = createStore();
+    try {
+      store.set('mqtt:meshcore', 'old-value');
+      const original = db
+        .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+        .get('mqtt:meshcore');
+
+      vi.mocked(safeStorage.decryptString).mockReturnValueOnce('wrong-value');
+      expect(() => store.set('mqtt:meshcore', 'replacement')).toThrow(
+        /persistence verification failed/,
+      );
+      expect(
+        db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
+      ).toEqual(original);
+      expect(store.get('mqtt:meshcore')).toBe('old-value');
+
+      vi.mocked(safeStorage.decryptString).mockImplementationOnce(() => {
+        throw new Error('keychain read failed');
+      });
+      expect(() => store.set('mqtt:meshcore', 'second-replacement')).toThrow(
+        'keychain read failed',
+      );
+      expect(
+        db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
+      ).toEqual(original);
+      expect(store.get('mqtt:meshcore')).toBe('old-value');
+    } finally {
+      db.close();
+    }
+  });
+
   it('deletes stale durable ciphertext only for the explicit basic_text backend', () => {
     const { db, store } = createStore();
     try {
@@ -174,6 +207,51 @@ describe('SecureSecretStore', () => {
       expect(() =>
         store.migrateLegacyBackupCiphertext('meshcore', 9, 'meshtastic-single', legacy),
       ).toThrow(/invalid legacy backup format/);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('preserves an existing backup unless a legacy import has the same key pair', () => {
+    const { db, store } = createStore();
+    try {
+      const existingPayload = JSON.stringify({
+        protocol: 'meshtastic',
+        nodeNum: 9,
+        publicKey: Buffer.alloc(32, 1).toString('base64'),
+        privateKey: Buffer.alloc(32, 2).toString('base64'),
+        nodeLabel: 'Current',
+        backedUpAt: 456,
+      });
+      store.set('backup:meshtastic:9', existingPayload);
+
+      const sameLegacy = JSON.stringify({
+        publicKey: Buffer.alloc(32, 1).toString('base64'),
+        privateKey: Buffer.alloc(32, 2).toString('base64'),
+      });
+      expect(
+        store.migrateLegacyBackupCiphertext(
+          'meshtastic',
+          9,
+          'meshtastic-single',
+          Buffer.from(`protected:${sameLegacy}`, 'utf8').toString('base64'),
+        ),
+      ).toMatchObject({ verified: true });
+      expect(store.get('backup:meshtastic:9')).toBe(existingPayload);
+
+      const conflictingLegacy = JSON.stringify({
+        publicKey: Buffer.alloc(32, 3).toString('base64'),
+        privateKey: Buffer.alloc(32, 4).toString('base64'),
+      });
+      expect(() =>
+        store.migrateLegacyBackupCiphertext(
+          'meshtastic',
+          9,
+          'meshtastic-single',
+          Buffer.from(`protected:${conflictingLegacy}`, 'utf8').toString('base64'),
+        ),
+      ).toThrow(/conflicting legacy backup/);
+      expect(store.get('backup:meshtastic:9')).toBe(existingPayload);
     } finally {
       db.close();
     }

@@ -325,7 +325,27 @@ export function createElectronAPIMock(): ElectronAPI {
           if (!ciphertext.startsWith('enc:')) {
             return Promise.resolve({ available: true, persistent: true, verified: false });
           }
-          secureSecrets.set(`backup:${protocol}:${String(id >>> 0)}`, ciphertext.slice(4));
+          const key = `backup:${protocol}:${String(id >>> 0)}`;
+          const candidate = ciphertext.slice(4);
+          const existing = secureSecrets.get(key);
+          if (existing != null) {
+            const existingPayload = JSON.parse(existing) as {
+              publicKey?: unknown;
+              privateKey?: unknown;
+            };
+            const candidatePayload = JSON.parse(candidate) as {
+              publicKey?: unknown;
+              privateKey?: unknown;
+            };
+            if (
+              existingPayload.publicKey !== candidatePayload.publicKey ||
+              existingPayload.privateKey !== candidatePayload.privateKey
+            ) {
+              return Promise.reject(new Error('secureSecrets: conflicting legacy backup'));
+            }
+          } else {
+            secureSecrets.set(key, candidate);
+          }
           return Promise.resolve({ available: true, persistent: true, verified: true });
         },
       ),
