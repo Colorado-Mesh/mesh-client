@@ -34,7 +34,7 @@ The animation follows [CoreScope's packet travel behavior](https://github.com/Kp
 
 Scroll zoom uses half-level steps and a lower wheel sensitivity; explicit plus/minus controls remain available. Map details and source configuration expand on demand. The panel and map shrink to their available container height, including at the app's 150% font setting, so expanded controls do not force the feed below the window.
 
-Current map area filtering, markers, and packet motion follow the visible wrapped world. Links across the dateline take the short route instead of drawing across the whole map.
+Current map area filtering, markers, and packet motion follow the visible wrapped world. Links across the dateline take the short route instead of drawing across the whole map. Automatic fitting and **Fit traffic** also use the smallest longitude arc so nearby nodes across the dateline stay together.
 
 Source settings preserve the chosen server region when closed, expose Disconnect or Cancel while a feed is active, and support Escape with focus returning to the settings button. Geographic **Map area** is independent of the server's **Feed region**. The fit button uses current traffic when available; incoming packets do not pan the map automatically. Existing **Show on map** actions return to Overview and use its normal focus controller.
 

@@ -44,6 +44,7 @@ import {
   LIVE_TRAFFIC_MAX_AGE_MS,
   type LiveTrafficBounds,
   type LiveTrafficEvent,
+  liveTrafficFitCoordinates,
   liveTrafficLongitudeNear,
   type LiveTrafficPoint,
   pointInLiveTrafficBounds,
@@ -166,14 +167,11 @@ function TrafficViewport({
       (regionId === 'all' || (regionId === 'viewport' && explicitFocus)) &&
       fitPoints.length > 0
     ) {
-      map.fitBounds(
-        fitPoints.map((point) => [point.lat, point.lon]),
-        {
-          padding: [48, 48],
-          maxZoom: 10,
-          animate: false,
-        },
-      );
+      map.fitBounds(liveTrafficFitCoordinates(fitPoints), {
+        padding: [48, 48],
+        maxZoom: 10,
+        animate: false,
+      });
     }
     reportBounds();
   }, [map, regionId, points, trafficPoints, focusRevision, reportBounds]);

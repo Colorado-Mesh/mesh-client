@@ -13,6 +13,7 @@ import {
   filterLiveTrafficEvents,
   LIVE_TRAFFIC_MAX_AGE_MS,
   LIVE_TRAFFIC_MAX_PACKETS,
+  liveTrafficFitCoordinates,
   pointInLiveTrafficBounds,
 } from './liveTrafficModel';
 
@@ -733,6 +734,16 @@ describe('traffic bounds, lifetime, and scope', () => {
     expect(
       filterLiveTrafficEvents(events, { bounds: { south: 45, north: 50, west: -125, east: -120 } }),
     ).toEqual([]);
+  });
+
+  it.each([
+    { longitudes: [], expected: [] },
+    { longitudes: [151], expected: [151] },
+    { longitudes: [-179, 179, -178], expected: [181, 179, 182] },
+    { longitudes: [10, 170, -170], expected: [10, 170, 190] },
+  ])('fits the smallest longitude arc for $longitudes', ({ longitudes, expected }) => {
+    const points = longitudes.map((lon, i) => ({ nodeId: i, lat: i, lon, label: `Node ${i}` }));
+    expect(liveTrafficFitCoordinates(points)).toEqual(expected.map((lon, i) => [i, lon]));
   });
 
   it('supports a custom viewport across the antimeridian', () => {

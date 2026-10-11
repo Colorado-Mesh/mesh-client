@@ -431,6 +431,24 @@ export function liveTrafficLongitudeNear(longitude: number, reference: number): 
   return longitude + Math.round((reference - longitude) / 360) * 360;
 }
 
+/** Fit the smallest longitude arc by excluding the largest gap between points. */
+export function liveTrafficFitCoordinates(points: readonly LiveTrafficPoint[]): [number, number][] {
+  if (points.length < 2) return points.map((point) => [point.lat, point.lon]);
+  const longitudes = points.map((point) => point.lon).sort((a, b) => a - b);
+  let largestGap = -1;
+  let start = longitudes[0];
+  for (let i = 0; i < longitudes.length; i++) {
+    const next = longitudes[(i + 1) % longitudes.length];
+    const gap = next + (i === longitudes.length - 1 ? 360 : 0) - longitudes[i];
+    if (gap > largestGap) {
+      largestGap = gap;
+      start = next;
+    }
+  }
+  const center = start + (360 - largestGap) / 2;
+  return points.map((point) => [point.lat, liveTrafficLongitudeNear(point.lon, center)]);
+}
+
 export function pointInLiveTrafficBounds(
   point: LiveTrafficPoint,
   bounds: LiveTrafficBounds,

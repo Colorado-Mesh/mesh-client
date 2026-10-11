@@ -211,6 +211,28 @@ describe('LiveTrafficPanel', () => {
       expect(feedRequest).toHaveBeenLastCalledWith(false, 'beacon', true);
     });
 
+    it('fits nearby nodes across the date line on arrival and on request', async () => {
+      await renderPanel(
+        <LiveTrafficPanel
+          nodes={
+            new Map([
+              [1, node(1, -17, 179)],
+              [2, node(2, -17.5, -179)],
+            ])
+          }
+          myNodeNum={1}
+          {...localPackets}
+        />,
+      );
+      const expected = [
+        [-17, 179],
+        [-17.5, 181],
+      ];
+      expect(map.fitBounds).toHaveBeenLastCalledWith(expected, expect.any(Object));
+      fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.fitTraffic' }));
+      expect(map.fitBounds).toHaveBeenLastCalledWith(expected, expect.any(Object));
+    });
+
     it('fits the configured location when no other node has a position', async () => {
       await renderPanel(
         <LiveTrafficPanel
