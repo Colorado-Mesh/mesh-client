@@ -474,7 +474,8 @@
     },
     "updatesSection": "업데이트",
     "autoUpdateDownload": "자동으로 업데이트 다운로드",
-    "autoUpdateDownloadDesc": "각 확인 후 백그라운드에서 최신 업데이트를 다운로드합니다. 꺼져 있으면 업데이트가 여전히 감지되지만 다운로드 버튼을 누를 때만 다운로드됩니다. 패키지 관리자가 설치를 처리할 때 유용합니다."
+    "autoUpdateDownloadDesc": "각 확인 후 백그라운드에서 최신 업데이트를 다운로드합니다. 꺼져 있으면 업데이트가 여전히 감지되지만 다운로드 버튼을 누를 때만 다운로드됩니다. 패키지 관리자가 설치를 처리할 때 유용합니다.",
+    "autoUpdateDownloadSaveFailed": "자동 업데이트 다운로드 설정을 저장할 수 없습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

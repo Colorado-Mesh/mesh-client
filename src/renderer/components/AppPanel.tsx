@@ -361,6 +361,12 @@ export default function AppPanel({
 
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  /** Last auto-download value SQLite confirmed; a missing row means the updater default (on). */
+  const autoUpdateDownloadConfirmedRef = useRef<boolean>(
+    DEFAULT_APP_SETTINGS_SHARED.autoUpdateDownloadEnabled,
+  );
+  /** User toggled auto-download before the mount getAll() resolved; skip its stale value. */
+  const autoUpdateDownloadTouchedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [themeSurfaceId, setThemeSurfaceId] = useState<ThemeSurfaceId>(loadThemeSurfaceId);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
@@ -533,6 +539,28 @@ export default function AppPanel({
     onHiddenProtocolsChange?.(settings.hiddenProtocols);
   }, [settings.hiddenProtocols, onHiddenProtocolsChange]);
 
+  const persistAutoUpdateDownload = useCallback(
+    (enabled: boolean) => {
+      autoUpdateDownloadTouchedRef.current = true;
+      void window.electronAPI.appSettings
+        .set('autoUpdateDownloadEnabled', enabled ? '1' : '0')
+        .then(() => {
+          autoUpdateDownloadConfirmedRef.current = enabled;
+        })
+        .catch((err: unknown) => {
+          console.warn(
+            '[AppPanel] autoUpdateDownloadEnabled persist failed ' + errLikeToLogString(err),
+          );
+          // Main reads only SQLite, so roll the UI back to what the updater will actually use.
+          const confirmed = autoUpdateDownloadConfirmedRef.current;
+          setSettings((prev) => ({ ...prev, autoUpdateDownloadEnabled: confirmed }));
+          mergeAppSetting('autoUpdateDownloadEnabled', confirmed, 'AppPanel updateSetting');
+          addToast(t('appPanel.autoUpdateDownloadSaveFailed'), 'error');
+        });
+    },
+    [addToast, t],
+  );
+
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     mergeAppSetting(key, value, 'AppPanel updateSetting');
@@ -552,13 +580,7 @@ export default function AppPanel({
         });
     }
     if (key === 'autoUpdateDownloadEnabled') {
-      void window.electronAPI.appSettings
-        .set('autoUpdateDownloadEnabled', value ? '1' : '0')
-        .catch((err: unknown) => {
-          console.warn(
-            '[AppPanel] autoUpdateDownloadEnabled persist failed ' + errLikeToLogString(err),
-          );
-        });
+      persistAutoUpdateDownload(Boolean(value));
     }
   };
 
@@ -586,8 +608,12 @@ export default function AppPanel({
           );
         }
         const autoDownload = raw?.autoUpdateDownloadEnabled;
-        if (autoDownload === '1' || autoDownload === '0') {
+        if (
+          (autoDownload === '1' || autoDownload === '0') &&
+          !autoUpdateDownloadTouchedRef.current
+        ) {
           const enabled = autoDownload === '1';
+          autoUpdateDownloadConfirmedRef.current = enabled;
           setSettings((prev) =>
             prev.autoUpdateDownloadEnabled === enabled
               ? prev

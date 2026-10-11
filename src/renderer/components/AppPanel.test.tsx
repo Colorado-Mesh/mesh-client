@@ -358,6 +358,64 @@ describe('AppPanel: auto-download updates toggle', () => {
     );
   });
 
+  it('rolls back the checkbox and localStorage and shows an error when the SQLite write fails', async () => {
+    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('db locked'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /download updates automatically/i,
+    });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    await waitFor(() => {
+      expect(checkbox).toBeChecked();
+    });
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.autoUpdateDownloadEnabled).toBe(true);
+    expect(
+      await screen.findByText('Could not save the automatic update download setting.'),
+    ).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('[AppPanel] autoUpdateDownloadEnabled persist failed'),
+    );
+    warn.mockRestore();
+  });
+
+  it('does not let a slow SQLite hydrate overwrite a change made while it was pending', async () => {
+    let resolveGetAll: (value: Record<string, string>) => void = () => {};
+    vi.mocked(window.electronAPI.appSettings.getAll).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGetAll = resolve;
+      }),
+    );
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /download updates automatically/i,
+    });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    expect(checkbox).not.toBeChecked();
+
+    await act(async () => {
+      resolveGetAll({ autoUpdateDownloadEnabled: '1' });
+      await Promise.resolve();
+    });
+    expect(checkbox).not.toBeChecked();
+  });
+
   it('hydrates an off value from SQLite on mount', async () => {
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
       autoUpdateDownloadEnabled: '0',

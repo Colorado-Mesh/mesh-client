@@ -490,7 +490,8 @@
     },
     "updatesSection": "Aktualizacje",
     "autoUpdateDownload": "Pobieraj aktualizacje automatycznie",
-    "autoUpdateDownloadDesc": "Pobiera najnowszą aktualizację w tle po każdej kontroli. Gdy wyłączone, aktualizacje są nadal wykrywane, ale pobierane tylko po naciśnięciu przycisku Pobierz — przydatne, gdy menedżer pakietów obsługuje instalację."
+    "autoUpdateDownloadDesc": "Pobiera najnowszą aktualizację w tle po każdej kontroli. Gdy wyłączone, aktualizacje są nadal wykrywane, ale pobierane tylko po naciśnięciu przycisku Pobierz — przydatne, gdy menedżer pakietów obsługuje instalację.",
+    "autoUpdateDownloadSaveFailed": "Nie można zapisać ustawienia automatycznego pobierania aktualizacji."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

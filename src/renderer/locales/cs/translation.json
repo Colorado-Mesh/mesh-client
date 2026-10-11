@@ -482,7 +482,8 @@
     },
     "updatesSection": "Aktualizace",
     "autoUpdateDownload": "Automaticky stahovat aktualizace",
-    "autoUpdateDownloadDesc": "Po každém šeku stáhne nejnovější aktualizaci na pozadí. Když je vypnuto, aktualizace jsou stále detekovány, ale stahovány pouze po stisknutí tlačítka Stáhnout — užitečné, když správce balíčků zpracovává instalaci."
+    "autoUpdateDownloadDesc": "Po každém šeku stáhne nejnovější aktualizaci na pozadí. Když je vypnuto, aktualizace jsou stále detekovány, ale stahovány pouze po stisknutí tlačítka Stáhnout — užitečné, když správce balíčků zpracovává instalaci.",
+    "autoUpdateDownloadSaveFailed": "Nelze uložit nastavení automatické aktualizace stahování."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

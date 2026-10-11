@@ -474,7 +474,8 @@
     },
     "updatesSection": "Updates",
     "autoUpdateDownload": "App-Updates automatisch downloaden",
-    "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt."
+    "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt.",
+    "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

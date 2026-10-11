@@ -474,7 +474,8 @@
     },
     "updatesSection": "更新",
     "autoUpdateDownload": "自动下载更新",
-    "autoUpdateDownloadDesc": "每次检查后在后台下载最新更新。关闭时，仍会检测到更新，但只有在按下“下载”按钮时才会下载，这在程序包管理器处理安装时非常有用。"
+    "autoUpdateDownloadDesc": "每次检查后在后台下载最新更新。关闭时，仍会检测到更新，但只有在按下“下载”按钮时才会下载，这在程序包管理器处理安装时非常有用。",
+    "autoUpdateDownloadSaveFailed": "无法保存自动更新下载设置。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
