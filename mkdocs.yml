@@ -104,6 +104,7 @@ nav:
   - Install: install.md
   - Features: features.md
   - User Guide:
+      - Live Traffic Map: live-traffic-map.md
       - Reticulum Setup Guide: reticulum-setup-guide.md
       - Reticulum: reticulum.md
       - EMCOMM (MECP & Incident Command): emcomm.md

@@ -7081,11 +7081,7 @@
     "pause": "一時停止",
     "region": "マップエリア",
     "regions": {
-      "colorado": "コロラド",
-      "all": "すべての地域",
-      "front-range": "フロントレンジ",
-      "western-slope": "ウェスタン・スロープ",
-      "viewport": "現在の表示範囲"
+      "all": "すべての地域"
     },
     "transportScope": "トランスポートコード",
     "scopeHint": "観測したパケットのトランスポートコードで絞り込むか、「scoped」（スコープあり）または「unscoped」（スコープなし）を入力します。コードはパケットごとの値で、無線機の設定は変更されません。",
@@ -7106,7 +7102,6 @@
     "mapAria": "ライブパケットトラフィックマップ",
     "speedFast": "2×",
     "basemap": "地図スタイル",
-    "fitRegion": "選択した地域全体を表示",
     "darkMap": "ダーク",
     "streetMap": "道路地図",
     "topographicMap": "USGS 地形図",
@@ -7192,6 +7187,11 @@
       "reconnecting": "再接続中",
       "disconnected": "未接続",
       "error": "接続エラー"
-    }
+    },
+    "areas": {
+      "all": "すべてのトラフィック",
+      "viewport": "現在の地図範囲"
+    },
+    "fitTraffic": "トラフィックに合わせて表示"
   }
 }

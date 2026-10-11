@@ -7080,11 +7080,7 @@
     "pause": "Duraklat",
     "resume": "Devam et",
     "regions": {
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "all": "Tüm bölgeler",
-      "viewport": "Geçerli görünüm alanı",
-      "western-slope": "Western Slope"
+      "all": "Tüm bölgeler"
     },
     "region": "Harita alanı",
     "transportScope": "Taşıma kodu",
@@ -7105,7 +7101,6 @@
     "speedNormal": "1×",
     "mapAria": "Canlı paket trafik haritası",
     "speedFast": "2×",
-    "fitRegion": "Seçili bölgenin tamamını göster",
     "darkMap": "Koyu",
     "topographicMap": "USGS topoğrafik harita",
     "basemap": "Harita stili",
@@ -7192,6 +7187,11 @@
       "connecting": "Bağlanıyor",
       "disconnected": "Bağlantı kesildi",
       "error": "Bağlantı hatası"
-    }
+    },
+    "areas": {
+      "all": "Tüm trafik",
+      "viewport": "Geçerli harita alanı"
+    },
+    "fitTraffic": "Trafiğe odaklan"
   }
 }

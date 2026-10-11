@@ -7081,11 +7081,7 @@
     "resume": "재개",
     "region": "지도 지역",
     "regions": {
-      "colorado": "콜로라도",
-      "front-range": "프론트 레인지",
-      "western-slope": "웨스턴 슬로프",
-      "all": "모든 지역",
-      "viewport": "현재 표시 영역"
+      "all": "모든 지역"
     },
     "scopeHint": "관측된 패킷의 전송 코드로 필터링하거나 scoped(범위 지정됨) 또는 unscoped(범위 미지정)를 입력하세요. 코드는 패킷별 값이며 무전기 설정을 변경하지 않습니다.",
     "transportScope": "전송 코드",
@@ -7108,7 +7104,6 @@
     "darkMap": "다크",
     "streetMap": "도로 지도",
     "basemap": "지도 스타일",
-    "fitRegion": "선택한 지역에 맞추기",
     "topographicMap": "USGS 지형도",
     "waiting": "패킷 관측 대기 중",
     "waitingHint": "실시간 트래픽을 보려면 무전기를 연결하세요.",
@@ -7192,6 +7187,11 @@
       "error": "연결 오류"
     },
     "zoomControls": "지도 확대/축소 컨트롤",
-    "mixedCodes": "여러 전송 코드"
+    "mixedCodes": "여러 전송 코드",
+    "areas": {
+      "all": "모든 트래픽",
+      "viewport": "현재 지도 영역"
+    },
+    "fitTraffic": "트래픽에 맞춰 보기"
   }
 }

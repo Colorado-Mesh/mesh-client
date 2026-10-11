@@ -61,6 +61,7 @@ A bundled Reticulum stack with TCP, I2P, Auto, and RNode interfaces. LXMF direct
 - **Persistent history:** every message, node, and contact is stored in a local SQLite database, so nothing disappears when you reconnect.
 - **Routing diagnostics:** spot problem relays, hidden terminals, noisy channels, and unstable paths. See [Diagnostics](diagnostics.md).
 - **Maps that work offline:** download map regions ahead of time for field use. See [Troubleshooting: Map tab without internet](troubleshooting.md#map-tab-without-internet-offline--no-wan).
+- **Live packet traffic:** watch local Meshtastic or MeshCore traffic, or connect to a regional MeshCore feed anywhere in the world. See the [Live traffic map guide](live-traffic-map.md).
 - **Emergency communications:** MECP emergency reports, Incident Command, and TAK (Cursor-on-Target) on all three protocols. See the [EMCOMM guide](emcomm.md).
 - **Your language:** the interface is available in 16 languages and works fully offline. See [Localization](localization.md).
 

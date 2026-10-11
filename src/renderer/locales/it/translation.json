@@ -7081,11 +7081,7 @@
     "pause": "Metti in pausa",
     "region": "Area della mappa",
     "regions": {
-      "all": "Tutte le regioni",
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Area visibile"
+      "all": "Tutte le regioni"
     },
     "transportScope": "Codice di trasporto",
     "scopeHint": "Filtra i codici di trasporto osservati o inserisci «scoped» (con ambito) o «unscoped» (senza ambito). I codici sono specifici del pacchetto e non configurano la radio.",
@@ -7105,7 +7101,6 @@
     "speedNormal": "1×",
     "speedFast": "2×",
     "mapAria": "Mappa del traffico dei pacchetti in tempo reale",
-    "fitRegion": "Adatta alla regione selezionata",
     "basemap": "Stile della mappa",
     "darkMap": "Scuro",
     "streetMap": "Strade",
@@ -7192,6 +7187,11 @@
       "reconnecting": "Riconnessione",
       "disconnected": "Disconnesso",
       "error": "Errore di connessione"
-    }
+    },
+    "areas": {
+      "all": "Tutto il traffico",
+      "viewport": "Area attuale della mappa"
+    },
+    "fitTraffic": "Inquadra il traffico"
   }
 }

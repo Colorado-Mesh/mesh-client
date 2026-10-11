@@ -7081,11 +7081,7 @@
     "resume": "Reprendre",
     "region": "Zone de la carte",
     "regions": {
-      "colorado": "Colorado",
-      "all": "Toutes les régions",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Zone visible"
+      "all": "Toutes les régions"
     },
     "transportScope": "Code transport",
     "scopeHint": "Filtrez les codes de transport observés ou saisissez « scoped » (avec portée) ou « unscoped » (sans portée). Ces codes sont propres aux paquets et ne configurent pas la radio.",
@@ -7105,7 +7101,6 @@
     "speedNormal": "1×",
     "mapAria": "Carte de trafic de paquets en direct",
     "speedFast": "2×",
-    "fitRegion": "Cadrer la région sélectionnée",
     "basemap": "Style de carte",
     "darkMap": "Sombre",
     "streetMap": "Rues",
@@ -7192,6 +7187,11 @@
       "disconnected": "Déconnecté",
       "error": "Erreur de connexion"
     },
-    "zoomControls": "Commandes du zoom de la carte"
+    "zoomControls": "Commandes du zoom de la carte",
+    "areas": {
+      "all": "Tout le trafic",
+      "viewport": "Zone actuelle de la carte"
+    },
+    "fitTraffic": "Cadrer le trafic"
   }
 }

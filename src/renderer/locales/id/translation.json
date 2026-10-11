@@ -7080,11 +7080,7 @@
     "pause": "Jeda",
     "resume": "Lanjutkan",
     "regions": {
-      "colorado": "Colorado",
-      "all": "Semua wilayah",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Area pandang saat ini"
+      "all": "Semua wilayah"
     },
     "region": "Area peta",
     "transportScope": "Kode transpor",
@@ -7106,7 +7102,6 @@
     "speedNormal": "1×",
     "mapAria": "Peta lalu lintas paket langsung",
     "basemap": "Gaya peta",
-    "fitRegion": "Tampilkan seluruh wilayah terpilih",
     "darkMap": "Gelap",
     "waiting": "Menunggu pengamatan paket",
     "topographicMap": "Peta topografi USGS",
@@ -7192,6 +7187,11 @@
       "error": "Kesalahan koneksi",
       "disconnected": "Terputus"
     },
-    "zoomControls": "Kontrol zoom peta"
+    "zoomControls": "Kontrol zoom peta",
+    "areas": {
+      "all": "Semua lalu lintas",
+      "viewport": "Area peta saat ini"
+    },
+    "fitTraffic": "Sesuaikan tampilan lalu lintas"
   }
 }

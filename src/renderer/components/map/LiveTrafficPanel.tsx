@@ -42,9 +42,9 @@ import {
   buildMeshtasticLiveTrafficEvents,
   filterLiveTrafficEvents,
   LIVE_TRAFFIC_MAX_AGE_MS,
-  LIVE_TRAFFIC_REGIONS,
   type LiveTrafficBounds,
   type LiveTrafficEvent,
+  liveTrafficFitCoordinates,
   liveTrafficLongitudeNear,
   type LiveTrafficPoint,
   pointInLiveTrafficBounds,
@@ -84,7 +84,7 @@ const EMPTY_MESHCORE_PACKETS: readonly RxPacketEntry[] = [];
 const EMPTY_MESHTASTIC_PACKETS: readonly MeshtasticRawPacketEntry[] = [];
 const EMPTY_EVENTS: readonly LiveTrafficEvent[] = [];
 const EMPTY_NODE_INDEX = buildLiveTrafficNodeIndex(new Map());
-const INITIAL_CENTER: [number, number] = [39.2, -105.8];
+const INITIAL_CENTER: [number, number] = [20, 0];
 
 export interface LiveTrafficPanelProps {
   active?: boolean;
@@ -163,28 +163,15 @@ function TrafficViewport({
     const explicitFocus = previousFocusRevision.current !== focusRevision;
     previousFocusRevision.current = focusRevision;
     const fitPoints = explicitFocus && trafficPoints.length > 0 ? trafficPoints : points;
-    const region = LIVE_TRAFFIC_REGIONS.find((item) => item.id === regionId);
-    if (region?.bounds) {
-      const { south, west, north, east } = region.bounds;
-      map.fitBounds(
-        [
-          [south, west],
-          [north, east],
-        ],
-        { padding: [32, 32], animate: false },
-      );
-    } else if (
+    if (
       (regionId === 'all' || (regionId === 'viewport' && explicitFocus)) &&
       fitPoints.length > 0
     ) {
-      map.fitBounds(
-        fitPoints.map((point) => [point.lat, point.lon]),
-        {
-          padding: [48, 48],
-          maxZoom: 10,
-          animate: false,
-        },
-      );
+      map.fitBounds(liveTrafficFitCoordinates(fitPoints), {
+        padding: [48, 48],
+        maxZoom: 10,
+        animate: false,
+      });
     }
     reportBounds();
   }, [map, regionId, points, trafficPoints, focusRevision, reportBounds]);
@@ -233,8 +220,8 @@ function TrafficZoomControls({ onFit }: { onFit: () => void }) {
         size="sm"
         variant="ghost"
         className="border-ink-700 rounded-none border-t"
-        aria-label={t('liveTraffic.fitRegion')}
-        title={t('liveTraffic.fitRegion')}
+        aria-label={t('liveTraffic.fitTraffic')}
+        title={t('liveTraffic.fitTraffic')}
         onClick={onFit}
         icon={<Crosshair aria-hidden className="h-3.5 w-3.5" />}
       />
@@ -444,8 +431,7 @@ export default function LiveTrafficPanel({
     () => (regional ? beacon.points : [...index.points.values()]),
     [regional, beacon.points, index],
   );
-  const selectedRegion = LIVE_TRAFFIC_REGIONS.find((region) => region.id === regionId);
-  const bounds = regionId === 'viewport' ? viewport : selectedRegion?.bounds;
+  const bounds = regionId === 'viewport' ? viewport : null;
   const normalizedScope = scope.toLowerCase();
   const parsedScope =
     scope === ''
@@ -571,20 +557,14 @@ export default function LiveTrafficPanel({
         <div className="flex flex-wrap items-center gap-2">
           <select
             aria-label={t('liveTraffic.region')}
-            className={`${SELECT_BOX_SM_CLASS} max-w-32`}
+            className={`${SELECT_BOX_SM_CLASS} max-w-44`}
             value={regionId}
             onChange={(event) => {
               setRegionId(event.target.value);
             }}
           >
-            {LIVE_TRAFFIC_REGIONS.filter((region) => !regional || region.id === 'all').map(
-              (region) => (
-                <option key={region.id} value={region.id}>
-                  {t(`liveTraffic.regions.${region.id}`)}
-                </option>
-              ),
-            )}
-            <option value="viewport">{t('liveTraffic.regions.viewport')}</option>
+            <option value="all">{t('liveTraffic.areas.all')}</option>
+            <option value="viewport">{t('liveTraffic.areas.viewport')}</option>
           </select>
           <Button
             size="sm"
@@ -782,7 +762,7 @@ export default function LiveTrafficPanel({
           >
             <MapContainer
               center={savedViewport?.center ?? INITIAL_CENTER}
-              zoom={savedViewport?.zoom ?? 7}
+              zoom={savedViewport?.zoom ?? 2}
               zoomSnap={0.5}
               wheelPxPerZoomLevel={180}
               wheelDebounceTime={0.08 * MS_PER_SECOND}

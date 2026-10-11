@@ -7081,11 +7081,7 @@
     "resume": "Continuar",
     "region": "Área do mapa",
     "regions": {
-      "all": "Todas as regiões",
-      "colorado": "Colorado",
-      "front-range": "Front Range",
-      "western-slope": "Western Slope",
-      "viewport": "Área visível"
+      "all": "Todas as regiões"
     },
     "transportScope": "Código de transporte",
     "scopeHint": "Filtre os códigos de transporte observados ou digite “scoped” (com escopo) ou “unscoped” (sem escopo). Os códigos são específicos de cada pacote e não configuram o rádio.",
@@ -7105,7 +7101,6 @@
     "speedNormal": "1×",
     "mapAria": "Mapa de tráfego de pacotes ao vivo",
     "speedFast": "2×",
-    "fitRegion": "Enquadrar região selecionada",
     "basemap": "Estilo do mapa",
     "darkMap": "Escuro",
     "streetMap": "Ruas",
@@ -7192,6 +7187,11 @@
       "reconnecting": "Reconectando",
       "disconnected": "Desconectado",
       "error": "Erro de conexão"
-    }
+    },
+    "areas": {
+      "all": "Todo o tráfego",
+      "viewport": "Área atual do mapa"
+    },
+    "fitTraffic": "Enquadrar tráfego"
   }
 }
