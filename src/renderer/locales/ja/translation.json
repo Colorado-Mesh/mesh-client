@@ -6993,7 +6993,7 @@
     "deletePack": "{{pack}}パックを削除",
     "downloadPack": "{{pack}}パックをダウンロード",
     "delete": "削除",
-    "onlinePrivacy": "オンライン翻訳は、オンライン翻訳を選択した場合にのみ、選択したメッセージテキストを設定されたLibreTranslateサーバーに送信します。自動翻訳は常にオフラインのままです。",
+    "onlinePrivacy": "オンライン翻訳は、オンライン翻訳を選択した場合にのみ、選択したメッセージテキストを設定されたLibreTranslateサーバーに送信します。自動翻訳は常にオフラインのままです。HTTPはlocalhostとループバックアドレスでのみ許可され、その他のサーバーではHTTPSが必要です。",
     "serverUrl": "LibreTranslateサーバーURL",
     "apiKey": "APIキー（オプション）",
     "savedKey": "APIキーは安全に保存されます。空白のフィールドは、同じサーバーURLに対してのみ保持されます。",

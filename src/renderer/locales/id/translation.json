@@ -6993,7 +6993,7 @@
     "deletePack": "Hapus paket {{pack}}",
     "downloadPack": "Unduh paket {{pack}}",
     "delete": "Menghapus",
-    "onlinePrivacy": "Terjemahan online mengirimkan teks pesan yang dipilih ke server LibreTranslate Anda yang dikonfigurasi hanya bila Anda memilih Terjemahkan online. Terjemahan otomatis selalu offline.",
+    "onlinePrivacy": "Terjemahan online mengirimkan teks pesan yang dipilih ke server LibreTranslate Anda yang dikonfigurasi hanya bila Anda memilih Terjemahkan online. Terjemahan otomatis selalu offline. HTTP hanya diizinkan untuk localhost dan alamat loopback; semua server lain harus menggunakan HTTPS.",
     "serverUrl": "URL server LibreTranslate",
     "apiKey": "Kunci API (opsional)",
     "savedKey": "Kunci API disimpan dengan aman. Bidang kosong menyimpannya hanya untuk URL server yang sama.",

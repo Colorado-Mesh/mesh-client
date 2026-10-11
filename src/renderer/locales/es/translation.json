@@ -6993,7 +6993,7 @@
     "deletePack": "Eliminar {{pack}} paquete",
     "downloadPack": "Descargar {{pack}} pack",
     "delete": "Eliminar",
-    "onlinePrivacy": "La traducción en línea envía el texto del mensaje seleccionado a su servidor LibreTranslate configurado solo cuando elige Traducir en línea. La traducción automática siempre permanece sin conexión.",
+    "onlinePrivacy": "La traducción en línea envía el texto del mensaje seleccionado a su servidor LibreTranslate configurado solo cuando elige Traducir en línea. La traducción automática siempre permanece sin conexión. HTTP solo está permitido para localhost y direcciones de bucle invertido; los demás servidores deben usar HTTPS.",
     "serverUrl": "URL del servidor de LibreTranslate",
     "apiKey": "Clave API (opcional)",
     "savedKey": "Una clave API se guarda de forma segura. Un campo en blanco lo mantiene solo para la misma URL del servidor.",

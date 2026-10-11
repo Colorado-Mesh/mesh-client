@@ -182,6 +182,10 @@ describe('App translation settings', () => {
     });
     expect(toggle).toBeDisabled();
     fireEvent.change(screen.getByRole('textbox', { name: 'chatTranslation.serverUrl' }), {
+      target: { value: 'http://translate.example' },
+    });
+    expect(toggle).toBeDisabled();
+    fireEvent.change(screen.getByRole('textbox', { name: 'chatTranslation.serverUrl' }), {
       target: { value: 'http://localhost:5000' },
     });
     fireEvent.click(toggle);

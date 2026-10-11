@@ -38,16 +38,20 @@ export class LibreTranslateClient {
         'url' in value &&
         typeof value.url === 'string'
       ) {
-        return {
+        const stored = {
           enabled: value.enabled,
           url: value.url,
           ...('encryptedKey' in value && typeof value.encryptedKey === 'string'
             ? { encryptedKey: value.encryptedKey }
             : {}),
         };
+        if (stored.url) validateLibreTranslationUrl(stored.url);
+        else if (stored.enabled) throw new Error('LibreTranslate URL required');
+        return stored;
       }
     } catch {
-      // catch-no-log-ok invalid saved configuration disables online translation
+      // catch-no-log-ok invalid or newly unsafe legacy settings fail closed without exposing them
+      this.deps.write(JSON.stringify({ enabled: false, url: '' }));
     }
     return { enabled: false, url: '' };
   }
