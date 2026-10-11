@@ -1,3 +1,5 @@
+import { MC_RESP_NO_MORE_MESSAGES } from './meshcoreWireCodes';
+
 /** Drop inbound frames that exactly match a recent outbound companion command (TX echo). */
 const TX_ECHO_TTL_MS = 500;
 const MAX_RECENT_TX = 16;
@@ -31,6 +33,8 @@ export class MeshcoreCompanionTxEchoFilter {
   }
 
   isEcho(inbound: Uint8Array): boolean {
+    // SyncNextMessage and NoMoreMessages are both [0x0a]; preserve the valid reply.
+    if (inbound.length === 1 && inbound[0] === MC_RESP_NO_MORE_MESSAGES) return false;
     const now = Date.now();
     this.prune(now);
     return this.recent.some(({ frame }) => framesEqual(frame, inbound));

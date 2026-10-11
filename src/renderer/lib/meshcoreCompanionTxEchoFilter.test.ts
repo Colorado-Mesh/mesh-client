@@ -5,6 +5,7 @@ import {
   type MeshcoreEchoFilterableConnection,
   patchMeshcoreCompanionTxEchoFilter,
 } from './meshcoreCompanionTxEchoFilter';
+import { MC_RESP_NO_MORE_MESSAGES } from './meshcoreWireCodes';
 
 describe('MeshcoreCompanionTxEchoFilter', () => {
   it('drops inbound frames that exactly match a recent outbound frame', () => {
@@ -19,6 +20,13 @@ describe('MeshcoreCompanionTxEchoFilter', () => {
     const filter = new MeshcoreCompanionTxEchoFilter();
     filter.noteOutbound(new Uint8Array([25, 0, 0]));
     expect(filter.isEcho(new Uint8Array([25, 0, 1]))).toBe(false);
+  });
+
+  it('preserves the no-more-messages reply that is identical to the sync command', () => {
+    const filter = new MeshcoreCompanionTxEchoFilter();
+    filter.noteOutbound(new Uint8Array([MC_RESP_NO_MORE_MESSAGES]));
+
+    expect(filter.isEcho(new Uint8Array([MC_RESP_NO_MORE_MESSAGES]))).toBe(false);
   });
 
   it('expires echoed frames after the TTL', () => {
