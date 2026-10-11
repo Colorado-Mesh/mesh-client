@@ -986,9 +986,6 @@
     "healthCheck": {
       "label": "MeshCore Kód zdravotní kontroly",
       "tooltip": "Kód testu pro zdravotní prohlídku MeshCore. Pozorovatelé na síti odesílatele hlásí, který z nich ji obdržel."
-    },
-    "remoteContent": {
-      "load": "Načíst vzdálený obsah z {{host}}"
     }
   },
   "common": {
@@ -5723,7 +5720,18 @@
     "channelRelayUnnamed": "Kanál {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic kanály do TAK",
     "channelRelayDescMeshtastic": "Vyber, které zprávy slyšeného kanálu se budou přenášet do TAK. Místnost GeoChat zrcadlí kanál, včetně zpráv slyšených přes MQTT, do této TAK chatovací místnosti. Toto platí pouze pro jednu cestu: nic z TAK není odesláno přes síť.",
-    "channelRelayNoChannelsMeshtastic": "Připojte rádio Meshtastic a zobrazte seznam jeho kanálů."
+    "channelRelayNoChannelsMeshtastic": "Připojte rádio Meshtastic a zobrazte seznam jeho kanálů.",
+    "unitStylesPreviewKind": "Typ uzlu k testování",
+    "unitStylesPreviewProtocol": "Protokol k testování",
+    "unitFilterKind": "Typ uzlu pro filtr {{n}}",
+    "unitFilterAnyKind": "Jakýkoli typ uzlu",
+    "unitFilterProtocol": "Protokol pro filtr {{n}}",
+    "unitFilterAnyProtocol": "Jakýkoli protokol",
+    "unitKindCompanion": "Společníci a klienti",
+    "unitKindRepeater": "Opakovače a směrovače",
+    "unitKindRoom": "Pokojové servery",
+    "unitKindSensor": "Snímače",
+    "unitKindTracker": "Trackery"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

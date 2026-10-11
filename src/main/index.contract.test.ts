@@ -943,9 +943,8 @@ describe('Native Electron call guards (source contract)', () => {
 
   it('logs native IPC helper failures locally before fallback or rejection', () => {
     expect(INDEX_SOURCE).toContain("'[IPC] notify:message failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] storage:isAvailable failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] storage:encrypt failed:'");
-    expect(INDEX_SOURCE).toContain("'[IPC] storage:decrypt failed:'");
+    expect(INDEX_SOURCE).toContain('const secureSecretStore = new SecureSecretStore(getDatabase)');
+    expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:decrypt'");
     expect(INDEX_SOURCE).toContain("'[IPC] app:getLoginItem failed:'");
     expect(INDEX_SOURCE).toContain("'[IPC] app:setLoginItem failed:'");
     expect(INDEX_SOURCE).toContain("'[IPC] app:showEmojiPanel failed:'");

@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Health Check-code",
       "tooltip": "Testcode voor MeshCore Health Check. Waarnemers op het mesh van de afzender melden wie van hen het heeft ontvangen."
-    },
-    "remoteContent": {
-      "load": "Laad externe inhoud van {{host}}"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Kanaal {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic kanalen naar TAK",
     "channelRelayDescMeshtastic": "Kies welke gehoorde kanaalberichten worden ingevoerd in TAK. Een GeoChat-ruimte weerspiegelt het kanaal, inclusief berichten die via MQTT worden gehoord, naar die TAK-chatruimte. Dit kan maar één kant op: er wordt niets van TAK over de mesh verzonden.",
-    "channelRelayNoChannelsMeshtastic": "Sluit een Meshtastic radio aan om de kanalen weer te geven."
+    "channelRelayNoChannelsMeshtastic": "Sluit een Meshtastic radio aan om de kanalen weer te geven.",
+    "unitStylesPreviewKind": "Knooppunttype om te testen",
+    "unitStylesPreviewProtocol": "Te testen protocol",
+    "unitFilterKind": "Knooppunttype voor filter {{n}}",
+    "unitFilterAnyKind": "Elk knooppunttype",
+    "unitFilterProtocol": "Protocol voor filter {{n}}",
+    "unitFilterAnyProtocol": "Elk protocol",
+    "unitKindCompanion": "Begeleiders en klanten",
+    "unitKindRepeater": "Repeaters en routers",
+    "unitKindRoom": "Roomservers",
+    "unitKindSensor": "Sensoren",
+    "unitKindTracker": "Trackers"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

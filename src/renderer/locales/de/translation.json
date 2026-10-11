@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Gesundheitscheckcode",
       "tooltip": "Testcode für MeshCore Health Check. Beobachter auf dem Mesh des Absenders berichten, wer von ihnen es erhalten hat."
-    },
-    "remoteContent": {
-      "load": "Remote-Inhalte von {{host}} laden"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Kanal {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic Kanäle zu TAK",
     "channelRelayDescMeshtastic": "Wähle aus, welche Nachrichten von den Heared Channels in TAK eingehen. Ein GeoChat-Raum spiegelt den Kanal einschließlich der über MQTT gesendeten Nachrichten in diesem TAK Chat-Raum wider. Das geht nur in eine Richtung: Nichts von TAK wird über das Netz geschickt.",
-    "channelRelayNoChannelsMeshtastic": "Schließen Sie ein Meshtastic -Funkgerät an, um dessen Sender aufzulisten."
+    "channelRelayNoChannelsMeshtastic": "Schließen Sie ein Meshtastic -Funkgerät an, um dessen Sender aufzulisten.",
+    "unitStylesPreviewKind": "Zu testender Knotentyp",
+    "unitStylesPreviewProtocol": "Prüfprotokoll",
+    "unitFilterKind": "Knotentyp für Filter {{n}}",
+    "unitFilterAnyKind": "Beliebiger Knotentyp",
+    "unitFilterProtocol": "Protokoll für Filter {{n}}",
+    "unitFilterAnyProtocol": "Beliebiges Protokoll",
+    "unitKindCompanion": "Begleiter und Kunden",
+    "unitKindRepeater": "Repeater und Router",
+    "unitKindRoom": "Raumserver",
+    "unitKindSensor": "Sensorik",
+    "unitKindTracker": "Tracker"
   },
   "telemetryPanel": {
     "title": "Telemetrie",

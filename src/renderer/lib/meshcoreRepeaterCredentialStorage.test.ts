@@ -1,29 +1,30 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import {
   getMeshcoreRepeaterCredential,
   listMeshcoreRepeaterCredentialNodeIds,
-  meshcoreRepeaterCredentialSettingForNode,
   readMeshcoreRepeaterCredentialMap,
   setMeshcoreRepeaterCredential,
 } from './meshcoreRepeaterCredentialStorage';
+import {
+  getCachedSecureSecret,
+  meshcoreRepeaterSecretKey,
+  resetSecureSecretCacheForTests,
+} from './secureSecretStorage';
 
 describe('meshcoreRepeaterCredentialStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.appSettings.set).mockClear();
+    resetSecureSecretCacheForTests();
   });
 
   it('persists admin password per repeater node', async () => {
     await setMeshcoreRepeaterCredential(0x1001, { password: 'secret' });
     const cred = getMeshcoreRepeaterCredential(0x1001);
     expect(cred?.password).toBe('secret');
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toContain(
-      meshcoreRepeaterCredentialSettingForNode(0x1001),
-    );
-    expect(window.electronAPI.appSettings.set).toHaveBeenCalled();
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(0x1001))).toContain('secret');
+    expect(localStorage.length).toBe(0);
   });
 
   it('clears credential when set to null', async () => {

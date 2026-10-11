@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Código de verificação de integridade",
       "tooltip": "Código de teste para MeshCore Verificação de saúde. Observadores na malha do remetente relatam qual deles o recebeu."
-    },
-    "remoteContent": {
-      "load": "Carregar conteúdo remoto de {{host}}"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Canal {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic canais para TAK",
     "channelRelayDescMeshtastic": "Escolha quais mensagens de canal ouvidas alimentam TAK. Uma sala do GeoChat espelha o canal, incluindo mensagens ouvidas em MQTT, naquela sala de chat TAK. Isso só vai de uma maneira: nada de TAK é enviado pela malha.",
-    "channelRelayNoChannelsMeshtastic": "Conecte um rádio Meshtastic para anunciar seus canais."
+    "channelRelayNoChannelsMeshtastic": "Conecte um rádio Meshtastic para anunciar seus canais.",
+    "unitStylesPreviewKind": "Digitar para testar",
+    "unitStylesPreviewProtocol": "Protocolo para testar",
+    "unitFilterKind": "Tipo de nó para filtro {{n}}",
+    "unitFilterAnyKind": "Qualquer tipo de nó",
+    "unitFilterProtocol": "Protocolo para filtro {{n}}",
+    "unitFilterAnyProtocol": "Qualquer protocolo L3",
+    "unitKindCompanion": "Companheiros e clientes",
+    "unitKindRepeater": "Repetidores e roteadores",
+    "unitKindRoom": "Servidores de sala",
+    "unitKindSensor": "Sensores",
+    "unitKindTracker": "Trackers"
   },
   "telemetryPanel": {
     "title": "Telemetria",

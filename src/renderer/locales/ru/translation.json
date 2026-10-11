@@ -1002,9 +1002,6 @@
     "healthCheck": {
       "label": "MeshCore Код проверки здоровья",
       "tooltip": "Код теста для проверки работоспособности MeshCore. Наблюдатели на сетке отправителя сообщают, кто из них ее получил."
-    },
-    "remoteContent": {
-      "load": "Загрузить удаленный контент из {{host}}"
     }
   },
   "common": {
@@ -5762,7 +5759,18 @@
     "channelRelayUnnamed": "Канал {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic передает канал TAK",
     "channelRelayDescMeshtastic": "Выберите, какие прослушанные сообщения канала будут поступать в TAK. Комната GeoChat дублирует канал, включая сообщения, услышанные через MQTT, в эту комнату чата TAK. Это происходит только в одном направлении: ничего из TAK не передается через сетку.",
-    "channelRelayNoChannelsMeshtastic": "Подключите радиоприемник Meshtastic, чтобы просмотреть его каналы."
+    "channelRelayNoChannelsMeshtastic": "Подключите радиоприемник Meshtastic, чтобы просмотреть его каналы.",
+    "unitStylesPreviewKind": "Тип тестируемого узла",
+    "unitStylesPreviewProtocol": "Протокол испытания",
+    "unitFilterKind": "Тип узла для фильтра {{n}}",
+    "unitFilterAnyKind": "Любой тип узла",
+    "unitFilterProtocol": "Протокол для фильтра {{n}}",
+    "unitFilterAnyProtocol": "Любой протокол",
+    "unitKindCompanion": "Компаньоны и клиенты",
+    "unitKindRepeater": "Ретрансляторы и маршрутизаторы",
+    "unitKindRoom": "Комнатные серверы",
+    "unitKindSensor": "Датчики",
+    "unitKindTracker": "Tracker"
   },
   "telemetryPanel": {
     "title": "Телеметрия",

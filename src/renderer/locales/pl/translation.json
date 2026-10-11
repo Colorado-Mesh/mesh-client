@@ -1002,9 +1002,6 @@
     "healthCheck": {
       "label": "MeshCore Kod kontroli stanu zdrowia",
       "tooltip": "Kod testowy do kontroli zdrowia MeshCore. Obserwatorzy na siatce nadawcy zgłaszają, który z nich ją otrzymał."
-    },
-    "remoteContent": {
-      "load": "Załaduj zdalną zawartość z {{host}}"
     }
   },
   "common": {
@@ -5762,7 +5759,18 @@
     "channelRelayUnnamed": "Kanał {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic kanały do TAK",
     "channelRelayDescMeshtastic": "Wybierz, które usłyszane wiadomości kanałowe mają być przesyłane do TAK. Pokój GeoChat odzwierciedla kanał, w tym wiadomości słyszane przez MQTT, w tym pokoju czatu TAK. To działa tylko w jeden sposób: nic z TAK nie jest wysyłane przez siatkę.",
-    "channelRelayNoChannelsMeshtastic": "Podłącz radio Meshtastic, aby wyświetlić listę jego kanałów."
+    "channelRelayNoChannelsMeshtastic": "Podłącz radio Meshtastic, aby wyświetlić listę jego kanałów.",
+    "unitStylesPreviewKind": "Typ węzła do przetestowania",
+    "unitStylesPreviewProtocol": "Protokół badania",
+    "unitFilterKind": "Typ węzła dla filtra {{n}}",
+    "unitFilterAnyKind": "Dowolny typ węzła",
+    "unitFilterProtocol": "Protokół dla filtra {{n}}",
+    "unitFilterAnyProtocol": "Dowolny protokół",
+    "unitKindCompanion": "Osoby towarzyszące i klienci",
+    "unitKindRepeater": "Powtarzacze i routery",
+    "unitKindRoom": "Serwery pokojowe",
+    "unitKindSensor": "Czujniki",
+    "unitKindTracker": "Trackery"
   },
   "telemetryPanel": {
     "title": "Telemetria",

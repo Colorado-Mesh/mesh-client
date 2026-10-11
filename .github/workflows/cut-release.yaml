@@ -1,6 +1,6 @@
 # Primary maintainer path: cut a release from Actions.
 #
-# Requires repository secret RELEASE_PUSH_TOKEN — a PAT (or GitHub App token)
+# Requires protected-environment secret RELEASE_CUT_TOKEN — a PAT (or GitHub App token)
 # owned by a repo **admin** (so the main merge-queue ruleset bypass applies)
 # with contents:write + workflows:write. Default GITHUB_TOKEN will not trigger
 # release.yaml / flatpak.yaml on the tag push (GitHub recursion guard).
@@ -43,7 +43,9 @@ concurrency:
 jobs:
   release:
     name: Cut release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: release-cut
     permissions:
       contents: read
     steps:
@@ -171,19 +173,19 @@ jobs:
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           # The admin credential exists only for this final, non-repository-controlled operation.
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          RELEASE_CUT_TOKEN: ${{ secrets.RELEASE_CUT_TOKEN }}
           MESH_CLIENT_RELEASE_PARSE_ONLY: ''
         run: |
           set -euo pipefail
-          if [ -z "${RELEASE_PUSH_TOKEN}" ]; then
-            echo '::error::Set repository secret RELEASE_PUSH_TOKEN (admin PAT: contents+workflows).'
+          if [ -z "${RELEASE_CUT_TOKEN}" ]; then
+            echo '::error::Set release-cut environment secret RELEASE_CUT_TOKEN.'
             exit 1
           fi
 
           ASKPASS="${RUNNER_TEMP}/mesh-release-askpass.sh"
           cleanup() {
             rm -f "${ASKPASS}"
-            unset GIT_ASKPASS GIT_TERMINAL_PROMPT RELEASE_PUSH_TOKEN
+            unset GIT_ASKPASS GIT_TERMINAL_PROMPT RELEASE_CUT_TOKEN
           }
           trap cleanup EXIT
           umask 077
@@ -193,7 +195,7 @@ jobs:
             '#!/bin/sh' \
             'case "$1" in' \
             '  *Username*) printf "%s\n" "x-access-token" ;;' \
-            '  *) printf "%s\n" "$RELEASE_PUSH_TOKEN" ;;' \
+            '  *) printf "%s\n" "$RELEASE_CUT_TOKEN" ;;' \
             'esac' > "${ASKPASS}"
           chmod 700 "${ASKPASS}"
           export GIT_ASKPASS="${ASKPASS}"

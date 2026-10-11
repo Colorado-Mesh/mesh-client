@@ -22,6 +22,19 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     }
   });
 
+  it('creates the main-owned secure secret ciphertext table', () => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      runSchemaUpgrade(db);
+      const columns = db.prepareOnce('PRAGMA table_info(secure_secrets)').all() as {
+        name: string;
+      }[];
+      expect(columns.map((column) => column.name)).toEqual(['key', 'ciphertext', 'updated_at']);
+    } finally {
+      db.close();
+    }
+  });
+
   it('adds local DM order to a v49 database without rewriting historical messages', () => {
     const db = new NodeSqliteDB(':memory:');
     try {

@@ -1,5 +1,5 @@
-# Safety net: when a release is published with tag_name still `untagged-*`
-# (or rebinds after verify), reattach it to vX.Y.Z and delete the orphan ref.
+# Maintainer-invoked recovery for a release published with tag_name `untagged-*`
+# (or rebound after verify): reattach it to vX.Y.Z and delete the orphan ref.
 #
 # Complements finalize verify in release.yaml — publish is manual and outside that gate.
 
@@ -9,8 +9,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Published release tag_name (vX.Y.Z or untagged-*)'
+        required: true
+        type: string
+      release_name:
+        description: 'Published release name (required for untagged-* repair)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -18,17 +26,21 @@ permissions:
 jobs:
   repair:
     name: Repair published release tag
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: release-repair
     steps:
       - name: Checkout code
         # actions/checkout v6.1.0
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: main
+          persist-credentials: false
       - name: Resolve vX.Y.Z tag and repair if needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
-          EVENT_TAG: ${{ github.event.release.tag_name }}
-          EVENT_NAME: ${{ github.event.release.name }}
+          EVENT_TAG: ${{ inputs.release_tag }}
+          EVENT_NAME: ${{ inputs.release_name }}
         run: |
           set -euo pipefail
           TAG="${EVENT_TAG}"

@@ -113,12 +113,32 @@ export const TAK_MATCH_OPS: readonly TakMatchOp[] = [
   'contains',
 ];
 
-/** Restyles relayed nodes whose callsign or long name matches one of its patterns. */
+/**
+ * What a relayed node is, from what it advertises: a MeshCore advert type, a Meshtastic device
+ * role, a Reticulum interface, or a tracker fix.
+ */
+export const TAK_NODE_KINDS = ['companion', 'repeater', 'room', 'sensor', 'tracker'] as const;
+export type TakNodeKind = (typeof TAK_NODE_KINDS)[number];
+
+/** The node a filter is tested against, beyond its names. */
+export interface TakFilterSubject {
+  kind: TakNodeKind;
+  protocol: MeshProtocol;
+}
+
+/**
+ * Restyles relayed nodes that meet every condition it sets: a name pattern, a node kind, a
+ * protocol. A filter that sets none matches nothing.
+ */
 export interface TakUnitFilter {
   enabled: boolean;
   op: TakMatchOp;
-  /** Compared case-insensitively. */
+  /** Compared case-insensitively against the callsign, then the long name. Empty: any name. */
   patterns: string[];
+  /** Only nodes of this kind. Unset: any kind. */
+  nodeKind?: TakNodeKind;
+  /** Only nodes heard on this protocol. Unset: any protocol. */
+  protocol?: MeshProtocol;
   /** Remove the matched prefix (startsWith) or suffix (endsWith) from the callsign. */
   stripMatch: boolean;
   style: TakUnitStyle;

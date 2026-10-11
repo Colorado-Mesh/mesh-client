@@ -225,15 +225,20 @@ export function KeyBackupRestoreSection({
   ]);
 
   const handleRemove = useCallback(
-    (nodeKey: number) => {
-      if (protocol === 'meshtastic') {
-        deleteMeshtasticDmKeyBackup(nodeKey);
-      } else {
-        deleteMeshcoreKeyBackup(nodeKey);
+    async (nodeKey: number) => {
+      try {
+        if (protocol === 'meshtastic') {
+          await deleteMeshtasticDmKeyBackup(nodeKey);
+        } else {
+          await deleteMeshcoreKeyBackup(nodeKey);
+        }
+        addToast(t('securityPanel.backupRemoved'), 'success');
+        setRemoveConfirmKey(null);
+        refreshStatus();
+      } catch (err) {
+        console.warn('[KeyBackupRestoreSection] remove ' + errLikeToLogString(err));
+        addToast(t('securityPanel.failed', { message: keyBackupFailureMessage(err, t) }), 'error');
       }
-      addToast(t('securityPanel.backupRemoved'), 'success');
-      setRemoveConfirmKey(null);
-      refreshStatus();
     },
     [protocol, addToast, t, refreshStatus],
   );
@@ -383,7 +388,7 @@ export function KeyBackupRestoreSection({
           confirmLabel={t('securityPanel.removeBackup')}
           danger
           onConfirm={() => {
-            handleRemove(removeConfirmKey);
+            void handleRemove(removeConfirmKey);
           }}
           onCancel={() => {
             setRemoveConfirmKey(null);

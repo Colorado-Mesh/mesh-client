@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Code du bilan de santé",
       "tooltip": "Code de test pour MeshCore Bilan de santé. Les observateurs sur le maillage de l'expéditeur signalent lequel d'entre eux l'a reçu."
-    },
-    "remoteContent": {
-      "load": "Charger du contenu distant à partir de {{host}}"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Canal {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic canaux vers TAK",
     "channelRelayDescMeshtastic": "Choisissez quel canal de messages entendus alimentent TAK. Une salle de GeoChat reflète le canal, y compris les messages entendus sur MQTT, dans cette salle de discussion TAK. Cela ne va que dans un sens : rien de TAK n'est envoyé sur le maillage.",
-    "channelRelayNoChannelsMeshtastic": "Connectez une radio Meshtastic pour répertorier ses chaînes."
+    "channelRelayNoChannelsMeshtastic": "Connectez une radio Meshtastic pour répertorier ses chaînes.",
+    "unitStylesPreviewKind": "Type de nœud à tester",
+    "unitStylesPreviewProtocol": "Protocole à tester",
+    "unitFilterKind": "Type de nœud pour le filtre {{n}}",
+    "unitFilterAnyKind": "Tout type de nœud",
+    "unitFilterProtocol": "Protocole pour le filtre {{n}}",
+    "unitFilterAnyProtocol": "Tout protocole",
+    "unitKindCompanion": "Compagnons et clients",
+    "unitKindRepeater": "Répéteurs et routeurs",
+    "unitKindRoom": "Serveurs de salle",
+    "unitKindSensor": "Capteurs",
+    "unitKindTracker": "Trackers"
   },
   "telemetryPanel": {
     "title": "Télémétrie",

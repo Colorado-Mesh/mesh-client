@@ -1,9 +1,11 @@
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 import {
   TAK_ICONSET_PATH_MAX_LEN,
   TAK_MATCH_OPS,
+  TAK_NODE_KINDS,
   TAK_TEAM_COLORS,
   TAK_TEAM_ROLES,
   TAK_UNIT_COT_TYPES,
@@ -11,6 +13,7 @@ import {
   TAK_UNIT_FILTER_PATTERNS_MAX,
   TAK_UNIT_FILTERS_MAX,
   type TakMatchOp,
+  type TakNodeKind,
   type TakStyleSettings,
   type TakUnitFilter,
 } from '@/shared/tak-types';
@@ -42,6 +45,21 @@ const OP_LABEL_KEYS: Record<TakMatchOp, string> = {
   contains: 'takServerPanel.unitFilterOpContains',
 };
 
+const KIND_LABEL_KEYS: Record<TakNodeKind, string> = {
+  companion: 'takServerPanel.unitKindCompanion',
+  repeater: 'takServerPanel.unitKindRepeater',
+  room: 'takServerPanel.unitKindRoom',
+  sensor: 'takServerPanel.unitKindSensor',
+  tracker: 'takServerPanel.unitKindTracker',
+};
+
+/** Protocol names are product names and are not translated. */
+const PROTOCOL_LABELS: Record<MeshProtocol, string> = {
+  meshtastic: 'Meshtastic',
+  meshcore: 'MeshCore',
+  reticulum: 'Reticulum',
+};
+
 const DEFAULT_COLOR = '#22C55E';
 
 /** Editable filter row; patterns stay as typed until saved. */
@@ -50,6 +68,10 @@ interface DraftFilter {
   enabled: boolean;
   op: TakMatchOp;
   patternsText: string;
+  /** Empty string: any node kind. */
+  nodeKind: TakNodeKind | '';
+  /** Empty string: any protocol. */
+  protocol: MeshProtocol | '';
   stripMatch: boolean;
   cotType: string;
   group: string;
@@ -65,6 +87,8 @@ function toDraft(filter: TakUnitFilter): DraftFilter {
     enabled: filter.enabled,
     op: filter.op,
     patternsText: filter.patterns.join(', '),
+    nodeKind: filter.nodeKind ?? '',
+    protocol: filter.protocol ?? '',
     stripMatch: filter.stripMatch,
     cotType: filter.style.cotType,
     group: filter.style.group ?? '',
@@ -96,6 +120,8 @@ function fromDraft(d: DraftFilter): TakUnitFilter {
     enabled: d.enabled,
     op: d.op,
     patterns: parsePatterns(d.patternsText),
+    ...(d.nodeKind ? { nodeKind: d.nodeKind } : {}),
+    ...(d.protocol ? { protocol: d.protocol } : {}),
     stripMatch: d.stripMatch,
     style: {
       cotType: d.cotType,
@@ -140,6 +166,38 @@ function FilterRow({ index, draft, disabled, onChange, onRemove }: RowProps) {
         <span className="text-ink-300 text-xs font-medium">
           {t('takServerPanel.unitFilterHeading', { n })}
         </span>
+        <select
+          value={draft.nodeKind}
+          onChange={(e) => {
+            set({ nodeKind: e.target.value as TakNodeKind | '' });
+          }}
+          disabled={disabled}
+          aria-label={t('takServerPanel.unitFilterKind', { n })}
+          className={SELECT_BOX_SM_CLASS}
+        >
+          <option value="">{t('takServerPanel.unitFilterAnyKind')}</option>
+          {TAK_NODE_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {t(KIND_LABEL_KEYS[kind])}
+            </option>
+          ))}
+        </select>
+        <select
+          value={draft.protocol}
+          onChange={(e) => {
+            set({ protocol: e.target.value as MeshProtocol | '' });
+          }}
+          disabled={disabled}
+          aria-label={t('takServerPanel.unitFilterProtocol', { n })}
+          className={SELECT_BOX_SM_CLASS}
+        >
+          <option value="">{t('takServerPanel.unitFilterAnyProtocol')}</option>
+          {REGISTERED_MESH_PROTOCOLS.map((protocol) => (
+            <option key={protocol} value={protocol}>
+              {PROTOCOL_LABELS[protocol]}
+            </option>
+          ))}
+        </select>
         <select
           value={draft.op}
           onChange={(e) => {
@@ -285,13 +343,18 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
   const [sendUnmatched, setSendUnmatched] = useState(initial.sendUnmatched);
   const [relayIcon, setRelayIcon] = useState(initial.relayIconsetPath ?? '');
   const [previewName, setPreviewName] = useState('');
+  const [previewKind, setPreviewKind] = useState<TakNodeKind>('companion');
+  const [previewProtocol, setPreviewProtocol] = useState<MeshProtocol>('meshcore');
   const [saved, setSaved] = useState(false);
 
   const filters = useMemo(() => drafts.map(fromDraft), [drafts]);
   const preview = useMemo(() => {
     const name = previewName.trim();
     if (!name) return null;
-    const match = matchTakUnitFilter(filters, name, name);
+    const match = matchTakUnitFilter(filters, name, name, {
+      kind: previewKind,
+      protocol: previewProtocol,
+    });
     if (match) {
       return t('takServerPanel.unitStylesPreviewMatch', {
         n: match.index + 1,
@@ -301,7 +364,7 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
     return sendUnmatched
       ? t('takServerPanel.unitStylesPreviewAdvertised')
       : t('takServerPanel.unitStylesPreviewDropped');
-  }, [filters, previewName, sendUnmatched, t]);
+  }, [filters, previewName, previewKind, previewProtocol, sendUnmatched, t]);
 
   const update = (key: number, next: DraftFilter) => {
     setSaved(false);
@@ -422,6 +485,36 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
           spellCheck={false}
           className={`${INPUT_BOX_SM_CLASS} w-full max-w-xs`}
         />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <select
+            value={previewKind}
+            onChange={(e) => {
+              setPreviewKind(e.target.value as TakNodeKind);
+            }}
+            aria-label={t('takServerPanel.unitStylesPreviewKind')}
+            className={SELECT_BOX_SM_CLASS}
+          >
+            {TAK_NODE_KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {t(KIND_LABEL_KEYS[kind])}
+              </option>
+            ))}
+          </select>
+          <select
+            value={previewProtocol}
+            onChange={(e) => {
+              setPreviewProtocol(e.target.value as MeshProtocol);
+            }}
+            aria-label={t('takServerPanel.unitStylesPreviewProtocol')}
+            className={SELECT_BOX_SM_CLASS}
+          >
+            {REGISTERED_MESH_PROTOCOLS.map((protocol) => (
+              <option key={protocol} value={protocol}>
+                {PROTOCOL_LABELS[protocol]}
+              </option>
+            ))}
+          </select>
+        </div>
         {preview && (
           <p className="text-ink-400 mt-1 text-xs" aria-live="polite">
             {preview}

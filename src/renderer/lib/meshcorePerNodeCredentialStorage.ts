@@ -1,12 +1,17 @@
-import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
-import { parseStoredJson } from './parseStoredJson';
+import {
+  getCachedSecureSecret,
+  listCachedSecureSecretKeys,
+  removeSecureSecret,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 export interface MeshcorePerNodeCredentialStorageConfig<T> {
   prefix: string;
   logTag: string;
   parseValue: (raw: unknown) => T | undefined;
   serialize: (cred: T) => string;
+  securePrefix: string;
 }
 
 export interface MeshcorePerNodeCredentialStorage<T> {
@@ -51,17 +56,12 @@ export function createMeshcorePerNodeCredentialStorage<T>(
   const settingKeyForNode = (nodeId: number): string => `${config.prefix}${String(nodeId >>> 0)}`;
 
   const readMap = (): Map<number, T> => {
-    const settings = parseStoredJson<Record<string, unknown>>(
-      getAppSettingsRaw(),
-      `${config.logTag} read`,
-    );
     const out = new Map<number, T>();
-    if (!settings) return out;
-    for (const [key, value] of Object.entries(settings)) {
-      if (!key.startsWith(config.prefix)) continue;
-      const idStr = key.slice(config.prefix.length);
+    for (const key of listCachedSecureSecretKeys(config.securePrefix)) {
+      const idStr = key.slice(config.securePrefix.length);
       const nodeId = Number.parseInt(idStr, 10);
-      if (!Number.isFinite(nodeId) || nodeId < 0) continue;
+      if (!Number.isFinite(nodeId) || nodeId < 0 || String(nodeId >>> 0) !== idStr) continue;
+      const value = getCachedSecureSecret(key);
       const cred = config.parseValue(value);
       if (cred) out.set(nodeId >>> 0, cred);
     }
@@ -73,13 +73,12 @@ export function createMeshcorePerNodeCredentialStorage<T>(
   const listNodeIds = (): number[] => [...readMap().keys()];
 
   const set = async (nodeId: number, cred: T | null): Promise<void> => {
-    const settingKey = settingKeyForNode(nodeId);
-    const payload = cred == null ? '' : config.serialize(cred);
-    mergeAppSetting(settingKey, payload, `${config.logTag} set`);
+    const secureKey = `${config.securePrefix}${String(nodeId >>> 0)}`;
     try {
-      await window.electronAPI.appSettings.set(settingKey, payload);
+      if (cred == null) await removeSecureSecret(secureKey);
+      else await setSecureSecret(secureKey, config.serialize(cred));
     } catch (e: unknown) {
-      console.warn(`[${config.logTag}] persist failed ` + errLikeToLogString(e));
+      console.warn(`[${config.logTag}] secure store failed ` + errLikeToLogString(e));
       throw e instanceof Error ? e : new Error(String(e));
     }
   };

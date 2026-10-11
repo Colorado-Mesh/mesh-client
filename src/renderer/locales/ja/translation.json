@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCoreヘルスチェックコード",
       "tooltip": "MeshCoreヘルスチェックのテストコード。送信者のメッシュの観察者は、どちらがそれを受け取ったかを報告します。"
-    },
-    "remoteContent": {
-      "load": "{{host}}からリモートコンテンツを読み込む"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "チャンネル{{n}}",
     "channelRelayTitleMeshtastic": "MeshtasticチャンネルからTAK",
     "channelRelayDescMeshtastic": "どのチャネル メッセージを TAK にフィードするかを選択します。 GeoChat ルームは、MQTT で聞いたメッセージを含むチャネルを TAK チャット ルームにミラーリングします。これは一方向にのみ行われます。TAK からはメッシュ経由で何も送信されません。",
-    "channelRelayNoChannelsMeshtastic": "Meshtastic 無線を接続して、そのチャンネルをリストします。"
+    "channelRelayNoChannelsMeshtastic": "Meshtastic 無線を接続して、そのチャンネルをリストします。",
+    "unitStylesPreviewKind": "テストするノードタイプ",
+    "unitStylesPreviewProtocol": "テストプロトコル",
+    "unitFilterKind": "フィルタ{{n}}のノードタイプ",
+    "unitFilterAnyKind": "任意のノードタイプ",
+    "unitFilterProtocol": "フィルタ{{n}}のプロトコル",
+    "unitFilterAnyProtocol": "任意のプロトコル",
+    "unitKindCompanion": "コンパニオンとクライアント",
+    "unitKindRepeater": "リピーターとルーター",
+    "unitKindRoom": "ルームサーバー",
+    "unitKindSensor": "センサー",
+    "unitKindTracker": "トラッカー"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

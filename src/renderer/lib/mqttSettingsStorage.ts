@@ -3,18 +3,30 @@ import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
 
+import { getCachedSecureSecret } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 /** Merge persisted MQTT JSON with defaults and clamp maxRetries. */
 export function readMqttSettingsFromStorage(
   storageKey: string,
   defaults: MQTTSettings,
+  secretKey?: string,
 ): MQTTSettings {
   try {
     const raw = localStorage.getItem(storageKey);
-    if (!raw) return { ...defaults };
-    const parsed = JSON.parse(raw) as Partial<MQTTSettings>;
-    const merged = { ...defaults, ...parsed };
+    const parsed = raw ? (JSON.parse(raw) as Partial<MQTTSettings>) : {};
+    let secureSettings: Partial<MQTTSettings> = {};
+    if (secretKey) {
+      const secureRaw = getCachedSecureSecret(secretKey);
+      if (secureRaw) {
+        try {
+          secureSettings = JSON.parse(secureRaw) as Partial<MQTTSettings>;
+        } catch {
+          // catch-no-log-ok corrupt session secret is treated as absent
+        }
+      }
+    }
+    const merged = { ...defaults, ...parsed, ...secureSettings };
     return {
       ...merged,
       maxRetries: clampMqttMaxRetries(merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS),

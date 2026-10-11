@@ -87,12 +87,11 @@ describe('packaging sidecar workflow gates', () => {
     }
   });
 
-  it('keeps release platform filtering and same-commit sidecar builds', () => {
+  it('builds every release platform from the same protected tag commit', () => {
     const release = read('.github/workflows/release.yaml');
     const job = release.split('\n  sidecars:\n')[1].split('\n  release:\n')[0];
-    expect(job).toContain(
-      "platforms: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}",
-    );
+    expect(job).toContain('platforms: all');
+    expect(release).not.toContain('workflow_dispatch');
     expect(sidecars).toContain('RELEASE_PLATFORMS: ${{ inputs.platforms }}');
     expect(sidecars).toContain('node scripts/resolve-release-matrix.mjs --sidecars');
     expect(sidecars.match(/ref: \$\{\{ github.sha \}\}/g)).toHaveLength(2);

@@ -7,21 +7,35 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      platforms:
-        description: 'Platforms to build (all, mac, linux, win, or comma-separated)'
-        required: false
-        default: all
-        type: string
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  authorize-release:
+    name: Authorize protected release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require exact semver release tag
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_REF_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          if [[ ! "${RELEASE_REF}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Official releases require an exact vX.Y.Z tag."
+            exit 1
+          fi
+          if [ "${RELEASE_REF_PROTECTED}" != 'true' ]; then
+            echo "::error::Official releases require a protected tag."
+            exit 1
+          fi
+
   schema-release-compare:
     name: Schema vs last official release
+    needs: authorize-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,6 +76,7 @@ jobs:
   prepare-github-release:
     needs: schema-release-compare
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
     outputs:
@@ -83,7 +98,6 @@ jobs:
         id: ensure
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
           MESH_CLIENT_ALLOW_DRAFT_CREATE: '1'
@@ -120,7 +134,7 @@ jobs:
       - name: Resolve release matrix
         id: matrix
         env:
-          RELEASE_PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
+          RELEASE_PLATFORMS: all
         run: |
           include="$(node scripts/resolve-release-matrix.mjs)"
           echo "include=$include" >> "$GITHUB_OUTPUT"
@@ -132,12 +146,13 @@ jobs:
       contents: read
     uses: ./.github/workflows/packaging-sidecars.yaml
     with:
-      platforms: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
+      platforms: all
 
   release:
     needs: [schema-release-compare, prepare-github-release, resolve-release-matrix, sidecars]
     if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' && needs.sidecars.result == 'success' }}
     runs-on: ${{ matrix.os }}
+    environment: release
     defaults:
       run:
         working-directory: ${{ github.workspace }}
@@ -336,6 +351,7 @@ jobs:
     # Require a successful build matrix — skipped/cancelled release must not consolidate.
     if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
     steps:
@@ -352,7 +368,6 @@ jobs:
       - name: Consolidate duplicate draft releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
         run: node scripts/ci-ensure-github-draft-release.mjs
@@ -360,7 +375,6 @@ jobs:
       - name: Verify draft release tag_name
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
           RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
         run: node scripts/ci-verify-github-draft-release.mjs
@@ -368,7 +382,6 @@ jobs:
       - name: Verify updater channel yml urls match GitHub assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
           RELEASE_ID: ${{ needs.prepare-github-release.outputs.release_id }}
         run: node scripts/assert-github-release-update-yml.mjs
@@ -377,6 +390,7 @@ jobs:
     name: Smoke test ${{ matrix.label }}
     needs: [release, finalize-github-release]
     runs-on: ${{ matrix.os }}
+    environment: release
     permissions:
       contents: read
     strategy:

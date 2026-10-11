@@ -12,6 +12,11 @@ import {
   resolveMeshtasticMqttChannelName,
   resolveMeshtasticMqttPublishFieldsForChannel,
 } from './meshtasticMqttPublish';
+import {
+  MESHCORE_MQTT_SECRET_KEY,
+  MESHTASTIC_MQTT_SECRET_KEY,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 const KEY_AES256 = 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=';
 const KEY_AES128_ZEROS = 'AAAAAAAAAAAAAAAAAAAAAA==';
@@ -194,17 +199,17 @@ describe('loadMeshtasticMqttManualChannelPsks', () => {
     localStorage.clear();
   });
 
-  it('reads channelPsks from mesh-client:mqttSettings', () => {
-    localStorage.setItem(
-      'mesh-client:mqttSettings',
+  it('reads channelPsks from the secure Meshtastic settings', async () => {
+    await setSecureSecret(
+      MESHTASTIC_MQTT_SECRET_KEY,
       JSON.stringify({ channelPsks: [`HamNet=${KEY_AES128_ZEROS}`] }),
     );
     expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`HamNet=${KEY_AES128_ZEROS}`]);
   });
 
-  it('recovers channelPsks from mesh-client:mqttSettings:meshcore after legacy migration', () => {
-    localStorage.setItem(
-      'mesh-client:mqttSettings:meshcore',
+  it('recovers channelPsks from migrated secure MeshCore settings', async () => {
+    await setSecureSecret(
+      MESHCORE_MQTT_SECRET_KEY,
       JSON.stringify({
         topicPrefix: 'meshcore/DEN',
         channelPsks: [`LongFast@0=${KEY_AES128_ZEROS}`],

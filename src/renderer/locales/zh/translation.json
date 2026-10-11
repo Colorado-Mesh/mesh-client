@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore健康检查代码",
       "tooltip": "MeshCore健康检查的测试代码。发件人网格上的观察者报告他们中的哪一个收到了它。"
-    },
-    "remoteContent": {
-      "load": "从{{host}}加载远程内容"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "通道{{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic频道至TAK",
     "channelRelayDescMeshtastic": "选择将哪些已听到的频道消息馈送到TAK。GeoChat聊天室将该频道（包括通过MQTT听到的消息）镜像到TAK聊天室。这只有一种方式： TAK中的任何内容都不会通过网格发送。",
-    "channelRelayNoChannelsMeshtastic": "连接Meshtastic收音机以列出其频道。"
+    "channelRelayNoChannelsMeshtastic": "连接Meshtastic收音机以列出其频道。",
+    "unitStylesPreviewKind": "要测试的节点类型",
+    "unitStylesPreviewProtocol": "测试方案",
+    "unitFilterKind": "过滤器的节点类型{{n}}",
+    "unitFilterAnyKind": "任何节点类型",
+    "unitFilterProtocol": "过滤器方案{{n}}",
+    "unitFilterAnyProtocol": "任何方案",
+    "unitKindCompanion": "同伴和客户",
+    "unitKindRepeater": "中继器和路由器",
+    "unitKindRoom": "房间服务器",
+    "unitKindSensor": "传感器",
+    "unitKindTracker": "跟踪器"
   },
   "telemetryPanel": {
     "title": "遥测",

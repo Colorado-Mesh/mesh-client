@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Kode Pemeriksaan Kesehatan",
       "tooltip": "Kode tes untuk MeshCore Pemeriksaan Kesehatan. Pengamat pada laporan mesh pengirim yang mana dari mereka yang menerimanya."
-    },
-    "remoteContent": {
-      "load": "Muat konten jarak jauh dari {{host}}"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Saluran {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic saluran ke TAK",
     "channelRelayDescMeshtastic": "Pilih pesan saluran mana yang didengarkan yang dimasukkan ke TAK. Ruang GeoChat mencerminkan saluran, termasuk pesan yang didengar melalui MQTT, ke dalam ruang obrolan TAK tersebut. Ini hanya berlaku satu arah: tidak ada apa pun dari TAK yang dikirim melalui mesh.",
-    "channelRelayNoChannelsMeshtastic": "Hubungkan radio Meshtastic untuk mencantumkan salurannya."
+    "channelRelayNoChannelsMeshtastic": "Hubungkan radio Meshtastic untuk mencantumkan salurannya.",
+    "unitStylesPreviewKind": "Ketik untuk menguji",
+    "unitStylesPreviewProtocol": "Protokol untuk diuji",
+    "unitFilterKind": "Tipe node untuk filter {{n}}",
+    "unitFilterAnyKind": "Semua jenis simpul",
+    "unitFilterProtocol": "Protokol untuk filter {{n}}",
+    "unitFilterAnyProtocol": "Protokol apa saja",
+    "unitKindCompanion": "Teman dan klien",
+    "unitKindRepeater": "Repeater dan router",
+    "unitKindRoom": "Server ruangan",
+    "unitKindSensor": "Sensor",
+    "unitKindTracker": "Pelacak"
   },
   "telemetryPanel": {
     "title": "Telemetri",

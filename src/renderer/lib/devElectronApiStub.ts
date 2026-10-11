@@ -21,6 +21,7 @@ function stubOutboxEntry(entry: OutboxEntryInput, id: number): OutboxEntry {
 /** No-op electronAPI for Vite browser dev when Electron preload is unavailable. */
 export function createDevElectronApiStub(): typeof window.electronAPI {
   let nextOutboxId = 1;
+  const secureSecrets = new Map<string, string>();
 
   return {
     beacon: {
@@ -258,16 +259,35 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     notify: {
       show: noopAsync,
     },
-    safeStorage: {
-      encrypt: async () => null,
-      decrypt: async () => null,
-      isAvailable: async () => false,
+    secureSecrets: {
+      status: async () => ({ available: true, persistent: false }),
+      list: async () => [...secureSecrets.keys()],
+      getAll: async () => Object.fromEntries(secureSecrets),
+      get: async (key: string) => secureSecrets.get(key) ?? null,
+      set: async (key: string, value: string) => {
+        secureSecrets.set(key, value);
+        return { available: true, persistent: false, verified: true };
+      },
+      remove: async (key: string) => {
+        secureSecrets.delete(key);
+      },
+      migrateLegacyIdentityCiphertext: async () => ({
+        available: true,
+        persistent: false,
+        verified: false,
+      }),
+      migrateLegacyBackupCiphertext: async () => ({
+        available: true,
+        persistent: false,
+        verified: false,
+      }),
     },
     appSettings: {
       getLoginItem: async () => ({ openAtLogin: false }),
       setLoginItem: noopAsync,
       getAll: async () => ({}),
       set: async () => ({ changes: 1 }),
+      remove: async () => ({ changes: 1 }),
     },
     onPowerSuspend: noopUnsub,
     onPowerResume: noopUnsub,

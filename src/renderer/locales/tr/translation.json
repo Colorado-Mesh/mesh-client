@@ -964,9 +964,6 @@
     "healthCheck": {
       "label": "MeshCore Sağlık Kontrolü kodu",
       "tooltip": "MeshCore Sağlamlık Denetimi için test kodu. Gönderenin mesh'indeki gözlemciler, hangisinin aldığını bildirir."
-    },
-    "remoteContent": {
-      "load": "{{host}} 'dan uzak içerik yükleyin"
     }
   },
   "common": {
@@ -5678,7 +5675,18 @@
     "channelRelayUnnamed": "Kanal {{n}}",
     "channelRelayTitleMeshtastic": "Meshtastic kanalları TAK'ye",
     "channelRelayDescMeshtastic": "Hangi duyulmuş kanal mesajlarının TAK'a besleneceğini seçin. Bir GeoChat odası, MQTT üzerinden duyulan mesajlar da dahil olmak üzere kanalı TAK sohbet odasına yansıtır. Bu sadece tek yönlüdür: TAK'den hiçbir şey ağ üzerinden gönderilmez.",
-    "channelRelayNoChannelsMeshtastic": "Kanallarını listelemek için bir Meshtastic radyo bağlayın."
+    "channelRelayNoChannelsMeshtastic": "Kanallarını listelemek için bir Meshtastic radyo bağlayın.",
+    "unitStylesPreviewKind": "Test edilecek düğüm türü",
+    "unitStylesPreviewProtocol": "Test edilecek protokol",
+    "unitFilterKind": "{{n}} filtresi için düğüm türü",
+    "unitFilterAnyKind": "Herhangi bir düğüm türü",
+    "unitFilterProtocol": "{{n}} filtresi için protokol",
+    "unitFilterAnyProtocol": "Herhangi bir protokol",
+    "unitKindCompanion": "Refakatçiler ve müşteriler",
+    "unitKindRepeater": "Tekrarlayıcılar ve yönlendiriciler",
+    "unitKindRoom": "Oda sunucuları",
+    "unitKindSensor": "Sensörleri",
+    "unitKindTracker": "İzleyiciler"
   },
   "telemetryPanel": {
     "title": "Telemetri",

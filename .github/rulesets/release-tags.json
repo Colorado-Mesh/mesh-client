@@ -1,0 +1,19 @@
+{
+  "name": "release tags",
+  "target": "tag",
+  "enforcement": "active",
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "always"
+    }
+  ],
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": ["refs/tags/v*"]
+    }
+  },
+  "rules": [{ "type": "creation" }, { "type": "update" }, { "type": "deletion" }]
+}

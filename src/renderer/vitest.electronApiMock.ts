@@ -25,6 +25,7 @@ function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
 
 /** Full typed electronAPI stub for renderer-ui tests (extracted from setup for reuse). */
 export function createElectronAPIMock(): ElectronAPI {
+  const secureSecrets = new Map<string, string>();
   return {
     beacon: {
       connect: vi.fn().mockResolvedValue({ ok: true }),
@@ -299,10 +300,60 @@ export function createElectronAPIMock(): ElectronAPI {
     clipboard: {
       writeText: vi.fn().mockResolvedValue(undefined),
     },
-    safeStorage: {
-      encrypt: vi.fn().mockResolvedValue(null),
-      decrypt: vi.fn().mockResolvedValue(null),
-      isAvailable: vi.fn().mockResolvedValue(false),
+    secureSecrets: {
+      status: vi.fn().mockResolvedValue({ available: true, persistent: true }),
+      list: vi.fn(() => Promise.resolve([...secureSecrets.keys()])),
+      getAll: vi.fn(() => Promise.resolve(Object.fromEntries(secureSecrets))),
+      get: vi.fn((key: string) => Promise.resolve(secureSecrets.get(key) ?? null)),
+      set: vi.fn((key: string, value: string) => {
+        secureSecrets.set(key, value);
+        return Promise.resolve({ available: true, persistent: true, verified: true });
+      }),
+      remove: vi.fn((key: string) => {
+        secureSecrets.delete(key);
+        return Promise.resolve();
+      }),
+      migrateLegacyIdentityCiphertext: vi.fn((ciphertext: string) => {
+        if (!ciphertext.startsWith('enc:')) {
+          return Promise.resolve({ available: true, persistent: true, verified: false });
+        }
+        secureSecrets.set('meshcore:identity', ciphertext.slice(4));
+        return Promise.resolve({ available: true, persistent: true, verified: true });
+      }),
+      migrateLegacyBackupCiphertext: vi.fn(
+        (
+          protocol: 'meshcore' | 'meshtastic',
+          id: number,
+          _format: 'per-node' | 'meshtastic-single',
+          ciphertext: string,
+        ) => {
+          if (!ciphertext.startsWith('enc:')) {
+            return Promise.resolve({ available: true, persistent: true, verified: false });
+          }
+          const key = `backup:${protocol}:${String(id >>> 0)}`;
+          const candidate = ciphertext.slice(4);
+          const existing = secureSecrets.get(key);
+          if (existing != null) {
+            const existingPayload = JSON.parse(existing) as {
+              publicKey?: unknown;
+              privateKey?: unknown;
+            };
+            const candidatePayload = JSON.parse(candidate) as {
+              publicKey?: unknown;
+              privateKey?: unknown;
+            };
+            if (
+              existingPayload.publicKey !== candidatePayload.publicKey ||
+              existingPayload.privateKey !== candidatePayload.privateKey
+            ) {
+              return Promise.reject(new Error('secureSecrets: conflicting legacy backup'));
+            }
+          } else {
+            secureSecrets.set(key, candidate);
+          }
+          return Promise.resolve({ available: true, persistent: true, verified: true });
+        },
+      ),
     },
     notificationSounds: {
       choose: vi.fn().mockResolvedValue(null),
@@ -314,6 +365,7 @@ export function createElectronAPIMock(): ElectronAPI {
       setLoginItem: vi.fn().mockResolvedValue(undefined),
       getAll: vi.fn().mockResolvedValue({}),
       set: vi.fn().mockResolvedValue({ changes: 1 }),
+      remove: vi.fn().mockResolvedValue({ changes: 1 }),
     },
     onPowerSuspend: vi.fn().mockReturnValue(() => {}),
     onPowerResume: vi.fn().mockReturnValue(() => {}),

@@ -27,6 +27,7 @@ const repeaterCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRepeat
   createMeshcorePerNodeCredentialStorage({
     prefix: MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX,
     logTag: 'meshcoreRepeaterCredentialStorage',
+    securePrefix: 'meshcore:repeater:',
     parseValue: parseCredentialValue,
     serialize: (cred) => JSON.stringify({ password: cred.password }),
   });

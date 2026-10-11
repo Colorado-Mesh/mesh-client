@@ -297,6 +297,7 @@ check_ratspeak_patches() {
     'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
     'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'
     'rsReticulum-rncp-picker-pinned-jail.patch|ratspeak/rsReticulum||rsReticulum RNCP native-picker pinned fetch jail|'
+    'rsReticulum-rncp-inbound-admission.patch|ratspeak/rsReticulum||rsReticulum RNCP pre-advertisement inbound admission|'
     'rsNomad-picker-pinned-roots.patch|Colorado-Mesh/rsNomad||rsNomad native-picker pinned content roots|'
     'rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|rsLXMF multi-file attachment APIs|https://github.com/ratspeak/rsLXMF/pull/7'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
