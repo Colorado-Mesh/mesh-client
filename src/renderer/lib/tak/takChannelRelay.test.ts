@@ -8,6 +8,7 @@ import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import type { ChatMessage } from '../types';
 import { relayMeshtasticChatToTak } from './takChannelRelay';
+import { rememberTakSend, resetTakEchoForTests } from './takEchoGuard';
 
 const ID = 'tak-channel-relay-meshtastic';
 const SENDER = 0x1234abcd;
@@ -41,6 +42,15 @@ describe('relayMeshtasticChatToTak', () => {
     useTakRelayPrefsStore.setState({ byIdentity: {} });
     useNodeStore.setState({ nodes: {} });
     vi.restoreAllMocks();
+  });
+
+  it('does not mirror back a TAK client message heard off the mesh, once', () => {
+    resetTakEchoForTests();
+    rememberTakSend(ID, 1, '[VIPER] on scene');
+    relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
   it('mirrors a broadcast channel message into the bridged GeoChat room', () => {

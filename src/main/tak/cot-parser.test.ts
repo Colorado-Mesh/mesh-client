@@ -8,6 +8,7 @@ import {
   CotFrameTooLargeError,
   isCotPing,
   parseCotEvent,
+  parseGeochatEvent,
 } from './cot-parser';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
@@ -179,5 +180,74 @@ describe('isCotPing', () => {
 
   it('ignores text that is not an event', () => {
     expect(isCotPing('not xml')).toBe(false);
+  });
+});
+
+describe('parseGeochatEvent', () => {
+  /** A GeoChat event as ATAK sends it; each part can be overridden. */
+  function geochat({
+    uid = 'GeoChat.ANDROID-1.Mesh Ops.6f9d2c1e-0a4b-4c58-9e11-2b7a5f0c9d3e',
+    type = 'b-t-f',
+    chat = 'chatroom="Mesh Ops" id="Mesh Ops" senderCallsign="VIPER"',
+    remarks = 'on scene',
+    link = '<link uid="ANDROID-1" type="a-f-G-U-C" relation="p-p"/>',
+  }: Partial<Record<'uid' | 'type' | 'chat' | 'remarks' | 'link', string>> = {}) {
+    return (
+      `<event version="2.0" uid="${uid}" type="${type}" time="2026-10-11T12:00:00Z" ` +
+      `start="2026-10-11T12:00:00Z" stale="2026-10-12T12:00:00Z" how="h-g-i-g-o">` +
+      `<point lat="39.7" lon="-105" hae="9999999" ce="9999999" le="9999999"/><detail>` +
+      `<__chat parent="RootContactGroup" groupOwner="false" ${chat}>` +
+      `<chatgrp uid0="ANDROID-1" uid1="Mesh Ops" id="Mesh Ops"/></__chat>${link}` +
+      `<remarks source="BAO.F.ATAK.ANDROID-1" to="Mesh Ops" time="2026-10-11T12:00:00Z">` +
+      `${remarks}</remarks></detail></event>`
+    );
+  }
+
+  it('reads the room, sender and text of a client message', () => {
+    expect(parseGeochatEvent(geochat())).toEqual({
+      room: 'Mesh Ops',
+      senderCallsign: 'VIPER',
+      senderUid: 'ANDROID-1',
+      text: 'on scene',
+      messageId: '6f9d2c1e-0a4b-4c58-9e11-2b7a5f0c9d3e',
+    });
+  });
+
+  it('unescapes the text and collapses line breaks to spaces', () => {
+    const chat = parseGeochatEvent(geochat({ remarks: 'a &amp; b\nline two' }));
+    expect(chat?.text).toBe('a & b line two');
+  });
+
+  it('takes the sender only from the event uid, never from the link element', () => {
+    expect(parseGeochatEvent(geochat({ uid: 'custom-uid-1' }))).toBeNull();
+    const chat = parseGeochatEvent(
+      geochat({ link: '<link uid="SOMEONE-ELSE" type="a-f-G-U-C" relation="p-p"/>' }),
+    );
+    expect(chat?.senderUid).toBe('ANDROID-1');
+  });
+
+  it('omits a message id that is not a plain token', () => {
+    const chat = parseGeochatEvent(geochat({ uid: 'GeoChat.ANDROID-1.Mesh Ops.bad id!' }));
+    expect(chat).toMatchObject({ senderUid: 'ANDROID-1' });
+    expect(chat).not.toHaveProperty('messageId');
+  });
+
+  it('leaves the callsign empty when the event has none', () => {
+    const chat = parseGeochatEvent(geochat({ chat: 'chatroom="Mesh Ops" id="Mesh Ops"' }));
+    expect(chat?.senderCallsign).toBe('');
+  });
+
+  it.each([
+    ['a delivery receipt', geochat({ type: 'b-t-f-d' })],
+    ['a read receipt', geochat({ type: 'b-t-f-r' })],
+    ['a position report', cot()],
+    ['a message without a room', geochat({ chat: 'id="x" senderCallsign="VIPER"' })],
+    ['a message without text', geochat({ remarks: '   ' })],
+    ['a mirrored mesh message', geochat({ uid: 'GeoChat.MESHCHAT-0a1b2c3d.Mesh Ops.m1' })],
+    ['a relayed mesh node uid', geochat({ uid: 'GeoChat.MC-6.Mesh Ops.m1' })],
+    ['a sender uid with markup', geochat({ uid: 'GeoChat.a&quot;b.Mesh Ops.m1' })],
+    ['an event uid that names no sender', geochat({ uid: 'x', link: '' })],
+  ])('ignores %s', (_label, xml) => {
+    expect(parseGeochatEvent(xml)).toBeNull();
   });
 });

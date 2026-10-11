@@ -27,6 +27,7 @@ export function geochatSenderUid(callsign: string): string {
   return `MESHCHAT-${h.toString(16).padStart(8, '0')}`;
 }
 
+/** A trimmed single-line label of 1 to `max` characters; throws naming `field` otherwise. */
 function label(value: unknown, max: number, field: string): string {
   if (typeof value !== 'string') throw new Error(`tak:pushChatMessage: ${field} must be a string`);
   const trimmed = value.trim();
@@ -65,15 +66,20 @@ export function parseTakGeochatMessage(raw: unknown): TAKGeochatMessage {
   return msg;
 }
 
-/** Standard CoT v2.0 GeoChat (`b-t-f`) event for one heard mesh message. */
+/**
+ * Standard CoT v2.0 GeoChat (`b-t-f`) event for one message. `senderUid` is the sending device's
+ * own uid when a TAK client's message is passed on to the other clients; a heard mesh message
+ * has none, so its sender uid is derived from the callsign.
+ */
 export function buildGeochatCot(
   msg: TAKGeochatMessage,
   nowMs: number = Date.now(),
   messageId: string = randomUUID(),
+  senderUid: string = geochatSenderUid(msg.senderCallsign),
 ): string {
-  const senderUid = geochatSenderUid(msg.senderCallsign);
   const room = escapeXml(msg.room);
   const callsign = escapeXml(msg.senderCallsign);
+  const sender = escapeXml(senderUid);
   const uid = escapeXml(`GeoChat.${senderUid}.${msg.room}.${messageId}`);
   const time = new Date(nowMs).toISOString();
   const sentAt = new Date(Math.min(msg.timeMs, nowMs)).toISOString();
@@ -90,10 +96,10 @@ export function buildGeochatCot(
     `<detail>` +
     `<__chat parent="RootContactGroup" groupOwner="false" chatroom="${room}" id="${room}"` +
     ` senderCallsign="${callsign}">` +
-    `<chatgrp uid0="${senderUid}" uid1="${room}" id="${room}"/>` +
+    `<chatgrp uid0="${sender}" uid1="${room}" id="${room}"/>` +
     `</__chat>` +
-    `<link uid="${senderUid}" type="a-f-G-U-C" relation="p-p"/>` +
-    `<remarks source="BAO.F.ATAK.${senderUid}" to="${room}" time="${sentAt}">` +
+    `<link uid="${sender}" type="a-f-G-U-C" relation="p-p"/>` +
+    `<remarks source="BAO.F.ATAK.${sender}" to="${room}" time="${sentAt}">` +
     `${escapeXml(msg.text)}</remarks>` +
     `</detail>` +
     `</event>`

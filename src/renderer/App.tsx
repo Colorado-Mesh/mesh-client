@@ -206,6 +206,7 @@ import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useServiceAnnouncements } from './hooks/useServiceAnnouncements';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakContacts } from './hooks/useTakContacts';
+import { useTakInboundChat } from './hooks/useTakInboundChat';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
 import { useTakRemoteStatus } from './hooks/useTakRemoteRelay';
 import { useTakServer } from './hooks/useTakServer';
@@ -1249,6 +1250,7 @@ function AppContent() {
         : null,
     [reticulumStackUp, reticulumSelfNodeId, reticulumSelfName],
   );
+  useTakInboundChat();
   useTakNodeReplicator({
     active: takStatus.running || takRemoteStatus.state !== 'disconnected',
     nodesByProtocol: uiNodesByProtocol,

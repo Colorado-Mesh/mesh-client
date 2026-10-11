@@ -203,8 +203,10 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.unitFilter*': 'fields of a filter row added by the indexed Add filter control',
     'takServerPanel.channelRelayTitle': 'section heading; its channel rows are indexed',
     'takServerPanel.channelRelayRoom*': 'GeoChat room field in each indexed channel row',
+    'takServerPanel.channelRelaySend*': 'TAK send opt-in in each indexed channel row',
     'takServerPanel.channelRelayUnnamed': 'fallback channel name in a row',
     'takServerPanel.channelRelayNoChannels*': 'empty-state text before a radio lists channels',
-    'takServerPanel.channelRelayDescMeshtastic': 'section prose; its channel rows are indexed',
+    'takServerPanel.channelRelayHelp': 'section prose; its channel rows are indexed',
+    'takServerPanel.channelRelayHelpMeshtastic': 'section prose; its channel rows are indexed',
   },
 };

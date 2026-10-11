@@ -63,7 +63,8 @@ interface Props {
 
 /**
  * Per-channel opt-ins for what a heard channel feeds into TAK: `!MT1` tracker fixes as markers
- * (when supported) and plain messages as a one-way GeoChat room. Only shown while a TAK sink is up.
+ * (when supported) and plain messages as a GeoChat room, one-way unless the channel also lets
+ * TAK clients send. Only shown while a TAK sink is up.
  */
 export default function TakChannelRelaySection({
   identityId,
@@ -78,6 +79,7 @@ export default function TakChannelRelaySection({
   const sinkActive = useTakSinkStore((s) => s.active);
   const prefs = useTakRelayPrefsStore((s) => (identityId ? s.byIdentity[identityId] : undefined));
   const setTrackerChannel = useTakRelayPrefsStore((s) => s.setTrackerChannel);
+  const setChatSend = useTakRelayPrefsStore((s) => s.setChatSend);
 
   if (!sinkActive || !identityId) return null;
 
@@ -93,7 +95,9 @@ export default function TakChannelRelaySection({
             const name = ch.name.trim() || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
             const tracker = prefs?.trackerChannels.includes(ch.index) ?? false;
             const room = prefs?.chatBridges[ch.index] ?? '';
+            const canSend = prefs?.chatSendChannels.includes(ch.index) ?? false;
             const checkboxId = `tak-channel-relay-${identityId}-${ch.index}`;
+            const sendCheckboxId = `tak-channel-send-${identityId}-${ch.index}`;
             return (
               <li key={ch.index} className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="text-ink-200 min-w-24 font-medium">{name}</span>
@@ -118,6 +122,21 @@ export default function TakChannelRelaySection({
                   channelName={name}
                   saved={room}
                 />
+                {room && (
+                  <label htmlFor={sendCheckboxId} className="text-ink-300 flex items-center gap-1">
+                    <input
+                      id={sendCheckboxId}
+                      type="checkbox"
+                      checked={canSend}
+                      onChange={(e) => {
+                        setChatSend(identityId, ch.index, e.target.checked);
+                      }}
+                      aria-label={t('takServerPanel.channelRelaySendFor', { channel: name })}
+                      className={CHECKBOX_CLASS}
+                    />
+                    {t('takServerPanel.channelRelaySend')}
+                  </label>
+                )}
               </li>
             );
           })}

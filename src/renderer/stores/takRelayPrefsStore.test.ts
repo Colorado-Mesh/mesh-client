@@ -31,7 +31,52 @@ describe('takRelayPrefsStore', () => {
   it('ignores invalid channel indices', () => {
     useTakRelayPrefsStore.getState().setTrackerChannel('a', -1, true);
     useTakRelayPrefsStore.getState().setChatBridge('a', 300, 'x');
-    expect(getTakRelayPrefs('a')).toEqual({ trackerChannels: [], chatBridges: {} });
+    expect(getTakRelayPrefs('a')).toEqual({
+      trackerChannels: [],
+      chatBridges: {},
+      chatSendChannels: [],
+    });
+  });
+
+  it('lets TAK send only to a bridged channel and drops the opt-in with the room', () => {
+    const { setChatBridge, setChatSend } = useTakRelayPrefsStore.getState();
+    setChatSend('a', 2, true);
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([]);
+
+    setChatBridge('a', 2, 'Mesh Ops');
+    setChatBridge('a', 0, 'Public');
+    setChatSend('a', 2, true);
+    setChatSend('a', 0, true);
+    setChatSend('a', 2, true);
+    setChatSend('a', 999, true);
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([0, 2]);
+
+    setChatSend('a', 0, false);
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([2]);
+    setChatBridge('a', 2, 'Renamed');
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([2]);
+    setChatBridge('a', 2, '');
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([]);
+  });
+
+  it('drops a persisted send opt-in for a channel with no room', async () => {
+    localStorage.setItem(
+      'mesh-client:takRelayPrefs',
+      JSON.stringify({
+        state: {
+          byIdentity: {
+            a: {
+              trackerChannels: [],
+              chatBridges: { 2: 'Room' },
+              chatSendChannels: [2, 2, 5, 'x'],
+            },
+          },
+        },
+        version: 1,
+      }),
+    );
+    await useTakRelayPrefsStore.persist.rehydrate();
+    expect(getTakRelayPrefs('a').chatSendChannels).toEqual([2]);
   });
 
   it('sanitizes malformed persisted state on rehydrate', async () => {
@@ -49,7 +94,7 @@ describe('takRelayPrefsStore', () => {
     );
     await useTakRelayPrefsStore.persist.rehydrate();
     expect(useTakRelayPrefsStore.getState().byIdentity).toEqual({
-      a: { trackerChannels: [1], chatBridges: { 2: 'Room' } },
+      a: { trackerChannels: [1], chatBridges: { 2: 'Room' }, chatSendChannels: [] },
     });
   });
 });

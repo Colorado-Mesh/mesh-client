@@ -12,6 +12,7 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKGeochatMessage,
+  TAKInboundChat,
   TakRelayExtras,
   TAKRemoteSettings,
   TAKRemoteStatus,
@@ -34,7 +35,14 @@ import {
   cotUidFor,
   meshNodeToCot,
 } from './tak/cot-converter';
-import { CotFramer, CotFrameTooLargeError, isCotPing, parseCotEvent } from './tak/cot-parser';
+import {
+  CotFramer,
+  CotFrameTooLargeError,
+  type CotGeochat,
+  isCotPing,
+  parseCotEvent,
+  parseGeochatEvent,
+} from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { buildGeochatCot } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
@@ -51,6 +59,8 @@ interface ConnectedClient {
   /** Uid of the unit whose callsign labels this client: its first self-reported unit event. */
   selfUid?: string;
   idleTimer: ReturnType<typeof setTimeout> | null;
+  /** Receive times of this client's recent chat messages, for the rate limit. */
+  chatTimesMs: number[];
 }
 
 /** A node update from any protocol feed; `protocol` defaults to Meshtastic (MQTT feed). */
@@ -66,6 +76,9 @@ interface CachedTakNode extends MeshNode, TakRelayExtras {
 const NODE_CACHE_MAX_SIZE = 2000;
 /** Local ATAK/iTAK connections; cap prevents unbounded TLS client growth. */
 const MAX_TAK_CLIENTS = 16;
+/** Chat messages one client may send per window; a mesh channel carries far less than this. */
+const TAK_CLIENT_CHAT_MAX_PER_WINDOW = 10;
+const TAK_CLIENT_CHAT_WINDOW_MS = 60 * 1000;
 /** Disconnect idle clients after 24h without inbound data. */
 const TAK_CLIENT_IDLE_MS = 24 * 60 * 60 * 1000;
 
@@ -458,10 +471,24 @@ export class TakServerManager extends EventEmitter {
     }, TAK_CLIENT_IDLE_MS);
   }
 
-  /** ATAK opens with its own SA (a unit event); later unit events with that uid track renames. */
+  /** True when another connected client already holds `uid` as its own. */
+  private uidHeldByOtherClient(clientId: string, uid: string): boolean {
+    for (const [otherId, other] of this.clients) {
+      if (otherId !== clientId && other.selfUid === uid) return true;
+    }
+    return false;
+  }
+
+  /**
+   * ATAK opens with its own SA (a unit event); later unit events with that uid track renames.
+   * A uid another connected client holds is never adopted, so one connection cannot take over
+   * another's identity.
+   */
   private updateClientCallsign(client: ConnectedClient, contact: TAKContact): void {
     if (!contact.type.startsWith('a-')) return;
-    client.selfUid ??= contact.uid;
+    if (client.selfUid === undefined && !this.uidHeldByOtherClient(client.info.id, contact.uid)) {
+      client.selfUid = contact.uid;
+    }
     if (contact.uid !== client.selfUid || contact.callsign === client.info.callsign) return;
     client.info = { ...client.info, callsign: contact.callsign };
     this.emit('client-updated', { ...client.info });
@@ -476,6 +503,78 @@ export class TakServerManager extends EventEmitter {
     }
   }
 
+  /** True when this client is still under its chat rate limit; records the message if so. */
+  private allowClientChat(client: ConnectedClient, nowMs: number): boolean {
+    const cutoff = nowMs - TAK_CLIENT_CHAT_WINDOW_MS;
+    client.chatTimesMs = client.chatTimesMs.filter((t) => t > cutoff);
+    if (client.chatTimesMs.length >= TAK_CLIENT_CHAT_MAX_PER_WINDOW) return false;
+    client.chatTimesMs.push(nowMs);
+    return true;
+  }
+
+  /**
+   * Whether this connection may send chat as `senderUid`. Every client presents the same
+   * data-package certificate, so there is no per-device credential to check; the boundary the
+   * server can hold is one identity per connection. The uid is the one the connection announced
+   * in its own position report, or else the first one it chats as, and it is refused when
+   * another connected client holds it.
+   */
+  private claimChatSender(id: string, client: ConnectedClient, senderUid: string): boolean {
+    if (client.selfUid !== undefined) return client.selfUid === senderUid;
+    if (this.uidHeldByOtherClient(id, senderUid)) return false;
+    client.selfUid = senderUid;
+    return true;
+  }
+
+  /**
+   * A GeoChat message from a local client: pass it on to the other local clients, as a TAK
+   * server does, and hand it to the renderer, which decides whether its room is bridged to a
+   * mesh channel that allows sending. Rebuilt from the parsed fields, never forwarded raw, and
+   * only under the connection's own uid and callsign.
+   */
+  private handleClientChat(
+    id: string,
+    client: ConnectedClient,
+    chat: CotGeochat,
+    nowMs: number,
+  ): void {
+    if (!this.claimChatSender(id, client, chat.senderUid)) {
+      console.warn(
+        `[TakServer] Client ${sanitizeLogMessage(id)} sent chat as another sender; message dropped`,
+      );
+      return;
+    }
+    if (!this.allowClientChat(client, nowMs)) {
+      console.warn(`[TakServer] Client ${sanitizeLogMessage(id)} chat rate limit; message dropped`);
+      return;
+    }
+    // The callsign from the connection's own position report wins over the one in the message.
+    const senderCallsign = client.info.callsign || chat.senderCallsign || chat.senderUid;
+    const message: TAKGeochatMessage = {
+      room: chat.room,
+      senderCallsign,
+      text: chat.text,
+      timeMs: nowMs,
+    };
+    const data = buildGeochatCot(message, nowMs, chat.messageId, chat.senderUid) + '\n';
+    for (const [otherId, other] of this.clients) {
+      if (otherId === id) continue;
+      try {
+        other.socket.write(data);
+      } catch {
+        // catch-no-log-ok: the other client may be closing; its own close handler reports it
+      }
+    }
+    const inbound: TAKInboundChat = {
+      room: chat.room,
+      senderCallsign,
+      text: chat.text,
+      clientId: id,
+      timeMs: nowMs,
+    };
+    this.emit('client-chat', inbound);
+  }
+
   private _handleClient(socket: tls.TLSSocket): void {
     const address = socket.remoteAddress ?? 'unknown';
     if (this.clients.size >= MAX_TAK_CLIENTS) {
@@ -488,7 +587,13 @@ export class TakServerManager extends EventEmitter {
 
     const id = randomUUID();
     const info: TAKClientInfo = { id, address, connectedAt: Date.now() };
-    const client: ConnectedClient = { socket, info, framer: new CotFramer(), idleTimer: null };
+    const client: ConnectedClient = {
+      socket,
+      info,
+      framer: new CotFramer(),
+      idleTimer: null,
+      chatTimesMs: [],
+    };
     this.clients.set(id, client);
 
     this._status = { ...this._status, clientCount: this.clients.size };
@@ -523,6 +628,11 @@ export class TakServerManager extends EventEmitter {
       for (const frame of frames) {
         if (isCotPing(frame)) {
           this.sendPong(socket, now);
+          continue;
+        }
+        const chat = parseGeochatEvent(frame);
+        if (chat) {
+          this.handleClientChat(id, client, chat, now);
           continue;
         }
         const contact = parseCotEvent(frame, 'local', now);
