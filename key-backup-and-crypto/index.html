@@ -2588,7 +2588,7 @@
 </tbody>
 </table>
 <p>Keys are <strong>not interchangeable</strong> across Meshtastic and MeshCore firmware.</p>
-<p><strong>Encryption:</strong> Electron <code>safeStorage</code> (OS keychain when available) over JSON in renderer <code>localStorage</code>.</p>
+<p><strong>Encryption:</strong> Electron <code>safeStorage</code> (OS keychain). Each archive and its index is a secure secret (<code>backup:meshtastic:&lt;nodeNum&gt;</code>, <code>backup:meshcore:&lt;nodeId&gt;</code>, <code>backup-index:meshtastic</code>, <code>backup-index:meshcore</code>). Backup succeeds only when OS key storage is available. Room and repeater passwords use the same store (<code>meshcore:room:&lt;nodeId&gt;</code>, <code>meshcore:repeater:&lt;nodeId&gt;</code>); when OS key storage is unavailable, those remembered passwords keep a local compatibility copy and key backups do not.</p>
 <p><strong>Not included in backup:</strong> channels, NodeDB, messages, MeshCore contacts DB, Meshtastic remote admin keys (<code>meshtasticRemoteAdminKey:&lt;nodeNum&gt;</code> in SQLite), device name/owner (optional <code>nodeLabel</code> in the index is display-only).</p>
 <p>Restore lists prefix entries with <strong>Meshtastic ·</strong> or <strong>MeshCore ·</strong> so archives are distinguishable when <code>nodeNum</code> and <code>nodeId</code> share the same numeric display.</p>
 <hr />
@@ -2600,25 +2600,21 @@
 <thead>
 <tr>
 <th>Item</th>
-<th>Location</th>
+<th>Secure secret</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Per-node encrypted blob</td>
-<td><code>localStorage</code> → <code>mesh-client:meshtastic-dm-key-backup:&lt;nodeNum&gt;</code></td>
+<td>Per-node archive</td>
+<td><code>backup:meshtastic:&lt;nodeNum&gt;</code></td>
 </tr>
 <tr>
-<td>Index (labels, dates, full public key in plaintext)</td>
-<td><code>localStorage</code> → <code>mesh-client:meshtastic-dm-key-backup-index</code></td>
-</tr>
-<tr>
-<td>Legacy (migrated on upgrade)</td>
-<td><code>mesh-client:key-backup</code> → moved into per-<code>nodeNum</code> slot when valid</td>
+<td>Index (labels and dates)</td>
+<td><code>backup-index:meshtastic</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Index privacy:</strong> Per-node <strong>private keys</strong> live in <code>safeStorage</code>-encrypted blobs. The <strong>index</strong> JSON in <code>localStorage</code> is <strong>not</strong> encrypted: each entry stores plaintext <code>nodeLabel</code>, <code>backedUpAt</code>, and the <strong>full</strong> <code>publicKeyB64</code> (the restore UI shows only an 8-character hex prefix). Public keys are not secret, but they are identity/correlation metadata readable by anything with access to this profile’s <code>localStorage</code>.</p>
+<p><strong>Index privacy:</strong> The index is a secure secret, same as the per-node archive. Each entry stores <code>nodeLabel</code>, <code>backedUpAt</code>, and <code>publicKeyB64</code> (the restore UI shows only an 8-character hex prefix).</p>
 <p><strong>Scope: per node, Meshtastic only</strong></p>
 <ul>
 <li>Each Meshtastic <code>nodeNum</code> has its own backup slot on this computer.</li>
@@ -2643,25 +2639,25 @@
 <thead>
 <tr>
 <th>Item</th>
-<th>Location</th>
+<th>Secure secret</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Per-node encrypted archive</td>
-<td><code>localStorage</code> → <code>mesh-client:meshcore-key-backup:&lt;nodeId&gt;</code></td>
+<td>Per-node archive</td>
+<td><code>backup:meshcore:&lt;nodeId&gt;</code></td>
 </tr>
 <tr>
 <td>Index</td>
-<td><code>localStorage</code> → <code>mesh-client:meshcore-key-backup-index</code></td>
+<td><code>backup-index:meshcore</code></td>
 </tr>
 <tr>
 <td><strong>Active MQTT cache</strong> (last connected/restored device)</td>
-<td><code>mesh-client:meshcoreIdentity</code> (+ optional <code>meshcoreIdentityEncPK</code>)</td>
+<td><code>mesh-client:meshcoreIdentity</code> in localStorage (public key); <code>meshcore:identity</code> in the secure store (private key)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Index privacy:</strong> Same as Meshtastic — encrypted per-node archives hold private keys; the index JSON stores plaintext <code>nodeLabel</code>, <code>backedUpAt</code>, and full <code>publicKeyB64</code> (UI shows an 8-character hex prefix only).</p>
+<p><strong>Index privacy:</strong> Same as Meshtastic — the index is a secure secret and stores <code>nodeLabel</code>, <code>backedUpAt</code>, and <code>publicKeyB64</code> (UI shows an 8-character hex prefix only).</p>
 <p>The <strong>active MQTT cache</strong> is separate from per-node archives: device-signing MeshCore MQTT (JWT) signing — LetsMesh, MeshMapper, Colorado Mesh, Waev, Meshat.se, MeshCore.CA, EastMesh — uses whichever identity was last connected or restored. Per-node archives retain full pairs without overwriting each other.</p>
 <p><strong>How keys get into the active cache (not a per-node backup)</strong></p>
 <ol>
@@ -2701,8 +2697,8 @@
 </tr>
 <tr>
 <td><strong>Storage pattern</strong></td>
-<td><code>meshtastic-dm-key-backup:&lt;nodeNum&gt;</code></td>
-<td><code>meshcore-key-backup:&lt;nodeId&gt;</code></td>
+<td><code>backup:meshtastic:&lt;nodeNum&gt;</code></td>
+<td><code>backup:meshcore:&lt;nodeId&gt;</code></td>
 </tr>
 <tr>
 <td><strong>Per node?</strong></td>
@@ -2752,7 +2748,7 @@
 <h3 id="full-companion-json-backup-evaluation-2026">Full companion JSON backup (evaluation, 2026)<a class="headerlink" href="#full-companion-json-backup-evaluation-2026" title="Permanent link">&para;</a></h3>
 <p>The official MeshCore companion can export/import a <strong>full device JSON</strong> (contacts, channels, radio params, and related fields). mesh-client today supports:</p>
 <ul>
-<li>Per-node <strong>Security</strong> archives (<code>mesh-client:meshcore-key-backup:&lt;nodeId&gt;</code>) — public + private key pairs only.</li>
+<li>Per-node <strong>Security</strong> archives (<code>backup:meshcore:&lt;nodeId&gt;</code>) — public + private key pairs only.</li>
 <li><strong>Radio</strong> JSON import for a subset of fields (<code>setRadioParams</code>, channels where APIs exist).</li>
 </ul>
 <p><strong>Gap:</strong> There is no single-click export/import of the entire companion JSON blob. Implementing parity would require auditing meshcore.js export shape vs <code>RadioPanel</code> import, SQLite contact merge, and conflict rules for channels/contacts — estimated multi-day effort. <strong>Deferred</strong> until Tier 1–3 parity items ship; track as a Security/Radio follow-up if users need whole-device migration beyond per-node key archives.</p>
@@ -2820,7 +2816,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="August 8, 2026 14:26:09 UTC">August 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 22:04:38 UTC">October 11, 2026</span>
   </span>
 
     
