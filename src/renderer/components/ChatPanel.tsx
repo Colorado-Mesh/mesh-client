@@ -4164,8 +4164,6 @@ function ChatPanel({
                                 <ChatPayloadText
                                   text={msg.payload}
                                   query={searchQuery}
-                                  // Always offer click-to-load controls, including while reading history.
-                                  loadLinkPreviews
                                   rncpControlEnabled={capabilities.hasRncpTransfer}
                                   senderIsBot={botSenders.has(msg.sender_id)}
                                   onContentResize={() => {

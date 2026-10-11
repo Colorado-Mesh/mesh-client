@@ -2,6 +2,7 @@ import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
 import { app, ipcMain, net, shell } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 
+import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { fetchAllGithubReleases } from '@/shared/fetchGithubReleases';
 import {
   type GithubReleaseRow,
@@ -47,14 +48,14 @@ function readAutoUpdateDownloadEnabled(): boolean {
     const row = getDatabase()
       .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
       .get(AUTO_UPDATE_DOWNLOAD_SETTING_KEY) as { value: string } | undefined;
-    return row?.value !== '0';
+    return autoUpdateDownloadEnabledFromStored(row?.value);
   } catch (e) {
-    // catch-no-log-ok DB read during early startup; default to auto-downloading
+    // A read error is not a stored "on" value; leave auto-download off.
     console.debug(
       '[updater] auto-download flag read failed:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
-    return true;
+    return false;
   }
 }
 

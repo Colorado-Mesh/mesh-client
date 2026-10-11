@@ -5,7 +5,7 @@ import type { useBeaconTraffic } from '@/renderer/hooks/useBeaconTraffic';
 import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { findRegionalFeedPreset, getRegionalFeedPresets } from '@/renderer/lib/map/beaconPresets';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
-import type { RegionalFeedProvider } from '@/shared/beacon';
+import { beaconStatusMessageKey, type RegionalFeedProvider } from '@/shared/beacon';
 
 import { Button } from '../ui/Button';
 import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from '../ui/formClasses';
@@ -178,7 +178,11 @@ function RegionalConnectionForm({ feed, provider = 'beacon' }: ConnectionControl
         className={`mt-1 text-xs ${feed.error || actionError ? 'text-orange-300' : 'text-muted'}`}
         role="status"
       >
-        {actionError ? t('liveTraffic.connectionActionFailed') : (feed.error ?? statusText)}
+        {actionError
+          ? t('liveTraffic.connectionActionFailed')
+          : feed.error
+            ? t(beaconStatusMessageKey(feed.error) ?? 'liveTraffic.beacon.status.error')
+            : statusText}
       </p>
       {feed.directoryLimited && (
         <p className="text-status-warning mt-1 text-xs" role="status">

@@ -11,6 +11,7 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
+import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
@@ -607,12 +608,8 @@ export default function AppPanel({
             prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
           );
         }
-        const autoDownload = raw?.autoUpdateDownloadEnabled;
-        if (
-          (autoDownload === '1' || autoDownload === '0') &&
-          !autoUpdateDownloadTouchedRef.current
-        ) {
-          const enabled = autoDownload === '1';
+        if (!autoUpdateDownloadTouchedRef.current) {
+          const enabled = autoUpdateDownloadEnabledFromStored(raw?.autoUpdateDownloadEnabled);
           autoUpdateDownloadConfirmedRef.current = enabled;
           setSettings((prev) =>
             prev.autoUpdateDownloadEnabled === enabled
@@ -626,6 +623,11 @@ export default function AppPanel({
       })
       .catch((err: unknown) => {
         console.warn('[AppPanel] app settings hydrate failed ' + errLikeToLogString(err));
+        if (cancelled || autoUpdateDownloadTouchedRef.current) return;
+        autoUpdateDownloadConfirmedRef.current = false;
+        setSettings((prev) =>
+          prev.autoUpdateDownloadEnabled ? { ...prev, autoUpdateDownloadEnabled: false } : prev,
+        );
       });
     return () => {
       cancelled = true;

@@ -37,6 +37,29 @@ function pruneSenders(now: number): void {
   for (const [key, w] of senders) {
     if (w.alerts.every((at) => now - at > MECP_ALERT_THROTTLE_WINDOW_MS)) senders.delete(key);
   }
+  const overflow = senders.size - MAX_TRACKED_SENDERS;
+  if (overflow <= 0) return;
+  let dropped = 0;
+  for (const key of senders.keys()) {
+    if (dropped >= overflow) break;
+    senders.delete(key);
+    dropped += 1;
+  }
+}
+
+/** @internal Test helper. */
+export function mecpAlertTrackedSenderCount(): number {
+  return senders.size;
+}
+
+/** @internal Test helper. Insert a sender without flood accounting, then the caller records. */
+export function noteMecpAlertSenderForTests(key: string, at: number): void {
+  senders.set(key, { alerts: [at], notifiedAt: null });
+}
+
+/** @internal Test helper. */
+export function mecpAlertHasSenderForTests(key: string): boolean {
+  return senders.has(key);
 }
 
 function senderAlertsInWindow(key: string, now: number): number[] {
@@ -87,7 +110,10 @@ export function recordMecpAlert(key: string, now = Date.now()): MecpThrottleDeci
     }
   }
 
-  senders.set(key, { alerts: [...inWindow, now], notifiedAt });
+  const isNewSender = !senders.has(key);
+  if (!(flooded && isNewSender)) {
+    senders.set(key, { alerts: [...inWindow, now], notifiedAt });
+  }
   pruneSenders(now);
   return { alert: !senderThrottled && !flooded, notify };
 }

@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Windows에서 여기에서 라디오를 선택하고 화면에 표시된 PIN을 입력합니다. mesh-client와 페어링하므로 Windows 설정에서 페어링할 필요가 없습니다. 먼저 휴대폰에서 MeshCore 앱을 닫으세요. 라디오는 한 번에 하나의 블루투스 연결만 허용합니다.",
     "stageEnterPinWindows": "라디오에 표시된 PIN을 입력하여 Windows와 페어링합니다.",
     "stagePairingWindows": "Windows와 페어링 중...",
-    "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오."
+    "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오.",
+    "mqttPacketTooLarge": "브로커가 안전 한도 {{limit}}바이트보다 큰 MQTT 패킷을 보내 자동 재연결이 꺼졌습니다."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "등록 응답에 인증서가 없습니다",
       "enrollTooLarge": "등록 응답이 너무 큽니다",
       "enrollKeyMismatch": "서버가 다른 키에 대한 인증서를 반환했습니다",
-      "enrollBusy": "현재 인증서 가져오기가 완료될 때까지 기다립니다"
+      "enrollBusy": "현재 인증서 가져오기가 완료될 때까지 기다립니다",
+      "frameTooLarge": "CoT 이벤트가 {{max}}바이트를 초과합니다"
     },
     "remoteUseTls": "TLS 사용 (권장)",
     "remotePlainTcpWarning": "일반 TCP는 암호화되지 않습니다. 네트워크 경로의 모든 사용자가 릴레이된 위치를 읽을 수 있습니다. 인증서는 사용되지 않으며, 시작 시 연결이 꺼져 있습니다.",
@@ -7161,7 +7163,11 @@
         "disconnected": "연결할 Beacon 지도 URL을 선택하세요.",
         "error": "연결할 수 없습니다.",
         "live": "실시간 지역 피드",
-        "reconnecting": "다시 연결 중…"
+        "reconnecting": "다시 연결 중…",
+        "feedOpenFailed": "지역 지도 피드를 열 수 없습니다.",
+        "refreshing": "피드가 끊긴 뒤 지역 지도를 새로 고치는 중입니다.",
+        "connectionInterrupted": "지역 지도 연결이 중단되었습니다.",
+        "publicHttpsRejected": "이 공개 HTTPS 지역 지도를 열 수 없습니다."
       },
       "preset": "지역 Beacon 지도",
       "custom": "사용자 지정 URL"

@@ -635,11 +635,15 @@ describe('registerReticulumIpcHandlers', () => {
         destination_hash: 'aa'.repeat(16),
         remote_path: '/remote/file.txt',
       });
-      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/fetch', {
-        destination_hash: 'aa'.repeat(16),
-        remote_path: '/remote/file.txt',
-        save_path: undefined,
-      });
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/rncp/fetch',
+        {
+          destination_hash: 'aa'.repeat(16),
+          remote_path: '/remote/file.txt',
+          save_path: undefined,
+        },
+        { allowDedicatedRoutes: true },
+      );
     });
 
     it('rncpFetch rejects a save_path not under the picked save directory', async () => {
@@ -744,6 +748,30 @@ describe('registerReticulumIpcHandlers', () => {
       expect(manager.proxyPost).not.toHaveBeenCalled();
     });
 
+    it('proxyPost rejects query and percent-encoded aliases of dedicated routes', async () => {
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/voice/audio?x=1', {}),
+      ).rejects.toThrow(/voiceSendAudio/);
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/rncp/%73end', {}),
+      ).rejects.toThrow(/rncpSend\/rncpFetch\/setRncpListener/);
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/voice/memo/%73tart', {}),
+      ).rejects.toThrow(/voiceMemo/);
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/games/%73tatus', {}),
+      ).rejects.toThrow(/games/);
+      await expect(
+        handlers.get('reticulum:proxyPut')?.(
+          event,
+          '/api/v1/nomadnetwork/%73erving/content-source',
+          {},
+        ),
+      ).rejects.toThrow(/setNomadContentSource/);
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+      expect(manager.proxyPut).not.toHaveBeenCalled();
+    });
+
     it('proxyPost rejects voice PCM path; voiceSendAudio forwards validated frames', async () => {
       await expect(
         handlers.get('reticulum:proxyPost')?.(event, '/api/v1/voice/audio', {
@@ -759,11 +787,15 @@ describe('registerReticulumIpcHandlers', () => {
         profile: 0x50,
       });
       expect(ok).toEqual({ ok: true });
-      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/voice/audio', {
-        channels: 1,
-        samples_b64: 'AAAA',
-        profile: 0x50,
-      });
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/voice/audio',
+        {
+          channels: 1,
+          samples_b64: 'AAAA',
+          profile: 0x50,
+        },
+        { allowDedicatedRoutes: true },
+      );
 
       const bad = await handlers.get('reticulum:voiceSendAudio')?.(event, {
         channels: 1,
@@ -785,12 +817,20 @@ describe('registerReticulumIpcHandlers', () => {
       const body = { destination_hash: 'aa'.repeat(16) };
       const ok = await handlers.get('reticulum:voiceMemoStart')?.(event, body);
       expect(ok).toEqual({ ok: true });
-      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_START_API_PATH, body);
+      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_START_API_PATH, body, {
+        allowDedicatedRoutes: true,
+      });
     });
 
     it('voiceMemoStart defaults invalid opts to {}', async () => {
       await handlers.get('reticulum:voiceMemoStart')?.(event, null);
-      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_START_API_PATH, {});
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        VOICE_MEMO_START_API_PATH,
+        {},
+        {
+          allowDedicatedRoutes: true,
+        },
+      );
     });
 
     it('voiceMemoSendAudio forwards validated frames', async () => {
@@ -800,11 +840,15 @@ describe('registerReticulumIpcHandlers', () => {
         samples_b64: 'AAAA',
       });
       expect(ok).toEqual({ ok: true });
-      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_AUDIO_API_PATH, {
-        session_id: 'sess-1',
-        channels: 1,
-        samples_b64: 'AAAA',
-      });
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        VOICE_MEMO_AUDIO_API_PATH,
+        {
+          session_id: 'sess-1',
+          channels: 1,
+          samples_b64: 'AAAA',
+        },
+        { allowDedicatedRoutes: true },
+      );
       expect(memoAudioRateLimitMock.checkOrThrow).toHaveBeenCalled();
     });
 
@@ -851,9 +895,11 @@ describe('registerReticulumIpcHandlers', () => {
         session_id: 'sess-1',
       });
       expect(ok).toEqual({ ok: true, ogg_base64: 'YQ==', duration_ms: 1000 });
-      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_STOP_API_PATH, {
-        session_id: 'sess-1',
-      });
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        VOICE_MEMO_STOP_API_PATH,
+        { session_id: 'sess-1' },
+        { allowDedicatedRoutes: true },
+      );
     });
 
     it('voiceMemoStop rejects invalid session request', async () => {
@@ -867,9 +913,11 @@ describe('registerReticulumIpcHandlers', () => {
         session_id: 'sess-1',
       });
       expect(ok).toEqual({ ok: true });
-      expect(manager.proxyPost).toHaveBeenCalledWith(VOICE_MEMO_CANCEL_API_PATH, {
-        session_id: 'sess-1',
-      });
+      expect(manager.proxyPost).toHaveBeenCalledWith(
+        VOICE_MEMO_CANCEL_API_PATH,
+        { session_id: 'sess-1' },
+        { allowDedicatedRoutes: true },
+      );
     });
 
     it('voiceMemoCancel rejects invalid session request', async () => {

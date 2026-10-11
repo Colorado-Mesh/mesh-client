@@ -12,6 +12,7 @@ import {
   buildGithubAttestationVerifyArgs,
   collectReleaseBundleDigests,
   createFlatpakBuilderPredicate,
+  flatpakGeneratorRequirementsSha256,
   parseNamedArgs,
   verifyFlatpakReleaseProvenance,
   verifyGithubFlatpakAttestation,
@@ -82,6 +83,7 @@ describe('Flatpak builder provenance', () => {
       },
       workflow: 'Colorado-Mesh/mesh-client/.github/workflows/flatpak.yaml',
       architectures: ['aarch64', 'x86_64'],
+      generator: { requirementsSha256: flatpakGeneratorRequirementsSha256() },
     });
   });
 

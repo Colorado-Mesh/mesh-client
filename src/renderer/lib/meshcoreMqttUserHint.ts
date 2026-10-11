@@ -1,5 +1,9 @@
 import type { MeshcorePrefixedHint, MeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 
+/** English sentence from `mqttPacketTooLargeMessage()` in main. */
+export const MQTT_PACKET_TOO_LARGE_MESSAGE_RE =
+  /^Broker sent an MQTT packet larger than the (\d+)-byte safety limit; automatic reconnect is disabled\.$/;
+
 function mqttPrefixedHint(message: string, hintKey: string): MeshcorePrefixedHint {
   return { type: 'prefixed', message, hintKey };
 }
@@ -11,6 +15,14 @@ function mqttPrefixedHint(message: string, hintKey: string): MeshcorePrefixedHin
 export function meshcoreMqttUserFacingHint(rawMessage: string): MeshcoreUserMessage {
   const m = rawMessage.trim();
   if (!m) return m;
+
+  const packetLimit = MQTT_PACKET_TOO_LARGE_MESSAGE_RE.exec(m);
+  if (packetLimit?.[1]) {
+    return {
+      key: 'connectionPanel.mqttPacketTooLarge',
+      params: { limit: packetLimit[1] },
+    };
+  }
 
   if (/not authorized|connection refused:\s*not authorized/i.test(m)) {
     return mqttPrefixedHint(m, 'meshcore.mqttHints.notAuthorized');

@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "No Windows, selecione o rádio aqui e insira o PIN mostrado na tela. O mesh-client o emparelha para você, para que você não precise emparelhá-lo nas Configurações do Windows. Feche o aplicativo MeshCore no seu telefone primeiro; o rádio aceita apenas uma conexão Bluetooth de cada vez.",
     "stageEnterPinWindows": "Insira o PIN mostrado no seu rádio para emparelhá-lo com o Windows",
     "stagePairingWindows": "Emparelhando com o Windows...",
-    "meshtasticSilentAfterConfigure": "Conectado ao rádio, mas parou de enviar tráfego de malha após a configuração. Reconectando automaticamente. Se isso continuar acontecendo, verifique a conexão de rede do rádio ou reinicie-a."
+    "meshtasticSilentAfterConfigure": "Conectado ao rádio, mas parou de enviar tráfego de malha após a configuração. Reconectando automaticamente. Se isso continuar acontecendo, verifique a conexão de rede do rádio ou reinicie-a.",
+    "mqttPacketTooLarge": "O broker enviou um pacote MQTT maior que o limite de segurança de {{limit}} bytes; a reconexão automática está desativada."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "A resposta de inscrição não tem certificado",
       "enrollTooLarge": "A resposta de inscrição é muito grande",
       "enrollKeyMismatch": "O servidor retornou um certificado para uma chave diferente",
-      "enrollBusy": "Aguarde a conclusão da importação do certificado atual"
+      "enrollBusy": "Aguarde a conclusão da importação do certificado atual",
+      "frameTooLarge": "O evento CoT excede {{max}} bytes"
     },
     "remoteUseTls": "Usar TLS (recomendado)",
     "remotePlainTcpWarning": "O TCP simples não está criptografado: qualquer pessoa no caminho da rede pode ler as posições retransmitidas. Os certificados não são usados e a conexão no lançamento fica desativada.",
@@ -7161,7 +7163,11 @@
         "live": "Fluxo regional ao vivo",
         "reconnecting": "Reconectando…",
         "disconnected": "Escolha a URL de um mapa do Beacon para conectar.",
-        "error": "Não foi possível conectar"
+        "error": "Não foi possível conectar",
+        "feedOpenFailed": "Não foi possível abrir o feed do mapa regional.",
+        "refreshing": "Atualizando o mapa regional após uma interrupção do feed.",
+        "connectionInterrupted": "Conexão do mapa regional interrompida.",
+        "publicHttpsRejected": "Não foi possível abrir este mapa regional HTTPS público."
       },
       "custom": "URL personalizada",
       "preset": "Mapa regional do Beacon"

@@ -52,6 +52,7 @@ jobs:
               - 'scripts/flatpak-builder-provenance*.mjs'
               - 'scripts/flatpakPnpmStoreVersion*.mjs'
               - 'scripts/flatpak-pnpm-install*'
+              - 'scripts/requirements-flatpak-generator.txt'
               - 'scripts/run-act.mjs'
               - 'scripts/sync-flatpak-electron*'
               - '.github/actions/setup-node-pnpm/action.yaml'
@@ -145,11 +146,14 @@ jobs:
       # PR-cycle only (not pre-commit): needs flatpak-node-generator to verify offline store vN.
       - name: Install flatpak-node-generator
         run: |
+          python3 -m pip install --require-hashes --only-binary=:all: \
+            -r scripts/requirements-flatpak-generator.txt
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           # Keep in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
           # --force-reinstall: same 0.1.0 version across commits; plain pip is a no-op on
           # preinstalled images and leaves the storeDir= generator.
-          pip3 install --force-reinstall --no-cache-dir \
+          # --no-deps: runtime deps come only from the hash-locked requirements file.
+          pip3 install --force-reinstall --no-cache-dir --no-deps \
             "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 
       - name: Check Flatpak offline pnpm sources

@@ -5,6 +5,7 @@ import {
   type WebContentsDidStartNavigationEventParams,
 } from 'electron';
 
+import { BEACON_STATUS_PUBLIC_HTTPS_REJECTED } from '../../shared/beacon';
 import { BeaconFeedClient, parseBeaconConnectRequest } from '../beacon-feed';
 import { assertIpcSender } from '../validate-ipc-sender';
 
@@ -52,7 +53,7 @@ export function registerBeaconIpcHandlers(): void {
     } catch {
       // catch-no-log-ok Fixed UI error avoids logging user URLs or remote response contents.
       if (currentClient && clients.get(sender.id)?.client === currentClient) disconnect(sender);
-      return { ok: false, error: 'Could not open this public HTTPS regional map.' };
+      return { ok: false, error: BEACON_STATUS_PUBLIC_HTTPS_REJECTED };
     }
   });
 

@@ -1,13 +1,12 @@
 import type { BrowserWindow } from 'electron';
 import { ipcMain, shell } from 'electron';
 
-import { isGamesApiPath, parseGamesActionRequest } from '../../shared/games-types';
+import { parseGamesActionRequest } from '../../shared/games-types';
 import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
 } from '../../shared/reticulum-types';
 import {
-  isVoiceMemoApiPath,
   parseVoiceMemoAudioRequest,
   parseVoiceMemoSessionRequest,
   VOICE_MEMO_AUDIO_API_PATH,
@@ -30,7 +29,6 @@ import type { BlocklistExportResult, BlocklistImportFileResult } from '../reticu
 import { readBlocklistFromFile, saveBlocklistToFile } from '../reticulum-blocklist-file';
 import {
   isAllowedNomadContentSourcePath,
-  isNomadContentSourceApiPath,
   NOMAD_CONTENT_SOURCE_API_PATH,
   readFirstExistingConfig,
   showNomadContentSourceDialog,
@@ -42,11 +40,11 @@ import {
   showReticulumIdentityBackupImportDialog,
   showReticulumIdentityImportDialog,
 } from '../reticulum-identity-import';
+import { assertReticulumProxyPath } from '../reticulum-proxy-path';
 import {
   isAllowedRncpRevealPath,
   isAllowedRncpSaveDirectoryPath,
   isAllowedRncpSendFilePath,
-  isRncpPickerGatedApiPath,
   showRncpOpenFileDialog,
   showRncpSaveDirectoryDialog,
 } from '../reticulum-remote-paths';
@@ -100,9 +98,7 @@ const reticulumBlocklistFileIpcRateLimit = createIpcRateLimiter({
   label: 'reticulum:blocklistFile',
 });
 
-function isVoiceAudioApiPath(apiPath: string): boolean {
-  return apiPath === VOICE_AUDIO_API_PATH;
-}
+const DEDICATED_PROXY = { allowDedicatedRoutes: true } as const;
 
 function assertGamesSessionId(sessionId: unknown): string | { error: string } {
   if (typeof sessionId !== 'string' || sessionId.length === 0 || sessionId.length > 128) {
@@ -259,10 +255,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
-    const pathArg = assertProxyApiPath(apiPath);
-    if (isGamesApiPath(pathArg)) {
-      throw new Error('LRGP games require reticulum:games* IPC channels');
-    }
+    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath));
     try {
       // Rate-limit inside try so checkOrThrow settles as an expected soft envelope
       // (avoids Electron `[error] Error occurred in handler` spam).
@@ -282,21 +275,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPost', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPost');
-    const pathArg = assertProxyApiPath(apiPath);
-    if (isRncpPickerGatedApiPath(pathArg)) {
-      throw new Error(
-        'rncp send/fetch/listener changes require reticulum:rncpSend/rncpFetch/setRncpListener (picker-backed)',
-      );
-    }
-    if (isVoiceAudioApiPath(pathArg)) {
-      throw new Error('voice PCM ingest requires reticulum:voiceSendAudio');
-    }
-    if (isVoiceMemoApiPath(pathArg)) {
-      throw new Error('voice memo requires reticulum:voiceMemo* IPC channels');
-    }
-    if (isGamesApiPath(pathArg)) {
-      throw new Error('LRGP games require reticulum:games* IPC channels');
-    }
+    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath));
     try {
       reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
@@ -332,7 +311,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost(VOICE_AUDIO_API_PATH, parsed);
+      return await m.proxyPost(VOICE_AUDIO_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceSendAudio', err, VOICE_AUDIO_API_PATH);
@@ -344,7 +323,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     const body = opts != null && typeof opts === 'object' && !Array.isArray(opts) ? opts : {};
     try {
       const m = ensureManager();
-      return await m.proxyPost(VOICE_MEMO_START_API_PATH, body);
+      return await m.proxyPost(VOICE_MEMO_START_API_PATH, body, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceMemoStart', err, VOICE_MEMO_START_API_PATH);
@@ -360,7 +339,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost(VOICE_MEMO_AUDIO_API_PATH, parsed);
+      return await m.proxyPost(VOICE_MEMO_AUDIO_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceMemoSendAudio', err, VOICE_MEMO_AUDIO_API_PATH);
@@ -375,7 +354,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      const result = await m.proxyPost(VOICE_MEMO_STOP_API_PATH, parsed);
+      const result = await m.proxyPost(VOICE_MEMO_STOP_API_PATH, parsed, DEDICATED_PROXY);
       if (
         result &&
         typeof result === 'object' &&
@@ -401,7 +380,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     try {
       const m = ensureManager();
-      return await m.proxyPost(VOICE_MEMO_CANCEL_API_PATH, parsed);
+      return await m.proxyPost(VOICE_MEMO_CANCEL_API_PATH, parsed, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('voiceMemoCancel', err, VOICE_MEMO_CANCEL_API_PATH);
@@ -422,12 +401,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
-    const pathArg = assertProxyApiPath(apiPath);
-    if (isNomadContentSourceApiPath(pathArg)) {
-      throw new Error(
-        'Nomad content-source changes require reticulum:setNomadContentSource (picker-backed)',
-      );
-    }
+    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath));
     try {
       reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
@@ -440,10 +414,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyDelete', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyDelete');
-    const pathArg = assertProxyApiPath(apiPath);
-    if (isGamesApiPath(pathArg)) {
-      throw new Error('LRGP games require reticulum:games* IPC channels');
-    }
+    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath));
     try {
       reticulumProxyIpcRateLimit.checkOrThrow();
       const m = ensureManager();
@@ -459,7 +430,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     assertIpcSender(event, 'reticulum:gamesStatus');
     reticulumGamesIpcRateLimit.checkOrThrow();
     try {
-      return await ensureManager().proxyGet('/api/v1/games/status');
+      return await ensureManager().proxyGet('/api/v1/games/status', DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesStatus', err, '/api/v1/games/status');
@@ -470,7 +441,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     assertIpcSender(event, 'reticulum:gamesApps');
     reticulumGamesIpcRateLimit.checkOrThrow();
     try {
-      return await ensureManager().proxyGet('/api/v1/games/apps');
+      return await ensureManager().proxyGet('/api/v1/games/apps', DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesApps', err, '/api/v1/games/apps');
@@ -485,7 +456,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         ? `/api/v1/games/sessions?peer=${encodeURIComponent(peer)}`
         : '/api/v1/games/sessions';
     try {
-      return await ensureManager().proxyGet(q);
+      return await ensureManager().proxyGet(q, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesSessions', err, q);
@@ -501,7 +472,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
     try {
-      return await ensureManager().proxyGet(path);
+      return await ensureManager().proxyGet(path, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesSessionDetail', err, path);
@@ -516,7 +487,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       return { ok: false, error: parsed.error };
     }
     try {
-      return await ensureManager().proxyPost('/api/v1/games/action', parsed);
+      return await ensureManager().proxyPost('/api/v1/games/action', parsed, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesAction', err, '/api/v1/games/action');
@@ -532,7 +503,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/resend`;
     try {
-      return await ensureManager().proxyPost(path, {});
+      return await ensureManager().proxyPost(path, {}, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesResend', err, path);
@@ -548,7 +519,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}/read`;
     try {
-      return await ensureManager().proxyPost(path, {});
+      return await ensureManager().proxyPost(path, {}, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesMarkRead', err, path);
@@ -564,7 +535,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
     const path = `/api/v1/games/sessions/${encodeURIComponent(idOrErr)}`;
     try {
-      return await ensureManager().proxyDelete(path);
+      return await ensureManager().proxyDelete(path, DEDICATED_PROXY);
     } catch (err) {
       // catch-no-log-ok settleReticulumProxyFailure logs expected failures / rethrows unexpected
       return settleReticulumProxyFailure('gamesDeleteSession', err, path);
@@ -853,7 +824,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
         save_path: savePath,
       };
       return savePath == null
-        ? await m.proxyPost('/api/v1/rncp/fetch', body)
+        ? await m.proxyPost('/api/v1/rncp/fetch', body, DEDICATED_PROXY)
         : await m.proxyPostWithPathCapability('rncp_fetch', '/api/v1/rncp/fetch', body);
     } catch (err) {
       logReticulumProxyFailure('rncpFetch', err, '/api/v1/rncp/fetch');
@@ -900,7 +871,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       };
       return enabled
         ? await m.proxyPostWithPathCapability('rncp_listener', '/api/v1/rncp/listener', body)
-        : await m.proxyPost('/api/v1/rncp/listener', body);
+        : await m.proxyPost('/api/v1/rncp/listener', body, DEDICATED_PROXY);
     } catch (err) {
       logReticulumProxyFailure('setRncpListener', err, '/api/v1/rncp/listener');
       throw err;

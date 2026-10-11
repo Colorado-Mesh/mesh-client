@@ -416,6 +416,38 @@ describe('AppPanel: auto-download updates toggle', () => {
     expect(checkbox).not.toBeChecked();
   });
 
+  it('hydrates any non-1 SQLite value as off', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      autoUpdateDownloadEnabled: 'yes',
+    });
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /download updates automatically/i,
+    });
+    await waitFor(() => {
+      expect(checkbox).not.toBeChecked();
+    });
+  });
+
+  it('turns the checkbox off when SQLite settings cannot be read', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockRejectedValueOnce(new Error('db down'));
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /download updates automatically/i,
+    });
+    await waitFor(() => {
+      expect(checkbox).not.toBeChecked();
+    });
+  });
+
   it('hydrates an off value from SQLite on mount', async () => {
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
       autoUpdateDownloadEnabled: '0',

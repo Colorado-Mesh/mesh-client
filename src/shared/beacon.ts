@@ -23,6 +23,24 @@ export interface BeaconConnectResult {
 
 export type BeaconFeedStatus = 'connecting' | 'live' | 'reconnecting' | 'disconnected' | 'error';
 
+/** Stable status codes emitted by main. The renderer translates them. */
+export const BEACON_STATUS_FEED_OPEN_FAILED = 'feed_open_failed';
+export const BEACON_STATUS_REFRESHING = 'refreshing';
+export const BEACON_STATUS_CONNECTION_INTERRUPTED = 'connection_interrupted';
+export const BEACON_STATUS_PUBLIC_HTTPS_REJECTED = 'public_https_rejected';
+
+const BEACON_STATUS_MESSAGE_KEYS: Record<string, string> = {
+  [BEACON_STATUS_FEED_OPEN_FAILED]: 'liveTraffic.beacon.status.feedOpenFailed',
+  [BEACON_STATUS_REFRESHING]: 'liveTraffic.beacon.status.refreshing',
+  [BEACON_STATUS_CONNECTION_INTERRUPTED]: 'liveTraffic.beacon.status.connectionInterrupted',
+  [BEACON_STATUS_PUBLIC_HTTPS_REJECTED]: 'liveTraffic.beacon.status.publicHttpsRejected',
+};
+
+/** Locale key for a known regional-feed status code, or null when the code is unknown. */
+export function beaconStatusMessageKey(code: string): string | null {
+  return BEACON_STATUS_MESSAGE_KEYS[code] ?? null;
+}
+
 export type BeaconFeedUpdate = { provider?: RegionalFeedProvider } & (
   | { type: 'status'; status: BeaconFeedStatus; message?: string }
   | {

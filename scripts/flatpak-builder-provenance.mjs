@@ -14,13 +14,14 @@ import {
   createReadStream,
   fstatSync,
   openSync,
+  readFileSync,
   readSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 export const FLATPAK_BUILDER_IMAGE =
@@ -38,6 +39,15 @@ export const FLATPAK_RELEASE_BUNDLES = Object.freeze([
 
 const SOURCE_SHA_RE = /^[a-f0-9]{40}$/;
 const MAX_VERIFICATION_RESULT_BYTES = 8 * 1024 * 1024;
+const GENERATOR_REQUIREMENTS_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'requirements-flatpak-generator.txt',
+);
+
+/** SHA-256 of the committed hash-locked generator requirements file. */
+export function flatpakGeneratorRequirementsSha256() {
+  return createHash('sha256').update(readFileSync(GENERATOR_REQUIREMENTS_PATH)).digest('hex');
+}
 
 /** @param {string} sourceSha */
 export function assertSourceSha(sourceSha) {
@@ -72,6 +82,9 @@ export function createFlatpakBuilderPredicate(input) {
     },
     workflow: FLATPAK_SIGNER_WORKFLOW,
     architectures: ['aarch64', 'x86_64'],
+    generator: {
+      requirementsSha256: flatpakGeneratorRequirementsSha256(),
+    },
   };
 }
 

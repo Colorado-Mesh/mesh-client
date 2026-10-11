@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "En Windows, seleccione la radio aquí e introduzca el PIN que se muestra en su pantalla. mesh-client lo empareja por usted, por lo que no necesita emparejarlo en la Configuración de Windows. Cierre primero la aplicación MeshCore en su teléfono; la radio solo acepta una conexión Bluetooth a la vez.",
     "stageEnterPinWindows": "Introduzca el PIN que se muestra en su radio para emparejarlo con Windows",
     "stagePairingWindows": "Emparejando con Windows...",
-    "meshtasticSilentAfterConfigure": "Se conectó a la radio, pero dejó de enviar tráfico de malla después de la configuración. Reconexión automática. Si esto sigue ocurriendo, compruebe la conexión de red de la radio o reiníciela."
+    "meshtasticSilentAfterConfigure": "Se conectó a la radio, pero dejó de enviar tráfico de malla después de la configuración. Reconexión automática. Si esto sigue ocurriendo, compruebe la conexión de red de la radio o reiníciela.",
+    "mqttPacketTooLarge": "El bróker envió un paquete MQTT mayor que el límite de seguridad de {{limit}} bytes; la reconexión automática está desactivada."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "La respuesta de inscripción no tiene certificado",
       "enrollTooLarge": "La respuesta de inscripción es demasiado grande",
       "enrollKeyMismatch": "El servidor devolvió un certificado para una clave diferente",
-      "enrollBusy": "Espere a que finalice la importación del certificado actual"
+      "enrollBusy": "Espere a que finalice la importación del certificado actual",
+      "frameTooLarge": "El evento CoT supera {{max}} bytes"
     },
     "remoteUseTls": "Usar TLS (recomendado)",
     "remotePlainTcpWarning": "El TCP simple no está cifrado: cualquier persona en la ruta de la red puede leer las posiciones retransmitidas. Los certificados no se utilizan y la conexión en el lanzamiento permanece desactivada.",
@@ -7161,7 +7163,11 @@
         "live": "Flujo regional en directo",
         "error": "No se pudo conectar.",
         "disconnected": "Elige la URL de un mapa de Beacon para conectarte.",
-        "reconnecting": "Reconectando…"
+        "reconnecting": "Reconectando…",
+        "feedOpenFailed": "No se pudo abrir el feed del mapa regional.",
+        "refreshing": "Actualizando el mapa regional tras una interrupción del feed.",
+        "connectionInterrupted": "Conexión del mapa regional interrumpida.",
+        "publicHttpsRejected": "No se pudo abrir este mapa regional HTTPS público."
       },
       "preset": "Mapa regional de Beacon",
       "custom": "URL personalizada"

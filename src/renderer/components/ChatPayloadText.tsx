@@ -285,8 +285,6 @@ function LocationCard({
 export interface ChatPayloadTextProps {
   text: string;
   query: string;
-  /** When false, skip async link-preview fetches (avoids layout shift while reading history). */
-  loadLinkPreviews?: boolean;
   /** Fired when async link-preview content mounts and row height may have grown. */
   onContentResize?: () => void;
   /** Active protocol supports rncp; otherwise rncp sentinel text is shown verbatim. */
@@ -303,7 +301,6 @@ export interface ChatPayloadTextProps {
 export function ChatPayloadText({
   text,
   query,
-  loadLinkPreviews = true,
   onContentResize,
   rncpControlEnabled = false,
   senderIsBot = false,
@@ -396,7 +393,7 @@ export function ChatPayloadText({
       {signalReport && <SignalReportChip report={signalReport} />}
       {firmwareBotReply && <FirmwareBotReplyCard reply={firmwareBotReply} />}
       {healthCheckCode && <HealthCheckCodeChip code={healthCheckCode} />}
-      {loadLinkPreviews && urlSegments.length > 0 && (
+      {urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (
             <HttpsLinkPreview key={seg.url} url={seg.url} onContentResize={onContentResize} />

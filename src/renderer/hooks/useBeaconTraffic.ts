@@ -17,7 +17,11 @@ import {
   type LiveTrafficEvent,
   type LiveTrafficPoint,
 } from '@/renderer/lib/map/liveTrafficModel';
-import type { BeaconFeedStatus, RegionalFeedProvider } from '@/shared/beacon';
+import {
+  BEACON_STATUS_PUBLIC_HTTPS_REJECTED,
+  type BeaconFeedStatus,
+  type RegionalFeedProvider,
+} from '@/shared/beacon';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 export { COLORADO_BEACON_URL } from '@/renderer/lib/map/beaconPresets';
@@ -238,14 +242,14 @@ export function useBeaconTraffic(
         if (!result.ok) {
           acceptUpdates.current = false;
           setStatus('error');
-          setError(result.error ?? 'Connection failed');
+          setError(result.error ?? BEACON_STATUS_PUBLIC_HTTPS_REJECTED);
         }
         return result.ok;
       } catch (cause) {
         if (!activeSession.current || attempt !== generation.current) return false;
         acceptUpdates.current = false;
         setStatus('error');
-        setError(cause instanceof Error ? cause.message : 'Connection failed');
+        setError(BEACON_STATUS_PUBLIC_HTTPS_REJECTED);
         console.warn('[beacon] connection failed', cause);
         return false;
       }

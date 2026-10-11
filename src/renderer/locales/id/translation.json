@@ -1776,7 +1776,8 @@
     "meshcoreBleWindowsInAppPairingHint": "Di Windows, pilih radio di sini dan masukkan PIN yang ditampilkan di layarnya. mesh-client memasangkannya untuk Anda, jadi Anda tidak perlu memasangkannya di Pengaturan Windows. Tutup aplikasi MeshCore di ponsel Anda terlebih dahulu; radio hanya menerima satu koneksi Bluetooth pada satu waktu.",
     "stageEnterPinWindows": "Masukkan PIN yang ditampilkan di radio Anda untuk memasangkannya dengan Windows",
     "stagePairingWindows": "Memasangkan dengan Windows…",
-    "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang."
+    "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang.",
+    "mqttPacketTooLarge": "Broker mengirim paket MQTT yang lebih besar dari batas aman {{limit}} byte; sambungan ulang otomatis dinonaktifkan."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -5625,7 +5626,8 @@
       "enrollNoCert": "Tanggapan pendaftaran tidak memiliki sertifikat",
       "enrollTooLarge": "Respons pendaftaran terlalu besar",
       "enrollKeyMismatch": "Server mengembalikan sertifikat untuk kunci yang berbeda",
-      "enrollBusy": "Tunggu hingga impor sertifikat saat ini selesai"
+      "enrollBusy": "Tunggu hingga impor sertifikat saat ini selesai",
+      "frameTooLarge": "Peristiwa CoT melebihi {{max}} byte"
     },
     "remoteUseTls": "Gunakan TLS (disarankan)",
     "remotePlainTcpWarning": "TCP biasa tidak terenkripsi: siapa pun di jalur jaringan dapat membaca posisi yang disampaikan. Sertifikat tidak digunakan, dan koneksi saat peluncuran tidak aktif.",
@@ -7161,7 +7163,11 @@
         "live": "Aliran regional langsung",
         "error": "Tidak dapat terhubung.",
         "reconnecting": "Menghubungkan kembali…",
-        "disconnected": "Pilih URL peta Beacon untuk terhubung."
+        "disconnected": "Pilih URL peta Beacon untuk terhubung.",
+        "feedOpenFailed": "Umpan peta regional tidak dapat dibuka.",
+        "refreshing": "Memperbarui peta regional setelah umpan terputus.",
+        "connectionInterrupted": "Koneksi peta regional terputus.",
+        "publicHttpsRejected": "Peta regional HTTPS publik ini tidak dapat dibuka."
       },
       "preset": "Peta Beacon regional",
       "custom": "URL khusus"

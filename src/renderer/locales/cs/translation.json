@@ -1798,7 +1798,8 @@
     "meshcoreBleWindowsInAppPairingHint": "V systému Windows zde vyberte rádio a zadejte KÓD PIN zobrazený na obrazovce. mesh-client jej spáruje za vás, takže jej nemusíte spárovat v nastavení systému Windows. Nejprve zavřete aplikaci MeshCore v telefonu; rádio přijímá pouze jedno připojení Bluetooth najednou.",
     "stageEnterPinWindows": "Pro spárování s Windows zadejte PIN zobrazený v rádiu",
     "stagePairingWindows": "Párování s Windows...",
-    "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte."
+    "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte.",
+    "mqttPacketTooLarge": "Broker odeslal paket MQTT větší než bezpečnostní limit {{limit}} bajtů; automatické opětovné připojení je vypnuto."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -5670,7 +5671,8 @@
       "enrollNoCert": "Odpověď na zápis nemá žádný certifikát",
       "enrollTooLarge": "Odpověď na zápis je příliš velká",
       "enrollKeyMismatch": "Server vrátil certifikát pro jiný klíč",
-      "enrollBusy": "Počkejte na dokončení importu aktuálního certifikátu"
+      "enrollBusy": "Počkejte na dokončení importu aktuálního certifikátu",
+      "frameTooLarge": "Událost CoT překračuje {{max}} bajtů"
     },
     "remoteUseTls": "Použít TLS (doporučeno)",
     "remotePlainTcpWarning": "Obyčejný TCP je nešifrovaný: kdokoli na síťové cestě může číst přenášené pozice. Certifikáty se nepoužívají a připojení při spuštění zůstává vypnuté.",
@@ -7226,7 +7228,11 @@
         "live": "Živý regionální zdroj",
         "reconnecting": "Opětovné připojování…",
         "disconnected": "Pro připojení vyberte URL mapy Beacon.",
-        "error": "Nelze se připojit."
+        "error": "Nelze se připojit.",
+        "feedOpenFailed": "Regionální mapový kanál se nepodařilo otevřít.",
+        "refreshing": "Obnovování regionální mapy po přerušení kanálu.",
+        "connectionInterrupted": "Připojení regionální mapy bylo přerušeno.",
+        "publicHttpsRejected": "Tuto veřejnou regionální mapu HTTPS se nepodařilo otevřít."
       },
       "preset": "Regionální mapa Beacon",
       "custom": "Vlastní URL"

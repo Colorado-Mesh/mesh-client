@@ -9,7 +9,8 @@ use serde::Deserialize;
 use crate::api::validate::reject_oversize;
 use crate::stack::StackHandle;
 
-const MAX_SAMPLES_B64_CHARS: usize = 512 * 1024;
+/// Match Electron `VOICE_MEMO_SAMPLES_B64_MAX` so a proxy alias cannot enlarge frames.
+const MAX_SAMPLES_B64_CHARS: usize = 32_768;
 const MAX_SESSION_ID_CHARS: usize = 64;
 
 #[derive(Debug, Deserialize)]

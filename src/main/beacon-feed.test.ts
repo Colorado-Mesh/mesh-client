@@ -365,7 +365,7 @@ describe('BeaconFeedClient lifecycle and bounded public data', () => {
     expect(updates).toContainEqual({
       type: 'status',
       status: 'reconnecting',
-      message: 'Refreshing Beacon after a feed interruption.',
+      message: 'refreshing',
       provider: 'beacon',
     });
     await vi.advanceTimersByTimeAsync(1000);

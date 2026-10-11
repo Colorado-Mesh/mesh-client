@@ -51,7 +51,7 @@ Docs are built with MkDocs Material.
      - `.\.venv\Scripts\Activate.ps1`
 2. Install the docs dependencies:
    - `pnpm run docs:install`
-   - or (manual): `python3 -m pip install -r docs/requirements.txt`
+   - or (manual): `python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt`
 3. Build locally:
    - `pnpm run docs:build`
 4. Preview locally:

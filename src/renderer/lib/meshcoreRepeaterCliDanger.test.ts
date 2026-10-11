@@ -37,6 +37,10 @@ describe('meshcoreRepeaterCliDanger', () => {
 
   it('allows literal destructive words in structured string settings', () => {
     expect(isMeshcoreRepeaterCliDangerCommand('set name Factory Repeater')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('region default reboot')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('region default preboot')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('region default reboot\nerase')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('region default')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('set owner.info Reboot contact')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('set guest.password reboot')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('set name test\nreboot')).toBe(true);

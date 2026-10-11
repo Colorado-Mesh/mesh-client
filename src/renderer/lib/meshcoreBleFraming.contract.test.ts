@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   MeshcoreCompanionTxEchoFilter,
   patchMeshcoreCompanionTxEchoFilter,
+  SYNC_NEXT_MESSAGE_ECHO_HOLD_MS,
 } from './meshcoreCompanionTxEchoFilter';
 
 class CaptureSerial extends SerialConnection {
@@ -65,7 +66,21 @@ function createWaitingMessageConnection(transport: 'serial' | 'gatt') {
     }
     await vi.runAllTimersAsync();
   };
-  return { conn, receive };
+  const push = async (payload: Uint8Array): Promise<void> => {
+    if (conn instanceof CaptureSerial) {
+      await conn.onDataReceived(
+        new Uint8Array([
+          Constants.SerialFrameTypes.Incoming,
+          payload.length & 0xff,
+          payload.length >> 8,
+          ...payload,
+        ]),
+      );
+    } else {
+      conn.onFrameReceived(payload);
+    }
+  };
+  return { conn, receive, push };
 }
 
 describe.each(['linux', 'darwin', 'win32'])('MeshCore waiting-message replies on %s', () => {
@@ -108,6 +123,55 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore waiting-message replies on
       expect(completed).not.toHaveBeenCalled();
       await receive(new Uint8Array([Constants.ResponseCodes.NoMoreMessages]));
 
+      expect(completed).toHaveBeenCalledExactlyOnceWith([
+        {
+          contactMessage: {
+            pubKeyPrefix: prefix,
+            pathLen: 0xff,
+            txtType: Constants.TxtTypes.CliData,
+            senderTimestamp: 1,
+            text,
+            snr: null,
+          },
+        },
+      ]);
+      await pending;
+    },
+  );
+
+  it.each(['serial', 'gatt'] as const)(
+    'drops a SyncNextMessage echo and still delivers the queued %s frame',
+    async (transport) => {
+      const { conn, push } = createWaitingMessageConnection(transport);
+      const completed = vi.fn();
+      const pending = conn.getWaitingMessages().then(completed);
+      expect(conn.writes.length).toBeGreaterThan(0);
+
+      const text = '03|> Test Repeater';
+      const prefix = new Uint8Array([1, 2, 3, 4, 5, 6]);
+      await push(new Uint8Array([Constants.ResponseCodes.NoMoreMessages]));
+      expect(completed).not.toHaveBeenCalled();
+      await push(
+        new Uint8Array([
+          Constants.ResponseCodes.ContactMsgRecv,
+          ...prefix,
+          0xff,
+          Constants.TxtTypes.CliData,
+          1,
+          0,
+          0,
+          0,
+          ...new TextEncoder().encode(text),
+        ]),
+      );
+      expect(completed).not.toHaveBeenCalled();
+      // meshcore.js emits on a 0ms timer. Flush that without expiring a later hold.
+      await vi.advanceTimersByTimeAsync(0);
+      expect(completed).not.toHaveBeenCalled();
+
+      await push(new Uint8Array([Constants.ResponseCodes.NoMoreMessages]));
+      await vi.advanceTimersByTimeAsync(SYNC_NEXT_MESSAGE_ECHO_HOLD_MS);
+      await vi.runAllTimersAsync();
       expect(completed).toHaveBeenCalledExactlyOnceWith([
         {
           contactMessage: {

@@ -6,6 +6,9 @@ import {
   MECP_ALERT_FLOOD_WINDOW_MS,
   MECP_ALERT_THROTTLE_MAX,
   MECP_ALERT_THROTTLE_WINDOW_MS,
+  mecpAlertHasSenderForTests,
+  mecpAlertTrackedSenderCount,
+  noteMecpAlertSenderForTests,
   recordMecpAlert,
   resetMecpAlertThrottleForTests,
 } from './mecpAlertThrottle';
@@ -47,5 +50,27 @@ describe('mecpAlertThrottle', () => {
     expect(recordMecpAlert('meshtastic:201', T0 + 11)).toEqual({ alert: false, notify: null });
     const after = T0 + 11 + MECP_ALERT_FLOOD_WINDOW_MS + 1;
     expect(recordMecpAlert('meshtastic:300', after).alert).toBe(true);
+  });
+
+  it('does not insert new sender keys while a flood is active', () => {
+    for (let i = 0; i < MECP_ALERT_FLOOD_MAX_SENDERS; i++) {
+      recordMecpAlert(`meshtastic:${i + 100}`, T0 + i);
+    }
+    const tracked = mecpAlertTrackedSenderCount();
+    expect(recordMecpAlert('meshtastic:200', T0 + 10).alert).toBe(false);
+    expect(recordMecpAlert('meshtastic:201', T0 + 11).alert).toBe(false);
+    expect(mecpAlertTrackedSenderCount()).toBe(tracked);
+  });
+
+  it('evicts the oldest sender keys once the map exceeds 1000', () => {
+    for (let i = 0; i < 1001; i++) noteMecpAlertSenderForTests(`meshtastic:${i}`, T0);
+    expect(mecpAlertTrackedSenderCount()).toBe(1001);
+    expect(recordMecpAlert('meshtastic:new', T0).alert).toBe(true);
+    expect(mecpAlertTrackedSenderCount()).toBe(1000);
+    expect(mecpAlertHasSenderForTests('meshtastic:0')).toBe(false);
+    expect(mecpAlertHasSenderForTests('meshtastic:1')).toBe(false);
+    expect(mecpAlertHasSenderForTests('meshtastic:2')).toBe(true);
+    expect(mecpAlertHasSenderForTests('meshtastic:1000')).toBe(true);
+    expect(mecpAlertHasSenderForTests('meshtastic:new')).toBe(true);
   });
 });

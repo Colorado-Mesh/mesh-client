@@ -2468,7 +2468,6 @@ export default function RoomsPanel({
                               <ChatPayloadText
                                 text={m.payload}
                                 query={searchQuery}
-                                loadLinkPreviews
                                 onContentResize={() => {
                                   schedulePostRowRemeasure(index);
                                 }}

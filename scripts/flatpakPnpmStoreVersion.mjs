@@ -26,6 +26,7 @@ export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS = [
   'install',
   '--force-reinstall',
   '--no-cache-dir',
+  '--no-deps',
   FLATPAK_NODE_GENERATOR_GIT,
 ];
 

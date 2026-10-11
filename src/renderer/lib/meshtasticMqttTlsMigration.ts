@@ -1,6 +1,8 @@
 import type { MQTTSettings } from '@/renderer/lib/types';
 import { MQTT_DEFAULT_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
 
+import { MQTT_PACKET_TOO_LARGE_MESSAGE_RE } from './meshcoreMqttUserHint';
+
 export const MESHTASTIC_OFFICIAL_BROKER_HOST = 'mqtt.meshtastic.org';
 export const LIAM_BROKER_HOST = 'mqtt.meshtastic.liamcottle.net';
 
@@ -45,6 +47,13 @@ export function isLiamBrokerSettings(s: MQTTSettings): boolean {
 }
 
 /** Extra context for Connection tab MQTT errors. */
-export function meshtasticMqttErrorUserHint(error: string): string {
+export function meshtasticMqttErrorUserHint(
+  error: string,
+  t?: (key: string, options?: Record<string, string>) => string,
+): string {
+  const packetLimit = MQTT_PACKET_TOO_LARGE_MESSAGE_RE.exec(error.trim());
+  if (packetLimit?.[1] && t) {
+    return t('connectionPanel.mqttPacketTooLarge', { limit: packetLimit[1] });
+  }
   return error;
 }

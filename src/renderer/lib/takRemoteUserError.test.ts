@@ -18,6 +18,7 @@ const MAIN_SOURCES = [
   'src/main/tak/remote-credentials.ts',
   'src/main/tak/enrollment.ts',
   'src/main/ipc/tak-handlers.ts',
+  'src/main/tak/cot-parser.ts',
 ];
 
 function fillWire(template: string): { text: string; vars: Record<string, string> } {

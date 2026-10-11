@@ -1807,7 +1807,8 @@
     "disconnectRadioGroup": "Disconnect radio",
     "moreDisconnectOptions": "More disconnect options",
     "disconnectOptions": "Disconnect options",
-    "lastConnectionLabel": "Last connection"
+    "lastConnectionLabel": "Last connection",
+    "mqttPacketTooLarge": "Broker sent an MQTT packet larger than the {{limit}}-byte safety limit; automatic reconnect is disabled."
   },
   "contactGroupsModal": {
     "title": "Contact Groups",
@@ -6458,7 +6459,8 @@
       "enrollNoCert": "The enrollment response has no certificate",
       "enrollTooLarge": "The enrollment response is too large",
       "enrollKeyMismatch": "The server returned a certificate for a different key",
-      "enrollBusy": "Wait for the current certificate import to finish"
+      "enrollBusy": "Wait for the current certificate import to finish",
+      "frameTooLarge": "CoT event exceeds {{max}} bytes"
     },
     "unitStylesTitle": "Relayed unit styles",
     "unitStylesDesc": "Relayed nodes are drawn from the role they advertise: repeaters and routers as installations, sensors as sensors, everyone else as a team member. Add filters to restyle nodes by name, node type, or protocol. A filter with no name patterns applies to every node of its type or protocol. The first enabled filter that matches wins.",
@@ -7163,7 +7165,11 @@
         "live": "Live regional feed",
         "reconnecting": "Reconnecting…",
         "disconnected": "Choose a Beacon map URL to connect.",
-        "error": "Unable to connect."
+        "error": "Unable to connect.",
+        "feedOpenFailed": "Could not open the regional map feed.",
+        "refreshing": "Refreshing the regional map after a feed interruption.",
+        "connectionInterrupted": "Regional map connection interrupted.",
+        "publicHttpsRejected": "Could not open this public HTTPS regional map."
       },
       "preset": "Regional Beacon map",
       "custom": "Custom URL"

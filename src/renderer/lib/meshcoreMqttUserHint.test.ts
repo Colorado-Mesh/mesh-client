@@ -52,6 +52,17 @@ describe('meshcoreMqttUserFacingHint', () => {
     expect(meshcoreUserMessageKey(out)).toBe('meshcore.mqttHints.tlsHandshake');
   });
 
+  it('maps the packet size limit to a parameterized locale key', () => {
+    expect(
+      meshcoreMqttUserFacingHint(
+        'Broker sent an MQTT packet larger than the 1048576-byte safety limit; automatic reconnect is disabled.',
+      ),
+    ).toEqual({
+      key: 'connectionPanel.mqttPacketTooLarge',
+      params: { limit: '1048576' },
+    });
+  });
+
   it('passes through unrelated messages unchanged', () => {
     expect(meshcoreMqttUserFacingHint('Something else')).toBe('Something else');
   });

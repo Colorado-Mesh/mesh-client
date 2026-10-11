@@ -5,11 +5,14 @@ import type { LookupFunction } from 'node:net';
 import { Address4, Address6 } from 'ip-address';
 import WebSocket from 'ws';
 
-import type {
-  BeaconConnectRequest,
-  BeaconFeedUpdate,
-  BeaconJsonObject,
-  RegionalFeedProvider,
+import {
+  BEACON_STATUS_CONNECTION_INTERRUPTED,
+  BEACON_STATUS_FEED_OPEN_FAILED,
+  BEACON_STATUS_REFRESHING,
+  type BeaconConnectRequest,
+  type BeaconFeedUpdate,
+  type BeaconJsonObject,
+  type RegionalFeedProvider,
 } from '../shared/beacon';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import {
@@ -240,7 +243,7 @@ export class BeaconFeedClient {
       this.emit({
         type: 'status',
         status: 'error',
-        message: 'Could not open the regional map feed.',
+        message: BEACON_STATUS_FEED_OPEN_FAILED,
       });
       throw error;
     }
@@ -440,7 +443,7 @@ export class BeaconFeedClient {
         this.emit({
           type: 'status',
           status: 'reconnecting',
-          message: 'Refreshing Beacon after a feed interruption.',
+          message: BEACON_STATUS_REFRESHING,
         });
         socket.terminate();
         return;
@@ -479,7 +482,7 @@ export class BeaconFeedClient {
         this.emit({
           type: 'status',
           status: 'reconnecting',
-          message: 'Regional map connection interrupted.',
+          message: BEACON_STATUS_CONNECTION_INTERRUPTED,
         });
       }
     });

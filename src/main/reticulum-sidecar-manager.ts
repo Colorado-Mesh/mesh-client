@@ -24,6 +24,7 @@ import {
   assertReticulumProxyPath,
   RETICULUM_FACTORY_RESET_PATH,
   reticulumProxyGetTimeoutMs,
+  type ReticulumProxyPathOptions,
 } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
@@ -944,12 +945,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
   }
 
-  async proxyGet(apiPath: string): Promise<unknown> {
+  async proxyGet(apiPath: string, opts?: ReticulumProxyPathOptions): Promise<unknown> {
     const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath);
+    const normalized = assertReticulumProxyPath(apiPath, opts);
     const timeoutMs = reticulumProxyGetTimeoutMs(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       headers: this.authHeaders(),
@@ -973,12 +974,16 @@ export class ReticulumSidecarManager extends EventEmitter {
     return JSON.parse(text) as unknown;
   }
 
-  async proxyPost(apiPath: string, body: unknown): Promise<unknown> {
+  async proxyPost(
+    apiPath: string,
+    body: unknown,
+    opts?: ReticulumProxyPathOptions,
+  ): Promise<unknown> {
     const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath);
+    const normalized = assertReticulumProxyPath(apiPath, opts);
     assertProxyBodySize(body);
     const pathOnly = normalized.split('?')[0] ?? normalized;
     // RRC connect includes path discovery + Link handshake + WELCOME wait.
@@ -1023,7 +1028,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0 || !proc) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath);
+    const normalized = assertReticulumProxyPath(apiPath, { allowDedicatedRoutes: true });
     assertProxyBodySize(body);
     const authToken = this.requireAuthToken();
     const capabilityIssuerToken = this.requireCapabilityIssuerToken();
@@ -1092,12 +1097,16 @@ export class ReticulumSidecarManager extends EventEmitter {
     return text ? (JSON.parse(text) as unknown) : {};
   }
 
-  async proxyPut(apiPath: string, body: unknown): Promise<unknown> {
+  async proxyPut(
+    apiPath: string,
+    body: unknown,
+    opts?: ReticulumProxyPathOptions,
+  ): Promise<unknown> {
     const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath);
+    const normalized = assertReticulumProxyPath(apiPath, opts);
     assertProxyBodySize(body);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'PUT',
@@ -1112,12 +1121,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     return text ? (JSON.parse(text) as unknown) : {};
   }
 
-  async proxyDelete(apiPath: string): Promise<unknown> {
+  async proxyDelete(apiPath: string, opts?: ReticulumProxyPathOptions): Promise<unknown> {
     const status = this._status;
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath);
+    const normalized = assertReticulumProxyPath(apiPath, opts);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'DELETE',
       headers: this.authHeaders(),

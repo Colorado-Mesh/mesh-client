@@ -7,7 +7,8 @@ use serde::Deserialize;
 use crate::api::validate::{MAX_DEST_HASH_CHARS, reject_oversize};
 use crate::stack::StackHandle;
 
-const MAX_SAMPLES_B64_CHARS: usize = 512 * 1024;
+/// Match Electron `VOICE_AUDIO_SAMPLES_B64_MAX` so a proxy alias cannot enlarge frames.
+const MAX_SAMPLES_B64_CHARS: usize = 32_768;
 
 #[derive(Debug, Deserialize)]
 pub struct VoiceCallBody {
