@@ -14,32 +14,19 @@ export function readMqttSettingsFromStorage(
 ): MQTTSettings {
   try {
     const raw = localStorage.getItem(storageKey);
-    if (!raw) return { ...defaults };
-    const parsed = JSON.parse(raw) as Partial<MQTTSettings>;
-    let secrets: Partial<MQTTSettings> = {};
+    const parsed = raw ? (JSON.parse(raw) as Partial<MQTTSettings>) : {};
+    let secureSettings: Partial<MQTTSettings> = {};
     if (secretKey) {
       const secureRaw = getCachedSecureSecret(secretKey);
       if (secureRaw) {
         try {
-          const secureParsed = JSON.parse(secureRaw) as {
-            password?: unknown;
-            channelPsks?: unknown;
-          };
-          secrets = {
-            ...(typeof secureParsed.password === 'string'
-              ? { password: secureParsed.password }
-              : {}),
-            ...(Array.isArray(secureParsed.channelPsks) &&
-            secureParsed.channelPsks.every((value) => typeof value === 'string')
-              ? { channelPsks: secureParsed.channelPsks }
-              : {}),
-          };
+          secureSettings = JSON.parse(secureRaw) as Partial<MQTTSettings>;
         } catch {
           // catch-no-log-ok corrupt session secret is treated as absent
         }
       }
     }
-    const merged = { ...defaults, ...parsed, ...secrets };
+    const merged = { ...defaults, ...parsed, ...secureSettings };
     return {
       ...merged,
       maxRetries: clampMqttMaxRetries(merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS),

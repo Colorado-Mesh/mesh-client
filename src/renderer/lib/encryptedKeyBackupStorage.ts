@@ -1,6 +1,7 @@
 import { keyBackupBase64ToBytes, keyBackupBytesToBase64 } from './keyBackupBytes';
 import {
   getCachedSecureSecret,
+  keyBackupIndexSecretKey,
   keyBackupSecretKey,
   listCachedSecureSecretKeys,
   migrateLegacyBackupCiphertext,
@@ -64,6 +65,13 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     return keyBackupSecretKey(protocol, normalizeId(id));
   }
 
+  function indexSecretKey(): string {
+    if (protocol !== 'meshcore' && protocol !== 'meshtastic') {
+      throw new Error(`${protocol} backup: unsupported protocol`);
+    }
+    return keyBackupIndexSecretKey(protocol);
+  }
+
   function toRawPayload(payload: EncryptedKeyBackupPayload): Record<string, unknown> {
     return {
       protocol: payload.protocol,
@@ -102,7 +110,7 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
 
   function readIndex(): EncryptedKeyBackupIndexEntry[] {
     try {
-      const raw = localStorage.getItem(indexKey);
+      const raw = getCachedSecureSecret(indexSecretKey()) ?? localStorage.getItem(indexKey);
       if (!raw) return [];
       const parsed = JSON.parse(raw) as Record<string, unknown>[];
       if (!Array.isArray(parsed)) return [];
@@ -121,22 +129,23 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     }
   }
 
-  function writeIndex(entries: EncryptedKeyBackupIndexEntry[]): void {
+  async function writeIndex(entries: EncryptedKeyBackupIndexEntry[]): Promise<void> {
     const raw = entries.map((e) => ({
       [idField]: e.id,
       nodeLabel: e.nodeLabel,
       publicKeyB64: e.publicKeyB64,
       backedUpAt: e.backedUpAt,
     }));
-    localStorage.setItem(indexKey, JSON.stringify(raw));
+    await setSecureSecret(indexSecretKey(), JSON.stringify(raw));
+    localStorage.removeItem(indexKey);
   }
 
-  function upsertIndexEntry(entry: EncryptedKeyBackupIndexEntry): void {
+  async function upsertIndexEntry(entry: EncryptedKeyBackupIndexEntry): Promise<void> {
     const id = normalizeId(entry.id);
     const next = readIndex().filter((e) => normalizeId(e.id) !== id);
     next.push({ ...entry, id });
     next.sort((a, b) => b.backedUpAt - a.backedUpAt);
-    writeIndex(next);
+    await writeIndex(next);
   }
 
   function list(): EncryptedKeyBackupIndexEntry[] {
@@ -165,7 +174,7 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     };
     await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)));
     localStorage.removeItem(storageKey(id));
-    upsertIndexEntry({
+    await upsertIndexEntry({
       id,
       nodeLabel: payload.nodeLabel,
       publicKeyB64: payload.publicKey,
@@ -192,11 +201,11 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     const normalized = normalizeId(id);
     await removeSecureSecret(secretKey(normalized));
     localStorage.removeItem(storageKey(normalized));
-    writeIndex(readIndex().filter((e) => normalizeId(e.id) !== normalized));
+    await writeIndex(readIndex().filter((e) => normalizeId(e.id) !== normalized));
   }
 
   /** Rebuild the non-sensitive index from secure-store payloads. */
-  function rebuildIndexFromSlots(): Promise<EncryptedKeyBackupIndexEntry[]> {
+  async function rebuildIndexFromSlots(): Promise<EncryptedKeyBackupIndexEntry[]> {
     const entries: EncryptedKeyBackupIndexEntry[] = [];
     for (const key of listCachedSecureSecretKeys(`backup:${protocol}:`)) {
       const stored = getCachedSecureSecret(key);
@@ -214,8 +223,8 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       }
     }
     entries.sort((a, b) => b.backedUpAt - a.backedUpAt);
-    writeIndex(entries);
-    return Promise.resolve(entries);
+    await writeIndex(entries);
+    return entries;
   }
 
   function indexNeedsRebuild(index: EncryptedKeyBackupIndexEntry[]): boolean {
@@ -233,8 +242,14 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
 
   /** Rebuild index from encrypted slots when missing, corrupt, or out of sync. Meshtastic-only hook. */
   async function ensureIndex(): Promise<void> {
-    if (!indexNeedsRebuild(readIndex())) return;
-    await rebuildIndexFromSlots();
+    const index = readIndex();
+    if (indexNeedsRebuild(index)) {
+      await rebuildIndexFromSlots();
+      return;
+    }
+    if (getCachedSecureSecret(indexSecretKey()) == null && localStorage.getItem(indexKey) != null) {
+      await writeIndex(index);
+    }
   }
 
   /**

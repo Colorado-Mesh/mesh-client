@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
-import { getCachedSecureSecret, resetSecureSecretCacheForTests } from './secureSecretStorage';
+import {
+  getCachedSecureSecret,
+  removeSecureSecret,
+  resetSecureSecretCacheForTests,
+} from './secureSecretStorage';
 
 describe('createEncryptedKeyBackupStorage', () => {
   beforeEach(() => {
@@ -38,6 +42,8 @@ describe('createEncryptedKeyBackupStorage', () => {
     const rawJson = JSON.parse(getCachedSecureSecret('backup:meshcore:2748')!);
     expect(rawJson.nodeId).toBe(0xabc);
     expect(rawJson.nodeNum).toBeUndefined();
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(getCachedSecureSecret('backup-index:meshcore')).not.toBeNull();
   });
 
   it('rejects an invalid key pair before writing anything', async () => {
@@ -69,7 +75,7 @@ describe('createEncryptedKeyBackupStorage', () => {
       privateKey: new Uint8Array(4),
       nodeLabel: 'Recovered',
     });
-    localStorage.removeItem('test:key-backup-index');
+    await removeSecureSecret('backup-index:meshcore');
     expect(storage.list()).toHaveLength(0);
 
     const rebuilt = await storage.rebuildIndexFromSlots();
@@ -85,6 +91,34 @@ describe('createEncryptedKeyBackupStorage', () => {
     const before = storage.list();
     await storage.ensureIndex();
     expect(storage.list()).toEqual(before);
+  });
+
+  it('ensureIndex migrates a legacy clear index into secure storage', async () => {
+    localStorage.setItem(
+      'test:key-backup-index',
+      JSON.stringify([{ nodeId: 3, publicKeyB64: 'AQIDBA==', backedUpAt: 1 }]),
+    );
+    const storage = makeStorage();
+
+    await storage.ensureIndex();
+
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(getCachedSecureSecret('backup-index:meshcore')).not.toBeNull();
+  });
+
+  it('ensureIndex rebuilds a stale legacy index before removing it', async () => {
+    const storage = makeStorage();
+    await storage.save({ id: 7, publicKey: new Uint8Array(4), privateKey: new Uint8Array(4) });
+    await removeSecureSecret('backup-index:meshcore');
+    localStorage.setItem(
+      'test:key-backup-index',
+      JSON.stringify([{ nodeId: 8, publicKeyB64: 'AQIDBA==', backedUpAt: 1 }]),
+    );
+
+    await storage.ensureIndex();
+
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(storage.list().map((entry) => entry.id)).toEqual([7]);
   });
 
   it('migrateLegacySingleSlot moves a valid legacy payload into per-id storage', async () => {

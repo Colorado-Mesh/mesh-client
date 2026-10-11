@@ -4,7 +4,7 @@ import type { NodeSqliteDB } from './db-compat';
 
 const MAX_SECRET_BYTES = 64 * 1024;
 const SECRET_KEY_PATTERN =
-  /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|profiles)|meshcore:(?:room|repeater):\d{1,10}|backup:(?:meshcore|meshtastic):\d{1,10})$/;
+  /^(?:meshcore:identity|mqtt:(?:meshcore|meshtastic|profiles)|meshcore:(?:room|repeater):\d{1,10}|backup:(?:meshcore|meshtastic):\d{1,10}|backup-index:(?:meshcore|meshtastic))$/;
 
 export interface SecureSecretStoreStatus {
   available: boolean;

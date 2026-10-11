@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetSecureSecretCacheForTests } from '@/renderer/lib/secureSecretStorage';
+
 import {
   getMqttSettingsStorageKey,
   loadProtocolMqttSettings,
@@ -10,6 +12,7 @@ import {
 describe('useProtocolMqttSettings helpers', () => {
   beforeEach(() => {
     localStorage.clear();
+    resetSecureSecretCacheForTests();
     vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
   });
 
@@ -25,13 +28,20 @@ describe('useProtocolMqttSettings helpers', () => {
     expect(meshcore.topicPrefix).toBe('meshcore');
   });
 
-  it('persistMqttSettingsIfChanged skips identical JSON', () => {
+  it('persists complete settings securely, removes legacy metadata, and skips identical JSON', async () => {
     const key = 'test-mqtt-persist';
     const settings = loadProtocolMqttSettings('meshcore');
+    localStorage.setItem(key, '{"legacy":true}');
     persistMqttSettingsIfChanged(key, settings);
-    const first = localStorage.getItem(key);
     persistMqttSettingsIfChanged(key, settings);
-    expect(localStorage.getItem(key)).toBe(first);
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(key)).toBeNull();
+    });
+    expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledWith(
+      'mqtt:meshtastic',
+      JSON.stringify(settings),
+    );
   });
 
   it('persists an intentional empty password as a secure override', () => {
@@ -41,7 +51,7 @@ describe('useProtocolMqttSettings helpers', () => {
 
     expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledWith(
       'mqtt:meshtastic',
-      JSON.stringify({ password: '' }),
+      JSON.stringify(settings),
     );
   });
 });

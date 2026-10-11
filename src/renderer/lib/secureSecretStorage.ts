@@ -35,6 +35,10 @@ export function keyBackupSecretKey(protocol: 'meshcore' | 'meshtastic', id: numb
   return `backup:${protocol}:${String(id >>> 0)}`;
 }
 
+export function keyBackupIndexSecretKey(protocol: 'meshcore' | 'meshtastic'): string {
+  return `backup-index:${protocol}`;
+}
+
 export function getCachedSecureSecret(key: string): string | null {
   return cache.get(key) ?? null;
 }

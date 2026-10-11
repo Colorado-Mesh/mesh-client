@@ -7,6 +7,7 @@ import {
   readMeshtasticMqttSettingsFromStorage,
 } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import {
+  getCachedSecureSecret,
   MESHCORE_MQTT_SECRET_KEY,
   MESHTASTIC_MQTT_SECRET_KEY,
   setSecureSecret,
@@ -27,20 +28,20 @@ export function loadProtocolMqttSettings(protocol: MeshProtocol): MQTTSettings {
 }
 
 export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
-  const { password, channelPsks, ...metadata } = settings;
-  const serialized = JSON.stringify(metadata);
-  if (localStorage.getItem(key) !== serialized) localStorage.setItem(key, serialized);
-
   const secretKey =
     key === MESHCORE_MQTT_SETTINGS_KEY ? MESHCORE_MQTT_SECRET_KEY : MESHTASTIC_MQTT_SECRET_KEY;
-  const secrets = {
-    password,
-    ...(channelPsks?.length ? { channelPsks } : {}),
-  };
-  const pending = setSecureSecret(secretKey, JSON.stringify(secrets));
-  void pending.catch((error: unknown) => {
-    console.warn('[useProtocolMqttSettings] secure persist failed ' + errLikeToLogString(error));
-  });
+  const serialized = JSON.stringify(settings);
+  if (getCachedSecureSecret(secretKey) === serialized) {
+    localStorage.removeItem(key);
+    return;
+  }
+  void setSecureSecret(secretKey, serialized)
+    .then(() => {
+      localStorage.removeItem(key);
+    })
+    .catch((error: unknown) => {
+      console.warn('[useProtocolMqttSettings] secure persist failed ' + errLikeToLogString(error));
+    });
 }
 
 export function flushPendingMqttSave(

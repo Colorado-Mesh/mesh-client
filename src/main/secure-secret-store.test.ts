@@ -43,6 +43,8 @@ describe('SecureSecretStore', () => {
         ['meshcore:repeater:43', 'repeater-password'],
         ['backup:meshcore:44', 'meshcore-channel-key-backup'],
         ['backup:meshtastic:45', 'meshtastic-dm-key-backup'],
+        ['backup-index:meshcore', 'meshcore-backup-index'],
+        ['backup-index:meshtastic', 'meshtastic-backup-index'],
       ]);
 
       for (const [key, value] of values) {
