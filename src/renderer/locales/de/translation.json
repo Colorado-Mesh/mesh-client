@@ -865,8 +865,7 @@
     "cancelAutoResend": "Erneuten Versuch abbrechen",
     "cancelAutoResendAria": "Automatischen Wiederholungsversuch dieser Nachricht abbrechen",
     "outboxEmergencyWillSend": "Wird so lange wiederholt, bis das Netzwerk es bestätigt",
-    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat.",
-    "floodScopeInherited": "Standard ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

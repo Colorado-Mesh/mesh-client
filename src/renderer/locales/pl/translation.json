@@ -899,8 +899,7 @@
     "cancelAutoResend": "Anuluj ponowienie",
     "cancelAutoResendAria": "Anuluj automatyczne ponawianie tej wiadomości",
     "outboxEmergencyWillSend": "Będzie ponawiać próby, dopóki sieć tego nie potwierdzi",
-    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła.",
-    "floodScopeInherited": "Domyślnie ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -865,8 +865,7 @@
     "cancelAutoResend": "Cancelar nova tentativa",
     "cancelAutoResendAria": "Cancelar repetição automática desta mensagem",
     "outboxEmergencyWillSend": "Continuaremos tentando novamente até que a rede reconheça",
-    "outboxEmergencyCancelConfirm": "Parar de tentar novamente esta mensagem de emergência? Ele não será mais reenviado, mesmo que a rede nunca o tenha reconhecido.",
-    "floodScopeInherited": "Padrão ({{scope}})"
+    "outboxEmergencyCancelConfirm": "Parar de tentar novamente esta mensagem de emergência? Ele não será mais reenviado, mesmo que a rede nunca o tenha reconhecido."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

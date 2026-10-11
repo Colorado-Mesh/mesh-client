@@ -896,8 +896,7 @@
       "listLabel": "Direct messages",
       "empty": "No conversations match"
     },
-    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies.",
-    "floodScopeInherited": "Default ({{scope}})"
+    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

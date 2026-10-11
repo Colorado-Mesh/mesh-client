@@ -865,8 +865,7 @@
     "cancelAutoResend": "再試行をキャンセル",
     "cancelAutoResendAria": "このメッセージの自動再試行をキャンセルする",
     "outboxEmergencyWillSend": "ネットワークが確認するまで再試行します",
-    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。",
-    "floodScopeInherited": "デフォルト({{scope}})"
+    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

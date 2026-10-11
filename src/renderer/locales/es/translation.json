@@ -865,8 +865,7 @@
     "cancelAutoResend": "Cancelar reintento",
     "cancelAutoResendAria": "Cancelar el reintento automático de este mensaje",
     "outboxEmergencyWillSend": "Seguirá intentándolo hasta que la red lo reconozca",
-    "outboxEmergencyCancelConfirm": "¿Quieres dejar de volver a intentar este mensaje de emergencia? Ya no se volverá a enviar, incluso si la red nunca lo reconoció.",
-    "floodScopeInherited": "Predeterminado ({{scope}})"
+    "outboxEmergencyCancelConfirm": "¿Quieres dejar de volver a intentar este mensaje de emergencia? Ya no se volverá a enviar, incluso si la red nunca lo reconoció."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
