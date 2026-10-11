@@ -759,14 +759,14 @@ Sunset after the reviewed `RS_LXMF_PIN` included PropagationClient link-scoped T
 
 ## rsReticulum-rncp-inbound-admission.patch
 
-Moves RNCP receive policy ahead of Resource acceptance. The listener requires an authenticated sender, rejects blocked, oversized, over-concurrent, and over-reserved advertisements before parts arrive, rechecks actual payload and metadata sizes after assembly, and can hand the verified bytes to mesh-client without writing them first. The stock `rns-tools rncp --listen` path remains in `SaveToDirectory` compatibility mode.
+Moves RNCP receive policy ahead of Resource acceptance. The listener requires an authenticated sender, rejects blocked, oversized, over-concurrent, and over-reserved advertisements before parts arrive, bounds cumulative actual data and metadata before each segment is acknowledged or retained, rechecks final payload sizes, and can hand the verified bytes to mesh-client without writing them first. The stock `rns-tools rncp --listen` path remains in `SaveToDirectory` compatibility mode.
 
 | Field | Value |
 | ----- | ----- |
 | **Base commit** | reviewed `RS_RETICULUM_PIN` `0f8731bb5b13e7f60e2d4bb38022480210009690` after the other rsReticulum overlays |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
-**Touches:** `crates/rns-runtime/src/rncp.rs`, `crates/rns-tools/src/commands/rncp.rs`, the generated API snapshots for earlier stacked overlays, and `api/stability.json`
+**Touches:** `crates/rns-runtime/src/rncp.rs`, `crates/rns-runtime/src/link_manager.rs`, `crates/rns-tools/src/commands/rncp.rs`, the generated API snapshots for earlier stacked overlays, and `api/stability.json`
 
 ### Apply locally
 

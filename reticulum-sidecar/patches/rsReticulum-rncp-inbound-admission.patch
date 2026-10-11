@@ -1,5 +1,5 @@
 diff --git a/api/snapshots/rns-interface.txt b/api/snapshots/rns-interface.txt
-index 2a1dd75f..c5f77441 100644
+index 2a1dd75..c5f7744 100644
 --- a/api/snapshots/rns-interface.txt
 +++ b/api/snapshots/rns-interface.txt
 @@ -412,6 +412,9 @@ pub const rns_interface::ble_rnode::NUS_RX_CHAR_UUID: uuid::Uuid
@@ -13,7 +13,7 @@ index 2a1dd75f..c5f77441 100644
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface_native(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, u16) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
 diff --git a/api/snapshots/rns-protocol.txt b/api/snapshots/rns-protocol.txt
-index 6be56cac..96320baf 100644
+index 6be56ca..96320ba 100644
 --- a/api/snapshots/rns-protocol.txt
 +++ b/api/snapshots/rns-protocol.txt
 @@ -427,6 +427,7 @@ pub rns_protocol::resource::WindowState::window_min: usize
@@ -25,7 +25,7 @@ index 6be56cac..96320baf 100644
  impl core::default::Default for rns_protocol::resource::WindowState
  pub fn rns_protocol::resource::WindowState::default() -> Self
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
-index fc525ab4..92b9fbb8 100644
+index fc525ab..2baed5b 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
 @@ -403,7 +403,10 @@ pub rns_runtime::link_client::LinkClientError::UnexpectedResponse(alloc::string:
@@ -51,7 +51,15 @@ index fc525ab4..92b9fbb8 100644
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource::ack: alloc::vec::Vec<u8>
  pub rns_runtime::link_manager::RequestOutcome::ReplyWithResource::auto_compress: bool
-@@ -634,6 +641,7 @@ pub rns_runtime::link_manager::ResourceCompletion::data: alloc::vec::Vec<u8>
+@@ -589,6 +596,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_accounting_event_channel(&mut
+ pub fn rns_runtime::link_manager::LinkManager::set_announce_handler<F>(&mut self, F) where F: core::ops::function::FnMut() + core::marker::Send + 'static
+ pub fn rns_runtime::link_manager::LinkManager::set_channel_message_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkChannelMessage>)
+ pub fn rns_runtime::link_manager::LinkManager::set_destination_delivery_proof_channel(&mut self, tokio::sync::mpsc::unbounded::UnboundedSender<rns_runtime::link_manager::DestinationDeliveryProof>)
++pub fn rns_runtime::link_manager::LinkManager::set_inbound_payload_limits(&mut self, usize, usize)
+ pub fn rns_runtime::link_manager::LinkManager::set_inbound_raw_channel(&mut self, tokio::sync::mpsc::bounded::Sender<alloc::vec::Vec<u8>>)
+ pub fn rns_runtime::link_manager::LinkManager::set_link_closed_channel(&mut self, tokio::sync::mpsc::bounded::Sender<[u8; 16]>)
+ pub fn rns_runtime::link_manager::LinkManager::set_link_endpoint_dispatch_handle(&mut self, rns_transport::link_endpoint_dispatch::LinkEndpointDispatchHandle)
+@@ -634,6 +642,7 @@ pub rns_runtime::link_manager::ResourceCompletion::data: alloc::vec::Vec<u8>
  pub rns_runtime::link_manager::ResourceCompletion::link_id: [u8; 16]
  pub rns_runtime::link_manager::ResourceCompletion::metadata: core::option::Option<alloc::vec::Vec<u8>>
  pub rns_runtime::link_manager::ResourceCompletion::resource_hash: [u8; 32]
@@ -59,7 +67,7 @@ index fc525ab4..92b9fbb8 100644
  pub fn rns_runtime::link_manager::register_destination(&tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, [u8; 16], &str) -> tokio::sync::mpsc::bounded::Receiver<rns_transport::link_messages::DestinationEvent>
  pub type rns_runtime::link_manager::DestinationRequestHandler = alloc::boxed::Box<(dyn core::ops::function::Fn(rns_runtime::link_manager::DestinationRequest) -> rns_runtime::link_manager::RequestOutcome + core::marker::Send + 'static)>
  pub mod rns_runtime::link_session
-@@ -1001,6 +1009,10 @@ pub rns_runtime::prelude::ReceiptError::TransportClosed
+@@ -1001,6 +1010,10 @@ pub rns_runtime::prelude::ReceiptError::TransportClosed
  pub enum rns_runtime::prelude::RequestOutcome
  pub rns_runtime::prelude::RequestOutcome::Drop
  pub rns_runtime::prelude::RequestOutcome::Reply(alloc::vec::Vec<u8>)
@@ -70,7 +78,7 @@ index fc525ab4..92b9fbb8 100644
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource::ack: alloc::vec::Vec<u8>
  pub rns_runtime::prelude::RequestOutcome::ReplyWithResource::auto_compress: bool
-@@ -1272,6 +1284,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
+@@ -1272,6 +1285,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
  pub async fn rns_runtime::reticulum::ReticulumHandle::query_transport(&self, rns_transport::messages::TransportQuery) -> core::option::Option<rns_transport::messages::TransportQueryResponse>
  pub async fn rns_runtime::reticulum::ReticulumHandle::recall(&self, [u8; 16]) -> core::result::Result<core::option::Option<rns_runtime::reticulum::RecalledDestination>, rns_runtime::reticulum::ControlError>
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
@@ -78,7 +86,7 @@ index fc525ab4..92b9fbb8 100644
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_ratcheted_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions, rns_runtime::destination_runtime::DestinationRatchetOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
  pub fn rns_runtime::reticulum::ReticulumHandle::remote_management_enabled(&self) -> bool
  pub async fn rns_runtime::reticulum::ReticulumHandle::request_path(&self, [u8; 16], rns_transport::messages::PathRequestOptions) -> core::result::Result<(), rns_runtime::reticulum::ControlError>
-@@ -1315,6 +1328,7 @@ impl<T> rns_runtime::resource_source::ResourceSource for T where T: alloc::io::r
+@@ -1315,6 +1329,7 @@ impl<T> rns_runtime::resource_source::ResourceSource for T where T: alloc::io::r
  pub async fn rns_runtime::prelude::init(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
  pub async fn rns_runtime::prelude::init_with_options(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>, rns_runtime::reticulum::InitOptions) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
  pub async fn rns_runtime::prelude::init_with_options_and_rnode_startup_options(core::option::Option<&str>, core::option::Option<std::path::PathBuf>, rns_runtime::lifecycle::ShutdownSignal, alloc::sync::Arc<core::sync::atomic::AtomicBool>, rns_runtime::reticulum::InitOptions, rns_interface::rnode::RNodeStartupOptions) -> core::result::Result<rns_runtime::reticulum::ReticulumHandle, rns_runtime::reticulum::ReticulumError>
@@ -86,7 +94,7 @@ index fc525ab4..92b9fbb8 100644
  pub async fn rns_runtime::prelude::resolve_destination_on_transport(&tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, [u8; 16], rns_runtime::destination_resolver::DestinationResolveOptions) -> core::result::Result<rns_transport::messages::RecalledDestinationRpcEntry, rns_runtime::destination_resolver::DestinationResolveError>
  pub type rns_runtime::prelude::PacketReceiptStatus = rns_transport::messages::ReceiptUpdate
  pub mod rns_runtime::probe
-@@ -1645,6 +1659,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
+@@ -1645,6 +1660,7 @@ pub async fn rns_runtime::reticulum::ReticulumHandle::query_control_result(&self
  pub async fn rns_runtime::reticulum::ReticulumHandle::query_transport(&self, rns_transport::messages::TransportQuery) -> core::option::Option<rns_transport::messages::TransportQueryResponse>
  pub async fn rns_runtime::reticulum::ReticulumHandle::recall(&self, [u8; 16]) -> core::result::Result<core::option::Option<rns_runtime::reticulum::RecalledDestination>, rns_runtime::reticulum::ControlError>
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
@@ -94,7 +102,7 @@ index fc525ab4..92b9fbb8 100644
  pub async fn rns_runtime::reticulum::ReticulumHandle::register_ratcheted_destination(&self, rns_identity::identity::Identity, impl core::convert::Into<alloc::string::String>, rns_runtime::destination_runtime::DestinationRuntimeOptions, rns_runtime::destination_runtime::DestinationRatchetOptions) -> core::result::Result<rns_runtime::destination_runtime::RegisteredDestination, rns_runtime::destination_runtime::DestinationRuntimeError>
  pub fn rns_runtime::reticulum::ReticulumHandle::remote_management_enabled(&self) -> bool
  pub async fn rns_runtime::reticulum::ReticulumHandle::request_path(&self, [u8; 16], rns_transport::messages::PathRequestOptions) -> core::result::Result<(), rns_runtime::reticulum::ControlError>
-@@ -1734,6 +1749,15 @@ pub async fn rns_runtime::reticulum::teardown_interface(&rns_runtime::reticulum:
+@@ -1734,6 +1750,15 @@ pub async fn rns_runtime::reticulum::teardown_interface(&rns_runtime::reticulum:
  pub async fn rns_runtime::reticulum::teardown_rnode_interface(&rns_runtime::reticulum::ReticulumHandle, u64)
  pub type rns_runtime::reticulum::PacketReceiptStatus = rns_transport::messages::ReceiptUpdate
  pub mod rns_runtime::rncp
@@ -110,7 +118,7 @@ index fc525ab4..92b9fbb8 100644
  pub enum rns_runtime::rncp::RncpError
  pub rns_runtime::rncp::RncpError::Denied
  pub rns_runtime::rncp::RncpError::HandshakeFailed(alloc::string::String)
-@@ -1748,6 +1772,11 @@ pub rns_runtime::rncp::RncpError::ResourceFailed(alloc::string::String)
+@@ -1748,6 +1773,11 @@ pub rns_runtime::rncp::RncpError::ResourceFailed(alloc::string::String)
  pub rns_runtime::rncp::RncpError::Timeout(&'static str)
  pub rns_runtime::rncp::RncpError::TransportUnavailable
  pub enum rns_runtime::rncp::RncpEvent
@@ -122,7 +130,7 @@ index fc525ab4..92b9fbb8 100644
  pub rns_runtime::rncp::RncpEvent::Completed
  pub rns_runtime::rncp::RncpEvent::Completed::bytes: usize
  pub rns_runtime::rncp::RncpEvent::Completed::file_name: alloc::string::String
-@@ -1762,6 +1791,14 @@ pub rns_runtime::rncp::RncpEvent::FetchServing::file_name: alloc::string::String
+@@ -1762,6 +1792,14 @@ pub rns_runtime::rncp::RncpEvent::FetchServing::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpEvent::FetchServing::link_id: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::LinkEstablished
  pub rns_runtime::rncp::RncpEvent::LinkEstablished::link_id: [u8; 16]
@@ -137,7 +145,7 @@ index fc525ab4..92b9fbb8 100644
  pub rns_runtime::rncp::RncpEvent::SenderDenied
  pub rns_runtime::rncp::RncpEvent::SenderDenied::identity_hash: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::SenderDenied::link_id: [u8; 16]
-@@ -1772,6 +1809,9 @@ pub rns_runtime::rncp::RncpEvent::WriteFailed
+@@ -1772,6 +1810,9 @@ pub rns_runtime::rncp::RncpEvent::WriteFailed
  pub rns_runtime::rncp::RncpEvent::WriteFailed::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpEvent::WriteFailed::link_id: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::WriteFailed::reason: alloc::string::String
@@ -147,7 +155,7 @@ index fc525ab4..92b9fbb8 100644
  pub struct rns_runtime::rncp::RncpFetchOutcome
  pub rns_runtime::rncp::RncpFetchOutcome::bytes: usize
  pub rns_runtime::rncp::RncpFetchOutcome::duration: core::time::Duration
-@@ -1788,15 +1828,25 @@ pub rns_runtime::rncp::RncpFetchRequest::progress_tx: core::option::Option<tokio
+@@ -1788,15 +1829,25 @@ pub rns_runtime::rncp::RncpFetchRequest::progress_tx: core::option::Option<tokio
  pub rns_runtime::rncp::RncpFetchRequest::remote_path: &'a str
  pub rns_runtime::rncp::RncpFetchRequest::save_dir: &'a std::path::Path
  pub rns_runtime::rncp::RncpFetchRequest::transport_tx: tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>
@@ -173,7 +181,7 @@ index fc525ab4..92b9fbb8 100644
  pub rns_runtime::rncp::RncpListenerConfig::save_dir: std::path::PathBuf
  impl core::default::Default for rns_runtime::rncp::RncpListenerConfig
  pub fn rns_runtime::rncp::RncpListenerConfig::default() -> Self
-@@ -1810,6 +1860,9 @@ pub rns_runtime::rncp::RncpOutcome::bytes: usize
+@@ -1810,6 +1861,9 @@ pub rns_runtime::rncp::RncpOutcome::bytes: usize
  pub rns_runtime::rncp::RncpOutcome::duration: core::time::Duration
  pub rns_runtime::rncp::RncpOutcome::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpOutcome::link_rtt: core::time::Duration
@@ -183,7 +191,7 @@ index fc525ab4..92b9fbb8 100644
  pub struct rns_runtime::rncp::RncpSendRequest<'a>
  pub rns_runtime::rncp::RncpSendRequest::auto_compress: bool
  pub rns_runtime::rncp::RncpSendRequest::data: alloc::vec::Vec<u8>
-@@ -1984,6 +2037,8 @@ pub rns_runtime::rpc::InterfaceStatEntry::rx_bytes: u64
+@@ -1984,6 +2038,8 @@ pub rns_runtime::rpc::InterfaceStatEntry::rx_bytes: u64
  pub rns_runtime::rpc::InterfaceStatEntry::rx_rate: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_bytes: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_drops: u64
@@ -193,7 +201,7 @@ index fc525ab4..92b9fbb8 100644
  pub struct rns_runtime::rpc::PathTableEntry
  pub rns_runtime::rpc::PathTableEntry::expires: f64
 diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
-index efa4c0c4..e91ccd58 100644
+index efa4c0c..e91ccd5 100644
 --- a/api/snapshots/rns-transport.txt
 +++ b/api/snapshots/rns-transport.txt
 @@ -48,10 +48,12 @@ pub rns_transport::actor::TransportActor::packet_hashlist: rns_transport::hashli
@@ -407,7 +415,7 @@ index efa4c0c4..e91ccd58 100644
  pub enum rns_transport::persistence::PersistenceError
  pub rns_transport::persistence::PersistenceError::Deserialize(alloc::string::String)
 diff --git a/api/stability.json b/api/stability.json
-index e9a18915..c4b44b0d 100644
+index e9a1891..f16bde1 100644
 --- a/api/stability.json
 +++ b/api/stability.json
 @@ -80,8 +80,8 @@
@@ -449,25 +457,395 @@ index e9a18915..c4b44b0d 100644
        "snapshot": "api/snapshots/rns-runtime.txt",
 -      "itemCount": 2063,
 -      "sha256": "ca162e9ddb542f0daf5817ac26d32be80346d36bdadd70673bf2cdc2535e4e29"
-+      "itemCount": 2118,
-+      "sha256": "4a9021c222d714b908b799609c6efee3c4f44b29fd21ebb2a58969cd9ddbec4e"
++      "itemCount": 2119,
++      "sha256": "e38093141f83e6d6be7bf09aa01a16be8b28dabb033f9b0c3487051d6aeecd7d"
      },
      {
        "name": "rns-tools",
+diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
+index 92277d8..301fbc4 100644
+--- a/crates/rns-runtime/src/link_manager.rs
++++ b/crates/rns-runtime/src/link_manager.rs
+@@ -562,6 +562,29 @@ struct ResourceTransferStart {
+     allow_handshake: bool,
+ }
+ 
++fn bounded_payload_size_is_valid(
++    data_bytes: usize,
++    metadata_bytes: Option<usize>,
++    declared_bytes: usize,
++    complete: bool,
++    (max_data_bytes, max_metadata_bytes): (usize, usize),
++) -> bool {
++    if data_bytes > max_data_bytes || metadata_bytes.is_some_and(|bytes| bytes > max_metadata_bytes)
++    {
++        return false;
++    }
++    let metadata_wire_bytes = match metadata_bytes {
++        Some(bytes) => match bytes.checked_add(3) {
++            Some(bytes) => bytes,
++            None => return false,
++        },
++        None => 0,
++    };
++    data_bytes
++        .checked_add(metadata_wire_bytes)
++        .is_some_and(|actual| actual <= declared_bytes && (!complete || actual == declared_bytes))
++}
++
+ pub struct LinkManager {
+     endpoint_dispatch: Option<rns_transport::link_endpoint_dispatch::LinkEndpointDispatchHandle>,
+     endpoint_dispatch_tokens:
+@@ -617,6 +640,8 @@ pub struct LinkManager {
+     resource_strategy: ResourceStrategy,
+     /// Application decision hook used only when the strategy is AcceptApp.
+     resource_accept_handler: Option<ResourceAcceptHandler>,
++    /// Optional application-owned bounds; enabled by RNCP without changing LXMF defaults.
++    inbound_payload_limits: Option<(usize, usize)>,
+     /// Fires when a link reaches the active state.
+     link_established_tx: Option<mpsc::Sender<[u8; 16]>>,
+     /// Fires on LinkIdentify before a resource ADV can race it.
+@@ -716,6 +741,7 @@ impl LinkManager {
+             resource_completion_tx: None,
+             resource_strategy: ResourceStrategy::AcceptAll,
+             resource_accept_handler: None,
++            inbound_payload_limits: None,
+             link_established_tx: None,
+             link_identified_tx: None,
+             link_identity_gate: None,
+@@ -794,6 +820,7 @@ impl LinkManager {
+             resource_completion_tx: None,
+             resource_strategy: ResourceStrategy::AcceptAll,
+             resource_accept_handler: None,
++            inbound_payload_limits: None,
+             link_established_tx: None,
+             link_identified_tx: None,
+             link_identity_gate: None,
+@@ -2670,6 +2697,26 @@ impl LinkManager {
+                             let is_response = adv.flags.is_response && adv.request_id.is_some();
+                             let ordinary_resource = !is_request && !is_response;
+ 
++                            // A bounded receive-only application has no response owner.
++                            // Do not let response flags bypass its admission and quotas.
++                            if is_response && self.inbound_payload_limits.is_some() {
++                                Self::reject_inbound_advertisement(
++                                    &self.transport_tx,
++                                    &mut self.pending_link_control,
++                                    &mut self.pending_endpoint_sends,
++                                    active,
++                                    &mut self.active_inbound_lifecycles,
++                                    &mut self.pending_inbound_request_resources,
++                                    &self.resource_event_tx,
++                                    &self.accounting_event_tx,
++                                    link_id,
++                                    resource_id,
++                                    adv.resource_hash,
++                                    "unsolicited response Resource on bounded listener".into(),
++                                );
++                                break 'adv;
++                            }
++
+                             // Structural and logical continuity checks run before
+                             // application admission. Once an application accepts a
+                             // first segment, every later removal is paired with one
+@@ -2899,7 +2946,7 @@ impl LinkManager {
+                             // Python's AcceptApp policy is consulted for every
+                             // ordinary segment advertisement. A rejected follow-up
+                             // concludes the already-started logical transfer.
+-                            if ordinary_resource {
++                            if ordinary_resource || self.inbound_payload_limits.is_some() {
+                                 match self.resource_strategy {
+                                     ResourceStrategy::AcceptAll => {}
+                                     ResourceStrategy::AcceptNone => unreachable!(
+@@ -3148,6 +3195,73 @@ impl LinkManager {
+                             let resource_id = Self::inbound_resource_identity(active, &rh).0;
+                             match completion {
+                                 Some(Ok((assembled_data, proof))) => {
++                                    if let Some(limits) = self.inbound_payload_limits {
++                                        let metadata = active.inbound_resources.get(&rh).and_then(
++                                            |transfer| transfer.resource.metadata.as_ref(),
++                                        );
++                                        let lifecycle = self
++                                            .active_inbound_lifecycles
++                                            .get(&(link_id, resource_id));
++                                        let mut prior_bytes = 0usize;
++                                        let mut metadata_bytes = metadata.map(Vec::len);
++                                        let mut complete = true;
++                                        let mut repeated_metadata = false;
++                                        if let Some(route) = active.segment_routing.get(&rh)
++                                            && let Some(coordinator) = active
++                                                .inbound_split_resources
++                                                .get(&route.original_hash)
++                                        {
++                                            prior_bytes = coordinator.data_size;
++                                            complete =
++                                                route.segment_index == coordinator.total_segments;
++                                            repeated_metadata =
++                                                route.segment_index > 1 && metadata.is_some();
++                                            metadata_bytes = coordinator
++                                                .metadata
++                                                .as_ref()
++                                                .map(Vec::len)
++                                                .or(metadata_bytes);
++                                        }
++                                        let valid = lifecycle.is_some_and(|lifecycle| {
++                                            !repeated_metadata
++                                                && prior_bytes
++                                                    .checked_add(assembled_data.len())
++                                                    .is_some_and(|data_bytes| {
++                                                        bounded_payload_size_is_valid(
++                                                            data_bytes,
++                                                            metadata_bytes,
++                                                            lifecycle.data_size,
++                                                            complete,
++                                                            limits,
++                                                        )
++                                                    })
++                                        });
++                                        if !valid {
++                                            Self::send_resource_action(
++                                                &self.transport_tx,
++                                                &mut self.pending_link_control,
++                                                &mut self.pending_endpoint_sends,
++                                                active,
++                                                &link_id,
++                                                TransferAction::SendCancel(
++                                                    rns_protocol::resource::CancelType::Rcl,
++                                                    rh,
++                                                ),
++                                            );
++                                            Self::conclude_inbound_failure(
++                                                active,
++                                                &mut self.active_inbound_lifecycles,
++                                                &mut self.pending_inbound_request_resources,
++                                                &self.resource_event_tx,
++                                                &self.accounting_event_tx,
++                                                link_id,
++                                                resource_id,
++                                                LinkResourceConclusion::Failed("inbound logical Resource exceeds payload bounds".into()),
++                                            );
++                                            break 'resource_part;
++                                        }
++                                    }
++
+                                     // PROOF+RESOURCE_PRF = plaintext, PacketType::Proof
+                                     // (Packet.py:195-197). Each split segment still needs its
+                                     // own proof or the sender retries.
+@@ -5230,6 +5344,13 @@ impl LinkManager {
+         self.resource_accept_handler = Some(Box::new(handler));
+     }
+ 
++    /// Bound actual logical bytes before proof, retention, and reassembly.
++    /// Also apply AcceptApp admission to request Resources; unsolicited responses
++    /// are rejected. Generic managers remain unchanged unless this is enabled.
++    pub fn set_inbound_payload_limits(&mut self, max_data_bytes: usize, max_metadata_bytes: usize) {
++        self.inbound_payload_limits = Some((max_data_bytes, max_metadata_bytes));
++    }
++
+     pub fn clear_resource_accept_handler(&mut self) {
+         self.resource_accept_handler = None;
+     }
+@@ -10956,6 +11077,186 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn bounded_split_resources_reject_before_proof_retention_and_reassembly() {
++        use rns_protocol::resource::OutboundResource;
++        for (sizes, declared, metadata, limits, succeeds) in [
++            (vec![40, 40, 40], 100, None, (100, 10), false),
++            (vec![40, 40, 20], 100, None, (100, 10), true),
++            (vec![40, 40, 10], 100, None, (100, 10), false),
++            (vec![110], 100, None, (100, 10), false),
++            (vec![2], 5, Some(vec![]), (2, 0), true),
++            (vec![2], 6, Some(vec![1]), (2, 0), false),
++            (vec![40, 40, 20], 105, Some(vec![1, 2]), (100, 2), true),
++        ] {
++            let (sender, receiver) = handshaken_link_pair();
++            let link_id = receiver.link_id;
++            let (tx, mut rx) = mpsc::channel(64);
++            let (_, event_rx) = mpsc::channel(16);
++            let mut manager = LinkManager::new(tx, event_rx, [0xCB; 16], None);
++            crate::rncp::configure_listener_resource_bounds(&mut manager, limits.0, limits.1);
++            manager.set_resource_accept_handler(|_, _| true);
++            let (completion_tx, mut completion_rx) = mpsc::channel(4);
++            manager.set_resource_completion_channel(completion_tx);
++            let (accounting_tx, mut accounting_rx) = mpsc::unbounded_channel();
++            manager.set_accounting_event_channel(accounting_tx);
++            manager.active_links.insert(
++                link_id,
++                ActiveLink {
++                    link: receiver,
++                    _interface_id: 1,
++                    channel: None,
++                    inbound_resources: HashMap::new(),
++                    outbound_resources: HashMap::new(),
++                    outbound_split_queues: HashMap::new(),
++                    inbound_split_resources: HashMap::new(),
++                    segment_routing: HashMap::new(),
++                },
++            );
++            let total_segments = sizes.len();
++            let resource_id = [0x5B; 32];
++            let encrypt = |data: &[u8]| sender.encrypt(data).unwrap();
++            let mut proof_count = 0;
++            for (index, size) in sizes.iter().enumerate() {
++                let mut segment = OutboundResource::with_options(
++                    vec![index as u8; *size],
++                    false,
++                    if index == 0 { metadata.clone() } else { None },
++                    None,
++                    Some(&encrypt),
++                )
++                .unwrap();
++                segment.flags.split = true;
++                segment.segment_index = index + 1;
++                segment.total_segments = total_segments;
++                segment.original_hash = Some(resource_id);
++                segment.advertisement_data_size = declared;
++                let mut transfer =
++                    OutboundTransfer::from_prebuilt(segment, std::time::Duration::from_millis(10));
++                let TransferAction::SendAdvertisement(advertisement) = transfer.tick() else {
++                    panic!("advertisement");
++                };
++                manager.handle_inbound_packet(
++                    &resource_advertisement_packet(&sender, &advertisement),
++                    1,
++                );
++                for part in &transfer.resource.parts {
++                    let mut packet = rns_wire::header::PacketHeader {
++                        flags: rns_wire::flags::PacketFlags {
++                            header_type: rns_wire::flags::HeaderType::Header1,
++                            context_flag: false,
++                            transport_type: rns_wire::flags::TransportType::Broadcast,
++                            destination_type: rns_wire::flags::DestinationType::Link,
++                            packet_type: rns_wire::flags::PacketType::Data,
++                        },
++                        hops: 0,
++                        transport_id: None,
++                        destination_hash: link_id,
++                        context: rns_wire::context::PacketContext::Resource,
++                    }
++                    .pack();
++                    packet.extend_from_slice(part);
++                    manager.handle_inbound_packet(&packet, 1);
++                }
++                while let Ok(TransportMessage::Outbound(request)) = next_transport_message(&mut rx)
++                {
++                    let (header, _) = rns_wire::header::PacketHeader::unpack(&request.raw).unwrap();
++                    if header.context == rns_wire::context::PacketContext::ResourcePrf {
++                        proof_count += 1;
++                    }
++                }
++                if index + 1 < total_segments {
++                    assert_eq!(
++                        manager.active_links[&link_id].inbound_split_resources[&resource_id]
++                            .data_size,
++                        sizes[..=index].iter().sum::<usize>()
++                    );
++                }
++            }
++            if succeeds {
++                let completion = completion_rx.try_recv().expect("valid split completion");
++                assert_eq!(completion.data.len(), sizes.iter().sum::<usize>());
++                assert_eq!(completion.metadata, metadata);
++                assert_eq!(proof_count, total_segments);
++            } else {
++                assert!(
++                    completion_rx.try_recv().is_err(),
++                    "rejected bytes must not complete"
++                );
++                assert_eq!(
++                    proof_count,
++                    total_segments - 1,
++                    "rejected segment must not be proved"
++                );
++            }
++            let active = &manager.active_links[&link_id];
++            assert!(active.inbound_resources.is_empty());
++            assert!(active.inbound_split_resources.is_empty());
++            assert!(active.segment_routing.is_empty());
++            assert!(manager.active_inbound_lifecycles.is_empty());
++            let mut terminal_count = 0;
++            while let Ok(event) = accounting_rx.try_recv() {
++                if let LinkManagerAccountingEvent::ResourceEvent(LinkResourceEvent::Concluded {
++                    conclusion,
++                    ..
++                }) = event
++                {
++                    terminal_count += 1;
++                    assert_eq!(
++                        matches!(conclusion, LinkResourceConclusion::Complete),
++                        succeeds
++                    );
++                }
++            }
++            assert_eq!(terminal_count, 1);
++        }
++    }
++
++    #[test]
++    fn bounded_listener_rejects_unsolicited_response_resource_before_admission() {
++        let (sender, receiver) = handshaken_link_pair();
++        let link_id = receiver.link_id;
++        let (tx, mut rx) = mpsc::channel(16);
++        let (_, event_rx) = mpsc::channel(16);
++        let mut manager = LinkManager::new(tx, event_rx, [0xCC; 16], None);
++        crate::rncp::configure_listener_resource_bounds(&mut manager, 100, 10);
++        manager.set_resource_accept_handler(|_, _| {
++            panic!("unsolicited response must not allocate admission")
++        });
++        manager.active_links.insert(
++            link_id,
++            ActiveLink {
++                link: receiver,
++                _interface_id: 1,
++                channel: None,
++                inbound_resources: HashMap::new(),
++                outbound_resources: HashMap::new(),
++                outbound_split_queues: HashMap::new(),
++                inbound_split_resources: HashMap::new(),
++                segment_routing: HashMap::new(),
++            },
++        );
++        let mut transfer = OutboundTransfer::new_encrypted(
++            vec![1; 32],
++            false,
++            std::time::Duration::from_millis(10),
++            sender.session_keys().unwrap(),
++        )
++        .unwrap();
++        transfer.resource.flags.is_response = true;
++        transfer.resource.request_id = Some(vec![2; 16]);
++        let TransferAction::SendAdvertisement(advertisement) = transfer.tick() else {
++            panic!("advertisement");
++        };
++        manager.handle_inbound_packet(&resource_advertisement_packet(&sender, &advertisement), 1);
++        assert!(manager.active_links[&link_id].inbound_resources.is_empty());
++        assert!(manager.active_inbound_lifecycles.is_empty());
++        assert!(
++            next_transport_message(&mut rx).is_err(),
++            "unowned responses must never request or prove bytes"
++        );
++    }
++
+     #[test]
+     fn one_segment_split_uses_original_hash_for_completion_and_terminal() {
+         let (sender_link, receiver_link) = handshaken_link_pair();
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index 30b97b21..7d5c4fc3 100644
+index 30b97b2..58e4805 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
 @@ -1,8 +1,9 @@
  //! Wire-compatible with Python `RNS.Utilities.rncp`. Supports `-l` (listen),
  //! send (default), and `-F` / `-f` (fetch serve / client).
-
+ 
 +use std::collections::{HashMap, HashSet};
  use std::path::{Path, PathBuf};
 -use std::sync::Arc;
 +use std::sync::{Arc, Mutex};
  use std::time::{Duration, Instant};
-
+ 
  use bytes::Bytes;
 @@ -18,6 +19,7 @@ use rns_link::link::{CloseReason, Link};
  use rns_protocol::resource::{
@@ -480,14 +858,14 @@ index 30b97b21..7d5c4fc3 100644
 @@ -25,7 +27,11 @@ use rns_transport::messages::{
  };
  use tokio::sync::oneshot;
-
+ 
 -use crate::link_manager::{LinkManager, RequestOutcome, ResourceCompletion};
 +use crate::link_manager::{
 +    LinkManager, LinkManagerAccountingEvent, LinkResourceConclusion, LinkResourceDirection,
 +    LinkResourceEvent, RequestOutcome,
 +};
 +use rns_link::link::ResourceStrategy;
-
+ 
  /// Python `REQ_FETCH_NOT_ALLOWED` sentinel (rncp.py:70).
  pub const REQ_FETCH_NOT_ALLOWED: u8 = 0xF0;
 @@ -40,6 +46,7 @@ pub const DEFAULT_RNCP_APP_NAME: &str = "rncp.receive";
@@ -495,7 +873,7 @@ index 30b97b21..7d5c4fc3 100644
  /// `FAILED` on a loaded peer.
  const RNCP_POST_PROOF_SETTLE: Duration = Duration::from_millis(250);
 +const RNCP_PAYLOAD_ACK_TIMEOUT: Duration = Duration::from_secs(60);
-
+ 
  async fn send_endpoint_packet(
      transport_tx: &mpsc::Sender<TransportMessage>,
 @@ -123,6 +130,21 @@ pub enum RncpEvent {
@@ -523,7 +901,7 @@ index 30b97b21..7d5c4fc3 100644
 @@ -139,6 +161,51 @@ pub enum RncpEvent {
      },
  }
-
+ 
 +#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 +pub enum RncpReceiveMode {
 +    SaveToDirectory,
@@ -580,9 +958,9 @@ index 30b97b21..7d5c4fc3 100644
 +    pub inbound_limits: Option<RncpInboundLimits>,
 +    pub blocked: Vec<[u8; 16]>,
  }
-
+ 
  impl Default for RncpListenerConfig {
-@@ -246,10 +316,202 @@ impl Default for RncpListenerConfig {
+@@ -246,10 +316,208 @@ impl Default for RncpListenerConfig {
              allow_fetch: false,
              fetch_jail: None,
              fetch_auto_compress: true,
@@ -659,6 +1037,7 @@ index 30b97b21..7d5c4fc3 100644
 +        let logical_limit = limits
 +            .max_file_bytes
 +            .checked_add(limits.max_metadata_bytes)
++            .and_then(|bytes| bytes.checked_add(3))
 +            .ok_or(RncpAdmissionReason::FileTooLarge)?;
 +        if declared_bytes > logical_limit {
 +            return Err(RncpAdmissionReason::FileTooLarge);
@@ -726,10 +1105,10 @@ index 30b97b21..7d5c4fc3 100644
 +            .collect();
 +        for key in keys {
 +            self.release(key);
-         }
-     }
- }
-
++        }
++    }
++}
++
 +fn logical_resource_id(advertisement: &ResourceAdvertisement) -> [u8; 32] {
 +    if advertisement.flags.split || advertisement.total_segments > 1 {
 +        advertisement.original_hash
@@ -746,33 +1125,38 @@ index 30b97b21..7d5c4fc3 100644
 +        conclusion,
 +    } = event
 +    {
-+        if conclusion == LinkResourceConclusion::Complete {
-+            state.mark_complete((link_id, resource_id));
-+        } else {
-+            state.release((link_id, resource_id));
-+        }
-+    }
-+}
-+
++        let key = (link_id, resource_id);
++        // File completions are marked before their terminal event and remain
++        // reserved until the payload owner acknowledges them. Request Resources
++        // have no payload completion, so their terminal event releases admission.
++        let awaiting_payload_ack = state
++            .by_resource
++            .get(&key)
++            .is_some_and(|entry| entry.completed);
++        if conclusion != LinkResourceConclusion::Complete || !awaiting_payload_ack {
++            state.release(key);
+         }
+     }
+ }
+ 
 +fn validate_completed_payload(
 +    admission: Option<RncpAdmission>,
 +    file_bytes: usize,
-+    metadata_bytes: usize,
++    metadata_bytes: Option<usize>,
 +    limits: RncpInboundLimits,
 +) -> Result<RncpAdmission, RncpAdmissionReason> {
-+    if metadata_bytes > limits.max_metadata_bytes {
++    if metadata_bytes.is_some_and(|bytes| bytes > limits.max_metadata_bytes) {
 +        return Err(RncpAdmissionReason::MetadataTooLarge);
 +    }
 +    if file_bytes > limits.max_file_bytes {
 +        return Err(RncpAdmissionReason::FileTooLarge);
 +    }
 +    let actual_logical_bytes = file_bytes
-+        .checked_add(if metadata_bytes == 0 {
-+            0
-+        } else {
-+            3usize
-+                .checked_add(metadata_bytes)
-+                .ok_or(RncpAdmissionReason::DeclaredSizeMismatch)?
++        .checked_add(match metadata_bytes {
++            None => 0,
++            Some(bytes) => 3usize
++                .checked_add(bytes)
++                .ok_or(RncpAdmissionReason::DeclaredSizeMismatch)?,
 +        })
 +        .ok_or(RncpAdmissionReason::DeclaredSizeMismatch)?;
 +    let admission = admission.ok_or(RncpAdmissionReason::DeclaredSizeMismatch)?;
@@ -785,7 +1169,21 @@ index 30b97b21..7d5c4fc3 100644
  pub struct RncpListenerHandle {
      pub destination_hash: [u8; 16],
      task: tokio::task::JoinHandle<()>,
-@@ -270,6 +532,11 @@ pub async fn spawn_rncp_listener(
+@@ -265,11 +533,25 @@ impl RncpListenerHandle {
+     }
+ }
+ 
++pub(crate) fn configure_listener_resource_bounds(
++    link_mgr: &mut LinkManager,
++    max_file_bytes: usize,
++    max_metadata_bytes: usize,
++) {
++    link_mgr.set_inbound_payload_limits(max_file_bytes, max_metadata_bytes);
++    link_mgr.set_resource_strategy(ResourceStrategy::AcceptApp);
++}
++
+ pub async fn spawn_rncp_listener(
+     transport_tx: mpsc::Sender<TransportMessage>,
      cfg: RncpListenerConfig,
      events_tx: mpsc::Sender<RncpEvent>,
  ) -> Result<RncpListenerHandle, RncpError> {
@@ -797,10 +1195,10 @@ index 30b97b21..7d5c4fc3 100644
      let signing_key = cfg
          .identity
          .get_signing_key()
-@@ -302,12 +569,17 @@ pub async fn spawn_rncp_listener(
+@@ -302,12 +584,17 @@ pub async fn spawn_rncp_listener(
          Some(signing_key),
      );
-
+ 
 -    let (completion_tx, mut completion_rx) = mpsc::channel::<ResourceCompletion>(64);
 -    link_mgr.set_resource_completion_channel(completion_tx);
 +    // Completion and terminal lifecycle notifications control admission
@@ -809,15 +1207,15 @@ index 30b97b21..7d5c4fc3 100644
 +    // while this listener drains it.
 +    let (accounting_tx, mut accounting_rx) = mpsc::unbounded_channel();
 +    link_mgr.set_accounting_event_channel(accounting_tx);
-
+ 
      // Gate the allow-list before parts arrive.
      let (identified_tx, mut identified_rx) = mpsc::channel::<([u8; 16], [u8; 16])>(64);
      link_mgr.set_link_identified_channel(identified_tx);
 +    let link_identities = link_mgr.link_identities_handle();
-
+ 
      if !cfg.allow_fetch && !cfg.allow_all {
          let allowed_push: std::collections::HashSet<[u8; 16]> =
-@@ -323,56 +595,126 @@ pub async fn spawn_rncp_listener(
+@@ -323,56 +610,130 @@ pub async fn spawn_rncp_listener(
          let allowed_fetch: Arc<std::collections::HashSet<[u8; 16]>> =
              Arc::new(cfg.allowed.iter().copied().collect());
          let allow_all_fetch = cfg.allow_all;
@@ -941,7 +1339,11 @@ index 30b97b21..7d5c4fc3 100644
 +        let blocked_admission: Arc<HashSet<[u8; 16]>> =
 +            Arc::new(cfg.blocked.iter().copied().collect());
 +        let allow_all_admission = cfg.allow_all;
-+        link_mgr.set_resource_strategy(ResourceStrategy::AcceptApp);
++        configure_listener_resource_bounds(
++            &mut link_mgr,
++            limits.max_file_bytes,
++            limits.max_metadata_bytes,
++        );
 +        link_mgr.set_resource_accept_handler(move |link_id, advertisement| {
 +            let identity_hash = admission_identities
 +                .lock()
@@ -980,15 +1382,15 @@ index 30b97b21..7d5c4fc3 100644
                  }
              }
          });
-@@ -384,6 +726,7 @@ pub async fn spawn_rncp_listener(
+@@ -384,6 +745,7 @@ pub async fn spawn_rncp_listener(
      let allowed: std::collections::HashSet<[u8; 16]> = cfg.allowed.iter().copied().collect();
      let overwrite = cfg.overwrite;
      let allow_fetch_outer = cfg.allow_fetch;
 +    let receive_mode = cfg.receive_mode;
      let events_tx_cb = events_tx.clone();
      let link_control_tx_cb = link_control_tx.clone();
-
-@@ -420,15 +763,102 @@ pub async fn spawn_rncp_listener(
+ 
+@@ -420,15 +782,102 @@ pub async fn spawn_rncp_listener(
                          }
                      }
                  }
@@ -1023,9 +1425,9 @@ index 30b97b21..7d5c4fc3 100644
 +                        }
                          continue;
                      }
-
+ 
 +                    let admission = if let Some(limits) = inbound_limits {
-+                        let metadata_bytes = evt.metadata.as_ref().map_or(0, Vec::len);
++                        let metadata_bytes = evt.metadata.as_ref().map(Vec::len);
 +                        let admission = admission_state
 +                            .lock()
 +                            .ok()
@@ -1060,7 +1462,7 @@ index 30b97b21..7d5c4fc3 100644
 +
                      let file_name = extract_filename(evt.metadata.as_deref())
                          .unwrap_or_else(|| default_file_name(&evt.resource_hash));
-
+ 
 +                    if receive_mode == RncpReceiveMode::EmitPayload {
 +                        let Some(admission) = admission else {
 +                            continue;
@@ -1093,7 +1495,7 @@ index 30b97b21..7d5c4fc3 100644
                      match save_payload(&save_dir, &file_name, &evt.data, overwrite).await {
                          Ok(path) => {
                              let _ = events_tx_cb
-@@ -450,6 +880,11 @@ pub async fn spawn_rncp_listener(
+@@ -450,6 +899,11 @@ pub async fn spawn_rncp_listener(
                                  .await;
                          }
                      }
@@ -1105,10 +1507,10 @@ index 30b97b21..7d5c4fc3 100644
                  }
              }
          }
-@@ -1575,6 +2010,393 @@ mod tests {
+@@ -1575,6 +2029,425 @@ mod tests {
          PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
      }
-
+ 
 +    #[cfg(any(target_os = "linux", target_os = "macos"))]
 +    #[test]
 +    fn fetch_sink_keeps_handle_alias_after_selected_root_is_replaced() {
@@ -1149,6 +1551,38 @@ index 30b97b21..7d5c4fc3 100644
 +    }
 +
 +    #[test]
++    fn request_resource_completion_releases_admission_without_payload_ack() {
++        let mut state = RncpAdmissionState::default();
++        let key = ([0x31; 16], [0x32; 32]);
++        state
++            .admit(
++                key.0,
++                key.1,
++                Some([0x33; 16]),
++                80,
++                1,
++                1,
++                inbound_limits(),
++                true,
++                &HashSet::new(),
++                &HashSet::new(),
++            )
++            .unwrap();
++        apply_admission_resource_event(
++            &mut state,
++            LinkResourceEvent::Concluded {
++                link_id: key.0,
++                resource_id: key.1,
++                direction: LinkResourceDirection::Inbound,
++                conclusion: LinkResourceConclusion::Complete,
++            },
++        );
++        assert!(state.by_resource.is_empty());
++        assert!(state.active_per_identity.is_empty());
++        assert_eq!(state.reserved_bytes, 0);
++    }
++
++    #[test]
 +    fn inbound_admission_rejects_before_receiving_untrusted_bytes() {
 +        let limits = inbound_limits();
 +        let mut state = RncpAdmissionState::default();
@@ -1181,7 +1615,7 @@ index 30b97b21..7d5c4fc3 100644
 +                [1; 16],
 +                [1; 32],
 +                Some([1; 16]),
-+                121,
++                124,
 +                1,
 +                1,
 +                limits,
@@ -1477,21 +1911,21 @@ index 30b97b21..7d5c4fc3 100644
 +            next_segment_index: 2,
 +            completed: true,
 +        };
-+        assert!(validate_completed_payload(Some(admission), 50, 10, limits).is_ok());
++        assert!(validate_completed_payload(Some(admission), 50, Some(10), limits).is_ok());
 +        assert_eq!(
-+            validate_completed_payload(Some(admission), 50, 9, limits),
++            validate_completed_payload(Some(admission), 50, Some(9), limits),
 +            Err(RncpAdmissionReason::DeclaredSizeMismatch)
 +        );
 +        assert_eq!(
-+            validate_completed_payload(Some(admission), 101, 0, limits),
++            validate_completed_payload(Some(admission), 101, None, limits),
 +            Err(RncpAdmissionReason::FileTooLarge)
 +        );
 +        assert_eq!(
-+            validate_completed_payload(Some(admission), 40, 21, limits),
++            validate_completed_payload(Some(admission), 40, Some(21), limits),
 +            Err(RncpAdmissionReason::MetadataTooLarge)
 +        );
 +        assert_eq!(
-+            validate_completed_payload(None, 50, 10, limits),
++            validate_completed_payload(None, 50, Some(10), limits),
 +            Err(RncpAdmissionReason::DeclaredSizeMismatch)
 +        );
 +    }
@@ -1499,7 +1933,7 @@ index 30b97b21..7d5c4fc3 100644
      #[test]
      fn metadata_roundtrip() {
          let packed = pack_metadata("hello.txt");
-@@ -1667,32 +2489,4 @@ mod tests {
+@@ -1667,32 +2540,4 @@ mod tests {
      fn successful_rncp_send_retains_python_receiver_settlement_window() {
          assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
      }
@@ -1533,7 +1967,7 @@ index 30b97b21..7d5c4fc3 100644
 -    }
  }
 diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/commands/rncp.rs
-index a4a70b67..9b4b3d55 100644
+index a4a70b6..9b4b3d5 100644
 --- a/crates/rns-tools/src/commands/rncp.rs
 +++ b/crates/rns-tools/src/commands/rncp.rs
 @@ -37,8 +37,8 @@ use rns_runtime::lifecycle::{ShutdownSignal, install_signal_handlers};
@@ -1545,7 +1979,7 @@ index a4a70b67..9b4b3d55 100644
 +    RncpListenerConfig, RncpOutcome, RncpReceiveMode, RncpSendRequest, default_rncp_app_name,
 +    rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
  };
-
+ 
  const DEFAULT_TIMEOUT_SECS: f64 = 15.0;
 @@ -634,6 +634,9 @@ async fn run_listen(args: Args) -> ! {
          allow_fetch: args.allow_fetch,
