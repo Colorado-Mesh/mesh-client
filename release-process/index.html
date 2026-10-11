@@ -3030,7 +3030,7 @@
 <li>The workflow sets <code>MESH_CLIENT_RELEASE_YES=1</code> (non-interactive). It validates, bumps, commits, and tags with <code>--prepare-only</code> while no push credential is present, then exposes the admin token only to a final <code>--push-only</code> step. Checkout never persists credentials.</li>
 <li>Wait for <code>release.yaml</code> + <code>flatpak.yaml</code> to attach draft artifacts, then <strong>Publish</strong> on GitHub.</li>
 </ol>
-<p><strong>Secret:</strong> <code>RELEASE_PUSH_TOKEN</code> — fine-grained PAT (or GitHub App installation token) owned by a repo <strong>admin</strong> (so the merge-queue ruleset bypass applies), with <strong>contents: write</strong>, <strong>workflows: write</strong>, and <strong>pull requests: write</strong> (also used by <code>third-party-licenses.yaml</code> so bot PRs run required checks). Plain <code>GITHUB_TOKEN</code> cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.</p>
+<p><strong>Protected boundary:</strong> <code>cut-release.yaml</code> runs only from <code>main</code> in the <code>release-cut</code> environment and uses its <code>RELEASE_CUT_TOKEN</code>. Use a fine-grained PAT (or GitHub App installation token) owned by a repo <strong>admin</strong>, with <strong>contents: write</strong> and <strong>workflows: write</strong>. Plain <code>GITHUB_TOKEN</code> cannot trigger the tag workflows or push past the merge-queue ruleset. A required environment reviewer must approve the real cut; dry runs do not receive the admin token.</p>
 <p>Version detection lives in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/detectReleaseBump.mjs"><code>scripts/detectReleaseBump.mjs</code></a> (handles scoped Conventional Commits such as <code>feat(rrc): …</code>). Do not set <code>MESH_CLIENT_RELEASE_PARSE_ONLY</code> in Actions (test-only hook; Cut release clears it).</p>
 <hr />
 <h2 id="local-fallback-pnpm-run-release">Local fallback: <code>pnpm run release</code><a class="headerlink" href="#local-fallback-pnpm-run-release" title="Permanent link">&para;</a></h2>
@@ -3076,42 +3076,34 @@
 <h2 id="macos-code-signing-and-notarization">macOS code signing and notarization<a class="headerlink" href="#macos-code-signing-and-notarization" title="Permanent link">&para;</a></h2>
 <p>Official macOS release artifacts are <strong>Developer ID signed</strong> and <strong>notarized</strong> when repository secrets are configured. <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/electron-builder.yml"><code>electron-builder.yml</code></a> sets <code>hardenedRuntime: true</code> and <code>notarize: true</code>; electron-builder skips notarization automatically when no signing certificate is available (local/fork builds).</p>
 <h3 id="required-github-actions-secrets">Required GitHub Actions secrets<a class="headerlink" href="#required-github-actions-secrets" title="Permanent link">&para;</a></h3>
-<p>Configure these in <strong>Settings → Secrets and variables → Actions</strong> (maintainers only):</p>
+<p>Configure secrets under the named <strong>Settings → Environments</strong> boundary, not at repository scope:</p>
 <table>
 <thead>
 <tr>
-<th>Secret</th>
-<th>Purpose</th>
+<th>Environment</th>
+<th>Secret(s)</th>
+<th>Allowed ref / approval</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong><code>RELEASE_PUSH_TOKEN</code></strong></td>
-<td>Admin PAT for <strong>Cut release</strong> (contents + workflows); see above</td>
+<td><strong><code>release</code></strong></td>
+<td><code>CSC_LINK</code>, <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, <code>APPLE_TEAM_ID</code></td>
+<td>Protected <code>v*</code> tag; required maintainer approval</td>
 </tr>
 <tr>
-<td><strong><code>CSC_LINK</code></strong></td>
-<td>Base64-encoded <code>.p12</code> <strong>Developer ID Application</strong> certificate</td>
+<td><strong><code>release-cut</code></strong></td>
+<td><code>RELEASE_CUT_TOKEN</code></td>
+<td><code>main</code>; required maintainer approval for release cuts and license-update PRs</td>
 </tr>
 <tr>
-<td><strong><code>CSC_KEY_PASSWORD</code></strong></td>
-<td>Password protecting the <code>.p12</code> file</td>
-</tr>
-<tr>
-<td><strong><code>APPLE_ID</code></strong></td>
-<td>Apple ID email used with App Store Connect / notarytool</td>
-</tr>
-<tr>
-<td><strong><code>APPLE_APP_SPECIFIC_PASSWORD</code></strong></td>
-<td>App-specific password for notarytool (not your Apple ID login password)</td>
-</tr>
-<tr>
-<td><strong><code>APPLE_TEAM_ID</code></strong></td>
-<td>10-character Team ID from Apple Developer membership</td>
+<td><strong><code>release-repair</code></strong></td>
+<td>No custom secret; the workflow uses its job-scoped <code>GITHUB_TOKEN</code></td>
+<td><code>main</code>; required maintainer approval</td>
 </tr>
 </tbody>
 </table>
-<p><code>release.yaml</code> and <code>build.yaml</code> pass these only on <strong><code>macos-latest</code></strong> matrix legs. <strong><code>CSC_IDENTITY_AUTO_DISCOVERY</code></strong> is set to <code>true</code> when <code>CSC_LINK</code> is present; otherwise <code>false</code> so electron-builder skips signing gracefully on fork PRs.</p>
+<p><code>release.yaml</code> alone receives the Apple/CSC credentials, and only its <strong><code>macos-latest</code></strong> matrix leg uses them. <code>build.yaml</code> never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. The one-time <code>migrate-release-secrets.yaml</code> workflow verifies the live environment policies and protected-tag ruleset before moving credentials, deletes the six legacy repository-wide secrets, and removes itself after success. No release credential should remain repository-scoped.</p>
 <h3 id="partial-secret-validation">Partial-secret validation<a class="headerlink" href="#partial-secret-validation" title="Permanent link">&para;</a></h3>
 <p>Before the macOS build step, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/release.yaml"><code>release.yaml</code></a> runs <strong>Validate macOS signing secrets</strong> when <code>CSC_LINK</code> is non-empty on tag releases. If any of <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, or <code>APPLE_TEAM_ID</code> is missing, the job <strong>fails early</strong> with a clear list — avoids a signed-but-unnotarized upload that Gatekeeper would reject.</p>
 <p>Fork workflows and local <code>pnpm run dist:mac</code> without these env vars produce <strong>unsigned</strong> <code>.dmg</code> / <code>.zip</code> bundles (still validated by <code>verify-mac-packaging.mjs</code>). See <a href="../ci-cd/#macos-packaging-verify-verify-mac-packagingmjs">CI/CD — macOS packaging verify</a>.</p>
@@ -3178,7 +3170,7 @@
 <ol>
 <li>Go to GitHub → <strong>Releases</strong></li>
 <li>Open the new <strong>draft</strong> for the version tag</li>
-<li>Confirm the release <strong>tag</strong> is <code>vX.Y.Z</code> (not <code>untagged-*</code> — a wrong tag breaks the in-app updater footer and AUR/<code>mesh-client-bin</code> download URLs). Finalize CI fails if any matching release is still <code>untagged-*</code>; a <strong>Repair published release tag</strong> workflow also reattaches the tag if Publish lands on a leftover placeholder.</li>
+<li>Confirm the release <strong>tag</strong> is <code>vX.Y.Z</code> (not <code>untagged-*</code> — a wrong tag breaks the in-app updater footer and AUR/<code>mesh-client-bin</code> download URLs). Finalize CI fails if any matching release is still <code>untagged-*</code>; if Publish lands on a leftover placeholder, a maintainer must manually dispatch <strong>Repair published release tag</strong> and approve its <code>release-repair</code> environment.</li>
 <li>Confirm artifacts:</li>
 </ol>
 <table>
@@ -3275,10 +3267,10 @@
 <h3 id="duplicate-draft-releases-for-one-tag">Duplicate draft releases for one tag<a class="headerlink" href="#duplicate-draft-releases-for-one-tag" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Historically caused when parallel <code>dist:*:publish</code> / softprops jobs each <code>POST</code>ed a draft after a List Releases miss. Current CI: only <code>prepare-github-release</code> may create (<code>MESH_CLIENT_ALLOW_DRAFT_CREATE=1</code>); builds/Flatpak upload by id; Flatpak waits with <code>ci-wait-github-draft-release.mjs</code>.</li>
-<li><strong>Draft tag detach (<code>untagged-*</code>):</strong> GitHub can leave a draft on <code>untagged-&lt;hex&gt;</code> while the annotated <code>vX.Y.Z</code> tag still exists (common during the upload window). Prepare asserts/repairs <code>tag_name</code> immediately after create (with <code>RELEASE_PUSH_TOKEN</code> fallback), finalize consolidates again, and both paths <strong>delete orphan <code>refs/tags/untagged-*</code></strong> after a successful repair so Publish cannot rebind to a leftover placeholder. Refs that are still a live release’s <code>tag_name</code> (e.g. historical 5.27.0) are never deleted.</li>
+<li><strong>Draft tag detach (<code>untagged-*</code>):</strong> GitHub can leave a draft on <code>untagged-&lt;hex&gt;</code> while the annotated <code>vX.Y.Z</code> tag still exists (common during the upload window). Prepare asserts/repairs <code>tag_name</code> with the release job's scoped <code>GITHUB_TOKEN</code>, finalize consolidates again, and both paths <strong>delete orphan <code>refs/tags/untagged-*</code></strong> after a successful repair so Publish cannot rebind to a leftover placeholder. Refs that are still a live release’s <code>tag_name</code> (e.g. historical 5.27.0) are never deleted.</li>
 <li><strong><code>finalize-github-release</code></strong> runs consolidation then <strong><code>ci-verify-github-draft-release.mjs</code></strong>, which <strong>fails the workflow</strong> if the draft <code>tag_name</code> is still <code>untagged-*</code> <strong>or</strong> any matching release for that version is still on an untagged placeholder. Do not publish until that job is green and the draft tag shows <code>vX.Y.Z</code>.</li>
-<li><strong>Publish safety net:</strong> <code>.github/workflows/repair-published-release-tag.yaml</code> runs on <code>release: published</code> and reattaches <code>vX.Y.Z</code> (from release name when the event tag is still <code>untagged-*</code>) via <code>scripts/repair-published-release-tag.mjs</code>.</li>
-<li><strong>Finalize PATCH 403 (<code>Resource not accessible by integration</code>):</strong> Actions <code>GITHUB_TOKEN</code> cannot PATCH <code>target_commitish</code> when the tagged commit differs in <code>.github/workflows/</code> from the default branch. Consolidation retries tag repair with <code>RELEASE_PUSH_TOKEN</code> when set; tag repair must succeed or the verify step fails.</li>
+<li><strong>Manual publish repair:</strong> if a published release still needs repair, dispatch <code>.github/workflows/repair-published-release-tag.yaml</code> from <code>main</code> with the release tag/name. Its <code>release-repair</code> environment requires maintainer approval and then reattaches <code>vX.Y.Z</code> via <code>scripts/repair-published-release-tag.mjs</code>.</li>
+<li><strong>Finalize PATCH 403 (<code>Resource not accessible by integration</code>):</strong> the release job's scoped <code>GITHUB_TOKEN</code> must repair the protected release tag; tag repair must succeed or the verify step fails. Do not restore a repository-wide credential fallback.</li>
 <li><strong>Assets still split (external fork):</strong> <code>finalize-github-release</code> merges via <code>ci-ensure-github-draft-release.mjs</code>; outside CI run <code>node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z</code> (requires <code>GH_TOKEN</code>).</li>
 <li><strong>Do not force-move the <code>v*</code> tag while a release workflow is in progress.</strong> Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow <code>github.sha</code>.</li>
 <li><strong>Smoke tests fail with “ref does not point to the expected commit”:</strong> the tag was moved after the workflow started. Re-run failed jobs only after the tag matches the run’s <code>headSha</code>, or merge the checkout <code>ref: ${{ github.sha }}</code> fix and trigger a fresh tag run.</li>
@@ -3344,7 +3336,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:31 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 14:24:34 UTC">October 11, 2026</span>
   </span>
 
     
