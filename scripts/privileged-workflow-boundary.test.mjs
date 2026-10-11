@@ -73,10 +73,10 @@ describe('privileged workflow boundaries', () => {
     expect(cut.jobs.release.environment).toBe('release-cut');
     expect(read('.github/workflows/cut-release.yaml')).not.toContain('secrets.RELEASE_PUSH_TOKEN');
     expect(licenses.on.workflow_dispatch).toBeUndefined();
-    expect(licenses.jobs.update.environment).toBe('license-automation');
+    expect(licenses.jobs.update.environment).toBe('release-cut');
     expect(licenses.permissions).toEqual({ contents: 'read' });
     expect(read('.github/workflows/third-party-licenses.yaml')).toContain(
-      'secrets.LICENSE_AUTOMATION_TOKEN',
+      'secrets.RELEASE_CUT_TOKEN',
     );
   });
 
@@ -117,7 +117,7 @@ describe('privileged workflow boundaries', () => {
         paths: ['.github/workflows/migrate-release-secrets.yaml'],
       },
     });
-    expect(workflow.jobs.migrate.environment).toBe('license-automation');
+    expect(workflow.jobs.migrate.environment).toBe('release-cut');
     expect(workflow.concurrency).toEqual({
       group: 'migrate-release-secrets',
       'cancel-in-progress': false,
@@ -125,16 +125,14 @@ describe('privileged workflow boundaries', () => {
     for (const name of repositorySecretNames) {
       expect(source).toContain(`secrets.${name}`);
     }
-    expect(source).toContain('secrets.RELEASE_PUSH_TOKEN || secrets.LICENSE_AUTOMATION_TOKEN');
+    expect(source).toContain('secrets.RELEASE_PUSH_TOKEN || secrets.RELEASE_CUT_TOKEN');
     expect(source).toContain('require_environment release');
     expect(source).toContain('repos/${REPO}/rulesets/${ruleset_id}');
     expect(source).toContain('if grep -Fxq "${name}" <<<"${existing}"');
     expect(source).toContain(
       'reconcile_secret release-cut RELEASE_CUT_TOKEN "${RELEASE_PUSH_TOKEN:-${RELEASE_CUT_TOKEN:-}}"',
     );
-    expect(source).toContain(
-      'reconcile_secret license-automation LICENSE_AUTOMATION_TOKEN "${LICENSE_AUTOMATION_TOKEN}"',
-    );
+    expect(source).not.toContain('LICENSE_AUTOMATION_TOKEN');
     expect(source).not.toContain('migration_token=');
     expect(source).toContain('for attempt in 1 2 3 4 5');
     expect(source).toContain('sleep "$((attempt * retry_delay_seconds))"');

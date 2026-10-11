@@ -114,12 +114,11 @@ Official macOS release artifacts are **Developer ID signed** and **notarized** w
 
 Configure secrets under the named **Settings → Environments** boundary, not at repository scope:
 
-| Environment              | Secret(s)                                                                                  | Allowed ref / approval                           |
-| ------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; required maintainer approval |
-| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval             |
-| **`license-automation`** | `LICENSE_AUTOMATION_TOKEN`                                                                 | `main`; automated license-update PRs             |
-| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval             |
+| Environment          | Secret(s)                                                                                  | Allowed ref / approval                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **`release`**        | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; required maintainer approval                             |
+| **`release-cut`**    | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts and license-update PRs |
+| **`release-repair`** | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                         |
 
 `release.yaml` alone receives the Apple/CSC credentials, and only its **`macos-latest`** matrix leg uses them. `build.yaml` never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. The one-time `migrate-release-secrets.yaml` workflow verifies the live environment policies and protected-tag ruleset before moving credentials, deletes the six legacy repository-wide secrets, and removes itself after success. No release credential should remain repository-scoped.
 

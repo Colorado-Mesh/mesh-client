@@ -25,7 +25,7 @@ jobs:
   update:
     name: Update third-party licenses
     runs-on: ubuntu-latest
-    environment: license-automation
+    environment: release-cut
     steps:
       # persist-credentials: false avoids Duplicate Authorization when CPR
       # configures its own http.*.extraheader (the checkout action's default helper).
@@ -66,28 +66,28 @@ jobs:
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
 
-      # LICENSE_AUTOMATION_TOKEN must be able to git-push a branch; existence alone is not
-      # enough (fine-grained missing Contents/PR write presents as push 403).
-      - name: Verify LICENSE_AUTOMATION_TOKEN can push
+      # RELEASE_CUT_TOKEN must be able to git-push a branch; existence alone is not
+      # enough. The protected environment requires maintainer approval before this probe.
+      - name: Verify RELEASE_CUT_TOKEN can push
         if: steps.licenses_diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.LICENSE_AUTOMATION_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_CUT_TOKEN }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN}" ]; then
-            echo '::error::Set license-automation environment secret LICENSE_AUTOMATION_TOKEN.'
+            echo '::error::Set release-cut environment secret RELEASE_CUT_TOKEN.'
             echo 'Default GITHUB_TOKEN PRs do not auto-run required checks under the merge-queue ruleset.'
             exit 1
           fi
 
           LOGIN=$(gh api user --jq .login)
-          echo "LICENSE_AUTOMATION_TOKEN authenticates as: ${LOGIN}"
+          echo "RELEASE_CUT_TOKEN authenticates as: ${LOGIN}"
 
           PUSH=$(gh api "repos/${REPO}" --jq '.permissions.push // false')
           if [ "${PUSH}" != 'true' ]; then
-            echo "::error::LICENSE_AUTOMATION_TOKEN (${LOGIN}) lacks push on ${REPO}."
+            echo "::error::RELEASE_CUT_TOKEN (${LOGIN}) lacks push on ${REPO}."
             echo 'Use a dedicated token with Contents, Pull requests, and Workflows write on this repo.'
             exit 1
           fi
@@ -95,12 +95,12 @@ jobs:
           MAIN_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq .object.sha)
           PROBE_REF="refs/heads/chore/cpr-token-probe-${RUN_ID}"
           if ! gh api -X POST "repos/${REPO}/git/refs" -f ref="${PROBE_REF}" -f sha="${MAIN_SHA}" >/dev/null; then
-            echo "::error::LICENSE_AUTOMATION_TOKEN (${LOGIN}) cannot create refs on ${REPO}."
+            echo "::error::RELEASE_CUT_TOKEN (${LOGIN}) cannot create refs on ${REPO}."
             echo 'Use a dedicated token with Contents, Pull requests, and Workflows write on this repo.'
             exit 1
           fi
           gh api -X DELETE "repos/${REPO}/git/refs/${PROBE_REF#refs/}" >/dev/null
-          echo "LICENSE_AUTOMATION_TOKEN can create/delete refs on ${REPO}"
+          echo "RELEASE_CUT_TOKEN can create/delete refs on ${REPO}"
 
       # Open a PR instead of pushing to main — the merge-queue ruleset blocks
       # direct pushes, and GitHub Actions cannot be added as a bypass actor
@@ -111,7 +111,7 @@ jobs:
         if: steps.licenses_diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
-          token: ${{ secrets.LICENSE_AUTOMATION_TOKEN }}
+          token: ${{ secrets.RELEASE_CUT_TOKEN }}
           commit-message: 'docs: update third-party licenses'
           title: 'docs: update third-party licenses'
           body: |

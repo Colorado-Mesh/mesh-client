@@ -6,19 +6,19 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                                      | Purpose                                                                          |
-| --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation             |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change  |
-| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                 |
-| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate |
-| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)            |
-| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                        |
-| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                      |
-| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags    |
-| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`         | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`        |
-| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                    |
-| `third-party-licenses.yaml` | Path-filtered push to `main`                 | Regenerate licenses doc and open a PR via protected `LICENSE_AUTOMATION_TOKEN`   |
+| Workflow                    | Trigger                                      | Purpose                                                                                        |
+| --------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation                           |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change                |
+| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                               |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate               |
+| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)                          |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                      |
+| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                                    |
+| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags                  |
+| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`         | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                      |
+| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                                  |
+| `third-party-licenses.yaml` | Path-filtered push to `main`                 | After maintainer approval, regenerate licenses and open a PR via protected `RELEASE_CUT_TOKEN` |
 
 ---
 
@@ -171,7 +171,7 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
 6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
 
-**Secret:** the protected `license-automation` environment exposes **`LICENSE_AUTOMATION_TOKEN`** only to the `main` branch. Use a dedicated token with **contents**, **workflows**, and **pull requests** write. Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
+**Secret:** the protected `release-cut` environment exposes **`RELEASE_CUT_TOKEN`** only to the `main` branch after required maintainer approval. The token needs **contents**, **workflows**, and **pull requests** write. Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
 
 ---
 
@@ -359,7 +359,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 
 - **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
 
-GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR (via the `license-automation` environment's `LICENSE_AUTOMATION_TOKEN`) instead of pushing to `main`.
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR via the reviewer-gated `release-cut` environment's `RELEASE_CUT_TOKEN` instead of pushing to `main`.
 
 **Pull request gate:** one approving review, **dismiss stale reviews on push**, and **require last push approval** so an approved PR cannot enter the merge queue after unreviewed follow-up commits.
 
@@ -388,7 +388,7 @@ gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
   --input .github/rulesets/release-tags.json
 ```
 
-Privileged workflows are additionally restricted by protected environments: `release` accepts `v*` tags and requires maintainer approval; `release-cut` accepts `main` and contains `RELEASE_CUT_TOKEN`; `license-automation` accepts `main` and contains `LICENSE_AUTOMATION_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. The one-time `migrate-release-secrets.yaml` workflow verifies those live boundaries and the tag ruleset before moving credentials out of repository scope, removes the old repository secrets, and then removes itself from `main`.
+Privileged workflows are additionally restricted by protected environments: `release` accepts `v*` tags and requires maintainer approval; `release-cut` accepts `main`, requires maintainer approval, and contains `RELEASE_CUT_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. The one-time `migrate-release-secrets.yaml` workflow verifies those live boundaries and the tag ruleset before moving credentials out of repository scope, removes the old repository secrets, and then removes itself from `main`.
 
 ---
 
