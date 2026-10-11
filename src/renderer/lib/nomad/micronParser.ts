@@ -35,10 +35,28 @@ export interface NomadMicronPartialPageResult {
   error?: string;
 }
 
+export interface NomadMicronPartialFetchResultWithSize {
+  /** Raw remote Micron source. The controller renders it only after budget admission. */
+  source: string;
+  /** UTF-8 bytes in the remote Micron source before rendering. */
+  sourceBytes: number;
+}
+
+export const NOMAD_MICRON_PARTIAL_LIMITS = Object.freeze({
+  maxDepth: 8,
+  maxPartials: 64,
+  maxSourceBytes: 1024 * 1024,
+  maxConcurrency: 1,
+  maxRefreshTimers: 8,
+  maxRequests: 128,
+  maxRequestsPerMinute: 60,
+  maxLifetimeMs: 5 * 60 * 1000,
+});
+
 /**
  * Resolve a Micron partial destination and fetch/render its content.
  * Failure point: sidecar/page fetch fails or destination is invalid.
- * Fallback: throw so bindPartials records data-partial-error on the placeholder.
+ * Fallback: throw so the page-scoped partial controller records an error on the placeholder.
  */
 export async function loadNomadMicronPartial(options: {
   destination: string;
@@ -52,7 +70,7 @@ export async function loadNomadMicronPartial(options: {
     path: string,
     requestData?: Record<string, string>,
   ) => Promise<NomadMicronPartialPageResult>;
-}): Promise<{ markup: string }> {
+}): Promise<NomadMicronPartialFetchResultWithSize> {
   const { destination, fields, signal, defaultPagePath, selectedHash, formContainer, fetchPage } =
     options;
 
@@ -96,39 +114,346 @@ export async function loadNomadMicronPartial(options: {
     throw new Error(res.error || 'partial_fetch_failed');
   }
 
-  return { markup: renderNomadMicronPage(res.content) };
+  return {
+    source: res.content,
+    sourceBytes: new TextEncoder().encode(res.content).byteLength,
+  };
 }
 
-/** Bind Micron partial placeholders; rebinds nested partials after each load. */
+type NomadMicronBoundPartialResult =
+  MicronPartialFetchResult | NomadMicronPartialFetchResultWithSize;
+
+interface NomadMicronPartialBinding {
+  element: HTMLElement;
+  depth: number;
+  ancestry: readonly string[];
+  resourceKey: string | null;
+  controller: AbortController | null;
+  interval: ReturnType<typeof setInterval> | null;
+  loading: boolean;
+  queued: boolean;
+  disposed: boolean;
+}
+
+export function canonicalNomadPageResourceKey(hash: string, path: string): string {
+  const segments: string[] = [];
+  for (const segment of normalizeNomadPagePath(path).split('/')) {
+    if (!segment || segment === '.') continue;
+    if (segment === '..') {
+      segments.pop();
+      continue;
+    }
+    segments.push(segment);
+  }
+  return `${hash.trim().toLowerCase()}:/${segments.join('/')}`;
+}
+
+export function resolveNomadPartialResourceKey(
+  destination: string,
+  selectedHash: string,
+  defaultPagePath: string,
+): string | null {
+  let parsed = parseNomadNetworkLinkUrl(destination, defaultPagePath);
+  if (!parsed && destination.trim().startsWith('/')) {
+    parsed = {
+      destination_hash: null,
+      path: normalizeNomadPagePath(destination),
+    };
+  }
+  if (!parsed) return null;
+  return canonicalNomadPageResourceKey(parsed.destination_hash ?? selectedHash, parsed.path);
+}
+
+/**
+ * Bind every partial in one page-scoped controller. The controller owns recursive
+ * discovery, refreshes, requests, and cleanup so a remote page cannot create an
+ * independent resource pool for each nested partial.
+ */
 export function bindNomadMicronPartials(
   root: HTMLElement,
-  fetcher: (info: MicronPartialInfo) => Promise<MicronPartialFetchResult>,
+  fetcher: (info: MicronPartialInfo) => Promise<NomadMicronBoundPartialResult>,
+  options: {
+    rootResourceKey?: string | null;
+    resolveResourceKey?: (info: MicronPartialInfo) => string | null;
+  } = {},
 ): MicronPartialCleanup {
-  const nestedCleanups: (() => void)[] = [];
+  const limits = NOMAD_MICRON_PARTIAL_LIMITS;
+  const bindings = new Map<HTMLElement, NomadMicronPartialBinding>();
+  const queue: NomadMicronPartialBinding[] = [];
+  const requestTimes: number[] = [];
+  const initialAncestry = options.rootResourceKey ? [options.rootResourceKey] : [];
+  let admittedPartials = 0;
+  let sourceBytes = 0;
+  let totalRequests = 0;
+  let activeRequests = 0;
+  let refreshTimers = 0;
+  let stopped = false;
 
-  const bindRoot = (scope: ParentNode): MicronPartialCleanup => {
-    const cleanup = MicronParser.bindPartials(scope, fetcher);
-    nestedCleanups.push(cleanup);
-    return cleanup;
+  const readPartial = (element: HTMLElement): Omit<MicronPartialInfo, 'signal'> => {
+    const url = element.getAttribute('data-partial-url');
+    const destination = element.getAttribute('data-partial-destination') || url || '';
+    const descriptor = element.getAttribute('data-partial-descriptor') || '';
+    const refresh = Number.parseFloat(element.getAttribute('data-partial-refresh') || '0');
+    const fieldsAttr = element.getAttribute('data-partial-fields') || '';
+    const fields = fieldsAttr.length > 0 ? fieldsAttr.split('|') : [];
+    const id = element.getAttribute('data-partial-id');
+    return { url, destination, descriptor, refresh, fields, id, element };
   };
 
-  const topCleanup = bindRoot(root);
-
-  const onPartialLoaded = (event: Event) => {
-    const el = event.target;
-    if (!(el instanceof HTMLElement) || !el.classList.contains('Mu-partial')) return;
-    if (!root.contains(el)) return;
-    bindRoot(el);
+  const setError = (binding: NomadMicronPartialBinding, error: unknown) => {
+    if (binding.disposed) return;
+    const message = error instanceof Error ? error.message : String(error);
+    binding.element.setAttribute('data-partial-error', message);
+    binding.element.dispatchEvent(
+      new CustomEvent('partial-error', {
+        bubbles: true,
+        detail: { error, info: readPartial(binding.element) },
+      }),
+    );
   };
-  root.addEventListener('partial-loaded', onPartialLoaded);
 
-  const cleanup: MicronPartialCleanup = () => {
-    root.removeEventListener('partial-loaded', onPartialLoaded);
-    for (const nested of nestedCleanups.splice(0).reverse()) {
-      nested();
+  const disposeBinding = (binding: NomadMicronPartialBinding) => {
+    if (binding.disposed) return;
+    binding.disposed = true;
+    binding.queued = false;
+    binding.controller?.abort();
+    binding.controller = null;
+    if (binding.interval != null) {
+      clearInterval(binding.interval);
+      binding.interval = null;
+      refreshTimers = Math.max(0, refreshTimers - 1);
+    }
+    binding.element.removeAttribute('data-partial-bound');
+    bindings.delete(binding.element);
+  };
+
+  const disposeDescendants = (element: HTMLElement) => {
+    for (const binding of Array.from(bindings.values())) {
+      if (binding.element !== element && element.contains(binding.element)) {
+        disposeBinding(binding);
+      }
     }
   };
-  cleanup.reload = topCleanup.reload;
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    queue.splice(0);
+    for (const binding of Array.from(bindings.values())) {
+      disposeBinding(binding);
+    }
+  };
+
+  const lifetimeTimer = setTimeout(stop, limits.maxLifetimeMs);
+
+  const resultSourceBytes = (result: NomadMicronBoundPartialResult): number => {
+    if (
+      result &&
+      typeof result === 'object' &&
+      'sourceBytes' in result &&
+      typeof result.sourceBytes === 'number'
+    ) {
+      return Math.max(0, Math.floor(result.sourceBytes));
+    }
+    if (typeof result === 'string') return new TextEncoder().encode(result).byteLength;
+    if (result && typeof result === 'object' && 'markup' in result) {
+      return new TextEncoder().encode(result.markup).byteLength;
+    }
+    if (typeof Node !== 'undefined' && result instanceof Node) {
+      return new TextEncoder().encode(result.textContent ?? '').byteLength;
+    }
+    return 0;
+  };
+
+  const prepareResult = (result: NomadMicronBoundPartialResult): Node[] | null => {
+    if (result == null) return null;
+    if (typeof Node !== 'undefined' && result instanceof Node) return [result];
+    let markup: string;
+    if (typeof result === 'string') {
+      markup = result;
+    } else if ('source' in result && typeof result.source === 'string') {
+      markup = renderNomadMicronPage(result.source);
+    } else if ('markup' in result && typeof result.markup === 'string') {
+      markup = result.markup;
+    } else {
+      return [];
+    }
+    const staging = document.createElement('div');
+    mountNomadMicronHtml(staging, markup);
+    return Array.from(staging.childNodes);
+  };
+
+  const commitResult = (
+    element: HTMLElement,
+    result: NomadMicronBoundPartialResult,
+    nodes: readonly Node[],
+  ) => {
+    element.replaceChildren(...nodes);
+    element.removeAttribute('data-partial-error');
+    element.setAttribute('data-partial-loaded', String(Date.now()));
+    element.dispatchEvent(new CustomEvent('partial-loaded', { bubbles: true, detail: { result } }));
+  };
+
+  let bindScope: (scope: ParentNode, depth: number, ancestry: readonly string[]) => void = () => {};
+  const controllerStopped = () => stopped;
+  const bindingDisposed = (binding: NomadMicronPartialBinding) => binding.disposed;
+
+  const runBinding = async (binding: NomadMicronPartialBinding) => {
+    binding.queued = false;
+    if (stopped || binding.disposed || !root.contains(binding.element)) {
+      disposeBinding(binding);
+      return;
+    }
+
+    const now = Date.now();
+    while (requestTimes.length > 0 && now - (requestTimes[0] ?? now) >= 60_000) {
+      requestTimes.shift();
+    }
+    if (totalRequests >= limits.maxRequests) {
+      setError(binding, new Error('partial_request_limit'));
+      stop();
+      return;
+    }
+    if (requestTimes.length >= limits.maxRequestsPerMinute) {
+      setError(binding, new Error('partial_request_rate_limit'));
+      stop();
+      return;
+    }
+
+    totalRequests += 1;
+    requestTimes.push(now);
+    const info = readPartial(binding.element);
+    if (!info.url) return;
+    const controller = new AbortController();
+    binding.controller = controller;
+    binding.loading = true;
+    binding.element.dispatchEvent(
+      new CustomEvent('partial-loading', { bubbles: true, detail: info }),
+    );
+    try {
+      const result = await fetcher({ ...info, signal: controller.signal });
+      if (
+        controllerStopped() ||
+        bindingDisposed(binding) ||
+        controller.signal.aborted ||
+        !root.contains(binding.element)
+      ) {
+        return;
+      }
+      const nextBytes = resultSourceBytes(result);
+      if (sourceBytes + nextBytes > limits.maxSourceBytes) {
+        setError(binding, new Error('partial_source_byte_limit'));
+        stop();
+        return;
+      }
+      sourceBytes += nextBytes;
+      const nodes = prepareResult(result);
+      if (nodes == null) return;
+      binding.element.dispatchEvent(
+        new CustomEvent('partial-replacing', { bubbles: true, detail: info }),
+      );
+      disposeDescendants(binding.element);
+      commitResult(binding.element, result, nodes);
+      const ancestry = binding.resourceKey
+        ? [...binding.ancestry, binding.resourceKey]
+        : binding.ancestry;
+      bindScope(binding.element, binding.depth + 1, ancestry);
+    } catch (error) {
+      // catch-no-log-ok Controller aborts are expected during refresh and page teardown.
+      if (!controller.signal.aborted && !bindingDisposed(binding) && !controllerStopped()) {
+        setError(binding, error);
+      }
+    } finally {
+      if (binding.controller === controller) binding.controller = null;
+      binding.loading = false;
+    }
+  };
+
+  const drain = () => {
+    if (stopped) return;
+    while (activeRequests < limits.maxConcurrency && queue.length > 0) {
+      const binding = queue.shift();
+      if (!binding || binding.disposed || !binding.queued || binding.loading) continue;
+      activeRequests += 1;
+      void runBinding(binding).finally(() => {
+        activeRequests = Math.max(0, activeRequests - 1);
+        drain();
+      });
+    }
+  };
+
+  const enqueue = (binding: NomadMicronPartialBinding) => {
+    if (stopped || binding.disposed || binding.loading || binding.queued) return;
+    binding.queued = true;
+    queue.push(binding);
+    drain();
+  };
+
+  bindScope = (scope, depth, ancestry) => {
+    if (stopped) return;
+    const elements = Array.from(
+      scope.querySelectorAll<HTMLElement>('.Mu-partial:not([data-partial-bound])'),
+    );
+    for (const element of elements) {
+      if (depth > limits.maxDepth) {
+        element.setAttribute('data-partial-error', 'partial_depth_limit');
+        continue;
+      }
+      admittedPartials += 1;
+      if (admittedPartials > limits.maxPartials) {
+        element.setAttribute('data-partial-error', 'partial_count_limit');
+        stop();
+        return;
+      }
+      const info = readPartial(element);
+      const resourceKey = options.resolveResourceKey?.({ ...info, signal: null }) ?? null;
+      const binding: NomadMicronPartialBinding = {
+        element,
+        depth,
+        ancestry,
+        resourceKey,
+        controller: null,
+        interval: null,
+        loading: false,
+        queued: false,
+        disposed: false,
+      };
+      bindings.set(element, binding);
+      element.setAttribute('data-partial-bound', '1');
+
+      if (resourceKey && ancestry.includes(resourceKey)) {
+        setError(binding, new Error('partial_cycle'));
+        continue;
+      }
+
+      enqueue(binding);
+      if (Number.isFinite(info.refresh) && info.refresh >= 1) {
+        if (refreshTimers >= limits.maxRefreshTimers) {
+          element.setAttribute('data-partial-refresh-error', 'partial_timer_limit');
+        } else {
+          refreshTimers += 1;
+          binding.interval = setInterval(() => {
+            enqueue(binding);
+          }, info.refresh * 1000);
+        }
+      }
+    }
+  };
+
+  bindScope(root, 1, initialAncestry);
+
+  const cleanup: MicronPartialCleanup = () => {
+    clearTimeout(lifetimeTimer);
+    stop();
+  };
+  cleanup.reload = (predicate) => {
+    for (const binding of bindings.values()) {
+      const info = readPartial(binding.element);
+      if (!predicate || predicate({ ...info, signal: binding.controller?.signal ?? null })) {
+        enqueue(binding);
+      }
+    }
+  };
   return cleanup;
 }
 

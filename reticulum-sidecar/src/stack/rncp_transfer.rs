@@ -28,6 +28,8 @@ use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use uuid::Uuid;
 
+use crate::api::path_capability::ConsumedPathCapability;
+
 use super::config::{self, DEFAULT_ANNOUNCE_INTERVAL_SEC};
 use super::link_task::spawn_link_task;
 use super::live::parse_hash16;
@@ -141,6 +143,7 @@ struct ActiveTransfer {
     file_name: Option<String>,
     cancel_tx: Option<oneshot::Sender<()>>,
     thread: std::thread::JoinHandle<()>,
+    _path_capability: Option<Arc<ConsumedPathCapability>>,
 }
 
 #[derive(Clone)]
@@ -149,6 +152,8 @@ struct PendingOffer {
     bytes: usize,
     identity_hash: Option<String>,
     overwrite: bool,
+    display_save_dir: PathBuf,
+    _path_capability: Option<Arc<ConsumedPathCapability>>,
 }
 
 struct ListenerState {
@@ -157,6 +162,7 @@ struct ListenerState {
     events_task: tokio::task::JoinHandle<()>,
     announce_task: Option<tokio::task::JoinHandle<()>>,
     staging: Arc<RncpStaging>,
+    _path_capability: Option<Arc<ConsumedPathCapability>>,
 }
 
 struct PayloadAckGuard(Option<RncpPayloadAck>);
@@ -198,6 +204,7 @@ pub struct RncpTransferManager {
     pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
     listener: Mutex<Option<ListenerState>>,
     staging: Mutex<Option<Arc<RncpStaging>>>,
+    listener_error: Mutex<Option<String>>,
     policy: Mutex<PolicyState>,
 }
 
@@ -217,6 +224,7 @@ impl RncpTransferManager {
             pending_offers: Arc::new(Mutex::new(HashMap::new())),
             listener: Mutex::new(None),
             staging: Mutex::new(None),
+            listener_error: Mutex::new(None),
             policy: Mutex::new(PolicyState::default()),
         }
     }
@@ -227,29 +235,20 @@ impl RncpTransferManager {
     pub async fn send(
         &self,
         destination_hash_hex: &str,
-        local_path: &str,
+        data: Vec<u8>,
+        display_path: String,
+        capability: Option<ConsumedPathCapability>,
     ) -> Result<String, String> {
         let dest_hash = parse_hash16(destination_hash_hex)?;
-        let path = PathBuf::from(local_path);
-        let metadata = tokio::fs::metadata(&path)
-            .await
-            .map_err(|e| format!("stat {}: {e}", path.display()))?;
-        if !metadata.is_file() {
-            return Err(format!("{} is not a regular file", path.display()));
-        }
-        if metadata.len() > MAX_RNCP_FILE_BYTES {
+        if data.len() as u64 > MAX_RNCP_FILE_BYTES {
             return Err(format!(
                 "file exceeds max transfer size of {MAX_RNCP_FILE_BYTES} bytes"
             ));
         }
-        let file_name = path
+        let file_name = Path::new(&display_path)
             .file_name()
             .map(|s| s.to_string_lossy().into_owned())
             .ok_or_else(|| "path has no file name".to_string())?;
-        let data = tokio::fs::read(&path)
-            .await
-            .map_err(|e| format!("read {}: {e}", path.display()))?;
-
         let mut active = self.active.lock().await;
         prune_finished_transfers(&mut active);
         if active.len() >= MAX_ACTIVE_RNCP_TRANSFERS {
@@ -267,11 +266,17 @@ impl RncpTransferManager {
         let event_tx = self.event_tx.clone();
         let tid = transfer_id.clone();
         let dest_hex_task = dest_hex.clone();
+        let capability = capability.map(Arc::new);
+        let worker_capability = capability.clone();
         // `rncp_send_file`'s future is not `Send` — build and drive it
         // entirely on the dedicated thread `spawn_link_task` gives us (see
         // that module for why).
         let (thread, cancel_tx) =
             spawn_link_task(format!("rncp-send-{transfer_id}"), move || async move {
+                // Keep picker authority alive until the worker actually exits;
+                // removing the status row during cancellation must not release
+                // its OS handle while the transfer future is still unwinding.
+                let _path_capability = worker_capability;
                 let file_name = file_name;
                 let result = rncp_send_file(RncpSendRequest {
                     transport_tx,
@@ -324,9 +329,10 @@ impl RncpTransferManager {
             ActiveTransfer {
                 kind: TransferKind::Send,
                 destination_hash: dest_hex,
-                file_name: Some(local_filename(local_path)),
+                file_name: Some(local_filename(&display_path)),
                 cancel_tx: Some(cancel_tx),
                 thread,
+                _path_capability: capability,
             },
         );
         Ok(transfer_id)
@@ -339,6 +345,8 @@ impl RncpTransferManager {
         destination_hash_hex: &str,
         remote_path: &str,
         save_dir: PathBuf,
+        display_dir: PathBuf,
+        capability: Option<ConsumedPathCapability>,
     ) -> Result<String, String> {
         let dest_hash = parse_hash16(destination_hash_hex)?;
         tokio::fs::create_dir_all(&save_dir)
@@ -364,9 +372,13 @@ impl RncpTransferManager {
         let dest_hex_task = dest_hex.clone();
         let remote_path_owned = remote_path.to_string();
         let save_dir_task = save_dir.clone();
+        let display_dir_task = display_dir;
+        let capability = capability.map(Arc::new);
+        let worker_capability = capability.clone();
         // `rncp_fetch_file`'s future is not `Send` — see `send()` above.
         let (thread, cancel_tx) =
             spawn_link_task(format!("rncp-fetch-{transfer_id}"), move || async move {
+                let _path_capability = worker_capability;
                 let result = rncp_fetch_file(RncpFetchRequest {
                     transport_tx,
                     identity,
@@ -400,7 +412,7 @@ impl RncpTransferManager {
                             file_name = ?outcome.file_name,
                             bytes = outcome.bytes,
                             destination_hash = %dest_hex_task,
-                            path = %outcome.saved_path.display(),
+                            path = %display_dir_task.join(&outcome.file_name).display(),
                             "[rncp] transfer completed"
                         );
                         emit(
@@ -410,7 +422,7 @@ impl RncpTransferManager {
                                 "transfer_id": tid,
                                 "file_name": outcome.file_name,
                                 "bytes": outcome.bytes,
-                                "path": outcome.saved_path.display().to_string(),
+                                "path": display_dir_task.join(&outcome.file_name).display().to_string(),
                                 "destination_hash": dest_hex_task,
                             }),
                         );
@@ -436,6 +448,7 @@ impl RncpTransferManager {
                 file_name: Some(remote_path.to_string()),
                 cancel_tx: Some(cancel_tx),
                 thread,
+                _path_capability: capability,
             },
         );
         Ok(transfer_id)
@@ -482,20 +495,21 @@ impl RncpTransferManager {
             .accept(transfer_id.to_string(), offer.overwrite)
             .await?;
         self.pending_offers.lock().await.remove(transfer_id);
+        let display_path = offer.display_save_dir.join(&promoted.file_name);
         tracing::info!(
             kind = "accept",
             transfer_id = %transfer_id,
             file_name = ?promoted.file_name,
             bytes = promoted.bytes,
             identity_hash = %promoted.identity_hash,
-            path = %promoted.path.display(),
+            path = %display_path.display(),
             "[rncp] transfer completed"
         );
         let payload = json!({
             "transfer_id": transfer_id,
             "file_name": promoted.file_name,
             "bytes": promoted.bytes,
-            "path": promoted.path.display().to_string(),
+            "path": display_path.display().to_string(),
             "identity_hash": promoted.identity_hash,
         });
         emit(&self.event_tx, "rncp.completed", payload.clone());
@@ -524,7 +538,8 @@ impl RncpTransferManager {
     }
 
     pub async fn status(&self) -> serde_json::Value {
-        let active = self.active.lock().await;
+        let mut active = self.active.lock().await;
+        prune_finished_transfers(&mut active);
         let transfers: Vec<serde_json::Value> = active
             .iter()
             .map(|(id, t)| {
@@ -587,9 +602,11 @@ impl RncpTransferManager {
     pub async fn start_listener(
         &self,
         save_dir: PathBuf,
+        display_save_dir: PathBuf,
         allow_fetch: bool,
         fetch_jail: Option<PathBuf>,
         overwrite: bool,
+        capability: Option<ConsumedPathCapability>,
     ) -> Result<serde_json::Value, String> {
         self.stop_listener().await;
 
@@ -662,11 +679,14 @@ impl RncpTransferManager {
         let dest_hash_bytes = handle.destination_hash();
         let destination_hash = hex::encode(dest_hash_bytes);
 
+        let capability = capability.map(Arc::new);
         let events_task = spawn_listener_event_loop(
             self.event_tx.clone(),
             policy,
             Arc::clone(&staging),
             overwrite,
+            display_save_dir.clone(),
+            capability.clone(),
             Arc::clone(&self.pending_offers),
             events_rx,
         );
@@ -684,11 +704,13 @@ impl RncpTransferManager {
             events_task,
             announce_task: Some(announce_task),
             staging: Arc::clone(&staging),
+            _path_capability: capability,
         });
         *self.staging.lock().await = Some(staging);
+        *self.listener_error.lock().await = None;
 
         Ok(
-            json!({ "destination_hash": destination_hash, "save_dir": save_dir.display().to_string() }),
+            json!({ "destination_hash": destination_hash, "save_dir": display_save_dir.display().to_string() }),
         )
     }
 
@@ -741,13 +763,19 @@ impl RncpTransferManager {
     pub async fn listener_status(&self) -> serde_json::Value {
         let listener = self.listener.lock().await;
         let policy = self.policy.lock().await;
+        let last_error = self.listener_error.lock().await.clone();
         json!({
             "enabled": listener.is_some(),
             "destination_hash": listener.as_ref().map(|s| s.destination_hash.clone()),
             "inbound_mode": policy.mode.as_str(),
             "allowed": policy.allowed.iter().cloned().collect::<Vec<_>>(),
             "blocked": policy.blocked.iter().cloned().collect::<Vec<_>>(),
+            "last_error": last_error,
         })
+    }
+
+    pub async fn require_picker_capability_after_restore(&self) {
+        *self.listener_error.lock().await = Some("picker_capability_required".into());
     }
 
     pub async fn receive_destination_hash(&self) -> Option<String> {
@@ -859,11 +887,14 @@ fn spawn_listen_announcer(
 /// verified payload (allow/blocked checks are still meaningful against a
 /// slightly stale list; the underlying `allow_all_listed` Link-identify gate
 /// itself only takes effect on the next `start_listener()` restart).
+#[allow(clippy::too_many_arguments)] // security context and display paths stay explicit at this boundary
 fn spawn_listener_event_loop(
     event_tx: broadcast::Sender<String>,
     policy: PolicyState,
     staging: Arc<RncpStaging>,
     overwrite: bool,
+    display_save_dir: PathBuf,
+    capability: Option<Arc<ConsumedPathCapability>>,
     pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
     mut events_rx: mpsc::Receiver<RncpEvent>,
 ) -> tokio::task::JoinHandle<()> {
@@ -874,6 +905,8 @@ fn spawn_listener_event_loop(
                 &policy,
                 &staging,
                 overwrite,
+                &display_save_dir,
+                capability.as_ref(),
                 &pending_offers,
                 evt,
             )
@@ -882,11 +915,14 @@ fn spawn_listener_event_loop(
     })
 }
 
+#[allow(clippy::too_many_arguments)] // security context and display paths stay explicit at this boundary
 async fn handle_rncp_event(
     event_tx: &broadcast::Sender<String>,
     policy: &PolicyState,
     staging: &Arc<RncpStaging>,
     overwrite: bool,
+    display_save_dir: &Path,
+    capability: Option<&Arc<ConsumedPathCapability>>,
     pending_offers: &Arc<Mutex<HashMap<String, PendingOffer>>>,
     evt: RncpEvent,
 ) {
@@ -934,6 +970,8 @@ async fn handle_rncp_event(
                 policy,
                 staging,
                 overwrite,
+                display_save_dir,
+                capability,
                 pending_offers,
                 resource_id,
                 identity_hash,
@@ -985,6 +1023,8 @@ async fn handle_verified_payload(
     policy: &PolicyState,
     staging: &Arc<RncpStaging>,
     overwrite: bool,
+    display_save_dir: &Path,
+    capability: Option<&Arc<ConsumedPathCapability>>,
     pending_offers: &Arc<Mutex<HashMap<String, PendingOffer>>>,
     resource_id: [u8; 32],
     identity_hash: [u8; 16],
@@ -1044,6 +1084,8 @@ async fn handle_verified_payload(
                     bytes,
                     identity_hash: Some(identity_hash.clone()),
                     overwrite,
+                    display_save_dir: display_save_dir.to_path_buf(),
+                    _path_capability: capability.cloned(),
                 },
             );
             emit(
@@ -1059,16 +1101,17 @@ async fn handle_verified_payload(
         }
         Ok(StoreOutcome::Promoted {
             file_name,
-            path,
+            path: _promoted_path,
             bytes,
             identity_hash,
         }) => {
+            let display_path = display_save_dir.join(&file_name);
             tracing::info!(
                 kind = "receive",
                 file_name = ?file_name,
                 bytes,
                 identity_hash = %identity_hash,
-                path = %path.display(),
+                path = %display_path.display(),
                 "[rncp] transfer completed"
             );
             emit(
@@ -1077,7 +1120,7 @@ async fn handle_verified_payload(
                 json!({
                     "file_name": file_name,
                     "bytes": bytes,
-                    "path": path.display().to_string(),
+                    "path": display_path.display().to_string(),
                     "identity_hash": identity_hash,
                 }),
             );
@@ -1215,25 +1258,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn send_rejects_missing_oversize_and_non_files() {
+    async fn send_rejects_oversize_and_invalid_destination() {
         let dir = tempfile::tempdir().expect("tempdir");
         let (manager, _rx) = test_manager(dir.path());
 
-        let missing = dir.path().join("missing.bin");
         assert!(
             manager
-                .send(TEST_DEST, missing.to_str().expect("utf8"))
+                .send(
+                    TEST_DEST,
+                    vec![0; MAX_RNCP_FILE_BYTES as usize + 1],
+                    "oversize.bin".into(),
+                    None,
+                )
                 .await
                 .is_err()
         );
         assert!(
             manager
-                .send(TEST_DEST, dir.path().to_str().expect("utf8"))
+                .send("nope", Vec::new(), "x".into(), None)
                 .await
-                .expect_err("dir rejected")
-                .contains("not a regular file")
+                .is_err()
         );
-        assert!(manager.send("nope", "/tmp/x").await.is_err());
     }
 
     #[tokio::test]
@@ -1244,7 +1289,12 @@ mod tests {
         let (manager, mut rx) = test_manager(dir.path());
 
         let transfer_id = manager
-            .send(TEST_DEST, local.to_str().expect("utf8"))
+            .send(
+                TEST_DEST,
+                b"hello".to_vec(),
+                local.display().to_string(),
+                None,
+            )
             .await
             .expect("send starts");
         let failed = recv_event_of_type(&mut rx, "rncp.failed").await;
@@ -1259,23 +1309,29 @@ mod tests {
 
         assert!(
             manager
-                .fetch("bad", "remote.txt", dir.path().join("dl"))
+                .fetch(
+                    "bad",
+                    "remote.txt",
+                    dir.path().join("dl"),
+                    dir.path().join("dl"),
+                    None,
+                )
                 .await
                 .is_err()
         );
         let transfer_id = manager
-            .fetch(TEST_DEST, "remote.txt", dir.path().join("dl"))
+            .fetch(
+                TEST_DEST,
+                "remote.txt",
+                dir.path().join("dl"),
+                dir.path().join("dl"),
+                None,
+            )
             .await
             .expect("fetch starts");
-        let status = manager.status().await;
-        let transfers = status["transfers"].as_array().expect("transfers");
-        assert!(
-            transfers
-                .iter()
-                .any(|t| t["transfer_id"] == transfer_id.as_str() && t["kind"] == "fetch")
-        );
         let failed = recv_event_of_type(&mut rx, "rncp.failed").await;
         assert_eq!(failed["transfer_id"], transfer_id);
+        assert_eq!(failed["destination_hash"], TEST_DEST);
     }
 
     #[tokio::test]
@@ -1286,7 +1342,12 @@ mod tests {
         let (manager, mut rx) = test_manager(dir.path());
 
         let transfer_id = manager
-            .send(TEST_DEST, local.to_str().expect("utf8"))
+            .send(
+                TEST_DEST,
+                b"hello".to_vec(),
+                local.display().to_string(),
+                None,
+            )
             .await
             .expect("send starts");
         manager.cancel(&transfer_id).await.expect("cancel");
@@ -1328,6 +1389,8 @@ mod tests {
                 bytes: 8,
                 identity_hash: Some(hex::encode([2; 16])),
                 overwrite: false,
+                display_save_dir: dir.path().to_path_buf(),
+                _path_capability: None,
             },
         );
         let payload = manager.accept(&transfer_id).await.expect("accept");
@@ -1362,6 +1425,8 @@ mod tests {
                 bytes: 8,
                 identity_hash: Some(hex::encode([4; 16])),
                 overwrite: false,
+                display_save_dir: dir.path().to_path_buf(),
+                _path_capability: None,
             },
         );
         manager.reject(&transfer_id).await.expect("reject");
@@ -1399,18 +1464,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn restored_listener_requires_fresh_picker_capability() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, _rx) = test_manager(dir.path());
+
+        manager.require_picker_capability_after_restore().await;
+
+        let status = manager.listener_status().await;
+        assert_eq!(status["enabled"], false);
+        assert_eq!(status["last_error"], "picker_capability_required");
+    }
+
+    #[tokio::test]
     async fn start_listener_rejects_off_policy_and_missing_fetch_jail() {
         let dir = tempfile::tempdir().expect("tempdir");
         let (manager, _rx) = test_manager(dir.path());
 
         let err = manager
-            .start_listener(dir.path().join("inbox"), true, None, false)
+            .start_listener(
+                dir.path().join("inbox"),
+                dir.path().join("inbox"),
+                true,
+                None,
+                false,
+                None,
+            )
             .await
             .expect_err("missing jail rejected");
         assert!(err.contains("fetch_jail"));
 
         let err = manager
-            .start_listener(dir.path().join("inbox"), false, None, false)
+            .start_listener(
+                dir.path().join("inbox"),
+                dir.path().join("inbox"),
+                false,
+                None,
+                false,
+                None,
+            )
             .await
             .expect_err("off policy rejected");
         assert!(err.contains("policy=off"));
@@ -1454,6 +1545,8 @@ mod tests {
                 &self.policy,
                 &self.staging,
                 self.overwrite,
+                self.dir.path(),
+                None,
                 &self.pending_offers,
                 evt,
             )
@@ -1478,6 +1571,8 @@ mod tests {
             &fx.policy,
             &fx.staging,
             false,
+            fx.dir.path(),
+            None,
             &fx.pending_offers,
             [1; 32],
             sender,
@@ -1502,6 +1597,8 @@ mod tests {
             &fx.policy,
             &fx.staging,
             false,
+            fx.dir.path(),
+            None,
             &fx.pending_offers,
             [2; 32],
             sender,
@@ -1528,6 +1625,8 @@ mod tests {
             &fx.policy,
             &fx.staging,
             false,
+            fx.dir.path(),
+            None,
             &fx.pending_offers,
             [3; 32],
             sender,
@@ -1632,6 +1731,7 @@ mod tests {
             file_name: None,
             cancel_tx: Some(oneshot::channel::<()>().0),
             thread,
+            _path_capability: None,
         };
         let mut active = HashMap::new();
         active.insert("finished".to_string(), make_transfer(finished_thread));
@@ -1686,7 +1786,14 @@ mod tests {
             .await
             .expect("policy");
         manager
-            .start_listener(dir.path().join("inbox"), false, None, false)
+            .start_listener(
+                dir.path().join("inbox"),
+                dir.path().join("inbox"),
+                false,
+                None,
+                false,
+                None,
+            )
             .await
             .expect("listener start");
 
@@ -1767,7 +1874,14 @@ loglevel = 4
             .await
             .expect("policy");
         manager
-            .start_listener(dir.path().join("inbox"), false, None, false)
+            .start_listener(
+                dir.path().join("inbox"),
+                dir.path().join("inbox"),
+                false,
+                None,
+                false,
+                None,
+            )
             .await
             .expect("listener start");
 
@@ -1815,7 +1929,14 @@ loglevel = 4
             .await
             .expect("policy");
         manager
-            .start_listener(dir.path().join("inbox"), false, None, false)
+            .start_listener(
+                dir.path().join("inbox"),
+                dir.path().join("inbox"),
+                false,
+                None,
+                false,
+                None,
+            )
             .await
             .expect("listener start");
 

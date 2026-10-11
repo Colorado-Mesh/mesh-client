@@ -17,7 +17,7 @@ mod instance_policy;
 pub mod interface_catalog;
 mod local_rnode_primary;
 mod lxmf_inbound_log;
-mod nomad_content_source;
+pub(crate) mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
 mod nomad_link_reuse;
@@ -91,6 +91,8 @@ mod voice_session;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+use crate::api::path_capability::{ConsumedPathCapability, MAX_AUTHORIZED_FILE_BYTES};
 
 pub use config::{
     ImportMode, ImportResult, StackSettings, StackSettingsPatch, UpdateInterfacePatch,
@@ -2239,6 +2241,7 @@ impl StackHandle {
     pub async fn set_nomad_content_source(
         &self,
         path: String,
+        capability: Option<ConsumedPathCapability>,
     ) -> Result<NomadServingStatus, String> {
         let trimmed = path.trim();
         if trimmed.is_empty() {
@@ -2247,67 +2250,48 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             let live = self.require_live()?;
-            let path_buf = std::path::PathBuf::from(trimmed);
             let previous_source = {
                 let inner = self.inner.read().await;
                 inner.nomad_serving_content_source.clone()
             };
-            // Validate before persisting.
-            let resolved = live
-                .nomad_server()
-                .set_content_source_path(path_buf)
-                .await?;
+            let display_name = {
+                let inner = self.inner.read().await;
+                inner
+                    .nomad_serving_display_name
+                    .clone()
+                    .filter(|n| !n.trim().is_empty())
+                    .unwrap_or_else(|| "Nomad node".into())
+            };
+            // Persist only the display preference; it is never sufficient
+            // authority to serve. Doing this before the lifecycle transaction
+            // means a save failure cannot disturb the running node/capability.
             {
                 let mut inner = self.inner.write().await;
-                inner.nomad_serving_content_source =
-                    Some(resolved.content_source.display().to_string());
+                inner.nomad_serving_content_source = Some(trimmed.to_string());
                 if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                    // Roll back in-memory content source to match disk.
-                    if let Some(prev) = previous_source.as_ref() {
-                        let _ = live
-                            .nomad_server()
-                            .set_content_source_path(std::path::PathBuf::from(prev))
-                            .await;
-                    } else {
-                        live.nomad_server().load_content_source_path(None).await;
-                    }
+                    inner.nomad_serving_content_source = previous_source;
                     return Err(e);
                 }
             }
-            // Restart host if running so the store opens under the new roots.
-            if live.nomad_server().is_running().await {
-                let name = {
-                    let inner = self.inner.read().await;
-                    inner
-                        .nomad_serving_display_name
-                        .clone()
-                        .filter(|n| !n.trim().is_empty())
-                        .unwrap_or_else(|| "Nomad node".into())
-                };
-                live.stop_nomad_serving().await?;
-                if let Err(e) = live.start_nomad_serving(name).await {
-                    // Restore previous content source preference after a failed restart.
-                    if let Some(prev) = previous_source.as_ref() {
-                        let _ = live
-                            .nomad_server()
-                            .set_content_source_path(std::path::PathBuf::from(prev))
-                            .await;
-                    } else {
-                        live.nomad_server().load_content_source_path(None).await;
+
+            match live
+                .reconfigure_nomad_content_source(
+                    std::path::PathBuf::from(trimmed),
+                    capability,
+                    display_name,
+                )
+                .await
+            {
+                Ok(_) => Ok(live.nomad_serving_status().await),
+                Err(error) => {
+                    let mut inner = self.inner.write().await;
+                    inner.nomad_serving_content_source = previous_source;
+                    if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+                        tracing::warn!("nomad content-source rollback persist failed: {save_err}");
                     }
-                    {
-                        let mut inner = self.inner.write().await;
-                        inner.nomad_serving_content_source = previous_source;
-                        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
-                            tracing::warn!(
-                                "nomad content-source rollback persist failed: {save_err}"
-                            );
-                        }
-                    }
-                    return Err(e);
+                    Err(error)
                 }
             }
-            return Ok(live.nomad_serving_status().await);
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -2782,12 +2766,25 @@ impl StackHandle {
         serde_json::json!({ "sessions": [] })
     }
 
-    pub async fn rncp_send(&self, destination_hash: &str, path: &str) -> serde_json::Value {
+    pub async fn rncp_send(
+        &self,
+        destination_hash: &str,
+        path: String,
+        capability: ConsumedPathCapability,
+    ) -> serde_json::Value {
+        let data = match capability.read_file("path", MAX_AUTHORIZED_FILE_BYTES) {
+            Ok(data) => data,
+            Err(error) => {
+                return serde_json::json!({ "ok": false, "error": error });
+            }
+        };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
-            return live.rncp_send(destination_hash, path).await;
+            return live
+                .rncp_send(destination_hash, data, path, capability)
+                .await;
         }
-        let _ = (destination_hash, path);
+        let _ = (destination_hash, path, data, capability);
         serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
     }
 
@@ -2796,17 +2793,34 @@ impl StackHandle {
         destination_hash: &str,
         remote_path: &str,
         save_path: Option<String>,
+        capability: Option<ConsumedPathCapability>,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
-            let save_dir = save_path
+            let display_dir = save_path
+                .as_ref()
                 .map(PathBuf::from)
                 .unwrap_or_else(|| self.storage_dir.join("rncp_fetched"));
+            let save_dir = match capability.as_ref() {
+                Some(capability) => {
+                    let Some(path) = capability.runtime_path("save_path") else {
+                        return serde_json::json!({ "ok": false, "error": "picker_capability_denied" });
+                    };
+                    path
+                }
+                None => display_dir.clone(),
+            };
             return live
-                .rncp_fetch(destination_hash, remote_path, save_dir)
+                .rncp_fetch(
+                    destination_hash,
+                    remote_path,
+                    save_dir,
+                    display_dir,
+                    capability,
+                )
                 .await;
         }
-        let _ = (destination_hash, remote_path, save_path);
+        let _ = (destination_hash, remote_path, save_path, capability);
         serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
     }
 
@@ -2869,6 +2883,7 @@ impl StackHandle {
         overwrite: bool,
         allowed: Vec<String>,
         blocked: Vec<String>,
+        capability: Option<ConsumedPathCapability>,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2904,17 +2919,40 @@ impl StackHandle {
             let Some(save_dir_str) = save_dir.clone() else {
                 return serde_json::json!({ "ok": false, "error": "save_dir_required" });
             };
+            let display_save_dir = PathBuf::from(&save_dir_str);
+            let save_dir_path = match capability.as_ref() {
+                Some(capability) => {
+                    let Some(path) = capability.runtime_path("save_dir") else {
+                        return serde_json::json!({ "ok": false, "error": "picker_capability_denied" });
+                    };
+                    path
+                }
+                None => display_save_dir.clone(),
+            };
             if allow_fetch && fetch_jail.is_none() {
                 return serde_json::json!({ "ok": false, "error": "fetch_jail_required" });
             }
+            let fetch_jail_path = if allow_fetch {
+                match capability.as_ref() {
+                    Some(capability) => {
+                        let Some(path) = capability.runtime_path("fetch_jail") else {
+                            return serde_json::json!({ "ok": false, "error": "picker_capability_denied" });
+                        };
+                        Some(path)
+                    }
+                    None => fetch_jail.clone().map(PathBuf::from),
+                }
+            } else {
+                None
+            };
             // Drain and clean the currently active staging directory before
             // changing the persisted path. Otherwise a crash after switching
             // A -> B could leave application-owned staged bytes orphaned in A.
             live.rncp_stop_listener().await;
-            // Persist the selected directory before opening the listener. If
+            // Persist the display preference before opening the listener. If
             // the process exits after staging starts but before the enabled
-            // state is committed, the next startup can still reconcile only
-            // the application-owned crash remnants in this directory.
+            // state is committed, startup can reconcile application-owned
+            // crash remnants while still requiring fresh picker authority.
             {
                 let mut inner = self.inner.write().await;
                 inner.rncp_listener_save_dir = Some(save_dir_str.clone());
@@ -2925,10 +2963,15 @@ impl StackHandle {
                     });
                 }
             }
-            let save_dir_path = PathBuf::from(save_dir_str);
-            let fetch_jail_path = fetch_jail.clone().map(PathBuf::from);
             let result = live
-                .rncp_start_listener(save_dir_path, allow_fetch, fetch_jail_path, overwrite)
+                .rncp_start_listener(
+                    save_dir_path,
+                    display_save_dir,
+                    allow_fetch,
+                    fetch_jail_path,
+                    overwrite,
+                    capability,
+                )
                 .await;
             // Persist only after a successful start so a restart does not
             // resurrect a config that never worked.
@@ -2955,6 +2998,7 @@ impl StackHandle {
             overwrite,
             allowed,
             blocked,
+            capability,
         );
         serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
     }

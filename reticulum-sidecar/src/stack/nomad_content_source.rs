@@ -196,6 +196,60 @@ pub fn resolve_content_roots(
     }
 }
 
+/// Resolve roots beneath an already pinned directory path without
+/// canonicalizing away the handle-derived prefix.
+pub fn resolve_pinned_content_roots(
+    external: &Path,
+    pinned_content_root: Option<&Path>,
+) -> Result<ResolvedNomadContentRoots, ContentSourceError> {
+    if external.as_os_str().is_empty() {
+        return Err(ContentSourceError::Required);
+    }
+    let layout = detect_layout(external)?;
+    match layout {
+        NomadContentLayout::SiteRoot => {
+            let pages_dir = external.join("pages");
+            reject_symlink(&pages_dir)?;
+            if !pages_dir.is_dir() || fs::read_dir(&pages_dir).is_err() {
+                return Err(ContentSourceError::Unreadable);
+            }
+            let files_dir = external.join("files");
+            if files_dir.exists() {
+                reject_symlink(&files_dir)?;
+                if !files_dir.is_dir() {
+                    return Err(ContentSourceError::InvalidLayout);
+                }
+            }
+            Ok(ResolvedNomadContentRoots {
+                layout,
+                content_source: external.to_path_buf(),
+                pages_dir,
+                files_dir,
+                content_root: external.to_path_buf(),
+            })
+        }
+        NomadContentLayout::PagesDir => {
+            let content_root = pinned_content_root
+                .map(Path::to_path_buf)
+                .ok_or(ContentSourceError::InvalidLayout)?;
+            let files_dir = content_root.join("files");
+            if files_dir.exists() {
+                reject_symlink(&files_dir)?;
+                if !files_dir.is_dir() {
+                    return Err(ContentSourceError::InvalidLayout);
+                }
+            }
+            Ok(ResolvedNomadContentRoots {
+                layout,
+                content_source: external.to_path_buf(),
+                pages_dir: external.to_path_buf(),
+                files_dir,
+                content_root,
+            })
+        }
+    }
+}
+
 /// Layout label for status JSON.
 pub fn layout_label(layout: NomadContentLayout) -> &'static str {
     match layout {

@@ -1,5 +1,5 @@
 diff --git a/api/snapshots/rns-interface.txt b/api/snapshots/rns-interface.txt
-index 2a1dd75..c5f7744 100644
+index 2a1dd75f..c5f77441 100644
 --- a/api/snapshots/rns-interface.txt
 +++ b/api/snapshots/rns-interface.txt
 @@ -412,6 +412,9 @@ pub const rns_interface::ble_rnode::NUS_RX_CHAR_UUID: uuid::Uuid
@@ -13,7 +13,7 @@ index 2a1dd75..c5f7744 100644
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
  pub async fn rns_interface::ble_rnode::spawn_ble_rnode_interface_native(rns_interface::ble_rnode::BleRNodeConfig, rns_interface::traits::InterfaceId, tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>, u16) -> core::result::Result<rns_interface::traits::InterfaceHandle, rns_interface::traits::InterfaceError>
 diff --git a/api/snapshots/rns-protocol.txt b/api/snapshots/rns-protocol.txt
-index 6be56ca..96320ba 100644
+index 6be56cac..96320baf 100644
 --- a/api/snapshots/rns-protocol.txt
 +++ b/api/snapshots/rns-protocol.txt
 @@ -427,6 +427,7 @@ pub rns_protocol::resource::WindowState::window_min: usize
@@ -25,7 +25,7 @@ index 6be56ca..96320ba 100644
  impl core::default::Default for rns_protocol::resource::WindowState
  pub fn rns_protocol::resource::WindowState::default() -> Self
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
-index fc525ab..92b9fbb 100644
+index fc525ab4..92b9fbb8 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
 @@ -403,7 +403,10 @@ pub rns_runtime::link_client::LinkClientError::UnexpectedResponse(alloc::string:
@@ -193,7 +193,7 @@ index fc525ab..92b9fbb 100644
  pub struct rns_runtime::rpc::PathTableEntry
  pub rns_runtime::rpc::PathTableEntry::expires: f64
 diff --git a/api/snapshots/rns-transport.txt b/api/snapshots/rns-transport.txt
-index efa4c0c..e91ccd5 100644
+index efa4c0c4..e91ccd58 100644
 --- a/api/snapshots/rns-transport.txt
 +++ b/api/snapshots/rns-transport.txt
 @@ -48,10 +48,12 @@ pub rns_transport::actor::TransportActor::packet_hashlist: rns_transport::hashli
@@ -407,10 +407,10 @@ index efa4c0c..e91ccd5 100644
  pub enum rns_transport::persistence::PersistenceError
  pub rns_transport::persistence::PersistenceError::Deserialize(alloc::string::String)
 diff --git a/api/stability.json b/api/stability.json
-index c17f206..cd12c4c 100644
+index e9a18915..c4b44b0d 100644
 --- a/api/stability.json
 +++ b/api/stability.json
-@@ -51,8 +51,8 @@
+@@ -80,8 +80,8 @@
        "tier": "provisional",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-transport.txt",
@@ -421,7 +421,7 @@ index c17f206..cd12c4c 100644
      },
      {
        "name": "rns-link",
-@@ -69,8 +69,8 @@
+@@ -98,8 +98,8 @@
        "tier": "candidate-stable",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-protocol.txt",
@@ -432,7 +432,7 @@ index c17f206..cd12c4c 100644
      },
      {
        "name": "rns-interface",
-@@ -78,8 +78,8 @@
+@@ -107,8 +107,8 @@
        "tier": "candidate-stable",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-interface.txt",
@@ -443,7 +443,7 @@ index c17f206..cd12c4c 100644
      },
      {
        "name": "rns-runtime",
-@@ -87,8 +87,8 @@
+@@ -116,8 +116,8 @@
        "tier": "provisional",
        "compatibility": "reviewed-snapshot",
        "snapshot": "api/snapshots/rns-runtime.txt",
@@ -455,7 +455,7 @@ index c17f206..cd12c4c 100644
      {
        "name": "rns-tools",
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index e9378cb..3a10db0 100644
+index 30b97b21..7d5c4fc3 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
 @@ -1,8 +1,9 @@
@@ -572,7 +572,7 @@ index e9378cb..3a10db0 100644
  /// Resolves a fetch path under the jail root (Python rncp.py:177-183).
  /// Absolute paths replace the jail prefix; relatives join onto it; canonical
  /// result must stay inside `jail_canonical`.
-@@ -185,6 +252,9 @@ pub struct RncpListenerConfig {
+@@ -232,6 +299,9 @@ pub struct RncpListenerConfig {
      pub fetch_jail: Option<PathBuf>,
      /// Python default on; `--no-compress` disables.
      pub fetch_auto_compress: bool,
@@ -582,17 +582,17 @@ index e9378cb..3a10db0 100644
  }
 
  impl Default for RncpListenerConfig {
-@@ -199,10 +269,202 @@ impl Default for RncpListenerConfig {
+@@ -246,10 +316,202 @@ impl Default for RncpListenerConfig {
              allow_fetch: false,
              fetch_jail: None,
              fetch_auto_compress: true,
 +            receive_mode: RncpReceiveMode::SaveToDirectory,
 +            inbound_limits: None,
 +            blocked: Vec::new(),
-         }
-     }
- }
-
++        }
++    }
++}
++
 +#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 +struct RncpAdmission {
 +    identity_hash: [u8; 16],
@@ -726,10 +726,10 @@ index e9378cb..3a10db0 100644
 +            .collect();
 +        for key in keys {
 +            self.release(key);
-+        }
-+    }
-+}
-+
+         }
+     }
+ }
+
 +fn logical_resource_id(advertisement: &ResourceAdvertisement) -> [u8; 32] {
 +    if advertisement.flags.split || advertisement.total_segments > 1 {
 +        advertisement.original_hash
@@ -785,7 +785,7 @@ index e9378cb..3a10db0 100644
  pub struct RncpListenerHandle {
      pub destination_hash: [u8; 16],
      task: tokio::task::JoinHandle<()>,
-@@ -223,6 +485,11 @@ pub async fn spawn_rncp_listener(
+@@ -270,6 +532,11 @@ pub async fn spawn_rncp_listener(
      cfg: RncpListenerConfig,
      events_tx: mpsc::Sender<RncpEvent>,
  ) -> Result<RncpListenerHandle, RncpError> {
@@ -797,7 +797,7 @@ index e9378cb..3a10db0 100644
      let signing_key = cfg
          .identity
          .get_signing_key()
-@@ -255,12 +522,17 @@ pub async fn spawn_rncp_listener(
+@@ -302,12 +569,17 @@ pub async fn spawn_rncp_listener(
          Some(signing_key),
      );
 
@@ -817,7 +817,7 @@ index e9378cb..3a10db0 100644
 
      if !cfg.allow_fetch && !cfg.allow_all {
          let allowed_push: std::collections::HashSet<[u8; 16]> =
-@@ -276,56 +548,126 @@ pub async fn spawn_rncp_listener(
+@@ -323,56 +595,126 @@ pub async fn spawn_rncp_listener(
          let allowed_fetch: Arc<std::collections::HashSet<[u8; 16]>> =
              Arc::new(cfg.allowed.iter().copied().collect());
          let allow_all_fetch = cfg.allow_all;
@@ -980,7 +980,7 @@ index e9378cb..3a10db0 100644
                  }
              }
          });
-@@ -337,6 +679,7 @@ pub async fn spawn_rncp_listener(
+@@ -384,6 +726,7 @@ pub async fn spawn_rncp_listener(
      let allowed: std::collections::HashSet<[u8; 16]> = cfg.allowed.iter().copied().collect();
      let overwrite = cfg.overwrite;
      let allow_fetch_outer = cfg.allow_fetch;
@@ -988,7 +988,7 @@ index e9378cb..3a10db0 100644
      let events_tx_cb = events_tx.clone();
      let link_control_tx_cb = link_control_tx.clone();
 
-@@ -373,15 +716,102 @@ pub async fn spawn_rncp_listener(
+@@ -420,15 +763,102 @@ pub async fn spawn_rncp_listener(
                          }
                      }
                  }
@@ -1093,7 +1093,7 @@ index e9378cb..3a10db0 100644
                      match save_payload(&save_dir, &file_name, &evt.data, overwrite).await {
                          Ok(path) => {
                              let _ = events_tx_cb
-@@ -403,6 +833,11 @@ pub async fn spawn_rncp_listener(
+@@ -450,6 +880,11 @@ pub async fn spawn_rncp_listener(
                                  .await;
                          }
                      }
@@ -1105,10 +1105,38 @@ index e9378cb..3a10db0 100644
                  }
              }
          }
-@@ -1513,6 +1948,365 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
- mod tests {
-     use super::*;
+@@ -1575,6 +2010,393 @@ mod tests {
+         PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
+     }
 
++    #[cfg(any(target_os = "linux", target_os = "macos"))]
++    #[test]
++    fn fetch_sink_keeps_handle_alias_after_selected_root_is_replaced() {
++        let unique = std::time::SystemTime::now()
++            .duration_since(std::time::UNIX_EPOCH)
++            .unwrap()
++            .as_nanos();
++        let dir = std::env::temp_dir().join(format!(
++            "rns-rncp-picker-pin-{}-{unique}",
++            std::process::id()
++        ));
++        let selected = dir.join("selected");
++        let moved = dir.join("moved");
++        std::fs::create_dir(&dir).unwrap();
++        std::fs::create_dir(&selected).unwrap();
++        std::fs::write(selected.join("served.txt"), b"picked").unwrap();
++        let handle = std::fs::File::open(&selected).unwrap();
++        let alias = pinned_dir_alias(&selected, &handle);
++
++        std::fs::rename(&selected, &moved).unwrap();
++        std::fs::create_dir(&selected).unwrap();
++        std::fs::write(selected.join("served.txt"), b"replacement").unwrap();
++
++        let resolved = resolve_fetch_path(Some(&alias), b"served.txt").unwrap();
++        assert_eq!(std::fs::read(resolved).unwrap(), b"picked");
++        std::fs::remove_dir_all(&dir).unwrap();
++    }
++
 +    fn inbound_limits() -> RncpInboundLimits {
 +        RncpInboundLimits {
 +            max_file_bytes: 100,
@@ -1471,8 +1499,41 @@ index e9378cb..3a10db0 100644
      #[test]
      fn metadata_roundtrip() {
          let packed = pack_metadata("hello.txt");
+@@ -1667,32 +2489,4 @@ mod tests {
+     fn successful_rncp_send_retains_python_receiver_settlement_window() {
+         assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
+     }
+-
+-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+-    #[test]
+-    fn fetch_sink_keeps_handle_alias_after_selected_root_is_replaced() {
+-        let unique = std::time::SystemTime::now()
+-            .duration_since(std::time::UNIX_EPOCH)
+-            .unwrap()
+-            .as_nanos();
+-        let dir = std::env::temp_dir().join(format!(
+-            "rns-rncp-picker-pin-{}-{unique}",
+-            std::process::id()
+-        ));
+-        let selected = dir.join("selected");
+-        let moved = dir.join("moved");
+-        std::fs::create_dir(&dir).unwrap();
+-        std::fs::create_dir(&selected).unwrap();
+-        std::fs::write(selected.join("served.txt"), b"picked").unwrap();
+-        let handle = std::fs::File::open(&selected).unwrap();
+-        let alias = pinned_dir_alias(&selected, &handle);
+-
+-        std::fs::rename(&selected, &moved).unwrap();
+-        std::fs::create_dir(&selected).unwrap();
+-        std::fs::write(selected.join("served.txt"), b"replacement").unwrap();
+-
+-        let resolved = resolve_fetch_path(Some(&alias), b"served.txt").unwrap();
+-        assert_eq!(std::fs::read(resolved).unwrap(), b"picked");
+-        std::fs::remove_dir_all(&dir).unwrap();
+-    }
+ }
 diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/commands/rncp.rs
-index a4a70b6..9b4b3d5 100644
+index a4a70b67..9b4b3d55 100644
 --- a/crates/rns-tools/src/commands/rncp.rs
 +++ b/crates/rns-tools/src/commands/rncp.rs
 @@ -37,8 +37,8 @@ use rns_runtime::lifecycle::{ShutdownSignal, install_signal_handlers};

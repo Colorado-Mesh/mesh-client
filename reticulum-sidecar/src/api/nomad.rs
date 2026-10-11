@@ -320,11 +320,9 @@ pub async fn put_nomad_serving_content_source(
     ) else {
         return capability_denied().into_response();
     };
-    if !capability.still_matches() {
-        return capability_denied().into_response();
-    }
-    let result = stack.set_nomad_content_source(body.path).await;
-    drop(capability);
+    let result = stack
+        .set_nomad_content_source(body.path, Some(capability))
+        .await;
     match result {
         Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })).into_response(),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })).into_response(),

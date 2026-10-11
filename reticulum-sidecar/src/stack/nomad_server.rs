@@ -16,8 +16,14 @@ use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::{Mutex, mpsc};
 
+#[cfg(test)]
+use tokio::sync::Notify;
+
+use crate::api::path_capability::ConsumedPathCapability;
+
 use super::nomad_content_source::{
     ContentSourceError, ResolvedNomadContentRoots, layout_label, resolve_content_roots,
+    resolve_pinned_content_roots,
 };
 use super::types::{NomadServeStatsRow, NomadServingStatus};
 
@@ -29,6 +35,16 @@ const WATCHER_WARN_INTERVAL: Duration = Duration::from_secs(60);
 struct WatcherState {
     _watcher: RecommendedWatcher,
     cancel: tokio::sync::watch::Sender<bool>,
+    task: tokio::task::JoinHandle<()>,
+}
+
+struct ContentSourceSelection {
+    runtime_path: PathBuf,
+    runtime_content_root: Option<PathBuf>,
+    display_path: PathBuf,
+    display_content_root: PathBuf,
+    capability: Option<ConsumedPathCapability>,
+    capability_required: bool,
 }
 
 /// Stable snake_case code for a page storage error, for renderer translation.
@@ -58,12 +74,30 @@ pub struct NomadServerHandle {
     /// Serializes start/stop/reconfigure so concurrent callers cannot double-spawn.
     lifecycle: Mutex<()>,
     inner: Mutex<Option<NomadNode>>,
-    content_source: Mutex<Option<PathBuf>>,
+    content_source: Mutex<Option<ContentSourceSelection>>,
     last_error: Mutex<Option<String>>,
     watcher_status: Mutex<String>,
     watcher: Mutex<Option<WatcherState>>,
     last_watcher_warn: Mutex<Option<Instant>>,
     watcher_warn_suppressed: Mutex<u32>,
+    #[cfg(test)]
+    start_test_gate: Mutex<Option<Arc<NomadStartTestGate>>>,
+    #[cfg(test)]
+    stop_test_gate: Mutex<Option<Arc<NomadStopTestGate>>>,
+}
+
+#[cfg(test)]
+#[derive(Default)]
+struct NomadStartTestGate {
+    entered: Notify,
+    release: Notify,
+}
+
+#[cfg(test)]
+#[derive(Default)]
+struct NomadStopTestGate {
+    entered: Notify,
+    release: Notify,
 }
 
 impl NomadServerHandle {
@@ -77,6 +111,10 @@ impl NomadServerHandle {
             watcher: Mutex::new(None),
             last_watcher_warn: Mutex::new(None),
             watcher_warn_suppressed: Mutex::new(0),
+            #[cfg(test)]
+            start_test_gate: Mutex::new(None),
+            #[cfg(test)]
+            stop_test_gate: Mutex::new(None),
         }
     }
 
@@ -85,36 +123,76 @@ impl NomadServerHandle {
     }
 
     /// Configure the required external content source path (watched folder).
-    pub async fn set_content_source_path(
+    #[cfg(test)]
+    async fn set_content_source_path(
         self: &Arc<Self>,
-        path: PathBuf,
+        path: &Path,
+        capability: Option<ConsumedPathCapability>,
     ) -> Result<ResolvedNomadContentRoots, String> {
-        let resolved = resolve_content_roots(&path).map_err(|e| e.as_str().to_string())?;
-        {
-            let mut guard = self.content_source.lock().await;
-            *guard = Some(resolved.content_source.clone());
+        let _lifecycle = self.lifecycle.lock().await;
+        if self.inner.lock().await.is_some() {
+            return Err("content_source_change_requires_stopped_server".into());
         }
-        {
-            let mut err = self.last_error.lock().await;
-            if err
-                .as_deref()
-                .is_some_and(|e| e.starts_with("content_source") || e == "invalid_content_source")
-            {
-                *err = None;
-            }
-        }
-        // Roots are bound into NomadContentStore at start — callers must restart
-        // the host node when serving is already running (see set_nomad_content_source).
-        if !self.is_running().await {
-            // Keep watcher stopped while offline.
-            self.stop_watcher().await;
-        }
+        let (selection, resolved) = Self::prepare_content_source(path, capability)?;
+        *self.content_source.lock().await = Some(selection);
+        self.clear_content_source_error().await;
+        // Keep watcher stopped while offline.
+        self.stop_watcher().await;
         Ok(resolved)
+    }
+
+    fn prepare_content_source(
+        path: &Path,
+        capability: Option<ConsumedPathCapability>,
+    ) -> Result<(ContentSourceSelection, ResolvedNomadContentRoots), String> {
+        let display_resolved = resolve_content_roots(path).map_err(|e| e.as_str().to_string())?;
+        let (runtime_path, runtime_content_root, resolved) = match capability.as_ref() {
+            Some(capability) => {
+                let runtime_path = capability
+                    .runtime_path("path")
+                    .ok_or_else(|| "picker_capability_denied".to_string())?;
+                let runtime_content_root = capability.runtime_path("content_root");
+                let resolved =
+                    resolve_pinned_content_roots(&runtime_path, runtime_content_root.as_deref())
+                        .map_err(|e| e.as_str().to_string())?;
+                (runtime_path, runtime_content_root, resolved)
+            }
+            None => (path.to_path_buf(), None, display_resolved.clone()),
+        };
+        Ok((
+            ContentSourceSelection {
+                runtime_path,
+                runtime_content_root,
+                display_path: display_resolved.content_source.clone(),
+                display_content_root: display_resolved.content_root.clone(),
+                capability,
+                capability_required: false,
+            },
+            resolved,
+        ))
+    }
+
+    async fn clear_content_source_error(&self) {
+        let mut err = self.last_error.lock().await;
+        if err
+            .as_deref()
+            .is_some_and(|e| e.starts_with("content_source") || e == "invalid_content_source")
+        {
+            *err = None;
+        }
     }
 
     /// Restore a previously persisted content source without validating restart.
     pub async fn load_content_source_path(&self, path: Option<PathBuf>) {
-        *self.content_source.lock().await = path;
+        let _lifecycle = self.lifecycle.lock().await;
+        *self.content_source.lock().await = path.map(|path| ContentSourceSelection {
+            runtime_path: path.clone(),
+            runtime_content_root: None,
+            display_content_root: path.clone(),
+            display_path: path,
+            capability: None,
+            capability_required: true,
+        });
     }
 
     pub async fn set_last_error(&self, code: Option<String>) {
@@ -122,11 +200,22 @@ impl NomadServerHandle {
     }
 
     pub async fn resolve_roots(&self) -> Result<ResolvedNomadContentRoots, String> {
-        let src = self.content_source.lock().await.clone();
-        let Some(path) = src else {
+        let source = self.content_source.lock().await;
+        let Some(source) = source.as_ref() else {
             return Err(ContentSourceError::Required.as_str().to_string());
         };
-        resolve_content_roots(&path).map_err(|e| e.as_str().to_string())
+        if source.capability_required {
+            return Err("picker_capability_required".into());
+        }
+        let resolved = if source.capability.is_some() {
+            resolve_pinned_content_roots(
+                &source.runtime_path,
+                source.runtime_content_root.as_deref(),
+            )
+        } else {
+            resolve_content_roots(&source.runtime_path)
+        };
+        resolved.map_err(|e| e.as_str().to_string())
     }
 
     fn roots_from_resolved(resolved: &ResolvedNomadContentRoots) -> NomadContentRoots {
@@ -153,7 +242,7 @@ impl NomadServerHandle {
             .lock()
             .await
             .as_ref()
-            .map(|p| p.display().to_string());
+            .map(|source| source.display_path.display().to_string());
         match content_meta {
             Some(meta) => NomadServingStatus {
                 enabled: enabled_pref,
@@ -164,8 +253,8 @@ impl NomadServerHandle {
                 page_count,
                 file_count,
                 stats: NomadServeStatsRow::default(),
-                content_root: meta.content_root.display().to_string(),
-                content_source: Some(meta.content_source.display().to_string()),
+                content_root: self.display_content_root(&meta).await,
+                content_source,
                 content_layout: Some(layout_label(meta.layout).into()),
                 watcher_status: Some(watcher_status),
                 last_error,
@@ -195,6 +284,16 @@ impl NomadServerHandle {
         display_name: String,
     ) -> Result<NomadServingStatus, String> {
         let _lifecycle = self.lifecycle.lock().await;
+        self.start_locked(transport_tx, identity, display_name)
+            .await
+    }
+
+    async fn start_locked(
+        self: &Arc<Self>,
+        transport_tx: tokio::sync::mpsc::Sender<TransportMessage>,
+        identity: Identity,
+        display_name: String,
+    ) -> Result<NomadServingStatus, String> {
         {
             let guard = self.inner.lock().await;
             if guard.is_some() {
@@ -211,6 +310,12 @@ impl NomadServerHandle {
                 return Err(e);
             }
         };
+
+        #[cfg(test)]
+        if let Some(gate) = self.start_test_gate.lock().await.take() {
+            gate.entered.notify_one();
+            gate.release.notified().await;
+        }
 
         let store = NomadContentStore::new(Self::roots_from_resolved(&resolved)).map_err(|e| {
             tracing::error!("[nomad-serving] content store open failed: {e}");
@@ -244,7 +349,7 @@ impl NomadServerHandle {
 
         let mut guard = self.inner.lock().await;
         if guard.is_some() {
-            node.shutdown();
+            node.shutdown().await;
             return Err("nomad serving already running".into());
         }
         let status = self.status_from_resolved_node(&node, true, &resolved).await;
@@ -259,13 +364,89 @@ impl NomadServerHandle {
 
     pub async fn stop(&self) -> Result<(), String> {
         let _lifecycle = self.lifecycle.lock().await;
+        self.stop_locked().await
+    }
+
+    async fn stop_locked(&self) -> Result<(), String> {
+        #[cfg(test)]
+        if let Some(gate) = self.stop_test_gate.lock().await.take() {
+            gate.entered.notify_one();
+            gate.release.notified().await;
+        }
         self.stop_watcher().await;
         let mut guard = self.inner.lock().await;
         if let Some(node) = guard.take() {
-            node.shutdown();
+            node.shutdown().await;
         }
         *self.watcher_status.lock().await = "ok".into();
         Ok(())
+    }
+
+    /// Replace the content capability and optionally restart the server as one
+    /// lifecycle transaction. The old capability remains owned until its node
+    /// and watcher have fully stopped; failed starts restore the old selection.
+    pub async fn reconfigure_content_source(
+        self: &Arc<Self>,
+        path: PathBuf,
+        capability: Option<ConsumedPathCapability>,
+        transport_tx: tokio::sync::mpsc::Sender<TransportMessage>,
+        identity: Identity,
+        display_name: String,
+    ) -> Result<(bool, Option<NomadServingStatus>), String> {
+        let _lifecycle = self.lifecycle.lock().await;
+        let (new_selection, _resolved) = Self::prepare_content_source(&path, capability)?;
+        let was_running = self.inner.lock().await.is_some();
+
+        if was_running {
+            self.stop_locked().await?;
+        }
+
+        let old_selection = {
+            let mut source = self.content_source.lock().await;
+            source.replace(new_selection)
+        };
+        self.clear_content_source_error().await;
+
+        if !was_running {
+            self.stop_watcher().await;
+            return Ok((false, None));
+        }
+        let rollback_name = display_name.clone();
+
+        match self
+            .start_locked(transport_tx.clone(), identity.clone(), display_name)
+            .await
+        {
+            Ok(status) => Ok((true, Some(status))),
+            Err(start_error) => {
+                // No partially installed node may outlive the failed selection.
+                if let Err(error) = self.stop_locked().await {
+                    tracing::warn!(
+                        "[nomad-serving] stop after failed content reconfigure: {error}"
+                    );
+                }
+                let failed_selection = {
+                    let mut source = self.content_source.lock().await;
+                    std::mem::replace(&mut *source, old_selection)
+                };
+
+                let rollback_error = if was_running {
+                    self.start_locked(transport_tx, identity, rollback_name)
+                        .await
+                        .err()
+                } else {
+                    None
+                };
+                drop(failed_selection);
+
+                if let Some(rollback_error) = rollback_error {
+                    return Err(format!(
+                        "{start_error}; rollback_restart_failed:{rollback_error}"
+                    ));
+                }
+                Err(start_error)
+            }
+        }
     }
 
     pub async fn set_display_name(&self, name: &str) {
@@ -426,7 +607,7 @@ impl NomadServerHandle {
             .lock()
             .await
             .as_ref()
-            .map(|p| p.display().to_string());
+            .map(|source| source.display_path.display().to_string());
         NomadServingStatus {
             enabled,
             running: true,
@@ -463,8 +644,13 @@ impl NomadServerHandle {
             page_count,
             file_count,
             stats: stats_row(&node.stats()),
-            content_root: resolved.content_root.display().to_string(),
-            content_source: Some(resolved.content_source.display().to_string()),
+            content_root: self.display_content_root(resolved).await,
+            content_source: self
+                .content_source
+                .lock()
+                .await
+                .as_ref()
+                .map(|source| source.display_path.display().to_string()),
             content_layout: Some(layout_label(resolved.layout).into()),
             watcher_status: Some(watcher_status),
             last_error,
@@ -480,6 +666,15 @@ impl NomadServerHandle {
         let page_count = count_entries_if_dir(&resolved.pages_dir);
         let file_count = count_entries_if_dir(&resolved.files_dir);
         (page_count, file_count, Some(resolved))
+    }
+
+    async fn display_content_root(&self, resolved: &ResolvedNomadContentRoots) -> String {
+        self.content_source
+            .lock()
+            .await
+            .as_ref()
+            .map(|source| source.display_content_root.display().to_string())
+            .unwrap_or_else(|| resolved.content_root.display().to_string())
     }
 
     async fn mutate_store(
@@ -520,6 +715,7 @@ impl NomadServerHandle {
         let mut guard = self.watcher.lock().await;
         if let Some(state) = guard.take() {
             let _ = state.cancel.send(true);
+            let _ = state.task.await;
         }
     }
 
@@ -583,13 +779,8 @@ impl NomadServerHandle {
         // overwrite with "ok" (UI relies on watcher_status for Reload from disk).
         *self.watcher_status.lock().await = initial_watcher_status_after_watches(degraded).into();
 
-        *self.watcher.lock().await = Some(WatcherState {
-            _watcher: watcher,
-            cancel: cancel_tx,
-        });
-
         let this = Arc::clone(self);
-        tokio::spawn(async move {
+        let task = tokio::spawn(async move {
             let mut pending = false;
             let mut debounce = tokio::time::interval(WATCHER_DEBOUNCE);
             debounce.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -658,6 +849,11 @@ impl NomadServerHandle {
                     }
                 }
             }
+        });
+        *self.watcher.lock().await = Some(WatcherState {
+            _watcher: watcher,
+            cancel: cancel_tx,
+            task,
         });
     }
 
@@ -732,7 +928,7 @@ mod tests {
         std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
         let handle = Arc::new(NomadServerHandle::new());
         handle
-            .set_content_source_path(site.clone())
+            .set_content_source_path(&site, None)
             .await
             .expect("set source");
         (dir, handle, site)
@@ -779,6 +975,21 @@ mod tests {
         let handle = Arc::new(NomadServerHandle::new());
         let err = handle.resolve_roots().await.expect_err("required");
         assert_eq!(err, "content_source_required");
+    }
+
+    #[tokio::test]
+    async fn restored_content_source_requires_fresh_picker_capability() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let site = dir.path().join("site");
+        std::fs::create_dir_all(site.join("pages")).unwrap();
+        let handle = Arc::new(NomadServerHandle::new());
+        handle.load_content_source_path(Some(site)).await;
+
+        let err = handle.resolve_roots().await.expect_err("restore blocked");
+        assert_eq!(err, "picker_capability_required");
+        let status = handle.status(true, "N").await;
+        assert!(!status.running);
+        assert!(status.content_source.is_some());
     }
 
     #[test]
@@ -893,7 +1104,7 @@ mod tests {
             .set_last_error(Some("content_source_unavailable".into()))
             .await;
         let resolved = handle
-            .set_content_source_path(site)
+            .set_content_source_path(&site, None)
             .await
             .expect("set source");
         assert_eq!(resolved.layout, NomadContentLayout::SiteRoot);
@@ -907,12 +1118,143 @@ mod tests {
         std::fs::create_dir_all(site2.join("pages")).unwrap();
         std::fs::write(site2.join("pages/index.mu"), b"> hi").unwrap();
         handle
-            .set_content_source_path(site2)
+            .set_content_source_path(&site2, None)
             .await
             .expect("set second source");
         let status2 = handle.status(false, "N").await;
         // Unrelated last_error codes are preserved across content-source updates.
         assert_eq!(status2.last_error.as_deref(), Some("watcher_init_failed"));
         assert_eq!(status2.content_layout.as_deref(), Some("site_root"));
+    }
+
+    #[tokio::test]
+    async fn start_and_content_reconfigure_are_one_serial_lifecycle() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let site_a = dir.path().join("site-a");
+        let site_b = dir.path().join("site-b");
+        std::fs::create_dir_all(site_a.join("pages")).unwrap();
+        std::fs::create_dir_all(site_b.join("pages")).unwrap();
+        std::fs::write(site_a.join("pages/index.mu"), b"> A").unwrap();
+        std::fs::write(site_b.join("pages/index.mu"), b"> B").unwrap();
+        let site_b_assert = site_b.clone();
+
+        let handle = Arc::new(NomadServerHandle::new());
+        handle
+            .set_content_source_path(&site_a, None)
+            .await
+            .expect("set A");
+        let gate = Arc::new(NomadStartTestGate::default());
+        *handle.start_test_gate.lock().await = Some(gate.clone());
+
+        let (transport_tx, _transport_rx) = mpsc::channel(32);
+        let start_handle = handle.clone();
+        let start_tx = transport_tx.clone();
+        let start = tokio::spawn(async move {
+            start_handle
+                .start(start_tx, Identity::new(), "A node".into())
+                .await
+        });
+        gate.entered.notified().await;
+
+        let reconfigure_handle = handle.clone();
+        let reconfigure_tx = transport_tx.clone();
+        let mut reconfigure = tokio::spawn(async move {
+            reconfigure_handle
+                .reconfigure_content_source(
+                    site_b,
+                    None,
+                    reconfigure_tx,
+                    Identity::new(),
+                    "B node".into(),
+                )
+                .await
+        });
+
+        // Reconfiguration cannot replace A while start owns the lifecycle.
+        assert!(
+            tokio::time::timeout(Duration::from_millis(25), &mut reconfigure)
+                .await
+                .is_err()
+        );
+        gate.release.notify_one();
+
+        let started = start.await.expect("start task").expect("start A");
+        assert_eq!(started.display_name, "A node");
+        let (was_running, reconfigured) = reconfigure
+            .await
+            .expect("reconfigure task")
+            .expect("reconfigure B");
+        assert!(was_running);
+        let reconfigured = reconfigured.expect("B restarted");
+        assert_eq!(reconfigured.display_name, "B node");
+        assert_eq!(handle.read_page("index.mu").await.expect("read B"), "> B");
+        let status = handle.status(true, "fallback").await;
+        let reported_source = PathBuf::from(status.content_source.expect("reported B source"));
+        assert_eq!(
+            reported_source
+                .canonicalize()
+                .expect("canonical reported B"),
+            site_b_assert.canonicalize().expect("canonical selected B")
+        );
+        assert_eq!(status.display_name, "B node");
+        handle.stop().await.expect("stop B");
+    }
+
+    #[tokio::test]
+    async fn stopped_server_is_not_resurrected_by_queued_reconfigure() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let site_a = dir.path().join("site-a");
+        let site_b = dir.path().join("site-b");
+        std::fs::create_dir_all(site_a.join("pages")).unwrap();
+        std::fs::create_dir_all(site_b.join("pages")).unwrap();
+        std::fs::write(site_a.join("pages/index.mu"), b"> A").unwrap();
+        std::fs::write(site_b.join("pages/index.mu"), b"> B").unwrap();
+
+        let handle = Arc::new(NomadServerHandle::new());
+        handle
+            .set_content_source_path(&site_a, None)
+            .await
+            .expect("set A");
+        let (transport_tx, _transport_rx) = mpsc::channel(32);
+        handle
+            .start(transport_tx.clone(), Identity::new(), "A node".into())
+            .await
+            .expect("start A");
+
+        let gate = Arc::new(NomadStopTestGate::default());
+        *handle.stop_test_gate.lock().await = Some(gate.clone());
+        let stop_handle = handle.clone();
+        let stop = tokio::spawn(async move { stop_handle.stop().await });
+        gate.entered.notified().await;
+
+        let reconfigure_handle = handle.clone();
+        let reconfigure_tx = transport_tx.clone();
+        let mut reconfigure = tokio::spawn(async move {
+            reconfigure_handle
+                .reconfigure_content_source(
+                    site_b,
+                    None,
+                    reconfigure_tx,
+                    Identity::new(),
+                    "B node".into(),
+                )
+                .await
+        });
+        assert!(
+            tokio::time::timeout(Duration::from_millis(25), &mut reconfigure)
+                .await
+                .is_err()
+        );
+        gate.release.notify_one();
+
+        stop.await.expect("stop task").expect("stop A");
+        let (was_running, status) = reconfigure
+            .await
+            .expect("reconfigure task")
+            .expect("reconfigure B while stopped");
+        assert!(!was_running);
+        assert!(status.is_none());
+        assert!(!handle.is_running().await);
+        assert_eq!(handle.read_page("index.mu").await.expect("read B"), "> B");
     }
 }

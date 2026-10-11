@@ -99,6 +99,7 @@ use super::via::{
     resolve_lxmf_sent_via,
 };
 use super::voice_session::VoiceSessionManager;
+use crate::api::path_capability::ConsumedPathCapability;
 use lxmf_outbound::{LxmfOutboundDriver, PathTableRoute};
 
 /// Settle window for PacketTap Tx correlation after LXMF enqueue.
@@ -738,13 +739,21 @@ impl LiveBridge {
                 state.nomad_serving_content_source.clone(),
             )
         };
-        // Load remembered content folder before auto-restore so start uses it.
+        // Persisted path text is a preference, not renewed picker authority.
+        // Keep it visible for repicking but fail closed across process restart.
         match &nomad_content_source {
             Some(path) => {
                 bridge
                     .nomad_server
                     .load_content_source_path(Some(std::path::PathBuf::from(path)))
                     .await;
+                if nomad_enabled {
+                    tracing::warn!("[nomad-serving] restore requires a fresh picker capability");
+                    bridge
+                        .nomad_server
+                        .set_last_error(Some("picker_capability_required".into()))
+                        .await;
+                }
             }
             None if nomad_enabled => {
                 tracing::warn!(
@@ -757,12 +766,7 @@ impl LiveBridge {
             }
             None => {}
         }
-        if nomad_enabled && nomad_content_source.is_some() {
-            if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
-                tracing::warn!("[nomad-serving] failed to restore Nomad serving: {e}");
-                bridge.nomad_server.set_last_error(Some(e.clone())).await;
-            }
-        }
+        let _ = nomad_name;
 
         // Restore the inbound rncp listener the user enabled in a previous
         // session (Remote → Settings → Inbound file offers). Failure point:
@@ -806,18 +810,9 @@ impl LiveBridge {
             if let Err(e) = bridge.rncp_configure_policy(mode, allowed, blocked).await {
                 tracing::warn!("[rncp] failed to restore inbound policy: {e}");
             } else {
-                let save_dir = persisted_save_dir.unwrap_or_else(|| storage_dir.join("rncp_inbox"));
-                let result = bridge
-                    .rncp_start_listener(
-                        save_dir,
-                        allow_fetch,
-                        fetch_jail.map(PathBuf::from),
-                        overwrite,
-                    )
-                    .await;
-                if result.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
-                    tracing::warn!("[rncp] failed to restore inbound listener: {result}");
-                }
+                let _ = (save_dir, allow_fetch, fetch_jail, overwrite);
+                tracing::warn!("[rncp] restore requires a fresh picker capability");
+                bridge.rncp_require_picker_capability_after_restore().await;
             }
         }
 
@@ -872,6 +867,11 @@ impl LiveBridge {
                 display_name,
             )
             .await?;
+        self.record_nomad_serving_started(&status).await;
+        Ok(status)
+    }
+
+    async fn record_nomad_serving_started(&self, status: &NomadServingStatus) {
         // Register ourselves in the Nomad node list so page fetch has identity_hash
         // and the UI can open self-preview without waiting for announce echo.
         if let (Some(dest), Some(id_hash)) = (&status.destination_hash, &status.identity_hash) {
@@ -894,17 +894,45 @@ impl LiveBridge {
             }
         });
         let _ = self.event_tx.send(msg.to_string());
-        Ok(status)
     }
 
     pub async fn stop_nomad_serving(&self) -> Result<(), String> {
         self.nomad_server.stop().await?;
+        self.emit_nomad_serving_stopped();
+        Ok(())
+    }
+
+    fn emit_nomad_serving_stopped(&self) {
         let msg = serde_json::json!({
             "type": "nomad.serving_stop",
             "payload": {}
         });
         let _ = self.event_tx.send(msg.to_string());
-        Ok(())
+    }
+
+    pub async fn reconfigure_nomad_content_source(
+        &self,
+        path: PathBuf,
+        capability: Option<ConsumedPathCapability>,
+        display_name: String,
+    ) -> Result<Option<NomadServingStatus>, String> {
+        let (was_running, status) = self
+            .nomad_server
+            .reconfigure_content_source(
+                path,
+                capability,
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                display_name,
+            )
+            .await?;
+        if was_running {
+            self.emit_nomad_serving_stopped();
+        }
+        if let Some(status) = status.as_ref() {
+            self.record_nomad_serving_started(status).await;
+        }
+        Ok(status)
     }
 
     pub fn nomad_server(&self) -> Arc<NomadServerHandle> {
@@ -2840,8 +2868,18 @@ impl LiveBridge {
         self.games_session.delete_session(session_id)
     }
 
-    pub async fn rncp_send(&self, destination_hash_hex: &str, path: &str) -> serde_json::Value {
-        match self.rncp_transfer.send(destination_hash_hex, path).await {
+    pub async fn rncp_send(
+        &self,
+        destination_hash_hex: &str,
+        data: Vec<u8>,
+        display_path: String,
+        capability: ConsumedPathCapability,
+    ) -> serde_json::Value {
+        match self
+            .rncp_transfer
+            .send(destination_hash_hex, data, display_path, Some(capability))
+            .await
+        {
             Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
@@ -2852,10 +2890,18 @@ impl LiveBridge {
         destination_hash_hex: &str,
         remote_path: &str,
         save_dir: PathBuf,
+        display_dir: PathBuf,
+        capability: Option<ConsumedPathCapability>,
     ) -> serde_json::Value {
         match self
             .rncp_transfer
-            .fetch(destination_hash_hex, remote_path, save_dir)
+            .fetch(
+                destination_hash_hex,
+                remote_path,
+                save_dir,
+                display_dir,
+                capability,
+            )
             .await
         {
             Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
@@ -2907,13 +2953,22 @@ impl LiveBridge {
     pub async fn rncp_start_listener(
         &self,
         save_dir: PathBuf,
+        display_save_dir: PathBuf,
         allow_fetch: bool,
         fetch_jail: Option<PathBuf>,
         overwrite: bool,
+        capability: Option<ConsumedPathCapability>,
     ) -> serde_json::Value {
         match self
             .rncp_transfer
-            .start_listener(save_dir, allow_fetch, fetch_jail, overwrite)
+            .start_listener(
+                save_dir,
+                display_save_dir,
+                allow_fetch,
+                fetch_jail,
+                overwrite,
+                capability,
+            )
             .await
         {
             Ok(mut payload) => {
@@ -2932,6 +2987,12 @@ impl LiveBridge {
 
     pub async fn rncp_listener_status(&self) -> serde_json::Value {
         self.rncp_transfer.listener_status().await
+    }
+
+    pub async fn rncp_require_picker_capability_after_restore(&self) {
+        self.rncp_transfer
+            .require_picker_capability_after_restore()
+            .await;
     }
 
     pub async fn rncp_receive_destination_hash(&self) -> Option<String> {

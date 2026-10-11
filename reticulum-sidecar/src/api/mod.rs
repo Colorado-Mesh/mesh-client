@@ -8,7 +8,7 @@ mod identity;
 mod interfaces;
 mod lxmf;
 mod nomad;
-mod path_capability;
+pub(crate) mod path_capability;
 mod path_medium;
 mod propagation;
 mod remote;

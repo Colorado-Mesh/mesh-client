@@ -293,6 +293,7 @@ export default function MicronPageEditor({
             <NomadMicronPageView
               content={preview}
               defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+              pagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
               selectedHash=""
               fitWidth={fitWidth}
               onNavigate={noopNavigate}
