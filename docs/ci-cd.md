@@ -16,9 +16,9 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                        |
 | `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                      |
 | `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags    |
-| `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)            |
+| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`         | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`        |
 | `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                    |
-| `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)               |
+| `third-party-licenses.yaml` | Path-filtered push to `main`                 | Regenerate licenses doc and open a PR via protected `LICENSE_AUTOMATION_TOKEN`   |
 
 ---
 
@@ -124,11 +124,11 @@ PR review comments come from [CodeRabbit](https://docs.coderabbit.ai/) via [`.co
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
 1. **`schema-release-compare`** — first job; compares this SHA’s `CURRENT_SCHEMA_VERSION` to the last **published** GitHub Release (paginated Releases API; highest semver among non-draft/non-prerelease rows; recovers `vX.Y.Z` from release **name** only when `tag_name` is missing or `untagged-*`), writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.
-2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id` (reconstructed from validated digits before `GITHUB_OUTPUT` — CodeQL `js/http-to-file-access`), then prepends the schema compare note (via `RELEASE_ID`, not List Releases). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
+2. **`prepare-github-release`** — **sole** creator of the draft GitHub release for the protected tag (`MESH_CLIENT_ALLOW_DRAFT_CREATE=1`), exports `release_id` (reconstructed from validated digits before `GITHUB_OUTPUT` — CodeQL `js/http-to-file-access`), then prepends the schema compare note (via `RELEASE_ID`, not List Releases). The tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`). The schema note is rebuilt from `schema-release-compare` job outputs (`MESH_CLIENT_SCHEMA_*`), not from a downloaded markdown artifact (same CodeQL rule).
 3. Installs Linux build dependencies (`libudev-dev`, `rpm`, …) on `ubuntu-latest` runners
 4. Rebuilds native dependencies (`pnpm run rebuild`)
 5. **Stamp CI build info** — `scripts/ci-write-build-info-env.mjs` writes `MESH_CLIENT_BUILD_INFO` (`buildChannel=release` + tag + Actions `runUrl`) into `$GITHUB_ENV` before `dist:*` so support-bundle `manifest.json` and startup logs identify an official release build (see [Build channel stamp](#build-channel-stamp-test-vs-release)).
-6. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`) with **`--publish never`**:
+6. Builds for all three platforms in parallel with **`--publish never`**:
    - `macos-latest` → `pnpm run dist:mac`
    - `ubuntu-latest` → `pnpm run dist:linux`
    - `windows-latest` → `pnpm run dist:win`
@@ -162,7 +162,7 @@ On **version tag pushes**, a bare `publish` job signs a custom Sigstore attestat
 
 ## Third-party licenses (`third-party-licenses.yaml`)
 
-After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow (and on `workflow_dispatch`):
+After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generator script, or this workflow:
 
 1. Checkout with `persist-credentials: false` (avoids Duplicate Authorization with create-pull-request)
 2. Setup pnpm + Node 22
@@ -171,7 +171,7 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
 6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
 
-**Secret:** reuse **`RELEASE_PUSH_TOKEN`** (admin PAT with **contents**, **workflows**, and **pull requests** write). Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
+**Secret:** the protected `license-automation` environment exposes **`LICENSE_AUTOMATION_TOKEN`** only to the `main` branch. Use a dedicated token with **contents**, **workflows**, and **pull requests** write. Default `GITHUB_TOKEN` PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to `main` remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before `create-pull-request` so a token missing write access fails with a clear error instead of a git 403.
 
 ---
 
@@ -359,7 +359,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 
 - **Repository admins** (`RepositoryRole` id 5) — emergency hotfixes and local `pnpm run release` (direct push of bump commit + tag to `main`)
 
-GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR (via `RELEASE_PUSH_TOKEN`) instead of pushing to `main`.
+GitHub Actions **cannot** be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). [`third-party-licenses.yaml`](../.github/workflows/third-party-licenses.yaml) therefore opens a PR (via the `license-automation` environment's `LICENSE_AUTOMATION_TOKEN`) instead of pushing to `main`.
 
 **Pull request gate:** one approving review, **dismiss stale reviews on push**, and **require last push approval** so an approved PR cannot enter the merge queue after unreviewed follow-up commits.
 
@@ -377,6 +377,18 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 `gh api --input` can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python `urllib` (same payload).
 
 The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `tests.yaml`. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.
+
+Release tags have a separate active **`release tags`** ruleset. Its canonical JSON is [`.github/rulesets/release-tags.json`](../.github/rulesets/release-tags.json): only repository administrators may create, update, or delete `v*` tags, and `release.yaml` rejects any tag whose ref is not protected. Keep the live ruleset synchronized after editing the JSON:
+
+```bash
+RULESET_ID="$(gh api repos/Colorado-Mesh/mesh-client/rulesets \
+  --jq '.[] | select(.name == "release tags" and .target == "tag") | .id')"
+gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
+  --method PUT \
+  --input .github/rulesets/release-tags.json
+```
+
+Privileged workflows are additionally restricted by protected environments: `release` accepts `v*` tags and requires maintainer approval; `release-cut` accepts `main` and contains `RELEASE_CUT_TOKEN`; `license-automation` accepts `main` and contains `LICENSE_AUTOMATION_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. The one-time `migrate-release-secrets.yaml` workflow verifies those live boundaries and the tag ruleset before moving credentials out of repository scope, removes the old repository secrets, and then removes itself from `main`.
 
 ---
 
@@ -507,7 +519,7 @@ Post-build smoke tests:
   - Thin **MacOS launcher** + full **Electron Framework** binary sizes; bundled **Reticulum sidecar** present
   - **Developer ID–signed builds:** `codesign --verify --deep --strict` on the finished `.app` (DMG mount / ZIP extract / on-disk), `xcrun stapler validate` (stapled notarization ticket), and Developer ID plus `codesign --verify --strict` checks on the bundled Reticulum sidecar. Unsigned or ad-hoc local `dist:mac` builds use optional mode; release workflow jobs and `dist:mac:publish` require the exact `APPLE_TEAM_ID` for both binaries before any upload.
   - CI uploads **DMG/ZIP only** — never raw `Mesh-client.app` (see comment in `release.yaml` **Upload macOS Artifact**)
-  - Optional signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is passed through from workflow secrets on `macos-latest`; layout checks do not require them, but signed CI builds must pass the codesign/stapler gate above
+  - Official tag releases receive signing values only from the protected `release` environment on `macos-latest`; manual `build.yaml` packaging is always unsigned (`CSC_IDENTITY_AUTO_DISCOVERY=false`). Layout checks do not require credentials, but signed release builds must pass the codesign/stapler gate above
 - `scripts/test-linux-appimage-reticulum-sidecar.mjs` — x64 uses `--appimage-extract`; arm64 on x64 runners uses `unsquashfs` for cross-arch extract
 - **`scripts/test-linux-appimage-launch.mjs`** — headless launch smoke that proves the packaged Linux AppImage actually **boots and loads the renderer**, not just that its files are well-formed or that the main process wrote a log line. Runs under `xvfb-run` in the `packaging-smoke` Linux leg (`build.yaml` / `release.yaml`), with a 5-minute step timeout. Extracts the AppImage (the file listing is kept out of the CI log unless extraction fails), launches its `AppRun` with `MESH_CLIENT_DISABLE_GPU=1`, `--no-sandbox --disable-setuid-sandbox`, and a throwaway `--user-data-dir`, then asserts the process stays alive past a startup threshold with no crash exit, that `mesh-client.log` contains a renderer-loaded signal (`[Startup] renderer URL:` or a `[renderer` line), and that the log and captured stderr have no renderer-gone, failed-load, or child-process-gone lines (those paths block on an error dialog, so the process can stay alive). Only the **native-arch** AppImage is launched (a cross-arch runtime cannot execute on the runner; that image is still covered by the sidecar extract smoke above). If no AppImage matches the host architecture, the smoke exits non-zero. The step **gates** `build.yaml` and `release.yaml`. Requires `xvfb` + Electron runtime libs (`libnss3`, `libgtk-3-0t64`, `libgbm1`, `libasound2t64`, …), installed by `scripts/ci-install-linux-appimage-smoke-deps.sh` from the Linux smoke step in both workflows.
 - `scripts/test-win-nsis-install.mjs` — NSIS + 7z sidecar probe on WoA

@@ -61,12 +61,13 @@ describe('Release preflight (e2e.yaml job)', () => {
       cutRelease.indexOf('- name: Prepare release without push credentials'),
       cutRelease.indexOf('- name: Push prepared release'),
     );
-    expect(prepare).not.toContain('RELEASE_PUSH_TOKEN');
+    expect(prepare).not.toContain('RELEASE_CUT_TOKEN');
+    expect(cutRelease).not.toContain('RELEASE_PUSH_TOKEN');
 
-    const tokenRefs = cutRelease.match(/secrets\.RELEASE_PUSH_TOKEN/g) ?? [];
+    const tokenRefs = cutRelease.match(/secrets\.RELEASE_CUT_TOKEN/g) ?? [];
     expect(tokenRefs).toHaveLength(1);
     expect(cutRelease).toContain('GIT_ASKPASS');
-    expect(cutRelease).not.toMatch(/git remote set-url[^\n]*RELEASE_PUSH_TOKEN/);
+    expect(cutRelease).not.toMatch(/git remote set-url[^\n]*RELEASE_CUT_TOKEN/);
   });
 
   it('installs yamllint from an exact wheel-only hash lock', () => {
