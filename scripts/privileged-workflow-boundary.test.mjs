@@ -66,17 +66,29 @@ describe('privileged workflow boundaries', () => {
     }
   });
 
-  it('binds release cutting and license automation to trusted main environments', () => {
+  it('binds release cutting to its trusted main environment', () => {
     const cut = loadWorkflow('cut-release');
-    const licenses = loadWorkflow('third-party-licenses');
     expect(cut.jobs.release.if).toBe("github.ref == 'refs/heads/main'");
     expect(cut.jobs.release.environment).toBe('release-cut');
     expect(read('.github/workflows/cut-release.yaml')).not.toContain('secrets.RELEASE_PUSH_TOKEN');
+  });
+
+  it('keeps license maintenance separate from release authority', () => {
+    const licenses = loadWorkflow('third-party-licenses');
+    const source = read('.github/workflows/third-party-licenses.yaml');
     expect(licenses.on.workflow_dispatch).toBeUndefined();
-    expect(licenses.jobs.update.environment).toBe('release-cut');
+    expect(licenses.on.push.branches).toEqual(['main']);
+    expect(licenses.jobs.update.environment).toBe('license-automation');
     expect(licenses.permissions).toEqual({ contents: 'read' });
-    expect(read('.github/workflows/third-party-licenses.yaml')).toContain(
-      'secrets.RELEASE_CUT_TOKEN',
+    expect(licenses.jobs.update.permissions).toEqual({
+      contents: 'write',
+      'pull-requests': 'write',
+    });
+    const createPr = licenses.jobs.update.steps.find((step) => step.name === 'Create pull request');
+    expect(createPr.with.token).toBe('${{ secrets.LICENSE_PR_TOKEN || github.token }}');
+    expect(createPr.with['add-paths'].trim()).toBe('docs/third-party-licenses.md');
+    expect(source).not.toMatch(
+      /RELEASE_(?:PUSH|CUT)_TOKEN|environment: release|refs\/tags|pnpm run release|gh release/,
     );
   });
 
