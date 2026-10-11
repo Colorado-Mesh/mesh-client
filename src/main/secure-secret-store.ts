@@ -264,7 +264,18 @@ export class SecureSecretStore {
     const key = `backup:${protocol}:${String(normalizedId)}`;
     const existing = this.get(key);
     if (existing != null) {
-      const existingKeys = assertLegacyBackupPayload(existing, protocol, normalizedId, 'per-node');
+      let existingKeys: { publicKey: string; privateKey: string };
+      try {
+        existingKeys = assertLegacyBackupPayload(existing, protocol, normalizedId, 'per-node');
+      } catch (error) {
+        if (format !== 'meshtastic-single') throw error;
+        existingKeys = assertLegacyBackupPayload(
+          existing,
+          protocol,
+          normalizedId,
+          'meshtastic-single',
+        );
+      }
       if (
         existingKeys.publicKey !== legacyKeys.publicKey ||
         existingKeys.privateKey !== legacyKeys.privateKey

@@ -257,6 +257,29 @@ describe('SecureSecretStore', () => {
     }
   });
 
+  it('retries an interrupted single-slot migration with the same bare key pair', () => {
+    const { db, store } = createStore();
+    try {
+      const barePair = JSON.stringify({
+        publicKey: Buffer.alloc(32, 1).toString('base64'),
+        privateKey: Buffer.alloc(32, 2).toString('base64'),
+      });
+      store.set('backup:meshtastic:9', barePair);
+
+      expect(
+        store.migrateLegacyBackupCiphertext(
+          'meshtastic',
+          9,
+          'meshtastic-single',
+          Buffer.from(`protected:${barePair}`, 'utf8').toString('base64'),
+        ),
+      ).toMatchObject({ persistent: true, verified: true });
+      expect(store.get('backup:meshtastic:9')).toBe(barePair);
+    } finally {
+      db.close();
+    }
+  });
+
   it('strictly allowlists keys and caps secret values', () => {
     const { db, store } = createStore();
     try {
