@@ -1,5 +1,3 @@
-import { StringDecoder } from 'string_decoder';
-
 import type { TAKContact, TAKContactSource } from '../../shared/tak-types';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { COT_PING_TYPE, COT_STALE_MS, COT_UID_PREFIXES } from './cot-converter';
@@ -17,36 +15,93 @@ const MAX_REMARKS_LENGTH = 500;
 /** ATAK writes this for an unknown height or error. */
 const COT_UNKNOWN_VALUE = 9999999;
 
-const EVENT_END = '</event>';
+const EVENT_START_BYTES = Buffer.from('<event', 'ascii');
+const EVENT_END_BYTES = Buffer.from('</event>', 'ascii');
+
+export class CotFrameTooLargeError extends Error {
+  readonly code = 'COT_FRAME_TOO_LARGE';
+
+  constructor() {
+    super(`CoT event exceeds ${COT_FRAME_MAX_BYTES} bytes`);
+    this.name = 'CotFrameTooLargeError';
+  }
+}
+
+function isEventStartBoundary(byte: number): boolean {
+  return byte === 0x3e || byte === 0x09 || byte === 0x0a || byte === 0x0d || byte === 0x20;
+}
 
 /**
  * Splits a TAK streaming connection (newline- or nothing-separated XML CoT) into complete
  * `<event>...</event>` strings. Decodes UTF-8 across chunk boundaries.
  */
 export class CotFramer {
-  private buffer = '';
-  private readonly decoder = new StringDecoder('utf8');
+  private readonly frame = Buffer.allocUnsafe(COT_FRAME_MAX_BYTES);
+  private frameLength = 0;
+  private eventStartMatch = 0;
+  private eventEndMatch = 0;
 
   push(chunk: Buffer | string): string[] {
-    this.buffer += typeof chunk === 'string' ? chunk : this.decoder.write(chunk);
+    const bytes = typeof chunk === 'string' ? Buffer.from(chunk, 'utf8') : chunk;
     const frames: string[] = [];
-    let end = this.buffer.indexOf(EVENT_END);
-    while (end >= 0) {
-      const frame = this.buffer.slice(0, end + EVENT_END.length);
-      this.buffer = this.buffer.slice(end + EVENT_END.length);
-      const start = lastEventStart(frame);
-      if (start >= 0) frames.push(frame.slice(start));
-      end = this.buffer.indexOf(EVENT_END);
+    for (const byte of bytes) {
+      if (this.frameLength === 0) {
+        this.seekEventStart(byte);
+        continue;
+      }
+
+      if (this.frameLength >= COT_FRAME_MAX_BYTES) {
+        this.reset();
+        throw new CotFrameTooLargeError();
+      }
+      this.frame[this.frameLength++] = byte;
+
+      if (byte === EVENT_END_BYTES[this.eventEndMatch]) {
+        this.eventEndMatch++;
+      } else {
+        this.eventEndMatch = byte === EVENT_END_BYTES[0] ? 1 : 0;
+      }
+      if (this.eventEndMatch !== EVENT_END_BYTES.length) continue;
+
+      const rawFrame = this.frame.subarray(0, this.frameLength);
+      const decodedFrame = rawFrame.toString('utf8');
+      const decodedBytes = Buffer.byteLength(decodedFrame, 'utf8');
+      this.reset();
+      if (rawFrame.byteLength > COT_FRAME_MAX_BYTES || decodedBytes > COT_FRAME_MAX_BYTES) {
+        throw new CotFrameTooLargeError();
+      }
+      frames.push(decodedFrame);
     }
-    if (this.buffer.length > COT_FRAME_MAX_BYTES) this.buffer = '';
     return frames;
   }
-}
 
-function lastEventStart(frame: string): number {
-  let last = -1;
-  for (const m of frame.matchAll(/<event[\s>]/g)) last = m.index;
-  return last;
+  private seekEventStart(byte: number): void {
+    if (this.eventStartMatch < EVENT_START_BYTES.length) {
+      if (byte === EVENT_START_BYTES[this.eventStartMatch]) {
+        this.eventStartMatch++;
+      } else {
+        this.eventStartMatch = byte === EVENT_START_BYTES[0] ? 1 : 0;
+      }
+      return;
+    }
+
+    if (!isEventStartBoundary(byte)) {
+      this.eventStartMatch = byte === EVENT_START_BYTES[0] ? 1 : 0;
+      return;
+    }
+
+    EVENT_START_BYTES.copy(this.frame, 0);
+    this.frame[EVENT_START_BYTES.length] = byte;
+    this.frameLength = EVENT_START_BYTES.length + 1;
+    this.eventStartMatch = 0;
+    this.eventEndMatch = 0;
+  }
+
+  private reset(): void {
+    this.frameLength = 0;
+    this.eventStartMatch = 0;
+    this.eventEndMatch = 0;
+  }
 }
 
 function unescapeXml(text: string): string {

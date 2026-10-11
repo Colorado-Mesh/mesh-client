@@ -2,7 +2,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { COT_STALE_MS } from './cot-converter';
-import { COT_FRAME_MAX_BYTES, CotFramer, isCotPing, parseCotEvent } from './cot-parser';
+import {
+  COT_FRAME_MAX_BYTES,
+  CotFramer,
+  CotFrameTooLargeError,
+  isCotPing,
+  parseCotEvent,
+} from './cot-parser';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
 
@@ -44,10 +50,42 @@ describe('CotFramer', () => {
     expect(parseCotEvent(frame ?? '', 'local', NOW)?.callsign).toBe('ÉCHO');
   });
 
-  it('drops an oversized partial event and recovers on the next one', () => {
+  it('rejects an oversized partial event and resets for the next connection', () => {
     const framer = new CotFramer();
-    expect(framer.push('<event uid="X">' + 'x'.repeat(COT_FRAME_MAX_BYTES + 1))).toEqual([]);
+    expect(() => framer.push('<event uid="X">' + 'x'.repeat(COT_FRAME_MAX_BYTES + 1))).toThrow(
+      CotFrameTooLargeError,
+    );
     expect(framer.push(cot({ uid: 'NEXT' }))).toHaveLength(1);
+  });
+
+  it('rejects a complete oversized event before returning it', () => {
+    const framer = new CotFramer();
+    const oversized = `<event uid="X">${'x'.repeat(COT_FRAME_MAX_BYTES)}</event>`;
+    expect(() => framer.push(oversized)).toThrow(CotFrameTooLargeError);
+  });
+
+  it('accepts a complete event exactly at the byte ceiling', () => {
+    const framer = new CotFramer();
+    const prefix = '<event uid="X">';
+    const suffix = '</event>';
+    const exact = prefix + 'x'.repeat(COT_FRAME_MAX_BYTES - prefix.length - suffix.length) + suffix;
+    expect(Buffer.byteLength(exact, 'utf8')).toBe(COT_FRAME_MAX_BYTES);
+    expect(framer.push(exact)).toEqual([exact]);
+  });
+
+  it('rejects a complete oversized event across arbitrary chunk boundaries', () => {
+    const oversized = Buffer.from(
+      `<event uid="X">${'🙂'.repeat(COT_FRAME_MAX_BYTES / 2)}</event>`,
+      'utf8',
+    );
+    for (const chunkSize of [1, 2, 3, 7, 31, 1024]) {
+      const framer = new CotFramer();
+      expect(() => {
+        for (let offset = 0; offset < oversized.length; offset += chunkSize) {
+          framer.push(oversized.subarray(offset, offset + chunkSize));
+        }
+      }).toThrow(CotFrameTooLargeError);
+    }
   });
 });
 
