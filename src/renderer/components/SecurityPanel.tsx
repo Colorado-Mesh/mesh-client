@@ -210,10 +210,10 @@ export default function SecurityPanel({
   }, [securityConfig, isMeshcore]);
 
   useEffect(() => {
-    void window.electronAPI.safeStorage
-      .isAvailable()
-      .then((available) => {
-        setSafeStorageAvailable(available);
+    void window.electronAPI.secureSecrets
+      .status()
+      .then(({ persistent }) => {
+        setSafeStorageAvailable(persistent);
       })
       .catch(() => {
         setSafeStorageAvailable(false);

@@ -2,9 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import { COLORADO_MQTT_REGION_ACK_KEY } from './connectionPanelStorageMigrations';
-import { MESHCORE_ENC_PK_KEY, MESHCORE_IDENTITY_STORAGE_KEY, WAEV_HOST } from './letsMeshJwt';
+import { MESHCORE_IDENTITY_STORAGE_KEY, WAEV_HOST } from './letsMeshJwt';
 import { MESHTASTIC_MQTT_SETTINGS_KEY } from './meshtasticMqttSettingsStorage';
 import { tryAutoLaunchMqtt } from './mqttAutoLaunch';
+import { MESHCORE_IDENTITY_SECRET_KEY, setSecureSecret } from './secureSecretStorage';
 
 describe('tryAutoLaunchMqtt', () => {
   afterEach(() => {
@@ -28,10 +29,8 @@ describe('tryAutoLaunchMqtt', () => {
         autoLaunch: true,
       }),
     );
-    const connect = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('window', {
-      electronAPI: { mqtt: { connect } },
-    });
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
 
     await tryAutoLaunchMqtt('meshtastic');
 
@@ -47,10 +46,8 @@ describe('tryAutoLaunchMqtt', () => {
       MESHTASTIC_MQTT_SETTINGS_KEY,
       JSON.stringify({ autoLaunch: false, server: 'mqtt.meshtastic.org' }),
     );
-    const connect = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('window', {
-      electronAPI: { mqtt: { connect } },
-    });
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
 
     await tryAutoLaunchMqtt('meshtastic');
 
@@ -66,10 +63,8 @@ describe('tryAutoLaunchMqtt', () => {
       APP_SETTINGS_STORAGE_KEY,
       JSON.stringify({ hiddenProtocols: ['meshtastic'] }),
     );
-    const connect = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('window', {
-      electronAPI: { mqtt: { connect } },
-    });
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
     vi.spyOn(console, 'debug').mockImplementation(() => {});
 
     await tryAutoLaunchMqtt('meshtastic');
@@ -82,10 +77,8 @@ describe('tryAutoLaunchMqtt', () => {
       MESHTASTIC_MQTT_SETTINGS_KEY,
       JSON.stringify({ autoLaunch: true, server: 'mqtt.meshtastic.org' }),
     );
-    const connect = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('window', {
-      electronAPI: { mqtt: { connect } },
-    });
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
 
     await tryAutoLaunchMqtt('reticulum');
 
@@ -105,10 +98,8 @@ describe('tryAutoLaunchMqtt', () => {
         tlsEnabled: true,
       }),
     );
-    const connect = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal('window', {
-      electronAPI: { mqtt: { connect } },
-    });
+    const connect = vi.mocked(window.electronAPI.mqtt.connect);
+    connect.mockReset().mockResolvedValue(undefined);
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await tryAutoLaunchMqtt('meshcore');
@@ -128,7 +119,6 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
     localStorage.removeItem('mesh-client:mqttPreset:meshcore');
     localStorage.removeItem(COLORADO_MQTT_REGION_ACK_KEY);
     localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
-    localStorage.removeItem(MESHCORE_ENC_PK_KEY);
   });
 
   it('defers JWT broker auto-launch until private key is cached', async () => {
@@ -147,7 +137,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
 
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify([3, 4]));
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
   });
 
@@ -164,7 +154,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
       }),
     );
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify([3, 4]));
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
   });
 
@@ -181,7 +171,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
       }),
     );
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify([3, 4]));
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
   });
 
@@ -209,7 +199,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
 
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify([3, 4]));
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
   });
 
@@ -232,7 +222,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
 
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify([3, 4]));
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
   });
 });

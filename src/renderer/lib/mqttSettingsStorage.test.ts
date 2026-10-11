@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -7,6 +7,7 @@ import {
 } from '@/shared/meshtasticMqttReconnect';
 
 import { readMqttSettingsFromStorage } from './mqttSettingsStorage';
+import { resetSecureSecretCacheForTests, setSecureSecret } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 const DEFAULTS: MQTTSettings = {
@@ -20,6 +21,11 @@ const DEFAULTS: MQTTSettings = {
 };
 
 describe('readMqttSettingsFromStorage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
+  });
+
   it('returns defaults when storage is empty', () => {
     expect(readMqttSettingsFromStorage('missing-key', DEFAULTS)).toEqual(DEFAULTS);
   });
@@ -37,5 +43,29 @@ describe('readMqttSettingsFromStorage', () => {
   it('falls back to defaults on corrupt JSON', () => {
     localStorage.setItem('bad-mqtt-settings', '{not json');
     expect(readMqttSettingsFromStorage('bad-mqtt-settings', DEFAULTS)).toEqual(DEFAULTS);
+  });
+
+  it('loads complete settings from secure storage without clear metadata', async () => {
+    await setSecureSecret(
+      'mqtt:meshtastic',
+      JSON.stringify({ ...DEFAULTS, server: 'secure.example.com', password: 'secret' }),
+    );
+
+    expect(readMqttSettingsFromStorage('missing-key', DEFAULTS, 'mqtt:meshtastic')).toMatchObject({
+      server: 'secure.example.com',
+      password: 'secret',
+    });
+  });
+
+  it('merges legacy clear metadata with an older secret-only record', async () => {
+    localStorage.setItem(
+      'legacy-mqtt-settings',
+      JSON.stringify({ server: 'legacy.example.com', port: 8883 }),
+    );
+    await setSecureSecret('mqtt:meshtastic', JSON.stringify({ password: 'secret' }));
+
+    expect(
+      readMqttSettingsFromStorage('legacy-mqtt-settings', DEFAULTS, 'mqtt:meshtastic'),
+    ).toMatchObject({ server: 'legacy.example.com', port: 8883, password: 'secret' });
   });
 });

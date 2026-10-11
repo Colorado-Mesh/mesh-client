@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   ensureMeshtasticDmKeyBackupIndex,
@@ -12,16 +12,16 @@ import {
   rebuildMeshtasticDmKeyBackupIndex,
   saveMeshtasticDmKeyBackup,
 } from './meshtasticDmKeyBackupStorage';
+import {
+  keyBackupSecretKey,
+  resetSecureSecretCacheForTests,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 describe('meshtasticDmKeyBackupStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
   it('stores separate backups per nodeNum', async () => {
@@ -70,7 +70,7 @@ describe('meshtasticDmKeyBackupStorage', () => {
       nodeLabel: 'Node C',
       backedUpAt: 1_700_000_000_000,
     });
-    localStorage.setItem(meshtasticDmKeyBackupStorageKey(0x300), `enc:${payload}`);
+    await setSecureSecret(keyBackupSecretKey('meshtastic', 0x300), payload);
 
     expect(listMeshtasticDmKeyBackups()).toHaveLength(0);
 
@@ -104,6 +104,7 @@ describe('meshtasticDmKeyBackupStorage', () => {
     const migrated = await migrateLegacyMeshtasticDmKeyBackup(0x42);
     expect(migrated).toBe(true);
     expect(localStorage.getItem(LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY)).toBeNull();
-    expect(localStorage.getItem(meshtasticDmKeyBackupStorageKey(0x42))).toBeTruthy();
+    expect(localStorage.getItem(meshtasticDmKeyBackupStorageKey(0x42))).toBeNull();
+    expect(hasMeshtasticDmKeyBackup(0x42)).toBe(true);
   });
 });

@@ -6,7 +6,7 @@ import { parseStoredJson } from './parseStoredJson';
 /** Current localStorage key for merged app + diagnostics preference JSON. */
 export const APP_SETTINGS_STORAGE_KEY = 'mesh-client:appSettings';
 
-const LEGACY_APP_SETTINGS_STORAGE_KEY = 'mesh-client:adminSettings';
+export const LEGACY_APP_SETTINGS_STORAGE_KEY = 'mesh-client:adminSettings';
 
 /**
  * One-time copy from legacy `mesh-client:adminSettings` so existing installs keep settings.

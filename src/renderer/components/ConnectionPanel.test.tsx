@@ -18,6 +18,13 @@ import {
   initNobleBleDualRadioStartup,
   resetNobleBleConnectMutexForTests,
 } from '../lib/meshcoreDualNobleBleInit';
+import {
+  getCachedSecureSecret,
+  MESHCORE_IDENTITY_SECRET_KEY,
+  MESHTASTIC_MQTT_SECRET_KEY,
+  MQTT_PROFILES_SECRET_KEY,
+  setSecureSecret,
+} from '../lib/secureSecretStorage';
 import type { DeviceState } from '../lib/types';
 import { mockConsoleWarn, withMockedConsoleWarn } from '../lib/vitestConsoleMock';
 import ConnectionPanel from './ConnectionPanel';
@@ -1666,9 +1673,11 @@ describe('ConnectionPanel Meshtastic MQTT autoLaunch persistence', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Auto-connect on application start' }));
 
-    expect(JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}').autoLaunch).toBe(
-      true,
-    );
+    await waitFor(() => {
+      const saved = JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}');
+      expect(saved.autoLaunch).toBe(true);
+    });
+    expect(localStorage.getItem('mesh-client:mqttSettings')).toBeNull();
   });
 });
 
@@ -1729,9 +1738,10 @@ describe('ConnectionPanel MQTT channel PSKs', () => {
     fireEvent.blur(textarea);
 
     await waitFor(() => {
-      const saved = JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}');
+      const saved = JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}');
       expect(saved.channelPsks).toEqual([KEY_A, KEY_B]);
     });
+    expect(localStorage.getItem('mesh-client:mqttSettings')).toBeNull();
   });
 
   it('shows invalid length warning after blur', async () => {
@@ -1839,10 +1849,8 @@ describe('ConnectionPanel LetsMesh username sync', () => {
 
   it('shows the MQTT client key with a copy button once the identity has a key pair', async () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
-    localStorage.setItem(
-      MESHCORE_IDENTITY_STORAGE_KEY,
-      JSON.stringify({ public_key: PUB_HEX, private_key: 'a'.repeat(128) }),
-    );
+    localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: PUB_HEX }));
+    await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify('a'.repeat(128)));
     try {
       renderMeshcoreLetsMesh();
       const copy = await screen.findByRole('button', { name: 'Copy client key' });
@@ -2539,10 +2547,29 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     },
   ];
 
-  beforeEach(() => {
+  const storedProfiles = profiles.map((profile) => ({
+    id: profile.id,
+    name: profile.name,
+    server: profile.server,
+    port: profile.port,
+    username: profile.username,
+    topicPrefix: profile.topicPrefix,
+  }));
+
+  beforeEach(async () => {
     localStorage.clear();
-    localStorage.setItem('mesh-client:mqttSettings', JSON.stringify(baseSettings));
-    localStorage.setItem('mesh-client:mqttProfiles:meshtastic', JSON.stringify(profiles));
+    const storedBaseSettings: Record<string, unknown> = { ...baseSettings };
+    delete storedBaseSettings.password;
+    localStorage.setItem('mesh-client:mqttSettings', JSON.stringify(storedBaseSettings));
+    localStorage.setItem('mesh-client:mqttProfiles:meshtastic', JSON.stringify(storedProfiles));
+    await setSecureSecret(
+      MESHTASTIC_MQTT_SECRET_KEY,
+      JSON.stringify({ password: baseSettings.password }),
+    );
+    await setSecureSecret(
+      MQTT_PROFILES_SECRET_KEY,
+      JSON.stringify({ nwi: baseSettings.password, chi: baseSettings.password }),
+    );
     vi.mocked(window.electronAPI.mqtt.connect).mockClear();
     vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockClear();
   });
@@ -2673,6 +2700,14 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
 
   it('applies only the latest of overlapping topic updates', async () => {
     const user = userEvent.setup();
+    await setSecureSecret(
+      MQTT_PROFILES_SECRET_KEY,
+      JSON.stringify({
+        nwi: baseSettings.password,
+        chi: baseSettings.password,
+        il: baseSettings.password,
+      }),
+    );
     localStorage.setItem(
       'mesh-client:mqttProfiles:meshtastic',
       JSON.stringify([
@@ -2700,6 +2735,10 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
 
   it('never sends a wildcard profile prefix to a live session', async () => {
     const user = userEvent.setup();
+    await setSecureSecret(
+      MQTT_PROFILES_SECRET_KEY,
+      JSON.stringify({ wild: baseSettings.password }),
+    );
     localStorage.setItem(
       'mesh-client:mqttProfiles:meshtastic',
       JSON.stringify([{ ...baseSettings, id: 'wild', name: 'Wild', topicPrefix: 'msh/+/IN' }]),
@@ -2779,5 +2818,26 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     await user.click(screen.getByRole('button', { name: 'Delete MQTT profile National' }));
     expect(screen.queryByRole('option', { name: 'Saved: National' })).toBeNull();
     expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toBe('[]');
+  });
+
+  it('restores the last persisted profile list when a save fails', async () => {
+    const user = userEvent.setup();
+    renderPanel('disconnected');
+    await user.selectOptions(presetSelect(), 'profile:nwi');
+    await screen.findByRole('button', { name: 'Delete MQTT profile NW Indiana' });
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(
+      new Error('profile save failed'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await user.click(screen.getByRole('button', { name: 'Delete MQTT profile NW Indiana' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Saved: NW Indiana' })).toBeInTheDocument();
+    });
+    expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toBe(
+      JSON.stringify(storedProfiles),
+    );
+    warn.mockRestore();
   });
 });

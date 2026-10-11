@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import {
   clearAllRoomEphemeralAdminPasswords,
   forgetAdminPassword,
@@ -12,16 +11,15 @@ import {
 } from './meshcoreInfraAdminSecrets';
 import {
   getMeshcoreRepeaterCredential,
-  meshcoreRepeaterCredentialSettingForNode,
   setMeshcoreRepeaterCredential,
 } from './meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from './meshcoreRepeaterSession';
 import {
   getMeshcoreRoomCredential,
-  meshcoreRoomCredentialSettingForNode,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import { getMeshcoreRoomSyncConfig, setMeshcoreRoomSyncConfig } from './meshcoreRoomSyncStorage';
+import { listCachedSecureSecretKeys } from './secureSecretStorage';
 
 describe('meshcoreInfraAdminSecrets', () => {
   beforeEach(() => {
@@ -35,18 +33,18 @@ describe('meshcoreInfraAdminSecrets', () => {
     await setAdminPassword(0x10, 'Repeater', 'rep-secret', { persist: true });
     expect(getMeshcoreRepeaterCredential(0x10)?.password).toBe('rep-secret');
     expect(getMeshcoreRoomCredential(0x10)).toBeUndefined();
-    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '';
-    expect(raw).toContain(meshcoreRepeaterCredentialSettingForNode(0x10));
-    expect(raw).not.toContain(meshcoreRoomCredentialSettingForNode(0x10));
+    expect(listCachedSecureSecretKeys()).toContain('meshcore:repeater:16');
+    expect(listCachedSecureSecretKeys()).not.toContain('meshcore:room:16');
+    expect(JSON.stringify(localStorage)).not.toContain('rep-secret');
   });
 
   it('persists room admin only under room credential prefix', async () => {
     await setAdminPassword(0x20, 'Room', 'room-admin', { persist: true });
     expect(getMeshcoreRoomCredential(0x20)?.adminPassword).toBe('room-admin');
     expect(getMeshcoreRepeaterCredential(0x20)).toBeUndefined();
-    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '';
-    expect(raw).toContain(meshcoreRoomCredentialSettingForNode(0x20));
-    expect(raw).not.toContain(meshcoreRepeaterCredentialSettingForNode(0x20));
+    expect(listCachedSecureSecretKeys()).toContain('meshcore:room:32');
+    expect(listCachedSecureSecretKeys()).not.toContain('meshcore:repeater:32');
+    expect(JSON.stringify(localStorage)).not.toContain('room-admin');
   });
 
   it('room setAdminPassword keeps guest and sync/auto-login when patching admin', async () => {

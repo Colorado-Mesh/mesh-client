@@ -8,11 +8,11 @@ import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { mergeAppSetting, mergeAppSettingsPartial } from '../lib/appSettingsStorage';
+import { mergeAppSettingsPartial } from '../lib/appSettingsStorage';
 import type { OurPositionReference } from '../lib/locationTrust';
 import { LORA_BLOCKLIST_SCOPE_ID } from '../lib/loraBlocklist';
 import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
-import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
+import { setMeshcoreRepeaterCredential } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
 import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import {
@@ -63,12 +63,8 @@ const meshcoreRepeaterNode: MeshNode = {
   hw_model: 'Repeater',
 };
 
-function seedRepeaterSavedCredential(): void {
-  mergeAppSetting(
-    meshcoreRepeaterCredentialSettingForNode(meshcoreRepeaterNode.node_id),
-    JSON.stringify({ password: 'test' }),
-    'NodeDetailModal.test',
-  );
+async function seedRepeaterSavedCredential(): Promise<void> {
+  await setMeshcoreRepeaterCredential(meshcoreRepeaterNode.node_id, { password: 'test' });
 }
 
 function renderMeshcoreModal(
@@ -293,6 +289,11 @@ describe('NodeDetailModal MeshCore actions', () => {
     vi.mocked(window.electronAPI.db.getMeshcoreContactById).mockResolvedValue(null);
     vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(1);
     vi.mocked(window.electronAPI.db.getNodeNote).mockResolvedValue(null);
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
+      available: true,
+      persistent: true,
+      verified: true,
+    });
     useNodeStore.setState({ nodes: {} });
   });
 
@@ -421,7 +422,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows success status when shareContact resolves true', async () => {
-    seedRepeaterSavedCredential();
+    await seedRepeaterSavedCredential();
     const user = userEvent.setup();
     const onShareContact = vi.fn().mockResolvedValue(true);
     renderMeshcoreModal({ onShareContact });
@@ -433,7 +434,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows failure status when shareContact resolves false', async () => {
-    seedRepeaterSavedCredential();
+    await seedRepeaterSavedCredential();
     const user = userEvent.setup();
     renderMeshcoreModal({ onShareContact: vi.fn().mockResolvedValue(false) });
 
@@ -443,7 +444,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('shows no public key message when exportContact returns null', async () => {
-    seedRepeaterSavedCredential();
+    await seedRepeaterSavedCredential();
     const user = userEvent.setup();
     renderMeshcoreModal({ onExportContact: vi.fn().mockResolvedValue(null) });
 
@@ -513,7 +514,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   });
 
   it('invokes requestRepeaterStatus after Continue when Remember persist fails', async () => {
-    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('ipc down'));
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(new Error('ipc down'));
     const user = userEvent.setup();
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });

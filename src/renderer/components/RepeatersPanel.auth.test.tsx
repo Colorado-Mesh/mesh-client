@@ -3,15 +3,17 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { clearAllRoomEphemeralAdminPasswords } from '../lib/meshcoreInfraAdminSecrets';
-import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
 import {
   getMeshcoreRoomCredential,
-  meshcoreRoomCredentialSettingForNode,
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
+import {
+  getCachedSecureSecret,
+  meshcoreRepeaterSecretKey,
+  meshcoreRoomSecretKey,
+} from '../lib/secureSecretStorage';
 import type { MeshNode } from '../lib/types';
 import RepeatersPanel from './RepeatersPanel';
 
@@ -100,6 +102,12 @@ describe('RepeatersPanel repeater auth', () => {
     clearAllRoomEphemeralAdminPasswords();
     vi.mocked(window.electronAPI.appSettings.set).mockClear();
     vi.mocked(window.electronAPI.appSettings.set).mockResolvedValue({ changes: 1 });
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
+      available: true,
+      persistent: true,
+      verified: true,
+    });
   });
 
   it('does not transmit configuration after closing the panel during authentication', async () => {
@@ -127,7 +135,7 @@ describe('RepeatersPanel repeater auth', () => {
   });
 
   it('continues Status after Continue when Remember persist fails', async () => {
-    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('ipc down'));
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(new Error('ipc down'));
     const user = userEvent.setup();
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     render(<RepeatersPanel {...makeProps({ onRequestRepeaterStatus })} />);
@@ -159,9 +167,8 @@ describe('RepeatersPanel repeater auth', () => {
       expect(onRequestRepeaterStatus).toHaveBeenCalledWith(room.node_id);
     });
     expect(getMeshcoreRoomCredential(room.node_id)?.adminPassword).toBe('room-admin');
-    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '';
-    expect(raw).toContain(meshcoreRoomCredentialSettingForNode(room.node_id));
-    expect(raw).not.toContain(meshcoreRepeaterCredentialSettingForNode(room.node_id));
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(room.node_id))).toContain('room-admin');
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(room.node_id))).toBeNull();
   });
 
   it('Room Status skips auth modal when admin password is already saved', async () => {

@@ -1198,11 +1198,26 @@ export interface ElectronAPI {
 
   notificationSounds: NotificationSoundsApi;
 
-  // ─── Safe storage ────────────────────────────────────────────────────────────
-  safeStorage: {
-    encrypt: (plaintext: string) => Promise<string | null>;
-    decrypt: (ciphertext: string) => Promise<string | null>;
-    isAvailable: () => Promise<boolean>;
+  // ─── Main-owned secure secret storage ───────────────────────────────────────
+  secureSecrets: {
+    status: () => Promise<{ available: boolean; persistent: boolean }>;
+    list: () => Promise<string[]>;
+    getAll: () => Promise<Record<string, string>>;
+    get: (key: string) => Promise<string | null>;
+    set: (
+      key: string,
+      value: string,
+    ) => Promise<{ available: boolean; persistent: boolean; verified: boolean }>;
+    remove: (key: string) => Promise<void>;
+    migrateLegacyIdentityCiphertext: (
+      ciphertext: string,
+    ) => Promise<{ available: boolean; persistent: boolean; verified: boolean }>;
+    migrateLegacyBackupCiphertext: (
+      protocol: 'meshcore' | 'meshtastic',
+      id: number,
+      format: 'per-node' | 'meshtastic-single',
+      ciphertext: string,
+    ) => Promise<{ available: boolean; persistent: boolean; verified: boolean }>;
   };
 
   // ─── App settings ────────────────────────────────────────────────────────────
@@ -1213,6 +1228,8 @@ export interface ElectronAPI {
     getAll: () => Promise<Record<string, string>>;
     /** Write a single SQLite-backed app setting. Keys are allow-listed in main. */
     set: (key: string, value: string) => Promise<{ changes: number }>;
+    /** Remove an allow-listed SQLite-backed app setting. */
+    remove: (key: string) => Promise<{ changes: number }>;
   };
 
   // ─── OS emoji panel ──────────────────────────────────────────────────────────

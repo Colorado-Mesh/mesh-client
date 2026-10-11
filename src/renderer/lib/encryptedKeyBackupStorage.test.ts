@@ -1,23 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
+import {
+  getCachedSecureSecret,
+  removeSecureSecret,
+  resetSecureSecretCacheForTests,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 describe('createEncryptedKeyBackupStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
-  function makeStorage(idField = 'nodeId') {
+  function makeStorage(idField = 'nodeId', protocol: 'meshcore' | 'meshtastic' = 'meshcore') {
     return createEncryptedKeyBackupStorage({
       prefix: 'test:key-backup:',
       indexKey: 'test:key-backup-index',
-      protocol: 'test-protocol',
+      protocol,
       idField,
       validateKeyPair: (publicKey, privateKey) => {
         if (publicKey.length !== 4) throw new Error('public key must be 4 bytes');
@@ -38,11 +39,12 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(loaded?.privateKey).toEqual(privateKey);
     expect(loaded?.payload.id).toBe(0xabc);
 
-    const rawCipher = localStorage.getItem(storage.storageKey(0xabc));
-    expect(rawCipher).toBeTruthy();
-    const rawJson = JSON.parse(rawCipher!.slice('enc:'.length));
+    expect(localStorage.getItem(storage.storageKey(0xabc))).toBeNull();
+    const rawJson = JSON.parse(getCachedSecureSecret('backup:meshcore:2748')!);
     expect(rawJson.nodeId).toBe(0xabc);
     expect(rawJson.nodeNum).toBeUndefined();
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(getCachedSecureSecret('backup-index:meshcore')).not.toBeNull();
   });
 
   it('rejects an invalid key pair before writing anything', async () => {
@@ -61,7 +63,7 @@ describe('createEncryptedKeyBackupStorage', () => {
       privateKey: new Uint8Array(4),
     });
     expect(storage.list()).toHaveLength(1);
-    storage.remove(42);
+    await storage.remove(42);
     expect(storage.has(42)).toBe(false);
     expect(storage.list()).toHaveLength(0);
   });
@@ -74,7 +76,7 @@ describe('createEncryptedKeyBackupStorage', () => {
       privateKey: new Uint8Array(4),
       nodeLabel: 'Recovered',
     });
-    localStorage.removeItem('test:key-backup-index');
+    await removeSecureSecret('backup-index:meshcore');
     expect(storage.list()).toHaveLength(0);
 
     const rebuilt = await storage.rebuildIndexFromSlots();
@@ -92,6 +94,34 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(storage.list()).toEqual(before);
   });
 
+  it('ensureIndex migrates a legacy clear index into secure storage', async () => {
+    localStorage.setItem(
+      'test:key-backup-index',
+      JSON.stringify([{ nodeId: 3, publicKeyB64: 'AQIDBA==', backedUpAt: 1 }]),
+    );
+    const storage = makeStorage();
+
+    await storage.ensureIndex();
+
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(getCachedSecureSecret('backup-index:meshcore')).not.toBeNull();
+  });
+
+  it('ensureIndex rebuilds a stale legacy index before removing it', async () => {
+    const storage = makeStorage();
+    await storage.save({ id: 7, publicKey: new Uint8Array(4), privateKey: new Uint8Array(4) });
+    await removeSecureSecret('backup-index:meshcore');
+    localStorage.setItem(
+      'test:key-backup-index',
+      JSON.stringify([{ nodeId: 8, publicKeyB64: 'AQIDBA==', backedUpAt: 1 }]),
+    );
+
+    await storage.ensureIndex();
+
+    expect(localStorage.getItem('test:key-backup-index')).toBeNull();
+    expect(storage.list().map((entry) => entry.id)).toEqual([7]);
+  });
+
   it('migrateLegacySingleSlot moves a valid legacy payload into per-id storage', async () => {
     const legacyKey = 'test:legacy-key-backup';
     const legacyPayload = JSON.stringify({
@@ -100,18 +130,97 @@ describe('createEncryptedKeyBackupStorage', () => {
     });
     localStorage.setItem(legacyKey, `enc:${legacyPayload}`);
 
-    const storage = makeStorage();
+    const storage = makeStorage('nodeNum', 'meshtastic');
     const migrated = await storage.migrateLegacySingleSlot(legacyKey, 99);
     expect(migrated).toBe(true);
     expect(localStorage.getItem(legacyKey)).toBeNull();
     expect(storage.has(99)).toBe(true);
   });
 
-  it('migrateLegacySingleSlot is a no-op when a backup already exists for the id', async () => {
-    const storage = makeStorage();
-    await storage.save({ id: 99, publicKey: new Uint8Array(4), privateKey: new Uint8Array(4) });
-    localStorage.setItem('test:legacy-key-backup', 'enc:{}');
-    const migrated = await storage.migrateLegacySingleSlot('test:legacy-key-backup', 99);
-    expect(migrated).toBe(false);
+  it('retries an interrupted single-slot migration instead of trusting its intermediate slot', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const legacyPayload = JSON.stringify({
+      publicKey: Buffer.from([1, 2, 3, 4]).toString('base64'),
+      privateKey: Buffer.from([5, 6, 7, 8]).toString('base64'),
+    });
+    localStorage.setItem(legacyKey, `enc:${legacyPayload}`);
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(
+      new Error('regular payload save failed'),
+    );
+    const storage = makeStorage('nodeNum', 'meshtastic');
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).rejects.toThrow(
+      'regular payload save failed',
+    );
+    expect(localStorage.getItem(legacyKey)).not.toBeNull();
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).resolves.toBe(true);
+    expect(localStorage.getItem(legacyKey)).toBeNull();
+    expect((await storage.load(99))?.payload.id).toBe(99);
+  });
+
+  it('reconciles stale index metadata before removing an equivalent legacy slot', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const publicKey = new Uint8Array([1, 2, 3, 4]);
+    const privateKey = new Uint8Array([5, 6, 7, 8]);
+    const storage = makeStorage('nodeNum', 'meshtastic');
+    await storage.save({ id: 99, publicKey, privateKey, nodeLabel: 'Current' });
+    const current = (await storage.load(99))?.payload;
+    expect(current).toBeDefined();
+    await setSecureSecret(
+      'backup-index:meshtastic',
+      JSON.stringify([
+        {
+          nodeNum: 99,
+          nodeLabel: 'Stale',
+          publicKeyB64: Buffer.from([9, 9, 9, 9]).toString('base64'),
+          backedUpAt: 1,
+        },
+      ]),
+    );
+    localStorage.setItem(
+      legacyKey,
+      `enc:${JSON.stringify({
+        publicKey: Buffer.from(publicKey).toString('base64'),
+        privateKey: Buffer.from(privateKey).toString('base64'),
+      })}`,
+    );
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).resolves.toBe(true);
+
+    expect(localStorage.getItem(legacyKey)).toBeNull();
+    expect(storage.list()).toEqual([
+      {
+        id: 99,
+        nodeLabel: 'Current',
+        publicKeyB64: current?.publicKey,
+        backedUpAt: current?.backedUpAt,
+      },
+    ]);
+  });
+
+  it('preserves both backups when an existing slot has a different key pair', async () => {
+    const legacyKey = 'test:legacy-key-backup';
+    const storage = makeStorage('nodeNum', 'meshtastic');
+    await storage.save({
+      id: 99,
+      publicKey: new Uint8Array([1, 2, 3, 4]),
+      privateKey: new Uint8Array([5, 6, 7, 8]),
+    });
+    const existing = getCachedSecureSecret('backup:meshtastic:99');
+    localStorage.setItem(
+      legacyKey,
+      `enc:${JSON.stringify({
+        publicKey: Buffer.from([9, 9, 9, 9]).toString('base64'),
+        privateKey: Buffer.from([8, 8, 8, 8]).toString('base64'),
+      })}`,
+    );
+
+    await expect(storage.migrateLegacySingleSlot(legacyKey, 99)).rejects.toThrow(
+      /conflicting legacy backup/,
+    );
+
+    expect(localStorage.getItem(legacyKey)).not.toBeNull();
+    expect(getCachedSecureSecret('backup:meshtastic:99')).toBe(existing);
   });
 });

@@ -22,7 +22,7 @@ import {
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
-  meshcoreRoomCredentialSettingForNode,
+  setMeshcoreRoomCredential,
 } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   meshcoreApplyRoomSession,
@@ -796,11 +796,7 @@ describe('RoomsPanel', () => {
   it('shows saved passwords section collapsed by default when credentials exist', async () => {
     const room = makeRoom(0x1020, 'Saved List Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test saved list',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
 
     renderRoomsPanel(nodes);
 
@@ -817,11 +813,7 @@ describe('RoomsPanel', () => {
   it('forget saved password clears credential from storage', async () => {
     const room = makeRoom(0x1021, 'Forget Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test forget',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
     mergeAppSetting(
       `meshcoreRoomSync:${String(room.node_id >>> 0)}`,
       JSON.stringify({ enabled: true, intervalMinutes: 60, autoLoginOnConnect: true }),
@@ -846,11 +838,7 @@ describe('RoomsPanel', () => {
   it('login overlay shows stop auto-login when saved credential has auto-login enabled', async () => {
     const room = makeRoom(0x1022, 'Stop Auto Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test stop auto',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
 
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
 
@@ -866,11 +854,7 @@ describe('RoomsPanel', () => {
   it('login overlay can re-enable auto-login when saved credential has it turned off', async () => {
     const room = makeRoom(0x1023, 'Enable Auto Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test enable auto',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
     mergeAppSetting(
       meshcoreRoomSyncSettingForNode(room.node_id),
       JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
@@ -898,11 +882,7 @@ describe('RoomsPanel', () => {
   it('login overlay keeps auto-login off when enabling it fails to persist', async () => {
     const room = makeRoom(0x1024, 'Enable Auto Fail Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test enable auto fail',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
     mergeAppSetting(
       meshcoreRoomSyncSettingForNode(room.node_id),
       JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
@@ -949,11 +929,7 @@ describe('RoomsPanel', () => {
       [roomA, false],
       [roomB, true],
     ] as const) {
-      mergeAppSetting(
-        meshcoreRoomCredentialSettingForNode(room.node_id),
-        JSON.stringify({ guestPassword: 'hello' }),
-        'RoomsPanel.test switch race cred',
-      );
+      await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
       mergeAppSetting(
         meshcoreRoomSyncSettingForNode(room.node_id),
         JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect }),
@@ -1009,11 +985,7 @@ describe('RoomsPanel', () => {
   it('does not auto-login on room select when saved credentials exist', async () => {
     const room = makeRoom(0x100e, 'Saved Creds Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test saved cred',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
 
     renderRoomsPanel(nodes, {
       initialRoomTarget: room.node_id,
@@ -1057,11 +1029,7 @@ describe('RoomsPanel', () => {
   it('clears auto-login failure when re-enabling auto-login on connect', async () => {
     const room = makeRoom(0x1023, 'Re-enable Auto Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(room.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test re-enable auto',
-    );
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
     mergeAppSetting(
       `meshcoreRoomSync:${String(room.node_id >>> 0)}`,
       JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
@@ -1822,11 +1790,7 @@ describe('RoomsPanel layout', () => {
       [room.node_id, room],
       [other.node_id, other],
     ]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(other.node_id),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'RoomsPanel.test axe',
-    );
+    await setMeshcoreRoomCredential(other.node_id, { guestPassword: 'hello' });
     meshcoreApplyRoomSession(room.node_id, {
       guestPassword: 'hello',
       adminPassword: 'admin',

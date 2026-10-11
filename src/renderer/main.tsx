@@ -17,6 +17,7 @@ import {
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
+import { initializeSecureSecretsFailClosed } from './lib/secureSecretStorage';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -52,6 +53,7 @@ void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
 
   installDevElectronApiStubIfNeeded();
+  await initializeSecureSecretsFailClosed();
 
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();

@@ -1,5 +1,11 @@
 import { errLikeToLogString } from './errLikeToLogString';
 import { meshcoreIsSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
+import {
+  getCachedSecureSecret,
+  MESHCORE_IDENTITY_SECRET_KEY,
+  removeSecureSecret,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 /** Ed25519 / MeshCore identity public key length in bytes (32-byte raw pubkey, 64 hex chars). */
 export const MESHCORE_PUBLIC_KEY_LENGTH = 32;
@@ -10,7 +16,7 @@ const TOKEN_EXPIRY_SECONDS = 3600;
 /** localStorage key for MeshCore keys used by LetsMesh / device-signing MQTT JWT (Radio import or radio export). */
 export const MESHCORE_IDENTITY_STORAGE_KEY = 'mesh-client:meshcoreIdentity';
 
-/** localStorage key for the safeStorage-encrypted private key (base64 ciphertext). */
+/** Legacy ciphertext key; startup migration removes it after verified secure-store import. */
 export const MESHCORE_ENC_PK_KEY = 'mesh-client:meshcoreIdentityEncPK';
 
 /** US LetsMesh broker (WebSocket TLS on 443). */
@@ -56,6 +62,16 @@ const DEVICE_SIGNING_HOST_WS_PATHS: Record<string, '/ws' | '/mqtt'> = {
 };
 
 const DEVICE_SIGNING_HOSTS = new Set(Object.keys(DEVICE_SIGNING_HOST_WS_PATHS));
+let identityMutationQueue: Promise<void> = Promise.resolve();
+
+function runIdentityMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = identityMutationQueue.then(operation, operation);
+  identityMutationQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 export function isLetsMeshSettings(server: string): boolean {
   return DEVICE_SIGNING_HOSTS.has(server.trim());
@@ -105,39 +121,42 @@ export async function syncMeshcoreActiveIdentityFromBackup(
  *
  * @returns true if storage was updated or already held this pubkey.
  */
-export function tryPersistMeshcorePublicKeyFromRadio(
+export async function tryPersistMeshcorePublicKeyFromRadio(
   publicKey: Uint8Array | null | undefined,
-): boolean {
+): Promise<boolean> {
   if (publicKey?.length !== MESHCORE_PUBLIC_KEY_LENGTH) return false;
   const pubHex = meshcorePubKeyBytesToHexLower(publicKey);
   if (meshcoreIsSyntheticPlaceholderPubKeyHex(pubHex)) return false;
 
-  try {
-    const existing = readMeshcoreIdentity();
-    const existingPub = normalizePublicKeyHex(existing?.public_key);
-    const pubkeyChanged = existingPub !== null && existingPub !== pubHex;
+  return runIdentityMutation(async () => {
+    try {
+      const existing = readMeshcoreIdentity();
+      const existingPub = normalizePublicKeyHex(existing?.public_key);
+      const pubkeyChanged = existingPub !== null && existingPub !== pubHex;
 
-    if (existingPub === pubHex && existing?.public_key) {
+      if (existingPub === pubHex && existing?.public_key) {
+        window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+        return true;
+      }
+
+      if (pubkeyChanged) {
+        await removeSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+        localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+      }
+
+      localStorage.setItem(
+        MESHCORE_IDENTITY_STORAGE_KEY,
+        JSON.stringify({ public_key: Array.from(publicKey) }),
+      );
       window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
       return true;
+    } catch (err) {
+      console.warn(
+        '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
+      );
+      return false;
     }
-
-    if (pubkeyChanged) {
-      localStorage.removeItem(MESHCORE_ENC_PK_KEY);
-    }
-
-    localStorage.setItem(
-      MESHCORE_IDENTITY_STORAGE_KEY,
-      JSON.stringify({ public_key: Array.from(publicKey) }),
-    );
-    window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
-    return true;
-  } catch (err) {
-    console.warn(
-      '[letsMeshJwt] tryPersistMeshcorePublicKeyFromRadio failed ' + errLikeToLogString(err),
-    );
-    return false;
-  }
+  });
 }
 
 /** True when active MQTT identity cache has both public and private key material. */
@@ -152,8 +171,8 @@ export function meshcoreIdentityHasFullKeyPair(): boolean {
  * After a MeshCore radio connects, persist identity from firmware export so LetsMesh MQTT can sign
  * JWTs without a separate JSON import (same storage shape as RadioPanel config import).
  *
- * Private key is stored encrypted via Electron safeStorage when available; falls back to
- * plaintext localStorage on platforms without an OS keychain (e.g. Linux without keyring).
+ * Private key is stored by the main-process secure-secret service. When a confidential
+ * OS backend is unavailable it remains session-only and is never written to localStorage.
  *
  * Both `publicKey` and `privateKeyBytes` allow `null` and `undefined` so callers can pass through
  * MeshCore export results without branching: e.g. `coerceMeshcoreExportPrivateKeyResult` returns
@@ -175,70 +194,65 @@ export async function tryPersistMeshcoreIdentityFromRadioExport(
   ) {
     return false;
   }
-  try {
-    const privArray = Array.from(privateKeyBytes);
-    const ciphertext = await window.electronAPI.safeStorage.encrypt(JSON.stringify(privArray));
-    if (ciphertext !== null) {
-      localStorage.setItem(
-        MESHCORE_IDENTITY_STORAGE_KEY,
-        JSON.stringify({ public_key: Array.from(publicKey) }),
+  return runIdentityMutation(async () => {
+    const previousSecret = getCachedSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+    try {
+      const privArray = Array.from(privateKeyBytes);
+      await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify(privArray));
+      try {
+        localStorage.setItem(
+          MESHCORE_IDENTITY_STORAGE_KEY,
+          JSON.stringify({ public_key: Array.from(publicKey) }),
+        );
+      } catch (metadataError) {
+        if (previousSecret == null) await removeSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+        else await setSecureSecret(MESHCORE_IDENTITY_SECRET_KEY, previousSecret);
+        throw metadataError;
+      }
+      try {
+        localStorage.removeItem(MESHCORE_ENC_PK_KEY);
+      } catch (legacyCleanupError) {
+        console.warn(
+          '[letsMeshJwt] legacy identity cleanup failed ' + errLikeToLogString(legacyCleanupError),
+        );
+      }
+      window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
+      return true;
+    } catch (err) {
+      // Still return false (no partial identity write); log for safeStorage / quota / private mode.
+      console.warn(
+        '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
       );
-      localStorage.setItem(MESHCORE_ENC_PK_KEY, ciphertext);
-    } else {
-      // safeStorage unavailable — store plaintext as before
-      localStorage.setItem(
-        MESHCORE_IDENTITY_STORAGE_KEY,
-        JSON.stringify({ public_key: Array.from(publicKey), private_key: privArray }),
-      );
+      return false;
     }
-    window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
-    return true;
-  } catch (err) {
-    // Still return false (no partial identity write); log for safeStorage / quota / private mode.
-    console.warn(
-      '[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed ' + errLikeToLogString(err),
-    );
-    return false;
-  }
+  });
 }
 
-/** Returns true if a private key exists (encrypted or plaintext), without decrypting it. */
+/** Returns true if the boot-hydrated secure store contains a private key. */
 export function meshcoreIdentityHasPrivateKey(): boolean {
-  try {
-    if (localStorage.getItem(MESHCORE_ENC_PK_KEY) !== null) return true;
-    const raw = localStorage.getItem(MESHCORE_IDENTITY_STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as { private_key?: unknown };
-    return parsed.private_key != null;
-  } catch {
-    // catch-no-log-ok
-    return false;
-  }
+  return getCachedSecureSecret(MESHCORE_IDENTITY_SECRET_KEY) !== null;
 }
 
 /**
- * Async version of readMeshcoreIdentity that decrypts the private key from safeStorage when
- * available, or falls back to the plaintext value stored in localStorage.
+ * Async-compatible identity reader. Private material comes only from the boot-hydrated
+ * main-process secure-secret service; localStorage contains public metadata only.
  */
-export async function readMeshcoreIdentityAsync(): Promise<{
+export function readMeshcoreIdentityAsync(): Promise<{
   private_key?: string | number[];
   public_key?: string | number[];
 } | null> {
   const base = readMeshcoreIdentity();
-  if (!base) return null;
-  const ciphertext = localStorage.getItem(MESHCORE_ENC_PK_KEY);
-  if (ciphertext !== null) {
+  if (!base) return Promise.resolve(null);
+  const plaintext = getCachedSecureSecret(MESHCORE_IDENTITY_SECRET_KEY);
+  if (plaintext !== null) {
     try {
-      const plaintext = await window.electronAPI.safeStorage.decrypt(ciphertext);
-      if (plaintext !== null) {
-        const private_key = JSON.parse(plaintext) as number[];
-        return { ...base, private_key };
-      }
+      const private_key = JSON.parse(plaintext) as number[];
+      return Promise.resolve({ ...base, private_key });
     } catch {
-      // catch-no-log-ok safeStorage decrypt failed — fall through to plaintext path
+      // catch-no-log-ok corrupt session cache is treated as missing key material
     }
   }
-  return base;
+  return Promise.resolve(base);
 }
 
 // Read the identity cached by RadioPanel after a config-file import.
@@ -249,7 +263,11 @@ export function readMeshcoreIdentity(): {
   try {
     const raw = localStorage.getItem(MESHCORE_IDENTITY_STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as { private_key?: string | number[]; public_key?: string | number[] };
+    const parsed = JSON.parse(raw) as {
+      private_key?: string | number[];
+      public_key?: string | number[];
+    };
+    return { public_key: parsed.public_key };
   } catch {
     // catch-no-log-ok localStorage read — non-critical identity cache; returns null on any parse error
     return null;

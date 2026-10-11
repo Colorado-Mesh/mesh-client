@@ -13,7 +13,7 @@ const EXPECTED_TOP_LEVEL_KEYS = [
   'update',
   'clipboard',
   'notify',
-  'safeStorage',
+  'secureSecrets',
   'appSettings',
   'meshcore',
   'http',

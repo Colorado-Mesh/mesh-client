@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
 import { meshcoreKeyBackupStorageKey } from '../lib/meshcoreKeyBackupStorage';
 import { saveMeshtasticDmKeyBackup } from '../lib/meshtasticDmKeyBackupStorage';
+import { resetSecureSecretCacheForTests } from '../lib/secureSecretStorage';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 
 describe('KeyBackupRestoreSection', () => {
@@ -13,12 +14,7 @@ describe('KeyBackupRestoreSection', () => {
   beforeEach(() => {
     localStorage.clear();
     addToast.mockClear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
   it('lists alternate backups and restores selected entry', async () => {
@@ -127,5 +123,46 @@ describe('KeyBackupRestoreSection', () => {
       expect(screen.getByText('No backup for MC Node')).toBeInTheDocument();
     });
     expect(localStorage.getItem(meshcoreKeyBackupStorageKey(0xabc))).toBeNull();
+  });
+
+  it('reports backup removal failures and keeps the backup available', async () => {
+    const user = userEvent.setup();
+    const nodeKey = 0x321;
+    await saveMeshtasticDmKeyBackup({
+      nodeNum: nodeKey,
+      publicKey: new Uint8Array(32).fill(1),
+      privateKey: new Uint8Array(32).fill(2),
+      nodeLabel: 'Keep Me',
+    });
+    vi.mocked(window.electronAPI.secureSecrets.remove).mockRejectedValueOnce(
+      new Error('secure delete failed'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <KeyBackupRestoreSection
+        protocol="meshtastic"
+        disabled={false}
+        safeStorageAvailable
+        localNodeKey={nodeKey}
+        localNodeLabel="Keep Me"
+        canBackup
+        onMeshtasticRestore={vi.fn()}
+        onMeshcoreRestore={vi.fn()}
+        onMeshtasticBackup={vi.fn()}
+        onMeshcoreBackup={vi.fn()}
+        addToast={addToast}
+      />,
+    );
+
+    await screen.findByText('Backup saved for Keep Me');
+    await user.click(screen.getByRole('button', { name: 'Remove backup' }));
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove backup' });
+    await user.click(removeButtons[removeButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('Failed: secure delete failed', 'error');
+    });
+    expect(screen.getByText('Backup saved for Keep Me')).toBeInTheDocument();
+    warn.mockRestore();
   });
 });

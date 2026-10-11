@@ -1,8 +1,14 @@
 import { errLikeToLogString } from './errLikeToLogString';
 import { parseStoredJson } from './parseStoredJson';
+import {
+  getCachedSecureSecret,
+  MQTT_PROFILES_SECRET_KEY,
+  removeSecureSecret,
+  setSecureSecret,
+} from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
-/** Same storage as Meshtastic `MQTTSettings` (localStorage, password included). */
+/** Non-secret profile metadata only; passwords are held by the main-owned credential service. */
 export const MQTT_PROFILES_STORAGE_KEY = 'mesh-client:mqttProfiles:meshtastic';
 export const MQTT_PROFILE_NAME_MAX_LENGTH = 60;
 export const MQTT_PROFILES_MAX = 50;
@@ -39,7 +45,10 @@ export function normalizeMqttProfileName(name: string): string {
   return name.trim().slice(0, MQTT_PROFILE_NAME_MAX_LENGTH);
 }
 
-function isMqttProfile(v: unknown): v is MqttProfile {
+type StoredMqttProfile = Omit<MqttProfile, 'password'>;
+let mqttProfileSaveQueue: Promise<void> = Promise.resolve();
+
+function isStoredMqttProfile(v: unknown): v is StoredMqttProfile {
   if (!v || typeof v !== 'object') return false;
   const p = v as Record<string, unknown>;
   return (
@@ -50,7 +59,6 @@ function isMqttProfile(v: unknown): v is MqttProfile {
     typeof p.port === 'number' &&
     Number.isInteger(p.port) &&
     typeof p.username === 'string' &&
-    typeof p.password === 'string' &&
     typeof p.topicPrefix === 'string' &&
     (p.tlsEnabled === undefined || typeof p.tlsEnabled === 'boolean') &&
     (p.tlsInsecure === undefined || typeof p.tlsInsecure === 'boolean') &&
@@ -61,26 +69,68 @@ function isMqttProfile(v: unknown): v is MqttProfile {
 
 export function loadMqttProfiles(): MqttProfile[] {
   try {
+    const passwords =
+      parseStoredJson<Record<string, string>>(
+        getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY),
+        'loadMqttProfiles passwords',
+      ) ?? {};
     const parsed = parseStoredJson<unknown>(
       localStorage.getItem(MQTT_PROFILES_STORAGE_KEY),
       'loadMqttProfiles',
     );
-    if (Array.isArray(parsed)) return parsed.filter(isMqttProfile).slice(0, MQTT_PROFILES_MAX);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter(isStoredMqttProfile)
+        .slice(0, MQTT_PROFILES_MAX)
+        .map((profile) => ({ ...profile, password: passwords[profile.id] ?? '' }));
+    }
   } catch (e) {
     console.debug('[mqttProfiles] load failed ' + errLikeToLogString(e));
   }
   return [];
 }
 
-export function saveMqttProfiles(profiles: readonly MqttProfile[]): void {
+async function saveMqttProfilesNow(profiles: readonly MqttProfile[]): Promise<void> {
+  const previousPasswords = getCachedSecureSecret(MQTT_PROFILES_SECRET_KEY);
   try {
+    const limited = profiles.slice(0, MQTT_PROFILES_MAX);
+    const passwords = Object.fromEntries(limited.map((profile) => [profile.id, profile.password]));
+    if (limited.length === 0) await removeSecureSecret(MQTT_PROFILES_SECRET_KEY);
+    else await setSecureSecret(MQTT_PROFILES_SECRET_KEY, JSON.stringify(passwords));
     localStorage.setItem(
       MQTT_PROFILES_STORAGE_KEY,
-      JSON.stringify(profiles.slice(0, MQTT_PROFILES_MAX)),
+      JSON.stringify(
+        limited.map((profile) => ({
+          id: profile.id,
+          name: profile.name,
+          server: profile.server,
+          port: profile.port,
+          username: profile.username,
+          topicPrefix: profile.topicPrefix,
+          tlsEnabled: profile.tlsEnabled,
+          tlsInsecure: profile.tlsInsecure,
+          useWebSocket: profile.useWebSocket,
+          wsPath: profile.wsPath,
+        })),
+      ),
     );
   } catch (e) {
+    try {
+      if (previousPasswords == null) await removeSecureSecret(MQTT_PROFILES_SECRET_KEY);
+      else await setSecureSecret(MQTT_PROFILES_SECRET_KEY, previousPasswords);
+    } catch (rollbackError) {
+      console.warn('[mqttProfiles] password rollback failed ' + errLikeToLogString(rollbackError));
+    }
     console.debug('[mqttProfiles] save failed ' + errLikeToLogString(e));
+    throw e instanceof Error ? e : new Error(String(e));
   }
+}
+
+export function saveMqttProfiles(profiles: readonly MqttProfile[]): Promise<void> {
+  const snapshot = profiles.map((profile) => ({ ...profile }));
+  const operation = mqttProfileSaveQueue.then(() => saveMqttProfilesNow(snapshot));
+  mqttProfileSaveQueue = operation.catch(() => undefined);
+  return operation;
 }
 
 function pickProfileFields(src: MqttProfileFields): MqttProfileFields {
