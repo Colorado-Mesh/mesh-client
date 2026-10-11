@@ -168,7 +168,7 @@
     "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues.",
     "exportForDeveloper": "Export support bundle for developer",
     "exportForDeveloperButton": "Export for Developer",
-    "exportForDeveloperWarning": "Includes your full database, which may contain saved passwords (MeshCore room credentials, MQTT settings, etc.). Share this bundle privately with maintainers only — never on public GitHub.",
+    "exportForDeveloperWarning": "Includes your full database and MECP emergency audit logs, which may contain saved passwords, message text, sender and channel identifiers, and location details. Share this bundle privately with maintainers only — never on public GitHub.",
     "exportSupportBundleFailed": "Could not export support bundle: {{message}}",
     "appearanceSection": "Appearance",
     "colorScheme": "Color scheme",
@@ -901,6 +901,9 @@
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
+    "remoteContent": {
+      "load": "Load remote content from {{host}}"
+    },
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Open on Giphy",
     "directImage": "Image: {{name}}",
@@ -7017,7 +7020,7 @@
     "deletePack": "Delete {{pack}} pack",
     "downloadPack": "Download {{pack}} pack",
     "delete": "Delete",
-    "onlinePrivacy": "Online translation sends the selected message text to your configured LibreTranslate server only when you choose Translate online. Automatic translation always stays offline.",
+    "onlinePrivacy": "Online translation sends the selected message text to your configured LibreTranslate server only when you choose Translate online. Automatic translation always stays offline. HTTP is allowed only for localhost and loopback addresses; all other servers must use HTTPS.",
     "serverUrl": "LibreTranslate server URL",
     "apiKey": "API key (optional)",
     "savedKey": "An API key is saved securely. A blank field keeps it only for the same server URL.",

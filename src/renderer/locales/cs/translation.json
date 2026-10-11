@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Zahrnuje snímek ladění a soubory protokolu v jednom zipu. Bezpečné připojení k veřejným problémům GitHub.",
     "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
     "exportForDeveloperButton": "Export pro vývojáře",
-    "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
+    "exportForDeveloperWarning": "Zahrnuje úplnou databázi a nouzové auditní protokoly MECP, které mohou obsahovat uložená hesla, text zpráv, identifikátory odesílatelů a kanálů a údaje o poloze. Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
     "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Vymazat všechny kontakty LXMF",
@@ -987,6 +987,9 @@
     "healthCheck": {
       "label": "MeshCore Kód zdravotní kontroly",
       "tooltip": "Kód testu pro zdravotní prohlídku MeshCore. Pozorovatelé na síti odesílatele hlásí, který z nich ji obdržel."
+    },
+    "remoteContent": {
+      "load": "Načíst vzdálený obsah z {{host}}"
     }
   },
   "common": {
@@ -7058,7 +7061,7 @@
     "deletePack": "Smazat {{pack}} balíček",
     "downloadPack": "Stáhnout {{pack}} balíček",
     "delete": "Odstranit",
-    "onlinePrivacy": "Online překlad odešle vybraný text zprávy na váš nakonfigurovaný server LibreTranslate pouze tehdy, když zvolíte Přeložit online. Automatický překlad vždy zůstane offline.",
+    "onlinePrivacy": "Online překlad odešle vybraný text zprávy na váš nakonfigurovaný server LibreTranslate pouze tehdy, když zvolíte Přeložit online. Automatický překlad vždy zůstane offline. HTTP je povoleno pouze pro localhost a adresy zpětné smyčky; všechny ostatní servery musí používat HTTPS.",
     "serverUrl": "Adresa URL serveru LibreTranslate",
     "apiKey": "API klíč (volitelné)",
     "savedKey": "Klíč API je bezpečně uložen. Prázdné pole jej uchovává pouze pro stejnou adresu URL serveru.",

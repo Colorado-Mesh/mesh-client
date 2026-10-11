@@ -926,6 +926,7 @@ WATCH_ENTRIES=(
   'usb|usb|https://www.npmjs.com/package/usb|Custom patch (macOS C++17 std compat)'
   'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
   'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'
+  'mqtt-packet|mqtt-packet|https://www.npmjs.com/package/mqtt-packet|Custom patch (reject oversized inbound MQTT packets before buffering)'
 )
 
 # --- Snapshot old versions ---

@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Incluye instantáneas de depuración y archivos de registro en un solo zip. Es seguro adjuntarlo a problemas públicos de GitHub.",
     "exportForDeveloper": "Paquete de soporte de exportación para desarrolladores",
     "exportForDeveloperButton": "Exportar para desarrollador",
-    "exportForDeveloperWarning": "Incluye su base de datos completa, que puede contener contraseñas guardadas (credenciales de sala MeshCore, configuración de MQTT, etc.). Comparta este paquete de forma privada solo con los mantenedores, nunca en GitHub público.",
+    "exportForDeveloperWarning": "Incluye su base de datos completa y los registros de auditoría de emergencias MECP, que pueden contener contraseñas guardadas, texto de mensajes, identificadores de remitente y canal y detalles de ubicación. Comparta este paquete de forma privada solo con los mantenedores, nunca en GitHub público.",
     "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Borrar todos los contactos LXMF",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Código de comprobación de estado",
       "tooltip": "Código de prueba para MeshCore Comprobación de estado. Los observadores en la malla del remitente informan cuál de ellos lo recibió."
+    },
+    "remoteContent": {
+      "load": "Cargar contenido remoto desde {{host}}"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "Eliminar {{pack}} paquete",
     "downloadPack": "Descargar {{pack}} pack",
     "delete": "Eliminar",
-    "onlinePrivacy": "La traducción en línea envía el texto del mensaje seleccionado a su servidor LibreTranslate configurado solo cuando elige Traducir en línea. La traducción automática siempre permanece sin conexión.",
+    "onlinePrivacy": "La traducción en línea envía el texto del mensaje seleccionado a su servidor LibreTranslate configurado solo cuando elige Traducir en línea. La traducción automática siempre permanece sin conexión. HTTP solo está permitido para localhost y direcciones de bucle invertido; los demás servidores deben usar HTTPS.",
     "serverUrl": "URL del servidor de LibreTranslate",
     "apiKey": "Clave API (opcional)",
     "savedKey": "Una clave API se guarda de forma segura. Un campo en blanco lo mantiene solo para la misma URL del servidor.",

@@ -1052,11 +1052,13 @@ describe('fetchLinkPreview', () => {
     process.off('unhandledRejection', onUnhandled);
   });
 
-  it('uses port 80 for http URLs without explicit port', async () => {
+  it('rejects http URLs before DNS or network access', async () => {
     const html = `<meta property="og:title" content="HTTP Title">`;
     mockFetch.mockResolvedValue(makeStreamResponse(html));
-    await fetchLinkPreview('http://example.com/page');
-    expect(agentConnectOpts.some((opts) => opts.port === 80)).toBe(true);
+    expect(await fetchLinkPreview('http://example.com/page')).toBeNull();
+    expect(mockDnsLookup).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(agentConnectOpts).toHaveLength(0);
   });
 
   it('deduplicates concurrent preview fetches for the same URL', async () => {

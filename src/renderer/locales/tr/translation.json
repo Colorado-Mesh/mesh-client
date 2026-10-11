@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Hata ayıklama anlık görüntüsünü ve günlük dosyalarını tek bir zip dosyasında içerir. Herkese açık GitHub sorunlarına eklemek güvenlidir.",
     "exportForDeveloper": "Geliştirici için destek paketini dışa aktarın",
     "exportForDeveloperButton": "Geliştirici için Dışa Aktarma",
-    "exportForDeveloperWarning": "Kaydedilmiş şifreleri (MeshCore oda kimlik bilgileri, MQTT ayarları vb.) içerebilecek tam veritabanınızı içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
+    "exportForDeveloperWarning": "Kaydedilmiş şifreleri, mesaj metnini, gönderen ve kanal kimliklerini ve konum ayrıntılarını içerebilecek tam veritabanınızı ve MECP acil durum denetim günlüklerini içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
     "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Tüm LXMF kişilerini temizle",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Sağlık Kontrolü kodu",
       "tooltip": "MeshCore Sağlamlık Denetimi için test kodu. Gönderenin mesh'indeki gözlemciler, hangisinin aldığını bildirir."
+    },
+    "remoteContent": {
+      "load": "{{host}} 'dan uzak içerik yükleyin"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "{{pack}} paketini sil",
     "downloadPack": "{{pack}} paketini indir",
     "delete": "Silmek",
-    "onlinePrivacy": "Çevrimiçi çeviri, seçilen mesaj metnini yalnızca Çevrimiçi çevir'i seçtiğinizde yapılandırılmış LibreTranslate sunucunuza gönderir. Otomatik çeviri her zaman çevrimdışı kalır.",
+    "onlinePrivacy": "Çevrimiçi çeviri, seçilen mesaj metnini yalnızca Çevrimiçi çevir'i seçtiğinizde yapılandırılmış LibreTranslate sunucunuza gönderir. Otomatik çeviri her zaman çevrimdışı kalır. HTTP yalnızca localhost ve geri döngü adresleri için kullanılabilir; diğer tüm sunucular HTTPS kullanmalıdır.",
     "serverUrl": "LibreTranslate sunucu URL'si",
     "apiKey": "API anahtarı (isteğe bağlı)",
     "savedKey": "API anahtarı güvenli bir şekilde kaydedilir. Boş bir alan, onu yalnızca aynı sunucu URL'si için tutar.",

@@ -34,7 +34,7 @@ import {
   cotUidFor,
   meshNodeToCot,
 } from './tak/cot-converter';
-import { CotFramer, isCotPing, parseCotEvent } from './tak/cot-parser';
+import { CotFramer, CotFrameTooLargeError, isCotPing, parseCotEvent } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { buildGeochatCot } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
@@ -509,7 +509,18 @@ export class TakServerManager extends EventEmitter {
     socket.on('data', (chunk: Buffer) => {
       this.resetClientIdleTimer(id, client);
       const now = Date.now();
-      for (const frame of client.framer.push(chunk)) {
+      let frames: string[];
+      try {
+        frames = client.framer.push(chunk);
+      } catch (err) {
+        if (!(err instanceof CotFrameTooLargeError)) throw err;
+        console.warn(
+          `[TakServer] Client ${sanitizeLogMessage(id)} sent an oversized CoT event; disconnecting`,
+        );
+        socket.destroy();
+        return;
+      }
+      for (const frame of frames) {
         if (isCotPing(frame)) {
           this.sendPong(socket, now);
           continue;

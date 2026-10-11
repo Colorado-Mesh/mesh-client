@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Enthält Debug-Snapshot und Protokolldateien in einer ZIP-Datei. Kann sicher an öffentliche GitHub-Probleme angehängt werden.",
     "exportForDeveloper": "Supportpaket für Entwickler exportieren",
     "exportForDeveloperButton": "Export für Entwickler",
-    "exportForDeveloperWarning": "Beinhaltet Ihre vollständige Datenbank, die möglicherweise gespeicherte Passwörter (MeshCore-Raumanmeldeinformationen, MQTT-Einstellungen usw.) enthält. Teilen Sie dieses Paket nur privat mit Betreuern – niemals auf dem öffentlichen GitHub.",
+    "exportForDeveloperWarning": "Enthält Ihre vollständige Datenbank und MECP-Notfallprotokolle, die gespeicherte Passwörter, Nachrichtentext, Absender- und Kanal-IDs sowie Standortdetails enthalten können. Teilen Sie dieses Paket nur privat mit Betreuern – niemals auf dem öffentlichen GitHub.",
     "exportSupportBundleFailed": "Support-Paket konnte nicht exportiert werden: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Alle LXMF-Kontakte löschen",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Gesundheitscheckcode",
       "tooltip": "Testcode für MeshCore Health Check. Beobachter auf dem Mesh des Absenders berichten, wer von ihnen es erhalten hat."
+    },
+    "remoteContent": {
+      "load": "Remote-Inhalte von {{host}} laden"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "{{pack}} Packung löschen",
     "downloadPack": "Paket {{pack}} herunterladen",
     "delete": "Löschen",
-    "onlinePrivacy": "Online-Übersetzung sendet den ausgewählten Nachrichtentext nur dann an Ihren konfigurierten LibreTranslate-Server, wenn Sie Online-Übersetzung wählen. Automatische Übersetzung bleibt immer offline.",
+    "onlinePrivacy": "Online-Übersetzung sendet den ausgewählten Nachrichtentext nur dann an Ihren konfigurierten LibreTranslate-Server, wenn Sie Online-Übersetzung wählen. Automatische Übersetzung bleibt immer offline. HTTP ist nur für localhost und Loopback-Adressen zulässig; alle anderen Server müssen HTTPS verwenden.",
     "serverUrl": "LibreTranslate-Server-URL",
     "apiKey": "API-Schlüssel (optional)",
     "savedKey": "Ein API-Schlüssel wird sicher gespeichert. Ein leeres Feld speichert es nur für dieselbe Server-URL.",

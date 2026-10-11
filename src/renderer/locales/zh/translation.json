@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "在一个 zip 中包含调试快照和日志文件。可以安全地附加到公共 GitHub 问题。",
     "exportForDeveloper": "为开发人员导出支持包",
     "exportForDeveloperButton": "为开发者导出",
-    "exportForDeveloperWarning": "包括您的完整数据库，其中可能包含保存的密码（MeshCore 房间凭据、MQTT 设置等）。仅与维护者私下共享此捆绑包 - 切勿在公共 GitHub 上共享。",
+    "exportForDeveloperWarning": "包括您的完整数据库和MECP紧急审计日志，其中可能包含保存的密码、消息文本、发送者和频道标识符以及位置详情。仅与维护者私下共享此捆绑包，切勿在公共GitHub上共享。",
     "exportSupportBundleFailed": "无法导出支持包：{{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "清除所有LXMF联系人",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore健康检查代码",
       "tooltip": "MeshCore健康检查的测试代码。发件人网格上的观察者报告他们中的哪一个收到了它。"
+    },
+    "remoteContent": {
+      "load": "从{{host}}加载远程内容"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "删除{{pack}}包",
     "downloadPack": "下载{{pack}}包",
     "delete": "删除",
-    "onlinePrivacy": "只有当您选择在线翻译时，在线翻译才会将所选的消息文本发送到您配置的LibreTranslate服务器。自动翻译始终保持离线状态。",
+    "onlinePrivacy": "只有当您选择在线翻译时，在线翻译才会将所选的消息文本发送到您配置的LibreTranslate服务器。自动翻译始终保持离线状态。HTTP仅允许用于localhost和环回地址；其他所有服务器都必须使用HTTPS。",
     "serverUrl": "LibreTranslate服务器URL",
     "apiKey": "API 密钥（可选）",
     "savedKey": "API密钥已安全保存。空白字段仅用于相同的服务器URL。",

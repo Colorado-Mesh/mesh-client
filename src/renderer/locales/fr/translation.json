@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Inclut un instantané de débogage et des fichiers journaux dans un seul zip. Attachement sécurisé aux problèmes publics GitHub.",
     "exportForDeveloper": "Offre groupée de support à l'exportation pour les développeurs",
     "exportForDeveloperButton": "Exporter pour le développeur",
-    "exportForDeveloperWarning": "Inclut votre base de données complète, qui peut contenir des mots de passe enregistrés (identifiants de salle MeshCore, paramètres MQTT, etc.). Partagez ce bundle en privé avec les responsables uniquement – ​​jamais sur GitHub public.",
+    "exportForDeveloperWarning": "Inclut votre base de données complète et les journaux d’audit d’urgence MECP, qui peuvent contenir des mots de passe, le texte des messages, des identifiants d’expéditeur et de canal, ainsi que des données de localisation. Partagez ce bundle en privé avec les responsables uniquement – jamais sur GitHub public.",
     "exportSupportBundleFailed": "Impossible d'exporter le pack de support : {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Effacer tous les contacts LXMF",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Code du bilan de santé",
       "tooltip": "Code de test pour MeshCore Bilan de santé. Les observateurs sur le maillage de l'expéditeur signalent lequel d'entre eux l'a reçu."
+    },
+    "remoteContent": {
+      "load": "Charger du contenu distant à partir de {{host}}"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "Supprimer {{pack}} pack",
     "downloadPack": "Télécharger {{pack}} pack",
     "delete": "Effacer",
-    "onlinePrivacy": "La traduction en ligne envoie le texte du message sélectionné à votre serveur LibreTranslate configuré uniquement lorsque vous choisissez Traduire en ligne. La traduction automatique reste toujours hors ligne.",
+    "onlinePrivacy": "La traduction en ligne envoie le texte du message sélectionné à votre serveur LibreTranslate configuré uniquement lorsque vous choisissez Traduire en ligne. La traduction automatique reste toujours hors ligne. HTTP est autorisé uniquement pour localhost et les adresses de bouclage ; tous les autres serveurs doivent utiliser HTTPS.",
     "serverUrl": "URL du serveur LibreTranslate",
     "apiKey": "Clé API (facultative)",
     "savedKey": "Une clé API est enregistrée en toute sécurité. Un champ vide le conserve uniquement pour la même URL de serveur.",

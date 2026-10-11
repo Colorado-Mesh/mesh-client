@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Termasuk snapshot debug dan file log dalam satu zip. Aman untuk dilampirkan ke masalah GitHub publik.",
     "exportForDeveloper": "Ekspor paket dukungan untuk pengembang",
     "exportForDeveloperButton": "Ekspor untuk Pengembang",
-    "exportForDeveloperWarning": "Termasuk database lengkap Anda, yang mungkin berisi kata sandi yang disimpan (kredensial ruang MeshCore, pengaturan MQTT, dll.). Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
+    "exportForDeveloperWarning": "Termasuk database lengkap dan log audit darurat MECP Anda, yang mungkin berisi kata sandi tersimpan, teks pesan, pengenal pengirim dan kanal, serta detail lokasi. Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
     "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Hapus semua kontak LXMF",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Kode Pemeriksaan Kesehatan",
       "tooltip": "Kode tes untuk MeshCore Pemeriksaan Kesehatan. Pengamat pada laporan mesh pengirim yang mana dari mereka yang menerimanya."
+    },
+    "remoteContent": {
+      "load": "Muat konten jarak jauh dari {{host}}"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "Hapus paket {{pack}}",
     "downloadPack": "Unduh paket {{pack}}",
     "delete": "Menghapus",
-    "onlinePrivacy": "Terjemahan online mengirimkan teks pesan yang dipilih ke server LibreTranslate Anda yang dikonfigurasi hanya bila Anda memilih Terjemahkan online. Terjemahan otomatis selalu offline.",
+    "onlinePrivacy": "Terjemahan online mengirimkan teks pesan yang dipilih ke server LibreTranslate Anda yang dikonfigurasi hanya bila Anda memilih Terjemahkan online. Terjemahan otomatis selalu offline. HTTP hanya diizinkan untuk localhost dan alamat loopback; semua server lain harus menggunakan HTTPS.",
     "serverUrl": "URL server LibreTranslate",
     "apiKey": "Kunci API (opsional)",
     "savedKey": "Kunci API disimpan dengan aman. Bidang kosong menyimpannya hanya untuk URL server yang sama.",

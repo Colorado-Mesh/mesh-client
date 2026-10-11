@@ -461,6 +461,10 @@ describe('AppPanel: support bundle exports', () => {
       </ToastProvider>,
     );
 
+    expect(
+      await screen.findByText(/MECP emergency audit logs.*sender and channel identifiers/i),
+    ).toBeInTheDocument();
+
     fireEvent.click(
       await screen.findByRole('button', { name: /Export support bundle for developer/i }),
     );

@@ -12,6 +12,7 @@ vi.mock('../log-service', async () => {
 
 import type { TAKContact, TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
+import { COT_FRAME_MAX_BYTES } from './cot-parser';
 import {
   describeTakRemoteError,
   TAK_REMOTE_HTTP_PORT_ERROR,
@@ -446,6 +447,31 @@ describe('TakRemoteClient reconnect and output', () => {
       lon: -105,
       source: 'remote',
     });
+    c.stop();
+  });
+
+  it('disconnects and backs off when the relay sends an oversized CoT event', () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets, connect } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('secureConnect');
+
+    sockets[0]?.emit(
+      'data',
+      Buffer.from(`<event uid="SERVER">${'x'.repeat(COT_FRAME_MAX_BYTES)}</event>`),
+    );
+
+    expect(sockets[0]?.destroy).toHaveBeenCalledOnce();
+    expect(c.getStatus()).toMatchObject({
+      state: 'connecting',
+      error: `CoT event exceeds ${COT_FRAME_MAX_BYTES} bytes`,
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('oversized CoT event'));
+    vi.advanceTimersByTime(TAK_REMOTE_RECONNECT_BASE_MS - 1);
+    expect(connect).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1);
+    expect(connect).toHaveBeenCalledTimes(2);
     c.stop();
   });
 

@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "하나의 zip에 디버그 스냅샷과 로그 파일이 포함되어 있습니다. 공개 GitHub 문제에 첨부해도 안전합니다.",
     "exportForDeveloper": "개발자용 지원 번들 내보내기",
     "exportForDeveloperButton": "개발자용으로 내보내기",
-    "exportForDeveloperWarning": "저장된 비밀번호(MeshCore 룸 자격 증명, MQTT 설정 등)가 포함될 수 있는 전체 데이터베이스를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
+    "exportForDeveloperWarning": "저장된 비밀번호, 메시지 텍스트, 발신자와 채널 식별자, 위치 세부 정보가 포함될 수 있는 전체 데이터베이스와 MECP 비상 감사 로그를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
     "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "모든 LXMF 연락처 지우기",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore 건강 검진 코드",
       "tooltip": "MeshCore 상태 점검을 위한 테스트 코드. 발신자의 메시에 대한 관찰자가 어느 쪽이 수신했는지 보고합니다."
+    },
+    "remoteContent": {
+      "load": "{{host}} 에서 원격 콘텐츠 로드"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "{{pack}} 팩 삭제",
     "downloadPack": "{{pack}} 팩 다운로드",
     "delete": "삭제",
-    "onlinePrivacy": "온라인 번역은 온라인 번역을 선택한 경우에만 선택한 메시지 텍스트를 구성된 LibreTranslate 서버로 전송합니다. 자동 번역은 항상 오프라인으로 유지됩니다.",
+    "onlinePrivacy": "온라인 번역은 온라인 번역을 선택한 경우에만 선택한 메시지 텍스트를 구성된 LibreTranslate 서버로 전송합니다. 자동 번역은 항상 오프라인으로 유지됩니다. HTTP는 localhost와 루프백 주소에만 허용되며 다른 모든 서버는 HTTPS를 사용해야 합니다.",
     "serverUrl": "LibreTranslate 서버 URL",
     "apiKey": "API 키 (선택 사항)",
     "savedKey": "API 키가 안전하게 저장됩니다. 빈 필드는 동일한 서버 URL에 대해서만 유지됩니다.",

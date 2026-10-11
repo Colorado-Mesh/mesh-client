@@ -643,7 +643,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
     // catch-no-log-ok invalid URL string — silent failure by design
     return null;
   }
-  if (!['http:', 'https:'].includes(url.protocol)) return null;
+  if (url.protocol !== 'https:') return null;
   if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
@@ -672,6 +672,13 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
 }
 
 export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMetadata | null> {
+  try {
+    if (new URL(urlString).protocol !== 'https:') return null;
+  } catch {
+    // catch-no-log-ok invalid URL strings fail closed without preview work
+    return null;
+  }
+
   const now = Date.now();
   const cached = previewCache.get(urlString);
   if (cached && cached.expires > now) {

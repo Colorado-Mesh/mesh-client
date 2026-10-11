@@ -4164,8 +4164,7 @@ function ChatPanel({
                                 <ChatPayloadText
                                   text={msg.payload}
                                   query={searchQuery}
-                                  // Always fetch: gating on !showScrollButton hid image embeds
-                                  // while reading history (the usual place users look for them).
+                                  // Always offer click-to-load controls, including while reading history.
                                   loadLinkPreviews
                                   rncpControlEnabled={capabilities.hasRncpTransfer}
                                   senderIsBot={botSenders.has(msg.sender_id)}

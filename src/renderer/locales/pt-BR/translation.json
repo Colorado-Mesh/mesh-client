@@ -354,7 +354,7 @@
     "exportForGitHubDesc": "Inclui instantâneo de depuração e arquivos de log em um zip. É seguro anexar a problemas públicos do GitHub.",
     "exportForDeveloper": "Exportar pacote de suporte para desenvolvedor",
     "exportForDeveloperButton": "Exportar para desenvolvedor",
-    "exportForDeveloperWarning": "Inclui seu banco de dados completo, que pode conter senhas salvas (credenciais de sala MeshCore, configurações MQTT, etc.). Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
+    "exportForDeveloperWarning": "Inclui seu banco de dados completo e os logs de auditoria de emergência MECP, que podem conter senhas salvas, texto de mensagens, identificadores de remetente e canal e detalhes de localização. Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
     "exportSupportBundleFailed": "Não foi possível exportar o pacote de suporte: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Limpar todos os contatos LXMF",
@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Código de verificação de integridade",
       "tooltip": "Código de teste para MeshCore Verificação de saúde. Observadores na malha do remetente relatam qual deles o recebeu."
+    },
+    "remoteContent": {
+      "load": "Carregar conteúdo remoto de {{host}}"
     }
   },
   "common": {
@@ -6993,7 +6996,7 @@
     "deletePack": "Eliminar pacote {{pack}}",
     "downloadPack": "Baixe o pacote {{pack}}",
     "delete": "Excluir",
-    "onlinePrivacy": "A tradução online envia o texto da mensagem selecionada para o servidor LibreTranslate configurado somente quando você escolhe Traduzir online. A tradução automática permanece sempre offline.",
+    "onlinePrivacy": "A tradução online envia o texto da mensagem selecionada para o servidor LibreTranslate configurado somente quando você escolhe Traduzir online. A tradução automática permanece sempre offline. HTTP é permitido apenas para localhost e endereços de loopback; os outros servidores devem usar HTTPS.",
     "serverUrl": "URL do servidor LibreTranslate",
     "apiKey": "Chave API (opcional)",
     "savedKey": "Uma chave de API é salva com segurança. Um campo em branco o mantém apenas para a mesma URL do servidor.",
