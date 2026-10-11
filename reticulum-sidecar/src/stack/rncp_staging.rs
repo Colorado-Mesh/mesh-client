@@ -1,6 +1,8 @@
+#[cfg(test)]
+use std::cell::Cell;
 use std::collections::HashSet;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -58,6 +60,8 @@ struct State {
     data_dir: PathBuf,
     manifest_path: PathBuf,
     manifest: Manifest,
+    #[cfg(test)]
+    fail_manifest_persist_after: Cell<Option<usize>>,
 }
 
 #[derive(Clone)]
@@ -205,7 +209,10 @@ impl State {
             identity_hash: identity_hex.clone(),
             phase: Phase::Writing,
         });
-        self.persist_manifest()?;
+        if let Err(error) = self.persist_manifest() {
+            self.remove_manifest_entry(&transfer_id);
+            return Err(error);
+        }
 
         let writing_path = self.data_dir.join(&writing_name);
         let part_name = format!("{transfer_id}.part");
@@ -238,7 +245,14 @@ impl State {
             .ok_or_else(|| "RNCP staging manifest entry disappeared".to_string())?;
         entry.staged_name = part_name;
         entry.phase = Phase::Pending;
-        self.persist_manifest()?;
+        if let Err(error) = self.persist_manifest() {
+            let _ = remove_owned_regular_file(&part_path);
+            self.remove_manifest_entry(&transfer_id);
+            if let Err(persist_error) = self.persist_manifest() {
+                tracing::warn!("rncp pending rollback persist failed: {persist_error}");
+            }
+            return Err(error);
+        }
 
         if pending {
             return Ok(StoreOutcome::Pending {
@@ -249,7 +263,20 @@ impl State {
             });
         }
 
-        let promoted = self.promote(&transfer_id, overwrite)?;
+        let promoted = match self.promote(&transfer_id, overwrite) {
+            Ok(promoted) => promoted,
+            Err(error) => {
+                let _ =
+                    remove_owned_regular_file(&self.data_dir.join(format!("{transfer_id}.part")));
+                self.remove_manifest_entry(&transfer_id);
+                if let Err(persist_error) = self.persist_manifest() {
+                    tracing::warn!(
+                        "rncp direct-promotion rollback persist failed: {persist_error}"
+                    );
+                }
+                return Err(error);
+            }
+        };
         Ok(StoreOutcome::Promoted {
             file_name: promoted.file_name,
             path: promoted.path,
@@ -276,18 +303,20 @@ impl State {
             fs::remove_file(&final_path)
                 .map_err(|e| format!("remove overwritten RNCP file: {e}"))?;
         }
-        // The staging directory is below save_dir, so a hard link gives us an
-        // atomic no-clobber promotion on every supported platform. `rename`
-        // would silently replace a file created after final_path() checked it.
-        fs::hard_link(&staged_path, &final_path)
-            .map_err(|e| format!("promote RNCP staged payload: {e}"))?;
-        if let Err(error) = fs::remove_file(&staged_path) {
-            let _ = fs::remove_file(&final_path);
-            return Err(format!("remove promoted RNCP stage: {error}"));
-        }
-        sync_dir(&self.save_dir)?;
+        install_staged_file(&staged_path, &final_path, &self.save_dir)?;
         self.remove_manifest_entry(transfer_id);
-        self.persist_manifest()?;
+        if let Err(error) = self.persist_manifest() {
+            self.manifest.entries.push(entry.clone());
+            let _ = fs::remove_file(&final_path);
+            let _ = sync_dir(&self.save_dir);
+            return Err(error);
+        }
+        if let Err(error) = remove_owned_regular_file(&staged_path) {
+            tracing::warn!("remove committed RNCP stage failed: {error}");
+        }
+        if let Err(error) = sync_dir(&self.data_dir) {
+            tracing::warn!("sync committed RNCP stage removal failed: {error}");
+        }
         Ok(PromotedOffer {
             file_name: final_path
                 .file_name()
@@ -373,6 +402,14 @@ impl State {
     }
 
     fn persist_manifest(&self) -> Result<(), String> {
+        #[cfg(test)]
+        if let Some(remaining) = self.fail_manifest_persist_after.get() {
+            if remaining == 0 {
+                self.fail_manifest_persist_after.set(None);
+                return Err("injected RNCP manifest persistence failure".into());
+            }
+            self.fail_manifest_persist_after.set(Some(remaining - 1));
+        }
         let bytes = serde_json::to_vec(&self.manifest)
             .map_err(|e| format!("serialize RNCP staging manifest: {e}"))?;
         if bytes.len() as u64 > MAX_MANIFEST_BYTES {
@@ -451,6 +488,8 @@ fn initialize(save_dir: PathBuf) -> Result<State, String> {
         data_dir,
         manifest_path,
         manifest: Manifest::empty(),
+        #[cfg(test)]
+        fail_manifest_persist_after: Cell::new(None),
     };
     state.persist_manifest()?;
     Ok(state)
@@ -616,6 +655,61 @@ fn create_private_file(path: &Path) -> Result<File, String> {
         .map_err(|e| format!("create private file {}: {e}", path.display()))
 }
 
+fn install_staged_file(
+    staged_path: &Path,
+    final_path: &Path,
+    save_dir: &Path,
+) -> Result<(), String> {
+    install_staged_file_with_link(staged_path, final_path, save_dir, |source, destination| {
+        fs::hard_link(source, destination)
+    })
+}
+
+fn install_staged_file_with_link<F>(
+    staged_path: &Path,
+    final_path: &Path,
+    save_dir: &Path,
+    link: F,
+) -> Result<(), String>
+where
+    F: FnOnce(&Path, &Path) -> io::Result<()>,
+{
+    if let Err(link_error) = link(staged_path, final_path) {
+        if !matches!(
+            link_error.kind(),
+            io::ErrorKind::Unsupported
+                | io::ErrorKind::PermissionDenied
+                | io::ErrorKind::CrossesDevices
+        ) {
+            return Err(format!("promote RNCP staged payload: {link_error}"));
+        }
+
+        let mut input = File::open(staged_path).map_err(|copy_error| {
+            format!("promote RNCP staged payload: {link_error}; open copy source: {copy_error}")
+        })?;
+        let mut output = create_private_file(final_path).map_err(|copy_error| {
+            format!(
+                "promote RNCP staged payload: {link_error}; create copy destination: {copy_error}"
+            )
+        })?;
+        let copy_result = io::copy(&mut input, &mut output)
+            .and_then(|_| output.sync_all())
+            .map_err(|copy_error| {
+                format!("promote RNCP staged payload: {link_error}; copy fallback: {copy_error}")
+            });
+        if let Err(error) = copy_result {
+            let _ = fs::remove_file(final_path);
+            return Err(error);
+        }
+    }
+
+    if let Err(error) = sync_dir(save_dir) {
+        let _ = fs::remove_file(final_path);
+        return Err(error);
+    }
+    Ok(())
+}
+
 fn set_private_dir_permissions(path: &Path) -> Result<(), String> {
     #[cfg(unix)]
     {
@@ -705,6 +799,52 @@ mod tests {
             identity_hash: identity_hash.into(),
             phase: Phase::Pending,
         }
+    }
+
+    #[test]
+    fn manifest_persist_failures_leave_no_unreachable_stage_or_quota_entry() {
+        for fail_after in [0, 1] {
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut state = initialize(dir.path().to_path_buf()).expect("state");
+            state.fail_manifest_persist_after.set(Some(fail_after));
+
+            let error = state
+                .store([42; 32], [43; 16], "payload.bin", b"payload", true, false)
+                .expect_err("injected manifest failure");
+
+            assert_eq!(error, "injected RNCP manifest persistence failure");
+            assert!(state.manifest.entries.is_empty());
+            assert!(
+                fs::read_dir(&state.data_dir)
+                    .expect("data dir")
+                    .next()
+                    .is_none(),
+                "fail_after={fail_after} left staged bytes"
+            );
+            let persisted = read_manifest(&state.manifest_path)
+                .expect("manifest")
+                .expect("present");
+            assert!(persisted.entries.is_empty());
+        }
+    }
+
+    #[test]
+    fn promotion_copies_without_clobber_when_hard_links_are_unsupported() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let staged = dir.path().join("payload.part");
+        let final_path = dir.path().join("payload.bin");
+        fs::write(&staged, b"payload").expect("stage");
+
+        install_staged_file_with_link(&staged, &final_path, dir.path(), |_, _| {
+            Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "hard links disabled for test",
+            ))
+        })
+        .expect("copy fallback");
+
+        assert_eq!(fs::read(&final_path).expect("promoted"), b"payload");
+        assert_eq!(fs::read(&staged).expect("stage retained"), b"payload");
     }
 
     #[tokio::test]

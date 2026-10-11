@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)"
 # shellcheck source=lib/apply-ratspeak-overlay.sh
 source "${SCRIPT_DIR}/lib/apply-ratspeak-overlay.sh"
 PATCH_FILE="${REPO_ROOT}/reticulum-sidecar/patches/rsReticulum-rncp-inbound-admission.patch"
@@ -26,18 +26,10 @@ fi
 
 overlay_already_present() {
   [[ -f "${RUNTIME_RS}" && -f "${TOOL_RS}" ]] || return 1
-  # Require the final admission, replay sequencing, lossless accounting,
-  # completion retention, and legacy CLI contracts. Partial or superseded
-  # overlay markers must fail loud instead of skipping the security patch.
-  grep -q 'set_resource_accept_handler' "${RUNTIME_RS}" \
-    && grep -q 'RncpReceiveMode::EmitPayload' "${RUNTIME_RS}" \
-    && grep -q 'RNCP_PAYLOAD_ACK_TIMEOUT' "${RUNTIME_RS}" \
-    && grep -q 'validate_completed_payload' "${RUNTIME_RS}" \
-    && grep -q 'set_accounting_event_channel' "${RUNTIME_RS}" \
-    && grep -q 'logical_resource_id' "${RUNTIME_RS}" \
-    && grep -q 'next_segment_index' "${RUNTIME_RS}" \
-    && grep -q 'release_incomplete_for_link' "${RUNTIME_RS}" \
-    && grep -q 'RncpReceiveMode::SaveToDirectory' "${TOOL_RS}"
+  # Marker checks can mistake a superseded or partially applied overlay for the
+  # complete patch. Reverse applicability covers every hunk, including the
+  # public API baseline and payload-ack contract.
+  git -C "${RNS_DIR}" apply --reverse --check "${PATCH_FILE}" > /dev/null 2>&1
 }
 
 if overlay_already_present; then

@@ -71,15 +71,22 @@ describe('apply-rsReticulum-rncp-inbound-admission.sh', () => {
     expect(patch).toContain('pub struct rns_runtime::rncp::RncpPayloadAck(_)');
   });
 
-  it('is a no-op only when every required marker is present', () => {
+  it('does not treat marker-only partial content as the complete overlay', () => {
     const rns = makeFakeRsReticulum({
       'crates/rns-runtime/src/rncp.rs':
         'set_resource_accept_handler\nRncpReceiveMode::EmitPayload\nRNCP_PAYLOAD_ACK_TIMEOUT\nvalidate_completed_payload\nset_accounting_event_channel\nlogical_resource_id\nnext_segment_index\nrelease_incomplete_for_link\n',
       'crates/rns-tools/src/commands/rncp.rs': 'RncpReceiveMode::SaveToDirectory\n',
     });
     const result = runApply(rns);
-    expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toMatch(/already applied/);
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).not.toMatch(/already applied/);
+    expect(result.stderr).toMatch(/did not apply|regenerate overlay/);
+  });
+
+  it('requires full reverse patch applicability before reporting a no-op', () => {
+    const script = readFileSync(APPLY_SCRIPT, 'utf8');
+    expect(script).toContain('git -C "${RNS_DIR}" apply --reverse --check "${PATCH_FILE}"');
+    expect(script).not.toContain("grep -q 'set_resource_accept_handler'");
   });
 
   it('does not accept the superseded lossy accounting markers as complete', () => {
