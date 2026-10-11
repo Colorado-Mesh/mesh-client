@@ -319,7 +319,7 @@ packages:
 
     const good = `
       FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
-      pip3 install --force-reinstall --no-cache-dir \\
+      pip3 install --force-reinstall --no-cache-dir --no-build-isolation \\
         "\${FBTOOLS}@${pin}#subdirectory=node"
       node scripts/patch-flatpak-node-generator-playwright.mjs
       flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json

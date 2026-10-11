@@ -98,8 +98,24 @@ function splitReticulumProxyPath(apiPath: string): { path: string; query: string
     if (!query) query = path.slice(decodedQuery);
     path = path.slice(0, decodedQuery);
   }
+  // URL parsing resolves `.` / `..` and encoded dot segments. Checks use this
+  // pathname only; it is not decoded again before forwarding.
+  path = pathnameForProxyChecks(path);
   while (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
   return { path, query };
+}
+
+function pathnameForProxyChecks(path: string): string {
+  let url: URL;
+  try {
+    url = new URL(path, 'http://127.0.0.1');
+  } catch {
+    throw new Error('Reticulum proxy path contains invalid encoding');
+  }
+  if (url.username !== '' || url.password !== '' || url.host !== '127.0.0.1') {
+    throw new Error('Reticulum proxy path contains invalid segments');
+  }
+  return url.pathname;
 }
 
 function assertDedicatedProxyRoute(path: string): void {

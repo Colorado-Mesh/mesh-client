@@ -68,6 +68,7 @@ export class MeshcoreCompanionTxEchoFilter {
    */
   ingest(inbound: Uint8Array): 'drop' | 'hold' | 'deliver' {
     if (this.heldSyncEcho) {
+      if (this.isEcho(inbound)) return 'drop';
       this.clearHold();
       if (inbound.length > 1) {
         // The held 0x0A matched the in-flight SyncNextMessage; this is the real frame.

@@ -33,9 +33,23 @@ describe('assertReticulumProxyPath', () => {
 
   it('rejects traversal segments', () => {
     expect(() => assertReticulumProxyPath('/api/v1/../system/factory-reset')).toThrow(
-      /invalid segments/,
+      /must start with/,
     );
     expect(() => assertReticulumProxyPath('/api/v1/%2e%2e/system/factory-reset')).toThrow(
+      /must start with/,
+    );
+    expect(() => assertReticulumProxyPath('/api/v1/%252e%252e/system/factory-reset')).toThrow(
+      /must start with/,
+    );
+  });
+
+  it('rejects dot-segment aliases after URL normalization', () => {
+    expect(() => assertReticulumProxyPath('/api/v1/voice/./audio')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/voice/%2e/audio')).toThrow(/voiceSendAudio/);
+    expect(() => assertReticulumProxyPath('/api/v1/system/./factory-reset')).toThrow(
+      /factoryReset/,
+    );
+    expect(() => assertReticulumProxyPath('//evil.example/api/v1/peers')).toThrow(
       /invalid segments/,
     );
   });

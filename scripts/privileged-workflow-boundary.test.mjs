@@ -302,7 +302,7 @@ exit 1`);
       name: 'main merge queue',
       target: 'branch',
       enforcement: 'active',
-      conditions: { ref_name: { include: ['refs/heads/main'] } },
+      conditions: { ref_name: { include: ['refs/heads/main'], exclude: [] } },
     });
     expect(ruleset.bypass_actors).toEqual([
       { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' },
@@ -311,6 +311,7 @@ exit 1`);
     expect(source).toContain('main merge queue');
     expect(source).toContain('The active main merge queue ruleset is missing.');
     expect(source).toContain('.github/rulesets/main-merge-queue.json');
+    expect(source).toContain('.conditions.ref_name.exclude');
     expect(source).toContain('RELEASE_CUT_TOKEN');
     expect(source).not.toMatch(/--method\s+(POST|PUT|PATCH)/);
   });

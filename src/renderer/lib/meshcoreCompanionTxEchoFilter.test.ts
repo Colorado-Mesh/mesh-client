@@ -86,4 +86,27 @@ describe('patchMeshcoreCompanionTxEchoFilter', () => {
     expect(onFrameReceived).toHaveBeenLastCalledWith(sync);
     vi.useRealTimers();
   });
+
+  it('drops a longer outbound echo and still delivers the queued frame', () => {
+    vi.useFakeTimers();
+    const onFrameReceived = vi.fn<(frame: Uint8Array) => void>();
+    const conn: MeshcoreEchoFilterableConnection = {
+      sendToRadioFrame: vi.fn(async () => {}),
+      onFrameReceived,
+    };
+    patchMeshcoreCompanionTxEchoFilter(conn);
+    const sync = new Uint8Array([MC_RESP_NO_MORE_MESSAGES]);
+    void conn.sendToRadioFrame(sync);
+    conn.onFrameReceived(sync);
+
+    const echoed = new Uint8Array([22, 1, 2]);
+    void conn.sendToRadioFrame(echoed);
+    conn.onFrameReceived(echoed);
+    expect(onFrameReceived).not.toHaveBeenCalled();
+
+    const queued = new Uint8Array([7, 1, 2, 3]);
+    conn.onFrameReceived(queued);
+    expect(onFrameReceived).toHaveBeenCalledExactlyOnceWith(queued);
+    vi.useRealTimers();
+  });
 });

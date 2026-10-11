@@ -1,6 +1,7 @@
 # Hash-locked PyPI dependencies for flatpak-node-generator.
 # The generator itself stays the pinned git commit and is installed with --no-deps
-# after this file, so a substituted dependency cannot ride along with that install.
+# and --no-build-isolation after this file. poetry-core is the hash-locked build
+# backend for that install, so pip cannot fetch an unconstrained build dependency.
 # Install with:
 #   python3 -m pip install --require-hashes --only-binary=:all: -r scripts/requirements-flatpak-generator.txt
 # Floors: aiohttp>=3.9,<4 and PyYAML>=6,<7 (same PyYAML pin as yamllint).
@@ -855,3 +856,5 @@ yarl==1.25.1 \
     --hash=sha256:f61964f235a43738bfac50da46fc4254943a7eea3051aeb0b6fc7c992c29fadc \
     --hash=sha256:fe01645169a2112aa1d4ebc3e4c5f029c5c8f97adfc32e5d37c993b39a994d75
     # via aiohttp
+poetry-core==2.5.0 \
+    --hash=sha256:98ee465b66f7e14bb9fbe68fb5e00d0cff184f036993ec94610ae4b5612f3add

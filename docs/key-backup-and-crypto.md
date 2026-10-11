@@ -67,11 +67,11 @@ Implementation: [`meshtasticDmKeyBackupStorage.ts`](../src/renderer/lib/meshtast
 
 **Storage:**
 
-| Item                                                   | Secure secret                                         |
-| ------------------------------------------------------ | ----------------------------------------------------- |
-| Per-node archive                                       | `backup:meshcore:<nodeId>`                            |
-| Index                                                  | `backup-index:meshcore`                               |
-| **Active MQTT cache** (last connected/restored device) | `meshcore:identity` (private key in the secure store) |
+| Item                                                   | Secure secret                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Per-node archive                                       | `backup:meshcore:<nodeId>`                                                                                         |
+| Index                                                  | `backup-index:meshcore`                                                                                            |
+| **Active MQTT cache** (last connected/restored device) | `mesh-client:meshcoreIdentity` in localStorage (public key); `meshcore:identity` in the secure store (private key) |
 
 **Index privacy:** Same as Meshtastic — the index is a secure secret and stores `nodeLabel`, `backedUpAt`, and `publicKeyB64` (UI shows an 8-character hex prefix only).
 

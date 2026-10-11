@@ -153,7 +153,8 @@ jobs:
           # --force-reinstall: same 0.1.0 version across commits; plain pip is a no-op on
           # preinstalled images and leaves the storeDir= generator.
           # --no-deps: runtime deps come only from the hash-locked requirements file.
-          pip3 install --force-reinstall --no-cache-dir --no-deps \
+          # --no-build-isolation: poetry-core is that hash-locked build backend.
+          pip3 install --force-reinstall --no-cache-dir --no-deps --no-build-isolation \
             "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 
       - name: Check Flatpak offline pnpm sources
