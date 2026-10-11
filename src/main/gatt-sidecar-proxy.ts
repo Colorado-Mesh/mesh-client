@@ -35,6 +35,7 @@ export type GattStartScanResult =
 
 interface LiveSession {
   port: number;
+  authToken: string;
   reservationId: symbol;
   sidecarSessionId: string;
   profile: GattSessionProfile;
@@ -47,6 +48,7 @@ interface ConnectionReservation {
   profile: GattSessionProfile;
   address: string;
   port: number;
+  authToken: string | null;
   sidecarSessionId: string | null;
   cleaningUp: boolean;
   cleanupAttempts: number;
@@ -122,6 +124,7 @@ function wsDataToUtf8(data: WebSocket.RawData): string {
 
 export class GattSidecarProxy extends EventEmitter {
   private port = 0;
+  private authToken: string | null = null;
   private sidecarGeneration = 0;
   private readonly sessions = new Map<GattSessionProfile, LiveSession>();
   private readonly connectAttempts = new Map<GattSessionProfile, symbol>();
@@ -220,9 +223,13 @@ export class GattSidecarProxy extends EventEmitter {
     return port;
   }
 
-  /** Called when sidecar reports a new port after restart. */
-  setPort(port: number): void {
+  /** Called when sidecar reports a new authenticated localhost endpoint after restart. */
+  setPort(port: number, authToken: string): void {
+    if (port > 0 && !authToken) {
+      throw new Error('gatt sidecar authentication token is required');
+    }
     this.port = port;
+    this.authToken = port > 0 ? authToken : null;
   }
 
   /**
@@ -231,6 +238,7 @@ export class GattSidecarProxy extends EventEmitter {
    */
   invalidateAfterSidecarExit(): void {
     this.port = 0;
+    this.authToken = null;
     this.sidecarGeneration += 1;
     this.connectAttempts.clear();
     for (const id of this.reservations.keys()) this.releaseReservation(id);
@@ -245,14 +253,22 @@ export class GattSidecarProxy extends EventEmitter {
     return `http://127.0.0.1:${port}`;
   }
 
+  private authorizationHeader(authToken = this.authToken): string {
+    if (!authToken) {
+      throw new Error('gatt sidecar authentication is unavailable');
+    }
+    return `Bearer ${authToken}`;
+  }
+
   private async jsonFetch(
     path: string,
     init?: RequestInit,
-    opts?: { timeoutMs?: number; port?: number },
+    opts?: { timeoutMs?: number; port?: number; authToken?: string },
   ): Promise<{ status: number; body: Record<string, unknown> }> {
     const port = opts?.port ?? (await this.ensurePort());
     const headers = new Headers(init?.headers);
     headers.set('content-type', 'application/json');
+    headers.set('authorization', this.authorizationHeader(opts?.authToken));
     const timeoutMs = opts?.timeoutMs ?? GATT_HTTP_TIMEOUT_MS;
     const res = await fetch(`${this.baseUrl(port)}${path}`, {
       ...init,
@@ -347,6 +363,7 @@ export class GattSidecarProxy extends EventEmitter {
       profile: sessionId,
       address: peripheralId,
       port: 0,
+      authToken: null,
       sidecarSessionId: null,
       cleaningUp: false,
       cleanupAttempts: 0,
@@ -364,6 +381,7 @@ export class GattSidecarProxy extends EventEmitter {
       const port = await this.ensurePort();
       if (!isCurrent()) return cancelled;
       reservation.port = port;
+      reservation.authToken = this.authToken;
       const { status, body } = await this.jsonFetch(
         '/api/v1/gatt/sessions',
         {
@@ -386,9 +404,12 @@ export class GattSidecarProxy extends EventEmitter {
         return { ok: false, error, code };
       }
       const sidecarSessionId = body.sessionId;
-      const { ws, ready } = this.openSessionWs(port, sidecarSessionId, sessionId);
+      const authToken = reservation.authToken;
+      if (!authToken) throw new Error('gatt sidecar authentication is unavailable');
+      const { ws, ready } = this.openSessionWs(port, authToken, sidecarSessionId, sessionId);
       this.sessions.set(sessionId, {
         port,
+        authToken,
         reservationId: attempt,
         sidecarSessionId,
         profile,
@@ -495,12 +516,16 @@ export class GattSidecarProxy extends EventEmitter {
 
   private openSessionWs(
     port: number,
+    authToken: string,
     sidecarSessionId: string,
     sessionId: GattSessionProfile,
   ): { ws: WebSocket; ready: Promise<void> } {
     const ws = new WebSocket(
       `ws://127.0.0.1:${port}/api/v1/gatt/sessions/${sidecarSessionId}/events`,
-      { handshakeTimeout: GATT_HTTP_TIMEOUT_MS },
+      {
+        handshakeTimeout: GATT_HTTP_TIMEOUT_MS,
+        headers: { Authorization: this.authorizationHeader(authToken) },
+      },
     );
     const isCurrent = () => this.sessions.get(sessionId)?.ws === ws;
     const disconnected = () => {
@@ -620,14 +645,18 @@ export class GattSidecarProxy extends EventEmitter {
     const reservation = this.reservations.get(id);
     if (!reservation?.sidecarSessionId) return;
     reservation.cleanupAttempts += 1;
-    const { port, sidecarSessionId } = reservation;
+    const { port, authToken, sidecarSessionId } = reservation;
+    if (!authToken) {
+      this.releaseReservation(id);
+      return;
+    }
     // Pin teardown to the process that created the session; cleanup must not start
     // a new sidecar or send an old session id to a replacement process.
     try {
       const { status, body } = await this.jsonFetch(
         `/api/v1/gatt/sessions/${sidecarSessionId}`,
         { method: 'DELETE' },
-        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port },
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port, authToken },
       );
       if (
         (status >= 200 && status < 300 && body.ok === true) ||
@@ -654,7 +683,7 @@ export class GattSidecarProxy extends EventEmitter {
       const { body } = await this.jsonFetch(
         `/api/v1/gatt/sessions/${sidecarSessionId}/connected`,
         undefined,
-        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port },
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port, authToken },
       );
       if (body.connected === false) {
         this.releaseReservation(id);
@@ -693,7 +722,7 @@ export class GattSidecarProxy extends EventEmitter {
       const { body } = await this.jsonFetch(
         `/api/v1/gatt/sessions/${live.sidecarSessionId}/connected`,
         undefined,
-        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port },
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port, authToken: live.authToken },
       );
       return this.sessions.get(sessionId) === live && body.connected === true;
     } catch {
@@ -714,7 +743,7 @@ export class GattSidecarProxy extends EventEmitter {
         method: 'POST',
         body: JSON.stringify({ data_b64 }),
       },
-      { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port },
+      { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port, authToken: live.authToken },
     );
     if (status < 200 || status >= 300 || body.ok !== true) {
       const code = typeof body.code === 'string' ? body.code : 'write_failed';
@@ -731,7 +760,7 @@ export class GattSidecarProxy extends EventEmitter {
       const { body } = await this.jsonFetch(
         `/api/v1/gatt/sessions/${live.sidecarSessionId}/rssi`,
         undefined,
-        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port },
+        { timeoutMs: GATT_HTTP_TIMEOUT_MS, port: live.port, authToken: live.authToken },
       );
       return typeof body.rssi === 'number' ? body.rssi : null;
     } catch {

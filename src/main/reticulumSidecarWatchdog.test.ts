@@ -22,6 +22,7 @@ describe('startSidecarWatchdog', () => {
       getPort: () => 1234,
       isProcessAlive: () => false,
       restartFn,
+      getAuthorizationHeader: () => 'Bearer test-token',
       fetchImpl,
       pollIntervalMs: SIDECAR_WATCHDOG_POLL_INTERVAL_MS,
     });
@@ -47,6 +48,7 @@ describe('startSidecarWatchdog', () => {
       getPort: () => 1234,
       isProcessAlive: () => true,
       restartFn,
+      getAuthorizationHeader: () => 'Bearer test-token',
       onHealthChange,
       fetchImpl,
       pollIntervalMs: 1000,
@@ -60,6 +62,10 @@ describe('startSidecarWatchdog', () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(onHealthChange).toHaveBeenCalledWith(true);
     expect(restartFn).not.toHaveBeenCalled();
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      'http://127.0.0.1:1234/api/v1/status',
+      expect.objectContaining({ headers: { Authorization: 'Bearer test-token' } }),
+    );
     stop();
   });
 
@@ -72,6 +78,7 @@ describe('startSidecarWatchdog', () => {
       getPort: () => 1234,
       isProcessAlive: () => true,
       restartFn,
+      getAuthorizationHeader: () => 'Bearer test-token',
       onHealthChange,
       fetchImpl,
       pollIntervalMs: 1000,

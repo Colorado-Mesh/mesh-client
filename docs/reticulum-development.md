@@ -27,7 +27,7 @@ flowchart LR
 
 The renderer **must not** call the sidecar URL directly (sandbox). All HTTP/WS goes through main-process `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`. Paths must start with `/api/v1/`. Full route list: [reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md).
 
-**Listen-first connect:** The sidecar binds HTTP first, then `attach_live` brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is `GET /api/v1/status` with `status: "ok"` — not `rns_ready` / `lxmf_ready`. `useReticulumRuntime` marks connection **configured** once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches `RETICULUM_CONFIGURED_EVENT`. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with `requires live rns-stack sidecar` until the bridge is up. **Cancel** / stop does not wait on cargo or BLE. LoRa Meshtastic/MeshCore may call `ensureForBle()` so GATT is available without a Reticulum UI Start. Renderer LXMF/RRC proxy sends use a **15 s** IPC deadline (`RETICULUM_IPC_SEND_TIMEOUT_MS`).
+**Listen-first connect:** The sidecar binds HTTP first, then `attach_live` brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is an authenticated `GET /api/v1/status` with `status: "ok"` — not `rns_ready` / `lxmf_ready`. Electron creates a fresh 256-bit bearer credential per process, delivers it only through stdin, and attaches it to every HTTP and WebSocket request. `useReticulumRuntime` marks connection **configured** once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches `RETICULUM_CONFIGURED_EVENT`. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with `requires live rns-stack sidecar` until the bridge is up. **Cancel** / stop does not wait on cargo or BLE. LoRa Meshtastic/MeshCore may call `ensureForBle()` so GATT is available without a Reticulum UI Start. Renderer LXMF/RRC proxy sends use a **15 s** IPC deadline (`RETICULUM_IPC_SEND_TIMEOUT_MS`).
 
 ### Ownership: RNS vs LXMF client vs mesh-client policy
 
@@ -114,8 +114,11 @@ Cargo always needs the `.rsstack/` checkouts (`rsReticulum`, `rsLXMF`, `rsNomad`
 
 ```bash
 pnpm run reticulum:sidecar:dev
-curl -s http://127.0.0.1:19437/api/v1/status
 ```
+
+The development launcher generates a fresh API credential and delivers it only over the
+sidecar's stdin. Use Electron's Reticulum UI and main-process proxy for API diagnostics; the raw
+localhost API intentionally rejects unauthenticated `curl` requests.
 
 CI matrix (stub + full stack): [`.github/workflows/reticulum-sidecar.yaml`](../.github/workflows/reticulum-sidecar.yaml). Flatpak release builds bundle the full-stack binary into `resources/reticulum-sidecar/`.
 

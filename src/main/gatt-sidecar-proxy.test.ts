@@ -8,6 +8,7 @@ const wsMock = vi.hoisted(() => ({
     readyState: number;
     close: ReturnType<typeof vi.fn>;
     terminate: ReturnType<typeof vi.fn>;
+    options?: { headers?: Record<string, string> };
   })[],
 }));
 
@@ -26,7 +27,10 @@ vi.mock('ws', async () => {
       this.emit('close');
     });
 
-    constructor() {
+    constructor(
+      _url: string,
+      public options?: { headers?: Record<string, string> },
+    ) {
       super();
       wsMock.sockets.push(this);
       if (wsMock.autoOpen) {
@@ -79,7 +83,7 @@ describe('GattSidecarProxy', () => {
     wsMock.autoOpen = true;
     wsMock.sockets = [];
     proxy = new GattSidecarProxy();
-    proxy.setPort(9876);
+    proxy.setPort(9876, 'test-sidecar-token');
     fetchMock = vi.fn<(url?: unknown, init?: RequestInit) => Promise<FetchResult>>();
     fetchMock.mockResolvedValue({
       status: 200,
@@ -112,6 +116,8 @@ describe('GattSidecarProxy', () => {
         'http://127.0.0.1:9876/api/v1/gatt/pair-state?address=ef%3A4f%3A4f%3A1c%3A23%3A73',
         expect.anything(),
       );
+      const init = fetchMock.mock.calls[0]?.[1];
+      expect(new Headers(init?.headers).get('authorization')).toBe('Bearer test-sidecar-token');
     });
 
     it('pairState maps the HTTP timeout to connect_timeout', async () => {
@@ -422,7 +428,10 @@ describe('GattSidecarProxy', () => {
     await expect(proxy.isConnected('meshtastic')).resolves.toBe(false);
 
     // Next ensure must re-run (port was cleared) — mock ensure returns a new port.
-    proxy.setEnsureSidecar(() => Promise.resolve(4242));
+    proxy.setEnsureSidecar(() => {
+      proxy.setPort(4242, 'replacement-sidecar-token');
+      return Promise.resolve(4242);
+    });
     fetchMock.mockResolvedValue({
       status: 200,
       json: () => Promise.resolve({ ok: true, sessionId: 'sidecar-sess-y' }),
@@ -446,6 +455,9 @@ describe('GattSidecarProxy', () => {
     const connecting = proxy.connect('meshcore', 'aa:bb:cc:dd:ee:01');
     await vi.waitFor(() => {
       expect(wsMock.sockets).toHaveLength(1);
+    });
+    expect(wsMock.sockets[0].options?.headers).toEqual({
+      Authorization: 'Bearer test-sidecar-token',
     });
     expect(connected).not.toHaveBeenCalled();
 
@@ -668,7 +680,7 @@ describe('GattSidecarProxy', () => {
     await proxy.connect('meshcore', 'aa:bb:cc:dd:ee:01');
     const ensure = vi.fn(() => Promise.resolve(1234));
     proxy.setEnsureSidecar(ensure);
-    proxy.setPort(0);
+    proxy.setPort(0, '');
 
     await proxy.disconnect('meshcore');
 

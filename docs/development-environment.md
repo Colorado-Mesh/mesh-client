@@ -130,11 +130,11 @@ When those `.rsstack/` checkouts already exist, `pnpm run reticulum:sidecar:buil
 ```bash
 # Optional: run sidecar standalone (port 19437)
 pnpm run reticulum:sidecar:dev
-
-# Health check (standalone or after Start stack in the app)
-curl -s http://127.0.0.1:19437/api/v1/status
-# → {"status":"ok",...}
 ```
+
+The standalone launcher creates a per-process API credential and sends it only over stdin. Check
+health through the Electron Connection panel or diagnostics; unauthenticated localhost requests are
+rejected.
 
 In Electron dev: select **RN** (Reticulum, yellow) at the top of the rail → **Connection** → **Start stack**. Then use **Network** for identity (generate/import) and **Connection** for interfaces (add, edit, delete). Dev builds resolve the binary from `reticulum-sidecar/target/debug/mesh-client-reticulum`.
 
