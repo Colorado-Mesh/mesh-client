@@ -1,5 +1,5 @@
 import type { MeshProtocol } from '../../shared/meshProtocol';
-import type { TakTrackerRole, TakUnitStyle } from '../../shared/tak-types';
+import type { TakNodeKind, TakTrackerRole, TakUnitStyle } from '../../shared/tak-types';
 import { isTakTrackerRole } from '../../shared/tak-types';
 
 /** Friendly ground unit on the default cyan team: a person carrying a radio. */
@@ -40,22 +40,38 @@ export interface AdvertisedStyleInput {
   infrastructure?: boolean;
 }
 
+/**
+ * What the node says it is: a tracker fix, a MeshCore advert type, a Meshtastic device role, or
+ * a Reticulum interface. Anything else is a companion (a person's radio).
+ */
+export function advertisedNodeKind(
+  node: AdvertisedStyleInput,
+  protocol: MeshProtocol,
+): TakNodeKind {
+  if (node.tracker_role && isTakTrackerRole(node.tracker_role)) return 'tracker';
+  if (node.infrastructure) return 'repeater';
+  if (protocol === 'meshcore') {
+    if (node.hw_model === 'Repeater') return 'repeater';
+    if (node.hw_model === 'Room') return 'room';
+    if (node.hw_model === 'Sensor') return 'sensor';
+  }
+  if (protocol === 'meshtastic' && node.role != null) {
+    if (MESHTASTIC_RELAY_ROLES.has(node.role)) return 'repeater';
+    if (node.role === MESHTASTIC_SENSOR_ROLE) return 'sensor';
+  }
+  return 'companion';
+}
+
 /** Style from what the node says about itself: tracker role tag, advert type, or device role. */
 export function advertisedTakStyle(
   node: AdvertisedStyleInput,
   protocol: MeshProtocol,
 ): TakUnitStyle {
-  if (node.tracker_role && isTakTrackerRole(node.tracker_role)) {
+  const kind = advertisedNodeKind(node, protocol);
+  if (kind === 'tracker' && node.tracker_role && isTakTrackerRole(node.tracker_role)) {
     return TAK_TRACKER_ROLE_STYLES[node.tracker_role];
   }
-  if (node.infrastructure) return TAK_RELAY_STYLE;
-  if (protocol === 'meshcore') {
-    if (node.hw_model === 'Repeater' || node.hw_model === 'Room') return TAK_RELAY_STYLE;
-    if (node.hw_model === 'Sensor') return TAK_SENSOR_STYLE;
-  }
-  if (protocol === 'meshtastic' && node.role != null) {
-    if (MESHTASTIC_RELAY_ROLES.has(node.role)) return TAK_RELAY_STYLE;
-    if (node.role === MESHTASTIC_SENSOR_ROLE) return TAK_SENSOR_STYLE;
-  }
+  if (kind === 'repeater' || kind === 'room') return TAK_RELAY_STYLE;
+  if (kind === 'sensor') return TAK_SENSOR_STYLE;
   return TAK_PERSON_STYLE;
 }

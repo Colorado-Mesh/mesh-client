@@ -1,4 +1,4 @@
-import type { TakMatchOp, TakUnitFilter } from './tak-types';
+import type { TakFilterSubject, TakMatchOp, TakUnitFilter } from './tak-types';
 
 export interface TakUnitFilterMatch {
   /** Index into the filter list. */
@@ -29,20 +29,34 @@ function strip(filter: TakUnitFilter, callsign: string, patternLength: number): 
   return out || callsign;
 }
 
+/** The filter's node kind and protocol conditions both hold; an unset condition always does. */
+function subjectMatches(filter: TakUnitFilter, subject: TakFilterSubject): boolean {
+  if (filter.nodeKind !== undefined && filter.nodeKind !== subject.kind) return false;
+  return filter.protocol === undefined || filter.protocol === subject.protocol;
+}
+
 /**
- * First enabled filter whose pattern matches the callsign, then the long name, compared
- * case-insensitively. A strip only applies when the callsign itself matched.
+ * First enabled filter the node meets every condition of. Name patterns are compared
+ * case-insensitively against the callsign, then the long name, and a strip only applies when
+ * the callsign itself matched. A filter with no patterns matches on node kind or protocol
+ * alone, and a filter with no conditions at all matches nothing.
  */
 export function matchTakUnitFilter(
   filters: readonly TakUnitFilter[],
   callsign: string,
   longName: string,
+  subject: TakFilterSubject,
 ): TakUnitFilterMatch | null {
   const cs = callsign.toLowerCase();
   const ln = longName.toLowerCase();
   for (const [index, filter] of filters.entries()) {
-    if (!filter.enabled) continue;
-    for (const raw of filter.patterns) {
+    if (!filter.enabled || !subjectMatches(filter, subject)) continue;
+    const patterns = filter.patterns.filter((p) => p.length > 0);
+    if (patterns.length === 0) {
+      if (filter.nodeKind === undefined && filter.protocol === undefined) continue;
+      return { index, filter, callsign };
+    }
+    for (const raw of patterns) {
       const pattern = raw.toLowerCase();
       if (!pattern) continue;
       if (matches(filter.op, cs, pattern)) {
