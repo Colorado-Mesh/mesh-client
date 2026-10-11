@@ -420,7 +420,11 @@ impl NomadServerHandle {
             Ok(status) => Ok((true, Some(status))),
             Err(start_error) => {
                 // No partially installed node may outlive the failed selection.
-                self.stop_locked().await?;
+                if let Err(error) = self.stop_locked().await {
+                    tracing::warn!(
+                        "[nomad-serving] stop after failed content reconfigure: {error}"
+                    );
+                }
                 let failed_selection = {
                     let mut source = self.content_source.lock().await;
                     std::mem::replace(&mut *source, old_selection)

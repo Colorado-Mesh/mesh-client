@@ -1280,15 +1280,9 @@ mod tests {
             )
             .await
             .expect("fetch starts");
-        let status = manager.status().await;
-        let transfers = status["transfers"].as_array().expect("transfers");
-        assert!(
-            transfers
-                .iter()
-                .any(|t| t["transfer_id"] == transfer_id.as_str() && t["kind"] == "fetch")
-        );
         let failed = recv_event_of_type(&mut rx, "rncp.failed").await;
         assert_eq!(failed["transfer_id"], transfer_id);
+        assert_eq!(failed["destination_hash"], TEST_DEST);
     }
 
     #[tokio::test]

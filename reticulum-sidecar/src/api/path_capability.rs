@@ -520,6 +520,9 @@ fn open_pinned(path: &Path, kind: PathKind) -> Result<File, &'static str> {
     let mut flags = libc::O_NOFOLLOW | libc::O_CLOEXEC;
     if kind == PathKind::Directory {
         flags |= libc::O_DIRECTORY;
+    } else {
+        // Type validation happens after open; never block here on a FIFO or device.
+        flags |= libc::O_NONBLOCK;
     }
     OpenOptions::new()
         .read(true)
@@ -829,6 +832,32 @@ mod tests {
                 .mint(&issuer_headers(), PathCapabilityOperation::RncpSend, &body)
                 .unwrap_err(),
             "capability_path_symlink_denied"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rejects_fifo_without_waiting_for_a_writer() {
+        let dir = tempdir().unwrap();
+        let fifo = dir.path().join("selected.fifo");
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(&fifo)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let body = serde_json::json!({
+            "destination_hash": "00112233445566778899aabbccddeeff",
+            "path": fifo
+        });
+        let store = PathCapabilityStore::try_new(ISSUER.into(), SESSION.into()).unwrap();
+
+        assert_eq!(
+            store
+                .mint(&issuer_headers(), PathCapabilityOperation::RncpSend, &body)
+                .unwrap_err(),
+            "capability_path_type_mismatch"
         );
     }
 
