@@ -290,8 +290,9 @@ jobs:
   publish:
     name: Publish to GitHub Release
     needs: flatpak
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       artifact-metadata: write
       attestations: write
@@ -303,6 +304,20 @@ jobs:
         66eb59fd5d923833e8e4142f60e542156aad4b8b1d5db38149d814c659e274bc"
 
     steps:
+      - name: Require exact semver release tag
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_REF_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          if [[ ! "${RELEASE_REF}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Flatpak publishing requires an exact vX.Y.Z tag."
+            exit 1
+          fi
+          if [ "${RELEASE_REF_PROTECTED}" != 'true' ]; then
+            echo "::error::Flatpak publishing requires a protected tag."
+            exit 1
+          fi
+
       # actions/checkout v6.1.0
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
