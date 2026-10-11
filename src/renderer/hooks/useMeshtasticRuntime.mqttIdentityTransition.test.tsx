@@ -7,7 +7,7 @@ import {
   MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
   resolveMeshtasticOutboundFromNodeId,
 } from '@/renderer/lib/meshtasticMqttIdentity';
-import { MESHTASTIC_MQTT_SETTINGS_KEY } from '@/renderer/lib/meshtasticMqttSettingsStorage';
+import { MESHTASTIC_MQTT_SECRET_KEY, setSecureSecret } from '@/renderer/lib/secureSecretStorage';
 
 import * as connection from '../lib/connection';
 import { useMeshtasticRuntime } from '../runtime/useMeshtasticRuntime';
@@ -57,7 +57,7 @@ describe('useMeshtasticRuntime — MQTT-first virtual id handoff', () => {
   let myNodeInfoHandler: MyNodeInfoHandler | undefined;
   let consoleDebugSpy: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMeshtasticMqttElectronMocks();
     vi.mocked(connection.createBleConnection).mockClear();
     vi.mocked(connection.createConnection).mockClear();
@@ -69,8 +69,8 @@ describe('useMeshtasticRuntime — MQTT-first virtual id handoff', () => {
     consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
     localStorage.setItem('mesh-client:mqttVirtualNodeId', String(VIRTUAL_ID));
-    localStorage.setItem(
-      MESHTASTIC_MQTT_SETTINGS_KEY,
+    await setSecureSecret(
+      MESHTASTIC_MQTT_SECRET_KEY,
       JSON.stringify({ channelPsks: [MQTT_PSK_LINE] }),
     );
 

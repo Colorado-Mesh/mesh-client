@@ -1,4 +1,12 @@
 import { keyBackupBase64ToBytes, keyBackupBytesToBase64 } from './keyBackupBytes';
+import {
+  getCachedSecureSecret,
+  keyBackupSecretKey,
+  listCachedSecureSecretKeys,
+  migrateLegacyBackupCiphertext,
+  removeSecureSecret,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 /**
  * Generic shape used internally by the factory. Protocol wrappers rename the numeric `id` field
@@ -39,16 +47,21 @@ function normalizeId(id: number): number {
 }
 
 /**
- * Shared encrypted key-backup storage (MeshCore DM keys, Meshtastic DM keys): per-id encrypted
- * localStorage slot via `window.electronAPI.safeStorage` plus a plaintext index for the restore
- * picker. Meshtastic-only legacy single-slot migration and index-rebuild-from-slots are exposed
- * as opt-in methods rather than folded into `save`/`load` so MeshCore callers don't inherit them.
+ * Shared key-backup storage: key material lives in the main-process secure-secret service while
+ * a non-sensitive local index feeds the restore picker.
  */
 export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorageConfig) {
   const { prefix, indexKey, protocol, idField, validateKeyPair } = config;
 
   function storageKey(id: number): string {
     return `${prefix}${String(normalizeId(id))}`;
+  }
+
+  function secretKey(id: number): string {
+    if (protocol !== 'meshcore' && protocol !== 'meshtastic') {
+      throw new Error(`${protocol} backup: unsupported protocol`);
+    }
+    return keyBackupSecretKey(protocol, normalizeId(id));
   }
 
   function toRawPayload(payload: EncryptedKeyBackupPayload): Record<string, unknown> {
@@ -126,25 +139,12 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     writeIndex(next);
   }
 
-  function listBackupStorageKeys(): string[] {
-    const keys: string[] = [];
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(prefix)) keys.push(key);
-      }
-    } catch {
-      // catch-no-log-ok localStorage iteration unavailable
-    }
-    return keys;
-  }
-
   function list(): EncryptedKeyBackupIndexEntry[] {
-    return readIndex();
+    return readIndex().filter((entry) => getCachedSecureSecret(secretKey(entry.id)) !== null);
   }
 
   function has(id: number): boolean {
-    return localStorage.getItem(storageKey(id)) !== null;
+    return getCachedSecureSecret(secretKey(id)) !== null;
   }
 
   async function save(options: {
@@ -163,11 +163,8 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       nodeLabel: options.nodeLabel?.trim() || undefined,
       backedUpAt: Date.now(),
     };
-    const encrypted = await window.electronAPI.safeStorage.encrypt(
-      JSON.stringify(toRawPayload(payload)),
-    );
-    if (!encrypted) throw new Error('Encryption failed');
-    localStorage.setItem(storageKey(id), encrypted);
+    await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)));
+    localStorage.removeItem(storageKey(id));
     upsertIndexEntry({
       id,
       nodeLabel: payload.nodeLabel,
@@ -176,39 +173,36 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     });
   }
 
-  async function load(id: number): Promise<{
+  function load(id: number): Promise<{
     publicKey: Uint8Array;
     privateKey: Uint8Array;
     payload: EncryptedKeyBackupPayload;
   } | null> {
-    const ciphertext = localStorage.getItem(storageKey(id));
-    if (!ciphertext) return null;
-    const decrypted = await window.electronAPI.safeStorage.decrypt(ciphertext);
-    if (!decrypted) throw new Error('Decryption failed');
-    const payload = parsePayload(decrypted);
-    return {
+    const stored = getCachedSecureSecret(secretKey(id));
+    if (!stored) return Promise.resolve(null);
+    const payload = parsePayload(stored);
+    return Promise.resolve({
       publicKey: keyBackupBase64ToBytes(payload.publicKey),
       privateKey: keyBackupBase64ToBytes(payload.privateKey),
       payload,
-    };
+    });
   }
 
-  function remove(id: number): void {
+  async function remove(id: number): Promise<void> {
     const normalized = normalizeId(id);
+    await removeSecureSecret(secretKey(normalized));
     localStorage.removeItem(storageKey(normalized));
     writeIndex(readIndex().filter((e) => normalizeId(e.id) !== normalized));
   }
 
-  /** Decrypt every per-id slot and rewrite the index (missing or corrupt index). Meshtastic-only hook. */
-  async function rebuildIndexFromSlots(): Promise<EncryptedKeyBackupIndexEntry[]> {
+  /** Rebuild the non-sensitive index from secure-store payloads. */
+  function rebuildIndexFromSlots(): Promise<EncryptedKeyBackupIndexEntry[]> {
     const entries: EncryptedKeyBackupIndexEntry[] = [];
-    for (const key of listBackupStorageKeys()) {
-      const ciphertext = localStorage.getItem(key);
-      if (!ciphertext) continue;
+    for (const key of listCachedSecureSecretKeys(`backup:${protocol}:`)) {
+      const stored = getCachedSecureSecret(key);
+      if (!stored) continue;
       try {
-        const decrypted = await window.electronAPI.safeStorage.decrypt(ciphertext);
-        if (!decrypted) continue;
-        const payload = parsePayload(decrypted);
+        const payload = parsePayload(stored);
         entries.push({
           id: normalizeId(payload.id),
           nodeLabel: payload.nodeLabel,
@@ -221,16 +215,17 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     }
     entries.sort((a, b) => b.backedUpAt - a.backedUpAt);
     writeIndex(entries);
-    return entries;
+    return Promise.resolve(entries);
   }
 
   function indexNeedsRebuild(index: EncryptedKeyBackupIndexEntry[]): boolean {
-    const slotKeys = listBackupStorageKeys();
+    const securePrefix = `backup:${protocol}:`;
+    const slotKeys = listCachedSecureSecretKeys(securePrefix);
     if (slotKeys.length === 0) return false;
     if (index.length === 0) return true;
     const indexedIds = new Set(index.map((e) => normalizeId(e.id)));
     return slotKeys.some((key) => {
-      const suffix = key.slice(prefix.length);
+      const suffix = key.slice(securePrefix.length);
       const id = Number(suffix);
       return Number.isFinite(id) && !indexedIds.has(normalizeId(id));
     });
@@ -250,9 +245,17 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     if (has(id)) return false;
     const legacy = localStorage.getItem(legacyKey);
     if (!legacy) return false;
-    const decrypted = await window.electronAPI.safeStorage.decrypt(legacy);
-    if (!decrypted) return false;
-    const parsed = JSON.parse(decrypted) as { publicKey?: string; privateKey?: string };
+    if (protocol !== 'meshtastic') return false;
+    const migrated = await migrateLegacyBackupCiphertext(
+      'meshtastic',
+      normalizeId(id),
+      'meshtastic-single',
+      legacy,
+    );
+    if (!migrated) return false;
+    const stored = getCachedSecureSecret(secretKey(id));
+    if (!stored) return false;
+    const parsed = JSON.parse(stored) as { publicKey?: string; privateKey?: string };
     if (!parsed.publicKey || !parsed.privateKey) return false;
     const publicKey = keyBackupBase64ToBytes(parsed.publicKey);
     const privateKey = keyBackupBase64ToBytes(parsed.privateKey);

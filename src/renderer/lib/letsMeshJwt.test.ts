@@ -1,5 +1,5 @@
 import { Utils, verifyAuthToken } from '@michaelhart/meshcore-decoder';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   deviceSigningWsPathForHost,
@@ -22,11 +22,13 @@ import {
   MESHMAPPER_HOST_LEGACY_CC,
   migrateMeshmapperServerHost,
   readMeshcoreIdentity,
+  readMeshcoreIdentityAsync,
   tryPersistMeshcoreIdentityFromRadioExport,
   tryPersistMeshcorePublicKeyFromRadio,
   WAEV_HOST,
 } from './letsMeshJwt';
 import { meshcoreSyntheticPlaceholderPubKeyHex } from './meshcoreUtils';
+import { resetSecureSecretCacheForTests } from './secureSecretStorage';
 
 // Sample key pair from @michaelhart/meshcore-decoder tests (auth-token.test.ts)
 const sampleKeyPair = {
@@ -38,6 +40,11 @@ const sampleKeyPair = {
 describe('letsMeshJwt', () => {
   beforeAll(async () => {
     await Utils.derivePublicKey(sampleKeyPair.privateKey);
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
   });
 
   it('letsMeshMqttUsernameFromIdentity uses v1_<uppercase public key>', () => {
@@ -180,9 +187,11 @@ describe('letsMeshJwt', () => {
     const id = readMeshcoreIdentity();
     expect(Array.isArray(id?.public_key)).toBe(true);
     expect((id?.public_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
-    // safeStorage mock returns null → plaintext fallback stores private_key in localStorage
-    expect(Array.isArray(id?.private_key)).toBe(true);
-    expect((id?.private_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
+    expect(id?.private_key).toBeUndefined();
+    expect(localStorage.getItem(MESHCORE_IDENTITY_STORAGE_KEY)).not.toContain('private_key');
+    const full = await readMeshcoreIdentityAsync();
+    expect(Array.isArray(full?.private_key)).toBe(true);
+    expect((full?.private_key as number[]).length).toBe(MESHCORE_PUBLIC_KEY_LENGTH);
     localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
     localStorage.removeItem(MESHCORE_ENC_PK_KEY);
   });
@@ -195,7 +204,8 @@ describe('letsMeshJwt', () => {
       sampleKeyPair.privateKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
     );
     expect(await tryPersistMeshcoreIdentityFromRadioExport(pub, priv)).toBe(true);
-    expect((readMeshcoreIdentity()?.private_key as number[]).length).toBe(64);
+    expect(readMeshcoreIdentity()?.private_key).toBeUndefined();
+    expect(((await readMeshcoreIdentityAsync())?.private_key as number[]).length).toBe(64);
     localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
     localStorage.removeItem(MESHCORE_ENC_PK_KEY);
   });
@@ -216,10 +226,10 @@ describe('letsMeshJwt', () => {
     expect(await tryPersistMeshcoreIdentityFromRadioExport(pub, priv)).toBe(false);
   });
 
-  it('tryPersistMeshcoreIdentityFromRadioExport logs and returns false when safeStorage.encrypt throws', async () => {
+  it('tryPersistMeshcoreIdentityFromRadioExport logs and returns false when secure storage throws', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const encrypt = vi.mocked(window.electronAPI.safeStorage.encrypt);
-    encrypt.mockRejectedValueOnce(new Error('encrypt failed'));
+    const persist = vi.mocked(window.electronAPI.secureSecrets.set);
+    persist.mockRejectedValueOnce(new Error('secure store failed'));
     const pub = Uint8Array.from(
       sampleKeyPair.publicKey.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
     );
@@ -230,8 +240,7 @@ describe('letsMeshJwt', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[letsMeshJwt] tryPersistMeshcoreIdentityFromRadioExport failed'),
     );
-    expect(warnSpy.mock.calls[0]?.[0]).toContain('encrypt failed');
-    encrypt.mockResolvedValue(null);
+    expect(warnSpy.mock.calls[0]?.[0]).toContain('secure store failed');
     warnSpy.mockRestore();
   });
 

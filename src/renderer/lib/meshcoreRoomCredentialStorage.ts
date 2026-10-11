@@ -45,6 +45,7 @@ const roomCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRoomStored
   createMeshcorePerNodeCredentialStorage({
     prefix: MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
     logTag: 'meshcoreRoomCredentialStorage',
+    securePrefix: 'meshcore:room:',
     parseValue: parseCredentialValue,
     serialize: (cred) => {
       const hasGuest = Object.prototype.hasOwnProperty.call(cred, 'guestPassword');

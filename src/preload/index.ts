@@ -1122,13 +1122,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('notificationSounds:read', event, id),
   },
 
-  // ─── Safe storage (OS-keychain-backed encryption) ──────────────
-  safeStorage: {
-    encrypt: (plaintext: string): Promise<string | null> =>
-      ipcRenderer.invoke('storage:encrypt', plaintext),
-    decrypt: (ciphertext: string): Promise<string | null> =>
-      ipcRenderer.invoke('storage:decrypt', ciphertext),
-    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('storage:isAvailable'),
+  // ─── Main-owned secure secret storage ──────────────────────────
+  secureSecrets: {
+    status: (): Promise<{ available: boolean; persistent: boolean }> =>
+      ipcRenderer.invoke('secureSecrets:status'),
+    list: (): Promise<string[]> => ipcRenderer.invoke('secureSecrets:list'),
+    get: (key: string): Promise<string | null> => ipcRenderer.invoke('secureSecrets:get', key),
+    set: (
+      key: string,
+      value: string,
+    ): Promise<{ available: boolean; persistent: boolean; verified: boolean }> =>
+      ipcRenderer.invoke('secureSecrets:set', key, value),
+    remove: (key: string): Promise<void> => ipcRenderer.invoke('secureSecrets:remove', key),
+    migrateLegacyIdentityCiphertext: (
+      ciphertext: string,
+    ): Promise<{ available: boolean; persistent: boolean; verified: boolean }> =>
+      ipcRenderer.invoke('secureSecrets:migrateLegacyIdentityCiphertext', ciphertext),
+    migrateLegacyBackupCiphertext: (
+      protocol: 'meshcore' | 'meshtastic',
+      id: number,
+      format: 'per-node' | 'meshtastic-single',
+      ciphertext: string,
+    ): Promise<{ available: boolean; persistent: boolean; verified: boolean }> =>
+      ipcRenderer.invoke(
+        'secureSecrets:migrateLegacyBackupCiphertext',
+        protocol,
+        id,
+        format,
+        ciphertext,
+      ),
   },
 
   // ─── App settings ──────────────────────────────────────────────
@@ -1139,6 +1161,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getAll: (): Promise<Record<string, string>> => ipcRenderer.invoke('appSettings:get'),
     set: (key: string, value: string): Promise<{ changes: number }> =>
       ipcRenderer.invoke('appSettings:set', key, value),
+    remove: (key: string): Promise<{ changes: number }> =>
+      ipcRenderer.invoke('appSettings:remove', key),
   },
 
   // ─── Power events ──────────────────────────────────────────────

@@ -8,7 +8,6 @@ import {
 } from './meshcoreRoomAutoLoginFailure';
 import {
   getMeshcoreRoomCredential,
-  meshcoreRoomCredentialSettingForNode,
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import {
@@ -62,11 +61,7 @@ describe('meshcoreRoomSavedSecrets', () => {
   });
 
   it('disable auto-login keeps credential', async () => {
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(0x12),
-      JSON.stringify({ guestPassword: 'secret' }),
-      'meshcoreRoomSavedSecrets.test',
-    );
+    await setMeshcoreRoomCredential(0x12, { guestPassword: 'secret' });
     mergeAppSetting(
       meshcoreRoomSyncSettingForNode(0x12),
       JSON.stringify({ enabled: true, intervalMinutes: 60, autoLoginOnConnect: true }),

@@ -1600,11 +1600,12 @@ export default function RadioPanel({
                 void tryPersistMeshcoreIdentityFromRadioExport(pubArr, privArr);
               } else {
                 const publicKeyJson = publicKeyNumbers ?? cfg.public_key;
-                const privateKeyJson = privArr ? Array.from(privArr) : cfg.private_key;
-                localStorage.setItem(
-                  'mesh-client:meshcoreIdentity',
-                  JSON.stringify({ public_key: publicKeyJson, private_key: privateKeyJson }),
-                );
+                if (publicKeyJson != null) {
+                  localStorage.setItem(
+                    'mesh-client:meshcoreIdentity',
+                    JSON.stringify({ public_key: publicKeyJson }),
+                  );
+                }
                 window.dispatchEvent(new Event('meshclient:meshcoreIdentityUpdated'));
               }
             } catch {

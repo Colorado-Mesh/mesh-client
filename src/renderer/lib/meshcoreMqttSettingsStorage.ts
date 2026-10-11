@@ -1,6 +1,7 @@
 import { MQTT_DEFAULT_RECONNECT_ATTEMPTS } from '@/shared/meshtasticMqttReconnect';
 
 import { readMqttSettingsFromStorage } from './mqttSettingsStorage';
+import { MESHCORE_MQTT_SECRET_KEY } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 const STORAGE_KEY = 'mesh-client:mqttSettings:meshcore';
@@ -21,5 +22,5 @@ const MESHCORE_MQTT_DEFAULTS: MQTTSettings = {
 
 /** Read persisted MeshCore MQTT settings (same merge as ConnectionPanel). */
 export function readMeshcoreMqttSettingsFromStorage(): MQTTSettings {
-  return readMqttSettingsFromStorage(STORAGE_KEY, MESHCORE_MQTT_DEFAULTS);
+  return readMqttSettingsFromStorage(STORAGE_KEY, MESHCORE_MQTT_DEFAULTS, MESHCORE_MQTT_SECRET_KEY);
 }

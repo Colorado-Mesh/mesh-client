@@ -16,6 +16,7 @@ import {
   renameMqttProfile,
   saveMqttProfiles,
 } from './mqttProfiles';
+import { resetSecureSecretCacheForTests } from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 const base: MQTTSettings = {
@@ -32,21 +33,23 @@ const base: MQTTSettings = {
 describe('mqttProfiles', () => {
   beforeEach(() => {
     localStorage.clear();
+    resetSecureSecretCacheForTests();
   });
 
-  it('creates, renames and deletes, surviving a save-and-load round trip', () => {
+  it('creates, renames and deletes, surviving a save-and-load round trip', async () => {
     let list = createMqttProfile([], '  Chicago  ', base, 'a');
     list = createMqttProfile(list, 'Illinois', { ...base, topicPrefix: 'msh/US/IL' }, 'b');
     list = renameMqttProfile(list, 'a', 'Chicagoland');
-    saveMqttProfiles(list);
+    await saveMqttProfiles(list);
 
     let loaded = loadMqttProfiles();
     expect(loaded.map((p) => p.name)).toEqual(['Chicagoland', 'Illinois']);
     expect(loaded[0]).toMatchObject({ server: 'mqtt.chimesh.org', topicPrefix: 'msh/US/IL/Chi' });
 
-    saveMqttProfiles(deleteMqttProfile(loaded, 'a'));
+    await saveMqttProfiles(deleteMqttProfile(loaded, 'a'));
     loaded = loadMqttProfiles();
     expect(loaded.map((p) => p.id)).toEqual(['b']);
+    expect(localStorage.getItem(MQTT_PROFILES_STORAGE_KEY)).not.toContain('large4cats');
   });
 
   it('ignores blank names and trims long ones', () => {

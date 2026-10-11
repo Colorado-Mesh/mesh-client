@@ -555,7 +555,9 @@ export default function ConnectionPanel({
   );
   const updateMqttProfiles = (next: MqttProfile[]) => {
     setMqttProfiles(next);
-    saveMqttProfiles(next);
+    void saveMqttProfiles(next).catch((e: unknown) => {
+      console.warn('[ConnectionPanel] MQTT profile persistence failed ' + errLikeToLogString(e));
+    });
   };
   // Async topic updates apply only if they are still the latest selection on a live session.
   const mqttProfileRequestRef = useRef(0);

@@ -1,18 +1,25 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   loadMeshtasticMqttManualChannelPsksFromStorage,
   MESHTASTIC_MQTT_SETTINGS_KEY,
   readMeshtasticMqttSettingsFromStorage,
 } from './meshtasticMqttSettingsStorage';
+import {
+  getCachedSecureSecret,
+  MESHCORE_MQTT_SECRET_KEY,
+  MESHTASTIC_MQTT_SECRET_KEY,
+  resetSecureSecretCacheForTests,
+  setSecureSecret,
+} from './secureSecretStorage';
 
-const MESHCORE_KEY = 'mesh-client:mqttSettings:meshcore';
 const RECOVERY_FLAG = 'mesh-client:migrated:meshtastic-psk-recovery-v1';
 const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';
 
 describe('readMeshtasticMqttSettingsFromStorage', () => {
-  afterEach(() => {
-    localStorage.removeItem(MESHTASTIC_MQTT_SETTINGS_KEY);
+  beforeEach(() => {
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
   });
 
   it('returns defaults when storage is empty', () => {
@@ -24,31 +31,36 @@ describe('readMeshtasticMqttSettingsFromStorage', () => {
     localStorage.setItem(MESHTASTIC_MQTT_SETTINGS_KEY, JSON.stringify({ autoLaunch: true }));
     expect(readMeshtasticMqttSettingsFromStorage().autoLaunch).toBe(true);
   });
+
+  it('lets an explicit empty secure password override the official preset default', async () => {
+    localStorage.setItem(MESHTASTIC_MQTT_SETTINGS_KEY, JSON.stringify({ autoLaunch: false }));
+    await setSecureSecret(MESHTASTIC_MQTT_SECRET_KEY, JSON.stringify({ password: '' }));
+
+    expect(readMeshtasticMqttSettingsFromStorage().password).toBe('');
+  });
 });
 
 describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
-  afterEach(() => {
-    localStorage.removeItem(MESHTASTIC_MQTT_SETTINGS_KEY);
-    localStorage.removeItem(MESHCORE_KEY);
-    localStorage.removeItem(RECOVERY_FLAG);
+  beforeEach(() => {
+    localStorage.clear();
+    resetSecureSecretCacheForTests();
   });
 
   it('returns empty when no settings exist', () => {
     expect(loadMeshtasticMqttManualChannelPsksFromStorage()).toEqual([]);
   });
 
-  it('reads channelPsks from mesh-client:mqttSettings', () => {
-    localStorage.setItem(
-      MESHTASTIC_MQTT_SETTINGS_KEY,
+  it('reads channelPsks from secure storage', async () => {
+    await setSecureSecret(
+      MESHTASTIC_MQTT_SECRET_KEY,
       JSON.stringify({ channelPsks: [`HamNet=${KEY_B}`] }),
     );
     expect(loadMeshtasticMqttManualChannelPsksFromStorage()).toEqual([`HamNet=${KEY_B}`]);
   });
 
-  it('recovers channelPsks from meshcore blob after legacy migration emptied meshtastic key', () => {
-    localStorage.removeItem(MESHTASTIC_MQTT_SETTINGS_KEY);
-    localStorage.setItem(
-      MESHCORE_KEY,
+  it('recovers channelPsks from the migrated meshcore secure secret', async () => {
+    await setSecureSecret(
+      MESHCORE_MQTT_SECRET_KEY,
       JSON.stringify({
         topicPrefix: 'meshcore/DEN',
         channelPsks: [`LongFast@0=${KEY_B}`, `TGIFMESH@1=${KEY_B}`],
@@ -60,24 +72,27 @@ describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
       `TGIFMESH@1=${KEY_B}`,
     ]);
 
-    const recovered = JSON.parse(localStorage.getItem(MESHTASTIC_MQTT_SETTINGS_KEY) ?? '{}') as {
+    const recovered = JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}') as {
       channelPsks?: string[];
       autoLaunch?: boolean;
     };
     expect(recovered.channelPsks).toEqual([`LongFast@0=${KEY_B}`, `TGIFMESH@1=${KEY_B}`]);
-    expect(recovered.autoLaunch).toBe(false);
+    expect(recovered.autoLaunch).toBeUndefined();
     expect(localStorage.getItem(RECOVERY_FLAG)).toBe('1');
   });
 
-  it('prefers meshtastic key when channelPsks already present', () => {
-    localStorage.setItem(
-      MESHTASTIC_MQTT_SETTINGS_KEY,
+  it('prefers the meshtastic secure secret when channelPsks already exist', async () => {
+    await setSecureSecret(
+      MESHTASTIC_MQTT_SECRET_KEY,
       JSON.stringify({ channelPsks: [`Primary=${KEY_B}`] }),
     );
-    localStorage.setItem(MESHCORE_KEY, JSON.stringify({ channelPsks: [`Other=${KEY_B}`] }));
+    await setSecureSecret(
+      MESHCORE_MQTT_SECRET_KEY,
+      JSON.stringify({ channelPsks: [`Other=${KEY_B}`] }),
+    );
 
     expect(loadMeshtasticMqttManualChannelPsksFromStorage()).toEqual([`Primary=${KEY_B}`]);
-    expect(JSON.parse(localStorage.getItem(MESHTASTIC_MQTT_SETTINGS_KEY) ?? '{}')).toEqual({
+    expect(JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}')).toEqual({
       channelPsks: [`Primary=${KEY_B}`],
     });
   });

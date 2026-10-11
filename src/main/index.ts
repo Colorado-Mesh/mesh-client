@@ -14,7 +14,6 @@ import {
   powerMonitor,
   powerSaveBlocker,
   protocol,
-  safeStorage,
   screen,
   type Session,
   shell,
@@ -201,6 +200,7 @@ import {
 } from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
+import { SecureSecretStore } from './secure-secret-store';
 import {
   buildSupportBundleZip,
   defaultSupportBundleFilename,
@@ -3682,66 +3682,65 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
   }
 });
 
-// ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
+// ─── IPC: Main-owned secure secret storage ─────────────────────────
 /** Export / import dialogs — max 5 / 60s. */
 const exportIpcRateLimit = createIpcRateLimiter({
   max: 5,
   windowMs: MS_PER_MINUTE,
   label: 'export',
 });
-/** storage:encrypt / storage:decrypt — max 30 / 60s. */
-const storageCryptoIpcRateLimit = createIpcRateLimiter({
-  max: 30,
+/** Typed secure-secret operations — max 120 / 60s for startup hydration and migrations. */
+const secureSecretIpcRateLimit = createIpcRateLimiter({
+  max: 120,
   windowMs: MS_PER_MINUTE,
-  label: 'storage:crypto',
+  label: 'secureSecrets',
+});
+const secureSecretStore = new SecureSecretStore(getDatabase);
+
+ipcMain.handle('secureSecrets:status', (event) => {
+  assertIpcSender(event, 'secureSecrets:status');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.status();
 });
 
-ipcMain.handle('storage:isAvailable', (event) => {
-  assertIpcSender(event, 'storage:isAvailable');
-  try {
-    return safeStorage.isEncryptionAvailable();
-  } catch (e) {
-    console.warn(
-      '[IPC] storage:isAvailable failed:',
-      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-    );
-    return false;
-  }
+ipcMain.handle('secureSecrets:list', (event) => {
+  assertIpcSender(event, 'secureSecrets:list');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.list();
 });
 
-ipcMain.handle('storage:encrypt', (event, plaintext: unknown) => {
-  assertIpcSender(event, 'storage:encrypt');
-  storageCryptoIpcRateLimit.checkOrThrow();
-  if (typeof plaintext !== 'string' || plaintext.length > 4096)
-    throw new Error('storage:encrypt: invalid input');
-  try {
-    if (!safeStorage.isEncryptionAvailable()) return null;
-    return safeStorage.encryptString(plaintext).toString('base64');
-  } catch (e) {
-    console.warn(
-      '[IPC] storage:encrypt failed:',
-      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-    );
-    return null;
-  }
+ipcMain.handle('secureSecrets:get', (event, key: unknown) => {
+  assertIpcSender(event, 'secureSecrets:get');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.get(key);
 });
 
-ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
-  assertIpcSender(event, 'storage:decrypt');
-  storageCryptoIpcRateLimit.checkOrThrow();
-  if (typeof ciphertext !== 'string' || ciphertext.length > 8192)
-    throw new Error('storage:decrypt: invalid input');
-  try {
-    if (!safeStorage.isEncryptionAvailable()) return null;
-    return safeStorage.decryptString(Buffer.from(ciphertext, 'base64'));
-  } catch (e) {
-    console.warn(
-      '[IPC] storage:decrypt failed:',
-      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-    );
-    return null;
-  }
+ipcMain.handle('secureSecrets:set', (event, key: unknown, value: unknown) => {
+  assertIpcSender(event, 'secureSecrets:set');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.set(key, value);
 });
+
+ipcMain.handle('secureSecrets:remove', (event, key: unknown) => {
+  assertIpcSender(event, 'secureSecrets:remove');
+  secureSecretIpcRateLimit.checkOrThrow();
+  secureSecretStore.remove(key);
+});
+
+ipcMain.handle('secureSecrets:migrateLegacyIdentityCiphertext', (event, ciphertext: unknown) => {
+  assertIpcSender(event, 'secureSecrets:migrateLegacyIdentityCiphertext');
+  secureSecretIpcRateLimit.checkOrThrow();
+  return secureSecretStore.migrateLegacyIdentityCiphertext(ciphertext);
+});
+
+ipcMain.handle(
+  'secureSecrets:migrateLegacyBackupCiphertext',
+  (event, protocol: unknown, id: unknown, format: unknown, ciphertext: unknown) => {
+    assertIpcSender(event, 'secureSecrets:migrateLegacyBackupCiphertext');
+    secureSecretIpcRateLimit.checkOrThrow();
+    return secureSecretStore.migrateLegacyBackupCiphertext(protocol, id, format, ciphertext);
+  },
+);
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getProcessUptimeSec', (event) => {
@@ -3844,6 +3843,13 @@ function isAppSettingsKeyAllowed(key: string): boolean {
   );
 }
 
+function isLegacyPlaintextCredentialKey(key: string): boolean {
+  return (
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
+  );
+}
+
 function appSettingsMaxValueLengthForKey(key: string): number {
   if (key === 'notificationSounds') return 4096;
   if (key === 'meshtasticOwnNodeNumsByPublicKey') return 4096;
@@ -3894,6 +3900,9 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
   if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
     throw new Error('appSettings:set: key not allowed');
   }
+  if (isLegacyPlaintextCredentialKey(key)) {
+    throw new Error('appSettings:set: plaintext credentials are not allowed');
+  }
   const maxValueLength = appSettingsMaxValueLengthForKey(key);
   if (typeof value !== 'string' || value.length > maxValueLength) {
     throw new Error(`appSettings:set: value must be a string under ${maxValueLength} chars`);
@@ -3911,6 +3920,17 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
     );
     throw err;
   }
+});
+
+ipcMain.handle('appSettings:remove', (event, key: unknown) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
+    throw new Error('appSettings:remove: key not allowed');
+  }
+  const result = getDatabase().prepareOnce('DELETE FROM app_settings WHERE key = ?').run(key);
+  return { changes: Number(result.changes) };
 });
 
 /** Notification click → bring the sender's window forward (restores from minimize / tray). */

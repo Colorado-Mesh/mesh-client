@@ -19,7 +19,12 @@ const SERVICE_ANNOUNCEMENT_IPC_SOURCE = readFileSync(
 
 function ipcHandlerBody(channel: string, span = 400): string {
   for (const src of [INDEX_SOURCE, TCP_BRIDGE_SOURCE, TAK_IPC_SOURCE, GPS_IPC_SOURCE]) {
-    const idx = src.indexOf(`ipcMain.handle('${channel}'`);
+    const markers = [
+      `ipcMain.handle('${channel}'`,
+      `ipcMain.handle(\n  '${channel}'`,
+      `ipcMain.handle(\n    '${channel}'`,
+    ];
+    const idx = Math.max(...markers.map((marker) => src.indexOf(marker)));
     if (idx >= 0) return src.slice(idx, idx + span);
   }
   return '';
@@ -172,21 +177,28 @@ describe('tcp-bridge write and connect (source contract)', () => {
   });
 });
 
-// ─── storage:encrypt / storage:decrypt input validation ─────────────
+// ─── Main-owned secure-secret IPC contract ───────────────────
 
-describe('storage IPC input validation (source contract)', () => {
-  it('storage:encrypt rejects inputs over 4096 bytes', () => {
-    const encryptIdx = INDEX_SOURCE.indexOf("ipcMain.handle('storage:encrypt'");
-    expect(encryptIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(encryptIdx, encryptIdx + 300);
-    expect(body).toContain('4096');
+describe('secure-secret IPC contract (source contract)', () => {
+  it('removes generic safeStorage encrypt/decrypt IPC', () => {
+    expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:encrypt'");
+    expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:decrypt'");
+    expect(INDEX_SOURCE).not.toContain("ipcMain.handle('storage:isAvailable'");
   });
 
-  it('storage:decrypt rejects inputs over 8192 bytes', () => {
-    const decryptIdx = INDEX_SOURCE.indexOf("ipcMain.handle('storage:decrypt'");
-    expect(decryptIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(decryptIdx, decryptIdx + 300);
-    expect(body).toContain('8192');
+  it.each([
+    'secureSecrets:status',
+    'secureSecrets:list',
+    'secureSecrets:get',
+    'secureSecrets:set',
+    'secureSecrets:remove',
+    'secureSecrets:migrateLegacyIdentityCiphertext',
+    'secureSecrets:migrateLegacyBackupCiphertext',
+  ] as const)('%s is registered through the main-owned service', (channel) => {
+    const body = ipcHandlerBody(channel, 500);
+    expect(body.length).toBeGreaterThan(0);
+    expect(body).toContain(`assertIpcSender(event, '${channel}')`);
+    expect(body).toContain('secureSecretIpcRateLimit.checkOrThrow()');
   });
 });
 
@@ -521,8 +533,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     'mqtt:publishProxy',
     'mqtt:publishMeshcore',
     'mqtt:publishMeshcorePacketLog',
-    'storage:encrypt',
-    'storage:decrypt',
+    'secureSecrets:status',
+    'secureSecrets:list',
+    'secureSecrets:get',
+    'secureSecrets:set',
+    'secureSecrets:remove',
+    'secureSecrets:migrateLegacyIdentityCiphertext',
+    'secureSecrets:migrateLegacyBackupCiphertext',
     'http:write',
     'http:disconnect',
     'hostLink:getSessionMeter',
@@ -537,6 +554,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'chat:readReticulumAttachmentAsDataUrl',
     'appSettings:get',
     'appSettings:set',
+    'appSettings:remove',
     'app:rendererHeartbeat',
     'app:getRendererLiveness',
     'app:getProcessUptimeSec',
@@ -572,7 +590,6 @@ describe('privileged IPC sender validation (source contract)', () => {
     'mqtt:getCachedNodes',
     'mqtt:getChannelNameToIndex',
     'mqtt:getClientId',
-    'storage:isAvailable',
     'support:exportBundle',
   ] as const;
 
@@ -700,23 +717,33 @@ describe('privileged IPC sender validation (source contract)', () => {
     expect(body).toContain('exportIpcRateLimit.checkOrThrow()');
   });
 
-  it('expensive export/crypto IPC channels use createIpcRateLimiter', () => {
+  it('expensive export/secret IPC channels use createIpcRateLimiter', () => {
     expect(INDEX_SOURCE).toContain('createIpcRateLimiter');
     expect(INDEX_SOURCE).toContain('exportIpcRateLimit');
-    expect(INDEX_SOURCE).toContain('storageCryptoIpcRateLimit');
+    expect(INDEX_SOURCE).toContain('secureSecretIpcRateLimit');
     for (const channel of [
       'db:export',
       'db:import',
       'log:export',
       'support:exportBundle',
-      'storage:encrypt',
-      'storage:decrypt',
       'mecp:exportReceivedLog',
     ] as const) {
       const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
       expect(handlerIdx).toBeGreaterThan(-1);
       const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
       expect(body).toMatch(/RateLimit\.checkOrThrow\(\)/);
+    }
+    for (const channel of [
+      'secureSecrets:status',
+      'secureSecrets:list',
+      'secureSecrets:get',
+      'secureSecrets:set',
+      'secureSecrets:remove',
+      'secureSecrets:migrateLegacyIdentityCiphertext',
+      'secureSecrets:migrateLegacyBackupCiphertext',
+    ] as const) {
+      const handlerBody = ipcHandlerBody(channel, 600);
+      expect(handlerBody).toContain('secureSecretIpcRateLimit.checkOrThrow()');
     }
   });
 
@@ -730,10 +757,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     expect(SUPPORT_BUNDLE_SOURCE).toContain('MAX_DEBUG_SNAPSHOT_JSON_BYTES');
   });
 
-  it('appSettings allows meshcore repeater credential prefix', () => {
+  it('appSettings permits legacy credential removal but rejects plaintext writes', () => {
     expect(INDEX_SOURCE).toContain('MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX');
+    expect(INDEX_SOURCE).toContain('MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX');
     expect(INDEX_SOURCE).toContain("from '../shared/appSettingsKeyPrefixes'");
-    expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
+    expect(INDEX_SOURCE).toContain('isLegacyPlaintextCredentialKey(key)');
+    expect(INDEX_SOURCE).toContain('appSettings:set: plaintext credentials are not allowed');
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:remove'");
   });
 
   it('appSettings:get validates IPC sender', () => {

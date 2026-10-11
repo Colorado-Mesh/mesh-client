@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MESHCORE_IDENTITY_STORAGE_KEY } from '../lib/letsMeshJwt';
 import { meshcoreKeyBackupStorageKey } from '../lib/meshcoreKeyBackupStorage';
 import { saveMeshtasticDmKeyBackup } from '../lib/meshtasticDmKeyBackupStorage';
+import { resetSecureSecretCacheForTests } from '../lib/secureSecretStorage';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 
 describe('KeyBackupRestoreSection', () => {
@@ -13,12 +14,7 @@ describe('KeyBackupRestoreSection', () => {
   beforeEach(() => {
     localStorage.clear();
     addToast.mockClear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
   it('lists alternate backups and restores selected entry', async () => {

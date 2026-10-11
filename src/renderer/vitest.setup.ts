@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
-import 'vitest-axe/extend-expect';
 // emoji-picker-element (ChatPanel) opens IndexedDB; jsdom has none.
 import 'fake-indexeddb/auto';
+import 'vitest-axe/extend-expect';
 
 import { cleanup } from '@testing-library/react';
 import i18next from 'i18next';
@@ -9,6 +9,7 @@ import { initReactI18next } from 'react-i18next';
 import { afterEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
+import { resetSecureSecretCacheForTests } from './lib/secureSecretStorage';
 import en from './locales/en/translation.json';
 import { createElectronAPIMock, resetElectronAPIOutboxMock } from './vitest.electronApiMock';
 
@@ -68,6 +69,7 @@ if (typeof Range !== 'undefined' && typeof Range.prototype.getClientRects !== 'f
 }
 afterEach(() => {
   cleanup();
+  resetSecureSecretCacheForTests();
   resetElectronAPIOutboxMock();
 });
 

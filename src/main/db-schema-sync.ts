@@ -284,6 +284,12 @@ export const CANONICAL_TABLES_DDL = `
         value TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS secure_secrets (
+        key TEXT PRIMARY KEY,
+        ciphertext TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS node_notes (
         node_id INTEGER PRIMARY KEY,
         notes TEXT NOT NULL DEFAULT '',

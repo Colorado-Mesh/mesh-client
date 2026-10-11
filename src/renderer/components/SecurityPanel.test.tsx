@@ -2,7 +2,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { meshtasticDmKeyBackupStorageKey } from '../lib/meshtasticDmKeyBackupStorage';
+import { hasMeshtasticDmKeyBackup } from '../lib/meshtasticDmKeyBackupStorage';
+import { resetSecureSecretCacheForTests } from '../lib/secureSecretStorage';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import SecurityPanel from './SecurityPanel';
 
@@ -26,9 +27,11 @@ describe('SecurityPanel', () => {
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     localStorage.clear();
-    vi.mocked(window.electronAPI.safeStorage.isAvailable).mockResolvedValue(false);
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockResolvedValue(null);
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockResolvedValue(null);
+    resetSecureSecretCacheForTests();
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: true,
+      persistent: false,
+    });
   });
 
   afterEach(() => {
@@ -49,12 +52,12 @@ describe('SecurityPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('backs up keys per nodeNum when safeStorage is available', async () => {
+  it('backs up keys per nodeNum when persistent secure storage is available', async () => {
     const user = userEvent.setup();
-    vi.mocked(window.electronAPI.safeStorage.isAvailable).mockResolvedValue(true);
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: true,
+      persistent: true,
+    });
 
     renderWithToast(
       <SecurityPanel
@@ -78,13 +81,16 @@ describe('SecurityPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Backup Keys' }));
 
     await waitFor(() => {
-      expect(window.electronAPI.safeStorage.encrypt).toHaveBeenCalled();
+      expect(window.electronAPI.secureSecrets.set).toHaveBeenCalled();
     });
-    expect(localStorage.getItem(meshtasticDmKeyBackupStorageKey(0x100))).toBeTruthy();
+    expect(hasMeshtasticDmKeyBackup(0x100)).toBe(true);
   });
 
   it('shows MeshCore sign section when protocol is meshcore', async () => {
-    vi.mocked(window.electronAPI.safeStorage.isAvailable).mockResolvedValue(true);
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: true,
+      persistent: true,
+    });
     renderWithToast(
       <SecurityPanel
         onSetConfig={vi.fn().mockResolvedValue(undefined)}

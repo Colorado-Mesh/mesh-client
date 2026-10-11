@@ -5,18 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { APP_SETTINGS_STORAGE_KEY, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { clearAllRoomEphemeralAdminPasswords } from '@/renderer/lib/meshcoreInfraAdminSecrets';
-import { meshcoreRepeaterCredentialSettingForNode } from '@/renderer/lib/meshcoreRepeaterCredentialStorage';
+import { setMeshcoreRepeaterCredential } from '@/renderer/lib/meshcoreRepeaterCredentialStorage';
 import {
   clearAllMeshcoreRepeaterEphemeralPasswords,
   setMeshcoreRepeaterEphemeralPassword,
 } from '@/renderer/lib/meshcoreRepeaterSession';
 import {
   getMeshcoreRoomCredential,
-  meshcoreRoomCredentialSettingForNode,
   setMeshcoreRoomCredential,
 } from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import {
+  getCachedSecureSecret,
+  meshcoreRepeaterSecretKey,
+  meshcoreRoomSecretKey,
+} from '@/renderer/lib/secureSecretStorage';
 
 import { useMeshcoreRepeaterRemoteAuth } from './useMeshcoreRepeaterRemoteAuth';
 
@@ -75,15 +78,17 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
     clearAllMeshcoreRepeaterEphemeralPasswords();
     clearAllRoomEphemeralAdminPasswords();
     vi.mocked(window.electronAPI.appSettings.set).mockClear();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
+      available: true,
+      persistent: true,
+      verified: true,
+    });
     addToastMock.mockClear();
   });
 
   it('resolves immediately when a saved credential exists', async () => {
-    mergeAppSetting(
-      meshcoreRepeaterCredentialSettingForNode(0xabc),
-      JSON.stringify({ password: 'secret' }),
-      'useMeshcoreRepeaterRemoteAuth.test',
-    );
+    await setMeshcoreRepeaterCredential(0xabc, { password: 'secret' });
 
     render(<RepeaterAuthProbe nodeId={0xabc} repeaterName="Test Repeater" />);
     fireEvent.click(screen.getByText('request-auth'));
@@ -116,7 +121,7 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
 
   it('continues the awaiting action after Continue even when Remember persist fails', async () => {
     const onAuthed = vi.fn();
-    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('ipc down'));
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(new Error('ipc down'));
 
     const user = userEvent.setup();
     render(<RepeaterAuthProbe nodeId={0xdef} repeaterName="Fresh Repeater" onAuthed={onAuthed} />);
@@ -161,11 +166,7 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
       );
     });
     expect(getMeshcoreRoomCredential(0x222)?.adminPassword).toBe('room-secret');
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '').toContain(
-      meshcoreRoomCredentialSettingForNode(0x222),
-    );
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '').not.toContain(
-      meshcoreRepeaterCredentialSettingForNode(0x222),
-    );
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(0x222))).toContain('room-secret');
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(0x222))).toBeNull();
   });
 });

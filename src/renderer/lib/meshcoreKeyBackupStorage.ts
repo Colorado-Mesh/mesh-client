@@ -94,8 +94,8 @@ export async function loadMeshcoreKeyBackup(nodeId: number): Promise<{
   };
 }
 
-export function deleteMeshcoreKeyBackup(nodeId: number): void {
-  backup.remove(nodeId);
+export async function deleteMeshcoreKeyBackup(nodeId: number): Promise<void> {
+  await backup.remove(nodeId);
 }
 
 /** Node label / !hex detail for restore picker (protocol prefix applied in UI via i18n). */

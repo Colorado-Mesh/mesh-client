@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
-import { meshcoreRoomCredentialSettingForNode } from './meshcoreRoomCredentialStorage';
+import { setMeshcoreRoomCredential } from './meshcoreRoomCredentialStorage';
 import {
   getMeshcoreRoomSyncConfig,
   listMeshcoreRoomAutoLoginOnConnectNodeIds,
@@ -19,12 +19,8 @@ describe('meshcoreRoomSyncStorage', () => {
     expect(getMeshcoreRoomSyncConfig(99).autoLoginOnConnect).toBe(false);
   });
 
-  it('defaults autoLoginOnConnect to true when room password is saved', () => {
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(55),
-      JSON.stringify({ guestPassword: 'hello' }),
-      'meshcoreRoomSyncStorage.test cred',
-    );
+  it('defaults autoLoginOnConnect to true when room password is saved', async () => {
+    await setMeshcoreRoomCredential(55, { guestPassword: 'hello' });
     expect(getMeshcoreRoomSyncConfig(55).autoLoginOnConnect).toBe(true);
     expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toContain(55);
   });
@@ -37,11 +33,7 @@ describe('meshcoreRoomSyncStorage', () => {
     });
     expect(getMeshcoreRoomSyncConfig(42).autoLoginOnConnect).toBe(true);
     expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toEqual([]);
-    mergeAppSetting(
-      meshcoreRoomCredentialSettingForNode(42),
-      JSON.stringify({ guestPassword: 'secret' }),
-      'meshcoreRoomSyncStorage.test cred',
-    );
+    await setMeshcoreRoomCredential(42, { guestPassword: 'secret' });
     expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toEqual([42]);
   });
 

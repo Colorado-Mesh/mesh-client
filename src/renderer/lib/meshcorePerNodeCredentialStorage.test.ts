@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import {
   createMeshcorePerNodeCredentialStorage,
   parseLegacyCredentialRaw,
 } from './meshcorePerNodeCredentialStorage';
+import {
+  getCachedSecureSecret,
+  resetSecureSecretCacheForTests,
+  setSecureSecret,
+} from './secureSecretStorage';
 
 const PREFIX = 'meshcoreTestCredential:';
 
@@ -17,6 +21,7 @@ function createTestStorage() {
   return createMeshcorePerNodeCredentialStorage<TestCred>({
     prefix: PREFIX,
     logTag: 'meshcoreTestCredential',
+    securePrefix: 'meshcore:repeater:',
     parseValue: (raw) => {
       if (typeof raw !== 'string' || !raw.trim()) return undefined;
       try {
@@ -33,7 +38,7 @@ function createTestStorage() {
 describe('createMeshcorePerNodeCredentialStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.appSettings.set).mockResolvedValue({ changes: 1 });
+    resetSecureSecretCacheForTests();
   });
 
   it('persists and reads credentials by node id', async () => {
@@ -41,7 +46,8 @@ describe('createMeshcorePerNodeCredentialStorage', () => {
     await storage.set(0x1001, { secret: 'alpha' });
     expect(storage.get(0x1001)?.secret).toBe('alpha');
     expect(storage.listNodeIds()).toEqual([0x1001]);
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toContain(`${PREFIX}4097`);
+    expect(getCachedSecureSecret('meshcore:repeater:4097')).toContain('alpha');
+    expect(localStorage.length).toBe(0);
   });
 
   it('coerces node ids with unsigned shift', async () => {
@@ -50,16 +56,10 @@ describe('createMeshcorePerNodeCredentialStorage', () => {
     expect(storage.get(0xffffffff)?.secret).toBe('unsigned');
   });
 
-  it('skips invalid keys and unparseable values when reading map', () => {
-    localStorage.setItem(
-      APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({
-        [`${PREFIX}10`]: JSON.stringify({ secret: 'ok' }),
-        [`${PREFIX}bad`]: JSON.stringify({ secret: 'skip' }),
-        [`${PREFIX}11`]: '',
-        other: 'ignored',
-      }),
-    );
+  it('skips invalid keys and unparseable values when reading map', async () => {
+    await setSecureSecret('meshcore:repeater:10', JSON.stringify({ secret: 'ok' }));
+    await setSecureSecret('meshcore:repeater:bad', JSON.stringify({ secret: 'skip' }));
+    await setSecureSecret('meshcore:repeater:11', '');
     const storage = createTestStorage();
     const map = storage.readMap();
     expect(map.size).toBe(1);
@@ -73,11 +73,12 @@ describe('createMeshcorePerNodeCredentialStorage', () => {
     expect(storage.get(0x20)).toBeUndefined();
   });
 
-  it('rethrows when IPC persist fails after local merge', async () => {
-    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('ipc fail'));
+  it('rethrows when secure-store persistence fails without a plaintext fallback', async () => {
+    vi.mocked(window.electronAPI.secureSecrets.set).mockRejectedValueOnce(new Error('ipc fail'));
     const storage = createTestStorage();
     await expect(storage.set(0x30, { secret: 'x' })).rejects.toThrow('ipc fail');
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toContain(`${PREFIX}48`);
+    expect(getCachedSecureSecret('meshcore:repeater:48')).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 });
 

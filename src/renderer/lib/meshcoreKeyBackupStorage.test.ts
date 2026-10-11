@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   deleteMeshcoreKeyBackup,
@@ -7,16 +7,12 @@ import {
   loadMeshcoreKeyBackup,
   saveMeshcoreKeyBackup,
 } from './meshcoreKeyBackupStorage';
+import { resetSecureSecretCacheForTests } from './secureSecretStorage';
 
 describe('meshcoreKeyBackupStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
   it('round-trips 32-byte seed private key with public key', async () => {
@@ -54,7 +50,7 @@ describe('meshcoreKeyBackupStorage', () => {
     expect(hasMeshcoreKeyBackup(42)).toBe(true);
     expect(listMeshcoreKeyBackups()).toHaveLength(1);
 
-    deleteMeshcoreKeyBackup(42);
+    await deleteMeshcoreKeyBackup(42);
     expect(hasMeshcoreKeyBackup(42)).toBe(false);
     expect(listMeshcoreKeyBackups()).toHaveLength(0);
     await expect(loadMeshcoreKeyBackup(42)).resolves.toBeNull();

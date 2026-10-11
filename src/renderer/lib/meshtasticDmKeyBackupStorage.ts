@@ -112,8 +112,8 @@ export async function loadMeshtasticDmKeyBackup(nodeNum: number): Promise<{
   };
 }
 
-export function deleteMeshtasticDmKeyBackup(nodeNum: number): void {
-  backup.remove(nodeNum);
+export async function deleteMeshtasticDmKeyBackup(nodeNum: number): Promise<void> {
+  await backup.remove(nodeNum);
 }
 
 /** Migrate legacy single-slot backup when it contains a valid pair. */

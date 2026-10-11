@@ -1,23 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
+import { getCachedSecureSecret, resetSecureSecretCacheForTests } from './secureSecretStorage';
 
 describe('createEncryptedKeyBackupStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(window.electronAPI.safeStorage.encrypt).mockImplementation(async (plain) =>
-      Promise.resolve(`enc:${plain}`),
-    );
-    vi.mocked(window.electronAPI.safeStorage.decrypt).mockImplementation(async (cipher) =>
-      Promise.resolve(cipher.startsWith('enc:') ? cipher.slice(4) : null),
-    );
+    resetSecureSecretCacheForTests();
   });
 
-  function makeStorage(idField = 'nodeId') {
+  function makeStorage(idField = 'nodeId', protocol: 'meshcore' | 'meshtastic' = 'meshcore') {
     return createEncryptedKeyBackupStorage({
       prefix: 'test:key-backup:',
       indexKey: 'test:key-backup-index',
-      protocol: 'test-protocol',
+      protocol,
       idField,
       validateKeyPair: (publicKey, privateKey) => {
         if (publicKey.length !== 4) throw new Error('public key must be 4 bytes');
@@ -38,9 +34,8 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(loaded?.privateKey).toEqual(privateKey);
     expect(loaded?.payload.id).toBe(0xabc);
 
-    const rawCipher = localStorage.getItem(storage.storageKey(0xabc));
-    expect(rawCipher).toBeTruthy();
-    const rawJson = JSON.parse(rawCipher!.slice('enc:'.length));
+    expect(localStorage.getItem(storage.storageKey(0xabc))).toBeNull();
+    const rawJson = JSON.parse(getCachedSecureSecret('backup:meshcore:2748')!);
     expect(rawJson.nodeId).toBe(0xabc);
     expect(rawJson.nodeNum).toBeUndefined();
   });
@@ -61,7 +56,7 @@ describe('createEncryptedKeyBackupStorage', () => {
       privateKey: new Uint8Array(4),
     });
     expect(storage.list()).toHaveLength(1);
-    storage.remove(42);
+    await storage.remove(42);
     expect(storage.has(42)).toBe(false);
     expect(storage.list()).toHaveLength(0);
   });
@@ -100,7 +95,7 @@ describe('createEncryptedKeyBackupStorage', () => {
     });
     localStorage.setItem(legacyKey, `enc:${legacyPayload}`);
 
-    const storage = makeStorage();
+    const storage = makeStorage('nodeNum', 'meshtastic');
     const migrated = await storage.migrateLegacySingleSlot(legacyKey, 99);
     expect(migrated).toBe(true);
     expect(localStorage.getItem(legacyKey)).toBeNull();

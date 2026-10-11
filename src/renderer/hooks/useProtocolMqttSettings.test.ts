@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getMqttSettingsStorageKey,
@@ -8,6 +8,11 @@ import {
 } from './useProtocolMqttSettings';
 
 describe('useProtocolMqttSettings helpers', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
+  });
+
   it('maps storage keys by protocol', () => {
     expect(getMqttSettingsStorageKey('meshtastic')).toBe('mesh-client:mqttSettings');
     expect(getMqttSettingsStorageKey('meshcore')).toBe('mesh-client:mqttSettings:meshcore');
@@ -27,5 +32,16 @@ describe('useProtocolMqttSettings helpers', () => {
     const first = localStorage.getItem(key);
     persistMqttSettingsIfChanged(key, settings);
     expect(localStorage.getItem(key)).toBe(first);
+  });
+
+  it('persists an intentional empty password as a secure override', () => {
+    const settings = { ...loadProtocolMqttSettings('meshtastic'), password: '' };
+
+    persistMqttSettingsIfChanged('mesh-client:mqttSettings', settings);
+
+    expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledWith(
+      'mqtt:meshtastic',
+      JSON.stringify({ password: '' }),
+    );
   });
 });
