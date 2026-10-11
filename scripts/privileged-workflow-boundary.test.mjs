@@ -86,6 +86,33 @@ describe('privileged workflow boundaries', () => {
     expect(read('.github/workflows/cut-release.yaml')).not.toContain('secrets.RELEASE_PUSH_TOKEN');
   });
 
+  it('publishes docs with masked basic auth scoped to the deploy step', () => {
+    const source = read('.github/workflows/docs.yml');
+    const workflow = yaml.load(source);
+    const deployCheckout = workflow.jobs.deploy.steps.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(deployCheckout.with['persist-credentials']).toBe(false);
+    const publish = workflow.jobs.deploy.steps.find((step) => step.name === 'Publish docs');
+    expect(publish.env).toEqual({ GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' });
+    expect(publish.run).toContain(
+      'header="AUTHORIZATION: basic $(printf \'x-access-token:%s\' "$GH_TOKEN" | base64 -w0)"',
+    );
+    expect(publish.run).toContain('echo "::add-mask::${header}"');
+    expect(publish.run).toContain('export GIT_CONFIG_COUNT=1');
+    expect(publish.run).toContain("export GIT_CONFIG_KEY_0='http.https://github.com/.extraheader'");
+    expect(publish.run).toContain('export GIT_CONFIG_VALUE_0="$header"');
+    expect(publish.run).toContain('mkdocs gh-deploy --force');
+    expect(source).not.toContain('AUTHORIZATION: bearer');
+    for (const job of [workflow.jobs.build, workflow.jobs.deploy]) {
+      for (const step of job.steps) {
+        if (step === publish) continue;
+        expect(step.env ?? {}).not.toHaveProperty('GH_TOKEN');
+        expect(JSON.stringify(step.env ?? {})).not.toContain('secrets.GITHUB_TOKEN');
+      }
+    }
+  });
+
   it('keeps license maintenance separate from release authority', () => {
     const licenses = loadWorkflow('third-party-licenses');
     const source = read('.github/workflows/third-party-licenses.yaml');
