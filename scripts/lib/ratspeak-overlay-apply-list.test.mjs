@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -131,5 +139,73 @@ exit ${exitCode}
     expect(result.status).not.toBe(0);
     const invoked = readFileSync(logPath, 'utf8').trim().split('\n');
     expect(invoked).toEqual(names.slice(0, failAt + 1));
+  });
+
+  describe('apply_ratspeak_overlays_resetting_stale', () => {
+    const gitEnv = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' };
+
+    /** @param {string} parentName */
+    function makeRepo(parentName) {
+      const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-overlay-stale-'));
+      tempDirs.push(work);
+      const repo = path.join(work, parentName, 'rsReticulum');
+      const git = (/** @type {string[]} */ args) =>
+        spawnSync('git', args, { cwd: repo, encoding: 'utf8', env: gitEnv });
+      mkdirSync(repo, { recursive: true });
+      writeFileSync(path.join(repo, 'src.rs'), 'base\n');
+      expect(git(['init', '-q']).status).toBe(0);
+      git(['config', 'user.email', 'test@example.com']);
+      git(['config', 'user.name', 'test']);
+      git(['add', '.']);
+      expect(git(['commit', '-q', '-m', 'init']).status).toBe(0);
+      return repo;
+    }
+
+    // Fake overlay: applies only on a pristine tree, like a revised patch over its old revision.
+    /** @param {string} repo */
+    function run(repo) {
+      const fn = `fake_apply() { git -C ${JSON.stringify(repo)} diff --quiet || return 1; echo overlay-v2 >> ${JSON.stringify(path.join(repo, 'src.rs'))}; }`;
+      return spawnSync(
+        'bash',
+        [
+          '-c',
+          `set -euo pipefail; source ${JSON.stringify(listPath)}; ${fn}; apply_ratspeak_overlays_resetting_stale ${JSON.stringify(repo)} fake_apply /unused`,
+        ],
+        { encoding: 'utf8', env: gitEnv },
+      );
+    }
+
+    it('resets a stale .rsstack checkout and re-applies overlays', () => {
+      const repo = makeRepo('.rsstack');
+      writeFileSync(path.join(repo, 'src.rs'), 'base\noverlay-v1\n');
+      writeFileSync(path.join(repo, 'leftover.rs'), 'x\n');
+      const result = run(repo);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toMatch(/discarding stale overlays/);
+      expect(readFileSync(path.join(repo, 'src.rs'), 'utf8')).toBe('base\noverlay-v2\n');
+      expect(existsSync(path.join(repo, 'leftover.rs'))).toBe(false);
+    });
+
+    it('keeps local changes and fails outside the .rsstack workspace', () => {
+      const repo = makeRepo('siblings');
+      writeFileSync(path.join(repo, 'src.rs'), 'base\nlocal-wip\n');
+      const result = run(repo);
+      expect(result.status).not.toBe(0);
+      expect(readFileSync(path.join(repo, 'src.rs'), 'utf8')).toBe('base\nlocal-wip\n');
+    });
+
+    it('does not retry when a clean checkout fails to apply', () => {
+      const repo = makeRepo('.rsstack');
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          `set -euo pipefail; source ${JSON.stringify(listPath)}; fake_apply() { return 1; }; apply_ratspeak_overlays_resetting_stale ${JSON.stringify(repo)} fake_apply /unused`,
+        ],
+        { encoding: 'utf8', env: gitEnv },
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).not.toMatch(/discarding stale overlays/);
+    });
   });
 });

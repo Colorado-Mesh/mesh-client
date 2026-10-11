@@ -15,18 +15,18 @@ if [[ ! -d "${RNS_DIR}/.git" ]]; then
   exit 0
 fi
 
-apply_ratspeak_rns_overlays "${SCRIPT_DIR}"
+apply_ratspeak_overlays_resetting_stale "${RNS_DIR}" apply_ratspeak_rns_overlays "${SCRIPT_DIR}"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   echo "rsLXMF not found at ${LXMF_DIR}; skipping lxmf overlay apply"
   exit 0
 fi
 
-apply_ratspeak_lxmf_overlays "${SCRIPT_DIR}"
+apply_ratspeak_overlays_resetting_stale "${LXMF_DIR}" apply_ratspeak_lxmf_overlays "${SCRIPT_DIR}"
 
 if [[ ! -d "${NOMAD_DIR}/.git" ]]; then
   echo "rsNomad not found at ${NOMAD_DIR}; skipping nomad overlay apply"
   exit 0
 fi
 
-apply_ratspeak_nomad_overlays "${SCRIPT_DIR}"
+apply_ratspeak_overlays_resetting_stale "${NOMAD_DIR}" apply_ratspeak_nomad_overlays "${SCRIPT_DIR}"

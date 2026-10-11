@@ -41,7 +41,7 @@ apply_ratspeak_rns_overlays() {
   local script_dir="$1"
   local s
   for s in "${RS_RETICULUM_APPLY_SCRIPTS[@]}"; do
-    "${script_dir}/${s}"
+    "${script_dir}/${s}" || return 1
   done
 }
 
@@ -49,7 +49,7 @@ apply_ratspeak_lxmf_overlays() {
   local script_dir="$1"
   local s
   for s in "${RS_LXMF_APPLY_SCRIPTS[@]}"; do
-    "${script_dir}/${s}"
+    "${script_dir}/${s}" || return 1
   done
 }
 
@@ -57,6 +57,26 @@ apply_ratspeak_nomad_overlays() {
   local script_dir="$1"
   local s
   for s in "${RS_NOMAD_APPLY_SCRIPTS[@]}"; do
-    "${script_dir}/${s}"
+    "${script_dir}/${s}" || return 1
   done
+}
+
+# apply_ratspeak_overlays_resetting_stale REPO_DIR APPLY_FN SCRIPT_DIR
+# A revised patch file cannot apply over its previous revision, so a dirty
+# checkout in the disposable .rsstack workspace is reset to HEAD and every
+# overlay re-applied once. Checkouts outside .rsstack may hold real work and
+# keep failing loud.
+apply_ratspeak_overlays_resetting_stale() {
+  local repo_dir="$1" apply_fn="$2" script_dir="$3"
+  if "${apply_fn}" "${script_dir}"; then
+    return 0
+  fi
+  if [[ "$(basename "$(dirname "${repo_dir}")")" != '.rsstack' ]] \
+    || [[ -z "$(git -C "${repo_dir}" status --porcelain)" ]]; then
+    return 1
+  fi
+  echo "warning: discarding stale overlays in ${repo_dir} and re-applying from $(git -C "${repo_dir}" rev-parse --short HEAD)" >&2
+  git -C "${repo_dir}" reset --hard HEAD > /dev/null
+  git -C "${repo_dir}" clean -fd > /dev/null
+  "${apply_fn}" "${script_dir}"
 }
