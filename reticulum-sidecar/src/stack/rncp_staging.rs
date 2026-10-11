@@ -500,7 +500,6 @@ impl State {
 fn initialize(save_dir: PathBuf) -> Result<State, String> {
     ensure_safe_dir(&save_dir)?;
     let staging_dir = save_dir.join(STAGING_DIR_NAME);
-    let existed = staging_dir.exists();
     ensure_private_dir(&staging_dir)?;
     let data_dir = staging_dir.join(DATA_DIR_NAME);
     ensure_private_dir(&data_dir)?;
@@ -509,9 +508,6 @@ fn initialize(save_dir: PathBuf) -> Result<State, String> {
 
     let marker_valid = read_owner_marker(&marker_path)?;
     if !marker_valid {
-        if existed {
-            cleanup_legacy_files(&staging_dir)?;
-        }
         write_owner_marker(&marker_path)?;
     }
 
@@ -860,20 +856,6 @@ fn cleanup_manifest_temps(staging_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn cleanup_legacy_files(staging_dir: &Path) -> Result<(), String> {
-    for entry in fs::read_dir(staging_dir).map_err(|e| format!("read legacy RNCP dir: {e}"))? {
-        let entry = entry.map_err(|e| format!("read legacy RNCP entry: {e}"))?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let Some(id) = name.get(..36) else {
-            continue;
-        };
-        if name.as_bytes().get(36) == Some(&b'-') && Uuid::parse_str(id).is_ok() {
-            remove_owned_regular_file(&entry.path())?;
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1190,19 +1172,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn legacy_cleanup_requires_uuid_prefix_and_preserves_neighbors() {
+    async fn unmarked_legacy_directory_preserves_all_existing_files() {
         let dir = tempfile::tempdir().expect("tempdir");
         let stage_dir = dir.path().join(STAGING_DIR_NAME);
         fs::create_dir(&stage_dir).expect("legacy stage dir");
-        let owned = stage_dir.join(format!("{}-old.txt", Uuid::new_v4()));
+        let uuid_prefixed = stage_dir.join(format!("{}-notes.txt", Uuid::new_v4()));
         let neighbor = stage_dir.join("not-owned.txt");
-        fs::write(&owned, b"old").expect("old stage");
+        fs::write(&uuid_prefixed, b"user notes").expect("uuid-prefixed user file");
         fs::write(&neighbor, b"neighbor").expect("neighbor");
 
         RncpStaging::open(dir.path().to_path_buf())
             .await
             .expect("open");
-        assert!(!owned.exists());
+        assert_eq!(
+            fs::read(uuid_prefixed).expect("uuid-prefixed file retained"),
+            b"user notes"
+        );
         assert_eq!(fs::read(neighbor).expect("neighbor retained"), b"neighbor");
     }
 }
