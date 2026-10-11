@@ -5,7 +5,7 @@ import {
   MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX,
 } from '@/shared/appSettingsKeyPrefixes';
 
-import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
+import { APP_SETTINGS_STORAGE_KEY, LEGACY_APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import {
   getCachedSecureSecret,
   initializeSecureSecrets,
@@ -293,6 +293,58 @@ describe('secureSecretStorage migrations', () => {
       'legacy backup verification failed',
     );
     expect(localStorage.getItem(storageKey)).toBe('legacy-ciphertext');
+  });
+
+  it('scrubs both settings aliases while preserving current credential precedence', async () => {
+    const currentKey = `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`;
+    const legacyKey = `${MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX}43`;
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ theme: 'dark', [currentKey]: 'current-room' }),
+    );
+    localStorage.setItem(
+      LEGACY_APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        theme: 'light',
+        [currentKey]: 'obsolete-room',
+        [legacyKey]: 'legacy-repeater',
+      }),
+    );
+
+    await initializeSecureSecrets();
+
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(42))).toBe('current-room');
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(43))).toBe('legacy-repeater');
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!)).toEqual({ theme: 'dark' });
+    expect(JSON.parse(localStorage.getItem(LEGACY_APP_SETTINGS_STORAGE_KEY)!)).toEqual({
+      theme: 'light',
+    });
+  });
+
+  it('preserves durable backup ciphertext when the import is session-only', async () => {
+    const storageKey = 'mesh-client:meshtastic-dm-key-backup:22';
+    localStorage.setItem(storageKey, 'legacy-ciphertext');
+    window.electronAPI.secureSecrets.migrateLegacyBackupCiphertext = vi
+      .fn()
+      .mockResolvedValue({ available: true, persistent: false, verified: true });
+
+    await expect(initializeSecureSecretsFailClosed()).rejects.toThrow(
+      'legacy backup verification failed',
+    );
+    expect(localStorage.getItem(storageKey)).toBe('legacy-ciphertext');
+  });
+
+  it('preserves saved credentials when secure persistence is unavailable', async () => {
+    const raw = JSON.stringify({
+      [`${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`]: 'room-password',
+    });
+    localStorage.setItem(LEGACY_APP_SETTINGS_STORAGE_KEY, raw);
+    window.electronAPI.secureSecrets.set = vi
+      .fn()
+      .mockResolvedValue({ available: true, persistent: false, verified: true });
+
+    await expect(initializeSecureSecretsFailClosed()).rejects.toThrow(/configure an OS keyring/);
+    expect(localStorage.getItem(LEGACY_APP_SETTINGS_STORAGE_KEY)).toBe(raw);
   });
 
   it('preserves a legacy backup when the secure slot contains a different key pair', async () => {
