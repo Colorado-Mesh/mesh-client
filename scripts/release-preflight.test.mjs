@@ -23,7 +23,12 @@ describe('Release preflight (e2e.yaml job)', () => {
   });
 
   it('keeps release tooling in the composite, not inline in Cut release', () => {
-    for (const tool of ['dtolnay/rust-toolchain', 'setup:actionlint', 'pip install yamllint']) {
+    for (const tool of [
+      'dtolnay/rust-toolchain',
+      'setup:actionlint',
+      'pip install --require-hashes --only-binary=:all:',
+      'scripts/requirements-yamllint.txt',
+    ]) {
       expect(toolchain).toContain(tool);
       expect(cutRelease).not.toContain(tool);
       expect(preflightJob).not.toContain(tool);
@@ -41,6 +46,38 @@ describe('Release preflight (e2e.yaml job)', () => {
     expect(preflightJob).toContain("MESH_CLIENT_RELEASE_PARSE_ONLY: ''");
     expect(preflightJob).toContain(
       "if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'",
+    );
+  });
+
+  it('keeps the admin token out of checkout and release preparation', () => {
+    expect(cutRelease).toMatch(/persist-credentials: false/);
+    expect(cutRelease).not.toMatch(/^\s*token:\s*>-/m);
+    expect(cutRelease).toContain('Prepare release without push credentials');
+    expect(cutRelease).toContain('--prepare-only');
+    expect(cutRelease).toContain('Push prepared release');
+    expect(cutRelease).toContain('--push-only');
+
+    const prepare = cutRelease.slice(
+      cutRelease.indexOf('- name: Prepare release without push credentials'),
+      cutRelease.indexOf('- name: Push prepared release'),
+    );
+    expect(prepare).not.toContain('RELEASE_PUSH_TOKEN');
+
+    const tokenRefs = cutRelease.match(/secrets\.RELEASE_PUSH_TOKEN/g) ?? [];
+    expect(tokenRefs).toHaveLength(1);
+    expect(cutRelease).toContain('GIT_ASKPASS');
+    expect(cutRelease).not.toMatch(/git remote set-url[^\n]*RELEASE_PUSH_TOKEN/);
+  });
+
+  it('installs yamllint from an exact wheel-only hash lock', () => {
+    const lock = readFileSync('scripts/requirements-yamllint.txt', 'utf8');
+    for (const requirement of ['yamllint==1.37.1', 'pathspec==0.12.1', 'PyYAML==6.0.3']) {
+      expect(lock).toContain(requirement);
+    }
+    expect(toolchain).toContain('--require-hashes --only-binary=:all:');
+    expect(lock.match(/--hash=sha256:/g)?.length).toBeGreaterThanOrEqual(9);
+    expect(toolchain.indexOf('Install yamllint')).toBeGreaterThan(
+      toolchain.indexOf('Install flatpak-node-generator'),
     );
   });
 });
