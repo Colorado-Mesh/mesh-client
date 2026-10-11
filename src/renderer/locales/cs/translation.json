@@ -477,7 +477,10 @@
       "empty": "Žádné blokované uzly.",
       "unblockAria": "Odblokovat {{node}}",
       "unblockFailed": "Nelze odblokovat tento uzel."
-    }
+    },
+    "updatesSection": "Aktualizace",
+    "autoUpdateDownload": "Automaticky stahovat aktualizace",
+    "autoUpdateDownloadDesc": "Po každém šeku stáhne nejnovější aktualizaci na pozadí. Když je vypnuto, aktualizace jsou stále detekovány, ale stahovány pouze po stisknutí tlačítka Stáhnout — užitečné, když správce balíčků zpracovává instalaci."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

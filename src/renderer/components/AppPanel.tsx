@@ -193,6 +193,8 @@ interface AppSettings {
   shareMyLocation: boolean;
   reduceMotion: boolean;
   use24HourTime: boolean;
+  /** Packaged builds download update artifacts after each check; App → Updates toggle. */
+  autoUpdateDownloadEnabled: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
@@ -549,9 +551,18 @@ export default function AppPanel({
           console.warn('[AppPanel] use24HourTime persist failed ' + errLikeToLogString(err));
         });
     }
+    if (key === 'autoUpdateDownloadEnabled') {
+      void window.electronAPI.appSettings
+        .set('autoUpdateDownloadEnabled', value ? '1' : '0')
+        .catch((err: unknown) => {
+          console.warn(
+            '[AppPanel] autoUpdateDownloadEnabled persist failed ' + errLikeToLogString(err),
+          );
+        });
+    }
   };
 
-  // ─── DB-backed settings hydrate (message retention + 24h clock) ─
+  // ─── DB-backed settings hydrate (message retention + 24h clock + update auto-download) ─
   // Source of truth lives in SQLite (`app_settings` KV table). One getAll()
   // on mount so tests that mockResolvedValueOnce still see retention keys.
   const [retention, setRetention] = useState<MessageRetentionSettings>({
@@ -572,6 +583,15 @@ export default function AppPanel({
           useTimeFormatStore.getState().hydrateFromSqlite(enabled);
           setSettings((prev) =>
             prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
+          );
+        }
+        const autoDownload = raw?.autoUpdateDownloadEnabled;
+        if (autoDownload === '1' || autoDownload === '0') {
+          const enabled = autoDownload === '1';
+          setSettings((prev) =>
+            prev.autoUpdateDownloadEnabled === enabled
+              ? prev
+              : { ...prev, autoUpdateDownloadEnabled: enabled },
           );
         }
         const loaded = parseMessageRetention(raw);
@@ -1993,6 +2013,33 @@ export default function AppPanel({
           >
             {t('appPanel.importMergeButton')}
           </button>
+        </div>
+      </div>
+
+      {/* Updates — auto-download of packaged update artifacts (install stays manual). */}
+      <div className="space-y-2">
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.updatesSection')}</h3>
+        <div
+          data-setting-anchor="app.updates.autoDownload"
+          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
+        >
+          <input
+            type="checkbox"
+            id="autoUpdateDownloadEnabled"
+            checked={settings.autoUpdateDownloadEnabled}
+            onChange={(e) => {
+              updateSetting('autoUpdateDownloadEnabled', e.target.checked);
+            }}
+            aria-label={t('appPanel.autoUpdateDownload')}
+            className="accent-brand-green"
+          />
+          <label
+            htmlFor="autoUpdateDownloadEnabled"
+            className="text-ink-300 cursor-pointer text-sm"
+          >
+            {t('appPanel.autoUpdateDownload')}
+          </label>
+          <HelpTooltip text={t('appPanel.autoUpdateDownloadDesc')} />
         </div>
       </div>
 

@@ -469,7 +469,10 @@
       "empty": "Keine blockierten Knoten.",
       "unblockAria": "Entsperren {{node}}",
       "unblockFailed": "Die Blockierung dieses Knotens konnte nicht aufgehoben werden."
-    }
+    },
+    "updatesSection": "Updates",
+    "autoUpdateDownload": "App-Updates automatisch downloaden",
+    "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

@@ -469,7 +469,10 @@
       "empty": "没有被阻止的节点。",
       "unblockAria": "取消屏蔽{{node}}",
       "unblockFailed": "无法取消阻止该节点。"
-    }
+    },
+    "updatesSection": "更新",
+    "autoUpdateDownload": "自动下载更新",
+    "autoUpdateDownloadDesc": "每次检查后在后台下载最新更新。关闭时，仍会检测到更新，但只有在按下“下载”按钮时才会下载，这在程序包管理器处理安装时非常有用。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

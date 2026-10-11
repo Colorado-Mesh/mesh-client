@@ -469,7 +469,10 @@
       "empty": "No hay nodos bloqueados.",
       "unblockAria": "Desbloquea {{node}}",
       "unblockFailed": "No se ha podido desbloquear ese nodo."
-    }
+    },
+    "updatesSection": "Actualizaciones",
+    "autoUpdateDownload": "Descargar actualizaciones automáticamente",
+    "autoUpdateDownloadDesc": "Descarga la última actualización en segundo plano después de cada comprobación. Cuando está desactivado, las actualizaciones aún se detectan, pero solo se descargan cuando se pulsa el botón Descargar, útil cuando un gestor de paquetes se encarga de la instalación."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

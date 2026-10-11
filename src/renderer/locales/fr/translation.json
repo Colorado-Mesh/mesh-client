@@ -469,7 +469,10 @@
       "empty": "Aucun nœud bloqué.",
       "unblockAria": "Débloquer {{node}}",
       "unblockFailed": "Impossible de débloquer ce nœud."
-    }
+    },
+    "updatesSection": "Mises à jour",
+    "autoUpdateDownload": "Télécharger automatiquement les mises à jour",
+    "autoUpdateDownloadDesc": "Télécharge la dernière mise à jour en arrière-plan après chaque vérification. Lorsqu'elle est désactivée, les mises à jour sont toujours détectées, mais seulement téléchargées lorsque vous appuyez sur le bouton Télécharger — utile lorsqu'un gestionnaire de paquets gère l'installation."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

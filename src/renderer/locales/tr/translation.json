@@ -469,7 +469,10 @@
       "empty": "Engellenmiş düğüm yok.",
       "unblockAria": "{{node}} engelini kaldır",
       "unblockFailed": "Bu düğümün engeli kaldırılamadı."
-    }
+    },
+    "updatesSection": "Güncellemeler",
+    "autoUpdateDownload": "~Güncellemeleri otomatik olarak indir",
+    "autoUpdateDownloadDesc": "Her kontrolden sonra arka plandaki en son güncellemeyi indirir. Kapalıyken, güncellemeler hala algılanır, ancak yalnızca İndir düğmesine bastığınızda indirilir — bir paket yöneticisi kurulumu gerçekleştirdiğinde kullanışlıdır."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
