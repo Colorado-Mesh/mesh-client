@@ -81,11 +81,9 @@ pub async fn rncp_send(
     ) else {
         return capability_denied().into_response();
     };
-    if !capability.still_matches() {
-        return capability_denied().into_response();
-    }
-    let response = stack.rncp_send(&body.destination_hash, &body.path).await;
-    drop(capability);
+    let response = stack
+        .rncp_send(&body.destination_hash, body.path, capability)
+        .await;
     Json(response).into_response()
 }
 
@@ -127,9 +125,13 @@ pub async fn rncp_fetch(
         None
     };
     let response = stack
-        .rncp_fetch(&body.destination_hash, &body.remote_path, body.save_path)
+        .rncp_fetch(
+            &body.destination_hash,
+            &body.remote_path,
+            body.save_path,
+            capability,
+        )
         .await;
-    drop(capability);
     Json(response).into_response()
 }
 
@@ -206,9 +208,6 @@ pub async fn set_rncp_listener(
         ) else {
             return capability_denied().into_response();
         };
-        if !capability.still_matches() {
-            return capability_denied().into_response();
-        }
         Some(capability)
     } else {
         None
@@ -222,8 +221,8 @@ pub async fn set_rncp_listener(
             body.overwrite,
             body.allowed,
             body.blocked,
+            capability,
         )
         .await;
-    drop(capability);
     Json(response).into_response()
 }

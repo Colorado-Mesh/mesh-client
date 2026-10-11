@@ -135,6 +135,10 @@ describe('update.sh Reticulum stack functionality check', () => {
       'rsReticulum-reply-file-query-metadata.patch|ratspeak/rsReticulum|26|',
     );
     expect(updateScript).toContain('rsLXMF-file-attachments-list.patch|ratspeak/rsLXMF|7|');
+    expect(updateScript).toContain(
+      'rsReticulum-rncp-picker-pinned-jail.patch|ratspeak/rsReticulum||',
+    );
+    expect(updateScript).toContain('rsNomad-picker-pinned-roots.patch|Colorado-Mesh/rsNomad||');
     expect(updateScript).not.toContain('RATSPEAK_STACK_PR_ENTRIES');
     expect(updateScript).not.toContain('check_ratspeak_stack_prs');
     expect(updateScript).not.toContain('ratspeak-stack-ci-pins.env');

@@ -403,17 +403,22 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(out).toContain(`SHA=${tipSha}`);
   });
 
-  it('applies rsReticulum and rsLXMF overlays after checkout via shared list', () => {
+  it('applies rsReticulum, rsLXMF, and rsNomad overlays after checkout via shared list', () => {
     expect(cloneScript).toContain('apply_ratspeak_rns_overlays');
     expect(cloneScript).toContain('apply_ratspeak_lxmf_overlays');
+    expect(cloneScript).toContain('apply_ratspeak_nomad_overlays');
     const rnsEnsure = cloneScript.indexOf('ensure_repo "${RNS_DIR}"');
     const rnsApply = cloneScript.indexOf('apply_ratspeak_rns_overlays');
     const lxmfEnsure = cloneScript.indexOf('ensure_repo "${LXMF_DIR}"');
     const lxmfApply = cloneScript.indexOf('apply_ratspeak_lxmf_overlays');
+    const nomadEnsure = cloneScript.indexOf('ensure_repo "${NOMAD_DIR}"');
+    const nomadApply = cloneScript.indexOf('apply_ratspeak_nomad_overlays');
     expect(rnsEnsure).toBeGreaterThanOrEqual(0);
     expect(rnsApply).toBeGreaterThan(rnsEnsure);
     expect(lxmfEnsure).toBeGreaterThan(rnsApply);
     expect(lxmfApply).toBeGreaterThan(lxmfEnsure);
+    expect(nomadEnsure).toBeGreaterThan(lxmfApply);
+    expect(nomadApply).toBeGreaterThan(nomadEnsure);
 
     const listPath = fileURLToPath(
       new URL('./lib/ratspeak-overlay-apply-list.sh', import.meta.url),
@@ -422,5 +427,6 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     expect(listScript).toContain('apply-rsReticulum-packet-tap.sh');
     expect(listScript).toContain('apply-rsLXMF-propagation-node-policy-setters.sh');
     expect(listScript).toContain('apply-rsLXMF-propagation-node-deferred-messagestore-load.sh');
+    expect(listScript).toContain('apply-rsNomad-picker-pinned-roots.sh');
   });
 });

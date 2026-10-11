@@ -1746,6 +1746,7 @@ dependencies = [
  "futures-util",
  "hex",
  "http",
+ "libc",
  "lrgp",
  "lxmf-core",
  "lxst-core",
@@ -1779,6 +1780,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "windows 0.58.0",
+ "windows-sys 0.61.2",
  "zeroize",
 ]
 

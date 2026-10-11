@@ -733,6 +733,26 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 After upstream rsReticulum promotes TCP-class response Resources (or otherwise reaches `WINDOW_MAX_FAST` without waiting on `RATE_FAST`), advance `RS_RETICULUM_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
 
+## rsReticulum-rncp-picker-pinned-jail.patch
+
+Preserves Linux `/proc/self/fd/...` and macOS `/.vol/...` picker-capability paths through RNCP fetch-jail resolution. Canonicalizing those paths would reopen the user-visible pathname and reintroduce a replace-before-read race.
+
+```bash
+./scripts/apply-rsReticulum-rncp-picker-pinned-jail.sh
+```
+
+Remove after the reviewed rsReticulum pin has equivalent handle-relative fetch-jail resolution and the replacement-race sink test.
+
+## rsNomad-picker-pinned-roots.patch
+
+Preserves picker handle aliases through rsNomad page/file storage reads, writes, and deletes. Component validation still rejects traversal and symlinks, while the final filesystem operation remains rooted at the approved directory handle. `NomadNode::shutdown` also aborts and joins its background tasks so the embedder can release the old capability only after every sink has stopped.
+
+```bash
+./scripts/apply-rsNomad-picker-pinned-roots.sh
+```
+
+Remove after the reviewed rsNomad pin has equivalent handle-relative content-root resolution and the content-store replacement-race test.
+
 ## Removed: rsLXMF-propagation-client-link-attached-tx.patch
 
 Sunset after the reviewed `RS_LXMF_PIN` included PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after pin-based sunset confirmation.
