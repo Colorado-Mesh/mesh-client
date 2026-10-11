@@ -508,6 +508,11 @@ export function AppTranslationSection() {
             >
               <h4 className="text-ink-200 font-medium">LibreTranslate</h4>
               <p className="text-muted text-sm">{t('chatTranslation.onlinePrivacy')}</p>
+              {status.libre.needsSecureUrl && (
+                <p role="status" className="text-sm text-orange-400">
+                  {t('chatTranslation.secureUrlRequired')}
+                </p>
+              )}
               <label className="text-ink-200 flex flex-col gap-1 text-sm">
                 {t('chatTranslation.serverUrl')}
                 <input

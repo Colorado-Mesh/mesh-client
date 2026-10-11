@@ -55,6 +55,23 @@ describe('createEncryptedKeyBackupStorage', () => {
     expect(storage.has(1)).toBe(false);
   });
 
+  it('rejects a session-only backup without advertising success or removing legacy data', async () => {
+    const storage = makeStorage();
+    const legacy = 'legacy-encrypted-backup';
+    localStorage.setItem(storage.storageKey(7), legacy);
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValueOnce({
+      available: true,
+      persistent: false,
+      verified: true,
+    });
+    await expect(
+      storage.save({ id: 7, publicKey: new Uint8Array(4), privateKey: new Uint8Array(4) }),
+    ).rejects.toThrow('OS key storage unavailable');
+    expect(storage.has(7)).toBe(false);
+    expect(storage.list()).toEqual([]);
+    expect(localStorage.getItem(storage.storageKey(7))).toBe(legacy);
+  });
+
   it('remove clears both the slot and the index entry', async () => {
     const storage = makeStorage();
     await storage.save({

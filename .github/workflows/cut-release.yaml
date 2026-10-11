@@ -172,7 +172,8 @@ jobs:
       - name: Push prepared release
         if: ${{ inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
-          # The admin credential exists only for this final, non-repository-controlled operation.
+          # Approved main and reviewed dependencies are trusted here. Keep the
+          # admin credential out of installation and release preparation steps.
           RELEASE_CUT_TOKEN: ${{ secrets.RELEASE_CUT_TOKEN }}
           MESH_CLIENT_RELEASE_PARSE_ONLY: ''
         run: |

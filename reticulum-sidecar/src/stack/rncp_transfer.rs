@@ -380,6 +380,10 @@ impl RncpTransferManager {
             spawn_link_task(format!("rncp-fetch-{transfer_id}"), move || async move {
                 let _path_capability = worker_capability;
                 let result = rncp_fetch_file(RncpFetchRequest {
+                    receive_limits: Some(rns_runtime::rncp::RncpFetchLimits {
+                        max_file_bytes: MAX_RNCP_FILE_BYTES as usize,
+                        max_metadata_bytes: MAX_RNCP_METADATA_BYTES,
+                    }),
                     transport_tx,
                     identity,
                     dest_hash,
@@ -772,10 +776,6 @@ impl RncpTransferManager {
             "blocked": policy.blocked.iter().cloned().collect::<Vec<_>>(),
             "last_error": last_error,
         })
-    }
-
-    pub async fn require_picker_capability_after_restore(&self) {
-        *self.listener_error.lock().await = Some("picker_capability_required".into());
     }
 
     pub async fn receive_destination_hash(&self) -> Option<String> {
@@ -1464,15 +1464,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn restored_listener_requires_fresh_picker_capability() {
+    async fn remembered_listener_directory_resumes_without_fresh_picker_capability() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let (manager, _rx) = test_manager(dir.path());
-
-        manager.require_picker_capability_after_restore().await;
-
-        let status = manager.listener_status().await;
-        assert_eq!(status["enabled"], false);
-        assert_eq!(status["last_error"], "picker_capability_required");
+        let (transport_tx, _transport_rx) = mpsc::channel::<TransportMessage>(32);
+        let (event_tx, _event_rx) = broadcast::channel::<String>(64);
+        let manager = RncpTransferManager::spawn(
+            transport_tx,
+            Identity::new(),
+            event_tx,
+            dir.path().to_path_buf(),
+        );
+        manager
+            .configure_policy("ask", vec![], vec![])
+            .await
+            .expect("policy");
+        let inbox = dir.path().join("inbox");
+        for _ in 0..2 {
+            manager
+                .start_listener(inbox.clone(), inbox.clone(), false, None, false, None)
+                .await
+                .expect("resume remembered directory");
+            assert_eq!(manager.listener_status().await["enabled"], true);
+            manager.stop_listener().await;
+        }
     }
 
     #[tokio::test]

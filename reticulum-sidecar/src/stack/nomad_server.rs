@@ -182,7 +182,7 @@ impl NomadServerHandle {
         }
     }
 
-    /// Restore a previously persisted content source without validating restart.
+    /// Restore a user-selected source from the native process's local configuration.
     pub async fn load_content_source_path(&self, path: Option<PathBuf>) {
         let _lifecycle = self.lifecycle.lock().await;
         *self.content_source.lock().await = path.map(|path| ContentSourceSelection {
@@ -191,7 +191,10 @@ impl NomadServerHandle {
             display_content_root: path.clone(),
             display_path: path,
             capability: None,
-            capability_required: true,
+            // Accepted local-state trust: remembered selections resume without
+            // another picker. resolve_roots still validates the directory layout;
+            // new renderer-supplied paths still require a picker capability.
+            capability_required: false,
         });
     }
 
@@ -978,15 +981,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn restored_content_source_requires_fresh_picker_capability() {
+    async fn restored_content_source_resumes_without_another_picker() {
         let dir = tempfile::tempdir().expect("tempdir");
         let site = dir.path().join("site");
         std::fs::create_dir_all(site.join("pages")).unwrap();
         let handle = Arc::new(NomadServerHandle::new());
         handle.load_content_source_path(Some(site)).await;
 
-        let err = handle.resolve_roots().await.expect_err("restore blocked");
-        assert_eq!(err, "picker_capability_required");
+        let roots = handle
+            .resolve_roots()
+            .await
+            .expect("restore valid selection");
+        assert_eq!(roots.layout, NomadContentLayout::SiteRoot);
         let status = handle.status(true, "N").await;
         assert!(!status.running);
         assert!(status.content_source.is_some());

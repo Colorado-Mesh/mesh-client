@@ -50,7 +50,9 @@
     "takRemoteConnecting": "원격 연결",
     "takRemoteError": "원격 오류",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "저장된 설정을 로드할 수 없습니다",
+    "savedSettingsRecovery": "저장된 데이터가 보관되었습니다. 시스템 키링을 사용할 수 있는지 확인하거나 잠시 후 다시 시도하십시오."
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -1011,7 +1013,8 @@
     "copied": "복사됨",
     "botBadge": "봇",
     "botBadgeLabel": "봇",
-    "botBadgeTooltip": "자동 응답에서 봇으로 감지됨"
+    "botBadgeTooltip": "자동 응답에서 봇으로 감지됨",
+    "retry": "다시 시도"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -3809,7 +3812,8 @@
     "unfavoriteSiteAria": "즐겨찾기에서 {{name}} 삭제",
     "favoriteAddedToast": "즐겨찾기에 {{name}} 추가됨",
     "favoriteRemovedToast": "즐겨찾기에서 {{name}} 삭제됨",
-    "favoriteFailedToast": "{{name}}의 즐겨찾기를 업데이트할 수 없습니다. Reticulum이 실행 중입니까?"
+    "favoriteFailedToast": "{{name}}의 즐겨찾기를 업데이트할 수 없습니다. Reticulum이 실행 중입니까?",
+    "partialsPaused": "일부 페이지 콘텐츠를 로드하거나 새로 고칠 수 없습니다. 페이지를 새로고침하고 다시 시도하세요."
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
@@ -7024,6 +7028,7 @@
     "downloadSize": "다운로드 ({{size}})",
     "readLanguagesHint": "이러한 언어로 된 메시지는 절대 자동으로 번역되지 않습니다. 번역 에서 선택한 언어는 항상 읽은 언어로 간주됩니다.",
     "pivotHint": "팩은 프랑스어와 영어와 같은 한 가지 번역 방향을 다룹니다. 다른 언어 쌍은 영어를 통해 번역됩니다: 프랑스어에서 독일어는 프랑스어 → 영어와 영어 → 독일어 팩이 필요합니다. 영어로 번역하려면 한 팩만 있으면 됩니다.",
-    "hideTranslation": "번역 숨기기"
+    "hideTranslation": "번역 숨기기",
+    "secureUrlRequired": "온라인 번역이 일시 중지되었습니다. 서버와 저장된 키가 유지되었습니다. HTTPS URL을 사용하여 다시 시작하십시오."
   }
 }

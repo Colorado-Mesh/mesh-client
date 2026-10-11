@@ -69,6 +69,13 @@ describe('apply-rsReticulum-rncp-inbound-admission.sh', () => {
     expect(patch).toContain('RncpReceiveMode::SaveToDirectory');
     expect(patch).toContain('api/stability.json');
     expect(patch).toContain('pub struct rns_runtime::rncp::RncpPayloadAck(_)');
+    expect(patch).toContain('pub struct RncpFetchLimits');
+    expect(patch).toContain('FetchReceiveBudget');
+    expect(patch).toContain('bounded_fetch_accepts_stock_file_and_exact_limits');
+    expect(patch).toContain('bounded_fetch_keeps_split_metadata_and_compression_compatibility');
+    expect(patch).toContain('bounded_fetch_rejects_invalid_declarations_and_actual_sizes');
+    expect(patch).toContain('bounded_fetch_rejects_wire_bytes_before_part_retention');
+    expect(patch).toContain('fetch packet exceeded negotiated MTU');
   });
 
   it('does not treat marker-only partial content as the complete overlay', () => {

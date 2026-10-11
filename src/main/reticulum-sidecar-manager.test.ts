@@ -106,6 +106,8 @@ function mockSidecarProc(pid = 4242): EventEmitter & {
 
 describe('ReticulumSidecarManager', () => {
   beforeEach(() => {
+    vi.stubEnv('RUST_LOG', '');
+    vi.stubEnv('MESH_CLIENT_RUST_LOG', '');
     mockWsInstances.length = 0;
     spawnMock.mockReset();
     vi.mocked(ensureDevSidecarBinary).mockReset();
@@ -126,6 +128,7 @@ describe('ReticulumSidecarManager', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 

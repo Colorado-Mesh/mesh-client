@@ -136,7 +136,7 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       publicKeyB64: e.publicKeyB64,
       backedUpAt: e.backedUpAt,
     }));
-    await setSecureSecret(indexSecretKey(), JSON.stringify(raw));
+    await setSecureSecret(indexSecretKey(), JSON.stringify(raw), true);
     localStorage.removeItem(indexKey);
   }
 
@@ -172,7 +172,9 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       nodeLabel: options.nodeLabel?.trim() || undefined,
       backedUpAt: Date.now(),
     };
-    await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)));
+    // A backup must survive a restart. Require durability at the write itself,
+    // since the panel's earlier keyring probe can become stale.
+    await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)), true);
     localStorage.removeItem(storageKey(id));
     await upsertIndexEntry({
       id,

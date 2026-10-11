@@ -50,7 +50,7 @@ export interface TranslationStatus {
   packs: TranslationPack[];
   progress: TranslationProgress[];
   diskBytes: number;
-  libre: { enabled: boolean; url: string; hasApiKey: boolean };
+  libre: { enabled: boolean; url: string; hasApiKey: boolean; needsSecureUrl?: boolean };
 }
 export interface TranslationActionResult {
   ok: boolean;

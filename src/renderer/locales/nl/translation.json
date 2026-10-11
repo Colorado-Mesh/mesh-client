@@ -50,7 +50,9 @@
     "takRemoteConnecting": "verbinding op afstand",
     "takRemoteError": "Fout op afstand",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Opgeslagen instellingen konden niet worden geladen",
+    "savedSettingsRecovery": "Uw opgeslagen gegevens zijn bewaard gebleven. Controleer of uw systeemsleutelbos beschikbaar is, of wacht even en probeer het opnieuw."
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -1011,7 +1013,8 @@
     "copied": "Gekopieerd",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Gedetecteerd als een bot uit de geautomatiseerde antwoorden"
+    "botBadgeTooltip": "Gedetecteerd als een bot uit de geautomatiseerde antwoorden",
+    "retry": "Opnieuw proberen"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -3809,7 +3812,8 @@
     "unfavoriteSiteAria": "Verwijder {{name}} uit favorieten",
     "favoriteAddedToast": "{{name}} toegevoegd aan favorieten",
     "favoriteRemovedToast": "{{name}} verwijderd uit favorieten",
-    "favoriteFailedToast": "Kan favoriet voor {{name}} niet bijwerken. Draait Reticulum?"
+    "favoriteFailedToast": "Kan favoriet voor {{name}} niet bijwerken. Draait Reticulum?",
+    "partialsPaused": "Sommige pagina-inhoud kon niet worden geladen of vernieuwd. Laad de pagina opnieuw om het opnieuw te proberen."
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
@@ -7024,6 +7028,7 @@
     "downloadSize": "Download ({{size}})",
     "readLanguagesHint": "Berichten in deze talen worden nooit automatisch vertaald. De taal die is geselecteerd onder Vertalen naar telt altijd als een taal die u leest.",
     "pivotHint": "Een pakket beslaat één vertaalrichting, zoals Frans naar Engels. Andere talenparen worden vertaald via het Engels: Frans naar Duits heeft de → Frans-Engels en → Engels-Duitse pakketten nodig. Vertalen naar het Engels heeft slechts één pakket nodig.",
-    "hideTranslation": "Vertaling verbergen"
+    "hideTranslation": "Vertaling verbergen",
+    "secureUrlRequired": "Online vertaling is gepauzeerd. Uw server en opgeslagen sleutel zijn bewaard gebleven; gebruik een HTTPS-URL om te hervatten."
   }
 }

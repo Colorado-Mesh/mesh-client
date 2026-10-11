@@ -50,7 +50,9 @@
     "takRemoteConnecting": "fernverbindung",
     "takRemoteError": "Remote-Fehler",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Einstellungen konnten nicht geladen werden",
+    "savedSettingsRecovery": "Ihre gespeicherten Daten wurden aufbewahrt. Überprüfen Sie, ob Ihr Systemschlüsselring verfügbar ist, oder warten Sie eine Minute und versuchen Sie es erneut."
   },
   "appPanel": {
     "failedSaveRetention": "Die Einstellung für die Nachrichtenaufbewahrung konnte nicht gespeichert werden.",
@@ -1011,7 +1013,8 @@
     "copied": "Kopiert",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Aufgrund seiner automatisierten Antworten als Bot erkannt"
+    "botBadgeTooltip": "Aufgrund seiner automatisierten Antworten als Bot erkannt",
+    "retry": "Erneut versuchen"
   },
   "configApplyNotice": {
     "persistNote": "Angewandte Einstellungen werden im Flash-Speicher des Geräts gespeichert und bleiben beim Neustart erhalten.",
@@ -3809,7 +3812,8 @@
     "unfavoriteSiteAria": "{{name}} aus Favoriten entfernen",
     "favoriteAddedToast": "{{name}} zu Favoriten hinzugefügt",
     "favoriteRemovedToast": "{{name}} aus Favoriten entfernt",
-    "favoriteFailedToast": "Favorit für {{name}} konnte nicht aktualisiert werden. Läuft Reticulum?"
+    "favoriteFailedToast": "Favorit für {{name}} konnte nicht aktualisiert werden. Läuft Reticulum?",
+    "partialsPaused": "Einige Seiteninhalte konnten nicht geladen oder aktualisiert werden. Laden Sie die Seite neu, um es erneut zu versuchen."
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
@@ -7024,6 +7028,7 @@
     "downloadSize": "Herunterladen ({{size}})",
     "readLanguagesHint": "Nachrichten in diesen Sprachen werden nie automatisch übersetzt. Die unter Übersetzen in ausgewählte Sprache zählt immer als eine Sprache, die Sie lesen.",
     "pivotHint": "Ein Paket deckt eine Übersetzungsrichtung ab, z. B. Französisch nach Englisch. Andere Sprachpaare werden über Englisch übersetzt: Französisch nach Deutsch benötigt das Französisch → Englisch und Englisch → Deutsch Packs. Um ins Englische zu übersetzen, braucht man nur eine Packung.",
-    "hideTranslation": "Übersetzung ausblenden"
+    "hideTranslation": "Übersetzung ausblenden",
+    "secureUrlRequired": "Die Online-Übersetzung ist pausiert. Ihr Server und Ihr gespeicherter Schlüssel wurden aufbewahrt. Verwenden Sie eine HTTPS-URL, um fortzufahren."
   }
 }
