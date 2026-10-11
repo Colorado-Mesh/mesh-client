@@ -122,7 +122,7 @@ Meshtastic and MeshCore use the literal form `@[Display Name]` in channel payloa
 
 ## MeshCore Open: GIF wire (`g:GIFID`)
 
-MeshCore Open sends GIFs as compact wire text `g:{giphyId}` (Giphy CDN). mesh-client renders these inline in chat via [`meshcoreGifWire.ts`](../src/renderer/lib/meshcoreGifWire.ts) and [`ChatPayloadText.tsx`](../src/renderer/components/ChatPayloadText.tsx). Full Giphy media/page URLs are also recognized. **Outbound GIF send** (paste URL/ID or **GIF** button in Chat composer) is available when **MeshCore Open compatibility** is enabled in **Radio → MeshCore Open wire (experimental)**.
+MeshCore Open sends GIFs as compact wire text `g:{giphyId}` (Giphy CDN). mesh-client recognizes these and full Giphy media/page URLs in [`meshcoreGifWire.ts`](../src/renderer/lib/meshcoreGifWire.ts), then shows a destination-labeled click-to-load control before [`ChatPayloadText.tsx`](../src/renderer/components/ChatPayloadText.tsx) requests the GIF. **Outbound GIF send** (paste URL/ID or **GIF** button in Chat composer) is available when **MeshCore Open compatibility** is enabled in **Radio → MeshCore Open wire (experimental)**.
 
 ## MeshCore: emoji reactions (tapbacks)
 

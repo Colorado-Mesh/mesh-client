@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore健康检查代码",
       "tooltip": "MeshCore健康检查的测试代码。发件人网格上的观察者报告他们中的哪一个收到了它。"
+    },
+    "remoteContent": {
+      "load": "从{{host}}加载远程内容"
     }
   },
   "common": {

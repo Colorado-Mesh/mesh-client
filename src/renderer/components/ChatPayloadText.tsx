@@ -11,7 +11,12 @@ import {
   RncpControlChip,
   SignalReportChip,
 } from '@/renderer/components/chat/ChatStructuredPayloads';
-import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
+import { RemoteContentGate } from '@/renderer/components/chat/RemoteContentGate';
+import {
+  buildStaticTileDestinationHost,
+  buildStaticTileUrl,
+  parseLocationMessage,
+} from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import { parseDroneReport } from '@/renderer/lib/droneReportParse';
 import {
@@ -181,6 +186,27 @@ function LinkPreview({
   );
 }
 
+function HttpsLinkPreviewGate({
+  url,
+  onContentResize,
+}: Readonly<{ url: string; onContentResize?: () => void }>) {
+  let destinationHost: string;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    destinationHost = parsed.hostname;
+  } catch {
+    // catch-no-log-ok invalid URL segments do not receive preview controls
+    return null;
+  }
+
+  return (
+    <RemoteContentGate destinationHost={destinationHost} onContentResize={onContentResize}>
+      <LinkPreview url={url} onContentResize={onContentResize} />
+    </RemoteContentGate>
+  );
+}
+
 function MeshcoreGifEmbed({
   gifId,
   query,
@@ -196,18 +222,24 @@ function MeshcoreGifEmbed({
   const wireText = `g:${gifId}`;
 
   return (
-    <ChatInlineImage
-      src={src}
-      alt={t('chatPayload.meshcoreGif')}
-      href={pageUrl}
-      title={t('chatPayload.meshcoreGifOpen')}
+    <RemoteContentGate
+      key={src}
+      destinationHost="media.giphy.com"
       onContentResize={onContentResize}
-      fallback={
-        <span className="text-ink-300 whitespace-pre-wrap">
-          {highlightCaseInsensitive(wireText, query)}
-        </span>
-      }
-    />
+    >
+      <ChatInlineImage
+        src={src}
+        alt={t('chatPayload.meshcoreGif')}
+        href={pageUrl}
+        title={t('chatPayload.meshcoreGifOpen')}
+        onContentResize={onContentResize}
+        fallback={
+          <span className="text-ink-300 whitespace-pre-wrap">
+            {highlightCaseInsensitive(wireText, query)}
+          </span>
+        }
+      />
+    </RemoteContentGate>
   );
 }
 
@@ -228,22 +260,29 @@ function LocationCard({
   // Without the tile scheme (plain-browser dev) the preview would only ever fail to load.
   const [tileFailed, setTileFailed] = useState(() => !meshTilesAvailable());
   const tileUrl = buildStaticTileUrl(lat, lon);
+  const tileDestinationHost = buildStaticTileDestinationHost(lat, lon);
   const coordLabel = `${lat}, ${lon}`;
 
   return (
     <div className="space-y-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-2">
       {!tileFailed && (
-        <img
-          src={tileUrl}
-          alt={t('chatPayload.locationCard.alt')}
-          className="h-32 w-full rounded object-cover"
-          onLoad={() => {
-            onContentResize?.();
-          }}
-          onError={() => {
-            setTileFailed(true);
-          }}
-        />
+        <RemoteContentGate
+          key={tileUrl}
+          destinationHost={tileDestinationHost}
+          onContentResize={onContentResize}
+        >
+          <img
+            src={tileUrl}
+            alt={t('chatPayload.locationCard.alt')}
+            className="h-32 w-full rounded object-cover"
+            onLoad={() => {
+              onContentResize?.();
+            }}
+            onError={() => {
+              setTileFailed(true);
+            }}
+          />
+        </RemoteContentGate>
       )}
       <div className="flex items-center gap-1 text-xs text-cyan-100/90">
         <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
@@ -378,7 +417,7 @@ export function ChatPayloadText({
       {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (
-            <LinkPreview key={seg.url} url={seg.url} onContentResize={onContentResize} />
+            <HttpsLinkPreviewGate key={seg.url} url={seg.url} onContentResize={onContentResize} />
           ))}
         </div>
       )}

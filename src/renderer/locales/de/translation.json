@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCore Gesundheitscheckcode",
       "tooltip": "Testcode für MeshCore Health Check. Beobachter auf dem Mesh des Absenders berichten, wer von ihnen es erhalten hat."
+    },
+    "remoteContent": {
+      "load": "Remote-Inhalte von {{host}} laden"
     }
   },
   "common": {

@@ -3,8 +3,13 @@ import { Activity, Bot, FileDown, MapPin, Plane, Settings, Signal } from 'lucide
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { RemoteContentGate } from '@/renderer/components/chat/RemoteContentGate';
 import { getDistanceUnit } from '@/renderer/lib/appSettingsStorage';
-import { buildOsmMapUrl, buildStaticTileUrl } from '@/renderer/lib/chatLocationUtils';
+import {
+  buildOsmMapUrl,
+  buildStaticTileDestinationHost,
+  buildStaticTileUrl,
+} from '@/renderer/lib/chatLocationUtils';
 import {
   type DroneReportCoords,
   formatDroneDistance,
@@ -159,6 +164,7 @@ export function DroneReportCard({
   const { t, i18n } = useTranslation();
   const [tileFailed, setTileFailed] = useState(() => !meshTilesAvailable());
   const center = report.drone ?? report.pilot;
+  const tileUrl = center ? buildStaticTileUrl(center.lat, center.lon) : null;
   const distanceKm =
     report.drone && report.pilot
       ? haversineDistanceKm(report.drone.lat, report.drone.lon, report.pilot.lat, report.pilot.lon)
@@ -169,18 +175,24 @@ export function DroneReportCard({
       className="space-y-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-2"
       data-testid="drone-report-card"
     >
-      {center && !tileFailed && (
-        <img
-          src={buildStaticTileUrl(center.lat, center.lon)}
-          alt={t('chatPayload.droneReport.tileAlt')}
-          className="h-32 w-full rounded object-cover"
-          onLoad={() => {
-            onContentResize?.();
-          }}
-          onError={() => {
-            setTileFailed(true);
-          }}
-        />
+      {center && tileUrl && !tileFailed && (
+        <RemoteContentGate
+          key={tileUrl}
+          destinationHost={buildStaticTileDestinationHost(center.lat, center.lon)}
+          onContentResize={onContentResize}
+        >
+          <img
+            src={tileUrl}
+            alt={t('chatPayload.droneReport.tileAlt')}
+            className="h-32 w-full rounded object-cover"
+            onLoad={() => {
+              onContentResize?.();
+            }}
+            onError={() => {
+              setTileFailed(true);
+            }}
+          />
+        </RemoteContentGate>
       )}
       <div className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-cyan-100">
         <Plane aria-hidden className="h-4 w-4 shrink-0" />

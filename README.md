@@ -289,7 +289,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - **Remove or clear a channel from Chat**: right-click a channel chip (or use the menu key / Shift+F10) for **Remove channel** and **Clear messages**; the + channel dialog also has a remove button per channel. Public (slot 0) can be cleared but not removed. Both confirm first and do nothing if a different radio is connected by then
 - **Transport badges** on received messages; **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
 - **Inbound dedup** (`meshcoreStoreDedup.ts`): merges duplicate RF/MQTT echoes, companion TX echoes, and tapback self-echoes so chat and Rooms stay readable
-- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via Radio **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
+- **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) show a destination-labeled click-to-load control before rendering inline; outbound send via Radio **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
 - Incoming push events: periodic advert (0x80), path update (0x81), send confirmed (0x82), message waiting (0x83), new contact (0x8A), incoming DM (7), incoming channel message (8)
 - All messages and contacts persisted to SQLite (`meshcore_messages`, `meshcore_contacts` tables)
 

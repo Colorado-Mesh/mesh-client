@@ -965,6 +965,9 @@
     "healthCheck": {
       "label": "MeshCoreヘルスチェックコード",
       "tooltip": "MeshCoreヘルスチェックのテストコード。送信者のメッシュの観察者は、どちらがそれを受け取ったかを報告します。"
+    },
+    "remoteContent": {
+      "load": "{{host}}からリモートコンテンツを読み込む"
     }
   },
   "common": {

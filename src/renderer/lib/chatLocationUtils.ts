@@ -1,5 +1,6 @@
 /** Shared-location wire helpers for chat (plain text + OSM link; locale-independent parse). */
 
+import { buildRemoteTileUrl } from '@/shared/offlineMaps/basemapRegistry';
 import { latLonToTile as sharedLatLonToTile } from '@/shared/offlineMaps/tileMath';
 
 export interface ParsedLocationMessage {
@@ -212,6 +213,12 @@ export function latLonToTile(lat: number, lon: number, zoom = 14): WebMercatorTi
 export function buildStaticTileUrl(lat: number, lon: number, zoom = 14): string {
   const { x, y, z } = latLonToTile(lat, lon, zoom);
   return `mesh-tiles://osm/${z}/${x}/${y}.png`;
+}
+
+/** Exact remote host contacted by the OSM cache-miss path for a static chat tile. */
+export function buildStaticTileDestinationHost(lat: number, lon: number, zoom = 14): string {
+  const { x, y, z } = latLonToTile(lat, lon, zoom);
+  return new URL(buildRemoteTileUrl('osm', z, x, y, { subdomainIndex: (x + y) % 4 })).hostname;
 }
 
 function formatCoord(n: number): string {
