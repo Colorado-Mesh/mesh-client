@@ -714,43 +714,21 @@ fn replace_promoted_file(source: &Path, destination: &Path) -> Result<(), String
     atomic_replace_file(source, destination).map_err(|e| format!("replace RNCP destination: {e}"))
 }
 
-#[cfg(not(windows))]
 fn atomic_replace_file(source: &Path, destination: &Path) -> io::Result<()> {
-    fs::rename(source, destination)
-}
-
-#[cfg(windows)]
-fn atomic_replace_file(source: &Path, destination: &Path) -> io::Result<()> {
-    use std::os::windows::ffi::OsStrExt;
-    use std::ptr;
-    use windows_sys::Win32::Storage::FileSystem::{REPLACEFILE_WRITE_THROUGH, ReplaceFileW};
-
-    if !destination.exists() {
-        return fs::rename(source, destination);
-    }
-
-    let source: Vec<u16> = source.as_os_str().encode_wide().chain(Some(0)).collect();
-    let destination: Vec<u16> = destination
-        .as_os_str()
-        .encode_wide()
-        .chain(Some(0))
-        .collect();
-    // SAFETY: both paths are valid, nul-terminated UTF-16 buffers for the
-    // duration of the call; the optional backup and metadata pointers are null.
-    let replaced = unsafe {
-        ReplaceFileW(
-            destination.as_ptr(),
-            source.as_ptr(),
-            ptr::null(),
-            REPLACEFILE_WRITE_THROUGH,
-            ptr::null(),
-            ptr::null(),
-        )
-    };
-    if replaced == 0 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(())
+    // `TempPath::persist` uses the platform's atomic replace primitive (rename
+    // on Unix and MoveFileExW with REPLACE_EXISTING on Windows) without
+    // introducing unsafe code into this crate. This path is owned by the RNCP
+    // staging directory and was created with create_new, so treating it as a
+    // temporary path cannot adopt an attacker-controlled file.
+    let source = tempfile::TempPath::try_from_path(source.to_path_buf())?;
+    match source.persist(destination) {
+        Ok(()) => Ok(()),
+        Err(mut error) => {
+            // A failed persistence must leave the source available for retry.
+            // TempPath otherwise removes its path when the error is dropped.
+            error.path.disable_cleanup(true);
+            Err(error.error)
+        }
     }
 }
 
