@@ -74,6 +74,8 @@ mod propagation_download;
 #[cfg(feature = "rns-stack")]
 mod propagation_serve;
 #[cfg(feature = "rns-stack")]
+mod rncp_staging;
+#[cfg(feature = "rns-stack")]
 mod rncp_transfer;
 #[cfg(feature = "rns-stack")]
 mod rnsh_session;
@@ -2902,10 +2904,28 @@ impl StackHandle {
             let Some(save_dir_str) = save_dir.clone() else {
                 return serde_json::json!({ "ok": false, "error": "save_dir_required" });
             };
-            let save_dir_path = PathBuf::from(save_dir_str);
             if allow_fetch && fetch_jail.is_none() {
                 return serde_json::json!({ "ok": false, "error": "fetch_jail_required" });
             }
+            // Drain and clean the currently active staging directory before
+            // changing the persisted path. Otherwise a crash after switching
+            // A -> B could leave application-owned staged bytes orphaned in A.
+            live.rncp_stop_listener().await;
+            // Persist the selected directory before opening the listener. If
+            // the process exits after staging starts but before the enabled
+            // state is committed, the next startup can still reconcile only
+            // the application-owned crash remnants in this directory.
+            {
+                let mut inner = self.inner.write().await;
+                inner.rncp_listener_save_dir = Some(save_dir_str.clone());
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    return serde_json::json!({
+                        "ok": false,
+                        "error": format!("persist rncp save directory before start: {e}"),
+                    });
+                }
+            }
+            let save_dir_path = PathBuf::from(save_dir_str);
             let fetch_jail_path = fetch_jail.clone().map(PathBuf::from);
             let result = live
                 .rncp_start_listener(save_dir_path, allow_fetch, fetch_jail_path, overwrite)

@@ -18,6 +18,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
   apply-rsReticulum-ble-rnode-host-rssi-cache.sh
   apply-rsReticulum-response-resource-window-fast.sh
+  apply-rsReticulum-rncp-inbound-admission.sh
 )
 
 RS_LXMF_APPLY_SCRIPTS=(

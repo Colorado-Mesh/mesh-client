@@ -87,6 +87,7 @@ use super::propagation_announce::PropagationAnnounceLoop;
 use super::propagation_bridge::PropagationBridge;
 use super::propagation_download::ClientDownloadPoll;
 use super::propagation_serve::PropagationServeHandle;
+use super::rncp_staging::RncpStaging;
 use super::rncp_transfer::RncpTransferManager;
 use super::rnsh_session::RnshSessionManager;
 use super::rrc_defaults::RRC_HUB_ASPECT;
@@ -769,19 +770,34 @@ impl LiveBridge {
         // the UI shows Off and the user can re-enable manually.
         let rncp_restore = {
             let state = inner.read().await;
-            state.rncp_listener_enabled.then(|| {
-                (
-                    state.rncp_listener_save_dir.clone(),
-                    state.rncp_listener_allow_fetch,
-                    state.rncp_listener_fetch_jail.clone(),
-                    state.rncp_listener_overwrite,
-                    state.rncp_listener_allowed.clone(),
-                    state.rncp_listener_blocked.clone(),
-                )
-            })
+            (
+                state.rncp_listener_enabled,
+                state.rncp_listener_save_dir.clone(),
+                state.rncp_listener_allow_fetch,
+                state.rncp_listener_fetch_jail.clone(),
+                state.rncp_listener_overwrite,
+                state.rncp_listener_allowed.clone(),
+                state.rncp_listener_blocked.clone(),
+            )
         };
-        if let Some((save_dir, allow_fetch, fetch_jail, overwrite, allowed, blocked)) = rncp_restore
-        {
+        let (enabled, save_dir, allow_fetch, fetch_jail, overwrite, allowed, blocked) =
+            rncp_restore;
+        let persisted_save_dir = save_dir.clone().map(PathBuf::from);
+        let reconcile_ok = if let Some(save_dir) = persisted_save_dir.as_ref() {
+            match RncpStaging::reconcile(save_dir.clone()).await {
+                Ok(()) => true,
+                Err(error) => {
+                    tracing::warn!(
+                        "[rncp] failed to reconcile persisted staging directory {}: {error}",
+                        save_dir.display()
+                    );
+                    false
+                }
+            }
+        } else {
+            true
+        };
+        if enabled && reconcile_ok {
             let mode = if allowed.is_empty() {
                 "ask"
             } else {
@@ -790,9 +806,7 @@ impl LiveBridge {
             if let Err(e) = bridge.rncp_configure_policy(mode, allowed, blocked).await {
                 tracing::warn!("[rncp] failed to restore inbound policy: {e}");
             } else {
-                let save_dir = save_dir
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| storage_dir.join("rncp_inbox"));
+                let save_dir = persisted_save_dir.unwrap_or_else(|| storage_dir.join("rncp_inbox"));
                 let result = bridge
                     .rncp_start_listener(
                         save_dir,
