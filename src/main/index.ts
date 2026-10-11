@@ -3721,11 +3721,14 @@ ipcMain.handle('secureSecrets:get', (event, key: unknown) => {
   return secureSecretStore.get(key);
 });
 
-ipcMain.handle('secureSecrets:set', (event, key: unknown, value: unknown) => {
-  assertIpcSender(event, 'secureSecrets:set');
-  secureSecretIpcRateLimit.checkOrThrow();
-  return secureSecretStore.set(key, value);
-});
+ipcMain.handle(
+  'secureSecrets:set',
+  (event, key: unknown, value: unknown, requirePersistent?: unknown) => {
+    assertIpcSender(event, 'secureSecrets:set');
+    secureSecretIpcRateLimit.checkOrThrow();
+    return secureSecretStore.set(key, value, requirePersistent);
+  },
+);
 
 ipcMain.handle('secureSecrets:remove', (event, key: unknown) => {
   assertIpcSender(event, 'secureSecrets:remove');

@@ -50,7 +50,9 @@
     "takRemoteConnecting": "conexión remota",
     "takRemoteError": "Error de API remota.",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "No se han podido cargar sus ajustes.",
+    "savedSettingsRecovery": "Sus datos guardados se han guardado. Compruebe que el llavero del sistema esté disponible, o espere un minuto e inténtelo de nuevo."
   },
   "appPanel": {
     "failedSaveRetention": "Error al guardar la configuración de retención de mensajes.",
@@ -1014,7 +1016,8 @@
     "copied": "Copiado",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Detectado como un bot por sus respuestas automáticas"
+    "botBadgeTooltip": "Detectado como un bot por sus respuestas automáticas",
+    "retry": "Reintentar"
   },
   "configApplyNotice": {
     "persistNote": "Los ajustes aplicados se guardan en la memoria flash del dispositivo y persisten durante los reinicios.",
@@ -3812,7 +3815,8 @@
     "unfavoriteSiteAria": "Quitar {{name}} de favoritos",
     "favoriteAddedToast": "{{name}} añadido a favoritos",
     "favoriteRemovedToast": "{{name}} eliminado de favoritos",
-    "favoriteFailedToast": "No se ha podido actualizar el favorito para {{name}}. ¿Se está ejecutando Reticulum?"
+    "favoriteFailedToast": "No se ha podido actualizar el favorito para {{name}}. ¿Se está ejecutando Reticulum?",
+    "partialsPaused": "No se ha podido cargar o actualizar parte del contenido de la página. Vuelve a cargar la página para volver a intentarlo."
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
@@ -7027,6 +7031,7 @@
     "downloadSize": "Descargar ({{size}})",
     "readLanguagesHint": "Los mensajes en estos idiomas nunca se traducen automáticamente. El idioma seleccionado en Traducir al siempre cuenta como un idioma que lees.",
     "pivotHint": "Un paquete cubre una dirección de traducción, como del francés al inglés. Otros pares de idiomas se traducen al inglés: francés a alemán necesita los paquetes francés → inglés e inglés → alemán. Traducir al inglés solo requiere un paquete.",
-    "hideTranslation": "Ocultar la traducción"
+    "hideTranslation": "Ocultar la traducción",
+    "secureUrlRequired": "La traducción en línea está en pausa. Su servidor y la clave guardada se han mantenido; use una URL HTTPS para reanudar."
   }
 }

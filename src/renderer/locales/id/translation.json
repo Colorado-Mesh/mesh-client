@@ -50,7 +50,9 @@
     "takRemoteConnecting": "koneksi jarak jauh",
     "takRemoteError": "kesalahan jarak jauh",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Pengaturan yang disimpan tidak dapat dimuat",
+    "savedSettingsRecovery": "Data Anda yang disimpan telah disimpan. Periksa apakah ring kunci sistem Anda tersedia, atau tunggu sebentar dan coba lagi."
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",
@@ -1014,7 +1016,8 @@
     "copied": "Disalin",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Terdeteksi sebagai bot dari balasan otomatisnya"
+    "botBadgeTooltip": "Terdeteksi sebagai bot dari balasan otomatisnya",
+    "retry": "Coba lagi"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -3812,7 +3815,8 @@
     "unfavoriteSiteAria": "Hapus {{name}} dari favorit",
     "favoriteAddedToast": "Menambahkan {{name}} ke favorit",
     "favoriteRemovedToast": "Menghapus {{name}} dari favorit",
-    "favoriteFailedToast": "Tidak dapat memperbarui favorit untuk {{name}}. Apakah Reticulum berjalan?"
+    "favoriteFailedToast": "Tidak dapat memperbarui favorit untuk {{name}}. Apakah Reticulum berjalan?",
+    "partialsPaused": "Beberapa konten halaman tidak dapat dimuat atau disegarkan. Muat ulang halaman untuk mencoba lagi."
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",
@@ -7027,6 +7031,7 @@
     "downloadSize": "Unduh ({{size}})",
     "readLanguagesHint": "Pesan dalam bahasa ini tidak pernah diterjemahkan secara otomatis. Bahasa yang dipilih di bawah Terjemahkan ke selalu dianggap sebagai bahasa yang Anda baca.",
     "pivotHint": "Paket mencakup satu arah terjemahan, seperti bahasa Prancis ke bahasa Inggris. Pasangan bahasa lainnya diterjemahkan melalui bahasa Inggris: French to German needs the French → English and English → German packs. Menerjemahkan ke dalam bahasa Inggris hanya membutuhkan satu paket.",
-    "hideTranslation": "Sembunyikan terjemahan"
+    "hideTranslation": "Sembunyikan terjemahan",
+    "secureUrlRequired": "Terjemahan online dihentikan sementara. Server Anda dan kunci yang disimpan telah disimpan; gunakan URL https untuk melanjutkan."
   }
 }

@@ -108,23 +108,24 @@ The version written into MetaInfo always comes from `package.json` after `pnpm v
 
 ## macOS code signing and notarization
 
-Official macOS release artifacts are **Developer ID signed** and **notarized** when repository secrets are configured. [`electron-builder.yml`](../electron-builder.yml) sets `hardenedRuntime: true` and `notarize: true`; electron-builder skips notarization automatically when no signing certificate is available (local/fork builds).
+Official macOS release artifacts require **Developer ID signing** and **notarization**. [`electron-builder.yml`](../electron-builder.yml) sets `hardenedRuntime: true` and `notarize: true`; unsigned local/fork builds remain available.
 
 ### Required GitHub Actions secrets
 
 Configure secrets under the named **Settings → Environments** boundary, not at repository scope:
 
-| Environment          | Secret(s)                                                                                  | Allowed ref / approval                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| **`release`**        | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; required maintainer approval                             |
-| **`release-cut`**    | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts and license-update PRs |
-| **`release-repair`** | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                         |
+| Environment              | Secret(s)                                                                                  | Allowed ref / approval                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; required maintainer approval                     |
+| **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts                |
+| **`license-automation`** | Optional `LICENSE_PR_TOKEN`                                                                | `main`; license-document maintenance only, with no release authority |
+| **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                 |
 
 `release.yaml` alone receives the Apple/CSC credentials, and only its **`macos-latest`** matrix leg uses them. `build.yaml` never receives signing secrets and explicitly disables certificate discovery, so arbitrary-ref manual packages remain unsigned. The one-time `migrate-release-secrets.yaml` workflow verifies the live environment policies and protected-tag ruleset before moving credentials, deletes the six legacy repository-wide secrets, and removes itself after success. No release credential should remain repository-scoped.
 
 ### Partial-secret validation
 
-Before the macOS build step, [`release.yaml`](../.github/workflows/release.yaml) runs **Validate macOS signing secrets** when `CSC_LINK` is non-empty on tag releases. If any of `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, or `APPLE_TEAM_ID` is missing, the job **fails early** with a clear list — avoids a signed-but-unnotarized upload that Gatekeeper would reject.
+Before every official Electron macOS release build, [`release.yaml`](../.github/workflows/release.yaml) runs **Validate macOS signing secrets**. If any of `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, or `APPLE_TEAM_ID` is missing, the job **fails early** with a clear list.
 
 Fork workflows and local `pnpm run dist:mac` without these env vars produce **unsigned** `.dmg` / `.zip` bundles (still validated by `verify-mac-packaging.mjs`). See [CI/CD — macOS packaging verify](ci-cd.md#macos-packaging-verify-verify-mac-packagingmjs).
 

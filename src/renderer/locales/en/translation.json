@@ -13,6 +13,8 @@
     "loadingPanel": "Loading panel",
     "loadingDialog": "Loading dialog",
     "loadingApp": "Loading Mesh Client",
+    "savedSettingsUnavailable": "Saved settings could not be loaded",
+    "savedSettingsRecovery": "Your saved data has been kept. Check that your system keyring is available, or wait a minute and try again.",
     "meshtasticQueueTooltip": "Transmit queue: packets waiting to be sent. Green = low, amber = filling up, red = congested.",
     "meshcoreQueueTooltip": "Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion or program error.",
     "reticulumQueueTooltip": "Host TX queue for local RNode \"{{name}}\": packets waiting for the radio (worst fill when multiple RNodes). Green under 25%, amber under 60%, red at 60% or more.",
@@ -1001,6 +1003,7 @@
     }
   },
   "common": {
+    "retry": "Retry",
     "close": "Close",
     "cancel": "Cancel",
     "save": "Save",
@@ -3922,6 +3925,7 @@
     "invalidUrl": "Invalid Nomad page address",
     "homePage": "Home page",
     "reloadPage": "Reload page",
+    "partialsPaused": "Some page content could not load or refresh. Reload the page to try again.",
     "clearBrowserCaches": "Clear page and image caches",
     "clearBrowserCachesHint": "Clear in-memory Nomad page and image caches. Caches are not saved to disk. Images larger than 2 MiB (base64) are never cached.",
     "clearedBrowserCaches": "Nomad page and image caches cleared",
@@ -7031,6 +7035,7 @@
     "downloadPack": "Download {{pack}} pack",
     "delete": "Delete",
     "onlinePrivacy": "Online translation sends the selected message text to your configured LibreTranslate server only when you choose Translate online. Automatic translation always stays offline. HTTP is allowed only for localhost and loopback addresses; all other servers must use HTTPS.",
+    "secureUrlRequired": "Online translation is paused. Your server and saved key have been kept; use an HTTPS URL to resume.",
     "serverUrl": "LibreTranslate server URL",
     "apiKey": "API key (optional)",
     "savedKey": "An API key is saved securely. A blank field keeps it only for the same server URL.",

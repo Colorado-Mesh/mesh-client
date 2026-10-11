@@ -26,7 +26,15 @@ export function readMqttSettingsFromStorage(
         }
       }
     }
-    const merged = { ...defaults, ...parsed, ...secureSettings };
+    // Older secure rows contain the entire settings object. Local preferences
+    // take precedence over that snapshot; only credentials come from the service.
+    const merged = {
+      ...defaults,
+      ...secureSettings,
+      ...parsed,
+      password: secureSettings.password ?? defaults.password,
+      channelPsks: secureSettings.channelPsks ?? defaults.channelPsks,
+    };
     return {
       ...merged,
       maxRetries: clampMqttMaxRetries(merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS),

@@ -754,14 +754,21 @@ describe('bindNomadMicronPartials', () => {
       const lifetimeContainer = document.createElement('div');
       mountNomadMicronHtml(lifetimeContainer, renderNomadMicronPage('`{:/page/slow.mu}'));
       const signals: (AbortSignal | null)[] = [];
-      const lifetimeCleanup = bindNomadMicronPartials(lifetimeContainer, (info) => {
-        signals.push(info.signal);
-        return new Promise(() => {});
-      });
+      const onPaused = vi.fn();
+      const lifetimeCleanup = bindNomadMicronPartials(
+        lifetimeContainer,
+        (info) => {
+          signals.push(info.signal);
+          return new Promise(() => {});
+        },
+        { onPaused },
+      );
       expect(signals[0]?.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(NOMAD_MICRON_PARTIAL_LIMITS.maxLifetimeMs);
       expect(signals[0]?.aborted).toBe(true);
+      expect(onPaused).toHaveBeenCalledTimes(1);
       lifetimeCleanup();
+      expect(onPaused).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
     }

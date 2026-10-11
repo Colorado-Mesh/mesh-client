@@ -33,6 +33,8 @@ declare module '@liamcottle/meshcore.js' {
   export class Constants {
     static SerialFrameTypes: { Incoming: number; Outgoing: number };
     static CommandCodes: { DeviceQuery: number };
+    static ResponseCodes: { ContactMsgRecv: number; NoMoreMessages: number };
+    static TxtTypes: { CliData: number };
     static SupportedCompanionProtocolVersion: number;
   }
 

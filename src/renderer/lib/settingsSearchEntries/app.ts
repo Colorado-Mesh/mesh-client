@@ -615,6 +615,8 @@ export const appSurface: SettingsSearchSurface = {
   exempt: {
     'chatTranslation.offlinePrivacy':
       'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.secureUrlRequired':
+      'Translation server migration status; its parent online-translation setting is indexed',
     'chatTranslation.optInDescription':
       'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.enable':

@@ -302,13 +302,17 @@ impl State {
             .ok_or_else(|| "no pending rncp offer with that id".to_string())?;
         let staged_path = self.checked_stage_path(&entry)?;
         let final_path = final_path(&self.save_dir, &entry.file_name, overwrite)?;
-        if overwrite && final_path.exists() {
+        {
             let promotion_path = promotion_path(&self.save_dir, transfer_id);
             self.set_phase(transfer_id, Phase::Promoting)?;
 
             let replacement = (|| {
                 install_staged_file(&staged_path, &promotion_path, &self.save_dir)?;
-                self.replace_destination(&promotion_path, &final_path)?;
+                if overwrite && final_path.exists() {
+                    self.replace_destination(&promotion_path, &final_path)?;
+                } else {
+                    publish_file_without_replacing(&promotion_path, &final_path)?;
+                }
                 if let Err(error) = sync_dir(&self.save_dir) {
                     tracing::warn!("sync committed RNCP replacement failed: {error}");
                 }
@@ -326,8 +330,6 @@ impl State {
                 }
                 return Err(error);
             }
-        } else {
-            install_staged_file(&staged_path, &final_path, &self.save_dir)?;
         }
 
         self.remove_manifest_entry(transfer_id);
@@ -728,6 +730,26 @@ fn atomic_replace_file(source: &Path, destination: &Path) -> io::Result<()> {
     }
 }
 
+fn publish_file_without_replacing(source: &Path, destination: &Path) -> Result<(), String> {
+    // Publish a complete, synced promotion file. Copy fallbacks never write the
+    // visible destination, and persist_noclobber preserves an existing file.
+    let source = tempfile::TempPath::try_from_path(source.to_path_buf())
+        .map_err(|error| format!("open RNCP promotion temp: {error}"))?;
+    match source.persist_noclobber(destination) {
+        Ok(()) => Ok(()),
+        Err(mut error) => {
+            error.path.disable_cleanup(true);
+            // Some volumes support the copy above but neither no-replace
+            // rename nor hard links. Keep the offer pending rather than
+            // claiming that an unpublished destination was saved.
+            Err(format!(
+                "RNCP destination not published; save folder cannot complete safe no-clobber publication: {}",
+                error.error
+            ))
+        }
+    }
+}
+
 fn create_private_file(path: &Path) -> Result<File, String> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
@@ -905,9 +927,10 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let staged = dir.path().join("payload.part");
         let final_path = dir.path().join("payload.bin");
+        let promotion = promotion_path(dir.path(), &Uuid::new_v4().to_string());
         fs::write(&staged, b"payload").expect("stage");
 
-        install_staged_file_with_link(&staged, &final_path, dir.path(), |_, _| {
+        install_staged_file_with_link(&staged, &promotion, dir.path(), |_, _| {
             Err(io::Error::new(
                 io::ErrorKind::Unsupported,
                 "hard links disabled for test",
@@ -915,8 +938,48 @@ mod tests {
         })
         .expect("copy fallback");
 
+        assert!(!final_path.exists());
+        publish_file_without_replacing(&promotion, &final_path).expect("atomic publication");
         assert_eq!(fs::read(&final_path).expect("promoted"), b"payload");
         assert_eq!(fs::read(&staged).expect("stage retained"), b"payload");
+    }
+
+    #[test]
+    fn failed_no_clobber_publication_keeps_the_complete_promotion_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let promotion = promotion_path(dir.path(), &Uuid::new_v4().to_string());
+        fs::write(&promotion, b"complete payload").expect("promotion");
+        let invalid_parent = dir.path().join("not-a-directory");
+        fs::write(&invalid_parent, b"occupied").expect("invalid parent");
+        let final_path = invalid_parent.join("payload.bin");
+
+        let error = publish_file_without_replacing(&promotion, &final_path)
+            .expect_err("publication must fail without a valid destination");
+        assert!(error.contains("RNCP destination not published"));
+        assert_eq!(
+            fs::read(&promotion).expect("promotion retained"),
+            b"complete payload"
+        );
+        assert!(!final_path.exists());
+    }
+
+    #[test]
+    fn startup_removes_interrupted_promotion_without_exposing_partial_destination() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut state = initialize(dir.path().to_path_buf()).expect("staging");
+        let mut entry = test_entry(&hex::encode([1; 16]), 7);
+        entry.phase = Phase::Promoting;
+        fs::write(state.data_dir.join(&entry.staged_name), b"payload").expect("stage");
+        let promotion = promotion_path(dir.path(), &entry.transfer_id);
+        fs::write(&promotion, b"part").expect("interrupted copy");
+        let destination = dir.path().join(&entry.file_name);
+        state.manifest.entries.push(entry);
+        state.persist_manifest().expect("manifest");
+        drop(state);
+        let recovered = initialize(dir.path().to_path_buf()).expect("recover");
+        assert!(!destination.exists());
+        assert!(!promotion.exists());
+        assert!(recovered.manifest.entries.is_empty());
     }
 
     #[tokio::test]

@@ -6,6 +6,7 @@ interface StoredLibreConfig {
   enabled: boolean;
   url: string;
   encryptedKey?: string;
+  needsSecureUrl?: boolean;
 }
 export interface LibreDependencies {
   fetch: typeof fetch;
@@ -45,20 +46,29 @@ export class LibreTranslateClient {
             ? { encryptedKey: value.encryptedKey }
             : {}),
         };
-        if (stored.url) validateLibreTranslationUrl(stored.url);
-        else if (stored.enabled) throw new Error('LibreTranslate URL required');
+        try {
+          if (stored.url) validateLibreTranslationUrl(stored.url);
+          else if (stored.enabled) throw new Error('LibreTranslate URL required');
+        } catch {
+          // catch-no-log-ok preserve dormant configuration while blocking unsafe requests
+          return { ...stored, enabled: false, needsSecureUrl: true };
+        }
         return stored;
       }
     } catch {
-      // catch-no-log-ok invalid or newly unsafe legacy settings fail closed without exposing them
-      this.deps.write(JSON.stringify({ enabled: false, url: '' }));
+      // catch-no-log-ok malformed legacy settings are unavailable without destructive writes
     }
     return { enabled: false, url: '' };
   }
 
-  status(): { enabled: boolean; url: string; hasApiKey: boolean } {
+  status(): { enabled: boolean; url: string; hasApiKey: boolean; needsSecureUrl?: boolean } {
     const config = this.config();
-    return { enabled: config.enabled, url: config.url, hasApiKey: Boolean(config.encryptedKey) };
+    return {
+      enabled: config.enabled,
+      url: config.url,
+      hasApiKey: Boolean(config.encryptedKey),
+      ...(config.needsSecureUrl ? { needsSecureUrl: true } : {}),
+    };
   }
 
   setConfig(config: LibreTranslationConfig): void {

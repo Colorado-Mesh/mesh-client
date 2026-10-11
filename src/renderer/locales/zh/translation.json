@@ -50,7 +50,9 @@
     "takRemoteConnecting": "远程连接",
     "takRemoteError": "远程访问出错",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "无法加载保存的设置",
+    "savedSettingsRecovery": "您保存的数据已保存。请检查系统钥匙圈是否可用，或等待一分钟，然后重试。"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",
@@ -1014,7 +1016,8 @@
     "copied": "已复制",
     "botBadge": "机器人",
     "botBadgeLabel": "机器人",
-    "botBadgeTooltip": "从其自动回复中检测为机器人"
+    "botBadgeTooltip": "从其自动回复中检测为机器人",
+    "retry": "再次挑战"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -3812,7 +3815,8 @@
     "unfavoriteSiteAria": "从收藏夹移除{{name}}",
     "favoriteAddedToast": "已将{{name}}添加到收藏夹",
     "favoriteRemovedToast": "已从收藏夹移除{{name}}",
-    "favoriteFailedToast": "无法更新{{name}}的收藏夹。Reticulum正在运行吗？"
+    "favoriteFailedToast": "无法更新{{name}}的收藏夹。Reticulum正在运行吗？",
+    "partialsPaused": "某些页面内容无法加载或刷新。请重新加载页面以重试。"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -7027,6 +7031,7 @@
     "downloadSize": "下载({{size}})",
     "readLanguagesHint": "这些语言的消息永远不会自动翻译。在“翻译成”下选择的语言始终计为您阅读的语言。",
     "pivotHint": "内容包涵盖一个翻译方向，例如法语到英语。其他语言对通过英语翻译：法语到德语需要法语→英语和英语→德语包。翻译成英文只需要一包。",
-    "hideTranslation": "隐藏翻译"
+    "hideTranslation": "隐藏翻译",
+    "secureUrlRequired": "在线翻译已暂停。您的服务器和保存的密钥已被保留；请使用HTTPS URL继续。"
   }
 }

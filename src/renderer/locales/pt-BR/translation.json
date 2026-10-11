@@ -50,7 +50,9 @@
     "takRemoteConnecting": "conexão remota",
     "takRemoteError": "Erro CSS remoto",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Não foi possível carregar as configurações.",
+    "savedSettingsRecovery": "Seus dados salvos foram mantidos. Verifique se o chaveiro do sistema está disponível ou aguarde um minuto e tente novamente."
   },
   "appPanel": {
     "failedSaveRetention": "Falha ao salvar a configuração de retenção de mensagens.",
@@ -1014,7 +1016,8 @@
     "copied": "Copiado",
     "botBadge": "Robô",
     "botBadgeLabel": "Robô",
-    "botBadgeTooltip": "Detectado como um bot em suas respostas automatizadas"
+    "botBadgeTooltip": "Detectado como um bot em suas respostas automatizadas",
+    "retry": "Tentar novamente"
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",
@@ -3812,7 +3815,8 @@
     "unfavoriteSiteAria": "Remover {{name}} dos favoritos",
     "favoriteAddedToast": "{{name}} adicionado aos favoritos",
     "favoriteRemovedToast": "{{name}} removido dos favoritos",
-    "favoriteFailedToast": "Não foi possível atualizar o favorito para {{name}}. O Reticulum está em execução?"
+    "favoriteFailedToast": "Não foi possível atualizar o favorito para {{name}}. O Reticulum está em execução?",
+    "partialsPaused": "Não foi possível carregar ou atualizar algum conteúdo da página. Recarregue a página para tentar novamente."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",
@@ -7027,6 +7031,7 @@
     "downloadSize": "Baixar ({{size}})",
     "readLanguagesHint": "As mensagens nesses idiomas nunca são traduzidas automaticamente. O idioma selecionado em Traduzir para sempre conta como um idioma que você lê.",
     "pivotHint": "Um pacote abrange uma direção de tradução, como francês para inglês. Outros pares de idiomas são traduzidos para o inglês: o francês para o alemão precisa dos pacotes francês → inglês e inglês → alemão. A tradução para o inglês precisa de apenas um pacote.",
-    "hideTranslation": "Ocultar tradução"
+    "hideTranslation": "Ocultar tradução",
+    "secureUrlRequired": "A tradução online está pausada. O seu servidor e a chave guardada foram mantidos; use um URL https para retomar."
   }
 }

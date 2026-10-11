@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   bindNomadMicronMedia,
@@ -22,6 +23,8 @@ import {
   parseReticulumLxmfLinkUrl,
 } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import { isRrcLink } from '@/renderer/lib/rrcLink';
+
+import { Button } from './ui/Button';
 
 interface NomadMicronPageViewProps {
   content: string;
@@ -79,6 +82,9 @@ export default function NomadMicronPageView({
   onFetchPartial,
   onFetchMedia,
 }: NomadMicronPageViewProps) {
+  const { t } = useTranslation();
+  const [partialsPaused, setPartialsPaused] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   // Keep latest link handlers/context in a ref so Micron remounts only when `content` changes.
   // Parent panel re-renders often (node list / store); unstable callback identity must not
@@ -115,6 +121,7 @@ export default function NomadMicronPageView({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    setPartialsPaused(false);
     mountNomadMicronHtml(container, renderNomadMicronPage(content));
 
     const handleNomadLink = (destination: string, dataFieldsAttr?: string | null) => {
@@ -238,6 +245,9 @@ export default function NomadMicronPageView({
           }
         },
         {
+          onPaused: () => {
+            setPartialsPaused(true);
+          },
           rootResourceKey: canonicalNomadPageResourceKey(selectedHash, pagePath),
           resolveResourceKey: (info) =>
             resolveNomadPartialResourceKey(info.destination, selectedHash, defaultPagePath),
@@ -253,7 +263,7 @@ export default function NomadMicronPageView({
       partialMediaAborts.clear();
       unbindPartials?.();
     };
-  }, [content, defaultPagePath, pagePath, selectedHash]);
+  }, [content, defaultPagePath, pagePath, selectedHash, reloadCount]);
 
   // Rebind /media when page content or fetch context changes (hash / path / fetcher).
   useEffect(() => {
@@ -265,22 +275,39 @@ export default function NomadMicronPageView({
     return () => {
       ac.abort();
     };
-  }, [content, selectedHash, defaultPagePath, onFetchMedia]);
+  }, [content, selectedHash, defaultPagePath, onFetchMedia, reloadCount]);
 
   return (
-    <div
-      ref={containerRef}
-      className={[
-        'nomad-micron-page text-ink-200 text-sm leading-snug',
-        // Default link chrome only when Micron did not set an inline color
-        // (so `` `FT020617` `` tips matching #!bg stay invisible).
-        '[&_a]:underline [&_a:not([style*="color"])]:text-yellow-400 [&_a:not([style*="color"]):hover]:text-yellow-300',
-        '[&_hr]:border-ink-600 [&_hr]:my-3',
-        '[&_input]:border-ink-600 [&_input]:bg-ink-900 [&_input]:text-ink-200 [&_input]:rounded [&_input]:border [&_input]:px-1',
-        fitWidth ? 'nomad-micron-page--fit-width' : null,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    />
+    <div>
+      {partialsPaused && (
+        <div role="status" className="mb-2 flex items-center gap-2 text-sm text-orange-400">
+          <span>{t('nomadNetwork.partialsPaused')}</span>
+          <Button
+            size="sm"
+            variant="secondary"
+            aria-label={t('nomadNetwork.reloadPage')}
+            onClick={() => {
+              setReloadCount((count) => count + 1);
+            }}
+          >
+            {t('nomadNetwork.reloadPage')}
+          </Button>
+        </div>
+      )}
+      <div
+        ref={containerRef}
+        className={[
+          'nomad-micron-page text-ink-200 text-sm leading-snug',
+          // Default link chrome only when Micron did not set an inline color
+          // (so `` `FT020617` `` tips matching #!bg stay invisible).
+          '[&_a]:underline [&_a:not([style*="color"])]:text-yellow-400 [&_a:not([style*="color"]):hover]:text-yellow-300',
+          '[&_hr]:border-ink-600 [&_hr]:my-3',
+          '[&_input]:border-ink-600 [&_input]:bg-ink-900 [&_input]:text-ink-200 [&_input]:rounded [&_input]:border [&_input]:px-1',
+          fitWidth ? 'nomad-micron-page--fit-width' : null,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      />
+    </div>
   );
 }
