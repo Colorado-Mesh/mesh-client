@@ -72,7 +72,7 @@ describe('packaging sidecar workflow gates', () => {
     const workflow = read(`.github/workflows/${file}.yaml`);
     const job = workflow.split(`\n  ${file}:\n`)[1].split(/\n {2}[\w-]+:\n/)[0];
     expect(workflow).toContain('uses: ./.github/workflows/packaging-sidecars.yaml');
-    expect(job).toMatch(/needs: \[[^\]]*sidecars\]/);
+    expect(job).toMatch(/needs:\s*\[[\s\S]*?sidecars[\s\S]*?\]/);
     if (file === 'release') expect(job).toContain("needs.sidecars.result == 'success'");
     expect(job).toContain('uses: ./.github/actions/download-packaging-sidecars');
     expect(job).toContain('platform: ${{ matrix.sidecar_platform }}');
