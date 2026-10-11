@@ -129,7 +129,15 @@ describe('privileged workflow boundaries', () => {
     expect(source).toContain('require_environment release');
     expect(source).toContain('repos/${REPO}/rulesets/${ruleset_id}');
     expect(source).toContain('if grep -Fxq "${name}" <<<"${existing}"');
+    expect(source).toContain(
+      'reconcile_secret release-cut RELEASE_CUT_TOKEN "${RELEASE_PUSH_TOKEN:-${RELEASE_CUT_TOKEN:-}}"',
+    );
+    expect(source).toContain(
+      'reconcile_secret license-automation LICENSE_AUTOMATION_TOKEN "${LICENSE_AUTOMATION_TOKEN}"',
+    );
+    expect(source).not.toContain('migration_token=');
     expect(source).toContain('for attempt in 1 2 3 4 5');
+    expect(source).toContain('sleep "$((attempt * retry_delay_seconds))"');
     expect(source).toContain('repos/${REPO}/contents/${path}?ref=main');
     expect(source).not.toContain('git push');
   });
@@ -187,6 +195,7 @@ fi`);
           ...process.env,
           PATH: `${dir}:${process.env.PATH}`,
           FAKE_DELETE_COUNT: count,
+          MIGRATION_RETRY_DELAY_SECONDS: '0',
           GH_TOKEN: 'test',
           REPO: 'Colorado-Mesh/mesh-client',
         },
@@ -214,6 +223,7 @@ exit 1`);
           ...process.env,
           PATH: `${dir}:${process.env.PATH}`,
           FAKE_METADATA_COUNT: count,
+          MIGRATION_RETRY_DELAY_SECONDS: '0',
           GH_TOKEN: 'test',
           REPO: 'Colorado-Mesh/mesh-client',
         },

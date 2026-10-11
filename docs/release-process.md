@@ -210,7 +210,7 @@ Both tag-triggered workflows must complete before the release is fully populated
 
 1. Go to GitHub → **Releases**
 2. Open the new **draft** for the version tag
-3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`; a **Repair published release tag** workflow also reattaches the tag if Publish lands on a leftover placeholder.
+3. Confirm the release **tag** is `vX.Y.Z` (not `untagged-*` — a wrong tag breaks the in-app updater footer and AUR/`mesh-client-bin` download URLs). Finalize CI fails if any matching release is still `untagged-*`; if Publish lands on a leftover placeholder, a maintainer must manually dispatch **Repair published release tag** and approve its `release-repair` environment.
 4. Confirm artifacts:
 
 | Platform      | Artifacts                                                                                                                                        |

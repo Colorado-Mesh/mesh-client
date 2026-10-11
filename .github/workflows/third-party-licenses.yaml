@@ -88,8 +88,7 @@ jobs:
           PUSH=$(gh api "repos/${REPO}" --jq '.permissions.push // false')
           if [ "${PUSH}" != 'true' ]; then
             echo "::error::LICENSE_AUTOMATION_TOKEN (${LOGIN}) lacks push on ${REPO}."
-            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
-            echo 'Use a dedicated token with Contents, Pull requests, and Workflows write.'
+            echo 'Use a dedicated token with Contents, Pull requests, and Workflows write on this repo.'
             exit 1
           fi
 
@@ -97,8 +96,7 @@ jobs:
           PROBE_REF="refs/heads/chore/cpr-token-probe-${RUN_ID}"
           if ! gh api -X POST "repos/${REPO}/git/refs" -f ref="${PROBE_REF}" -f sha="${MAIN_SHA}" >/dev/null; then
             echo "::error::LICENSE_AUTOMATION_TOKEN (${LOGIN}) cannot create refs on ${REPO}."
-            echo 'Grant Contents+Pull requests+Workflows write on this repo,'
-            echo 'Use a dedicated token with Contents, Pull requests, and Workflows write.'
+            echo 'Use a dedicated token with Contents, Pull requests, and Workflows write on this repo.'
             exit 1
           fi
           gh api -X DELETE "repos/${REPO}/git/refs/${PROBE_REF#refs/}" >/dev/null
