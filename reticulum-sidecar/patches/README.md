@@ -756,3 +756,26 @@ Remove after the reviewed rsNomad pin has equivalent handle-relative content-roo
 ## Removed: rsLXMF-propagation-client-link-attached-tx.patch
 
 Sunset after the reviewed `RS_LXMF_PIN` included PropagationClient link-scoped TX with `SendLinkEndpoint` plus `attached_interface` (interface-pinned link TX). That superseded the local `OutboundAttached` / `queue_link_outbound` overlay for the same pathless-Link flood as [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22). Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after pin-based sunset confirmation.
+
+## rsReticulum-rncp-inbound-admission.patch
+
+Moves RNCP receive policy ahead of Resource acceptance. The listener requires an authenticated sender, rejects blocked, oversized, over-concurrent, and over-reserved advertisements before parts arrive, bounds cumulative actual data and metadata before each segment is acknowledged or retained, rechecks final payload sizes, and can hand the verified bytes to mesh-client without writing them first. The stock `rns-tools rncp --listen` path remains in `SaveToDirectory` compatibility mode.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` `0f8731bb5b13e7f60e2d4bb38022480210009690` after the other rsReticulum overlays |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
+
+**Touches:** `crates/rns-runtime/src/rncp.rs`, `crates/rns-runtime/src/link_manager.rs`, `crates/rns-tools/src/commands/rncp.rs`, the generated API snapshots for earlier stacked overlays, and `api/stability.json`
+
+### Apply locally
+
+```bash
+./scripts/apply-rsReticulum-rncp-inbound-admission.sh
+```
+
+Listed last in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` because its RNCP API snapshot includes earlier runtime overlays.
+
+### Sunset
+
+When upstream rsReticulum provides equivalent pre-advertisement identity, byte, concurrency, and reservation limits plus an application-owned payload handoff, remove this patch and its apply step.

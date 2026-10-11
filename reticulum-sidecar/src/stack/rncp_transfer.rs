@@ -5,19 +5,10 @@
 //! (their futures are not `Send`), tracked by `transfer_id` so the HTTP
 //! layer can poll progress and cancel.
 //!
-//! Inbound transfers are more involved: `rns_runtime::rncp::spawn_rncp_listener`
-//! only gates senders at Link-identify time (`allow_all` / `allowed`); once a
-//! sender is let through it receives and writes the resource straight to
-//! `save_dir` with no further app-level checkpoint before completion. To
-//! approximate an "ask" policy (prompt before a file becomes visible) we run
-//! the listener with `allow_all: true` when policy mode is `ask`, then — on
-//! each `RncpEvent::Completed` — either pass allow-listed senders' files
-//! straight through, or move everyone else's already-fully-received file
-//! into a hidden staging subdirectory and surface it as an `rncp.offer` that
-//! only becomes a real file on explicit `accept()` (`reject()` deletes the
-//! staged file instead). `allow_all_listed` mode instead gates at the
-//! listener's own `allow_all: false` + `allowed` check, so unlisted senders
-//! never even complete a transfer.
+//! Inbound transfers use rsReticulum's pre-advertisement admission gate, then
+//! hand verified bytes to the application without writing them. This module
+//! owns crash-safe staging and promotion, so blocked, oversized, unidentified,
+//! and over-quota transfers never reach persistent storage.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -28,8 +19,9 @@ use bytes::Bytes;
 use rns_identity::destination::{DestType, Destination, Direction};
 use rns_identity::identity::Identity;
 use rns_runtime::rncp::{
-    RncpEvent, RncpFetchRequest, RncpListenerConfig, RncpListenerHandle, RncpSendRequest,
-    default_rncp_app_name, rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
+    RncpAdmissionReason, RncpEvent, RncpFetchRequest, RncpInboundLimits, RncpListenerConfig,
+    RncpListenerHandle, RncpPayloadAck, RncpReceiveMode, RncpSendRequest, default_rncp_app_name,
+    rncp_fetch_file, rncp_send_file, spawn_rncp_listener,
 };
 use rns_transport::messages::{OutboundRequest, TransportMessage};
 use serde_json::json;
@@ -41,6 +33,9 @@ use crate::api::path_capability::ConsumedPathCapability;
 use super::config::{self, DEFAULT_ANNOUNCE_INTERVAL_SEC};
 use super::link_task::spawn_link_task;
 use super::live::parse_hash16;
+#[cfg(test)]
+use super::rncp_staging::MAX_PENDING_OFFERS;
+use super::rncp_staging::{RncpStaging, StoreOutcome};
 
 /// Soft cap on concurrently *active* outbound transfers (send/fetch tasks
 /// this manager is driving). Completed/failed entries are pruned on the
@@ -52,17 +47,18 @@ const MAX_ACTIVE_RNCP_TRANSFERS: usize = 3;
 /// files (checked after the fact — the underlying resource transfer has no
 /// pre-flight size veto).
 const MAX_RNCP_FILE_BYTES: u64 = 25 * 1024 * 1024;
+const MAX_RNCP_METADATA_BYTES: usize = 4 * 1024;
+const MAX_ACTIVE_INBOUND_RNCP: usize = 3;
+const MAX_ACTIVE_INBOUND_RNCP_PER_IDENTITY: usize = 1;
+const MAX_RESERVED_INBOUND_RNCP_BYTES: usize =
+    MAX_ACTIVE_INBOUND_RNCP * (MAX_RNCP_FILE_BYTES as usize + MAX_RNCP_METADATA_BYTES);
 /// Cap on staged ask-mode inbound offers awaiting accept()/reject(); further
 /// completed transfers are deleted and reported as failed until the backlog
 /// drains (prevents unbounded disk growth in the hidden staging dir).
-const MAX_PENDING_RNCP_OFFERS: usize = 16;
 const RNCP_PATH_WAIT: Duration = Duration::from_secs(30);
 /// Generous ceiling for a bounded (25 MiB) transfer over a possibly
 /// RF-speed-constrained Reticulum path.
 const RNCP_TRANSFER_TIMEOUT: Duration = Duration::from_secs(30 * 60);
-/// Subdirectory (under a listener's `save_dir`) used to stage files from
-/// senders that are not allow-listed until `accept()`/`reject()`.
-const STAGING_DIR_NAME: &str = ".rncp-pending";
 /// Brief settle before the first listen announce so TCP hubs can come up
 /// (matches LXMF delivery startup announce).
 const RNCP_LISTEN_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
@@ -150,13 +146,13 @@ struct ActiveTransfer {
     _path_capability: Option<Arc<ConsumedPathCapability>>,
 }
 
+#[derive(Clone)]
 struct PendingOffer {
-    staged_path: PathBuf,
-    original_save_dir: PathBuf,
-    display_save_dir: PathBuf,
     file_name: String,
     bytes: usize,
     identity_hash: Option<String>,
+    overwrite: bool,
+    display_save_dir: PathBuf,
     _path_capability: Option<Arc<ConsumedPathCapability>>,
 }
 
@@ -165,7 +161,37 @@ struct ListenerState {
     destination_hash: String,
     events_task: tokio::task::JoinHandle<()>,
     announce_task: Option<tokio::task::JoinHandle<()>>,
+    staging: Arc<RncpStaging>,
     _path_capability: Option<Arc<ConsumedPathCapability>>,
+}
+
+struct PayloadAckGuard(Option<RncpPayloadAck>);
+
+impl PayloadAckGuard {
+    fn new(ack: RncpPayloadAck) -> Self {
+        Self(Some(ack))
+    }
+}
+
+impl Drop for PayloadAckGuard {
+    fn drop(&mut self) {
+        if let Some(ack) = self.0.take() {
+            ack.finish();
+        }
+    }
+}
+
+fn admission_reason(reason: RncpAdmissionReason) -> &'static str {
+    match reason {
+        RncpAdmissionReason::IdentificationRequired => "identification_required",
+        RncpAdmissionReason::NotAllowed => "not_allowed",
+        RncpAdmissionReason::FileTooLarge => "file_too_large",
+        RncpAdmissionReason::TooManyActive => "too_many_active",
+        RncpAdmissionReason::SenderBusy => "sender_busy",
+        RncpAdmissionReason::ReservedBytesExceeded => "reserved_bytes_exceeded",
+        RncpAdmissionReason::DeclaredSizeMismatch => "declared_size_mismatch",
+        RncpAdmissionReason::MetadataTooLarge => "metadata_too_large",
+    }
 }
 
 pub struct RncpTransferManager {
@@ -177,6 +203,7 @@ pub struct RncpTransferManager {
     active: Mutex<HashMap<String, ActiveTransfer>>,
     pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
     listener: Mutex<Option<ListenerState>>,
+    staging: Mutex<Option<Arc<RncpStaging>>>,
     listener_error: Mutex<Option<String>>,
     policy: Mutex<PolicyState>,
 }
@@ -196,6 +223,7 @@ impl RncpTransferManager {
             active: Mutex::new(HashMap::new()),
             pending_offers: Arc::new(Mutex::new(HashMap::new())),
             listener: Mutex::new(None),
+            staging: Mutex::new(None),
             listener_error: Mutex::new(None),
             policy: Mutex::new(PolicyState::default()),
         }
@@ -448,42 +476,41 @@ impl RncpTransferManager {
         self.reject(transfer_id).await
     }
 
-    /// Moves a staged inbound offer into its listener's real `save_dir`,
-    /// sanitizing/deduplicating the filename.
+    /// Promotes a manifest-owned inbound offer into the listener save dir.
     pub async fn accept(&self, transfer_id: &str) -> Result<serde_json::Value, String> {
         let offer = {
-            let mut offers = self.pending_offers.lock().await;
+            let offers = self.pending_offers.lock().await;
             offers
-                .remove(transfer_id)
+                .get(transfer_id)
+                .cloned()
                 .ok_or_else(|| "no pending rncp offer with that id".to_string())?
         };
-        tokio::fs::create_dir_all(&offer.original_save_dir)
+        let staging = self
+            .staging
+            .lock()
             .await
-            .map_err(|e| format!("create save dir: {e}"))?;
-        let safe_name = sanitize_filename(&offer.file_name);
-        let final_path = dedupe_path(&offer.original_save_dir, &safe_name).await;
-        tokio::fs::rename(&offer.staged_path, &final_path)
-            .await
-            .map_err(|e| format!("accept: move staged file failed: {e}"))?;
-        let final_name = final_path
-            .file_name()
-            .map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or(safe_name);
+            .clone()
+            .ok_or_else(|| "rncp listener is not running".to_string())?;
+        let promoted = staging
+            .accept(transfer_id.to_string(), offer.overwrite)
+            .await?;
+        self.pending_offers.lock().await.remove(transfer_id);
+        let display_path = offer.display_save_dir.join(&promoted.file_name);
         tracing::info!(
             kind = "accept",
             transfer_id = %transfer_id,
-            file_name = ?final_name,
-            bytes = offer.bytes,
-            identity_hash = offer.identity_hash.as_deref().unwrap_or(""),
-            path = %offer.display_save_dir.join(&final_name).display(),
+            file_name = ?promoted.file_name,
+            bytes = promoted.bytes,
+            identity_hash = %promoted.identity_hash,
+            path = %display_path.display(),
             "[rncp] transfer completed"
         );
         let payload = json!({
             "transfer_id": transfer_id,
-            "file_name": final_name,
-            "bytes": offer.bytes,
-            "path": offer.display_save_dir.join(&final_name).display().to_string(),
-            "identity_hash": offer.identity_hash,
+            "file_name": promoted.file_name,
+            "bytes": promoted.bytes,
+            "path": display_path.display().to_string(),
+            "identity_hash": promoted.identity_hash,
         });
         emit(&self.event_tx, "rncp.completed", payload.clone());
         Ok(payload)
@@ -491,13 +518,17 @@ impl RncpTransferManager {
 
     /// Deletes a staged inbound offer without saving it.
     pub async fn reject(&self, transfer_id: &str) -> Result<(), String> {
-        let offer = {
-            let mut offers = self.pending_offers.lock().await;
-            offers
-                .remove(transfer_id)
-                .ok_or_else(|| "no pending rncp offer with that id".to_string())?
-        };
-        let _ = tokio::fs::remove_file(&offer.staged_path).await;
+        if !self.pending_offers.lock().await.contains_key(transfer_id) {
+            return Err("no pending rncp offer with that id".into());
+        }
+        let staging = self
+            .staging
+            .lock()
+            .await
+            .clone()
+            .ok_or_else(|| "rncp listener is not running".to_string())?;
+        staging.reject(transfer_id.to_string()).await?;
+        self.pending_offers.lock().await.remove(transfer_id);
         emit(
             &self.event_tx,
             "rncp.cancelled",
@@ -562,12 +593,8 @@ impl RncpTransferManager {
         Ok(())
     }
 
-    /// Starts (or restarts) the inbound listener using the currently
-    /// configured policy: `allow_all_listed` maps to the underlying
-    /// library's `allow_all: false` + `allowed` gate (unlisted senders never
-    /// complete a transfer); `ask` maps to `allow_all: true` with our own
-    /// staging layered on top (see module docs); `off` is rejected here —
-    /// callers should `stop_listener()` instead.
+    /// Starts (or restarts) the inbound listener with pre-advertisement
+    /// identity, size, concurrency, and aggregate-byte admission.
     ///
     /// After register, starts a listen announcer (rncp-rs parity) so peers can
     /// resolve the receive destination pubkey/path — registration alone is not
@@ -605,11 +632,21 @@ impl RncpTransferManager {
             }
         };
 
+        let mut blocked = Vec::with_capacity(policy.blocked.len());
+        for hex_str in &policy.blocked {
+            blocked.push(
+                parse_hash16(hex_str)
+                    .map_err(|_| format!("invalid blocked RNCP identity hash: {hex_str}"))?,
+            );
+        }
+
         tokio::fs::create_dir_all(&save_dir)
             .await
             .map_err(|e| format!("create save dir {}: {e}", save_dir.display()))?;
 
-        let (events_tx, events_rx) = mpsc::channel::<RncpEvent>(128);
+        let staging = Arc::new(RncpStaging::open(save_dir.clone()).await?);
+
+        let (events_tx, events_rx) = mpsc::channel::<RncpEvent>(MAX_ACTIVE_INBOUND_RNCP.max(1));
         let listener_cfg = RncpListenerConfig {
             identity: self.identity.clone(),
             app_name: default_rncp_app_name().to_string(),
@@ -620,10 +657,25 @@ impl RncpTransferManager {
             allow_fetch,
             fetch_jail,
             fetch_auto_compress: true,
+            receive_mode: RncpReceiveMode::EmitPayload,
+            inbound_limits: Some(RncpInboundLimits {
+                max_file_bytes: MAX_RNCP_FILE_BYTES as usize,
+                max_metadata_bytes: MAX_RNCP_METADATA_BYTES,
+                max_active_transfers: MAX_ACTIVE_INBOUND_RNCP,
+                max_active_per_identity: MAX_ACTIVE_INBOUND_RNCP_PER_IDENTITY,
+                max_reserved_bytes: MAX_RESERVED_INBOUND_RNCP_BYTES,
+                require_identified_sender: true,
+            }),
+            blocked,
         };
-        let handle = spawn_rncp_listener(self.transport_tx.clone(), listener_cfg, events_tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        let handle =
+            match spawn_rncp_listener(self.transport_tx.clone(), listener_cfg, events_tx).await {
+                Ok(handle) => handle,
+                Err(error) => {
+                    let _ = staging.cleanup().await;
+                    return Err(error.to_string());
+                }
+            };
         let dest_hash_bytes = handle.destination_hash();
         let destination_hash = hex::encode(dest_hash_bytes);
 
@@ -631,7 +683,8 @@ impl RncpTransferManager {
         let events_task = spawn_listener_event_loop(
             self.event_tx.clone(),
             policy,
-            save_dir.clone(),
+            Arc::clone(&staging),
+            overwrite,
             display_save_dir.clone(),
             capability.clone(),
             Arc::clone(&self.pending_offers),
@@ -650,8 +703,10 @@ impl RncpTransferManager {
             destination_hash: destination_hash.clone(),
             events_task,
             announce_task: Some(announce_task),
+            staging: Arc::clone(&staging),
             _path_capability: capability,
         });
+        *self.staging.lock().await = Some(staging);
         *self.listener_error.lock().await = None;
 
         Ok(
@@ -665,10 +720,29 @@ impl RncpTransferManager {
             if let Some(announce_task) = state.announce_task.take() {
                 announce_task.abort();
             }
-            state.events_task.abort();
             if let Some(handle) = state.handle.take() {
                 handle.shutdown().await;
             }
+            state.events_task.abort();
+            let _ = state.events_task.await;
+            if let Err(error) = state.staging.cleanup().await {
+                tracing::warn!("rncp staging cleanup failed on stop: {error}");
+            }
+        }
+        *self.staging.lock().await = None;
+        let removed: Vec<String> = self
+            .pending_offers
+            .lock()
+            .await
+            .drain()
+            .map(|(id, _)| id)
+            .collect();
+        for transfer_id in removed {
+            emit(
+                &self.event_tx,
+                "rncp.cancelled",
+                json!({ "transfer_id": transfer_id, "reason": "listener_stopped" }),
+            );
         }
     }
 
@@ -810,29 +884,28 @@ fn spawn_listen_announcer(
 /// Drives one listener's `RncpEvent` stream for the lifetime of that
 /// listener. `policy` is a point-in-time snapshot taken when the listener
 /// was started — sufficient for the ask-mode staging decision made per
-/// `Completed` event (allow/blocked checks are still meaningful against a
+/// verified payload (allow/blocked checks are still meaningful against a
 /// slightly stale list; the underlying `allow_all_listed` Link-identify gate
 /// itself only takes effect on the next `start_listener()` restart).
+#[allow(clippy::too_many_arguments)] // security context and display paths stay explicit at this boundary
 fn spawn_listener_event_loop(
     event_tx: broadcast::Sender<String>,
     policy: PolicyState,
-    save_dir: PathBuf,
+    staging: Arc<RncpStaging>,
+    overwrite: bool,
     display_save_dir: PathBuf,
     capability: Option<Arc<ConsumedPathCapability>>,
     pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
     mut events_rx: mpsc::Receiver<RncpEvent>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        let mut link_identities: HashMap<[u8; 16], [u8; 16]> = HashMap::new();
-        let staging_dir = save_dir.join(STAGING_DIR_NAME);
         while let Some(evt) = events_rx.recv().await {
             handle_rncp_event(
                 &event_tx,
                 &policy,
-                &mut link_identities,
-                &save_dir,
+                &staging,
+                overwrite,
                 &display_save_dir,
-                &staging_dir,
                 capability.as_ref(),
                 &pending_offers,
                 evt,
@@ -846,168 +919,81 @@ fn spawn_listener_event_loop(
 async fn handle_rncp_event(
     event_tx: &broadcast::Sender<String>,
     policy: &PolicyState,
-    link_identities: &mut HashMap<[u8; 16], [u8; 16]>,
-    save_dir: &Path,
+    staging: &Arc<RncpStaging>,
+    overwrite: bool,
     display_save_dir: &Path,
-    staging_dir: &Path,
     capability: Option<&Arc<ConsumedPathCapability>>,
     pending_offers: &Arc<Mutex<HashMap<String, PendingOffer>>>,
     evt: RncpEvent,
 ) {
     match evt {
         RncpEvent::LinkEstablished { .. } => {}
-        RncpEvent::SenderIdentified {
-            link_id,
-            identity_hash,
-        } => {
-            // Blocked identities are still tracked so `Completed` can clean up
-            // their file — we cannot abort the link mid-transfer without
-            // library support; size/block enforcement happens on Completed.
+        RncpEvent::SenderIdentified { identity_hash, .. } => {
             if policy.is_blocked(&hex::encode(identity_hash)) {
                 tracing::debug!(
                     identity_hash = %hex::encode(identity_hash),
-                    "rncp sender identified as blocked; transfer will be discarded on completion"
+                    "rncp sender identified as blocked; pre-advertisement policy will reject"
                 );
             }
-            link_identities.insert(link_id, identity_hash);
         }
-        RncpEvent::SenderDenied { link_id, .. } => {
-            link_identities.remove(&link_id);
+        RncpEvent::SenderDenied { .. } => {
             emit(event_tx, "rncp.failed", json!({ "reason": "not_allowed" }));
         }
+        RncpEvent::AdmissionRejected {
+            link_id: _,
+            identity_hash,
+            advertised_bytes,
+            reason,
+        } => {
+            emit(
+                event_tx,
+                "rncp.failed",
+                json!({
+                    "reason": admission_reason(reason),
+                    "bytes": advertised_bytes,
+                    "identity_hash": identity_hash.map(hex::encode),
+                }),
+            );
+        }
+        RncpEvent::PayloadReady {
+            link_id: _,
+            resource_id,
+            identity_hash,
+            file_name,
+            advertised_bytes: _,
+            data,
+            ack,
+        } => {
+            let _ack = PayloadAckGuard::new(ack);
+            handle_verified_payload(
+                event_tx,
+                policy,
+                staging,
+                overwrite,
+                display_save_dir,
+                capability,
+                pending_offers,
+                resource_id,
+                identity_hash,
+                file_name,
+                data,
+            )
+            .await;
+        }
         RncpEvent::Completed {
-            link_id,
+            link_id: _,
             file_name,
             saved_path,
             bytes,
         } => {
-            let original_save_dir = save_dir.to_path_buf();
-            let identity_hex = link_identities.remove(&link_id).map(hex::encode);
-            let is_blocked = identity_hex
-                .as_deref()
-                .is_some_and(|h| policy.is_blocked(h));
-            let is_allowed = identity_hex
-                .as_deref()
-                .is_some_and(|h| policy.is_allowed(h));
-
-            // The underlying resource transfer has no pre-flight size veto —
-            // enforce the cap after the fact, before the file becomes visible
-            // (directly or as an offer).
-            if (bytes as u64) > MAX_RNCP_FILE_BYTES {
-                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
-                    tracing::debug!("rncp oversize inbound remove failed: {e}");
-                }
-                emit(
-                    event_tx,
-                    "rncp.failed",
-                    json!({
-                        "reason": "file_too_large",
-                        "file_name": file_name,
-                        "bytes": bytes,
-                        "identity_hash": identity_hex,
-                    }),
-                );
-                return;
-            }
-
-            if is_blocked {
-                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
-                    tracing::debug!("rncp blocked inbound remove failed: {e}");
-                }
-                emit(
-                    event_tx,
-                    "rncp.failed",
-                    json!({
-                        "reason": "not_allowed",
-                        "file_name": file_name,
-                        "identity_hash": identity_hex,
-                    }),
-                );
-                return;
-            }
-
-            if policy.mode != InboundMode::Ask || is_allowed {
-                tracing::info!(
-                    kind = "receive",
-                    file_name = ?file_name,
-                    bytes,
-                    identity_hash = identity_hex.as_deref().unwrap_or(""),
-                    path = %display_save_dir.join(&file_name).display(),
-                    "[rncp] transfer completed"
-                );
-                emit(
-                    event_tx,
-                    "rncp.completed",
-                    json!({
-                        "file_name": file_name,
-                        "bytes": bytes,
-                        "path": display_save_dir.join(&file_name).display().to_string(),
-                        "identity_hash": identity_hex,
-                    }),
-                );
-                return;
-            }
-
-            // Ask-mode, unlisted sender: the file is already fully received
-            // (see module docs) — stage it under `save_dir` so it does not
-            // appear in the real inbox until accept().
-            if pending_offers.lock().await.len() >= MAX_PENDING_RNCP_OFFERS {
-                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
-                    tracing::debug!("rncp over-cap inbound remove failed: {e}");
-                }
-                emit(
-                    event_tx,
-                    "rncp.failed",
-                    json!({
-                        "reason": "too_many_pending",
-                        "file_name": file_name,
-                        "bytes": bytes,
-                        "identity_hash": identity_hex,
-                    }),
-                );
-                return;
-            }
-            if let Err(e) = tokio::fs::create_dir_all(staging_dir).await {
-                tracing::warn!("rncp staging dir create failed: {e}");
-                emit(
-                    event_tx,
-                    "rncp.failed",
-                    json!({ "reason": "staging_failed", "file_name": file_name }),
-                );
-                return;
-            }
-            let transfer_id = Uuid::new_v4().to_string();
-            let staged_path =
-                staging_dir.join(format!("{transfer_id}-{}", sanitize_filename(&file_name)));
-            if let Err(e) = tokio::fs::rename(&saved_path, &staged_path).await {
-                tracing::warn!("rncp offer stage failed: {e}");
-                emit(
-                    event_tx,
-                    "rncp.failed",
-                    json!({ "reason": "staging_failed", "file_name": file_name }),
-                );
-                return;
-            }
-            pending_offers.lock().await.insert(
-                transfer_id.clone(),
-                PendingOffer {
-                    staged_path,
-                    original_save_dir,
-                    display_save_dir: display_save_dir.to_path_buf(),
-                    file_name: file_name.clone(),
-                    bytes,
-                    identity_hash: identity_hex.clone(),
-                    _path_capability: capability.cloned(),
-                },
-            );
+            let _ = tokio::fs::remove_file(&saved_path).await;
             emit(
                 event_tx,
-                "rncp.offer",
+                "rncp.failed",
                 json!({
-                    "transfer_id": transfer_id,
+                    "reason": "unexpected_library_persistence",
                     "file_name": file_name,
                     "bytes": bytes,
-                    "identity_hash": identity_hex,
                 }),
             );
         }
@@ -1031,31 +1017,126 @@ async fn handle_rncp_event(
     }
 }
 
-fn sanitize_filename(name: &str) -> String {
-    let base = Path::new(name)
-        .file_name()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    let trimmed = base.trim();
-    if trimmed.is_empty() {
-        "rncp_file".to_string()
-    } else {
-        trimmed.to_string()
+#[allow(clippy::too_many_arguments)]
+async fn handle_verified_payload(
+    event_tx: &broadcast::Sender<String>,
+    policy: &PolicyState,
+    staging: &Arc<RncpStaging>,
+    overwrite: bool,
+    display_save_dir: &Path,
+    capability: Option<&Arc<ConsumedPathCapability>>,
+    pending_offers: &Arc<Mutex<HashMap<String, PendingOffer>>>,
+    resource_id: [u8; 32],
+    identity_hash: [u8; 16],
+    file_name: String,
+    data: Arc<[u8]>,
+) {
+    let identity_hex = hex::encode(identity_hash);
+    if policy.is_blocked(&identity_hex) {
+        emit(
+            event_tx,
+            "rncp.failed",
+            json!({
+                "reason": "not_allowed",
+                "file_name": file_name,
+                "identity_hash": identity_hex,
+            }),
+        );
+        return;
     }
-}
+    if data.len() as u64 > MAX_RNCP_FILE_BYTES {
+        emit(
+            event_tx,
+            "rncp.failed",
+            json!({
+                "reason": "file_too_large",
+                "file_name": file_name,
+                "bytes": data.len(),
+                "identity_hash": identity_hex,
+            }),
+        );
+        return;
+    }
 
-async fn dedupe_path(dir: &Path, file_name: &str) -> PathBuf {
-    let candidate = dir.join(file_name);
-    if tokio::fs::metadata(&candidate).await.is_err() {
-        return candidate;
-    }
-    let mut i = 1u32;
-    loop {
-        let alt = dir.join(format!("{file_name}.{i}"));
-        if tokio::fs::metadata(&alt).await.is_err() {
-            return alt;
+    let payload_bytes = data.len();
+    let pending = policy.mode == InboundMode::Ask && !policy.is_allowed(&identity_hex);
+    match staging
+        .store(
+            resource_id,
+            identity_hash,
+            file_name.clone(),
+            data,
+            pending,
+            overwrite,
+        )
+        .await
+    {
+        Ok(StoreOutcome::Pending {
+            transfer_id,
+            file_name,
+            bytes,
+            identity_hash,
+        }) => {
+            pending_offers.lock().await.insert(
+                transfer_id.clone(),
+                PendingOffer {
+                    file_name: file_name.clone(),
+                    bytes,
+                    identity_hash: Some(identity_hash.clone()),
+                    overwrite,
+                    display_save_dir: display_save_dir.to_path_buf(),
+                    _path_capability: capability.cloned(),
+                },
+            );
+            emit(
+                event_tx,
+                "rncp.offer",
+                json!({
+                    "transfer_id": transfer_id,
+                    "file_name": file_name,
+                    "bytes": bytes,
+                    "identity_hash": identity_hash,
+                }),
+            );
         }
-        i += 1;
+        Ok(StoreOutcome::Promoted {
+            file_name,
+            path: _promoted_path,
+            bytes,
+            identity_hash,
+        }) => {
+            let display_path = display_save_dir.join(&file_name);
+            tracing::info!(
+                kind = "receive",
+                file_name = ?file_name,
+                bytes,
+                identity_hash = %identity_hash,
+                path = %display_path.display(),
+                "[rncp] transfer completed"
+            );
+            emit(
+                event_tx,
+                "rncp.completed",
+                json!({
+                    "file_name": file_name,
+                    "bytes": bytes,
+                    "path": display_path.display().to_string(),
+                    "identity_hash": identity_hash,
+                }),
+            );
+        }
+        Err(reason) => {
+            emit(
+                event_tx,
+                "rncp.failed",
+                json!({
+                    "reason": reason,
+                    "file_name": file_name,
+                    "bytes": payload_bytes,
+                    "identity_hash": identity_hex,
+                }),
+            );
+        }
     }
 }
 
@@ -1120,22 +1201,13 @@ mod tests {
     }
 
     #[test]
-    fn sanitize_filename_strips_path() {
-        assert_eq!(sanitize_filename("/etc/passwd"), "passwd");
-        assert_eq!(sanitize_filename("../x"), "x");
-        assert_eq!(sanitize_filename("nested/dir/file.txt"), "file.txt");
-        assert_eq!(sanitize_filename(""), "rncp_file");
-        assert_eq!(sanitize_filename("   "), "rncp_file");
-    }
-
-    #[test]
     fn max_file_bytes_is_25_mib() {
         assert_eq!(MAX_RNCP_FILE_BYTES, 25 * 1024 * 1024);
     }
 
     #[test]
     fn pending_offer_cap_is_bounded() {
-        assert_eq!(MAX_PENDING_RNCP_OFFERS, 16);
+        assert_eq!(MAX_PENDING_OFFERS, 16);
     }
 
     #[test]
@@ -1148,29 +1220,6 @@ mod tests {
     fn local_filename_falls_back_to_input() {
         assert_eq!(local_filename("/a/b/c.txt"), "c.txt");
         assert_eq!(local_filename("plain.bin"), "plain.bin");
-    }
-
-    #[tokio::test]
-    async fn dedupe_path_appends_counter_when_taken() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        assert_eq!(
-            dedupe_path(dir.path(), "f.txt").await,
-            dir.path().join("f.txt")
-        );
-        tokio::fs::write(dir.path().join("f.txt"), b"x")
-            .await
-            .expect("write");
-        assert_eq!(
-            dedupe_path(dir.path(), "f.txt").await,
-            dir.path().join("f.txt.1")
-        );
-        tokio::fs::write(dir.path().join("f.txt.1"), b"x")
-            .await
-            .expect("write");
-        assert_eq!(
-            dedupe_path(dir.path(), "f.txt").await,
-            dir.path().join("f.txt.2")
-        );
     }
 
     // ── manager-level tests (dead transport fails link tasks fast) ──
@@ -1308,58 +1357,82 @@ mod tests {
         assert!(manager.cancel("unknown").await.is_err());
     }
 
-    /// Writes `name` as a staged file and returns its `PendingOffer` row.
-    async fn stage_offer(staging: &Path, save_dir: &Path, name: &str) -> PendingOffer {
-        let staged_path = staging.join(name);
-        tokio::fs::write(&staged_path, name.as_bytes())
-            .await
-            .expect("stage");
-        PendingOffer {
-            staged_path,
-            original_save_dir: save_dir.to_path_buf(),
-            display_save_dir: save_dir.to_path_buf(),
-            file_name: name.to_string(),
-            bytes: name.len(),
-            identity_hash: Some("aa".repeat(16)),
-            _path_capability: None,
-        }
-    }
-
     #[tokio::test]
     async fn accept_moves_staged_offer_and_reject_deletes() {
         let dir = tempfile::tempdir().expect("tempdir");
         let (manager, mut rx) = test_manager(dir.path());
-        let staging = dir.path().join(STAGING_DIR_NAME);
-        tokio::fs::create_dir_all(&staging).await.expect("staging");
+        let staging = Arc::new(
+            RncpStaging::open(dir.path().to_path_buf())
+                .await
+                .expect("staging"),
+        );
+        *manager.staging.lock().await = Some(Arc::clone(&staging));
 
-        let offer = stage_offer(&staging, dir.path(), "keep.txt").await;
-        manager
-            .pending_offers
-            .lock()
+        let StoreOutcome::Pending { transfer_id, .. } = staging
+            .store(
+                [1; 32],
+                [2; 16],
+                "keep.txt".into(),
+                Arc::from(&b"keep.txt"[..]),
+                true,
+                false,
+            )
             .await
-            .insert("offer-1".to_string(), offer);
-        let payload = manager.accept("offer-1").await.expect("accept");
+            .expect("stage")
+        else {
+            panic!("expected pending offer")
+        };
+        manager.pending_offers.lock().await.insert(
+            transfer_id.clone(),
+            PendingOffer {
+                file_name: "keep.txt".into(),
+                bytes: 8,
+                identity_hash: Some(hex::encode([2; 16])),
+                overwrite: false,
+                display_save_dir: dir.path().to_path_buf(),
+                _path_capability: None,
+            },
+        );
+        let payload = manager.accept(&transfer_id).await.expect("accept");
         assert_eq!(payload["file_name"], "keep.txt");
         let completed = recv_event_of_type(&mut rx, "rncp.completed").await;
-        assert_eq!(completed["transfer_id"], "offer-1");
+        assert_eq!(completed["transfer_id"], transfer_id);
         let final_path = dir.path().join("keep.txt");
         assert_eq!(
             tokio::fs::read(&final_path).await.expect("accepted file"),
             b"keep.txt"
         );
-        assert!(manager.accept("offer-1").await.is_err());
+        assert!(manager.accept(&transfer_id).await.is_err());
 
-        let offer = stage_offer(&staging, dir.path(), "drop.txt").await;
-        let staged_path = offer.staged_path.clone();
-        manager
-            .pending_offers
-            .lock()
+        let StoreOutcome::Pending { transfer_id, .. } = staging
+            .store(
+                [3; 32],
+                [4; 16],
+                "drop.txt".into(),
+                Arc::from(&b"drop.txt"[..]),
+                true,
+                false,
+            )
             .await
-            .insert("offer-2".to_string(), offer);
-        manager.reject("offer-2").await.expect("reject");
+            .expect("stage")
+        else {
+            panic!("expected pending offer")
+        };
+        manager.pending_offers.lock().await.insert(
+            transfer_id.clone(),
+            PendingOffer {
+                file_name: "drop.txt".into(),
+                bytes: 8,
+                identity_hash: Some(hex::encode([4; 16])),
+                overwrite: false,
+                display_save_dir: dir.path().to_path_buf(),
+                _path_capability: None,
+            },
+        );
+        manager.reject(&transfer_id).await.expect("reject");
         let cancelled = recv_event_of_type(&mut rx, "rncp.cancelled").await;
         assert_eq!(cancelled["reason"], "rejected");
-        assert!(tokio::fs::metadata(&staged_path).await.is_err());
+        assert!(manager.reject(&transfer_id).await.is_err());
     }
 
     #[tokio::test]
@@ -1440,21 +1513,26 @@ mod tests {
         event_tx: broadcast::Sender<String>,
         event_rx: broadcast::Receiver<String>,
         policy: PolicyState,
-        link_identities: HashMap<[u8; 16], [u8; 16]>,
-        staging_dir: PathBuf,
+        staging: Arc<RncpStaging>,
+        overwrite: bool,
         pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
         dir: tempfile::TempDir,
     }
 
-    fn event_loop_fixture(policy: PolicyState) -> EventLoopFixture {
+    async fn event_loop_fixture(policy: PolicyState) -> EventLoopFixture {
         let dir = tempfile::tempdir().expect("tempdir");
         let (event_tx, event_rx) = broadcast::channel::<String>(64);
+        let staging = Arc::new(
+            RncpStaging::open(dir.path().to_path_buf())
+                .await
+                .expect("staging"),
+        );
         EventLoopFixture {
             event_tx,
             event_rx,
             policy,
-            link_identities: HashMap::new(),
-            staging_dir: dir.path().join(STAGING_DIR_NAME),
+            staging,
+            overwrite: false,
             pending_offers: Arc::new(Mutex::new(HashMap::new())),
             dir,
         }
@@ -1465,21 +1543,14 @@ mod tests {
             handle_rncp_event(
                 &self.event_tx,
                 &self.policy,
-                &mut self.link_identities,
+                &self.staging,
+                self.overwrite,
                 self.dir.path(),
-                self.dir.path(),
-                &self.staging_dir,
                 None,
                 &self.pending_offers,
                 evt,
             )
             .await;
-        }
-
-        async fn write_inbound(&self, name: &str, contents: &[u8]) -> PathBuf {
-            let path = self.dir.path().join(name);
-            tokio::fs::write(&path, contents).await.expect("inbound");
-            path
         }
     }
 
@@ -1492,146 +1563,123 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn completed_from_allowed_sender_passes_straight_through() {
+    async fn verified_unlisted_payload_becomes_a_manifest_owned_offer() {
         let sender = [0xAA; 16];
-        let mut fx = event_loop_fixture(ask_policy(&[&hex::encode(sender)], &[]));
-        let saved = fx.write_inbound("direct.txt", b"direct").await;
-
-        fx.dispatch(RncpEvent::SenderIdentified {
-            link_id: [1; 16],
-            identity_hash: sender,
-        })
+        let mut fx = event_loop_fixture(ask_policy(&[], &[])).await;
+        handle_verified_payload(
+            &fx.event_tx,
+            &fx.policy,
+            &fx.staging,
+            false,
+            fx.dir.path(),
+            None,
+            &fx.pending_offers,
+            [1; 32],
+            sender,
+            "offer.txt".into(),
+            Arc::from(&b"offer"[..]),
+        )
         .await;
-        fx.dispatch(RncpEvent::Completed {
-            link_id: [1; 16],
-            file_name: "direct.txt".to_string(),
-            saved_path: saved.clone(),
-            bytes: 6,
-        })
+
+        let offer = recv_event_of_type(&mut fx.event_rx, "rncp.offer").await;
+        assert_eq!(offer["file_name"], "offer.txt");
+        assert_eq!(offer["identity_hash"], hex::encode(sender));
+        assert_eq!(fx.pending_offers.lock().await.len(), 1);
+        assert!(!fx.dir.path().join("offer.txt").exists());
+    }
+
+    #[tokio::test]
+    async fn verified_allowed_payload_is_promoted_directly() {
+        let sender = [0xBB; 16];
+        let mut fx = event_loop_fixture(ask_policy(&[&hex::encode(sender)], &[])).await;
+        handle_verified_payload(
+            &fx.event_tx,
+            &fx.policy,
+            &fx.staging,
+            false,
+            fx.dir.path(),
+            None,
+            &fx.pending_offers,
+            [2; 32],
+            sender,
+            "direct.txt".into(),
+            Arc::from(&b"direct"[..]),
+        )
         .await;
 
         let completed = recv_event_of_type(&mut fx.event_rx, "rncp.completed").await;
         assert_eq!(completed["file_name"], "direct.txt");
-        assert!(tokio::fs::metadata(&saved).await.is_ok());
+        assert_eq!(
+            std::fs::read(fx.dir.path().join("direct.txt")).unwrap(),
+            b"direct"
+        );
         assert!(fx.pending_offers.lock().await.is_empty());
     }
 
     #[tokio::test]
-    async fn completed_from_blocked_sender_deletes_file() {
-        let sender = [0xBB; 16];
-        let mut fx = event_loop_fixture(ask_policy(&[], &[&hex::encode(sender)]));
-        let saved = fx.write_inbound("blocked.txt", b"blocked").await;
-
-        fx.dispatch(RncpEvent::SenderIdentified {
-            link_id: [2; 16],
-            identity_hash: sender,
-        })
-        .await;
-        fx.dispatch(RncpEvent::Completed {
-            link_id: [2; 16],
-            file_name: "blocked.txt".to_string(),
-            saved_path: saved.clone(),
-            bytes: 7,
-        })
+    async fn verified_blocked_payload_is_not_persisted() {
+        let sender = [0xCC; 16];
+        let mut fx = event_loop_fixture(ask_policy(&[], &[&hex::encode(sender)])).await;
+        handle_verified_payload(
+            &fx.event_tx,
+            &fx.policy,
+            &fx.staging,
+            false,
+            fx.dir.path(),
+            None,
+            &fx.pending_offers,
+            [3; 32],
+            sender,
+            "blocked.txt".into(),
+            Arc::from(&b"blocked"[..]),
+        )
         .await;
 
         let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
         assert_eq!(failed["reason"], "not_allowed");
-        assert!(tokio::fs::metadata(&saved).await.is_err());
+        assert!(!fx.dir.path().join("blocked.txt").exists());
+        assert!(fx.pending_offers.lock().await.is_empty());
     }
 
     #[tokio::test]
-    async fn completed_oversize_is_deleted_and_reported() {
-        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
-        let saved = fx.write_inbound("big.bin", b"stub").await;
+    async fn unexpected_library_persistence_is_removed() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[])).await;
+        let saved = fx.dir.path().join("unexpected.txt");
+        tokio::fs::write(&saved, b"unexpected")
+            .await
+            .expect("write unexpected file");
 
         fx.dispatch(RncpEvent::Completed {
             link_id: [3; 16],
-            file_name: "big.bin".to_string(),
+            file_name: "unexpected.txt".to_string(),
             saved_path: saved.clone(),
-            bytes: (MAX_RNCP_FILE_BYTES + 1) as usize,
+            bytes: 10,
         })
         .await;
 
+        let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(failed["reason"], "unexpected_library_persistence");
+        assert!(tokio::fs::metadata(saved).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn admission_rejection_reports_specific_reason() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[])).await;
+        fx.dispatch(RncpEvent::AdmissionRejected {
+            link_id: [4; 16],
+            identity_hash: Some([0xCC; 16]),
+            advertised_bytes: (MAX_RNCP_FILE_BYTES + 1) as usize,
+            reason: RncpAdmissionReason::FileTooLarge,
+        })
+        .await;
         let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
         assert_eq!(failed["reason"], "file_too_large");
-        assert!(tokio::fs::metadata(&saved).await.is_err());
-    }
-
-    #[tokio::test]
-    async fn ask_mode_unlisted_sender_is_staged_as_offer() {
-        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
-        let saved = fx.write_inbound("ask.txt", b"ask").await;
-
-        fx.dispatch(RncpEvent::SenderIdentified {
-            link_id: [4; 16],
-            identity_hash: [0xCC; 16],
-        })
-        .await;
-        fx.dispatch(RncpEvent::Completed {
-            link_id: [4; 16],
-            file_name: "ask.txt".to_string(),
-            saved_path: saved.clone(),
-            bytes: 3,
-        })
-        .await;
-
-        let offer = recv_event_of_type(&mut fx.event_rx, "rncp.offer").await;
-        assert_eq!(offer["file_name"], "ask.txt");
-        assert_eq!(offer["identity_hash"], hex::encode([0xCC; 16]));
-        // Original inbox path is gone; the staged copy holds the bytes.
-        assert!(tokio::fs::metadata(&saved).await.is_err());
-        let offers = fx.pending_offers.lock().await;
-        assert_eq!(offers.len(), 1);
-        let staged = offers.values().next().expect("offer");
-        assert!(staged.staged_path.starts_with(&fx.staging_dir));
-        assert_eq!(
-            std::fs::read(&staged.staged_path).expect("staged bytes"),
-            b"ask"
-        );
-    }
-
-    #[tokio::test]
-    async fn ask_mode_over_cap_offer_is_dropped() {
-        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
-        {
-            let mut offers = fx.pending_offers.lock().await;
-            for i in 0..MAX_PENDING_RNCP_OFFERS {
-                offers.insert(
-                    format!("prefill-{i}"),
-                    PendingOffer {
-                        staged_path: fx.staging_dir.join(format!("p{i}")),
-                        original_save_dir: fx.dir.path().to_path_buf(),
-                        display_save_dir: fx.dir.path().to_path_buf(),
-                        file_name: format!("p{i}"),
-                        bytes: 1,
-                        identity_hash: None,
-                        _path_capability: None,
-                    },
-                );
-            }
-        }
-        let saved = fx.write_inbound("overflow.txt", b"x").await;
-        fx.dispatch(RncpEvent::Completed {
-            link_id: [5; 16],
-            file_name: "overflow.txt".to_string(),
-            saved_path: saved.clone(),
-            bytes: 1,
-        })
-        .await;
-
-        let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
-        assert_eq!(failed["reason"], "too_many_pending");
-        assert!(tokio::fs::metadata(&saved).await.is_err());
-        assert_eq!(
-            fx.pending_offers.lock().await.len(),
-            MAX_PENDING_RNCP_OFFERS
-        );
+        assert_eq!(failed["identity_hash"], hex::encode([0xCC; 16]));
     }
 
     #[tokio::test]
     async fn denied_and_write_failed_events_report_failures() {
-        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
+        let mut fx = event_loop_fixture(ask_policy(&[], &[])).await;
 
         fx.dispatch(RncpEvent::SenderDenied {
             link_id: [6; 16],
