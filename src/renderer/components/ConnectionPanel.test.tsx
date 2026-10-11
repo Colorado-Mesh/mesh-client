@@ -1674,10 +1674,10 @@ describe('ConnectionPanel Meshtastic MQTT autoLaunch persistence', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Auto-connect on application start' }));
 
     await waitFor(() => {
-      const saved = JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}');
+      const saved = JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}');
       expect(saved.autoLaunch).toBe(true);
     });
-    expect(localStorage.getItem('mesh-client:mqttSettings')).toBeNull();
+    expect(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY)).not.toContain('autoLaunch');
   });
 });
 
@@ -1741,7 +1741,8 @@ describe('ConnectionPanel MQTT channel PSKs', () => {
       const saved = JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}');
       expect(saved.channelPsks).toEqual([KEY_A, KEY_B]);
     });
-    expect(localStorage.getItem('mesh-client:mqttSettings')).toBeNull();
+    expect(localStorage.getItem('mesh-client:mqttSettings')).not.toContain(KEY_A);
+    expect(localStorage.getItem('mesh-client:mqttSettings')).not.toContain(KEY_B);
   });
 
   it('shows invalid length warning after blur', async () => {

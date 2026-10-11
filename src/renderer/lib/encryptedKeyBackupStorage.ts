@@ -136,6 +136,8 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       publicKeyB64: e.publicKeyB64,
       backedUpAt: e.backedUpAt,
     }));
+    // The index has no private key material; removal and startup repair must
+    // still work when OS-backed key storage is temporarily unavailable.
     await setSecureSecret(indexSecretKey(), JSON.stringify(raw));
     localStorage.removeItem(indexKey);
   }
@@ -172,7 +174,9 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       nodeLabel: options.nodeLabel?.trim() || undefined,
       backedUpAt: Date.now(),
     };
-    await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)));
+    // A backup must survive a restart. Require durability at the write itself,
+    // since the panel's earlier keyring probe can become stale.
+    await setSecureSecret(secretKey(id), JSON.stringify(toRawPayload(payload)), true);
     localStorage.removeItem(storageKey(id));
     await upsertIndexEntry({
       id,

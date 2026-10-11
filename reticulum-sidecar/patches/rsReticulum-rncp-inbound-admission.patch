@@ -25,7 +25,7 @@ index 6be56ca..96320ba 100644
  impl core::default::Default for rns_protocol::resource::WindowState
  pub fn rns_protocol::resource::WindowState::default() -> Self
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
-index fc525ab..2baed5b 100644
+index fc525ab..4bddbff 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
 @@ -403,7 +403,10 @@ pub rns_runtime::link_client::LinkClientError::UnexpectedResponse(alloc::string:
@@ -145,17 +145,24 @@ index fc525ab..2baed5b 100644
  pub rns_runtime::rncp::RncpEvent::SenderDenied
  pub rns_runtime::rncp::RncpEvent::SenderDenied::identity_hash: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::SenderDenied::link_id: [u8; 16]
-@@ -1772,6 +1810,9 @@ pub rns_runtime::rncp::RncpEvent::WriteFailed
+@@ -1772,6 +1810,12 @@ pub rns_runtime::rncp::RncpEvent::WriteFailed
  pub rns_runtime::rncp::RncpEvent::WriteFailed::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpEvent::WriteFailed::link_id: [u8; 16]
  pub rns_runtime::rncp::RncpEvent::WriteFailed::reason: alloc::string::String
 +pub enum rns_runtime::rncp::RncpReceiveMode
 +pub rns_runtime::rncp::RncpReceiveMode::EmitPayload
 +pub rns_runtime::rncp::RncpReceiveMode::SaveToDirectory
++pub struct rns_runtime::rncp::RncpFetchLimits
++pub rns_runtime::rncp::RncpFetchLimits::max_file_bytes: usize
++pub rns_runtime::rncp::RncpFetchLimits::max_metadata_bytes: usize
  pub struct rns_runtime::rncp::RncpFetchOutcome
  pub rns_runtime::rncp::RncpFetchOutcome::bytes: usize
  pub rns_runtime::rncp::RncpFetchOutcome::duration: core::time::Duration
-@@ -1788,15 +1829,25 @@ pub rns_runtime::rncp::RncpFetchRequest::progress_tx: core::option::Option<tokio
+@@ -1785,18 +1829,29 @@ pub rns_runtime::rncp::RncpFetchRequest::overall_timeout: core::time::Duration
+ pub rns_runtime::rncp::RncpFetchRequest::overwrite: bool
+ pub rns_runtime::rncp::RncpFetchRequest::path_wait: core::time::Duration
+ pub rns_runtime::rncp::RncpFetchRequest::progress_tx: core::option::Option<tokio::sync::mpsc::bounded::Sender<f32>>
++pub rns_runtime::rncp::RncpFetchRequest::receive_limits: core::option::Option<rns_runtime::rncp::RncpFetchLimits>
  pub rns_runtime::rncp::RncpFetchRequest::remote_path: &'a str
  pub rns_runtime::rncp::RncpFetchRequest::save_dir: &'a std::path::Path
  pub rns_runtime::rncp::RncpFetchRequest::transport_tx: tokio::sync::mpsc::bounded::Sender<rns_transport::messages::TransportMessage>
@@ -181,7 +188,7 @@ index fc525ab..2baed5b 100644
  pub rns_runtime::rncp::RncpListenerConfig::save_dir: std::path::PathBuf
  impl core::default::Default for rns_runtime::rncp::RncpListenerConfig
  pub fn rns_runtime::rncp::RncpListenerConfig::default() -> Self
-@@ -1810,6 +1861,9 @@ pub rns_runtime::rncp::RncpOutcome::bytes: usize
+@@ -1810,6 +1865,9 @@ pub rns_runtime::rncp::RncpOutcome::bytes: usize
  pub rns_runtime::rncp::RncpOutcome::duration: core::time::Duration
  pub rns_runtime::rncp::RncpOutcome::file_name: alloc::string::String
  pub rns_runtime::rncp::RncpOutcome::link_rtt: core::time::Duration
@@ -191,7 +198,7 @@ index fc525ab..2baed5b 100644
  pub struct rns_runtime::rncp::RncpSendRequest<'a>
  pub rns_runtime::rncp::RncpSendRequest::auto_compress: bool
  pub rns_runtime::rncp::RncpSendRequest::data: alloc::vec::Vec<u8>
-@@ -1984,6 +2038,8 @@ pub rns_runtime::rpc::InterfaceStatEntry::rx_bytes: u64
+@@ -1984,6 +2042,8 @@ pub rns_runtime::rpc::InterfaceStatEntry::rx_bytes: u64
  pub rns_runtime::rpc::InterfaceStatEntry::rx_rate: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_bytes: u64
  pub rns_runtime::rpc::InterfaceStatEntry::tx_drops: u64
@@ -415,7 +422,7 @@ index efa4c0c..e91ccd5 100644
  pub enum rns_transport::persistence::PersistenceError
  pub rns_transport::persistence::PersistenceError::Deserialize(alloc::string::String)
 diff --git a/api/stability.json b/api/stability.json
-index e9a1891..f16bde1 100644
+index e9a1891..c88bf21 100644
 --- a/api/stability.json
 +++ b/api/stability.json
 @@ -80,8 +80,8 @@
@@ -457,20 +464,20 @@ index e9a1891..f16bde1 100644
        "snapshot": "api/snapshots/rns-runtime.txt",
 -      "itemCount": 2063,
 -      "sha256": "ca162e9ddb542f0daf5817ac26d32be80346d36bdadd70673bf2cdc2535e4e29"
-+      "itemCount": 2119,
-+      "sha256": "e38093141f83e6d6be7bf09aa01a16be8b28dabb033f9b0c3487051d6aeecd7d"
++      "itemCount": 2123,
++      "sha256": "489e3eea3777457ab1a892e7cd0c13d20e83418876b234d62262d2158f363491"
      },
      {
        "name": "rns-tools",
 diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
-index 92277d8..301fbc4 100644
+index 92277d8..1223cbf 100644
 --- a/crates/rns-runtime/src/link_manager.rs
 +++ b/crates/rns-runtime/src/link_manager.rs
 @@ -562,6 +562,29 @@ struct ResourceTransferStart {
      allow_handshake: bool,
  }
  
-+fn bounded_payload_size_is_valid(
++pub(crate) fn bounded_payload_size_is_valid(
 +    data_bytes: usize,
 +    metadata_bytes: Option<usize>,
 +    declared_bytes: usize,
@@ -833,7 +840,7 @@ index 92277d8..301fbc4 100644
      fn one_segment_split_uses_original_hash_for_completion_and_terminal() {
          let (sender_link, receiver_link) = handshaken_link_pair();
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index 30b97b2..58e4805 100644
+index 30b97b2..38f44c8 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
 @@ -1,8 +1,9 @@
@@ -967,10 +974,10 @@ index 30b97b2..58e4805 100644
 +            receive_mode: RncpReceiveMode::SaveToDirectory,
 +            inbound_limits: None,
 +            blocked: Vec::new(),
-+        }
-+    }
-+}
-+
+         }
+     }
+ }
+ 
 +#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 +struct RncpAdmission {
 +    identity_hash: [u8; 16],
@@ -1135,10 +1142,10 @@ index 30b97b2..58e4805 100644
 +            .is_some_and(|entry| entry.completed);
 +        if conclusion != LinkResourceConclusion::Complete || !awaiting_payload_ack {
 +            state.release(key);
-         }
-     }
- }
- 
++        }
++    }
++}
++
 +fn validate_completed_payload(
 +    admission: Option<RncpAdmission>,
 +    file_bytes: usize,
@@ -1507,7 +1514,504 @@ index 30b97b2..58e4805 100644
                  }
              }
          }
-@@ -1575,6 +2029,425 @@ mod tests {
+@@ -1125,6 +1579,174 @@ pub struct RncpFetchRequest<'a> {
+     pub overall_timeout: Duration,
+     pub path_wait: Duration,
+     pub progress_tx: Option<mpsc::Sender<f32>>,
++    pub receive_limits: Option<RncpFetchLimits>,
++}
++
++/// Optional application limits; stock rncp retains its existing defaults.
++#[derive(Debug, Clone, Copy)]
++pub struct RncpFetchLimits {
++    pub max_file_bytes: usize,
++    pub max_metadata_bytes: usize,
++}
++
++enum FetchAdvertisementAdmission {
++    New,
++    ActiveDuplicate,
++    CompletedDuplicate(Vec<u8>),
++}
++
++struct FetchReceiveBudget {
++    limits: RncpFetchLimits,
++    first: Option<ResourceAdvertisement>,
++    active: Option<ResourceAdvertisement>,
++    completed: HashMap<usize, (Vec<u8>, Vec<u8>)>,
++    file_bytes: usize,
++    metadata_bytes: Option<usize>,
++    active_wire_bytes: usize,
++}
++
++impl FetchReceiveBudget {
++    fn new(limits: RncpFetchLimits) -> Self {
++        Self {
++            limits,
++            first: None,
++            active: None,
++            completed: HashMap::new(),
++            file_bytes: 0,
++            metadata_bytes: None,
++            active_wire_bytes: 0,
++        }
++    }
++
++    fn check_advertisement(
++        &self,
++        adv: &ResourceAdvertisement,
++        request_id: &[u8; 16],
++    ) -> Result<FetchAdvertisementAdmission, RncpError> {
++        let denied = || RncpError::ResourceFailed("fetch response exceeded receive limits".into());
++        let Some(max_declared) = self
++            .limits
++            .max_file_bytes
++            .checked_add(self.limits.max_metadata_bytes)
++            .and_then(|bytes| bytes.checked_add(3))
++        else {
++            return Err(denied());
++        };
++        if adv.data_size > max_declared
++            || adv.total_segments == 0
++            || adv.total_segments > rns_protocol::resource::MAX_SEGMENTS
++            || adv.segment_index == 0
++            || adv.segment_index > adv.total_segments
++            || adv.flags.is_request
++            || adv
++                .request_id
++                .as_ref()
++                .is_some_and(|id| id.as_slice() != request_id)
++            || (adv.flags.is_response && adv.request_id.is_none())
++        {
++            return Err(denied());
++        }
++        if let Some(first) = &self.first {
++            if adv.original_hash != first.original_hash
++                || adv.data_size != first.data_size
++                || adv.total_segments != first.total_segments
++                || adv.flags.split != first.flags.split
++                || adv.flags.is_response != first.flags.is_response
++                || adv.request_id != first.request_id
++            {
++                return Err(denied());
++            }
++        }
++        if let Some((advertisement, proof)) = self.completed.get(&adv.segment_index) {
++            return if *advertisement == adv.pack() {
++                Ok(FetchAdvertisementAdmission::CompletedDuplicate(
++                    proof.clone(),
++                ))
++            } else {
++                Err(denied())
++            };
++        }
++        if let Some(active) = &self.active {
++            return if active.pack() == adv.pack() {
++                Ok(FetchAdvertisementAdmission::ActiveDuplicate)
++            } else {
++                Err(denied())
++            };
++        }
++        if adv.segment_index != self.completed.len() + 1 {
++            return Err(denied());
++        }
++        Ok(FetchAdvertisementAdmission::New)
++    }
++
++    fn admit(&mut self, adv: &ResourceAdvertisement) {
++        if self.first.is_none() {
++            self.first = Some(adv.clone());
++        }
++        self.active = Some(adv.clone());
++        self.active_wire_bytes = 0;
++    }
++
++    fn admit_part(
++        &mut self,
++        resource: &rns_protocol::resource::InboundResource,
++        body: &[u8],
++    ) -> Result<bool, RncpError> {
++        let denied = || RncpError::ResourceFailed("fetch response exceeded wire limits".into());
++        // Check before cloning or retaining the packet. Parts must fit the
++        // negotiated SDU and their combined ciphertext must fit the advertisement.
++        if body.len() > resource.sdu {
++            return Err(denied());
++        }
++        let hash = rns_protocol::resource::get_map_hash(body, &resource.random_hash);
++        let start = resource.consecutive_completed;
++        let end = start
++            .saturating_add(resource.window.window)
++            .min(resource.total_parts);
++        let new_part = (start..end).any(|index| {
++            resource.map_hashes.get(index) == Some(&hash) && resource.parts[index].is_none()
++        });
++        if !new_part {
++            return Ok(false);
++        }
++        let bytes = self
++            .active_wire_bytes
++            .checked_add(body.len())
++            .ok_or_else(denied)?;
++        if bytes > resource.total_size {
++            return Err(denied());
++        }
++        self.active_wire_bytes = bytes;
++        Ok(true)
++    }
++
++    fn check_payload(&self, bytes: usize, metadata: Option<usize>) -> Result<(), RncpError> {
++        let denied = || RncpError::ResourceFailed("fetch response exceeded receive limits".into());
++        let first = self.first.as_ref().ok_or_else(denied)?;
++        let active = self.active.as_ref().ok_or_else(denied)?;
++        let total = self.file_bytes.checked_add(bytes).ok_or_else(denied)?;
++        if (active.segment_index == 1 && metadata.is_some() != first.flags.has_metadata)
++            || (active.segment_index > 1 && metadata.is_some())
++            || !crate::link_manager::bounded_payload_size_is_valid(
++                total,
++                self.metadata_bytes.or(metadata),
++                first.data_size,
++                active.segment_index == first.total_segments,
++                (self.limits.max_file_bytes, self.limits.max_metadata_bytes),
++            )
++        {
++            return Err(denied());
++        }
++        Ok(())
++    }
++
++    fn conclude(&mut self, bytes: usize, metadata: Option<usize>, proof: Vec<u8>) {
++        let active = self.active.take().expect("validated active fetch segment");
++        self.file_bytes += bytes;
++        self.metadata_bytes = self.metadata_bytes.or(metadata);
++        self.completed
++            .insert(active.segment_index, (active.pack(), proof));
++    }
+ }
+ 
+ /// Fetches a remote file via `rncp --fetch`. Wire flow:
+@@ -1145,6 +1767,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+         overall_timeout,
+         path_wait,
+         progress_tx,
++        receive_limits,
+     } = request;
+ 
+     let started = Instant::now();
+@@ -1233,6 +1856,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+ 
+     let link_rtt = link.rtt.unwrap_or(Duration::from_millis(500));
+     let mut ack_seen = false;
++    let mut receive_budget = receive_limits.map(FetchReceiveBudget::new);
+     let mut transfers: std::collections::HashMap<[u8; 32], InboundTransfer> =
+         std::collections::HashMap::new();
+     let mut split_resources: std::collections::HashMap<[u8; 32], MultiSegmentInbound> =
+@@ -1240,7 +1864,7 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+     let mut segment_routes: std::collections::HashMap<[u8; 32], ([u8; 32], usize)> =
+         std::collections::HashMap::new();
+ 
+-    let result: Result<(String, Vec<u8>), RncpError> = loop {
++    let result: Result<(String, Vec<u8>), RncpError> = 'receive: loop {
+         if Instant::now() >= deadline {
+             break Err(RncpError::Timeout("fetch"));
+         }
+@@ -1271,6 +1895,11 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+         if interface_id != attached_interface {
+             continue;
+         }
++        if receive_budget.is_some() && raw.len() > link.mtu as usize {
++            break Err(RncpError::ResourceFailed(
++                "fetch packet exceeded negotiated MTU".into(),
++            ));
++        }
+         let (header, off) = match rns_wire::header::PacketHeader::unpack(&raw) {
+             Ok(h) => h,
+             Err(_) => continue,
+@@ -1308,6 +1937,18 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                 else {
+                     continue;
+                 };
++                if let Some(budget) = &receive_budget {
++                    match budget.check_advertisement(&adv, &packet_request_id) {
++                        Ok(FetchAdvertisementAdmission::New) => {}
++                        Ok(FetchAdvertisementAdmission::ActiveDuplicate) => continue,
++                        Ok(FetchAdvertisementAdmission::CompletedDuplicate(proof)) => {
++                            let packet = build_resource_proof_packet(link_id, &proof);
++                            send_endpoint_packet(&transport_tx, link_id, packet).await?;
++                            continue;
++                        }
++                        Err(error) => break Err(error),
++                    }
++                }
+                 if adv.total_segments > 1 {
+                     if adv.total_segments > MAX_SEGMENTS
+                         || adv.segment_index == 0
+@@ -1317,16 +1958,6 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                             "invalid split-resource advertisement".into(),
+                         ));
+                     }
+-                    let coord = split_resources.entry(adv.original_hash).or_insert_with(|| {
+-                        MultiSegmentInbound::new(adv.total_segments, adv.original_hash)
+-                    });
+-                    if coord.total_segments != adv.total_segments {
+-                        break Err(RncpError::ResourceFailed(
+-                            "split-resource total_segments changed".into(),
+-                        ));
+-                    }
+-                    segment_routes
+-                        .insert(adv.resource_hash, (adv.original_hash, adv.segment_index));
+                 }
+                 let map_hashes = adv.get_map_hashes();
+                 let mut transfer_flags = adv.flags;
+@@ -1348,6 +1979,23 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                 ) else {
+                     continue;
+                 };
++                if let Some(budget) = &mut receive_budget {
++                    budget.admit(&adv);
++                }
++                // Invalid advertisements must not leave coordinator/routing
++                // allocations behind when transfer construction rejects them.
++                if adv.total_segments > 1 {
++                    let coord = split_resources.entry(adv.original_hash).or_insert_with(|| {
++                        MultiSegmentInbound::new(adv.total_segments, adv.original_hash)
++                    });
++                    if coord.total_segments != adv.total_segments {
++                        break Err(RncpError::ResourceFailed(
++                            "split-resource total_segments changed".into(),
++                        ));
++                    }
++                    segment_routes
++                        .insert(adv.resource_hash, (adv.original_hash, adv.segment_index));
++                }
+                 if let TransferAction::SendRequest(req_data) = t.request_next()
+                     && let Ok(encrypted) = link.encrypt(&req_data)
+                 {
+@@ -1364,6 +2012,13 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                 let mut resource_action_to_send = None;
+                 let mut completed_rh = None;
+                 for (rh, t) in &mut transfers {
++                    if let Some(budget) = &mut receive_budget {
++                        match budget.admit_part(&t.resource, body) {
++                            Ok(true) => {}
++                            Ok(false) => continue,
++                            Err(error) => break 'receive Err(error),
++                        }
++                    }
+                     let action = t.receive_part(body.to_vec());
+                     if let Some(ref tx) = progress_tx {
+                         let _ = tx.try_send(t.resource.progress() as f32);
+@@ -1428,6 +2083,13 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                             ));
+                         }
+                     };
++                    if let Some(budget) = &receive_budget {
++                        if let Err(error) =
++                            budget.check_payload(payload.len(), metadata.as_ref().map(Vec::len))
++                        {
++                            break Err(error);
++                        }
++                    }
+                     let prf_raw = build_resource_proof_packet(link_id, &proof);
+                     // The received file is not locally concluded until its
+                     // Resource proof has been admitted on the exact Link
+@@ -1435,6 +2097,9 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+                     // the receiver publish success that the sender can never
+                     // observe.
+                     send_endpoint_packet(&transport_tx, link_id, prf_raw).await?;
++                    if let Some(budget) = &mut receive_budget {
++                        budget.conclude(payload.len(), metadata.as_ref().map(Vec::len), proof);
++                    }
+ 
+                     transfers.remove(&rh);
+ 
+@@ -1535,6 +2200,11 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+ 
+     let (file_name, payload) = result?;
+     let bytes = payload.len();
++    if receive_limits.is_some_and(|limits| bytes > limits.max_file_bytes) {
++        return Err(RncpError::ResourceFailed(
++            "fetch response exceeded receive limits".into(),
++        ));
++    }
+     let saved_path = save_payload(save_dir, &file_name, &payload, overwrite)
+         .await
+         .map_err(RncpError::Io)?;
+@@ -1560,6 +2230,174 @@ pub async fn rncp_fetch_file(request: RncpFetchRequest<'_>) -> Result<RncpFetchO
+ mod tests {
+     use super::*;
+ 
++    fn bounded_fetch_adv(
++        bytes: usize,
++        index: usize,
++        count: usize,
++        metadata: bool,
++    ) -> ResourceAdvertisement {
++        let mut adv = ResourceAdvertisement::new(
++            80,
++            bytes,
++            1,
++            [index as u8; 32],
++            vec![0x42; 4],
++            rns_protocol::resource::ResourceFlags {
++                split: count > 1,
++                has_metadata: metadata,
++                ..Default::default()
++            },
++            &[],
++            rns_wire::constants::LINK_MDU,
++        );
++        adv.original_hash = [0x99; 32];
++        adv.segment_index = index;
++        adv.total_segments = count;
++        adv
++    }
++
++    fn bounded_fetch_budget() -> FetchReceiveBudget {
++        FetchReceiveBudget::new(RncpFetchLimits {
++            max_file_bytes: 8,
++            max_metadata_bytes: 4,
++        })
++    }
++
++    #[test]
++    fn bounded_fetch_rejects_wire_bytes_before_part_retention() {
++        use rns_protocol::resource::{InboundResource, ResourceFlags, get_map_hash};
++        let random_hash = [0x42; 4];
++        let first = vec![1; 40];
++        let second = vec![2; 40];
++        let mut resource = InboundResource::new(
++            2,
++            64,
++            8,
++            random_hash,
++            [3; 32],
++            ResourceFlags::default(),
++            vec![
++                get_map_hash(&first, &random_hash),
++                get_map_hash(&second, &random_hash),
++            ],
++        )
++        .expect("bounded resource");
++        let mut budget = bounded_fetch_budget();
++        budget.admit(&bounded_fetch_adv(8, 1, 1, false));
++        assert!(
++            budget
++                .admit_part(&resource, &vec![0; resource.sdu + 1])
++                .is_err()
++        );
++        assert!(resource.parts.iter().all(Option::is_none));
++        assert!(budget.admit_part(&resource, &first).expect("first part"));
++        assert!(resource.receive_part(first.clone()));
++        assert!(
++            !budget
++                .admit_part(&resource, &first)
++                .expect("duplicate ignored")
++        );
++        assert!(budget.admit_part(&resource, &second).is_err());
++        assert!(resource.parts[1].is_none());
++        assert_eq!(budget.active_wire_bytes, 40);
++    }
++
++    #[test]
++    fn bounded_fetch_accepts_stock_file_and_exact_limits() {
++        for metadata in [None, Some(0), Some(4)] {
++            let declared = 8 + metadata.map_or(0, |bytes| bytes + 3);
++            let mut adv = bounded_fetch_adv(declared, 1, 1, metadata.is_some());
++            // A one-segment split Resource is also valid on the wire.
++            for split in [false, true] {
++                adv.flags.split = split;
++                let mut budget = bounded_fetch_budget();
++                assert!(matches!(
++                    budget.check_advertisement(&adv, &[1; 16]),
++                    Ok(FetchAdvertisementAdmission::New)
++                ));
++                budget.admit(&adv);
++                assert!(budget.check_payload(8, metadata).is_ok());
++            }
++        }
++    }
++
++    #[test]
++    fn bounded_fetch_keeps_split_metadata_and_compression_compatibility() {
++        let first = bounded_fetch_adv(15, 1, 2, true);
++        let mut budget = bounded_fetch_budget();
++        budget.admit(&first);
++        assert!(budget.check_payload(3, Some(4)).is_ok());
++        budget.conclude(3, Some(4), vec![5]);
++        assert!(
++            matches!(budget.check_advertisement(&first, &[1;16]), Ok(FetchAdvertisementAdmission::CompletedDuplicate(proof)) if proof == vec![5])
++        );
++        let mut second = bounded_fetch_adv(15, 2, 2, true);
++        second.flags.compressed = true;
++        assert!(matches!(
++            budget.check_advertisement(&second, &[1; 16]),
++            Ok(FetchAdvertisementAdmission::New)
++        ));
++        budget.admit(&second);
++        // Follow-up flag normalization strips metadata only from transfer flags.
++        assert!(budget.check_payload(5, None).is_ok());
++        assert!(budget.check_payload(6, None).is_err());
++        assert!(budget.check_payload(4, None).is_err());
++        assert!(budget.check_payload(5, Some(4)).is_err());
++    }
++
++    #[test]
++    fn bounded_fetch_rejects_multiple_or_changed_resources_before_admission() {
++        let first = bounded_fetch_adv(8, 1, 2, false);
++        let mut budget = bounded_fetch_budget();
++        budget.admit(&first);
++        assert!(matches!(
++            budget.check_advertisement(&first, &[1; 16]),
++            Ok(FetchAdvertisementAdmission::ActiveDuplicate)
++        ));
++        let mut another = first.clone();
++        another.original_hash = [2; 32];
++        assert!(budget.check_advertisement(&another, &[1; 16]).is_err());
++        another = first.clone();
++        another.resource_hash = [3; 32];
++        assert!(budget.check_advertisement(&another, &[1; 16]).is_err());
++        another = first.clone();
++        another.data_size += 1;
++        assert!(budget.check_advertisement(&another, &[1; 16]).is_err());
++        another = first.clone();
++        another.total_segments += 1;
++        assert!(budget.check_advertisement(&another, &[1; 16]).is_err());
++        assert!(budget.completed.is_empty());
++        assert_eq!(budget.file_bytes, 0);
++    }
++
++    #[test]
++    fn bounded_fetch_rejects_invalid_declarations_and_actual_sizes() {
++        let mut budget = bounded_fetch_budget();
++        for (bytes, index, count) in [(16, 1, 1), (8, 0, 1), (8, 1, 0), (8, 2, 1), (8, 1, 129)] {
++            assert!(
++                budget
++                    .check_advertisement(&bounded_fetch_adv(bytes, index, count, false), &[1; 16])
++                    .is_err()
++            );
++        }
++        let mut adv = bounded_fetch_adv(8, 1, 1, false);
++        adv.request_id = Some(vec![2; 16]);
++        assert!(budget.check_advertisement(&adv, &[1; 16]).is_err());
++        adv.request_id = None;
++        adv.flags.is_response = true;
++        assert!(budget.check_advertisement(&adv, &[1; 16]).is_err());
++        adv.flags.is_response = false;
++        budget.admit(&adv);
++        assert!(budget.check_payload(9, None).is_err());
++        assert!(budget.check_payload(7, None).is_err());
++        assert!(budget.check_payload(8, Some(5)).is_err());
++        let overflow = FetchReceiveBudget::new(RncpFetchLimits {
++            max_file_bytes: usize::MAX,
++            max_metadata_bytes: 4,
++        });
++        assert!(overflow.check_advertisement(&adv, &[1; 16]).is_err());
++    }
++
+     #[cfg(target_os = "linux")]
+     fn pinned_dir_alias(dir: &Path, handle: &std::fs::File) -> PathBuf {
+         use std::os::fd::AsRawFd;
+@@ -1575,6 +2413,425 @@ mod tests {
          PathBuf::from(format!("/.vol/{}/{}", metadata.dev(), metadata.ino()))
      }
  
@@ -1933,7 +2437,7 @@ index 30b97b2..58e4805 100644
      #[test]
      fn metadata_roundtrip() {
          let packed = pack_metadata("hello.txt");
-@@ -1667,32 +2540,4 @@ mod tests {
+@@ -1667,32 +2924,4 @@ mod tests {
      fn successful_rncp_send_retains_python_receiver_settlement_window() {
          assert_eq!(RNCP_POST_PROOF_SETTLE, Duration::from_millis(250));
      }
@@ -1967,7 +2471,7 @@ index 30b97b2..58e4805 100644
 -    }
  }
 diff --git a/crates/rns-tools/src/commands/rncp.rs b/crates/rns-tools/src/commands/rncp.rs
-index a4a70b6..9b4b3d5 100644
+index a4a70b6..9d3189d 100644
 --- a/crates/rns-tools/src/commands/rncp.rs
 +++ b/crates/rns-tools/src/commands/rncp.rs
 @@ -37,8 +37,8 @@ use rns_runtime::lifecycle::{ShutdownSignal, install_signal_handlers};
@@ -1981,7 +2485,15 @@ index a4a70b6..9b4b3d5 100644
  };
  
  const DEFAULT_TIMEOUT_SECS: f64 = 15.0;
-@@ -634,6 +634,9 @@ async fn run_listen(args: Args) -> ! {
+@@ -313,6 +313,7 @@ async fn run_fetch(args: Args) -> ! {
+     });
+ 
+     let result = rncp_fetch_file(RncpFetchRequest {
++        receive_limits: None,
+         transport_tx: handle.transport_tx.clone(),
+         identity,
+         dest_hash,
+@@ -634,6 +635,9 @@ async fn run_listen(args: Args) -> ! {
          allow_fetch: args.allow_fetch,
          fetch_jail,
          fetch_auto_compress: !args.no_compress,
@@ -1991,7 +2503,7 @@ index a4a70b6..9b4b3d5 100644
      };
      let listener = match spawn_rncp_listener(handle.transport_tx.clone(), cfg, event_tx).await {
          Ok(h) => h,
-@@ -688,6 +691,13 @@ async fn run_listen(args: Args) -> ! {
+@@ -688,6 +692,13 @@ async fn run_listen(args: Args) -> ! {
                              saved_path.display()
                          );
                      }

@@ -50,7 +50,9 @@
     "takRemoteConnecting": "connexion à distance",
     "takRemoteError": "Erreur CSS à distance",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Les paramètres enregistrés n'ont pas pu être chargés",
+    "savedSettingsRecovery": "Vos données enregistrées ont été conservées. Vérifiez que votre porte-clés système est disponible, ou attendez une minute et réessayez."
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",
@@ -1011,7 +1013,8 @@
     "copied": "Copié",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Détecté comme un bot à partir de ses réponses automatisées"
+    "botBadgeTooltip": "Détecté comme un bot à partir de ses réponses automatisées",
+    "retry": "Réessayer"
   },
   "configApplyNotice": {
     "persistNote": "Les paramètres appliqués sont enregistrés dans la mémoire flash de l'appareil et persistent lors des redémarrages.",
@@ -3810,7 +3813,8 @@
     "unfavoriteSiteAria": "Supprimer {{name}} des favoris",
     "favoriteAddedToast": "{{name}} ajouté aux favoris",
     "favoriteRemovedToast": "Suppression de {{name}} des favoris",
-    "favoriteFailedToast": "Impossible de mettre à jour le favori pour {{name}}. Reticulum est-il en cours d’exécution ?"
+    "favoriteFailedToast": "Impossible de mettre à jour le favori pour {{name}}. Reticulum est-il en cours d’exécution ?",
+    "partialsPaused": "Le contenu de certaines pages n'a pas pu être chargé ou actualisé. Rechargez la page pour réessayer."
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",
@@ -7036,7 +7040,8 @@
     "downloadSize": "Télécharger ({{size}})",
     "readLanguagesHint": "Les messages dans ces langues ne sont jamais traduits automatiquement. La langue sélectionnée sous Traduire en compte toujours comme une langue que vous lisez.",
     "pivotHint": "Un pack couvre une direction de traduction, telle que le français vers l'anglais. Les autres paires de langues passent par l'anglais : le français vers l'allemand nécessite les packs français → anglais et anglais → allemand. La traduction en anglais ne nécessite qu'un seul pack.",
-    "hideTranslation": "Masquer la traduction"
+    "hideTranslation": "Masquer la traduction",
+    "secureUrlRequired": "La traduction en ligne est en pause. Votre serveur et la clé enregistrée ont été conservés ; utilisez une URL HTTPS pour reprendre."
   },
   "liveTraffic": {
     "controlPacket": "Paquet de contrôle",

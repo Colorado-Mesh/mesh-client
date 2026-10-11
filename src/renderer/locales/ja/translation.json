@@ -50,7 +50,9 @@
     "takRemoteConnecting": "リモート接続",
     "takRemoteError": "リモートAPIエラー。",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}、{{remote}}"
+    "takWithRemote": "{{local}}、{{remote}}",
+    "savedSettingsUnavailable": "保存された設定を読み込めませんでした",
+    "savedSettingsRecovery": "保存されたデータは保持されました。システムのキーリングが使用可能であることを確認するか、しばらく待ってからもう一度お試しください。"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",
@@ -1011,7 +1013,8 @@
     "copied": "コピーしました",
     "botBadge": "ボット",
     "botBadgeLabel": "ボット",
-    "botBadgeTooltip": "自動返信からボットとして検出される"
+    "botBadgeTooltip": "自動返信からボットとして検出される",
+    "retry": "再試行"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
@@ -3810,7 +3813,8 @@
     "unfavoriteSiteAria": "お気に入りから{{name}}を削除",
     "favoriteAddedToast": "{{name}}をお気に入りに追加しました",
     "favoriteRemovedToast": "お気に入りから{{name}}を削除しました",
-    "favoriteFailedToast": "{{name}}のお気に入りを更新できませんでした。Reticulumは実行中ですか？"
+    "favoriteFailedToast": "{{name}}のお気に入りを更新できませんでした。Reticulumは実行中ですか？",
+    "partialsPaused": "プレビュー画像を読み込むことができませんでした。ページを読み込み直してもう一度お試しください。"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
@@ -7036,7 +7040,8 @@
     "downloadSize": "ダウンロード（ {{size}} ）",
     "readLanguagesHint": "これらの言語のメッセージは自動翻訳されません。「次の言語に翻訳」で選択した言語は、常に読める言語として扱われます。",
     "pivotHint": "各パックは、フランス語 → 英語のように一方向の翻訳を担当します。その他の言語ペアは英語を経由して翻訳されるため、フランス語からドイツ語へは「フランス語 → 英語」と「英語 → ドイツ語」の両方のパックが必要です。英語への翻訳に必要なパックは1つだけです。",
-    "hideTranslation": "翻訳を非表示にする"
+    "hideTranslation": "翻訳を非表示にする",
+    "secureUrlRequired": "オンライン翻訳が一時停止されています。サーバーと保存されたキーが保持されました。HTTPS URLを使用して再開してください。"
   },
   "liveTraffic": {
     "controlPacket": "制御パケット",

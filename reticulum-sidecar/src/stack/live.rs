@@ -739,21 +739,15 @@ impl LiveBridge {
                 state.nomad_serving_content_source.clone(),
             )
         };
-        // Persisted path text is a preference, not renewed picker authority.
-        // Keep it visible for repicking but fail closed across process restart.
+        // Accepted local-state trust: resume the folders selected in an earlier
+        // session. Requiring a picker on every restart breaks unattended hosting.
+        // Fresh renderer path changes retain their picker/capability checks.
         match &nomad_content_source {
             Some(path) => {
                 bridge
                     .nomad_server
                     .load_content_source_path(Some(std::path::PathBuf::from(path)))
                     .await;
-                if nomad_enabled {
-                    tracing::warn!("[nomad-serving] restore requires a fresh picker capability");
-                    bridge
-                        .nomad_server
-                        .set_last_error(Some("picker_capability_required".into()))
-                        .await;
-                }
             }
             None if nomad_enabled => {
                 tracing::warn!(
@@ -766,7 +760,13 @@ impl LiveBridge {
             }
             None => {}
         }
-        let _ = nomad_name;
+
+        if nomad_enabled && nomad_content_source.is_some() {
+            if let Err(error) = bridge.start_nomad_serving(nomad_name).await {
+                tracing::warn!("[nomad-serving] failed to restore Nomad serving: {error}");
+                bridge.nomad_server.set_last_error(Some(error)).await;
+            }
+        }
 
         // Restore the inbound rncp listener the user enabled in a previous
         // session (Remote → Settings → Inbound file offers). Failure point:
@@ -810,9 +810,26 @@ impl LiveBridge {
             if let Err(e) = bridge.rncp_configure_policy(mode, allowed, blocked).await {
                 tracing::warn!("[rncp] failed to restore inbound policy: {e}");
             } else {
-                let _ = (save_dir, allow_fetch, fetch_jail, overwrite);
-                tracing::warn!("[rncp] restore requires a fresh picker capability");
-                bridge.rncp_require_picker_capability_after_restore().await;
+                // As with Nomad hosting, persisted native configuration is
+                // trusted for restart. This intentionally permits local profile
+                // tampering to change the remembered directory; interactive
+                // renderer changes still require native picker authorization.
+                let save_dir = save_dir
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| storage_dir.join("rncp_inbox"));
+                let result = bridge
+                    .rncp_start_listener(
+                        save_dir.clone(),
+                        save_dir,
+                        allow_fetch,
+                        fetch_jail.map(PathBuf::from),
+                        overwrite,
+                        None,
+                    )
+                    .await;
+                if result.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
+                    tracing::warn!("[rncp] failed to restore inbound listener: {result}");
+                }
             }
         }
 
@@ -2987,12 +3004,6 @@ impl LiveBridge {
 
     pub async fn rncp_listener_status(&self) -> serde_json::Value {
         self.rncp_transfer.listener_status().await
-    }
-
-    pub async fn rncp_require_picker_capability_after_restore(&self) {
-        self.rncp_transfer
-            .require_picker_capability_after_restore()
-            .await;
     }
 
     pub async fn rncp_receive_destination_hash(&self) -> Option<String> {

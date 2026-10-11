@@ -81,20 +81,31 @@ describe('LibreTranslate client', () => {
       client.setConfig({ enabled: true, url: 'https://key@server.test' });
     }).toThrow();
   });
-  it('disables an unsafe legacy HTTP server and removes its encrypted API key', async () => {
-    const { client, fetchImpl, safeStorage, saved } = setup(
-      () => Promise.resolve(Response.json({ translatedText: 'hello' })),
-      JSON.stringify({
-        enabled: true,
-        url: 'http://translate.example',
-        encryptedKey: Buffer.from('encrypted:private-key').toString('base64'),
-      }),
-    );
+  it.each([true, false])(
+    'preserves unsafe legacy configuration while blocking requests (enabled=%s)',
+    async (enabled) => {
+      const { client, fetchImpl, safeStorage, saved } = setup(
+        () => Promise.resolve(Response.json({ translatedText: 'hello' })),
+        JSON.stringify({
+          enabled,
+          url: 'http://translate.example',
+          encryptedKey: Buffer.from('encrypted:private-key').toString('base64'),
+        }),
+      );
 
-    expect(client.status()).toEqual({ enabled: false, url: '', hasApiKey: false });
-    expect(saved()).toBe(JSON.stringify({ enabled: false, url: '' }));
-    await expect(client.translate('secret', 'en', 'fr')).rejects.toThrow('LibreTranslate disabled');
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(safeStorage.decryptString).not.toHaveBeenCalled();
-  });
+      const original = saved();
+      expect(client.status()).toEqual({
+        enabled: false,
+        url: 'http://translate.example',
+        hasApiKey: true,
+        needsSecureUrl: true,
+      });
+      expect(saved()).toBe(original);
+      await expect(client.translate('secret', 'en', 'fr')).rejects.toThrow(
+        'LibreTranslate disabled',
+      );
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(safeStorage.decryptString).not.toHaveBeenCalled();
+    },
+  );
 });

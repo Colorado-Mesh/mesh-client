@@ -17,7 +17,9 @@ import {
   meshcoreRoomSecretKey,
   MESHTASTIC_MQTT_SECRET_KEY,
   MQTT_PROFILES_SECRET_KEY,
+  removeSecureSecret,
   resetSecureSecretCacheForTests,
+  setSecureSecret,
 } from './secureSecretStorage';
 
 const secureValues = new Map<string, string>();
@@ -94,6 +96,119 @@ describe('secureSecretStorage migrations', () => {
     appSettingsValues.clear();
     resetSecureSecretCacheForTests();
     installSecureSecretApi();
+  });
+
+  it('remembers credentials through keyring outages and removes compatibility copies after encryption', async () => {
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValue({
+      available: false,
+      persistent: false,
+      verified: true,
+    });
+    await setSecureSecret(MESHCORE_MQTT_SECRET_KEY, '{"password":"remember-me"}');
+    secureValues.set(MESHCORE_MQTT_SECRET_KEY, '{"password":"older-protected-value"}');
+    resetSecureSecretCacheForTests();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(MESHCORE_MQTT_SECRET_KEY)).toBe('{"password":"remember-me"}');
+    expect(window.electronAPI.secureSecrets.set).not.toHaveBeenCalled();
+
+    installSecureSecretApi();
+    resetSecureSecretCacheForTests();
+    await initializeSecureSecrets();
+    expect(secureValues.get(MESHCORE_MQTT_SECRET_KEY)).toBe('{"password":"remember-me"}');
+    expect(localStorage.getItem('mesh-client:credentialCompatibility:mqtt:meshcore')).toBeNull();
+  });
+
+  it('hydrates large compatibility collections without replaying writes while the keyring is unavailable', async () => {
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    for (let id = 0; id < 130; id += 1) {
+      localStorage.setItem(
+        `mesh-client:credentialCompatibility:${meshcoreRoomSecretKey(id)}`,
+        JSON.stringify(`credential-${id}`),
+      );
+    }
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(129))).toBe('credential-129');
+    expect(window.electronAPI.secureSecrets.set).not.toHaveBeenCalled();
+  });
+
+  it('keeps unreadable protected rows ahead of stale legacy settings during an outage', async () => {
+    const key = meshcoreRoomSecretKey(42);
+    secureValues.set(key, 'protected-current');
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [`${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`]: 'stale-legacy',
+      }),
+    );
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    vi.mocked(window.electronAPI.secureSecrets.getAll).mockResolvedValue({});
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(key)).toBeNull();
+    expect(localStorage.getItem(`mesh-client:credentialCompatibility:${key}`)).toBeNull();
+
+    installSecureSecretApi();
+    resetSecureSecretCacheForTests();
+    await initializeSecureSecrets();
+    expect(secureValues.get(key)).toBe('protected-current');
+    expect(getCachedSecureSecret(key)).toBe('protected-current');
+  });
+
+  it('does not revive a forgotten legacy room credential on the next start', async () => {
+    const key = meshcoreRoomSecretKey(42);
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [`${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`]: 'old-password',
+      }),
+    );
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(key)).toBe('old-password');
+    await removeSecureSecret(key);
+    resetSecureSecretCacheForTests();
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(key)).toBeNull();
+    expect(localStorage.getItem(`mesh-client:credentialCompatibility:${key}`)).toBe('null');
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).not.toHaveProperty(
+      `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`,
+    );
+  });
+
+  it('opens with retained encrypted legacy values when the keyring is unavailable', async () => {
+    localStorage.setItem('mesh-client:meshcoreIdentityEncPK', 'still-encrypted');
+    localStorage.setItem('mesh-client:meshcore-key-backup:14', 'still-encrypted');
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    await expect(initializeSecureSecretsFailClosed()).resolves.toBeUndefined();
+    expect(window.electronAPI.secureSecrets.migrateLegacyIdentityCiphertext).not.toHaveBeenCalled();
+    expect(window.electronAPI.secureSecrets.migrateLegacyBackupCiphertext).not.toHaveBeenCalled();
+    expect(localStorage.getItem('mesh-client:meshcoreIdentityEncPK')).toBe('still-encrypted');
+  });
+
+  it('does not write compatibility storage for an already encrypted credential', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    await setSecureSecret(MESHCORE_MQTT_SECRET_KEY, 'encrypted-value');
+    expect(setItem).not.toHaveBeenCalledWith(
+      'mesh-client:credentialCompatibility:mqtt:meshcore',
+      expect.anything(),
+    );
+    setItem.mockRestore();
   });
 
   it('migrates and erases every legacy plaintext/ciphertext credential class', async () => {
@@ -328,9 +443,7 @@ describe('secureSecretStorage migrations', () => {
       .fn()
       .mockResolvedValue({ available: true, persistent: false, verified: true });
 
-    await expect(initializeSecureSecretsFailClosed()).rejects.toThrow(
-      'legacy backup verification failed',
-    );
+    await expect(initializeSecureSecretsFailClosed()).resolves.toBeUndefined();
     expect(localStorage.getItem(storageKey)).toBe('legacy-ciphertext');
   });
 
@@ -343,8 +456,47 @@ describe('secureSecretStorage migrations', () => {
       .fn()
       .mockResolvedValue({ available: true, persistent: false, verified: true });
 
-    await expect(initializeSecureSecretsFailClosed()).rejects.toThrow(/configure an OS keyring/);
+    await expect(initializeSecureSecretsFailClosed()).resolves.toBeUndefined();
     expect(localStorage.getItem(LEGACY_APP_SETTINGS_STORAGE_KEY)).toBe(raw);
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(42))).toBe('room-password');
+  });
+
+  it('resumes a partially migrated credential collection instead of replaying its prefix', async () => {
+    const credentials = Object.fromEntries(
+      Array.from({ length: 120 }, (_, id) => [
+        `${MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX}${String(id)}`,
+        `password-${String(id)}`,
+      ]),
+    );
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(credentials));
+    let writes = 0;
+    vi.mocked(window.electronAPI.secureSecrets.set).mockImplementation((key, value) => {
+      if (++writes > 118) return Promise.reject(new Error('rate limit'));
+      secureValues.set(key, value);
+      return Promise.resolve({ available: true, persistent: true, verified: true });
+    });
+    await expect(initializeSecureSecrets()).rejects.toThrow('rate limit');
+    expect(Object.keys(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!))).toHaveLength(
+      2,
+    );
+    writes = 0;
+    await initializeSecureSecrets();
+    expect(writes).toBe(2);
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(119))).toBe('password-119');
+    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe('{}');
+  });
+
+  it('scrubs stale SQLite credentials without overwriting current local or secure values', async () => {
+    const localKey = `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`;
+    const secureKey = `${MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX}43`;
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ [localKey]: 'current-local' }));
+    secureValues.set(meshcoreRepeaterSecretKey(43), 'current-secure');
+    appSettingsValues.set(localKey, 'obsolete-db-room');
+    appSettingsValues.set(secureKey, 'obsolete-db-repeater');
+    await initializeSecureSecrets();
+    expect(getCachedSecureSecret(meshcoreRoomSecretKey(42))).toBe('current-local');
+    expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(43))).toBe('current-secure');
+    expect(appSettingsValues.size).toBe(0);
   });
 
   it('preserves a legacy backup when the secure slot contains a different key pair', async () => {

@@ -8,6 +8,7 @@ import {
 } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import {
   getCachedSecureSecret,
+  isProtectedSecureSecretUnavailable,
   MESHCORE_MQTT_SECRET_KEY,
   MESHTASTIC_MQTT_SECRET_KEY,
   setSecureSecret,
@@ -31,10 +32,31 @@ export function loadProtocolMqttSettings(protocol: MeshProtocol): MQTTSettings {
 export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings): void {
   const secretKey =
     key === MESHCORE_MQTT_SETTINGS_KEY ? MESHCORE_MQTT_SECRET_KEY : MESHTASTIC_MQTT_SECRET_KEY;
-  const serialized = JSON.stringify(settings);
+  const { password, channelPsks, ...preferences } = settings;
+  const serialized = JSON.stringify({ password, channelPsks });
+  if (isProtectedSecureSecretUnavailable(secretKey)) {
+    const loaded = loadProtocolMqttSettings(
+      secretKey === MESHCORE_MQTT_SECRET_KEY ? 'meshcore' : 'meshtastic',
+    );
+    if (
+      password === loaded.password &&
+      JSON.stringify(channelPsks) === JSON.stringify(loaded.channelPsks)
+    ) {
+      // Changing broker preferences must not replace an unreadable protected
+      // credential with a default plaintext copy during a keyring outage.
+      localStorage.setItem(key, JSON.stringify(preferences));
+      return;
+    }
+  }
+  // Broker preferences are intentionally durable without a keyring. Passwords and
+  // channel keys use OS encryption when available and the documented local
+  // compatibility copy during keyring outages.
+  const persistPreferences = () => {
+    localStorage.setItem(key, JSON.stringify(preferences));
+  };
   const previous = pendingMqttSecretWrites.get(secretKey);
   if (!previous && getCachedSecureSecret(secretKey) === serialized) {
-    localStorage.removeItem(key);
+    persistPreferences();
     return;
   }
   const operation = previous
@@ -44,10 +66,10 @@ export function persistMqttSettingsIfChanged(key: string, settings: MQTTSettings
           if (getCachedSecureSecret(secretKey) !== serialized) {
             await setSecureSecret(secretKey, serialized);
           }
-          localStorage.removeItem(key);
+          persistPreferences();
         })
     : setSecureSecret(secretKey, serialized).then(() => {
-        localStorage.removeItem(key);
+        persistPreferences();
       });
   const tracked = operation
     .catch((error: unknown) => {
@@ -86,7 +108,9 @@ export function useProtocolMqttSettings(protocol: MeshProtocol) {
 
   useEffect(() => {
     return () => {
-      flushPendingMqttSave(persistTimerRef, storageKey, settingsRef.current);
+      if (persistTimerRef.current) {
+        flushPendingMqttSave(persistTimerRef, storageKey, settingsRef.current);
+      }
     };
   }, [storageKey]);
 

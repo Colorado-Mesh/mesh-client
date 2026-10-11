@@ -1145,8 +1145,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     set: (
       key: string,
       value: string,
+      requirePersistent?: boolean,
     ): Promise<{ available: boolean; persistent: boolean; verified: boolean }> =>
-      ipcRenderer.invoke('secureSecrets:set', key, value),
+      ipcRenderer.invoke('secureSecrets:set', key, value, requirePersistent),
     remove: (key: string): Promise<void> => ipcRenderer.invoke('secureSecrets:remove', key),
     migrateLegacyIdentityCiphertext: (
       ciphertext: string,

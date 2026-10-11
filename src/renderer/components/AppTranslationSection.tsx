@@ -278,6 +278,11 @@ export function AppTranslationSection() {
       </summary>
       <div className="border-ink-700 space-y-4 border-t px-4 pt-3 pb-4">
         <p className="text-muted text-sm">{t('chatTranslation.offlinePrivacy')}</p>
+        {status?.libre.needsSecureUrl && (
+          <p role="status" className="text-sm text-orange-400">
+            {t('chatTranslation.secureUrlRequired')}
+          </p>
+        )}
         {!status?.enabled ? (
           <>
             <p className="text-ink-300 text-sm">

@@ -126,24 +126,12 @@ function strongStorageAvailable(): boolean {
   }
 }
 
-function basicTextStorageSelected(): boolean {
-  try {
-    return (
-      safeStorage.isEncryptionAvailable() &&
-      safeStorage.getSelectedStorageBackend?.() === 'basic_text'
-    );
-  } catch {
-    // catch-no-log-ok storage backend probing is intentionally fail-closed
-    return false;
-  }
-}
-
 /**
  * Main-process-only credential service. Durable values are encrypted by an OS-backed
  * safeStorage backend before SQLite sees them. When no confidential backend exists,
  * values remain process-memory-only. Durable values are preserved through temporary keyring
- * outages, but ciphertext created by Electron's explicitly insecure `basic_text` backend is
- * removed before a session-only replacement is accepted.
+ * outages and backend changes. This service never creates `basic_text` ciphertext,
+ * so a backend fallback cannot justify deleting previously protected values.
  */
 export class SecureSecretStore {
   private readonly session = new Map<string, string>();
@@ -155,14 +143,15 @@ export class SecureSecretStore {
     return { available: true, persistent };
   }
 
-  set(key: unknown, value: unknown): SecureSecretWriteResult {
+  set(key: unknown, value: unknown, requirePersistent: unknown = false): SecureSecretWriteResult {
     assertSecretKey(key);
     assertSecretValue(value);
+    if (typeof requirePersistent !== 'boolean') {
+      throw new Error('secureSecrets: invalid persistence requirement');
+    }
 
     if (!strongStorageAvailable()) {
-      if (basicTextStorageSelected()) {
-        this.db().prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
-      }
+      if (requirePersistent) throw new Error('secureSecrets: OS key storage unavailable');
       this.session.set(key, value);
       return { available: true, persistent: false, verified: this.session.get(key) === value };
     }

@@ -119,6 +119,10 @@ function LinkPreview({
   const [preview, setPreview] = useState<LinkPreviewData | null>(null);
 
   useEffect(() => {
+    // Automatic remote content is intentional: previews, GIFs and map tiles must
+    // work without a consent button. Disclosure of viewer IP, request timing and
+    // tile coordinates is an accepted privacy risk. Link previews retain their
+    // fetch limits; GIF and map-tile requests use separate paths.
     let cancelled = false;
     fetchLinkPreviewDeduped(url)
       .then((result: LinkPreviewData | null) => {

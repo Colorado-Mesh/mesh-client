@@ -50,7 +50,9 @@
     "takRemoteConnecting": "connessione remota",
     "takRemoteError": "Errore dell'esecuzione remota",
     "takRemoteOnly": "TAK {{remote}}",
-    "takWithRemote": "{{local}}, {{remote}}"
+    "takWithRemote": "{{local}}, {{remote}}",
+    "savedSettingsUnavailable": "Impossibile caricare le impostazioni salvate",
+    "savedSettingsRecovery": "I tuoi dati salvati sono stati conservati. Verifica che il tuo portachiavi di sistema sia disponibile o attendi un minuto e riprova."
   },
   "appPanel": {
     "failedSaveRetention": "Impossibile salvare l'impostazione di conservazione dei messaggi.",
@@ -1011,7 +1013,8 @@
     "copied": "Copiati",
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
-    "botBadgeTooltip": "Rilevato come bot dalle sue risposte automatiche"
+    "botBadgeTooltip": "Rilevato come bot dalle sue risposte automatiche",
+    "retry": "Riprova"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
@@ -3810,7 +3813,8 @@
     "unfavoriteSiteAria": "Rimuovi {{name}} dai preferiti",
     "favoriteAddedToast": "{{name}} aggiunto ai preferiti",
     "favoriteRemovedToast": "Rimosso {{name}} dai preferiti",
-    "favoriteFailedToast": "Impossibile aggiornare il preferito per {{name}}. Reticulum è in esecuzione?"
+    "favoriteFailedToast": "Impossibile aggiornare il preferito per {{name}}. Reticulum è in esecuzione?",
+    "partialsPaused": "Impossibile caricare o aggiornare alcuni contenuti della pagina. Ricarica la pagina per riprovare."
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",
@@ -7036,7 +7040,8 @@
     "downloadSize": "Scarica ({{size}})",
     "readLanguagesHint": "I messaggi in queste lingue non vengono mai tradotti automaticamente. La lingua selezionata in Traduci in conta sempre come lingua letta.",
     "pivotHint": "Un pacchetto copre una direzione di traduzione, come dal francese all'inglese. Altre coppie linguistiche sono tradotte attraverso l'inglese: dal francese al tedesco ha bisogno dei pacchetti francese → inglese e inglese → tedesco. Per tradurre in inglese basta un solo pacchetto.",
-    "hideTranslation": "Nascondi la traduzione"
+    "hideTranslation": "Nascondi la traduzione",
+    "secureUrlRequired": "La traduzione online è in pausa. Il tuo server e la chiave salvata sono stati conservati; utilizza un URL HTTPS per riprendere."
   },
   "liveTraffic": {
     "controlPacket": "Pacchetto di controllo",
