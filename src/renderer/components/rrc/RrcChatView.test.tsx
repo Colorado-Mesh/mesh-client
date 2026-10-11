@@ -15,6 +15,7 @@ const mockScrollToEnd = vi.fn();
 const mockMeasure = vi.fn();
 const mockMeasureElement = vi.fn();
 let mockIsAtEnd = true;
+let mockVirtualWindowSize = Infinity;
 /** Last options handed to the virtualizer, for row-estimate assertions. */
 let lastVirtualizerOpts: { count: number; estimateSize: (index: number) => number } | null = null;
 
@@ -28,7 +29,7 @@ vi.mock('@tanstack/react-virtual', () => ({
     return {
       measure: mockMeasure,
       getVirtualItems: () =>
-        Array.from({ length: count }, (_, index) => ({
+        Array.from({ length: Math.min(count, mockVirtualWindowSize) }, (_, index) => ({
           index,
           key: index,
           start: index * 22,
@@ -118,6 +119,8 @@ describe('RrcChatView font scale re-measure', () => {
   }
 
   beforeEach(() => {
+    // Retain all 600 estimates while mounting a realistic visible subset of the history.
+    mockVirtualWindowSize = 30;
     mockIsAtEnd = true;
     mockScrollToEnd.mockClear();
     mockMeasure.mockClear();
@@ -125,6 +128,7 @@ describe('RrcChatView font scale re-measure', () => {
   });
 
   afterEach(() => {
+    mockVirtualWindowSize = Infinity;
     document.documentElement.style.fontSize = '';
   });
 
@@ -133,6 +137,7 @@ describe('RrcChatView font scale re-measure', () => {
 
     const before = readEstimatedLayout();
     expect(before.offsets).toHaveLength(600);
+    expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(30);
     mockScrollToEnd.mockClear();
 
     act(() => {
