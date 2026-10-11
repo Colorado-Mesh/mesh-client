@@ -471,10 +471,24 @@ export class TakServerManager extends EventEmitter {
     }, TAK_CLIENT_IDLE_MS);
   }
 
-  /** ATAK opens with its own SA (a unit event); later unit events with that uid track renames. */
+  /** True when another connected client already holds `uid` as its own. */
+  private uidHeldByOtherClient(clientId: string, uid: string): boolean {
+    for (const [otherId, other] of this.clients) {
+      if (otherId !== clientId && other.selfUid === uid) return true;
+    }
+    return false;
+  }
+
+  /**
+   * ATAK opens with its own SA (a unit event); later unit events with that uid track renames.
+   * A uid another connected client holds is never adopted, so one connection cannot take over
+   * another's identity.
+   */
   private updateClientCallsign(client: ConnectedClient, contact: TAKContact): void {
     if (!contact.type.startsWith('a-')) return;
-    client.selfUid ??= contact.uid;
+    if (client.selfUid === undefined && !this.uidHeldByOtherClient(client.info.id, contact.uid)) {
+      client.selfUid = contact.uid;
+    }
     if (contact.uid !== client.selfUid || contact.callsign === client.info.callsign) return;
     client.info = { ...client.info, callsign: contact.callsign };
     this.emit('client-updated', { ...client.info });
@@ -499,9 +513,24 @@ export class TakServerManager extends EventEmitter {
   }
 
   /**
+   * Whether this connection may send chat as `senderUid`. Every client presents the same
+   * data-package certificate, so there is no per-device credential to check; the boundary the
+   * server can hold is one identity per connection. The uid is the one the connection announced
+   * in its own position report, or else the first one it chats as, and it is refused when
+   * another connected client holds it.
+   */
+  private claimChatSender(id: string, client: ConnectedClient, senderUid: string): boolean {
+    if (client.selfUid !== undefined) return client.selfUid === senderUid;
+    if (this.uidHeldByOtherClient(id, senderUid)) return false;
+    client.selfUid = senderUid;
+    return true;
+  }
+
+  /**
    * A GeoChat message from a local client: pass it on to the other local clients, as a TAK
    * server does, and hand it to the renderer, which decides whether its room is bridged to a
-   * mesh channel that allows sending. Rebuilt from the parsed fields, never forwarded raw.
+   * mesh channel that allows sending. Rebuilt from the parsed fields, never forwarded raw, and
+   * only under the connection's own uid and callsign.
    */
   private handleClientChat(
     id: string,
@@ -509,11 +538,18 @@ export class TakServerManager extends EventEmitter {
     chat: CotGeochat,
     nowMs: number,
   ): void {
+    if (!this.claimChatSender(id, client, chat.senderUid)) {
+      console.warn(
+        `[TakServer] Client ${sanitizeLogMessage(id)} sent chat as another sender; message dropped`,
+      );
+      return;
+    }
     if (!this.allowClientChat(client, nowMs)) {
       console.warn(`[TakServer] Client ${sanitizeLogMessage(id)} chat rate limit; message dropped`);
       return;
     }
-    const senderCallsign = chat.senderCallsign || client.info.callsign || chat.senderUid;
+    // The callsign from the connection's own position report wins over the one in the message.
+    const senderCallsign = client.info.callsign || chat.senderCallsign || chat.senderUid;
     const message: TAKGeochatMessage = {
       room: chat.room,
       senderCallsign,

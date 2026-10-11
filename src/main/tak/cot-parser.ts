@@ -130,7 +130,6 @@ const OPEN_TAG = {
   contact: /<contact(?=[\s/>])[^>]*>/,
   group: /<__group(?=[\s/>])[^>]*>/,
   chat: /<__chat(?=[\s/>])[^>]*>/,
-  link: /<link(?=[\s/>])[^>]*>/,
 } as const;
 
 const ATTR = {
@@ -250,7 +249,7 @@ export interface CotGeochat {
   room: string;
   /** Empty when the event carried none; the caller falls back to the client's callsign. */
   senderCallsign: string;
-  /** The sending device's uid, so other clients attribute the message to its contact. */
+  /** The uid the event claims as its sender; the server checks it against the connection. */
   senderUid: string;
   text: string;
   /** Message id from the event uid, when it has a usable one. */
@@ -263,10 +262,11 @@ function singleLine(text: string | undefined): string | undefined {
 }
 
 /**
- * Parse a GeoChat (`b-t-f`) event from a TAK client into the room, sender and text. Event uids
- * are `GeoChat.<sender uid>.<room>.<message id>`; an event with another uid shape names its
- * sender in `<link uid>`. Returns null for anything else, for a message
- * without a room, sender uid or text, and for this app's own mirrored mesh messages.
+ * Parse a GeoChat (`b-t-f`) event from a TAK client into the room, sender and text. The sender
+ * uid is read only from the event uid, `GeoChat.<sender uid>.<room>.<message id>`, and is a
+ * claim the server still has to check against the connection. Returns null for anything else,
+ * for a message without a room, sender uid or text, and for this app's own mirrored mesh
+ * messages.
  */
 export function parseGeochatEvent(xml: string): CotGeochat | null {
   const eventTag = openTag(xml, 'event');
@@ -278,7 +278,7 @@ export function parseGeochatEvent(xml: string): CotGeochat | null {
 
   const uidParts = (attr(eventTag, 'uid') ?? '').split('.');
   const fromEventUid = uidParts[0] === 'GeoChat' && uidParts.length >= 4;
-  const senderUid = fromEventUid ? (uidParts[1] ?? '') : (attr(openTag(xml, 'link'), 'uid') ?? '');
+  const senderUid = fromEventUid ? (uidParts[1] ?? '') : '';
   if (!CHAT_UID_RE.test(senderUid)) return null;
   if (senderUid.startsWith(MESH_CHAT_UID_PREFIX)) return null;
   if (COT_UID_PREFIXES.some((prefix) => senderUid.startsWith(prefix))) return null;

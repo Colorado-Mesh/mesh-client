@@ -12,6 +12,7 @@ interface SentEntry {
 
 let recentlySent: SentEntry[] = [];
 
+/** One key per identity, channel and exact text. */
 function echoKey(identityId: IdentityId, channelIndex: number, text: string): string {
   return `${identityId}\u0000${channelIndex}\u0000${text}`;
 }

@@ -27,6 +27,7 @@ export function geochatSenderUid(callsign: string): string {
   return `MESHCHAT-${h.toString(16).padStart(8, '0')}`;
 }
 
+/** A trimmed single-line label of 1 to `max` characters; throws naming `field` otherwise. */
 function label(value: unknown, max: number, field: string): string {
   if (typeof value !== 'string') throw new Error(`tak:pushChatMessage: ${field} must be a string`);
   const trimmed = value.trim();

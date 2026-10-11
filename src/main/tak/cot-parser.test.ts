@@ -184,6 +184,7 @@ describe('isCotPing', () => {
 });
 
 describe('parseGeochatEvent', () => {
+  /** A GeoChat event as ATAK sends it; each part can be overridden. */
   function geochat({
     uid = 'GeoChat.ANDROID-1.Mesh Ops.6f9d2c1e-0a4b-4c58-9e11-2b7a5f0c9d3e',
     type = 'b-t-f',
@@ -217,9 +218,17 @@ describe('parseGeochatEvent', () => {
     expect(chat?.text).toBe('a & b line two');
   });
 
-  it('takes the sender from the link when the event uid has another shape', () => {
-    const chat = parseGeochatEvent(geochat({ uid: 'custom-uid-1' }));
-    expect(chat).toMatchObject({ senderUid: 'ANDROID-1', room: 'Mesh Ops' });
+  it('takes the sender only from the event uid, never from the link element', () => {
+    expect(parseGeochatEvent(geochat({ uid: 'custom-uid-1' }))).toBeNull();
+    const chat = parseGeochatEvent(
+      geochat({ link: '<link uid="SOMEONE-ELSE" type="a-f-G-U-C" relation="p-p"/>' }),
+    );
+    expect(chat?.senderUid).toBe('ANDROID-1');
+  });
+
+  it('omits a message id that is not a plain token', () => {
+    const chat = parseGeochatEvent(geochat({ uid: 'GeoChat.ANDROID-1.Mesh Ops.bad id!' }));
+    expect(chat).toMatchObject({ senderUid: 'ANDROID-1' });
     expect(chat).not.toHaveProperty('messageId');
   });
 
@@ -236,8 +245,8 @@ describe('parseGeochatEvent', () => {
     ['a message without text', geochat({ remarks: '   ' })],
     ['a mirrored mesh message', geochat({ uid: 'GeoChat.MESHCHAT-0a1b2c3d.Mesh Ops.m1' })],
     ['a relayed mesh node uid', geochat({ uid: 'GeoChat.MC-6.Mesh Ops.m1' })],
-    ['a sender uid with markup', geochat({ uid: 'x', link: '<link uid="a&quot;b"/>' })],
-    ['no sender uid at all', geochat({ uid: 'x', link: '' })],
+    ['a sender uid with markup', geochat({ uid: 'GeoChat.a&quot;b.Mesh Ops.m1' })],
+    ['an event uid that names no sender', geochat({ uid: 'x', link: '' })],
   ])('ignores %s', (_label, xml) => {
     expect(parseGeochatEvent(xml)).toBeNull();
   });

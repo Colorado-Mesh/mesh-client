@@ -12,9 +12,12 @@ import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
  */
 export const TAK_MESH_SEND_MAX_BYTES = 160;
 const ELLIPSIS = '…';
+/** A send that has not settled by now is treated as failed so it cannot hold up later messages. */
+export const TAK_MESH_SEND_TIMEOUT_MS = 15_000;
 
 const encoder = new TextEncoder();
 
+/** Size of `text` in UTF-8 bytes. */
 function utf8Length(text: string): number {
   return encoder.encode(text).length;
 }
@@ -70,6 +73,25 @@ export function findTakSendTargets(room: string): TakSendTarget[] {
 
 export type TakMeshSendFn = (target: TakSendTarget, text: string) => Promise<void>;
 
+/** Reject when `send` has not settled within the send timeout. */
+function withSendTimeout(send: Promise<void>): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('mesh send timed out'));
+    }, TAK_MESH_SEND_TIMEOUT_MS);
+    send.then(
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      (e: unknown) => {
+        clearTimeout(timer);
+        reject(e instanceof Error ? e : new Error(String(e)));
+      },
+    );
+  });
+}
+
 /**
  * Transmit one TAK client's GeoChat message on every mesh channel bridged to its room that
  * allows sending. Does nothing for a room no channel opted in for. Returns how many channels it
@@ -87,7 +109,7 @@ export async function relayTakChatToMesh(
   for (const target of targets) {
     rememberTakSend(target.identityId, target.channelIndex, text, nowMs);
     try {
-      await sendFn(target, text);
+      await withSendTimeout(sendFn(target, text));
       sent++;
     } catch (e) {
       consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
@@ -95,4 +117,20 @@ export async function relayTakChatToMesh(
     }
   }
   return sent;
+}
+
+let relayQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Relay messages one at a time, in the order they arrived: each message finishes on all of its
+ * channels before the next starts, so the mesh sees them in TAK order. A failed or timed-out
+ * message does not stop the ones queued behind it.
+ */
+export function enqueueTakChatRelay(
+  message: TAKInboundChat,
+  sendFn: TakMeshSendFn,
+): Promise<number> {
+  const run = relayQueue.then(() => relayTakChatToMesh(message, sendFn));
+  relayQueue = run.catch(() => undefined);
+  return run;
 }

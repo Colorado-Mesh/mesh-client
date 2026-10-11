@@ -808,6 +808,7 @@ describe('TakServerManager GeoChat', () => {
 });
 
 describe('TakServerManager chat from local clients', () => {
+  /** A client GeoChat event; `callsign` is the raw senderCallsign attribute, or empty for none. */
   const CHAT = (text: string, opts: { room?: string; sender?: string; callsign?: string } = {}) => {
     const room = opts.room ?? 'Mesh Ops';
     const sender = opts.sender ?? 'ANDROID-1';
@@ -829,6 +830,7 @@ describe('TakServerManager chat from local clients', () => {
     vi.useRealTimers();
   });
 
+  /** Connect a mock client and forget the writes made on connect. */
   function connect(manager: TakServerManager): tls.TLSSocket {
     const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
     const socket = mockTlsSocket();
@@ -836,6 +838,75 @@ describe('TakServerManager chat from local clients', () => {
     vi.mocked(socket.write).mockClear();
     return socket;
   }
+
+  /** A client's own position report, which is what binds a uid and callsign to its connection. */
+  const SELF = (uid: string, callsign: string) =>
+    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
+    `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
+    `<detail><contact callsign="${callsign}"/></detail></event>`;
+
+  it("drops chat sent under a uid other than the connection's own", () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const manager = new TakServerManager();
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const sender = connect(manager);
+    const other = connect(manager);
+    sender.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+
+    sender.emit('data', Buffer.from(CHAT('spoofed', { sender: 'ANDROID-9' })));
+    expect(inbound).toEqual([]);
+    expect(other.write).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('another sender'));
+
+    sender.emit('data', Buffer.from(CHAT('genuine', { sender: 'ANDROID-1' })));
+    expect(inbound).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('drops chat sent under a uid another connected client holds', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const manager = new TakServerManager();
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const victim = connect(manager);
+    const impostor = connect(manager);
+    victim.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+
+    impostor.emit('data', Buffer.from(CHAT('as viper', { sender: 'ANDROID-1' })));
+    expect(inbound).toEqual([]);
+    expect(victim.write).not.toHaveBeenCalled();
+
+    impostor.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    impostor.emit('data', Buffer.from(CHAT('still viper', { sender: 'ANDROID-1' })));
+    expect(inbound).toEqual([]);
+    expect(manager.getConnectedClients().map((c) => c.callsign)).toEqual(['VIPER', undefined]);
+    warn.mockRestore();
+  });
+
+  it('binds a connection to the first uid it chats as when it sent no position report', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const manager = new TakServerManager();
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const sender = connect(manager);
+    sender.emit('data', Buffer.from(CHAT('first', { sender: 'ANDROID-1' })));
+    sender.emit('data', Buffer.from(CHAT('switched', { sender: 'ANDROID-2' })));
+    expect(inbound.map((m) => m.text)).toEqual(['first']);
+    warn.mockRestore();
+  });
+
+  it("uses the callsign from the connection's own report over the one in the message", () => {
+    const manager = new TakServerManager();
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const sender = connect(manager);
+    const other = connect(manager);
+    sender.emit('data', Buffer.from(SELF('ANDROID-1', 'GHOST')));
+    sender.emit('data', Buffer.from(CHAT('hello', { callsign: ' senderCallsign="COMMAND"' })));
+    expect(inbound[0]?.senderCallsign).toBe('GHOST');
+    expect(String(vi.mocked(other.write).mock.calls[0]?.[0])).toContain('senderCallsign="GHOST"');
+  });
 
   it('hands a client message to the renderer and passes it on to the other clients only', () => {
     const manager = new TakServerManager();
