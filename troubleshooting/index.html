@@ -2652,6 +2652,8 @@
       
         
       
+        
+      
     
     
     
@@ -3057,6 +3059,34 @@
     
   
     Offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/live-packet-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live packet map
   
 
     
@@ -5267,7 +5297,7 @@
 <p><strong>Cause</strong>: Signal strength is only available for <strong>direct (0-hop) RF</strong> neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.</p>
 <p><strong>Fix</strong>: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.</p>
 <h3 id="map-tab-without-internet-offline--no-wan">Map tab without internet (offline / no WAN)<a class="headerlink" href="#map-tab-without-internet-offline--no-wan" title="Permanent link">&para;</a></h3>
-<p><strong>Basemap tiles:</strong> The map background uses <strong>OpenStreetMap</strong> by default (or <strong>Carto Dark</strong> if selected). On the Map tab, use the <strong>Layers</strong> control under the <strong>online/stale/offline</strong> status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The <code>TileLayer</code> is defined in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx"><code>MapPanel.tsx</code></a>. Tiles are served through the privileged <strong><code>mesh-tiles:</code></strong> protocol and stored under the app <strong>userData</strong> <code>tile-cache/</code> directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use <strong>Layers → Offline maps → Download current view</strong> while online to pre-fetch a region (estimate + confirm; a single job is capped at about <strong>half</strong> the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional <strong>Auto-cache</strong> downloads the current view after a short settle when the viewport key changes. On high-DPI displays, <strong>Carto Dark</strong> region downloads may fetch <code>@2x</code> tiles. <strong>Clear tile cache</strong> frees disk. <strong>Without internet access, uncached areas look blank</strong>; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Developer reference: <a href="../development/offline-maps/"><code>docs/development/offline-maps.md</code></a>.</p>
+<p><strong>Basemap tiles:</strong> The map background uses <strong>OpenStreetMap</strong> by default, with a <strong>Dark (OpenStreetMap)</strong> option styled locally without an API key. Use <strong>Layers</strong> under the status counts to switch basemaps and toggle overlays. Tiles are served through the privileged <strong><code>mesh-tiles:</code></strong> protocol and viewed tiles are cached automatically under the app <strong>userData</strong> <code>tile-cache/</code> directory (~1 GiB LRU). OpenStreetMap permits normal viewport caching but prohibits prefetching, so region downloads and <strong>Auto-cache</strong> are available only with <strong>USGS Topo</strong> selected. For USGS, <strong>Download current view</strong> estimates and confirms a region; downloads pause on a dropped connection and resume after ~60s stable online. <strong>Clear tile cache</strong> frees disk. <strong>Without internet, uncached areas look blank</strong>; cached tiles and local mesh overlays still render. Older CARTO dark tiles are kept on disk but are not displayed by the new dark source; view an area online once to cache its replacement. Developer reference: <a href="../development/offline-maps/"><code>docs/development/offline-maps.md</code></a>.</p>
 <p><strong>Overlays:</strong> <strong>Node markers, polylines, position trails, and other vector layers</strong> are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still <strong>render on top of a missing or partial basemap</strong>.</p>
 <p><strong>Your position offline:</strong> Use <strong>device GPS</strong> when available, <strong>Fixed Position</strong> on the <strong>Radio</strong> tab, or <strong>static coordinates</strong> in app/GPS settings. The IP-geolocation fallback returns immediately with code <code>OFFLINE</code> when there is no WAN. See <strong>GPS "Location unavailable" or stuck on the map</strong> above. Positions heard over the mesh do not require internet.</p>
 <p><strong>USGS Topo blank offline:</strong> <strong>USGS Topo</strong> covers the <strong>United States only</strong> — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (<code>basemap.nationalmap.gov</code>); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before <strong>Download current view</strong>). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See <a href="../development/offline-maps/">offline-maps.md</a>.</p>
@@ -5390,7 +5420,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 18:33:06 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 18:38:59 UTC">October 11, 2026</span>
   </span>
 
     

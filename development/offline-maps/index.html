@@ -16,7 +16,7 @@
         <link rel="prev" href="../mecp/">
       
       
-        <link rel="next" href="../settings-search/">
+        <link rel="next" href="../live-packet-map/">
       
       
         
@@ -1533,6 +1533,8 @@
       
         
       
+        
+      
     
     
     
@@ -2052,6 +2054,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../live-packet-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live packet map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../settings-search/" class="md-nav__link">
         
   
@@ -2381,11 +2411,13 @@
 </table>
 <h2 id="behavior-invariants">Behavior invariants<a class="headerlink" href="#behavior-invariants" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Cache-on-view:</strong> online <code>mesh-tiles:</code> misses fetch OSM/Carto with timeout, then <code>putCachedTile</code>. Offline miss → 404 (blank tile).</li>
-<li><strong>Region download:</strong> estimate → confirm → job with concurrency; pauses when <code>net.isOnline()</code> is false; resumes after ~60s stable online. Cancel combines job abort with per-tile fetch timeout (<code>AbortSignal.any</code>).</li>
+<li><strong>Cache-on-view:</strong> online <code>mesh-tiles:</code> misses fetch OSM/USGS with timeout, then <code>putCachedTile</code>. Offline miss → 404 (blank tile).</li>
+<li><strong>Region download:</strong> USGS Topo only; OpenStreetMap standard tiles prohibit bulk download and prefetch, so both <code>osm</code> and <code>dark</code> disable download/auto-cache controls and the main-process downloader rejects requests before starting a job. For permitted sources: estimate → confirm → job with concurrency; pauses when <code>net.isOnline()</code> is false; resumes after ~60s stable online. Cancel combines job abort with per-tile fetch timeout (<code>AbortSignal.any</code>).</li>
 <li><strong>Basemaps:</strong> allowlist is <code>osm</code>, <code>dark</code>, <code>usgs-topo</code> (<code>OFFLINE_MAP_BASEMAP_IDS</code>); unknown ids are rejected by the protocol, cache, and IPC. Attribution strings live in <code>BASEMAP_ATTRIBUTIONS</code>.</li>
 <li><strong>USGS topo:</strong> remote is the National Map ArcGIS <code>USGSTopo/MapServer/tile/{z}/{y}/{x}</code> (row before column — <code>buildRemoteTileUrl</code> swaps; <code>mesh-tiles:</code> URLs stay <code>{z}/{x}/{y}</code>). US coverage only; cached tiles stop at z16 (<code>USGS_TOPO_MAX_NATIVE_ZOOM</code> → Leaflet <code>maxNativeZoom</code>), so region downloads above z16 count as failed tiles. Tiles are JPEG stored under a <code>.png</code> cache filename (Chromium sniffs image bytes). No retina variant.</li>
-<li><strong>Retina:</strong> CARTO dark <code>@2x</code> only when the renderer passes <code>retina: true</code> (<code>devicePixelRatio &gt; 1</code>). OSM ignores retina. Cache keys include <code>@2x</code> filename when set.</li>
+<li><strong>Dark OpenStreetMap:</strong> <code>dark</code> uses the canonical <code>https://tile.openstreetmap.org/{z}/{x}/{y}.png</code> raster source with a tile-only CSS filter (<code>mesh-basemap-dark</code>). Labels stay in the raster tiles; markers, trails, attribution, and controls are not filtered. No API key or extra map engine is needed. Normal viewport caching is retained. See the <a href="https://operations.osmfoundation.org/policies/tiles/">OSM tile usage policy</a>.</li>
+<li><strong>Source changes:</strong> the dark URL includes <code>?source=osm-v1</code> to bypass Chromium's old CARTO image cache. Dark disk tiles live under <code>dark/osm-v1/</code>, so cached CARTO key-error images cannot be reused. Existing files and saved-region metadata are retained and remain subject to the normal cache limit. Existing dark regions need to be viewed online to fill the replacement source.</li>
+<li><strong>Retina:</strong> current sources have no <code>@2x</code> variant. Legacy retina URLs remain parseable, but new UI requests use standard tiles.</li>
 <li><strong>Caps:</strong> single-job estimate must stay ≤ <code>OFFLINE_MAP_MAX_ESTIMATE_BYTES</code> (= 50% of <code>TILE_CACHE_MAX_BYTES</code>, ~1 GiB LRU) and ≤ <code>OFFLINE_MAP_MAX_TILES</code> so a completed region is not immediately LRU-evicted.</li>
 <li><strong>Manifest:</strong> atomic write (temp + rename); serialized <code>mutateManifest</code>; in-memory byte/source counts (single-flight <code>ensureStats</code>); full tree scan only when over budget for eviction (shared in-flight pass down to ~90% low-water); debounced source-stat persist.</li>
 <li><strong>IPC validation:</strong> finite lat/lon (lat ∈ [-90,90], |lon| ≤ 360), finite zooms; reject inverted north/south.</li>
@@ -2414,7 +2446,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 6, 2026 18:23:55 UTC">October 6, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 18:38:59 UTC">October 11, 2026</span>
   </span>
 
     
