@@ -66,7 +66,11 @@ export interface ReticulumProxyPathOptions {
   allowFactoryReset?: boolean;
   /** Dedicated voice, games, RNCP, and Nomad handlers already authorized the route. */
   allowDedicatedRoutes?: boolean;
+  /** HTTP method; read-only status routes (e.g. rncp listener GET) are not picker-gated. */
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
 }
+
+const RNCP_LISTENER_STATUS_API_PATH = '/api/v1/rncp/listener';
 
 /**
  * Decode once, drop the fragment, and separate the query.
@@ -118,7 +122,7 @@ function pathnameForProxyChecks(path: string): string {
   return url.pathname;
 }
 
-function assertDedicatedProxyRoute(path: string): void {
+function assertDedicatedProxyRoute(path: string, method: string | undefined): void {
   if (path === VOICE_AUDIO_API_PATH) {
     throw new Error('voice PCM ingest requires reticulum:voiceSendAudio');
   }
@@ -128,7 +132,10 @@ function assertDedicatedProxyRoute(path: string): void {
   if (isGamesApiPath(path)) {
     throw new Error('LRGP games require reticulum:games* IPC channels');
   }
-  if (isRncpPickerGatedApiPath(path)) {
+  if (
+    isRncpPickerGatedApiPath(path) &&
+    !(method === 'GET' && path === RNCP_LISTENER_STATUS_API_PATH)
+  ) {
     throw new Error(
       'rncp send/fetch/listener changes require reticulum:rncpSend/rncpFetch/setRncpListener (picker-backed)',
     );
@@ -169,6 +176,6 @@ export function assertReticulumProxyPath(
       'Reticulum factory reset requires electronAPI.reticulum.factoryReset (not generic proxy)',
     );
   }
-  if (!opts?.allowDedicatedRoutes) assertDedicatedProxyRoute(path);
+  if (!opts?.allowDedicatedRoutes) assertDedicatedProxyRoute(path, opts?.method);
   return `${path}${query}`;
 }
