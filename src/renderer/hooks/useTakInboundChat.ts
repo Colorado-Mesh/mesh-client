@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { enqueueTakChatRelay, listTakSendRooms } from '../lib/tak/takInboundChat';
@@ -23,11 +23,19 @@ export function useTakInboundChat(): void {
   const sinkActive = useTakSinkStore((s) => s.active);
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
   const identities = useIdentityStore((s) => s.identities);
+  // The stores change for many reasons that leave the room list alone. Keying the effect on the
+  // list's contents sends main one update per real change, well inside its rate limit. Room names
+  // hold no control characters, so a newline cannot occur inside one.
+  const roomsKey = useMemo(
+    () => listTakSendRooms(identities, relayPrefs).join('\n'),
+    [relayPrefs, identities],
+  );
   useEffect(() => {
     // Main keeps the list only while a sink exists, so it is sent again whenever one starts.
     if (!sinkActive) return;
-    window.electronAPI.tak.setChatSendRooms(listTakSendRooms()).catch((e: unknown) => {
+    const rooms = roomsKey ? roomsKey.split('\n') : [];
+    window.electronAPI.tak.setChatSendRooms(rooms).catch((e: unknown) => {
       console.warn('[TakInboundChat] setChatSendRooms failed ' + errLikeToLogString(e));
     });
-  }, [sinkActive, relayPrefs, identities]);
+  }, [sinkActive, roomsKey]);
 }

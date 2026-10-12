@@ -1,7 +1,11 @@
 import type { TAKInboundChat } from '@/shared/tak-types';
 
-import { useIdentityStore } from '../../stores/identityStore';
-import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
+import { type IdentityRecord, useIdentityStore } from '../../stores/identityStore';
+import {
+  getTakRelayPrefs,
+  type TakRelayIdentityPrefs,
+  useTakRelayPrefsStore,
+} from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { IdentityId } from '../types';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
@@ -71,13 +75,21 @@ export function findTakSendTargets(room: string): TakSendTarget[] {
   return targets;
 }
 
-/** Every room at least one identity lets TAK clients send to, sorted, without repeats. */
-export function listTakSendRooms(): string[] {
+/**
+ * Every room at least one loaded identity lets TAK clients send to, sorted, without repeats.
+ * Reads the stores unless given their state.
+ */
+export function listTakSendRooms(
+  identities: Record<IdentityId, IdentityRecord> = useIdentityStore.getState().identities,
+  prefsByIdentity: Record<IdentityId, TakRelayIdentityPrefs> = useTakRelayPrefsStore.getState()
+    .byIdentity,
+): string[] {
   const rooms = new Set<string>();
-  for (const identity of Object.values(useIdentityStore.getState().identities)) {
+  for (const identity of Object.values(identities)) {
     const protocol = identity.protocol.type;
     if (protocol !== 'meshtastic' && protocol !== 'meshcore') continue;
-    const prefs = getTakRelayPrefs(identity.id);
+    const prefs = prefsByIdentity[identity.id] as TakRelayIdentityPrefs | undefined;
+    if (!prefs) continue;
     for (const channelIndex of prefs.chatSendChannels) {
       const room = prefs.chatBridges[channelIndex];
       if (room) rooms.add(room);
