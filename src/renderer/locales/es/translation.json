@@ -2627,7 +2627,9 @@
       "pingFailed": "Falló el ping",
       "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo.",
       "removeContactFailed": "Eliminado localmente, pero la radio rechazó removeContact. El contacto puede reaparecer después de una actualización.",
-      "bleTimeoutGatt": "Se ha agotado el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de sidecar GATT. Vuelva a intentarlo, encienda el ciclo ble en el dispositivo o use Serial/TCP."
+      "bleTimeoutGatt": "Se ha agotado el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de sidecar GATT. Vuelva a intentarlo, encienda el ciclo ble en el dispositivo o use Serial/TCP.",
+      "radioContactMissing": "Este nodo no está en la lista de contactos de su radio, por lo que la radio no puede iniciar sesión en él. Espera a su próximo anuncio o impórtalo como contacto y vuelve a intentarlo.",
+      "radioContactTableFull": "La lista de contactos de su radio está llena, por lo que no se ha podido añadir este nodo para iniciar sesión. Elimina los contactos no utilizados e inténtalo de nuevo."
     },
     "mqttHints": {
       "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Encienda el CAD de hardware. MeshCore deja el CAD desactivado de forma predeterminada porque puede bloquear la radio durante unos 4 segundos.",
     "radioCliCadOff": "Apagar el CAD de hardware",
     "radioCliBootReasonGet": "Obtener motivo de arranque y apagado",
-    "cliQuickRadio": "Radio:"
+    "cliQuickRadio": "Radio:",
+    "cliAutoPingWaitingForCli": "Esperando que el comando CLI de otro nodo termine antes de hacer ping...",
+    "cliAutoPingBusy": "El comando CLI de otro nodo todavía se está ejecutando; inténtelo de nuevo cuando termine."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

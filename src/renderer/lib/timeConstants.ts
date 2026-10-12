@@ -101,6 +101,12 @@ export const MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS = 90_000;
 /** getContacts / setContactPath during login path sync. */
 export const MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS = 25_000;
 
+/**
+ * 0-hop repeater admin login wait after the radio's estTimeout (no timeout retry), so an
+ * unanswered login does not hold the repeater admin lane and preempt pings for minutes.
+ */
+export const MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS = 30 * MS_PER_SECOND;
+
 /** Entire loginRoom (resolve + sync + RPC) wall clock. */
 export const MESHCORE_ROOM_LOGIN_TOTAL_TIMEOUT_MS = 120_000;
 

@@ -7,6 +7,11 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import {
+  beginMeshcoreCliReplyHold,
+  endMeshcoreCliReplyHold,
+} from '../lib/meshcoreRepeaterRpcInFlight';
+import { MESHCORE_CLI_PREEMPT_TRACE_REASON } from '../lib/meshcoreRepeaterTracePath';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import RepeatersPanel from './RepeatersPanel';
@@ -783,6 +788,74 @@ describe('RepeatersPanel', () => {
         'error',
       );
     });
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
+  it('waits for another CLI reply hold to clear before auto-pinging', async () => {
+    const multiHop = { ...repeater, hops_away: 1 };
+    const onPing = vi.fn().mockResolvedValue(true);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    beginMeshcoreCliReplyHold();
+    try {
+      render(
+        <RepeatersPanel
+          {...makeBaseProps()}
+          nodes={new Map([[multiHop.node_id, multiHop]])}
+          onPing={onPing}
+          onSendCliCommand={onSendCliCommand}
+        />,
+      );
+
+      await chooseRowAction(userEvent, 'CLI interface');
+      await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith(
+          "Waiting for another node's CLI command to finish before Ping…",
+          'info',
+        );
+      });
+      expect(onPing).not.toHaveBeenCalled();
+    } finally {
+      endMeshcoreCliReplyHold();
+    }
+
+    await waitFor(() => {
+      expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
+    });
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
+      'error',
+    );
+  });
+
+  it('reports a busy CLI instead of asking for manual Ping when the trace is CLI-preempted', async () => {
+    const multiHop = { ...repeater, hops_away: 1 };
+    const onPing = vi.fn().mockRejectedValue(new Error(MESHCORE_CLI_PREEMPT_TRACE_REASON));
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        "Another node's CLI command is still running; try again when it finishes.",
+        'error',
+      );
+    });
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
+      'error',
+    );
     expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 

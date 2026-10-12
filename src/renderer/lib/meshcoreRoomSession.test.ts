@@ -663,6 +663,27 @@ describe('meshcoreRoomSession', () => {
     expect(mockRunMeshcoreRoomLogin).toHaveBeenCalled();
   });
 
+  it('meshcoreTryRemoteServerLogin for Room forwards hopsAway including zero', async () => {
+    meshcoreClearAllRoomSessions();
+    mockRunMeshcoreRoomLogin.mockResolvedValue({ permissions: 3 });
+    const { setMeshcoreRoomCredential } = await import('./meshcoreRoomCredentialStorage');
+    await setMeshcoreRoomCredential(68, { adminPassword: 'admin' });
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      sendToRadioFrame: vi.fn(),
+    };
+    const pubKey = new Uint8Array(32);
+    await meshcoreTryRemoteServerLogin(conn, 68, pubKey, 'Room', undefined, { hopsAway: 0 });
+    expect(mockRunMeshcoreRoomLogin).toHaveBeenCalledWith(
+      conn,
+      pubKey,
+      'admin',
+      expect.objectContaining({ hopsAway: 0 }),
+    );
+  });
+
   it('meshcoreTryRemoteServerLogin for Room skips login when session already exists', async () => {
     meshcoreClearAllRoomSessions();
     meshcoreApplyRoomSession(67, {

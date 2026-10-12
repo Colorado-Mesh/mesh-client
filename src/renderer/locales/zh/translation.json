@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping失败",
       "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。",
       "removeContactFailed": "已在本地删除，但电台拒绝了removeContact。刷新后联系人可能会重新出现。",
-      "bleTimeoutGatt": "通过Sidecar GATT打开MeshCore时蓝牙连接超时。重试，重启设备上的BLE电源，或使用串行/TCP。"
+      "bleTimeoutGatt": "通过Sidecar GATT打开MeshCore时蓝牙连接超时。重试，重启设备上的BLE电源，或使用串行/TCP。",
+      "radioContactMissing": "此节点不在您的收音机的联系人列表中，因此收音机无法登录。等待下一个通告或将其导入为联系人，然后重试。",
+      "radioContactTableFull": "您的收音机的联系人列表已满，因此无法添加此节点进行登录。删除未使用的联系人，然后重试。"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "打开硬件CAD。MeshCore默认情况下会关闭CAD ，因为它可以锁定收音机约4秒钟。",
     "radioCliCadOff": "关闭硬件CAD",
     "radioCliBootReasonGet": "获取启动和关闭原因",
-    "cliQuickRadio": "广播："
+    "cliQuickRadio": "广播：",
+    "cliAutoPingWaitingForCli": "正在等待另一个节点的CLI命令在Ping之前完成…",
+    "cliAutoPingBusy": "另一个节点的CLI命令仍在运行；完成后重试。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

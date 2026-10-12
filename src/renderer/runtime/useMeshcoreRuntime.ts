@@ -305,6 +305,7 @@ import {
 } from '../lib/meshcoreRepeaterRpcInFlight';
 import {
   assertMeshcoreRepeaterLoginOk,
+  meshcoreRepeaterLoginTimeoutPolicy,
   meshcoreRepeaterTryLoginWithPassword,
 } from '../lib/meshcoreRepeaterSession';
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
@@ -341,6 +342,7 @@ import {
   setMeshcoreRoomCredential,
 } from '../lib/meshcoreRoomCredentialStorage';
 import {
+  addMeshcoreNodeContactToRadio,
   resetMeshcoreRoomCompanionSyncSinceForCatchUp,
   syncMeshcoreRoomContactPathBeforeLogin,
 } from '../lib/meshcoreRoomLoginPathSync';
@@ -5603,6 +5605,8 @@ export function useMeshcoreRuntime() {
             });
             return true;
           } catch (e: unknown) {
+            // Callers (Repeaters panel CLI auto-ping) distinguish a busy CLI from a failed route.
+            if (meshcoreTraceCancelledForCliPreempt(e)) throw e;
             const failedHops = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
             if ((failedHops ?? 0) >= 1) {
               outPathMapRef.current.delete(nodeId);
@@ -5763,6 +5767,26 @@ export function useMeshcoreRuntime() {
     [bumpMeshcoreNodeLastHeardFromRpc, ensureNodePubKey, resolveMeshcoreConn],
   );
 
+  /** Repeater login options: 0-hop wait policy and re-add on SendLogin ERR_CODE_NOT_FOUND. */
+  const makeRepeaterLoginOpts = useCallback(
+    (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
+      if (!node) return undefined;
+      return {
+        hopsAway: node.hops_away,
+        restoreRadioContact: async () => {
+          try {
+            await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
+          } catch (e: unknown) {
+            maybeRequestMeshcoreAutoOffloadForError(e instanceof Error ? e.cause : e);
+            throw e;
+          }
+        },
+      };
+    },
+    [],
+  );
+
   const requestTelemetry = useCallback(
     async (nodeId: number, opts?: { timeoutMs?: number }) => {
       setMeshcoreRepeaterRpcPending((prev) =>
@@ -5806,6 +5830,7 @@ export function useMeshcoreRuntime() {
               pubKey,
               getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
               repeaterRemoteRpcRef.current,
+              makeRepeaterLoginOpts(conn, nodeId, pubKey),
             );
             const raw = await runMeshcoreRepeaterTelemetryRequest(
               conn,
@@ -5923,7 +5948,7 @@ export function useMeshcoreRuntime() {
         );
       }
     },
-    [ensureNodePubKey, resolveMeshcoreConn],
+    [ensureNodePubKey, makeRepeaterLoginOpts, resolveMeshcoreConn],
   );
 
   requestTelemetryMeshCoreRef.current = requestTelemetry;
@@ -6188,6 +6213,9 @@ export function useMeshcoreRuntime() {
                     adminPw,
                     {
                       runSerialized: repeaterRemoteRpcRef.current,
+                      ...meshcoreRepeaterLoginTimeoutPolicy(
+                        getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away,
+                      ),
                     },
                   );
                   assertMeshcoreRepeaterLoginOk(aclLogin);
@@ -6198,6 +6226,7 @@ export function useMeshcoreRuntime() {
                     pubKey,
                     hwModelForCli,
                     repeaterRemoteRpcRef.current,
+                    makeRepeaterLoginOpts(conn, nodeId, pubKey),
                   );
                 }
 
@@ -6374,6 +6403,7 @@ export function useMeshcoreRuntime() {
       addCliHistoryEntry,
       bumpMeshcoreNodeLastHeardFromRpc,
       ensureNodePubKey,
+      makeRepeaterLoginOpts,
       meshcoreTraceResults,
       resolveMeshcoreConn,
     ],

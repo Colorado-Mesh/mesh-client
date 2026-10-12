@@ -2,6 +2,7 @@ import { meshcoreUnpackPathLenByte } from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
+import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
 import { meshcoreContactOutPathBytesForTrace } from './meshcoreRadioContactPath';
 import { isMeshcoreTableFullError } from './meshcoreRadioErr';
 import {
@@ -197,6 +198,54 @@ function buildContactFromNode(
     advLat: lat,
     advLon: lon,
   };
+}
+
+/** meshcore.js writes `outPathLen` as a raw byte; 0xFF is firmware OUT_PATH_UNKNOWN (flood). */
+const MESHCORE_OUT_PATH_UNKNOWN = 0xff;
+
+/**
+ * Re-add a node evicted from the companion contact table so SendLogin can address it.
+ * The route is left unknown (flood); the login reply teaches the radio the path.
+ * Failure point: TABLE_FULL — thrown as `meshcore.errors.radioContactTableFull` with `cause`.
+ */
+export async function addMeshcoreNodeContactToRadio(
+  conn: MeshcoreRoomLoginPathSyncConn,
+  pubKey: Uint8Array,
+  node: Pick<MeshNode, 'long_name' | 'hw_model' | 'last_heard' | 'latitude' | 'longitude'>,
+  runSerialized?: <T>(fn: () => Promise<T>) => Promise<T>,
+): Promise<void> {
+  const addOrUpdate = conn.addOrUpdateContact;
+  if (!addOrUpdate) {
+    throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactMissing'));
+  }
+  const contact = buildContactFromNode(pubKey, node);
+  const op = () =>
+    addOrUpdate.call(
+      conn,
+      pubKey,
+      contact.type,
+      contact.flags,
+      MESHCORE_OUT_PATH_UNKNOWN,
+      new Uint8Array(64),
+      contact.advName,
+      contact.lastAdvert,
+      contact.advLat,
+      contact.advLon,
+    );
+  try {
+    await withTimeout(
+      runSerialized ? runSerialized(op) : op(),
+      MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS,
+      'meshcoreAddNodeContactToRadio',
+    );
+  } catch (e: unknown) {
+    if (isMeshcoreTableFullError(e)) {
+      throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactTableFull'), {
+        cause: e,
+      });
+    }
+    throw e;
+  }
 }
 
 /**

@@ -1,3 +1,4 @@
+import { MeshcoreRadioRejectedError } from './meshcoreRadioErr';
 import {
   MC_RESP_ERR,
   MC_RESP_SENT,
@@ -108,8 +109,14 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
       armResponseTimeout(r.estTimeout ?? 0);
     };
 
-    const onErr = (): void => {
-      fail(new Error(opts.rejectSentMessage));
+    const onErr = (response?: unknown): void => {
+      const errCode = (response as { errCode?: unknown } | undefined)?.errCode;
+      fail(
+        new MeshcoreRadioRejectedError(
+          opts.rejectSentMessage,
+          typeof errCode === 'number' ? errCode : undefined,
+        ),
+      );
     };
 
     opts.conn.on(opts.pushEvent, onPush);

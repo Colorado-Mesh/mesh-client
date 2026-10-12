@@ -1,6 +1,8 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { MESHCORE_TELEMETRY_TIMEOUT_MS } from '../hooks/meshcore/meshcoreHookPreamble';
+import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { isMeshcoreNotFoundError } from './meshcoreRadioErr';
 import { getMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStorage';
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
 import {
@@ -9,6 +11,7 @@ import {
 } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import { awaitMeshcoreRepeaterAdminRfIdle } from './meshcoreTraceRadioIdle';
+import { MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
 
 /** Minimal connection surface for repeater admin login RPC. */
 export type MeshcoreRepeaterLoginConn = MeshcoreRadioConnection;
@@ -43,6 +46,9 @@ export function meshcoreRepeaterLoginErrorIsAuthFailure(error: unknown): boolean
 /** Throw when a saved/ephemeral password login was attempted but failed (do not continue RPC). */
 export function assertMeshcoreRepeaterLoginOk(result: MeshcoreRepeaterTryLoginResult): void {
   if (!result.attempted || result.ok) return;
+  if (isMeshcoreNotFoundError(result.error)) {
+    throw new Error(serializeMeshcoreUserMessage('meshcore.errors.radioContactMissing'));
+  }
   if (meshcoreRepeaterLoginErrorIsAuthFailure(result.error)) {
     throw new Error('authentication failed');
   }
@@ -86,16 +92,37 @@ export async function meshcoreRepeaterTryLogin(
   nodeId: number,
   runSerialized?: MeshcoreRepeaterRunSerialized,
   extraTimeoutMs: number = MESHCORE_TELEMETRY_TIMEOUT_MS,
+  loginOpts?: Pick<MeshcoreRepeaterLoginOptions, 'restoreRadioContact' | 'retryOnTimeout'>,
 ): Promise<MeshcoreRepeaterTryLoginResult> {
   const { password, fromPersisted } = resolveRepeaterPassword(nodeId);
   if (!password) {
     return { attempted: false, ok: true, fromPersisted: false };
   }
   return meshcoreRepeaterTryLoginWithPassword(conn, pubKey, password, {
+    ...loginOpts,
     fromPersisted,
     runSerialized,
     extraTimeoutMs,
   });
+}
+
+export interface MeshcoreRepeaterLoginOptions {
+  fromPersisted?: boolean;
+  runSerialized?: MeshcoreRepeaterRunSerialized;
+  extraTimeoutMs?: number;
+  /** Re-add the node to the companion contact table when SendLogin reports not found. */
+  restoreRadioContact?: () => Promise<void>;
+  /** Resend once after a reply timeout (default true). */
+  retryOnTimeout?: boolean;
+}
+
+/** 0-hop logins use a short reply wait with no resend; others keep the default policy. */
+export function meshcoreRepeaterLoginTimeoutPolicy(
+  hopsAway: number | null | undefined,
+): Pick<MeshcoreRepeaterLoginOptions, 'extraTimeoutMs' | 'retryOnTimeout'> {
+  return hopsAway === 0
+    ? { extraTimeoutMs: MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS, retryOnTimeout: false }
+    : {};
 }
 
 /**
@@ -106,11 +133,7 @@ export async function meshcoreRepeaterTryLoginWithPassword(
   conn: MeshcoreRepeaterLoginConn,
   pubKey: Uint8Array,
   password: string,
-  opts?: {
-    fromPersisted?: boolean;
-    runSerialized?: MeshcoreRepeaterRunSerialized;
-    extraTimeoutMs?: number;
-  },
+  opts?: MeshcoreRepeaterLoginOptions,
 ): Promise<MeshcoreRepeaterTryLoginResult> {
   const trimmed = password.trim();
   const fromPersisted = opts?.fromPersisted ?? false;
@@ -133,8 +156,25 @@ export async function meshcoreRepeaterTryLoginWithPassword(
     await attempt();
     return { attempted: true, ok: true, fromPersisted };
   } catch (e) {
+    const restoreRadioContact = opts?.restoreRadioContact;
+    if (restoreRadioContact && isMeshcoreNotFoundError(e)) {
+      console.warn(
+        '[meshcoreRepeaterSession] node missing from radio contacts; re-adding for login',
+      );
+      try {
+        await restoreRadioContact();
+        await attempt();
+        return { attempted: true, ok: true, fromPersisted };
+      } catch (restoreErr) {
+        console.warn(
+          '[meshcoreRepeaterSession] repeater login after contact restore failed ' +
+            errLikeToLogString(restoreErr),
+        );
+        return { attempted: true, ok: false, fromPersisted, error: restoreErr };
+      }
+    }
     const msg = errLikeToLogString(e).toLowerCase();
-    if (msg.includes('timeout') || msg.includes('timed out')) {
+    if (opts?.retryOnTimeout !== false && (msg.includes('timeout') || msg.includes('timed out'))) {
       try {
         await attempt();
         return { attempted: true, ok: true, fromPersisted };

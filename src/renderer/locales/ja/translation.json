@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping 失敗",
       "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。",
       "removeContactFailed": "ローカルに削除されましたが、無線がremoveContactを拒否しました。更新後に連絡先が再表示される場合があります。",
-      "bleTimeoutGatt": "サイドカー GATT 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。"
+      "bleTimeoutGatt": "サイドカー GATT 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "radioContactMissing": "このノードはラジオの連絡先リストにないため、ラジオはログインできません。次の advert を待つか、連絡先としてインポートしてから、もう一度お試しください。",
+      "radioContactTableFull": "ラジオの連絡先リストがいっぱいなので、このノードをログイン用に追加できませんでした。未使用の連絡先を削除してから、もう一度お試しください。"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "ハードウェアCADをオンにします。MeshCoreは、ラジオを約4秒間ロックできるため、デフォルトでCADをオフにします。",
     "radioCliCadOff": "ハードウェアCADをオフにする",
     "radioCliBootReasonGet": "起動とシャットダウンの理由を取得する",
-    "cliQuickRadio": "通信機"
+    "cliQuickRadio": "通信機",
+    "cliAutoPingWaitingForCli": "別のノードのCLIコマンドが終了するのを待ってからPingしています...",
+    "cliAutoPingBusy": "別のノードのCLIコマンドはまだ実行中です。終了したらもう一度やり直してください。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

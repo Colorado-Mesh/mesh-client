@@ -2627,7 +2627,9 @@
       "pingFailed": "Falha no ping",
       "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo.",
       "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização.",
-      "bleTimeoutGatt": "A conexão Bluetooth expirou ao abrir o MeshCore no sidecar GATT. Tente novamente, faça o ciclo de energia BLE no dispositivo ou use Serial/TCP."
+      "bleTimeoutGatt": "A conexão Bluetooth expirou ao abrir o MeshCore no sidecar GATT. Tente novamente, faça o ciclo de energia BLE no dispositivo ou use Serial/TCP.",
+      "radioContactMissing": "Este nó não está na lista de contatos do seu rádio, portanto, o rádio não pode fazer login nele. Aguarde o próximo anúncio ou importe-o como contato e tente novamente.",
+      "radioContactTableFull": "A lista de contatos do seu rádio está cheia, portanto, este nó não pôde ser adicionado para login. Remova os contatos não utilizados e tente novamente."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Ligue o CAD de hardware. O MeshCore deixa o CAD desligado por padrão porque pode bloquear o rádio por cerca de 4 segundos.",
     "radioCliCadOff": "Desativar o CAD de hardware",
     "radioCliBootReasonGet": "Obter motivo de inicialização e desligamento",
-    "cliQuickRadio": "Rádio:"
+    "cliQuickRadio": "Rádio:",
+    "cliAutoPingWaitingForCli": "Aguardando o comando CLI de outro nó terminar antes do Ping...",
+    "cliAutoPingBusy": "O comando CLI de outro nó ainda está em execução; tente novamente quando terminar."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
