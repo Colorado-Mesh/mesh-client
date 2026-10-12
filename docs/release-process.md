@@ -116,7 +116,7 @@ Configure secrets under the named **Settings → Environments** boundary, not at
 
 | Environment              | Secret(s)                                                                                  | Allowed ref / approval                                               |
 | ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; required maintainer approval                     |
+| **`release`**            | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` | Protected `v*` tag; no reviewer (the approved cut is the gate)       |
 | **`release-cut`**        | `RELEASE_CUT_TOKEN`                                                                        | `main`; required maintainer approval for release cuts                |
 | **`license-automation`** | Optional `LICENSE_PR_TOKEN`                                                                | `main`; license-document maintenance only, with no release authority |
 | **`release-repair`**     | No custom secret; the workflow uses its job-scoped `GITHUB_TOKEN`                          | `main`; required maintainer approval                                 |

@@ -388,7 +388,7 @@ gh api "repos/Colorado-Mesh/mesh-client/rulesets/${RULESET_ID}" \
   --input .github/rulesets/release-tags.json
 ```
 
-Privileged workflows are additionally restricted by protected environments: `release` accepts `v*` tags and requires maintainer approval; `release-cut` accepts `main`, requires maintainer approval, and contains `RELEASE_CUT_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. Release credentials live only in these environments; none are repository-scoped.
+Privileged workflows are additionally restricted by protected environments: `release` accepts only protected `v*` tags (the release tags ruleset limits tag creation to admins, so the approved cut is the human gate); `release-cut` accepts `main`, requires maintainer approval, and contains `RELEASE_CUT_TOKEN`; `release-repair` accepts `main` and requires maintainer approval. Release credentials live only in these environments; none are repository-scoped.
 
 ---
 
