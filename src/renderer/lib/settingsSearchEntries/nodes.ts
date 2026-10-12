@@ -6,7 +6,7 @@ import type {
 
 // App.tsx renders ReticulumPeerListPanel instead of NodeListPanel when this flag is set.
 const hasNodeList = (ctx: SettingsSearchContext) => !ctx.capabilities.hasReticulumPeersList;
-// NodeListPanel shows the contact import, refresh, advert and offload controls only with this flag.
+// NodeListPanel shows the contact import, refresh and offload controls only with this flag.
 const hasContactTools = (ctx: SettingsSearchContext) => ctx.capabilities.hasContactImportExport;
 const hasContactGroups = (ctx: SettingsSearchContext) =>
   hasNodeList(ctx) && ctx.capabilities.hasUserManagedContactGroups;
@@ -53,14 +53,6 @@ const nodesEntries: readonly SettingSearchEntry[] = [
     visible: hasContactTools,
   },
   {
-    id: 'nodes.contacts.floodAdvert',
-    slot: 'Nodes',
-    labelKey: 'nodeListPanel.sendFloodAdvert',
-    sectionKey: CONTACTS,
-    keywords: ['advert', 'advertise', 'announce', 'flood'],
-    visible: hasContactTools,
-  },
-  {
     id: 'nodes.contacts.import',
     slot: 'Nodes',
     labelKey: 'nodeListPanel.buttonImportContacts',
@@ -104,10 +96,7 @@ export const nodesSurface: SettingsSearchSurface = {
     'nodeListPanel.search*Aria': 'accessible name of the indexed search field',
     'nodeListPanel.manageGroups': 'tooltip of the indexed manage groups button',
     'nodeListPanel.buttonRefresh': 'visible text of the indexed refresh contacts button',
-    'nodeListPanel.buttonFloodAdvert': 'visible text of the indexed flood advert button',
-    'nodeListPanel.sendFloodAdvertUnavailable': 'tooltip of the indexed flood advert button',
     'nodeListPanel.contactsRefreshed': 'success toast, not a control',
-    'nodeListPanel.floodAdvertSent': 'success toast, not a control',
     'nodeListPanel.meshcoreImportedHint': 'help text under the contact filters',
     'nodeListPanel.meshcoreContactType': 'column tooltip',
     'nodeListPanel.favoritesColumn': 'column tooltip',

@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
     "refreshFailed": "Échec de l'actualisation : {{message}}",
-    "floodAdvertSent": "flood advert envoyée",
-    "advertFailed": "Échec de l'annonce : {{message}}",
     "importFailed": "Échec de l'importation : {{message}}",
     "importResultSuccess_one": "Contact {{count}} importé.",
     "importResultSuccess_other": "Contacts {{count}} importés.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Aucun nœud ne correspond à votre recherche.",
     "emptyNoNodesYet": "Aucun nœud n'a encore été découvert. Connectez-vous à un appareil pour voir le réseau maillé.",
     "buttonRefresh": "Renouvellement",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Contacts",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Répéteur",
@@ -6981,7 +6978,16 @@
     "scope": "Périmètre Flood par défaut",
     "defaultScope": "Nom de la région (vide pour unscoped)",
     "scopeSummary": "Région des paquets Flood émis par ce nœud",
-    "scopeHint": "Firmware v1.15+ : saisissez une région publique comme #us-tn-tri ; laissez vide pour ne pas limiter la région. Ce réglage concerne les annonces Flood et la livraison des messages de salle par Flood. Les routes directes et les droits d’accès à la salle sont indépendants. Les périmètres de la radio Companion et de ses canaux sont réglés séparément."
+    "scopeHint": "Firmware v1.15+ : saisissez une région publique comme #us-tn-tri ; laissez vide pour ne pas limiter la région. Ce réglage concerne les annonces Flood et la livraison des messages de salle par Flood. Les routes directes et les droits d’accès à la salle sont indépendants. Les périmètres de la radio Companion et de ses canaux sont réglés séparément.",
+    "regionsAndScope": "Régions et portée du flood",
+    "regionsSummary": "Régions configurées, autorisations de retransmission et portée sortante",
+    "configuredRegions": "Régions configurées",
+    "homeRegion": "Région d’origine",
+    "floodAllowed": "Flood autorisé",
+    "floodDenied": "Flood bloqué",
+    "regionsHint": "Lu depuis ce répéteur. * désigne le trafic sans portée régionale. Modifiez les règles de région dans la CLI.",
+    "regionsUnavailable": "Ce micrologiciel ne permet pas de lire la liste des régions à distance. Consultez-la via une connexion série.",
+    "regionsTruncated": "Le micrologiciel a limité cette réponse ; d’autres régions sont peut-être configurées. Utilisez une connexion série pour consulter la liste complète."
   },
   "chatTranslation": {
     "translate": "Traducir mensaje",

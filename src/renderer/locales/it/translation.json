@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contatti aggiornati.",
     "refreshFailed": "Aggiornamento non riuscito: {{message}}",
-    "floodAdvertSent": "Flood advert inviato",
-    "advertFailed": "Annuncio non riuscito: {{message}}",
     "importFailed": "Importazione non riuscita: {{message}}",
     "importResultSuccess_one": "Contatto {{count}} importato.",
     "importResultSuccess_other": "Contatti {{count}} importati.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Nessun nodo corrisponde alla tua ricerca.",
     "emptyNoNodesYet": "Nessun nodo ancora scoperto. Connettiti a un dispositivo per vedere la rete mesh.",
     "buttonRefresh": "Aggiorna",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importa contatti",
     "meshcoreTypeChat": "Chiacchierata",
     "meshcoreTypeRepeater": "Ripetitore",
@@ -6981,7 +6978,16 @@
     "scope": "Ambito Flood predefinito",
     "defaultScope": "Nome della regione (vuoto per senza ambito)",
     "scopeSummary": "Regione per i pacchetti Flood in uscita da questo nodo",
-    "scopeHint": "Firmware v1.15+: inserisci una regione pubblica come #us-tn-tri; lascia vuoto per non limitare la regione. Vale per gli annunci Flood e la consegna dei messaggi della sala tramite Flood. I percorsi diretti e i permessi della sala sono indipendenti. Gli ambiti della radio Companion e dei suoi canali si configurano separatamente."
+    "scopeHint": "Firmware v1.15+: inserisci una regione pubblica come #us-tn-tri; lascia vuoto per non limitare la regione. Vale per gli annunci Flood e la consegna dei messaggi della sala tramite Flood. I percorsi diretti e i permessi della sala sono indipendenti. Gli ambiti della radio Companion e dei suoi canali si configurano separatamente.",
+    "regionsAndScope": "Regioni e ambito flood",
+    "regionsSummary": "Regioni configurate, permessi di inoltro e ambito in uscita",
+    "configuredRegions": "Regioni configurate",
+    "homeRegion": "Regione di origine",
+    "floodAllowed": "Flood consentito",
+    "floodDenied": "Flood bloccato",
+    "regionsHint": "Letto da questo ripetitore. * indica traffico senza ambito regionale. Modifica le regole delle regioni nella CLI.",
+    "regionsUnavailable": "Questo firmware non supporta la lettura remota dell’elenco delle regioni. Controlla le regioni tramite una connessione seriale.",
+    "regionsTruncated": "Il firmware ha limitato questa risposta; potrebbero esserci altre regioni configurate. Usa una connessione seriale per vedere l’elenco completo."
   },
   "chatTranslation": {
     "translate": "Traduci messaggio",

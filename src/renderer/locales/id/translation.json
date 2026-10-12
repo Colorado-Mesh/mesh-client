@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
     "refreshFailed": "Penyegaran gagal: {{message}}",
-    "floodAdvertSent": "flood advert terkirim",
-    "advertFailed": "advert gagal: {{message}}",
     "importFailed": "Impor gagal: {{message}}",
     "importResultSuccess_one": "Kontak {{count}} yang diimpor.",
     "importResultSuccess_other": "Kontak {{count}} yang diimpor.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Tidak ada node yang cocok dengan pencarian Anda.",
     "emptyNoNodesYet": "Belum ada node yang ditemukan. Hubungkan ke perangkat untuk melihat jaringan mesh.",
     "buttonRefresh": "Menyegarkan",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Impor Kontak",
     "meshcoreTypeChat": "Mengobrol",
     "meshcoreTypeRepeater": "Pengulang",
@@ -6981,7 +6978,16 @@
     "scope": "Cakupan Flood default",
     "defaultScope": "Nama wilayah (kosong untuk dibuka)",
     "scopeSummary": "Wilayah untuk paket Flood keluar dari simpul ini",
-    "scopeHint": "Firmware v1.15+: masukkan wilayah publik seperti #us-tn-tri; kosongkan untuk tanpa batas wilayah. Berlaku untuk pengumuman Flood dan pengiriman pesan ruangan melalui Flood. Rute langsung dan akses ruangan terpisah. Radio Companion dan kanalnya memiliki pengaturan cakupan sendiri."
+    "scopeHint": "Firmware v1.15+: masukkan wilayah publik seperti #us-tn-tri; kosongkan untuk tanpa batas wilayah. Berlaku untuk pengumuman Flood dan pengiriman pesan ruangan melalui Flood. Rute langsung dan akses ruangan terpisah. Radio Companion dan kanalnya memiliki pengaturan cakupan sendiri.",
+    "regionsAndScope": "Wilayah dan cakupan flood",
+    "regionsSummary": "Wilayah terkonfigurasi, izin penerusan, dan cakupan keluar",
+    "configuredRegions": "Wilayah yang dikonfigurasi",
+    "homeRegion": "Wilayah asal",
+    "floodAllowed": "Flood diizinkan",
+    "floodDenied": "Flood diblokir",
+    "regionsHint": "Dibaca dari repeater ini. * berarti lalu lintas tanpa batasan wilayah. Edit aturan wilayah melalui CLI.",
+    "regionsUnavailable": "Firmware ini tidak mendukung pembacaan daftar wilayah dari jarak jauh. Periksa wilayah melalui koneksi serial.",
+    "regionsTruncated": "Firmware membatasi panjang balasan ini; mungkin ada wilayah lain yang sudah dikonfigurasi. Gunakan koneksi serial untuk melihat daftar lengkap."
   },
   "chatTranslation": {
     "translate": "Terjemahkan pesan",
