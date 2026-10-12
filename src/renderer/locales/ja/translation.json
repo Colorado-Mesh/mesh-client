@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
     "refreshFailed": "更新に失敗しました: {{message}}",
-    "floodAdvertSent": "フラッドadvertが送信されました",
-    "advertFailed": "advertが失敗しました: {{message}}",
     "importFailed": "インポートに失敗しました: {{message}}",
     "importResultSuccess_one": "{{count}} 連絡先をインポートしました。",
     "importResultSuccess_other": "{{count}} の連絡先をインポートしました。",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "検索に一致するノードはありません。",
     "emptyNoNodesYet": "まだノードは検出されていません。デバイスに接続してメッシュ ネットワークを表示します。",
     "buttonRefresh": "リフレッシュ",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "連絡先のインポート",
     "meshcoreTypeChat": "チャット",
     "meshcoreTypeRepeater": "リピータ",
@@ -6981,7 +6978,16 @@
     "scope": "デフォルトのフラッドスコープ",
     "defaultScope": "リージョン名（スコープなしの場合は空白）",
     "scopeSummary": "このノードが送信するFloodパケットのリージョン",
-    "scopeHint": "ファームウェアv1.15以降：#us-tn-triなどの公開リージョン名を入力します。空欄はリージョン制限なしです。FloodアドバートとFlood経由のルームメッセージ配信に適用されます。直接ルートとルームへのアクセス権は別です。コンパニオン無線機と各チャンネルのスコープは個別に設定します。"
+    "scopeHint": "ファームウェアv1.15以降：#us-tn-triなどの公開リージョン名を入力します。空欄はリージョン制限なしです。FloodアドバートとFlood経由のルームメッセージ配信に適用されます。直接ルートとルームへのアクセス権は別です。コンパニオン無線機と各チャンネルのスコープは個別に設定します。",
+    "regionsAndScope": "リージョンと Flood スコープ",
+    "regionsSummary": "設定済みリージョン、転送権限、送信スコープ",
+    "configuredRegions": "設定されたリージョン",
+    "homeRegion": "ホームリージョン",
+    "floodAllowed": "Flood 許可",
+    "floodDenied": "Flood 拒否",
+    "regionsHint": "このリピーターから読み取った設定です。* はリージョン制限のない通信を示します。リージョンのルールは CLI で編集してください。",
+    "regionsUnavailable": "このファームウェアはリージョン一覧のリモート読み取りに対応していません。シリアル接続で確認してください。",
+    "regionsTruncated": "ファームウェアの応答長制限により、ほかの設定済みリージョンが表示されていない可能性があります。完全な一覧はシリアル接続で確認してください。"
   },
   "chatTranslation": {
     "translate": "メッセージを翻訳する",

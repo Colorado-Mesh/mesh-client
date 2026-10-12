@@ -3571,8 +3571,6 @@
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
-    "floodAdvertSent": "flood advert wysłane",
-    "advertFailed": "Ogłoszenie nie powiodło się: {{message}}",
     "importFailed": "Import nie powiódł się: {{message}}",
     "importResultSuccess_one": "Zaimportowano kontakt {{count}}.",
     "importResultSuccessWithSkipped_one": "Zaimportowano kontakt {{count}}, pominięto {{skipped}}.",
@@ -3634,7 +3632,6 @@
     "emptyNoSearchMatches": "Żaden węzeł nie pasuje do Twojego wyszukiwania.",
     "emptyNoNodesYet": "Nie odkryto jeszcze żadnych węzłów. Połącz się z urządzeniem, aby zobaczyć sieć mesh.",
     "buttonRefresh": "Odświeżać",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importuj kontakty",
     "meshcoreTypeChat": "Pogawędzić",
     "meshcoreTypeRepeater": "Przekaźnik",
@@ -7095,7 +7092,16 @@
     "scope": "Domyślny zakres Flood",
     "defaultScope": "Nazwa regionu (pusta dla obszaru nieobjętego zakresem)",
     "scopeSummary": "Region dla wychodzących pakietów Flood tego węzła",
-    "scopeHint": "Firmware v1.15+: wpisz publiczną nazwę regionu, np. #us-tn-tri; puste pole oznacza brak ograniczenia regionu. Dotyczy ogłoszeń Flood i dostarczania wiadomości pokoju przez Flood. Trasy bezpośrednie i uprawnienia dostępu do pokoju są niezależne. Zakresy radia Companion i jego kanałów ustawia się osobno."
+    "scopeHint": "Firmware v1.15+: wpisz publiczną nazwę regionu, np. #us-tn-tri; puste pole oznacza brak ograniczenia regionu. Dotyczy ogłoszeń Flood i dostarczania wiadomości pokoju przez Flood. Trasy bezpośrednie i uprawnienia dostępu do pokoju są niezależne. Zakresy radia Companion i jego kanałów ustawia się osobno.",
+    "regionsAndScope": "Regiony i zakres flood",
+    "regionsSummary": "Skonfigurowane regiony, uprawnienia przekazywania i zakres ruchu wychodzącego",
+    "configuredRegions": "Skonfigurowane regiony",
+    "homeRegion": "Region macierzysty",
+    "floodAllowed": "Flood dozwolony",
+    "floodDenied": "Flood zablokowany",
+    "regionsHint": "Odczytano z tego przemiennika. * oznacza ruch bez ograniczenia regionalnego. Reguły regionów można edytować w CLI.",
+    "regionsUnavailable": "Ten firmware nie obsługuje zdalnego odczytu listy regionów. Sprawdź regiony przez połączenie szeregowe.",
+    "regionsTruncated": "Firmware ograniczył długość odpowiedzi; mogą istnieć inne skonfigurowane regiony. Pełną listę odczytasz przez połączenie szeregowe."
   },
   "chatTranslation": {
     "translate": "Translate message",

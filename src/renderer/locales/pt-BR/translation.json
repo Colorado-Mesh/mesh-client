@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
     "refreshFailed": "Falha na atualização: {{message}}",
-    "floodAdvertSent": "flood advert enviado",
-    "advertFailed": "Falha no anúncio: {{message}}",
     "importFailed": "Falha na importação: {{message}}",
     "importResultSuccess_one": "Contato {{count}} importado.",
     "importResultSuccess_other": "Contatos {{count}} importados.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Nenhum nó corresponde à sua pesquisa.",
     "emptyNoNodesYet": "Nenhum nó descoberto ainda. Conecte-se a um dispositivo para ver a rede mesh.",
     "buttonRefresh": "Atualizar",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importar contactos",
     "meshcoreTypeChat": "Bate-papo",
     "meshcoreTypeRepeater": "Repetidor",
@@ -6981,7 +6978,16 @@
     "scope": "Escopo Flood padrão",
     "defaultScope": "Nome da região (em branco para sem escopo)",
     "scopeSummary": "Região para os pacotes Flood enviados por este nó",
-    "scopeHint": "Firmware v1.15+: insira uma região pública como #us-tn-tri; deixe em branco para não limitar a região. Aplica-se aos anúncios Flood e à entrega de mensagens da sala por Flood. Rotas diretas e permissões de acesso à sala são independentes. Os escopos do rádio Companion e de seus canais são configurados separadamente."
+    "scopeHint": "Firmware v1.15+: insira uma região pública como #us-tn-tri; deixe em branco para não limitar a região. Aplica-se aos anúncios Flood e à entrega de mensagens da sala por Flood. Rotas diretas e permissões de acesso à sala são independentes. Os escopos do rádio Companion e de seus canais são configurados separadamente.",
+    "regionsAndScope": "Regiões e escopo de flood",
+    "regionsSummary": "Regiões configuradas, permissões de encaminhamento e escopo de saída",
+    "configuredRegions": "Regiões configuradas",
+    "homeRegion": "Região de origem",
+    "floodAllowed": "Flood permitido",
+    "floodDenied": "Flood bloqueado",
+    "regionsHint": "Lido deste repetidor. * indica tráfego sem escopo regional. Edite as regras de região na CLI.",
+    "regionsUnavailable": "Este firmware não permite consultar a lista de regiões remotamente. Consulte as regiões por uma conexão serial.",
+    "regionsTruncated": "O firmware limitou esta resposta; pode haver outras regiões configuradas. Use uma conexão serial para ver a lista completa."
   },
   "chatTranslation": {
     "translate": "Traduzir mensagem",

@@ -37,6 +37,10 @@ import {
   readInfraConfig,
 } from '../lib/meshcoreInfraConfig';
 import {
+  type MeshcoreRepeaterRegions,
+  readMeshcoreRepeaterRegions,
+} from '../lib/meshcoreRepeaterRegions';
+import {
   type MeshcoreRoomAclEntry,
   meshcoreRoomAclLevelLabel,
   parseMeshcoreRoomAclResponse,
@@ -213,6 +217,7 @@ function ConfigField({
 
 function ConfigSection({
   section,
+  showRegions,
   busy,
   connected,
   send,
@@ -222,6 +227,7 @@ function ConfigSection({
   run,
 }: {
   section: InfraConfigSection;
+  showRegions: boolean;
   busy: boolean;
   connected: boolean;
   send: InfraConfigSend;
@@ -236,23 +242,42 @@ function ConfigSection({
   const [edited, setEdited] = useState<InfraConfigValues>({});
   const [status, setStatus] = useState<ConfigStatus | null>(null);
   const [rebootRequired, setRebootRequired] = useState(false);
-  const title = t(SECTION_LABELS[section]);
+  const [regions, setRegions] = useState<MeshcoreRepeaterRegions | null>(null);
+  const [regionsError, setRegionsError] = useState<string | null>(null);
+  const title = t(showRegions ? 'infraConfig.regionsAndScope' : SECTION_LABELS[section]);
   const fields = INFRA_CONFIG_FIELDS[section];
   const changedCount =
     snapshot == null ? 0 : fields.filter(({ key }) => edited[key] !== snapshot.values[key]).length;
   const dirty = changedCount > 0;
   const SectionIcon = SECTION_ICONS[section];
 
+  const loadRegions = useCallback(async () => {
+    if (!showRegions || !isCurrent()) return;
+    setRegions(null);
+    setRegionsError(null);
+    try {
+      const next = await readMeshcoreRepeaterRegions(send, isCurrent);
+      if (isCurrent()) setRegions(next);
+    } catch (error) {
+      // catch-no-log-ok read errors are shown beside the list; default scope remains usable
+      if (isCurrent())
+        setRegionsError(
+          translateMeshcoreUserMessage(t, error instanceof Error ? error.message : ''),
+        );
+    }
+  }, [showRegions, send, isCurrent, t]);
+
   const load = useCallback(
     () =>
       run(section, async () => {
         setStatus({ kind: 'info', message: t('infraConfig.loading'), connectionToken });
+        let settingsRead = false;
         try {
           const next = await readInfraConfig(section, send, isCurrent);
           if (!isCurrent()) return;
           setSnapshot(next);
           setEdited(next.values);
-          setStatus(null);
+          settingsRead = true;
         } catch (error) {
           // catch-no-log-ok failure is shown inline, without logging firmware values or credentials
           if (isCurrent())
@@ -261,8 +286,10 @@ function ConfigSection({
               message: translateMeshcoreUserMessage(t, error instanceof Error ? error.message : ''),
             });
         }
+        await loadRegions();
+        if (settingsRead && isCurrent()) setStatus(null);
       }),
-    [section, send, isCurrent, run, t, connectionToken],
+    [section, send, isCurrent, run, t, connectionToken, loadRegions],
   );
 
   useEffect(() => {
@@ -306,6 +333,8 @@ function ConfigSection({
             }
           : { kind: 'success', message: t('infraConfig.saved') },
       );
+      // Setting a default can create a region or enable its flood flag on the repeater.
+      await loadRegions();
     });
 
   return (
@@ -317,7 +346,7 @@ function ConfigSection({
     >
       <SectionHeading
         title={title}
-        description={t(SECTION_DESCRIPTIONS[section])}
+        description={t(showRegions ? 'infraConfig.regionsSummary' : SECTION_DESCRIPTIONS[section])}
         icon={<SectionIcon aria-hidden size={20} />}
         badge={
           dirty ? (
@@ -333,6 +362,52 @@ function ConfigSection({
         }
       />
       <div className="border-ink-800 space-y-4 border-t px-4 py-4">
+        {showRegions && (
+          <div className="space-y-2">
+            <h3 className="text-ink-200 text-sm font-medium">
+              {t('infraConfig.configuredRegions')}
+            </h3>
+            {regions && (
+              <ul
+                aria-label={t('infraConfig.configuredRegions')}
+                className="divide-ink-800 divide-y"
+              >
+                {regions.entries.map((region, index) => (
+                  <li
+                    key={index}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs"
+                  >
+                    <span className="text-ink-200 min-w-0 wrap-anywhere">
+                      <span className="font-mono whitespace-pre">
+                        {'  '.repeat(region.depth)}
+                        {region.name}
+                      </span>
+                      {region.home && (
+                        <span className="text-muted ml-2">{t('infraConfig.homeRegion')}</span>
+                      )}
+                    </span>
+                    <span className={region.floodAllowed ? 'text-green-400' : 'text-muted'}>
+                      {t(
+                        region.floodAllowed
+                          ? 'infraConfig.floodAllowed'
+                          : 'infraConfig.floodDenied',
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {regions?.truncated && (
+              <p className={NOTICE_CLASS.warn}>{t('infraConfig.regionsTruncated')}</p>
+            )}
+            {regionsError && (
+              <p role="alert" className={NOTICE_CLASS.error}>
+                {regionsError}
+              </p>
+            )}
+            <p className="text-muted text-xs">{t('infraConfig.regionsHint')}</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {fields.map((field) => (
             <ConfigField
@@ -583,7 +658,12 @@ export function MeshcoreInfraConfigPanel({ node, isConnected, onSend, onBack, on
           ...(node.hw_model === 'Room' ? ['room'] : []),
         ] as InfraConfigSection[]
       ).map((section) => (
-        <ConfigSection key={section} section={section} {...shared} />
+        <ConfigSection
+          key={section}
+          section={section}
+          showRegions={section === 'scope' && node.hw_model !== 'Room'}
+          {...shared}
+        />
       ))}
       {node.hw_model === 'Room' && <RoomPermissions {...shared} />}
       <details className="group bg-deep-black border-ink-700 rounded-card border">

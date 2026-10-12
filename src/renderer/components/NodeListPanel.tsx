@@ -4,7 +4,6 @@ import {
   Download,
   KeyRound,
   MapPin,
-  Radio,
   RefreshCw,
   Search,
   Settings,
@@ -208,10 +207,6 @@ interface Props {
   /** MeshCore: show Refresh button on Contacts tab (paired with onRefreshContacts) */
   meshcoreShowRefreshControl?: boolean;
   onRefreshContacts?: () => Promise<void>;
-  /** MeshCore: flood advert (same as Radio panel Device Actions). */
-  onSendAdvert?: () => Promise<void>;
-  /** When false, Flood Advert is disabled (radio not operational). Ignored if onSendAdvert is unset. */
-  meshcoreRadioOperational?: boolean;
   meshcoreShowPublicKeys?: boolean;
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
@@ -238,8 +233,6 @@ export default function NodeListPanel({
   contactGroupsEnabled = true,
   meshcoreShowRefreshControl = false,
   onRefreshContacts,
-  onSendAdvert,
-  meshcoreRadioOperational = true,
   meshcoreShowPublicKeys = false,
   meshcorePublicKeyHexByNodeId,
   onShowOnMap,
@@ -269,7 +262,6 @@ export default function NodeListPanel({
   const [statusFilter, setStatusFilter] = useState<NodeStatusFilter>('all');
   const [importLoading, setImportLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
-  const [advertLoading, setAdvertLoading] = useState(false);
 
   const identityId = getIdentityIdForProtocol(mode) ?? getOfflineIdentityIdForProtocol(mode);
   const identityMessages = useMessages(identityId);
@@ -393,23 +385,6 @@ export default function NodeListPanel({
       );
     } finally {
       setImportLoading(false);
-    }
-  };
-
-  const handleSendAdvert = async () => {
-    if (!onSendAdvert) return;
-    setAdvertLoading(true);
-    try {
-      await onSendAdvert();
-      addToast(t('nodeListPanel.floodAdvertSent'), 'success');
-    } catch (e) {
-      console.warn('[NodeListPanel] sendAdvert failed:', e instanceof Error ? e.message : e);
-      addToast(
-        t('nodeListPanel.advertFailed', { message: e instanceof Error ? e.message : String(e) }),
-        'error',
-      );
-    } finally {
-      setAdvertLoading(false);
     }
   };
 
@@ -814,29 +789,6 @@ export default function NodeListPanel({
               }
             >
               {t('nodeListPanel.buttonRefresh')}
-            </Button>
-          ) : null}
-          {mode === 'meshcore' && onSendAdvert ? (
-            <Button
-              size="sm"
-              onClick={() => {
-                void handleSendAdvert();
-              }}
-              disabled={!meshcoreRadioOperational || advertLoading}
-              data-setting-anchor="nodes.contacts.floodAdvert"
-              aria-label={t('nodeListPanel.sendFloodAdvert')}
-              title={
-                meshcoreRadioOperational ? undefined : t('nodeListPanel.sendFloodAdvertUnavailable')
-              }
-              icon={
-                advertLoading ? (
-                  smallSpinner
-                ) : (
-                  <Radio aria-hidden className={ICON_SM_PLUS} size={14} />
-                )
-              }
-            >
-              {t('nodeListPanel.buttonFloodAdvert')}
             </Button>
           ) : null}
           {mode === 'meshcore' && onImportContacts ? (

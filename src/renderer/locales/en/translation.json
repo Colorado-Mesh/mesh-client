@@ -3781,8 +3781,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",
     "refreshFailed": "Refresh failed: {{message}}",
-    "floodAdvertSent": "Flood advert sent",
-    "advertFailed": "Advert failed: {{message}}",
     "importFailed": "Import failed: {{message}}",
     "importResultSuccess_one": "Imported {{count}} contact.",
     "importResultSuccess_other": "Imported {{count}} contacts.",
@@ -3853,7 +3851,6 @@
     "emptyNoSearchMatches": "No nodes match your search.",
     "emptyNoNodesYet": "No nodes discovered yet. Connect to a device to see the mesh network.",
     "buttonRefresh": "Refresh",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Import Contacts",
     "buttonExportJson": "Export JSON",
     "buttonExportCsv": "Export CSV",
@@ -6987,7 +6984,16 @@
     "scope": "Default flood scope",
     "defaultScope": "Region name (blank for unscoped)",
     "scopeSummary": "Region used for this node’s outgoing floods",
-    "scopeHint": "Firmware v1.15+: enter a public region name such as #us-tn-tri, or leave blank for unscoped. This controls flooded adverts and room delivery; direct routes and room access are separate. The companion radio and channel scopes are configured separately."
+    "scopeHint": "Firmware v1.15+: enter a public region name such as #us-tn-tri, or leave blank for unscoped. This controls flooded adverts and room delivery; direct routes and room access are separate. The companion radio and channel scopes are configured separately.",
+    "regionsAndScope": "Regions and flood scope",
+    "regionsSummary": "Configured regions, forwarding permissions and outgoing scope",
+    "configuredRegions": "Configured regions",
+    "homeRegion": "Home",
+    "floodAllowed": "Flood allowed",
+    "floodDenied": "Flood denied",
+    "regionsHint": "Read from this repeater. * means unscoped traffic. Edit region rules in the CLI.",
+    "regionsUnavailable": "This firmware does not provide a remote region list. Check regions over a serial connection.",
+    "regionsTruncated": "The firmware limited this reply; more regions may be configured. Use a serial connection to view the full list."
   },
   "chatTranslation": {
     "translate": "Translate message",
