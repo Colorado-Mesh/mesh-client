@@ -255,7 +255,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
-    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath));
+    const pathArg = assertReticulumProxyPath(assertProxyApiPath(apiPath), { method: 'GET' });
     try {
       // Rate-limit inside try so checkOrThrow settles as an expected soft envelope
       // (avoids Electron `[error] Error occurred in handler` spam).
