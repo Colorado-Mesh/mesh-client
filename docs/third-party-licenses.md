@@ -24,7 +24,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
 | i18next                    | MIT                           | ^26.4.3         | 26.4.3            | git+https://github.com/i18next/i18next.git                                     |
-| ip-address                 | MIT                           | ^10.7.1         | 10.7.3            | git+https://github.com/beaugunderson/ip-address.git                            |
+| ip-address                 | MIT                           | ^10.7.1         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.2         | 3.10.2            | git+https://github.com/Stuk/jszip.git                                          |
@@ -56,7 +56,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.64.0         | 1.64.0            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.14        | 3.14.14           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.15        | 3.14.15           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.7         | 14.6.7            | git+https://github.com/testing-library/user-event.git                                |
@@ -109,4 +109,63 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 
 ## Rust sidecar dependencies
 
-Rust crate licenses are gated by `pnpm run check:rust-licenses` (requires Cargo); run it locally to view this table.
+Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
+
+| License                                             | Crates |
+| --------------------------------------------------- | ------ |
+| MIT OR Apache-2.0                                   | 197    |
+| MIT                                                 | 75     |
+| Apache-2.0 OR MIT                                   | 29     |
+| AGPL-3.0-or-later                                   | 15     |
+| MIT/Apache-2.0                                      | 12     |
+| BSD-3-Clause                                        | 7      |
+| Apache-2.0                                          | 5      |
+| Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 5      |
+| Apache-2.0/MIT                                      | 5      |
+| MIT OR Apache-2.0 OR Zlib                           | 5      |
+| Unlicense OR MIT                                    | 5      |
+| CC0-1.0                                             | 4      |
+| Zlib OR Apache-2.0 OR MIT                           | 3      |
+| BSD-2-Clause OR Apache-2.0 OR MIT                   | 2      |
+| BSD-3-Clause OR Apache-2.0                          | 2      |
+| ISC                                                 | 2      |
+| MIT OR Apache-2.0 OR LGPL-2.1-or-later              | 2      |
+| MIT OR Zlib OR Apache-2.0                           | 2      |
+| MIT/Apache-2.0/BSD-3-Clause                         | 2      |
+| Unlicense/MIT                                       | 2      |
+| (MIT OR Apache-2.0) AND Unicode-3.0                 | 1      |
+| 0BSD OR MIT OR Apache-2.0                           | 1      |
+| Apache-2.0 / MIT                                    | 1      |
+| Apache-2.0 OR BSL-1.0                               | 1      |
+| BSD-2-Clause                                        | 1      |
+| BSD-2-Clause OR MIT OR Apache-2.0                   | 1      |
+| bzip2-1.0.6                                         | 1      |
+| GPL-3.0/MIT                                         | 1      |
+| LGPL-2.1-only AND MIT AND BSD-3-Clause              | 1      |
+| MIT / Apache-2.0                                    | 1      |
+| MIT AND BSD-3-Clause                                | 1      |
+| MIT OR Apache-2.0 OR BSD-1-Clause                   | 1      |
+| MIT OR BSD-3-Clause                                 | 1      |
+| MPL-2.0                                             | 1      |
+| Zlib                                                | 1      |
+
+### Ratspeak stack crates
+
+| Crate          | Version | License                                | Source                                                 |
+| -------------- | ------- | -------------------------------------- | ------------------------------------------------------ |
+| lrgp           | 0.4.1   | MIT                                    | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)         |
+| lxmf-core      | 1.3.0   | AGPL-3.0-or-later                      | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
+| lxst-codec2    | 0.2.0   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-core      | 0.2.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-rns       | 0.2.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-telephony | 0.2.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| nomad-core     | 0.1.0   | AGPL-3.0-or-later                      | [rsNomad](https://github.com/ratspeak/rsNomad)         |
+| rns-crypto     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-identity   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-interface  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-link       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-protocol   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-ratkey     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-runtime    | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-transport  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-wire       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
