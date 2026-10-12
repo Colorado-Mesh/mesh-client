@@ -206,7 +206,7 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.channelRelaySend*': 'TAK send opt-in in each indexed channel row',
     'takServerPanel.channelRelayUnnamed': 'fallback channel name in a row',
     'takServerPanel.channelRelayNoChannels*': 'empty-state text before a radio lists channels',
-    'takServerPanel.channelRelayHelp': 'section prose; its channel rows are indexed',
-    'takServerPanel.channelRelayHelpMeshtastic': 'section prose; its channel rows are indexed',
+    'takServerPanel.channelRelayIntro': 'section prose; its channel rows are indexed',
+    'takServerPanel.channelRelayIntroMeshtastic': 'section prose; its channel rows are indexed',
   },
 };

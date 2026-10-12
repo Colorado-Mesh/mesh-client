@@ -133,6 +133,7 @@ const OPEN_TAG = {
 } as const;
 
 const ATTR = {
+  id: /\sid\s*=\s*(?:"([^"]*)"|'([^']*)')/,
   uid: /\suid\s*=\s*(?:"([^"]*)"|'([^']*)')/,
   type: /\stype\s*=\s*(?:"([^"]*)"|'([^']*)')/,
   time: /\stime\s*=\s*(?:"([^"]*)"|'([^']*)')/,
@@ -241,6 +242,7 @@ const COT_GEOCHAT_TYPE = 'b-t-f';
 /** Sender uid prefix this app writes on mirrored mesh messages (`geochatSenderUid`). */
 const MESH_CHAT_UID_PREFIX = 'MESHCHAT-';
 const CHAT_UID_RE = /^[A-Za-z0-9_.:@-]{1,128}$/;
+const MAX_CHAT_ROOM_ID_LENGTH = 128;
 const CHAT_MESSAGE_ID_RE = /^[A-Za-z0-9-]{1,64}$/;
 const CONTROL_CHARS_GLOBAL_RE = /\p{Cc}+/gu;
 
@@ -254,6 +256,11 @@ export interface CotGeochat {
   text: string;
   /** Message id from the event uid, when it has a usable one. */
   messageId?: string;
+  /**
+   * The conversation id: the recipient's uid for a direct message, otherwise usually the room
+   * name. Lets the server recognise a message addressed to a room's contact.
+   */
+  roomId?: string;
 }
 
 /** Single line: control characters (newlines included) collapse to one space. */
@@ -290,6 +297,8 @@ export function parseGeochatEvent(xml: string): CotGeochat | null {
     senderUid,
     text,
   };
+  const roomId = singleLine(attr(chatTag, 'id'))?.trim();
+  if (roomId && roomId.length <= MAX_CHAT_ROOM_ID_LENGTH) chat.roomId = roomId;
   const messageId = fromEventUid ? (uidParts[uidParts.length - 1] ?? '') : '';
   if (CHAT_MESSAGE_ID_RE.test(messageId)) chat.messageId = messageId;
   return chat;
