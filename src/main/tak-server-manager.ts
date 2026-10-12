@@ -349,6 +349,7 @@ export class TakServerManager extends EventEmitter {
     this.chatRoomAnnounceTimer.unref();
   }
 
+  /** Build the contact event for every room open for sending and pass each to `send`. */
   private forEachChatRoomContact(send: (cot: string) => void): void {
     const now = Date.now();
     for (const room of this.chatSendRooms.values()) send(buildChatRoomContactCot(room, now));
@@ -422,6 +423,7 @@ export class TakServerManager extends EventEmitter {
     for (const [id, client] of this.clients) this.writeToClient(id, client, cot);
   }
 
+  /** Write one CoT event to one local client, logging rather than throwing if the write fails. */
   private writeToClient(id: string, client: ConnectedClient, cot: string): void {
     try {
       client.socket.write(cot + '\n');

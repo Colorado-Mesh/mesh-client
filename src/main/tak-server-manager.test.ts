@@ -809,6 +809,7 @@ describe('TakServerManager GeoChat', () => {
 });
 
 describe('TakServerManager rooms TAK clients may send to', () => {
+  /** A client's own position report, which binds a uid and callsign to its connection. */
   const SELF = (uid: string, callsign: string) =>
     `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
     `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
@@ -830,6 +831,7 @@ describe('TakServerManager rooms TAK clients may send to', () => {
     vi.useRealTimers();
   });
 
+  /** Connect a mock client, optionally sending its own position report as `[uid, callsign]`. */
   function connect(manager: TakServerManager, self?: [string, string]): tls.TLSSocket {
     const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
     const socket = mockTlsSocket();
@@ -838,6 +840,7 @@ describe('TakServerManager rooms TAK clients may send to', () => {
     return socket;
   }
 
+  /** Everything written to a mock client socket, one string per write. */
   const written = (socket: tls.TLSSocket) =>
     vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
 

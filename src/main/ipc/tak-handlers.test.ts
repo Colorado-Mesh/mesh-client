@@ -520,6 +520,7 @@ describe('tak:pushChatMessage', () => {
 describe('tak:setChatSendRooms', () => {
   type Handler = (event: unknown, arg?: unknown) => unknown;
 
+  /** Register the TAK handlers against `manager` and return the tak:setChatSendRooms handler. */
   async function register(manager: unknown): Promise<Handler> {
     const { ipcMain } = await import('electron');
     const handle = vi.mocked(ipcMain.handle);

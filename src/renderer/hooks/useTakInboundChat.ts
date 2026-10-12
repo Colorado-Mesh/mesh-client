@@ -7,6 +7,10 @@ import { useIdentityStore } from '../stores/identityStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
 
+/** First wait before re-sending a refused room list; it doubles up to the maximum. */
+export const TAK_SEND_ROOMS_RETRY_MS = 5_000;
+export const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
+
 /**
  * Sends GeoChat messages from local TAK clients on the mesh channels bridged to their room, for
  * channels the user allowed TAK to send to, one message at a time in arrival order. Also keeps
@@ -34,8 +38,23 @@ export function useTakInboundChat(): void {
     // Main keeps the list only while a sink exists, so it is sent again whenever one starts.
     if (!sinkActive) return;
     const rooms = roomsKey ? roomsKey.split('\n') : [];
-    window.electronAPI.tak.setChatSendRooms(rooms).catch((e: unknown) => {
-      console.warn('[TakInboundChat] setChatSendRooms failed ' + errLikeToLogString(e));
-    });
+    // A refused update (main's rate limit, say) would leave main with an old list, so it is
+    // retried, waiting longer each time, until it lands or a newer list or unmount replaces it.
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let delayMs = TAK_SEND_ROOMS_RETRY_MS;
+    const send = (): void => {
+      window.electronAPI.tak.setChatSendRooms(rooms).catch((e: unknown) => {
+        if (cancelled) return;
+        console.warn('[TakInboundChat] setChatSendRooms failed; retrying ' + errLikeToLogString(e));
+        retryTimer = setTimeout(send, delayMs);
+        delayMs = Math.min(delayMs * 2, TAK_SEND_ROOMS_RETRY_MAX_MS);
+      });
+    };
+    send();
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
   }, [sinkActive, roomsKey]);
 }
