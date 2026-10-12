@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "联系人已刷新。",
     "refreshFailed": "刷新失败： {{message}}",
-    "floodAdvertSent": "泛洪通告已发送",
-    "advertFailed": "通告失败： {{message}}",
     "importFailed": "导入失败： {{message}}",
     "importResultSuccess_one": "已导入{{count}}联系人。",
     "importResultSuccess_other": "导入了{{count}}个联系人。",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "没有与您的搜索匹配的节点。",
     "emptyNoNodesYet": "尚未发现节点。连接到设备以查看网状网络。",
     "buttonRefresh": "重新整理",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "导入联系人",
     "meshcoreTypeChat": "聊天",
     "meshcoreTypeRepeater": "Repeater 重复器",
@@ -6981,7 +6978,16 @@
     "scope": "默认泛洪范围",
     "defaultScope": "区域名称（空白表示无范围）",
     "scopeSummary": "此节点发出的泛洪数据包使用的区域",
-    "scopeHint": "固件v1.15及以上：输入公共区域名称，例如#us-tn-tri；留空表示不限制区域。适用于泛洪广播公告和通过泛洪传送的聊天室消息。直连路由和聊天室访问权限独立设置。伴随无线电设备及其各个频道的范围需分别配置。"
+    "scopeHint": "固件v1.15及以上：输入公共区域名称，例如#us-tn-tri；留空表示不限制区域。适用于泛洪广播公告和通过泛洪传送的聊天室消息。直连路由和聊天室访问权限独立设置。伴随无线电设备及其各个频道的范围需分别配置。",
+    "regionsAndScope": "区域与 Flood 范围",
+    "regionsSummary": "已配置的区域、转发权限和发送范围",
+    "configuredRegions": "已配置区域",
+    "homeRegion": "本地区域",
+    "floodAllowed": "允许 Flood",
+    "floodDenied": "禁止 Flood",
+    "regionsHint": "从此中继器读取。* 表示未限定区域的流量。请在 CLI 中编辑区域规则。",
+    "regionsUnavailable": "此固件不支持远程读取区域列表。请通过串口连接查看区域。",
+    "regionsTruncated": "固件限制了回复长度，可能还有其他已配置的区域。请通过串口连接查看完整列表。"
   },
   "chatTranslation": {
     "translate": "翻译消息",

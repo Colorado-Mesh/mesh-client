@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
     "refreshFailed": "Error al actualizar: {{message}}",
-    "floodAdvertSent": "flood advert enviado",
-    "advertFailed": "Anuncio fallido: {{message}}",
     "importFailed": "Error en la importación: {{message}}",
     "importResultSuccess_one": "Contacto {{count}} importado.",
     "importResultSuccess_other": "Se importaron {{count}} contactos.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Ningún nodo coincide con tu búsqueda.",
     "emptyNoNodesYet": "Aún no se han descubierto nodos. Conéctese a un dispositivo para ver la red de malla.",
     "buttonRefresh": "Actualizar",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importar contactos",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Repetidor",
@@ -6981,7 +6978,16 @@
     "scope": "Ámbito Flood predeterminado",
     "defaultScope": "Nombre de la región (en blanco para sin ámbito)",
     "scopeSummary": "Región para los paquetes Flood salientes de este nodo",
-    "scopeHint": "Firmware v1.15+: introduce una región pública como #us-tn-tri; deja el campo vacío para no limitar la región. Se aplica a los anuncios Flood y la entrega de mensajes de sala mediante Flood. Las rutas directas y el acceso a la sala son independientes. El radio Companion y sus canales tienen ámbitos separados."
+    "scopeHint": "Firmware v1.15+: introduce una región pública como #us-tn-tri; deja el campo vacío para no limitar la región. Se aplica a los anuncios Flood y la entrega de mensajes de sala mediante Flood. Las rutas directas y el acceso a la sala son independientes. El radio Companion y sus canales tienen ámbitos separados.",
+    "regionsAndScope": "Regiones y alcance de flood",
+    "regionsSummary": "Regiones configuradas, permisos de reenvío y alcance de salida",
+    "configuredRegions": "Regiones configuradas",
+    "homeRegion": "Región de origen",
+    "floodAllowed": "Flood permitido",
+    "floodDenied": "Flood bloqueado",
+    "regionsHint": "Leído de este repetidor. * indica tráfico sin alcance regional. Edite las reglas de región en la CLI.",
+    "regionsUnavailable": "Este firmware no permite consultar la lista de regiones de forma remota. Consúltela mediante una conexión serie.",
+    "regionsTruncated": "El firmware limitó esta respuesta; puede haber más regiones configuradas. Use una conexión serie para ver la lista completa."
   },
   "chatTranslation": {
     "translate": "Traducir mensaje",

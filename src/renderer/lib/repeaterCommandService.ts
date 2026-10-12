@@ -106,7 +106,7 @@ export class RepeaterCommandService {
   }
 
   parseResponseToken(response: string): { token: string | null; body: string } {
-    const match = /^([0-9A-Fa-f]{2})\|(.*)$/.exec(response);
+    const match = /^([0-9A-Fa-f]{2})\|(.*)$/s.exec(response);
     if (match) {
       return { token: match[1].toUpperCase(), body: match[2] };
     }

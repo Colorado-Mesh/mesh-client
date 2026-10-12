@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -41,6 +41,125 @@ function props(overrides = {}) {
 }
 
 describe('MeshCore infrastructure configuration panel', () => {
+  it('reads and refreshes the repeater region tree, independently of default-scope support', async () => {
+    const user = userEvent.setup();
+    let tree = '*^ F\n us F\n  us-tn F\n   us-tn-tri\n';
+    const send = vi.fn((command: string) =>
+      Promise.resolve(command === 'region' ? tree : 'Unknown command: region default'),
+    );
+    const { container } = render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    expect(send).not.toHaveBeenCalled();
+    await user.click(screen.getByText('Regions and flood scope'));
+    const list = await screen.findByRole('list', { name: 'Configured regions' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(list).getByText('us-tn-tri')).toBeInTheDocument();
+    expect(within(list).getByText('Home')).toBeInTheDocument();
+    expect(within(list).getByText('Flood denied')).toBeInTheDocument();
+    expect(screen.getByLabelText('Region name (blank for unscoped)')).toBeDisabled();
+    expect(send.mock.calls.map(([command]) => command)).toEqual(['region default', 'region']);
+    tree = '*^ F\n eu F\n';
+    await user.click(screen.getByRole('button', { name: 'Refresh Regions and flood scope' }));
+    expect(await screen.findByText('eu')).toBeInTheDocument();
+    expect(screen.queryByText('us-tn-tri')).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('refreshes the region list after a default-scope write changes the repeater regions', async () => {
+    const user = userEvent.setup();
+    let scope = '<null>';
+    const send = vi.fn((command: string) => {
+      if (command === 'region')
+        return Promise.resolve(scope === '<null>' ? '*^ F\n' : '*^ F\n new-region F\n');
+      if (command.startsWith('region default ')) {
+        scope = command.slice('region default '.length);
+        return Promise.resolve(`default scope is now ${scope}`);
+      }
+      return Promise.resolve(`default scope is ${scope}`);
+    });
+    render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await user.click(screen.getByText('Regions and flood scope'));
+    await screen.findByRole('list', { name: 'Configured regions' });
+    await user.type(screen.getByLabelText('Region name (blank for unscoped)'), 'new-region');
+    expect(screen.getByRole('button', { name: 'Refresh Regions and flood scope' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Apply Regions and flood scope' }));
+    expect(await screen.findByText('new-region')).toBeInTheDocument();
+    expect(send.mock.calls.map(([command]) => command)).toEqual([
+      'region default',
+      'region',
+      'region default new-region',
+      'region default',
+      'region',
+    ]);
+  });
+
+  it('keeps default scope usable when listing fails and lets the user retry', async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    const send = vi.fn((command: string) => {
+      if (command === 'region')
+        return fail
+          ? Promise.reject(new Error('CLI command timed out'))
+          : Promise.resolve('* F\n us F\n');
+      return Promise.resolve('default scope is <null>');
+    });
+    render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await user.click(screen.getByText('Regions and flood scope'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('CLI command timed out');
+    expect(screen.getByLabelText('Region name (blank for unscoped)')).toBeEnabled();
+    fail = false;
+    await user.click(screen.getByRole('button', { name: 'Refresh Regions and flood scope' }));
+    expect(await screen.findByText('us')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('warns about a truncated reply instead of displaying a partial final region', async () => {
+    const user = userEvent.setup();
+    const send = vi.fn((command: string) =>
+      Promise.resolve(
+        command === 'region'
+          ? '* F\n' + ' region F\n'.repeat(15) + ' next'
+          : 'default scope is <null>',
+      ),
+    );
+    render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await user.click(screen.getByText('Regions and flood scope'));
+    expect(await screen.findByText(/The firmware limited this reply/)).toBeInTheDocument();
+    expect(screen.queryByText('next')).not.toBeInTheDocument();
+  });
+
+  it('rejects a late region reply after reconnect and supports an explicit refresh', async () => {
+    const user = userEvent.setup();
+    let resolve!: (value: string) => void;
+    let pending = true;
+    const send = vi.fn((command: string) => {
+      if (command !== 'region') return Promise.resolve('default scope is <null>');
+      return pending
+        ? new Promise<string>((done) => {
+            resolve = done;
+          })
+        : Promise.resolve('* F\n fresh F\n');
+    });
+    const { rerender } = render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await user.click(screen.getByText('Regions and flood scope'));
+    await waitFor(() => {
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+    rerender(<MeshcoreInfraConfigPanel {...props({ onSend: send, isConnected: false })} />);
+    rerender(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await act(async () => {
+      resolve('* F\n stale F\n');
+      await Promise.resolve();
+    });
+    expect(screen.queryByText('stale')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The operation stopped because the connection changed',
+    );
+    pending = false;
+    await user.click(screen.getByRole('button', { name: 'Refresh Regions and flood scope' }));
+    expect(await screen.findByText('fresh')).toBeInTheDocument();
+  });
+
   it('reads, applies, and checks a room server default scope separately from access settings', async () => {
     const user = userEvent.setup();
     let scope = '<null>';
@@ -81,7 +200,7 @@ describe('MeshCore infrastructure configuration panel', () => {
         {...props({ onSend: vi.fn().mockResolvedValue('Unknown command: region default') })}
       />,
     );
-    await user.click(screen.getByText('Default flood scope'));
+    await user.click(screen.getByText('Regions and flood scope'));
     expect(await screen.findByText('Unavailable on this firmware or board')).toBeInTheDocument();
     expect(screen.getByLabelText('Region name (blank for unscoped)')).toBeDisabled();
   });

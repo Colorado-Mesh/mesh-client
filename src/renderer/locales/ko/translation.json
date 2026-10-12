@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
     "refreshFailed": "새로고침 실패: {{message}}",
-    "floodAdvertSent": "플러드 advert가 전송되었습니다",
-    "advertFailed": "advert 실패: {{message}}",
     "importFailed": "가져오기 실패: {{message}}",
     "importResultSuccess_one": "{{count}} 연락처를 가져왔습니다.",
     "importResultSuccess_other": "{{count}} 연락처를 가져왔습니다.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "검색어와 일치하는 노드가 없습니다.",
     "emptyNoNodesYet": "아직 발견된 노드가 없습니다. 메시 네트워크를 보려면 기기에 연결하세요.",
     "buttonRefresh": "새로 고치다",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "연락처 가져오기",
     "meshcoreTypeChat": "채팅",
     "meshcoreTypeRepeater": "연발총",
@@ -6981,7 +6978,16 @@
     "scope": "기본 플러드 범위",
     "defaultScope": "지역 이름 (범위가 지정되지 않은 경우 비어 있음)",
     "scopeSummary": "이 노드가 보내는 Flood 패킷의 지역",
-    "scopeHint": "펌웨어 v1.15 이상: #us-tn-tri 같은 공개 지역 이름을 입력하세요. 비워 두면 지역 제한이 없습니다. Flood 광고와 Flood 경로를 통한 룸 메시지 전달에 적용됩니다. 직접 경로와 룸 접근 권한은 별개입니다. 컴패니언 무전기와 각 채널의 범위는 따로 설정합니다."
+    "scopeHint": "펌웨어 v1.15 이상: #us-tn-tri 같은 공개 지역 이름을 입력하세요. 비워 두면 지역 제한이 없습니다. Flood 광고와 Flood 경로를 통한 룸 메시지 전달에 적용됩니다. 직접 경로와 룸 접근 권한은 별개입니다. 컴패니언 무전기와 각 채널의 범위는 따로 설정합니다.",
+    "regionsAndScope": "리전 및 Flood 범위",
+    "regionsSummary": "설정된 리전, 전달 권한 및 송신 범위",
+    "configuredRegions": "구성된 영역",
+    "homeRegion": "홈 리전",
+    "floodAllowed": "Flood 허용",
+    "floodDenied": "Flood 차단",
+    "regionsHint": "이 리피터에서 읽은 설정입니다. *는 리전 제한이 없는 트래픽을 의미합니다. 리전 규칙은 CLI에서 편집하세요.",
+    "regionsUnavailable": "이 펌웨어는 리전 목록의 원격 읽기를 지원하지 않습니다. 직렬 연결로 리전을 확인하세요.",
+    "regionsTruncated": "펌웨어의 응답 길이 제한으로 일부 설정된 리전이 표시되지 않을 수 있습니다. 전체 목록은 직렬 연결로 확인하세요."
   },
   "chatTranslation": {
     "translate": "메시지 번역하기",

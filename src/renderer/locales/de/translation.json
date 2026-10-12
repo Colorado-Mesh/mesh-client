@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
     "refreshFailed": "Aktualisierung fehlgeschlagen: {{message}}",
-    "floodAdvertSent": "Flood-Advert gesendet",
-    "advertFailed": "Anzeige fehlgeschlagen: {{message}}",
     "importFailed": "Import fehlgeschlagen: {{message}}",
     "importResultSuccess_one": "{{count}} Kontakt importiert.",
     "importResultSuccess_other": "{{count}} Kontakte importiert.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Keine Knoten entsprechen Ihrer Suche.",
     "emptyNoNodesYet": "Noch keine Knoten entdeckt. Verbinden Sie sich mit einem Gerät, um das Mesh-Netzwerk zu sehen.",
     "buttonRefresh": "Aktualisieren",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Import Kontakte",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Repeater",
@@ -6981,7 +6978,16 @@
     "scope": "Standard-Flood-Scope",
     "defaultScope": "Regionsname (leer für unscoped)",
     "scopeSummary": "Region für ausgehende Flood-Pakete dieses Knotens",
-    "scopeHint": "Firmware v1.15+: Öffentlichen Regionsnamen wie #us-tn-tri eingeben; leer lassen für Unscoped. Gilt für Flood-Adverts und Raumzustellung über Flood. Direkte Routen und Raumzugriff sind unabhängig. Scopes des Companion-Radios und seiner Kanäle werden separat eingestellt."
+    "scopeHint": "Firmware v1.15+: Öffentlichen Regionsnamen wie #us-tn-tri eingeben; leer lassen für Unscoped. Gilt für Flood-Adverts und Raumzustellung über Flood. Direkte Routen und Raumzugriff sind unabhängig. Scopes des Companion-Radios und seiner Kanäle werden separat eingestellt.",
+    "regionsAndScope": "Regionen und Flood-Bereich",
+    "regionsSummary": "Konfigurierte Regionen, Weiterleitungsrechte und ausgehender Bereich",
+    "configuredRegions": "Konfigurierte Regionen",
+    "homeRegion": "Heimatregion",
+    "floodAllowed": "Flood erlaubt",
+    "floodDenied": "Flood gesperrt",
+    "regionsHint": "Von diesem Repeater gelesen. * steht für Datenverkehr ohne Regionsbegrenzung. Regionsregeln lassen sich in der CLI ändern.",
+    "regionsUnavailable": "Diese Firmware unterstützt das Auslesen der Regionsliste per Funk nicht. Prüfen Sie die Regionen über eine serielle Verbindung.",
+    "regionsTruncated": "Die Firmware hat diese Antwort gekürzt; möglicherweise sind weitere Regionen eingerichtet. Nutzen Sie eine serielle Verbindung für die vollständige Liste."
   },
   "chatTranslation": {
     "translate": "Mitteilung übersetzen",

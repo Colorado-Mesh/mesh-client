@@ -4849,17 +4849,11 @@ function AppContent() {
                                           ? meshcorePublicKeyHexByNodeId
                                           : undefined
                                       }
-                                      onSendAdvert={
-                                        capabilities.hasContactImportExport
-                                          ? meshcorePanelActions.sendAdvert
-                                          : undefined
-                                      }
                                       onOffloadContactsFromRadio={
                                         capabilities.hasContactImportExport
                                           ? meshcorePanelActions.offloadContactsFromRadio
                                           : undefined
                                       }
-                                      meshcoreRadioOperational={isOperational}
                                       onShowOnMap={handleShowOnMap}
                                     />
                                   </div>

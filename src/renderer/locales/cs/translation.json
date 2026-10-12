@@ -3543,8 +3543,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",
     "refreshFailed": "Obnovení se nezdařilo: {{message}}",
-    "floodAdvertSent": "Flood advert odeslán",
-    "advertFailed": "advert se nezdařila: {{message}}",
     "importFailed": "Import se nezdařil: {{message}}",
     "importResultSuccess_one": "Importovaný {{count}} kontakt.",
     "importResultSuccess_other": "Importováno {{count}} kontaktů.",
@@ -3605,7 +3603,6 @@
     "emptyNoSearchMatches": "Vašemu hledání neodpovídají žádné uzly.",
     "emptyNoNodesYet": "Dosud nebyly objeveny žádné uzly. Připojte se k zařízení a zobrazte síť mesh.",
     "buttonRefresh": "Obnovit",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importovat kontakty",
     "meshcoreTypeChat": "Povídání",
     "meshcoreTypeRepeater": "Opakovač",
@@ -7046,7 +7043,16 @@
     "scope": "Výchozí rozsah Flood",
     "defaultScope": "Název regionu (prázdný pro neskopírovaný)",
     "scopeSummary": "Oblast pro odchozí Flood pakety tohoto uzlu",
-    "scopeHint": "Firmware v1.15+: zadejte veřejný název oblasti, např. #us-tn-tri; prázdná hodnota znamená bez omezení oblasti. Platí pro Flood oznámení a doručování zpráv místnosti přes Flood. Přímé trasy a přístupová práva místnosti jsou nezávislé. Rozsahy rádia a jeho kanálů se nastavují samostatně."
+    "scopeHint": "Firmware v1.15+: zadejte veřejný název oblasti, např. #us-tn-tri; prázdná hodnota znamená bez omezení oblasti. Platí pro Flood oznámení a doručování zpráv místnosti přes Flood. Přímé trasy a přístupová práva místnosti jsou nezávislé. Rozsahy rádia a jeho kanálů se nastavují samostatně.",
+    "regionsAndScope": "Regiony a rozsah flood",
+    "regionsSummary": "Nastavené regiony, oprávnění k přeposílání a odchozí rozsah",
+    "configuredRegions": "Konfigurované regiony",
+    "homeRegion": "Domovský region",
+    "floodAllowed": "Flood povolen",
+    "floodDenied": "Flood zakázán",
+    "regionsHint": "Načteno z tohoto opakovače. * označuje provoz bez regionálního omezení. Pravidla regionů upravte v CLI.",
+    "regionsUnavailable": "Tento firmware nepodporuje vzdálené čtení seznamu regionů. Zkontrolujte regiony přes sériové připojení.",
+    "regionsTruncated": "Firmware omezil délku odpovědi; mohou být nastaveny další regiony. Celý seznam zobrazíte přes sériové připojení."
   },
   "chatTranslation": {
     "translate": "Přeložit zprávu",

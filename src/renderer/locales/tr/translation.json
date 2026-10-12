@@ -3508,8 +3508,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
     "refreshFailed": "Yenileme başarısız oldu: {{message}}",
-    "floodAdvertSent": "Flood advert gönderildi",
-    "advertFailed": "advert başarısız oldu: {{message}}",
     "importFailed": "İçe aktarma başarısız oldu: {{message}}",
     "importResultSuccess_one": "{{count}} kişisi içe aktarıldı.",
     "importResultSuccess_other": "{{count}} kişi içe aktarıldı.",
@@ -3570,7 +3568,6 @@
     "emptyNoSearchMatches": "Aramanızla eşleşen düğüm yok.",
     "emptyNoNodesYet": "Henüz düğüm keşfedilmedi. Örgü ağını görmek için bir cihaza bağlanın.",
     "buttonRefresh": "Yenile",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Kişileri İçe Aktar",
     "meshcoreTypeChat": "Sohbet",
     "meshcoreTypeRepeater": "Tekrarlayıcı",
@@ -6981,7 +6978,16 @@
     "scope": "Varsayılan Flood kapsamı",
     "defaultScope": "Bölge adı (kapsam dışı için boş)",
     "scopeSummary": "Bu düğümün gönderdiği Flood paketlerinin bölgesi",
-    "scopeHint": "Firmware v1.15+: #us-tn-tri gibi bir genel bölge adı girin; bölge sınırı olmaması için boş bırakın. Flood duyurularına ve Flood üzerinden oda mesajı teslimine uygulanır. Doğrudan rotalar ve oda erişim izinleri ayrıdır. Companion telsizin ve kanallarının kapsamları ayrı ayarlanır."
+    "scopeHint": "Firmware v1.15+: #us-tn-tri gibi bir genel bölge adı girin; bölge sınırı olmaması için boş bırakın. Flood duyurularına ve Flood üzerinden oda mesajı teslimine uygulanır. Doğrudan rotalar ve oda erişim izinleri ayrıdır. Companion telsizin ve kanallarının kapsamları ayrı ayarlanır.",
+    "regionsAndScope": "Bölgeler ve flood kapsamı",
+    "regionsSummary": "Yapılandırılmış bölgeler, iletme izinleri ve giden trafik kapsamı",
+    "configuredRegions": "Yapılandırılmış bölgeler",
+    "homeRegion": "Ana bölge",
+    "floodAllowed": "Flood izinli",
+    "floodDenied": "Flood engelli",
+    "regionsHint": "Bu tekrarlayıcıdan okundu. * bölge kısıtlaması olmayan trafiği belirtir. Bölge kurallarını CLI üzerinden düzenleyin.",
+    "regionsUnavailable": "Bu ürün yazılımı bölge listesinin uzaktan okunmasını desteklemiyor. Bölgeleri seri bağlantı üzerinden kontrol edin.",
+    "regionsTruncated": "Ürün yazılımı yanıt uzunluğunu sınırladı; yapılandırılmış başka bölgeler olabilir. Tam listeyi seri bağlantı üzerinden görüntüleyin."
   },
   "chatTranslation": {
     "translate": "Mesajı çevir",
