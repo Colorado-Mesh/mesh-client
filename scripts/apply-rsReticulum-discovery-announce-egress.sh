@@ -26,13 +26,19 @@ fi
 
 overlay_already_present() {
   [[ -f "${RETICULUM_RS}" ]] || return 1
-  # Accept extracted helpers (overlay / upstream) or the older inline fix form.
+  # Accept extracted helpers (overlay / older inline fix) or rsReticulum 1.3.0+
+  # discovery publisher (register_destination + online-gated Announcer::register).
   if grep -qE 'fn take_online_discovery_interfaces\(' "${RETICULUM_RS}" \
     && grep -qE 'fn discovery_local_destination_registration\(' "${RETICULUM_RS}"; then
     return 0
   fi
-  grep -qE 'discovery destination registered as local for announce egress' "${RETICULUM_RS}" \
-    && grep -qE 'discovery interface online — starting announces' "${RETICULUM_RS}"
+  if grep -qE 'discovery destination registered as local for announce egress' "${RETICULUM_RS}" \
+    && grep -qE 'discovery interface online — starting announces' "${RETICULUM_RS}"; then
+    return 0
+  fi
+  grep -qE 'async fn run_discovery_publisher\(' "${RETICULUM_RS}" \
+    && grep -qE 'failed to register discovery destination' "${RETICULUM_RS}" \
+    && grep -qE 'online: Option<Arc<AtomicBool>>' "${RETICULUM_RS}"
 }
 
 if overlay_already_present; then

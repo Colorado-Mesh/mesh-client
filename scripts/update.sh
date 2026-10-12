@@ -292,7 +292,6 @@ check_ratspeak_patches() {
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
-    'rsReticulum-announce-rebroadcast-exclude-rf.patch|ratspeak/rsReticulum||rsReticulum announce rebroadcast exclude RF sinks (ratspeak/rsReticulum#24)|https://github.com/ratspeak/rsReticulum/issues/24'
     'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
     'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
     'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'
@@ -306,7 +305,6 @@ check_ratspeak_patches() {
     'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
     'rsLXMF-propagation-client-abort-transfer.patch|ratspeak/rsLXMF||rsLXMF PropagationClient abort_transfer for cancelled Sync|'
     'rsLXMF-propagation-client-lrproof-diagnostics.patch|ratspeak/rsLXMF||rsLXMF PropagationClient LRPROOF establish diagnostics|'
-    'rsLXMF-propagation-client-request-resource.patch|ratspeak/rsLXMF||rsLXMF PropagationClient oversized /get request Resource (ratspeak/rsLXMF#8)|https://github.com/ratspeak/rsLXMF/issues/8'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0

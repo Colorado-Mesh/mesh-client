@@ -77,7 +77,12 @@ describe('translation pack manager', () => {
         totalBytes: compressed.length,
         state: 'installed',
       });
-      await fs.writeFile(manager.assetPath('fr-en', 'model.bin'), Buffer.alloc(data.length));
+      const assetPath = manager.assetPath('fr-en', 'model.bin');
+      await fs.writeFile(assetPath, Buffer.alloc(data.length));
+      // Same-size overwrite can keep mtimeMs identical within one tick; bump mtime so
+      // verify's size:mtime:ctime signature cache cannot return the prior valid=true.
+      const stamp = new Date(Date.now() + 5_000);
+      await fs.utimes(assetPath, stamp, stamp);
       expect(await manager.verify('fr-en')).toBe(false);
       await manager.delete('fr-en');
       expect(await fs.readdir(directory())).toEqual([]);
