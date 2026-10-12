@@ -293,6 +293,7 @@ import {
   type MeshcoreRepeaterRpcPendingMap,
   setRepeaterAdminRpcPending,
 } from '../lib/meshcoreRepeaterAdminPending';
+import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import {
@@ -5767,13 +5768,20 @@ export function useMeshcoreRuntime() {
     [bumpMeshcoreNodeLastHeardFromRpc, ensureNodePubKey, resolveMeshcoreConn],
   );
 
+  const resolveAdminHopsForNode = useCallback((nodeId: number): number => {
+    return resolveMeshcoreAdminHopsAway(
+      getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
+      outPathMapRef.current.get(nodeId),
+    );
+  }, []);
+
   /** Repeater login options: 0-hop wait policy and re-add on SendLogin ERR_CODE_NOT_FOUND. */
   const makeRepeaterLoginOpts = useCallback(
     (conn: MeshCoreConnection, nodeId: number, pubKey: Uint8Array) => {
       const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
       if (!node) return undefined;
       return {
-        hopsAway: node.hops_away,
+        hopsAway: resolveAdminHopsForNode(nodeId),
         restoreRadioContact: async () => {
           try {
             await addMeshcoreNodeContactToRadio(conn, pubKey, node, repeaterRemoteRpcRef.current);
@@ -5784,7 +5792,7 @@ export function useMeshcoreRuntime() {
         },
       };
     },
-    [],
+    [resolveAdminHopsForNode],
   );
 
   const requestTelemetry = useCallback(
@@ -6131,8 +6139,7 @@ export function useMeshcoreRuntime() {
           }
 
           const drainBusyAtStart = waitingMessagesDrainBusyRef.current;
-          const hopsForDrain =
-            getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+          const hopsForDrain = resolveAdminHopsForNode(nodeId);
           // 0-hop: do not block CLI behind a stuck/long waiting-message drain (common right after
           // connect when silent bulk times out). Multi-hop still waits so path/CLI replies can flush.
           const drainWaitMs = hopsForDrain <= 0 ? 0 : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;
@@ -6176,8 +6183,7 @@ export function useMeshcoreRuntime() {
                 });
 
                 {
-                  const hopsAwayCli =
-                    getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+                  const hopsAwayCli = resolveAdminHopsForNode(nodeId);
                   if (hopsAwayCli > 0) {
                     await awaitMeshcoreRepeaterPingSettleForNode(
                       nodeId,
@@ -6197,6 +6203,7 @@ export function useMeshcoreRuntime() {
                   meshcoreIdentityIdRef.current,
                   nodeId,
                 )?.hw_model;
+                const loginOpts = makeRepeaterLoginOpts(conn, nodeId, pubKey);
                 if (hwModelForCli === 'Room') {
                   const adminPw = resolveRoomAdminPassword(
                     nodeId,
@@ -6213,9 +6220,8 @@ export function useMeshcoreRuntime() {
                     adminPw,
                     {
                       runSerialized: repeaterRemoteRpcRef.current,
-                      ...meshcoreRepeaterLoginTimeoutPolicy(
-                        getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away,
-                      ),
+                      restoreRadioContact: loginOpts?.restoreRadioContact,
+                      ...meshcoreRepeaterLoginTimeoutPolicy(loginOpts?.hopsAway),
                     },
                   );
                   assertMeshcoreRepeaterLoginOk(aclLogin);
@@ -6226,15 +6232,14 @@ export function useMeshcoreRuntime() {
                     pubKey,
                     hwModelForCli,
                     repeaterRemoteRpcRef.current,
-                    makeRepeaterLoginOpts(conn, nodeId, pubKey),
+                    loginOpts,
                   );
                 }
 
-                const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
                 assertRequestCurrent();
                 const trace = meshcoreTraceResults.get(nodeId);
                 const hopCount = computeRepeaterCliHopCount(
-                  node?.hops_away,
+                  resolveAdminHopsForNode(nodeId),
                   trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
                 );
                 const cliBaseTimeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
@@ -6280,8 +6285,7 @@ export function useMeshcoreRuntime() {
                 try {
                   await repeaterRemoteRpcRef.current(async () => {
                     {
-                      const hopsAwayCli =
-                        getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
+                      const hopsAwayCli = resolveAdminHopsForNode(nodeId);
                       if (hopsAwayCli > 0) {
                         await awaitMeshcoreRepeaterAdminRfIdle(
                           MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
@@ -6404,6 +6408,7 @@ export function useMeshcoreRuntime() {
       bumpMeshcoreNodeLastHeardFromRpc,
       ensureNodePubKey,
       makeRepeaterLoginOpts,
+      resolveAdminHopsForNode,
       meshcoreTraceResults,
       resolveMeshcoreConn,
     ],
@@ -8470,6 +8475,7 @@ export function useMeshcoreRuntime() {
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,
+      repeaterAdminRouting: { resolveHopsAway: resolveAdminHopsForNode },
       meshcorePingRouteReadyEpoch,
       requestRepeaterStatus,
       requestTelemetry,
@@ -8621,6 +8627,7 @@ export function useMeshcoreRuntime() {
       setOwner,
       traceRoute,
       meshcoreCanPingTrace,
+      resolveAdminHopsForNode,
       meshcorePingRouteReadyEpoch,
       requestRepeaterStatus,
       requestTelemetry,

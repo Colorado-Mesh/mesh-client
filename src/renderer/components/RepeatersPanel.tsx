@@ -210,6 +210,8 @@ interface Props {
     command: string,
     opts?: MeshcoreRepeaterCliOptions,
   ) => Promise<string>;
+  /** Read the current companion route instead of the last displayed advert hop count. */
+  resolveCliHopsAway?: (nodeId: number) => number;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
@@ -420,6 +422,7 @@ export default function RepeatersPanel({
   meshcoreTelemetryErrors,
   onSelectRepeater,
   onSendCliCommand,
+  resolveCliHopsAway,
   meshcoreCliHistories,
   meshcoreCliErrors,
   onClearCliHistory,
@@ -838,7 +841,7 @@ export default function RepeatersPanel({
   /** Returns null when CLI may proceed, else the i18n key describing why it cannot. */
   const ensureCliRoutePrimed = async (nodeId: number): Promise<string | null> => {
     if (meshcoreTraceResultsRef.current.get(nodeId) != null) return null;
-    const hops = nodes.get(nodeId)?.hops_away ?? 0;
+    const hops = resolveCliHopsAway?.(nodeId) ?? nodes.get(nodeId)?.hops_away ?? 0;
     if (hops <= 0) return null;
     const fail = (key: string): string => {
       addToast(t(key), 'error');
@@ -1225,7 +1228,7 @@ export default function RepeatersPanel({
                   const cliHopCount =
                     traceResult != null
                       ? meshcoreTracePathLenToHops(traceResult.pathLen)
-                      : (node.hops_away ?? 0);
+                      : (resolveCliHopsAway?.(node.node_id) ?? node.hops_away ?? 0);
                   const showCliMultiHopHint = cliHopCount > 0 && traceResult == null;
                   const neighborErrorRaw = meshcoreNeighborErrors?.get(node.node_id);
                   const statusErrorText = statusErrorRaw

@@ -197,6 +197,34 @@ describe('meshcoreRepeaterTryLogin', () => {
     expect(result).toMatchObject({ attempted: true, ok: true });
   });
 
+  it('restores an evicted Room contact for an explicit CLI admin password', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    pubKey[0] = 0x7a;
+    const restoreRadioContact = vi.fn(() => {
+      conn.sendToRadioFrame.mockImplementationOnce(() => {
+        queueMicrotask(() => {
+          conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+          conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), permissions: 3 });
+        });
+        return Promise.resolve();
+      });
+      return Promise.resolve();
+    });
+    const loginPromise = meshcoreRepeaterTryLoginWithPassword(conn, pubKey, 'room-admin', {
+      restoreRadioContact,
+      ...meshcoreRepeaterLoginTimeoutPolicy(0),
+    });
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR, { errCode: 2 });
+    expect(await loginPromise).toMatchObject({ attempted: true, ok: true });
+    expect(restoreRadioContact).toHaveBeenCalledTimes(1);
+    expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(2);
+    for (const [frame] of conn.sendToRadioFrame.mock.calls) {
+      expect(new TextDecoder().decode(frame.subarray(33))).toBe('room-admin');
+    }
+  });
+
   it('reports a missing radio contact instead of authentication failure', async () => {
     const conn = createMockConn();
     const pubKey = new Uint8Array(32);
