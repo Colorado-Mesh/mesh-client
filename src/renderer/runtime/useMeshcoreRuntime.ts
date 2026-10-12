@@ -305,6 +305,7 @@ import {
 } from '../lib/meshcoreRepeaterRpcInFlight';
 import {
   assertMeshcoreRepeaterLoginOk,
+  meshcoreRepeaterLoginTimeoutPolicy,
   meshcoreRepeaterTryLoginWithPassword,
 } from '../lib/meshcoreRepeaterSession';
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
@@ -5604,6 +5605,8 @@ export function useMeshcoreRuntime() {
             });
             return true;
           } catch (e: unknown) {
+            // Callers (Repeaters panel CLI auto-ping) distinguish a busy CLI from a failed route.
+            if (meshcoreTraceCancelledForCliPreempt(e)) throw e;
             const failedHops = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
             if ((failedHops ?? 0) >= 1) {
               outPathMapRef.current.delete(nodeId);
@@ -6210,6 +6213,9 @@ export function useMeshcoreRuntime() {
                     adminPw,
                     {
                       runSerialized: repeaterRemoteRpcRef.current,
+                      ...meshcoreRepeaterLoginTimeoutPolicy(
+                        getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away,
+                      ),
                     },
                   );
                   assertMeshcoreRepeaterLoginOk(aclLogin);

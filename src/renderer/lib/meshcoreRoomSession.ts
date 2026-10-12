@@ -553,7 +553,9 @@ export async function meshcoreTryRemoteServerLogin(
     // there is no BBS session yet. Do not forceRelogin over an existing guest/readwrite session —
     // that often times out on firmwares that omit LoginFail (CLI uses ACL SendLogin separately).
     if (meshcoreIsRoomLoggedIn(nodeId)) return;
-    await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
+    await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey, {
+      hopsAway: opts?.hopsAway ?? undefined,
+    });
     return;
   }
   const zeroHop = opts?.hopsAway === 0;

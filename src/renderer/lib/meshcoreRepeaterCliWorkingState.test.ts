@@ -104,6 +104,18 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('repeaterRemoteRpcRef.current');
   });
 
+  it('traceRoute rethrows CLI-preempted traces instead of reporting a failed ping', () => {
+    const traceBody = extractUseCallbackBody(RUNTIME_SOURCE, 'traceRoute');
+    expect(traceBody).toContain('if (meshcoreTraceCancelledForCliPreempt(e)) throw e;');
+  });
+
+  it('applies the zero-hop login timeout policy to Room CLI ACL login', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    const roomBranch = extractIfBlockBody(cliBody, "hwModelForCli === 'Room'");
+    expect(roomBranch).toContain('meshcoreRepeaterTryLoginWithPassword');
+    expect(roomBranch).toMatch(/\.\.\.meshcoreRepeaterLoginTimeoutPolicy\(/);
+  });
+
   it('holds companion queue only until RESP_SENT; response wait is outside queue slot', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     expect(cliBody).toContain('waitForMeshcoreRadioSentAck');

@@ -11,6 +11,7 @@ import {
 } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 import { awaitMeshcoreRepeaterAdminRfIdle } from './meshcoreTraceRadioIdle';
+import { MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
 
 /** Minimal connection surface for repeater admin login RPC. */
 export type MeshcoreRepeaterLoginConn = MeshcoreRadioConnection;
@@ -113,6 +114,15 @@ export interface MeshcoreRepeaterLoginOptions {
   restoreRadioContact?: () => Promise<void>;
   /** Resend once after a reply timeout (default true). */
   retryOnTimeout?: boolean;
+}
+
+/** 0-hop logins use a short reply wait with no resend; others keep the default policy. */
+export function meshcoreRepeaterLoginTimeoutPolicy(
+  hopsAway: number | null | undefined,
+): Pick<MeshcoreRepeaterLoginOptions, 'extraTimeoutMs' | 'retryOnTimeout'> {
+  return hopsAway === 0
+    ? { extraTimeoutMs: MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS, retryOnTimeout: false }
+    : {};
 }
 
 /**

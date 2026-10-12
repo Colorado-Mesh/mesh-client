@@ -14,9 +14,12 @@ import {
   assertMeshcoreRepeaterLoginOk,
   clearAllMeshcoreRepeaterEphemeralPasswords,
   meshcoreRepeaterHasResolvablePassword,
+  meshcoreRepeaterLoginTimeoutPolicy,
   meshcoreRepeaterTryLogin,
+  meshcoreRepeaterTryLoginWithPassword,
   setMeshcoreRepeaterEphemeralPassword,
 } from './meshcoreRepeaterSession';
+import { MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
 
 type MockMeshcoreRepeaterConn = MeshcoreRadioConnection & {
   emit: (event: string | number, payload?: unknown) => void;
@@ -239,6 +242,42 @@ describe('meshcoreRepeaterTryLogin', () => {
       await Promise.resolve();
       conn.emit(MC_RESP_SENT, { estTimeout: 100 });
       vi.advanceTimersByTime(100 + 30_000);
+      const result = await loginPromise;
+      expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
+      expect(() => {
+        assertMeshcoreRepeaterLoginOk(result);
+      }).toThrow(/^timeout$/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([1, 3, null, undefined])(
+    'keeps the default login timeout policy when hopsAway is %s',
+    (hopsAway) => {
+      expect(meshcoreRepeaterLoginTimeoutPolicy(hopsAway)).toEqual({});
+    },
+  );
+
+  it('zero-hop Room CLI ACL login waits only the zero-hop timeout and does not resend', async () => {
+    vi.useFakeTimers();
+    try {
+      const conn = createMockConn();
+      const pubKey = new Uint8Array(32);
+      pubKey[0] = 0x73;
+      let settled = false;
+      const loginPromise = meshcoreRepeaterTryLoginWithPassword(conn, pubKey, 'roomadmin', {
+        ...meshcoreRepeaterLoginTimeoutPolicy(0),
+      }).finally(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      await vi.advanceTimersByTimeAsync(
+        100 + MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS - 1,
+      );
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
       const result = await loginPromise;
       expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
       expect(() => {
