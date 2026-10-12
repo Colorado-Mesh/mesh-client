@@ -93,6 +93,7 @@ import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager'
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
 import { COT_FRAME_MAX_BYTES } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
+import { chatRoomContactUid } from './tak/geochat-cot';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
@@ -804,6 +805,107 @@ describe('TakServerManager GeoChat', () => {
     const line = String(vi.mocked(socket.write).mock.calls[0]?.[0]);
     expect(line).toContain('type="b-t-f"');
     expect(line).toContain('chatroom="Mesh"');
+  });
+});
+
+describe('TakServerManager rooms TAK clients may send to', () => {
+  const SELF = (uid: string, callsign: string) =>
+    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
+    `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
+    `<detail><contact callsign="${callsign}"/></detail></event>`;
+
+  /** A direct message from `sender` to the contact that stands for `room`. */
+  const TO_ROOM = (sender: string, room: string, text: string) =>
+    `<event version="2.0" uid="GeoChat.${sender}.${chatRoomContactUid(room)}.m-1" type="b-t-f" ` +
+    `time="2026-10-11T12:00:00Z" start="2026-10-11T12:00:00Z" stale="2026-10-12T12:00:00Z" ` +
+    `how="h-g-i-g-o"><point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/><detail>` +
+    `<__chat parent="RootContactGroup" chatroom="${room}" id="${chatRoomContactUid(room)}" ` +
+    `senderCallsign="VIPER"/><remarks>${text}</remarks></detail></event>`;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function connect(manager: TakServerManager, self?: [string, string]): tls.TLSSocket {
+    const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
+    const socket = mockTlsSocket();
+    internals._handleClient(socket);
+    if (self) socket.emit('data', Buffer.from(SELF(...self)));
+    return socket;
+  }
+
+  const written = (socket: tls.TLSSocket) =>
+    vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
+
+  it('announces each room as a contact, to connected clients and to ones that connect later', () => {
+    const manager = new TakServerManager();
+    const early = connect(manager);
+    manager.setChatSendRooms(['Public']);
+    const late = connect(manager);
+    for (const socket of [early, late]) {
+      const contact = written(socket).find((l) => l.includes(chatRoomContactUid('Public')));
+      expect(contact).toContain('<contact callsign="Public" endpoint="*:-1:stcp"/>');
+    }
+  });
+
+  it('removes the contact of a room that is no longer open for sending', () => {
+    const manager = new TakServerManager();
+    const socket = connect(manager);
+    manager.setChatSendRooms(['Public']);
+    vi.mocked(socket.write).mockClear();
+    manager.setChatSendRooms([]);
+    const lines = written(socket);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('type="t-x-d-d"');
+    expect(lines[0]).toContain(`<link uid="${chatRoomContactUid('Public')}"`);
+  });
+
+  it("delivers a mesh message in such a room as a message from the room's contact", () => {
+    const manager = new TakServerManager();
+    manager.setChatSendRooms(['Public']);
+    const known = connect(manager, ['ANDROID-1', 'VIPER']);
+    const unknown = connect(manager);
+    vi.mocked(known.write).mockClear();
+    vi.mocked(unknown.write).mockClear();
+
+    manager.sendChat({ room: 'Public', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() });
+
+    expect(written(known)[0]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Public"');
+    expect(written(known)[0]).toContain('>Bob: hi</remarks>');
+    // A client that has not reported who it is cannot be addressed, so it gets the room form.
+    expect(written(unknown)[0]).toContain('chatroom="Public" id="Public"');
+  });
+
+  it('leaves a room that is not open for sending in the room form', () => {
+    const manager = new TakServerManager();
+    manager.setChatSendRooms(['Public']);
+    const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+    vi.mocked(socket.write).mockClear();
+    manager.sendChat({ room: 'Listen', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() });
+    expect(written(socket)[0]).toContain('chatroom="Listen" id="Listen"');
+  });
+
+  it("takes a message to a room's contact as a message for that room", () => {
+    const manager = new TakServerManager();
+    manager.setChatSendRooms(['Public']);
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+    vi.mocked(sender.write).mockClear();
+    vi.mocked(other.write).mockClear();
+
+    sender.emit('data', Buffer.from(TO_ROOM('ANDROID-1', 'Public', 'on scene')));
+
+    expect(inbound).toMatchObject([{ room: 'Public', senderCallsign: 'VIPER', text: 'on scene' }]);
+    expect(sender.write).not.toHaveBeenCalled();
+    // The other client sees it in the same conversation it would reply in.
+    expect(written(other)[0]).toContain('chatroom="EAGLE" id="ANDROID-2" senderCallsign="Public"');
+    expect(written(other)[0]).toContain('>VIPER: on scene</remarks>');
   });
 });
 

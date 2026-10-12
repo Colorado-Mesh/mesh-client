@@ -44,7 +44,14 @@ import {
   parseGeochatEvent,
 } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
-import { buildGeochatCot } from './tak/geochat-cot';
+import {
+  buildChatRoomContactCot,
+  buildGeochatCot,
+  buildRoomContactChatCot,
+  CHAT_ROOM_CONTACT_STALE_MS,
+  chatRoomContactUid,
+  type GeochatRecipient,
+} from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
@@ -101,6 +108,9 @@ export class TakServerManager extends EventEmitter {
     port: DEFAULT_TAK_REMOTE_PORT,
   };
   private readonly contacts = new TakContactCache();
+  /** Rooms TAK clients may send to, keyed by the uid of the contact that stands for each. */
+  private chatSendRooms = new Map<string, string>();
+  private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
   constructor() {
@@ -293,10 +303,80 @@ export class TakServerManager extends EventEmitter {
     if (cot) this.broadcast(cot);
   }
 
-  /** Mirror one heard mesh channel message into TAK GeoChat on every sink. */
+  /**
+   * Mirror one heard mesh channel message into TAK GeoChat on every sink. A room clients may
+   * send to reaches each local client as a message from the room's contact; other rooms, and the
+   * remote relay, get the plain room form.
+   */
   sendChat(msg: TAKGeochatMessage): void {
     if (!this.hasConnectedSink()) return;
-    this.broadcast(buildGeochatCot(msg));
+    const groupCot = buildGeochatCot(msg);
+    if (!this.chatSendRooms.has(chatRoomContactUid(msg.room))) {
+      this.broadcast(groupCot);
+      return;
+    }
+    if (this.remote?.isConnected()) this.remote.write(groupCot);
+    this.writeRoomChat(msg, groupCot);
+  }
+
+  /**
+   * Replace the set of rooms TAK clients may send to. Each gets a contact announced to every
+   * local client; a room that left the set has its contact removed.
+   */
+  setChatSendRooms(rooms: string[]): void {
+    const next = new Map(rooms.map((room) => [chatRoomContactUid(room), room]));
+    const now = Date.now();
+    for (const uid of this.chatSendRooms.keys()) {
+      if (!next.has(uid)) this.writeToClients(cotDeleteEvent(uid, now));
+    }
+    for (const [uid, room] of next) {
+      if (!this.chatSendRooms.has(uid)) this.writeToClients(buildChatRoomContactCot(room, now));
+    }
+    this.chatSendRooms = next;
+    this.scheduleChatRoomAnnouncements();
+  }
+
+  /** Re-announce room contacts well inside their stale time so they do not expire in ATAK. */
+  private scheduleChatRoomAnnouncements(): void {
+    if (this.chatRoomAnnounceTimer) clearInterval(this.chatRoomAnnounceTimer);
+    this.chatRoomAnnounceTimer = null;
+    if (this.chatSendRooms.size === 0) return;
+    this.chatRoomAnnounceTimer = setInterval(() => {
+      this.forEachChatRoomContact((cot) => {
+        this.writeToClients(cot);
+      });
+    }, CHAT_ROOM_CONTACT_STALE_MS / 4);
+    this.chatRoomAnnounceTimer.unref();
+  }
+
+  private forEachChatRoomContact(send: (cot: string) => void): void {
+    const now = Date.now();
+    for (const room of this.chatSendRooms.values()) send(buildChatRoomContactCot(room, now));
+  }
+
+  /** The uid and callsign a client reported for itself, once it has reported both. */
+  private recipientFor(client: ConnectedClient): GeochatRecipient | null {
+    if (!client.selfUid || !client.info.callsign) return null;
+    return { uid: client.selfUid, callsign: client.info.callsign };
+  }
+
+  /**
+   * Deliver one message in a send-enabled room to local clients, skipping `exceptId`. A client
+   * that has not said who it is yet cannot be addressed directly and gets the plain room form.
+   */
+  private writeRoomChat(
+    msg: TAKGeochatMessage,
+    groupCot: string,
+    exceptId?: string,
+    messageId?: string,
+  ): void {
+    const now = Date.now();
+    for (const [id, client] of this.clients) {
+      if (id === exceptId) continue;
+      const recipient = this.recipientFor(client);
+      const cot = recipient ? buildRoomContactChatCot(msg, recipient, now, messageId) : groupCot;
+      this.writeToClient(id, client, cot);
+    }
   }
 
   getStyleSettings(): TakStyleSettings {
@@ -334,16 +414,19 @@ export class TakServerManager extends EventEmitter {
   /** Write one CoT event to the remote relay and every local client. */
   private broadcast(cot: string): void {
     if (this.remote?.isConnected()) this.remote.write(cot);
-    const data = cot + '\n';
-    for (const [id, client] of this.clients) {
-      try {
-        client.socket.write(data);
-      } catch (err) {
-        console.warn(
-          `[TakServer] Failed to write to client ${id}:`,
-          sanitizeLogMessage(String(err)),
-        );
-      }
+    this.writeToClients(cot);
+  }
+
+  /** Write one CoT event to every local client. */
+  private writeToClients(cot: string): void {
+    for (const [id, client] of this.clients) this.writeToClient(id, client, cot);
+  }
+
+  private writeToClient(id: string, client: ConnectedClient, cot: string): void {
+    try {
+      client.socket.write(cot + '\n');
+    } catch (err) {
+      console.warn(`[TakServer] Failed to write to client ${id}:`, sanitizeLogMessage(String(err)));
     }
   }
 
@@ -550,23 +633,20 @@ export class TakServerManager extends EventEmitter {
     }
     // The callsign from the connection's own position report wins over the one in the message.
     const senderCallsign = client.info.callsign || chat.senderCallsign || chat.senderUid;
-    const message: TAKGeochatMessage = {
-      room: chat.room,
-      senderCallsign,
-      text: chat.text,
-      timeMs: nowMs,
-    };
-    const data = buildGeochatCot(message, nowMs, chat.messageId, chat.senderUid) + '\n';
-    for (const [otherId, other] of this.clients) {
-      if (otherId === id) continue;
-      try {
-        other.socket.write(data);
-      } catch {
-        // catch-no-log-ok: the other client may be closing; its own close handler reports it
+    // A message to a room's contact is for that room, whatever name the client filed it under.
+    const sendRoom = chat.roomId ? this.chatSendRooms.get(chat.roomId) : undefined;
+    const room = sendRoom ?? chat.room;
+    const message: TAKGeochatMessage = { room, senderCallsign, text: chat.text, timeMs: nowMs };
+    const groupCot = buildGeochatCot(message, nowMs, chat.messageId, chat.senderUid);
+    if (sendRoom) {
+      this.writeRoomChat(message, groupCot, id, chat.messageId);
+    } else {
+      for (const [otherId, other] of this.clients) {
+        if (otherId !== id) this.writeToClient(otherId, other, groupCot);
       }
     }
     const inbound: TAKInboundChat = {
-      room: chat.room,
+      room,
       senderCallsign,
       text: chat.text,
       clientId: id,
@@ -607,6 +687,9 @@ export class TakServerManager extends EventEmitter {
       } catch {
         // catch-no-log-ok: socket may close between connection and flush; not actionable
       }
+    });
+    this.forEachChatRoomContact((cot) => {
+      this.writeToClient(id, client, cot);
     });
 
     this.resetClientIdleTimer(id, client);

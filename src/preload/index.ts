@@ -1377,6 +1377,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     pushChatMessage: (message: TAKGeochatMessage): Promise<void> =>
       ipcRenderer.invoke('tak:pushChatMessage', message),
+    setChatSendRooms: (rooms: string[]): Promise<void> =>
+      ipcRenderer.invoke('tak:setChatSendRooms', rooms),
     getStyleSettings: (): Promise<TakStyleSettings> => ipcRenderer.invoke('tak:getStyleSettings'),
     setStyleSettings: (settings: TakStyleSettings): Promise<TakStyleSettings> =>
       ipcRenderer.invoke('tak:setStyleSettings', settings),

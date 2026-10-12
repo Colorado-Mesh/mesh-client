@@ -1448,6 +1448,11 @@ export interface ElectronAPI {
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
     /** Mirror one heard mesh channel message into TAK GeoChat; dropped while no sink is active. */
     pushChatMessage: (message: TAKGeochatMessage) => Promise<void>;
+    /**
+     * Replace the GeoChat rooms TAK clients may send to. Each is announced to clients as a
+     * contact they can message; ignored while no sink has started.
+     */
+    setChatSendRooms: (rooms: string[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */

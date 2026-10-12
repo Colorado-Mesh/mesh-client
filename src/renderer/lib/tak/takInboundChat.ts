@@ -71,6 +71,21 @@ export function findTakSendTargets(room: string): TakSendTarget[] {
   return targets;
 }
 
+/** Every room at least one identity lets TAK clients send to, sorted, without repeats. */
+export function listTakSendRooms(): string[] {
+  const rooms = new Set<string>();
+  for (const identity of Object.values(useIdentityStore.getState().identities)) {
+    const protocol = identity.protocol.type;
+    if (protocol !== 'meshtastic' && protocol !== 'meshcore') continue;
+    const prefs = getTakRelayPrefs(identity.id);
+    for (const channelIndex of prefs.chatSendChannels) {
+      const room = prefs.chatBridges[channelIndex];
+      if (room) rooms.add(room);
+    }
+  }
+  return [...rooms].sort();
+}
+
 export type TakMeshSendFn = (target: TakSendTarget, text: string) => Promise<void>;
 
 /** Reject when `send` has not settled within the send timeout. */

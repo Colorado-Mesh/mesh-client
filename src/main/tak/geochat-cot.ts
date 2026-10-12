@@ -2,6 +2,8 @@ import { randomUUID } from 'crypto';
 
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
+  TAK_CHAT_ROOM_UID_PREFIX,
+  TAK_CHAT_SEND_ROOMS_MAX,
   TAK_GEOCHAT_CALLSIGN_MAX_LEN,
   TAK_GEOCHAT_ROOM_MAX_LEN,
   TAK_GEOCHAT_TEXT_MAX_LEN,
@@ -16,15 +18,111 @@ const UNKNOWN_ALTITUDE = 9999999;
 /** Room names and callsigns are single-line labels. */
 const CONTROL_CHARS_RE = /\p{Cc}/u;
 
-/** Stable sender uid for a mesh callsign; ATAK groups a sender's messages by it. */
-export function geochatSenderUid(callsign: string): string {
-  // FNV-1a, 32-bit: short and stable across restarts.
+/** FNV-1a, 32-bit, as eight hex digits: short and stable across restarts. */
+function fnv1aHex(text: string): string {
   let h = 0x811c9dc5;
-  for (let i = 0; i < callsign.length; i++) {
-    h ^= callsign.charCodeAt(i);
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
     h = Math.imul(h, 0x01000193) >>> 0;
   }
-  return `MESHCHAT-${h.toString(16).padStart(8, '0')}`;
+  return h.toString(16).padStart(8, '0');
+}
+
+/** Stable sender uid for a mesh callsign; ATAK groups a sender's messages by it. */
+export function geochatSenderUid(callsign: string): string {
+  return `MESHCHAT-${fnv1aHex(callsign)}`;
+}
+
+/** Stable uid of the contact that stands for a room TAK clients may send to. */
+export function chatRoomContactUid(room: string): string {
+  return `${TAK_CHAT_ROOM_UID_PREFIX}${fnv1aHex(room)}`;
+}
+
+/** Validate the renderer's list of rooms TAK clients may send to. Throws when malformed. */
+export function parseTakChatSendRooms(raw: unknown): string[] {
+  if (!Array.isArray(raw) || raw.length > TAK_CHAT_SEND_ROOMS_MAX) {
+    throw new Error(
+      `tak:setChatSendRooms: rooms must be an array of at most ${TAK_CHAT_SEND_ROOMS_MAX}`,
+    );
+  }
+  const rooms = new Set<string>();
+  for (const room of raw) {
+    if (typeof room !== 'string') throw new Error('tak:setChatSendRooms: room must be a string');
+    const trimmed = room.trim();
+    if (!trimmed || trimmed.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(trimmed)) {
+      throw new Error(
+        `tak:setChatSendRooms: room must be 1-${TAK_GEOCHAT_ROOM_MAX_LEN} printable characters`,
+      );
+    }
+    rooms.add(trimmed);
+  }
+  return [...rooms];
+}
+
+/** A TAK client the server can address: the uid and callsign from its own position report. */
+export interface GeochatRecipient {
+  uid: string;
+  callsign: string;
+}
+
+/** How long a room contact stays in ATAK without being announced again. */
+export const CHAT_ROOM_CONTACT_STALE_MS = GEOCHAT_STALE_MS;
+
+/**
+ * The contact that stands for a room TAK clients may send to. ATAK only transmits chat to a
+ * contact it can reach, and `endpoint="*:-1:stcp"` says this one is reached through the server
+ * connection. A contact needs a point; a room has no place, so it sits at 0, 0.
+ */
+export function buildChatRoomContactCot(room: string, nowMs: number = Date.now()): string {
+  const uid = escapeXml(chatRoomContactUid(room));
+  const time = new Date(nowMs).toISOString();
+  const stale = new Date(nowMs + CHAT_ROOM_CONTACT_STALE_MS).toISOString();
+  return (
+    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="${time}" start="${time}"` +
+    ` stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
+    `<detail>` +
+    `<contact callsign="${escapeXml(room)}" endpoint="*:-1:stcp"/>` +
+    `<__group name="White" role="Team Member"/>` +
+    `</detail>` +
+    `</event>`
+  );
+}
+
+/**
+ * One message in a send-enabled room, as a direct message to `recipient` from the room's
+ * contact. ATAK files it under that contact, and a reply there comes back addressed to the
+ * contact's uid, which names the room. The original sender's name leads the text because every
+ * line in the conversation comes from the same contact.
+ */
+export function buildRoomContactChatCot(
+  msg: TAKGeochatMessage,
+  recipient: GeochatRecipient,
+  nowMs: number = Date.now(),
+  messageId: string = randomUUID(),
+): string {
+  const senderUid = chatRoomContactUid(msg.room);
+  const sender = escapeXml(senderUid);
+  const to = escapeXml(recipient.uid);
+  const uid = escapeXml(`GeoChat.${senderUid}.${recipient.uid}.${messageId}`);
+  const time = new Date(nowMs).toISOString();
+  const sentAt = new Date(Math.min(msg.timeMs, nowMs)).toISOString();
+  const stale = new Date(nowMs + GEOCHAT_STALE_MS).toISOString();
+  return (
+    `<event version="2.0" uid="${uid}" type="b-t-f" time="${time}" start="${time}"` +
+    ` stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
+    `<detail>` +
+    `<__chat parent="RootContactGroup" groupOwner="false" chatroom="${escapeXml(recipient.callsign)}"` +
+    ` id="${to}" senderCallsign="${escapeXml(msg.room)}">` +
+    `<chatgrp uid0="${sender}" uid1="${to}" id="${to}"/>` +
+    `</__chat>` +
+    `<link uid="${sender}" type="a-f-G-U-C" relation="p-p"/>` +
+    `<remarks source="BAO.F.ATAK.${sender}" to="${to}" time="${sentAt}">` +
+    `${escapeXml(`${msg.senderCallsign}: ${msg.text}`)}</remarks>` +
+    `</detail>` +
+    `</event>`
+  );
 }
 
 /** A trimmed single-line label of 1 to `max` characters; throws naming `field` otherwise. */
