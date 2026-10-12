@@ -2679,7 +2679,9 @@
       "pingFailed": "PING nie powiódł się",
       "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności.",
       "removeContactFailed": "Usunięto lokalnie, ale radio odrzuciło removeContact. Kontakt może pojawić się ponownie po odświeżeniu.",
-      "bleTimeoutGatt": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore nad przyczepą boczną GATT. Ponów próbę, przeprowadź cykl zasilania BLE na urządzeniu lub użyj protokołu szeregowego/TCP."
+      "bleTimeoutGatt": "Przekroczono limit czasu połączenia Bluetooth podczas otwierania MeshCore nad przyczepą boczną GATT. Ponów próbę, przeprowadź cykl zasilania BLE na urządzeniu lub użyj protokołu szeregowego/TCP.",
+      "radioContactMissing": "Ten węzeł nie znajduje się na liście kontaktów Twojego radia, więc radio nie może się do niego zalogować. Poczekaj na kolejny advert lub zaimportuj go jako kontakt, a następnie spróbuj ponownie.",
+      "radioContactTableFull": "Lista kontaktów Twojego radia jest pełna, więc nie można dodać tego węzła do logowania. Usuń nieużywane kontakty, a następnie spróbuj ponownie."
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
@@ -5096,7 +5098,9 @@
     "radioCliCadOnHint": "Włącz sprzęt CAD. MeshCore domyślnie pozostawia CAD wyłączonym, ponieważ może zablokować radio na około 4 sekundy.",
     "radioCliCadOff": "Wyłącz sprzęt CAD",
     "radioCliBootReasonGet": "Powód uruchomienia i wyłączenia",
-    "cliQuickRadio": "Sprzęt radiowy"
+    "cliQuickRadio": "Sprzęt radiowy",
+    "cliAutoPingWaitingForCli": "Oczekiwanie na zakończenie polecenia CLI innego węzła przed wysłaniem polecenia Ping...",
+    "cliAutoPingBusy": "Polecenie CLI innego węzła jest nadal uruchomione; spróbuj ponownie po zakończeniu."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

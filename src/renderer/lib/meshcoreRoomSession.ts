@@ -17,6 +17,7 @@ import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, runMeshcoreRoomLogin } from './meshc
 import { runMeshcoreRoomLogout } from './meshcoreRoomLogoutRpc';
 import { getMeshcoreRoomLastPostAt } from './meshcoreRoomSyncStorage';
 import {
+  MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS,
   MESHCORE_ROOM_LOGIN_MAX_ATTEMPTS,
   MESHCORE_ROOM_LOGIN_RETRY_DELAY_MS,
   type MeshcoreCompanionTransport,
@@ -541,6 +542,11 @@ export async function meshcoreTryRemoteServerLogin(
   pubKey: Uint8Array,
   hwModel: string | undefined,
   runSerialized?: MeshcoreRepeaterRunSerialized,
+  opts?: {
+    /** Re-add an evicted repeater contact on SendLogin ERR_CODE_NOT_FOUND, then retry. */
+    restoreRadioContact?: () => Promise<void>;
+    hopsAway?: number | null;
+  },
 ): Promise<void> {
   if (hwModel === 'Room') {
     // Status/Neighbors do not require login. Telemetry may try a best-effort admin login when
@@ -550,6 +556,14 @@ export async function meshcoreTryRemoteServerLogin(
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
-  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId, runSerialized);
+  const zeroHop = opts?.hopsAway === 0;
+  const login = await meshcoreRepeaterTryLogin(
+    conn,
+    pubKey,
+    nodeId,
+    runSerialized,
+    zeroHop ? MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS : undefined,
+    { restoreRadioContact: opts?.restoreRadioContact, retryOnTimeout: !zeroHop },
+  );
   assertMeshcoreRepeaterLoginOk(login);
 }

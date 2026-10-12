@@ -2627,7 +2627,9 @@
       "pingFailed": "Échec du ping",
       "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif.",
       "removeContactFailed": "Supprimé localement, mais la radio a rejeté removeContact. Le contact peut réapparaître après un rafraîchissement.",
-      "bleTimeoutGatt": "La connexion Bluetooth a expiré lors de l'ouverture de MeshCore sur le side-car GATT. Réessayez, mettez en marche le cycle ble sur l'appareil ou utilisez Serial/TCP."
+      "bleTimeoutGatt": "La connexion Bluetooth a expiré lors de l'ouverture de MeshCore sur le side-car GATT. Réessayez, mettez en marche le cycle ble sur l'appareil ou utilisez Serial/TCP.",
+      "radioContactMissing": "Ce nœud ne figure pas dans la liste de contacts de votre radio, de sorte que la radio ne peut pas s'y connecter. Attendez sa prochaine annonce ou importez-la en tant que contact, puis réessayez.",
+      "radioContactTableFull": "La liste de contacts de votre radio est pleine, ce nœud n'a donc pas pu être ajouté pour la connexion. Supprimez les contacts inutilisés, puis réessayez."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Activez la CAO matérielle. MeshCore laisse la CAO désactivée par défaut car il peut verrouiller la radio pendant environ 4 secondes.",
     "radioCliCadOff": "Désactiver la CAO du matériel",
     "radioCliBootReasonGet": "Obtenir la raison du démarrage et de l'arrêt",
-    "cliQuickRadio": "Radio:"
+    "cliQuickRadio": "Radio:",
+    "cliAutoPingWaitingForCli": "Attendre que la commande CLI d'un autre nœud se termine avant Ping…",
+    "cliAutoPingBusy": "La commande CLI d'un autre nœud est toujours en cours d'exécution ; réessayez lorsqu'elle se termine."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

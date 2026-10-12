@@ -8,6 +8,23 @@ export const MESHCORE_RADIO_ERR_BAD_STATE = 4;
 export const MESHCORE_RADIO_ERR_FILE_IO = 5;
 export const MESHCORE_RADIO_ERR_ILLEGAL_ARG = 6;
 
+/** Companion `RESP_ERR` reply to a queued command, keeping the firmware error code. */
+export class MeshcoreRadioRejectedError extends Error {
+  readonly errCode: number | undefined;
+
+  constructor(message: string, errCode: number | undefined) {
+    super(message);
+    this.name = 'MeshcoreRadioRejectedError';
+    this.errCode = errCode;
+  }
+}
+
+/** True when the companion rejected a command because the contact is not in its table. */
+export function isMeshcoreNotFoundError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false;
+  return (err as { errCode?: unknown }).errCode === MESHCORE_RADIO_ERR_NOT_FOUND;
+}
+
 /** True when `err` is the companion's ERR_CODE_TABLE_FULL rejection (patched meshcore.js `{ errCode }`). */
 export function isMeshcoreTableFullError(err: unknown): boolean {
   if (err === null || typeof err !== 'object') return false;

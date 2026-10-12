@@ -50,6 +50,11 @@ import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdmin
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import { normalizeMeshcoreCliCommand } from '../lib/meshcoreRepeaterCliQueue';
+import {
+  awaitMeshcoreCliReplyHoldClear,
+  meshcoreCliReplyHoldActive,
+} from '../lib/meshcoreRepeaterRpcInFlight';
+import { meshcoreTraceCancelledForCliPreempt } from '../lib/meshcoreRepeaterTracePath';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import { effectiveLastHeardMs, getNodeStatus } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
@@ -830,24 +835,39 @@ export default function RepeatersPanel({
     });
   };
 
-  const ensureCliRoutePrimed = async (nodeId: number): Promise<boolean> => {
-    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return true;
+  /** Returns null when CLI may proceed, else the i18n key describing why it cannot. */
+  const ensureCliRoutePrimed = async (nodeId: number): Promise<string | null> => {
+    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return null;
     const hops = nodes.get(nodeId)?.hops_away ?? 0;
-    if (hops <= 0) return true;
+    if (hops <= 0) return null;
+    const fail = (key: string): string => {
+      addToast(t(key), 'error');
+      return key;
+    };
+    // Traces fail fast while another node's CLI holds the reply path; wait it out here
+    // (this node's own CLI has not started yet, so there is no deadlock).
+    if (meshcoreCliReplyHoldActive()) {
+      addToast(t('repeatersPanel.cliAutoPingWaitingForCli'), 'info');
+      try {
+        await awaitMeshcoreCliReplyHoldClear();
+      } catch (e) {
+        console.warn('[RepeatersPanel] CLI auto-ping wait failed ' + errLikeToLogString(e));
+        return fail('repeatersPanel.cliAutoPingBusy');
+      }
+    }
     addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
     try {
       const pingOk = await onPing(nodeId);
-      if (pingOk === false) {
-        addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
-        return false;
-      }
-      if (meshcoreTraceResultsRef.current.get(nodeId) != null || pingOk === true) return true;
-      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
-      return false;
+      if (pingOk === false) return fail('repeatersPanel.cliAutoPingFailed');
+      if (meshcoreTraceResultsRef.current.get(nodeId) != null || pingOk === true) return null;
+      return fail('repeatersPanel.cliAutoPingFailed');
     } catch (e) {
       console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
-      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
-      return false;
+      return fail(
+        meshcoreTraceCancelledForCliPreempt(e)
+          ? 'repeatersPanel.cliAutoPingBusy'
+          : 'repeatersPanel.cliAutoPingFailed',
+      );
     }
   };
 
@@ -874,8 +894,8 @@ export default function RepeatersPanel({
     if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
     if (!auth.ok) throw new Error(t('infraConfig.authCancelled'));
     if (auth.saved) refreshStoredSecrets();
-    const primed = await ensureCliRoutePrimed(nodeId);
-    if (!primed) throw new Error(t('repeatersPanel.cliAutoPingFailed'));
+    const primeFailureKey = await ensureCliRoutePrimed(nodeId);
+    if (primeFailureKey != null) throw new Error(t(primeFailureKey));
     if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
     return onSendCliCommand(nodeId, normalizeMeshcoreCliCommand(command), opts);
   };

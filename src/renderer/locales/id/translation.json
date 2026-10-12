@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping gagal",
       "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
       "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran.",
-      "bleTimeoutGatt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui sespan GATT. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP."
+      "bleTimeoutGatt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui sespan GATT. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
+      "radioContactMissing": "Node ini tidak ada dalam daftar kontak radio Anda, jadi radio tidak dapat masuk ke sana. Tunggu advert berikutnya atau impor sebagai kontak, lalu coba lagi.",
+      "radioContactTableFull": "Daftar kontak radio Anda sudah penuh, jadi simpul ini tidak dapat ditambahkan untuk login. Hapus kontak yang tidak digunakan, lalu coba lagi."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Aktifkan CAD perangkat keras. MeshCore meninggalkan CAD secara default karena dapat mengunci radio selama sekitar 4 detik.",
     "radioCliCadOff": "Nonaktifkan CAD perangkat keras",
     "radioCliBootReasonGet": "Dapatkan alasan boot dan shutdown",
-    "cliQuickRadio": "Radio"
+    "cliQuickRadio": "Radio",
+    "cliAutoPingWaitingForCli": "Menunggu perintah CLI node lain selesai sebelum Ping...",
+    "cliAutoPingBusy": "Perintah CLI node lain masih berjalan; coba lagi saat selesai."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

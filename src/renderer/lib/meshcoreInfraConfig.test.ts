@@ -80,6 +80,10 @@ describe('MeshCore infrastructure configuration', () => {
         current,
       ),
     ).toEqual({ values: {}, unavailable: ['region.default'] });
+    expect(await readInfraConfig('scope', vi.fn().mockResolvedValue('Err - ??'), current)).toEqual({
+      values: {},
+      unavailable: ['region.default'],
+    });
     const send = vi.fn().mockResolvedValue('OK');
     const result = await applyInfraConfig(
       'scope',

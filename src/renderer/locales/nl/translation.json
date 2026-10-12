@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping mislukt",
       "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",
       "removeContactFailed": "Lokaal verwijderd, maar de radio heeft removeContact geweigerd. Het contact kan opnieuw verschijnen na een verversing.",
-      "bleTimeoutGatt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via zijspan GATT. Probeer het opnieuw, schakel BLE op het apparaat uit en weer in, of gebruik Serieel/TCP."
+      "bleTimeoutGatt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via zijspan GATT. Probeer het opnieuw, schakel BLE op het apparaat uit en weer in, of gebruik Serieel/TCP.",
+      "radioContactMissing": "Dit knooppunt staat niet in de lijst met contactpersonen van uw radio, dus de radio kan er niet op inloggen. Wacht op de volgende advert of importeer deze als contactpersoon en probeer het opnieuw.",
+      "radioContactTableFull": "De lijst met contactpersonen van uw radio is vol, dus dit knooppunt kon niet worden toegevoegd om in te loggen. Verwijder ongebruikte contacten en probeer het opnieuw."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Zet hardware CAD aan. MeshCore laat CAD standaard uit omdat het de radio ongeveer 4 seconden kan vergrendelen.",
     "radioCliCadOff": "Zet hardware CAD uit",
     "radioCliBootReasonGet": "Reden voor opstarten en afsluiten",
-    "cliQuickRadio": "Radio"
+    "cliQuickRadio": "Radio",
+    "cliAutoPingWaitingForCli": "Wachten tot het CLI-commando van een ander knooppunt is voltooid voordat Ping...",
+    "cliAutoPingBusy": "De CLI-opdracht van een ander knooppunt wordt nog steeds uitgevoerd; probeer het opnieuw wanneer deze is voltooid."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

@@ -111,7 +111,9 @@ function assertCurrent(isCurrent: InfraConfigIsCurrent): void {
 }
 
 function isUnsupported(response: string): boolean {
-  return /^(?:\?\?:|unknown (?:command|config)|error[: ,]+unsupported)/i.test(response.trim());
+  return /^(?:\?\?:|err - \?\?|unknown (?:command|config)|error[: ,]+unsupported)/i.test(
+    response.trim(),
+  );
 }
 
 export function assertInfraConfigCommandOk(response: string): void {

@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping non eseguito correttamente!",
       "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo.",
       "removeContactFailed": "Rimosso localmente, ma la radio ha rifiutato removeContact. Il contatto potrebbe riapparire dopo un aggiornamento.",
-      "bleTimeoutGatt": "Connessione Bluetooth scaduta durante l'apertura di MeshCore su sidecar GATT. Riprovare, eseguire il ciclo di alimentazione BLE sul dispositivo o utilizzare Serial/TCP."
+      "bleTimeoutGatt": "Connessione Bluetooth scaduta durante l'apertura di MeshCore su sidecar GATT. Riprovare, eseguire il ciclo di alimentazione BLE sul dispositivo o utilizzare Serial/TCP.",
+      "radioContactMissing": "Questo nodo non è nell'elenco dei contatti della tua radio, quindi la radio non può accedervi. Attendi il suo prossimo annuncio o importalo come contatto, quindi riprova.",
+      "radioContactTableFull": "L'elenco dei contatti della tua radio è pieno, quindi non è stato possibile aggiungere questo nodo per l'accesso. Rimuovi i contatti inutilizzati, quindi riprova."
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Attiva CAD hardware. MeshCore lascia il CAD spento per impostazione predefinita perché può bloccare la radio per circa 4 secondi.",
     "radioCliCadOff": "Disattiva CAD hardware",
     "radioCliBootReasonGet": "Ottieni motivo di avvio e arresto",
-    "cliQuickRadio": "Radio:"
+    "cliQuickRadio": "Radio:",
+    "cliAutoPingWaitingForCli": "In attesa che il comando CLI di un altro nodo finisca prima del ping...",
+    "cliAutoPingBusy": "Il comando CLI di un altro nodo è ancora in esecuzione; riprova al termine."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

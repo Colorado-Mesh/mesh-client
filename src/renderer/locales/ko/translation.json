@@ -2627,7 +2627,9 @@
       "pingFailed": "핑 실패",
       "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요.",
       "removeContactFailed": "로컬로 제거되었지만 라디오가 removeContact를 거부했습니다. 새로 고침 후 연락처가 다시 나타날 수 있습니다.",
-      "bleTimeoutGatt": "사이드카 GATT를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요."
+      "bleTimeoutGatt": "사이드카 GATT를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "radioContactMissing": "이 노드는 라디오의 연락처 목록에 없으므로 라디오에 로그인할 수 없습니다. 다음 advert를 기다리거나 연락처로 가져온 다음 다시 시도하세요.",
+      "radioContactTableFull": "라디오의 연락처 목록이 가득 찼으므로 이 노드를 로그인에 추가할 수 없습니다. 사용하지 않는 연락처를 삭제한 다음 다시 시도하세요."
     },
     "mqttHints": {
       "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "하드웨어 CAD를 켭니다. MeshCore는 약 4초 동안 라디오를 잠글 수 있기 때문에 기본적으로 CAD를 사용하지 않습니다.",
     "radioCliCadOff": "하드웨어 CAD 끄기",
     "radioCliBootReasonGet": "부팅 및 종료 이유 가져오기",
-    "cliQuickRadio": "라디오 :"
+    "cliQuickRadio": "라디오 :",
+    "cliAutoPingWaitingForCli": "핑 전에 다른 노드의 CLI 명령이 완료되기를 기다리는 중...",
+    "cliAutoPingBusy": "다른 노드의 CLI 명령이 여전히 실행 중입니다. 완료되면 다시 시도하십시오."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

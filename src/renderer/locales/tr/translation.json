@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping başarısız oldu",
       "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin.",
       "removeContactFailed": "Yerel olarak kaldırıldı, ancak telsiz removeContact’ı reddetti. Kişi yenilendikten sonra yeniden görünebilir.",
-      "bleTimeoutGatt": "Sepet GATT üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın."
+      "bleTimeoutGatt": "Sepet GATT üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "radioContactMissing": "Bu düğüm, telsizinin kişi listesinde değil, bu nedenle telsiz ona giriş yapamaz. Bir sonraki advert'ini bekleyin veya kişi olarak içe aktarın, ardından tekrar deneyin.",
+      "radioContactTableFull": "Radyonun kişi listesi dolu, bu nedenle bu karo giriş için eklenemedi. Kullanılmayan kişileri kaldırın, ardından tekrar deneyin."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -5014,7 +5016,9 @@
     "radioCliCadOnHint": "Donanım Cad özelliğini açın. MeshCore, radyoyu yaklaşık 4 saniye boyunca kilitleyebildiği için Cad'i varsayılan olarak kapalı bırakır.",
     "radioCliCadOff": "Donanım Cad özelliğini kapatın",
     "radioCliBootReasonGet": "Önyükleme ve kapatma nedenini öğrenin",
-    "cliQuickRadio": "Radyo"
+    "cliQuickRadio": "Radyo",
+    "cliAutoPingWaitingForCli": "Ping atmadan önce başka bir düğümün CLI komutunun bitmesi bekleniyor…",
+    "cliAutoPingBusy": "Başka bir düğümün CLI komutu hala çalışıyor; bittiğinde tekrar deneyin."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

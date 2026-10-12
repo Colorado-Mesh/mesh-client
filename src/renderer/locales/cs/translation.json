@@ -2656,7 +2656,9 @@
       "pingFailed": "Ping selhal",
       "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti.",
       "removeContactFailed": "Odebráno lokálně, ale rádio odmítlo removeContact. Kontakt se může po obnovení znovu objevit.",
-      "bleTimeoutGatt": "Při otevírání MeshCore přes sidecar GATT vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP."
+      "bleTimeoutGatt": "Při otevírání MeshCore přes sidecar GATT vypršel časový limit připojení Bluetooth. Zkuste to znovu, vypněte a zapněte BLE na zařízení nebo použijte sériové/TCP.",
+      "radioContactMissing": "Tento uzel není v seznamu kontaktů vašeho rádia, takže se k němu rádio nemůže přihlásit. Počkejte na další advert nebo jej importujte jako kontakt a zkuste to znovu.",
+      "radioContactTableFull": "Seznam kontaktů vašeho rádia je plný, takže tento uzel nelze přidat pro přihlášení. Odeberte nepoužité kontakty a zkuste to znovu."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
@@ -5058,7 +5060,9 @@
     "radioCliCadOnHint": "Zapněte hardwarový CAD. MeshCore ponechává CAD ve výchozím nastavení vypnutý, protože může uzamknout rádio asi na 4 sekundy.",
     "radioCliCadOff": "Vypnout hardwarový CAD",
     "radioCliBootReasonGet": "Získat důvod spuštění a vypnutí",
-    "cliQuickRadio": "Rádio režim:"
+    "cliQuickRadio": "Rádio režim:",
+    "cliAutoPingWaitingForCli": "Čekání na dokončení příkazu CLI jiného uzlu před Ping...",
+    "cliAutoPingBusy": "Příkaz CLI jiného uzlu je stále spuštěn; po dokončení to zkuste znovu."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
