@@ -114,6 +114,19 @@ describe('meshcore repeater CLI working state', () => {
     const roomBranch = extractIfBlockBody(cliBody, "hwModelForCli === 'Room'");
     expect(roomBranch).toContain('meshcoreRepeaterTryLoginWithPassword');
     expect(roomBranch).toMatch(/\.\.\.meshcoreRepeaterLoginTimeoutPolicy\(/);
+    expect(roomBranch).toContain('meshcoreRepeaterLoginTimeoutPolicy(loginOpts?.hopsAway)');
+    expect(roomBranch).toContain('restoreRadioContact: loginOpts?.restoreRadioContact');
+  });
+
+  it('uses the companion route for CLI drain, trace waits and login timeout decisions', () => {
+    const routeBody = extractUseCallbackBody(RUNTIME_SOURCE, 'resolveAdminHopsForNode');
+    expect(routeBody).toContain('resolveMeshcoreAdminHopsAway');
+    expect(routeBody).toContain('outPathMapRef.current.get(nodeId)');
+    const loginBody = extractUseCallbackBody(RUNTIME_SOURCE, 'makeRepeaterLoginOpts');
+    expect(loginBody).toContain('hopsAway: resolveAdminHopsForNode(nodeId)');
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('const hopsForDrain = resolveAdminHopsForNode(nodeId)');
+    expect(cliBody.match(/const hopsAwayCli = resolveAdminHopsForNode\(nodeId\)/g)).toHaveLength(2);
   });
 
   it('holds companion queue only until RESP_SENT; response wait is outside queue slot', () => {

@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
 import {
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
@@ -723,6 +724,78 @@ describe('RepeatersPanel', () => {
       'Establishing route with Ping before CLI…',
       'info',
     );
+  });
+
+  it.each(['Repeater', 'Room'])(
+    'skips CLI auto-ping for a direct %s with stale displayed hops',
+    async (hwModel) => {
+      const node = { ...repeater, hw_model: hwModel, hops_away: 2 };
+      const onPing = vi.fn().mockResolvedValue(false);
+      const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+      render(
+        <RepeatersPanel
+          {...makeBaseProps()}
+          nodes={new Map([[node.node_id, node]])}
+          resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array())}
+          onPing={onPing}
+          onSendCliCommand={onSendCliCommand}
+        />,
+      );
+      await chooseRowAction(userEvent, 'CLI interface');
+      expect(screen.queryByText(/^Multi-hop CLI is more reliable/)).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'name' }));
+      await waitFor(() => {
+        expect(onSendCliCommand).toHaveBeenCalledWith(node.node_id, 'name', undefined);
+      });
+      expect(onPing).not.toHaveBeenCalled();
+    },
+  );
+
+  it('primes a known multi-hop companion route even when displayed hops are zero', async () => {
+    const node = { ...repeater, hops_away: 0 };
+    const onPing = vi.fn().mockResolvedValue(true);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[node.node_id, node]])}
+        resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array([0x11, 0x22]))}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+    await waitFor(() => {
+      expect(onSendCliCommand).toHaveBeenCalled();
+    });
+    expect(onPing.mock.invocationCallOrder[0]).toBeLessThan(
+      onSendCliCommand.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('loads direct room configuration with stale multi-hop UI hops without requiring Ping', async () => {
+    const node = { ...repeater, hw_model: 'Room', hops_away: 3 };
+    const onPing = vi.fn().mockResolvedValue(false);
+    const onSendCliCommand = vi.fn((_nodeId: number, command: string) =>
+      Promise.resolve(command === 'get name' ? '> Test Room' : '> 0'),
+    );
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[node.node_id, node]])}
+        resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array())}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+    await chooseRowAction(userEvent, 'Configure');
+    await userEvent.click(screen.getByText('Identity and location'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toHaveValue('Test Room');
+      expect(onSendCliCommand).toHaveBeenCalledTimes(4);
+    });
+    expect(onPing).not.toHaveBeenCalled();
   });
 
   it('skips auto-ping before CLI when a trace exists this session', async () => {

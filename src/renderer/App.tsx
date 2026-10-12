@@ -5296,6 +5296,9 @@ function AppContent() {
                                   setSelectedNodeId(node.node_id);
                                 }}
                                 onSendCliCommand={meshcorePanelActions.sendRepeaterCliCommand}
+                                resolveCliHopsAway={
+                                  meshcoreRuntime.repeaterAdminRouting.resolveHopsAway
+                                }
                                 meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
                                 meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                                 onClearCliHistory={meshcorePanelActions.clearCliHistory}
