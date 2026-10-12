@@ -40,19 +40,16 @@ export function chatRoomContactUid(room: string): string {
 
 /** Validate the renderer's list of rooms TAK clients may send to. Throws when malformed. */
 export function parseTakChatSendRooms(raw: unknown): string[] {
-  if (!Array.isArray(raw) || raw.length > TAK_CHAT_SEND_ROOMS_MAX) {
-    throw new Error(
-      `tak:setChatSendRooms: rooms must be an array of at most ${TAK_CHAT_SEND_ROOMS_MAX}`,
+  const bad = () =>
+    new Error(
+      `tak:setChatSendRooms: expected up to ${TAK_CHAT_SEND_ROOMS_MAX} rooms of 1-${TAK_GEOCHAT_ROOM_MAX_LEN} printable characters`,
     );
-  }
+  if (!Array.isArray(raw) || raw.length > TAK_CHAT_SEND_ROOMS_MAX) throw bad();
   const rooms = new Set<string>();
   for (const room of raw) {
-    if (typeof room !== 'string') throw new Error('tak:setChatSendRooms: room must be a string');
-    const trimmed = room.trim();
+    const trimmed = typeof room === 'string' ? room.trim() : '';
     if (!trimmed || trimmed.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(trimmed)) {
-      throw new Error(
-        `tak:setChatSendRooms: room must be 1-${TAK_GEOCHAT_ROOM_MAX_LEN} printable characters`,
-      );
+      throw bad();
     }
     rooms.add(trimmed);
   }
@@ -101,27 +98,19 @@ export function buildRoomContactChatCot(
   nowMs: number = Date.now(),
   messageId: string = randomUUID(),
 ): string {
-  const senderUid = chatRoomContactUid(msg.room);
-  const sender = escapeXml(senderUid);
-  const to = escapeXml(recipient.uid);
-  const uid = escapeXml(`GeoChat.${senderUid}.${recipient.uid}.${messageId}`);
-  const time = new Date(nowMs).toISOString();
-  const sentAt = new Date(Math.min(msg.timeMs, nowMs)).toISOString();
-  const stale = new Date(nowMs + GEOCHAT_STALE_MS).toISOString();
-  return (
-    `<event version="2.0" uid="${uid}" type="b-t-f" time="${time}" start="${time}"` +
-    ` stale="${stale}" how="h-g-i-g-o">` +
-    `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
-    `<detail>` +
-    `<__chat parent="RootContactGroup" groupOwner="false" chatroom="${escapeXml(recipient.callsign)}"` +
-    ` id="${to}" senderCallsign="${escapeXml(msg.room)}">` +
-    `<chatgrp uid0="${sender}" uid1="${to}" id="${to}"/>` +
-    `</__chat>` +
-    `<link uid="${sender}" type="a-f-G-U-C" relation="p-p"/>` +
-    `<remarks source="BAO.F.ATAK.${sender}" to="${to}" time="${sentAt}">` +
-    `${escapeXml(`${msg.senderCallsign}: ${msg.text}`)}</remarks>` +
-    `</detail>` +
-    `</event>`
+  return geochatEvent(
+    {
+      ...msg,
+      latitude: undefined,
+      longitude: undefined,
+      text: `${msg.senderCallsign}: ${msg.text}`,
+    },
+    chatRoomContactUid(msg.room),
+    msg.room,
+    recipient.callsign,
+    recipient.uid,
+    nowMs,
+    messageId,
   );
 }
 
@@ -175,29 +164,44 @@ export function buildGeochatCot(
   messageId: string = randomUUID(),
   senderUid: string = geochatSenderUid(msg.senderCallsign),
 ): string {
-  const room = escapeXml(msg.room);
-  const callsign = escapeXml(msg.senderCallsign);
+  return geochatEvent(msg, senderUid, msg.senderCallsign, msg.room, msg.room, nowMs, messageId);
+}
+
+/**
+ * The GeoChat event both builders share. `chatroom` is the conversation's display name and
+ * `chatId` its id: the room name for a room, the recipient's uid for a direct message.
+ */
+function geochatEvent(
+  msg: TAKGeochatMessage,
+  senderUid: string,
+  senderCallsign: string,
+  chatroom: string,
+  chatId: string,
+  nowMs: number,
+  messageId: string,
+): string {
+  const room = escapeXml(chatroom);
+  const id = escapeXml(chatId);
   const sender = escapeXml(senderUid);
-  const uid = escapeXml(`GeoChat.${senderUid}.${msg.room}.${messageId}`);
+  const uid = escapeXml(`GeoChat.${senderUid}.${chatId}.${messageId}`);
   const time = new Date(nowMs).toISOString();
   const sentAt = new Date(Math.min(msg.timeMs, nowMs)).toISOString();
   const stale = new Date(nowMs + GEOCHAT_STALE_MS).toISOString();
   const known = msg.latitude != null && msg.longitude != null;
-  const point = known
-    ? `<point lat="${msg.latitude}" lon="${msg.longitude}" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>`
-    : `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>`;
+  const lat = known ? msg.latitude : 0;
+  const lon = known ? msg.longitude : 0;
 
   return (
     `<event version="2.0" uid="${uid}" type="b-t-f" time="${time}" start="${time}"` +
     ` stale="${stale}" how="h-g-i-g-o">` +
-    point +
+    `<point lat="${lat}" lon="${lon}" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
     `<detail>` +
-    `<__chat parent="RootContactGroup" groupOwner="false" chatroom="${room}" id="${room}"` +
-    ` senderCallsign="${callsign}">` +
-    `<chatgrp uid0="${sender}" uid1="${room}" id="${room}"/>` +
+    `<__chat parent="RootContactGroup" groupOwner="false" chatroom="${room}" id="${id}"` +
+    ` senderCallsign="${escapeXml(senderCallsign)}">` +
+    `<chatgrp uid0="${sender}" uid1="${id}" id="${id}"/>` +
     `</__chat>` +
     `<link uid="${sender}" type="a-f-G-U-C" relation="p-p"/>` +
-    `<remarks source="BAO.F.ATAK.${sender}" to="${room}" time="${sentAt}">` +
+    `<remarks source="BAO.F.ATAK.${sender}" to="${id}" time="${sentAt}">` +
     `${escapeXml(msg.text)}</remarks>` +
     `</detail>` +
     `</event>`
