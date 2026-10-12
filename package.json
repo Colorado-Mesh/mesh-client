@@ -189,7 +189,7 @@
     "@michaelhart/meshcore-decoder": "^0.3.0",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-virtual": "^3.14.14",
+    "@tanstack/react-virtual": "^3.14.15",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

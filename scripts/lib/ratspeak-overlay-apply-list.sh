@@ -14,7 +14,6 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh
   apply-rsReticulum-interface-tx-queue-stats.sh
-  apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
   apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
   apply-rsReticulum-ble-rnode-host-rssi-cache.sh
   apply-rsReticulum-response-resource-window-fast.sh
@@ -30,7 +29,6 @@ RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-link-delivery-has-pending-to.sh
   apply-rsLXMF-propagation-client-abort-transfer.sh
   apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
-  apply-rsLXMF-propagation-client-request-resource.sh
 )
 
 RS_NOMAD_APPLY_SCRIPTS=(
