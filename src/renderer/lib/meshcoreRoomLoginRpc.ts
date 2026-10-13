@@ -1,3 +1,4 @@
+import { runMeshcoreCompanionRequest } from './meshcoreCompanionRequestQueue';
 import {
   buildSendLoginFrame,
   type MeshcoreRadioConnection,
@@ -43,6 +44,23 @@ export function runMeshcoreRoomLogin(
     signal?: AbortSignal;
     companionTransport?: MeshcoreCompanionTransport;
   },
+): Promise<MeshcoreRoomLoginResponse> {
+  requireContactPubKeyPrefix(contactPublicKey);
+  return runMeshcoreCompanionRequest(
+    conn,
+    () => performRoomLogin(conn, contactPublicKey, password, opts),
+    {
+      signal: opts?.signal,
+      abortMessage: MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+    },
+  );
+}
+
+function performRoomLogin(
+  conn: MeshcoreRadioConnection,
+  contactPublicKey: Uint8Array,
+  password: string,
+  opts?: Parameters<typeof runMeshcoreRoomLogin>[3],
 ): Promise<MeshcoreRoomLoginResponse> {
   const expectedPrefix = requireContactPubKeyPrefix(contactPublicKey);
   const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway);

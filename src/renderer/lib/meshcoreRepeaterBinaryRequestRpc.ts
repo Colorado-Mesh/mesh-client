@@ -1,3 +1,4 @@
+import { runMeshcoreCompanionRequest } from './meshcoreCompanionRequestQueue';
 import {
   buildSendBinaryReqFrame,
   MC_PUSH_BINARY_RESPONSE,
@@ -10,10 +11,31 @@ import {
 } from './meshcoreRepeaterRpcQueuedSend';
 
 /**
- * Resilient binary request: queue only covers send + SENT; BinaryResponse is matched by tag.
+ * Resilient binary request: SENT queue releases at acknowledgment; the companion's
+ * pending request slot stays owned until the tag-matched BinaryResponse or failure.
  * Replaces meshcore.js `sendBinaryRequest()` for repeater admin RPCs that share the companion queue.
  */
 export function runMeshcoreRepeaterBinaryRequest(
+  conn: MeshcoreRadioConnection,
+  contactPublicKey: Uint8Array,
+  requestCodeAndParams: Uint8Array,
+  extraTimeoutMs: number,
+  runSerialized: MeshcoreRepeaterRunSerialized,
+  beforeSend?: () => Promise<void>,
+): Promise<Uint8Array> {
+  return runMeshcoreCompanionRequest(conn, () =>
+    performBinaryRequest(
+      conn,
+      contactPublicKey,
+      requestCodeAndParams,
+      extraTimeoutMs,
+      runSerialized,
+      beforeSend,
+    ),
+  );
+}
+
+function performBinaryRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   requestCodeAndParams: Uint8Array,
