@@ -155,6 +155,17 @@ describe('ensure-rsReticulum-patches.sh stale pin re-pin', () => {
     expect(existsSync(join(root, 'applied'))).toBe(true);
   });
 
+  it('reads dependency HEADs, not a caller repo exported via GIT_DIR', () => {
+    const { root } = makeFixture({ rnsPinIndex: 1 });
+    const caller = makeTempDir('mesh-caller-repo-');
+    makeRepo(caller);
+    git(caller, 'commit', '--allow-empty', '-m', 'caller-only');
+    const result = runEnsure(root, { GIT_DIR: join(caller, '.git'), GIT_WORK_TREE: caller });
+    expect(result.status).toBe(0);
+    expect(existsSync(join(root, 'clone-ran'))).toBe(false);
+    expect(existsSync(join(root, 'applied'))).toBe(true);
+  });
+
   it('does not re-pin when a local bisect override is active', () => {
     const { root, rns } = makeFixture({ rnsPinIndex: 0 });
     const result = runEnsure(root, {
