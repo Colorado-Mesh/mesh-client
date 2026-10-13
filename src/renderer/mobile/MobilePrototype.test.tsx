@@ -661,20 +661,23 @@ describe('MobilePrototype', () => {
     ).toHaveTextContent('Basecamp radio, connected');
   });
 
-  it('falls back to a usable start screen for unknown URL values', () => {
-    window.history.replaceState(
-      null,
-      '',
-      '?scene=unknown&platform=unknown&protocol=unknown&display=unknown',
-    );
-    render(<MobilePrototype />);
+  it.each(['unknown', '__proto__', 'constructor', 'toString'])(
+    'falls back to a usable start screen for unsupported protocol %s',
+    (protocolValue) => {
+      window.history.replaceState(
+        null,
+        '',
+        `?scene=unknown&platform=unknown&protocol=${protocolValue}&display=unknown`,
+      );
+      render(<MobilePrototype />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Connect your radio' })).toBeVisible();
-    expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('connect');
-    expect(screen.getByRole('combobox', { name: 'Platform' })).toHaveValue('ios');
-    expect(screen.getByRole('combobox', { name: 'Protocol' })).toHaveValue('meshtastic');
-    expect(screen.getByRole('combobox', { name: 'Display preview' })).toHaveValue('phone');
-  });
+      expect(screen.getByRole('heading', { level: 1, name: 'Connect your radio' })).toBeVisible();
+      expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('connect');
+      expect(screen.getByRole('combobox', { name: 'Platform' })).toHaveValue('ios');
+      expect(screen.getByRole('combobox', { name: 'Protocol' })).toHaveValue('meshtastic');
+      expect(screen.getByRole('combobox', { name: 'Display preview' })).toHaveValue('phone');
+    },
+  );
 
   it('uses explicit preview props before URL parameters', () => {
     window.history.replaceState(

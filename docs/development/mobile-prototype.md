@@ -124,7 +124,7 @@ The desktop app currently connects Meshtastic and MeshCore through the Rust side
 
 The revised shell passed 1,320 layout combinations across both platform contexts, all three protocols, ten scenes, Phone/Tablet/Foldable presets, widths from 320 to 1366 CSS pixels, and 100%/200% text. Checked visible shell targets were at least 48 by 48 CSS pixels, with no horizontal page overflow or browser page errors. All 180 scene axe runs and two modal axe runs passed, for 182 browser accessibility checks. The protocol chooser and launcher were also checked for focus handling and dismissal. Protocol switching and folded/unfolded resizing preserved separate local drafts.
 
-The 55 focused component tests include real-theme axe coverage, protocol context isolation, adaptive semantics, and the More launcher. The full local gate passed with 15,635 tests passing and five skipped. The final popover-position regression also passed separately. Native-device checks remain separate.
+The 58 focused component tests include real-theme axe coverage, protocol context isolation, adaptive semantics, and the More launcher. The full local gate passed with 15,639 tests passing and five skipped. These include popover placement, unsupported protocol URL values, and fixed protocol-state updates. Native-device checks remain separate.
 
 - [x] Review every scene in the iOS and Android contexts across Phone, Tablet, and Foldable presets.
 - [x] Verify reviewer controls and shell navigation show the intended mock views, with accessible names and a clear selected state.

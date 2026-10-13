@@ -98,6 +98,22 @@ const SAMPLE_CONVERSATIONS = {
   },
 };
 const SAMPLE_UNREAD_COUNTS = { meshtastic: 2, meshcore: 1, reticulum: 0 };
+
+function updateProtocolPreview<T>(
+  previous: Record<MeshProtocol, T>,
+  protocol: MeshProtocol,
+  next: T,
+): Record<MeshProtocol, T> {
+  switch (protocol) {
+    case 'meshtastic':
+      return { ...previous, meshtastic: next };
+    case 'meshcore':
+      return { ...previous, meshcore: next };
+    case 'reticulum':
+      return { ...previous, reticulum: next };
+  }
+}
+
 function isMobileDisplay(value: string | null): value is MobileDisplay {
   return value === 'phone' || value === 'tablet' || value === 'foldable';
 }
@@ -161,7 +177,7 @@ export function MobilePrototype({
   const scene = scenes[protocol];
   const sample = SAMPLE_CONVERSATIONS[protocol];
   const setScene = (next: MobileScene) => {
-    setScenes((previous) => ({ ...previous, [protocol]: next }));
+    setScenes((previous) => updateProtocolPreview(previous, protocol, next));
   };
   const switchProtocol = (next: MeshProtocol) => {
     if (next === protocol) return;
@@ -416,7 +432,9 @@ export function MobilePrototype({
             rows={1}
             value={drafts[protocol]}
             onChange={(event) => {
-              setDrafts((previous) => ({ ...previous, [protocol]: event.target.value }));
+              setDrafts((previous) =>
+                updateProtocolPreview(previous, protocol, event.target.value),
+              );
             }}
             placeholder={t('mobilePrototype.messagePlaceholder')}
             aria-label={t('mobilePrototype.messageLabel')}
