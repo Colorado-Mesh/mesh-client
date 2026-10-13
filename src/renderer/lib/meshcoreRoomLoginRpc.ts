@@ -35,6 +35,7 @@ export const normalizeLoginPubKeyPrefix = normalizePubKeyPrefix;
 
 export { buildSendLoginFrame } from './meshcoreRepeaterRpcCommon';
 
+/** Queue a Room login with immediate cancellation before its SendLogin is transmitted. */
 export function runMeshcoreRoomLogin(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
@@ -56,6 +57,7 @@ export function runMeshcoreRoomLogin(
   );
 }
 
+/** Run the active Room login, cleaning listeners on reply, rejection, timeout or cancellation. */
 function performRoomLogin(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,

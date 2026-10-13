@@ -35,6 +35,7 @@ export function runMeshcoreRepeaterBinaryRequest(
   );
 }
 
+/** Wait for the SENT tag and matching binary payload while owning the companion request slot. */
 function performBinaryRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,

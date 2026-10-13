@@ -48,6 +48,7 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
   );
 }
 
+/** Register prefix-matched listeners only after acquiring the companion request slot. */
 function performPrefixPushRequest<T>(
   opts: MeshcoreRepeaterPrefixPushRequestOpts<T>,
   expectedPrefix: Uint8Array,
