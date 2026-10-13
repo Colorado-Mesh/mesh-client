@@ -23,3 +23,9 @@ export function isMeshcoreRepeaterCliDangerCommand(command: string): boolean {
   if (MESHCORE_REPEATER_CLI_CONFIRM_COMMANDS.has(trimmed)) return true;
   return MESHCORE_REPEATER_CLI_DANGER_PATTERN.test(trimmed);
 }
+
+/** Commands after which the repeater restarts on its own (cached Status uptime is invalid). */
+export function isMeshcoreRepeaterRebootCommand(command: string): boolean {
+  const trimmed = command.trim().toLowerCase();
+  return trimmed === 'reboot' || trimmed === 'clkreboot';
+}
