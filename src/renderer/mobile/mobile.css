@@ -51,6 +51,9 @@
 .mobile-header > :last-child {
   margin-left: auto;
 }
+.mobile-protocol-control {
+  min-width: 0;
+}
 .mobile-back {
   display: flex;
   align-items: center;
@@ -386,4 +389,84 @@
     border-top: 1px solid var(--color-ink-700);
     background: var(--color-deep-black);
   }
+}
+
+.mobile-preview[data-display='tablet'],
+.mobile-preview[data-display='foldable'] {
+  grid-template-columns: minmax(0, 64rem);
+}
+.mobile-preview[data-display='foldable'] {
+  grid-template-columns: minmax(0, 56rem);
+}
+.mobile-preview:not([data-display='phone']) .mobile-brief {
+  display: none;
+}
+.mobile-preview:not([data-display='phone']) .mobile-review {
+  position: static;
+  width: 100%;
+  padding-top: 1.5rem;
+}
+.mobile-shell[data-wide='true'] {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: calc(100dvh - 8rem);
+}
+.mobile-shell[data-wide='true'] > header {
+  grid-column: 1 / -1;
+}
+.mobile-shell[data-wide='true'] > .mobile-content {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+  max-width: 36rem;
+  justify-self: center;
+}
+.mobile-shell[data-wide='true'] > .mobile-nav {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+  grid-row: 2;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.5rem;
+  border-top: 0;
+  border-right: 1px solid var(--color-ink-700);
+  border-radius: 0;
+}
+.mobile-shell[data-wide='true'] .mobile-nav button {
+  min-height: 4rem;
+}
+.mobile-shell[data-wide='true'] > .mobile-split-content {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  column-gap: 1.25rem;
+  max-width: none;
+  justify-self: stretch;
+}
+.mobile-chat-sidebar {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  min-width: 0;
+  padding-right: 1.25rem;
+  border-right: 1px solid var(--color-ink-700);
+}
+.mobile-chat-sidebar .mobile-conversation-row {
+  margin-top: 1.25rem;
+}
+.mobile-split-content > .mobile-page-title,
+.mobile-split-content > .mobile-message-history,
+.mobile-split-content > .mobile-composer-area,
+.mobile-split-content > .mobile-chat-empty {
+  grid-column: 2;
+  min-width: 0;
+}
+.mobile-chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
 }

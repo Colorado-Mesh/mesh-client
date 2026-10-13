@@ -33,6 +33,8 @@ import {
   MESHTASTIC_CAPABILITIES,
   RETICULUM_CAPABILITIES,
 } from '../lib/radio/BaseRadioProvider';
+import { ProtocolSwitcher } from './ProtocolSwitcher';
+import { useWideMobileLayout } from './useWideMobileLayout';
 
 export const MOBILE_SCENES = {
   connect: 'mobilePrototype.sceneConnect',
@@ -49,11 +51,13 @@ export const MOBILE_SCENES = {
 
 export type MobileScene = keyof typeof MOBILE_SCENES;
 export type MobilePlatform = 'ios' | 'android';
+export type MobileDisplay = 'phone' | 'tablet' | 'foldable';
 
 interface MobilePrototypeProps {
   initialScene?: MobileScene;
   initialPlatform?: MobilePlatform;
   initialProtocol?: MeshProtocol;
+  initialDisplay?: MobileDisplay;
 }
 
 const SAMPLE_CAPABILITIES = {
@@ -68,6 +72,33 @@ const SAMPLE_RADIO_NAMES: Record<MeshProtocol, string> = {
   reticulum: 'Field RNode',
 };
 
+const SAMPLE_CONVERSATIONS = {
+  meshtastic: {
+    nameKey: 'mobilePrototype.conversationName',
+    incomingKey: 'mobilePrototype.incomingBody',
+    outgoingKey: 'mobilePrototype.outgoingBody',
+  },
+  meshcore: {
+    nameKey: 'mobilePrototype.meshcoreContactName',
+    incomingKey: 'mobilePrototype.meshcoreIncoming',
+    outgoingKey: 'mobilePrototype.meshcoreOutgoing',
+  },
+  reticulum: {
+    nameKey: 'mobilePrototype.reticulumContactName',
+    incomingKey: 'mobilePrototype.reticulumIncoming',
+    outgoingKey: 'mobilePrototype.reticulumOutgoing',
+  },
+};
+const SAMPLE_UNREAD_COUNTS = { meshtastic: 2, meshcore: 1, reticulum: 0 };
+function isMobileDisplay(value: string | null): value is MobileDisplay {
+  return value === 'phone' || value === 'tablet' || value === 'foldable';
+}
+function sampleIsConnected(scene: MobileScene): boolean {
+  return (
+    scene === 'ready' || scene === 'conversations' || scene === 'chat' || scene === 'message-error'
+  );
+}
+
 function isMobileScene(value: string | null): value is MobileScene {
   return value !== null && Object.hasOwn(MOBILE_SCENES, value);
 }
@@ -80,13 +111,26 @@ export function MobilePrototype({
   initialScene,
   initialPlatform,
   initialProtocol,
+  initialDisplay,
 }: MobilePrototypeProps) {
   const { t } = useTranslation();
   const query = new URLSearchParams(window.location.search);
   const queryScene = query.get('scene');
   const queryProtocol = query.get('protocol');
-  const [scene, setScene] = useState<MobileScene>(
-    initialScene ?? (isMobileScene(queryScene) ? queryScene : 'connect'),
+  const startingScene = initialScene ?? (isMobileScene(queryScene) ? queryScene : 'connect');
+  const [scenes, setScenes] = useState<Record<MeshProtocol, MobileScene>>({
+    meshtastic: startingScene,
+    meshcore: startingScene,
+    reticulum: startingScene,
+  });
+  const [drafts, setDrafts] = useState<Record<MeshProtocol, string>>({
+    meshtastic: '',
+    meshcore: '',
+    reticulum: '',
+  });
+  const queryDisplay = query.get('display');
+  const [display, setDisplay] = useState<MobileDisplay>(
+    initialDisplay ?? (isMobileDisplay(queryDisplay) ? queryDisplay : 'phone'),
   );
   const [platform, setPlatform] = useState<MobilePlatform>(
     initialPlatform ?? (query.get('platform') === 'android' ? 'android' : 'ios'),
@@ -94,6 +138,36 @@ export function MobilePrototype({
   const [protocol, setProtocol] = useState<MeshProtocol>(
     initialProtocol ?? (isMeshProtocol(queryProtocol) ? queryProtocol : 'meshtastic'),
   );
+  const phone = useRef<HTMLDivElement>(null);
+  const wide = useWideMobileLayout(phone);
+  const restoringProtocolFocus = useRef(false);
+  const scene = scenes[protocol];
+  const sample = SAMPLE_CONVERSATIONS[protocol];
+  const setScene = (next: MobileScene) => {
+    setScenes((previous) => ({ ...previous, [protocol]: next }));
+  };
+  const switchProtocol = (next: MeshProtocol) => {
+    if (next === protocol) return;
+    restoringProtocolFocus.current = true;
+    setProtocol(next);
+  };
+  const protocolContexts = {
+    meshtastic: {
+      radioName: SAMPLE_RADIO_NAMES.meshtastic,
+      connected: sampleIsConnected(scenes.meshtastic),
+      unreadCount: SAMPLE_UNREAD_COUNTS.meshtastic,
+    },
+    meshcore: {
+      radioName: SAMPLE_RADIO_NAMES.meshcore,
+      connected: sampleIsConnected(scenes.meshcore),
+      unreadCount: SAMPLE_UNREAD_COUNTS.meshcore,
+    },
+    reticulum: {
+      radioName: SAMPLE_RADIO_NAMES.reticulum,
+      connected: sampleIsConnected(scenes.reticulum),
+      unreadCount: SAMPLE_UNREAD_COUNTS.reticulum,
+    },
+  };
   const heading = useRef<HTMLHeadingElement>(null);
   const theme = PROTOCOL_THEME[protocol];
   const radioName = SAMPLE_RADIO_NAMES[protocol];
@@ -102,8 +176,12 @@ export function MobilePrototype({
   const connected = messagingScene || scene === 'ready';
 
   useEffect(() => {
+    if (restoringProtocolFocus.current) {
+      restoringProtocolFocus.current = false;
+      return;
+    }
     heading.current?.focus();
-  }, [scene]);
+  }, [scene, protocol]);
 
   const previewButton = (label: string, next: MobileScene, primary = false) => (
     <Button
@@ -143,8 +221,28 @@ export function MobilePrototype({
     </button>
   );
 
+  const conversationRow = () => (
+    <button
+      type="button"
+      className="mobile-conversation-row"
+      aria-label={t('mobilePrototype.openConversation', { name: t(sample.nameKey) })}
+      onClick={() => {
+        setScene('chat');
+      }}
+    >
+      <span className="mobile-avatar" aria-hidden="true">
+        {t(sample.nameKey).slice(0, 2).toLocaleUpperCase()}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-medium">{t(sample.nameKey)}</span>
+        <span className="text-body-lg text-muted mt-1 block">{t(sample.incomingKey)}</span>
+        <span className="text-label text-muted mt-2 block font-mono">09:41</span>
+      </span>
+      <ChevronRight aria-hidden="true" size={18} className="text-muted" />
+    </button>
+  );
   return (
-    <div className="mobile-preview text-ink-200 font-sans">
+    <div className="mobile-preview text-ink-200 font-sans" data-display={display}>
       <aside className="mobile-brief" aria-label={t('mobilePrototype.designBrief')}>
         <RadioTower aria-hidden="true" size={32} className="text-bright-green" />
         <p className="text-title mt-5 font-medium">{t('mobilePrototype.brand')}</p>
@@ -162,10 +260,16 @@ export function MobilePrototype({
         >
           {t('mobilePrototype.prototypeNotice')}
         </aside>
-        <div role="group" className="mobile-shell" data-platform={platform}>
+        <div
+          ref={phone}
+          role="group"
+          data-wide={wide}
+          className="mobile-shell"
+          data-platform={platform}
+        >
           <header aria-label={t('mobilePrototype.phonePreview')}>
             <div className="mobile-header">
-              {chatScene ? (
+              {chatScene && !wide ? (
                 <button
                   type="button"
                   className="mobile-back"
@@ -181,7 +285,13 @@ export function MobilePrototype({
                 <RadioTower aria-hidden="true" size={25} className="text-bright-green" />
               )}
               <span className="font-medium">{t('mobilePrototype.brand')}</span>
-              <span className={`text-label ${theme.nameTextClass}`}>{theme.displayName}</span>
+              <div className="mobile-protocol-control">
+                <ProtocolSwitcher
+                  protocol={protocol}
+                  onSelect={switchProtocol}
+                  contexts={protocolContexts}
+                />
+              </div>
             </div>
 
             <button
@@ -206,7 +316,20 @@ export function MobilePrototype({
             </button>
           </header>
 
-          <main className={`mobile-content ${chatScene ? 'mobile-chat-content' : ''}`}>
+          <main
+            className={`mobile-content ${chatScene ? 'mobile-chat-content' : ''} ${messagingScene && wide ? 'mobile-split-content' : ''}`}
+          >
+            {messagingScene && wide && (
+              <section
+                className="mobile-chat-sidebar"
+                aria-label={t('mobilePrototype.conversationList')}
+              >
+                <h2 className="text-title font-semibold">{t('mobilePrototype.chats')}</h2>
+                <p className="text-label text-muted mt-2">{t('mobilePrototype.sampleMessages')}</p>
+                {conversationRow()}
+                <div className="mobile-note mt-5">{t('mobilePrototype.historyNote')}</div>
+              </section>
+            )}
             <div className="mobile-page-title">
               <p className={`text-label ${theme.nameTextClass}`}>
                 {t(
@@ -216,7 +339,7 @@ export function MobilePrototype({
                 )}
               </p>
               <h1 ref={heading} tabIndex={-1} className="mt-1 text-2xl font-semibold outline-none">
-                {chatScene ? t('mobilePrototype.conversationName') : t(MOBILE_SCENES[scene])}
+                {chatScene ? t(sample.nameKey) : t(MOBILE_SCENES[scene])}
               </h1>
               {chatScene && (
                 <p className="text-body-lg text-muted mt-1">
@@ -394,35 +517,20 @@ export function MobilePrototype({
               </>
             )}
 
-            {scene === 'conversations' && (
+            {scene === 'conversations' && !wide && (
               <>
                 <p className="text-title text-muted mb-6">
                   {t('mobilePrototype.conversationsBody')}
                 </p>
-                <button
-                  type="button"
-                  className="mobile-conversation-row"
-                  aria-label={t('mobilePrototype.openConversation')}
-                  onClick={() => {
-                    setScene('chat');
-                  }}
-                >
-                  <span className="mobile-avatar" aria-hidden="true">
-                    AL
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">
-                      {t('mobilePrototype.conversationName')}
-                    </span>
-                    <span className="text-body-lg text-muted mt-1 block">
-                      {t('mobilePrototype.incomingBody')}
-                    </span>
-                    <span className="text-label text-muted mt-2 block font-mono">09:41</span>
-                  </span>
-                  <ChevronRight aria-hidden="true" size={18} className="text-muted" />
-                </button>
+                {conversationRow()}
                 <div className="mobile-note mt-6">{t('mobilePrototype.historyNote')}</div>
               </>
+            )}
+            {scene === 'conversations' && wide && (
+              <div className="mobile-chat-empty">
+                <MessageCircle aria-hidden="true" size={40} className="text-muted" />
+                <p className="text-title mt-4">{t('mobilePrototype.chooseConversation')}</p>
+              </div>
             )}
 
             {chatScene && (
@@ -435,14 +543,12 @@ export function MobilePrototype({
                     {t('mobilePrototype.today')}
                   </p>
                   <div className="mobile-message incoming">
-                    <p className="text-label text-ink-200 mb-2 font-medium">
-                      {t('mobilePrototype.conversationName')}
-                    </p>
-                    <p>{t('mobilePrototype.incomingBody')}</p>
+                    <p className="text-label text-ink-200 mb-2 font-medium">{t(sample.nameKey)}</p>
+                    <p>{t(sample.incomingKey)}</p>
                     <p className="text-label text-muted mt-3 font-mono">09:41</p>
                   </div>
                   <div className="mobile-message outgoing">
-                    <p>{t('mobilePrototype.outgoingBody')}</p>
+                    <p>{t(sample.outgoingKey)}</p>
                     <p
                       className={`mobile-delivery ${scene === 'message-error' ? 'text-red-400' : 'text-green-400'}`}
                     >
@@ -481,6 +587,10 @@ export function MobilePrototype({
                     <textarea
                       id="mobile-message"
                       rows={2}
+                      value={drafts[protocol]}
+                      onChange={(event) => {
+                        setDrafts((previous) => ({ ...previous, [protocol]: event.target.value }));
+                      }}
                       placeholder={t('mobilePrototype.messagePlaceholder')}
                       aria-label={t('mobilePrototype.messageLabel')}
                     />
@@ -542,6 +652,19 @@ export function MobilePrototype({
         <details open>
           <summary>{t('mobilePrototype.reviewControls')}</summary>
           <div className="mobile-review-fields">
+            <label htmlFor="preview-display">{t('mobilePrototype.display')}</label>
+            <select
+              id="preview-display"
+              value={display}
+              aria-label={t('mobilePrototype.display')}
+              onChange={(event) => {
+                if (isMobileDisplay(event.target.value)) setDisplay(event.target.value);
+              }}
+            >
+              <option value="phone">{t('mobilePrototype.phone')}</option>
+              <option value="tablet">{t('mobilePrototype.tablet')}</option>
+              <option value="foldable">{t('mobilePrototype.foldable')}</option>
+            </select>
             <label htmlFor="preview-platform">{t('mobilePrototype.platform')}</label>
             <select
               id="preview-platform"
@@ -560,7 +683,7 @@ export function MobilePrototype({
               value={protocol}
               aria-label={t('mobilePrototype.protocol')}
               onChange={(event) => {
-                if (isMeshProtocol(event.target.value)) setProtocol(event.target.value);
+                if (isMeshProtocol(event.target.value)) switchProtocol(event.target.value);
               }}
             >
               {MESH_PROTOCOLS.map((value) => (
