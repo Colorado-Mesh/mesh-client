@@ -50,6 +50,7 @@ export function isMainProcessBleTimeoutMessage(message: string): boolean {
 const SIDECAR_GATT_CONNECT_TIMEOUT_RE = /\bconnect_timeout\s*:/;
 
 export function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutStage {
+  if (isReticulumSidecarResolveErrorMessage(message)) return 'unknown';
   if (/MeshCore BLE IPC open timed out/i.test(message)) return 'ipc-open';
   if (/MeshCore BLE protocol handshake timed out/i.test(message)) return 'protocol-handshake';
   if (isMainProcessBleTimeoutMessage(message)) return 'ipc-open';
@@ -77,11 +78,22 @@ const MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE =
   /unreachable while discovering services|unreachable while discovering characteristics|gatt.*unreachable/i;
 
 export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
+  if (isReticulumSidecarResolveErrorMessage(message)) return false;
   if (classifyMeshcoreBleTimeoutStage(message) !== 'unknown') return true;
   if (MESHCORE_RETRYABLE_GATT_DISCOVERY_FLAKES_RE.test(message)) return true;
   return /already in progress|gatt server is disconnected|disconnected during gatt init|disconnected during handshake|pairing step finished|fromRadio characteristic supports neither notify nor read/i.test(
     message,
   );
+}
+
+const RETICULUM_SIDECAR_RESOLVE_ERROR_RE = /\bRETICULUM_[A-Z_]+/;
+
+/**
+ * True when GATT connect failed because the sidecar itself could not be resolved or built
+ * (`RETICULUM_*` from main). BLE retry / rescan / power-cycle cannot fix these.
+ */
+export function isReticulumSidecarResolveErrorMessage(message: string): boolean {
+  return RETICULUM_SIDECAR_RESOLVE_ERROR_RE.test(message);
 }
 
 /** Stable sidecar GATT error codes → `connectionPanel.errors.ble.*`. */

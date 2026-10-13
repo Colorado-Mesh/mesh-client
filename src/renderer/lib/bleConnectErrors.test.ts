@@ -8,6 +8,7 @@ import {
   isMeshcoreRetryableBleErrorMessage,
   isMeshcoreSetupAbortError,
   isMeshcoreTcpTransportDeadError,
+  isReticulumSidecarResolveErrorMessage,
   MESHCORE_SETUP_ABORT_MESSAGE,
   rethrowMeshcoreSetupAbortFromTcpDead,
   shouldClearMeshcoreBleSelectionForError,
@@ -54,6 +55,16 @@ describe('classifyMeshcoreBleTimeoutStage', () => {
       'ipc-open',
     );
     expect(classifyMeshcoreBleTimeoutStage('connect_timeout: connect timed out')).toBe('ipc-open');
+  });
+
+  it.each([
+    'sidecar_down: RETICULUM_RNS_PATCH_APPLY_FAILED: patch failed',
+    'connect_timeout: RETICULUM_RNS_PATCH_APPLY_FAILED: patch failed',
+    'RETICULUM_CARGO_MISSING: cargo not found, build timed out',
+  ])('treats sidecar resolve failures as non-timeout, non-retryable (%s)', (message) => {
+    expect(isReticulumSidecarResolveErrorMessage(message)).toBe(true);
+    expect(classifyMeshcoreBleTimeoutStage(message)).toBe('unknown');
+    expect(isMeshcoreRetryableBleErrorMessage(message)).toBe(false);
   });
 
   it('does not classify other sidecar GATT codes as timeouts', () => {

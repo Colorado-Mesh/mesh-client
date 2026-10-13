@@ -73,6 +73,14 @@ const GATT_DISCONNECT_ALL_BUDGET_MS = 2_000;
  */
 const GATT_CLEANUP_MAX_ATTEMPTS = 8;
 
+/**
+ * Code for a thrown GATT connect failure. `RETICULUM_*` errors come from sidecar resolve/build
+ * (missing binary, cargo, patch overlays) — retrying BLE or power-cycling cannot fix those.
+ */
+export function gattConnectFailureCode(error: string): string {
+  return /\bRETICULUM_[A-Z_]+/.test(error) ? 'sidecar_down' : 'connect_timeout';
+}
+
 function profileFromSession(sessionId: string): GattSessionProfile {
   if (sessionId === 'meshcore') return 'meshcore';
   return 'meshtastic';
@@ -430,7 +438,7 @@ export class GattSidecarProxy extends EventEmitter {
       this.beginRemoteCleanup(attempt);
       const error = unknownMessage(e, 'connect failed');
       this.emit('connect-aborted', { sessionId, message: error });
-      return { ok: false, error, code: 'connect_timeout' };
+      return { ok: false, error, code: gattConnectFailureCode(error) };
     } finally {
       if (isCurrent()) {
         this.connectAttempts.delete(sessionId);

@@ -11,6 +11,7 @@ import {
   extractGattBleErrorCode,
   gattBleErrorI18nKey,
   isMeshcoreSetupAbortError,
+  isReticulumSidecarResolveErrorMessage,
 } from './bleConnectErrors';
 import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
 import {
@@ -162,6 +163,9 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   // block lasts until the RNode is fixed, so tell the user what to fix instead of "retry".
   if (/RNode bond recovery/i.test(msg)) {
     return t('connectionPanel.humanize.ble.rnodeBondRecoveryHold');
+  }
+  if (isReticulumSidecarResolveErrorMessage(msg)) {
+    return humanizeReticulumSidecarError(msg, t);
   }
   const gattCode = extractGattBleErrorCode(err) ?? extractGattBleErrorCode(msg);
   if (gattCode) {

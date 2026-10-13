@@ -29,6 +29,9 @@ export interface MeshtasticHeartbeatFailureDiagnostics {
  * That is the SDK queue timeout, not a transport fault — logging it drowned overnight
  * support logs. Elevate for teardown, a second consecutive miss, settle time far from
  * 60s, or a queue that grew beyond the heartbeat item itself.
+ *
+ * When the queue holds at most one item after the reject, an idle keep-alive can wait out one
+ * extra interval behind the previous un-ACKed heartbeat (~120s), so the upper bound doubles.
  */
 export function isElevatedMeshtasticHeartbeatFailure(
   d: MeshtasticHeartbeatFailureDiagnostics,
@@ -37,7 +40,9 @@ export function isElevatedMeshtasticHeartbeatFailure(
     return true;
   }
   const settleMin = MESHTASTIC_HEARTBEAT_INTERVAL_MS - HEARTBEAT_SETTLE_SLACK_MS;
-  const settleMax = MESHTASTIC_HEARTBEAT_INTERVAL_MS + HEARTBEAT_SETTLE_SLACK_MS;
+  const idleQueue = d.depthAfter !== null && d.depthAfter <= 1;
+  const settleMax =
+    (idleQueue ? 2 : 1) * MESHTASTIC_HEARTBEAT_INTERVAL_MS + HEARTBEAT_SETTLE_SLACK_MS;
   if (d.elapsedMs < settleMin || d.elapsedMs > settleMax) {
     return true;
   }

@@ -33,7 +33,22 @@ describe('isElevatedMeshtasticHeartbeatFailure', () => {
     ['second consecutive miss', { ...idle, consecutive: 2 }, true],
     ['teardown race', { ...idle, tornDown: true }, true],
     ['settle far below 60s', { ...idle, elapsedMs: 5_000 }, true],
-    ['settle far above 60s', { ...idle, elapsedMs: 120_000 }, true],
+    [
+      '~120s behind the previous un-ACKed heartbeat with an idle queue',
+      { ...idle, elapsedMs: 120_000 },
+      false,
+    ],
+    ['settle beyond two intervals with an idle queue', { ...idle, elapsedMs: 150_000 }, true],
+    [
+      '~120s with a growing queue',
+      { ...idle, elapsedMs: 120_000, depthBefore: 1, depthAfter: 3 },
+      true,
+    ],
+    [
+      '~120s with an unknown queue depth',
+      { ...idle, elapsedMs: 120_000, depthBefore: null, depthAfter: null },
+      true,
+    ],
     ['queue grew beyond the heartbeat item', { ...idle, depthBefore: 1, depthAfter: 3 }, true],
     ['empty queue filled with a backlog', { ...idle, depthBefore: 0, depthAfter: 3 }, true],
   ] as const)('%s', (_name, diagnostics, expected) => {
