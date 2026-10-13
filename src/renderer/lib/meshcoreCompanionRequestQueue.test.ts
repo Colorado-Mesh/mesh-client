@@ -5,6 +5,7 @@ import { runMeshcoreRepeaterBinaryRequest } from './meshcoreRepeaterBinaryReques
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
 import {
   MC_PUSH_BINARY_RESPONSE,
+  MC_PUSH_LOGIN_FAIL,
   MC_PUSH_LOGIN_SUCCESS,
   MC_PUSH_STATUS_RESPONSE,
   MC_PUSH_TELEMETRY_RESPONSE,
@@ -16,7 +17,10 @@ import { runMeshcoreRepeaterTelemetryRequest } from './meshcoreRepeaterTelemetry
 import { MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, runMeshcoreRoomLogin } from './meshcoreRoomLoginRpc';
 import { createMockMeshcoreConn, makePubKey } from './meshcoreTestHelpers';
 import { createRepeaterRemoteRpcQueue } from './repeaterRemoteRpcQueue';
-import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
+import {
+  computeRoomLoginResponseWaitMs,
+  MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS,
+} from './timeConstants';
 
 describe('companion remote request ownership', () => {
   afterEach(() => vi.useRealTimers());
@@ -174,6 +178,87 @@ describe('companion remote request ownership', () => {
     conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: key.subarray(0, 6) });
     await active;
   });
+
+  it('keeps a transmitted Room login in its slot after Cancel, without accepting its reply as admin', async () => {
+    vi.useFakeTimers();
+    const conn = createMockMeshcoreConn();
+    const key = makePubKey(1);
+    const controller = new AbortController();
+    const guest = runMeshcoreRoomLogin(conn, key, 'hello', { signal: controller.signal });
+    await vi.advanceTimersByTimeAsync(0);
+    conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+    controller.abort();
+    await expect(guest).rejects.toMatchObject({ name: 'AbortError' });
+
+    const admin = runMeshcoreRepeaterLogin(conn, key, 'secret', 1000);
+    const receivedAdmin = vi.fn();
+    void admin.then(receivedAdmin);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(conn.sentFrames).toHaveLength(1);
+    conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: key.subarray(0, 6), permissions: 2 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(conn.sentFrames).toHaveLength(2);
+    expect(receivedAdmin).not.toHaveBeenCalled();
+    conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+    conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: key.subarray(0, 6), permissions: 1 });
+    await expect(admin).resolves.toMatchObject({ permissions: 1 });
+  });
+
+  it.each(['timeout', 'login rejection'])(
+    'releases a cancelled, transmitted Room login after %s',
+    async (failure) => {
+      vi.useFakeTimers();
+      const conn = createMockMeshcoreConn();
+      const key = makePubKey(1);
+      const controller = new AbortController();
+      const first = runMeshcoreRoomLogin(conn, key, 'hello', {
+        hopsAway: 0,
+        signal: controller.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      controller.abort();
+      await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+      const nextKey = makePubKey(2);
+      const next = runMeshcoreRepeaterLogin(conn, nextKey, 'secret', 1000);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conn.sentFrames).toHaveLength(1);
+      if (failure === 'timeout') {
+        await vi.advanceTimersByTimeAsync(computeRoomLoginResponseWaitMs(0, 100));
+      } else conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: key.subarray(0, 6) });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conn.sentFrames).toHaveLength(2);
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: nextKey.subarray(0, 6) });
+      await next;
+    },
+  );
+
+  it.each(['radio error', 'missing SENT'])(
+    'retains a cancelled Room login before SENT until %s settles it',
+    async (failure) => {
+      vi.useFakeTimers();
+      const conn = createMockMeshcoreConn();
+      const controller = new AbortController();
+      const first = runMeshcoreRoomLogin(conn, makePubKey(1), 'hello', {
+        signal: controller.signal,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      controller.abort();
+      await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+      const key = makePubKey(2);
+      const next = runMeshcoreRepeaterLogin(conn, key, 'secret', 1000);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conn.sentFrames).toHaveLength(1);
+      if (failure === 'radio error') conn.emit(MC_RESP_ERR, { errCode: 2 });
+      else await vi.advanceTimersByTimeAsync(MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(conn.sentFrames).toHaveLength(2);
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: key.subarray(0, 6) });
+      await next;
+    },
+  );
 
   it('gives a replacement companion connection its own request slot', async () => {
     const oldConn = createMockMeshcoreConn();
