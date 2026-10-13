@@ -1,4 +1,4 @@
-# flake.nix — build & run mesh-client on NixOS.
+# flake.nix — build & run mesh-client on NixOS / macOS (aarch64).
 #
 # Usage:
 #   nix run .#mesh-client        # build and launch the app
@@ -11,8 +11,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Lockfile-to-Nix importer (pnpm 10+, workspaces). Source-only input, no
-    # hashes of its own — pnpm-lock.yaml carries every integrity hash.
     pnpm2nix = {
       url = "github:FliegendeWurst/pnpm2nix-nzbr";
       flake = false;
@@ -55,6 +53,7 @@
     systems = [
       "x86_64-linux"
       "aarch64-linux"
+      "aarch64-darwin"
     ];
     forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system nixpkgs.legacyPackages.${system});
 
@@ -69,10 +68,6 @@
         name != "flake.nix" && name != "flake.lock";
     };
 
-    # Eval-time drift guard: the 5 rev-pinned inputs must match
-    # reticulum-sidecar/ratspeak-stack-pins.env (the reviewed source of truth
-    # for pins). stackSrc throws on a mismatch and the outputs seq below
-    # forces it, so a stale input URL fails every `nix build`/`nix eval`.
     pinsEnv = builtins.readFile ./reticulum-sidecar/ratspeak-stack-pins.env;
     pinOf = name: let
       lines = builtins.filter builtins.isString (builtins.split "\n" pinsEnv);
@@ -216,18 +211,25 @@
 
         doCheck = false;
 
-        nativeBuildInputs = [
-          pkgs.pkg-config
-          pkgs.autoPatchelfHook
-        ];
+        nativeBuildInputs =
+          [
+            pkgs.pkg-config
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+            pkgs.autoPatchelfHook
+          ];
 
-        # btleplug → BlueZ over dbus; libusb/udev for serial/BLE backends.
-        buildInputs = [
-          pkgs.dbus
-          pkgs.libusb1
-          pkgs.udev
-          pkgs.stdenv.cc.cc.lib # libgcc_s for autoPatchelf
-        ];
+        # btleplug → BlueZ over dbus (Linux) / CoreBluetooth (macOS, no deps);
+        # libusb for serial backends. udev + autoPatchelf are Linux-only.
+        buildInputs =
+          [
+            pkgs.libusb1
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+            pkgs.dbus
+            pkgs.udev
+            pkgs.stdenv.cc.cc.lib # libgcc_s for autoPatchelf
+          ];
 
         meta = {
           description = "Headless Reticulum/LXMF daemon for mesh-client (BLE/GATT + RNS stack)";
@@ -378,9 +380,23 @@
         }
       );
 
-      devShells = forAllSystems (
-        _system: pkgs: {
-          default =
+      devShells = forAllSystems (_system: pkgs: {
+        default =
+          if pkgs.stdenv.hostPlatform.isDarwin
+          then
+            # macOS: the downloaded Electron binary runs natively — no FHS
+            # chroot needed, so a plain mkShell with the toolchain suffices.
+            pkgs.mkShell {
+              name = "mesh-client-dev-shell";
+              packages = with pkgs; [
+                nodejs_22
+                pnpm_12
+                git
+                python3
+                pkg-config
+              ];
+            }
+          else
             (pkgs.buildFHSEnv {
               name = "mesh-client-dev-shell";
               # Lets the repo scripts download and run the official Electron
@@ -421,7 +437,6 @@
                 ];
               runScript = "bash";
             }).env;
-        }
-      );
+      });
     };
 }
