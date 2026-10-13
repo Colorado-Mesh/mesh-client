@@ -224,9 +224,9 @@ mod tests {
         };
         let wire = wire_row_from_discovered(&row);
         assert!(!wire.has_coordinates);
-        assert_eq!(wire.latitude, 0.0);
-        assert_eq!(wire.longitude, 0.0);
-        assert_eq!(wire.height, 0.0);
+        assert_eq!(wire.latitude.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(wire.longitude.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(wire.height.to_bits(), 0.0_f64.to_bits());
     }
 
     #[cfg(feature = "rns-stack")]

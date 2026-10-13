@@ -25,6 +25,8 @@ Overlays require **git checkouts** in the repo-local `.rsstack/` workspace (not 
 ./scripts/ensure-rsReticulum-patches.sh
 ```
 
+When a `.rsstack` checkout (rsReticulum, rsLXMF, or rsNomad) is not at its reviewed pin, for example after a pin bump lands on `main`, `ensure-rsReticulum-patches.sh` re-pins automatically by running `clone-ratspeak-stack.sh` (network fetch). External `RS_*_DIR` clones and active `RS_*_REF` bisect overrides are left alone.
+
 Apply a single overlay when developing that patch:
 
 ```bash
