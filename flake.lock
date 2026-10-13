@@ -1,0 +1,134 @@
+{
+  "nodes": {
+    "lrgpRs": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787008159,
+        "narHash": "sha256-SgdQZpVmJjB/g1OnW2/Gx3fwtrcUC+2UQy88gvMTDUw=",
+        "owner": "ratspeak",
+        "repo": "lrgp-rs",
+        "rev": "88c8665e1e7e1ad710e53e8da6425f3dbe4f5856",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ratspeak",
+        "repo": "lrgp-rs",
+        "rev": "88c8665e1e7e1ad710e53e8da6425f3dbe4f5856",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791594108,
+        "narHash": "sha256-XK4KceonkwD8LuMAt/vNrz982mXJM5jeHAxMwsUXXAQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6510408d147d8c5e6d76043e899e9251756f6a75",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "pnpm2nix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784968304,
+        "narHash": "sha256-NPXKyp40QNCk9r6kavSwqi/zv7OcLgrSRtPmHW+e74w=",
+        "owner": "FliegendeWurst",
+        "repo": "pnpm2nix-nzbr",
+        "rev": "9b15300b711a50bb96e553b66aad5cad94df9c7e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "FliegendeWurst",
+        "repo": "pnpm2nix-nzbr",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "lrgpRs": "lrgpRs",
+        "nixpkgs": "nixpkgs",
+        "pnpm2nix": "pnpm2nix",
+        "rsLXMF": "rsLXMF",
+        "rsLXST": "rsLXST",
+        "rsNomad": "rsNomad",
+        "rsReticulum": "rsReticulum"
+      }
+    },
+    "rsLXMF": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791523074,
+        "narHash": "sha256-7ditbWSxheOIJ7aIHnkiSI+O9b9zys8dE69LQhctTOI=",
+        "owner": "ratspeak",
+        "repo": "rsLXMF",
+        "rev": "8bad5e2f1fdaa08592d153c2cc64af65366100f1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ratspeak",
+        "repo": "rsLXMF",
+        "rev": "8bad5e2f1fdaa08592d153c2cc64af65366100f1",
+        "type": "github"
+      }
+    },
+    "rsLXST": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791523078,
+        "narHash": "sha256-3PNx9bCIu08tbJg7QXEuJ/IcfUg7Yohg3/fA2Bh7tWA=",
+        "owner": "ratspeak",
+        "repo": "rsLXST",
+        "rev": "8acab49832ab7538c8672db2b365bd5764bf3944",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ratspeak",
+        "repo": "rsLXST",
+        "rev": "8acab49832ab7538c8672db2b365bd5764bf3944",
+        "type": "github"
+      }
+    },
+    "rsNomad": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789514949,
+        "narHash": "sha256-1VoG2sKGmMxGxjFqLHX+qJUhVXiaLCmIHlx+IEbpxvE=",
+        "owner": "Colorado-Mesh",
+        "repo": "rsNomad",
+        "rev": "05ad8ece94e78e0281c17644e0a70d28218eba22",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Colorado-Mesh",
+        "repo": "rsNomad",
+        "rev": "05ad8ece94e78e0281c17644e0a70d28218eba22",
+        "type": "github"
+      }
+    },
+    "rsReticulum": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791523057,
+        "narHash": "sha256-RjLuEkm8ssfQy+rMCBx+Zn4QbuvmrJ51O7Gd7eDZkOk=",
+        "owner": "ratspeak",
+        "repo": "rsReticulum",
+        "rev": "0f8731bb5b13e7f60e2d4bb38022480210009690",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ratspeak",
+        "repo": "rsReticulum",
+        "rev": "0f8731bb5b13e7f60e2d4bb38022480210009690",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
