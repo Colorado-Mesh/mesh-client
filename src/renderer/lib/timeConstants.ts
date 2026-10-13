@@ -18,6 +18,8 @@ export {
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
 /** Max wait for admin RPCs while a same-node ping RPC (incl. 0-hop direct retry) is still running. */
 export const MESHCORE_REPEATER_PING_SETTLE_MAX_MS = 2 * MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS;
+/** Delay after a CLI `reboot` before re-querying Status, so the repeater has finished booting. */
+export const MESHCORE_REPEATER_POST_REBOOT_STATUS_DELAY_MS = 30 * MS_PER_SECOND;
 
 /**
  * Max wait for `RESP_CODE_SENT` after `CMD_SEND_TRACE_PATH`. If the companion never acks, the

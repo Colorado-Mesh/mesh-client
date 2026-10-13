@@ -295,7 +295,14 @@ import {
 } from '../lib/meshcoreRepeaterAdminPending';
 import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
-import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
+import {
+  isMeshcoreRepeaterCliDangerCommand,
+  isMeshcoreRepeaterRebootCommand,
+} from '../lib/meshcoreRepeaterCliDanger';
+import {
+  createRepeaterPostRebootStatusScheduler,
+  type RepeaterPostRebootStatusScheduler,
+} from '../lib/meshcoreRepeaterPostRebootStatus';
 import {
   beginMeshcoreCliReplyHold,
   endMeshcoreCliReplyHold,
@@ -884,6 +891,11 @@ export function useMeshcoreRuntime() {
   const prevStatsTimestampRef = useRef<number | null>(null);
   /** Periodic poll for local radio stats ({@link MESHCORE_STATS_POLL_MS}). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const requestRepeaterStatusRef = useRef<((nodeId: number) => Promise<unknown>) | null>(null);
+  const postRebootStatusSchedulerRef = useRef<RepeaterPostRebootStatusScheduler | null>(null);
+  postRebootStatusSchedulerRef.current ??= createRepeaterPostRebootStatusScheduler(
+    (nodeId) => requestRepeaterStatusRef.current?.(nodeId) ?? Promise.resolve(),
+  );
   /** Clears pending no-route expiry timers when a new ping starts (legacy; errors persist until next ping). */
   const meshcorePingNoRouteExpiryTimersRef = useRef<Map<number, number>>(new Map());
 
@@ -3521,6 +3533,7 @@ export function useMeshcoreRuntime() {
       setTelemetry([]);
       setSignalTelemetry([]);
       setMeshcoreTraceResults(new Map());
+      postRebootStatusSchedulerRef.current?.cancelAll();
       setMeshcoreNodeStatus(new Map());
       setMeshcoreNodeTelemetry(new Map());
       setMeshcoreTelemetryErrors(new Map());
@@ -3921,7 +3934,9 @@ export function useMeshcoreRuntime() {
 
   // Cleanup on unmount — tear down listeners and release connection/driver.
   useEffect(() => {
+    const postRebootStatusScheduler = postRebootStatusSchedulerRef.current;
     return () => {
+      postRebootStatusScheduler?.cancelAll();
       serialRediscoveryStopRef.current?.();
       serialRediscoveryStopRef.current = null;
       resetMeshcoreRoomAutoLoginSingleFlight();
@@ -5714,6 +5729,7 @@ export function useMeshcoreRuntime() {
               nDirectDups: raw.n_direct_dups,
               nFloodDups: raw.n_flood_dups,
               currTxQueueLen: raw.curr_tx_queue_len,
+              fetchedAt: Date.now(),
             };
             setMeshcoreNodeStatus((prev) => {
               const next = new Map(prev);
@@ -5767,6 +5783,34 @@ export function useMeshcoreRuntime() {
     },
     [bumpMeshcoreNodeLastHeardFromRpc, ensureNodePubKey, resolveMeshcoreConn],
   );
+  requestRepeaterStatusRef.current = requestRepeaterStatus;
+
+  /** Drop pre-reboot Status counters and re-query once the repeater has had time to boot. */
+  const scheduleRepeaterPostRebootStatus = useCallback((nodeId: number) => {
+    const connectionAtReboot = connRef.current;
+    const identityAtReboot = meshcoreIdentityIdRef.current;
+    const setupGenerationAtReboot = meshcoreSetupGenerationRef.current;
+    setMeshcoreNodeStatus((prev) => {
+      if (!prev.has(nodeId)) return prev;
+      const next = new Map(prev);
+      next.delete(nodeId);
+      return next;
+    });
+    setMeshcoreStatusErrors((prev) => {
+      if (!prev.has(nodeId)) return prev;
+      const next = new Map(prev);
+      next.delete(nodeId);
+      return next;
+    });
+    postRebootStatusSchedulerRef.current?.schedule(
+      nodeId,
+      () =>
+        connectionAtReboot != null &&
+        connectionAtReboot === connRef.current &&
+        identityAtReboot === meshcoreIdentityIdRef.current &&
+        setupGenerationAtReboot === meshcoreSetupGenerationRef.current,
+    );
+  }, []);
 
   const resolveAdminHopsForNode = useCallback((nodeId: number): number => {
     return resolveMeshcoreAdminHopsAway(
@@ -6117,6 +6161,7 @@ export function useMeshcoreRuntime() {
         preemptMeshcoreSilentBulkForCli();
         let cliReplyDrainKickTimer: ReturnType<typeof setInterval> | undefined;
         let cliPendingToken: string | undefined;
+        let rebootCommandSent = false;
         const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
         repeaterCommandServiceRef.current ??= service;
         try {
@@ -6317,6 +6362,7 @@ export function useMeshcoreRuntime() {
                   }
                   throw sendErr;
                 }
+                if (isMeshcoreRepeaterRebootCommand(trimmed)) rebootCommandSent = true;
                 const cliSendWaitMs = Date.now() - cliSendStartedAt;
                 console.debug(
                   `[useMeshcoreRuntime] CLI sent node=0x${nodeId.toString(16)} token=${cliPendingToken ?? '?'} sendWaitMs=${cliSendWaitMs}`,
@@ -6399,6 +6445,7 @@ export function useMeshcoreRuntime() {
             setMeshcoreRepeaterRpcPending((prev) =>
               setRepeaterAdminRpcPending(prev, nodeId, 'cli', false),
             );
+            if (rebootCommandSent) scheduleRepeaterPostRebootStatus(nodeId);
           }
         }
       });
@@ -6411,6 +6458,7 @@ export function useMeshcoreRuntime() {
       resolveAdminHopsForNode,
       meshcoreTraceResults,
       resolveMeshcoreConn,
+      scheduleRepeaterPostRebootStatus,
     ],
   );
 

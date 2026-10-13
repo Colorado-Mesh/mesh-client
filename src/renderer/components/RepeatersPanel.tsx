@@ -1418,7 +1418,25 @@ export default function RepeatersPanel({
                             <span className="text-muted">—</span>
                           )}
                         </td>
-                        <td className="py-2 pr-4">{formatUptime(t, status?.totalUpTimeSecs)}</td>
+                        <td
+                          className="py-2 pr-4"
+                          title={
+                            status?.fetchedAt
+                              ? t('repeatersPanel.uptimeFetchedAgo', {
+                                  time: formatRelativeTime(t, status.fetchedAt),
+                                })
+                              : undefined
+                          }
+                        >
+                          {formatUptime(t, status?.totalUpTimeSecs)}
+                          {status?.fetchedAt && status.totalUpTimeSecs ? (
+                            <span className="text-muted block text-xs">
+                              {t('repeatersPanel.uptimeFetchedAgo', {
+                                time: formatRelativeTime(t, status.fetchedAt),
+                              })}
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="py-2 pr-4">
                           {airPct != null ? `${airPct.toFixed(1)}%` : '—'}
                         </td>

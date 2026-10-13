@@ -187,4 +187,37 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toContain('syncDeviceTime');
     expect(cliBody).toContain('meshcoreRepeaterRpcErrorMessage(errMsg, cliTimeoutMs)');
   });
+
+  it('schedules a post-reboot Status refresh only after the reboot left the radio', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    const sentAckIdx = cliBody.indexOf('markMeshcoreCompanionTx();');
+    const flagIdx = cliBody.indexOf(
+      'if (isMeshcoreRepeaterRebootCommand(trimmed)) rebootCommandSent = true;',
+    );
+    expect(sentAckIdx).toBeGreaterThan(-1);
+    expect(flagIdx).toBeGreaterThan(sentAckIdx);
+    // Runs from `finally`, so a reboot whose reply times out still refreshes.
+    const finallyIdx = cliBody.lastIndexOf('} finally {');
+    const scheduleIdx = cliBody.indexOf(
+      'if (rebootCommandSent) scheduleRepeaterPostRebootStatus(nodeId);',
+    );
+    expect(scheduleIdx).toBeGreaterThan(finallyIdx);
+  });
+
+  it('clears cached Status and guards the post-reboot refresh on the captured session', () => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, 'scheduleRepeaterPostRebootStatus');
+    expect(body).toContain('setMeshcoreNodeStatus');
+    expect(body).toContain('setMeshcoreStatusErrors');
+    expect(body).toContain('connectionAtReboot === connRef.current');
+    expect(body).toContain('identityAtReboot === meshcoreIdentityIdRef.current');
+    expect(body).toContain('setupGenerationAtReboot === meshcoreSetupGenerationRef.current');
+  });
+
+  it('cancels pending post-reboot refreshes on disconnect cleanup', () => {
+    const resetIdx = RUNTIME_SOURCE.indexOf('postRebootStatusSchedulerRef.current?.cancelAll();');
+    const statusClearIdx = RUNTIME_SOURCE.indexOf('setMeshcoreNodeStatus(new Map());');
+    expect(resetIdx).toBeGreaterThan(-1);
+    expect(statusClearIdx).toBeGreaterThan(resetIdx);
+    expect(RUNTIME_SOURCE).toContain('postRebootStatusScheduler?.cancelAll();');
+  });
 });

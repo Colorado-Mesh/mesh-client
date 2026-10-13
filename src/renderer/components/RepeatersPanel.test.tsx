@@ -1081,6 +1081,45 @@ describe('RepeatersPanel', () => {
     expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 
+  it('shows how old the uptime snapshot is when the Status fetch time is known', () => {
+    const status: MeshCoreRepeaterStatus = {
+      battMilliVolts: 0,
+      noiseFloor: 0,
+      lastRssi: 0,
+      lastSnr: 0,
+      nPacketsRecv: 0,
+      nPacketsSent: 0,
+      totalAirTimeSecs: 0,
+      totalUpTimeSecs: 3 * 3600,
+      nSentFlood: 0,
+      nSentDirect: 0,
+      nRecvFlood: 0,
+      nRecvDirect: 0,
+      errEvents: 0,
+      nDirectDups: 0,
+      nFloodDups: 0,
+      currTxQueueLen: 0,
+    };
+    const { rerender } = render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={new Map([[repeater.node_id, status]])}
+      />,
+    );
+    expect(screen.getByText('3h 0m')).toBeInTheDocument();
+    expect(screen.queryByText(/^fetched /)).not.toBeInTheDocument();
+
+    rerender(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={
+          new Map([[repeater.node_id, { ...status, fetchedAt: Date.now() - 12 * 60_000 }]])
+        }
+      />,
+    );
+    expect(screen.getByText('fetched 12m ago')).toBeInTheDocument();
+  });
+
   it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {
     const contactsSpy = vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts');
     const props = makeBaseProps();
