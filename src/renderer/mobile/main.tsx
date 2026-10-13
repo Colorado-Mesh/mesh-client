@@ -5,7 +5,7 @@ import i18next from 'i18next';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 
-import { aria, mobilePrototype } from '../locales/en/translation.json';
+import { aria, common, mobilePrototype, shell } from '../locales/en/translation.json';
 import { MobilePrototype } from './MobilePrototype';
 
 const previewI18n = i18next.createInstance();
@@ -16,14 +16,7 @@ void previewI18n
     fallbackLng: 'en',
     resources: {
       en: {
-        translation: {
-          mobilePrototype,
-          aria: {
-            switchToMeshtastic: aria.switchToMeshtastic,
-            switchToMeshCore: aria.switchToMeshCore,
-            switchToReticulum: aria.switchToReticulum,
-          },
-        },
+        translation: { aria, common, mobilePrototype, shell },
       },
     },
     interpolation: { escapeValue: false },

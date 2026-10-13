@@ -46,6 +46,28 @@ afterAll(() => {
 });
 
 describe('mobile ProtocolSwitcher', () => {
+  it('keeps the rail popover inside an inset app shell', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <div className="mobile-shell" data-wide="true">
+        <ProtocolSwitcher wide protocol="meshtastic" contexts={contexts} onSelect={vi.fn()} />
+      </div>,
+    );
+    const shell = container.querySelector('.mobile-shell')!;
+    const trigger = screen.getByRole('button', { name: 'Switch protocol, current Meshtastic' });
+    vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue(new DOMRect(128, 0, 1024, 850));
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(new DOMRect(140, 250, 48, 48));
+
+    await user.click(trigger);
+
+    const dialog = screen.getByRole('dialog', { name: 'Choose a protocol' });
+    const left = Number.parseFloat(dialog.style.getPropertyValue('--protocol-sheet-left'));
+    const width = Number.parseFloat(dialog.style.getPropertyValue('--protocol-sheet-width'));
+    expect(left).toBeGreaterThanOrEqual(128);
+    expect(left + width).toBeLessThanOrEqual(1152);
+    expect(left).toBe(196);
+  });
+
   it('opens a labelled modal and focuses the selected protocol', async () => {
     const user = userEvent.setup();
     render(<ProtocolSwitcher protocol="meshcore" contexts={contexts} onSelect={vi.fn()} />);
@@ -73,7 +95,7 @@ describe('mobile ProtocolSwitcher', () => {
     render(<ProtocolSwitcher protocol="meshtastic" contexts={contexts} onSelect={onSelect} />);
     const trigger = screen.getByRole('button', { name: 'Switch protocol, current Meshtastic' });
     await user.click(trigger);
-    await user.click(screen.getByRole('radio', { name: 'Switch to Reticulum' }));
+    await user.click(screen.getByRole('radio', { name: 'Switch to Reticulum, 1 unread' }));
 
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('reticulum');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -81,7 +103,7 @@ describe('mobile ProtocolSwitcher', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('closes an already selected card without changing protocol', async () => {
+  it('closes the selected segment without changing protocol', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<ProtocolSwitcher protocol="meshcore" contexts={contexts} onSelect={onSelect} />);
@@ -93,7 +115,7 @@ describe('mobile ProtocolSwitcher', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('supports keyboard selection through the native radio group', async () => {
+  it('supports the shared segmented control keyboard selection', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<ProtocolSwitcher protocol="meshtastic" contexts={contexts} onSelect={onSelect} />);
@@ -161,6 +183,44 @@ describe('mobile ProtocolSwitcher', () => {
     expect(screen.getByText('12 unread, sample')).toBeInTheDocument();
   });
 
+  it('shows the shared vertical control on wide layouts and selects directly from the rail', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<ProtocolSwitcher protocol="meshtastic" contexts={contexts} onSelect={onSelect} wide />);
+
+    const group = screen.getByRole('radiogroup', { name: 'Protocol switcher' });
+    expect(group).toHaveAttribute('aria-orientation', 'vertical');
+    expect(within(group).getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveTextContent(
+      'MT',
+    );
+    expect(
+      within(group).getByRole('radio', { name: 'Switch to MeshCore, 3 unread' }),
+    ).toHaveTextContent('MC');
+    await user.click(within(group).getByRole('radio', { name: 'Switch to Reticulum, 1 unread' }));
+
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('reticulum');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('keeps radio context details available from the wide rail', async () => {
+    const user = userEvent.setup();
+    render(<ProtocolSwitcher protocol="meshtastic" contexts={contexts} onSelect={vi.fn()} wide />);
+    const trigger = screen.getByRole('button', { name: 'Switch protocol, current Meshtastic' });
+    await user.click(trigger);
+
+    const dialog = screen.getByRole('dialog', { name: 'Choose a protocol' });
+    expect(within(dialog).getByRole('radiogroup')).toHaveAttribute(
+      'aria-orientation',
+      'horizontal',
+    );
+    expect(within(dialog).getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveTextContent(
+      'Meshtastic',
+    );
+    expect(within(dialog).getByText('Field RNode')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
+  });
+
   it('uses a compact popover on wide shells and a sheet when the shell becomes compact', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
@@ -203,5 +263,13 @@ describe('mobile ProtocolSwitcher', () => {
     await user.click(screen.getByRole('button', { name: 'Switch protocol, current Meshtastic' }));
     hydrateAxeThemeColors(container);
     expect(await axe(screen.getByRole('dialog'))).toHaveNoViolations();
+  });
+
+  it('has no axe violations with the shared wide protocol control', async () => {
+    const { container } = render(
+      <ProtocolSwitcher protocol="meshtastic" contexts={contexts} onSelect={vi.fn()} wide />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

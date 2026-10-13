@@ -2,7 +2,7 @@
 
 This draft begins Mesh Client's iOS and Android work with a responsive UI shell and screenshot scenes for phones, tablets, and foldables. It retains the existing branding and focuses design review on Bluetooth radio connection, protocol switching, and messaging. The first goal is to settle layout, navigation, copy, and accessibility before implementing mobile transports.
 
-Reviewer controls, shell navigation, and the header protocol chooser can change the displayed mock view. Each protocol has its own sample radio, conversation, current scene, and locally editable draft. Switching protocols restores that protocol's scene and draft within the current browser session. Connection, pairing, reconnect, and disconnect controls only navigate between static scenes. The send and retry-message controls are disabled visual placeholders. There is no real or simulated connection workflow, message queue, or message delivery. The prototype does not access hardware, invoke Electron IPC, show OS prompts, or open OS settings. Sample radio and message statuses are design fixtures, and native packets are never sent.
+Reviewer controls, shell navigation, and the protocol switcher can change the displayed mock view. Each protocol has its own sample radio, conversation, current scene, and locally editable draft. Switching protocols restores that protocol's scene and draft within the current browser session. Connection, pairing, reconnect, and disconnect controls only navigate between static scenes. The send and retry-message controls are disabled visual placeholders. There is no real or simulated connection workflow, message queue, or message delivery. The prototype does not access hardware, invoke Electron IPC, show OS prompts, or open OS settings. Sample radio and message statuses are design fixtures, and native packets are never sent.
 
 ## Run and build
 
@@ -27,17 +27,21 @@ The build output is `dist/mobile-prototype`. Use the URL printed by the preview 
 
 ## Design direction
 
-The [UI style guide](../style-guide.md) remains the source for branding: ink surfaces, bundled IBM Plex Sans and Mono, existing radius and elevation tokens, and emerald, cyan, and yellow protocol identities. Primary actions use the accent with dark text; connection status uses a semantic status color accompanied by text or an icon.
+The [UI style guide](../style-guide.md) and Mesh Client's existing components remain the sources for the design. The prototype uses ink surfaces, bundled IBM Plex Sans and Mono, existing radius and elevation tokens, and emerald, cyan, and yellow protocol identities. It reuses `chat/ConversationLayout` for the conversation panes and the shared `ProtocolSwitcher` for protocol selection. Primary actions use the accent with dark text; connection status uses a semantic status color accompanied by text or an icon.
+
+The revised shell follows the client's compact visual hierarchy: a 52-pixel section header, a bottom status bar, bounded conversation panels, compact conversation rows, and restrained pane titles. The list includes a disabled search field to show its placement. Messages use 14-pixel body text at the default scale, compact sender and timestamp lines, sender initials in the gutter, and incoming/outgoing bubble tokens. The composer uses the client's field treatment and Send icon. The phone bottom navigation highlights the active icon with a pill rather than filling the whole navigation cell.
 
 At narrow widths, the shell gives each task a single pane and puts the main action within comfortable reach. Interactive targets are at least 48 CSS pixels in each dimension. Text uses rem sizes and supports 200% enlargement. At narrow widths with enlarged text, navigation reflows into two rows and radio metadata stays in the main text column. Safe-area padding protects content from screen cutouts and the home gesture area. Reduced motion removes decorative movement.
 
-Navigation keeps the familiar Chat, Network, Map, Incident, and More destinations. It appears at the bottom in the narrow layout and in a left rail when the shell has enough room. Chat shows conversation and message layouts. Network, Map, and Incident have disabled controls with accessible future-scope labels; they do not imply that mobile network management, maps, incident operations, or settings are implemented.
+Navigation keeps the familiar Chat, Network, Map, Incident, and More destinations. It appears at the bottom in the narrow layout and in a left rail when the shell has enough room. Chat shows conversation and message layouts. More opens a launcher in a native HTML `<dialog>`; Connection and Chat select their mock views, while the remaining panels are disabled and labelled as future scope. The wide rail pins Incident and App below its scrolling primary navigation. App remains a disabled placeholder; Device opens the connection scenes. These controls do not imply that mobile network management, maps, incident operations, or settings are implemented.
 
-Platform, display, and scene controls sit outside the app shell. Selecting iOS or Android changes the review context and permission explanation. Selecting a scene previews a static state. These controls are for reviewers and do not belong in the eventual mobile app. The header protocol chooser uses a browser `<dialog>` to preview selection among Meshtastic, MeshCore, and Reticulum; it is not a native Bluetooth or OS permission dialog.
+Platform, display, and scene controls sit outside the app shell. Selecting iOS or Android changes the review context and permission explanation. Selecting a scene previews a static state. These controls are for reviewers and do not belong in the eventual mobile app. The prototype disclosure also stays outside the shell so implementation notes do not compete with the chat. The protocol chooser and launcher use browser `<dialog>` elements; they are not native Bluetooth or OS permission dialogs.
 
 ## Adaptive layout
 
-The available shell width determines the layout. A 48em fit threshold enables the wide layout, about 768 CSS pixels at default text size. At that text size, the wide shell uses an 80-pixel navigation rail, a 240-pixel conversation list, and a flexible chat pane. With insufficient room, only the conversation list or the selected chat is shown. At 200% text, the fit threshold grows with the text size and collapses the split when both panes would be too cramped.
+The available shell width determines the layout. A 48em fit threshold enables the wide layout, about 768 CSS pixels at default text size. At that text size, the wide shell uses the client's 72-pixel navigation rail, a 288-pixel conversation list, and a flexible chat pane inside the shared `ConversationLayout`. With insufficient room, only the conversation list or the selected chat is shown. At 200% text, the fit threshold grows with the text size and collapses the split when both panes would be too cramped.
+
+Wide layouts put the shared vertical protocol segments directly on the rail. A radio-details trigger beside them opens a compact chooser popover with full-name segments and sample radio rows. Compact layouts open the same chooser from the header as a bottom sheet. Both use the client's shared horizontal protocol segments inside the chooser, with sample link and unread information in the rows below.
 
 Phone, Tablet, and Foldable are generic review presets. The tablet shell has a maximum width of 1024 CSS pixels and the foldable shell a maximum width of 896 CSS pixels. The actual available window width still controls the split, so a narrow window can collapse either preset. These values are prototype layout choices, not hardware specifications. A hypothetical iPhone Duo is covered by the generic foldable design goal; this draft assumes no dimensions, hinge position, or released Apple foldable model.
 
@@ -48,11 +52,12 @@ The browser preview does not detect a real fold, hinge, or posture. Native Andro
 ## Reviewer walkthrough
 
 1. Open a chat scene and type a sample draft. Sending remains disabled.
-2. Open the protocol chooser from the header and select another protocol. Review its sample radio and conversation, then enter a different draft.
+2. On a phone, open the protocol chooser from the header and select another protocol. On a wide layout, use the rail's protocol segments directly or open the radio-details chooser. Review its sample radio and conversation, then enter a different draft.
 3. Switch back and verify the earlier protocol's scene and draft are restored. Close the chooser and check focus returns to its trigger.
 4. Select Tablet or Foldable in the display review control. Widen the window to review the conversation list beside chat, then narrow it to review the single-pane form.
 5. Repeat with 200% text. Confirm the layout collapses when needed without losing the selected scene or local draft.
 6. Use the scene selector to inspect connection and message failure designs. The scene changes do not connect a radio or transmit a message.
+7. Open More on a phone or App on a wide layout. Select Connection or Chat to preview that destination, and confirm the remaining launcher entries are visibly disabled. Close the launcher and check focus returns to its trigger.
 
 ## Screenshot scenes
 
@@ -77,7 +82,7 @@ The [existing BLE contracts](ble-serial.md#lora-ble-reconnect-parity-meshtastic-
 
 ## Captured screens
 
-The phone screenshots show the shell at normal text size. The iOS phone review context is 390 pixels wide, and the Android phone context is 412 pixels wide. Additional captures show the header protocol chooser and the generic wide layouts. These are browser captures; they do not show native OS chrome, permission dialogs, a real hinge, or a physical device.
+The phone screenshots show the shell at normal text size. The iOS phone review context is 390 pixels wide, and the Android phone context is 412 pixels wide. Additional captures show the compact protocol chooser, More launcher, and generic wide layouts. Wide captures include the full viewport so a top-layer popover cannot be cropped by the app container. These are browser captures; they do not show native OS chrome, permission dialogs, a real hinge, or a physical device.
 
 | iOS                                                                                      | Android                                                                                  |
 | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -87,11 +92,13 @@ The phone screenshots show the shell at normal text size. The iOS phone review c
 
 ![Header protocol chooser in the iOS review context](mobile-prototype/screenshots/ios-protocol-switcher.png)
 
+![More launcher in the iOS review context](mobile-prototype/screenshots/ios-more.png)
+
 ![Tablet conversation list and chat layout](mobile-prototype/screenshots/tablet-chat.png)
 
 ![Generic foldable conversation list and chat layout](mobile-prototype/screenshots/foldable-chat.png)
 
-The chooser uses a bottom sheet on compact layouts and a compact popover beside the header on wide layouts. Folding or resizing while it is open updates the presentation and preserves focus.
+The chooser uses a bottom sheet on compact layouts and a compact popover beside the rail's radio-details trigger on wide layouts. Folding or resizing while it is open updates the presentation and preserves focus. Wide protocol selection is also available directly from the rail without opening the chooser.
 
 ![Tablet protocol popover](mobile-prototype/screenshots/tablet-protocol-switcher.png)
 
@@ -115,13 +122,14 @@ The desktop app currently connects Meshtastic and MeshCore through the Rust side
 
 ## Visual review checklist
 
-The current shell passed 1,320 layout combinations across both platform contexts, all three protocols, ten scenes, Phone/Tablet/Foldable presets, widths from 320 to 1366 CSS pixels, and 100%/200% text. Checked visible shell targets were at least 48 by 48 CSS pixels, with no horizontal page overflow or browser page errors. All 180 scene axe runs passed. The native browser protocol dialog was also checked in each display context, including 200% text, focus containment, Escape/backdrop dismissal, and resizing from popover to bottom sheet while open. Protocol switching and folded/unfolded resizing preserved separate local drafts.
+The revised shell passed 1,320 layout combinations across both platform contexts, all three protocols, ten scenes, Phone/Tablet/Foldable presets, widths from 320 to 1366 CSS pixels, and 100%/200% text. Checked visible shell targets were at least 48 by 48 CSS pixels, with no horizontal page overflow or browser page errors. All 180 scene axe runs and two modal axe runs passed, for 182 browser accessibility checks. The protocol chooser and launcher were also checked for focus handling and dismissal. Protocol switching and folded/unfolded resizing preserved separate local drafts.
 
-The 42 focused component tests include real-theme axe coverage, protocol context isolation, and adaptive semantics. The full local gate passed with 15,623 tests passing and five skipped. Native-device checks remain separate.
+The 55 focused component tests include real-theme axe coverage, protocol context isolation, adaptive semantics, and the More launcher. The full local gate passed with 15,635 tests passing and five skipped. The final popover-position regression also passed separately. Native-device checks remain separate.
 
 - [x] Review every scene in the iOS and Android contexts across Phone, Tablet, and Foldable presets.
 - [x] Verify reviewer controls and shell navigation show the intended mock views, with accessible names and a clear selected state.
-- [x] Verify the header protocol chooser, focus handling, per-protocol scene restoration, and local draft restoration.
+- [x] Verify rail protocol selection, the compact and wide choosers, focus handling, per-protocol scene restoration, and local draft restoration.
+- [x] Verify the More/App launcher, selectable Connection and Chat destinations, disabled future panels, and focus restoration.
 - [x] Verify connection and messaging controls are recognizable visual placeholders and do not imply real or simulated transport behavior.
 - [x] Confirm prototype, sample-data, and future-scope labels remain clear in the refreshed screenshots.
 - [x] Review phone widths of 320, 390, and 430 CSS pixels plus wide and collapsed tablet/foldable windows at default and 200% text. No page-level horizontal overflow, clipped labels, overlapping targets, or hidden content.
@@ -132,7 +140,8 @@ The 42 focused component tests include real-theme axe coverage, protocol context
 - [x] Check status and failure text is understandable without color alone.
 - [x] Check text and non-text contrast against the actual theme tokens; run axe with the repository's real-theme hydration helper for component coverage.
 - [x] Check reduced-motion behavior and bundled assets in the updated built preview, including with external network requests blocked.
-- [x] Build the standalone preview and complete the repository checks required by `AGENTS.md` for the updated shell.
+- [x] Build the standalone preview and run the focused component checks for the revised shell.
+- [x] Complete the full repository gate required by `AGENTS.md` for the revised shell.
 
 Native VoiceOver and TalkBack, permission and pairing prompts, hardware discovery, radio handshakes, real message delivery and acknowledgements, fold posture and hinge handling, IME behavior, background behavior, and platform packaging remain unverified by this browser UI shell.
 

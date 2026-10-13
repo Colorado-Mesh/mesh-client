@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -28,6 +28,7 @@ beforeAll(() => {
     configurable: true,
     value(this: HTMLDialogElement) {
       this.setAttribute('open', '');
+      this.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus();
     },
   });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', {
@@ -84,7 +85,7 @@ describe('MobilePrototype', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Your radio is ready' })).toHaveFocus();
     expect(
       screen.getByRole('button', { name: 'Preview radio connection screen' }),
-    ).toHaveTextContent('Trail radio, sample link');
+    ).toHaveTextContent('Trail radio, connected');
     expect(
       screen.getByText('A radio connection does not guarantee that a recipient is reachable.'),
     ).toBeVisible();
@@ -150,7 +151,7 @@ describe('MobilePrototype', () => {
         />,
       );
 
-      const list = screen.getByRole('region', { name: 'Conversation list' });
+      const list = screen.getByRole('complementary', { name: 'Conversation list' });
       expect(
         within(list).getByRole('button', { name: `Preview conversation with ${name}` }),
       ).toBeVisible();
@@ -175,9 +176,11 @@ describe('MobilePrototype', () => {
       />,
     );
 
-    const list = screen.getByRole('region', { name: 'Conversation list' });
+    const list = screen.getByRole('complementary', { name: 'Conversation list' });
     expect(screen.getByText('Choose a conversation to start reading.')).toBeVisible();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: 'Message draft, preview only' }),
+    ).not.toBeInTheDocument();
     await user.click(within(list).getByRole('button', { name: 'Preview conversation with Sam' }));
 
     expect(screen.getByRole('heading', { level: 1, name: 'Sam' })).toHaveFocus();
@@ -185,7 +188,7 @@ describe('MobilePrototype', () => {
       'Field node is ready. See you at camp.',
     );
     expect(screen.queryByText('Choose a conversation to start reading.')).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Conversation list' })).toBeVisible();
+    expect(screen.getByRole('complementary', { name: 'Conversation list' })).toBeVisible();
   });
 
   it('retains the conversation and draft while its available width changes', async () => {
@@ -195,25 +198,32 @@ describe('MobilePrototype', () => {
       screen.getByRole('textbox', { name: 'Message draft, preview only' }),
       'A folding draft',
     );
-    expect(screen.queryByRole('region', { name: 'Conversation list' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveFocus();
+    expect(
+      screen.queryByRole('complementary', { name: 'Conversation list' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to chats' })).toBeVisible();
 
     layout.wide = true;
     rerender(<MobilePrototype initialDisplay="foldable" initialScene="chat" />);
-    expect(screen.getByRole('region', { name: 'Conversation list' })).toBeVisible();
+    expect(screen.getByRole('complementary', { name: 'Conversation list' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Back to chats' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
       'A folding draft',
     );
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveFocus();
 
     layout.wide = false;
     rerender(<MobilePrototype initialDisplay="foldable" initialScene="chat" />);
-    expect(screen.queryByRole('region', { name: 'Conversation list' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'Conversation list' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to chats' })).toBeVisible();
     expect(screen.getByRole('heading', { level: 1, name: 'Alex' })).toBeVisible();
     expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
       'A folding draft',
     );
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveFocus();
   });
 
   it('switches the sample conversation from the header chooser and restores trigger focus', async () => {
@@ -222,8 +232,10 @@ describe('MobilePrototype', () => {
     await user.click(screen.getByRole('button', { name: 'Switch protocol, current Meshtastic' }));
 
     const dialog = screen.getByRole('dialog', { name: 'Choose a protocol' });
-    expect(within(dialog).getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveFocus();
-    await user.click(within(dialog).getByRole('radio', { name: 'Switch to MeshCore' }));
+    expect(
+      within(dialog).getByRole('radio', { name: /^Switch to Meshtastic(?:,|$)/ }),
+    ).toHaveFocus();
+    await user.click(within(dialog).getByRole('radio', { name: /^Switch to MeshCore(?:,|$)/ }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Switch protocol, current MeshCore' })).toHaveFocus();
@@ -288,19 +300,21 @@ describe('MobilePrototype', () => {
 
     await user.click(screen.getByRole('button', { name: 'Switch protocol, current MeshCore' }));
     const dialog = within(screen.getByRole('dialog', { name: 'Choose a protocol' }));
-    expect(dialog.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAccessibleDescription(
-      'Trail radio Radio ready, sample 2 unread, sample',
+    const trailContext = within(dialog.getByText('Trail radio').parentElement!.parentElement!);
+    expect(trailContext.getByText('Radio ready, sample')).toBeVisible();
+    expect(trailContext.getByText('2 unread, sample')).toBeVisible();
+    const basecampContext = within(
+      dialog.getByText('Basecamp radio').parentElement!.parentElement!,
     );
-    expect(dialog.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAccessibleDescription(
-      'Basecamp radio No radio connected 1 unread, sample',
-    );
-    await user.click(dialog.getByRole('radio', { name: 'Switch to Meshtastic' }));
+    expect(basecampContext.getByText('No radio connected')).toBeVisible();
+    expect(basecampContext.getByText('1 unread, sample')).toBeVisible();
+    await user.click(dialog.getByRole('radio', { name: /^Switch to Meshtastic(?:,|$)/ }));
 
     expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('message-error');
     expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
       'Keep this draft',
     );
-    expect(screen.getByText('Failed, sample state')).toBeVisible();
+    expect(screen.getByText('Failed')).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Retry message, design placeholder' }),
     ).toBeDisabled();
@@ -315,12 +329,12 @@ describe('MobilePrototype', () => {
   });
 
   it.each([
-    ['meshtastic', 'Meshtastic', 'Trail radio'],
-    ['meshcore', 'MeshCore', 'Basecamp radio'],
-    ['reticulum', 'Reticulum', 'Field RNode'],
-  ] satisfies [MeshProtocol, string, string][])(
+    ['meshtastic', 'Meshtastic', 'Trail radio', true],
+    ['meshcore', 'MeshCore', 'Basecamp radio', true],
+    ['reticulum', 'Reticulum', 'Field RNode', false],
+  ] satisfies [MeshProtocol, string, string, boolean][])(
     'previews %s branding and its named sample radio',
-    async (protocol, displayName, radioName) => {
+    async (protocol, displayName, radioName, hasBatteryTelemetry) => {
       const user = userEvent.setup();
       render(<MobilePrototype initialScene="ready" />);
 
@@ -332,7 +346,12 @@ describe('MobilePrototype', () => {
       expect(within(screen.getByRole('main')).getByText(radioName)).toBeVisible();
       expect(
         screen.getByRole('button', { name: 'Preview radio connection screen' }),
-      ).toHaveTextContent(`${radioName}, sample link`);
+      ).toHaveTextContent(`${radioName}, connected`);
+      if (hasBatteryTelemetry) {
+        expect(within(screen.getByRole('main')).getByText('84%')).toBeVisible();
+      } else {
+        expect(within(screen.getByRole('main')).queryByText('84%')).not.toBeInTheDocument();
+      }
     },
   );
 
@@ -348,7 +367,9 @@ describe('MobilePrototype', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Connecting to your radio' }),
     ).toHaveFocus();
-    expect(screen.getByText(/No pairing takes place in this preview\./)).toBeVisible();
+    expect(
+      screen.getByText('If your phone asks you to pair, follow the system prompt.'),
+    ).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Nearby radios' })).toHaveFocus();
@@ -357,29 +378,54 @@ describe('MobilePrototype', () => {
     ).toHaveTextContent('No radio connected');
   });
 
-  it('keeps navigation current while opening a sample chat, going back, and returning to setup', async () => {
+  it('keeps the compact chat list accessible while opening a conversation and returning with a draft', async () => {
     const user = userEvent.setup();
     render(<MobilePrototype initialScene="ready" />);
     const nav = within(screen.getByRole('navigation', { name: 'Mobile navigation preview' }));
     const chat = nav.getByRole('button', { name: 'Chat' });
-    const more = nav.getByRole('button', { name: 'More' });
-
-    expect(more).toHaveAttribute('aria-current', 'page');
     expect(chat).not.toHaveAttribute('aria-current');
     await user.click(chat);
-    expect(screen.getByRole('heading', { level: 1, name: 'Chats' })).toHaveFocus();
+    expect(
+      within(screen.getByRole('complementary', { name: 'Conversation list' })).getByRole(
+        'heading',
+        {
+          level: 1,
+          name: 'Chat',
+        },
+      ),
+    ).toHaveFocus();
     expect(chat).toHaveAttribute('aria-current', 'page');
-    expect(more).not.toHaveAttribute('aria-current');
+    expect(
+      screen.queryByRole('textbox', { name: 'Message draft, preview only' }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Preview conversation with Alex' }));
     expect(screen.getByRole('heading', { level: 1, name: 'Alex' })).toHaveFocus();
     expect(chat).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.queryByRole('complementary', { name: 'Conversation list' }),
+    ).not.toBeInTheDocument();
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message draft, preview only' }),
+      'Back soon',
+    );
     await user.click(screen.getByRole('button', { name: 'Back to chats' }));
-    expect(screen.getByRole('heading', { level: 1, name: 'Chats' })).toHaveFocus();
-    await user.click(more);
-    expect(screen.getByRole('heading', { level: 1, name: 'Connect your radio' })).toHaveFocus();
-    expect(more).toHaveAttribute('aria-current', 'page');
-    expect(chat).not.toHaveAttribute('aria-current');
+    expect(
+      within(screen.getByRole('complementary', { name: 'Conversation list' })).getByRole(
+        'heading',
+        {
+          level: 1,
+          name: 'Chat',
+        },
+      ),
+    ).toHaveFocus();
+    expect(
+      screen.queryByRole('textbox', { name: 'Message draft, preview only' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Preview conversation with Alex' }));
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
+      'Back soon',
+    );
   });
 
   it('leaves unfinished navigation destinations disabled and on the current mock screen', async () => {
@@ -395,8 +441,173 @@ describe('MobilePrototype', () => {
       const button = nav.getByRole('button', { name });
       expect(button).toBeDisabled();
       await user.click(button);
-      expect(screen.getByRole('heading', { level: 1, name: 'Chats' })).toBeVisible();
+      expect(
+        within(screen.getByRole('complementary', { name: 'Conversation list' })).getByRole(
+          'heading',
+          {
+            level: 1,
+            name: 'Chat',
+          },
+        ),
+      ).toBeVisible();
     }
+  });
+
+  it('opens More without leaving the current conversation, then previews connection setup', async () => {
+    const user = userEvent.setup();
+    render(<MobilePrototype initialScene="chat" />);
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message draft, preview only' }),
+      'Keep my place',
+    );
+    const more = screen.getByRole('button', { name: 'More' });
+    await user.click(more);
+
+    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('chat');
+    for (const name of ['Network', 'Map', 'Incident']) {
+      const button = within(dialog).getByRole('button', { name });
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('chat');
+    }
+
+    await user.click(within(dialog).getByRole('button', { name: /^Connection/ }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Connect your radio' })).toHaveFocus();
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Screen' }), 'chat');
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
+      'Keep my place',
+    );
+  });
+
+  it.each(['close button', 'backdrop', 'cancel'] as const)(
+    'dismisses More with %s and restores its trigger without changing the draft',
+    async (method) => {
+      const user = userEvent.setup();
+      render(<MobilePrototype initialScene="chat" />);
+      const draft = screen.getByRole('textbox', { name: 'Message draft, preview only' });
+      await user.type(draft, 'A launcher draft');
+      const more = screen.getByRole('button', { name: 'More' });
+      await user.click(more);
+      const dialog = screen.getByRole('dialog', { name: 'All panels' });
+
+      if (method === 'close button') {
+        await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+      } else if (method === 'backdrop') {
+        fireEvent.pointerDown(dialog);
+      } else {
+        fireEvent(dialog, new Event('cancel', { cancelable: true }));
+      }
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(more).toHaveFocus();
+      expect(more).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('chat');
+      expect(draft).toHaveValue('A launcher draft');
+    },
+  );
+
+  it('opens the compact chat list from More and focuses the visible list heading', async () => {
+    const user = userEvent.setup();
+    render(<MobilePrototype initialScene="ready" />);
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'All panels' })).getByRole('button', {
+        name: 'Chat',
+      }),
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('complementary', { name: 'Conversation list' })).getByRole(
+        'heading',
+        {
+          level: 1,
+          name: 'Chat',
+        },
+      ),
+    ).toHaveFocus();
+    expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('conversations');
+  });
+
+  it('restores active navigation when an open More launcher unfolds onto the wide rail', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<MobilePrototype initialDisplay="foldable" initialScene="chat" />);
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+
+    layout.wide = true;
+    rerender(<MobilePrototype initialDisplay="foldable" initialScene="chat" />);
+    expect(screen.getByRole('button', { name: 'App' })).toBeDisabled();
+    fireEvent(dialog, new Event('cancel', { cancelable: true }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Mobile navigation preview' })).getByRole(
+        'button',
+        {
+          name: 'Chat',
+        },
+      ),
+    ).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 1, name: 'Alex' })).toBeVisible();
+  });
+
+  it('uses the wide protocol rail while keeping drafts and conversations separate', async () => {
+    const user = userEvent.setup();
+    layout.wide = true;
+    render(<MobilePrototype initialDisplay="tablet" initialScene="chat" />);
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message draft, preview only' }),
+      'For Alex',
+    );
+    const rail = within(screen.getByRole('navigation', { name: 'Mobile navigation preview' }));
+    await user.click(rail.getByRole('radio', { name: /^Switch to MeshCore(?:,|$)/ }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Morgan' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue('');
+    expect(rail.getByRole('radio', { name: /^Switch to MeshCore(?:,|$)/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message draft, preview only' }),
+      'For Morgan',
+    );
+    await user.click(rail.getByRole('radio', { name: /^Switch to Meshtastic(?:,|$)/ }));
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Alex' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Message draft, preview only' })).toHaveValue(
+      'For Alex',
+    );
+    expect(screen.getByLabelText('Sample message history')).not.toHaveTextContent(
+      'Basecamp radio is on.',
+    );
+  });
+
+  it('keeps unfinished wide panels disabled while Device opens connection setup', async () => {
+    const user = userEvent.setup();
+    layout.wide = true;
+    render(<MobilePrototype initialDisplay="tablet" initialScene="chat" />);
+    const nav = within(screen.getByRole('navigation', { name: 'Mobile navigation preview' }));
+    for (const name of ['App', 'Monitor']) {
+      const button = nav.getByRole('button', { name });
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(screen.getByRole('combobox', { name: 'Screen' })).toHaveValue('chat');
+    }
+    expect(nav.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
+
+    await user.click(nav.getByRole('button', { name: 'Device' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Connect your radio' })).toHaveFocus();
+    expect(nav.getByRole('button', { name: 'Device' })).toHaveAttribute('aria-current', 'page');
+    expect(nav.getByRole('button', { name: 'Chat' })).not.toHaveAttribute('aria-current');
   });
 
   it.each(['chat', 'message-error'] as const)(
@@ -418,16 +629,16 @@ describe('MobilePrototype', () => {
       expect(history.getByText('At the trailhead. Can you hear me?')).toBeVisible();
       expect(history.getByText('Loud and clear. Heading your way now.')).toBeVisible();
       expect(history.queryByText('Reviewing the composer')).not.toBeInTheDocument();
-      expect(screen.getByText('Draft field only. Sending is not implemented.')).toBeVisible();
+      expect(screen.getByText('UI preview')).toBeVisible();
 
       if (scene === 'message-error') {
         const retry = screen.getByRole('button', { name: 'Retry message, design placeholder' });
         expect(retry).toBeDisabled();
         await user.click(retry);
-        expect(history.getByText('Failed, sample state')).toBeVisible();
+        expect(history.getByText('Failed')).toBeVisible();
         expect(draft).toHaveValue('Reviewing the composer\n');
       } else {
-        expect(history.getByText('Delivered, sample state')).toBeVisible();
+        expect(history.getAllByText('Delivered')).toHaveLength(2);
       }
     },
   );
@@ -447,7 +658,7 @@ describe('MobilePrototype', () => {
     expect(screen.getByRole('combobox', { name: 'Display preview' })).toHaveValue('tablet');
     expect(
       screen.getByRole('button', { name: 'Preview radio connection screen' }),
-    ).toHaveTextContent('Basecamp radio, sample link');
+    ).toHaveTextContent('Basecamp radio, connected');
   });
 
   it('falls back to a usable start screen for unknown URL values', () => {
@@ -536,5 +747,14 @@ describe('MobilePrototype', () => {
     expect(
       await axe(screen.getByRole('dialog', { name: 'Choose a protocol' })),
     ).toHaveNoViolations();
+  });
+
+  it('has no axe violations in the compact More launcher', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<MobilePrototype initialScene="chat" />);
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    hydrateAxeThemeColors(container);
+
+    expect(await axe(screen.getByRole('dialog', { name: 'All panels' }))).toHaveNoViolations();
   });
 });
