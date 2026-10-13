@@ -4510,9 +4510,15 @@ impl LiveBridge {
             }
             return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
         }
+        // Pin now: the announce settle + path gate below take 10s+, long enough for an
+        // announce flood to evict the PN pubkey before LRPROOF validation.
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.pin_known_identity_for_propagation(&dest_hex);
+        }
         // Only hard-reject destinations positively classified as non-PN.
         if target_class == "delivery" || target_class == "other" {
             if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
                 driver.set_propagation_sync_target(None);
             }
             return Err("PROPAGATION_TARGET_NOT_PN".into());
@@ -4538,6 +4544,7 @@ impl LiveBridge {
             .unwrap_or(false);
         if outbound_busy {
             if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
                 driver.set_propagation_sync_target(None);
             }
             tracing::info!(
@@ -4558,6 +4565,7 @@ impl LiveBridge {
             // Path gate awaits; only clear if we still own this attempt's latch.
             if let Ok(mut driver) = self.outbound.lock() {
                 if driver.propagation_sync_target() == Some(hash) {
+                    driver.clear_propagation_identity_pins();
                     driver.set_propagation_sync_target(None);
                 }
             }
@@ -4571,16 +4579,33 @@ impl LiveBridge {
         }
         // Pin PN pubkey for the duration of the client `/get` link so announce-flood
         // eviction cannot drop it before LRPROOF validation (see known_identities cap).
-        let pinned = if let Ok(mut driver) = self.outbound.lock() {
-            if let Some(pub_key) = driver.public_key_for(&dest_hex) {
-                driver.pin_identity_for_propagation(&dest_hex, pub_key);
-                true
-            } else {
-                false
-            }
-        } else {
-            false
+        let pin_known = || {
+            self.outbound
+                .lock()
+                .map(|mut d| d.pin_known_identity_for_propagation(&dest_hex))
+                .unwrap_or(false)
         };
+        let mut pinned = pin_known();
+        if !pinned {
+            self.ensure_identity_for_direct(&dest_hex).await;
+            pinned = pin_known();
+        }
+        if !pinned {
+            // Without the pubkey every LRPROOF is ignored; failover rounds cannot help.
+            if let Ok(mut driver) = self.outbound.lock() {
+                if driver.propagation_sync_target() == Some(hash) {
+                    driver.clear_propagation_identity_pins();
+                    driver.set_propagation_sync_target(None);
+                }
+            }
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                hops = ?hops,
+                "propagation sync aborted — PN identity unknown before client /get"
+            );
+            return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
         let local_serving = self.propagation.is_local_serving();
         let (msg_count, msg_bytes) = self.propagation.local_stats();
         tracing::info!(

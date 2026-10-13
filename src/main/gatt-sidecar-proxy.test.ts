@@ -265,6 +265,28 @@ describe('GattSidecarProxy', () => {
     });
   });
 
+  it('connect maps a sidecar resolve failure to sidecar_down, not connect_timeout', async () => {
+    const aborted = vi.fn();
+    proxy.on('connect-aborted', aborted);
+    proxy.invalidateAfterSidecarExit();
+    const message =
+      'RETICULUM_RNS_PATCH_APPLY_FAILED: error: packet-tap patch did not apply on rsReticulum';
+    proxy.setEnsureSidecar(() => Promise.reject(new Error(message)));
+
+    const result = await proxy.connect('meshcore', 'AA:BB:CC:DD:EE:FF');
+
+    expect(result).toEqual({ ok: false, error: message, code: 'sidecar_down' });
+    expect(aborted).toHaveBeenCalledWith({ sessionId: 'meshcore', message });
+  });
+
+  it('connect keeps connect_timeout for non-sidecar thrown failures', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('The operation was aborted due to timeout'));
+
+    const result = await proxy.connect('meshcore', 'AA:BB:CC:DD:EE:FF');
+
+    expect(result).toMatchObject({ ok: false, code: 'connect_timeout' });
+  });
+
   it.each([
     { message: 'peripheral ff92959f not found — scan first', expected: true },
     { message: 'session meshcore not found', expected: false },

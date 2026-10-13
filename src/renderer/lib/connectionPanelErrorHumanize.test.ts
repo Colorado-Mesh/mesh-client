@@ -219,6 +219,22 @@ describe('humanizeBleError', () => {
     ).toBe(`connectionPanel.humanize.ble.${hintKey}`);
   });
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'maps sidecar resolve failures on GATT connect to the Reticulum sidecar copy on %s',
+    (platform) => {
+      mockPlatform(platform);
+      expect(
+        humanizeBleError(
+          new Error('sidecar_down: RETICULUM_RNS_PATCH_APPLY_FAILED: patch does not apply'),
+          t,
+        ),
+      ).toBe('connectionPanel.reticulumSidecarPatchMissing');
+      expect(humanizeBleError(new Error('RETICULUM_CARGO_MISSING'), t)).toBe(
+        'connectionPanel.reticulumSidecarCargoMissing',
+      );
+    },
+  );
+
   it('maps sidecar GATT error codes to connectionPanel.errors.ble.*', () => {
     mockPlatform('darwin');
     expect(humanizeBleError(new Error('adapter_missing: no bluetooth adapter'), t)).toBe(

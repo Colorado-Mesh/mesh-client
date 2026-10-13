@@ -260,6 +260,28 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
     );
   });
 
+  it('does not retry or show BLE timeout guidance when the sidecar cannot be built', async () => {
+    const raw =
+      'sidecar_down: RETICULUM_RNS_PATCH_APPLY_FAILED: error: packet-tap patch did not apply';
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(new Error(raw));
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-sidecar-down');
+      }),
+    ).rejects.toThrow(raw);
+
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('connect: BLE GATT timed out'),
+    );
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('meshcore.errors.bleTimeoutGatt'),
+    );
+  });
+
   it('stringifies object-shaped non-timeout BLE errors', async () => {
     vi.mocked(window.electronAPI.connectGatt).mockRejectedValue({
       code: 'BLE_CUSTOM',

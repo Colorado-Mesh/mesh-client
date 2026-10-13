@@ -280,6 +280,17 @@ impl LxmfOutboundDriver {
         self.pinned_identities.insert(key, public_key);
     }
 
+    /// Pin the already-known pubkey for `dest_hash_hex`; false when no key is known.
+    pub fn pin_known_identity_for_propagation(&mut self, dest_hash_hex: &str) -> bool {
+        match self.public_key_for(dest_hash_hex) {
+            Some(public_key) => {
+                self.pin_identity_for_propagation(dest_hash_hex, public_key);
+                true
+            }
+            None => false,
+        }
+    }
+
     pub fn clear_propagation_identity_pins(&mut self) {
         self.pinned_identities.clear();
     }
@@ -2704,6 +2715,26 @@ mod tests {
         driver.clear_propagation_identity_pins();
         // Pin cleared — known_identities may still hold the key until capacity pressure.
         assert!(driver.identity_known_for(&pn_hex));
+    }
+
+    #[test]
+    fn pin_known_identity_for_propagation_pins_only_known_keys() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
+        let unknown_hex = "cafebabe".to_string() + &"cd".repeat(12);
+        assert!(!driver.pin_known_identity_for_propagation(&unknown_hex));
+        assert!(!driver.identity_known_for(&unknown_hex));
+
+        let pn_hex = "deadbeef".to_string() + &"ab".repeat(12);
+        let pn_key = [0x42u8; 64];
+        driver.register_identity_key(&pn_hex, pn_key);
+        assert!(driver.pin_known_identity_for_propagation(&pn_hex.to_uppercase()));
+        for i in 0..(MAX_KNOWN_IDENTITIES + 64) {
+            let hex = format!("{i:032x}");
+            driver.register_identity_key(&hex, [((i % 250) + 1) as u8; 64]);
+        }
+        assert_eq!(driver.public_key_for(&pn_hex), Some(pn_key));
     }
 
     #[test]
