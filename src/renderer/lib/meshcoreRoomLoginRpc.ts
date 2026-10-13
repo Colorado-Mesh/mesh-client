@@ -1,3 +1,4 @@
+import { runMeshcoreCompanionRequest } from './meshcoreCompanionRequestQueue';
 import {
   buildSendLoginFrame,
   type MeshcoreRadioConnection,
@@ -34,6 +35,7 @@ export const normalizeLoginPubKeyPrefix = normalizePubKeyPrefix;
 
 export { buildSendLoginFrame } from './meshcoreRepeaterRpcCommon';
 
+/** Cancel callers promptly while retaining transmitted login ownership until the companion settles. */
 export function runMeshcoreRoomLogin(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
@@ -44,10 +46,50 @@ export function runMeshcoreRoomLogin(
     companionTransport?: MeshcoreCompanionTransport;
   },
 ): Promise<MeshcoreRoomLoginResponse> {
+  requireContactPubKeyPrefix(contactPublicKey);
+  const request = runMeshcoreCompanionRequest(
+    conn,
+    () => performRoomLogin(conn, contactPublicKey, password, opts),
+    {
+      signal: opts?.signal,
+      abortMessage: MESHCORE_ROOM_LOGIN_ABORT_MESSAGE,
+    },
+  );
+  const signal = opts?.signal;
+  if (!signal) return request;
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      signal.removeEventListener('abort', onAbort);
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError'));
+    };
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+    void request.then(
+      (response) => {
+        cleanup();
+        resolve(response);
+      },
+      (error: unknown) => {
+        cleanup();
+        reject(unknownToError(error, 'room login failed'));
+      },
+    );
+  });
+}
+
+/** Retain the companion slot and listeners until the active login receives a reply or fails. */
+function performRoomLogin(
+  conn: MeshcoreRadioConnection,
+  contactPublicKey: Uint8Array,
+  password: string,
+  opts?: Parameters<typeof runMeshcoreRoomLogin>[3],
+): Promise<MeshcoreRoomLoginResponse> {
   const expectedPrefix = requireContactPubKeyPrefix(contactPublicKey);
   const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway);
   const sentWaitMs = computeRoomLoginSentWaitMs(opts?.companionTransport);
-  const signal = opts?.signal;
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -70,7 +112,6 @@ export function runMeshcoreRoomLogin(
       conn.off(MC_RESP_ERR, onErr);
       conn.off(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);
       conn.off(MC_PUSH_LOGIN_FAIL, onLoginFail);
-      signal?.removeEventListener('abort', onAbort);
     };
 
     const fail = (e: unknown): void => {
@@ -102,16 +143,6 @@ export function runMeshcoreRoomLogin(
         fail('timeout');
       }, responseWaitMs);
     };
-
-    const onAbort = (): void => {
-      fail(new DOMException(MESHCORE_ROOM_LOGIN_ABORT_MESSAGE, 'AbortError'));
-    };
-
-    if (signal?.aborted) {
-      onAbort();
-      return;
-    }
-    signal?.addEventListener('abort', onAbort, { once: true });
 
     const onLoginSuccess = (response: unknown): void => {
       const r = response as MeshcoreRoomLoginResponse;
