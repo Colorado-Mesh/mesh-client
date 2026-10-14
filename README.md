@@ -654,7 +654,10 @@ For coding conventions and PR workflow, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Community
 
-Join the `#mesh-client` channel on Discord for help, feedback, and development discussion: https://discord.com/invite/McChKR5NpS
+Join us on Discord: https://discord.com/invite/McChKR5NpS
+
+- `#mesh-client-help` — help using the client, questions, and feedback
+- `#mesh-client-dev` — development discussion
 
 ---
 

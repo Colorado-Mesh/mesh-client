@@ -278,7 +278,7 @@ Release notes “Breaking Changes” use the same subject bang + footer rules (n
 - [ ] Test download and install on at least one platform
 - [ ] **Publish** the draft on GitHub
 - [ ] Confirm docs site updated after the version commit landed on `main` ([docs workflow](ci-cd.md#docs-docsyml))
-- [ ] Announce (Discord `#mesh-client`, etc.)
+- [ ] Announce (Discord `#mesh-client-help`, etc.)
 - [ ] Close milestone if used
 
 ---

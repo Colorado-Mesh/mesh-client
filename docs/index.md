@@ -90,7 +90,7 @@ A bundled Reticulum stack with TCP, I2P, Auto, and RNode interfaces. LXMF direct
 - **Something not working?** Start with [Troubleshooting](troubleshooting.md), or the [MeshCore](troubleshooting-meshcore.md) and [Reticulum](troubleshooting-reticulum.md) pages.
 - **Reporting a bug:** use **App → Export for GitHub** and attach the file. See [Reporting bugs](troubleshooting.md#reporting-bugs-export-for-github-app-tab).
 - **Unfamiliar term?** Check the [Glossary](glossary.md).
-- **Talk to people:** the [Colorado Mesh Discord](https://discord.com/invite/McChKR5NpS) or [GitHub issues](https://github.com/Colorado-Mesh/mesh-client/issues).
+- **Talk to people:** the `#mesh-client-help` channel on the [Colorado Mesh Discord](https://discord.com/invite/McChKR5NpS), or [GitHub issues](https://github.com/Colorado-Mesh/mesh-client/issues).
 
 ## Frequently asked questions
 
