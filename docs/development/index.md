@@ -25,4 +25,6 @@ File-level developer notes for each subsystem, for human contributors and coding
 | Symptom → where-to-check index                                                                            | [common-issues.md](common-issues.md)                                                    |
 | Where to look first by area (diagnostics, protocols, lifecycle, DB, BLE, MQTT, Rooms, UI)                 | [architecture-quick-ref.md](architecture-quick-ref.md)                                  |
 
+For the draft iOS and Android UI shell and screenshot review, see [mobile-prototype.md](mobile-prototype.md).
+
 For user-facing guides, see [reticulum.md](../reticulum.md), [emcomm.md](../emcomm.md), [troubleshooting.md](../troubleshooting.md), [troubleshooting-meshcore.md](../troubleshooting-meshcore.md), [troubleshooting-reticulum.md](../troubleshooting-reticulum.md), and [meshcore-meshtastic-parity.md](../meshcore-meshtastic-parity.md).

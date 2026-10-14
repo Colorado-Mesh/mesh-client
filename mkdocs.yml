@@ -141,6 +141,7 @@ nav:
           - Renderer hooks: development/renderer-hooks.md
           - BLE and serial: development/ble-serial.md
           - Chat: development/chat.md
+          - Mobile UI prototype (draft): development/mobile-prototype.md
           - Connection panel: development/connection-panel.md
           - Meshtastic: development/meshtastic.md
           - MQTT: development/mqtt.md
