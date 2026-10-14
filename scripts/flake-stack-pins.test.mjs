@@ -5,7 +5,8 @@
 // flake must not hard-code stack revisions, must consume every pin in the
 // pins file, and must fetch the same repositories the clone script checks
 // out. (Pin bumps only touch ratspeak-stack-pins.env; no flake.nix /
-// flake.lock change is needed.)
+// flake.lock change is needed.) The flake's nixpkgs electron_N / pnpm_N /
+// nodejs_N attributes must also track the majors in package.json.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,5 +75,36 @@ describe('flake.nix Reticulum stack sourcing', () => {
   it('applies overlays from the shared apply list, not a duplicated one', () => {
     expect(flakeNix).toContain('source scripts/lib/ratspeak-overlay-apply-list.sh');
     expect(flakeNix).not.toContain('overlayOrder');
+  });
+});
+
+const packageJson = JSON.parse(read('package.json'));
+
+/** Every distinct `<attr>_<major>` nixpkgs attribute major in flake.nix. */
+function flakeMajors(attrRe) {
+  return [...new Set([...flakeNix.matchAll(attrRe)].map((m) => m[1]))];
+}
+
+function leadingMajor(spec) {
+  const match = /(\d+)/.exec(spec);
+  if (!match) throw new Error(`no major version in ${spec}`);
+  return match[1];
+}
+
+describe('flake.nix toolchain majors follow package.json', () => {
+  it('uses the nixpkgs Electron major matching devDependencies.electron', () => {
+    expect(flakeMajors(/\belectron_(\d+)\b/g)).toEqual([
+      leadingMajor(packageJson.devDependencies.electron),
+    ]);
+  });
+
+  it('uses the nixpkgs pnpm major matching packageManager', () => {
+    expect(flakeMajors(/\bpnpm_(\d+)\b/g)).toEqual([
+      leadingMajor(packageJson.packageManager.split('@')[1]),
+    ]);
+  });
+
+  it('uses the nixpkgs Node.js major matching engines.node', () => {
+    expect(flakeMajors(/\bnodejs_(\d+)\b/g)).toEqual([leadingMajor(packageJson.engines.node)]);
   });
 });
