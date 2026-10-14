@@ -72,11 +72,18 @@ describe('PlaceCache', () => {
   });
 
   it('evicts the oldest entries beyond the cap', () => {
-    const cache = PlaceCache.inDirectory(dir);
-    for (let i = 0; i <= PLACE_CACHE_MAX_ENTRIES; i++) {
-      cache.set(`k${i}`, { lat: 0, lon: 0, label: String(i) });
+    // Seed a full cache on disk: one set() per entry rewrites the whole file each time, which
+    // is O(n²) and times out under CI coverage load.
+    const savedAt = Date.now();
+    const full: Record<string, unknown> = {};
+    for (let i = 0; i < PLACE_CACHE_MAX_ENTRIES; i++) {
+      full[`k${i}`] = { lat: 0, lon: 0, label: String(i), savedAt };
     }
+    fs.writeFileSync(path.join(dir, PLACE_CACHE_FILENAME), JSON.stringify(full));
+    const cache = PlaceCache.inDirectory(dir);
+    cache.set(`k${PLACE_CACHE_MAX_ENTRIES}`, { lat: 0, lon: 0, label: 'newest' }, savedAt);
     const reloaded = PlaceCache.inDirectory(dir);
+    expect(reloaded.get('k1')).not.toBeNull();
     expect(reloaded.get('k0')).toBeNull();
     expect(reloaded.get(`k${PLACE_CACHE_MAX_ENTRIES}`)).not.toBeNull();
   });

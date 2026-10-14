@@ -14,7 +14,7 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 ./scripts/clone-ratspeak-stack.sh
 ```
 
-That checks out `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` under `.rsstack/` at the full SHAs in `ratspeak-stack-pins.env`, verifies each source tree, and then applies overlays. A local bisect requires both an `RS_*_REF` and `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`; CI and release builds reject overrides. See [patches/README.md](patches/README.md). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
+That checks out `rsReticulum` / `rsLXMF` / `rsNomad` / `rsLXST` / `lrgp-rs` under `.rsstack/` at the full SHAs in `ratspeak-stack-pins.env`, verifies each source tree, and then applies overlays. A local bisect requires both an `RS_*_REF` and `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`; CI and release builds reject overrides. See [patches/README.md](patches/README.md). The repo-root `flake.nix` (`nix build .#reticulum-sidecar`) fetches the same pins and applies the same overlay list. See [Nix](../docs/development-environment.md#nix-nixos-and-macos). Peer default avatars use [LXMFace](https://github.com/ratspeak/LXMFace) in the **renderer** (`src/renderer/lib/reticulum/lxmface.ts`), not this sidecar.
 
 **Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires the `.rsstack/` checkouts on disk (CI runs `clone-ratspeak-stack.sh`; locally use the script above):
 
