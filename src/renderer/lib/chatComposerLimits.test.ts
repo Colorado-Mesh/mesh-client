@@ -6,6 +6,7 @@ import {
   countMessageChars,
   countMessageWireBytes,
   getChatPayloadLimit,
+  getComposerPayloadLimit,
   getComposerWireOverhead,
   getMaxChunks,
   getMeshcoreChannelPayloadLimit,
@@ -54,6 +55,21 @@ describe('getMeshcoreChannelPayloadLimit', () => {
 describe('getMeshcoreRoomPayloadLimit', () => {
   it('returns 156 (160 minus 4-byte pubkey prefix)', () => {
     expect(getMeshcoreRoomPayloadLimit()).toBe(156);
+  });
+});
+
+describe('getComposerPayloadLimit', () => {
+  it('uses the conservative channel budget until the MeshCore sender name is known', () => {
+    expect(getComposerPayloadLimit({ protocol: 'meshcore' })).toBe(126);
+    expect(getComposerPayloadLimit({ protocol: 'meshcore', senderDisplayName: '   ' })).toBe(126);
+    expect(
+      getComposerPayloadLimit({ protocol: 'meshcore', senderDisplayName: '🐭Opossum 7B6D' }),
+    ).toBe(getMeshcoreChannelPayloadLimit('🐭Opossum 7B6D'));
+  });
+
+  it('keeps DM and room budgets independent of the channel sender name', () => {
+    expect(getComposerPayloadLimit({ protocol: 'meshcore', composerContext: 'dm' })).toBe(160);
+    expect(getComposerPayloadLimit({ protocol: 'meshcore', composerContext: 'room' })).toBe(156);
   });
 });
 

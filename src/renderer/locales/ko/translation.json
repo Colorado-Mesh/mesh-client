@@ -6571,7 +6571,8 @@
       "requestTitle": "MECP 요청 또는 보고",
       "responseTitle": "MECP 반응",
       "showAllCodes": "모든 MECP 코드 표시",
-      "openRequest": "MECP에 요청 또는 보고"
+      "openRequest": "MECP에 요청 또는 보고",
+      "wirePreview": "다른 앱에 표시되는 내용"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

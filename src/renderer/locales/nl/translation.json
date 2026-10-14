@@ -6571,7 +6571,8 @@
       "requestTitle": "MECP-aanvraag of -rapport",
       "responseTitle": "MECP-respons",
       "showAllCodes": "Alle MECP-codes weergeven",
-      "openRequest": "Aanvragen of melden bij MECP"
+      "openRequest": "Aanvragen of melden bij MECP",
+      "wirePreview": "Wat andere apps zullen tonen"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

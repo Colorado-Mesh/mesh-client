@@ -6632,7 +6632,8 @@
       "requestTitle": "Požadavek nebo zpráva MECP",
       "responseTitle": "Odpověď MECP",
       "showAllCodes": "Zobrazit všechny kódy MECP",
-      "openRequest": "Žádost nebo hlášení s MECP"
+      "openRequest": "Žádost nebo hlášení s MECP",
+      "wirePreview": "Co uvidí ostatní aplikace"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

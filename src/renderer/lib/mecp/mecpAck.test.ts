@@ -38,8 +38,11 @@ function incident(partial: Partial<EmergencyIncident> & Pick<EmergencyIncident, 
 
 describe('composeGeneralAck', () => {
   it('round-trips R01 + echoed codes + callsign, and is not a beacon ACK', () => {
-    const msg = composeGeneralAck(0, ['M01', 'P05'], { callsign: 'KD5IHC', freetext: 'on way' });
-    expect(msg).toBe('MECP/0/R01 M01 P05 on way ~KD5IHC');
+    const msg = composeGeneralAck(0, ['M01', 'P05'], {
+      callsign: 'KD5IHC',
+      freetext: 'Received report from Ada.',
+    });
+    expect(msg).toBe('MECP/0/R01 M01 P05 Received report from Ada. ~KD5IHC [MAYDAY ACK: Received]');
     expect(MECP_REGEX.test(msg)).toBe(true);
     const parsed = tryParseMecp(msg)!;
     expect(parsed.severity).toBe(0);
@@ -52,29 +55,52 @@ describe('composeGeneralAck', () => {
 
   it('dedupes R01, drops invalid codes, and sanitizes callsign', () => {
     const msg = composeGeneralAck(2, ['R01', 'bad', 'T04'], { callsign: 'W1-AW/portable' });
-    expect(msg).toBe('MECP/2/R01 T04 ~W1AWporta');
+    expect(msg).toBe('MECP/2/R01 T04 ~W1AWporta [SAFETY ACK: Received]');
     expect(tryParseMecp(msg)!.extracted.callsign).toBe('W1AWporta');
   });
 
-  it('stays under the byte limit and keeps the callsign', () => {
-    const msg = composeGeneralAck(1, ['M01'], { callsign: 'EOC1', freetext: 'é'.repeat(300) });
+  it('keeps operator notes and the callsign when the complete message fits', () => {
+    const notes = 'é'.repeat(60);
+    const msg = composeGeneralAck(1, ['M01'], { callsign: 'EOC1', freetext: notes });
     expect(getByteLength(msg)).toBeLessThanOrEqual(MAX_MESSAGE_BYTES);
-    expect(msg.endsWith(' ~EOC1')).toBe(true);
+    expect(msg).toContain(`${notes} ~EOC1`);
     expect(tryParseMecp(msg)!.extracted.callsign).toBe('EOC1');
   });
 
-  it('drops trailing echoed codes when codes alone overflow', () => {
+  it('rejects oversized operator notes instead of silently truncating them', () => {
+    expect(() =>
+      composeGeneralAck(1, ['M01'], { callsign: 'EOC1', freetext: 'é'.repeat(300) }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects oversized echoed codes instead of silently dropping references', () => {
     const codes = Array.from({ length: 60 }, (_, i) => `M${String(i % 100).padStart(2, '0')}`);
-    const msg = composeGeneralAck(0, codes, { callsign: 'EOC1' });
-    expect(getByteLength(msg)).toBeLessThanOrEqual(MAX_MESSAGE_BYTES);
-    expect(tryParseMecp(msg)!.codes[0]).toBe('R01');
+    expect(() => composeGeneralAck(0, codes, { callsign: 'EOC1' })).toThrow(RangeError);
+  });
+
+  it('enforces the destination transport budget and keeps drill markers', () => {
+    const msg = composeGeneralAck(3, ['D02'], { freetext: 'Received report from Ada.' });
+    expect(msg).toContain('[TEST ONLY: Received; This is a test]');
+    const exactLimit = getByteLength(msg);
+    expect(
+      composeGeneralAck(3, ['D02'], {
+        freetext: 'Received report from Ada.',
+        maxBytes: exactLimit,
+      }),
+    ).toBe(msg);
+    expect(() =>
+      composeGeneralAck(3, ['D02'], {
+        freetext: 'Received report from Ada.',
+        maxBytes: exactLimit - 1,
+      }),
+    ).toThrow(RangeError);
   });
 });
 
 describe('composeBeaconAck / composeBeaconCancel', () => {
   it('round-trips B02 with the decoder', () => {
     const msg = composeBeaconAck(0, { freetext: 'heard you' });
-    expect(msg).toBe('MECP/0/B02 heard you');
+    expect(msg).toBe('MECP/0/B02 heard you [MAYDAY: Beacon received]');
     const parsed = tryParseMecp(msg)!;
     expect(isBeaconAck(parsed.codes)).toBe(true);
     expect(isBeaconCancel(parsed.codes)).toBe(false);
@@ -82,16 +108,36 @@ describe('composeBeaconAck / composeBeaconCancel', () => {
 
   it('round-trips B03 with the decoder', () => {
     const msg = composeBeaconCancel(3);
-    expect(msg).toBe('MECP/3/B03');
+    expect(msg).toBe('MECP/3/B03 [ROUTINE: Cancel beacon — I am OK]');
     const parsed = tryParseMecp(msg)!;
     expect(isBeaconCancel(parsed.codes)).toBe(true);
     expect(isBeaconAck(parsed.codes)).toBe(false);
   });
 
-  it('truncates long freetext', () => {
-    const msg = composeBeaconAck(1, { freetext: 'x'.repeat(400) });
-    expect(getByteLength(msg)).toBe(MAX_MESSAGE_BYTES);
+  it('rejects oversized beacon notes instead of silently truncating them', () => {
+    expect(() => composeBeaconAck(1, { freetext: 'x'.repeat(400) })).toThrow(RangeError);
   });
+
+  it.each([composeBeaconAck, composeBeaconCancel])(
+    'keeps drill markers without echoing distress codes in beacon control messages',
+    (compose) => {
+      const msg = compose(0, { drillCodes: ['B01', 'M01', 'D02', 'D02'] });
+      expect(tryParseMecp(msg)!.codes).toEqual([
+        compose === composeBeaconAck ? 'B02' : 'B03',
+        'D02',
+      ]);
+      expect(tryParseMecp(msg)!.isDrill).toBe(true);
+      expect(msg).toContain('[TEST ONLY:');
+    },
+  );
+
+  it.each([composeBeaconAck, composeBeaconCancel])(
+    'rejects a beacon control message that exceeds the transport budget',
+    (compose) => {
+      const msg = compose(0);
+      expect(() => compose(0, { maxBytes: getByteLength(msg) - 1 })).toThrow(RangeError);
+    },
+  );
 });
 
 describe('findOpenIncidentForAck', () => {
@@ -153,6 +199,63 @@ describe('findOpenIncidentForAck', () => {
       'beacon',
     );
     expect(findOpenIncidentForAck([plain], { severity: 0, codes: ['B02'] })).toBeNull();
+  });
+
+  it.each(['D01', 'D02'])('never applies a %s beacon ACK to a real beacon', (drillCode) => {
+    const real = incident({ id: 'real', codes: ['B01', 'M01'], beaconActive: true });
+    expect(findOpenIncidentForAck([real], { severity: 0, codes: ['B02', drillCode] })).toBeNull();
+    const drill = incident({
+      id: 'drill',
+      codes: ['B01', 'M01', drillCode],
+      beaconActive: true,
+      isDrill: true,
+      senderId: '!drill',
+    });
+    expect(
+      findOpenIncidentForAck([real, drill], { severity: 0, codes: ['B02', drillCode] })?.id,
+    ).toBe('drill');
+  });
+
+  it('keeps an unmarked legacy B02 within real incidents even if a drill is newer', () => {
+    const real = incident({ id: 'real', codes: ['B01'], beaconActive: true });
+    const drill = incident({
+      id: 'drill',
+      codes: ['B01', 'D02'],
+      beaconActive: true,
+      isDrill: true,
+      senderId: '!drill',
+      lastSeenAt: 9_000,
+    });
+    expect(findOpenIncidentForAck([real, drill], { severity: 0, codes: ['B02'] })?.id).toBe('real');
+    expect(findOpenIncidentForAck([drill], { severity: 0, codes: ['B02'] })).toBeNull();
+  });
+
+  it('uses the parsed drill flag when it is available', () => {
+    const real = incident({ id: 'real', lastSeenAt: 9_000 });
+    const drill = incident({ id: 'drill', isDrill: true, senderId: '!drill' });
+    expect(
+      findOpenIncidentForAck([real, drill], { severity: 0, codes: ['R01', 'M01'], isDrill: true })
+        ?.id,
+    ).toBe('drill');
+  });
+
+  it('keeps general drill ACKs separate from real reports with overlapping distress codes', () => {
+    const real = incident({ id: 'real', lastSeenAt: 9_000 });
+    const drill = incident({
+      id: 'drill',
+      codes: ['D02', 'M01'],
+      isDrill: true,
+      senderId: '!drill',
+    });
+    expect(
+      findOpenIncidentForAck([real], { severity: 0, codes: ['R01', 'D02', 'M01'] }),
+    ).toBeNull();
+    expect(
+      findOpenIncidentForAck([real, drill], { severity: 0, codes: ['R01', 'D02', 'M01'] })?.id,
+    ).toBe('drill');
+    expect(findOpenIncidentForAck([real, drill], { severity: 0, codes: ['R01', 'M01'] })?.id).toBe(
+      'real',
+    );
   });
 
   it('breaks ties by most recent lastSeenAt', () => {

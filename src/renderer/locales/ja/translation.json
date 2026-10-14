@@ -6571,7 +6571,8 @@
       "requestTitle": "MECPの要求または報告",
       "responseTitle": "MECP応答",
       "showAllCodes": "すべてのMECPコードを表示",
-      "openRequest": "MECPにリクエストまたは報告する"
+      "openRequest": "MECPにリクエストまたは報告する",
+      "wirePreview": "他のアプリに表示される内容"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

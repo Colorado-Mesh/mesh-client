@@ -6571,7 +6571,8 @@
       "requestTitle": "MECP请求或报告",
       "responseTitle": "MECP响应",
       "showAllCodes": "显示所有MECP代码",
-      "openRequest": "向MECP申请或报告"
+      "openRequest": "向MECP申请或报告",
+      "wirePreview": "其他应用将显示的内容"
     },
     "rebroadcast": {
       "title": "MECP射频重播",

@@ -6571,7 +6571,8 @@
       "requestTitle": "MECP talebi veya raporu",
       "responseTitle": "MECP yanıtı",
       "showAllCodes": "Tüm MECP kodlarını göster",
-      "openRequest": "MECP ile talepte bulunun veya rapor verin"
+      "openRequest": "MECP ile talepte bulunun veya rapor verin",
+      "wirePreview": "Diğer uygulamaların göreceği metin"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

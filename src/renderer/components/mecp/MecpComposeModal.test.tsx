@@ -79,7 +79,42 @@ describe('MecpComposeModal', () => {
     expect(screen.getByRole('button', { name: /send mecp/i })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /R02 Help coming/ }));
     await user.click(screen.getByRole('button', { name: /send mecp/i }));
-    expect(onSend).toHaveBeenCalledWith('MECP/3/R02');
+    expect(onSend).toHaveBeenCalledWith('MECP/3/R02 [ROUTINE: Help coming]');
+  });
+
+  it('previews the exact readable drill text that other apps receive', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+    render(<MecpComposeModal open onClose={() => {}} onSend={onSend} />);
+    await user.click(screen.getByRole('button', { name: /D02 This is a test/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Free text (pax, GPS, notes)' }),
+      '1pax app test',
+    );
+    const text = 'MECP/3/D02 1pax app test [TEST ONLY: This is a test]';
+    expect(screen.getByText('What other apps will see')).toBeInTheDocument();
+    expect(screen.getByText(text)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /send mecp/i }));
+    expect(onSend).toHaveBeenCalledWith(text);
+  });
+
+  it('blocks oversized transport text without removing the operator notes', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+    const { rerender } = render(
+      <MecpComposeModal open onClose={() => {}} onSend={onSend} maxMessageBytes={45} />,
+    );
+    await user.click(screen.getByRole('button', { name: /D02 This is a test/ }));
+    const notes = '2pax 39.7392,-104.9903 app test';
+    await user.type(screen.getByRole('textbox', { name: 'Free text (pax, GPS, notes)' }), notes);
+    const text = `MECP/3/D02 ${notes} [TEST ONLY: This is a test]`;
+    expect(screen.getByText(text)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('/ 45 bytes');
+    expect(screen.getByRole('button', { name: /send mecp/i })).toBeDisabled();
+    expect(onSend).not.toHaveBeenCalled();
+    rerender(<MecpComposeModal open onClose={() => {}} onSend={onSend} maxMessageBytes={126} />);
+    await user.click(screen.getByRole('button', { name: /send mecp/i }));
+    expect(onSend).toHaveBeenCalledWith(text);
   });
 
   it.each(['request', 'response'] as const)(

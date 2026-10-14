@@ -7,6 +7,7 @@ import {
   resolveIncidentAckRoute,
 } from './incidentAck';
 import type { EmergencyIncident } from './incidentTypes';
+import { getByteLength, tryParseMecp } from './mecpMessages';
 
 function incident(partial: Partial<EmergencyIncident> = {}): EmergencyIncident {
   return {
@@ -38,12 +39,16 @@ describe('composeIncidentAck', () => {
     const text = composeIncidentAck(incident({ codes: ['M01', 'T04'] }));
     expect(text).toMatch(/^MECP\/0\/R01 M01 T04/);
     expect(text).not.toContain('B02');
+    expect(text).toContain('Received report from Ada.');
+    expect(text).toContain('[MAYDAY ACK: Received]');
+    expect(text).not.toMatch(/help|dispatched|en route|on way/i);
   });
 
   it('composes a B02 beacon ACK for an unacknowledged active beacon', () => {
     const text = composeIncidentAck(incident({ codes: ['B01'], beaconActive: true }));
     expect(text).toMatch(/^MECP\/0\/B02/);
     expect(text).not.toContain('R01');
+    expect(text).toContain('Received beacon from Ada.');
   });
 
   it('falls back to the general ACK once the beacon was already acknowledged', () => {
@@ -51,6 +56,40 @@ describe('composeIncidentAck', () => {
       incident({ codes: ['B01', 'M01'], beaconActive: true, beaconAcked: true }),
     );
     expect(text).toMatch(/^MECP\/0\/R01/);
+  });
+
+  it('uses the sender id when the sender display name is unavailable', () => {
+    expect(composeIncidentAck(incident({ senderName: '  ' }))).toContain(
+      'Received report from 42.',
+    );
+  });
+
+  it.each([false, true])('retains test-only suppression on ACKs (beacon: %s)', (beaconActive) => {
+    const text = composeIncidentAck(
+      incident({ codes: ['D02', 'M01'], beaconActive, isDrill: true }),
+    );
+    expect(tryParseMecp(text)!.codes).toContain('D02');
+    expect(tryParseMecp(text)!.isDrill).toBe(true);
+    expect(text).toContain('[TEST ONLY:');
+  });
+
+  it('retains test-only suppression on legacy drill incidents without a drill code', () => {
+    const text = composeIncidentAck(
+      incident({ codes: ['B01'], beaconActive: true, isDrill: true }),
+    );
+    expect(tryParseMecp(text)!.codes).toEqual(['B02', 'D02']);
+    expect(tryParseMecp(text)!.isDrill).toBe(true);
+  });
+
+  it('refuses an ACK that cannot preserve its target and code references within the budget', () => {
+    const original = incident({ codes: ['M01', 'T04'] });
+    const text = composeIncidentAck(original);
+    expect(() => composeIncidentAck(original, { maxBytes: getByteLength(text) - 1 })).toThrow(
+      RangeError,
+    );
+    expect(original.codes).toEqual(['M01', 'T04']);
+    expect(original.status).toBe('open');
+    expect(original.ackCount).toBe(0);
   });
 });
 

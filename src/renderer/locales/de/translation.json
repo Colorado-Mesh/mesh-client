@@ -6571,7 +6571,8 @@
       "requestTitle": "MECP-Anfrage oder -Bericht",
       "responseTitle": "MECP-Antwort",
       "showAllCodes": "Alle Codes anzeigen",
-      "openRequest": "Anfrage oder Bericht mit MECP"
+      "openRequest": "Anfrage oder Bericht mit MECP",
+      "wirePreview": "Was andere Apps anzeigen"
     },
     "rebroadcast": {
       "title": "MECP RF Rebroadcast",

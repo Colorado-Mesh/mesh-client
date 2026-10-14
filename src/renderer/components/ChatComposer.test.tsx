@@ -655,19 +655,23 @@ describe('ChatComposer', () => {
     expect((textarea as HTMLTextAreaElement).value).toBe(longText);
   });
 
-  it('exposes a warn-phase hint about single-packet sends', () => {
+  it.each([
+    [undefined, 110],
+    ['A', 140],
+  ])('exposes a warn-phase hint with sender name %s', (senderDisplayName, length) => {
     render(
       <ChatComposer
         protocol="meshcore"
         viewKey="ch:0"
         isConnected
         allowOutbox={false}
+        senderDisplayName={senderDisplayName}
         onSendChunk={vi.fn().mockResolvedValue(undefined)}
       />,
     );
     const textarea = screen.getByRole('textbox');
-    // ~85% of a ~157-char channel limit → warn phase (not over), surfacing the ⓘ hint.
-    fireEvent.change(textarea, { target: { value: 'a'.repeat(140) } });
+    // Both the unknown-name fallback and a known name warn before their packet fills.
+    fireEvent.change(textarea, { target: { value: 'a'.repeat(length) } });
     expect(
       screen.getByLabelText(
         'MeshCore sends one packet per message; longer messages can’t be sent.',

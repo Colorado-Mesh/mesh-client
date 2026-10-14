@@ -6677,7 +6677,8 @@
       "requestTitle": "Запрос или отчет MECP",
       "responseTitle": "Ответ MECP",
       "showAllCodes": "Показать все коды MECP",
-      "openRequest": "Запрос или отчет в MECP"
+      "openRequest": "Запрос или отчет в MECP",
+      "wirePreview": "Что увидят другие приложения"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

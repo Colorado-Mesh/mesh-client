@@ -5,6 +5,7 @@ import {
   extractMecpCoords,
   getByteLength,
   incidentFingerprint,
+  incidentPayloadMatchKey,
   isMecpDrill,
   isMecpMessage,
   localizeMecpCodes,
@@ -116,6 +117,23 @@ describe('incidentFingerprint', () => {
     });
     expect(a).toBe(b);
     expect(a).toBe(incidentFingerprint({ ...base, freetext: '2pax ridge' }));
+  });
+
+  it('keeps the same identity when a generated summary is added to user notes', () => {
+    const parts = { ...base, codes: ['M01'] };
+    const readable = { ...parts, freetext: '2pax ridge 39.7,-105.0 [MAYDAY: Injury]' };
+    expect(incidentFingerprint(readable)).toBe(incidentFingerprint(parts));
+    expect(incidentPayloadMatchKey(readable)).toBe(incidentPayloadMatchKey(parts));
+  });
+
+  it('ignores a generated summary without dropping unrelated bracketed user notes', () => {
+    const parts = { ...base, codes: ['M01'], freetext: 'ridge [Injury]' };
+    expect(incidentFingerprint({ ...parts, freetext: 'ridge [Injury] [MAYDAY: Injury]' })).toBe(
+      incidentFingerprint(parts),
+    );
+    expect(incidentFingerprint({ ...parts, freetext: 'ridge [MAYDAY: Flooding]' })).not.toBe(
+      incidentFingerprint({ ...parts, freetext: 'ridge' }),
+    );
   });
 });
 

@@ -20,6 +20,7 @@ import {
  * English stays on the main chunk; other packs load on demand.
  */
 import enLanguage from './languages/en.json';
+import { stripMecpReadableSummary } from './mecpReadableText';
 
 /** Meta.ai / plan wire check: MECP/<0-3>/… */
 export const MECP_REGEX = /^MECP\/[0-3]\//;
@@ -156,13 +157,24 @@ export function stripMecpCoordsFromFreetext(freetext: string): string {
   return freetext.replace(MECP_COORDS_REGEX, ' ').replace(/\s+/g, ' ').trim();
 }
 
-export function normalizeMecpFreetext(freetext: string): string {
-  return freetext.trim().replace(/\s+/g, ' ').toLowerCase();
+interface MecpFreetextContext {
+  severity: number;
+  codes: readonly string[];
 }
 
-/** Normalized freetext with coordinates stripped (identity for incident merge / fingerprint). */
-export function normalizeMecpFreetextForMatch(freetext: string): string {
-  return normalizeMecpFreetext(stripMecpCoordsFromFreetext(freetext));
+export function normalizeMecpFreetext(freetext: string, context?: MecpFreetextContext): string {
+  const notes = context
+    ? stripMecpReadableSummary(freetext, context.severity, context.codes)
+    : freetext;
+  return notes.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** Normalize user notes, excluding coordinates and generated code summaries from incident identity. */
+export function normalizeMecpFreetextForMatch(
+  freetext: string,
+  context?: MecpFreetextContext,
+): string {
+  return stripMecpCoordsFromFreetext(normalizeMecpFreetext(freetext, context));
 }
 
 /** cyrb53: fast non-cryptographic 53-bit string hash (stable across sessions). */
@@ -194,7 +206,7 @@ export function incidentFingerprint(parts: {
   const key = [
     String(parts.severity),
     codes,
-    normalizeMecpFreetextForMatch(parts.freetext),
+    normalizeMecpFreetextForMatch(parts.freetext, parts),
     parts.senderId.trim().toLowerCase(),
   ].join('|');
   return `mecp-${cyrb53(key)}`;
@@ -207,7 +219,9 @@ export function incidentPayloadMatchKey(parts: {
   freetext: string;
 }): string {
   const codes = [...new Set(parts.codes.map((c) => c.trim().toUpperCase()))].sort().join(',');
-  return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext)].join('|');
+  return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext, parts)].join(
+    '|',
+  );
 }
 
 /**

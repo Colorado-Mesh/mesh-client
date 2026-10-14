@@ -6817,7 +6817,8 @@
       "requestTitle": "MECP request or report",
       "responseTitle": "MECP response",
       "showAllCodes": "Show all MECP codes",
-      "openRequest": "Request or report with MECP"
+      "openRequest": "Request or report with MECP",
+      "wirePreview": "What other apps will see"
     },
     "rebroadcast": {
       "title": "RF rebroadcast bridge",

@@ -133,6 +133,10 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(ack).not.toMatch(/sendEmergencyText\(/);
     expect(ack).toMatch(/incidentAckViewKey\(/);
     expect(ack).toMatch(/if \(outcome === 'sent'\) \{[\s\S]*?confirmBeacon[\s\S]*?recordAck/);
+    expect(ack).toMatch(/composeIncidentAck\(incident,\s*\{\s*maxBytes: Math\.min\(/);
+    expect(ack).toMatch(/composerContext: route\.toNode == null \? 'channel' : 'dm'/);
+    expect(ack).toMatch(/senderDisplayName: meshcoreSenderDisplayName/);
+    expect(ack).toMatch(/catch \(e: unknown\) \{[\s\S]*?ackFailed[\s\S]*?return;\s*\}/);
   });
 
   it('originated beacon resolve sends B03 through the emergency outbox', () => {

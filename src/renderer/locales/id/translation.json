@@ -6571,7 +6571,8 @@
       "requestTitle": "Permintaan atau laporan MECP",
       "responseTitle": "Tanggapan MECP",
       "showAllCodes": "Tampilkan semua kode MECP",
-      "openRequest": "Minta atau laporkan dengan MECP"
+      "openRequest": "Minta atau laporkan dengan MECP",
+      "wirePreview": "Teks yang akan ditampilkan aplikasi lain"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

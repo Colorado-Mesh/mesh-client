@@ -12,12 +12,29 @@ export function incidentNeedsBeaconAck(
 
 /** B02 for an unacknowledged active beacon, otherwise a general R01 ACK echoing the codes. */
 export function composeIncidentAck(
-  incident: Pick<EmergencyIncident, 'severity' | 'codes' | 'beaconActive' | 'beaconAcked'>,
-  opts?: { callsign?: string },
+  incident: Pick<
+    EmergencyIncident,
+    'severity' | 'codes' | 'beaconActive' | 'beaconAcked' | 'senderName' | 'senderId' | 'isDrill'
+  >,
+  opts?: { callsign?: string; maxBytes?: number },
 ): string {
+  const sender = incident.senderName.trim() || incident.senderId;
+  // Older stored test incidents may have isDrill without retaining their original drill code.
+  const codes =
+    incident.isDrill && !incident.codes.some((code) => code === 'D01' || code === 'D02')
+      ? [...incident.codes, 'D02']
+      : incident.codes;
   return incidentNeedsBeaconAck(incident)
-    ? composeBeaconAck(incident.severity)
-    : composeGeneralAck(incident.severity, incident.codes, { callsign: opts?.callsign });
+    ? composeBeaconAck(incident.severity, {
+        freetext: `Received beacon from ${sender}.`,
+        drillCodes: codes,
+        maxBytes: opts?.maxBytes,
+      })
+    : composeGeneralAck(incident.severity, codes, {
+        callsign: opts?.callsign,
+        freetext: `Received report from ${sender}.`,
+        maxBytes: opts?.maxBytes,
+      });
 }
 
 export interface IncidentAckRoute {

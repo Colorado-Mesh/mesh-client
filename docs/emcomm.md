@@ -18,7 +18,7 @@ MECP/<severity>/<codes> [freetext]
 | `3`      | ROUTINE | Short tone when not muted                                                |
 
 - Codes are a letter plus two digits (for example `M01`). Labels come from the MECP language packs, so codes display in your language.
-- A report is at most **200 bytes** (UTF-8).
+- A report is at most **200 bytes** (UTF-8), or the radio's smaller text limit. MeshCore channel messages reserve space for the sender's name.
 - Drill codes (`D01`, `D02`) mark a report as a drill: it is listed but never plays an alert tone or toast and never adds an unread alert badge. Open MAYDAY and URGENT drills still count toward the **Incident** tab badge.
 - Tones and volume are configurable per severity in **App → Notifications → Notification tones**. MAYDAY and URGENT keep their mute bypass and a 10% volume floor. See [Notification sounds](notification-sounds.md).
 - Chat channel and DM chips show a shield icon, colored by the most severe unread MECP report in that conversation.
@@ -27,9 +27,17 @@ MECP/<severity>/<codes> [freetext]
 
 1. Turn on **App → MECP → Show MECP buttons in Chat** (off by default).
 2. In Chat, open the conversation to send to, then click the red **siren** button to request help or report conditions, or the blue **shield** button to respond.
-3. Choose severity and codes, add free text and optionally your position, and send. Both workflows start at ROUTINE with no codes selected. The response workflow opens on acknowledgements and help updates. Use **Show all MECP codes** if you need a code from another category.
+3. Choose severity and codes, add free text and optionally your position, then review **What other apps will see** and send. Both workflows start at ROUTINE with no codes selected. The response workflow opens on acknowledgements and help updates. Use **Show all MECP codes** if you need a code from another category.
 
-Both workflows use the same standard MECP codes and translated labels, so other clients can read them. On MeshCore, queued reports and retries use the destination channel’s saved scope. Choose **Unscoped** beside Send for mesh-wide floods, or a saved region for local floods; **Default** follows the companion radio’s default.
+Mesh Client appends a short English description to the same message, so people using apps without a MECP decoder can understand it. The standard codes still display in each supported language. Tests and drills are explicitly labeled **TEST ONLY** or **DRILL ONLY**, even when their selected severity is MAYDAY. For example:
+
+```text
+MECP/3/D02 1pax app test [TEST ONLY: This is a test]
+```
+
+Reports, tests, and acknowledgements use the current conversation; nothing moves to a separate channel. If the complete message exceeds the radio's byte limit, shorten it before sending. Mesh Client preserves your notes, coordinates, and person count rather than silently cutting them off.
+
+On MeshCore, queued reports and retries use the destination channel’s saved scope. Choose **Unscoped** beside Send for mesh-wide floods, or a saved region for local floods; **Default** follows the companion radio’s default.
 
 Every report goes through the **emergency outbox**. It is sent right away when the radio is up, and it keeps retrying (after 30 seconds, 1 minute, 2 minutes, then every 5 minutes) until the network acknowledges it. Acknowledgement means the radio heard the mesh repeat or confirm it (a Meshtastic ACK, a MeshCore repeater rebroadcast or DM ACK, a Reticulum delivery receipt), or another station acknowledged or relayed your report. There is no age cutoff or attempt limit. While a report is waiting, Chat shows it with **Waiting for network acknowledgement…** or a retry countdown. If a report is stuck, use **Stop retrying** on it (you are asked to confirm). A soft cap of 20 queued emergency reports blocks the least urgent extras, but never deletes anything and never blocks a MAYDAY.
 

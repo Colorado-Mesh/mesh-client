@@ -5,8 +5,6 @@ import { mecpCodeInComposeMode, type MecpComposeMode } from '@/renderer/lib/mecp
 import {
   CATEGORIES,
   type CategoryLetter,
-  encode,
-  getByteLength,
   getCachedMecpLanguage,
   loadMecpLanguage,
   MAX_MESSAGE_BYTES,
@@ -14,6 +12,7 @@ import {
   type Severity,
   severityLabelKey,
 } from '@/renderer/lib/mecp/mecpMessages';
+import { encodeReadableMecp } from '@/renderer/lib/mecp/mecpReadableText';
 
 import { TEXTAREA_BOX_CLASS } from '../ui/formClasses';
 import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
@@ -39,6 +38,7 @@ interface MecpComposeModalProps {
   /** App GPS waterfall (device → static → browser → IP). Prefer over raw geolocation. */
   resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
   mode?: MecpComposeMode;
+  maxMessageBytes?: number;
 }
 
 const DEFAULT_MECP_SEVERITY: Severity = 3;
@@ -51,6 +51,7 @@ export function MecpComposeModal({
   onSend,
   resolveGps,
   mode = 'all',
+  maxMessageBytes = MAX_MESSAGE_BYTES,
 }: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
   const [severity, setSeverity] = useState<Severity>(DEFAULT_MECP_SEVERITY);
@@ -149,11 +150,12 @@ export function MecpComposeModal({
   const responseMode = mode === 'response';
 
   const encoded = useMemo(
-    () => encode(severity, codes, freetext.trim() || undefined),
-    [severity, codes, freetext],
+    () => encodeReadableMecp(severity, codes, freetext.trim() || undefined, maxMessageBytes),
+    [severity, codes, freetext, maxMessageBytes],
   );
 
-  const byteLen = encoded.byteLength || getByteLength(encoded.message);
+  const byteLen = encoded.byteLength;
+  const byteLimit = Math.min(MAX_MESSAGE_BYTES, maxMessageBytes);
   const canSend = codes.length > 0 && !encoded.overLimit && !sending;
 
   const clearError = useCallback(() => {
@@ -390,12 +392,20 @@ export function MecpComposeModal({
           </button>
         </div>
 
-        <p className="text-ink-300 mb-1 font-mono text-xs break-all">{encoded.message || '—'}</p>
+        <p id="mecp-wire-preview-label" className="text-ink-400 mb-1 text-xs">
+          {t('mecp.compose.wirePreview')}
+        </p>
+        <p
+          className="text-ink-300 mb-1 font-mono text-xs break-all"
+          aria-labelledby="mecp-wire-preview-label"
+        >
+          {encoded.message || '—'}
+        </p>
         <p
           className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-muted'}`}
           role="status"
         >
-          {t('mecp.compose.byteBudget', { used: byteLen, max: MAX_MESSAGE_BYTES })}
+          {t('mecp.compose.byteBudget', { used: byteLen, max: byteLimit })}
         </p>
 
         {error ? (

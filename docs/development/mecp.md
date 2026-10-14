@@ -10,11 +10,19 @@ MECP/<severity>/<codes> [freetext]
 
 - Severity: `0` MAYDAY, `1` URGENT, `2` SAFETY, `3` ROUTINE
 - Codes: letter + two digits (`M01`, `M16` medical supply drop, …); drill `D01`/`D02` set `isDrill` (suppresses alerts). Labels come from vendored language packs under `languages/`
-- Max **200** UTF-8 bytes (`MAX_MESSAGE_BYTES`)
+- Max **200** UTF-8 bytes (`MAX_MESSAGE_BYTES`), capped by `getComposerPayloadLimit` for the actual transport and destination. MeshCore channels include the UTF-8 sender name, colon, and following space inside the 160-byte wire limit; DMs have 160 bytes and rooms reserve the pubkey prefix.
 - Vendored engine: [`src/renderer/lib/mecp/engine/`](../../src/renderer/lib/mecp/engine/) from [xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP) (GPLv3)
 - Language packs: [`src/renderer/lib/mecp/languages/`](../../src/renderer/lib/mecp/languages/) (CC BY 4.0)
 - Overview / video: [mecp.radio](https://mecp.radio/)
 - App wrappers: `mecpMessages.ts` (`MECP_REGEX`, `tryParseMecp`), `mecpAlert.ts`, `mecpRebroadcast.ts`
+
+### Readable outbound text
+
+`mecpReadableText.ts` wraps the vendored encoder without changing MECP grammar. It appends a deterministic English summary such as `[MAYDAY: Injury]`, `[TEST ONLY: This is a test]`, or `[ROUTINE ACK: Received]` to the same packet. Codes and operator text stay first, preserving R03's leading numeric ETA and the existing count/GPS/reference/callsign extraction. The composer previews this exact wire text and blocks messages over the transport budget; notes and codes are never silently removed to make room.
+
+Incident acknowledgements name the report's sender and describe receipt only. Beacon acknowledgements and cancellations also carry readable text and preserve test/drill codes. Channel selection is unchanged. Queued retries and RF bridges retain the composed payload rather than adding or retranslating summaries later.
+
+`stripMecpReadableSummary` removes only the exact generated suffix for incident identity and derived incident notes. Raw chat and audit text retain it. A generated summary alone must not enable cross-protocol merging of unrelated code-only or GPS-only reports; operator details still support matching actual bridged copies.
 
 ## Receive path
 

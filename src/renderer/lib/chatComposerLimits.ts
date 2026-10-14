@@ -83,7 +83,10 @@ export function getComposerPayloadLimit(opts: {
   const ctx = opts.composerContext ?? 'channel';
   if (ctx === 'room') return getMeshcoreRoomPayloadLimit();
   if (ctx === 'dm') return getMeshcoreDmPayloadLimit();
-  return getMeshcoreChannelPayloadLimit(opts.senderDisplayName ?? '');
+  if (!opts.senderDisplayName?.trim()) {
+    return MESHCORE_WIRE_MAX - MESHCORE_MAX_NAME_LEN - MESHCORE_NAME_SUFFIX_LEN;
+  }
+  return getMeshcoreChannelPayloadLimit(opts.senderDisplayName);
 }
 
 /** Reply wire overhead on the first chunk only (MeshCore visible prefix; Meshtastic reply_id field). */
