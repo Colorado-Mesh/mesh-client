@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
+
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
@@ -13,7 +15,11 @@ import { getNodeStatus } from '../nodeStatus';
 import { useRelayCoverageStore } from '../relayCoverage/relayCoverageStore';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode, TelemetryPoint } from '../types';
-import { openHeardRepeatWindow, resetHeardRepeatWindowsForTests } from './heardRepeatTracker';
+import {
+  openHeardRepeatWindow,
+  resetHeardRepeatWindowsForTests,
+  setMeshcoreHeardRepeatChannelSecrets,
+} from './heardRepeatTracker';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
 import { createMeshcoreMqttPacketLogBucket } from './meshcoreMqttPacketLogThrottle';
 import {
@@ -443,6 +449,31 @@ function hexToU8(hex: string): Uint8Array {
   return out;
 }
 
+const OWN_CHANNEL_IDX = 2;
+const OWN_CHANNEL_SECRET = Uint8Array.from({ length: 16 }, (_, i) => 0x40 + i);
+
+function u8ToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** FLOOD GRP_TXT carrying our own `"Me: hello"` on OWN_CHANNEL_IDX, after the given path prefix. */
+function ownFloodGrpTxtHex(pathLenAndPathHex: string, sentAtSec: number): string {
+  const inner = encodeMeshcoreGroupText(OWN_CHANNEL_SECRET, sentAtSec, 'Me: hello');
+  return `15${pathLenAndPathHex}${u8ToHex(inner)}`;
+}
+
+function openOwnChannelWindow(identityId: string, messageId: string): number {
+  const sentAtSec = Math.floor(Date.now() / 1000);
+  setMeshcoreHeardRepeatChannelSecrets([{ index: OWN_CHANNEL_IDX, secret: OWN_CHANNEL_SECRET }]);
+  openHeardRepeatWindow(identityId, messageId, undefined, undefined, {
+    channelIndex: OWN_CHANNEL_IDX,
+    senderName: 'Me',
+    wireText: 'hello',
+    sentAtSec,
+  });
+  return sentAtSec;
+}
+
 describe('handleMeshcoreRfRx heard-repeat coverage', () => {
   const MSG = 'ch:0:heard-repeat';
   /** Node ids whose 1-byte meshcoreNodeHash matches path bytes 0x88 / 0x07. */
@@ -462,7 +493,7 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
     vi.restoreAllMocks();
   });
 
-  it('credits Repeater path hashes on GRP_TXT flood overhear without cleartext originator', () => {
+  it('credits Repeater path hashes when the GRP_TXT flood decrypts to our own message', () => {
     const nodes = new Map<number, MeshNode>([
       [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
       [CHAT_07, makeNode(CHAT_07, { hw_model: 'Chat', long_name: 'Chat 07' })],
@@ -472,14 +503,33 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
       readNodes: () => nodes,
       selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
     });
-    openHeardRepeatWindow(ID, MSG);
+    const sentAtSec = openOwnChannelWindow(ID, MSG);
 
     // Realistic flood path: forwarders only (0x88 repeater, 0x07 chat) — originator is never in path.
-    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(ownFloodGrpTxtHex('028807', sentAtSec)) },
+      deps,
+    );
 
     expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([
       { nodeId: REPEATER_88, name: 'Hill 88', snr: 6, rssi: -50 },
     ]);
+  });
+
+  it('does not credit forwarders of someone else’s channel message during our window', () => {
+    const nodes = new Map<number, MeshNode>([
+      [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
+    ]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+      selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
+    });
+    openOwnChannelWindow(ID, MSG);
+
+    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+
+    expect(useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters).toEqual([]);
   });
 
   it('does not credit Chat path hops; unresolved forwarder hashes still count', () => {
@@ -491,9 +541,12 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
       readNodes: () => nodes,
       selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
     });
-    openHeardRepeatWindow(ID, MSG);
+    const sentAtSec = openOwnChannelWindow(ID, MSG);
 
-    handleMeshcoreRfRx({ lastSnr: 6, lastRssi: -50, raw: hexToU8(FLOOD_GRP_TXT_HEX) }, deps);
+    handleMeshcoreRfRx(
+      { lastSnr: 6, lastRssi: -50, raw: hexToU8(ownFloodGrpTxtHex('028807', sentAtSec)) },
+      deps,
+    );
 
     const heard = useRelayCoverageStore.getState().coverageFor(ID, MSG)?.heardRepeaters ?? [];
     // Path 0x88 (unknown forwarder) → hex credit; 0x07 (Chat) → ignored.
@@ -518,7 +571,7 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
     expect(pathSpy).not.toHaveBeenCalled();
   });
 
-  it('binds empty-path GRP_TXT and rejects a later foreign payload path credit', () => {
+  it('does not credit an unconfirmed empty-path GRP_TXT or a later foreign payload', () => {
     const pathSpy = vi.spyOn(meshcorePathChainDisplay, 'buildMeshcorePathResolutionFromNodes');
     const nodes = new Map<number, MeshNode>([
       [REPEATER_88, makeNode(REPEATER_88, { hw_model: 'Repeater', long_name: 'Hill 88' })],
@@ -607,15 +660,15 @@ describe('handleMeshcoreRfRx heard-repeat coverage', () => {
       [repId, makeNode(repId, { hw_model: 'Repeater', long_name: 'FNL-0647' })],
     ]);
     const pubKeyMap = new Map<number, Uint8Array>([[repId, repPub]]);
-    // FLOOD GRP_TXT, path_len=0x41 → 1 hop × 2-byte hash, path=06 47
-    const raw = hexToU8(`15410647${FLOOD_GRP_TXT_HEX.slice(8)}`);
     const { deps } = makeDeps({
       myNodeNumRef: ref(1),
       readNodes: () => nodes,
       pubKeyMapRef: ref(pubKeyMap),
       selfInfoRef: ref({ name: 'Me', publicKey: new Uint8Array(32).fill(9) } as MeshCoreSelfInfo),
     });
-    openHeardRepeatWindow(ID, MSG);
+    const sentAtSec = openOwnChannelWindow(ID, MSG);
+    // FLOOD GRP_TXT, path_len=0x41 → 1 hop × 2-byte hash, path=06 47
+    const raw = hexToU8(ownFloodGrpTxtHex('410647', sentAtSec));
 
     handleMeshcoreRfRx({ lastSnr: 7, lastRssi: -60, raw }, deps);
 

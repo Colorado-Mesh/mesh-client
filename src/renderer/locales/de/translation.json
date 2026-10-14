@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "{{count}}-Nachrichten löschen",
     "clearMessagesChannelConfirmLabel": "{{channel}} löschen",
     "clearMessagesTitle": "Klare Nachrichten",
-    "clearAllRepeatersConfirm": "Dadurch werden alle gespeicherten MeshCore-Repeater dauerhaft aus der lokalen Datenbank entfernt. Dies kann nicht rückgängig gemacht werden.",
     "clearAllLocalDataTitle": "Alle lokalen Daten löschen",
     "clearAllLocalDataConfirm": "Dadurch werden ALLE lokalen Nachrichten, Knoten und zwischengespeicherten Sitzungsdaten dauerhaft gelöscht. Diese Aktion kann NICHT rückgängig gemacht werden.",
     "clearEverythingConfirmButton": "Alles löschen",
@@ -475,7 +474,8 @@
     "updatesSection": "Updates",
     "autoUpdateDownload": "App-Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt.",
-    "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden."
+    "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden.",
+    "clearAllRepeatersConfirm": "Dadurch werden alle nicht favorisierten MeshCore-Repeater vom verbundenen Funkgerät und aus der lokalen Datenbank entfernt. Repeater erscheinen wieder, sobald sie sich erneut ankündigen. Dies kann nicht rückgängig gemacht werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

@@ -147,11 +147,14 @@ import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import {
   clearHeardRepeatWindow,
   clearHeardRepeatWindowIfMessage,
+  clearMeshcoreHeardRepeatChannelSecrets,
   openHeardRepeatWindow,
   renameHeardRepeatWindowMessageId,
+  setMeshcoreHeardRepeatChannelSecrets,
 } from '../lib/meshcore/heardRepeatTracker';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import { clearMeshcoreRepeaters } from '../lib/meshcore/meshcoreClearRepeaters';
 import {
   attachMeshcoreContactCapacityPush,
   clearMeshcoreFirmwareContactsFullLatch,
@@ -655,6 +658,8 @@ export function useMeshcoreRuntime() {
   const [meshcoreContactsForTelemetry, setMeshcoreContactsForTelemetry] = useState<
     MeshCoreContactRaw[]
   >([]);
+  /** True once a contacts dump from the connected radio has been applied this session. */
+  const [meshcoreRadioContactsLoaded, setMeshcoreRadioContactsLoaded] = useState(false);
   const [meshcorePubKeyHexByNodeId, setMeshcorePubKeyHexByNodeId] = useState<Map<number, string>>(
     new Map(),
   );
@@ -1104,6 +1109,12 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     selfInfoRef.current = selfInfo;
   }, [selfInfo]);
+
+  useEffect(() => {
+    setMeshcoreHeardRepeatChannelSecrets(channels);
+  }, [channels]);
+
+  useEffect(() => clearMeshcoreHeardRepeatChannelSecrets, []);
 
   useEffect(() => {
     setMeshcoreDiagnosticsNodes(nodes, myNodeNumRef.current);
@@ -1946,6 +1957,7 @@ export function useMeshcoreRuntime() {
           pendingPathUpdateNodeIds: pendingIds,
           onContacts: (contacts) => {
             setMeshcoreContactsForTelemetry(contacts);
+            setMeshcoreRadioContactsLoaded(true);
             setMeshcorePubKeyHexByNodeId(
               mergeMeshcorePubKeyHexFromContacts(contacts, selfInfoRef.current),
             );
@@ -2711,6 +2723,7 @@ export function useMeshcoreRuntime() {
         if (sequentialRadioInit) {
           getContactsStart = performance.now();
         }
+        setMeshcoreRadioContactsLoaded(false);
         // TCP only: FIN during dump must not reconnect-loop (BLE/serial ignore this latch path).
         meshcoreTcpContactsDumpInFlightRef.current = transportType === 'tcp';
         let contactsRaw: MeshCoreContactRaw[] = [];
@@ -2777,6 +2790,7 @@ export function useMeshcoreRuntime() {
           assertInitConnStillLive();
           initOnRadioContactCount = contacts.length;
           setMeshcoreContactsForTelemetry(contacts);
+          setMeshcoreRadioContactsLoaded(true);
           setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, info));
           previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
           newNodes = await awaitUnlessMeshcoreSetupCancelled(
@@ -3528,6 +3542,7 @@ export function useMeshcoreRuntime() {
       setSelfInfo(null);
       clearRadioSelfPosition('meshcore');
       setMeshcoreContactsForTelemetry([]);
+      setMeshcoreRadioContactsLoaded(false);
       setMeshcoreAutoadd(null);
       setDeviceLogs([]);
       setTelemetry([]);
@@ -4564,7 +4579,20 @@ export function useMeshcoreRuntime() {
           const provisionalHeardId = `out:mc-ch:${sentAt}:${channelIdx}`;
           if (hadRadioConn && heardIdentityId) {
             // Open before TX so fast repeater overhears during send can still credit.
-            openHeardRepeatWindow(heardIdentityId, provisionalHeardId);
+            openHeardRepeatWindow(
+              heardIdentityId,
+              provisionalHeardId,
+              undefined,
+              undefined,
+              selfInfo?.name
+                ? {
+                    channelIndex: channelIdx,
+                    senderName: selfInfo.name,
+                    wireText: textToSend,
+                    sentAtSec: Math.floor(sentAt / 1000),
+                  }
+                : undefined,
+            );
           }
           if (hadRadioConn) {
             try {
@@ -4675,6 +4703,7 @@ export function useMeshcoreRuntime() {
         contactsRaw.map(meshcoreContactRawFromDevice),
       );
       setMeshcoreContactsForTelemetry(contacts);
+      setMeshcoreRadioContactsLoaded(true);
       setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
       const newNodes = await buildNodesFromContacts(contacts, {
@@ -4859,17 +4888,47 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const clearAllRepeaters = useCallback(async () => {
+    let dbContacts: MeshcoreContactDbRow[];
+    try {
+      dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+    } catch (e: unknown) {
+      console.warn(
+        '[useMeshcoreRuntime] clearAllRepeaters getMeshcoreContacts error ' + errLikeToLogString(e),
+      );
+      throw e instanceof Error ? e : new Error(String(e));
+    }
+    const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRepeaters({
+      conn: connRef.current,
+      selfNodeId: myNodeNumRef.current,
+      nodes,
+      dbContacts,
+      clearDbRepeaters: () => window.electronAPI.db.clearMeshcoreRepeaters(),
+    });
+    const removedIds = new Set(removedNodeIds);
     setNodes((prev) => {
       const next = new Map(prev);
-      for (const [id, node] of prev) {
-        if (node.hw_model === 'Repeater') next.delete(id);
-      }
+      for (const id of removedIds) next.delete(id);
       return next;
     });
-    await window.electronAPI.db.clearMeshcoreRepeaters().catch((e: unknown) => {
-      console.warn('[useMeshcoreRuntime] clearMeshcoreRepeaters error ' + errLikeToLogString(e));
+    const storeId = resolveMeshcoreStoreIdentityId();
+    for (const id of removedIds) {
+      if (storeId) removeNode(storeId, id);
+      pubKeyMapRef.current.delete(id);
+      outPathMapRef.current.delete(id);
+      radioContactPathLenByNodeRef.current.delete(id);
+    }
+    for (const [prefix, id] of pubKeyPrefixMapRef.current) {
+      if (removedIds.has(id)) pubKeyPrefixMapRef.current.delete(prefix);
+    }
+    setMeshcorePubKeyHexByNodeId((prev) => {
+      const next = new Map(prev);
+      for (const id of removedIds) next.delete(id);
+      return next;
     });
-  }, []);
+    if (radioRemoveFailures > 0) {
+      pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
+    }
+  }, [nodes, resolveMeshcoreStoreIdentityId]);
 
   const clearAllMeshcoreContacts = useCallback(async () => {
     const conn = connRef.current;
@@ -8613,6 +8672,7 @@ export function useMeshcoreRuntime() {
       telemetryDeviceUpdateInterval: undefined as number | undefined,
       setRadioParams,
       meshcoreContactsForTelemetry,
+      meshcoreRadioContactsLoaded,
       meshcorePubKeyHexByNodeId,
       meshcoreAutoadd,
       applyMeshcoreContactAutoAdd,
@@ -8730,6 +8790,7 @@ export function useMeshcoreRuntime() {
       connectAutomatic,
       setRadioParams,
       meshcoreContactsForTelemetry,
+      meshcoreRadioContactsLoaded,
       meshcorePubKeyHexByNodeId,
       meshcoreAutoadd,
       applyMeshcoreContactAutoAdd,

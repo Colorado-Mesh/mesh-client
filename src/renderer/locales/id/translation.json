@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Hapus {{count}} Pesan",
     "clearMessagesChannelConfirmLabel": "Hapus {{channel}}",
     "clearMessagesTitle": "Hapus Pesan",
-    "clearAllRepeatersConfirm": "Ini akan menghapus secara permanen semua repeater MeshCore yang disimpan dari database lokal. Hal ini tidak dapat dibatalkan.",
     "clearAllLocalDataTitle": "Hapus Semua Data Lokal",
     "clearAllLocalDataConfirm": "Ini akan menghapus secara permanen SEMUA pesan lokal, node, dan data sesi cache. Tindakan ini TIDAK DAPAT dibatalkan.",
     "clearEverythingConfirmButton": "Hapus Segalanya",
@@ -475,7 +474,8 @@
     "updatesSection": "Pembaruan",
     "autoUpdateDownload": "Unduh pembaruan secara otomatis",
     "autoUpdateDownloadDesc": "Mengunduh pembaruan terbaru di latar belakang setelah setiap pemeriksaan. Ketika mati, pembaruan masih terdeteksi tetapi hanya diunduh ketika Anda menekan tombol Unduh — berguna ketika manajer paket menangani instalasi.",
-    "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis."
+    "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis.",
+    "clearAllRepeatersConfirm": "Tindakan ini menghapus semua repeater MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Repeater akan muncul kembali saat mengirim pengumuman lagi. Tindakan ini tidak dapat diurungkan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

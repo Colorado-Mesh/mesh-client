@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "清除 {{count}} 消息",
     "clearMessagesChannelConfirmLabel": "清除 {{channel}}",
     "clearMessagesTitle": "明确的信息",
-    "clearAllRepeatersConfirm": "这将从本地数据库中永久删除所有已保存的 MeshCore 中继器。此操作无法撤消。",
     "clearAllLocalDataTitle": "清除所有本地数据",
     "clearAllLocalDataConfirm": "这将永久删除所有本地消息、节点和缓存的会话数据。此操作无法撤消。",
     "clearEverythingConfirmButton": "清除一切",
@@ -475,7 +474,8 @@
     "updatesSection": "更新",
     "autoUpdateDownload": "自动下载更新",
     "autoUpdateDownloadDesc": "每次检查后在后台下载最新更新。关闭时，仍会检测到更新，但只有在按下“下载”按钮时才会下载，这在程序包管理器处理安装时非常有用。",
-    "autoUpdateDownloadSaveFailed": "无法保存自动更新下载设置。"
+    "autoUpdateDownloadSaveFailed": "无法保存自动更新下载设置。",
+    "clearAllRepeatersConfirm": "这将从已连接的电台和本地数据库中删除所有未收藏的 MeshCore 中继器。中继器再次发送广播通告时会重新出现。此操作无法撤消。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

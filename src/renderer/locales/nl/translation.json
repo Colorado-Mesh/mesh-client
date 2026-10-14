@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Wis {{count}} berichten",
     "clearMessagesChannelConfirmLabel": "Wissen {{channel}}",
     "clearMessagesTitle": "Duidelijke berichten",
-    "clearAllRepeatersConfirm": "Hierdoor worden alle opgeslagen MeshCore-repeaters permanent uit de lokale database verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearAllLocalDataTitle": "Wis alle lokale gegevens",
     "clearAllLocalDataConfirm": "Hierdoor worden ALLE lokale berichten, knooppunten en in de cache opgeslagen sessiegegevens permanent verwijderd. Deze actie kan NIET ongedaan worden gemaakt.",
     "clearEverythingConfirmButton": "Alles wissen",
@@ -475,7 +474,8 @@
     "updatesSection": "Updates",
     "autoUpdateDownload": "Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Download de laatste update op de achtergrond na elke controle. Wanneer uitgeschakeld, worden updates nog steeds gedetecteerd, maar alleen gedownload wanneer u op de knop Downloaden drukt — handig wanneer een pakketbeheerder de installatie afhandelt.",
-    "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan."
+    "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan.",
+    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

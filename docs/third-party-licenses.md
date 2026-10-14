@@ -15,6 +15,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | :------------------------- | :---------------------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------- |
 | @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.16.0         | 2.16.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
 | @jsr/meshtastic__protobufs | n/a                           | ^2.8.1          | 2.8.1             | n/a                                                                            |
+| @noble/ciphers             | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-ciphers.git                             |
+| @noble/hashes              | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-hashes.git                              |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.23.0         | 2.23.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
