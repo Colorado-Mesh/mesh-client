@@ -30,7 +30,8 @@
     "M3SHGH0ST https://github.com/cj-vana",
     "M0Rf30 https://github.com/M0Rf30",
     "ashortgrayble https://github.com/ashortgrayble",
-    "W0RMT https://github.com/RobertMTalbot"
+    "W0RMT https://github.com/RobertMTalbot",
+    "cappuccinocosmico https://github.com/cappuccinocosmico"
   ],
   "main": "dist-electron/main/index.js",
   "scripts": {

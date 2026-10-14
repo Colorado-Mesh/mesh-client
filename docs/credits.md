@@ -17,6 +17,7 @@
 - [M0Rf30](https://github.com/M0Rf30) - Flatpak Electron packaging
 - [ashortgrayble](https://github.com/ashortgrayble) - Colorado Mesh style guide (color scales, type, radius and elevation)
 - [W0RMT](https://github.com/RobertMTalbot)
+- [cappuccinocosmico](https://github.com/cappuccinocosmico/) - NixOS and Nix Flake Packaging
 
 ## Colorado Mesh
 
