@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Usuń wiadomości {{count}}",
     "clearMessagesChannelConfirmLabel": "Wyczyść {{channel}}",
     "clearMessagesTitle": "Wyczyść Wiadomości",
-    "clearAllRepeatersConfirm": "Spowoduje to trwałe usunięcie wszystkich zapisanych wzmacniaków MeshCore z lokalnej bazy danych. Tego nie można cofnąć.",
     "clearAllLocalDataTitle": "Wyczyść wszystkie dane lokalne",
     "clearAllLocalDataConfirm": "Spowoduje to trwałe usunięcie WSZYSTKICH lokalnych wiadomości, węzłów i buforowanych danych sesji. Tej akcji NIE można cofnąć.",
     "clearEverythingConfirmButton": "Wyczyść wszystko",
@@ -491,7 +490,8 @@
     "updatesSection": "Aktualizacje",
     "autoUpdateDownload": "Pobieraj aktualizacje automatycznie",
     "autoUpdateDownloadDesc": "Pobiera najnowszą aktualizację w tle po każdej kontroli. Gdy wyłączone, aktualizacje są nadal wykrywane, ale pobierane tylko po naciśnięciu przycisku Pobierz — przydatne, gdy menedżer pakietów obsługuje instalację.",
-    "autoUpdateDownloadSaveFailed": "Nie można zapisać ustawienia automatycznego pobierania aktualizacji."
+    "autoUpdateDownloadSaveFailed": "Nie można zapisać ustawienia automatycznego pobierania aktualizacji.",
+    "clearAllRepeatersConfirm": "Spowoduje to usunięcie wszystkich nieulubionych przemienników MeshCore z podłączonego radia i lokalnej bazy danych. Przemienniki pojawią się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

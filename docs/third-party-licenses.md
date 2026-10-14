@@ -15,6 +15,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | :------------------------- | :---------------------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------- |
 | @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.16.0         | 2.16.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
 | @jsr/meshtastic__protobufs | n/a                           | ^2.8.1          | 2.8.1             | n/a                                                                            |
+| @noble/ciphers             | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-ciphers.git                             |
+| @noble/hashes              | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-hashes.git                              |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.23.0         | 2.23.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
@@ -82,7 +84,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-import                  | MIT             | ^2.32.0         | 2.32.0            | git+https://github.com/import-js/eslint-plugin-import.git                            |
 | eslint-plugin-jsx-a11y                | MIT             | ^6.10.2         | 6.10.2            | git+https://github.com/jsx-eslint/eslint-plugin-jsx-a11y.git                         |
 | eslint-plugin-no-secrets              | MIT             | ^2.3.3          | 2.3.3             | git+https://github.com/nickdeis/eslint-plugin-no-secrets.git                         |
-| eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | git+https://github.com/prettier/eslint-plugin-prettier.git                           |
+| eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.7.tgz |
 | eslint-plugin-react                   | MIT             | ^7.37.5         | 7.37.5            | git+https://github.com/jsx-eslint/eslint-plugin-react.git                            |
 | eslint-plugin-react-hooks             | MIT             | ^7.1.1          | 7.1.1             | git+https://github.com/facebook/react.git                                            |
 | eslint-plugin-security                | Apache-2.0      | ^4.2.0          | 4.2.0             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |

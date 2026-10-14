@@ -459,7 +459,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 | ----------- | --------------------------------------------------------------------- |
 | **macOS**   | **13 Ventura** or later (Electron 44; Monterey is not supported)      |
 | **Windows** | Windows 10 version **1809+** or Windows 11 (x64 and arm64 installers) |
-| **Linux**   | x86_64 or aarch64; AppImage, `.deb`, `.rpm`, or Flatpak               |
+| **Linux**   | x86_64 or aarch64; AppImage, `.deb`, `.rpm`, Flatpak, or Nix flake    |
 
 **Pre-built binaries** for **macOS**, **Linux**, and **Windows** are available in the [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) area. Download the installer or archive for your platform; no Node.js or build tools required.
 
@@ -480,6 +480,15 @@ VMware guests and other GPU edge cases: [Flatpak troubleshooting](docs/troublesh
 ```bash
 yay -S mesh-client # or: paru -S mesh-client
 ```
+
+**Nix (NixOS, other Linux, Apple-silicon macOS):** the repo root ships a `flake.nix` that builds the app and the Reticulum sidecar from source for `x86_64-linux`, `aarch64-linux`, and `aarch64-darwin` (Intel Macs are not supported). This is the easiest route on NixOS, where the prebuilt Electron binaries do not run. It is a source build, not a signed release artifact, so the first run compiles everything locally and can take a while.
+
+```bash
+nix run github:Colorado-Mesh/mesh-client               # build and launch
+nix build github:Colorado-Mesh/mesh-client#mesh-client # or from a clone: nix run / nix build
+```
+
+Install Nix with the [Determinate Systems installer](https://install.determinate.systems/) if you do not have it. Flake developer shells: [Development Guide — Nix](docs/development-environment.md#nix-nixos-and-macos).
 
 **macOS (release download):**
 
@@ -621,7 +630,7 @@ Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/
 | Maps         | Leaflet + OpenStreetMap / Carto Dark / USGS Topo via privileged `mesh-tiles:` + userData tile cache (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
 | Charts       | Recharts                                                                                                                                                                                                                                  |
 | Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                                                                                                      |
-| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                                                                                             |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + Nix flake + optional `cargo` sidecar                                                                                                                 |
 
 ### Architecture
 

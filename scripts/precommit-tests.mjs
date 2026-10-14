@@ -41,6 +41,18 @@ export const SERVICE_ANNOUNCEMENT_FEED_TEST_PATH =
 const SERVICE_ANNOUNCEMENT_FEED_PATH = 'announcements/announcements.json';
 
 /**
+ * flake.nix and the Ratspeak stack pins/overlay list are not imports, so `vitest related` cannot
+ * reach the guard that keeps the Nix build sourcing the same pinned stack and toolchain majors.
+ */
+export const FLAKE_STACK_PINS_TEST_PATH = 'scripts/flake-stack-pins.test.mjs';
+const FLAKE_STACK_PINS_INPUTS = new Set([
+  'flake.nix',
+  'reticulum-sidecar/ratspeak-stack-pins.env',
+  'scripts/clone-ratspeak-stack.sh',
+  'scripts/lib/ratspeak-overlay-apply-list.sh',
+]);
+
+/**
  * Settings-search guards read component sources as text (anchors, swept `t()` keys) and check
  * label keys against the English locale, so `vitest related` cannot reach them from those inputs.
  */
@@ -217,6 +229,19 @@ export function appendServiceAnnouncementFeedTestIfNeeded(stagedPaths, relatedPa
 }
 
 /**
+ * Append the flake stack-pin guard when flake.nix or the stack pins / overlay list are staged.
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendFlakeStackPinsTestIfNeeded(stagedPaths, relatedPaths) {
+  const needsGuard = stagedPaths.some((p) => FLAKE_STACK_PINS_INPUTS.has(p.replace(/\\/g, '/')));
+  const out = new Set(relatedPaths.map((p) => p.replace(/\\/g, '/')));
+  if (needsGuard) out.add(FLAKE_STACK_PINS_TEST_PATH);
+  return [...out].sort();
+}
+
+/**
  * Append the settings-search guards when a component or the English locale is staged.
  * @param {string[]} stagedPaths
  * @param {string[]} relatedPaths
@@ -338,15 +363,18 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendSettingsSearchEntriesLoaderTestIfNeeded(
+  const relatedPaths = appendFlakeStackPinsTestIfNeeded(
     stagedPaths,
-    appendSettingsSearchGuardTestsIfNeeded(
+    appendSettingsSearchEntriesLoaderTestIfNeeded(
       stagedPaths,
-      appendServiceAnnouncementFeedTestIfNeeded(
+      appendSettingsSearchGuardTestsIfNeeded(
         stagedPaths,
-        appendSidecarRouteDocsTestIfNeeded(
+        appendServiceAnnouncementFeedTestIfNeeded(
           stagedPaths,
-          appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+          appendSidecarRouteDocsTestIfNeeded(
+            stagedPaths,
+            appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+          ),
         ),
       ),
     ),

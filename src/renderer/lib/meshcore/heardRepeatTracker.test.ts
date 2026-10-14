@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverageStore';
+import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 import { meshCorePathInvariantPayloadId } from '@/shared/meshcoreRfPacketParse';
 
@@ -15,6 +16,7 @@ import {
   renameHeardRepeatWindowMessageId,
   resetHeardRepeatWindowsForTests,
   resolveMeshcoreHeardRepeaterFromNode,
+  setMeshcoreHeardRepeatChannelSecrets,
 } from './heardRepeatTracker';
 
 const IDENTITY = 'mc-id-1';
@@ -25,6 +27,33 @@ const MY_NODE = 0x01020304; // hash 0x04
 
 function payloadId(tag: string) {
   return meshCorePathInvariantPayloadId(5, new TextEncoder().encode(tag));
+}
+
+const GRP_TXT_NIBBLE = 5;
+const CHANNEL_IDX = 3;
+const CHANNEL_SECRET = Uint8Array.from({ length: 16 }, (_, i) => 0x20 + i);
+const SENDER_NAME = 'N4CNR Heltec V4';
+const SENT_AT_SEC = Math.floor(Date.parse('2026-06-01T12:00:00.000Z') / 1000);
+
+function grpTxtId(text: string, timestampSec = SENT_AT_SEC, secret = CHANNEL_SECRET) {
+  return meshCorePathInvariantPayloadId(
+    GRP_TXT_NIBBLE,
+    encodeMeshcoreGroupText(secret, timestampSec, text),
+  );
+}
+
+/** Our own channel flood as repeaters rebroadcast it. */
+const OWN_GRP_TXT = () => grpTxtId(`${SENDER_NAME}: Test`);
+
+/** Open a window that expects our own `"N4CNR Heltec V4: Test"` on CHANNEL_IDX. */
+function openOwnChannelWindow(messageId: string): void {
+  setMeshcoreHeardRepeatChannelSecrets([{ index: CHANNEL_IDX, secret: CHANNEL_SECRET }]);
+  openHeardRepeatWindow(IDENTITY, messageId, undefined, undefined, {
+    channelIndex: CHANNEL_IDX,
+    senderName: SENDER_NAME,
+    wireText: 'Test',
+    sentAtSec: SENT_AT_SEC,
+  });
 }
 
 const REPEATER_ID = 0x0a0b0c0d; // hash 0x0a^0x0b^0x0c^0x0d = 0x00
@@ -253,7 +282,57 @@ describe('heardRepeatTracker', () => {
     );
   });
 
-  it('credits GRP_TXT channel-flood path hashes without cleartext self-origin', () => {
+  it('credits GRP_TXT forwarders when the flood decrypts to our own message', () => {
+    openOwnChannelWindow(MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: floodPath(hashByte(REPEATER_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
+      { nodeId: REPEATER_ID, name: 'Rep Alpha' },
+    ]);
+  });
+
+  it('does not credit foreign channel traffic while the window is unconfirmed', () => {
+    openOwnChannelWindow(MSG_A);
+    const foreign = [
+      grpTxtId('Curt ~ 1114: Test'),
+      grpTxtId(
+        `${SENDER_NAME}: Test`,
+        SENT_AT_SEC,
+        Uint8Array.from({ length: 16 }, () => 7),
+      ),
+      grpTxtId(`${SENDER_NAME}: Test`, SENT_AT_SEC - 60),
+      grpTxtId(`${SENDER_NAME}: other text`),
+      payloadId('NOTGRPTXT'),
+    ];
+    for (const payloadIdentity of foreign) {
+      recordMeshcoreRfRx({
+        identityId: IDENTITY,
+        isOwnMeshcoreTx: false,
+        treatAsOwnChannelFlood: true,
+        pathBytes: floodPath(hashByte(REPEATER_ID)),
+        pathHashSizeBytes: 1,
+        myNodeNum: MY_NODE,
+        payloadIdentity,
+        candidates,
+        resolveRepeater,
+      });
+    }
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('does not credit GRP_TXT when the window has no expectation', () => {
+    setMeshcoreHeardRepeatChannelSecrets([{ index: CHANNEL_IDX, secret: CHANNEL_SECRET }]);
     openHeardRepeatWindow(IDENTITY, MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
@@ -262,12 +341,50 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
       candidates,
       resolveRepeater,
     });
-    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual([
-      { nodeId: REPEATER_ID, name: 'Rep Alpha' },
-    ]);
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('does not credit GRP_TXT when the channel secret is unknown', () => {
+    openOwnChannelWindow(MSG_A);
+    setMeshcoreHeardRepeatChannelSecrets([]);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: floodPath(hashByte(REPEATER_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
+      candidates,
+      resolveRepeater,
+    });
+    expect(useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters).toEqual(
+      [],
+    );
+  });
+
+  it('accepts a send timestamp one second after the recorded send time', () => {
+    openOwnChannelWindow(MSG_A);
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: floodPath(hashByte(REPEATER_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      payloadIdentity: grpTxtId(`${SENDER_NAME}: Test`, SENT_AT_SEC + 1),
+      candidates,
+      resolveRepeater,
+    });
+    expect(
+      useRelayCoverageStore.getState().coverageFor(IDENTITY, MSG_A)?.heardRepeaters,
+    ).toHaveLength(1);
   });
 
   it('treatAsOwnChannelFlood without an open window does not create coverage', () => {
@@ -304,7 +421,7 @@ describe('heardRepeatTracker', () => {
   it('prefers Repeater over fresher Chat on 1-byte path hash collision', () => {
     const collideChat = 257; // same XOR hash as REPEATER_ID (0)
     expect(hashByte(collideChat)).toBe(hashByte(REPEATER_ID));
-    openHeardRepeatWindow(IDENTITY, MSG_A);
+    openOwnChannelWindow(MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
@@ -312,6 +429,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
       candidates: [
         { node_id: collideChat, last_heard: 999 },
         { node_id: REPEATER_ID, last_heard: 1 },
@@ -532,7 +650,7 @@ describe('heardRepeatTracker', () => {
   });
 
   it('credits Repeater but not Chat when Chat appears first in the flood path', () => {
-    openHeardRepeatWindow(IDENTITY, MSG_A);
+    openOwnChannelWindow(MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
@@ -540,6 +658,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: [hashByte(CHAT_ID), hashByte(REPEATER_ID)],
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
       candidates,
       resolveRepeater,
     });
@@ -640,8 +759,8 @@ describe('heardRepeatTracker', () => {
     );
   });
 
-  it('does not bind payload identity from the first credited hop (avoids foreign race)', () => {
-    openHeardRepeatWindow(IDENTITY, MSG_A);
+  it('credits only our flood when foreign channel traffic arrives first, then later repeats', () => {
+    openOwnChannelWindow(MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
@@ -649,7 +768,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentity: payloadId('FOREIGN01'),
+      payloadIdentity: grpTxtId('Curt ~ 1114: Test'),
       candidates,
       resolveRepeater,
     });
@@ -660,7 +779,19 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(ROOM_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
-      payloadIdentity: payloadId('OWNMSG02'),
+      payloadIdentity: OWN_GRP_TXT(),
+      candidates,
+      resolveRepeater,
+    });
+    // A later repeat of the same payload via another forwarder is also credited.
+    recordMeshcoreRfRx({
+      identityId: IDENTITY,
+      isOwnMeshcoreTx: false,
+      treatAsOwnChannelFlood: true,
+      pathBytes: floodPath(hashByte(ROOM_ID), hashByte(REPEATER_ID)),
+      pathHashSizeBytes: 1,
+      myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
       candidates,
       resolveRepeater,
     });
@@ -669,7 +800,7 @@ describe('heardRepeatTracker', () => {
   });
 
   it('credits multi-hop path as multiple named forwarders', () => {
-    openHeardRepeatWindow(IDENTITY, MSG_A);
+    openOwnChannelWindow(MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,
@@ -677,6 +808,7 @@ describe('heardRepeatTracker', () => {
       pathBytes: floodPath(hashByte(REPEATER_ID), hashByte(ROOM_ID)),
       pathHashSizeBytes: 1,
       myNodeNum: MY_NODE,
+      payloadIdentity: OWN_GRP_TXT(),
       candidates,
       resolveRepeater,
     });
@@ -709,8 +841,8 @@ describe('heardRepeatTracker', () => {
     expect(isSyntheticHeardNodeId(-1)).toBe(true);
   });
 
-  it('binds payload identity from empty-path channel flood echo', () => {
-    openHeardRepeatWindow(IDENTITY, MSG_A);
+  it('does not bind payload identity from a foreign empty-path channel flood', () => {
+    openOwnChannelWindow(MSG_A);
     recordMeshcoreRfRx({
       identityId: IDENTITY,
       isOwnMeshcoreTx: false,

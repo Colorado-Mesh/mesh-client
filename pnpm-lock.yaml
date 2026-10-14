@@ -49,6 +49,12 @@ importers:
       '@meshtastic/protobufs':
         specifier: npm:@jsr/meshtastic__protobufs@^2.8.1
         version: '@jsr/meshtastic__protobufs@2.8.1'
+      '@noble/ciphers':
+        specifier: ^2.4.0
+        version: 2.4.0
+      '@noble/hashes':
+        specifier: ^2.4.0
+        version: 2.4.0
       '@xterm/addon-fit':
         specifier: ^0.11.0
         version: 0.11.0
@@ -779,6 +785,10 @@ packages:
   '@michaelhart/meshcore-decoder@0.3.0':
     resolution: {integrity: sha512-vdBbYEKw8mzE7y5br0OpfwjBAZIowsrPOIbh8a7KnL+eSQDH6jw4yy11JzAZZW0km6l4Ntmg8fvsZwEzAVTdHA==}
     hasBin: true
+
+  '@noble/ciphers@2.4.0':
+    resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
+    engines: {node: '>= 20.19.0'}
 
   '@noble/curves@1.9.7':
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
@@ -5040,6 +5050,8 @@ snapshots:
       chalk: 4.1.2
       commander: 12.1.0
       crypto-js: 4.2.0
+
+  '@noble/ciphers@2.4.0': {}
 
   '@noble/curves@1.9.7':
     dependencies:

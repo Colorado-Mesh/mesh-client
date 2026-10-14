@@ -119,7 +119,7 @@ pnpm run reticulum:sidecar:build
 
 This writes `reticulum-sidecar/target/debug/mesh-client-reticulum` (macOS/Linux) or `.exe` on Windows.
 
-**First-time / recover the stack workspace:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) the repo-local `.rsstack/` workspace checkouts `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs` at the reviewed full SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`, verifies each checkout, and then applies mesh-client overlays (fails if a pin cannot be fetched or a patch will not apply). For a local bisect only, set the relevant `RS_*_REF` plus `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`; CI and release-channel builds reject overrides.
+**First-time / recover the stack workspace:** from the mesh-client repo root, run `./scripts/clone-ratspeak-stack.sh`. That script clones (or updates) the repo-local `.rsstack/` workspace checkouts `rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, and `lrgp-rs` at the reviewed full SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`, verifies each checkout, and then applies mesh-client overlays (fails if a pin cannot be fetched or a patch will not apply). For a local bisect only, set the relevant `RS_*_REF` plus `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`; CI and release-channel builds reject overrides. The [Nix flake](#nix-nixos-and-macos) reads the same pins file and overlay apply list.
 
 When those `.rsstack/` checkouts already exist, `pnpm run reticulum:sidecar:build` applies required overlays via `scripts/ensure-rsReticulum-patches.sh` before compiling with `rns-stack,rns-ble,rns-rnode-tcp`. See [`reticulum-sidecar/patches/README.md`](../reticulum-sidecar/patches/README.md) for overlay details.
 
@@ -888,6 +888,8 @@ See [Build troubleshooting](#windows-could-not-find-any-visual-studio-installati
 
 Install Node 22 (22.15.0+ recommended), `make`, and C++ build tools (`g++`/`gcc-c++`) with native build dependencies.
 
+NixOS: use `nix develop` instead of the package lists below; see [Nix (NixOS and macOS)](#nix-nixos-and-macos).
+
 Debian/Ubuntu:
 
 ```bash
@@ -960,6 +962,26 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 ### Troubleshooting
 
 See [Linux development: SIGILL / SIGSEGV](#linux-development-sigill-during-pnpm-install) and [Linux: serial port access denied](troubleshooting.md#linux-serial-port-access-denied).
+
+## Nix (NixOS and macOS)
+
+The repo-root `flake.nix` supports `x86_64-linux`, `aarch64-linux`, and `aarch64-darwin`. It is the supported way to develop on NixOS, where the Electron binary that `pnpm install` downloads cannot find its dynamic libraries.
+
+| Command                             | Result                                                                                          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `nix run` / `nix run .#mesh-client` | Build the packaged app and launch it                                                            |
+| `nix build .#mesh-client`           | Build the app to `./result` (gitignored, along with `result-*`)                                 |
+| `nix build .#reticulum-sidecar`     | Build only `mesh-client-reticulum` (features `rns-stack,rns-ble,rns-rnode-tcp`)                 |
+| `nix develop`                       | Enter a dev shell with Node.js, pnpm, Rust, and Python, then run `pnpm install && pnpm run dev` |
+
+On Linux, `nix develop` opens an FHS environment that carries Electron's runtime libraries (GTK, NSS, Mesa, BlueZ D-Bus, udev, and others), so the regular `pnpm` workflow and pre-commit hooks work unchanged. On macOS it is a plain shell, because the downloaded Electron runs natively.
+
+How the flake stays in sync with the rest of the build:
+
+- **App version** is read from `package.json`, so `pnpm run release` needs no flake change.
+- **Reticulum stack** sources are fetched at the SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`, and overlays are applied from `scripts/lib/ratspeak-overlay-apply-list.sh`. These are the same inputs `scripts/clone-ratspeak-stack.sh` uses. Pin bumps and new overlays need no `flake.nix` or `flake.lock` edit.
+- **Toolchain majors:** the flake uses the nixpkgs attributes `electron_<major>`, `pnpm_<major>`, and `nodejs_<major>`. These must match `devDependencies.electron`, `packageManager`, and `engines.node` in `package.json`. Building the flake fails with an Electron mismatch, and `scripts/flake-stack-pins.test.mjs` fails on any mismatch. When one of those majors changes, update the attribute in `flake.nix`. If the locked nixpkgs does not have the new attribute yet, run `nix flake update` and commit `flake.lock`.
+- **Pre-commit and PR CI** run `scripts/flake-stack-pins.test.mjs` whenever `flake.nix`, the pins file, `scripts/clone-ratspeak-stack.sh`, or the overlay apply list changes (`scripts/precommit-tests.mjs`). No CI job evaluates or builds the flake.
 
 ## Build troubleshooting
 

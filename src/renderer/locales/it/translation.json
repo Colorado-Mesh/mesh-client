@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Cancella {{count}} Messaggi",
     "clearMessagesChannelConfirmLabel": "Cancella {{channel}}",
     "clearMessagesTitle": "Cancella messaggi",
-    "clearAllRepeatersConfirm": "Ciò rimuoverà permanentemente tutti i ripetitori MeshCore salvati dal database locale. Questa operazione non può essere annullata.",
     "clearAllLocalDataTitle": "Cancella tutti i dati locali",
     "clearAllLocalDataConfirm": "Ciò eliminerà permanentemente TUTTI i messaggi locali, i nodi e i dati della sessione memorizzata nella cache. Questa azione NON PUÒ essere annullata.",
     "clearEverythingConfirmButton": "Cancella tutto",
@@ -475,7 +474,8 @@
     "updatesSection": "Aggiornamenti",
     "autoUpdateDownload": "Scarica automaticamente gli aggiornamenti",
     "autoUpdateDownloadDesc": "Scarica l'ultimo aggiornamento in background dopo ogni controllo. Quando è spento, gli aggiornamenti vengono ancora rilevati ma scaricati solo quando si preme il pulsante Download, utile quando un gestore di pacchetti gestisce l'installazione.",
-    "autoUpdateDownloadSaveFailed": "Impossibile salvare l'impostazione di download dell'aggiornamento automatico."
+    "autoUpdateDownloadSaveFailed": "Impossibile salvare l'impostazione di download dell'aggiornamento automatico.",
+    "clearAllRepeatersConfirm": "Questo rimuove tutti i ripetitori MeshCore non preferiti dalla radio collegata e dal database locale. I ripetitori riappaiono quando si annunciano di nuovo. Questa operazione non può essere annullata."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

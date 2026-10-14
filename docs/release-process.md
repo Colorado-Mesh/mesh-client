@@ -157,6 +157,7 @@ Only if `pnpm run release` cannot be used:
 # Edit package.json version, then:
 git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
 # If electron changed: node scripts/sync-flatpak-electron.mjs
+# If the electron/pnpm/Node.js major changed: bump electron_N / pnpm_N / nodejs_N in flake.nix
 # Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git commit -m "chore: release vX.Y.Z"

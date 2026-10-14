@@ -356,7 +356,7 @@
     "clearMessagesAllConfirmLabel": "Clear {{count}} Messages",
     "clearMessagesChannelConfirmLabel": "Clear {{channel}}",
     "clearMessagesTitle": "Clear Messages",
-    "clearAllRepeatersConfirm": "This will permanently remove all saved MeshCore repeaters from the local database. This cannot be undone.",
+    "clearAllRepeatersConfirm": "This removes all non-favorited MeshCore repeaters from the connected radio and the local database. Repeaters reappear when they advertise again. This cannot be undone.",
     "clearAllLocalDataTitle": "Clear All Local Data",
     "clearAllLocalDataConfirm": "This will permanently delete ALL local messages, nodes, and cached session data. This action CANNOT be undone.",
     "clearEverythingConfirmButton": "Clear Everything",

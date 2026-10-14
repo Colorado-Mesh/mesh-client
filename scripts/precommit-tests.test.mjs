@@ -5,11 +5,13 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  appendFlakeStackPinsTestIfNeeded,
   appendServiceAnnouncementFeedTestIfNeeded,
   appendSettingsSearchEntriesLoaderTestIfNeeded,
   appendSettingsSearchGuardTestsIfNeeded,
   appendSidecarRouteDocsTestIfNeeded,
   expandWithSiblingTests,
+  FLAKE_STACK_PINS_TEST_PATH,
   isForceFullSuitePath,
   isManifestOnlyCommit,
   pickProjects,
@@ -185,6 +187,26 @@ describe('precommit-tests service announcements feed', () => {
         [SERVICE_ANNOUNCEMENT_FEED_TEST_PATH],
       ),
     ).toEqual([SERVICE_ANNOUNCEMENT_FEED_TEST_PATH]);
+  });
+});
+
+describe('precommit-tests flake stack pins guard', () => {
+  it.each([
+    'flake.nix',
+    'reticulum-sidecar/ratspeak-stack-pins.env',
+    'scripts/lib/ratspeak-overlay-apply-list.sh',
+  ])('runs the flake guard for a %s-only commit', (staged) => {
+    const plan = planPrecommitTests([staged]);
+    expect(plan.mode).toBe('related');
+    expect(plan.relatedPaths).toEqual([FLAKE_STACK_PINS_TEST_PATH]);
+    expect(plan.projects).toEqual(['main']);
+  });
+
+  it('does not append the test for unrelated staged paths or duplicate it', () => {
+    expect(appendFlakeStackPinsTestIfNeeded(['README.md', 'flake.lock'], [])).toEqual([]);
+    expect(appendFlakeStackPinsTestIfNeeded(['flake.nix'], [FLAKE_STACK_PINS_TEST_PATH])).toEqual([
+      FLAKE_STACK_PINS_TEST_PATH,
+    ]);
   });
 });
 

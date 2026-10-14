@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Limpar mensagens {{count}}",
     "clearMessagesChannelConfirmLabel": "Limpar {{channel}}",
     "clearMessagesTitle": "Limpar mensagens",
-    "clearAllRepeatersConfirm": "Isso removerá permanentemente todos os repetidores MeshCore salvos do banco de dados local. Isto não pode ser desfeito.",
     "clearAllLocalDataTitle": "Limpar todos os dados locais",
     "clearAllLocalDataConfirm": "Isso excluirá permanentemente TODAS as mensagens locais, nós e dados de sessão em cache. Esta ação NÃO PODE ser desfeita.",
     "clearEverythingConfirmButton": "Limpar tudo",
@@ -475,7 +474,8 @@
     "updatesSection": "Atualizações",
     "autoUpdateDownload": "Baixar atualizações automaticamente",
     "autoUpdateDownloadDesc": "Faz o download da atualização mais recente em segundo plano após cada verificação. Quando desligado, as atualizações ainda são detectadas, mas só são baixadas quando você pressiona o botão Download — útil quando um gerenciador de pacotes lida com a instalação.",
-    "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática."
+    "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática.",
+    "clearAllRepeatersConfirm": "Isso remove todos os repetidores MeshCore não favoritos do rádio conectado e do banco de dados local. Repetidores reaparecem quando anunciam novamente. Isso não pode ser desfeito."
   },
   "aria": {
     "closeDialog": "Fechar janela",

@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "{{count}} Mesajlarını Temizle",
     "clearMessagesChannelConfirmLabel": "{{channel}} öğesini temizle",
     "clearMessagesTitle": "Mesajları Temizle",
-    "clearAllRepeatersConfirm": "Bu, kayıtlı tüm MeshCore tekrarlayıcıları yerel veritabanından kalıcı olarak kaldıracaktır. Bu geri alınamaz.",
     "clearAllLocalDataTitle": "Tüm Yerel Verileri Temizle",
     "clearAllLocalDataConfirm": "Bu, TÜM yerel mesajları, düğümleri ve önbelleğe alınmış oturum verilerini kalıcı olarak silecektir. Bu eylem geri alınamaz.",
     "clearEverythingConfirmButton": "Herşeyi Temizle",
@@ -475,7 +474,8 @@
     "updatesSection": "Güncellemeler",
     "autoUpdateDownload": "~Güncellemeleri otomatik olarak indir",
     "autoUpdateDownloadDesc": "Her kontrolden sonra arka plandaki en son güncellemeyi indirir. Kapalıyken, güncellemeler hala algılanır, ancak yalnızca İndir düğmesine bastığınızda indirilir — bir paket yöneticisi kurulumu gerçekleştirdiğinde kullanışlıdır.",
-    "autoUpdateDownloadSaveFailed": "Otomatik güncelleme indirme ayarı kaydedilemedi."
+    "autoUpdateDownloadSaveFailed": "Otomatik güncelleme indirme ayarı kaydedilemedi.",
+    "clearAllRepeatersConfirm": "Bu işlem, favoriye eklenmemiş tüm MeshCore tekrarlayıcılarını bağlı telsizden ve yerel veritabanından kaldırır. Tekrarlayıcılar yeniden duyuru yaptıklarında tekrar görünür. Bu işlem geri alınamaz."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

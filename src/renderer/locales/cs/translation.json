@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Vymazat zprávy {{count}}",
     "clearMessagesChannelConfirmLabel": "Vymazat {{channel}}",
     "clearMessagesTitle": "Vymazat zprávy",
-    "clearAllRepeatersConfirm": "To trvale odstraní všechny uložené opakovače MeshCore z místní databáze. Toto nelze vrátit zpět.",
     "clearAllLocalDataTitle": "Vymazat všechna místní data",
     "clearAllLocalDataConfirm": "To trvale odstraní VŠECHNY místní zprávy, uzly a data relací uložená v mezipaměti. Tuto akci NELZE vrátit zpět.",
     "clearEverythingConfirmButton": "Vymazat vše",
@@ -483,7 +482,8 @@
     "updatesSection": "Aktualizace",
     "autoUpdateDownload": "Automaticky stahovat aktualizace",
     "autoUpdateDownloadDesc": "Po každém šeku stáhne nejnovější aktualizaci na pozadí. Když je vypnuto, aktualizace jsou stále detekovány, ale stahovány pouze po stisknutí tlačítka Stáhnout — užitečné, když správce balíčků zpracovává instalaci.",
-    "autoUpdateDownloadSaveFailed": "Nelze uložit nastavení automatické aktualizace stahování."
+    "autoUpdateDownloadSaveFailed": "Nelze uložit nastavení automatické aktualizace stahování.",
+    "clearAllRepeatersConfirm": "Tím se z připojeného rádia a místní databáze odstraní všechny neoblíbené opakovače MeshCore. Opakovače se znovu objeví, jakmile se znovu ohlásí. Tuto akci nelze vrátit zpět."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

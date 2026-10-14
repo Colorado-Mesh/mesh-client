@@ -19,6 +19,8 @@ dist/
 meta.json
 node_modules/
 release/
+/result
+/result-*
 test-results/
 playwright-report/
 coverage/
