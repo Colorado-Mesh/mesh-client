@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Single source of apply-script order for clone-ratspeak-stack / ensure-rsReticulum-patches.
+# Single source of apply-script order for clone-ratspeak-stack / ensure-rsReticulum-patches / flake.nix.
 # Keep patch basenames in sync with RATSPEAK_PATCH_ENTRIES in scripts/update.sh.
 # shellcheck shell=bash
 

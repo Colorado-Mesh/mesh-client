@@ -102,7 +102,7 @@ Path-filtered on `reticulum-sidecar/**` and related scripts:
 
 The full-stack matrix and the two WoA jobs cache Cargo downloads and compiled dependencies with `Swatinem/rust-cache`, separately by job, target triple, and Rust toolchain. The cache is restored after cloning the current Ratspeak sources, applying overlays, and selecting the toolchain. The sidecar workspace crate is excluded, so every run still invokes Cargo to rebuild changed path dependencies and the executable. Host tests run on cache hits as well as misses; a cache miss performs a normal build. Release optimization and linking still run, so warm jobs retain some compilation cost.
 
-CI, local **dev**, and release packaging clone the `.rsstack/` workspace through `scripts/clone-ratspeak-stack.sh` at the reviewed full SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`. The script verifies each fetched commit and clean checkout before overlays or Cargo run; CI and release-channel builds reject ref overrides. A local bisect requires both the relevant `RS_*_REF` and `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`. Open upstream feature PRs needed before they land on `main` (e.g. [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as overlays under `reticulum-sidecar/patches/` and tracked by `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Packaging also records the verified SHAs in `.rsstack/RESOLVED_SHAS.txt` beside each artifact.
+CI, local **dev**, and release packaging clone the `.rsstack/` workspace through `scripts/clone-ratspeak-stack.sh` at the reviewed full SHAs in `reticulum-sidecar/ratspeak-stack-pins.env`. The script verifies each fetched commit and clean checkout before overlays or Cargo run; CI and release-channel builds reject ref overrides. A local bisect requires both the relevant `RS_*_REF` and `MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1`. Open upstream feature PRs needed before they land on `main` (e.g. [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as overlays under `reticulum-sidecar/patches/` and tracked by `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. Packaging also records the verified SHAs in `.rsstack/RESOLVED_SHAS.txt` beside each artifact. The repo-root `flake.nix` fetches the same pins with `builtins.fetchTree` and applies overlays from `scripts/lib/ratspeak-overlay-apply-list.sh`. `scripts/flake-stack-pins.test.mjs`, selected by `scripts/precommit-tests.mjs` whenever those inputs change, keeps the flake from drifting. No workflow evaluates or builds the flake. See [development-environment.md](development-environment.md#nix-nixos-and-macos).
 
 Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit full-feature). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 
@@ -207,6 +207,10 @@ Automated dependency updates are configured in `.github/dependabot.yml`:
   release exists, LXMFace `js/lxmface.js` commit). Sibling **rsReticulum** /
   **rsLXMF** / **rsNomad** / **rsLXST** / **lrgp-rs** use the committed full SHAs in
   `reticulum-sidecar/ratspeak-stack-pins.env`; dependency updates require a reviewed pin change.
+- **Electron / pnpm / Node.js major bumps** also require the matching nixpkgs attribute
+  (`electron_<major>`, `pnpm_<major>`, `nodejs_<major>`) in `flake.nix`, plus
+  `nix flake update` when the locked nixpkgs lacks it. Otherwise
+  `scripts/flake-stack-pins.test.mjs` fails the full suite.
 
 ### Testing Dependabot PRs locally
 
