@@ -62,6 +62,10 @@ import {
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
 import {
+  buildDebugSnapshotMeshcoreRadioLive,
+  setDebugSnapshotMeshcoreRadioLive,
+} from '@/renderer/lib/debugSnapshotMeshcoreContext';
+import {
   buildDebugSnapshotMeshtasticContextFromRuntime,
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
@@ -3091,6 +3095,21 @@ function AppContent() {
       ),
     );
   }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
+
+  useEffect(() => {
+    const connected = meshcoreRuntime.state.status !== 'disconnected';
+    setDebugSnapshotMeshcoreRadioLive(
+      buildDebugSnapshotMeshcoreRadioLive(
+        meshcoreRuntime.selfInfo,
+        meshcoreRuntime.state,
+        connected ? meshcoreRuntime.meshcoreContactsForTelemetry.length : null,
+      ),
+    );
+  }, [
+    meshcoreRuntime.selfInfo,
+    meshcoreRuntime.state,
+    meshcoreRuntime.meshcoreContactsForTelemetry,
+  ]);
 
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
   const handleMeshcoreSyncWaitingMessages = useCallback(async () => {

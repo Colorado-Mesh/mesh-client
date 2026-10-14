@@ -5980,7 +5980,7 @@ ipcMain.handle('db:clearMeshcoreContacts', (event) => {
   }
 });
 
-// Deletes only Repeater-type contacts (contact_type = 2), leaving Chat and Room contacts intact.
+// Deletes only non-favorited Repeater-type contacts (contact_type = 2), leaving Chat and Room contacts intact.
 ipcMain.handle('db:clearMeshcoreRepeaters', (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
@@ -5988,7 +5988,11 @@ ipcMain.handle('db:clearMeshcoreRepeaters', (event) => {
   try {
     const db = getDbForIpc('db:clearMeshcoreRepeaters');
     if (!db) return { changes: 0 };
-    return db.prepareOnce('DELETE FROM meshcore_contacts WHERE contact_type = 2').run();
+    return db
+      .prepareOnce(
+        'DELETE FROM meshcore_contacts WHERE contact_type = 2 AND COALESCE(favorited, 0) = 0',
+      )
+      .run();
   } catch (err) {
     finishDbIpcHandler('db:clearMeshcoreRepeaters', err);
   }

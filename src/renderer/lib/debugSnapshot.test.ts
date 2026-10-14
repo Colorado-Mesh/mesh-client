@@ -9,7 +9,12 @@ import {
 } from '../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { lastReadStorageKey } from './chatPanelProtocolStorage';
+import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
+import {
+  FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+  floodScopeOverridesStorageKey,
+  lastReadStorageKey,
+} from './chatPanelProtocolStorage';
 import {
   analyzeDebugSnapshot,
   buildDebugSnapshot,
@@ -19,6 +24,11 @@ import {
   type DebugReticulumSnapshot,
   type DebugSnapshot,
 } from './debugSnapshot';
+import {
+  buildDebugSnapshotMeshcoreRadioLive,
+  resetDebugSnapshotMeshcoreContext,
+  setDebugSnapshotMeshcoreRadioLive,
+} from './debugSnapshotMeshcoreContext';
 import {
   resetDebugSnapshotMeshtasticContext,
   setDebugSnapshotMeshtasticContext,
@@ -106,6 +116,26 @@ function makeReticulumSnapshot(
   };
 }
 
+function makeMeshcoreRadio(
+  overrides: Partial<DebugSnapshot['meshcoreRadio']> = {},
+): DebugSnapshot['meshcoreRadio'] {
+  return {
+    radioFreq: null,
+    radioBw: null,
+    radioSf: null,
+    radioCr: null,
+    txPower: null,
+    manualAddContacts: null,
+    firmwareVersion: null,
+    pathHashMode: null,
+    radioContactCount: null,
+    radioMaxContacts: 350,
+    floodScopeRadioDefault: '#test',
+    floodScopeOverrides: {},
+    ...overrides,
+  };
+}
+
 function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSnapshot {
   const ui = {
     activePanelIndex: 0,
@@ -159,6 +189,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ui,
     meshtastic,
     meshcore,
+    meshcoreRadio: makeMeshcoreRadio(),
     reticulum,
     ...overrides,
   };
@@ -173,6 +204,7 @@ describe('buildDebugSnapshot', () => {
     useConnectionStore.setState({ connections: {} });
     resetDebugSnapshotUiContext();
     resetDebugSnapshotMeshtasticContext();
+    resetDebugSnapshotMeshcoreContext();
     localStorage.clear();
   });
 
@@ -258,6 +290,41 @@ describe('buildDebugSnapshot', () => {
     expect(snap.meshtastic.mqttChannelNameToIndex).toEqual({ LongFast: 1, Private: 0 });
   });
 
+  it('includes MeshCore radio params and flood scope from context and storage', () => {
+    ensureOfflineProtocolIdentities();
+    setDebugSnapshotMeshcoreRadioLive(
+      buildDebugSnapshotMeshcoreRadioLive(
+        { radioFreq: 910.525, radioBw: 62.5, radioSf: 7, radioCr: 5, txPower: 22 },
+        { firmwareVersion: 'v1.14.0', pathHashMode: 1 },
+        165,
+      ),
+    );
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreFloodScopeHashtag: '#tn' }),
+    );
+    localStorage.setItem(
+      floodScopeOverridesStorageKey('meshcore'),
+      JSON.stringify({ 'ch:1': '#east-tn', 'ch:2': FLOOD_SCOPE_OVERRIDE_UNSCOPED }),
+    );
+
+    const snap = buildDebugSnapshot();
+
+    expect(snap.meshcoreRadio).toMatchObject({
+      radioFreq: 910.525,
+      radioBw: 62.5,
+      radioSf: 7,
+      radioCr: 5,
+      txPower: 22,
+      firmwareVersion: 'v1.14.0',
+      pathHashMode: 1,
+      radioContactCount: 165,
+      floodScopeRadioDefault: '#tn',
+      floodScopeOverrides: { 'ch:1': '#east-tn', 'ch:2': FLOOD_SCOPE_OVERRIDE_UNSCOPED },
+    });
+    expect(snap.meshcoreRadio.radioMaxContacts).toBeGreaterThan(0);
+  });
+
   it('uses activeProtocol from ui context for activeTab including reticulum', () => {
     ensureOfflineProtocolIdentities();
     setDebugSnapshotUiContext({ activeProtocol: 'reticulum' });
@@ -311,6 +378,10 @@ describe('buildDebugSnapshot', () => {
   it('reports live session when hydration slot id is reused on connect', () => {
     ensureOfflineProtocolIdentities();
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ meshcoreFloodScopeHashtag: '#test' }),
+    );
     setDebugSnapshotUiContext({ activeProtocol: 'meshcore' });
     addTransport(OFFLINE_MESHCORE_IDENTITY_ID, {
       transportId: 't1',
@@ -481,6 +552,35 @@ describe('buildDebugSnapshot', () => {
 });
 
 describe('analyzeDebugSnapshot', () => {
+  it('flags meshcoreFloodUnscoped when no radio default or named per-view scope is set', () => {
+    const snap = makeSyntheticSnapshot({
+      meshcoreRadio: makeMeshcoreRadio({
+        floodScopeRadioDefault: '',
+        floodScopeOverrides: { 'ch:2': FLOOD_SCOPE_OVERRIDE_UNSCOPED },
+      }),
+    });
+    expect(snap.warnings.map((w) => w.code)).toContain('meshcoreFloodUnscoped');
+  });
+
+  it('does not flag meshcoreFloodUnscoped when a per-view named scope exists', () => {
+    const snap = makeSyntheticSnapshot({
+      meshcoreRadio: makeMeshcoreRadio({
+        floodScopeRadioDefault: '',
+        floodScopeOverrides: { 'ch:1': '#tn' },
+      }),
+    });
+    expect(snap.warnings.map((w) => w.code)).not.toContain('meshcoreFloodUnscoped');
+  });
+
+  it('does not flag meshcoreFloodUnscoped when MeshCore is not the active or stored protocol', () => {
+    const snap = makeSyntheticSnapshot({
+      storedProtocol: 'meshtastic',
+      ui: { ...getDebugSnapshotUiContext(), activeProtocol: 'meshtastic' },
+      meshcoreRadio: makeMeshcoreRadio({ floodScopeRadioDefault: '' }),
+    });
+    expect(snap.warnings.map((w) => w.code)).not.toContain('meshcoreFloodUnscoped');
+  });
+
   it('flags identitySplit and staleResolvedBucket for old bad shape', () => {
     const connectedId = 'id-mc-split';
     const snap = makeSyntheticSnapshot({

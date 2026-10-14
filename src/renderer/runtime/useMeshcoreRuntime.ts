@@ -152,6 +152,7 @@ import {
 } from '../lib/meshcore/heardRepeatTracker';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import { clearMeshcoreRepeaters } from '../lib/meshcore/meshcoreClearRepeaters';
 import {
   attachMeshcoreContactCapacityPush,
   clearMeshcoreFirmwareContactsFullLatch,
@@ -4859,17 +4860,46 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const clearAllRepeaters = useCallback(async () => {
+    let dbContacts: MeshcoreContactDbRow[] = [];
+    try {
+      dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
+    } catch (e: unknown) {
+      console.warn(
+        '[useMeshcoreRuntime] clearAllRepeaters getMeshcoreContacts error ' + errLikeToLogString(e),
+      );
+    }
+    const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRepeaters({
+      conn: connRef.current,
+      selfNodeId: myNodeNumRef.current,
+      nodes,
+      dbContacts,
+      clearDbRepeaters: () => window.electronAPI.db.clearMeshcoreRepeaters(),
+    });
+    const removedIds = new Set(removedNodeIds);
     setNodes((prev) => {
       const next = new Map(prev);
-      for (const [id, node] of prev) {
-        if (node.hw_model === 'Repeater') next.delete(id);
-      }
+      for (const id of removedIds) next.delete(id);
       return next;
     });
-    await window.electronAPI.db.clearMeshcoreRepeaters().catch((e: unknown) => {
-      console.warn('[useMeshcoreRuntime] clearMeshcoreRepeaters error ' + errLikeToLogString(e));
+    const storeId = resolveMeshcoreStoreIdentityId();
+    for (const id of removedIds) {
+      if (storeId) removeNode(storeId, id);
+      pubKeyMapRef.current.delete(id);
+      outPathMapRef.current.delete(id);
+      radioContactPathLenByNodeRef.current.delete(id);
+    }
+    for (const [prefix, id] of pubKeyPrefixMapRef.current) {
+      if (removedIds.has(id)) pubKeyPrefixMapRef.current.delete(prefix);
+    }
+    setMeshcorePubKeyHexByNodeId((prev) => {
+      const next = new Map(prev);
+      for (const id of removedIds) next.delete(id);
+      return next;
     });
-  }, []);
+    if (radioRemoveFailures > 0) {
+      pushAppToast(i18n.t('meshcore.errors.removeContactFailed'), 'warning');
+    }
+  }, [nodes, resolveMeshcoreStoreIdentityId]);
 
   const clearAllMeshcoreContacts = useCallback(async () => {
     const conn = connRef.current;
