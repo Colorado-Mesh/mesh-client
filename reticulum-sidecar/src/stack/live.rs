@@ -4478,11 +4478,29 @@ impl LiveBridge {
     ) -> Result<(), String> {
         let hash = parse_hash16(destination_hash)?;
         let dest_hex = destination_hash.to_lowercase();
+        // Ownership token before the first await: a newer Sync for the same PN supersedes this
+        // one, and every pin / abort below must check it (the target hash cannot tell runs apart).
+        let Ok(token) = self
+            .outbound
+            .lock()
+            .map(|mut d| d.begin_propagation_sync_owner())
+        else {
+            return Err("propagation sync unavailable".into());
+        };
+        let release_claim = || {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.release_propagation_sync_owner(token, hash);
+            }
+        };
         // Cancel any in-flight sync/emitter before starting a new one.
         self.cancel_propagation_sync().await;
         // Claim the PN Link early so outbound packed deposits defer instead of racing.
         if let Ok(mut driver) = self.outbound.lock() {
+            if !driver.owns_propagation_sync(token) {
+                return Err("PROPAGATION_SYNC_SUPERSEDED".into());
+            }
             if driver.has_inflight_delivery_to(&hash) {
+                driver.release_propagation_sync_owner(token, hash);
                 tracing::info!(
                     target: "propagation-sync",
                     dest = %dest_hex,
@@ -4505,16 +4523,17 @@ impl LiveBridge {
             .unwrap_or(false);
         let target_class = self.classify_propagation_sync_target(&dest_hex).await;
         if !identity_ok || !identity_known_after {
-            if let Ok(mut driver) = self.outbound.lock() {
-                driver.set_propagation_sync_target(None);
-            }
+            release_claim();
             return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
+        // Pin now: the announce settle + path gate below take 10s+, long enough for an
+        // announce flood to evict the PN pubkey before LRPROOF validation.
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.pin_known_identity_for_propagation_owned(token, &dest_hex);
         }
         // Only hard-reject destinations positively classified as non-PN.
         if target_class == "delivery" || target_class == "other" {
-            if let Ok(mut driver) = self.outbound.lock() {
-                driver.set_propagation_sync_target(None);
-            }
+            release_claim();
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
         // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
@@ -4537,9 +4556,7 @@ impl LiveBridge {
             .map(|d| d.has_inflight_delivery_to(&hash))
             .unwrap_or(false);
         if outbound_busy {
-            if let Ok(mut driver) = self.outbound.lock() {
-                driver.set_propagation_sync_target(None);
-            }
+            release_claim();
             tracing::info!(
                 target: "propagation-sync",
                 dest = %dest_hex,
@@ -4556,11 +4573,7 @@ impl LiveBridge {
             .await
         {
             // Path gate awaits; only clear if we still own this attempt's latch.
-            if let Ok(mut driver) = self.outbound.lock() {
-                if driver.propagation_sync_target() == Some(hash) {
-                    driver.set_propagation_sync_target(None);
-                }
-            }
+            release_claim();
             tracing::info!(
                 target: "propagation-sync",
                 dest = %dest_hex,
@@ -4571,16 +4584,37 @@ impl LiveBridge {
         }
         // Pin PN pubkey for the duration of the client `/get` link so announce-flood
         // eviction cannot drop it before LRPROOF validation (see known_identities cap).
-        let pinned = if let Ok(mut driver) = self.outbound.lock() {
-            if let Some(pub_key) = driver.public_key_for(&dest_hex) {
-                driver.pin_identity_for_propagation(&dest_hex, pub_key);
-                true
-            } else {
-                false
-            }
-        } else {
-            false
+        let pin_known = || {
+            self.outbound
+                .lock()
+                .map(|mut d| d.pin_known_identity_for_propagation_owned(token, &dest_hex))
+                .unwrap_or(false)
         };
+        let still_owner = || {
+            self.outbound
+                .lock()
+                .map(|d| d.owns_propagation_sync(token))
+                .unwrap_or(false)
+        };
+        let mut pinned = pin_known();
+        if !pinned && still_owner() {
+            self.ensure_identity_for_direct(&dest_hex).await;
+            pinned = pin_known();
+        }
+        if !still_owner() {
+            return Err("PROPAGATION_SYNC_SUPERSEDED".into());
+        }
+        if !pinned {
+            // Without the pubkey every LRPROOF is ignored; failover rounds cannot help.
+            release_claim();
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                hops = ?hops,
+                "propagation sync aborted — PN identity unknown before client /get"
+            );
+            return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
         let local_serving = self.propagation.is_local_serving();
         let (msg_count, msg_bytes) = self.propagation.local_stats();
         tracing::info!(
@@ -4597,15 +4631,11 @@ impl LiveBridge {
         // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
         let (cancel, run_id) = {
             let Ok(_lifecycle) = self.propagation.lock_sync_lifecycle() else {
-                if let Ok(mut driver) = self.outbound.lock() {
-                    driver.set_propagation_sync_target(None);
-                }
+                release_claim();
                 return Err("propagation sync unavailable".into());
             };
             let Ok(mut slot) = self.sync_cancel.lock() else {
-                if let Ok(mut driver) = self.outbound.lock() {
-                    driver.set_propagation_sync_target(None);
-                }
+                release_claim();
                 return Err("propagation sync unavailable".into());
             };
             let cancel = Arc::new(AtomicBool::new(false));
@@ -4621,11 +4651,8 @@ impl LiveBridge {
         let outbound = Arc::clone(&self.outbound);
         let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
             if let Ok(mut driver) = outbound.lock() {
-                // Guard against clearing a superseded Sync/silent owner.
-                if driver.propagation_sync_target() == Some(hash) {
-                    driver.clear_propagation_identity_pins();
-                    driver.set_propagation_sync_target(None);
-                }
+                // Guard against clearing a newer Sync for the same PN.
+                driver.release_propagation_sync_owner(token, hash);
             }
         });
         if !self.spawn_client_download_driver(
@@ -4638,14 +4665,9 @@ impl LiveBridge {
             Some(on_terminal),
             true,
         ) {
-            // Download did not start — drop our claim only if we still own this hash.
+            // Download did not start — drop our claim only if this run still owns it.
             // Never wipe another owner's latch (overlapping silent `/get` / Sync).
-            if let Ok(mut driver) = self.outbound.lock() {
-                if driver.propagation_sync_target() == Some(hash) {
-                    driver.clear_propagation_identity_pins();
-                    driver.set_propagation_sync_target(None);
-                }
-            }
+            release_claim();
             // Client `/get` already in flight (host silent retrieve / prior Sync).
             return Err("PROPAGATION_RETRIEVE_BUSY".into());
         }

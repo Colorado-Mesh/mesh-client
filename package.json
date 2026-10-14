@@ -1,6 +1,6 @@
 {
   "name": "mesh-client",
-  "version": "6.3.0",
+  "version": "6.4.0",
   "description": "Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.",
   "keywords": [
     "meshtastic",
@@ -151,6 +151,8 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.16.0",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.8.1",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "@zip.js/zip.js": "^2.23.0",
@@ -189,7 +191,7 @@
     "@michaelhart/meshcore-decoder": "^0.3.0",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-virtual": "^3.14.14",
+    "@tanstack/react-virtual": "^3.14.15",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

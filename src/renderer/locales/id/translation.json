@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Hapus {{count}} Pesan",
     "clearMessagesChannelConfirmLabel": "Hapus {{channel}}",
     "clearMessagesTitle": "Hapus Pesan",
-    "clearAllRepeatersConfirm": "Ini akan menghapus secara permanen semua repeater MeshCore yang disimpan dari database lokal. Hal ini tidak dapat dibatalkan.",
     "clearAllLocalDataTitle": "Hapus Semua Data Lokal",
     "clearAllLocalDataConfirm": "Ini akan menghapus secara permanen SEMUA pesan lokal, node, dan data sesi cache. Tindakan ini TIDAK DAPAT dibatalkan.",
     "clearEverythingConfirmButton": "Hapus Segalanya",
@@ -475,7 +474,8 @@
     "updatesSection": "Pembaruan",
     "autoUpdateDownload": "Unduh pembaruan secara otomatis",
     "autoUpdateDownloadDesc": "Mengunduh pembaruan terbaru di latar belakang setelah setiap pemeriksaan. Ketika mati, pembaruan masih terdeteksi tetapi hanya diunduh ketika Anda menekan tombol Unduh — berguna ketika manajer paket menangani instalasi.",
-    "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis."
+    "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis.",
+    "clearAllRepeatersConfirm": "Tindakan ini menghapus semua repeater MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Repeater akan muncul kembali saat mengirim pengumuman lagi. Tindakan ini tidak dapat diurungkan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping gagal",
       "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
       "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran.",
-      "bleTimeoutGatt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui sespan GATT. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP."
+      "bleTimeoutGatt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui sespan GATT. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
+      "radioContactMissing": "Node ini tidak ada dalam daftar kontak radio Anda, jadi radio tidak dapat masuk ke sana. Tunggu advert berikutnya atau impor sebagai kontak, lalu coba lagi.",
+      "radioContactTableFull": "Daftar kontak radio Anda sudah penuh, jadi simpul ini tidak dapat ditambahkan untuk login. Hapus kontak yang tidak digunakan, lalu coba lagi."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",
     "refreshFailed": "Penyegaran gagal: {{message}}",
-    "floodAdvertSent": "flood advert terkirim",
-    "advertFailed": "advert gagal: {{message}}",
     "importFailed": "Impor gagal: {{message}}",
     "importResultSuccess_one": "Kontak {{count}} yang diimpor.",
     "importResultSuccess_other": "Kontak {{count}} yang diimpor.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "Tidak ada node yang cocok dengan pencarian Anda.",
     "emptyNoNodesYet": "Belum ada node yang ditemukan. Hubungkan ke perangkat untuk melihat jaringan mesh.",
     "buttonRefresh": "Menyegarkan",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Impor Kontak",
     "meshcoreTypeChat": "Mengobrol",
     "meshcoreTypeRepeater": "Pengulang",
@@ -4893,7 +4892,7 @@
     "columnActions": "Tindakan",
     "nodesTabName": "Node",
     "title": "Repeater & Ruangan",
-    "columnsDataHint": "SNR, RSSI, uptime, dan airtime berasal dari tindakan Status (atau pengambilan otomatis saat panel ini terbuka). Hop dan riwayat jalur memerlukan Ping. MeshCore tidak mengisi kolom tersebut hanya dari iklan.",
+    "columnsDataHint": "SNR, RSSI, uptime, dan airtime adalah cuplikan dari tindakan Status terakhir dan tidak diperbarui sendiri (Status dijalankan kembali secara otomatis sekitar 30 detik setelah CLI reboot). Hop dan riwayat jalur memerlukan Ping. MeshCore tidak mengisi kolom tersebut hanya dari iklan.",
     "remoteAuthLabel": "Kata sandi admin pengulang (opsional)",
     "remoteAuthPlaceholder": "Biarkan kosong jika repeater tidak memiliki kata sandi admin",
     "remoteAuthCancelDialog": "Batalkan dialog kata sandi pengulang",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "diambil {{time}}",
     "rememberPasswordSaveFailed": "Tidak dapat menyimpan kata sandi pengulang untuk memulai ulang. Ini hanya akan berfungsi untuk sesi ini.",
     "telemetryFailedToast": "Telemetri gagal: {{message}}",
     "cliMultiHopHint": "Multi-hop CLI lebih andal setelah jejak Ping berhasil. Perintah CLI pertama pada repeater multi-hop menjalankan Ping otomatis ketika tidak ada trace pada sesi ini. Jika perintah habis waktu, jalankan Ping terlebih dahulu atau periksa sinkronisasi jam pendamping di aplikasi MeshCore.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "Aktifkan CAD perangkat keras. MeshCore meninggalkan CAD secara default karena dapat mengunci radio selama sekitar 4 detik.",
     "radioCliCadOff": "Nonaktifkan CAD perangkat keras",
     "radioCliBootReasonGet": "Dapatkan alasan boot dan shutdown",
-    "cliQuickRadio": "Radio"
+    "cliQuickRadio": "Radio",
+    "cliAutoPingWaitingForCli": "Menunggu perintah CLI node lain selesai sebelum Ping...",
+    "cliAutoPingBusy": "Perintah CLI node lain masih berjalan; coba lagi saat selesai."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -6981,7 +6983,16 @@
     "scope": "Cakupan Flood default",
     "defaultScope": "Nama wilayah (kosong untuk dibuka)",
     "scopeSummary": "Wilayah untuk paket Flood keluar dari simpul ini",
-    "scopeHint": "Firmware v1.15+: masukkan wilayah publik seperti #us-tn-tri; kosongkan untuk tanpa batas wilayah. Berlaku untuk pengumuman Flood dan pengiriman pesan ruangan melalui Flood. Rute langsung dan akses ruangan terpisah. Radio Companion dan kanalnya memiliki pengaturan cakupan sendiri."
+    "scopeHint": "Firmware v1.15+: masukkan wilayah publik seperti #us-tn-tri; kosongkan untuk tanpa batas wilayah. Berlaku untuk pengumuman Flood dan pengiriman pesan ruangan melalui Flood. Rute langsung dan akses ruangan terpisah. Radio Companion dan kanalnya memiliki pengaturan cakupan sendiri.",
+    "regionsAndScope": "Wilayah dan cakupan flood",
+    "regionsSummary": "Wilayah terkonfigurasi, izin penerusan, dan cakupan keluar",
+    "configuredRegions": "Wilayah yang dikonfigurasi",
+    "homeRegion": "Wilayah asal",
+    "floodAllowed": "Flood diizinkan",
+    "floodDenied": "Flood diblokir",
+    "regionsHint": "Dibaca dari repeater ini. * berarti lalu lintas tanpa batasan wilayah. Edit aturan wilayah melalui CLI.",
+    "regionsUnavailable": "Firmware ini tidak mendukung pembacaan daftar wilayah dari jarak jauh. Periksa wilayah melalui koneksi serial.",
+    "regionsTruncated": "Firmware membatasi panjang balasan ini; mungkin ada wilayah lain yang sudah dikonfigurasi. Gunakan koneksi serial untuk melihat daftar lengkap."
   },
   "chatTranslation": {
     "translate": "Terjemahkan pesan",

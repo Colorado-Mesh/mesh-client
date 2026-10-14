@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "{{count}}-Nachrichten löschen",
     "clearMessagesChannelConfirmLabel": "{{channel}} löschen",
     "clearMessagesTitle": "Klare Nachrichten",
-    "clearAllRepeatersConfirm": "Dadurch werden alle gespeicherten MeshCore-Repeater dauerhaft aus der lokalen Datenbank entfernt. Dies kann nicht rückgängig gemacht werden.",
     "clearAllLocalDataTitle": "Alle lokalen Daten löschen",
     "clearAllLocalDataConfirm": "Dadurch werden ALLE lokalen Nachrichten, Knoten und zwischengespeicherten Sitzungsdaten dauerhaft gelöscht. Diese Aktion kann NICHT rückgängig gemacht werden.",
     "clearEverythingConfirmButton": "Alles löschen",
@@ -475,7 +474,8 @@
     "updatesSection": "Updates",
     "autoUpdateDownload": "App-Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt.",
-    "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden."
+    "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden.",
+    "clearAllRepeatersConfirm": "Dadurch werden alle nicht favorisierten MeshCore-Repeater vom verbundenen Funkgerät und aus der lokalen Datenbank entfernt. Repeater erscheinen wieder, sobald sie sich erneut ankündigen. Dies kann nicht rückgängig gemacht werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping fehlgeschlagen",
       "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut.",
       "removeContactFailed": "Lokal entfernt, aber das Radio hat removeContact abgelehnt. Der Kontakt kann nach einer Aktualisierung wieder angezeigt werden.",
-      "bleTimeoutGatt": "Zeitüberschreitung der Bluetooth-Verbindung beim Öffnen von MeshCore über Sidecar GATT. Versuchen Sie es erneut, schalten Sie BLE auf dem Gerät ein oder verwenden Sie Serial/TCP."
+      "bleTimeoutGatt": "Zeitüberschreitung der Bluetooth-Verbindung beim Öffnen von MeshCore über Sidecar GATT. Versuchen Sie es erneut, schalten Sie BLE auf dem Gerät ein oder verwenden Sie Serial/TCP.",
+      "radioContactMissing": "Dieser Knoten befindet sich nicht in der Kontaktliste Ihres Radios, sodass sich das Radio nicht anmelden kann. Warten Sie auf das nächste Advert oder importieren Sie ihn als Kontakt und versuchen Sie es dann erneut.",
+      "radioContactTableFull": "Die Kontaktliste Ihres Radios ist voll, daher konnte dieser Knoten nicht für die Anmeldung hinzugefügt werden. Entfernen Sie nicht verwendete Kontakte und versuchen Sie es erneut."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
     "refreshFailed": "Aktualisierung fehlgeschlagen: {{message}}",
-    "floodAdvertSent": "Flood-Advert gesendet",
-    "advertFailed": "Anzeige fehlgeschlagen: {{message}}",
     "importFailed": "Import fehlgeschlagen: {{message}}",
     "importResultSuccess_one": "{{count}} Kontakt importiert.",
     "importResultSuccess_other": "{{count}} Kontakte importiert.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "Keine Knoten entsprechen Ihrer Suche.",
     "emptyNoNodesYet": "Noch keine Knoten entdeckt. Verbinden Sie sich mit einem Gerät, um das Mesh-Netzwerk zu sehen.",
     "buttonRefresh": "Aktualisieren",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Import Kontakte",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Repeater",
@@ -4893,7 +4892,7 @@
     "columnActions": "Aktionen",
     "nodesTabName": "Knoten",
     "title": "Repeater & Räume",
-    "columnsDataHint": "SNR, RSSI, Betriebszeit und Sendezeit stammen aus der Statusaktion (oder werden automatisch abgerufen, während dieses Bedienfeld geöffnet ist). Hops und Pfadverlauf benötigen Ping. MeshCore füllt diese Spalten nicht allein durch Werbung.",
+    "columnsDataHint": "SNR, RSSI, Betriebszeit und Sendezeit sind ein Schnappschuss der letzten Statusaktion und werden nicht selbst aktualisiert (der Status wird etwa 30 Sekunden nach einem CLI-Neustart automatisch erneut ausgeführt). Hops und Pfadverlauf benötigen Ping. MeshCore füllt diese Spalten nicht allein durch Werbung.",
     "remoteAuthLabel": "Admin-Passwort (optional)",
     "remoteAuthPlaceholder": "Leer lassen, wenn dieser Knoten kein Admin-Passwort hat",
     "remoteAuthCancelDialog": "Repeater-Passwort-Dialog abbrechen",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "abgerufen {{time}}",
     "rememberPasswordSaveFailed": "Repeater-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
     "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}",
     "cliMultiHopHint": "Mehrhop-CLI ist nach erfolgreichem Ping-Trace zuverlässiger. Der erste CLI-Befehl auf einem Mehrhop-Knoten startet Ping automatisch, wenn in dieser Sitzung noch kein Trace existiert. Bei Timeouts Ping manuell ausführen oder die Companion-Uhrensynchronisation in der MeshCore-App prüfen.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "Hardware-CAD einschalten. MeshCore lässt CAD standardmäßig aus, da es das Radio für etwa 4 Sekunden sperren kann.",
     "radioCliCadOff": "Hardware-CAD ausschalten",
     "radioCliBootReasonGet": "Grund für das Starten und Herunterfahren abrufen",
-    "cliQuickRadio": "Radio:"
+    "cliQuickRadio": "Radio:",
+    "cliAutoPingWaitingForCli": "Warten, bis der CLI-Befehl eines anderen Knotens beendet ist, bevor Ping...",
+    "cliAutoPingBusy": "Der CLI-Befehl eines anderen Knotens wird noch ausgeführt. Versuchen Sie es erneut, wenn er beendet ist."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -6981,7 +6983,16 @@
     "scope": "Standard-Flood-Scope",
     "defaultScope": "Regionsname (leer für unscoped)",
     "scopeSummary": "Region für ausgehende Flood-Pakete dieses Knotens",
-    "scopeHint": "Firmware v1.15+: Öffentlichen Regionsnamen wie #us-tn-tri eingeben; leer lassen für Unscoped. Gilt für Flood-Adverts und Raumzustellung über Flood. Direkte Routen und Raumzugriff sind unabhängig. Scopes des Companion-Radios und seiner Kanäle werden separat eingestellt."
+    "scopeHint": "Firmware v1.15+: Öffentlichen Regionsnamen wie #us-tn-tri eingeben; leer lassen für Unscoped. Gilt für Flood-Adverts und Raumzustellung über Flood. Direkte Routen und Raumzugriff sind unabhängig. Scopes des Companion-Radios und seiner Kanäle werden separat eingestellt.",
+    "regionsAndScope": "Regionen und Flood-Bereich",
+    "regionsSummary": "Konfigurierte Regionen, Weiterleitungsrechte und ausgehender Bereich",
+    "configuredRegions": "Konfigurierte Regionen",
+    "homeRegion": "Heimatregion",
+    "floodAllowed": "Flood erlaubt",
+    "floodDenied": "Flood gesperrt",
+    "regionsHint": "Von diesem Repeater gelesen. * steht für Datenverkehr ohne Regionsbegrenzung. Regionsregeln lassen sich in der CLI ändern.",
+    "regionsUnavailable": "Diese Firmware unterstützt das Auslesen der Regionsliste per Funk nicht. Prüfen Sie die Regionen über eine serielle Verbindung.",
+    "regionsTruncated": "Die Firmware hat diese Antwort gekürzt; möglicherweise sind weitere Regionen eingerichtet. Nutzen Sie eine serielle Verbindung für die vollständige Liste."
   },
   "chatTranslation": {
     "translate": "Mitteilung übersetzen",

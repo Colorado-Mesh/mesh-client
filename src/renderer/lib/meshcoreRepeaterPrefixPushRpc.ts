@@ -1,3 +1,5 @@
+import { runMeshcoreCompanionRequest } from './meshcoreCompanionRequestQueue';
+import { MeshcoreRadioRejectedError } from './meshcoreRadioErr';
 import {
   MC_RESP_ERR,
   MC_RESP_SENT,
@@ -12,6 +14,7 @@ import {
   type MeshcoreRepeaterRunSerialized,
   runMeshcoreRepeaterQueuedSend,
 } from './meshcoreRepeaterRpcQueuedSend';
+import { MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS } from './timeConstants';
 
 export interface MeshcoreRepeaterPrefixPushRequestOpts<T> {
   conn: MeshcoreRadioConnection;
@@ -40,12 +43,27 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
 ): Promise<T> {
   const expectedPrefix = requireContactPubKeyPrefix(opts.contactPublicKey);
 
+  return runMeshcoreCompanionRequest(opts.conn, () =>
+    performPrefixPushRequest(opts, expectedPrefix),
+  );
+}
+
+/** Register prefix-matched listeners only after acquiring the companion request slot. */
+function performPrefixPushRequest<T>(
+  opts: MeshcoreRepeaterPrefixPushRequestOpts<T>,
+  expectedPrefix: Uint8Array,
+): Promise<T> {
   return new Promise((resolve, reject) => {
     let settled = false;
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    let sentTimeoutId: ReturnType<typeof setTimeout> | undefined;
     const auxHandlers = new Map<number, (response: unknown) => void>();
 
     const cleanup = (): void => {
+      if (sentTimeoutId !== undefined) {
+        clearTimeout(sentTimeoutId);
+        sentTimeoutId = undefined;
+      }
       if (responseTimeoutId !== undefined) {
         clearTimeout(responseTimeoutId);
         responseTimeoutId = undefined;
@@ -102,14 +120,24 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
     };
 
     const onSent = (response: unknown): void => {
+      if (sentTimeoutId !== undefined) {
+        clearTimeout(sentTimeoutId);
+        sentTimeoutId = undefined;
+      }
       opts.conn.off(MC_RESP_SENT, onSent);
       opts.conn.off(MC_RESP_ERR, onErr);
       const r = response as { estTimeout?: number };
       armResponseTimeout(r.estTimeout ?? 0);
     };
 
-    const onErr = (): void => {
-      fail(new Error(opts.rejectSentMessage));
+    const onErr = (response?: unknown): void => {
+      const errCode = (response as { errCode?: unknown } | undefined)?.errCode;
+      fail(
+        new MeshcoreRadioRejectedError(
+          opts.rejectSentMessage,
+          typeof errCode === 'number' ? errCode : undefined,
+        ),
+      );
     };
 
     opts.conn.on(opts.pushEvent, onPush);
@@ -148,6 +176,10 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
 
     opts.conn.on(MC_RESP_SENT, onSent);
     opts.conn.on(MC_RESP_ERR, onErr);
+    // A missing SENT must release the request slot, even without a supplied send queue.
+    sentTimeoutId = setTimeout(() => {
+      fail(new Error('timeout waiting for sent acknowledgment'));
+    }, MESHCORE_TRACE_SENT_WAIT_TIMEOUT_MS);
 
     void opts.conn.sendToRadioFrame(opts.buildFrame()).catch((err: unknown) => {
       fail(err);

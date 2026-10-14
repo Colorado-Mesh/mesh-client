@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Limpar mensagens {{count}}",
     "clearMessagesChannelConfirmLabel": "Limpar {{channel}}",
     "clearMessagesTitle": "Limpar mensagens",
-    "clearAllRepeatersConfirm": "Isso removerá permanentemente todos os repetidores MeshCore salvos do banco de dados local. Isto não pode ser desfeito.",
     "clearAllLocalDataTitle": "Limpar todos os dados locais",
     "clearAllLocalDataConfirm": "Isso excluirá permanentemente TODAS as mensagens locais, nós e dados de sessão em cache. Esta ação NÃO PODE ser desfeita.",
     "clearEverythingConfirmButton": "Limpar tudo",
@@ -475,7 +474,8 @@
     "updatesSection": "Atualizações",
     "autoUpdateDownload": "Baixar atualizações automaticamente",
     "autoUpdateDownloadDesc": "Faz o download da atualização mais recente em segundo plano após cada verificação. Quando desligado, as atualizações ainda são detectadas, mas só são baixadas quando você pressiona o botão Download — útil quando um gerenciador de pacotes lida com a instalação.",
-    "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática."
+    "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática.",
+    "clearAllRepeatersConfirm": "Isso remove todos os repetidores MeshCore não favoritos do rádio conectado e do banco de dados local. Repetidores reaparecem quando anunciam novamente. Isso não pode ser desfeito."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Falha no ping",
       "floodScopeBusy": "A substituição do escopo Flood não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo.",
       "removeContactFailed": "Removido localmente, mas o rádio rejeitou removeContact. O contato pode reaparecer após uma atualização.",
-      "bleTimeoutGatt": "A conexão Bluetooth expirou ao abrir o MeshCore no sidecar GATT. Tente novamente, faça o ciclo de energia BLE no dispositivo ou use Serial/TCP."
+      "bleTimeoutGatt": "A conexão Bluetooth expirou ao abrir o MeshCore no sidecar GATT. Tente novamente, faça o ciclo de energia BLE no dispositivo ou use Serial/TCP.",
+      "radioContactMissing": "Este nó não está na lista de contatos do seu rádio, portanto, o rádio não pode fazer login nele. Aguarde o próximo anúncio ou importe-o como contato e tente novamente.",
+      "radioContactTableFull": "A lista de contatos do seu rádio está cheia, portanto, este nó não pôde ser adicionado para login. Remova os contatos não utilizados e tente novamente."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",
     "refreshFailed": "Falha na atualização: {{message}}",
-    "floodAdvertSent": "flood advert enviado",
-    "advertFailed": "Falha no anúncio: {{message}}",
     "importFailed": "Falha na importação: {{message}}",
     "importResultSuccess_one": "Contato {{count}} importado.",
     "importResultSuccess_other": "Contatos {{count}} importados.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "Nenhum nó corresponde à sua pesquisa.",
     "emptyNoNodesYet": "Nenhum nó descoberto ainda. Conecte-se a um dispositivo para ver a rede mesh.",
     "buttonRefresh": "Atualizar",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Importar contactos",
     "meshcoreTypeChat": "Bate-papo",
     "meshcoreTypeRepeater": "Repetidor",
@@ -4893,7 +4892,7 @@
     "columnActions": "Ações",
     "nodesTabName": "Nós",
     "title": "Repetidores e salas",
-    "columnsDataHint": "SNR, RSSI, tempo de atividade e tempo de antena vêm da ação Status (ou busca automática enquanto este painel está aberto). O histórico de saltos e caminhos precisa de Ping. MeshCore não preenche essas colunas apenas com anúncios.",
+    "columnsDataHint": "SNR, RSSI, tempo de atividade e tempo de antena são um instantâneo da última ação de Status e não são atualizados por conta própria (o Status é executado novamente automaticamente cerca de 30 segundos após uma reinicialização da CLI). O histórico de saltos e caminhos precisa de Ping. MeshCore não preenche essas colunas apenas com anúncios.",
     "remoteAuthLabel": "Senha de administrador do repetidor (opcional)",
     "remoteAuthPlaceholder": "Deixe em branco se os repetidores não tiverem senha de administrador",
     "remoteAuthCancelDialog": "Caixa de diálogo Cancelar senha do repetidor",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "obtido {{time}}",
     "rememberPasswordSaveFailed": "Não foi possível salvar a senha do repetidor para reinicializações. Funcionará apenas para esta sessão.",
     "telemetryFailedToast": "Falha na telemetria: {{message}}",
     "cliMultiHopHint": "A CLI multi-hop é mais confiável após um rastreamento de Ping bem-sucedido. O primeiro comando CLI em um repetidor multi-hop executa Ping automaticamente quando não há trace nesta sessão. Se os comandos atingirem o tempo limite, execute o Ping primeiro ou verifique a sincronização do relógio complementar no aplicativo MeshCore.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "Ligue o CAD de hardware. O MeshCore deixa o CAD desligado por padrão porque pode bloquear o rádio por cerca de 4 segundos.",
     "radioCliCadOff": "Desativar o CAD de hardware",
     "radioCliBootReasonGet": "Obter motivo de inicialização e desligamento",
-    "cliQuickRadio": "Rádio:"
+    "cliQuickRadio": "Rádio:",
+    "cliAutoPingWaitingForCli": "Aguardando o comando CLI de outro nó terminar antes do Ping...",
+    "cliAutoPingBusy": "O comando CLI de outro nó ainda está em execução; tente novamente quando terminar."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -6981,7 +6983,16 @@
     "scope": "Escopo Flood padrão",
     "defaultScope": "Nome da região (em branco para sem escopo)",
     "scopeSummary": "Região para os pacotes Flood enviados por este nó",
-    "scopeHint": "Firmware v1.15+: insira uma região pública como #us-tn-tri; deixe em branco para não limitar a região. Aplica-se aos anúncios Flood e à entrega de mensagens da sala por Flood. Rotas diretas e permissões de acesso à sala são independentes. Os escopos do rádio Companion e de seus canais são configurados separadamente."
+    "scopeHint": "Firmware v1.15+: insira uma região pública como #us-tn-tri; deixe em branco para não limitar a região. Aplica-se aos anúncios Flood e à entrega de mensagens da sala por Flood. Rotas diretas e permissões de acesso à sala são independentes. Os escopos do rádio Companion e de seus canais são configurados separadamente.",
+    "regionsAndScope": "Regiões e escopo de flood",
+    "regionsSummary": "Regiões configuradas, permissões de encaminhamento e escopo de saída",
+    "configuredRegions": "Regiões configuradas",
+    "homeRegion": "Região de origem",
+    "floodAllowed": "Flood permitido",
+    "floodDenied": "Flood bloqueado",
+    "regionsHint": "Lido deste repetidor. * indica tráfego sem escopo regional. Edite as regras de região na CLI.",
+    "regionsUnavailable": "Este firmware não permite consultar a lista de regiões remotamente. Consulte as regiões por uma conexão serial.",
+    "regionsTruncated": "O firmware limitou esta resposta; pode haver outras regiões configuradas. Use uma conexão serial para ver a lista completa."
   },
   "chatTranslation": {
     "translate": "Traduzir mensagem",

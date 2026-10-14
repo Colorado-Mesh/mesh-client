@@ -25,6 +25,8 @@ Overlays require **git checkouts** in the repo-local `.rsstack/` workspace (not 
 ./scripts/ensure-rsReticulum-patches.sh
 ```
 
+When a `.rsstack` checkout (rsReticulum, rsLXMF, or rsNomad) is not at its reviewed pin, for example after a pin bump lands on `main`, `ensure-rsReticulum-patches.sh` re-pins automatically by running `clone-ratspeak-stack.sh` (network fetch). External `RS_*_DIR` clones and active `RS_*_REF` bisect overrides are left alone.
+
 Apply a single overlay when developing that patch:
 
 ```bash
@@ -49,7 +51,7 @@ Carry [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26)
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `0f8731bb5b13e7f60e2d4bb38022480210009690` (`ratspeak/rsReticulum` `origin/main`; PR #26 diff rebased onto upstream's let-chain `fetch_spec` block) |
+| **Base commit** | `799e946ac997f388395fec4e8c49ea55a03e5bc8` (`ratspeak/rsReticulum` v1.3.0; PR #26 diff rebased onto upstream's let-chain `fetch_spec` block) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/26 |
 
 **Adds (8 files):**
@@ -86,7 +88,7 @@ Wire packet tap API for the Reticulum Stats/Sniffer panel (`wire_packet` WebSock
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`) |
+| **Base commit** | `799e946ac997f388395fec4e8c49ea55a03e5bc8` (`ratspeak/rsReticulum` v1.3.0) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/10 |
 
 **Adds (4 files):**
@@ -209,7 +211,7 @@ Debounce BLE RNode reconnect after mid-SMP disconnect (`BLE pairing in progress`
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `70b7399` (`ratspeak/rsReticulum` `origin/main`) |
+| **Base commit** | `799e946ac997f388395fec4e8c49ea55a03e5bc8` (`ratspeak/rsReticulum` v1.3.0; after prior overlays) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/20 |
 
 **Modifies (1 file):**
@@ -279,10 +281,10 @@ Register `rnstransport.discovery.interface` as a local destination before announ
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9928abed269a83ec5a7ef165ff1142d938cad706` (after prior overlays) |
+| **Base commit** | `799e946ac997f388395fec4e8c49ea55a03e5bc8` (`ratspeak/rsReticulum` v1.3.0; apply script no-ops — upstream `run_discovery_publisher` already registers the discovery destination and gates `Announcer::register` on the online latch) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/19 |
 
-**Modifies (3 files):**
+**Modifies (3 files when the overlay still applies on older pins):**
 
 - `crates/rns-runtime/src/reticulum.rs` — online latch on `LocalDiscoveryInterface`, `take_online_discovery_interfaces`, `discovery_local_destination_registration`, deferred announcer
 - `crates/rns-transport/src/actor/mod.rs` — outbound discovery announce egress regression tests
@@ -296,35 +298,11 @@ From mesh-client repo root (`.rsstack/rsReticulum` required):
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ```
 
-Apply **after** the other rsReticulum overlays (packet-tap also touches `reticulum.rs`):
-
-```bash
-./scripts/apply-rsReticulum-packet-tap.sh
-./scripts/apply-rsReticulum-auto-beacon-utun.sh
-./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
-./scripts/apply-rsReticulum-discovery-announce-egress.sh
-```
-
-### Regenerate
-
-Regenerate against the reviewed `RS_RETICULUM_PIN` (record the full SHA in the PR):
-
-```bash
-# After applying prior overlays on the reviewed pin, implement the discovery fix, then:
-cd .rsstack/rsReticulum
-source ../../reticulum-sidecar/ratspeak-stack-pins.env
-git fetch origin "${RS_RETICULUM_PIN}"
-git reset --hard "${RS_RETICULUM_PIN}" && git clean -fd
-git diff -- \
-  crates/rns-runtime/src/reticulum.rs \
-  crates/rns-transport/src/actor/mod.rs \
-  crates/rns-transport/src/discovery/announcer.rs \
-  > ../../reticulum-sidecar/patches/rsReticulum-discovery-announce-egress.patch
-```
+On the reviewed v1.3.0 pin the apply script **no-ops** when `run_discovery_publisher` + discovery destination registration + `online: Option<Arc<AtomicBool>>` are already present. Keep the patch until [PR #19](https://github.com/ratspeak/rsReticulum/pull/19) closes and the entry is dropped from `RATSPEAK_PATCH_ENTRIES`.
 
 ### Sunset
 
-After [ratspeak/rsReticulum#19](https://github.com/ratspeak/rsReticulum/pull/19) merges, advance `RS_RETICULUM_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
+After [ratspeak/rsReticulum#19](https://github.com/ratspeak/rsReticulum/pull/19) merges (or is closed as superseded by the v1.3.0 publisher), drop this patch, its apply step, and the `RATSPEAK_PATCH_ENTRIES` row after full-feature sidecar checks pass.
 
 ## rsLXMF-file-attachments-list.patch
 
@@ -572,28 +550,9 @@ After ratspeak/rsReticulum exposes equivalent live TX queue depth on interface s
 
 Sunset when [ratspeak/rsReticulum#22](https://github.com/ratspeak/rsReticulum/issues/22) landed `921eac4` (*transport: bind established Links to exact interfaces*). Established Link TX uses `SendLinkEndpoint` on the establishment interface; generic unattached Link packets are dropped (`dropping unattached locally-originated Link packet`) instead of broadcasting onto every OUT iface. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after sunset confirmation.
 
-## rsReticulum-announce-rebroadcast-exclude-rf.patch
+## Removed: rsReticulum-announce-rebroadcast-exclude-rf.patch
 
-With `enable_transport`, rsReticulum enqueues rebroadcasted mesh announces onto every eligible OUT iface, including flow-controlled BLE RNodes. Host TX mpsc fills while FC drains slowly (overnight / busy TCP mesh). Skip RF sinks (`iface_is_rf_sink`: RNode name or bitrate under 100 kbps) in `broadcast_announce_on_interfaces` only. Local discovery announces still use `broadcast_local_announce_on_interfaces` (RNode included).
-
-| Field | Value |
-| ----- | ----- |
-| **Base commit** | `47dbbf1febc0a9d3259f179a0512d9b56bb2320d` (`ratspeak/rsReticulum` `origin/main`) |
-| **Upstream issue** | https://github.com/ratspeak/rsReticulum/issues/24 |
-
-**Touches:** `crates/rns-transport/src/actor/mod.rs`
-
-### Apply locally
-
-```bash
-./scripts/apply-rsReticulum-announce-rebroadcast-exclude-rf.sh
-```
-
-Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
-
-### Sunset
-
-After ratspeak/rsReticulum rate-limits or excludes RF for announce rebroadcast equivalently ([issue #24](https://github.com/ratspeak/rsReticulum/issues/24)), advance `RS_RETICULUM_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
+Sunset when [ratspeak/rsReticulum#24](https://github.com/ratspeak/rsReticulum/issues/24) landed in rsReticulum [v1.3.0](https://github.com/ratspeak/rsReticulum/releases/tag/v1.3.0) (`799e946` — *transport: repair discovery and bound background radio admission*). Upstream keeps learned mesh announces out of the ordinary RNode control/data backlog with announce admission, bitrate-aware `ANNOUNCE_CAP` spacing, and generation-specific ownership, so the local `iface_is_rf_sink` skip in `broadcast_announce_on_interfaces` is no longer needed. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after pin-based sunset confirmation.
 
 ## rsLXMF-propagation-client-abort-transfer.patch
 
@@ -624,7 +583,7 @@ Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync 
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_LXMF_PIN` @ `8bad5e2` after other rsLXMF overlays (incl. abort-transfer) |
+| **Base commit** | reviewed `RS_LXMF_PIN` @ `74dc13f` (v1.3.0) after other rsLXMF overlays (incl. abort-transfer) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (`drain_events` / `handle_link_proof` establish diagnostics)
@@ -641,28 +600,9 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 After upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, advance `RS_LXMF_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
 
-## rsLXMF-propagation-client-request-resource.patch
+## Removed: rsLXMF-propagation-client-request-resource.patch
 
-`PropagationClient::send_get_path_request` always sent `/get` as one Link packet. Once the haves list passes about 13 transient IDs (32 bytes each), the packed request exceeds the Link MDU and rsReticulum rejects the send as `InvalidPacket`. Client Sync then fails every cycle at `PurgeRequested` and the node never purges delivered mail. This overlay matches Python `Link.request`: when the packed body is larger than `link.mdu`, it is sent as a single-segment request Resource (`flags.is_request`, `request_id` = truncated hash of the packed request). The client serves the node's `RESOURCE_REQ`, accepts `RESOURCE_PRF`, and then waits for the normal response.
-
-| Field | Value |
-| ----- | ----- |
-| **Base commit** | reviewed `RS_LXMF_PIN` @ `8bad5e2` after other rsLXMF overlays (incl. LRPROOF diagnostics) |
-| **Upstream issue** | [ratspeak/rsLXMF#8](https://github.com/ratspeak/rsLXMF/issues/8) |
-
-**Touches:** rsLXMF `PropagationClient` (`send_get_path_request`, outbound request Resource driver in `tick`, `ResourceReq` / `ResourcePrf` in `drain_events`)
-
-### Apply locally
-
-```bash
-./scripts/apply-rsLXMF-propagation-client-request-resource.sh
-```
-
-Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
-
-### Sunset
-
-After upstream rsLXMF sends oversized PropagationClient `/get` requests as a Resource, advance `RS_LXMF_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
+Sunset when [ratspeak/rsLXMF#8](https://github.com/ratspeak/rsLXMF/issues/8) landed in rsLXMF [v1.3.0](https://github.com/ratspeak/rsLXMF/releases/tag/v1.3.0) (`74dc13f` via `5fe094c` — *propagation: transfer oversized requests as bounded Resources*). Upstream `PropagationClient::send_get_path_request` sends packed `/get` bodies larger than the Link MDU as request Resources (`flags.is_request`), so the local overlay is fully superseded. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after pin-based sunset confirmation.
 
 ## rsReticulum-ble-rnode-flow-control-ready-timeout.patch
 
@@ -670,7 +610,7 @@ When BLE RNode `flow_control` is on, wait up to 2s for `CMD_READY`, then release
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_RETICULUM_PIN` @ `5b6b5eb` after other rsReticulum overlays |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` @ `799e946` (v1.3.0) after other rsReticulum overlays (rebased onto background-permitted OR `claim_ble_packet_permit`) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-interface/src/ble_rnode.rs` (main + native bridge TX loops)
@@ -693,7 +633,7 @@ Cache advertisement / resolve-time host↔RNode RSSI so mesh-client Interface **
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_RETICULUM_PIN` @ `0f8731b` after other rsReticulum overlays (incl. flow-control READY timeout) |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` @ `799e946` (v1.3.0) after other rsReticulum overlays (incl. flow-control READY timeout) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-interface/src/ble_rnode.rs` — `remember_host_rssi` / `cached_host_rssi`, fill on `scan_ble_devices` + `resolve_ble_target`
@@ -763,7 +703,7 @@ Moves RNCP receive policy ahead of Resource acceptance. The listener requires an
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | reviewed `RS_RETICULUM_PIN` `0f8731bb5b13e7f60e2d4bb38022480210009690` after the other rsReticulum overlays |
+| **Base commit** | reviewed `RS_RETICULUM_PIN` `799e946ac997f388395fec4e8c49ea55a03e5bc8` (v1.3.0) after the other rsReticulum overlays |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-runtime/src/rncp.rs`, `crates/rns-runtime/src/link_manager.rs`, `crates/rns-tools/src/commands/rncp.rs`, the generated API snapshots for earlier stacked overlays, and `api/stability.json`

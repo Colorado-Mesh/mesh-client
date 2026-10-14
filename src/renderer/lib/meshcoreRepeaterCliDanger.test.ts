@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isMeshcoreRepeaterCliDangerCommand,
+  isMeshcoreRepeaterRebootCommand,
   MESHCORE_REPEATER_CLI_DANGER_PATTERN,
 } from './meshcoreRepeaterCliDanger';
 
@@ -45,5 +46,14 @@ describe('meshcoreRepeaterCliDanger', () => {
     expect(isMeshcoreRepeaterCliDangerCommand('set guest.password reboot')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('set name test\nreboot')).toBe(true);
     expect(isMeshcoreRepeaterCliDangerCommand('factory')).toBe(true);
+  });
+
+  it('detects self-restarting reboot commands only', () => {
+    expect(isMeshcoreRepeaterRebootCommand('reboot')).toBe(true);
+    expect(isMeshcoreRepeaterRebootCommand(' Reboot ')).toBe(true);
+    expect(isMeshcoreRepeaterRebootCommand('clkreboot')).toBe(true);
+    expect(isMeshcoreRepeaterRebootCommand('rebootx')).toBe(false);
+    expect(isMeshcoreRepeaterRebootCommand('start ota')).toBe(false);
+    expect(isMeshcoreRepeaterRebootCommand('region default reboot')).toBe(false);
   });
 });

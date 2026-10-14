@@ -506,6 +506,7 @@ export function createElectronAPIMock(): ElectronAPI {
       getStyleSettings: vi.fn().mockResolvedValue({ filters: [], sendUnmatched: true }),
       setStyleSettings: vi.fn().mockImplementation((s: unknown) => Promise.resolve(s)),
       pushChatMessage: vi.fn().mockResolvedValue(undefined),
+      setChatSendRooms: vi.fn().mockResolvedValue(undefined),
       onInboundChat: vi.fn().mockReturnValue(() => {}),
     },
     bleCoexistence: {

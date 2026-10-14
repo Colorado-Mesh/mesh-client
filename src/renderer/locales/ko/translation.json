@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "{{count}} 메시지 지우기",
     "clearMessagesChannelConfirmLabel": "{{channel}} 지우기",
     "clearMessagesTitle": "메시지 지우기",
-    "clearAllRepeatersConfirm": "이렇게 하면 저장된 모든 MeshCore 리피터가 로컬 데이터베이스에서 영구적으로 제거됩니다. 이 작업은 취소할 수 없습니다.",
     "clearAllLocalDataTitle": "모든 로컬 데이터 지우기",
     "clearAllLocalDataConfirm": "이렇게 하면 모든 로컬 메시지, 노드 및 캐시된 세션 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
     "clearEverythingConfirmButton": "모두 지우기",
@@ -475,7 +474,8 @@
     "updatesSection": "업데이트",
     "autoUpdateDownload": "자동으로 업데이트 다운로드",
     "autoUpdateDownloadDesc": "각 확인 후 백그라운드에서 최신 업데이트를 다운로드합니다. 꺼져 있으면 업데이트가 여전히 감지되지만 다운로드 버튼을 누를 때만 다운로드됩니다. 패키지 관리자가 설치를 처리할 때 유용합니다.",
-    "autoUpdateDownloadSaveFailed": "자동 업데이트 다운로드 설정을 저장할 수 없습니다."
+    "autoUpdateDownloadSaveFailed": "자동 업데이트 다운로드 설정을 저장할 수 없습니다.",
+    "clearAllRepeatersConfirm": "연결된 무선기와 로컬 데이터베이스에서 즐겨찾기하지 않은 모든 MeshCore 리피터를 제거합니다. 리피터는 다시 알림(advert)을 보내면 다시 나타납니다. 이 작업은 취소할 수 없습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -2627,7 +2627,9 @@
       "pingFailed": "핑 실패",
       "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요.",
       "removeContactFailed": "로컬로 제거되었지만 라디오가 removeContact를 거부했습니다. 새로 고침 후 연락처가 다시 나타날 수 있습니다.",
-      "bleTimeoutGatt": "사이드카 GATT를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요."
+      "bleTimeoutGatt": "사이드카 GATT를 통해 MeshCore를 여는 동안 Bluetooth 연결 시간이 초과되었습니다. 다시 시도하고 장치에서 BLE 전원을 껐다 켜거나 직렬/TCP를 사용하세요.",
+      "radioContactMissing": "이 노드는 라디오의 연락처 목록에 없으므로 라디오에 로그인할 수 없습니다. 다음 advert를 기다리거나 연락처로 가져온 다음 다시 시도하세요.",
+      "radioContactTableFull": "라디오의 연락처 목록이 가득 찼으므로 이 노드를 로그인에 추가할 수 없습니다. 사용하지 않는 연락처를 삭제한 다음 다시 시도하세요."
     },
     "mqttHints": {
       "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",
     "refreshFailed": "새로고침 실패: {{message}}",
-    "floodAdvertSent": "플러드 advert가 전송되었습니다",
-    "advertFailed": "advert 실패: {{message}}",
     "importFailed": "가져오기 실패: {{message}}",
     "importResultSuccess_one": "{{count}} 연락처를 가져왔습니다.",
     "importResultSuccess_other": "{{count}} 연락처를 가져왔습니다.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "검색어와 일치하는 노드가 없습니다.",
     "emptyNoNodesYet": "아직 발견된 노드가 없습니다. 메시 네트워크를 보려면 기기에 연결하세요.",
     "buttonRefresh": "새로 고치다",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "연락처 가져오기",
     "meshcoreTypeChat": "채팅",
     "meshcoreTypeRepeater": "연발총",
@@ -4893,7 +4892,7 @@
     "columnActions": "행위",
     "nodesTabName": "노드",
     "title": "중계기와 룸",
-    "columnsDataHint": "SNR, RSSI, 가동 시간 및 방송 시간은 상태 작업(또는 이 패널이 열려 있는 동안 자동 가져오기)에서 가져옵니다. 홉 및 경로 기록에는 Ping이 필요합니다. MeshCore는 광고만으로는 해당 열을 채우지 않습니다.",
+    "columnsDataHint": "SNR, RSSI, 가동 시간 및 방송 시간은 마지막 상태 작업의 스냅샷이며 자체적으로 업데이트되지 않습니다 (상태는 CLI 재부팅 후 약 30초 후에 자동으로 다시 실행됩니다). 홉 및 경로 기록에는 Ping이 필요합니다. MeshCore는 광고만으로는 해당 열을 채우지 않습니다.",
     "remoteAuthLabel": "리피터 관리자 비밀번호(선택사항)",
     "remoteAuthPlaceholder": "리피터에 관리자 비밀번호가 없으면 비워 두세요.",
     "remoteAuthCancelDialog": "리피터 비밀번호 취소 대화상자",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "{{time}} 가져옴",
     "rememberPasswordSaveFailed": "재시작을 위해 리피터 암호를 저장할 수 없습니다. 이 세션에서만 작동합니다.",
     "telemetryFailedToast": "원격 측정 실패: {{message}}",
     "cliMultiHopHint": "멀티 홉 CLI는 Ping 추적이 성공한 후에 더 안정적입니다. 이 세션에 trace가 없으면 멀티 홉 리피터에서 첫 CLI 명령이 Ping을 자동으로 실행합니다. 명령이 시간 초과되면 먼저 Ping을 실행하거나 MeshCore 앱에서 컴패니언 시계 동기화를 확인하십시오.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "하드웨어 CAD를 켭니다. MeshCore는 약 4초 동안 라디오를 잠글 수 있기 때문에 기본적으로 CAD를 사용하지 않습니다.",
     "radioCliCadOff": "하드웨어 CAD 끄기",
     "radioCliBootReasonGet": "부팅 및 종료 이유 가져오기",
-    "cliQuickRadio": "라디오 :"
+    "cliQuickRadio": "라디오 :",
+    "cliAutoPingWaitingForCli": "핑 전에 다른 노드의 CLI 명령이 완료되기를 기다리는 중...",
+    "cliAutoPingBusy": "다른 노드의 CLI 명령이 여전히 실행 중입니다. 완료되면 다시 시도하십시오."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -6981,7 +6983,16 @@
     "scope": "기본 플러드 범위",
     "defaultScope": "지역 이름 (범위가 지정되지 않은 경우 비어 있음)",
     "scopeSummary": "이 노드가 보내는 Flood 패킷의 지역",
-    "scopeHint": "펌웨어 v1.15 이상: #us-tn-tri 같은 공개 지역 이름을 입력하세요. 비워 두면 지역 제한이 없습니다. Flood 광고와 Flood 경로를 통한 룸 메시지 전달에 적용됩니다. 직접 경로와 룸 접근 권한은 별개입니다. 컴패니언 무전기와 각 채널의 범위는 따로 설정합니다."
+    "scopeHint": "펌웨어 v1.15 이상: #us-tn-tri 같은 공개 지역 이름을 입력하세요. 비워 두면 지역 제한이 없습니다. Flood 광고와 Flood 경로를 통한 룸 메시지 전달에 적용됩니다. 직접 경로와 룸 접근 권한은 별개입니다. 컴패니언 무전기와 각 채널의 범위는 따로 설정합니다.",
+    "regionsAndScope": "리전 및 Flood 범위",
+    "regionsSummary": "설정된 리전, 전달 권한 및 송신 범위",
+    "configuredRegions": "구성된 영역",
+    "homeRegion": "홈 리전",
+    "floodAllowed": "Flood 허용",
+    "floodDenied": "Flood 차단",
+    "regionsHint": "이 리피터에서 읽은 설정입니다. *는 리전 제한이 없는 트래픽을 의미합니다. 리전 규칙은 CLI에서 편집하세요.",
+    "regionsUnavailable": "이 펌웨어는 리전 목록의 원격 읽기를 지원하지 않습니다. 직렬 연결로 리전을 확인하세요.",
+    "regionsTruncated": "펌웨어의 응답 길이 제한으로 일부 설정된 리전이 표시되지 않을 수 있습니다. 전체 목록은 직렬 연결로 확인하세요."
   },
   "chatTranslation": {
     "translate": "메시지 번역하기",

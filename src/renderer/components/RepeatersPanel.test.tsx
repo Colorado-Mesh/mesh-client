@@ -7,6 +7,12 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshCoreRepeaterStatus } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreStoredUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import { resolveMeshcoreAdminHopsAway } from '../lib/meshcoreRepeaterAdminRouting';
+import {
+  beginMeshcoreCliReplyHold,
+  endMeshcoreCliReplyHold,
+} from '../lib/meshcoreRepeaterRpcInFlight';
+import { MESHCORE_CLI_PREEMPT_TRACE_REASON } from '../lib/meshcoreRepeaterTracePath';
 import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import RepeatersPanel from './RepeatersPanel';
@@ -720,6 +726,78 @@ describe('RepeatersPanel', () => {
     );
   });
 
+  it.each(['Repeater', 'Room'])(
+    'skips CLI auto-ping for a direct %s with stale displayed hops',
+    async (hwModel) => {
+      const node = { ...repeater, hw_model: hwModel, hops_away: 2 };
+      const onPing = vi.fn().mockResolvedValue(false);
+      const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+      render(
+        <RepeatersPanel
+          {...makeBaseProps()}
+          nodes={new Map([[node.node_id, node]])}
+          resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array())}
+          onPing={onPing}
+          onSendCliCommand={onSendCliCommand}
+        />,
+      );
+      await chooseRowAction(userEvent, 'CLI interface');
+      expect(screen.queryByText(/^Multi-hop CLI is more reliable/)).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'name' }));
+      await waitFor(() => {
+        expect(onSendCliCommand).toHaveBeenCalledWith(node.node_id, 'name', undefined);
+      });
+      expect(onPing).not.toHaveBeenCalled();
+    },
+  );
+
+  it('primes a known multi-hop companion route even when displayed hops are zero', async () => {
+    const node = { ...repeater, hops_away: 0 };
+    const onPing = vi.fn().mockResolvedValue(true);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[node.node_id, node]])}
+        resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array([0x11, 0x22]))}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+    await waitFor(() => {
+      expect(onSendCliCommand).toHaveBeenCalled();
+    });
+    expect(onPing.mock.invocationCallOrder[0]).toBeLessThan(
+      onSendCliCommand.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('loads direct room configuration with stale multi-hop UI hops without requiring Ping', async () => {
+    const node = { ...repeater, hw_model: 'Room', hops_away: 3 };
+    const onPing = vi.fn().mockResolvedValue(false);
+    const onSendCliCommand = vi.fn((_nodeId: number, command: string) =>
+      Promise.resolve(command === 'get name' ? '> Test Room' : '> 0'),
+    );
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[node.node_id, node]])}
+        resolveCliHopsAway={() => resolveMeshcoreAdminHopsAway(node, new Uint8Array())}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+    await chooseRowAction(userEvent, 'Configure');
+    await userEvent.click(screen.getByText('Identity and location'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toHaveValue('Test Room');
+      expect(onSendCliCommand).toHaveBeenCalledTimes(4);
+    });
+    expect(onPing).not.toHaveBeenCalled();
+  });
+
   it('skips auto-ping before CLI when a trace exists this session', async () => {
     const multiHop = { ...repeater, hops_away: 2 };
     const onPing = vi.fn().mockResolvedValue(undefined);
@@ -783,6 +861,74 @@ describe('RepeatersPanel', () => {
         'error',
       );
     });
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
+  it('waits for another CLI reply hold to clear before auto-pinging', async () => {
+    const multiHop = { ...repeater, hops_away: 1 };
+    const onPing = vi.fn().mockResolvedValue(true);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    beginMeshcoreCliReplyHold();
+    try {
+      render(
+        <RepeatersPanel
+          {...makeBaseProps()}
+          nodes={new Map([[multiHop.node_id, multiHop]])}
+          onPing={onPing}
+          onSendCliCommand={onSendCliCommand}
+        />,
+      );
+
+      await chooseRowAction(userEvent, 'CLI interface');
+      await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+      await waitFor(() => {
+        expect(mockAddToast).toHaveBeenCalledWith(
+          "Waiting for another node's CLI command to finish before Ping…",
+          'info',
+        );
+      });
+      expect(onPing).not.toHaveBeenCalled();
+    } finally {
+      endMeshcoreCliReplyHold();
+    }
+
+    await waitFor(() => {
+      expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
+    });
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
+      'error',
+    );
+  });
+
+  it('reports a busy CLI instead of asking for manual Ping when the trace is CLI-preempted', async () => {
+    const multiHop = { ...repeater, hops_away: 1 };
+    const onPing = vi.fn().mockRejectedValue(new Error(MESHCORE_CLI_PREEMPT_TRACE_REASON));
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        "Another node's CLI command is still running; try again when it finishes.",
+        'error',
+      );
+    });
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Ping failed; run Ping manually before retrying CLI on multi-hop nodes.',
+      'error',
+    );
     expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 
@@ -933,6 +1079,45 @@ describe('RepeatersPanel', () => {
       />,
     );
     expect(screen.getByText('0.0%')).toBeInTheDocument();
+  });
+
+  it('shows how old the uptime snapshot is when the Status fetch time is known', () => {
+    const status: MeshCoreRepeaterStatus = {
+      battMilliVolts: 0,
+      noiseFloor: 0,
+      lastRssi: 0,
+      lastSnr: 0,
+      nPacketsRecv: 0,
+      nPacketsSent: 0,
+      totalAirTimeSecs: 0,
+      totalUpTimeSecs: 3 * 3600,
+      nSentFlood: 0,
+      nSentDirect: 0,
+      nRecvFlood: 0,
+      nRecvDirect: 0,
+      errEvents: 0,
+      nDirectDups: 0,
+      nFloodDups: 0,
+      currTxQueueLen: 0,
+    };
+    const { rerender } = render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={new Map([[repeater.node_id, status]])}
+      />,
+    );
+    expect(screen.getByText('3h 0m')).toBeInTheDocument();
+    expect(screen.queryByText(/^fetched /)).not.toBeInTheDocument();
+
+    rerender(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        meshcoreNodeStatus={
+          new Map([[repeater.node_id, { ...status, fetchedAt: Date.now() - 12 * 60_000 }]])
+        }
+      />,
+    );
+    expect(screen.getByText('fetched 12m ago')).toBeInTheDocument();
   });
 
   it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {

@@ -42,9 +42,14 @@ pub struct RmapDiscoveredWireRow {
 #[cfg(feature = "rns-stack")]
 pub fn wire_row_from_discovered(row: &DiscoveredInterface) -> RmapDiscoveredWireRow {
     let info = &row.info;
-    let lat = info.latitude;
-    let lon = info.longitude;
-    let has_coordinates = is_valid_map_coordinate(lat, lon);
+    // rsReticulum 1.3+: unknown coords are None (including when height alone is known).
+    // Wire keeps f64 zeros for absent values; `has_coordinates` is the map-marker gate.
+    let lat = info.latitude.unwrap_or(0.0);
+    let lon = info.longitude.unwrap_or(0.0);
+    let has_coordinates = info
+        .latitude
+        .zip(info.longitude)
+        .is_some_and(|(lat, lon)| is_valid_map_coordinate(lat, lon));
     RmapDiscoveredWireRow {
         discovery_hash: row.filename(),
         transport_id: hex::encode(info.transport_id),
@@ -53,7 +58,7 @@ pub fn wire_row_from_discovered(row: &DiscoveredInterface) -> RmapDiscoveredWire
         interface_type: info.interface_type.clone(),
         latitude: lat,
         longitude: lon,
-        height: info.height,
+        height: info.height.unwrap_or(0.0),
         transport_enabled: info.transport_enabled,
         reachable_on: info.reachable_on.clone(),
         port: info.port,
@@ -130,9 +135,9 @@ mod tests {
                 transport_id: [0xAB; 16],
                 interface_type: "RNodeInterface".into(),
                 transport_enabled: true,
-                latitude: 48.8566,
-                longitude: 2.3522,
-                height: 35.0,
+                latitude: Some(48.8566),
+                longitude: Some(2.3522),
+                height: Some(35.0),
                 frequency: Some(869_525_000),
                 bandwidth: Some(125_000),
                 spreading_factor: Some(8),
@@ -203,9 +208,9 @@ mod tests {
                 transport_id: [0x01; 16],
                 interface_type: "I2PInterface".into(),
                 transport_enabled: false,
-                latitude: 0.0,
-                longitude: 0.0,
-                height: 0.0,
+                latitude: None,
+                longitude: None,
+                height: None,
                 ..Default::default()
             },
             network_id: [0x02; 16],
@@ -216,6 +221,39 @@ mod tests {
             last_heard: 1,
             heard_count: 1,
             status: Some(DiscoveryStatus::Unknown),
+        };
+        let wire = wire_row_from_discovered(&row);
+        assert!(!wire.has_coordinates);
+        assert_eq!(wire.latitude.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(wire.longitude.to_bits(), 0.0_f64.to_bits());
+        assert_eq!(wire.height.to_bits(), 0.0_f64.to_bits());
+    }
+
+    #[cfg(feature = "rns-stack")]
+    #[test]
+    fn wire_row_treats_known_zero_coords_as_null_island() {
+        use rns_transport::discovery::app_data::DiscoveryInfo;
+
+        // Upstream 1.3+: known zero is Some(0.0), not unknown.
+        let row = DiscoveredInterface {
+            info: DiscoveryInfo {
+                name: "Null Island".into(),
+                transport_id: [0x03; 16],
+                interface_type: "TCPClientInterface".into(),
+                transport_enabled: true,
+                latitude: Some(0.0),
+                longitude: Some(0.0),
+                height: Some(0.0),
+                ..Default::default()
+            },
+            network_id: [0x04; 16],
+            hops: 0,
+            stamp_value: 14,
+            stamp: vec![],
+            discovered: 1,
+            last_heard: 1,
+            heard_count: 1,
+            status: Some(DiscoveryStatus::Available),
         };
         let wire = wire_row_from_discovered(&row);
         assert!(!wire.has_coordinates);

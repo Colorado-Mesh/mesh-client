@@ -1,3 +1,4 @@
+import { MeshcoreRadioRejectedError } from './meshcoreRadioErr';
 import {
   MC_RESP_ERR,
   MC_RESP_SENT,
@@ -52,9 +53,15 @@ export function waitForMeshcoreRadioSentAck(
       opts?.onSentAck?.(result);
       resolve(result);
     };
-    const onErr = (): void => {
+    const onErr = (response?: unknown): void => {
       cleanup();
-      reject(new Error(rejectErrMsg));
+      const errCode = (response as { errCode?: unknown } | undefined)?.errCode;
+      reject(
+        new MeshcoreRadioRejectedError(
+          rejectErrMsg,
+          typeof errCode === 'number' ? errCode : undefined,
+        ),
+      );
     };
     sentWaitTimer = setTimeout(() => {
       cleanup();

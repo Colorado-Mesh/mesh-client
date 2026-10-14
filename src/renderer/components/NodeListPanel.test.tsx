@@ -775,79 +775,23 @@ describe('NodeListPanel import contacts', () => {
   });
 });
 
-describe('NodeListPanel flood advert (MeshCore)', () => {
-  beforeEach(() => {
-    addToastMock.mockClear();
-  });
-
-  it('shows Send flood advert control when meshcore and onSendAdvert provided', async () => {
-    const user = userEvent.setup();
-    const onSendAdvert = vi.fn().mockResolvedValue(undefined);
-    render(
-      <NodeListPanel
-        nodes={new Map()}
-        myNodeNum={0}
-        onNodeClick={vi.fn()}
-        locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshcore"
-        onSendAdvert={onSendAdvert}
-      />,
-    );
-    const btn = screen.getByRole('button', { name: 'Send flood advert' });
-    expect(btn).toBeEnabled();
-    await user.click(btn);
-    expect(onSendAdvert).toHaveBeenCalledTimes(1);
-    expect(addToastMock).toHaveBeenCalledWith('Flood advert sent', 'success');
-  });
-
-  it('does not show flood advert in meshtastic mode even if onSendAdvert provided', () => {
-    render(
-      <NodeListPanel
-        nodes={new Map()}
-        myNodeNum={0}
-        onNodeClick={vi.fn()}
-        locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshtastic"
-        onSendAdvert={vi.fn()}
-      />,
-    );
-    expect(screen.queryByRole('button', { name: 'Send flood advert' })).not.toBeInTheDocument();
-  });
-
-  it('does not show flood advert when onSendAdvert omitted in meshcore mode', () => {
-    render(
-      <NodeListPanel
-        nodes={new Map()}
-        myNodeNum={0}
-        onNodeClick={vi.fn()}
-        locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshcore"
-      />,
-    );
-    expect(screen.queryByRole('button', { name: 'Send flood advert' })).not.toBeInTheDocument();
-  });
-
-  it('disables flood advert when meshcoreRadioOperational is false', () => {
-    render(
-      <NodeListPanel
-        nodes={new Map()}
-        myNodeNum={0}
-        onNodeClick={vi.fn()}
-        locationFilter={defaultFilter}
-        onToggleFavorite={vi.fn()}
-        mode="meshcore"
-        onSendAdvert={vi.fn()}
-        meshcoreRadioOperational={false}
-      />,
-    );
-    const advert = screen.getByRole('button', { name: 'Send flood advert' });
-    expect(advert).toBeDisabled();
-    // The tooltip says why it cannot be used.
-    expect(advert).toHaveAttribute('title', 'Available once a MeshCore radio is connected');
-  });
+describe('NodeListPanel toolbar', () => {
+  it.each(['meshcore', 'meshtastic'] as const)(
+    'does not duplicate the header advert action in %s',
+    (mode) => {
+      render(
+        <NodeListPanel
+          nodes={new Map()}
+          myNodeNum={0}
+          onNodeClick={vi.fn()}
+          locationFilter={defaultFilter}
+          onToggleFavorite={vi.fn()}
+          mode={mode}
+        />,
+      );
+      expect(screen.queryByRole('button', { name: /advert/i })).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe('NodeListPanel search', () => {

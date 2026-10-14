@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Effacer les messages {{count}}",
     "clearMessagesChannelConfirmLabel": "Effacer {{channel}}",
     "clearMessagesTitle": "Messages clairs",
-    "clearAllRepeatersConfirm": "Cela supprimera définitivement tous les répéteurs MeshCore enregistrés de la base de données locale. Cela ne peut pas être annulé.",
     "clearAllLocalDataTitle": "Effacer toutes les données locales",
     "clearAllLocalDataConfirm": "Cela supprimera définitivement TOUS les messages locaux, nœuds et données de session mises en cache. Cette action NE PEUT PAS être annulée.",
     "clearEverythingConfirmButton": "Tout effacer",
@@ -475,7 +474,8 @@
     "updatesSection": "Mises à jour",
     "autoUpdateDownload": "Télécharger automatiquement les mises à jour",
     "autoUpdateDownloadDesc": "Télécharge la dernière mise à jour en arrière-plan après chaque vérification. Lorsqu'elle est désactivée, les mises à jour sont toujours détectées, mais seulement téléchargées lorsque vous appuyez sur le bouton Télécharger — utile lorsqu'un gestionnaire de paquets gère l'installation.",
-    "autoUpdateDownloadSaveFailed": "Impossible d'enregistrer le paramètre de téléchargement de mise à jour automatique."
+    "autoUpdateDownloadSaveFailed": "Impossible d'enregistrer le paramètre de téléchargement de mise à jour automatique.",
+    "clearAllRepeatersConfirm": "Cela supprime tous les répéteurs MeshCore non favoris de la radio connectée et de la base de données locale. Les répéteurs réapparaissent lorsqu’ils s’annoncent à nouveau. Cette action est irréversible."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Échec du ping",
       "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif.",
       "removeContactFailed": "Supprimé localement, mais la radio a rejeté removeContact. Le contact peut réapparaître après un rafraîchissement.",
-      "bleTimeoutGatt": "La connexion Bluetooth a expiré lors de l'ouverture de MeshCore sur le side-car GATT. Réessayez, mettez en marche le cycle ble sur l'appareil ou utilisez Serial/TCP."
+      "bleTimeoutGatt": "La connexion Bluetooth a expiré lors de l'ouverture de MeshCore sur le side-car GATT. Réessayez, mettez en marche le cycle ble sur l'appareil ou utilisez Serial/TCP.",
+      "radioContactMissing": "Ce nœud ne figure pas dans la liste de contacts de votre radio, de sorte que la radio ne peut pas s'y connecter. Attendez sa prochaine annonce ou importez-la en tant que contact, puis réessayez.",
+      "radioContactTableFull": "La liste de contacts de votre radio est pleine, ce nœud n'a donc pas pu être ajouté pour la connexion. Supprimez les contacts inutilisés, puis réessayez."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contacts actualisés.",
     "refreshFailed": "Échec de l'actualisation : {{message}}",
-    "floodAdvertSent": "flood advert envoyée",
-    "advertFailed": "Échec de l'annonce : {{message}}",
     "importFailed": "Échec de l'importation : {{message}}",
     "importResultSuccess_one": "Contact {{count}} importé.",
     "importResultSuccess_other": "Contacts {{count}} importés.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "Aucun nœud ne correspond à votre recherche.",
     "emptyNoNodesYet": "Aucun nœud n'a encore été découvert. Connectez-vous à un appareil pour voir le réseau maillé.",
     "buttonRefresh": "Renouvellement",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Contacts",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Répéteur",
@@ -4893,7 +4892,7 @@
     "columnActions": "Interventions",
     "nodesTabName": "Nœuds",
     "title": "Répéteurs et salles",
-    "columnsDataHint": "SNR, RSSI, disponibilité et temps d'antenne proviennent de l'action Statut (ou de la récupération automatique lorsque ce panneau est ouvert). L'historique des sauts et du chemin a besoin de Ping. MeshCore ne remplit pas ces colonnes uniquement à partir d'annonces.",
+    "columnsDataHint": "SNR, RSSI, disponibilité et temps d'antenne sont un instantané de la dernière action d'état et ne sont pas mis à jour par eux-mêmes (l'état est exécuté automatiquement environ 30 secondes après un redémarrage de la CLI). L'historique des sauts et du chemin a besoin de Ping. MeshCore ne remplit pas ces colonnes uniquement à partir d'annonces.",
     "remoteAuthLabel": "Mot de passe d'administration (facultatif)",
     "remoteAuthPlaceholder": "Laissez vide si ce nœud n'a pas de mot de passe admin",
     "remoteAuthCancelDialog": "Boîte de dialogue Annuler le mot de passe du répéteur",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "récupéré {{time}}",
     "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
     "telemetryFailedToast": "Échec de la télémétrie : {{message}}",
     "cliMultiHopHint": "La CLI multi-sauts est plus fiable après un Ping avec trace réussie. La première commande CLI sur un nœud multi-sauts lance Ping automatiquement s'il n'y a pas de trace dans cette session. En cas de délai d'attente, lancez Ping manuellement ou vérifiez la synchro d'horloge du companion dans l'app MeshCore.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "Activez la CAO matérielle. MeshCore laisse la CAO désactivée par défaut car il peut verrouiller la radio pendant environ 4 secondes.",
     "radioCliCadOff": "Désactiver la CAO du matériel",
     "radioCliBootReasonGet": "Obtenir la raison du démarrage et de l'arrêt",
-    "cliQuickRadio": "Radio:"
+    "cliQuickRadio": "Radio:",
+    "cliAutoPingWaitingForCli": "Attendre que la commande CLI d'un autre nœud se termine avant Ping…",
+    "cliAutoPingBusy": "La commande CLI d'un autre nœud est toujours en cours d'exécution ; réessayez lorsqu'elle se termine."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -6981,7 +6983,16 @@
     "scope": "Périmètre Flood par défaut",
     "defaultScope": "Nom de la région (vide pour unscoped)",
     "scopeSummary": "Région des paquets Flood émis par ce nœud",
-    "scopeHint": "Firmware v1.15+ : saisissez une région publique comme #us-tn-tri ; laissez vide pour ne pas limiter la région. Ce réglage concerne les annonces Flood et la livraison des messages de salle par Flood. Les routes directes et les droits d’accès à la salle sont indépendants. Les périmètres de la radio Companion et de ses canaux sont réglés séparément."
+    "scopeHint": "Firmware v1.15+ : saisissez une région publique comme #us-tn-tri ; laissez vide pour ne pas limiter la région. Ce réglage concerne les annonces Flood et la livraison des messages de salle par Flood. Les routes directes et les droits d’accès à la salle sont indépendants. Les périmètres de la radio Companion et de ses canaux sont réglés séparément.",
+    "regionsAndScope": "Régions et portée du flood",
+    "regionsSummary": "Régions configurées, autorisations de retransmission et portée sortante",
+    "configuredRegions": "Régions configurées",
+    "homeRegion": "Région d’origine",
+    "floodAllowed": "Flood autorisé",
+    "floodDenied": "Flood bloqué",
+    "regionsHint": "Lu depuis ce répéteur. * désigne le trafic sans portée régionale. Modifiez les règles de région dans la CLI.",
+    "regionsUnavailable": "Ce micrologiciel ne permet pas de lire la liste des régions à distance. Consultez-la via une connexion série.",
+    "regionsTruncated": "Le micrologiciel a limité cette réponse ; d’autres régions sont peut-être configurées. Utilisez une connexion série pour consulter la liste complète."
   },
   "chatTranslation": {
     "translate": "Traducir mensaje",

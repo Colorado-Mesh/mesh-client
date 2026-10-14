@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
-import { syncMeshcoreRoomContactPathBeforeLogin } from './meshcoreRoomLoginPathSync';
+import {
+  addMeshcoreNodeContactToRadio,
+  syncMeshcoreRoomContactPathBeforeLogin,
+} from './meshcoreRoomLoginPathSync';
 import { pubkeyToNodeId } from './meshcoreUtils';
 
 function makePubKey(seed: number): Uint8Array {
@@ -341,5 +344,52 @@ describe('resetMeshcoreRoomCompanionSyncSinceForCatchUp', () => {
     ).resolves.toBe('skipped');
     expect(conn.getContacts).not.toHaveBeenCalled();
     expect(conn.removeContact).not.toHaveBeenCalled();
+  });
+});
+
+describe('addMeshcoreNodeContactToRadio', () => {
+  const node = {
+    long_name: 'Ridge Repeater',
+    hw_model: 'Repeater',
+    last_heard: 1_791_800_000,
+    latitude: 39.5,
+    longitude: -105.25,
+  };
+
+  it('adds the node with an unknown (flood) route through the serialized queue', async () => {
+    const pubKey = makePubKey(0x6f);
+    const addOrUpdateContact = vi.fn().mockResolvedValue(undefined);
+    const conn = { getContacts: vi.fn(), setContactPath: vi.fn(), addOrUpdateContact };
+    let serializedCalls = 0;
+    const runSerialized = <T>(fn: () => Promise<T>): Promise<T> => {
+      serializedCalls++;
+      return fn();
+    };
+    await addMeshcoreNodeContactToRadio(conn, pubKey, node, runSerialized);
+    expect(serializedCalls).toBe(1);
+    expect(addOrUpdateContact).toHaveBeenCalledWith(
+      pubKey,
+      2,
+      0,
+      0xff,
+      new Uint8Array(64),
+      'Ridge Repeater',
+      1_791_800_000,
+      39_500_000,
+      -105_250_000,
+    );
+  });
+
+  it('maps ERR_CODE_TABLE_FULL to a user message and keeps the radio error as cause', async () => {
+    const pubKey = makePubKey(0x70);
+    const conn = {
+      getContacts: vi.fn(),
+      setContactPath: vi.fn(),
+      addOrUpdateContact: vi.fn().mockRejectedValue({ errCode: 3 }),
+    };
+    const err = await addMeshcoreNodeContactToRadio(conn, pubKey, node).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe('meshcore.errors.radioContactTableFull');
+    expect((err as Error).cause).toEqual({ errCode: 3 });
   });
 });

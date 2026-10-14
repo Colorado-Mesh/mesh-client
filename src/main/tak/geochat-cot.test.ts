@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildGeochatCot, geochatSenderUid, parseTakGeochatMessage } from './geochat-cot';
+import {
+  buildChatRoomContactCot,
+  buildGeochatCot,
+  buildRoomContactChatCot,
+  chatRoomContactUid,
+  geochatSenderUid,
+  parseTakChatSendRooms,
+  parseTakGeochatMessage,
+} from './geochat-cot';
 
 const NOW = Date.parse('2026-10-09T12:00:00.000Z');
 const MSG = { room: 'Mesh Ops', senderCallsign: 'Bob', text: 'on scene', timeMs: NOW - 5000 };
@@ -70,5 +78,63 @@ describe('parseTakGeochatMessage', () => {
     ['an out-of-range position', { ...MSG, latitude: 95, longitude: 0 }],
   ])('rejects %s', (_label, raw) => {
     expect(() => parseTakGeochatMessage(raw)).toThrow(/tak:pushChatMessage/);
+  });
+});
+
+describe('room contacts', () => {
+  it('gives each room a stable contact uid', () => {
+    expect(chatRoomContactUid('Mesh Ops')).toBe(chatRoomContactUid('Mesh Ops'));
+    expect(chatRoomContactUid('Mesh Ops')).not.toBe(chatRoomContactUid('Public'));
+    expect(chatRoomContactUid('Mesh Ops')).toMatch(/^MESHROOM-[0-9a-f]{8}$/);
+  });
+
+  it('announces a room as a contact reached through the server connection', () => {
+    const cot = buildChatRoomContactCot('R&D "lab"', NOW);
+    expect(cot.startsWith('<event ')).toBe(true);
+    expect(cot).toContain(`uid="${chatRoomContactUid('R&D "lab"')}"`);
+    expect(cot).toContain('type="a-f-G-U-C"');
+    expect(cot).toContain('<contact callsign="R&amp;D &quot;lab&quot;" endpoint="*:-1:stcp"/>');
+    expect(cot).toContain('stale="2026-10-10T12:00:00.000Z"');
+  });
+
+  it("builds a room message as a direct message from the room's contact", () => {
+    const cot = buildRoomContactChatCot(MSG, { uid: 'ANDROID-1', callsign: 'VIPER' }, NOW, 'm-1');
+    const room = chatRoomContactUid('Mesh Ops');
+    expect(cot).toContain(`uid="GeoChat.${room}.ANDROID-1.m-1"`);
+    expect(cot).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Mesh Ops"');
+    expect(cot).toContain(`<chatgrp uid0="${room}" uid1="ANDROID-1" id="ANDROID-1"/>`);
+    expect(cot).toContain('>Bob: on scene</remarks>');
+  });
+
+  it('escapes the recipient and the text', () => {
+    const cot = buildRoomContactChatCot(
+      { ...MSG, senderCallsign: 'A<B', text: '1 & 2' },
+      { uid: 'a"b', callsign: 'C>D' },
+      NOW,
+      'm-1',
+    );
+    expect(cot).toContain('chatroom="C&gt;D" id="a&quot;b"');
+    expect(cot).toContain('>A&lt;B: 1 &amp; 2</remarks>');
+  });
+});
+
+describe('parseTakChatSendRooms', () => {
+  it('trims rooms and drops repeats', () => {
+    expect(parseTakChatSendRooms([' Mesh Ops ', 'Public', 'Mesh Ops'])).toEqual([
+      'Mesh Ops',
+      'Public',
+    ]);
+    expect(parseTakChatSendRooms([])).toEqual([]);
+  });
+
+  it.each([
+    ['not an array', 'Mesh'],
+    ['too many rooms', Array.from({ length: 65 }, (_, i) => `r${i}`)],
+    ['a room that is not a string', [1]],
+    ['an empty room', [' ']],
+    ['an overlong room', ['x'.repeat(65)]],
+    ['a control character in a room', ['a\nb']],
+  ])('rejects %s', (_label, raw) => {
+    expect(() => parseTakChatSendRooms(raw)).toThrow(/tak:setChatSendRooms/);
   });
 });

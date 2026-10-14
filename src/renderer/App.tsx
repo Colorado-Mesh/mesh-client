@@ -62,6 +62,10 @@ import {
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
 import {
+  buildDebugSnapshotMeshcoreRadioLive,
+  setDebugSnapshotMeshcoreRadioLive,
+} from '@/renderer/lib/debugSnapshotMeshcoreContext';
+import {
   buildDebugSnapshotMeshtasticContextFromRuntime,
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
@@ -3092,6 +3096,23 @@ function AppContent() {
     );
   }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
 
+  useEffect(() => {
+    setDebugSnapshotMeshcoreRadioLive(
+      buildDebugSnapshotMeshcoreRadioLive(
+        meshcoreRuntime.selfInfo,
+        meshcoreRuntime.state,
+        meshcoreRuntime.meshcoreRadioContactsLoaded
+          ? meshcoreRuntime.meshcoreContactsForTelemetry.length
+          : null,
+      ),
+    );
+  }, [
+    meshcoreRuntime.selfInfo,
+    meshcoreRuntime.state,
+    meshcoreRuntime.meshcoreContactsForTelemetry,
+    meshcoreRuntime.meshcoreRadioContactsLoaded,
+  ]);
+
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
   const handleMeshcoreSyncWaitingMessages = useCallback(async () => {
     try {
@@ -4849,17 +4870,11 @@ function AppContent() {
                                           ? meshcorePublicKeyHexByNodeId
                                           : undefined
                                       }
-                                      onSendAdvert={
-                                        capabilities.hasContactImportExport
-                                          ? meshcorePanelActions.sendAdvert
-                                          : undefined
-                                      }
                                       onOffloadContactsFromRadio={
                                         capabilities.hasContactImportExport
                                           ? meshcorePanelActions.offloadContactsFromRadio
                                           : undefined
                                       }
-                                      meshcoreRadioOperational={isOperational}
                                       onShowOnMap={handleShowOnMap}
                                     />
                                   </div>
@@ -5302,6 +5317,9 @@ function AppContent() {
                                   setSelectedNodeId(node.node_id);
                                 }}
                                 onSendCliCommand={meshcorePanelActions.sendRepeaterCliCommand}
+                                resolveCliHopsAway={
+                                  meshcoreRuntime.repeaterAdminRouting.resolveHopsAway
+                                }
                                 meshcoreCliHistories={meshcoreRuntime.meshcoreCliHistories}
                                 meshcoreCliErrors={meshcoreRuntime.meshcoreCliErrors}
                                 onClearCliHistory={meshcorePanelActions.clearCliHistory}

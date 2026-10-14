@@ -950,7 +950,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!status.running || status.port <= 0) {
       throw new Error('Reticulum sidecar is not running');
     }
-    const normalized = assertReticulumProxyPath(apiPath, opts);
+    const normalized = assertReticulumProxyPath(apiPath, { ...opts, method: 'GET' });
     const timeoutMs = reticulumProxyGetTimeoutMs(apiPath);
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       headers: this.authHeaders(),

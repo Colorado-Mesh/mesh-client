@@ -20,6 +20,8 @@ export interface MeshCoreRepeaterStatus {
   nDirectDups: number;
   nFloodDups: number;
   currTxQueueLen: number;
+  /** Wall-clock ms when this snapshot was received; counters do not advance after this. */
+  fetchedAt?: number;
 }
 
 export interface CayenneLppEntry {

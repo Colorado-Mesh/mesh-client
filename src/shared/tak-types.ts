@@ -225,6 +225,14 @@ export interface TAKInboundChat {
   timeMs: number;
 }
 
+/**
+ * Uid prefix of the contact that stands for a GeoChat room TAK clients may send to. A client
+ * reaches the room's mesh channel by messaging that contact.
+ */
+export const TAK_CHAT_ROOM_UID_PREFIX = 'MESHROOM-';
+/** Most rooms the renderer may register as open for TAK clients to send to. */
+export const TAK_CHAT_SEND_ROOMS_MAX = 64;
+
 export const TAK_GEOCHAT_TEXT_MAX_LEN = 1024;
 export const TAK_GEOCHAT_ROOM_MAX_LEN = 64;
 export const TAK_GEOCHAT_CALLSIGN_MAX_LEN = 64;

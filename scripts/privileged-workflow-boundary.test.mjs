@@ -1,44 +1,11 @@
 // @vitest-environment node
-import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 import yaml from 'js-yaml';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 const read = (path) => readFileSync(path, 'utf8');
 const loadWorkflow = (name) => yaml.load(read(`.github/workflows/${name}.yaml`));
-
-const repositorySecretNames = [
-  'APPLE_APP_SPECIFIC_PASSWORD',
-  'APPLE_ID',
-  'APPLE_TEAM_ID',
-  'CSC_KEY_PASSWORD',
-  'CSC_LINK',
-  'RELEASE_PUSH_TOKEN',
-  'RELEASE_CUT_TOKEN',
-];
-const tempDirs = [];
-
-afterEach(() => {
-  for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
-
-function migrationStep(name) {
-  return loadWorkflow('migrate-release-secrets').jobs.migrate.steps.find(
-    (step) => step.name === name,
-  ).run;
-}
-
-function fakeGh(source) {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'mesh-release-boundary-'));
-  tempDirs.push(dir);
-  const executable = path.join(dir, 'gh');
-  writeFileSync(executable, `#!/usr/bin/env bash\nset -euo pipefail\n${source}\n`);
-  chmodSync(executable, 0o700);
-  return dir;
-}
 
 describe('privileged workflow boundaries', () => {
   it('keeps arbitrary-ref binary builds unconditionally unsigned', () => {
@@ -160,149 +127,8 @@ describe('privileged workflow boundaries', () => {
     );
   });
 
-  it('migrates repository secrets once from trusted main, then removes itself', () => {
-    const workflow = loadWorkflow('migrate-release-secrets');
-    const source = read('.github/workflows/migrate-release-secrets.yaml');
-    expect(workflow.on).toEqual({
-      push: {
-        branches: ['main'],
-        paths: ['.github/workflows/migrate-release-secrets.yaml'],
-      },
-    });
-    expect(workflow.jobs.migrate.environment).toBe('release-cut');
-    expect(workflow.concurrency).toEqual({
-      group: 'migrate-release-secrets',
-      'cancel-in-progress': false,
-    });
-    for (const name of repositorySecretNames) {
-      expect(source).toContain(`secrets.${name}`);
-    }
-    expect(source).toContain('secrets.RELEASE_PUSH_TOKEN || secrets.RELEASE_CUT_TOKEN');
-    expect(source).toContain('require_environment release');
-    expect(source).toContain('repos/${REPO}/rulesets/${ruleset_id}');
-    expect(source).toContain('if grep -Fxq "${name}" <<<"${existing}"');
-    expect(source).toContain(
-      'reconcile_secret release-cut RELEASE_CUT_TOKEN "${RELEASE_PUSH_TOKEN:-${RELEASE_CUT_TOKEN:-}}"',
-    );
-    expect(source).not.toContain('LICENSE_AUTOMATION_TOKEN');
-    expect(source).not.toContain('migration_token=');
-    expect(source).toContain('for attempt in 1 2 3 4 5');
-    expect(source).toContain('sleep "$((attempt * retry_delay_seconds))"');
-    expect(source).toContain('repos/${REPO}/contents/${path}?ref=main');
-    expect(source).not.toContain('git push');
-  });
-
-  it('resumes cleanup when only a subset of repository secrets remains', () => {
-    const dir = fakeGh(`
-if [ "$1" = secret ] && [ "$2" = list ]; then
-  cat "$FAKE_SECRET_STATE"
-elif [ "$1" = secret ] && [ "$2" = delete ]; then
-  grep -Fxv "$3" "$FAKE_SECRET_STATE" >"$FAKE_SECRET_STATE.next" || true
-  mv "$FAKE_SECRET_STATE.next" "$FAKE_SECRET_STATE"
-else
-  exit 97
-fi`);
-    const state = path.join(dir, 'secrets');
-    writeFileSync(state, 'APPLE_ID\nCSC_LINK\nRELEASE_PUSH_TOKEN\nKEEP\n');
-    const result = spawnSync(
-      'bash',
-      ['-c', migrationStep('Delete repository-wide credentials idempotently')],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${dir}:${process.env.PATH}`,
-          FAKE_SECRET_STATE: state,
-          GH_TOKEN: 'test',
-          REPO: 'Colorado-Mesh/mesh-client',
-        },
-      },
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(readFileSync(state, 'utf8')).toBe('KEEP\n');
-  });
-
-  it('retries self-removal against a fresh main SHA after races', () => {
-    const dir = fakeGh(`
-count=$(cat "$FAKE_DELETE_COUNT")
-if [[ " $* " == *" --method DELETE "* ]]; then
-  count=$((count + 1))
-  printf '%s' "$count" >"$FAKE_DELETE_COUNT"
-  [ "$count" -ge 3 ]
-elif [ "$1" = api ]; then
-  printf '{"sha":"sha-%s"}\\n' "$count"
-else
-  exit 98
-fi`);
-    const count = path.join(dir, 'count');
-    writeFileSync(count, '0');
-    const result = spawnSync(
-      'bash',
-      ['-c', migrationStep('Remove completed migration workflow with race retries')],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${dir}:${process.env.PATH}`,
-          FAKE_DELETE_COUNT: count,
-          MIGRATION_RETRY_DELAY_SECONDS: '0',
-          GH_TOKEN: 'test',
-          REPO: 'Colorado-Mesh/mesh-client',
-        },
-      },
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(readFileSync(count, 'utf8')).toBe('3');
-  });
-
-  it('fails closed when migration workflow metadata cannot be read', () => {
-    const dir = fakeGh(`
-count=$(cat "$FAKE_METADATA_COUNT")
-count=$((count + 1))
-printf '%s' "$count" >"$FAKE_METADATA_COUNT"
-echo 'gh: transient API failure' >&2
-exit 1`);
-    const count = path.join(dir, 'count');
-    writeFileSync(count, '0');
-    const result = spawnSync(
-      'bash',
-      ['-c', migrationStep('Remove completed migration workflow with race retries')],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${dir}:${process.env.PATH}`,
-          FAKE_METADATA_COUNT: count,
-          MIGRATION_RETRY_DELAY_SECONDS: '0',
-          GH_TOKEN: 'test',
-          REPO: 'Colorado-Mesh/mesh-client',
-        },
-      },
-    );
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('gh: transient API failure');
-    expect(readFileSync(count, 'utf8')).toBe('5');
-  });
-
-  it('accepts only a confirmed 404 as already removed', () => {
-    const dir = fakeGh(`
-echo 'gh: Not Found (HTTP 404)' >&2
-exit 1`);
-    const result = spawnSync(
-      'bash',
-      ['-c', migrationStep('Remove completed migration workflow with race retries')],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${dir}:${process.env.PATH}`,
-          GH_TOKEN: 'test',
-          REPO: 'Colorado-Mesh/mesh-client',
-        },
-      },
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain('already absent from main');
+  it('keeps the completed one-time secret migration removed', () => {
+    expect(existsSync('.github/workflows/migrate-release-secrets.yaml')).toBe(false);
   });
 
   it('records an active v* tag ruleset that blocks creation, updates, and deletion', () => {
@@ -323,7 +149,7 @@ exit 1`);
     ]);
   });
 
-  it('requires the committed main merge queue ruleset before secret migration', () => {
+  it('records an active main merge queue ruleset with admin bypass', () => {
     const ruleset = JSON.parse(read('.github/rulesets/main-merge-queue.json'));
     expect(ruleset).toMatchObject({
       name: 'main merge queue',
@@ -334,12 +160,5 @@ exit 1`);
     expect(ruleset.bypass_actors).toEqual([
       { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' },
     ]);
-    const source = read('.github/workflows/migrate-release-secrets.yaml');
-    expect(source).toContain('main merge queue');
-    expect(source).toContain('The active main merge queue ruleset is missing.');
-    expect(source).toContain('.github/rulesets/main-merge-queue.json');
-    expect(source).toContain('.conditions.ref_name.exclude');
-    expect(source).toContain('RELEASE_CUT_TOKEN');
-    expect(source).not.toMatch(/--method\s+(POST|PUT|PATCH)/);
   });
 });

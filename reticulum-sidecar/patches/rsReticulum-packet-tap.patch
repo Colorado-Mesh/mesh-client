@@ -1,8 +1,8 @@
 diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
-index 0105b03..6cf57ca 100644
+index 3fd78d2..09fb32f 100644
 --- a/crates/rns-runtime/src/reticulum.rs
 +++ b/crates/rns-runtime/src/reticulum.rs
-@@ -1476,6 +1476,17 @@ impl ReticulumHandle {
+@@ -1542,6 +1542,17 @@ impl ReticulumHandle {
          result
      }
  
@@ -21,7 +21,7 @@ index 0105b03..6cf57ca 100644
      ///
      /// This reads this process' live, validated replicated announce cache in
 diff --git a/crates/rns-transport/src/actor/inbound.rs b/crates/rns-transport/src/actor/inbound.rs
-index 9a48725..9ec6306 100644
+index 3b91a4b..06eba3b 100644
 --- a/crates/rns-transport/src/actor/inbound.rs
 +++ b/crates/rns-transport/src/actor/inbound.rs
 @@ -41,6 +41,15 @@ impl TransportActor {
@@ -41,10 +41,10 @@ index 9a48725..9ec6306 100644
              Ok((header, offset)) => (header, offset),
              Err(e) => {
 diff --git a/crates/rns-transport/src/actor/mod.rs b/crates/rns-transport/src/actor/mod.rs
-index fe2bfb0..03c760b 100644
+index a31d825..5f87ddc 100644
 --- a/crates/rns-transport/src/actor/mod.rs
 +++ b/crates/rns-transport/src/actor/mod.rs
-@@ -245,6 +245,9 @@ pub struct TransportActor {
+@@ -274,6 +274,9 @@ pub struct TransportActor {
      /// background switches the maintenance tick to the long interval so the
      /// actor stops burning CPU (and battery) while the app is suspended.
      pub is_foreground: Arc<AtomicBool>,
@@ -54,7 +54,7 @@ index fe2bfb0..03c760b 100644
  }
  
  /// Cached announce metadata for diagnostics + CacheRequest replay. Raw
-@@ -411,6 +414,7 @@ impl TransportActor {
+@@ -452,6 +455,7 @@ impl TransportActor {
              announce_handlers: Vec::new(),
              next_announce_handler_id: 0,
              is_foreground: Arc::new(AtomicBool::new(true)),
@@ -62,7 +62,7 @@ index fe2bfb0..03c760b 100644
          };
  
          (actor, tx)
-@@ -974,6 +978,9 @@ impl TransportActor {
+@@ -1082,6 +1086,9 @@ impl TransportActor {
                      debug!(dest = hex::encode(dest), "registered path waiter");
                  }
              }
@@ -71,8 +71,8 @@ index fe2bfb0..03c760b 100644
 +            }
              TransportMessage::Shutdown => unreachable!(),
          }
-     }
-@@ -1447,6 +1454,35 @@ impl TransportActor {
+         self.process_background_starts();
+@@ -1556,6 +1563,35 @@ impl TransportActor {
      ///
      /// `try_send` failures: `Full` bumps `tx_drops`; `Closed` auto-deregisters
      /// (zombie interface — receiver dropped without DeregisterInterface).
@@ -108,7 +108,7 @@ index fe2bfb0..03c760b 100644
      #[tracing::instrument(
          level = "trace",
          name = "actor.send_to_interface",
-@@ -1468,11 +1504,22 @@ impl TransportActor {
+@@ -1577,11 +1613,22 @@ impl TransportActor {
          } else {
              Bytes::copy_from_slice(raw)
          };

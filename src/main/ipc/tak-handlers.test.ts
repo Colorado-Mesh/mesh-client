@@ -516,3 +516,40 @@ describe('tak:pushChatMessage', () => {
     expect(sendChat).not.toHaveBeenCalled();
   });
 });
+
+describe('tak:setChatSendRooms', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  /** Register the TAK handlers against `manager` and return the tak:setChatSendRooms handler. */
+  async function register(manager: unknown): Promise<Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return handle.mock.calls.find((c) => c[0] === 'tak:setChatSendRooms')?.[1] as Handler;
+  }
+
+  it('validates the rooms and hands them to the manager', async () => {
+    const setChatSendRooms = vi.fn();
+    const handler = await register({ setChatSendRooms });
+    handler({}, [' Public ', 'Mesh Ops']);
+    expect(setChatSendRooms).toHaveBeenCalledWith(['Public', 'Mesh Ops']);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setChatSendRooms');
+  });
+
+  it('does nothing before a sink has started', async () => {
+    expect((await register(null))({}, ['Public'])).toBeUndefined();
+  });
+
+  it('rejects a malformed list', async () => {
+    const setChatSendRooms = vi.fn();
+    const handler = await register({ setChatSendRooms });
+    expect(() => handler({}, ['a\nb'])).toThrow(/tak:setChatSendRooms/);
+    expect(setChatSendRooms).not.toHaveBeenCalled();
+  });
+});

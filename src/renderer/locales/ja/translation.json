@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "{{count}} メッセージをクリアする",
     "clearMessagesChannelConfirmLabel": "{{channel}}をクリア",
     "clearMessagesTitle": "メッセージをクリアする",
-    "clearAllRepeatersConfirm": "これにより、保存されているすべての MeshCore リピーターがローカル データベースから永久に削除されます。これを元に戻すことはできません。",
     "clearAllLocalDataTitle": "ローカルデータをすべてクリア",
     "clearAllLocalDataConfirm": "これにより、すべてのローカル メッセージ、ノード、キャッシュされたセッション データが完全に削除されます。この操作は元に戻すことができません。",
     "clearEverythingConfirmButton": "すべてをクリア",
@@ -475,7 +474,8 @@
     "updatesSection": "更新",
     "autoUpdateDownload": "自動的に更新をダウンロード",
     "autoUpdateDownloadDesc": "各チェック後にバックグラウンドで最新のアップデートをダウンロードします。オフの場合、アップデートは検出されますが、ダウンロードボタンを押したときにのみダウンロードされます。これは、パッケージマネージャーがインストールを処理する場合に便利です。",
-    "autoUpdateDownloadSaveFailed": "自動更新ダウンロード設定を保存できませんでした。"
+    "autoUpdateDownloadSaveFailed": "自動更新ダウンロード設定を保存できませんでした。",
+    "clearAllRepeatersConfirm": "接続中の無線機とローカルデータベースから、お気に入り以外のすべてのMeshCoreリピーターを削除します。リピーターは再びアドバタイズすると再表示されます。この操作は元に戻せません。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping 失敗",
       "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。",
       "removeContactFailed": "ローカルに削除されましたが、無線がremoveContactを拒否しました。更新後に連絡先が再表示される場合があります。",
-      "bleTimeoutGatt": "サイドカー GATT 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。"
+      "bleTimeoutGatt": "サイドカー GATT 経由で MeshCore を開いているときに Bluetooth 接続がタイムアウトしました。再試行するか、デバイスの BLE の電源を入れ直すか、シリアル/TCP を使用します。",
+      "radioContactMissing": "このノードはラジオの連絡先リストにないため、ラジオはログインできません。次の advert を待つか、連絡先としてインポートしてから、もう一度お試しください。",
+      "radioContactTableFull": "ラジオの連絡先リストがいっぱいなので、このノードをログイン用に追加できませんでした。未使用の連絡先を削除してから、もう一度お試しください。"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
     "refreshFailed": "更新に失敗しました: {{message}}",
-    "floodAdvertSent": "フラッドadvertが送信されました",
-    "advertFailed": "advertが失敗しました: {{message}}",
     "importFailed": "インポートに失敗しました: {{message}}",
     "importResultSuccess_one": "{{count}} 連絡先をインポートしました。",
     "importResultSuccess_other": "{{count}} の連絡先をインポートしました。",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "検索に一致するノードはありません。",
     "emptyNoNodesYet": "まだノードは検出されていません。デバイスに接続してメッシュ ネットワークを表示します。",
     "buttonRefresh": "リフレッシュ",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "連絡先のインポート",
     "meshcoreTypeChat": "チャット",
     "meshcoreTypeRepeater": "リピータ",
@@ -4893,7 +4892,7 @@
     "columnActions": "アクション",
     "nodesTabName": "ノード",
     "title": "リピーターとルーム",
-    "columnsDataHint": "SNR、RSSI、稼働時間、および通信時間は、ステータス アクション (または、このパネルが開いている間の自動取得) から取得されます。ホップとパス履歴には Ping が必要です。 MeshCore は広告だけからこれらの列を埋めません。",
+    "columnsDataHint": "SNR、RSSI、稼働時間、および放送時間は、最後のステータスアクションからのスナップショットであり、単独では更新されません（ステータスは、CLI再起動後約30秒後に自動的に再実行されます）。ホップとパス履歴には Ping が必要です。MeshCore は広告だけからこれらの列を埋めません。",
     "remoteAuthLabel": "リピーター管理者パスワード (オプション)",
     "remoteAuthPlaceholder": "リピーターに管理者パスワードがない場合は空のままにしてください",
     "remoteAuthCancelDialog": "リピータパスワードダイアログのキャンセル",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}分",
+    "uptimeFetchedAgo": "{{time}}に取得",
     "rememberPasswordSaveFailed": "再起動用のリピーターパスワードを保存できませんでした。このセッションでのみ機能します。",
     "telemetryFailedToast": "テレメトリに失敗しました： {{message}}",
     "cliMultiHopHint": "マルチホップCLIは、Pingトレースが成功した後、より信頼性が高くなります。このセッションにtraceがない場合、マルチホップリピーターへの最初のCLIコマンドはPingを自動的に実行します。コマンドがタイムアウトした場合は、まずPingを実行するか、MeshCoreアプリでコンパニオンクロック同期を確認してください。",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "ハードウェアCADをオンにします。MeshCoreは、ラジオを約4秒間ロックできるため、デフォルトでCADをオフにします。",
     "radioCliCadOff": "ハードウェアCADをオフにする",
     "radioCliBootReasonGet": "起動とシャットダウンの理由を取得する",
-    "cliQuickRadio": "通信機"
+    "cliQuickRadio": "通信機",
+    "cliAutoPingWaitingForCli": "別のノードのCLIコマンドが終了するのを待ってからPingしています...",
+    "cliAutoPingBusy": "別のノードのCLIコマンドはまだ実行中です。終了したらもう一度やり直してください。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -6981,7 +6983,16 @@
     "scope": "デフォルトのフラッドスコープ",
     "defaultScope": "リージョン名（スコープなしの場合は空白）",
     "scopeSummary": "このノードが送信するFloodパケットのリージョン",
-    "scopeHint": "ファームウェアv1.15以降：#us-tn-triなどの公開リージョン名を入力します。空欄はリージョン制限なしです。FloodアドバートとFlood経由のルームメッセージ配信に適用されます。直接ルートとルームへのアクセス権は別です。コンパニオン無線機と各チャンネルのスコープは個別に設定します。"
+    "scopeHint": "ファームウェアv1.15以降：#us-tn-triなどの公開リージョン名を入力します。空欄はリージョン制限なしです。FloodアドバートとFlood経由のルームメッセージ配信に適用されます。直接ルートとルームへのアクセス権は別です。コンパニオン無線機と各チャンネルのスコープは個別に設定します。",
+    "regionsAndScope": "リージョンと Flood スコープ",
+    "regionsSummary": "設定済みリージョン、転送権限、送信スコープ",
+    "configuredRegions": "設定されたリージョン",
+    "homeRegion": "ホームリージョン",
+    "floodAllowed": "Flood 許可",
+    "floodDenied": "Flood 拒否",
+    "regionsHint": "このリピーターから読み取った設定です。* はリージョン制限のない通信を示します。リージョンのルールは CLI で編集してください。",
+    "regionsUnavailable": "このファームウェアはリージョン一覧のリモート読み取りに対応していません。シリアル接続で確認してください。",
+    "regionsTruncated": "ファームウェアの応答長制限により、ほかの設定済みリージョンが表示されていない可能性があります。完全な一覧はシリアル接続で確認してください。"
   },
   "chatTranslation": {
     "translate": "メッセージを翻訳する",

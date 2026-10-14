@@ -14,9 +14,12 @@ import {
   assertMeshcoreRepeaterLoginOk,
   clearAllMeshcoreRepeaterEphemeralPasswords,
   meshcoreRepeaterHasResolvablePassword,
+  meshcoreRepeaterLoginTimeoutPolicy,
   meshcoreRepeaterTryLogin,
+  meshcoreRepeaterTryLoginWithPassword,
   setMeshcoreRepeaterEphemeralPassword,
 } from './meshcoreRepeaterSession';
+import { MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS } from './timeConstants';
 
 type MockMeshcoreRepeaterConn = MeshcoreRadioConnection & {
   emit: (event: string | number, payload?: unknown) => void;
@@ -166,6 +169,151 @@ describe('meshcoreRepeaterTryLogin', () => {
     expect(() => {
       assertMeshcoreRepeaterLoginOk(result);
     }).toThrow(/authentication failed/i);
+  });
+
+  it('re-adds an evicted radio contact and retries login on ERR_CODE_NOT_FOUND', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    pubKey[0] = 0x6f;
+    setMeshcoreRepeaterEphemeralPassword(0x6f, 'admin');
+    const restoreRadioContact = vi.fn(() => {
+      conn.sendToRadioFrame.mockImplementationOnce(() => {
+        queueMicrotask(() => {
+          conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+          conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6) });
+        });
+        return Promise.resolve();
+      });
+      return Promise.resolve();
+    });
+    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x6f, undefined, undefined, {
+      restoreRadioContact,
+    });
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR, { errCode: 2 });
+    const result = await loginPromise;
+    expect(restoreRadioContact).toHaveBeenCalledTimes(1);
+    expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ attempted: true, ok: true });
+  });
+
+  it('restores an evicted Room contact for an explicit CLI admin password', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    pubKey[0] = 0x7a;
+    const restoreRadioContact = vi.fn(() => {
+      conn.sendToRadioFrame.mockImplementationOnce(() => {
+        queueMicrotask(() => {
+          conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+          conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), permissions: 3 });
+        });
+        return Promise.resolve();
+      });
+      return Promise.resolve();
+    });
+    const loginPromise = meshcoreRepeaterTryLoginWithPassword(conn, pubKey, 'room-admin', {
+      restoreRadioContact,
+      ...meshcoreRepeaterLoginTimeoutPolicy(0),
+    });
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR, { errCode: 2 });
+    expect(await loginPromise).toMatchObject({ attempted: true, ok: true });
+    expect(restoreRadioContact).toHaveBeenCalledTimes(1);
+    expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(2);
+    for (const [frame] of conn.sendToRadioFrame.mock.calls) {
+      expect(new TextDecoder().decode(frame.subarray(33))).toBe('room-admin');
+    }
+  });
+
+  it('reports a missing radio contact instead of authentication failure', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    pubKey[0] = 0x70;
+    setMeshcoreRepeaterEphemeralPassword(0x70, 'admin');
+    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x70);
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR, { errCode: 2 });
+    const result = await loginPromise;
+    expect(() => {
+      assertMeshcoreRepeaterLoginOk(result);
+    }).toThrow('meshcore.errors.radioContactMissing');
+  });
+
+  it('surfaces a contact restore failure without retrying login', async () => {
+    const conn = createMockConn();
+    const pubKey = new Uint8Array(32);
+    pubKey[0] = 0x71;
+    setMeshcoreRepeaterEphemeralPassword(0x71, 'admin');
+    const restoreErr = new Error('meshcore.errors.radioContactTableFull');
+    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x71, undefined, undefined, {
+      restoreRadioContact: () => Promise.reject(restoreErr),
+    });
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR, { errCode: 2 });
+    const result = await loginPromise;
+    expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
+    expect(() => {
+      assertMeshcoreRepeaterLoginOk(result);
+    }).toThrow('meshcore.errors.radioContactTableFull');
+  });
+
+  it('does not resend after a reply timeout when retryOnTimeout is false', async () => {
+    vi.useFakeTimers();
+    try {
+      const conn = createMockConn();
+      const pubKey = new Uint8Array(32);
+      pubKey[0] = 0x72;
+      setMeshcoreRepeaterEphemeralPassword(0x72, 'admin');
+      const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x72, undefined, 30_000, {
+        retryOnTimeout: false,
+      });
+      await Promise.resolve();
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      vi.advanceTimersByTime(100 + 30_000);
+      const result = await loginPromise;
+      expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
+      expect(() => {
+        assertMeshcoreRepeaterLoginOk(result);
+      }).toThrow(/^timeout$/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([1, 3, null, undefined])(
+    'keeps the default login timeout policy when hopsAway is %s',
+    (hopsAway) => {
+      expect(meshcoreRepeaterLoginTimeoutPolicy(hopsAway)).toEqual({});
+    },
+  );
+
+  it('zero-hop Room CLI ACL login waits only the zero-hop timeout and does not resend', async () => {
+    vi.useFakeTimers();
+    try {
+      const conn = createMockConn();
+      const pubKey = new Uint8Array(32);
+      pubKey[0] = 0x73;
+      let settled = false;
+      const loginPromise = meshcoreRepeaterTryLoginWithPassword(conn, pubKey, 'roomadmin', {
+        ...meshcoreRepeaterLoginTimeoutPolicy(0),
+      }).finally(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+      await vi.advanceTimersByTimeAsync(
+        100 + MESHCORE_REPEATER_ZERO_HOP_LOGIN_EXTRA_TIMEOUT_MS - 1,
+      );
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      const result = await loginPromise;
+      expect(conn.sendToRadioFrame).toHaveBeenCalledTimes(1);
+      expect(() => {
+        assertMeshcoreRepeaterLoginOk(result);
+      }).toThrow(/^timeout$/i);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('assertMeshcoreRepeaterLoginOk maps login timeout to timeout (not auth)', () => {

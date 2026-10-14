@@ -39,10 +39,18 @@ describe('reticulum discovery announce egress contracts', () => {
       const hasInlineFix =
         source.includes('discovery destination registered as local for announce egress') &&
         source.includes('discovery interface online — starting announces');
-      expect(hasHelpers || hasInlineFix).toBe(true);
-      expect(source).toMatch(/RegisterDestination[\s\S]*DISCOVERY_ASPECT_FILTER/);
+      // rsReticulum 1.3.0+: owned discovery publisher registers the destination and
+      // gates Announcer::register on the online latch (supersedes the overlay helpers).
+      const hasUpstreamPublisher =
+        source.includes('async fn run_discovery_publisher') &&
+        source.includes('failed to register discovery destination') &&
+        source.includes('online: Option<Arc<AtomicBool>>');
+      expect(hasHelpers || hasInlineFix || hasUpstreamPublisher).toBe(true);
       expect(source).toMatch(
-        /online[\s\S]*Announcer::register|pending\.retain|take_online_discovery/,
+        /RegisterDestination[\s\S]*DISCOVERY_ASPECT_FILTER|register_destination\([\s\S]*DISCOVERY_ASPECT_FILTER/,
+      );
+      expect(source).toMatch(
+        /online[\s\S]*Announcer::register|announcer\.register|pending\.retain|take_online_discovery/,
       );
     },
   );

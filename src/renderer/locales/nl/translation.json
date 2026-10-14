@@ -248,7 +248,6 @@
     "clearMessagesAllConfirmLabel": "Wis {{count}} berichten",
     "clearMessagesChannelConfirmLabel": "Wissen {{channel}}",
     "clearMessagesTitle": "Duidelijke berichten",
-    "clearAllRepeatersConfirm": "Hierdoor worden alle opgeslagen MeshCore-repeaters permanent uit de lokale database verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearAllLocalDataTitle": "Wis alle lokale gegevens",
     "clearAllLocalDataConfirm": "Hierdoor worden ALLE lokale berichten, knooppunten en in de cache opgeslagen sessiegegevens permanent verwijderd. Deze actie kan NIET ongedaan worden gemaakt.",
     "clearEverythingConfirmButton": "Alles wissen",
@@ -475,7 +474,8 @@
     "updatesSection": "Updates",
     "autoUpdateDownload": "Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Download de laatste update op de achtergrond na elke controle. Wanneer uitgeschakeld, worden updates nog steeds gedetecteerd, maar alleen gedownload wanneer u op de knop Downloaden drukt — handig wanneer een pakketbeheerder de installatie afhandelt.",
-    "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan."
+    "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan.",
+    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -2627,7 +2627,9 @@
       "pingFailed": "Ping mislukt",
       "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",
       "removeContactFailed": "Lokaal verwijderd, maar de radio heeft removeContact geweigerd. Het contact kan opnieuw verschijnen na een verversing.",
-      "bleTimeoutGatt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via zijspan GATT. Probeer het opnieuw, schakel BLE op het apparaat uit en weer in, of gebruik Serieel/TCP."
+      "bleTimeoutGatt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via zijspan GATT. Probeer het opnieuw, schakel BLE op het apparaat uit en weer in, of gebruik Serieel/TCP.",
+      "radioContactMissing": "Dit knooppunt staat niet in de lijst met contactpersonen van uw radio, dus de radio kan er niet op inloggen. Wacht op de volgende advert of importeer deze als contactpersoon en probeer het opnieuw.",
+      "radioContactTableFull": "De lijst met contactpersonen van uw radio is vol, dus dit knooppunt kon niet worden toegevoegd om in te loggen. Verwijder ongebruikte contacten en probeer het opnieuw."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -3508,8 +3510,6 @@
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
     "refreshFailed": "Vernieuwen mislukt: {{message}}",
-    "floodAdvertSent": "Flood-advert verzonden",
-    "advertFailed": "Advert mislukt: {{message}}",
     "importFailed": "Importeren mislukt: {{message}}",
     "importResultSuccess_one": "Geïmporteerd {{count}} contact.",
     "importResultSuccess_other": "Geïmporteerde {{count}} contacten.",
@@ -3570,7 +3570,6 @@
     "emptyNoSearchMatches": "Er zijn geen knooppunten die overeenkomen met uw zoekopdracht.",
     "emptyNoNodesYet": "Nog geen knooppunten ontdekt. Maak verbinding met een apparaat om het mesh-netwerk te bekijken.",
     "buttonRefresh": "Vernieuwen",
-    "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Contacten importeren",
     "meshcoreTypeChat": "Chatten",
     "meshcoreTypeRepeater": "Repeater",
@@ -4893,7 +4892,7 @@
     "columnActions": "Acties",
     "nodesTabName": "Knooppunten",
     "title": "Repeaters & ruimtes",
-    "columnsDataHint": "SNR, RSSI, uptime en zendtijd zijn afkomstig van de statusactie (of automatisch ophalen terwijl dit paneel open is). Hop- en padgeschiedenis hebben Ping nodig. MeshCore vult deze kolommen niet alleen met adverts.",
+    "columnsDataHint": "SNR, RSSI, uptime en zendtijd zijn een momentopname van de laatste statusactie en worden niet zelf bijgewerkt (de status wordt ongeveer 30 seconden na een CLI-reboot automatisch opnieuw uitgevoerd). Hop- en padgeschiedenis hebben Ping nodig. MeshCore vult deze kolommen niet alleen met adverts.",
     "remoteAuthLabel": "Repeater beheerderswachtwoord (optioneel)",
     "remoteAuthPlaceholder": "Laat leeg als repeaters geen beheerderswachtwoord hebben",
     "remoteAuthCancelDialog": "Dialoogvenster Repeaterwachtwoord annuleren",
@@ -4958,6 +4957,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
+    "uptimeFetchedAgo": "opgehaald {{time}}",
     "rememberPasswordSaveFailed": "Kon repeaterwachtwoord niet opslaan voor herstarten. Het werkt alleen voor deze sessie.",
     "telemetryFailedToast": "Telemetrie mislukt: {{message}}",
     "cliMultiHopHint": "Multi-hop CLI is betrouwbaarder na een succesvolle Ping-trace. Het eerste CLI-commando op een multi-hop repeater voert Ping automatisch uit wanneer er geen trace in deze sessie bestaat. Als de opdrachten een time-out hebben, voer je eerst Ping uit of controleer je de synchronisatie van de bijbehorende klok in de MeshCore-app.",
@@ -5017,7 +5017,9 @@
     "radioCliCadOnHint": "Zet hardware CAD aan. MeshCore laat CAD standaard uit omdat het de radio ongeveer 4 seconden kan vergrendelen.",
     "radioCliCadOff": "Zet hardware CAD uit",
     "radioCliBootReasonGet": "Reden voor opstarten en afsluiten",
-    "cliQuickRadio": "Radio"
+    "cliQuickRadio": "Radio",
+    "cliAutoPingWaitingForCli": "Wachten tot het CLI-commando van een ander knooppunt is voltooid voordat Ping...",
+    "cliAutoPingBusy": "De CLI-opdracht van een ander knooppunt wordt nog steeds uitgevoerd; probeer het opnieuw wanneer deze is voltooid."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -6981,7 +6983,16 @@
     "scope": "Standaard Flood-scope",
     "defaultScope": "Naam regio (leeg voor unscoped)",
     "scopeSummary": "Regio voor uitgaande Flood-pakketten van deze node",
-    "scopeHint": "Firmware v1.15+: voer een publieke regio zoals #us-tn-tri in; laat leeg voor geen regiobeperking. Geldt voor Flood-adverts en bezorging van ruimteberichten via Flood. Directe routes en toegang tot de ruimte staan hier los van. Scopes van de Companion-radio en zijn kanalen worden apart ingesteld."
+    "scopeHint": "Firmware v1.15+: voer een publieke regio zoals #us-tn-tri in; laat leeg voor geen regiobeperking. Geldt voor Flood-adverts en bezorging van ruimteberichten via Flood. Directe routes en toegang tot de ruimte staan hier los van. Scopes van de Companion-radio en zijn kanalen worden apart ingesteld.",
+    "regionsAndScope": "Regio’s en flood-bereik",
+    "regionsSummary": "Ingestelde regio’s, doorstuurrechten en uitgaand bereik",
+    "configuredRegions": "Geconfigureerde regio's",
+    "homeRegion": "Thuisregio",
+    "floodAllowed": "Flood toegestaan",
+    "floodDenied": "Flood geblokkeerd",
+    "regionsHint": "Gelezen van deze repeater. * staat voor verkeer zonder regiobeperking. Bewerk regioregels in de CLI.",
+    "regionsUnavailable": "Deze firmware ondersteunt het op afstand uitlezen van de regiolijst niet. Bekijk de regio’s via een seriële verbinding.",
+    "regionsTruncated": "De firmware heeft dit antwoord ingekort; mogelijk zijn er meer regio’s ingesteld. Gebruik een seriële verbinding voor de volledige lijst."
   },
   "chatTranslation": {
     "translate": "Bericht vertalen",

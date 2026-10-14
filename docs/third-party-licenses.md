@@ -15,6 +15,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | :------------------------- | :---------------------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------- |
 | @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.16.0         | 2.16.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
 | @jsr/meshtastic__protobufs | n/a                           | ^2.8.1          | 2.8.1             | n/a                                                                            |
+| @noble/ciphers             | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-ciphers.git                             |
+| @noble/hashes              | MIT                           | ^2.4.0          | 2.4.0             | git+https://github.com/paulmillr/noble-hashes.git                              |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.23.0         | 2.23.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
@@ -24,7 +26,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
 | i18next                    | MIT                           | ^26.4.3         | 26.4.3            | git+https://github.com/i18next/i18next.git                                     |
-| ip-address                 | MIT                           | ^10.7.1         | 10.7.3            | git+https://github.com/beaugunderson/ip-address.git                            |
+| ip-address                 | MIT                           | ^10.7.1         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.2         | 3.10.2            | git+https://github.com/Stuk/jszip.git                                          |
@@ -56,7 +58,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.64.0         | 1.64.0            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.14        | 3.14.14           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.15        | 3.14.15           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.7         | 14.6.7            | git+https://github.com/testing-library/user-event.git                                |
@@ -82,7 +84,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-import                  | MIT             | ^2.32.0         | 2.32.0            | git+https://github.com/import-js/eslint-plugin-import.git                            |
 | eslint-plugin-jsx-a11y                | MIT             | ^6.10.2         | 6.10.2            | git+https://github.com/jsx-eslint/eslint-plugin-jsx-a11y.git                         |
 | eslint-plugin-no-secrets              | MIT             | ^2.3.3          | 2.3.3             | git+https://github.com/nickdeis/eslint-plugin-no-secrets.git                         |
-| eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | git+https://github.com/prettier/eslint-plugin-prettier.git                           |
+| eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.7.tgz |
 | eslint-plugin-react                   | MIT             | ^7.37.5         | 7.37.5            | git+https://github.com/jsx-eslint/eslint-plugin-react.git                            |
 | eslint-plugin-react-hooks             | MIT             | ^7.1.1          | 7.1.1             | git+https://github.com/facebook/react.git                                            |
 | eslint-plugin-security                | Apache-2.0      | ^4.2.0          | 4.2.0             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |

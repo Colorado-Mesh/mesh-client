@@ -9,6 +9,7 @@ import {
   enqueueTakChatRelay,
   findTakSendTargets,
   formatTakMeshText,
+  listTakSendRooms,
   relayTakChatToMesh,
   TAK_MESH_SEND_MAX_BYTES,
   TAK_MESH_SEND_TIMEOUT_MS,
@@ -100,6 +101,17 @@ describe('findTakSendTargets', () => {
   it('ignores prefs for an identity that is no longer loaded', () => {
     bridge('gone', 2, 'Mesh Ops', true);
     expect(findTakSendTargets('Mesh Ops')).toEqual([]);
+  });
+});
+
+describe('listTakSendRooms', () => {
+  it('lists each room some loaded identity lets TAK send to, once', () => {
+    bridge('mc', 2, 'Mesh Ops', true);
+    bridge('mc', 3, 'Listen Only', false);
+    bridge('mt', 0, 'Mesh Ops', true);
+    bridge('mt', 1, 'Alpha', true);
+    bridge('gone', 2, 'Ghost', true);
+    expect(listTakSendRooms()).toEqual(['Alpha', 'Mesh Ops']);
   });
 });
 

@@ -206,6 +206,7 @@ describe('parseGeochatEvent', () => {
   it('reads the room, sender and text of a client message', () => {
     expect(parseGeochatEvent(geochat())).toEqual({
       room: 'Mesh Ops',
+      roomId: 'Mesh Ops',
       senderCallsign: 'VIPER',
       senderUid: 'ANDROID-1',
       text: 'on scene',
@@ -230,6 +231,17 @@ describe('parseGeochatEvent', () => {
     const chat = parseGeochatEvent(geochat({ uid: 'GeoChat.ANDROID-1.Mesh Ops.bad id!' }));
     expect(chat).toMatchObject({ senderUid: 'ANDROID-1' });
     expect(chat).not.toHaveProperty('messageId');
+  });
+
+  it('reports the conversation id, which names the contact a direct message is for', () => {
+    expect(parseGeochatEvent(geochat())?.roomId).toBe('Mesh Ops');
+    const direct = parseGeochatEvent(
+      geochat({ chat: 'chatroom="Public" id="MESHROOM-0a1b2c3d" senderCallsign="VIPER"' }),
+    );
+    expect(direct).toMatchObject({ room: 'Public', roomId: 'MESHROOM-0a1b2c3d' });
+    expect(parseGeochatEvent(geochat({ chat: 'chatroom="Mesh Ops"' }))).not.toHaveProperty(
+      'roomId',
+    );
   });
 
   it('leaves the callsign empty when the event has none', () => {

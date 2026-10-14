@@ -15,6 +15,11 @@ import {
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
 import {
+  type DebugSnapshotMeshcoreRadioContext,
+  getDebugSnapshotMeshcoreRadioContext,
+  isMeshcoreFloodFullyUnscoped,
+} from './debugSnapshotMeshcoreContext';
+import {
   type DebugSnapshotMeshtasticChannelConfigSummary,
   type DebugSnapshotMeshtasticChannelPill,
   getDebugSnapshotMeshtasticContext,
@@ -146,7 +151,8 @@ export type DebugSnapshotWarningCode =
   | 'connectedNoPrimaryMessages'
   | 'windowHiddenOnChat'
   | 'lastReadSuppressesChannelUnread'
-  | 'sidecarNotRunning';
+  | 'sidecarNotRunning'
+  | 'meshcoreFloodUnscoped';
 
 export interface DebugReticulumSnapshot extends ReticulumDiagnosticSidecarSnapshot {
   bucket: DebugIdentityBucketSnapshot;
@@ -172,6 +178,8 @@ export interface DebugSnapshot {
   ui: ReturnType<typeof getDebugSnapshotUiContext>;
   meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
+  /** MeshCore radio params, path hash mode, and flood scope (radio default + per-view). */
+  meshcoreRadio: DebugSnapshotMeshcoreRadioContext;
   reticulum: DebugReticulumSnapshot;
   /** Main-process uptime / heartbeat age (export path only). */
   mainLiveness?: RendererLivenessSnapshot | null;
@@ -608,6 +616,7 @@ function buildDebugSnapshotBase(
     ui,
     meshtastic,
     meshcore,
+    meshcoreRadio: getDebugSnapshotMeshcoreRadioContext(),
     reticulum,
   };
 }
@@ -623,6 +632,18 @@ export function analyzeDebugSnapshot(
   ];
 
   const { ui } = snap;
+  if (
+    (snap.storedProtocol === 'meshcore' || ui.activeProtocol === 'meshcore') &&
+    isMeshcoreFloodFullyUnscoped(snap.meshcoreRadio)
+  ) {
+    warnings.push({
+      code: 'meshcoreFloodUnscoped',
+      protocol: 'meshcore',
+      detail:
+        'No MeshCore flood scope set (radio default empty, no per-view named scope); floods are unscoped and may be dropped by region-restricted repeaters',
+    });
+  }
+
   if (
     ui.chatPanelFrozen &&
     ui.frozenMessageCount != null &&

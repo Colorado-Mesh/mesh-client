@@ -75,6 +75,12 @@ describe('RepeaterCommandService', () => {
   });
 
   describe('parseResponseToken', () => {
+    it('preserves multiline replies and matches only the leading token', () => {
+      const body = '*^ F\r\n us F\r\n  us-tn F\r\n';
+      expect(service.parseResponseToken(`AB|${body}`)).toEqual({ token: 'AB', body });
+      expect(service.parseResponseToken('\nAB|OK').token).toBeNull();
+    });
+
     it('should parse token and body from response', () => {
       const result = service.parseResponseToken('AB|response text');
       expect(result.token).toBe('AB');

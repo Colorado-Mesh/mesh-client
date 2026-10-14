@@ -70,6 +70,25 @@ describe('assertReticulumProxyPath', () => {
     );
   });
 
+  it('allows GET of rncp listener status but keeps listener mutations picker-gated', () => {
+    expect(assertReticulumProxyPath('/api/v1/rncp/listener', { method: 'GET' })).toBe(
+      '/api/v1/rncp/listener',
+    );
+    expect(assertReticulumProxyPath('/api/v1/rncp/listener/', { method: 'GET' })).toBe(
+      '/api/v1/rncp/listener',
+    );
+    expect(() => assertReticulumProxyPath('/api/v1/rncp/listener')).toThrow(/setRncpListener/);
+    expect(() => assertReticulumProxyPath('/api/v1/rncp/listener', { method: 'POST' })).toThrow(
+      /setRncpListener/,
+    );
+    expect(() => assertReticulumProxyPath('/api/v1/rncp/send', { method: 'GET' })).toThrow(
+      /rncpSend/,
+    );
+    expect(() => assertReticulumProxyPath('/api/v1/rncp/fetch', { method: 'GET' })).toThrow(
+      /rncpFetch/,
+    );
+  });
+
   it('rejects factory-reset on the generic proxy path', () => {
     expect(() => assertReticulumProxyPath('/api/v1/system/factory-reset')).toThrow(/factoryReset/);
   });
