@@ -281,7 +281,21 @@ export function useSendMessage(
       // Open the heard-repeat listen window on the provisional bubble id (renameMessageId
       // re-keys coverage if packetId later replaces it).
       if (isMeshcore && !isMeshcoreDm) {
-        openHeardRepeatWindow(identityId, provisionalId);
+        const radioName = tryGetMeshcoreSession()?.getSelfName?.(myNodeNum)?.trim();
+        openHeardRepeatWindow(
+          identityId,
+          provisionalId,
+          undefined,
+          undefined,
+          radioName
+            ? {
+                channelIndex,
+                senderName: radioName,
+                wireText: resolvedOutbound.wireText,
+                sentAtSec: Math.floor(record.timestamp / 1000),
+              }
+            : undefined,
+        );
       }
 
       const abandonMeshcoreHeardRepeat = (): void => {

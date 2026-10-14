@@ -1,6 +1,7 @@
 import type { HeardRepeater } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import { useRelayCoverageStore } from '@/renderer/lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '@/renderer/lib/types';
+import { decodeMeshcoreGroupText, meshcoreChannelHash } from '@/shared/meshcoreGroupText';
 import { meshcoreNodeHash, type NodeHashCandidate } from '@/shared/meshcoreNodeHash';
 import { meshcoreSplitPathHashSegments } from '@/shared/meshcorePathHash';
 import {
@@ -16,14 +17,27 @@ export type MeshcoreHashSizeBytes = 1 | 2 | 3;
 
 export type MeshcoreHeardRepeater = HeardRepeater;
 
+/** Seconds before the recorded send time a decrypted GRP_TXT timestamp may fall (clock rounding). */
+const OWN_GRP_TXT_TIMESTAMP_EARLY_SEC = 2;
+
+/** What our own channel flood decrypts to; used to recognise its rebroadcasts. */
+export interface MeshcoreOwnChannelFloodExpectation {
+  channelIndex: number;
+  /** Radio node name; firmware prefixes channel text with `"name: "`. */
+  senderName: string;
+  wireText: string;
+  sentAtSec: number;
+}
+
 interface PendingWindow {
   messageId: string;
   identityId: IdentityId;
   openedAt: number;
   windowMs: number;
+  expect?: MeshcoreOwnChannelFloodExpectation;
   /**
-   * Path-invariant flood id (type||payload). Bound from empty-path / own TX when seen;
-   * once set, only matching rebroadcasts credit (blocks concurrent foreign GRP_TXT).
+   * Path-invariant flood id (type||payload). Bound from own TX or a GRP_TXT that decrypts to
+   * {@link expect}; once set, only matching rebroadcasts credit.
    */
   payloadIdentity?: MeshCorePathInvariantPayloadId;
 }
@@ -31,8 +45,46 @@ interface PendingWindow {
 /** Latest open listen window per identity. */
 const pendingByIdentity = new Map<IdentityId, PendingWindow>();
 
+/** Radio channel secrets by index, published by the MeshCore runtime. */
+const channelSecretsByIndex = new Map<number, Uint8Array>();
+
+export function setMeshcoreHeardRepeatChannelSecrets(
+  channels: readonly { index: number; secret: Uint8Array }[],
+): void {
+  channelSecretsByIndex.clear();
+  for (const ch of channels) {
+    if (ch.secret.length === 16) channelSecretsByIndex.set(ch.index, ch.secret);
+  }
+}
+
+export function clearMeshcoreHeardRepeatChannelSecrets(): void {
+  channelSecretsByIndex.clear();
+}
+
 export function resetHeardRepeatWindowsForTests(): void {
   pendingByIdentity.clear();
+  channelSecretsByIndex.clear();
+}
+
+/** True when a GRP_TXT inner payload decrypts to our expected channel message. */
+function grpTxtMatchesExpectation(
+  innerPayload: Uint8Array,
+  expect: MeshcoreOwnChannelFloodExpectation,
+  windowMs: number,
+): boolean {
+  const secret = channelSecretsByIndex.get(expect.channelIndex);
+  if (!secret || innerPayload.length === 0) return false;
+  if (innerPayload[0] !== meshcoreChannelHash(secret)) return false;
+  const decoded = decodeMeshcoreGroupText(secret, innerPayload);
+  if (!decoded) return false;
+  const latestSec = expect.sentAtSec + Math.ceil(windowMs / 1000);
+  if (
+    decoded.timestampSec < expect.sentAtSec - OWN_GRP_TXT_TIMESTAMP_EARLY_SEC ||
+    decoded.timestampSec > latestSec
+  ) {
+    return false;
+  }
+  return decoded.text === `${expect.senderName}: ${expect.wireText}`;
 }
 
 /** Drop the listen window for an identity (disconnect / session teardown). */
@@ -63,6 +115,7 @@ export function openHeardRepeatWindow(
   messageId: string,
   windowMs: number = MESHCORE_HEARD_REPEAT_WINDOW_MS,
   openedAt: number = Date.now(),
+  expect?: MeshcoreOwnChannelFloodExpectation,
 ): void {
   const prev = pendingByIdentity.get(identityId);
   if (prev) {
@@ -87,6 +140,7 @@ export function openHeardRepeatWindow(
     messageId,
     openedAt,
     windowMs,
+    ...(expect ? { expect } : {}),
   });
   useRelayCoverageStore.getState().set(identityId, messageId, {
     protocol: 'meshcore',
@@ -204,9 +258,9 @@ export interface RecordMeshcoreRfRxArgs {
   isOwnMeshcoreTx: boolean;
   /**
    * GRP_TXT channel floods do not carry a cleartext originator pubkey, so
-   * `isOwnMeshcoreTx` is usually false on repeater overhears. When true and a
-   * listen window is open, credit Repeater/Room hashes in the flood path
-   * (forwarders only — MeshCore never puts the originator in `path`).
+   * `isOwnMeshcoreTx` is usually false on repeater overhears. When true, the packet
+   * is credited only once it (or an earlier rebroadcast of the same payload) decrypts
+   * to the window's {@link MeshcoreOwnChannelFloodExpectation}.
    */
   treatAsOwnChannelFlood?: boolean;
   pathBytes: readonly number[];
@@ -217,7 +271,7 @@ export interface RecordMeshcoreRfRxArgs {
   /**
    * Path-invariant flood id ({@link MeshCorePathInvariantPayloadId}). When the
    * window already bound an id, mismatched packets are ignored (foreign floods).
-   * Empty-path / own TX binds the id for later rebroadcasts.
+   * Own TX, or a GRP_TXT whose `innerPayload` decrypts to the expectation, binds the id.
    */
   payloadIdentity?: MeshCorePathInvariantPayloadId | null;
   snr?: number;
@@ -233,10 +287,10 @@ export interface RecordMeshcoreRfRxArgs {
  * Credit flood-path forwarder hashes on a channel-flood / own-TX RF overhear to the open TX window.
  *
  * Correlation:
- * - Bind path-invariant payload id only from own-TX echo or empty-path channel flood (never from
- *   the first credited hop — that races with foreign GRP_TXT).
- * - Once bound, mismatched ids are ignored; unbound windows credit all window GRP_TXT forwarders
- *   (pre-#888 best-effort; Chat hops still excluded).
+ * - Bind the path-invariant payload id from own-TX echo, or from a GRP_TXT that decrypts with the
+ *   send's channel secret to `"senderName: wireText"` with a timestamp near the send.
+ * - Once bound, mismatched ids are ignored. Unbound windows never credit GRP_TXT forwarders,
+ *   so other people's channel traffic in the window does not count as "Heard by".
  */
 export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   const {
@@ -260,20 +314,24 @@ export function recordMeshcoreRfRx(args: RecordMeshcoreRfRxArgs): void {
   if (!window) return;
 
   const incomingId = payloadIdentity ?? null;
-  // Bind only from own-TX or empty-path channel echo — never from first credited hop.
-  const canBindIdentity =
-    Boolean(incomingId) &&
-    !window.payloadIdentity &&
-    (isOwnMeshcoreTx || (Boolean(treatAsOwnChannelFlood) && pathBytes.length === 0));
-  if (canBindIdentity && incomingId) {
-    window.payloadIdentity = incomingId;
-    pendingByIdentity.set(identityId, { ...window });
+  if (!window.payloadIdentity && incomingId) {
+    // Bind from own TX, or from a GRP_TXT that decrypts to our own channel message.
+    const ownGrpTxt =
+      !isOwnMeshcoreTx &&
+      Boolean(treatAsOwnChannelFlood) &&
+      window.expect != null &&
+      grpTxtMatchesExpectation(incomingId.innerPayload, window.expect, window.windowMs);
+    if (isOwnMeshcoreTx || ownGrpTxt) {
+      window.payloadIdentity = incomingId;
+      pendingByIdentity.set(identityId, { ...window });
+    }
   }
-  if (
-    window.payloadIdentity &&
-    incomingId &&
-    !meshCorePathInvariantPayloadIdsEqual(window.payloadIdentity, incomingId)
-  ) {
+  if (window.payloadIdentity) {
+    if (incomingId && !meshCorePathInvariantPayloadIdsEqual(window.payloadIdentity, incomingId)) {
+      return;
+    }
+  } else if (!isOwnMeshcoreTx) {
+    // Unconfirmed channel flood: may be anyone's traffic, never credit it.
     return;
   }
 

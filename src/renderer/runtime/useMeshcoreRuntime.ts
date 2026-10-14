@@ -147,8 +147,10 @@ import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import {
   clearHeardRepeatWindow,
   clearHeardRepeatWindowIfMessage,
+  clearMeshcoreHeardRepeatChannelSecrets,
   openHeardRepeatWindow,
   renameHeardRepeatWindowMessageId,
+  setMeshcoreHeardRepeatChannelSecrets,
 } from '../lib/meshcore/heardRepeatTracker';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
@@ -1105,6 +1107,12 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     selfInfoRef.current = selfInfo;
   }, [selfInfo]);
+
+  useEffect(() => {
+    setMeshcoreHeardRepeatChannelSecrets(channels);
+  }, [channels]);
+
+  useEffect(() => clearMeshcoreHeardRepeatChannelSecrets, []);
 
   useEffect(() => {
     setMeshcoreDiagnosticsNodes(nodes, myNodeNumRef.current);
@@ -4565,7 +4573,20 @@ export function useMeshcoreRuntime() {
           const provisionalHeardId = `out:mc-ch:${sentAt}:${channelIdx}`;
           if (hadRadioConn && heardIdentityId) {
             // Open before TX so fast repeater overhears during send can still credit.
-            openHeardRepeatWindow(heardIdentityId, provisionalHeardId);
+            openHeardRepeatWindow(
+              heardIdentityId,
+              provisionalHeardId,
+              undefined,
+              undefined,
+              selfInfo?.name
+                ? {
+                    channelIndex: channelIdx,
+                    senderName: selfInfo.name,
+                    wireText: textToSend,
+                    sentAtSec: Math.floor(sentAt / 1000),
+                  }
+                : undefined,
+            );
           }
           if (hadRadioConn) {
             try {
