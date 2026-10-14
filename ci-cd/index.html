@@ -3215,7 +3215,7 @@ budgets live in
 <li><strong>Build matrix</strong> — stub + full-stack <code>cargo test</code> and release builds on Linux, macOS, and Windows. The WoA arm64 jobs cross-compile release binaries on Windows x64 runners; the Windows x64 matrix jobs run the corresponding host tests once.</li>
 </ol>
 <p>The full-stack matrix and the two WoA jobs cache Cargo downloads and compiled dependencies with <code>Swatinem/rust-cache</code>, separately by job, target triple, and Rust toolchain. The cache is restored after cloning the current Ratspeak sources, applying overlays, and selecting the toolchain. The sidecar workspace crate is excluded, so every run still invokes Cargo to rebuild changed path dependencies and the executable. Host tests run on cache hits as well as misses; a cache miss performs a normal build. Release optimization and linking still run, so warm jobs retain some compilation cost.</p>
-<p>CI, local <strong>dev</strong>, and release packaging clone the <code>.rsstack/</code> workspace through <code>scripts/clone-ratspeak-stack.sh</code> at the reviewed full SHAs in <code>reticulum-sidecar/ratspeak-stack-pins.env</code>. The script verifies each fetched commit and clean checkout before overlays or Cargo run; CI and release-channel builds reject ref overrides. A local bisect requires both the relevant <code>RS_*_REF</code> and <code>MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1</code>. Open upstream feature PRs needed before they land on <code>main</code> (e.g. <a href="https://github.com/ratspeak/rsReticulum/pull/26">rsReticulum#26</a> ReplyFile, <a href="https://github.com/ratspeak/rsLXMF/pull/7">rsLXMF#7</a> multi-file attachments) are carried as overlays under <code>reticulum-sidecar/patches/</code> and tracked by <code>RATSPEAK_PATCH_ENTRIES</code> in <code>scripts/update.sh</code>. Packaging also records the verified SHAs in <code>.rsstack/RESOLVED_SHAS.txt</code> beside each artifact.</p>
+<p>CI, local <strong>dev</strong>, and release packaging clone the <code>.rsstack/</code> workspace through <code>scripts/clone-ratspeak-stack.sh</code> at the reviewed full SHAs in <code>reticulum-sidecar/ratspeak-stack-pins.env</code>. The script verifies each fetched commit and clean checkout before overlays or Cargo run; CI and release-channel builds reject ref overrides. A local bisect requires both the relevant <code>RS_*_REF</code> and <code>MESH_CLIENT_ALLOW_RATSPEAK_REF_OVERRIDE=1</code>. Open upstream feature PRs needed before they land on <code>main</code> (e.g. <a href="https://github.com/ratspeak/rsReticulum/pull/26">rsReticulum#26</a> ReplyFile, <a href="https://github.com/ratspeak/rsLXMF/pull/7">rsLXMF#7</a> multi-file attachments) are carried as overlays under <code>reticulum-sidecar/patches/</code> and tracked by <code>RATSPEAK_PATCH_ENTRIES</code> in <code>scripts/update.sh</code>. Packaging also records the verified SHAs in <code>.rsstack/RESOLVED_SHAS.txt</code> beside each artifact. The repo-root <code>flake.nix</code> fetches the same pins with <code>builtins.fetchTree</code> and applies overlays from <code>scripts/lib/ratspeak-overlay-apply-list.sh</code>. <code>scripts/flake-stack-pins.test.mjs</code>, selected by <code>scripts/precommit-tests.mjs</code> whenever those inputs change, keeps the flake from drifting. No workflow evaluates or builds the flake. See <a href="../development-environment/#nix-nixos-and-macos">development-environment.md</a>.</p>
 <p>Local parity: <code>pnpm run reticulum:sidecar:clippy:full</code>, <code>pnpm run check:reticulum-sidecar</code> (pre-commit full-feature). See <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a>.</p>
 <hr />
 <h2 id="coderabbit">CodeRabbit<a class="headerlink" href="#coderabbit" title="Permanent link">&para;</a></h2>
@@ -3298,6 +3298,10 @@ budgets live in
   release exists, LXMFace <code>js/lxmface.js</code> commit). Sibling <strong>rsReticulum</strong> /
   <strong>rsLXMF</strong> / <strong>rsNomad</strong> / <strong>rsLXST</strong> / <strong>lrgp-rs</strong> use the committed full SHAs in
   <code>reticulum-sidecar/ratspeak-stack-pins.env</code>; dependency updates require a reviewed pin change.</li>
+<li><strong>Electron / pnpm / Node.js major bumps</strong> also require the matching nixpkgs attribute
+  (<code>electron_&lt;major&gt;</code>, <code>pnpm_&lt;major&gt;</code>, <code>nodejs_&lt;major&gt;</code>) in <code>flake.nix</code>, plus
+  <code>nix flake update</code> when the locked nixpkgs lacks it. Otherwise
+  <code>scripts/flake-stack-pins.test.mjs</code> fails the full suite.</li>
 </ul>
 <h3 id="testing-dependabot-prs-locally">Testing Dependabot PRs locally<a class="headerlink" href="#testing-dependabot-prs-locally" title="Permanent link">&para;</a></h3>
 <p>Use <strong>pnpm</strong> (not npm) to test dependabot PRs:</p>
@@ -3722,7 +3726,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 12, 2026 22:22:50 UTC">October 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 14, 2026 14:55:35 UTC">October 14, 2026</span>
   </span>
 
     
