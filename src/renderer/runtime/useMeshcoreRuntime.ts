@@ -658,6 +658,8 @@ export function useMeshcoreRuntime() {
   const [meshcoreContactsForTelemetry, setMeshcoreContactsForTelemetry] = useState<
     MeshCoreContactRaw[]
   >([]);
+  /** True once a contacts dump from the connected radio has been applied this session. */
+  const [meshcoreRadioContactsLoaded, setMeshcoreRadioContactsLoaded] = useState(false);
   const [meshcorePubKeyHexByNodeId, setMeshcorePubKeyHexByNodeId] = useState<Map<number, string>>(
     new Map(),
   );
@@ -1955,6 +1957,7 @@ export function useMeshcoreRuntime() {
           pendingPathUpdateNodeIds: pendingIds,
           onContacts: (contacts) => {
             setMeshcoreContactsForTelemetry(contacts);
+            setMeshcoreRadioContactsLoaded(true);
             setMeshcorePubKeyHexByNodeId(
               mergeMeshcorePubKeyHexFromContacts(contacts, selfInfoRef.current),
             );
@@ -2720,6 +2723,7 @@ export function useMeshcoreRuntime() {
         if (sequentialRadioInit) {
           getContactsStart = performance.now();
         }
+        setMeshcoreRadioContactsLoaded(false);
         // TCP only: FIN during dump must not reconnect-loop (BLE/serial ignore this latch path).
         meshcoreTcpContactsDumpInFlightRef.current = transportType === 'tcp';
         let contactsRaw: MeshCoreContactRaw[] = [];
@@ -2786,6 +2790,7 @@ export function useMeshcoreRuntime() {
           assertInitConnStillLive();
           initOnRadioContactCount = contacts.length;
           setMeshcoreContactsForTelemetry(contacts);
+          setMeshcoreRadioContactsLoaded(true);
           setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, info));
           previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
           newNodes = await awaitUnlessMeshcoreSetupCancelled(
@@ -3537,6 +3542,7 @@ export function useMeshcoreRuntime() {
       setSelfInfo(null);
       clearRadioSelfPosition('meshcore');
       setMeshcoreContactsForTelemetry([]);
+      setMeshcoreRadioContactsLoaded(false);
       setMeshcoreAutoadd(null);
       setDeviceLogs([]);
       setTelemetry([]);
@@ -4697,6 +4703,7 @@ export function useMeshcoreRuntime() {
         contactsRaw.map(meshcoreContactRawFromDevice),
       );
       setMeshcoreContactsForTelemetry(contacts);
+      setMeshcoreRadioContactsLoaded(true);
       setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
       const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
       const newNodes = await buildNodesFromContacts(contacts, {
@@ -4881,13 +4888,14 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const clearAllRepeaters = useCallback(async () => {
-    let dbContacts: MeshcoreContactDbRow[] = [];
+    let dbContacts: MeshcoreContactDbRow[];
     try {
       dbContacts = (await window.electronAPI.db.getMeshcoreContacts()) as MeshcoreContactDbRow[];
     } catch (e: unknown) {
       console.warn(
         '[useMeshcoreRuntime] clearAllRepeaters getMeshcoreContacts error ' + errLikeToLogString(e),
       );
+      throw e instanceof Error ? e : new Error(String(e));
     }
     const { removedNodeIds, radioRemoveFailures } = await clearMeshcoreRepeaters({
       conn: connRef.current,
@@ -8664,6 +8672,7 @@ export function useMeshcoreRuntime() {
       telemetryDeviceUpdateInterval: undefined as number | undefined,
       setRadioParams,
       meshcoreContactsForTelemetry,
+      meshcoreRadioContactsLoaded,
       meshcorePubKeyHexByNodeId,
       meshcoreAutoadd,
       applyMeshcoreContactAutoAdd,
@@ -8781,6 +8790,7 @@ export function useMeshcoreRuntime() {
       connectAutomatic,
       setRadioParams,
       meshcoreContactsForTelemetry,
+      meshcoreRadioContactsLoaded,
       meshcorePubKeyHexByNodeId,
       meshcoreAutoadd,
       applyMeshcoreContactAutoAdd,

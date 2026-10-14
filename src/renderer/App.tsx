@@ -3097,18 +3097,20 @@ function AppContent() {
   }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
 
   useEffect(() => {
-    const connected = meshcoreRuntime.state.status !== 'disconnected';
     setDebugSnapshotMeshcoreRadioLive(
       buildDebugSnapshotMeshcoreRadioLive(
         meshcoreRuntime.selfInfo,
         meshcoreRuntime.state,
-        connected ? meshcoreRuntime.meshcoreContactsForTelemetry.length : null,
+        meshcoreRuntime.meshcoreRadioContactsLoaded
+          ? meshcoreRuntime.meshcoreContactsForTelemetry.length
+          : null,
       ),
     );
   }, [
     meshcoreRuntime.selfInfo,
     meshcoreRuntime.state,
     meshcoreRuntime.meshcoreContactsForTelemetry,
+    meshcoreRuntime.meshcoreRadioContactsLoaded,
   ]);
 
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
