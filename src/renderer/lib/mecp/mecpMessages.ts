@@ -17,7 +17,8 @@ import {
  * Vendored MECP packs (CC BY 4.0, https://github.com/xiang-dev-1/MECP `languages/`).
  * Upstream JSON includes a website `ui` block and other unread metadata; this app
  * strips those keys. A resync must strip them again and keep `codes` / `categories`.
- * English stays on the main chunk; other packs load on demand.
+ * UI packs use the loader/cache below. Code labels are also bundled synchronously
+ * by mecpReadableText so generated tails can be matched in any incoming language.
  */
 import enLanguage from './languages/en.json';
 import { stripMecpReadableSummary } from './mecpReadableText';
@@ -37,7 +38,7 @@ const LANGUAGE_MODULES: Partial<Record<string, LanguageFile>> = {
 };
 
 /**
- * Lazy-load non-English packs so the default path stays light.
+ * Load non-English UI packs into the cache on demand.
  * Keys must stay inside the range of `mecpLanguageForAppLocale` (fa/no/sk/sr/sv
  * are omitted: that function never returns them). `zh-tw` stays: the mapper
  * returns it for `zh-tw`, `zh-hant`, and `zh-tw*`.
@@ -169,7 +170,7 @@ export function normalizeMecpFreetext(freetext: string, context?: MecpFreetextCo
   return notes.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-/** Normalize user notes, excluding coordinates and generated code summaries from incident identity. */
+/** Normalize user notes without coordinates, optional code explanations, or the MECP help tail. */
 export function normalizeMecpFreetextForMatch(
   freetext: string,
   context?: MecpFreetextContext,

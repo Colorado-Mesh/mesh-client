@@ -74,23 +74,26 @@ describe('ChatPanel outbox channel scopes', () => {
     queueOutbox.mockClear();
   });
 
-  it('queues the exact readable drill on the selected emergency channel with its radio budget', async () => {
-    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ mecpComposeEnabled: true }));
-    const emergencyChannel = { ...localChannel, index: 5, name: 'emergency' };
-    panel([emergencyChannel]);
-    expect(composeArgs.maxMessageBytes).toBe(126);
-    const payload = encodeReadableMecp(3, ['D02'], '1pax app test').message;
-    await composeArgs.onSend(payload);
-    expect(queueOutbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        protocol: 'meshcore',
-        channel: 5,
-        toNode: null,
-        payload,
-        priority: 'emergency',
-      }),
-    );
-  });
+  it.each([{}, { explanationLanguage: 'de', includeHelpLink: true }])(
+    'queues the exact chosen drill text on the emergency channel with its radio budget: %j',
+    async (options) => {
+      localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ mecpComposeEnabled: true }));
+      const emergencyChannel = { ...localChannel, index: 5, name: 'emergency' };
+      panel([emergencyChannel]);
+      expect(composeArgs.maxMessageBytes).toBe(126);
+      const payload = encodeReadableMecp(3, ['D02'], '1pax app test', 126, options).message;
+      await composeArgs.onSend(payload);
+      expect(queueOutbox).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'meshcore',
+          channel: 5,
+          toNode: null,
+          payload,
+          priority: 'emergency',
+        }),
+      );
+    },
+  );
 
   it.each([
     [localChannel, '#us-tn-tri', '#us-tn-tri'],

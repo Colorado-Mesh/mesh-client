@@ -40,9 +40,9 @@ describe('composeGeneralAck', () => {
   it('round-trips R01 + echoed codes + callsign, and is not a beacon ACK', () => {
     const msg = composeGeneralAck(0, ['M01', 'P05'], {
       callsign: 'KD5IHC',
-      freetext: 'Received report from Ada.',
+      freetext: 'norte',
     });
-    expect(msg).toBe('MECP/0/R01 M01 P05 Received report from Ada. ~KD5IHC [MAYDAY ACK: Received]');
+    expect(msg).toBe('MECP/0/R01 M01 P05 norte ~KD5IHC');
     expect(MECP_REGEX.test(msg)).toBe(true);
     const parsed = tryParseMecp(msg)!;
     expect(parsed.severity).toBe(0);
@@ -55,7 +55,7 @@ describe('composeGeneralAck', () => {
 
   it('dedupes R01, drops invalid codes, and sanitizes callsign', () => {
     const msg = composeGeneralAck(2, ['R01', 'bad', 'T04'], { callsign: 'W1-AW/portable' });
-    expect(msg).toBe('MECP/2/R01 T04 ~W1AWporta [SAFETY ACK: Received]');
+    expect(msg).toBe('MECP/2/R01 T04 ~W1AWporta');
     expect(tryParseMecp(msg)!.extracted.callsign).toBe('W1AWporta');
   });
 
@@ -79,28 +79,55 @@ describe('composeGeneralAck', () => {
   });
 
   it('enforces the destination transport budget and keeps drill markers', () => {
-    const msg = composeGeneralAck(3, ['D02'], { freetext: 'Received report from Ada.' });
-    expect(msg).toContain('[TEST ONLY: Received; This is a test]');
+    const msg = composeGeneralAck(3, ['D02'], { freetext: 'app test' });
+    expect(msg).toBe('MECP/3/R01 D02 app test');
     const exactLimit = getByteLength(msg);
     expect(
       composeGeneralAck(3, ['D02'], {
-        freetext: 'Received report from Ada.',
+        freetext: 'app test',
         maxBytes: exactLimit,
       }),
     ).toBe(msg);
     expect(() =>
       composeGeneralAck(3, ['D02'], {
-        freetext: 'Received report from Ada.',
+        freetext: 'app test',
         maxBytes: exactLimit - 1,
       }),
     ).toThrow(RangeError);
+  });
+
+  it('adds an explanation in the selected language and a help link only when requested', () => {
+    const msg = composeGeneralAck(0, ['M01'], {
+      callsign: 'EOC1',
+      freetext: 'norte',
+      explanationLanguage: 'es',
+      includeHelpLink: true,
+    });
+    expect(msg).toContain('Recibido');
+    expect(msg).toContain('https://mecp.radio');
+    expect(msg).not.toContain('Received');
+    expect(tryParseMecp(msg)!.codes).toEqual(['R01', 'M01']);
+    expect(tryParseMecp(msg)!.extracted.callsign).toBe('EOC1');
+    expect(msg.startsWith('MECP/0/R01 M01 norte ~EOC1 ')).toBe(true);
+  });
+
+  it('rejects optional additions that do not fit rather than discarding notes or references', () => {
+    const compact = composeGeneralAck(0, ['M01'], { freetext: 'norte', callsign: 'EOC1' });
+    const opts = { freetext: 'norte', callsign: 'EOC1', maxBytes: getByteLength(compact) };
+    expect(composeGeneralAck(0, ['M01'], opts)).toBe(compact);
+    expect(() => composeGeneralAck(0, ['M01'], { ...opts, explanationLanguage: 'es' })).toThrow(
+      RangeError,
+    );
+    expect(() => composeGeneralAck(0, ['M01'], { ...opts, includeHelpLink: true })).toThrow(
+      RangeError,
+    );
   });
 });
 
 describe('composeBeaconAck / composeBeaconCancel', () => {
   it('round-trips B02 with the decoder', () => {
     const msg = composeBeaconAck(0, { freetext: 'heard you' });
-    expect(msg).toBe('MECP/0/B02 heard you [MAYDAY: Beacon received]');
+    expect(msg).toBe('MECP/0/B02 heard you');
     const parsed = tryParseMecp(msg)!;
     expect(isBeaconAck(parsed.codes)).toBe(true);
     expect(isBeaconCancel(parsed.codes)).toBe(false);
@@ -108,7 +135,7 @@ describe('composeBeaconAck / composeBeaconCancel', () => {
 
   it('round-trips B03 with the decoder', () => {
     const msg = composeBeaconCancel(3);
-    expect(msg).toBe('MECP/3/B03 [ROUTINE: Cancel beacon — I am OK]');
+    expect(msg).toBe('MECP/3/B03');
     const parsed = tryParseMecp(msg)!;
     expect(isBeaconCancel(parsed.codes)).toBe(true);
     expect(isBeaconAck(parsed.codes)).toBe(false);
@@ -127,7 +154,17 @@ describe('composeBeaconAck / composeBeaconCancel', () => {
         'D02',
       ]);
       expect(tryParseMecp(msg)!.isDrill).toBe(true);
-      expect(msg).toContain('[TEST ONLY:');
+      expect(msg).toBe(`MECP/0/${compose === composeBeaconAck ? 'B02' : 'B03'} D02`);
+    },
+  );
+
+  it.each([composeBeaconAck, composeBeaconCancel])(
+    'supports an explicitly selected explanation language and help link',
+    (compose) => {
+      const msg = compose(3, { explanationLanguage: 'es', includeHelpLink: true });
+      expect(msg).toContain(compose === composeBeaconAck ? 'Baliza confirmada' : 'Cancelar baliza');
+      expect(msg).toContain('https://mecp.radio');
+      expect(msg).not.toContain('Beacon received');
     },
   );
 

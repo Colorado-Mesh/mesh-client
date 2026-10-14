@@ -1,8 +1,23 @@
 import type { EncodeResult, Severity } from './engine';
 import { encode, MAX_MESSAGE_BYTES } from './engine';
-import english from './languages/en.json';
+import { MECP_EXPLANATION_LANGUAGES } from './mecpExplanationLanguages';
 
-const ENGLISH_CODES: Readonly<Partial<Record<string, string>>> = english.codes;
+export { MECP_EXPLANATION_LANGUAGES } from './mecpExplanationLanguages';
+
+export interface MecpWireTextOptions {
+  explanationLanguage?: string;
+  includeHelpLink?: boolean;
+}
+
+export const MECP_HELP_URL = 'https://mecp.radio';
+
+type CodeLabels = Readonly<Partial<Record<string, string>>>;
+
+const CODE_PACKS: Readonly<Partial<Record<string, CodeLabels>>> = import.meta.glob<CodeLabels>(
+  './languages/*.json',
+  { eager: true, import: 'codes' },
+);
+
 const SEVERITY_LABELS: Readonly<Partial<Record<number, string>>> = {
   0: 'MAYDAY',
   1: 'URGENT',
@@ -10,7 +25,30 @@ const SEVERITY_LABELS: Readonly<Partial<Record<number, string>>> = {
   3: 'ROUTINE',
 };
 
-function readableSummary(severity: number, codes: readonly string[]): string {
+function summaryCodes(codes: readonly string[]): readonly string[] {
+  // Other ACK codes describe the original report, not actions by the acknowledging station.
+  return codes.includes('R01')
+    ? codes.filter((code) => code === 'R01' || code === 'D01' || code === 'D02')
+    : codes;
+}
+
+function localizedSummary(language: string, codes: readonly string[]): string {
+  const labels = CODE_PACKS[`./languages/${language}.json`];
+  if (!labels || !MECP_EXPLANATION_LANGUAGES.some((choice) => choice.id === language)) {
+    throw new RangeError(`Unsupported MECP explanation language: ${language}`);
+  }
+  const selected = summaryCodes(codes);
+  const ordered = [
+    ...selected.filter((code) => code === 'D02'),
+    ...selected.filter((code) => code === 'D01'),
+    ...selected.filter((code) => code !== 'D01' && code !== 'D02'),
+  ];
+  const meanings = ordered.map((code) => labels[code] ?? code);
+  return meanings.length > 0 ? `[${language}: ${meanings.join('; ')}]` : `[${language}]`;
+}
+
+function legacyEnglishSummary(severity: number, codes: readonly string[]): string {
+  const english = CODE_PACKS['./languages/en.json'];
   const isAck = codes.includes('R01');
   const priority = SEVERITY_LABELS[severity] ?? 'MECP';
   const label = codes.includes('D02')
@@ -20,14 +58,10 @@ function readableSummary(severity: number, codes: readonly string[]): string {
       : isAck
         ? `${priority} ACK`
         : priority;
-  // Other ACK codes describe the original report, not actions by the acknowledging station.
-  const summaryCodes = isAck
-    ? codes.filter((code) => code === 'R01' || code === 'D01' || code === 'D02')
-    : codes;
-  const meanings = summaryCodes.map((code) => {
+  const meanings = summaryCodes(codes).map((code) => {
     if (code === 'R01') return 'Received';
     if (code === 'B02') return 'Beacon received';
-    return ENGLISH_CODES[code] ?? code;
+    return english?.[code] ?? code;
   });
   return meanings.length > 0 ? `[${label}: ${meanings.join('; ')}]` : `[${label}]`;
 }
@@ -38,9 +72,16 @@ export function encodeReadableMecp(
   codes: string[],
   freetext?: string,
   maxBytes = MAX_MESSAGE_BYTES,
+  options: MecpWireTextOptions = {},
 ): EncodeResult {
-  const summary = readableSummary(severity, codes);
-  const result = encode(severity, codes, [freetext?.trim(), summary].filter(Boolean).join(' '));
+  const summary =
+    options.explanationLanguage === undefined
+      ? undefined
+      : localizedSummary(options.explanationLanguage, codes);
+  const details = [freetext?.trim(), summary, options.includeHelpLink ? MECP_HELP_URL : undefined]
+    .filter(Boolean)
+    .join(' ');
+  const result = encode(severity, codes, details);
   const byteLimit = Math.min(MAX_MESSAGE_BYTES, maxBytes);
   const overLimit = result.byteLength > byteLimit;
   const warnings = [...result.warnings];
@@ -50,13 +91,8 @@ export function encodeReadableMecp(
   return { ...result, overLimit, warnings };
 }
 
-/** Remove only this report's generated tail, preserving independent operator details. */
-export function stripMecpReadableSummary(
-  freetext: string,
-  severity: number,
-  codes: readonly string[],
-): string {
-  const summaryWords = readableSummary(severity, codes).toLowerCase().split(/\s+/);
+function stripExactTail(freetext: string, tail: string): string {
+  const summaryWords = tail.toLowerCase().split(/\s+/);
   const words = [...freetext.matchAll(/\S+/g)];
   const suffixWords = words.slice(-summaryWords.length);
   if (
@@ -67,4 +103,18 @@ export function stripMecpReadableSummary(
   }
   const suffixStart = suffixWords[0].index;
   return freetext.slice(0, suffixStart).trimEnd();
+}
+
+/** Remove known generated tails independently of the receiving app's display language. */
+export function stripMecpReadableSummary(
+  freetext: string,
+  severity: number,
+  codes: readonly string[],
+): string {
+  const withoutLink = stripExactTail(freetext, MECP_HELP_URL);
+  for (const language of MECP_EXPLANATION_LANGUAGES) {
+    const withoutSummary = stripExactTail(withoutLink, localizedSummary(language.id, codes));
+    if (withoutSummary !== withoutLink) return withoutSummary;
+  }
+  return stripExactTail(withoutLink, legacyEnglishSummary(severity, codes));
 }

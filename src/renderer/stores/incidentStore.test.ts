@@ -345,6 +345,114 @@ describe('incidentStore', () => {
     },
   );
 
+  it.each([
+    'https://mecp.radio',
+    '[de: Verletzung]',
+    '[ru: Травма]',
+    '[de: Verletzung] https://mecp.radio',
+    '[ru: Травма] https://mecp.radio',
+  ])(
+    'optional %s never supplies distinct victim notes or a suppression tombstone',
+    async (tail) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      for (const [index, notes] of ['', '39.7,-105.0'].entries()) {
+        const text = `MECP/0/M01 ${notes} ${tail}`;
+        const a = s.upsertFromMecp(
+          report(text, { senderId: `!alice-${index}`, receivedAt: Date.now() }),
+        )!;
+        const b = s.upsertFromMecp(
+          report(text, {
+            senderId: `!bob-${index}`,
+            protocol: 'meshcore',
+            receivedAt: Date.now(),
+          }),
+        )!;
+
+        expect(b).not.toBe(a);
+        expect(useIncidentStore.getState().incidents[a]).toMatchObject({ freetext: notes });
+        expect(useIncidentStore.getState().incidents[b]).toMatchObject({ freetext: notes });
+        s.resolveIncident(a);
+        expect(
+          Object.keys(useIncidentStore.getState().resolvedTombstones).some((key) =>
+            key.startsWith('payload:'),
+          ),
+        ).toBe(false);
+        const seedId = s.upsertFromMecp({
+          ...report(text, {
+            senderId: `!third-${index}`,
+            protocol: 'reticulum',
+            receivedAt: Date.now(),
+          }),
+          fromSeed: true,
+        });
+        expect(seedId).not.toBeNull();
+        expect(seedId).not.toBe(a);
+      }
+      expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(6);
+    },
+  );
+
+  it.each([
+    ['compact to German', '', '[de: Verletzung] https://mecp.radio'],
+    ['Russian to compact', '[ru: Травма] https://mecp.radio', ''],
+    ['German to Russian', '[de: Verletzung]', '[ru: Травма]'],
+  ])(
+    'merges the detailed bridge %s without rewriting either payload',
+    async (_label, fromTail, toTail) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const notes = '2pax trapped 39.7,-105.0';
+      const original = report(`MECP/0/M01 ${notes} ${fromTail}`, { messageId: 'original' });
+      const relayed = report(`MECP/0/M01 ${notes} ${toTail}`, {
+        senderId: '!bridge',
+        protocol: 'meshcore',
+        messageId: 'bridge-copy',
+        receivedAt: 2_000,
+      });
+      const originalRaw = original.parsed.raw;
+      const relayRaw = relayed.parsed.raw;
+      const id = s.upsertFromMecp(original)!;
+
+      expect(s.upsertFromMecp(relayed)).toBe(id);
+      expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+      expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+        freetext: notes,
+        lat: 39.7,
+        lon: -105.0,
+        coordsSource: 'message',
+        senderId: '!victim',
+        relaySenderIds: ['!bridge'],
+        messageIds: ['original', 'bridge-copy'],
+      });
+      expect(original.parsed.raw).toBe(originalRaw);
+      expect(relayed.parsed.raw).toBe(relayRaw);
+    },
+  );
+
+  it('keeps a same-sender incident while language and help toggles change through escalation', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/2/M01 ridge 39.7,-105.0'))!;
+    const updates = [
+      'MECP/2/M01 ridge 39.7,-105.0 [de: Verletzung]',
+      'MECP/2/M01 ridge 39.7,-105.0 https://mecp.radio',
+      'MECP/0/M01 ridge 39.7,-105.0 [ru: Травма] https://mecp.radio',
+      'MECP/0/M01 ridge 40.1,-104.5',
+    ];
+    for (const [index, text] of updates.entries()) {
+      expect(s.upsertFromMecp(report(text, { receivedAt: 2_000 + index * 1_000 }))).toBe(id);
+    }
+
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+    expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+      severity: 0,
+      freetext: 'ridge 40.1,-104.5',
+      lat: 40.1,
+      lon: -104.5,
+    });
+  });
+
   it('merges a detailed readable report with its relayed copy and preserves user notes', async () => {
     const { useIncidentStore } = await loadStore();
     const s = useIncidentStore.getState();
@@ -404,14 +512,22 @@ describe('incidentStore', () => {
   it('preserves beacon acknowledgement through readable severity and position updates', async () => {
     const { useIncidentStore } = await loadStore();
     const s = useIncidentStore.getState();
-    const id = s.upsertFromMecp(report(encodeReadableMecp(2, ['B01'], 'ridge').message))!;
+    const id = s.upsertFromMecp(
+      report(
+        encodeReadableMecp(2, ['B01'], 'ridge', undefined, { explanationLanguage: 'de' }).message,
+      ),
+    )!;
     s.confirmBeacon(id);
 
     expect(
       s.upsertFromMecp(
-        report(encodeReadableMecp(0, ['B01'], 'ridge 39.7,-105.0').message, {
-          receivedAt: 2_000,
-        }),
+        report(
+          encodeReadableMecp(0, ['B01'], 'ridge 39.7,-105.0', undefined, {
+            explanationLanguage: 'ru',
+            includeHelpLink: true,
+          }).message,
+          { receivedAt: 2_000 },
+        ),
       ),
     ).toBe(id);
     expect(useIncidentStore.getState().incidents[id]).toMatchObject({

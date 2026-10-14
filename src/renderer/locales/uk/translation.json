@@ -6678,7 +6678,13 @@
       "responseTitle": "Відповідь MECP",
       "showAllCodes": "Показати всі коди MECP",
       "openRequest": "Запит або звіт з MECP",
-      "wirePreview": "Що бачитимуть інші застосунки"
+      "wirePreview": "Що бачитимуть інші застосунки",
+      "includeExplanation": "Додати пояснення",
+      "explanationLanguage": "Мова пояснення",
+      "explanationHint": "Виберіть мову, зрозумілу одержувачам. Ці слова займають місце в повідомленні.",
+      "includeHelpLink": "Додати посилання на довідку MECP",
+      "helpLinkHint": "Додає https://mecp.radio для тих, хто має доступ до інтернету.",
+      "optionalTextOverLimit": "Повідомлення надто довге. Вимкніть доповнення або скоротіть нотатки."
     },
     "rebroadcast": {
       "title": "Повторна передача MECP RF",

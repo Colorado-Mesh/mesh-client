@@ -6572,7 +6572,13 @@
       "responseTitle": "Tanggapan MECP",
       "showAllCodes": "Tampilkan semua kode MECP",
       "openRequest": "Minta atau laporkan dengan MECP",
-      "wirePreview": "Teks yang akan ditampilkan aplikasi lain"
+      "wirePreview": "Teks yang akan ditampilkan aplikasi lain",
+      "includeExplanation": "Sertakan penjelasan",
+      "explanationLanguage": "Bahasa penjelasan",
+      "explanationHint": "Pilih bahasa yang dipahami penerima. Kata-kata ini memakai ruang dalam pesan.",
+      "includeHelpLink": "Sertakan tautan bantuan MECP",
+      "helpLinkHint": "Menambahkan https://mecp.radio untuk orang yang memiliki akses internet.",
+      "optionalTextOverLimit": "Pesan terlalu panjang. Matikan tambahan atau persingkat catatan Anda."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

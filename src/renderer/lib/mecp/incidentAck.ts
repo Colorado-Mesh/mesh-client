@@ -1,7 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import type { EmergencyIncident } from './incidentTypes';
-import { composeBeaconAck, composeGeneralAck } from './mecpAck';
+import { composeBeaconAck, composeGeneralAck, type MecpAckOptions } from './mecpAck';
 
 /** Same predicate as `AckIncidentButton` so the button label and wire payload always agree. */
 export function incidentNeedsBeaconAck(
@@ -14,11 +14,10 @@ export function incidentNeedsBeaconAck(
 export function composeIncidentAck(
   incident: Pick<
     EmergencyIncident,
-    'severity' | 'codes' | 'beaconActive' | 'beaconAcked' | 'senderName' | 'senderId' | 'isDrill'
+    'severity' | 'codes' | 'beaconActive' | 'beaconAcked' | 'isDrill'
   >,
-  opts?: { callsign?: string; maxBytes?: number },
+  opts?: MecpAckOptions & { callsign?: string },
 ): string {
-  const sender = incident.senderName.trim() || incident.senderId;
   // Older stored test incidents may have isDrill without retaining their original drill code.
   const codes =
     incident.isDrill && !incident.codes.some((code) => code === 'D01' || code === 'D02')
@@ -26,15 +25,10 @@ export function composeIncidentAck(
       : incident.codes;
   return incidentNeedsBeaconAck(incident)
     ? composeBeaconAck(incident.severity, {
-        freetext: `Received beacon from ${sender}.`,
+        ...opts,
         drillCodes: codes,
-        maxBytes: opts?.maxBytes,
       })
-    : composeGeneralAck(incident.severity, codes, {
-        callsign: opts?.callsign,
-        freetext: `Received report from ${sender}.`,
-        maxBytes: opts?.maxBytes,
-      });
+    : composeGeneralAck(incident.severity, codes, opts);
 }
 
 export interface IncidentAckRoute {

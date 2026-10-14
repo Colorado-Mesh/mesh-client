@@ -84,7 +84,7 @@ describe('resolveIncidentWithBeaconCancel', () => {
         viewKey: 'ch:2',
         channel: 2,
         toNode: null,
-        payload: expect.stringMatching(/^MECP\/0\/B03 \[MAYDAY: Cancel beacon/),
+        payload: 'MECP/0/B03',
         priority: 'emergency',
       }),
     );
@@ -153,8 +153,7 @@ describe('resolveIncidentWithBeaconCancel', () => {
     ).resolves.toBe('cancel-queued');
     const entry = queueOutbox.mock.calls[0][0];
     expect(entry).toMatchObject({ protocol: 'meshtastic', channel: 2, toNode: null });
-    expect(entry.payload).toContain('I am OK');
-    expect(entry.payload).toContain('[TEST ONLY:');
+    expect(entry.payload).toBe('MECP/3/B03 D02');
     expect(tryParseMecp(entry.payload)!.codes).toEqual(['B03', 'D02']);
     expect(tryParseMecp(entry.payload)!.isDrill).toBe(true);
   });
@@ -171,11 +170,11 @@ describe('resolveIncidentWithBeaconCancel', () => {
     expect(tryParseMecp(payload)!.isDrill).toBe(true);
   });
 
-  it('keeps the beacon open when the destination budget cannot fit the readable cancel', async () => {
+  it('keeps the beacon open when the destination budget cannot fit the compact cancel', async () => {
     const incident = ingest('MECP/0/B01', '42', { localOrigin: true });
     const warn = mockConsoleWarn();
     const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
-    const messageByteLimit = vi.fn(() => 20);
+    const messageByteLimit = vi.fn(() => 9);
     await expect(
       resolveIncidentWithBeaconCancel(
         incident,
@@ -227,7 +226,7 @@ describe('resolveIncidentWithBeaconCancel', () => {
         viewKey: 'dm:7',
         toNode: 7,
         channel: 2,
-        payload: expect.stringMatching(/^MECP\/0\/B03 \[MAYDAY: Cancel beacon/),
+        payload: 'MECP/0/B03',
         priority: 'emergency',
       }),
     );

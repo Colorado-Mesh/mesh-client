@@ -6572,7 +6572,13 @@
       "responseTitle": "MECP応答",
       "showAllCodes": "すべてのMECPコードを表示",
       "openRequest": "MECPにリクエストまたは報告する",
-      "wirePreview": "他のアプリに表示される内容"
+      "wirePreview": "他のアプリに表示される内容",
+      "includeExplanation": "説明を追加",
+      "explanationLanguage": "説明の言語",
+      "explanationHint": "受信者が理解できる言語を選んでください。説明文もメッセージの容量を使います。",
+      "includeHelpLink": "MECP ヘルプリンクを追加",
+      "helpLinkHint": "インターネットに接続できる人向けに https://mecp.radio を追加します。",
+      "optionalTextOverLimit": "メッセージが長すぎます。追加内容を無効にするか、メモを短くしてください。"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

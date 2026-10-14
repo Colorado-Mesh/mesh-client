@@ -16,13 +16,17 @@ MECP/<severity>/<codes> [freetext]
 - Overview / video: [mecp.radio](https://mecp.radio/)
 - App wrappers: `mecpMessages.ts` (`MECP_REGEX`, `tryParseMecp`), `mecpAlert.ts`, `mecpRebroadcast.ts`
 
-### Readable outbound text
+### Optional outbound explanations and help
 
-`mecpReadableText.ts` wraps the vendored encoder without changing MECP grammar. It appends a deterministic English summary such as `[MAYDAY: Injury]`, `[TEST ONLY: This is a test]`, or `[ROUTINE ACK: Received]` to the same packet. Codes and operator text stay first, preserving R03's leading numeric ETA and the existing count/GPS/reference/callsign extraction. The composer previews this exact wire text and blocks messages over the transport budget; notes and codes are never silently removed to make room.
+`mecpReadableText.ts` wraps the vendored encoder without changing MECP grammar. Its default output is compact codes plus operator notes. Per-message `MecpWireTextOptions` can append an explanation from a selected vendored language pack, such as `[de: Verletzung]`, and/or the exact help URL `https://mecp.radio`. The composer exposes both as unchecked options and starts its explanation selector on the mapped app locale; the operator can choose any of the 15 bundled MECP languages. Unsupported explicit language IDs throw rather than silently producing English.
 
-Incident acknowledgements name the report's sender and describe receipt only. Beacon acknowledgements and cancellations also carry readable text and preserve test/drill codes. Channel selection is unchanged. Queued retries and RF bridges retain the composed payload rather than adding or retranslating summaries later.
+Codes and operator text stay first, preserving R03's leading numeric ETA and existing count/GPS/reference/callsign extraction. Explanations and links count against the actual UTF-8 transport budget. The preview is the exact queued text; oversized additions block sending until the operator disables them or edits the notes. Nothing is silently shortened, removed, or split. Queued retries and RF bridges retain the composed payload rather than adding or retranslating options later.
 
-`stripMecpReadableSummary` removes only the exact generated suffix for incident identity and derived incident notes. Raw chat and audit text retain it. A generated summary alone must not enable cross-protocol merging of unrelated code-only or GPS-only reports; operator details still support matching actual bridged copies.
+ACK explanations use only receipt and drill/test meanings; echoed response codes must not imply that the acknowledging station is dispatching help or reporting all-clear. One-click incident ACKs and beacon cancellations add no automatic prose or link. Beacon controls preserve test/drill codes. Channel selection is unchanged.
+
+`stripMecpReadableSummary` recognizes exact generated explanation tails in every bundled language, the exact help URL, and prior English summaries for receive compatibility. It excludes them from incident identity and derived incident notes while raw chat and audit text retain them. A canned explanation or common link alone must not enable cross-protocol merging or payload tombstones for unrelated code-only/GPS-only reports. Operator details still support matching actual bridged copies, including across compact and explained representations.
+
+The code-label catalog is bundled synchronously so incoming explanations can be verified before incident ingest, regardless of the receiver's UI language or loaded UI cache. The existing UI pack loader API is retained; Vite may place these shared JSON modules in the initial bundle. No language data is downloaded at runtime.
 
 ## Receive path
 

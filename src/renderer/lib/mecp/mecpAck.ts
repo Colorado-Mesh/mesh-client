@@ -9,7 +9,7 @@
 import type { Severity } from './engine';
 import { CODE_REGEX, isBeaconAck } from './engine';
 import type { EmergencyIncident } from './incidentTypes';
-import { encodeReadableMecp } from './mecpReadableText';
+import { encodeReadableMecp, type MecpWireTextOptions } from './mecpReadableText';
 
 export const MECP_ACK_CODE = 'R01';
 export const MECP_BEACON_CODE = 'B01';
@@ -39,7 +39,7 @@ function sanitizeCallsign(callsign: string | undefined): string {
   return callsign.replace(/[^A-Za-z0-9]/g, '').slice(0, CALLSIGN_MAX_LEN);
 }
 
-export interface MecpAckOptions {
+export interface MecpAckOptions extends MecpWireTextOptions {
   freetext?: string;
   maxBytes?: number;
   /** Preserve drill/test suppression when acknowledging or cancelling a test beacon. */
@@ -47,13 +47,13 @@ export interface MecpAckOptions {
 }
 
 /** Keep reference codes and operator notes intact; an oversized ACK must not be sent. */
-function composeReadableWithinLimit(
+function composeWithinLimit(
   severity: Severity,
   codes: string[],
   freetext: string,
-  maxBytes: number | undefined,
+  opts: MecpAckOptions | undefined,
 ): string {
-  const result = encodeReadableMecp(severity, codes, freetext, maxBytes);
+  const result = encodeReadableMecp(severity, codes, freetext, opts?.maxBytes, opts);
   if (result.overLimit) {
     throw new RangeError(result.warnings.join('; '));
   }
@@ -71,29 +71,29 @@ export function composeGeneralAck(
 ): string {
   const echoed = echoedAckCodes(codes.filter((c) => CODE_REGEX.test(c)));
   const callsign = sanitizeCallsign(opts?.callsign);
-  return composeReadableWithinLimit(
+  return composeWithinLimit(
     severity,
     [MECP_ACK_CODE, ...echoed],
     [opts?.freetext, callsign ? `~${callsign}` : ''].filter(Boolean).join(' '),
-    opts?.maxBytes,
+    opts,
   );
 }
 
 export function composeBeaconAck(severity: Severity, opts?: MecpAckOptions): string {
-  return composeReadableWithinLimit(
+  return composeWithinLimit(
     severity,
     [MECP_BEACON_ACK_CODE, ...beaconDrillCodes(opts?.drillCodes)],
     opts?.freetext ?? '',
-    opts?.maxBytes,
+    opts,
   );
 }
 
 export function composeBeaconCancel(severity: Severity, opts?: MecpAckOptions): string {
-  return composeReadableWithinLimit(
+  return composeWithinLimit(
     severity,
     [MECP_BEACON_CANCEL_CODE, ...beaconDrillCodes(opts?.drillCodes)],
     opts?.freetext ?? '',
-    opts?.maxBytes,
+    opts,
   );
 }
 

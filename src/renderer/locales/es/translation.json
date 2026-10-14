@@ -6572,7 +6572,13 @@
       "responseTitle": "Respuesta MECP",
       "showAllCodes": "Mostrar todos los códigos MECP",
       "openRequest": "Solicitar o informar con MECP",
-      "wirePreview": "Lo que verán otras aplicaciones"
+      "wirePreview": "Lo que verán otras aplicaciones",
+      "includeExplanation": "Incluir una explicación",
+      "explanationLanguage": "Idioma de la explicación",
+      "explanationHint": "Elige un idioma que entiendan los destinatarios. Estas palabras ocupan espacio en el mensaje.",
+      "includeHelpLink": "Incluir un enlace de ayuda de MECP",
+      "helpLinkHint": "Añade https://mecp.radio para quienes tengan acceso a internet.",
+      "optionalTextOverLimit": "El mensaje es demasiado largo. Desactiva un añadido o acorta tus notas."
     },
     "rebroadcast": {
       "title": "Retransmisión MECP RF",

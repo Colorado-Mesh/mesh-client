@@ -6818,7 +6818,13 @@
       "responseTitle": "MECP response",
       "showAllCodes": "Show all MECP codes",
       "openRequest": "Request or report with MECP",
-      "wirePreview": "What other apps will see"
+      "wirePreview": "What other apps will see",
+      "includeExplanation": "Include an explanation",
+      "explanationLanguage": "Explanation language",
+      "explanationHint": "Choose a language your audience understands. These words use space in the message.",
+      "includeHelpLink": "Include a MECP help link",
+      "helpLinkHint": "Adds https://mecp.radio for people with internet access.",
+      "optionalTextOverLimit": "The message is too long. Turn off an addition or shorten your notes."
     },
     "rebroadcast": {
       "title": "RF rebroadcast bridge",

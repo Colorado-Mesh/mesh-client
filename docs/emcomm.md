@@ -29,13 +29,17 @@ MECP/<severity>/<codes> [freetext]
 2. In Chat, open the conversation to send to, then click the red **siren** button to request help or report conditions, or the blue **shield** button to respond.
 3. Choose severity and codes, add free text and optionally your position, then review **What other apps will see** and send. Both workflows start at ROUTINE with no codes selected. The response workflow opens on acknowledgements and help updates. Use **Show all MECP codes** if you need a code from another category.
 
-Mesh Client appends a short English description to the same message, so people using apps without a MECP decoder can understand it. The standard codes still display in each supported language. Tests and drills are explicitly labeled **TEST ONLY** or **DRILL ONLY**, even when their selected severity is MAYDAY. For example:
+Messages stay compact by default: standard MECP codes followed by your notes. Apps with MECP decoding show the codes in the recipient's language. For example:
 
 ```text
-MECP/3/D02 1pax app test [TEST ONLY: This is a test]
+MECP/3/D02 1pax app test
 ```
 
-Reports, tests, and acknowledgements use the current conversation; nothing moves to a separate channel. If the complete message exceeds the radio's byte limit, shorten it before sending. Mesh Client preserves your notes, coordinates, and person count rather than silently cutting them off.
+For people using apps without a decoder, **Include an explanation** adds the code meanings in a language you choose. The selector starts on your app language when a matching MECP pack is available; you can choose another language for your audience. The words stay in that selected language in apps without decoding. Drill/test meanings come first, and ACK explanations describe receipt without implying help is coming.
+
+**Include a MECP help link** adds `https://mecp.radio` for people with internet access. Explanations and the link are optional for each message and start off. They use the same packet; the link adds 19 bytes including its separator. Neither replaces an offline decoder in the receiving app.
+
+Reports, tests, and acknowledgements use the current conversation; nothing moves to a separate channel. **What other apps will see** shows the complete text and its UTF-8 byte count. If an addition makes it too long, turn it off or shorten your notes before sending. Mesh Client preserves your notes, coordinates, and person count rather than silently cutting them off. One-click incident acknowledgements and beacon cancellations stay compact.
 
 On MeshCore, queued reports and retries use the destination channel’s saved scope. Choose **Unscoped** beside Send for mesh-wide floods, or a saved region for local floods; **Default** follows the companion radio’s default.
 
