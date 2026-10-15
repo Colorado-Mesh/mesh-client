@@ -83,6 +83,8 @@ export default function MeshcoreCompanionCliSection({
   const [applyingGroup, setApplyingGroup] = useState<MeshcoreCompanionSettingGroup | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [rebootPending, setRebootPending] = useState(false);
+  /** Group whose Apply asked for a reboot; the notice renders there so it is in view. */
+  const [rebootGroup, setRebootGroup] = useState<MeshcoreCompanionSettingGroup | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
   const [consoleInput, setConsoleInput] = useState('');
@@ -162,7 +164,10 @@ export default function MeshcoreCompanionCliSection({
       setApplyingGroup(null);
     }
     setFieldErrors(errors);
-    if (needsReboot) setRebootPending(true);
+    if (needsReboot) {
+      setRebootPending(true);
+      setRebootGroup(group);
+    }
     onToast?.(
       failed.length === 0
         ? t('meshcoreCompanionCli.applied')
@@ -228,7 +233,10 @@ export default function MeshcoreCompanionCliSection({
         'received',
         isMeshcoreCompanionSensitiveCommand(command) ? '[redacted]' : res.reply,
       );
-      if (meshcoreCliReplyNeedsReboot(res.reply)) setRebootPending(true);
+      if (meshcoreCliReplyNeedsReboot(res.reply)) {
+        setRebootPending(true);
+        setRebootGroup(null);
+      }
       setConsoleInput('');
     } catch (e) {
       console.warn('[MeshcoreCompanionCliSection] console command failed ' + errLikeToLogString(e));
@@ -244,13 +252,17 @@ export default function MeshcoreCompanionCliSection({
     try {
       if (action === 'reboot') {
         setRebootPending(false);
+        setRebootGroup(null);
         onToast?.(t('meshcoreCompanionCli.rebooting'), 'success');
         await cli.rebootAndReconnect();
       } else if (action === 'poweroff') {
         await cli.powerOff();
       } else if (action === 'clearWifi') {
         const res = await cli.run(MESHCORE_COMPANION_WIFI_CLEAR_COMMAND);
-        if (res.kind === 'ok') setRebootPending(true);
+        if (res.kind === 'ok') {
+          setRebootPending(true);
+          setRebootGroup('wifi');
+        }
         await load();
       }
     } catch (e) {
@@ -360,6 +372,25 @@ export default function MeshcoreCompanionCliSection({
     );
   };
 
+  const renderRebootNotice = () => (
+    <div
+      role="status"
+      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-orange-700 bg-orange-900/40 px-3 py-2"
+    >
+      <span className="text-sm text-orange-200">{t('meshcoreCompanionCli.rebootPending')}</span>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setConfirm('reboot');
+        }}
+        className="text-sm font-medium text-orange-200 underline hover:text-orange-100"
+      >
+        {t('meshcoreCompanionCli.rebootNow')}
+      </button>
+    </div>
+  );
+
   const renderGroupBody = (group: MeshcoreCompanionSettingGroup) => {
     if (group === 'wifi' && snapshot && !snapshot.wifiSupported) {
       return <p className="text-muted text-xs">{t('meshcoreCompanionCli.wifiUnsupported')}</p>;
@@ -408,6 +439,7 @@ export default function MeshcoreCompanionCliSection({
             ? t('meshcoreCompanionCli.applying')
             : t('meshcoreCompanionCli.apply')}
         </button>
+        {rebootPending && rebootGroup === group && renderRebootNotice()}
       </>
     );
   };
@@ -432,26 +464,7 @@ export default function MeshcoreCompanionCliSection({
           <p className="text-muted text-sm">{t('meshcoreCompanionCli.requiresFirmware')}</p>
         ) : (
           <>
-            {rebootPending && (
-              <div
-                role="status"
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-orange-700 bg-orange-900/40 px-3 py-2"
-              >
-                <span className="text-sm text-orange-200">
-                  {t('meshcoreCompanionCli.rebootPending')}
-                </span>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => {
-                    setConfirm('reboot');
-                  }}
-                  className="text-sm font-medium text-orange-200 underline hover:text-orange-100"
-                >
-                  {t('meshcoreCompanionCli.rebootNow')}
-                </button>
-              </div>
-            )}
+            {rebootPending && rebootGroup === null && renderRebootNotice()}
             {loading && <p className="text-muted text-sm">{t('meshcoreCompanionCli.loading')}</p>}
             {loadError && <p className="text-sm text-red-400">{loadError}</p>}
             <button
