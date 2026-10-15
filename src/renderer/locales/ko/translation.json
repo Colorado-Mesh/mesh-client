@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "다시 연결 중… 시도 {{attempt}}/{{max}}",
     "serialReselect": "USB 직렬 연결 끊김 — 장치를 다시 선택하십시오",
     "serialReselectAction": "직렬 포트 선택",
-    "statusRegion": "연결 상태"
+    "statusRegion": "연결 상태",
+    "rebootingReconnectAttempt": "라디오 재부팅. 다시 연결 중… 시도 {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",
@@ -7208,5 +7209,142 @@
       "viewport": "현재 지도 영역"
     },
     "fitTraffic": "트래픽에 맞춰 보기"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "도우미 장치 설정",
+    "description": "연결된 컴패니언 라디오에 저장된 설정은 명령줄 (MeshCore 펌웨어 v 1.18 이상) 로 읽고 작성합니다.",
+    "requiresFirmware": "이 설정을 사용하려면 동반자를 MeshCore 펌웨어 v 1.18 이상으로 업데이트하세요.",
+    "loading": "라디오에서 설정 읽기...",
+    "loadFailed": "라디오에서 설정을 읽을 수 없습니다. 연결을 확인하고 다시 시도하세요.",
+    "refresh": "라디오에서 새로 고침",
+    "apply": "적용",
+    "applying": "신청 중",
+    "applied": "동반자 설정이 저장되었습니다.",
+    "appliedWithErrors": "일부 설정이 저장되지 않았습니다 ({{count}}). 강조 표시된 필드를 확인하세요.",
+    "applyFailed": "라디오가 이 값을 수락하지 않았습니다.",
+    "unsupported": "이 라디오에서 지원되지 않음",
+    "secretPlaceholder": "좌 동",
+    "showSecret": "표시",
+    "hideSecret": "숨기기",
+    "revealFailed": "라디오에서 저장된 비밀번호를 읽을 수 없습니다.",
+    "rebootPending": "일부 변경 사항은 라디오가 재부팅된 후에 적용됩니다.",
+    "rebootNow": "지금 재부팅하기",
+    "rebooting": "라디오를 재부팅합니다. mesh-client 이 (가) 자동으로 다시 연결됩니다.",
+    "actionFailed": "라디오가 해당 작업을 완료하지 않았습니다.",
+    "reboot": "재부팅 및 재연결",
+    "powerOff": "전원 끄기",
+    "powerHint": "재부팅하면 동일한 연결에서 자동으로 다시 연결됩니다. 전원을 끄면 연결이 끊어집니다. 라디오를 다시 켜서 다시 연결하십시오.",
+    "clearWifi": "WiFi 구성 지우기",
+    "copyIp": "IP 주소",
+    "ipCopied": "IP 주소가 복사되었습니다.",
+    "wifiTcpHint": "와이파이를 통해 연결하려면 연결에서 TCP/IP를 선택하고 {{ip}} 을 입력하세요.",
+    "wifiUnsupported": "이 라디오의 펌웨어는 WiFi 없이 제작되었습니다.",
+    "consoleHint": "보드별 명령을 포함하여 모든 companion 명령을 실행합니다. 답글은 아래에 표시됩니다.",
+    "consoleLog": "동반자 명령 내역",
+    "consoleInput": "동반자 명령",
+    "consolePlaceholder": "예: GET 라디오",
+    "consoleSend": "보내기",
+    "groups": {
+      "device": "장치",
+      "radio": "라디오 튜닝",
+      "wifi": "WiFi",
+      "power": "전원",
+      "console": "명령 콘솔"
+    },
+    "validation": {
+      "required": "값을 입력하십시오",
+      "notNumber": "숫자입력",
+      "notInteger": "정수를 입력하십시오",
+      "outOfRange": "값이 범위를 벗어났습니다.",
+      "tooLong": "값이 너무 깁니다.",
+      "invalidChars": "줄 바꿈은 허용되지 않습니다.",
+      "pinFormat": "6자리 숫자를 입력하거나 무작위 PIN에 대해 0을 입력합니다."
+    },
+    "settings": {
+      "ver": {
+        "label": "펌웨어 버전"
+      },
+      "board": {
+        "label": "이사회"
+      },
+      "tz_offset": {
+        "label": "시간대 오프셋 (시간)",
+        "hint": "라디오 자체 디스플레이에서 사용됩니다. -12에서 +14까지."
+      },
+      "pin": {
+        "label": "블루투스 핀",
+        "hint": "6자리 또는 무작위 PIN의 경우 0입니다. 재부팅 후 적용됩니다. 다시 페어링해야 합니다."
+      },
+      "af": {
+        "label": "방송 시간 계수",
+        "hint": "0 ~ 9. 더 높은 값은 전송 사이에 더 오래 기다립니다."
+      },
+      "dutycycle": {
+        "label": "듀티 사이크"
+      },
+      "int_thresh": {
+        "label": "간섭 임계값",
+        "hint": "0 ~ 255. 0은 간섭 감지를 끕니다."
+      },
+      "cad": {
+        "label": "채널 활동 감지",
+        "hint": "전송하기 전에 경청하십시오."
+      },
+      "radio_rxgain": {
+        "label": "부스트된 수신 이득",
+        "hint": "모든 무선 칩이 이를 지원하는 것은 아닙니다."
+      },
+      "rxdelay": {
+        "label": "수신 지연 기준",
+        "hint": "0 ~ 20."
+      },
+      "agc_reset_interval": {
+        "label": "AGC 재설정 간격 (초)",
+        "hint": "0에서 1020까지, 4의 배수로 반올림합니다. 0은 그것을 끕니다."
+      },
+      "txdelay": {
+        "label": "플러드 전송 지연 계수",
+        "hint": "0 ~ 2."
+      },
+      "direct_txdelay": {
+        "label": "직접 전송 지연 계수",
+        "hint": "0 ~ 2."
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "재부팅 후 적용됩니다."
+      },
+      "wifi_ssid": {
+        "label": "네트워크 이름 (SSID)",
+        "hint": "최대 32자. 재부팅 후 적용됩니다."
+      },
+      "wifi_pwd": {
+        "label": "비밀번호",
+        "hint": "최대 63자. 열린 네트워크를 위해 비워 둡니다. 재부팅 후 적용됩니다."
+      },
+      "wifi_status": {
+        "label": "상태"
+      },
+      "wifi_ip": {
+        "label": "IP 주소"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "라디오를 재부팅하시겠습니까?",
+        "message": "라디오가 다시 시작되고 mesh-client 이 (가) 자동으로 다시 연결됩니다. 재시작 중에 전송된 메시지는 대기열에 추가됩니다.",
+        "confirm": "다시 시작"
+      },
+      "poweroff": {
+        "title": "라디오의 전원을 끄시겠습니까?",
+        "message": "라디오가 꺼지고 mesh-client 의 연결이 끊어집니다. 다시 켜려면 물리적 액세스 권한이 필요합니다.",
+        "confirm": "전원 끄기"
+      },
+      "clearWifi": {
+        "title": "WiFi 구성을 지우시겠습니까?",
+        "message": "저장된 네트워크 이름과 암호가 지워집니다. 다음 재부팅 후 WiFi가 중지됩니다.",
+        "confirm": "책임"
+      }
+    }
   }
 }

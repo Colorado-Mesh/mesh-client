@@ -34,6 +34,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       meshcoreDeleteChannel: runtime.deleteMeshcoreChannel,
       applyMeshcoreContactAutoAdd: runtime.applyMeshcoreContactAutoAdd,
       applyMeshcoreTelemetryPrivacy: runtime.applyMeshcoreTelemetryPrivacyPolicy,
+      companionCli: runtime.companionCli,
       getPickerStyleNodeLabel: runtime.getPickerStyleNodeLabel,
       setRadioParams: runtime.setRadioParams,
       refreshMeshcoreAutoaddFromDevice: runtime.refreshMeshcoreAutoaddFromDevice,

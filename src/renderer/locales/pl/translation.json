@@ -1081,7 +1081,8 @@
     "reconnectingAttempt": "Ponowne łączenie… próba {{attempt}}/{{max}}",
     "serialReselect": "Utracono połączenie szeregowe USB — wybierz ponownie swoje urządzenie",
     "serialReselectAction": "Wybierz port szeregowy",
-    "statusRegion": "Status połączenia"
+    "statusRegion": "Status połączenia",
+    "rebootingReconnectAttempt": "Ponowne uruchamianie radia. Ponowne łączenie… próba {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksymalna liczba prób ponownego połączenia MQTT",
@@ -7330,5 +7331,142 @@
       "viewport": "Bieżący obszar mapy"
     },
     "fitTraffic": "Dopasuj widok do ruchu"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Ustawienia urządzenia towarzyszącego",
+    "description": "Ustawienia przechowywane w podłączonym radiu towarzyszącym, odczytywane i zapisywane za pomocą jego wiersza poleceń (oprogramowanie sprzętowe MeshCore v1.18 lub nowsze).",
+    "requiresFirmware": "Zaktualizuj towarzysza do oprogramowania sprzętowego MeshCore w wersji1.18 lub nowszej, aby korzystać z tych ustawień.",
+    "loading": "Odczytywanie ustawień z radia…",
+    "loadFailed": "Nie można odczytać ustawień z radia. Sprawdź połączenie i spróbuj ponownie.",
+    "refresh": "Odśwież z radia",
+    "apply": "Zastosuj",
+    "applying": "Stosowanie…",
+    "applied": "Ustawienia towarzyszące zostały zapisane.",
+    "appliedWithErrors": "Niektóre ustawienia nie zostały zapisane ({{count}}). Zobacz podświetlone pola.",
+    "applyFailed": "Radio nie zaakceptowało tej wartości.",
+    "unsupported": "Nieobsługiwane przez to radio",
+    "secretPlaceholder": "Niezmienione",
+    "showSecret": "Pokaż",
+    "hideSecret": "Ukryj",
+    "revealFailed": "Nie można odczytać zapisanego hasła z radia.",
+    "rebootPending": "Niektóre zmiany wchodzą w życie po ponownym uruchomieniu radia.",
+    "rebootNow": "Uruchom ponownie teraz",
+    "rebooting": "Ponowne uruchomienie radia. mesh-client połączy się ponownie automatycznie.",
+    "actionFailed": "Radio nie zakończyło tej czynności.",
+    "reboot": "Uruchom ponownie i połącz ponownie",
+    "powerOff": "Zasilanie wyłączone",
+    "powerHint": "Ponowne uruchomienie automatycznie łączy się z tym samym połączeniem. Wyłączanie odłącza się; włącz ponownie radio, aby ponownie się połączyć.",
+    "clearWifi": "Wyczyść konfigurację Wi-Fi",
+    "copyIp": "Kopiuj adres IP@ action: inmenu interface connection properties",
+    "ipCopied": "Skopiowano adres IP.",
+    "wifiTcpHint": "Aby połączyć się przez Wi-Fi, wybierz TCP/IP w Połączeniu i wpisz {{ip}}.",
+    "wifiUnsupported": "Oprogramowanie sprzętowe tego radia zostało zbudowane bez WiFi.",
+    "consoleHint": "Uruchom dowolne polecenie towarzyszące, w tym specyficzne dla tablicy. Odpowiedzi pojawiają się poniżej.",
+    "consoleLog": "Historia poleceń towarzyszących",
+    "consoleInput": "Dowództwo towarzyszące",
+    "consolePlaceholder": "np. uzyskaj radio",
+    "consoleSend": "Wyślij",
+    "groups": {
+      "device": "Urządzenie",
+      "radio": "Dostrajanie radia",
+      "wifi": "WIFI",
+      "power": "Moc",
+      "console": "Konsola poleceń"
+    },
+    "validation": {
+      "required": "Wprowadź wartość.",
+      "notNumber": "Wprowadź liczbę wpisów wyświetlanych na stronie. Wprowadź zero, aby wyświetlić wszystkie.",
+      "notInteger": "Należy wpisać liczbę całkowitą.",
+      "outOfRange": "(Ustawiona wartość jest poza zakresem).",
+      "tooLong": "Wartość jest zbyt długa.",
+      "invalidChars": "Podziały linii są niedozwolone.",
+      "pinFormat": "Wprowadź 6 cyfr lub 0 dla losowego KODU PIN."
+    },
+    "settings": {
+      "ver": {
+        "label": "Wersja oprogramowania sprzętowego"
+      },
+      "board": {
+        "label": "Zarząd"
+      },
+      "tz_offset": {
+        "label": "Przesunięcie strefy czasowej (godziny)",
+        "hint": "Używany przez własny wyświetlacz radia. Od -12 do +14."
+      },
+      "pin": {
+        "label": "PIN BLUETOOTH",
+        "hint": "6 cyfr lub 0 dla losowego KODU PIN. Nastąpi po ponownym uruchomieniu; konieczne będzie ponowne sparowanie."
+      },
+      "af": {
+        "label": "Współczynnik czasu antenowego",
+        "hint": "0 do 9. Większe wartości czekają dłużej między transmisjami."
+      },
+      "dutycycle": {
+        "label": "Cykl pracy"
+      },
+      "int_thresh": {
+        "label": "Próg zakłóceń",
+        "hint": "0 do 255. 0 wyłącza wykrywanie zakłóceń."
+      },
+      "cad": {
+        "label": "Wykrywanie aktywności kanału",
+        "hint": "Posłuchaj przed transmisją."
+      },
+      "radio_rxgain": {
+        "label": "Wzmocnione wzmocnienie odbioru",
+        "hint": "Nie każdy chip radiowy to obsługuje."
+      },
+      "rxdelay": {
+        "label": "Odbierz podstawę opóźnienia",
+        "hint": "0 % do – 20 %"
+      },
+      "agc_reset_interval": {
+        "label": "Interwał resetowania AGC (sekundy)",
+        "hint": "0 do 1020, zaokrąglone do wielokrotności 4. 0 wyłącza."
+      },
+      "txdelay": {
+        "label": "Współczynnik opóźnienia transmisji zalania",
+        "hint": "0 do 2"
+      },
+      "direct_txdelay": {
+        "label": "Współczynnik opóźnienia transmisji bezpośredniej",
+        "hint": "0 do 2"
+      },
+      "wifi_enabled": {
+        "label": "WIFI",
+        "hint": "Uruchamia się po ponownym uruchomieniu."
+      },
+      "wifi_ssid": {
+        "label": "Nazwa sieci (SSID)",
+        "hint": "Maksymalnie 32 znaki. Uruchamia się po ponownym uruchomieniu."
+      },
+      "wifi_pwd": {
+        "label": "Hasło",
+        "hint": "Maksymalnie 63 znaki. Pozostaw puste dla otwartej sieci. Uruchamia się po ponownym uruchomieniu."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "Adres IP"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Zrestartować radio?",
+        "message": "Radio uruchomi się ponownie, a mesh-client połączy się ponownie automatycznie. Wiadomości wysyłane podczas restartu są kolejkowane.",
+        "confirm": "Ponowne Uruchomienie"
+      },
+      "poweroff": {
+        "title": "Wyłączyć radio?",
+        "message": "Radio wyłącza się i mesh-client się rozłącza. Aby ponownie go włączyć, będziesz potrzebować dostępu fizycznego.",
+        "confirm": "Zasilanie wyłączone"
+      },
+      "clearWifi": {
+        "title": "Wyczyścić konfigurację Wi-Fi?",
+        "message": "Zapisana nazwa sieci i hasło zostaną usunięte. Sieć Wi-Fi zatrzymuje się po następnym ponownym uruchomieniu.",
+        "confirm": "Clear"
+      }
+    }
   }
 }

@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}",
     "serialReselect": "Koneksi serial USB terputus — pilih perangkat Anda lagi",
     "serialReselectAction": "Pilih port serial",
-    "statusRegion": "Status Koneksi"
+    "statusRegion": "Status Koneksi",
+    "rebootingReconnectAttempt": "Pemutaran ulang radio. Menghubungkan kembali… upaya {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",
@@ -7208,5 +7209,142 @@
       "viewport": "Area peta saat ini"
     },
     "fitTraffic": "Sesuaikan tampilan lalu lintas"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Pengaturan perangkat pendamping",
+    "description": "Pengaturan yang disimpan pada radio pendamping yang terhubung, dibaca dan ditulis dengan baris perintahnya (MeshCore firmware v1.18 atau yang lebih baru).",
+    "requiresFirmware": "Perbarui pendamping ke firmware MeshCore v1.18 atau yang lebih baru untuk menggunakan pengaturan ini.",
+    "loading": "Membaca pengaturan dari radio…",
+    "loadFailed": "Tidak dapat membaca pengaturan dari radio. Periksa koneksi dan coba lagi.",
+    "refresh": "Segarkan dari radio",
+    "apply": "Terapkan",
+    "applying": "Menerapkan",
+    "applied": "Pengaturan pendamping disimpan.",
+    "appliedWithErrors": "Beberapa pengaturan tidak disimpan ({{count}}). Lihat bidang yang disorot.",
+    "applyFailed": "Radio tidak menerima nilai ini.",
+    "unsupported": "Tidak didukung oleh radio ini",
+    "secretPlaceholder": "Tidak berubah",
+    "showSecret": "Tampilkan",
+    "hideSecret": "Sembunyikan",
+    "revealFailed": "Tidak dapat membaca kata sandi yang disimpan dari radio.",
+    "rebootPending": "Beberapa perubahan berlaku setelah reboot radio.",
+    "rebootNow": "Reboot sekarang",
+    "rebooting": "Menyalakan ulang radio. mesh-client akan tersambung kembali secara otomatis.",
+    "actionFailed": "Radio tidak menyelesaikan tindakan itu.",
+    "reboot": "Reboot dan sambungkan kembali",
+    "powerOff": "Matikan",
+    "powerHint": "Mem - boot ulang secara otomatis pada koneksi yang sama. Mematikan sambungan; nyalakan kembali radio untuk menyambung kembali.",
+    "clearWifi": "Hapus konfigurasi WiFi",
+    "copyIp": "Alamat IP",
+    "ipCopied": "Alamat IP disalin.",
+    "wifiTcpHint": "Untuk terhubung melalui WiFi, pilih TCP/IP di Koneksi dan masukkan {{ip}}.",
+    "wifiUnsupported": "Firmware radio ini dibangun tanpa WiFi.",
+    "consoleHint": "Jalankan perintah pendamping apa pun, termasuk perintah khusus papan. Balasan muncul di bawah ini.",
+    "consoleLog": "Riwayat perintah pendamping",
+    "consoleInput": "Perintah pendamping",
+    "consolePlaceholder": "mis. dapatkan radio",
+    "consoleSend": "Kirim",
+    "groups": {
+      "device": "Perangkat",
+      "radio": "Penyetelan radio",
+      "wifi": "WiFi",
+      "power": "Kuasa",
+      "console": "Konsol perintah"
+    },
+    "validation": {
+      "required": "Masukan nilai",
+      "notNumber": "Masukkan nomor",
+      "notInteger": "Masukkan bilangan bulat.",
+      "outOfRange": "Nilai di luar jangkauan",
+      "tooLong": "Nilai terlalu panjang.",
+      "invalidChars": "Pemutusan saluran tidak diperbolehkan.",
+      "pinFormat": "Masukkan 6 digit, atau 0 untuk PIN acak."
+    },
+    "settings": {
+      "ver": {
+        "label": "Versi Firmware"
+      },
+      "board": {
+        "label": "Dewan"
+      },
+      "tz_offset": {
+        "label": "Ofset zona waktu (jam)",
+        "hint": "Digunakan oleh layar radio itu sendiri. Dari -12 hingga +14."
+      },
+      "pin": {
+        "label": "PIN BLUETOOTH",
+        "hint": "6 digit, atau 0 untuk PIN acak. Berlaku setelah reboot; Anda harus memasangkannya lagi."
+      },
+      "af": {
+        "label": "Faktor waktu tayang",
+        "hint": "0 hingga 9. Nilai yang lebih tinggi menunggu lebih lama di antara transmisi."
+      },
+      "dutycycle": {
+        "label": "Siklus tugas"
+      },
+      "int_thresh": {
+        "label": "Ambang batas interferensi",
+        "hint": "0 hingga 255. 0 mematikan deteksi interferensi."
+      },
+      "cad": {
+        "label": "Deteksi aktivitas saluran",
+        "hint": "Dengarkan sebelum mentransmisikan."
+      },
+      "radio_rxgain": {
+        "label": "Peningkatan menerima keuntungan",
+        "hint": "Tidak semua chip radio mendukung hal ini."
+      },
+      "rxdelay": {
+        "label": "Menerima basis penundaan",
+        "hint": "0 hingga 20."
+      },
+      "agc_reset_interval": {
+        "label": "Interval reset AGC (detik)",
+        "hint": "0 hingga 1020, dibulatkan menjadi kelipatan 4. 0 mematikannya."
+      },
+      "txdelay": {
+        "label": "Faktor tunda transmisi Flood",
+        "hint": "0 hingga 2."
+      },
+      "direct_txdelay": {
+        "label": "Faktor penundaan transmisi langsung",
+        "hint": "0 hingga 2."
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Berlaku setelah reboot."
+      },
+      "wifi_ssid": {
+        "label": "Nama jaringan (SSID)",
+        "hint": "Hingga 32 karakter. Berlaku setelah reboot."
+      },
+      "wifi_pwd": {
+        "label": "Kata Sandi",
+        "hint": "Hingga 63 karakter. Biarkan kosong untuk jaringan yang terbuka. Berlaku setelah reboot."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "Alamat IP"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Reboot radio?",
+        "message": "Radio dimulai ulang dan mesh-client tersambung kembali secara otomatis. Pesan yang dikirim selama restart antri.",
+        "confirm": "Reboot"
+      },
+      "poweroff": {
+        "title": "Matikan radio?",
+        "message": "Radio mati dan mesh-client terputus. Anda akan membutuhkan akses fisik untuk mengaktifkannya kembali.",
+        "confirm": "Matikan"
+      },
+      "clearWifi": {
+        "title": "Hapus konfigurasi WiFi?",
+        "message": "Nama jaringan dan kata sandi yang disimpan dihapus. WiFi berhenti setelah reboot berikutnya.",
+        "confirm": "Kosongkan"
+      }
+    }
   }
 }

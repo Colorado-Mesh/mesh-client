@@ -64,6 +64,11 @@ export interface LoraRfReconnectAttemptDeps<TParams> {
 
   /** Default 32_000 (matches MeshCore / Meshtastic caps). */
   maxDelayMs?: number;
+  /**
+   * Floor for the first attempt's backoff (e.g. a planned radio reboot needs time to boot and
+   * re-advertise before the first open). Null/undefined keeps the normal 2s first delay.
+   */
+  firstAttemptMinDelayMs?: () => number | null | undefined;
   /** Meshtastic checks overlapping open before beginOpening; MeshCore after. */
   overlapCheck: LoraRfReconnectOverlapCheck;
 
@@ -146,7 +151,9 @@ export async function runLoraRfReconnectAttempt<TParams>(
   deps.setReconnectingUi(attemptNumber);
 
   const maxDelayMs = deps.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
-  const delay = Math.min(2000 * Math.pow(2, attemptNumber - 1), maxDelayMs);
+  const backoff = Math.min(2000 * Math.pow(2, attemptNumber - 1), maxDelayMs);
+  const firstFloor = attemptNumber === 1 ? (deps.firstAttemptMinDelayMs?.() ?? 0) : 0;
+  const delay = Math.max(backoff, firstFloor);
   console.debug(
     `[${deps.logTag}] reconnect: waiting ${delay}ms before attempt ${attemptNumber}/${maxReconnectAttempts}`,
   );

@@ -3,6 +3,8 @@ export const MC_RESP_OK = 0;
 export const MC_RESP_ERR = 1;
 export const MC_RESP_SENT = 6;
 export const MC_RESP_NO_MORE_MESSAGES = 10;
+/** Companion v14+: reply to {@link MC_CMD_RUN_CLI_COMMAND} (not decoded by meshcore.js). */
+export const MC_RESP_CLI_REPLY = 29;
 
 /** meshcore.js PushCodes */
 export const MC_PUSH_LOGIN_SUCCESS = 0x85;
@@ -22,3 +24,5 @@ export const MC_CMD_SEND_STATUS_REQ = 27;
 export const MC_CMD_LOGOUT = 29;
 export const MC_CMD_SEND_TELEMETRY_REQ = 39;
 export const MC_CMD_SEND_BINARY_REQ = 50;
+/** Companion v14+: run a local companion CLI command. */
+export const MC_CMD_RUN_CLI_COMMAND = 66;

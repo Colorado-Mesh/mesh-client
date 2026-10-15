@@ -86,6 +86,7 @@ import {
   serializeErrorLike,
   upgradeMeshcoreCrossTransportMessage,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { useMeshcoreCompanionCli } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -155,6 +156,7 @@ import {
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import { clearMeshcoreRepeaters } from '../lib/meshcore/meshcoreClearRepeaters';
+import { meshcoreCompanionProtocolVersionFromDeviceQuery } from '../lib/meshcore/meshcoreCompanionCli';
 import {
   attachMeshcoreContactCapacityPush,
   clearMeshcoreFirmwareContactsFullLatch,
@@ -515,6 +517,7 @@ import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/s
 import {
   computeRoomPostTotalTimeoutMs,
   MESHCORE_MAX_RECONNECT_DELAY_MS,
+  MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS,
   MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS,
   MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS,
   MESHCORE_REPEATER_PING_SETTLE_MAX_MS,
@@ -797,6 +800,8 @@ export function useMeshcoreRuntime() {
   const meshcoreSerialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const meshcoreSerialLossCleanupRef = useRef<(() => void) | null>(null);
   const handleMeshcoreConnectionLostRef = useRef<() => void>(() => {});
+  /** User asked the companion to reboot; the next link loss reconnects with a longer first delay. */
+  const meshcorePlannedRebootRef = useRef(false);
   const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
   const scheduleMeshcoreReconnectAttemptRef = useRef<() => void>(() => {});
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
@@ -2368,6 +2373,8 @@ export function useMeshcoreRuntime() {
             if (typeof r?.firmware_build_date === 'string' && r.firmware_build_date.trim()) {
               next.firmwareVersion = r.firmware_build_date.trim();
             }
+            const ver = meshcoreCompanionProtocolVersionFromDeviceQuery(response);
+            if (ver !== null) next.companionProtocolVersion = ver;
             const mm = meshcoreManufacturerModelFromDeviceQuery(response);
             if (mm) next.manufacturerModel = mm;
             return next;
@@ -3111,6 +3118,8 @@ export function useMeshcoreRuntime() {
               if (isMeshcorePathHashMode(pathFields.pathHashMode)) {
                 next.pathHashMode = pathFields.pathHashMode;
               }
+              const ver = meshcoreCompanionProtocolVersionFromDeviceQuery(deviceInfo);
+              if (ver !== null) next.companionProtocolVersion = ver;
               return next;
             });
 
@@ -3624,24 +3633,32 @@ export function useMeshcoreRuntime() {
         scheduleMeshcoreReconnectAttemptRef.current();
       },
       setReconnectingUi: (attempt) => {
+        const plannedReboot = meshcorePlannedRebootRef.current;
         setState((s) => ({
           ...s,
           status: 'reconnecting',
-          connectionLoss: true,
+          connectionLoss: !plannedReboot,
+          plannedReboot,
           reconnectAttempt: attempt,
         }));
       },
       setDisconnectedUi: () => {
+        meshcorePlannedRebootRef.current = false;
         setState((s) => ({
           ...s,
           status: 'disconnected',
           connectionLoss: true,
+          plannedReboot: false,
         }));
       },
       maxDelayMs: MESHCORE_MAX_RECONNECT_DELAY_MS,
+      firstAttemptMinDelayMs: () =>
+        meshcorePlannedRebootRef.current ? MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS : null,
       overlapCheck: 'afterOpening',
       disconnectIdentity: (identityId) => connectionDriver.disconnect(identityId),
       onExhausted: async (params) => {
+        meshcorePlannedRebootRef.current = false;
+        setState((s) => ({ ...s, plannedReboot: false }));
         if (params.rfType === 'tcp') {
           rejectMeshcoreTcpLiveForUserTx(new Error('MeshCore TCP reconnect exhausted'));
         }
@@ -3760,10 +3777,12 @@ export function useMeshcoreRuntime() {
         meshcoreDeferredReconnectRef.current = false;
         meshcoreRfReconnectRef.current.markSuccess();
         meshcoreBleReconnectExhaustedRef.current.clear();
+        meshcorePlannedRebootRef.current = false;
         setState((s) => ({
           ...s,
           serialNeedsReselect: false,
           connectionLoss: false,
+          plannedReboot: false,
         }));
         // OpenHop dead bridge: outbox drain would tcp-write-fail → reconnect thrash.
         if (!(params.rfType === 'tcp' && meshcoreTcpBridgeDeadRef.current)) {
@@ -4373,6 +4392,7 @@ export function useMeshcoreRuntime() {
   );
 
   const disconnect = useCallback(async () => {
+    meshcorePlannedRebootRef.current = false;
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 
@@ -4820,6 +4840,14 @@ export function useMeshcoreRuntime() {
     }
     await disconnect();
   }, [disconnect]);
+
+  const companionCli = useMeshcoreCompanionCli({
+    connRef,
+    companionProtocolVersion: state.companionProtocolVersion,
+    plannedRebootRef: meshcorePlannedRebootRef,
+    connectionLostRef: handleMeshcoreConnectionLostRef,
+    disconnect,
+  });
 
   const deleteNode = useCallback(
     async (nodeId: number) => {
@@ -8341,6 +8369,7 @@ export function useMeshcoreRuntime() {
       status: state.status,
       connectionLoss: state.connectionLoss,
       serialNeedsReselect: state.serialNeedsReselect,
+      plannedReboot: state.plannedReboot,
       myNodeNum: state.myNodeNum,
       connectionType: state.connectionType,
       reconnectAttempt: state.reconnectAttempt,
@@ -8575,6 +8604,7 @@ export function useMeshcoreRuntime() {
       syncClock,
       refreshContacts,
       reboot,
+      companionCli,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
@@ -8728,6 +8758,7 @@ export function useMeshcoreRuntime() {
       syncClock,
       refreshContacts,
       reboot,
+      companionCli,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,

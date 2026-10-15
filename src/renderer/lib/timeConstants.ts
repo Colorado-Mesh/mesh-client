@@ -301,6 +301,9 @@ export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;
 /** Exponential backoff cap for RF auto-reconnect (2s × 2^attempt, max this value). */
 export const MESHCORE_MAX_RECONNECT_DELAY_MS = 32_000;
 
+/** First reconnect backoff after a user-requested companion reboot (boot + BLE re-advertise). */
+export const MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS = 8 * MS_PER_SECOND;
+
 /** Hop-scaled timeout base for repeater status / telemetry / neighbors RPCs (USB serial queue). */
 export const MESHCORE_REPEATER_RPC_TIMEOUT_BASE_MS = 30_000;
 

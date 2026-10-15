@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}",
     "serialReselect": "USB串行连接丢失—请重新选择您的设备",
     "serialReselectAction": "选择串行端口",
-    "statusRegion": "连接状态"
+    "statusRegion": "连接状态",
+    "rebootingReconnectAttempt": "无线电重启。正在重新连接…尝试{{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",
@@ -7208,5 +7209,142 @@
       "viewport": "当前地图区域"
     },
     "fitTraffic": "缩放至流量范围"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "配套设备设置",
+    "description": "存储在连接的配套收音机上的设置，使用其命令行进行读写（ MeshCore固件v 1.18或更高版本）。",
+    "requiresFirmware": "将伴侣更新到MeshCore固件v 1.18或更高版本以使用这些设置。",
+    "loading": "正在从收音机读取设置…",
+    "loadFailed": "无法从收音机读取设置。请检查连接，然后重试。",
+    "refresh": "从收音机刷新",
+    "apply": "确认",
+    "applying": "正在应用……",
+    "applied": "伴侣设置已保存。",
+    "appliedWithErrors": "部分设置未保存（ {{count}} ）。查看突出显示的字段。",
+    "applyFailed": "收音机不接受此值。",
+    "unsupported": "此收音机不支持",
+    "secretPlaceholder": "不变",
+    "showSecret": "顯示",
+    "hideSecret": "隱藏",
+    "revealFailed": "无法从收音机中读取保存的密码。",
+    "rebootPending": "某些更改在无线电重新启动后生效。",
+    "rebootNow": "现在重新启动？",
+    "rebooting": "正在重新启动收音机。mesh-client将自动重新连接。",
+    "actionFailed": "收音机没有完成该操作。",
+    "reboot": "重新启动并重新连接",
+    "powerOff": "断（电源）",
+    "powerHint": "重新启动会在同一连接上自动重新连接。断开电源断开连接；重新打开收音机以重新连接。",
+    "clearWifi": "清除WiFi配置",
+    "copyIp": "复制 IP 地址@ action: inmenu interface connection properties",
+    "ipCopied": "IP地址已复制。",
+    "wifiTcpHint": "要通过无线网络连接，请在连接中选择TCP/IP ，然后输入{{ip}}。",
+    "wifiUnsupported": "这款收音机的固件是在没有无线网络的情况下构建的。",
+    "consoleHint": "运行任何配套命令，包括特定于主板的命令。回复将显示在下方。",
+    "consoleLog": "精灵命令历史记录",
+    "consoleInput": "精灵命令",
+    "consolePlaceholder": "例如：获取无线电",
+    "consoleSend": "傳送",
+    "groups": {
+      "device": "设备",
+      "radio": "无线电调谐",
+      "wifi": "WiFi",
+      "power": "兵力",
+      "console": "命令控制台"
+    },
+    "validation": {
+      "required": "请输入值。",
+      "notNumber": "请输入数字",
+      "notInteger": "输入一个整数。",
+      "outOfRange": "行动成本值超出范围",
+      "tooLong": "此值太长。",
+      "invalidChars": "不允许换行。",
+      "pinFormat": "请输入6位数字，随机PIN码请输入0。"
+    },
+    "settings": {
+      "ver": {
+        "label": "固件版本"
+      },
+      "board": {
+        "label": "端   板"
+      },
+      "tz_offset": {
+        "label": "时区偏移量（小时）",
+        "hint": "由收音机自己的显示器使用。从-12到+14。"
+      },
+      "pin": {
+        "label": "蓝牙PIN",
+        "hint": "6位数字，或随机PIN为0。重新启动后生效；您需要再次配对。"
+      },
+      "af": {
+        "label": "通话时间系数",
+        "hint": "0至9。较高的值在传输之间等待更长时间。"
+      },
+      "dutycycle": {
+        "label": "工作周期"
+      },
+      "int_thresh": {
+        "label": "干扰阈值",
+        "hint": "0至255. 0关闭干扰检测。"
+      },
+      "cad": {
+        "label": "通道活动检测",
+        "hint": "传输前先聆听。"
+      },
+      "radio_rxgain": {
+        "label": "提升的接收增益",
+        "hint": "并非每个无线电芯片都支持这一点。"
+      },
+      "rxdelay": {
+        "label": "接收延迟基数",
+        "hint": "0 至 20"
+      },
+      "agc_reset_interval": {
+        "label": "AGC复位间隔（秒）",
+        "hint": "0到1020 ，四舍五入到4的倍数。0将其关闭。"
+      },
+      "txdelay": {
+        "label": "泛洪传输延迟系数",
+        "hint": "至2 .："
+      },
+      "direct_txdelay": {
+        "label": "直接传输延迟因子",
+        "hint": "至2 .："
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "在重新启动后生效。"
+      },
+      "wifi_ssid": {
+        "label": "网络名称(SSID)",
+        "hint": "最多32个字符。在重新启动后生效。"
+      },
+      "wifi_pwd": {
+        "label": "密码",
+        "hint": "最多63个字符。对于开放网络，请留空。在重新启动后生效。"
+      },
+      "wifi_status": {
+        "label": "状态"
+      },
+      "wifi_ip": {
+        "label": "IP 地址"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "重启收音机？",
+        "message": "收音机重新启动， mesh-client自动重新连接。在重新启动期间发送的消息将被排队。",
+        "confirm": "重启"
+      },
+      "poweroff": {
+        "title": "关掉收音机？",
+        "message": "收音机关闭， mesh-client断开。您将需要物理访问权限才能重新打开。",
+        "confirm": "断（电源）"
+      },
+      "clearWifi": {
+        "title": "清除WiFi配置？",
+        "message": "已保存的网络名称和密码将被清除。下次重新启动后，无线网络将停止。",
+        "confirm": "清空"
+      }
+    }
   }
 }

@@ -391,6 +391,46 @@ describe('runLoraRfReconnectAttempt', () => {
       expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
     },
   );
+
+  describe.each(['linux', 'darwin', 'win32'] as const)(
+    'planned reboot first delay (%s)',
+    (platform) => {
+      it.each(['ble', 'serial', 'tcp'] as const)(
+        'floors only the first %s attempt delay',
+        async (type) => {
+          params = { type, blePeripheralId: type === 'ble' ? 'aa:bb:cc:dd:ee:ff' : undefined };
+          const { gattPairState } = stubBlePlatform(platform);
+          gattPairState.mockResolvedValue({ ok: true, paired: true });
+          const deps = {
+            getBlePeripheralId: (p: TestParams) =>
+              p.type === 'ble' ? p.blePeripheralId : undefined,
+            firstAttemptMinDelayMs: () => 8_000,
+          };
+          const first = runLoraRfReconnectAttempt(buildDeps(deps));
+          await vi.advanceTimersByTimeAsync(2_500);
+          expect(runOpenAndAttach).not.toHaveBeenCalled();
+          await vi.advanceTimersByTimeAsync(6_000);
+          await first;
+          expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+
+          runOpenAndAttach.mockClear();
+          controller.onLinkLost();
+          generation.set(controller.generation);
+          isReconnecting.set(true);
+          const second = runLoraRfReconnectAttempt(buildDeps(deps));
+          // Attempt 2 uses the normal 4s backoff, not the 8s floor.
+          await vi.advanceTimersByTimeAsync(4_500);
+          await second;
+          expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+        },
+      );
+    },
+  );
+
+  it('keeps the normal 2s first delay when no floor is supplied', async () => {
+    await runAttempt({ firstAttemptMinDelayMs: () => null });
+    expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('loraRfReconnectAttempt source contracts', () => {

@@ -1065,7 +1065,8 @@
     "reconnectingAttempt": "Opětovné připojení... Pokus {{attempt}}/{{max}}",
     "serialReselect": "Ztráta sériového připojení USB — vyberte zařízení znovu",
     "serialReselectAction": "Výběr sériového portu",
-    "statusRegion": "Stav připojení"
+    "statusRegion": "Stav připojení",
+    "rebootingReconnectAttempt": "Restartování rádia. Opětovné připojení… pokus {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maximální počet pokusů o opětovné připojení MQTT",
@@ -7281,5 +7282,142 @@
       "viewport": "Aktuální oblast mapy"
     },
     "fitTraffic": "Přizpůsobit provozu"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Nastavení doprovodného zařízení",
+    "description": "Nastavení uložená v připojeném doprovodném rádiu, čtení a zápis pomocí příkazového řádku (MeshCore firmware v1.18 nebo novější).",
+    "requiresFirmware": "Chcete-li použít tato nastavení, aktualizujte společníka na MeshCore firmware v1.18 nebo novější.",
+    "loading": "Načítání nastavení z rádia...",
+    "loadFailed": "Nelze číst nastavení z rádia. Zkontrolujte připojení a zkuste to znovu.",
+    "refresh": "Obnovit z rádia",
+    "apply": "Použít",
+    "applying": "Uplatňuje se...",
+    "applied": "Doprovodná nastavení uložena.",
+    "appliedWithErrors": "Některá nastavení nebyla uložena ({{count}}). Viz zvýrazněná pole.",
+    "applyFailed": "Rádio tuto hodnotu nepřijalo.",
+    "unsupported": "Toto rádio nepodporuje",
+    "secretPlaceholder": "Beze změny",
+    "showSecret": "Vizuálné",
+    "hideSecret": "Skrýt",
+    "revealFailed": "Nelze přečíst uložené heslo z rádia.",
+    "rebootPending": "Některé změny se projeví po restartu rádia.",
+    "rebootNow": "\"Restartovat nyní\"",
+    "rebooting": "Restartování rádia. mesh-client se automaticky znovu připojí.",
+    "actionFailed": "Rádio tuto akci nedokončilo.",
+    "reboot": "Restartovat a znovu připojit",
+    "powerOff": "Vypnutí",
+    "powerHint": "Restartování se automaticky znovu připojí ke stejnému připojení. Vypnutí se odpojí; pro opětovné připojení zapněte rádio.",
+    "clearWifi": "Vymazat konfiguraci WiFi",
+    "copyIp": "@ action: inmenu interface connection properties",
+    "ipCopied": "IP adresa zkopírována.",
+    "wifiTcpHint": "Pro připojení přes Wi-Fi zvol v Připojení TCP/IP a zadej {{ip}}.",
+    "wifiUnsupported": "Firmware tohoto rádia byl postaven bez WiFi.",
+    "consoleHint": "Spusťte libovolný doprovodný příkaz, včetně příkazů specifických pro desku. Odpovědi se zobrazují níže.",
+    "consoleLog": "Historie doprovodných příkazů",
+    "consoleInput": "Doprovodný příkaz",
+    "consolePlaceholder": "např. získat rádio",
+    "consoleSend": "Odeslat",
+    "groups": {
+      "device": "Zařízení",
+      "radio": "Ladění rádia",
+      "wifi": "WiFi",
+      "power": "Výkon",
+      "console": "Příkazová konzola"
+    },
+    "validation": {
+      "required": "Zadej hodnotu.",
+      "notNumber": "Zadat číslo",
+      "notInteger": "Zadejte prosím celé číslo.",
+      "outOfRange": "Hodnota mimo rozsah",
+      "tooLong": "Hodnota je příliš dlouhá.",
+      "invalidChars": "Zalomení řádků není povoleno.",
+      "pinFormat": "Zadejte 6 číslic nebo 0 pro náhodný PIN."
+    },
+    "settings": {
+      "ver": {
+        "label": "Verze firmwaru"
+      },
+      "board": {
+        "label": "HW Deska"
+      },
+      "tz_offset": {
+        "label": "Posun časového pásma (hodiny)",
+        "hint": "Používá se na vlastním displeji rádia. Od -12 do +14."
+      },
+      "pin": {
+        "label": "Bluetooth PIN",
+        "hint": "6 číslic nebo 0 pro náhodný PIN. Po restartu se projeví; budete muset znovu spárovat."
+      },
+      "af": {
+        "label": "Faktor vysílacího času",
+        "hint": "0 až 9. Vyšší hodnoty čekají mezi přenosy déle."
+      },
+      "dutycycle": {
+        "label": "Střída"
+      },
+      "int_thresh": {
+        "label": "Prahová hodnota rušení",
+        "hint": "0 až 255. 0 vypne detekci rušení."
+      },
+      "cad": {
+        "label": "Detekce aktivity kanálu",
+        "hint": "Před vysíláním poslouchejte."
+      },
+      "radio_rxgain": {
+        "label": "Zvýšení příjmu s posíleným příjmem",
+        "hint": "Ne každý rádiový čip to podporuje."
+      },
+      "rxdelay": {
+        "label": "Přijmout základnu zpoždění",
+        "hint": "0 % až – 20 %"
+      },
+      "agc_reset_interval": {
+        "label": "Interval resetování AGC (sekundy)",
+        "hint": "0 až 1020, zaokrouhleno na násobky 4. 0 ho vypne."
+      },
+      "txdelay": {
+        "label": "Faktor zpoždění vysílání Flood",
+        "hint": "ad 2. Zabezpečení toho, co bylo získáno atd."
+      },
+      "direct_txdelay": {
+        "label": "Faktor zpoždění přímého přenosu",
+        "hint": "ad 2. Zabezpečení toho, co bylo získáno atd."
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Účinek se projeví po restartu."
+      },
+      "wifi_ssid": {
+        "label": "Název sítě (SSID)",
+        "hint": "Až 32 znaků. Účinek se projeví po restartu."
+      },
+      "wifi_pwd": {
+        "label": "Heslo",
+        "hint": "Až 63 znaků. Ponechte prázdné pro otevřenou síť. Účinek se projeví po restartu."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "IP adresa"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Restartovat rádio?",
+        "message": "Rádio se restartuje a mesh-client se automaticky znovu připojí. Zprávy odeslané během restartu jsou ve frontě.",
+        "confirm": "\"Restartovat\""
+      },
+      "poweroff": {
+        "title": "Vypnout rádio?",
+        "message": "Rádio se vypne a mesh-client se odpojí. K jeho opětovnému zapnutí budete potřebovat fyzický přístup.",
+        "confirm": "Vypnutí"
+      },
+      "clearWifi": {
+        "title": "Vymazat konfiguraci Wi-Fi?",
+        "message": "Uložený název sítě a heslo jsou vymazány. Po příštím restartu se WiFi zastaví.",
+        "confirm": "Vymazat"
+      }
+    }
   }
 }
