@@ -132,6 +132,7 @@ import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import { disposeAiSummaries, initializeAi } from '@/renderer/stores/aiSummaryStore';
 import {
   type EmergencyIncident,
   incidentTabBadgeCount,
@@ -558,6 +559,10 @@ export default function App() {
 }
 
 function AppContent() {
+  useEffect(() => {
+    initializeAi();
+    return disposeAiSummaries;
+  }, []);
   const { t } = useTranslation();
   const { addToast } = useToast();
   useEffect(() => {

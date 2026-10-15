@@ -84,6 +84,17 @@ Wikipedia, Tatoeba and SETimes and is **CC-BY-SA-3.0**; see
 The identification data is used unchanged; translation models are decompressed without
 modifying their data. No model, vocabulary, language-ID file or translation WASM is bundled.
 
+### AI conversation summaries
+
+The optional offline engine bundles [wllama](https://github.com/ngxson/wllama) and
+[llama.cpp](https://github.com/ggml-org/llama.cpp) under MIT. Their notices ship in
+`dist-electron/main/ai-licenses/`. After explicit download, the catalog uses Apache-2.0
+SmolLM2 weights from [Hugging Face TB](https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct)
+([bartowski GGUF](https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF)) and
+[Qwen2.5 GGUF](https://huggingface.co/Qwen) weights from the Qwen team.
+Immutable revisions, sizes and checksums are in `src/main/ai/local/modelManifest.ts`.
+No model weights ship in the installer.
+
 ## Third-party licenses
 
 npm runtime and development dependency licenses are generated from `package.json` in [third-party-licenses.md](third-party-licenses.md). Transitive licenses are gated by `pnpm run check:licenses`; Rust sidecar crate licenses are gated by `pnpm run check:rust-licenses`.

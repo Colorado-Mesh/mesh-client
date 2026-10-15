@@ -207,6 +207,7 @@
     "@typescript-eslint/parser": "^8.71.2",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^4.1.11",
+    "@wllama/wllama": "3.8.1",
     "concurrently": "^9.2.5",
     "electron": "^44.1.1",
     "electron-builder": "^26.17.0",

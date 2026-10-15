@@ -9,6 +9,7 @@ File-level developer notes for each subsystem, for human contributors and coding
 | Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                                                | [renderer-hooks.md](renderer-hooks.md)                                                  |
 | Meshtastic config apply, admin, channel URLs, Store & Forward, remote admin, GPS                                     | [meshtastic.md](meshtastic.md)                                                          |
 | MQTT ingest, channel key mapping, sticky BLE suppress                                                                | [mqtt.md](mqtt.md)                                                                      |
+| AI summaries, endpoint privacy, offline models and OS helpers                                                        | [ai-summarization.md](ai-summarization.md)                                              |
 | Chat panel, composer, link previews, notifications, dedup, hop badges, reactions, relay coverage, export             | [chat.md](chat.md)                                                                      |
 | MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                                                    | [meshcore-repeaters.md](meshcore-repeaters.md)                                          |
 | MeshCore Rooms (BBS) login/post/sync/wire text                                                                       | [meshcore-rooms.md](meshcore-rooms.md)                                                  |

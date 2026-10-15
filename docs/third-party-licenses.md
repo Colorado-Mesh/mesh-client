@@ -73,6 +73,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @typescript-eslint/parser             | MIT             | ^8.71.2         | 8.71.2            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | @vitejs/plugin-react                  | MIT             | ^6.1.2          | 6.1.2             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
+| @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
 | electron                              | MIT             | ^44.1.1         | 44.7.2            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.17.0        | 26.17.0           | git+https://github.com/electron-userland/electron-builder.git                        |

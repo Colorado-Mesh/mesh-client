@@ -45,6 +45,7 @@ const RENDERER_LOGIC_INCLUDE = [
 
 /** Borderline: needs localStorage / electronAPI / renderHook / navigator */
 const RENDERER_LOGIC_EXCLUDE = [
+  'src/renderer/lib/aiSummaryScope.test.ts',
   'src/renderer/hooks/useActiveMeshIdentity.test.ts',
   'src/renderer/hooks/useChatOutbox.test.ts',
   'src/renderer/hooks/useConnectionStatus.test.ts',

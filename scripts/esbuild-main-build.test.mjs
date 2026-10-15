@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Keep the minified main outfile under esbuild's 1mb advisory (and well below). */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 672 * 1024;
+/** Allow the AI orchestration code while staying well below esbuild's 1mb advisory. */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 704 * 1024;
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */
@@ -80,6 +80,10 @@ describe('esbuild-main-build', () => {
       expect(fs.readFileSync(path.join(noticeDirectory, 'README.md'), 'utf8')).toContain(
         '48d55cf7ec80093903e2ef7f58b61a84a22ef716',
       );
+      for (const notice of ['LICENSE-wllama.txt', 'LICENSE-llama-cpp.txt'])
+        expect(fs.readFileSync(path.join(tempDir, 'ai-licenses', notice), 'utf8')).toContain(
+          'Permission is hereby granted',
+        );
       const { size } = fs.statSync(outfile);
       expect(size).toBeGreaterThan(100_000);
       expect(size).toBeLessThan(MAIN_BUNDLE_SIZE_BUDGET_BYTES);

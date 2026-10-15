@@ -16,6 +16,7 @@ import { shouldShowRrcWhoTranscript } from '@/renderer/lib/rrcMessageDisplay';
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
 import { isCacheableRrcIdentityHash, persistRrcNick } from '@/renderer/lib/rrcNickPersist';
 import { removeRrcOpenDm, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
+import { mergeRrcReadWatermark, snapshotRrcReadWatermark } from '@/renderer/lib/rrcReadWatermark';
 import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 import {
   coalesceRrcMemberRoster,
@@ -564,11 +565,31 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     const hub = normHub(hash);
     set((s) => {
       const session = hub ? (s.sessionsByHub.get(hub) ?? emptyHubSession()) : emptyHubSession();
+      if (hub && session.activeRoom && s.focusedHubHash !== hub) {
+        const room = session.activeRoom;
+        snapshotRrcReadWatermark(
+          hub,
+          room,
+          session.unreadByRoom.get(roomStorageKey(room)),
+          s.messages.get(msgKey(hub, room)) ?? [],
+        );
+      }
       return { focusedHubHash: hub, ...mirrorFromSession(hub, session) };
     });
   },
 
   setRrcPanelFocused: (focused) => {
+    const state = get();
+    if (focused && !state.rrcPanelFocused && state.focusedHubHash && state.activeRoom) {
+      const hub = state.focusedHubHash;
+      const room = state.activeRoom;
+      snapshotRrcReadWatermark(
+        hub,
+        room,
+        state.unreadByRoom.get(roomStorageKey(room)),
+        state.messages.get(msgKey(hub, room)) ?? [],
+      );
+    }
     set({ rrcPanelFocused: focused });
   },
 
@@ -588,6 +609,17 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         if (!room) return { ...session, activeRoom: null };
         const soft = [...session.rooms.keys()].find((k) => rrcRoomsMatch(k, room));
         const key = soft ?? normRoom(room);
+        if (hub && !rrcRoomsMatch(session.activeRoom ?? '', key)) {
+          const history = get().messages.get(msgKey(hub, key)) ?? [];
+          snapshotRrcReadWatermark(
+            hub,
+            key,
+            session.unreadByRoom.get(roomStorageKey(key)),
+            history,
+          );
+          if (history.length)
+            mergeRrcReadWatermark(hub, key, Math.max(...history.map((m) => m.timestamp)));
+        }
         const unreadByRoom = new Map(session.unreadByRoom);
         for (const [rk] of session.unreadByRoom) {
           if (rrcRoomsMatch(rk, key)) unreadByRoom.delete(rk);
@@ -1156,6 +1188,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearUnread: (room, hubHash) => {
+    const readHub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
+    if (readHub) {
+      const history = get().messages.get(msgKey(readHub, room)) ?? [];
+      if (history.length)
+        mergeRrcReadWatermark(readHub, room, Math.max(...history.map((m) => m.timestamp)));
+    }
     set((s) => {
       const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
       if (!hub) return {};

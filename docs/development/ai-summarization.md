@@ -1,0 +1,106 @@
+# AI conversation summaries
+
+Catch up summarizes the selected conversation without posting to the mesh. It supports
+Meshtastic and MeshCore channels/DMs, Reticulum LXMF DMs, MeshCore rooms and RRC rooms.
+The shared button and card provide unread/hour/loaded scopes, streamed text, cancellation,
+copy, regenerate, dismiss, actual message count, truncation disclosure and a settings link.
+Summaries are session memory only and should be checked against original traffic.
+
+## Opt-in and privacy
+
+AI starts disabled, with no model selection. Only App > AI conversation summaries and launcher
+settings search expose the feature before opt-in. The optional startup `ai:getStatus` reads
+settings without downloading, probing OS AI, creating a model directory or starting workers.
+Native availability probes run only in open AI settings or on an explicit test/summary request.
+A saved OS choice exposes Catch up after restart; the first click rechecks native readiness.
+
+The main process owns endpoint requests and API keys. `AiConfig` encrypts keys with safeStorage,
+rejects insecure OS storage and drops a key when its endpoint or engine changes. Provider blobs
+are excluded from generic app-settings reads, and only validated `ai:*` writes may change AI
+state, so generic preference writes cannot bypass disable teardown or endpoint validation.
+Remote engines require HTTPS plus an acknowledgment specific to the saved endpoint. Local
+engines accept literal loopback/private LAN and `.local` hosts. All endpoints disclose their
+host on the result, including LAN servers, which receive text off-device. Redirects fail closed.
+Gemini credentials use a header rather than the URL. Provider errors never include bodies or keys.
+
+Disable/configuration changes abort active main requests, terminate native helpers, cancel model
+jobs as appropriate, invalidate renderer requests and clear displayed summaries. Loaded WASM is
+released at the end of each generation, cancellation or disable. Inference never invokes tools,
+interprets HTML or posts messages. JSON-quoted transcript lines and untrusted-data instructions
+reduce prompt injection risk; they do not guarantee model obedience.
+
+## Engines and platform limits
+
+| Engine             | Platforms             | Requirements                                                                                                         |
+| ------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Apple Intelligence | macOS 26+             | Eligible hardware, Apple Intelligence enabled, staged universal Foundation Models helper                             |
+| Windows Phi Silica | Windows 11 24H2+      | Copilot+ hardware, ready model, Microsoft LAF token/attestation and supported package identity with `systemAIModels` |
+| Downloaded model   | macOS, Windows, Linux | Explicit verified GGUF download and selection; bundled wllama 3.8.1 CPU WASM worker                                  |
+| Local server       | All                   | Ollama, LM Studio, llama.cpp, vLLM, LocalAI or compatible endpoint                                                   |
+| Remote provider    | All                   | OpenAI-compatible, Anthropic, Gemini or Ollama wire format, HTTPS and acknowledgment                                 |
+
+Linux has no built-in OS LLM API. Unsupported OS/hardware hides that choice.
+The existing Windows NSIS distribution does not supply the required package identity or
+Microsoft-issued LAF credentials. The Windows helper therefore reports unavailable in that
+installation. Compilation alone does not establish Windows OS AI readiness. Its project accepts
+maintainer-provided `AiLafToken`/`AiLafAttestation` MSBuild properties; do not invent these values
+or request a model download during a probe. Build both Windows RIDs and select the matching staged
+helper in beforePack. The other engines are available without those Windows requirements.
+
+Native helper source lives in `native/ai/`; `scripts/build-ai-helper.mjs` stages binaries and
+runtime dependencies under `resources/ai-helper/`. Build/release CI compiles the helpers before
+packaging. Large binaries and Swift caches are excluded from Git and packaged resources.
+Swift returns cumulative snapshots, so its helper emits only new suffixes. Windows has no
+max-output-token option in this API; its helper uses a conservative 1,000-character bound.
+
+## Data and runtime boundaries
+
+`src/shared/ai-types.ts` is the preload contract. Main services are under `src/main/ai/`;
+`src/main/ipc/ai-handlers.ts` owns validation, rate limits and lifecycle. Registration is inert.
+HTTP adapters parse bounded SSE/NDJSON, require a completion marker, support fragmented UTF-8
+and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budgets; Gemini
+thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
+is independently capped at 1,000 characters. Context budgets preserve complete newest messages and disclose
+truncation. Apple uses a smaller budget for its 4,096-token context.
+
+A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
+inclusive time bounds and exact conversation filters **before** its 501-row cap. The extra row
+signals truncation. Channels follow keyed identities across slot/radio changes; unkeyed legacy
+rows use the existing current/null-radio fallback. DMs and rooms use peer/server and radio filters;
+Reticulum uses identity plus full destination hash; RRC uses canonical hub/room and prose kinds.
+MeshCore skew normalization occurs before range filtering. `idx_mc_msgs_room_ts` is additive and
+idempotent; no schema version change is needed.
+
+Chat and Rooms reuse their opening unread-divider snapshots. RRC persists canonical read
+watermarks through `rrcReadWatermark.ts`, snapshots before selection clears unread and retains
+that boundary while caught-up updates the live watermark. An absent watermark can fall back to
+the live unread count. History retention can remove older traffic, so counts refer to text
+actually included, never an assertion that all historical traffic still exists.
+
+Bundled inference returns a validated `localJob` from main and runs through a thin renderer
+`AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
+The module is dynamically imported only for explicit generation, uses bundled WASM, disables
+CDN compatibility fallback and suppresses native logging. Single-thread CPU settings work
+without changing cross-origin isolation. A global latch bounds model concurrency. CPU inference has a five-minute deadline covering
+model loading and generation; endpoint/native requests retain the one-minute deadline. Abort races
+initialization and terminates the worker even if upstream model loading has not settled.
+
+`mesh-ai:` serves only enabled, verified manifest assets, with realpath containment and CORS for
+the sandboxed renderer. Model installs stream to a unique temporary directory, hash incrementally
+without buffering a gigabyte in memory, verify exact size/SHA-256 and publish by rename.
+The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
+checked on 2026-10-15. The two Qwen2.5 weight sets use Apache-2.0. Wllama and llama.cpp use MIT;
+the npm license report covers the runtime. Model attribution belongs here, not in that report. The proposed 360M option was removed
+after synthetic checks showed repetition and incorrect sender/question attribution. The catalog
+is not an accuracy guarantee; users must verify summaries against original traffic. The 0.5B
+model can also misread an unresolved request as a commitment, so its catalog guidance explicitly
+warns about sender/question attribution. The scored real-model smoke uses the 1.5B option.
+
+## Validation
+
+Focused tests cover default-off IPC behavior, URL/key policy, all adapters, fragmented streams,
+response caps, cancellation, prompt framing, exact per-protocol DB scopes, broadcast/channel
+remap history, verified installs, native pipe/exit/callback failures, renderer request correlation,
+RRC watermarks and accessible controls. Run `pnpm run check:pr` before opening/updating the PR.
+Native compilation and real-model smoke tests are separate from deterministic unit tests.
+Windows runtime activation and hardware validation require an eligible, correctly packaged host.

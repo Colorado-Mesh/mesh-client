@@ -38,6 +38,7 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
   translationEnabled: false,
+  aiEnabled: false,
   translationReadLanguages: ['en'] as string[],
   translationTargetLanguage: 'en' as string,
   translationAutoEnabled: false,

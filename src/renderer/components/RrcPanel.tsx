@@ -26,6 +26,7 @@ import { RrcRoomSidebar } from '@/renderer/components/rrc/RrcRoomSidebar';
 import { Button, IconButton } from '@/renderer/components/ui/Button';
 import { SegmentedControl } from '@/renderer/components/ui/SegmentedControl';
 import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDot';
+import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -66,6 +67,7 @@ import {
 import { hydrateRrcHubNicks } from '@/renderer/lib/rrcNickCacheHydrate';
 import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
+import { openingRrcReadWatermark } from '@/renderer/lib/rrcReadWatermark';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcRoomHistory';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
@@ -89,6 +91,7 @@ import {
   RRC_HELP_I18N_KEYS,
 } from '@/renderer/lib/rrcSlashCommands';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
+import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
@@ -100,6 +103,9 @@ import {
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
+
+import { CatchUpButton } from './chat/CatchUpButton';
+import { ChatSummaryCard } from './chat/ChatSummaryCard';
 
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
@@ -1262,6 +1268,34 @@ export default function RrcPanel({
   const memberCount = activeRoomInfo?.members?.length ?? activeRoomInfo?.member_count;
   const headerTitle =
     activeRoomHeaderLabel ?? hubName ?? hubDestHash?.slice(0, 8) ?? t('rrc.selectHubPrompt');
+  const aiEnabled = useAiSummaryStore((s) => s.status?.enabled === true);
+  const summaryMessages = useMemo(
+    () =>
+      aiEnabled
+        ? activeMessages
+            .filter((m) => m.kind === 'msg' || m.kind === 'action')
+            .map((m) => ({
+              at: m.timestamp,
+              sender: (m.nickname ?? m.sender_hash ?? '').slice(0, 120),
+              body: m.body,
+            }))
+        : [],
+    [aiEnabled, activeMessages],
+  );
+  const summary = useConversationSummary({
+    key: `reticulum:rrc:${hubDestHash}::${activeRoom}`,
+    label: activeRoom ?? '',
+    protocol: 'reticulum',
+    surface: 'rrc',
+    messages: summaryMessages,
+    watermark: hubDestHash && activeRoom ? openingRrcReadWatermark(hubDestHash, activeRoom) : 0,
+    available: !!hubDestHash && !!activeRoom,
+    history:
+      hubDestHash && activeRoom
+        ? { protocol: 'reticulum', surface: 'rrc', hubHash: hubDestHash, room: activeRoom }
+        : null,
+  });
+
   const headerHub = activeRoomHeaderLabel ? (hubName ?? hubDestHash?.slice(0, 8)) : null;
   const statusDotTone: StatusDotTone =
     status === 'active'
@@ -1419,6 +1453,7 @@ export default function RrcPanel({
   const conversation = (
     <>
       <header className="border-ink-800 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
+        <CatchUpButton summary={summary} />
         {layoutMode.compact ? (
           <span className="relative inline-flex">
             <IconButton
@@ -1556,6 +1591,7 @@ export default function RrcPanel({
           </button>
         </div>
       )}
+      <ChatSummaryCard summary={summary} />
       <div className="flex min-h-0 flex-1">
         <RrcChatView
           connected={connected}

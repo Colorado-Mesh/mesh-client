@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
+import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
@@ -105,6 +106,7 @@ import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
 import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/lib/nodeStatus';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import { touch } from '@/shared/touch';
 
@@ -122,6 +124,8 @@ import {
   roomPostVirtualizerKey,
   scheduleVirtualRowRemeasure,
 } from '../lib/chatScrollUtils';
+import { CatchUpButton } from './chat/CatchUpButton';
+import { ChatSummaryCard } from './chat/ChatSummaryCard';
 import { ConversationLayout, useConversationLayoutMode } from './chat/ConversationLayout';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -437,6 +441,37 @@ export default function RoomsPanel({
       nameByNodeId,
     );
   }, [messages, nodes, selectedRoomId]);
+
+  const aiEnabled = useAiSummaryStore((s) => s.status?.enabled === true);
+  const summaryMessages = useMemo(
+    () =>
+      aiEnabled
+        ? roomPosts.map((m) => ({
+            at: m.timestamp,
+            sender: m.sender_name.slice(0, 120),
+            body: m.payload,
+          }))
+        : [],
+    [aiEnabled, roomPosts],
+  );
+  const summary = useConversationSummary({
+    key: `meshcore:${myNodeNum}:room:${selectedRoomId}`,
+    label: activeRoom?.long_name ?? `Room ${selectedRoomId}`,
+    protocol: 'meshcore',
+    surface: 'room',
+    watermark: unreadDividerTimestamp,
+    messages: summaryMessages,
+    available: selectedRoomId != null,
+    history:
+      selectedRoomId == null
+        ? null
+        : {
+            protocol: 'meshcore',
+            surface: 'room',
+            roomServerId: selectedRoomId,
+            radioNodeId: myNodeNum > 0 ? myNodeNum : undefined,
+          },
+  });
 
   const filteredRoomPosts = useMemo(() => {
     let posts = roomPosts;
@@ -1735,6 +1770,7 @@ export default function RoomsPanel({
         </div>
         {loggedIn && (
           <div className="flex items-center gap-0.5">
+            <CatchUpButton summary={summary} />
             <IconButton
               aria-label={t('chatPanel.searchMessages')}
               aria-pressed={showSearch}
@@ -2238,6 +2274,7 @@ export default function RoomsPanel({
             </div>
           )}
 
+          <ChatSummaryCard summary={summary} />
           <div className="relative min-h-0 flex-1">
             <div
               ref={streamRef}

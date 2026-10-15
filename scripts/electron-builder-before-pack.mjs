@@ -3,7 +3,7 @@
  * resources/reticulum-sidecar/ so extraResources bundles the correct binary.
  * Also attaches SCHEMA-UPGRADE.txt when CI wrote a schema-bump notice.
  */
-import { copyFileSync, existsSync, mkdirSync, statSync } from 'fs';
+import { copyFileSync, cpSync, rmSync, existsSync, mkdirSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -23,6 +23,21 @@ export default async function beforePack(context) {
   const platform = context.electronPlatformName;
   if (platform !== 'win32' && platform !== 'linux' && platform !== 'darwin') {
     throw new Error(`[beforePack] Unsupported electronPlatformName: ${platform}`);
+  }
+
+  if (platform === 'darwin' || platform === 'win32') {
+    const arch = context.arch === 3 ? 'arm64' : context.arch === 1 ? 'x64' : null;
+    if (!arch) throw new Error('Unsupported OS AI helper architecture');
+    const staged = path.join(
+      projectRoot,
+      'resources/ai-helper/staged',
+      platform === 'darwin' ? 'darwin' : `win-${arch}`,
+    );
+    if (!existsSync(staged))
+      throw new Error('OS AI helper is not staged; run node scripts/build-ai-helper.mjs');
+    const active = path.join(projectRoot, 'resources/ai-helper/active');
+    rmSync(active, { recursive: true, force: true });
+    cpSync(staged, active, { recursive: true });
   }
 
   const stagedPath = resolveStagedSidecarPathForPackContext(projectRoot, platform, context.arch);

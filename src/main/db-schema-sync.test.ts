@@ -26,6 +26,9 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     const db = new NodeSqliteDB(':memory:');
     try {
       runSchemaUpgrade(db);
+      expect(
+        db.prepareOnce("SELECT name FROM sqlite_master WHERE name='idx_mc_msgs_room_ts'").get(),
+      ).toBeTruthy();
       const columns = db.prepareOnce('PRAGMA table_info(secure_secrets)').all() as {
         name: string;
       }[];
