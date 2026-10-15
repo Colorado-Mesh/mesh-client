@@ -95,6 +95,9 @@ are display hints and never qualify a Reticulum message for this action. Direct 
 resource and propagated delivery remain unavailable until those delivery paths expose
 per-message ingress evidence. These measurements are session-only and are not inferred for
 restored database history.
+Runtime BLE Peer enable/disable changes refresh the shared reception allowlist before
+activation. Other live RNS interface classifications retain their startup configuration
+until the stack restarts.
 
 When a verified reception has no numeric measurements, the action sends only a receipt such
 as `ack: received via RF` or `ack: received via BLE`. A BLE label is reported as BLE and does

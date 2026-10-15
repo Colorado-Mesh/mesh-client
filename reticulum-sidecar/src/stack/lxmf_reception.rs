@@ -14,6 +14,20 @@ use super::via::classify_interface_row;
 
 const MAX_OBSERVATIONS: usize = 256;
 
+/// apply_interfaces only starts/stops BLE Peers; other live interface types stay unchanged.
+pub fn refresh_ble_peer_reception_interfaces(
+    current: &mut Vec<InterfaceRow>,
+    configured: &[InterfaceRow],
+) {
+    current.retain(|row| row.iface_type != "ble_peer");
+    current.extend(
+        configured
+            .iter()
+            .filter(|row| row.iface_type == "ble_peer" && row.enabled)
+            .cloned(),
+    );
+}
+
 #[derive(Clone, Serialize)]
 pub struct RadioReception {
     #[serde(rename = "rx_radio_transport")]
@@ -172,6 +186,51 @@ mod tests {
         .pack();
         raw.extend_from_slice(b"encrypted message");
         raw
+    }
+
+    #[test]
+    fn runtime_ble_peer_updates_reach_the_tap_before_reception() {
+        let interfaces = std::sync::Arc::new(Mutex::new(Vec::new()));
+        let tap_interfaces = interfaces.clone();
+        let reception = LxmfReception::default();
+        let raw = raw();
+        reception.observe(&event(&raw), [1; 16], &tap_interfaces.lock().unwrap());
+        reception.with_message(Some([2; 32]), &raw, || {
+            assert!(reception.take(Some([2; 32])).is_none());
+        });
+
+        let mut peer = interface("ble_peer");
+        refresh_ble_peer_reception_interfaces(
+            &mut interfaces.lock().unwrap(),
+            std::slice::from_ref(&peer),
+        );
+        reception.observe(&event(&raw), [1; 16], &tap_interfaces.lock().unwrap());
+        reception.with_message(Some([2; 32]), &raw, || {
+            assert_eq!(reception.take(Some([2; 32])).unwrap().transport, "ble");
+        });
+
+        peer.enabled = false;
+        refresh_ble_peer_reception_interfaces(&mut interfaces.lock().unwrap(), &[peer]);
+        let mut later = raw.clone();
+        later.push(1);
+        reception.observe(&event(&later), [1; 16], &tap_interfaces.lock().unwrap());
+        reception.with_message(Some([3; 32]), &later, || {
+            assert!(reception.take(Some([3; 32])).is_none());
+        });
+    }
+
+    #[test]
+    fn runtime_refresh_does_not_reclassify_ordinary_live_interfaces() {
+        let mut interfaces = vec![interface("tcp"), interface("ble_peer")];
+        refresh_ble_peer_reception_interfaces(&mut interfaces, &[interface("rnode")]);
+        assert_eq!(interfaces.len(), 1);
+        assert_eq!(interfaces[0].iface_type, "tcp");
+        let reception = LxmfReception::default();
+        let raw = raw();
+        reception.observe(&event(&raw), [1; 16], &interfaces);
+        reception.with_message(Some([2; 32]), &raw, || {
+            assert!(reception.take(Some([2; 32])).is_none());
+        });
     }
 
     #[test]
