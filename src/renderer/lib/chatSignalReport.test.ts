@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 
-import { formatChatSignalReport, meshcoreMessageReceptionStats } from './chatSignalReport';
+import {
+  formatChatSignalReport,
+  meshcoreMessageReceptionStats,
+  messageReceptionStats,
+} from './chatSignalReport';
 import { isBotReplyText } from './firmwareBotReplyParse';
 import { parseHopReport } from './hopReportParse';
 import type { RxPacketEntry } from './meshcore/meshcoreHookTypes';
@@ -125,6 +129,19 @@ describe('signal report quick replies', () => {
     expect(formatChatSignalReport({ snr: NaN, rssi: Infinity, hops: 3 }, 100)).toBe('ack: 3 hops');
     expect(formatChatSignalReport({}, 100)).toBeNull();
   });
+
+  it.each([undefined, NaN, Infinity, -Infinity])(
+    'falls back per field when a captured measurement is %s',
+    (invalid) => {
+      const received = { ...message, rxSnr: 12, rxRssi: -98, rxHops: 6 };
+      expect(messageReceptionStats(received, { snr: invalid, rssi: 0, hops: 0, path: [] })).toEqual(
+        { snr: 12, rssi: 0, hops: 0, path: [] },
+      );
+      expect(
+        messageReceptionStats(received, { snr: 0, rssi: invalid, hops: 2, path: ['AB'] }),
+      ).toEqual({ snr: 0, rssi: -98, hops: 2, path: ['AB'] });
+    },
+  );
 
   it('omits a long route without changing the real hop count and never exceeds the budget', () => {
     const stats = { snr: -1.25, rssi: -108, hops: 30, path: Array<string>(30).fill('ABCDEF') };

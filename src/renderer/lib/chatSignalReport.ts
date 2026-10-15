@@ -14,8 +14,18 @@ export interface MessageReceptionStats {
   path?: string[];
 }
 
-export function messageReceptionStats(message: ChatMessage): MessageReceptionStats {
-  return { snr: message.rxSnr, rssi: message.rxRssi, hops: message.rxHops };
+export function messageReceptionStats(
+  message: ChatMessage,
+  captured?: MessageReceptionStats,
+): MessageReceptionStats {
+  const snr = captured?.snr;
+  const rssi = captured?.rssi;
+  return {
+    snr: snr != null && Number.isFinite(snr) ? snr : message.rxSnr,
+    rssi: rssi != null && Number.isFinite(rssi) ? rssi : message.rxRssi,
+    hops: captured?.hops ?? message.rxHops,
+    path: captured?.path,
+  };
 }
 
 /** Match captured channel text exactly; timing proximity alone cannot identify an RF packet. */

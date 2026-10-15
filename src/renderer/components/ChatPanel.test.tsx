@@ -6921,6 +6921,21 @@ describe('Signal report quick replies', () => {
     expect(props.onSend).not.toHaveBeenCalled();
   });
 
+  it('keeps stored signal measurements when a capture only has a valid hop count', async () => {
+    const { props } = renderSignalPanel({
+      getReceptionStats: () => ({ snr: NaN, rssi: undefined, hops: 0, path: [] }),
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+    await waitFor(() => {
+      expect(props.onSend).toHaveBeenCalledWith(
+        'ack: SNR 12.0 dB, RSSI -4 dBm, 0 hops',
+        0,
+        undefined,
+        12345,
+      );
+    });
+  });
+
   it('uses Meshtastic reply ids and preserves zero-hop measurements', async () => {
     const { props } = renderSignalPanel({
       protocol: 'meshtastic',

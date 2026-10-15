@@ -1933,7 +1933,7 @@ function ChatPanel({
     setSignalReportSending(true);
     setChatActionError(null);
     try {
-      const stats = getReceptionStats?.(message) ?? messageReceptionStats(message);
+      const stats = messageReceptionStats(message, getReceptionStats?.(message));
       const budget =
         getComposerPayloadLimit({
           protocol,
