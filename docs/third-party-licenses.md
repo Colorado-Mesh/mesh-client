@@ -21,11 +21,11 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.23.0         | 2.23.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
-| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.16         | 3.4.16            | git://github.com/cure53/DOMPurify.git                                          |
+| dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.17         | 3.4.17            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
-| i18next                    | MIT                           | ^26.4.3         | 26.4.3            | git+https://github.com/i18next/i18next.git                                     |
+| i18next                    | MIT                           | ^26.4.4         | 26.4.4            | git+https://github.com/i18next/i18next.git                                     |
 | ip-address                 | MIT                           | ^10.7.1         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
@@ -34,7 +34,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | lucide-react-motion        | MIT                           | ^0.4.0          | 0.4.0             | https://registry.npmjs.org/lucide-react-motion/-/lucide-react-motion-0.4.0.tgz |
 | mgrs                       | MIT                           | ^2.2.0          | 2.2.0             | git://github.com/proj4js/mgrs.git                                              |
 | motion                     | MIT                           | ^12.43.0        | 12.43.0           | git+https://github.com/motiondivision/motion.git                               |
-| mqtt                       | MIT                           | ^5.16.0         | 5.16.0            | git://github.com/mqttjs/MQTT.js.git                                            |
+| mqtt                       | MIT                           | ^5.16.1         | 5.16.1            | git://github.com/mqttjs/MQTT.js.git                                            |
 | node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.0          | 1.4.0             | git+https://github.com/digitalbazaar/forge.git                                 |
 | qrcode                     | MIT                           | ^1.5.4          | 1.5.4             | git://github.com/soldair/node-qrcode.git                                       |
 | react-i18next              | MIT                           | ^17.0.16        | 17.0.16           | git+https://github.com/i18next/react-i18next.git                               |
@@ -42,7 +42,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.15        | 5.33.15           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
-| undici                     | MIT                           | ^8.11.2         | 8.11.2            | git+https://github.com/nodejs/undici.git                                       |
+| undici                     | MIT                           | ^8.12.1         | 8.12.1            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.22.0            | git+https://github.com/websockets/ws.git                                       |
 
 ## Development dependencies
@@ -56,12 +56,12 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @jsr/meshtastic__transport-http       | n/a             | ^0.2.1          | 0.2.1             | n/a                                                                                  |
 | @jsr/meshtastic__transport-web-serial | n/a             | ^0.2.5          | 0.2.5             | n/a                                                                                  |
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
-| @playwright/test                      | Apache-2.0      | ^1.64.0         | 1.64.0            | git+https://github.com/microsoft/playwright.git                                      |
+| @playwright/test                      | Apache-2.0      | ^1.64.1         | 1.64.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.15        | 3.14.15           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.19        | 3.14.19           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
-| @testing-library/user-event           | MIT             | ^14.6.7         | 14.6.7            | git+https://github.com/testing-library/user-event.git                                |
+| @testing-library/user-event           | MIT             | ^14.6.8         | 14.6.8            | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node                           | MIT             | ^25.9.9         | 25.9.9            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -69,12 +69,12 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @types/qrcode                         | MIT             | ^1.5.6          | 1.5.6             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/react                          | MIT             | ^19.3.0         | 19.3.0            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/react-dom                      | MIT             | ^19.3.0         | 19.3.0            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
-| @typescript-eslint/eslint-plugin      | MIT             | ^8.71.1         | 8.71.1            | https://github.com/typescript-eslint/typescript-eslint.git                           |
-| @typescript-eslint/parser             | MIT             | ^8.71.1         | 8.71.1            | https://github.com/typescript-eslint/typescript-eslint.git                           |
+| @typescript-eslint/eslint-plugin      | MIT             | ^8.71.2         | 8.71.2            | https://github.com/typescript-eslint/typescript-eslint.git                           |
+| @typescript-eslint/parser             | MIT             | ^8.71.2         | 8.71.2            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | @vitejs/plugin-react                  | MIT             | ^6.1.2          | 6.1.2             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^44.1.1         | 44.7.0            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^44.1.1         | 44.7.2            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.17.0        | 26.17.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
@@ -84,7 +84,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-import                  | MIT             | ^2.32.0         | 2.32.0            | git+https://github.com/import-js/eslint-plugin-import.git                            |
 | eslint-plugin-jsx-a11y                | MIT             | ^6.10.2         | 6.10.2            | git+https://github.com/jsx-eslint/eslint-plugin-jsx-a11y.git                         |
 | eslint-plugin-no-secrets              | MIT             | ^2.3.3          | 2.3.3             | git+https://github.com/nickdeis/eslint-plugin-no-secrets.git                         |
-| eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.7.tgz |
+| eslint-plugin-prettier                | MIT             | ^5.5.7          | 5.5.7             | https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.7.tgz |
 | eslint-plugin-react                   | MIT             | ^7.37.5         | 7.37.5            | git+https://github.com/jsx-eslint/eslint-plugin-react.git                            |
 | eslint-plugin-react-hooks             | MIT             | ^7.1.1          | 7.1.1             | git+https://github.com/facebook/react.git                                            |
 | eslint-plugin-security                | Apache-2.0      | ^4.2.0          | 4.2.0             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |
@@ -103,7 +103,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | sort-package-json                     | MIT             | ^3.7.1          | 3.7.1             | git+ssh://git@github.com/keithamus/sort-package-json.git                             |
 | tailwindcss                           | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |
-| typescript-eslint                     | MIT             | ^8.71.1         | 8.71.1            | https://github.com/typescript-eslint/typescript-eslint.git                           |
+| typescript-eslint                     | MIT             | ^8.71.2         | 8.71.2            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | vite                                  | MIT             | ^8.3.4          | 8.3.4             | git+https://github.com/vitejs/vite.git                                               |
 | vitest                                | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | vitest-axe                            | MIT             | ^1.0.0-pre.5    | 1.0.0-pre.5       | git+https://github.com/chaance/vitest-axe.git                                        |
