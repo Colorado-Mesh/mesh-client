@@ -871,7 +871,9 @@
     "cancelAutoResend": "再試行をキャンセル",
     "cancelAutoResendAria": "このメッセージの自動再試行をキャンセルする",
     "outboxEmergencyWillSend": "ネットワークが確認するまで再試行します",
-    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。"
+    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。",
+    "sendSignalReport": "シグナルレポートを送信",
+    "signalReportUnavailable": "受信統計が利用できないか、1つの返信に収まらない。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

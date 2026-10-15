@@ -890,7 +890,9 @@
     "cancelAutoResend": "Zrušit opakování",
     "cancelAutoResendAria": "Zrušit automatické opakování této zprávy",
     "outboxEmergencyWillSend": "Bude se opakovat, dokud to síť nepotvrdí",
-    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila."
+    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila.",
+    "sendSignalReport": "Odeslat zprávu o signálu",
+    "signalReportUnavailable": "Statistiky příjmu nejsou k dispozici nebo se nevejdou do jedné odpovědi."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

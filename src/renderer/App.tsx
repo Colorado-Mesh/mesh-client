@@ -283,6 +283,7 @@ import {
 } from './lib/appTabMappings';
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { playMessageNotification } from './lib/chatNotifications';
+import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
 import {
   deviceHeaderVariant,
   headerDotClass,
@@ -4448,6 +4449,16 @@ function AppContent() {
                             <ChatPanel
                               key={protocol}
                               messages={chatMessagesForPanel}
+                              getReceptionStats={
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? (message) =>
+                                      meshcoreMessageReceptionStats(
+                                        message,
+                                        meshcoreRuntime.rawPackets,
+                                        meshcoreRuntime.channels,
+                                      )
+                                  : undefined
+                              }
                               messagesForUnread={activeUiMessages}
                               channels={chatChannelsForPanel}
                               meshcoreChannelSources={

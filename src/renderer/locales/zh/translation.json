@@ -871,7 +871,9 @@
     "cancelAutoResend": "取消重试",
     "cancelAutoResendAria": "取消此消息的自动重试",
     "outboxEmergencyWillSend": "将继续重试，直到网络确认",
-    "outboxEmergencyCancelConfirm": "停止重试此紧急消息？它将不再被重新发送，即使网络从未确认过。"
+    "outboxEmergencyCancelConfirm": "停止重试此紧急消息？它将不再被重新发送，即使网络从未确认过。",
+    "sendSignalReport": "发送信号报告",
+    "signalReportUnavailable": "接收统计数据不可用或无法放入一条回复。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

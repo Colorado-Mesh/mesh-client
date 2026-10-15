@@ -138,7 +138,7 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
     expect(packetIdForDb).toBe(0xdeadbeef);
   });
 
-  it('preserves existing rxHops when incoming has none', () => {
+  it('does not substitute MQTT gateway hops when the local RF reception has none', () => {
     const mqtt = baseMsg({ packetId: 0x11111111, receivedVia: 'mqtt', rxHops: 2 });
     const rf = baseMsg({
       packetId: 0x22222222,
@@ -147,8 +147,32 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
       timestamp: mqtt.timestamp + 5_000,
     });
     const { messages } = mapMeshtasticCrossTransportUpgrade([mqtt], rf);
-    expect(messages[0].rxHops).toBe(2);
+    expect(messages[0].rxHops).toBeUndefined();
   });
+
+  it.each(['rf-first', 'mqtt-first'] as const)(
+    'retains only the local RF measurements when merging %s',
+    (order) => {
+      const rf = baseMsg({ receivedVia: 'rf', packetId: 123, rxSnr: 0, rxRssi: -98, rxHops: 2 });
+      const mqtt = baseMsg({
+        receivedVia: 'mqtt',
+        packetId: 456,
+        rxSnr: 30,
+        rxRssi: -12,
+        rxHops: 8,
+      });
+      const existing = order === 'rf-first' ? rf : mqtt;
+      const incoming = order === 'rf-first' ? mqtt : rf;
+      const result = mapMeshtasticCrossTransportUpgrade([existing], incoming);
+      expect(result.messages[0]).toMatchObject({
+        receivedVia: 'both',
+        packetId: 123,
+        rxSnr: 0,
+        rxRssi: -98,
+        rxHops: 2,
+      });
+    },
+  );
 
   it('does not clobber optimistic/device id when MQTT echo arrives before RF', () => {
     const optimistic = baseMsg({ packetId: 0x99999999, status: 'sending' });

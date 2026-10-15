@@ -871,7 +871,9 @@
     "cancelAutoResend": "Opnieuw proberen annuleren",
     "cancelAutoResendAria": "Automatisch opnieuw proberen van dit bericht annuleren",
     "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het netwerk het bevestigt",
-    "outboxEmergencyCancelConfirm": "Stop met het opnieuw proberen van dit noodbericht? Het zal niet langer kwalijk worden genomen, zelfs als het netwerk het nooit heeft erkend."
+    "outboxEmergencyCancelConfirm": "Stop met het opnieuw proberen van dit noodbericht? Het zal niet langer kwalijk worden genomen, zelfs als het netwerk het nooit heeft erkend.",
+    "sendSignalReport": "Signaalrapport verzenden",
+    "signalReportUnavailable": "Ontvangststatistieken zijn niet beschikbaar of passen niet in één antwoord."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

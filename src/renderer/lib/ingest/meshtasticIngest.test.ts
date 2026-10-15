@@ -181,7 +181,7 @@ describe('attachMeshtasticIngest', () => {
     session.detach();
   });
 
-  it('exposes hopCount as rxHops through store adapter round-trip', () => {
+  it('exposes per-packet RF measurements through the store adapter round-trip', () => {
     const session = attachMeshtasticIngest(ID, {
       getIsConfiguring: () => false,
       getMyNodeNum: () => 0,
@@ -197,6 +197,8 @@ describe('attachMeshtasticIngest', () => {
           channelIndex: 0,
           timestamp: 8000,
           hopCount: 4,
+          rxSnr: 0,
+          rxRssi: -98,
         },
       },
       ID,
@@ -204,8 +206,58 @@ describe('attachMeshtasticIngest', () => {
     const record = useMessageStore.getState().messages[ID]['77'];
     expect(record.hopCount).toBe(4);
     expect(record).toBeDefined();
-    expect(messageRecordToChatMessage(record).rxHops).toBe(4);
+    expect(messageRecordToChatMessage(record)).toMatchObject({ rxHops: 4, rxSnr: 0, rxRssi: -98 });
     session.detach();
+  });
+
+  it('retains local signal stats when an RF copy follows an MQTT copy with a different id', () => {
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          '123': {
+            id: '123',
+            from: 3,
+            to: 0xffffffff,
+            senderName: 'Peer',
+            payload: 'hybrid reception',
+            channelIndex: 0,
+            timestamp: 8000,
+            receivedVia: 'mqtt',
+            rxSnr: 30,
+            rxRssi: -10,
+            rxHops: 8,
+          },
+        },
+      },
+    });
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0,
+    });
+    try {
+      packetRouter.dispatch(
+        {
+          type: 'text_message',
+          payload: {
+            id: '456',
+            from: 3,
+            to: 0xffffffff,
+            payload: 'hybrid reception',
+            channelIndex: 0,
+            timestamp: 9000,
+            hopCount: 2,
+            rxSnr: 0,
+            rxRssi: -98,
+          },
+        },
+        ID,
+      );
+      expect(
+        messageRecordToChatMessage(useMessageStore.getState().messages[ID]['456']),
+      ).toMatchObject({ packetId: 456, receivedVia: 'both', rxHops: 2, rxSnr: 0, rxRssi: -98 });
+    } finally {
+      session.detach();
+    }
   });
 
   it('skips saveNode when node hw_model is a MeshCore contact label', () => {

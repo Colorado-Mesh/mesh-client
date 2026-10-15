@@ -871,7 +871,9 @@
     "cancelAutoResend": "Batalkan coba lagi",
     "cancelAutoResendAria": "Batalkan percobaan ulang otomatis pesan ini",
     "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai jaringan menyadarinya",
-    "outboxEmergencyCancelConfirm": "Berhenti mencoba lagi pesan darurat ini? Itu tidak akan lagi dikirim kembali, bahkan jika jaringan tidak pernah mengakuinya."
+    "outboxEmergencyCancelConfirm": "Berhenti mencoba lagi pesan darurat ini? Itu tidak akan lagi dikirim kembali, bahkan jika jaringan tidak pernah mengakuinya.",
+    "sendSignalReport": "Kirim laporan sinyal",
+    "signalReportUnavailable": "Statistik penerimaan sinyal tidak tersedia atau tidak muat dalam satu balasan."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

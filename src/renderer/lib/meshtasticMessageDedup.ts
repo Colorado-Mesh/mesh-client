@@ -171,12 +171,16 @@ export function mapMeshtasticCrossTransportUpgrade(
     return { messages: [...messages], matched: false };
   }
   const packetIdForDb = resolveMeshtasticCrossTransportPacketId(hit, incoming);
+  const rfMessage =
+    incoming.receivedVia === 'rf' || incoming.receivedVia === 'both' ? incoming : hit;
   const next = messages.map((m) => {
     if (m !== hit) return m;
     return {
       ...m,
       receivedVia: 'both' as const,
-      rxHops: m.rxHops ?? incoming.rxHops,
+      rxHops: rfMessage.rxHops,
+      rxSnr: rfMessage.rxSnr,
+      rxRssi: rfMessage.rxRssi,
       ...(packetIdForDb !== undefined ? { packetId: packetIdForDb } : {}),
     };
   });

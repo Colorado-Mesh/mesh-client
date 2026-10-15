@@ -41,6 +41,7 @@ export interface MessageRecord {
   localOrder?: number;
   rxSnr?: number;
   rxRssi?: number;
+  rxRadioTransport?: 'rf' | 'ble';
   hopCount?: number;
   /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
   rxHops?: number;
@@ -130,6 +131,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'localOrder',
   'rxSnr',
   'rxRssi',
+  'rxRadioTransport',
   'hopCount',
   'rxHops',
   'tapback',

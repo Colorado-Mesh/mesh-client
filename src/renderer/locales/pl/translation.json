@@ -905,7 +905,9 @@
     "cancelAutoResend": "Anuluj ponowienie",
     "cancelAutoResendAria": "Anuluj automatyczne ponawianie tej wiadomości",
     "outboxEmergencyWillSend": "Będzie ponawiać próby, dopóki sieć tego nie potwierdzi",
-    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła."
+    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła.",
+    "sendSignalReport": "Wyślij raport sygnału",
+    "signalReportUnavailable": "Statystyki odbioru są niedostępne lub nie mieszczą się w jednej odpowiedzi."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

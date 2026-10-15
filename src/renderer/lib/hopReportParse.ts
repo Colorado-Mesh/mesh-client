@@ -9,11 +9,10 @@ import type { ParsedSignalReport, SignalReportSource } from './signalReportParse
  *   `eight hops to SW Denver`, `Got you 6 hops`, `10 hops to ruby hill. welcome!`
  */
 
-const MAX_LENGTH = 120;
+const MAX_LENGTH = 228;
 
-const CLIENT_ACK_RE =
-  /^,? *ack: SNR (-?\d{1,3}\.?\d{0,2}) dB, RSSI (-?\d{1,3}) dBm, (\d{1,2}) hops? via ([0-9a-f, ]{2,400})$/i;
-const PATH_HASH_RE = /^[0-9a-f]{2,4}$/i;
+const CLIENT_ACK_RE = /^,? *ack: (.+)$/i;
+const PATH_HASH_RE = /^[0-9a-f]{2,6}$/i;
 const MAX_PATH_HASHES = 64;
 
 const SPELLED_COUNTS: Readonly<Record<string, number>> = {
@@ -61,7 +60,7 @@ export function parseHopReport(text: string): ParsedSignalReport | null {
   if (line.includes('\n')) return null;
 
   const ack = CLIENT_ACK_RE.exec(line);
-  if (ack) return parseClientAck(ack);
+  if (ack) return parseClientAck(ack[1]);
 
   const body = line
     .replace(LEAD_IN_RE, '')
@@ -81,18 +80,32 @@ export function parseHopReport(text: string): ParsedSignalReport | null {
   };
 }
 
-function parseClientAck(m: RegExpExecArray): ParsedSignalReport | null {
-  const hashes = m[4].split(',').map((h) => h.trim());
-  if (hashes.length > MAX_PATH_HASHES || !hashes.every((h) => PATH_HASH_RE.test(h))) return null;
-  const snr = Number.parseFloat(m[1]);
-  if (!Number.isFinite(snr)) return null;
-  const hops = Number.parseInt(m[3], 10);
-  return {
-    source: 'clientAck',
-    hops,
-    direct: hops === 0,
-    snr,
-    rssi: Number.parseInt(m[2], 10),
-    path: hashes.join(', '),
-  };
+function parseClientAck(body: string): ParsedSignalReport | null {
+  const sections = body.split(/ via /i);
+  if (sections.length > 2) return null;
+  const measurements = sections[0];
+  const path = sections.at(1);
+  const result: ParsedSignalReport = { source: 'clientAck', direct: false };
+  for (const part of measurements.split(/, */)) {
+    const snr = /^SNR (-?\d{1,3}\.?\d{0,2}) dB$/i.exec(part);
+    const rssi = /^RSSI (-?\d{1,3}) dBm$/i.exec(part);
+    const hops = /^(\d{1,2}) hops?$/i.exec(part);
+    if (snr && result.snr == null) result.snr = Number(snr[1]);
+    else if (rssi && result.rssi == null) result.rssi = Number(rssi[1]);
+    else if (hops && result.hops == null) {
+      result.hops = Number(hops[1]);
+      result.direct = result.hops === 0;
+    } else return null;
+  }
+  if (path != null) {
+    const hashes = path.split(',').map((hash) => hash.trim());
+    if (
+      result.hops == null ||
+      hashes.length > MAX_PATH_HASHES ||
+      !hashes.every((hash) => hash.length % 2 === 0 && PATH_HASH_RE.test(hash))
+    )
+      return null;
+    result.path = hashes.join(', ');
+  }
+  return result;
 }

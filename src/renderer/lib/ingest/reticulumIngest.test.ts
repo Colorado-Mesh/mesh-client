@@ -463,3 +463,56 @@ describe('reticulumIngest reply quotes', () => {
     expect(record.replyPreviewSender).toBe('Carol');
   });
 });
+
+describe('Reticulum per-message radio evidence', () => {
+  beforeEach(() => {
+    upsertMessage.mockClear();
+    messagesState = {};
+    useBlockStore.setState({ byProtocol: {} });
+  });
+
+  it('preserves verified RF measurements including zero independently of the cached route', () => {
+    ingestReticulumLxmfPayload('id-1', {
+      sender_hash: 'cd'.repeat(16),
+      message_hash: 'ab'.repeat(32),
+      text: 'RF frame',
+      direction: 'inbound',
+      received_via: 'tcp',
+      rx_radio_transport: 'rf',
+      rx_snr: 0,
+      rx_rssi: -98,
+      rx_hops: 0,
+    });
+    expect(upsertMessage).toHaveBeenCalledWith(
+      'id-1',
+      expect.objectContaining({
+        receivedVia: 'tcp',
+        rxRadioTransport: 'rf',
+        rxSnr: 0,
+        rxRssi: -98,
+        rxHops: 0,
+      }),
+    );
+  });
+
+  it.each(['inbound', 'outbound'])(
+    'does not treat a cached RF route or unverified measurements as evidence (%s)',
+    (direction) => {
+      ingestReticulumLxmfPayload('id-1', {
+        sender_hash: 'cd'.repeat(16),
+        text: 'route only',
+        direction,
+        received_via: 'rf',
+        rx_snr: 12,
+        rx_rssi: -10,
+        rx_hops: 2,
+        ...(direction === 'outbound' ? { rx_radio_transport: 'rf' as const } : {}),
+      });
+      const record = upsertMessage.mock.calls[0]?.[1] as MessageRecord;
+      expect(record.rxRadioTransport).toBeUndefined();
+      expect(record.rxSnr).toBeUndefined();
+      expect(record.rxRssi).toBeUndefined();
+      expect(record.rxHops).toBeUndefined();
+    },
+  );
+});

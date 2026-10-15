@@ -318,6 +318,8 @@ function handleTextMessage(
 
   const merged: ChatMessage = {
     ...parsedRaw,
+    rxSnr: record.rxSnr,
+    rxRssi: record.rxRssi,
     localOrder: record.localOrder,
     status: record.status ?? parsedRaw.status,
     receivedVia: record.receivedVia ?? parsedRaw.receivedVia,

@@ -55,6 +55,7 @@ use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
 };
+use super::lxmf_reception::{LxmfReception, refresh_ble_peer_reception_interfaces};
 use super::nomad_file::{nomad_file_name_from_metadata_or_path, nomad_file_name_from_path};
 use super::nomad_link_errors::{
     NomadLinkSessionKind, map_nomad_link_session_kind, nomad_link_session_kind_from_timeout_what,
@@ -143,6 +144,7 @@ pub(crate) fn live_interface_runtime_mode_if_online(online: bool, mode: &str) ->
 }
 
 pub struct LiveBridge {
+    reception_interfaces: Arc<Mutex<Vec<InterfaceRow>>>,
     config_dir: PathBuf,
     storage_dir: PathBuf,
     handle: reticulum::ReticulumHandle,
@@ -403,6 +405,14 @@ impl LiveBridge {
 
         let (tap_tx, mut tap_rx) = broadcast::channel(256);
         handle.register_packet_tap(tap_tx).await;
+        let lxmf_dest_hash =
+            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+        let reception = Arc::new(LxmfReception::default());
+        let reception_tap = reception.clone();
+        let reception_interfaces = Arc::new(Mutex::new(
+            config::interfaces_from_config_dir(&config_dir).unwrap_or_default(),
+        ));
+        let reception_interfaces_tap = reception_interfaces.clone();
         let packet_log_tap = packet_log.clone();
         // Keep PacketLogBuffer for GET /api/v1/packets + egress evidence, but do NOT emit
         // wire_packet on the shared event bus — that starves lxmf_message under large meshes.
@@ -410,6 +420,9 @@ impl LiveBridge {
             loop {
                 match tap_rx.recv().await {
                     Ok(evt) => {
+                        if let Ok(interfaces) = reception_interfaces_tap.lock() {
+                            reception_tap.observe(&evt, lxmf_dest_hash, &interfaces);
+                        }
                         let row = wire_packet_from_tap(&evt);
                         packet_log_tap.push(row);
                     }
@@ -419,8 +432,6 @@ impl LiveBridge {
             }
         });
 
-        let lxmf_dest_hash =
-            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         // Offline inbox / PN identity is lxmf.propagation — not the delivery destination.
         let lxmf_propagation_dest_hash =
             Destination::hash_from_name_and_identity("lxmf.propagation", Some(&identity.hash));
@@ -469,7 +480,9 @@ impl LiveBridge {
         let self_name_cb = display_name.clone();
         let config_dir_for_cb = config_dir.clone();
         let games_session_cb = games_session.clone();
+        let reception_cb = reception.clone();
         router.register_delivery_callback(move |msg| {
+            let radio_reception = reception_cb.take(msg.hash);
             if !msg.incoming {
                 return;
             }
@@ -498,7 +511,7 @@ impl LiveBridge {
                 .ok()
                 .map(|cache| resolve_inbound_sender_name_map(&cache, &sender_hex))
                 .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string());
-            let payload = lxmf_payload_from_message(
+            let mut payload = lxmf_payload_from_message(
                 msg,
                 &self_hash_cb,
                 &self_name_cb,
@@ -507,6 +520,12 @@ impl LiveBridge {
                 "inbound",
                 Some(&inbound_sender_name),
             );
+            if let Some(reception) = radio_reception {
+                payload["rx_radio_transport"] = reception.transport.into();
+                payload["rx_hops"] = reception.hops.into();
+                payload["rx_snr"] = serde_json::json!(reception.snr);
+                payload["rx_rssi"] = serde_json::json!(reception.rssi);
+            }
             // Buffer before WS emit so lag/reconnect can catch up via GET /api/v1/lxmf/recent.
             // Stamp `ring_seq` on accepted rows so live watermark and catch-up share a cursor.
             // Deduped / lock-failed pushes return None — still emit the original payload.
@@ -543,6 +562,7 @@ impl LiveBridge {
             &identity,
             lxmf_dest_hash,
             router.clone(),
+            reception,
         );
         let last_lxmf_announce_at = Arc::new(Mutex::new(None));
         spawn_lxmf_announce_loop(
@@ -587,6 +607,7 @@ impl LiveBridge {
         let outbound = Arc::new(Mutex::new(outbound_driver));
 
         let bridge = Self {
+            reception_interfaces,
             config_dir: config_dir.clone(),
             storage_dir: storage_dir.clone(),
             handle: handle.clone(),
@@ -5625,6 +5646,9 @@ impl LiveBridge {
 
     pub async fn apply_interfaces(&self, stack: &StackHandle) -> Result<(), String> {
         let interfaces = stack.list_interfaces().await;
+        if let Ok(mut current) = self.reception_interfaces.lock() {
+            refresh_ble_peer_reception_interfaces(&mut current, &interfaces);
+        }
         tracing::info!(
             count = interfaces.len(),
             "apply_interfaces: syncing {} interface(s) from config",
