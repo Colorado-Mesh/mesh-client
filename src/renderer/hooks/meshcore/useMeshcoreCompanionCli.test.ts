@@ -34,7 +34,7 @@ function setup(version: number | null) {
   const { conn, sent } = makeConn();
   const connRef = { current: conn };
   const plannedRebootRef = { current: false };
-  const connectionLost = vi.fn();
+  const connectionLost = vi.fn(() => true);
   const connectionLostRef = { current: connectionLost };
   const disconnect = vi.fn().mockResolvedValue(undefined);
   const { result } = renderHook(() =>
@@ -113,4 +113,25 @@ describe('useMeshcoreCompanionCli', () => {
     const logged = debug.mock.calls.flat().join(' ');
     expect(logged).not.toContain('hunter2');
   });
+
+  it('redacts error text for sensitive commands and still rejects', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result, conn } = setup(14);
+    conn.sendToRadioFrame.mockRejectedValueOnce(new Error('write failed: set wifi.pwd hunter2'));
+    await expect(result.current.run('set wifi.pwd hunter2')).rejects.toThrow('hunter2');
+    const logged = warn.mock.calls.flat().join(' ');
+    expect(logged).toContain('[redacted]');
+    expect(logged).not.toContain('hunter2');
+  });
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'clears the planned-reboot flag when the reconnect owner skips the cycle (%s)',
+    async () => {
+      const { result, plannedRebootRef, connectionLost } = setup(14);
+      connectionLost.mockReturnValue(false);
+      await result.current.rebootAndReconnect();
+      expect(connectionLost).toHaveBeenCalledTimes(1);
+      expect(plannedRebootRef.current).toBe(false);
+    },
+  );
 });

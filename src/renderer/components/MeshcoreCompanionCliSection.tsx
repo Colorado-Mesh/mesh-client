@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
@@ -141,9 +142,9 @@ export default function MeshcoreCompanionCliSection({
       return;
     }
     setApplyingGroup(group);
-    let needsReboot = false;
-    const failed: string[] = [];
     try {
+      let needsReboot = false;
+      const failed: string[] = [];
       for (const key of keys) {
         try {
           const res = await applyMeshcoreCompanionSetting(cli.run, key, edits[key]);
@@ -160,29 +161,29 @@ export default function MeshcoreCompanionCliSection({
           errors[key] = t('meshcoreCompanionCli.applyFailed');
         }
       }
+      setFieldErrors(errors);
+      if (needsReboot) {
+        setRebootPending(true);
+        setRebootGroup(group);
+      }
+      onToast?.(
+        failed.length === 0
+          ? t('meshcoreCompanionCli.applied')
+          : t('meshcoreCompanionCli.appliedWithErrors', { count: failed.length }),
+        failed.length === 0 ? 'success' : 'error',
+      );
+      const kept: Record<string, string> = {};
+      for (const key of failed) kept[key] = edits[key];
+      try {
+        const snap = await readAllMeshcoreCompanionSettings(cli.run);
+        setSnapshot(snap);
+      } catch (e) {
+        console.warn('[MeshcoreCompanionCliSection] re-read failed ' + errLikeToLogString(e));
+      }
+      setEdits(kept);
     } finally {
       setApplyingGroup(null);
     }
-    setFieldErrors(errors);
-    if (needsReboot) {
-      setRebootPending(true);
-      setRebootGroup(group);
-    }
-    onToast?.(
-      failed.length === 0
-        ? t('meshcoreCompanionCli.applied')
-        : t('meshcoreCompanionCli.appliedWithErrors', { count: failed.length }),
-      failed.length === 0 ? 'success' : 'error',
-    );
-    const kept: Record<string, string> = {};
-    for (const key of failed) kept[key] = edits[key];
-    try {
-      const snap = await readAllMeshcoreCompanionSettings(cli.run);
-      setSnapshot(snap);
-    } catch (e) {
-      console.warn('[MeshcoreCompanionCliSection] re-read failed ' + errLikeToLogString(e));
-    }
-    setEdits(kept);
   };
 
   const reveal = async (key: string): Promise<void> => {
@@ -239,8 +240,11 @@ export default function MeshcoreCompanionCliSection({
       }
       setConsoleInput('');
     } catch (e) {
-      console.warn('[MeshcoreCompanionCliSection] console command failed ' + errLikeToLogString(e));
-      pushConsole('error', e instanceof Error ? e.message : String(e));
+      const message = isMeshcoreCompanionSensitiveCommand(command)
+        ? t('meshcoreCompanionCli.actionFailed')
+        : sanitizeLogMessage(errLikeToLogString(e));
+      console.warn('[MeshcoreCompanionCliSection] console command failed ' + message);
+      pushConsole('error', message);
     } finally {
       setConsoleBusy(false);
     }
@@ -380,7 +384,7 @@ export default function MeshcoreCompanionCliSection({
       <span className="text-sm text-orange-200">{t('meshcoreCompanionCli.rebootPending')}</span>
       <button
         type="button"
-        disabled={disabled}
+        disabled={busy}
         onClick={() => {
           setConfirm('reboot');
         }}
@@ -506,7 +510,7 @@ export default function MeshcoreCompanionCliSection({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={disabled}
+                  disabled={busy}
                   onClick={() => {
                     setConfirm('reboot');
                   }}
@@ -565,7 +569,7 @@ export default function MeshcoreCompanionCliSection({
                   aria-label={t('meshcoreCompanionCli.consoleInput')}
                   placeholder={t('meshcoreCompanionCli.consolePlaceholder')}
                   value={consoleInput}
-                  disabled={disabled || consoleBusy}
+                  disabled={busy || consoleBusy}
                   onChange={(e) => {
                     setConsoleInput(e.target.value);
                   }}
@@ -573,7 +577,7 @@ export default function MeshcoreCompanionCliSection({
                 />
                 <button
                   type="submit"
-                  disabled={disabled || consoleBusy || consoleInput.trim() === ''}
+                  disabled={busy || consoleBusy || consoleInput.trim() === ''}
                   className="bg-brand-green text-app-bg rounded-lg px-4 py-1.5 text-sm font-medium disabled:opacity-50"
                 >
                   {t('meshcoreCompanionCli.consoleSend')}

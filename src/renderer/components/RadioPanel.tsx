@@ -2911,6 +2911,7 @@ export default function RadioPanel({
 
       {capabilities?.hasCompanionCli && meshcoreCompanionCli && (
         <MeshcoreCompanionCliSection
+          key={identityId ?? 'meshcore-companion-cli'}
           cli={meshcoreCompanionCli}
           disabled={disabled}
           onToast={addToast}

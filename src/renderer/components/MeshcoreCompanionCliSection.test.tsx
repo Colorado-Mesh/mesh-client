@@ -151,6 +151,67 @@ describe('MeshcoreCompanionCliSection', () => {
     expect(log.textContent).not.toContain('hunter2');
   });
 
+  it('hides error text for a failed sensitive console command', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const base = makeCli();
+    const cli = makeCli({
+      run: vi.fn((command: string) =>
+        command.startsWith('set wifi.pwd')
+          ? Promise.reject(new Error('failed: set wifi.pwd hunter2'))
+          : base.run(command),
+      ),
+    });
+    renderWithToast(<MeshcoreCompanionCliSection cli={cli} disabled={false} />);
+    openSection();
+    await screen.findByDisplayValue('HomeNet');
+    const input = screen.getByRole('textbox', { name: 'Companion command' });
+    fireEvent.change(input, { target: { value: 'set wifi.pwd hunter2' } });
+    fireEvent.submit(input.closest('form')!);
+    const log = screen.getByRole('list', { name: 'Companion command history' });
+    await waitFor(() => {
+      expect(log.querySelectorAll('li')).toHaveLength(2);
+    });
+    expect(log.textContent).not.toContain('hunter2');
+  });
+
+  it('keeps console and reboot disabled until the post-apply refresh finishes', async () => {
+    let releaseRefresh: (() => void) | null = null;
+    const base = makeCli();
+    let applied = false;
+    const cli = makeCli({
+      run: vi.fn((command: string) => {
+        if (command === 'set af 2') applied = true;
+        if (applied && command === 'ver') {
+          return new Promise<MeshcoreCompanionCliResult>((resolve) => {
+            releaseRefresh = () => {
+              resolve({ kind: 'ok', reply: REPLIES.ver });
+            };
+          });
+        }
+        return base.run(command);
+      }),
+    });
+    renderWithToast(<MeshcoreCompanionCliSection cli={cli} disabled={false} />);
+    openSection();
+    await screen.findByDisplayValue('HomeNet');
+    const af = screen.getByDisplayValue('1.0');
+    fireEvent.change(af, { target: { value: '2' } });
+    const apply = Array.from(af.closest('fieldset')?.querySelectorAll('button') ?? []).find(
+      (b) => b.textContent === 'Apply',
+    );
+    if (!apply) throw new Error('apply missing');
+    fireEvent.click(apply);
+    await waitFor(() => {
+      expect(releaseRefresh).not.toBeNull();
+    });
+    expect(screen.getByRole('textbox', { name: 'Companion command' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reboot and reconnect' })).toBeDisabled();
+    (releaseRefresh as unknown as () => void)();
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: 'Companion command' })).not.toBeDisabled();
+    });
+  });
+
   it('has no axe violations when loaded', async () => {
     const { container } = renderWithToast(
       <MeshcoreCompanionCliSection cli={makeCli()} disabled={false} />,

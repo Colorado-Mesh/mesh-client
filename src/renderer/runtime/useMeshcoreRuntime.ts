@@ -799,7 +799,7 @@ export function useMeshcoreRuntime() {
   const meshcoreLastDataReceivedRef = useRef<number>(Date.now());
   const meshcoreSerialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const meshcoreSerialLossCleanupRef = useRef<(() => void) | null>(null);
-  const handleMeshcoreConnectionLostRef = useRef<() => void>(() => {});
+  const handleMeshcoreConnectionLostRef = useRef<() => boolean>(() => false);
   /** User asked the companion to reboot; the next link loss reconnects with a longer first delay. */
   const meshcorePlannedRebootRef = useRef(false);
   const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
@@ -3854,10 +3854,10 @@ export function useMeshcoreRuntime() {
     scheduleMeshcoreReconnectAttemptRef.current = scheduleMeshcoreReconnectAttempt;
   }, [scheduleMeshcoreReconnectAttempt]);
 
-  const handleMeshcoreConnectionLost = useCallback(() => {
+  const handleMeshcoreConnectionLost = useCallback((): boolean => {
     if (meshcoreExplicitDisconnectRef.current) {
       console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
-      return;
+      return false;
     }
     if (
       meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
@@ -3866,7 +3866,7 @@ export function useMeshcoreRuntime() {
       console.debug(
         '[useMeshcoreRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
       );
-      return;
+      return false;
     }
     if (
       meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
@@ -3876,7 +3876,7 @@ export function useMeshcoreRuntime() {
       })
     ) {
       console.debug('[useMeshcoreRuntime] skip reconnect (BLE budget exhausted)');
-      return;
+      return false;
     }
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
@@ -3898,7 +3898,7 @@ export function useMeshcoreRuntime() {
         console.debug(
           '[useMeshcoreRuntime] Connection lost before first configure — skip reconnect (auto-connect owns retry)',
         );
-        return;
+        return false;
       }
       meshcoreConnectionParamsRef.current ??= rehydrateMeshcoreConnectionParamsFromStorage();
       console.debug(
@@ -3906,9 +3906,9 @@ export function useMeshcoreRuntime() {
       );
     }
     if (!meshcoreConnectionParamsRef.current) {
-      if (meshcoreExplicitDisconnectRef.current) return;
+      if (meshcoreExplicitDisconnectRef.current) return false;
       const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
-      if (!rehydrated) return;
+      if (!rehydrated) return false;
       meshcoreConnectionParamsRef.current = rehydrated;
     }
     // Single-owner: while a cycle is active, onLinkLost only dirties — never schedules after
@@ -3964,6 +3964,7 @@ export function useMeshcoreRuntime() {
         '[useMeshcoreRuntime] handleMeshcoreConnectionLost async ' + errLikeToLogString(e),
       );
     });
+    return true;
   }, [teardownMeshcoreConnEventListeners]);
 
   // Cleanup on unmount — tear down listeners and release connection/driver.

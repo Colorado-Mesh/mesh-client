@@ -1,9 +1,12 @@
 import { type RefObject, useCallback, useMemo } from 'react';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import {
   formatMeshcoreCompanionCliForLog,
   isMeshcoreCompanionCliSupported,
+  isMeshcoreCompanionSensitiveCommand,
   type MeshcoreCompanionCliConnection,
   type MeshcoreCompanionCliResult,
   runMeshcoreCompanionCli,
@@ -26,8 +29,11 @@ export interface UseMeshcoreCompanionCliDeps {
   connRef: RefObject<(MeshcoreCompanionCliConnection & { reboot(): Promise<void> }) | null>;
   companionProtocolVersion: number | null | undefined;
   plannedRebootRef: RefObject<boolean>;
-  /** Runtime connection-lost handler: tears down and starts the single-owner reconnect cycle. */
-  connectionLostRef: RefObject<() => void>;
+  /**
+   * Runtime connection-lost handler: tears down and starts the single-owner reconnect cycle.
+   * Returns false when it skipped reconnecting (manual disconnect, BLE hold, no session).
+   */
+  connectionLostRef: RefObject<() => boolean>;
   disconnect: () => Promise<void>;
   sleep?: (ms: number) => Promise<void>;
 }
@@ -57,11 +63,14 @@ export function useMeshcoreCompanionCli(
         );
         return result;
       } catch (e) {
+        const detail = isMeshcoreCompanionSensitiveCommand(command)
+          ? '[redacted]'
+          : errLikeToLogString(e);
         console.warn(
           '[useMeshcoreCompanionCli] ' +
             formatMeshcoreCompanionCliForLog(command) +
             ' failed: ' +
-            errLikeToLogString(e),
+            sanitizeLogMessage(detail),
         );
         throw e;
       }
@@ -98,7 +107,7 @@ export function useMeshcoreCompanionCli(
       // catch-no-log-ok logged in sendNoReply; the link may already be gone, reconnect anyway
     }
     await sleep(MESHCORE_PLANNED_REBOOT_FLUSH_MS);
-    connectionLostRef.current();
+    if (!connectionLostRef.current()) plannedRebootRef.current = false;
   }, [connRef, plannedRebootRef, sendNoReply, sleep, connectionLostRef]);
 
   const powerOff = useCallback(async (): Promise<void> => {
