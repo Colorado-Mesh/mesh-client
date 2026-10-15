@@ -1199,6 +1199,13 @@ export function useMeshtasticRuntime() {
     return () => setMeshtasticRemoteConfigTarget(meshtasticIdentityId, null);
   }, [configureTargetNodeNum, meshtasticIdentityId]);
 
+  // Heard Mesh Beacons / node status are keyed by node number only; clear on identity change so a
+  // prior radio's entries cannot surface for reused node numbers on the next session.
+  useEffect(() => {
+    setMeshBeacons(new Map());
+    setNodeStatuses(new Map());
+  }, [meshtasticIdentityId]);
+
   useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
   }, [remoteAdminStatus]);

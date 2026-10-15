@@ -71,9 +71,9 @@ export default function MeshcoreTelemetryPushSection({
 
   const start = async () => {
     setError(null);
-    if (!(await ensureAccess())) return;
     setBusy(true);
     try {
+      if (!(await ensureAccess())) return;
       const minutes = Number.parseFloat(leaseMinutes);
       await push.subscribe(nodeId, {
         timeoutSecs: clampMeshcoreTelemetryPushTimeoutSecs(minutes * 60),

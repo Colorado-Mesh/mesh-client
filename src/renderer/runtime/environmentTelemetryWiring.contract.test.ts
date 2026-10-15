@@ -12,7 +12,7 @@ describe('environment telemetry history wiring (source contract)', () => {
     );
     const body = extractUseCallbackBody(src, 'applyMeshcoreTelemetryLpp');
     expect(body).toMatch(/recordEnvironmentReading\(\s*'meshcore',\s*nodeId,/);
-    expect(body).toContain("'rpc'");
+    expect(body).toMatch(/recordEnvironmentReading\([\s\S]*\bsource\s*,?\s*\)/);
   });
 
   it('Meshtastic MQTT onNodeUpdate records readings only when the marker is present', () => {

@@ -33,7 +33,7 @@ export const ENVIRONMENT_READING_DB_COLUMNS: Readonly<Record<EnvironmentReadingF
   co2: 'co2',
 };
 
-export const ENVIRONMENT_TELEMETRY_SOURCES = ['rf', 'mqtt', 'rpc'] as const;
+export const ENVIRONMENT_TELEMETRY_SOURCES = ['rf', 'mqtt', 'rpc', 'push'] as const;
 export type EnvironmentTelemetrySource = (typeof ENVIRONMENT_TELEMETRY_SOURCES)[number];
 
 export function isEnvironmentTelemetrySource(value: unknown): value is EnvironmentTelemetrySource {

@@ -6009,7 +6009,7 @@ export function useMeshcoreRuntime() {
             relativeHumidity: result.relativeHumidity,
             barometricPressure: result.barometricPressure,
           },
-          'rpc',
+          source,
         );
       }
       const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);

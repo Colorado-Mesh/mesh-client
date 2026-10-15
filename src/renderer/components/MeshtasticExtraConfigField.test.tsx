@@ -7,6 +7,7 @@ import { useMeshtasticExtraConfigFields } from '../hooks/useMeshtasticExtraConfi
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import {
   DEVICE_EXTRA_FIELDS,
+  MESHTASTIC_ADDRESS_MODE_STATIC,
   NETWORK_EXTRA_FIELDS,
   POSITION_EXTRA_FIELDS,
 } from '../lib/meshtastic/meshtasticExtraConfigFields';
@@ -62,7 +63,10 @@ describe('MeshtasticExtraConfigField', () => {
 
   it('flags an invalid IPv4 address inline', async () => {
     const user = userEvent.setup();
-    const { container } = render(<Harness slice={{ positionFlags: 0 }} />);
+    // Static mode so ipv4Config fields are validated (DHCP skips them on apply).
+    const { container } = render(
+      <Harness slice={{ positionFlags: 0, addressMode: MESHTASTIC_ADDRESS_MODE_STATIC }} />,
+    );
     await user.click(screen.getByText('Advanced hardware'));
     await user.type(screen.getByRole('textbox', { name: 'IP address' }), '10.0.0');
     expect(screen.getByRole('alert')).toHaveTextContent('IP address has an invalid value.');

@@ -40,6 +40,9 @@ describe('redactMeshcoreCliSecretsInText', () => {
     ['reply: wifi.pwd = hunter2', 'reply: wifi.pwd: [redacted]'],
     ['> wifi.pwd: hunter2', '> wifi.pwd: [redacted]'],
     ['set guest.password abc', 'set guest.password [redacted]'],
+    ['[cli] password hunter2', '[cli] password [redacted]'],
+    ['a1|password hunter2', 'a1|password [redacted]'],
+    ['password now: hunter2', 'password now: [redacted]'],
   ])('%s', (input, expected) => {
     expect(redactMeshcoreCliSecretsInText(input)).toBe(expected);
   });
@@ -54,8 +57,16 @@ describe('redactMeshcoreCliSecretsInText', () => {
 
   it('JSON variant stops at the end of the string value and keeps the document valid', () => {
     const doc = {
-      history: ['set wifi.pwd a"b\\c', 'ver', 'reply wifi.pwd: x"y', 'set pin 1\nnext line'],
+      history: [
+        'set wifi.pwd a"b\\c',
+        'ver',
+        'reply wifi.pwd: x"y',
+        'set pin 1\nnext line',
+        'password secret',
+        'password now: secret',
+      ],
       other: 'set name keep',
+      'wifi.pwd': 'hunter2',
     };
     const out = redactMeshcoreCliSecretsInJsonText(JSON.stringify(doc, null, 2));
     expect(JSON.parse(out)).toEqual({
@@ -64,8 +75,11 @@ describe('redactMeshcoreCliSecretsInText', () => {
         'ver',
         'reply wifi.pwd: [redacted]',
         'set pin [redacted]',
+        'password [redacted]',
+        'password now: [redacted]',
       ],
       other: 'set name keep',
+      'wifi.pwd': '[redacted]',
     });
   });
 

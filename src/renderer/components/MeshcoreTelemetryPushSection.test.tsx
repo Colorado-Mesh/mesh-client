@@ -77,6 +77,37 @@ describe('MeshcoreTelemetryPushSection', () => {
     expect(push.subscribe).not.toHaveBeenCalled();
   });
 
+  it('marks busy before ensureAccess so a second toggle cannot start during the prompt', async () => {
+    let resolveAccess: (ok: boolean) => void = () => {};
+    const ensureAccess = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveAccess = resolve;
+        }),
+    );
+    const push = makePush({ subscribe: vi.fn(() => Promise.resolve(ACTIVE)) });
+    render(
+      <MeshcoreTelemetryPushSection
+        nodeId={7}
+        push={push}
+        ensureAccess={ensureAccess}
+        disabled={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => {
+      expect(ensureAccess).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByRole('switch')).toBeDisabled();
+    fireEvent.click(screen.getByRole('switch'));
+    expect(ensureAccess).toHaveBeenCalledTimes(1);
+    resolveAccess(false);
+    await waitFor(() => {
+      expect(screen.getByRole('switch')).not.toBeDisabled();
+    });
+    expect(push.subscribe).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['noMetrics', /does not report any of the selected values/],
     ['rejected', /refused the subscription/],

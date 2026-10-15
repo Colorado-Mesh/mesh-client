@@ -419,7 +419,7 @@ describe('buildSupportBundleZip', () => {
   it('scrubs MeshCore CLI secrets from both logs and the debug snapshot', async () => {
     await fs.promises.writeFile(
       logPath,
-      '[INFO] [useMeshcoreCompanionCli] set wifi.pwd hunter2 -> OK\nkeep me\n',
+      '[INFO] [useMeshcoreCompanionCli] set wifi.pwd hunter2 -> OK\n[INFO] password admin-secret\n[INFO] password now: admin-secret\nkeep me\n',
       'utf8',
     );
     await fs.promises.writeFile(
@@ -428,7 +428,12 @@ describe('buildSupportBundleZip', () => {
       'utf8',
     );
     const snapshot = JSON.stringify(
-      { meshcore: { cliHistory: ['get wifi.pwd -> hunter2', 'ver'] } },
+      {
+        meshcore: {
+          cliHistory: ['get wifi.pwd -> hunter2', 'password admin-secret', 'ver'],
+          wifi: { 'wifi.pwd': 'hunter2' },
+        },
+      },
       null,
       2,
     );
@@ -442,11 +447,17 @@ describe('buildSupportBundleZip', () => {
     for (const text of [log, backup, snap]) {
       expect(text).not.toContain('hunter2');
       expect(text).not.toContain('123456');
+      expect(text).not.toContain('admin-secret');
     }
-    expect(log).toBe('[INFO] [useMeshcoreCompanionCli] set wifi.pwd [redacted]\nkeep me\n');
+    expect(log).toBe(
+      '[INFO] [useMeshcoreCompanionCli] set wifi.pwd [redacted]\n[INFO] password [redacted]\n[INFO] password now: [redacted]\nkeep me\n',
+    );
     expect(backup).toContain('a1|set pin [redacted]');
     expect(JSON.parse(snap)).toEqual({
-      meshcore: { cliHistory: ['get wifi.pwd [redacted]', 'ver'] },
+      meshcore: {
+        cliHistory: ['get wifi.pwd [redacted]', 'password [redacted]', 'ver'],
+        wifi: { 'wifi.pwd': '[redacted]' },
+      },
     });
   });
 

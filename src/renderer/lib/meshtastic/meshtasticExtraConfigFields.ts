@@ -185,6 +185,10 @@ function writeOne(spec: ExtraConfigFieldSpec, value: ExtraFieldValue | undefined
   }
 }
 
+/** Numeric value of `Config_NetworkConfig_AddressMode.STATIC` (form values are plain numbers). */
+export const MESHTASTIC_ADDRESS_MODE_STATIC: number =
+  Config.Config_NetworkConfig_AddressMode.STATIC;
+
 /** Builds apply overrides; nested keys merge into a copy of the device's sub-message. */
 export function buildExtraFieldOverrides(
   rawSlice: unknown,
@@ -193,7 +197,12 @@ export function buildExtraFieldOverrides(
 ): ExtraFieldOverridesResult {
   const slice = meshtasticConfigSlice(rawSlice);
   const overrides: Record<string, unknown> = {};
+  const addressMode = values.addressMode;
+  const skipIpv4Config =
+    typeof addressMode === 'number' && addressMode !== MESHTASTIC_ADDRESS_MODE_STATIC;
   for (const spec of specs) {
+    // Hidden static-IPv4 fields must not block DHCP applies or write stale values.
+    if (skipIpv4Config && spec.key.startsWith('ipv4Config.')) continue;
     const written = writeOne(spec, values[spec.key]);
     if (written === null) return { ok: false, invalidKey: spec.key };
     const dot = spec.key.indexOf('.');
@@ -308,9 +317,6 @@ export const POWER_EXTRA_FIELDS = {
     descKey: 'meshtasticExtraConfig.powermonEnablesDesc',
   },
 } as const satisfies Record<string, ExtraConfigFieldSpec>;
-
-export const MESHTASTIC_ADDRESS_MODE_STATIC: number =
-  Config.Config_NetworkConfig_AddressMode.STATIC;
 
 export const NETWORK_EXTRA_FIELDS = {
   addressMode: {

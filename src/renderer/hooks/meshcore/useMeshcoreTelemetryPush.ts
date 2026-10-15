@@ -71,10 +71,18 @@ export function useMeshcoreTelemetryPush(
   const [subscriptions, setSubscriptions] = useState<
     ReadonlyMap<number, MeshcoreTelemetryPushSubscription>
   >(() => new Map());
+  /** Bumped on subscribe/unsubscribe/clearAll so a late RF reply cannot restore a cancelled sub. */
+  const subscribeGenerationsRef = useRef(new Map<number, number>());
 
   const publish = useCallback(() => {
     setSubscriptions(new Map(registry.list().map((s) => [s.nodeId, s])));
   }, [registry]);
+
+  const bumpSubscribeGeneration = useCallback((nodeId: number): number => {
+    const next = (subscribeGenerationsRef.current.get(nodeId) ?? 0) + 1;
+    subscribeGenerationsRef.current.set(nodeId, next);
+    return next;
+  }, []);
 
   const subscribeRef = useRef<
     (
@@ -102,7 +110,17 @@ export function useMeshcoreTelemetryPush(
       nodeId: number,
       options: MeshcoreTelemetryPushOptions,
     ): Promise<MeshcoreTelemetryPushSubscription> => {
+      const generation = bumpSubscribeGeneration(nodeId);
+      const stillCurrent = (): MeshcoreTelemetryPushSubscription | null => {
+        if (subscribeGenerationsRef.current.get(nodeId) === generation) return null;
+        return registry.get(nodeId) ?? null;
+      };
       const channels = await depsRef.current.getTelemetryChannels(nodeId);
+      const afterChannels = stillCurrent();
+      if (afterChannels) return afterChannels;
+      if (subscribeGenerationsRef.current.get(nodeId) !== generation) {
+        throw new Error('telemetry push subscribe superseded');
+      }
       const minDeltas = buildMeshcoreTelemetryMinDeltas(channels, options.thresholds);
       if (minDeltas.length < MESHCORE_TELEMETRY_PUSH_MIN_DELTAS_MIN_BYTES) {
         throw new MeshcoreTelemetryPushError('noMetrics');
@@ -114,6 +132,11 @@ export function useMeshcoreTelemetryPush(
           buildMeshcoreTelemetrySubscribeRequest(tag, options.timeoutSecs, minDeltas),
         ),
       );
+      const afterReply = stillCurrent();
+      if (afterReply) return afterReply;
+      if (subscribeGenerationsRef.current.get(nodeId) !== generation) {
+        throw new Error('telemetry push subscribe superseded');
+      }
       if (reply.grantedSecs === 0) {
         throw new MeshcoreTelemetryPushError('rejected');
       }
@@ -133,7 +156,7 @@ export function useMeshcoreTelemetryPush(
       );
       return sub;
     },
-    [publish, registry, scheduleRenew],
+    [bumpSubscribeGeneration, publish, registry, scheduleRenew],
   );
   useEffect(() => {
     subscribeRef.current = subscribe;
@@ -141,6 +164,7 @@ export function useMeshcoreTelemetryPush(
 
   const unsubscribe = useCallback(
     async (nodeId: number): Promise<void> => {
+      bumpSubscribeGeneration(nodeId);
       const had = registry.get(nodeId) != null;
       registry.delete(nodeId);
       publish();
@@ -155,10 +179,13 @@ export function useMeshcoreTelemetryPush(
         );
       }
     },
-    [connRef, publish, registry],
+    [bumpSubscribeGeneration, connRef, publish, registry],
   );
 
   const clearAll = useCallback(() => {
+    for (const [nodeId, gen] of subscribeGenerationsRef.current) {
+      subscribeGenerationsRef.current.set(nodeId, gen + 1);
+    }
     registry.clearAll();
     publish();
   }, [publish, registry]);

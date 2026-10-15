@@ -159,4 +159,30 @@ describe('useMeshcoreTelemetryPush', () => {
     expect(result.current.subscriptions.size).toBe(0);
     expect(deps.sendSensorRequest).toHaveBeenCalledTimes(1);
   });
+
+  it('discards a late subscribe reply after unsubscribe so it cannot restore the subscription', async () => {
+    const conn = fakeConn();
+    let release: (body: Uint8Array) => void = () => {};
+    const deps = makeDeps(conn, {
+      sendSensorRequest: vi.fn(
+        () =>
+          new Promise<Uint8Array>((resolve) => {
+            release = resolve;
+          }),
+      ),
+    });
+    const { result } = renderHook(() => useMeshcoreTelemetryPush(deps));
+    let subscribePromise: Promise<unknown> = Promise.resolve();
+    act(() => {
+      subscribePromise = result.current.subscribe(9, OPTIONS).catch((e: unknown) => e);
+    });
+    await act(async () => {
+      await result.current.unsubscribe(9);
+    });
+    await act(async () => {
+      release(GRANTED_3600);
+      await subscribePromise;
+    });
+    expect(result.current.subscriptions.has(9)).toBe(false);
+  });
 });

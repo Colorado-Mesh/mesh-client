@@ -84,6 +84,25 @@ describe('readExtraFieldValues / buildExtraFieldOverrides', () => {
     expect(result).toEqual({ ok: false, invalidKey: 'ipv4Config.dns' });
   });
 
+  it('skips ipv4Config fields when address mode is DHCP so invalid hidden values do not block apply', () => {
+    const specs = extraFieldList(NETWORK_EXTRA_FIELDS);
+    const result = buildExtraFieldOverrides({}, specs, {
+      addressMode: 0,
+      'ipv4Config.ip': 'not-an-ip',
+      'ipv4Config.gateway': 'also-bad',
+      rsyslogServer: 'logs:514',
+    });
+    expect(result).toEqual({
+      ok: true,
+      overrides: {
+        addressMode: 0,
+        rsyslogServer: 'logs:514',
+        enabledProtocols: 0,
+        ipv6Enabled: false,
+      },
+    });
+  });
+
   it('enforces number bounds', () => {
     const specs = extraFieldList(POWER_EXTRA_FIELDS);
     const result = buildExtraFieldOverrides({}, specs, { deviceBatteryInaAddress: 200 });
