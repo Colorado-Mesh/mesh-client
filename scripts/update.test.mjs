@@ -110,7 +110,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).not.toContain('RATSPEAK_STACK_PR_ENTRIES:');
     expect(result.stdout).toContain('RATSPEAK_RELEASE_WATCH_ENTRIES:');
-    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.2.0');
+    expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
       'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.33',
@@ -543,9 +543,9 @@ exit 0
     return {
       releases: {
         'ratspeak/rsLXST': {
-          tag_name: 'v0.2.0',
-          published_at: '2026-08-17T23:34:17Z',
-          body: 'rsLXST v0.2.0',
+          tag_name: 'v0.3.0',
+          published_at: '2026-10-12T22:34:34Z',
+          body: 'rsLXST v0.3.0',
         },
         'ratspeak/lrgp-rs': {
           tag_name: 'v0.4.1',
