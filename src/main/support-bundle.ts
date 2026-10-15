@@ -4,7 +4,10 @@ import JSZip from 'jszip';
 import path from 'path';
 
 import { buildInfoForManifest, getBuildInfo } from '../shared/buildInfo';
-import { redactMeshcoreCliSecretsInText } from '../shared/meshcoreCliSecrets';
+import {
+  redactMeshcoreCliSecretsInJsonText,
+  redactMeshcoreCliSecretsInText,
+} from '../shared/meshcoreCliSecrets';
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
@@ -191,30 +194,14 @@ Contents:
 
 /**
  * Scrub MeshCore CLI secrets (`set wifi.pwd`, `set pin`, `get wifi.pwd` replies, …) from a log
- * buffer. The renderer already redacts before logging; this catches older builds' lines.
+ * buffer. The renderer already redacts before logging; this catches older builds' lines. The
+ * debug snapshot gets the JSON-string variant so it stays valid JSON.
  */
 export function redactMeshcoreCliSecretsInLog(log: Buffer): Buffer {
   if (log.length === 0) return log;
   const text = log.toString('utf8');
   const redacted = redactMeshcoreCliSecretsInText(text);
   return redacted === text ? log : Buffer.from(redacted, 'utf8');
-}
-
-function redactMeshcoreCliSecretsInJsonValue(value: unknown): unknown {
-  if (typeof value === 'string') return redactMeshcoreCliSecretsInText(value);
-  if (Array.isArray(value)) return value.map(redactMeshcoreCliSecretsInJsonValue);
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, redactMeshcoreCliSecretsInJsonValue(v)]),
-    );
-  }
-  return value;
-}
-
-/** Same scrub for the debug snapshot; string values are scrubbed so the JSON stays valid. */
-export function redactMeshcoreCliSecretsInSnapshotJson(json: string): string {
-  if (redactMeshcoreCliSecretsInText(json) === json) return json;
-  return JSON.stringify(redactMeshcoreCliSecretsInJsonValue(JSON.parse(json)), null, 2);
 }
 
 /** Truncate long hex ids in exported log lines (keep triage prefix only). */
@@ -339,7 +326,7 @@ export async function buildSupportBundleZip(
   await flushLogBeforeQuit();
 
   const zip = new JSZip();
-  zip.file('debug-snapshot.json', redactMeshcoreCliSecretsInSnapshotJson(debugSnapshotJson));
+  zip.file('debug-snapshot.json', redactMeshcoreCliSecretsInJsonText(debugSnapshotJson));
 
   const logPath = getLogPath();
   const logDir = path.dirname(logPath);

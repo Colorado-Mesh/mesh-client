@@ -4,6 +4,7 @@ import {
   isMeshcoreCliSecretCommand,
   meshcoreCliSecretCommandHead,
   redactMeshcoreCliSecretCommand,
+  redactMeshcoreCliSecretsInJsonText,
   redactMeshcoreCliSecretsInText,
 } from './meshcoreCliSecrets';
 
@@ -49,6 +50,23 @@ describe('redactMeshcoreCliSecretsInText', () => {
     expect(redactMeshcoreCliSecretsInText(text)).toBe(
       'a\r\nset pin [redacted]\r\nb set wifi.pwd [redacted]\nwifi.pwd: [redacted]\nreset pin ok\n',
     );
+  });
+
+  it('JSON variant stops at the end of the string value and keeps the document valid', () => {
+    const doc = {
+      history: ['set wifi.pwd a"b\\c', 'ver', 'reply wifi.pwd: x"y', 'set pin 1\nnext line'],
+      other: 'set name keep',
+    };
+    const out = redactMeshcoreCliSecretsInJsonText(JSON.stringify(doc, null, 2));
+    expect(JSON.parse(out)).toEqual({
+      history: [
+        'set wifi.pwd [redacted]',
+        'ver',
+        'reply wifi.pwd: [redacted]',
+        'set pin [redacted]',
+      ],
+      other: 'set name keep',
+    });
   });
 
   it('does not touch ordinary password wording', () => {

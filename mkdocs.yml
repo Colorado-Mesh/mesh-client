@@ -146,6 +146,7 @@ nav:
           - MQTT: development/mqtt.md
           - MeshCore Repeaters: development/meshcore-repeaters.md
           - MeshCore Rooms: development/meshcore-rooms.md
+          - MeshCore companion CLI: development/meshcore-companion-cli.md
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
           - Offline maps: development/offline-maps.md
