@@ -4,6 +4,7 @@ import { encodeMeshcoreGroupText } from '@/shared/meshcoreGroupText';
 
 import {
   formatChatSignalReport,
+  hasRfMessageReception,
   meshcoreMessageReceptionStats,
   messageReceptionStats,
 } from './chatSignalReport';
@@ -55,6 +56,25 @@ function packet(overrides: Partial<RxPacketEntry> = {}): RxPacketEntry {
 }
 
 describe('signal report quick replies', () => {
+  it.each(['rf', 'both', 'ble', 'rf+tcp', 'network+ble'] as const)(
+    'recognizes message-level wireless reception over %s without needing numeric stats',
+    (receivedVia) => {
+      expect(hasRfMessageReception({ receivedVia })).toBe(true);
+      expect(formatChatSignalReport({}, 100, receivedVia)).toBe(
+        `ack: received via ${receivedVia === 'both' ? 'RF' : receivedVia.toUpperCase()}`,
+      );
+      expect(formatChatSignalReport({}, 5, receivedVia)).toBeNull();
+    },
+  );
+
+  it.each([undefined, 'tcp', 'network', 'mqtt', 'paper'] as const)(
+    'does not infer RF reception from %s',
+    (receivedVia) => {
+      expect(hasRfMessageReception({ receivedVia })).toBe(false);
+      expect(formatChatSignalReport({}, 100, receivedVia)).toBeNull();
+    },
+  );
+
   it('reproduces the screenshot from an exact RF packet match', () => {
     const stats = meshcoreMessageReceptionStats(
       message,

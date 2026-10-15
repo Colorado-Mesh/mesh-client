@@ -127,7 +127,13 @@ function handleTextMessage(
     if (alreadySeen || isPacketSeen(seenPacketIds, incoming.sender_id, packetId)) {
       const upgraded = messages.map((m) =>
         isSamePacket(m) && m.receivedVia === 'mqtt'
-          ? { ...m, receivedVia: 'both' as const, rxHops: m.rxHops ?? incoming.rxHops }
+          ? {
+              ...m,
+              receivedVia: 'both' as const,
+              rxHops: incoming.rxHops,
+              rxSnr: incoming.rxSnr,
+              rxRssi: incoming.rxRssi,
+            }
           : m,
       );
       for (const m of upgraded) {

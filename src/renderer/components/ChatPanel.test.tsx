@@ -6910,15 +6910,14 @@ describe('Signal report quick replies', () => {
     }
   });
 
-  it('does not send fabricated stats for messages without reception measurements', async () => {
+  it('sends only a receipt when RF provenance is known without numeric measurements', async () => {
     const { props } = renderSignalPanel({
       messages: [{ ...message, rxSnr: undefined, rxRssi: undefined, rxHops: undefined }],
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
-    expect(
-      await screen.findByText(i18n.t('chatPanel.signalReportUnavailable')),
-    ).toBeInTheDocument();
-    expect(props.onSend).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(props.onSend).toHaveBeenCalledWith('ack: received via RF', 0, undefined, 12345);
+    });
   });
 
   it('keeps stored signal measurements when a capture only has a valid hop count', async () => {
@@ -6957,10 +6956,42 @@ describe('Signal report quick replies', () => {
     { messages: [{ ...message, receivedVia: 'mqtt' as const }] },
     { isConnected: false },
     { isMqttOnly: true },
-    { protocol: 'reticulum' as const },
+    { protocol: 'reticulum' as const, messages: [{ ...message, receivedVia: 'tcp' as const }] },
   ])('hides the RF action when unavailable: %j', async (overrides) => {
     renderSignalPanel(overrides);
     await waitForComposer();
     expect(screen.queryByRole('button', { name: 'Send signal report' })).not.toBeInTheDocument();
   });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'replies to a Reticulum RF chat by LXMF hash while preserving the draft on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const parentHash = 'ab'.repeat(32);
+      const { props } = renderSignalPanel({
+        protocol: 'reticulum',
+        dmOnlyChat: true,
+        lxmfReplyHashReplies: true,
+        initialDmTarget: 2,
+        messages: [
+          {
+            ...message,
+            to: 99,
+            reticulum_sender_hash: 'cd'.repeat(16),
+            reticulum_message_hash: parentHash,
+            rxSnr: undefined,
+            rxRssi: undefined,
+            rxHops: undefined,
+          },
+        ],
+      });
+      const composer = await waitForComposer();
+      fireEvent.change(composer, { target: { value: 'Reticulum draft' } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+      await waitFor(() => {
+        expect(props.onSend).toHaveBeenCalledWith('ack: received via RF', 0, 2, parentHash);
+      });
+      expect(composer).toHaveValue('Reticulum draft');
+    },
+  );
 });

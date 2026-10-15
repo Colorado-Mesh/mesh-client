@@ -14,6 +14,14 @@ export interface MessageReceptionStats {
   path?: string[];
 }
 
+/** Message transport evidence, independent of the active protocol or current peer route. */
+export function hasRfMessageReception(message: Pick<ChatMessage, 'receivedVia'>): boolean {
+  const via = message.receivedVia;
+  return (
+    via === 'both' || (via?.split('+').some((atom) => atom === 'rf' || atom === 'ble') ?? false)
+  );
+}
+
 export function messageReceptionStats(
   message: ChatMessage,
   captured?: MessageReceptionStats,
@@ -67,6 +75,7 @@ export function meshcoreMessageReceptionStats(
 export function formatChatSignalReport(
   stats: MessageReceptionStats,
   byteBudget: number,
+  receivedVia?: ChatMessage['receivedVia'],
 ): string | null {
   const parts: string[] = [];
   if (stats.snr != null && Number.isFinite(stats.snr)) parts.push(`SNR ${stats.snr.toFixed(1)} dB`);
@@ -74,7 +83,10 @@ export function formatChatSignalReport(
     parts.push(`RSSI ${Math.round(stats.rssi)} dBm`);
   if (stats.hops != null && Number.isInteger(stats.hops) && stats.hops >= 0)
     parts.push(`${stats.hops} ${stats.hops === 1 ? 'hop' : 'hops'}`);
-  if (parts.length === 0) return null;
+  if (parts.length === 0) {
+    if (!hasRfMessageReception({ receivedVia })) return null;
+    parts.push(`received via ${receivedVia === 'both' ? 'RF' : receivedVia?.toUpperCase()}`);
+  }
   const body = `ack: ${parts.join(', ')}`;
   if (countMessageWireBytes(body) > byteBudget) return null;
   if (

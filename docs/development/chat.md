@@ -69,7 +69,9 @@ fetch a loader at runtime. Credits and license notices are in `docs/credits.md`.
 
 ## Signal report quick replies
 
-Incoming RF messages expose **Send signal report** beside Reply while a radio is connected.
+Incoming messages with RF or BLE reception provenance expose **Send signal report** beside
+Reply across all chat protocols while connected. TCP/network-only, MQTT-only, paper and
+unknown-provenance messages do not expose the action.
 The action sends one reply through the existing destination and saved flood-scope path,
 preserves the composer draft and selected reply, and blocks duplicate clicks during a send.
 Reports use message-level SNR/RSSI/hops, including legitimate zero values. MeshCore channel
@@ -81,3 +83,12 @@ Measurements are receiver-local and can describe the final repeater hop. Raw cap
 session-only; older history can therefore offer fewer stats. Wire copy uses the interoperable
 `ack:` format; UI labels remain localized. `chatSignalReport.ts` owns matching/formatting,
 with partial reports and 1/2/3-byte hashes rendered by `hopReportParse.ts` as human reports.
+
+Meshtastic reports use local packet measurements and RF reply IDs. Hybrid RF/MQTT merges
+retain the local RF measurements in either arrival order and never substitute a gateway's
+signal or hop count. Reticulum replies use LXMF message hashes and the message's recorded
+transport, including BLE and explicit RF/mixed labels. When numeric measurements are absent,
+the same action sends only a receipt such as `ack: received via RF` or `ack: received via BLE`.
+Reticulum currently exposes transport provenance without message-level SNR/RSSI; the receipt
+does not infer measurements from the peer's current route or an unrelated raw packet. A BLE
+label is reported as BLE and does not assert a LoRa path.

@@ -74,6 +74,7 @@ import {
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import {
   formatChatSignalReport,
+  hasRfMessageReception,
   type MessageReceptionStats,
   messageReceptionStats,
 } from '@/renderer/lib/chatSignalReport';
@@ -1880,10 +1881,10 @@ function ChatPanel({
         : viewKey;
 
   const outboxSendFn = useCallback(
-    async (text: string, ch: number, dest?: number, replyId?: number) => {
+    async (text: string, ch: number, dest?: number, replyRef?: number | string) => {
       let result: string | undefined;
       const send = async () => {
-        result = await onSend(text, ch, dest, replyId);
+        result = await onSend(text, ch, dest, replyRef);
       };
       if (applyMeshcoreFloodScopeHashtag) {
         // Outbox rows can target a different channel from the currently open conversation.
@@ -1918,13 +1919,25 @@ function ChatPanel({
 
   const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
   const sendSignalReport = async (message: ChatMessage): Promise<void> => {
-    if (signalReportSendingRef.current || !isConnected || isMqttOnly) return;
+    if (
+      signalReportSendingRef.current ||
+      !isConnected ||
+      isMqttOnly ||
+      !hasRfMessageReception(message)
+    )
+      return;
     const destination =
-      message.to != null && !isMeshtasticBroadcastNodeNum(message.to)
+      message.reticulum_sender_hash ||
+      (message.to != null && !isMeshtasticBroadcastNodeNum(message.to))
         ? message.sender_id
         : undefined;
     const replyKey =
       protocol === 'meshtastic' ? message.packetId : (message.packetId ?? message.timestamp);
+    const replyRef = message.reticulum_message_hash ?? replyKey;
+    if (lxmfReplyHashReplies && !message.reticulum_message_hash) {
+      setChatActionError({ message: t('chatPanel.signalReportUnavailable'), viewKey });
+      return;
+    }
     if (protocol === 'meshtastic' && !replyKey) {
       setChatActionError({ message: t('chatPanel.replyRequiresPacketId'), viewKey });
       return;
@@ -1947,13 +1960,13 @@ function ChatPanel({
           replyKey,
           useKeyedReplies: isMeshcoreOpenWireCompatEnabled(),
         });
-      const text = formatChatSignalReport(stats, budget);
+      const text = formatChatSignalReport(stats, budget, message.receivedVia);
       if (!text) {
         setChatActionError({ message: t('chatPanel.signalReportUnavailable'), viewKey });
         return;
       }
       const send = () =>
-        outboxSendFn(text, message.channel < 0 ? 0 : message.channel, destination, replyKey);
+        outboxSendFn(text, message.channel < 0 ? 0 : message.channel, destination, replyRef);
       if (protocol === 'meshtastic') {
         await withMeshtasticTextSendPacing(send);
       } else {
@@ -4422,9 +4435,8 @@ function ChatPanel({
                                 </button>
                                 {!isOwn &&
                                   !isMqttOnly &&
-                                  capabilities.hasRfStats &&
                                   viewMode !== 'starred' &&
-                                  (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
+                                  hasRfMessageReception(msg) && (
                                     <button
                                       type="button"
                                       disabled={signalReportSending}
