@@ -13,6 +13,7 @@ import {
   loadActiveChannelInitial,
   saveActiveChannel,
   saveDraft,
+  saveFloodScopeOverride,
 } from '../lib/chatPanelProtocolStorage';
 import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
 import { computeChannelUnreadCounts } from '../lib/chatUnreadCounts';
@@ -28,7 +29,7 @@ import type { MessageRecord } from '../stores/messageStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel } from './chat/ChatChannelSwitcher';
-import ChatPanel from './ChatPanel';
+import ChatPanel, { type ChatPanelProps } from './ChatPanel';
 import { ToastProvider } from './Toast';
 
 const probeReticulumPeerMock = vi.hoisted(() => vi.fn());
@@ -6783,5 +6784,168 @@ describe('Chat translation actions', () => {
     expect(api.translate).toHaveBeenCalledWith(
       expect.objectContaining({ provider: 'offline', mode: 'manual' }),
     );
+  });
+});
+
+describe('Signal report quick replies', () => {
+  const message: ChatMessage = {
+    sender_id: 2,
+    sender_name: 'Peer',
+    payload: 'Test transmission',
+    channel: 0,
+    timestamp: 1_800_000_000_000,
+    packetId: 12345,
+    receivedVia: 'rf',
+    rxSnr: 12,
+    rxRssi: -4,
+    rxHops: 6,
+  };
+
+  function renderSignalPanel(overrides: Partial<ChatPanelProps> = {}) {
+    const props = {
+      messages: [message],
+      channels: [{ index: 0, name: 'General' }],
+      myNodeNum: 99,
+      nodes: new Map(),
+      isConnected: true,
+      isActive: true,
+      protocol: 'meshcore' as const,
+      onSend: vi.fn().mockResolvedValue(undefined),
+      onReact: vi.fn(),
+      onResend: vi.fn(),
+      onNodeClick: vi.fn(),
+      ...overrides,
+    };
+    return {
+      props,
+      ...render(
+        <ToastProvider>
+          <ChatPanel {...props} />
+        </ToastProvider>,
+      ),
+    };
+  }
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'sends one reply immediately while preserving the draft on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const getReceptionStats = vi
+        .fn()
+        .mockReturnValue({ snr: 12, rssi: -4, hops: 6, path: ['0600', 'C5EC'] });
+      const { props, container } = renderSignalPanel({ getReceptionStats });
+      const composer = await waitForComposer();
+      fireEvent.change(composer, { target: { value: 'Unfinished draft' } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Reply to message' }));
+      expect(getReceptionStats).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Send signal report' }));
+      await waitFor(() => {
+        expect(props.onSend).toHaveBeenCalledExactlyOnceWith(
+          'ack: SNR 12.0 dB, RSSI -4 dBm, 6 hops via 0600, C5EC',
+          0,
+          undefined,
+          12345,
+        );
+      });
+      expect(composer).toHaveValue('Unfinished draft');
+      expect(screen.getByRole('button', { name: /Cancel reply/i })).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
+
+  it('keeps the action disabled while the send is pending', async () => {
+    let resolve!: () => void;
+    const onSend = vi.fn(
+      () =>
+        new Promise<undefined>((done) => {
+          resolve = () => {
+            done(undefined);
+          };
+        }),
+    );
+    renderSignalPanel({ onSend });
+    const button = await screen.findByRole('button', { name: 'Send signal report' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(onSend).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+    await act(async () => {
+      resolve();
+      await Promise.resolve();
+    });
+    expect(button).toBeEnabled();
+  });
+
+  it('sends DM reports back to the sender and restores the saved flood scope on failure', async () => {
+    saveFloodScopeOverride('meshcore', 'dm:2', '#test');
+    const applyScope = vi.fn().mockResolvedValue(undefined);
+    const onSend = vi.fn().mockRejectedValue(new Error('Not connected'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      renderSignalPanel({
+        messages: [{ ...message, channel: -1, to: 99 }],
+        initialDmTarget: 2,
+        onSend,
+        applyMeshcoreFloodScopeHashtag: applyScope,
+        meshcoreFloodScopeHashtag: '#home',
+      });
+      const composer = await waitForComposer();
+      fireEvent.change(composer, { target: { value: 'Keep this draft' } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+      await waitFor(() => {
+        expect(onSend).toHaveBeenCalledWith('ack: SNR 12.0 dB, RSSI -4 dBm, 6 hops', 0, 2, 12345);
+      });
+      await waitFor(() => {
+        expect(applyScope).toHaveBeenLastCalledWith('#home');
+      });
+      expect(applyScope).toHaveBeenNthCalledWith(1, '#test');
+      expect(composer).toHaveValue('Keep this draft');
+      expect(
+        await screen.findByText(i18n.t('chatPanel.sendErrors.notConnected')),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Send signal report' })).toBeEnabled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does not send fabricated stats for messages without reception measurements', async () => {
+    const { props } = renderSignalPanel({
+      messages: [{ ...message, rxSnr: undefined, rxRssi: undefined, rxHops: undefined }],
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+    expect(
+      await screen.findByText(i18n.t('chatPanel.signalReportUnavailable')),
+    ).toBeInTheDocument();
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
+
+  it('uses Meshtastic reply ids and preserves zero-hop measurements', async () => {
+    const { props } = renderSignalPanel({
+      protocol: 'meshtastic',
+      messages: [{ ...message, rxHops: 0, rxSnr: 0 }],
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+    await waitFor(() => {
+      expect(props.onSend).toHaveBeenCalledWith(
+        'ack: SNR 0.0 dB, RSSI -4 dBm, 0 hops',
+        0,
+        undefined,
+        12345,
+      );
+    });
+  });
+
+  it.each([
+    { messages: [{ ...message, sender_id: 99 }] },
+    { messages: [{ ...message, receivedVia: 'mqtt' as const }] },
+    { isConnected: false },
+    { isMqttOnly: true },
+    { protocol: 'reticulum' as const },
+  ])('hides the RF action when unavailable: %j', async (overrides) => {
+    renderSignalPanel(overrides);
+    await waitForComposer();
+    expect(screen.queryByRole('button', { name: 'Send signal report' })).not.toBeInTheDocument();
   });
 });

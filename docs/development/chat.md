@@ -66,3 +66,18 @@ When refreshing translation upstreams, review the pinned Firefox loader sources 
 only after verifying checksums, model quality/version, native constructor compatibility and
 licenses, then rerun the real-model smoke. Do not automatically adopt a new CDN record or
 fetch a loader at runtime. Credits and license notices are in `docs/credits.md`.
+
+## Signal report quick replies
+
+Incoming RF messages expose **Send signal report** beside Reply while a radio is connected.
+The action sends one reply through the existing destination and saved flood-scope path,
+preserves the composer draft and selected reply, and blocks duplicate clicks during a send.
+Reports use message-level SNR/RSSI/hops, including legitimate zero values. MeshCore channel
+routes and signal measurements are recovered on demand from local RF captures only after
+matching the channel key, sender, text and sender timestamp. Missing captures fall back to
+known message measurements; node telemetry and MQTT captures are never substituted. Route
+hashes are omitted as a whole when they exceed the UTF-8 budget including reply overhead.
+Measurements are receiver-local and can describe the final repeater hop. Raw captures are
+session-only; older history can therefore offer fewer stats. Wire copy uses the interoperable
+`ack:` format; UI labels remain localized. `chatSignalReport.ts` owns matching/formatting,
+with partial reports and 1/2/3-byte hashes rendered by `hopReportParse.ts` as human reports.

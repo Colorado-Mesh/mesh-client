@@ -871,7 +871,9 @@
     "cancelAutoResend": "Erneuten Versuch abbrechen",
     "cancelAutoResendAria": "Automatischen Wiederholungsversuch dieser Nachricht abbrechen",
     "outboxEmergencyWillSend": "Wird so lange wiederholt, bis das Netzwerk es bestätigt",
-    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat."
+    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat.",
+    "sendSignalReport": "Signalbericht senden",
+    "signalReportUnavailable": "Empfangsstatistiken sind nicht verfügbar oder passen nicht in eine Antwort."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

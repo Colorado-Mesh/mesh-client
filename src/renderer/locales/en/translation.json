@@ -576,6 +576,8 @@
     "searchResults_other": "{{count}} results",
     "jumpToQuotedMessage": "Jump to quoted message from {{sender}}",
     "replyToMessage": "Reply to message",
+    "sendSignalReport": "Send signal report",
+    "signalReportUnavailable": "Reception stats are unavailable or do not fit in one reply.",
     "addReaction": "Add reaction",
     "emojiButton": "Emoji",
     "sendButton": "Send",

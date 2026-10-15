@@ -871,7 +871,9 @@
     "cancelAutoResend": "Yeniden denemeyi iptal et",
     "cancelAutoResendAria": "Bu mesajın otomatik yeniden denemesini iptal et",
     "outboxEmergencyWillSend": "Ağ onaylayana kadar yeniden denemeye devam edecek",
-    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir."
+    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir.",
+    "sendSignalReport": "Sinyal raporu gönder",
+    "signalReportUnavailable": "Alım istatistikleri mevcut değil veya tek bir yanıta sığmıyor."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

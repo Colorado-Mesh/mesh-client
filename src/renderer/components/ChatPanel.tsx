@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
+  Signal,
   Siren,
   Smile,
   Star,
@@ -48,7 +49,10 @@ import {
   createBatchedMessageAnnouncer,
   truncateForAnnouncement,
 } from '@/renderer/lib/a11yAnnouncer';
-import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
+import {
+  isMecpComposeEnabled,
+  isMeshcoreOpenWireCompatEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
   autoResendKey,
@@ -59,11 +63,20 @@ import {
 import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import {
+  getComposerPayloadLimit,
+  getComposerWireOverhead,
+} from '@/renderer/lib/chatComposerLimits';
+import {
   clearFloodScopeOverride,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   loadFloodScopeOverridesInitial,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
+import {
+  formatChatSignalReport,
+  type MessageReceptionStats,
+  messageReceptionStats,
+} from '@/renderer/lib/chatSignalReport';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
@@ -72,12 +85,14 @@ import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconM
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { MESHCORE_PUBLIC_CHANNEL_INDEX } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
+import { recordMeshcoreSend } from '@/renderer/lib/meshcoreSendRateNotice';
 import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
 import {
   MeshtasticHybridPathIcons,
   MeshtasticMqttPathIcon,
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
+import { withMeshtasticTextSendPacing } from '@/renderer/lib/meshtasticTextSendPacing';
 import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
@@ -680,6 +695,8 @@ function mergeReadWatermarks(
 
 export interface ChatPanelProps {
   messages: ChatMessage[];
+  /** Resolve extra per-message RF measurements from local packet captures, on demand. */
+  getReceptionStats?: (message: ChatMessage) => MessageReceptionStats | undefined;
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
@@ -782,6 +799,7 @@ export interface ChatPanelProps {
 
 function ChatPanel({
   messages,
+  getReceptionStats,
   messagesForUnread,
   channels,
   meshcoreChannelSources,
@@ -1217,6 +1235,8 @@ function ChatPanel({
     viewKey: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const signalReportSendingRef = useRef(false);
+  const [signalReportSending, setSignalReportSending] = useState(false);
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
   const [mecpComposeMode, setMecpComposeMode] = useState<'request' | 'response'>('request');
   const [mecpComposeSession, setMecpComposeSession] = useState(0);
@@ -1897,6 +1917,59 @@ function ChatPanel({
   );
 
   const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
+  const sendSignalReport = async (message: ChatMessage): Promise<void> => {
+    if (signalReportSendingRef.current || !isConnected || isMqttOnly) return;
+    const destination =
+      message.to != null && !isMeshtasticBroadcastNodeNum(message.to)
+        ? message.sender_id
+        : undefined;
+    const replyKey =
+      protocol === 'meshtastic' ? message.packetId : (message.packetId ?? message.timestamp);
+    if (protocol === 'meshtastic' && !replyKey) {
+      setChatActionError({ message: t('chatPanel.replyRequiresPacketId'), viewKey });
+      return;
+    }
+    signalReportSendingRef.current = true;
+    setSignalReportSending(true);
+    setChatActionError(null);
+    try {
+      const stats = getReceptionStats?.(message) ?? messageReceptionStats(message);
+      const budget =
+        getComposerPayloadLimit({
+          protocol,
+          composerContext: destination == null ? 'channel' : 'dm',
+          senderDisplayName: composerSelfDisplayName,
+          payloadLimitOverride: composerPayloadLimit,
+        }) -
+        getComposerWireOverhead({
+          protocol,
+          replyToSenderName: message.sender_name,
+          replyKey,
+          useKeyedReplies: isMeshcoreOpenWireCompatEnabled(),
+        });
+      const text = formatChatSignalReport(stats, budget);
+      if (!text) {
+        setChatActionError({ message: t('chatPanel.signalReportUnavailable'), viewKey });
+        return;
+      }
+      const send = () =>
+        outboxSendFn(text, message.channel < 0 ? 0 : message.channel, destination, replyKey);
+      if (protocol === 'meshtastic') {
+        await withMeshtasticTextSendPacing(send);
+      } else {
+        await send();
+        if (capabilities.composerMaxChunks === 1) recordMeshcoreSend();
+      }
+    } catch (err) {
+      console.warn('[ChatPanel] Signal report failed: ' + errLikeToLogString(err));
+      if (isActiveRef.current) {
+        setChatActionError({ message: translateChatSendError(t, err), viewKey });
+      }
+    } finally {
+      signalReportSendingRef.current = false;
+      setSignalReportSending(false);
+    }
+  };
   const {
     rows: outboxRows,
     queue: queueOutbox,
@@ -4347,6 +4420,31 @@ function ChatPanel({
                                     size={14}
                                   />
                                 </button>
+                                {!isOwn &&
+                                  !isMqttOnly &&
+                                  capabilities.hasRfStats &&
+                                  viewMode !== 'starred' &&
+                                  (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
+                                    <button
+                                      type="button"
+                                      disabled={signalReportSending}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        void sendSignalReport(msg);
+                                      }}
+                                      {...{ [PARENT_HOVER_ATTR]: '' }}
+                                      className="message-action text-muted rounded p-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                                      aria-label={t('chatPanel.sendSignalReport')}
+                                      title={t('chatPanel.sendSignalReport')}
+                                    >
+                                      <Signal
+                                        aria-hidden
+                                        className="h-3.5 w-3.5"
+                                        trigger={parentIconTrigger}
+                                        size={14}
+                                      />
+                                    </button>
+                                  )}
                                 {/* React — Meshtastic MQTT-origin parents cannot receive tapbacks (#341). */}
                                 {(() => {
                                   const mqttOriginReactionUnsupported =

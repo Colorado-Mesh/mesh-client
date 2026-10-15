@@ -571,7 +571,9 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     vi.restoreAllMocks();
   });
 
-  function dispatchChannelText(overrides: { hopCount?: number; payload?: string } = {}) {
+  function dispatchChannelText(
+    overrides: { hopCount?: number; payload?: string; rxSnr?: number; rxRssi?: number } = {},
+  ) {
     const payload = overrides.payload ?? 'Peer: hello mesh';
     upsertMessage(ID, {
       id: channelMsgId,
@@ -581,6 +583,8 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
       channelIndex: 0,
       timestamp: now,
       receivedVia: 'rf',
+      rxSnr: overrides.rxSnr,
+      rxRssi: overrides.rxRssi,
     });
     packetRouter.dispatch(
       {
@@ -593,6 +597,8 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
           channelIndex: 0,
           timestamp: now,
           hopCount: overrides.hopCount,
+          rxSnr: overrides.rxSnr,
+          rxRssi: overrides.rxRssi,
         },
       },
       ID,
@@ -610,6 +616,14 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     const record = useMessageStore.getState().messages[ID][channelMsgId];
     expect(record).toBeDefined();
     expect(messageRecordToChatMessage(record).rxHops).toBe(2);
+  });
+
+  it('preserves per-message signal measurements when normalizing MeshCore channel text', () => {
+    const detach = attachMeshcoreIngest(ID);
+    dispatchChannelText({ rxSnr: 0, rxRssi: -98, hopCount: 2 });
+    detach();
+    const record = useMessageStore.getState().messages[ID][channelMsgId];
+    expect(messageRecordToChatMessage(record)).toMatchObject({ rxSnr: 0, rxRssi: -98, rxHops: 2 });
   });
 
   it('correlates DM rxHops from TXT_MSG raw packet log when hopCount omitted', () => {

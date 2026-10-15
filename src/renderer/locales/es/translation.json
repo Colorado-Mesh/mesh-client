@@ -871,7 +871,9 @@
     "cancelAutoResend": "Cancelar reintento",
     "cancelAutoResendAria": "Cancelar el reintento automático de este mensaje",
     "outboxEmergencyWillSend": "Seguirá intentándolo hasta que la red lo reconozca",
-    "outboxEmergencyCancelConfirm": "¿Quieres dejar de volver a intentar este mensaje de emergencia? Ya no se volverá a enviar, incluso si la red nunca lo reconoció."
+    "outboxEmergencyCancelConfirm": "¿Quieres dejar de volver a intentar este mensaje de emergencia? Ya no se volverá a enviar, incluso si la red nunca lo reconoció.",
+    "sendSignalReport": "Enviar informe de señal",
+    "signalReportUnavailable": "Las estadísticas de recepción no están disponibles o no caben en una respuesta."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
