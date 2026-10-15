@@ -191,8 +191,8 @@ describe('meshcore repeater CLI working state', () => {
   it('schedules a post-reboot Status refresh only after the reboot left the radio', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     const sentAckIdx = cliBody.indexOf('markMeshcoreCompanionTx();');
-    const flagIdx = cliBody.indexOf(
-      'if (isMeshcoreRepeaterRebootCommand(trimmed)) rebootCommandSent = true;',
+    const flagIdx = cliBody.search(
+      /if \(!isCompanionTarget && isMeshcoreRepeaterRebootCommand\(trimmed\)\) \{\s*rebootCommandSent = true;/,
     );
     expect(sentAckIdx).toBeGreaterThan(-1);
     expect(flagIdx).toBeGreaterThan(sentAckIdx);

@@ -1235,6 +1235,13 @@ export const MESHCORE_TXT_TYPE_CLI_DATA = 1;
 /** meshcore.js `TxtTypes.SignedPlain` — room server pushed posts to logged-in clients. */
 export const MESHCORE_TXT_TYPE_SIGNED_PLAIN = 2;
 
+/**
+ * Companion v1.18 `TXT_TYPE_CLI_COMMAND`: remote CLI command sent to another companion. The target
+ * runs it only when its contact entry for the sender has flag 0x10; otherwise it forwards the text
+ * to its app as an inbound type-3 message. Replies come back as {@link MESHCORE_TXT_TYPE_CLI_DATA}.
+ */
+export const MESHCORE_TXT_TYPE_CLI_COMMAND = 3;
+
 export function parseMeshcoreRoomPostPayload(
   text: string,
   pubKeyPrefixToNodeId: Map<string, number>,

@@ -4,6 +4,10 @@ import JSZip from 'jszip';
 import path from 'path';
 
 import { buildInfoForManifest, getBuildInfo } from '../shared/buildInfo';
+import {
+  redactMeshcoreCliSecretsInJsonText,
+  redactMeshcoreCliSecretsInText,
+} from '../shared/meshcoreCliSecrets';
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
@@ -188,6 +192,18 @@ Contents:
 `;
 }
 
+/**
+ * Scrub MeshCore CLI secrets (`set wifi.pwd`, `set pin`, `get wifi.pwd` replies, …) from a log
+ * buffer. The renderer already redacts before logging; this catches older builds' lines. The
+ * debug snapshot gets the JSON-string variant so it stays valid JSON.
+ */
+export function redactMeshcoreCliSecretsInLog(log: Buffer): Buffer {
+  if (log.length === 0) return log;
+  const text = log.toString('utf8');
+  const redacted = redactMeshcoreCliSecretsInText(text);
+  return redacted === text ? log : Buffer.from(redacted, 'utf8');
+}
+
 /** Truncate long hex ids in exported log lines (keep triage prefix only). */
 function redactLxmfOutboundLogLine(line: string): string {
   return line.replace(/\b([0-9a-fA-F]{16,})\b/g, (hex) => `${hex.slice(0, 8)}…`);
@@ -310,17 +326,19 @@ export async function buildSupportBundleZip(
   await flushLogBeforeQuit();
 
   const zip = new JSZip();
-  zip.file('debug-snapshot.json', debugSnapshotJson);
+  zip.file('debug-snapshot.json', redactMeshcoreCliSecretsInJsonText(debugSnapshotJson));
 
   const logPath = getLogPath();
   const logDir = path.dirname(logPath);
-  const currentLog = await readFileOrEmpty(logPath);
+  const currentLog = redactMeshcoreCliSecretsInLog(await readFileOrEmpty(logPath));
   zip.file('mesh-client.log', currentLog);
 
   const backupPath = path.join(logDir, LOG_BACKUP_FILENAME);
   let backupLog: Buffer = Buffer.alloc(0);
   if (fs.existsSync(backupPath)) {
-    backupLog = await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES);
+    backupLog = redactMeshcoreCliSecretsInLog(
+      await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES),
+    );
     zip.file(LOG_BACKUP_FILENAME, backupLog);
   }
 

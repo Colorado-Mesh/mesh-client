@@ -615,6 +615,52 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(status).toHaveClass('text-red-300');
   });
 
+  it('renders the node status string when one has been heard', () => {
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        nodeStatuses={
+          new Map([
+            [
+              mockNode.node_id,
+              { from: mockNode.node_id, status: 'On patrol', timestamp: Date.now() },
+            ],
+          ])
+        }
+      />,
+    );
+
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText('On patrol')).toBeInTheDocument();
+  });
+
+  it('omits the node status section without a status', () => {
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        nodeStatuses={new Map()}
+      />,
+    );
+
+    expect(screen.queryByText(/^Updated /)).toBeNull();
+  });
+
   it('renders Pax Counter section when data is present', () => {
     render(
       <NodeDetailModal

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMeshtasticExtraConfigFields } from '@/renderer/hooks/useMeshtasticExtraConfigFields';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { syncMeshcoreActiveIdentityFromBackup } from '@/renderer/lib/letsMeshJwt';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
@@ -10,12 +11,14 @@ import {
   mergeMeshtasticConfigApplyValue,
   stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
+import { SECURITY_EXTRA_FIELDS } from '@/renderer/lib/meshtastic/meshtasticExtraConfigFields';
 import type { ConfigTargetContext, MeshProtocol } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
+import { MeshtasticExtraConfigField } from './MeshtasticExtraConfigField';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
@@ -28,6 +31,7 @@ interface SecurityConfig {
   serialEnabled: boolean;
   debugLogApiEnabled: boolean;
   adminChannelEnabled: boolean;
+  packetSignaturePolicy?: number;
 }
 
 interface Props {
@@ -179,6 +183,10 @@ export default function SecurityPanel({
   const [debugLogApiEnabled, setDebugLogApiEnabled] = useState(false);
   const [adminChannelEnabled, setAdminChannelEnabled] = useState(false);
   const [applyingToggles, setApplyingToggles] = useState(false);
+  const securityExtra = useMeshtasticExtraConfigFields(
+    isMeshcore ? undefined : securityConfig,
+    SECURITY_EXTRA_FIELDS,
+  );
 
   // ── Private key reveal
   const [showPrivateKey, setShowPrivateKey] = useState(false);
@@ -237,6 +245,7 @@ export default function SecurityPanel({
           serialEnabled: merged.serialEnabled,
           debugLogApiEnabled: merged.debugLogApiEnabled,
           adminChannelEnabled: merged.adminChannelEnabled,
+          packetSignaturePolicy: merged.packetSignaturePolicy,
         };
       }
       await onSetConfig({
@@ -302,9 +311,24 @@ export default function SecurityPanel({
 
   // ── Administration toggles apply
   const handleApplyToggles = useCallback(async () => {
+    if (!securityExtra.result.ok) {
+      addToast(
+        t('meshtasticExtraConfig.applyInvalid', {
+          section: t('securityPanel.sectionAdminSettings'),
+        }),
+        'error',
+      );
+      return;
+    }
     setApplyingToggles(true);
     try {
-      await applyConfig({ isManaged, serialEnabled, debugLogApiEnabled, adminChannelEnabled });
+      await applyConfig({
+        isManaged,
+        serialEnabled,
+        debugLogApiEnabled,
+        adminChannelEnabled,
+        ...securityExtra.result.overrides,
+      });
       addToast(t('securityPanel.adminSettingsApplied'), 'success');
     } catch (err) {
       console.warn('[SecurityPanel] handleApplyToggles ' + errLikeToLogString(err));
@@ -317,7 +341,16 @@ export default function SecurityPanel({
     } finally {
       setApplyingToggles(false);
     }
-  }, [isManaged, serialEnabled, debugLogApiEnabled, adminChannelEnabled, applyConfig, addToast, t]);
+  }, [
+    isManaged,
+    serialEnabled,
+    debugLogApiEnabled,
+    adminChannelEnabled,
+    securityExtra.result,
+    applyConfig,
+    addToast,
+    t,
+  ]);
 
   const localNodeKey = isMeshcore ? meshcoreNodeId : localNodeNum;
 
@@ -662,6 +695,12 @@ export default function SecurityPanel({
               onChange={setAdminChannelEnabled}
               disabled={disabled}
               description={t('securityPanel.adminChannelDesc')}
+            />
+            <MeshtasticExtraConfigField
+              anchorId="security.adminSettings.packetSignaturePolicy"
+              spec={SECURITY_EXTRA_FIELDS.packetSignaturePolicy}
+              state={securityExtra}
+              disabled={disabled}
             />
             <ApplyButton
               label={t('securityPanel.applySettings')}

@@ -160,7 +160,12 @@ import {
 } from '../lib/meshtastic/meshtasticHeardRepeat';
 import { formatMeshtasticLinkStats } from '../lib/meshtastic/meshtasticLinkStats';
 import { meshtasticLoraConfigToProtobuf } from '../lib/meshtastic/meshtasticLocalLoraConfig';
-import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
+import type {
+  HeardMeshBeacon,
+  ModulePortEvent,
+  NodeStatusEntry,
+  PaxCounterPoint,
+} from '../lib/meshtastic/meshtasticModuleEvents';
 import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
@@ -660,6 +665,8 @@ export function useMeshtasticRuntime() {
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
   const [paxCounterData, setPaxCounterData] = useState<Map<number, PaxCounterPoint[]>>(new Map());
+  const [meshBeacons, setMeshBeacons] = useState<Map<number, HeardMeshBeacon>>(new Map());
+  const [nodeStatuses, setNodeStatuses] = useState<Map<number, NodeStatusEntry>>(new Map());
   const [serialMessages, setSerialMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
@@ -1191,6 +1198,13 @@ export function useMeshtasticRuntime() {
     setMeshtasticRemoteConfigTarget(meshtasticIdentityId, configureTargetNodeNum);
     return () => setMeshtasticRemoteConfigTarget(meshtasticIdentityId, null);
   }, [configureTargetNodeNum, meshtasticIdentityId]);
+
+  // Heard Mesh Beacons / node status are keyed by node number only; clear on identity change so a
+  // prior radio's entries cannot surface for reused node numbers on the next session.
+  useEffect(() => {
+    setMeshBeacons(new Map());
+    setNodeStatuses(new Map());
+  }, [meshtasticIdentityId]);
 
   useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
@@ -2096,6 +2110,8 @@ export function useMeshtasticRuntime() {
       setPingResponses,
       setIpTunnelMessages,
       setPaxCounterData,
+      setMeshBeacons,
+      setNodeStatuses,
       setSerialMessages,
       setStoreForwardMessages,
       setRangeTestPackets,
@@ -4857,6 +4873,8 @@ export function useMeshtasticRuntime() {
       pingResponses,
       ipTunnelMessages,
       paxCounterData,
+      meshBeacons,
+      nodeStatuses,
       serialMessages,
       storeForwardMessages,
       requestStoreForwardHistory,
@@ -4964,6 +4982,8 @@ export function useMeshtasticRuntime() {
       pingResponses,
       ipTunnelMessages,
       paxCounterData,
+      meshBeacons,
+      nodeStatuses,
       serialMessages,
       storeForwardMessages,
       requestStoreForwardHistory,

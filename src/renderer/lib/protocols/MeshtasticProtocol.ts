@@ -63,6 +63,13 @@ const UNTYPED_MODULE_PORTS = new Map<number, string>([
   [PortNum.NODE_STATUS_APP, 'nodeStatus'],
   [PortNum.MESH_BEACON_APP, 'meshBeacon'],
   [PortNum.ATAK_PLUGIN_V2, 'atakPluginV2'],
+  [PortNum.STORE_FORWARD_PLUSPLUS_APP, 'storeForwardPlusPlus'],
+  [PortNum.PAGING_APP, 'paging'],
+  [PortNum.LORAWAN_BRIDGE, 'loraWanBridge'],
+  [PortNum.RETICULUM_TUNNEL_APP, 'reticulumTunnel'],
+  [PortNum.CAYENNE_APP, 'cayenne'],
+  [PortNum.LORA_OTA_APP, 'loraOta'],
+  [PortNum.GROUPALARM_APP, 'groupAlarm'],
 ]);
 /* eslint-enable @typescript-eslint/no-unsafe-member-access */
 

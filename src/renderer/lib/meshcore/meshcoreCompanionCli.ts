@@ -1,4 +1,9 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+import {
+  isMeshcoreCliSecretCommand,
+  MESHCORE_CLI_REDACTED,
+  redactMeshcoreCliSecretCommand,
+} from '@/shared/meshcoreCliSecrets';
 
 import { MC_CMD_RUN_CLI_COMMAND, MC_RESP_CLI_REPLY } from '../meshcoreWireCodes';
 
@@ -34,20 +39,14 @@ export interface RunMeshcoreCompanionCliOptions {
 
 /** Commands whose arguments or reply text must never be logged (WiFi password, BLE PIN). */
 export function isMeshcoreCompanionSensitiveCommand(command: string): boolean {
-  const c = command
-    .trim()
-    .replace(/^[0-9A-Za-z]{2}\|/, '')
-    .toLowerCase();
-  return /^(set|get) wifi\.pwd\b/.test(c) || /^set pin\b/.test(c);
+  return isMeshcoreCliSecretCommand(command);
 }
 
 /** Loggable, sanitized form of a companion CLI exchange; secrets are replaced. */
 export function formatMeshcoreCompanionCliForLog(command: string, reply?: string): string {
   const sensitive = isMeshcoreCompanionSensitiveCommand(command);
-  const cmd = sensitive
-    ? command.trim().split(/\s+/).slice(0, 2).join(' ') + ' [redacted]'
-    : command;
-  const out = reply === undefined ? cmd : `${cmd} -> ${sensitive ? '[redacted]' : reply}`;
+  const cmd = redactMeshcoreCliSecretCommand(command);
+  const out = reply === undefined ? cmd : `${cmd} -> ${sensitive ? MESHCORE_CLI_REDACTED : reply}`;
   return sanitizeLogMessage(out);
 }
 

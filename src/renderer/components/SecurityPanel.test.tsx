@@ -38,6 +38,32 @@ describe('SecurityPanel', () => {
     vi.restoreAllMocks();
   });
 
+  it('applies the packet signature policy with the admin settings', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    renderWithToast(
+      <SecurityPanel
+        onSetConfig={onSetConfig}
+        onCommit={vi.fn().mockResolvedValue(undefined)}
+        isConnected
+        securityConfig={{ ...makeSecurityConfig(), packetSignaturePolicy: 0 }}
+      />,
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Packet signature policy' }),
+      'Strict',
+    );
+    await user.click(screen.getByRole('button', { name: 'Apply Settings' }));
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'security',
+          value: expect.objectContaining({ packetSignaturePolicy: 2, isManaged: false }),
+        },
+      });
+    });
+  });
+
   it('shows connect hint when disconnected', () => {
     renderWithToast(
       <SecurityPanel

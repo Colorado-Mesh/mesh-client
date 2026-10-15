@@ -1,10 +1,13 @@
-import type { TFunction } from 'i18next';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  type MeshtasticExtraConfigFieldsState,
+  useMeshtasticExtraConfigFields,
+} from '@/renderer/hooks/useMeshtasticExtraConfigFields';
 import { useSyncFormFromConfig } from '@/renderer/hooks/useSyncFormFromConfig';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { MESHTASTIC_CHANNEL_ROLE_SECONDARY } from '@/renderer/lib/meshtastic/meshBeaconJoin';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -14,21 +17,46 @@ import {
   meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import {
+  AUDIO_MODULE_FIELDS,
+  DETECTION_SENSOR_EXTRA_FIELDS,
+  PAXCOUNTER_EXTRA_FIELDS,
+  RANGE_TEST_EXTRA_FIELDS,
+  remoteHardwarePinsFromConfig,
+  remoteHardwarePinTypeLabel,
+  TELEMETRY_EXTRA_FIELDS,
+} from '@/renderer/lib/meshtastic/meshtasticExtraConfigFields';
+import type { HeardMeshBeacon } from '@/renderer/lib/meshtastic/meshtasticModuleEvents';
+import {
   buildMeshtasticMqttModuleApplyValue,
   type MeshtasticDeviceNetworkCapabilities,
   meshtasticDeviceRequiresMqttProxyToClient,
   validateMeshtasticMqttModuleApply,
 } from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
 import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/meshtasticSerialModuleApply';
-import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
-import { HelpTooltip } from './HelpTooltip';
+import { MeshBeaconHeardList } from './MeshBeaconHeardList';
+import { type MeshBeaconChannelConfig, MeshBeaconModuleSection } from './MeshBeaconModuleSection';
+import {
+  MeshtasticAdvancedHardwareGroup,
+  MeshtasticExtraConfigField,
+} from './MeshtasticExtraConfigField';
+import {
+  cfgBool,
+  cfgNum,
+  cfgStr,
+  ConfigNumber,
+  ConfigSelect,
+  ConfigText,
+  ConfigToggle,
+  ModuleSection,
+  ModuleStatus,
+  StatusOnlySection,
+} from './moduleConfigControls';
 import { useToast } from './Toast';
-import { buttonClassName } from './ui/Button';
-import { INPUT_BOX_CLASS, SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
+import { SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface PacketMessage {
   from: number;
@@ -38,18 +66,6 @@ interface PacketMessage {
 
 function storeForwardRecordsFromCfg(cfg: Record<string, unknown>): number {
   return cfgNum(cfg.records ?? cfg.numRecords, 0);
-}
-
-function cfgBool(v: unknown, fallback: boolean): boolean {
-  return typeof v === 'boolean' ? v : fallback;
-}
-
-function cfgNum(v: unknown, fallback: number): number {
-  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
-}
-
-function cfgStr(v: unknown, fallback: string): string {
-  return typeof v === 'string' ? v : fallback;
 }
 
 interface Props {
@@ -74,260 +90,25 @@ interface Props {
   privateMessages?: Map<number, PacketMessage[]>;
   pingResponses?: Map<number, PacketMessage>;
   hasAudio?: boolean;
-}
-
-// ─── Reusable config components (same pattern as RadioPanel) ─────
-
-function ConfigSelect({
-  label,
-  value,
-  options,
-  onChange,
-  disabled,
-  description,
-  anchorId,
-}: {
-  label: string;
-  value: number;
-  options: { value: number; label: string }[];
-  onChange: (val: number) => void;
-  disabled: boolean;
-  description?: string;
-  anchorId?: string;
-}) {
-  return (
-    <div data-setting-anchor={anchorId} className="space-y-1">
-      <label className="text-muted text-sm">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          if (!Number.isFinite(n)) return;
-          onChange(n);
-        }}
-        disabled={disabled}
-        className={`${SELECT_BOX_CLASS} w-full`}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      {description && <p className="text-muted text-xs">{description}</p>}
-    </div>
-  );
-}
-
-function ConfigToggle({
-  label,
-  checked,
-  onChange,
-  disabled,
-  description,
-  anchorId,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  disabled: boolean;
-  description?: string;
-  anchorId?: string;
-}) {
-  return (
-    <div data-setting-anchor={anchorId} className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-ink-300 text-sm">{label}</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          onClick={() => {
-            onChange(!checked);
-          }}
-          disabled={disabled}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-brand-green' : 'bg-ink-600'
-          }`}
-        >
-          <span
-            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-              checked ? 'translate-x-4.5' : 'translate-x-0.75'
-            }`}
-          />
-        </button>
-      </div>
-      {description && <p className="text-muted text-xs">{description}</p>}
-    </div>
-  );
-}
-
-function ConfigNumber({
-  label,
-  value,
-  onChange,
-  disabled,
-  min,
-  max,
-  unit,
-  description,
-  tooltip,
-  anchorId,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  disabled: boolean;
-  min?: number;
-  max?: number;
-  unit?: string;
-  description?: string;
-  tooltip?: string;
-  anchorId?: string;
-}) {
-  return (
-    <div data-setting-anchor={anchorId} className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <label className="text-muted text-sm">{label}</label>
-        {tooltip && <HelpTooltip text={tooltip} />}
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (!Number.isFinite(n)) return;
-            onChange(n);
-          }}
-          min={min}
-          max={max}
-          disabled={disabled}
-          className={`${INPUT_BOX_CLASS} w-28`}
-        />
-        {unit && <span className="text-muted text-sm">{unit}</span>}
-      </div>
-      {description && <p className="text-muted text-xs">{description}</p>}
-    </div>
-  );
-}
-
-function ConfigText({
-  label,
-  value,
-  onChange,
-  disabled,
-  description,
-  password,
-  anchorId,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  disabled: boolean;
-  description?: string;
-  password?: boolean;
-  anchorId?: string;
-}) {
-  const { t } = useTranslation();
-  const [show, setShow] = useState(false);
-  return (
-    <div data-setting-anchor={anchorId} className="space-y-1">
-      <label className="text-muted text-sm">{label}</label>
-      <div className="flex items-center gap-1">
-        <input
-          type={password && !show ? 'password' : 'text'}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          disabled={disabled}
-          className={`${INPUT_BOX_CLASS} flex-1`}
-        />
-        {password && (
-          <button
-            type="button"
-            onClick={() => {
-              setShow((s) => !s);
-            }}
-            className="text-muted hover:text-ink-300 px-2 py-2 text-xs"
-          >
-            {show ? t('common.hide') : t('common.show')}
-          </button>
-        )}
-      </div>
-      {description && <p className="text-muted text-xs">{description}</p>}
-    </div>
-  );
-}
-
-function ModuleSection({
-  title,
-  children,
-  onApply,
-  applying,
-  disabled,
-  sliceReady = true,
-  showSliceWaiting = false,
-  globalApplyLocked = false,
-  anchorId,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onApply: () => void;
-  applying: boolean;
-  disabled: boolean;
-  /** When false, Apply stays disabled until device module slice is hydrated. */
-  sliceReady?: boolean;
-  /** Show "waiting for settings" hint (pass when connected and slice not ready). */
-  showSliceWaiting?: boolean;
-  /** When true, Apply is disabled while any module section is applying. */
-  globalApplyLocked?: boolean;
-  anchorId?: string;
-}) {
-  const { t } = useTranslation();
-  const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
-  return (
-    <details
-      data-setting-anchor={anchorId}
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
-    >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        {showSliceWaiting && !sliceReady && (
-          <p className="text-xs text-orange-300/90">
-            {t('radioPanel.waitingForConfigSection', { section: title })}
-          </p>
-        )}
-        {children}
-        <button
-          type="button"
-          onClick={onApply}
-          disabled={applyDisabled}
-          className={buttonClassName('primary', 'md')}
-        >
-          {applying
-            ? t('modulePanel.applyingButton')
-            : t('modulePanel.applySection', { section: title })}
-        </button>
-      </div>
-    </details>
-  );
-}
-
-function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">{children}</div>
-    </details>
-  );
+  /** Radio channel table; MeshBeacon offers and broadcast targets reference it. */
+  channelConfigs?: readonly MeshBeaconChannelConfig[];
+  /** Beacons heard by the connected radio; omitted while configuring a remote node. */
+  meshBeacons?: ReadonlyMap<number, HeardMeshBeacon>;
+  getNodeName?: (nodeNum: number) => string;
+  /** Connected radio LoRa config; used to validate a beacon's radio offer. */
+  loraConfig?: unknown;
+  onSetChannel?: (config: {
+    index: number;
+    role: number;
+    settings: {
+      name: string;
+      psk: Uint8Array;
+      uplinkEnabled: boolean;
+      downlinkEnabled: boolean;
+      positionPrecision: number;
+    };
+  }) => Promise<void>;
+  onSetConfig?: (config: unknown) => Promise<void>;
 }
 
 const RTTTL_PRESETS = [
@@ -357,47 +138,6 @@ function isValidRtttl(s: string): boolean {
   );
 }
 
-function formatTimeAgo(ts: number, t: TFunction): string {
-  if (!ts) return '—';
-  const diff = Date.now() - ts;
-  if (diff < MS_PER_MINUTE) return t('common.justNow');
-  return t('common.minutesAgo', { count: Math.floor(diff / MS_PER_MINUTE) });
-}
-
-function ModuleStatus({
-  packets,
-  label,
-}: {
-  packets?: Map<number, { from: number; data: Uint8Array; timestamp: number }[]>;
-  label: string;
-}) {
-  const { t } = useTranslation();
-  if (!packets || packets.size === 0) {
-    return (
-      <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
-        <span className="text-muted">{t('modulePanel.statusNoPackets', { label })}</span>
-      </div>
-    );
-  }
-  const total = Array.from(packets.values()).reduce((sum, arr) => sum + arr.length, 0);
-  const latest = Math.max(
-    ...Array.from(packets.values()).flatMap((arr) => arr.map((p) => p.timestamp)),
-  );
-  const lastSeen = formatTimeAgo(latest, t);
-  return (
-    <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
-      <span className="text-ink-400">
-        {t('modulePanel.statusLine', {
-          count: packets.size,
-          label,
-          total,
-          lastSeen,
-        })}
-      </span>
-    </div>
-  );
-}
-
 const INPUT_EVENT_VALUES = [0, 10, 17, 18, 19, 20, 27, 24] as const;
 
 const SERIAL_MODE_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
@@ -405,6 +145,8 @@ const SERIAL_MODE_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 const TAK_TEAM_COLOR_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
 
 const TAK_TEAM_ROLE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+const EMPTY_CHANNEL_CONFIGS: readonly MeshBeaconChannelConfig[] = [];
 
 export default function ModulePanel({
   configTarget,
@@ -426,6 +168,12 @@ export default function ModulePanel({
   privateMessages,
   pingResponses,
   hasAudio,
+  channelConfigs = EMPTY_CHANNEL_CONFIGS,
+  meshBeacons,
+  getNodeName,
+  loraConfig,
+  onSetChannel,
+  onSetConfig,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -538,6 +286,9 @@ export default function ModulePanel({
   const [mqttMapReportPrecision, setMqttMapReportPrecision] = useState<number>(
     cfgNum(mapReportCfg.positionPrecision, 10),
   );
+  const [mqttMapReportLocation, setMqttMapReportLocation] = useState<boolean>(
+    cfgBool(mapReportCfg.shouldReportLocation, false),
+  );
   const [mqttProxyToClient, setMqttProxyToClient] = useState<boolean>(
     cfgBool(mqttCfg.proxyToClientEnabled, false),
   );
@@ -556,8 +307,32 @@ export default function ModulePanel({
     mapReportingEnabled: mqttMapReporting,
     mapReportPublishIntervalSecs: mqttMapReportInterval,
     mapReportPositionPrecision: mqttMapReportPrecision,
+    mapReportShouldReportLocation: mqttMapReportLocation,
     proxyToClientEnabled: mqttProxyToClientChecked,
   });
+
+  // ─── Declarative extra fields (2.8 parity) ────────────────────
+  const rangeExtra = useMeshtasticExtraConfigFields(
+    moduleConfigs.rangeTest,
+    RANGE_TEST_EXTRA_FIELDS,
+  );
+  const telemetryExtra = useMeshtasticExtraConfigFields(
+    moduleConfigs.telemetry,
+    TELEMETRY_EXTRA_FIELDS,
+  );
+  const detectionExtra = useMeshtasticExtraConfigFields(
+    moduleConfigs.detectionSensor,
+    DETECTION_SENSOR_EXTRA_FIELDS,
+  );
+  const paxExtra = useMeshtasticExtraConfigFields(
+    moduleConfigs.paxcounter,
+    PAXCOUNTER_EXTRA_FIELDS,
+  );
+  const audioExtra = useMeshtasticExtraConfigFields(moduleConfigs.audio, AUDIO_MODULE_FIELDS);
+  const remoteHardwarePins = useMemo(
+    () => remoteHardwarePinsFromConfig(moduleConfigs.remoteHardware),
+    [moduleConfigs.remoteHardware],
+  );
 
   // ─── Canned messages ──────────────────────────────────────────
   const cannedCfg = meshtasticConfigSlice(moduleConfigs.cannedMessage);
@@ -699,6 +474,10 @@ export default function ModulePanel({
     cfgBool(trafficMgmtCfg.routerPreserveHops, false),
   );
 
+  // ─── Status Message module ─────────────────────────────────────
+  const statusMsgCfg = meshtasticConfigSlice(moduleConfigs.statusmessage);
+  const [nodeStatusText, setNodeStatusText] = useState<string>(cfgStr(statusMsgCfg.nodeStatus, ''));
+
   // ─── Pax counter module ────────────────────────────────────────
   const paxCfg = meshtasticConfigSlice(moduleConfigs.paxcounter);
   const [paxEnabled, setPaxEnabled] = useState<boolean>(cfgBool(paxCfg.enabled, false));
@@ -781,6 +560,7 @@ export default function ModulePanel({
         : {};
     setMqttMapReportInterval(cfgNum(mrs.publishIntervalSecs, 0));
     setMqttMapReportPrecision(cfgNum(mrs.positionPrecision, 10));
+    setMqttMapReportLocation(cfgBool(mrs.shouldReportLocation, false));
     setMqttProxyToClient(cfgBool(cfg.proxyToClientEnabled, false));
   });
 
@@ -829,6 +609,10 @@ export default function ModulePanel({
     setNeighborInfoEnabled(cfgBool(cfg.enabled, false));
     setNeighborInfoUpdateInterval(cfgNum(cfg.updateInterval, 0));
     setNeighborInfoTransmitOverLora(cfgBool(cfg.transmitOverLora, false));
+  });
+
+  useSyncFormFromConfig(moduleConfigs.statusmessage, (cfg) => {
+    setNodeStatusText(cfgStr(cfg.nodeStatus, ''));
   });
 
   useSyncFormFromConfig(moduleConfigs.tak, (cfg) => {
@@ -940,6 +724,23 @@ export default function ModulePanel({
       return;
     }
     void applyModule(sectionLabel, moduleCase, value);
+  };
+
+  const applyMeshtasticModuleWithExtra = (
+    sectionLabel: string,
+    moduleCase: string,
+    deviceSlice: unknown,
+    uiOverrides: Record<string, unknown>,
+    extra: MeshtasticExtraConfigFieldsState,
+  ) => {
+    if (!extra.result.ok) {
+      addToast(t('meshtasticExtraConfig.applyInvalid', { section: sectionLabel }), 'error');
+      return;
+    }
+    applyMeshtasticModule(sectionLabel, moduleCase, deviceSlice, {
+      ...uiOverrides,
+      ...extra.result.overrides,
+    });
   };
 
   const validateMqttRelayBeforeApply = (): string | null => {
@@ -1112,6 +913,13 @@ export default function ModulePanel({
               min={0}
               max={32}
               description={t('modulePanel.fields.mapReportPositionPrecisionDesc')}
+            />
+            <ConfigToggle
+              label={t('meshtasticExtraConfig.shouldReportLocation')}
+              checked={mqttMapReportLocation}
+              onChange={setMqttMapReportLocation}
+              disabled={disabled || !mqttEnabled}
+              description={t('meshtasticExtraConfig.shouldReportLocationDesc')}
             />
           </>
         )}
@@ -1446,11 +1254,17 @@ export default function ModulePanel({
         anchorId="modules.rangeTest"
         {...moduleSectionProps('rangeTest')}
         onApply={() => {
-          applyMeshtasticModule(t('modulePanel.sectionRangeTest'), 'rangeTest', rangeCfg, {
-            enabled: rangeEnabled,
-            sender: rangeSenderInterval,
-            save: rangeSave,
-          });
+          applyMeshtasticModuleWithExtra(
+            t('modulePanel.sectionRangeTest'),
+            'rangeTest',
+            rangeCfg,
+            {
+              enabled: rangeEnabled,
+              sender: rangeSenderInterval,
+              save: rangeSave,
+            },
+            rangeExtra,
+          );
         }}
         applying={applyingSection === 'rangeTest'}
         disabled={disabled}
@@ -1479,6 +1293,11 @@ export default function ModulePanel({
           disabled={disabled || !rangeEnabled}
           description={t('modulePanel.fields.saveResultsToFileDesc')}
         />
+        <MeshtasticExtraConfigField
+          spec={RANGE_TEST_EXTRA_FIELDS.clearOnReboot}
+          state={rangeExtra}
+          disabled={disabled || !rangeEnabled || !rangeSave}
+        />
       </ModuleSection>
 
       {/* ═══ Telemetry Module ═══ */}
@@ -1488,19 +1307,25 @@ export default function ModulePanel({
           anchorId="modules.telemetry"
           {...moduleSectionProps('telemetry')}
           onApply={() => {
-            applyMeshtasticModule(t('modulePanel.sectionTelemetryModule'), 'telemetry', telCfg, {
-              deviceTelemetryEnabled: telDeviceTelemetryEnabled,
-              deviceUpdateInterval: telDeviceInterval,
-              environmentMeasurementEnabled: telEnvEnabled,
-              environmentUpdateInterval: telEnvInterval,
-              environmentScreenEnabled: telEnvScreenEnabled,
-              environmentDisplayFahrenheit: telEnvFahrenheit,
-              airQualityEnabled: telAirQualityEnabled,
-              airQualityInterval: telAirQualityInterval,
-              powerMeasurementEnabled: telPowerEnabled,
-              powerUpdateInterval: telPowerInterval,
-              powerScreenEnabled: telPowerScreenEnabled,
-            });
+            applyMeshtasticModuleWithExtra(
+              t('modulePanel.sectionTelemetryModule'),
+              'telemetry',
+              telCfg,
+              {
+                deviceTelemetryEnabled: telDeviceTelemetryEnabled,
+                deviceUpdateInterval: telDeviceInterval,
+                environmentMeasurementEnabled: telEnvEnabled,
+                environmentUpdateInterval: telEnvInterval,
+                environmentScreenEnabled: telEnvScreenEnabled,
+                environmentDisplayFahrenheit: telEnvFahrenheit,
+                airQualityEnabled: telAirQualityEnabled,
+                airQualityInterval: telAirQualityInterval,
+                powerMeasurementEnabled: telPowerEnabled,
+                powerUpdateInterval: telPowerInterval,
+                powerScreenEnabled: telPowerScreenEnabled,
+              },
+              telemetryExtra,
+            );
           }}
           applying={applyingSection === 'telemetry'}
           disabled={disabled}
@@ -1596,6 +1421,26 @@ export default function ModulePanel({
             onChange={setTelPowerScreenEnabled}
             disabled={disabled || !telPowerEnabled}
             description={t('modulePanel.fields.telPowerScreenEnabledDesc')}
+          />
+          <MeshtasticExtraConfigField
+            spec={TELEMETRY_EXTRA_FIELDS.airQualityScreenEnabled}
+            state={telemetryExtra}
+            disabled={disabled || !telAirQualityEnabled}
+          />
+          <MeshtasticExtraConfigField
+            spec={TELEMETRY_EXTRA_FIELDS.healthMeasurementEnabled}
+            state={telemetryExtra}
+            disabled={disabled}
+          />
+          <MeshtasticExtraConfigField
+            spec={TELEMETRY_EXTRA_FIELDS.healthUpdateInterval}
+            state={telemetryExtra}
+            disabled={disabled || telemetryExtra.values.healthMeasurementEnabled !== true}
+          />
+          <MeshtasticExtraConfigField
+            spec={TELEMETRY_EXTRA_FIELDS.healthScreenEnabled}
+            state={telemetryExtra}
+            disabled={disabled || telemetryExtra.values.healthMeasurementEnabled !== true}
           />
         </ModuleSection>
       )}
@@ -1875,7 +1720,7 @@ export default function ModulePanel({
         anchorId="modules.detectionSensor"
         {...moduleSectionProps('detectionSensor')}
         onApply={() => {
-          applyMeshtasticModule(
+          applyMeshtasticModuleWithExtra(
             t('modulePanel.sectionDetectionSensor'),
             'detectionSensor',
             detectCfg,
@@ -1885,6 +1730,7 @@ export default function ModulePanel({
               minimumBroadcastSecs: detectMinBroadcast,
               stateBroadcastSecs: detectStateBroadcast,
             },
+            detectionExtra,
           );
         }}
         applying={applyingSection === 'detectionSensor'}
@@ -1922,6 +1768,23 @@ export default function ModulePanel({
           unit={secondsUnit}
           description={t('modulePanel.fields.stateBroadcastIntervalDesc')}
         />
+        <MeshtasticExtraConfigField
+          spec={DETECTION_SENSOR_EXTRA_FIELDS.detectionTriggerType}
+          state={detectionExtra}
+          disabled={disabled || !detectEnabled}
+        />
+        <MeshtasticAdvancedHardwareGroup>
+          <MeshtasticExtraConfigField
+            spec={DETECTION_SENSOR_EXTRA_FIELDS.monitorPin}
+            state={detectionExtra}
+            disabled={disabled || !detectEnabled}
+          />
+          <MeshtasticExtraConfigField
+            spec={DETECTION_SENSOR_EXTRA_FIELDS.usePullup}
+            state={detectionExtra}
+            disabled={disabled || !detectEnabled}
+          />
+        </MeshtasticAdvancedHardwareGroup>
       </ModuleSection>
 
       {/* ═══ Pax Counter Module ═══ */}
@@ -1931,10 +1794,16 @@ export default function ModulePanel({
           anchorId="modules.paxCounter"
           {...moduleSectionProps('paxcounter')}
           onApply={() => {
-            applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
-              enabled: paxEnabled,
-              paxcounterUpdateInterval: paxInterval,
-            });
+            applyMeshtasticModuleWithExtra(
+              t('modulePanel.sectionPaxCounter'),
+              'paxcounter',
+              paxCfg,
+              {
+                enabled: paxEnabled,
+                paxcounterUpdateInterval: paxInterval,
+              },
+              paxExtra,
+            );
           }}
           applying={applyingSection === 'paxcounter'}
           disabled={disabled}
@@ -1954,6 +1823,16 @@ export default function ModulePanel({
             min={0}
             unit={secondsUnit}
             description={t('modulePanel.fields.paxUpdateIntervalDesc')}
+          />
+          <MeshtasticExtraConfigField
+            spec={PAXCOUNTER_EXTRA_FIELDS.wifiThreshold}
+            state={paxExtra}
+            disabled={disabled || !paxEnabled}
+          />
+          <MeshtasticExtraConfigField
+            spec={PAXCOUNTER_EXTRA_FIELDS.bleThreshold}
+            state={paxExtra}
+            disabled={disabled || !paxEnabled}
           />
         </ModuleSection>
       )}
@@ -2012,6 +1891,27 @@ export default function ModulePanel({
             description={t('modulePanel.fields.remoteHardwareAllowUndefinedPinsDesc')}
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.remoteHardwareHint')}</p>
+          <div className="space-y-1">
+            <p className="text-muted text-sm">{t('meshtasticExtraConfig.availablePins')}</p>
+            {remoteHardwarePins.length === 0 ? (
+              <p className="text-muted text-xs">{t('meshtasticExtraConfig.availablePinsNone')}</p>
+            ) : (
+              <ul
+                aria-label={t('meshtasticExtraConfig.availablePins')}
+                className="text-ink-300 space-y-0.5 text-xs"
+              >
+                {remoteHardwarePins.map((pin) => (
+                  <li key={pin.gpioPin}>
+                    {t('meshtasticExtraConfig.availablePinRow', {
+                      pin: pin.gpioPin,
+                      name: pin.name || '—',
+                      type: remoteHardwarePinTypeLabel(pin.type, t),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </ModuleSection>
       )}
 
@@ -2192,8 +2092,143 @@ export default function ModulePanel({
         </ModuleSection>
       )}
 
+      {/* ═══ Status Message Module ═══ */}
+      {'statusmessage' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionStatusMessage')}
+          anchorId="modules.statusMessage"
+          {...moduleSectionProps('statusmessage')}
+          onApply={() => {
+            applyMeshtasticModule(
+              t('modulePanel.sectionStatusMessage'),
+              'statusmessage',
+              statusMsgCfg,
+              { nodeStatus: nodeStatusText.trim() },
+            );
+          }}
+          applying={applyingSection === 'statusmessage'}
+          disabled={disabled}
+        >
+          <ConfigText
+            label={t('modulePanel.fields.nodeStatus')}
+            value={nodeStatusText}
+            onChange={setNodeStatusText}
+            disabled={disabled}
+            description={t('modulePanel.fields.nodeStatusDesc')}
+          />
+        </ModuleSection>
+      )}
+
+      {/* ═══ Mesh Beacon Module ═══ */}
+      {'meshBeacon' in moduleConfigs && (
+        <MeshBeaconModuleSection
+          moduleConfig={moduleConfigs.meshBeacon}
+          channelConfigs={channelConfigs}
+          {...moduleSectionProps('meshBeacon')}
+          onApply={(label, slice, overrides) => {
+            applyMeshtasticModule(label, 'meshBeacon', slice, overrides);
+          }}
+          applying={applyingSection === 'meshBeacon'}
+          disabled={disabled}
+        >
+          {meshBeacons && onSetChannel && onSetConfig && (
+            <MeshBeaconHeardList
+              beacons={meshBeacons}
+              getNodeName={getNodeName ?? ((n) => `!${n.toString(16).padStart(8, '0')}`)}
+              channelConfigs={channelConfigs}
+              loraConfig={loraConfig ? meshtasticConfigSlice(loraConfig) : null}
+              disabled={disabled}
+              canJoin={!remoteTarget}
+              onJoinChannel={async (slot, offer) => {
+                await onSetChannel({
+                  index: slot,
+                  role: MESHTASTIC_CHANNEL_ROLE_SECONDARY,
+                  settings: {
+                    name: offer.name,
+                    psk: offer.psk,
+                    uplinkEnabled: false,
+                    downlinkEnabled: false,
+                    positionPrecision: 0,
+                  },
+                });
+                await onCommit();
+              }}
+              onApplyLora={async (overrides) => {
+                await onSetConfig({
+                  payloadVariant: {
+                    case: 'lora',
+                    value: mergeMeshtasticConfigApplyValue(loraConfig, overrides),
+                  },
+                });
+                await onCommit();
+              }}
+            />
+          )}
+        </MeshBeaconModuleSection>
+      )}
+
       {/* ═══ IP Tunnel ═══ */}
-      {!remoteTarget && hasAudio && audioMessages != null && (
+      {'audio' in moduleConfigs && (
+        <ModuleSection
+          title={t('modulePanel.sectionAudio')}
+          anchorId="modules.audio"
+          {...moduleSectionProps('audio')}
+          onApply={() => {
+            applyMeshtasticModuleWithExtra(
+              t('modulePanel.sectionAudio'),
+              'audio',
+              moduleConfigs.audio,
+              {},
+              audioExtra,
+            );
+          }}
+          applying={applyingSection === 'audio'}
+          disabled={disabled}
+        >
+          {!remoteTarget && audioMessages != null && (
+            <ModuleStatus packets={audioMessages} label={t('modulePanel.statusLabels.audio')} />
+          )}
+          <MeshtasticExtraConfigField
+            spec={AUDIO_MODULE_FIELDS.codec2Enabled}
+            state={audioExtra}
+            disabled={disabled}
+          />
+          <MeshtasticExtraConfigField
+            spec={AUDIO_MODULE_FIELDS.bitrate}
+            state={audioExtra}
+            disabled={disabled || audioExtra.values.codec2Enabled !== true}
+          />
+          <MeshtasticAdvancedHardwareGroup>
+            <MeshtasticExtraConfigField
+              spec={AUDIO_MODULE_FIELDS.pttPin}
+              state={audioExtra}
+              disabled={disabled}
+            />
+            <MeshtasticExtraConfigField
+              spec={AUDIO_MODULE_FIELDS.i2sWs}
+              state={audioExtra}
+              disabled={disabled}
+            />
+            <MeshtasticExtraConfigField
+              spec={AUDIO_MODULE_FIELDS.i2sSd}
+              state={audioExtra}
+              disabled={disabled}
+            />
+            <MeshtasticExtraConfigField
+              spec={AUDIO_MODULE_FIELDS.i2sDin}
+              state={audioExtra}
+              disabled={disabled}
+            />
+            <MeshtasticExtraConfigField
+              spec={AUDIO_MODULE_FIELDS.i2sSck}
+              state={audioExtra}
+              disabled={disabled}
+            />
+          </MeshtasticAdvancedHardwareGroup>
+        </ModuleSection>
+      )}
+
+      {!('audio' in moduleConfigs) && !remoteTarget && hasAudio && audioMessages != null && (
         <StatusOnlySection title={t('modulePanel.sectionAudio')}>
           <ModuleStatus packets={audioMessages} label={t('modulePanel.statusLabels.audio')} />
         </StatusOnlySection>

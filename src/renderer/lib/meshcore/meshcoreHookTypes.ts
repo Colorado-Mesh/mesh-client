@@ -340,4 +340,9 @@ export interface MeshcoreTraceResultEntry {
 export interface MeshcoreRepeaterCliOptions {
   confirmedDanger?: boolean;
   isCurrent?: () => boolean;
+  /**
+   * `companion`: remote CLI on another v1.18+ companion (txt_type 3, no server login; the target
+   * must allow us with contact flag 0x10). Defaults to `repeater` (txt_type 1 after admin login).
+   */
+  target?: 'repeater' | 'companion';
 }

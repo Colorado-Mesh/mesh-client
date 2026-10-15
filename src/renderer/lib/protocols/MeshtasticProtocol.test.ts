@@ -551,6 +551,31 @@ describe('MeshtasticProtocol Date-shaped rxTime', () => {
     teardown();
   });
 
+  it.each([
+    [36, 'nodeStatus'],
+    [37, 'meshBeacon'],
+    [35, 'storeForwardPlusPlus'],
+    [38, 'paging'],
+    [75, 'loraWanBridge'],
+    [76, 'reticulumTunnel'],
+    [77, 'cayenne'],
+    [79, 'loraOta'],
+    [112, 'groupAlarm'],
+  ])('labels untyped 2.8 portnum %i as %s', (portnum, label) => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onMeshPacket', {
+      from: 7,
+      payloadVariant: { case: 'decoded', value: { portnum, payload: new Uint8Array([1]) } },
+    });
+    const modulePort = events.find((e) => e.type === 'meshtastic_module_port');
+    expect(modulePort?.type === 'meshtastic_module_port' && modulePort.payload.portLabel).toBe(
+      label,
+    );
+    teardown();
+  });
+
   it('ignores portnums that already have a typed SDK event', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];

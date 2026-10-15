@@ -136,6 +136,8 @@ function makeDeps(opts?: { isBleReconnectAttemptActive?: () => boolean }) {
     setPingResponses: noopSet,
     setIpTunnelMessages: noopSet,
     setPaxCounterData: noopSet,
+    setMeshBeacons: noopSet,
+    setNodeStatuses: noopSet,
     setSerialMessages: noopSet,
     setStoreForwardMessages: noopSet,
     setRangeTestPackets: noopSet,

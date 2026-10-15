@@ -316,6 +316,22 @@ const radioEntries: readonly SettingSearchEntry[] = [
     keywords: ['fan', 'amplifier', 'pa'],
     visible: hasMeshtasticLora,
   },
+  {
+    id: 'radio.lora.ignoreIncoming',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.ignoreIncoming',
+    sectionKey: LORA,
+    keywords: ['ignore', 'block', 'drop', 'node'],
+    visible: hasMeshtasticLora,
+  },
+  {
+    id: 'radio.lora.femLnaMode',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.femLnaMode',
+    sectionKey: LORA,
+    keywords: ['fem', 'lna', 'amplifier', 'front end'],
+    visible: hasMeshtasticLora,
+  },
 
   // Channels
   {
@@ -510,6 +526,14 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: hasDeviceRole,
   },
   {
+    id: 'radio.device.buzzerMode',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.buzzerMode',
+    sectionKey: DEVICE,
+    keywords: ['buzzer', 'sound', 'beep', 'silent'],
+    visible: hasDeviceRole,
+  },
+  {
     id: 'radio.device.buttonGpio',
     slot: 'Radio',
     labelKey: 'radioPanel.buttonGpioLabel',
@@ -604,6 +628,14 @@ const radioEntries: readonly SettingSearchEntry[] = [
     labelKey: 'radioPanel.fixedPositionLabel',
     sectionKey: POSITION,
     keywords: ['fixed', 'static', 'manual', 'location'],
+    visible: hasFullPosition,
+  },
+  {
+    id: 'radio.position.flags',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.positionFlags',
+    sectionKey: POSITION,
+    keywords: ['altitude', 'heading', 'speed', 'satellites', 'flags'],
     visible: hasFullPosition,
   },
   {
@@ -802,6 +834,22 @@ const radioEntries: readonly SettingSearchEntry[] = [
     keywords: ['ethernet', 'wired', 'lan'],
     visible: hasWifi,
   },
+  {
+    id: 'radio.wifi.addressMode',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.addressMode',
+    sectionKey: WIFI,
+    keywords: ['dhcp', 'static ip', 'gateway', 'dns', 'subnet'],
+    visible: hasWifi,
+  },
+  {
+    id: 'radio.wifi.rsyslog',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.rsyslogServer',
+    sectionKey: WIFI,
+    keywords: ['syslog', 'rsyslog', 'logs'],
+    visible: hasWifi,
+  },
 
   // Display
   {
@@ -899,6 +947,14 @@ const radioEntries: readonly SettingSearchEntry[] = [
     keywords: ['bubbles', 'messages', 'chat'],
     visible: hasDisplay,
   },
+  {
+    id: 'radio.display.compass',
+    slot: 'Radio',
+    labelKey: 'meshtasticExtraConfig.compassNorthTop',
+    sectionKey: DISPLAY,
+    keywords: ['compass', 'north', 'orientation'],
+    visible: hasDisplay,
+  },
 
   // Bluetooth
   {
@@ -989,6 +1045,7 @@ export const radioSurface: SettingsSearchSurface = {
     { path: 'src/renderer/components/LockdownSection.tsx', sweepAllKeys: true },
   ],
   exempt: {
+    'meshtasticExtraConfig.applyInvalid': 'validation status text, not a control',
     'radioPanel.*Desc': 'help text under a control; the control is indexed',
     'radioPanel.*Description': 'help text under a control; the control is indexed',
     'radioPanel.*Hint*': 'help text under a control; the control is indexed',

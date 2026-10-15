@@ -61,6 +61,8 @@ function moduleConfigKeyFromResponse(value: unknown): string | undefined {
   if (rawCase === 'ambient_lighting') return 'ambientLighting';
   if (rawCase === 'detection_sensor') return 'detectionSensor';
   if (rawCase === 'traffic_management') return 'trafficManagement';
+  if (rawCase === 'mesh_beacon') return 'meshBeacon';
+  if (rawCase === 'status_message' || rawCase === 'statusMessage') return 'statusmessage';
   return rawCase;
 }
 

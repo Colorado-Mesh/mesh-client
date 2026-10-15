@@ -19,9 +19,17 @@ This file holds the always-on hard rules (workflow, security, style, testing, CI
 - **Document exceptions inline** with a short comment (`// OS-specific: …`) and, for non-obvious splits, a note in the PR body.
 - **Tests:** cover all three platforms when behavior is shared (`it.each(['linux', 'darwin', 'win32'])`); use platform-specific cases only when the mechanism under test exists on that OS.
 
+### Protocol parity
+
+- **Default:** feature and UI changes — especially **chat panel** and other shared UI — apply to **all three protocols (Meshtastic, MeshCore, Reticulum)** unless there is a documented, justified protocol-specific exception. Goal: every feature available everywhere with a consistent look and layout.
+- A single-protocol report or an obvious fit for one protocol does **not** by itself narrow scope — reason about the other protocols before gating a feature off.
+- Enable/disable parts of a shared surface with `ProtocolCapabilities` / `useRadioProvider(protocol)` rather than building the feature as protocol-specific from the start. "Consistent look" means shared components and tokens; protocol accent colors (emerald/cyan/yellow) still differ by design.
+- **Document exceptions** with a short inline comment or a note in the PR body for genuinely protocol-specific features (e.g. Meshtastic channel URLs, MeshCore Repeaters admin, Reticulum sidecar stack).
+- **Tests:** cover all three protocols when behavior is shared (protocol matrix or capability-driven cases); use protocol-specific cases only when the mechanism under test exists on that protocol.
+
 ## 2. Architecture & Domain
 
-Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Multi-protocol:** Meshtastic, MeshCore, and Reticulum; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc. for LoRa; Reticulum uses `ReticulumDiagnosticEngine.ts`). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
+Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Multi-protocol:** Meshtastic, MeshCore, and Reticulum; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`) — apply changes to all protocols by default (§1 Protocol parity). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc. for LoRa; Reticulum uses `ReticulumDiagnosticEngine.ts`). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
 
 **Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-ink-800`). Neutrals are the **ink** scale from the Midnight Serenity palette (`--color-ink-*` in `styles.css`; `slate-*` / `zinc-*` / `gray-*` are rejected by source-policy `renderer-ink-neutrals`); protocol identity scales are Meshtastic emerald, MeshCore cyan, Reticulum yellow (`lib/protocolTheme.ts`); status is success green, warning orange, error red, info indigo. Custom theme colors via CSS custom properties in `styles.css` (`--color-brand-green`, etc.). Avoid inline hex colors in JSX. **App → Appearance → Colors** lets users customize theme tokens including chat/RRC **message action** bar/button colors (`themeColors.ts`); **Show background** / **Always show message actions** control action-bar visibility. Shell layout, navigation, tokens, controls and UI copy rules: [`docs/style-guide.md`](docs/style-guide.md).
 
@@ -143,33 +151,34 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 Deep, file-level subsystem detail lives in the developer docs ([`docs/development/`](docs/development/index.md) and the top-level guides below), shared by human contributors and agents, so it loads on demand instead of on every prompt. **Open the matching file when a task touches that area.**
 
-| When working on…                                                                              | Read                                                                                           |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games              | [`docs/reticulum-development.md#code-map`](docs/reticulum-development.md#code-map)             |
-| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence             | [`docs/development/ble-serial.md`](docs/development/ble-serial.md)                             |
-| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                         | [`docs/development/renderer-hooks.md`](docs/development/renderer-hooks.md)                     |
-| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                     | [`docs/development/meshtastic.md`](docs/development/meshtastic.md)                             |
-| MQTT ingest, channel key mapping, sticky BLE suppress                                         | [`docs/development/mqtt.md`](docs/development/mqtt.md)                                         |
-| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export | [`docs/development/chat.md`](docs/development/chat.md)                                         |
-| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                             | [`docs/development/meshcore-repeaters.md`](docs/development/meshcore-repeaters.md)             |
-| MeshCore Rooms (BBS) login/post/sync/wire text                                                | [`docs/development/meshcore-rooms.md`](docs/development/meshcore-rooms.md)                     |
-| Diagnostics engines, rows, tab scoping                                                        | [`docs/diagnostics.md#17-key-source-files`](docs/diagnostics.md#17-key-source-files)           |
-| i18n / localization workflow, auto-translate, language selector                               | [`docs/localization.md#maintainer-workflow`](docs/localization.md#maintainer-workflow)         |
-| Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/development/connection-panel.md`](docs/development/connection-panel.md)                 |
-| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/development/mecp.md`](docs/development/mecp.md)                                         |
-| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/development/emcomm.md`](docs/development/emcomm.md)                                     |
-| Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/development/offline-maps.md`](docs/development/offline-maps.md)                         |
-| Weather forecast map (parsed chat forecasts drawn on the Map)                                 | `src/renderer/components/WeatherForecastLayer.tsx`                                             |
-| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                                                   |
-| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/development/settings-search.md`](docs/development/settings-search.md)                   |
-| Developer service announcements feed, strip, pre-commit warning                               | [`docs/service-announcements.md#implementation`](docs/service-announcements.md#implementation) |
-| Symptom → where-to-check index                                                                | [`docs/development/common-issues.md`](docs/development/common-issues.md)                       |
-| Where to look first by area (diagnostics, protocols, lifecycle, DB, BLE, MQTT, Rooms, UI)     | [`docs/development/architecture-quick-ref.md`](docs/development/architecture-quick-ref.md)     |
-| Published docs site (mkdocs nav, landing/install pages, in-app doc links)                     | `mkdocs.yml`, `src/shared/docsSite.ts`                                                         |
+| When working on…                                                                                                     | Read                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games                                     | [`docs/reticulum-development.md#code-map`](docs/reticulum-development.md#code-map)             |
+| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence                                    | [`docs/development/ble-serial.md`](docs/development/ble-serial.md)                             |
+| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                                                | [`docs/development/renderer-hooks.md`](docs/development/renderer-hooks.md)                     |
+| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                                            | [`docs/development/meshtastic.md`](docs/development/meshtastic.md)                             |
+| MQTT ingest, channel key mapping, sticky BLE suppress                                                                | [`docs/development/mqtt.md`](docs/development/mqtt.md)                                         |
+| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export                        | [`docs/development/chat.md`](docs/development/chat.md)                                         |
+| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                                                    | [`docs/development/meshcore-repeaters.md`](docs/development/meshcore-repeaters.md)             |
+| MeshCore Rooms (BBS) login/post/sync/wire text                                                                       | [`docs/development/meshcore-rooms.md`](docs/development/meshcore-rooms.md)                     |
+| MeshCore companion CLI (v1.18 settings, reboot), remote CLI (flag 0x10), sensor telemetry push, CLI secret redaction | [`docs/development/meshcore-companion-cli.md`](docs/development/meshcore-companion-cli.md)     |
+| Diagnostics engines, rows, tab scoping                                                                               | [`docs/diagnostics.md#17-key-source-files`](docs/diagnostics.md#17-key-source-files)           |
+| i18n / localization workflow, auto-translate, language selector                                                      | [`docs/localization.md#maintainer-workflow`](docs/localization.md#maintainer-workflow)         |
+| Connection panel helpers (error hints, rehydrate, storage migrations)                                                | [`docs/development/connection-panel.md`](docs/development/connection-panel.md)                 |
+| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                                                  | [`docs/development/mecp.md`](docs/development/mecp.md)                                         |
+| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                                        | [`docs/development/emcomm.md`](docs/development/emcomm.md)                                     |
+| Offline maps (`mesh-tiles:`), tile cache, region download                                                            | [`docs/development/offline-maps.md`](docs/development/offline-maps.md)                         |
+| Weather forecast map (parsed chat forecasts drawn on the Map)                                                        | `src/renderer/components/WeatherForecastLayer.tsx`                                             |
+| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules                                | [`docs/style-guide.md`](docs/style-guide.md)                                                   |
+| Launcher settings search: adding a searchable setting, anchors, registry, guards                                     | [`docs/development/settings-search.md`](docs/development/settings-search.md)                   |
+| Developer service announcements feed, strip, pre-commit warning                                                      | [`docs/service-announcements.md#implementation`](docs/service-announcements.md#implementation) |
+| Symptom → where-to-check index                                                                                       | [`docs/development/common-issues.md`](docs/development/common-issues.md)                       |
+| Where to look first by area (diagnostics, protocols, lifecycle, DB, BLE, MQTT, Rooms, UI)                            | [`docs/development/architecture-quick-ref.md`](docs/development/architecture-quick-ref.md)     |
+| Published docs site (mkdocs nav, landing/install pages, in-app doc links)                                            | `mkdocs.yml`, `src/shared/docsSite.ts`                                                         |
 
 **Always-remember invariants** (details in the linked files):
 
-- Gate features with `ProtocolCapabilities` / `useRadioProvider(protocol)` — never `protocol === 'meshcore'`.
+- Gate features with `ProtocolCapabilities` / `useRadioProvider(protocol)` — never `protocol === 'meshcore'`; apply changes to all protocols by default (§1 Protocol parity).
 - Mount protocol runtimes **once** from `App.tsx`; do not remount in children. New protocol logic goes in `lib/` + thin runtime wiring, not monolithic runtimes.
 - Prefer `useProtocolFacade` and identity-scoped stores (`identityStore` / `nodeStore` / `messageStore` / `connectionStore`, keyed by `identityId`); SQLite→UI via `hydrateIdentityStoresFromDb`.
 - MeshCore zero-hop Status/Telemetry/Neighbors are pubkey-framed (no contact-list gate); multi-hop ping needs a hash-segment path (≥2 bytes), never the full destination pubkey. Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` without explicit user request — see [`docs/development/meshcore-repeaters.md`](docs/development/meshcore-repeaters.md).

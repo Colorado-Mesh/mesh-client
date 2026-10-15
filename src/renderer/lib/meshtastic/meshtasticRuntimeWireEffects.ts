@@ -52,7 +52,12 @@ import {
 } from './meshtasticGetMetadataAfterConfigure';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import { recordMeshtasticLockdownStatus } from './meshtasticLockdown';
-import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
+import type {
+  HeardMeshBeacon,
+  ModulePortEvent,
+  NodeStatusEntry,
+  PaxCounterPoint,
+} from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 import { attachMeshtasticNodeSideEffects } from './meshtasticNodeSideEffects';
@@ -218,6 +223,8 @@ export interface MeshtasticRuntimeWireEffectsDeps {
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
   setPaxCounterData: Dispatch<SetStateAction<Map<number, PaxCounterPoint[]>>>;
+  setMeshBeacons: Dispatch<SetStateAction<Map<number, HeardMeshBeacon>>>;
+  setNodeStatuses: Dispatch<SetStateAction<Map<number, NodeStatusEntry>>>;
   setSerialMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
@@ -362,6 +369,8 @@ export function attachMeshtasticRuntimeWireEffects(
     setPingResponses,
     setIpTunnelMessages,
     setPaxCounterData,
+    setMeshBeacons,
+    setNodeStatuses,
     setSerialMessages,
     setStoreForwardMessages,
     setRangeTestPackets,
@@ -719,6 +728,8 @@ export function attachMeshtasticRuntimeWireEffects(
         setAtakMessages,
         setMapReports,
         setPrivateMessages,
+        setMeshBeacons,
+        setNodeStatuses,
       }),
       attachMeshtasticStoreForwardSideEffects(identityId, {
         touchLastData,
