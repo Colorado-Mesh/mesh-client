@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadRuntimeSource } from '../lib/sourceContractTestHelpers';
+import { extractUseCallbackBody, loadRuntimeSource } from '../lib/sourceContractTestHelpers';
 
 describe('environment telemetry history wiring (source contract)', () => {
   it('MeshCore requestTelemetry records any node reading with source rpc', () => {
     const src = loadRuntimeSource('useMeshcoreRuntime.ts');
     const start = src.indexOf('runMeshcoreRepeaterTelemetryRequest(');
     expect(start).toBeGreaterThan(-1);
-    const body = src.slice(start, start + 6000);
+    expect(src.slice(start, start + 600)).toContain(
+      "applyMeshcoreTelemetryLpp(nodeId, raw.lppSensorData, 'rpc');",
+    );
+    const body = extractUseCallbackBody(src, 'applyMeshcoreTelemetryLpp');
     expect(body).toMatch(/recordEnvironmentReading\(\s*'meshcore',\s*nodeId,/);
     expect(body).toContain("'rpc'");
   });

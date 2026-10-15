@@ -7365,5 +7365,25 @@
       "message": "Dit contact kan elke instelling op uw radio wijzigen, opnieuw opstarten of uitschakelen. Sta alleen contacten toe die u volledig vertrouwt.",
       "confirm": "Toestaan"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Live-telemetrie",
+    "enableLabel": "Push-updates van deze sensor",
+    "enableDescription": "De sensor verzendt een meting wanneer een waarde meer verandert dan de onderstaande bedragen. Vereist sensorfirmware v1.18 of nieuwer. De app verlengt het abonnement terwijl er verbinding is.",
+    "thresholdsLegend": "Verzenden wanneer de wijziging minimaal is",
+    "thresholdsHint": "Laat een veld leeg om die waarde te negeren. Alleen waarden die de sensor meldt, worden bekeken.",
+    "metric": {
+      "temperature": "Temperatuur (°C)",
+      "humidity": "Vochtigheid (%)",
+      "voltage": "Spanning (V)",
+      "pressure": "Druk (hPa)"
+    },
+    "leaseLabel": "Abonnementsduur (minuten)",
+    "leaseHint": "Als de app offline gaat, stopt de sensor na deze lange tijd met verzenden.",
+    "waitingForPush": "Geabonneerd. Wachten op de eerste verandering.",
+    "lastPush": "Laatste update om {{time}}",
+    "errorNoMetrics": "Deze sensor rapporteert geen van de geselecteerde waarden. Vraag eerst telemetrie aan of stel een drempelwaarde in.",
+    "errorRejected": "De sensor weigerde het abonnement. Controleer de firmwareversie en uw login.",
+    "errorFailed": "Kon de sensor niet bereiken. Probeer het opnieuw."
   }
 }

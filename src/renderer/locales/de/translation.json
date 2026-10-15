@@ -7365,5 +7365,25 @@
       "message": "Dieser Kontakt kann jede Einstellung Ihres Radios ändern, es neu starten oder ausschalten. Erlaube nur Kontakte, denen du voll und ganz vertraust.",
       "confirm": "Erlauben"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Live-Telemetrie",
+    "enableLabel": "Push-Updates von diesem Sensor",
+    "enableDescription": "Der Sensor sendet einen Messwert, wenn sich ein Wert um mehr als die unten aufgeführten Beträge ändert. Benötigt Sensor-Firmware v1.18 oder neuer. Die App erneuert das Abonnement, während die Verbindung besteht.",
+    "thresholdsLegend": "Senden Sie, wenn die Änderung mindestens erfolgt",
+    "thresholdsHint": "Lassen Sie ein Feld leer, um diesen Wert zu ignorieren. Es werden nur die Werte beobachtet, die der Sensor meldet.",
+    "metric": {
+      "temperature": "Temperatur (°C)",
+      "humidity": "Luftfeuchtigkeit (%)",
+      "voltage": "Spannung (V)",
+      "pressure": "Druck (hPa)"
+    },
+    "leaseLabel": "Abonnementdauer (Minuten)",
+    "leaseHint": "Wenn die App offline geht, sendet der Sensor nach dieser Zeit nicht mehr.",
+    "waitingForPush": "Gezeichnet. Warten auf die erste Änderung.",
+    "lastPush": "Letztes Update um {{time}}",
+    "errorNoMetrics": "Dieser Sensor meldet keinen der ausgewählten Werte. Fordern Sie zuerst Telemetrie an oder legen Sie einen Schwellenwert fest.",
+    "errorRejected": "Der Sensor hat das Abonnement abgelehnt. Überprüfen Sie die Firmware-Version und Ihr Login.",
+    "errorFailed": "Konnte den Sensor nicht erreichen. Versuchen Sie es erneut."
   }
 }

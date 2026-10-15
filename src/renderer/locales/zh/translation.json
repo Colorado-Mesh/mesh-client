@@ -7365,5 +7365,25 @@
       "message": "此联系人将能够更改收音机上的任何设置，重新启动或关闭收音机。仅允许您完全信任的联系人。",
       "confirm": "允许"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "实时遥测",
+    "enableLabel": "从此传感器推送更新",
+    "enableDescription": "当值的变化超过以下量时，传感器会发送读数。需要传感器固件 v1.18 或更高版本。该应用程序会在连接时续订订阅。",
+    "thresholdsLegend": "更改至少时发送",
+    "thresholdsHint": "将字段留空以忽略该值。仅观察传感器报告的值。",
+    "metric": {
+      "temperature": "温度（°C）",
+      "humidity": "湿度 （％）",
+      "voltage": "电压（伏）",
+      "pressure": "压力（百帕）"
+    },
+    "leaseLabel": "订阅时长（分钟）",
+    "leaseHint": "如果应用程序离线，传感器会在这么长时间后停止发送。",
+    "waitingForPush": "已订阅。等待第一个改变。",
+    "lastPush": "最后更新于 {{time}}",
+    "errorNoMetrics": "该传感器不报告任何选定的值。首先请求遥测或设置阈值。",
+    "errorRejected": "传感器拒绝订阅。检查其固件版本和您的登录信息。",
+    "errorFailed": "无法到达传感器。再试一次。"
   }
 }

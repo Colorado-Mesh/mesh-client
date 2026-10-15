@@ -7365,5 +7365,25 @@
       "message": "Kontak ini akan dapat mengubah pengaturan apa pun di radio Anda, menyalakan ulang, atau mematikannya. Hanya izinkan kontak yang Anda percayai sepenuhnya.",
       "confirm": "Izinkan"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Telemetri langsung",
+    "enableLabel": "Dorong pembaruan dari sensor ini",
+    "enableDescription": "Sensor mengirimkan pembacaan ketika suatu nilai berubah lebih dari jumlah di bawahnya. Membutuhkan firmware sensor v1.18 atau lebih baru. Aplikasi ini memperbarui langganan saat terhubung.",
+    "thresholdsLegend": "Kirim ketika perubahannya setidaknya",
+    "thresholdsHint": "Biarkan bidang kosong untuk mengabaikan nilai tersebut. Hanya nilai yang dilaporkan sensor yang diawasi.",
+    "metric": {
+      "temperature": "Suhu (°C)",
+      "humidity": "Kelembapan (%)",
+      "voltage": "Tegangan (V)",
+      "pressure": "Tekanan (hPa)"
+    },
+    "leaseLabel": "Durasi berlangganan (menit)",
+    "leaseHint": "Jika aplikasi offline, sensor akan berhenti mengirim setelah jangka waktu tersebut.",
+    "waitingForPush": "Berlangganan. Menunggu perubahan pertama.",
+    "lastPush": "Pembaruan terakhir pada {{time}}",
+    "errorNoMetrics": "Sensor ini tidak melaporkan nilai apa pun yang dipilih. Minta telemetri terlebih dahulu atau tetapkan ambang batas.",
+    "errorRejected": "Sensor menolak berlangganan. Periksa versi firmware dan login Anda.",
+    "errorFailed": "Tidak dapat menjangkau sensor. Coba lagi."
   }
 }

@@ -7365,5 +7365,25 @@
       "message": "Ce contact pourra modifier n'importe quel paramètre de votre radio, le redémarrer ou l'éteindre. N'autorisez que les contacts en qui vous avez pleinement confiance.",
       "confirm": "Autoriser"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Télémétrie en direct",
+    "enableLabel": "Envoyer les mises à jour de ce capteur",
+    "enableDescription": "Le capteur envoie une lecture lorsqu'une valeur change de plus que les montants ci-dessous. Nécessite le micrologiciel du capteur v1.18 ou plus récent. L'application renouvelle l'abonnement une fois connectée.",
+    "thresholdsLegend": "Envoyer lorsque le changement est au moins",
+    "thresholdsHint": "Laissez un champ vide pour ignorer cette valeur. Seules les valeurs rapportées par le capteur sont surveillées.",
+    "metric": {
+      "temperature": "Température (°C)",
+      "humidity": "Humidité (%)",
+      "voltage": "Tension (V)",
+      "pressure": "Pression (hPa)"
+    },
+    "leaseLabel": "Durée de l'abonnement (minutes)",
+    "leaseHint": "Si l'application se déconnecte, le capteur cesse d'envoyer après ce délai.",
+    "waitingForPush": "Abonné. En attendant le premier changement.",
+    "lastPush": "Dernière mise à jour à {{time}}",
+    "errorNoMetrics": "Ce capteur ne signale aucune des valeurs sélectionnées. Demandez d’abord la télémétrie ou définissez un seuil.",
+    "errorRejected": "Le capteur a refusé l'abonnement. Vérifiez sa version du firmware et votre identifiant.",
+    "errorFailed": "Impossible d'atteindre le capteur. Essayer à nouveau."
   }
 }

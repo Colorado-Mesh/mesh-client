@@ -7438,5 +7438,25 @@
       "message": "Tento kontakt bude moci změnit jakékoli nastavení rádia, restartovat jej nebo vypnout. Povolte pouze kontakty, kterým plně důvěřujete.",
       "confirm": "Povolit"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Živá telemetrie",
+    "enableLabel": "Push aktualizace z tohoto senzoru",
+    "enableDescription": "Senzor odešle hodnotu, když se hodnota změní o více než níže uvedené hodnoty. Vyžaduje firmware senzoru v1.18 nebo novější. Během připojení aplikace obnoví předplatné.",
+    "thresholdsLegend": "Odešlete, až bude alespoň změna",
+    "thresholdsHint": "Chcete-li tuto hodnotu ignorovat, nechte pole prázdné. Sledují se pouze hodnoty, které senzor hlásí.",
+    "metric": {
+      "temperature": "Teplota (°C)",
+      "humidity": "vlhkost (%)",
+      "voltage": "Napětí (V)",
+      "pressure": "Tlak (hPa)"
+    },
+    "leaseLabel": "Délka předplatného (minuty)",
+    "leaseHint": "Pokud se aplikace přepne do režimu offline, senzor po uplynutí této doby přestane odesílat.",
+    "waitingForPush": "Předplaceno. Čekání na první změnu.",
+    "lastPush": "Poslední aktualizace v {{time}}",
+    "errorNoMetrics": "Tento senzor nehlásí žádnou z vybraných hodnot. Nejprve požádejte o telemetrii nebo nastavte práh.",
+    "errorRejected": "Senzor odmítl předplatné. Zkontrolujte jeho verzi firmwaru a své přihlašovací údaje.",
+    "errorFailed": "Nelze dosáhnout na senzor. Zkuste to znovu."
   }
 }

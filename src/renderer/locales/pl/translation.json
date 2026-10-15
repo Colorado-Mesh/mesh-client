@@ -7487,5 +7487,25 @@
       "message": "Ten kontakt będzie mógł zmienić dowolne ustawienie w radiu, zrestartować je lub wyłączyć. Zezwalaj tylko na kontakty, którym w pełni ufasz.",
       "confirm": "Zezwalaj"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Telemetria na żywo",
+    "enableLabel": "Przesyłaj aktualizacje z tego czujnika",
+    "enableDescription": "Czujnik wysyła odczyt, gdy wartość zmienia się o więcej niż wartości podane poniżej. Wymaga oprogramowania czujnika w wersji 1.18 lub nowszej. Aplikacja odnawia subskrypcję po podłączeniu.",
+    "thresholdsLegend": "Wyślij, gdy nastąpi przynajmniej zmiana",
+    "thresholdsHint": "Pozostaw pole puste, aby zignorować tę wartość. Obserwowane są tylko wartości raportowane przez czujnik.",
+    "metric": {
+      "temperature": "Temperatura (°C)",
+      "humidity": "Wilgotność (%)",
+      "voltage": "Napięcie (V)",
+      "pressure": "Ciśnienie (hPa)"
+    },
+    "leaseLabel": "Długość subskrypcji (minuty)",
+    "leaseHint": "Jeśli aplikacja przejdzie w tryb offline, czujnik przestanie wysyłać dane po upływie tego czasu.",
+    "waitingForPush": "Zasubskrybowano. Czekam na pierwszą zmianę.",
+    "lastPush": "Ostatnia aktualizacja o {{time}}",
+    "errorNoMetrics": "Ten czujnik nie zgłasza żadnej z wybranych wartości. Najpierw poproś o dane telemetryczne lub ustaw próg.",
+    "errorRejected": "Czujnik odmówił subskrypcji. Sprawdź wersję oprogramowania i swój login.",
+    "errorFailed": "Nie udało się dotrzeć do czujnika. Spróbuj ponownie."
   }
 }

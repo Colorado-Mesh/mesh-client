@@ -88,6 +88,7 @@ import {
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreCompanionCli } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import { useMeshcoreCompanionRemote } from '../hooks/meshcore/useMeshcoreCompanionRemote';
+import { useMeshcoreTelemetryPush } from '../hooks/meshcore/useMeshcoreTelemetryPush';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -239,6 +240,7 @@ import {
   waitForMeshcoreTcpLiveForUserTx,
   yieldToMeshcoreTcpUserTxSends,
 } from '../lib/meshcore/meshcoreTcpInitBurst';
+import type { MeshcoreLppChannelEntry } from '../lib/meshcore/meshcoreTelemetryPush';
 import {
   buildMeshcoreOutboundTapbackWire,
   MESHCORE_TXT_TYPE_CLI_COMMAND,
@@ -687,6 +689,8 @@ export function useMeshcoreRuntime() {
   const [meshcoreTelemetryErrors, setMeshcoreTelemetryErrors] = useState<Map<number, string>>(
     new Map(),
   );
+  /** LPP channel/type pairs from each sensor's latest telemetry (telemetry push min-deltas). */
+  const meshcoreTelemetryChannelsRef = useRef(new Map<number, MeshcoreLppChannelEntry[]>());
   const [meshcoreStatusErrors, setMeshcoreStatusErrors] = useState<Map<number, string>>(new Map());
   const [meshcorePingErrors, setMeshcorePingErrors] = useState<Map<number, string>>(new Map());
   const [meshcoreRepeaterRpcPending, setMeshcoreRepeaterRpcPending] =
@@ -804,6 +808,8 @@ export function useMeshcoreRuntime() {
   const handleMeshcoreConnectionLostRef = useRef<() => boolean>(() => false);
   /** User asked the companion to reboot; the next link loss reconnects with a longer first delay. */
   const meshcorePlannedRebootRef = useRef(false);
+  /** Forget telemetry push subscriptions on manual disconnect (set once the hook mounts). */
+  const meshcoreTelemetryPushClearRef = useRef<() => void>(() => {});
   const attemptMeshcoreReconnectRef = useRef<() => Promise<void>>(async () => {});
   const scheduleMeshcoreReconnectAttemptRef = useRef<() => void>(() => {});
   /** Incremented on `disconnect()` so in-flight `initConn` can abort instead of timing out. */
@@ -4396,6 +4402,7 @@ export function useMeshcoreRuntime() {
 
   const disconnect = useCallback(async () => {
     meshcorePlannedRebootRef.current = false;
+    meshcoreTelemetryPushClearRef.current();
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 
@@ -5929,6 +5936,101 @@ export function useMeshcoreRuntime() {
     [resolveAdminHopsForNode],
   );
 
+  /** Decode Cayenne LPP from a telemetry reply or push and update the per-node telemetry stores. */
+  const applyMeshcoreTelemetryLpp = useCallback(
+    (nodeId: number, lppSensorData: Uint8Array | undefined, source: 'rpc' | 'push') => {
+      let entries: CayenneLppEntry[] = [];
+      if (lppSensorData) {
+        try {
+          entries = CayenneLpp.parse(lppSensorData) as CayenneLppEntry[];
+        } catch (parseErr: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] telemetry CayenneLpp.parse error ' + errLikeToLogString(parseErr),
+          );
+        }
+      }
+      const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
+      const temps = assignCayenneTemperatureFields(entries, CayenneLpp.LPP_TEMPERATURE);
+      result.temperature = temps.temperature;
+      result.mcuTemperature = temps.mcuTemperature;
+      for (const entry of entries) {
+        if (entry.type === CayenneLpp.LPP_TEMPERATURE) {
+          // handled above (env vs MCU by channel)
+        } else if (
+          entry.type === CayenneLpp.LPP_RELATIVE_HUMIDITY &&
+          typeof entry.value === 'number'
+        ) {
+          result.relativeHumidity = entry.value;
+        } else if (
+          entry.type === CayenneLpp.LPP_BAROMETRIC_PRESSURE &&
+          typeof entry.value === 'number'
+        ) {
+          result.barometricPressure = entry.value;
+        } else if (entry.type === CayenneLpp.LPP_VOLTAGE && typeof entry.value === 'number') {
+          result.voltage = entry.value;
+        } else if (
+          entry.type === CayenneLpp.LPP_GPS &&
+          typeof entry.value === 'object' &&
+          entry.value !== null
+        ) {
+          result.gps = entry.value;
+        }
+      }
+      setMeshcoreNodeTelemetry((prev) => {
+        const next = new Map(prev);
+        next.set(nodeId, result);
+        return next;
+      });
+      setMeshcoreTelemetryErrors((prev) => {
+        const next = new Map(prev);
+        next.delete(nodeId);
+        return next;
+      });
+      const hasEnv =
+        result.temperature != null ||
+        result.mcuTemperature != null ||
+        result.relativeHumidity != null ||
+        result.barometricPressure != null;
+      if (hasEnv) {
+        const pt: EnvironmentTelemetryPoint = {
+          timestamp: result.fetchedAt,
+          nodeNum: nodeId,
+          temperature: result.temperature,
+          mcuTemperature: result.mcuTemperature,
+          relativeHumidity: result.relativeHumidity,
+          barometricPressure: result.barometricPressure,
+        };
+        setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
+        recordEnvironmentReading(
+          'meshcore',
+          nodeId,
+          {
+            temperature: result.temperature,
+            relativeHumidity: result.relativeHumidity,
+            barometricPressure: result.barometricPressure,
+          },
+          'rpc',
+        );
+      }
+      const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);
+      if (altM !== undefined) {
+        setNodes((prev) => {
+          const cur = prev.get(nodeId);
+          if (!cur) return prev;
+          const next = new Map(prev);
+          next.set(nodeId, { ...cur, altitude: altM });
+          return next;
+        });
+      }
+      meshcoreTelemetryChannelsRef.current.set(
+        nodeId,
+        entries.map((e) => ({ channel: e.channel, type: e.type })),
+      );
+      if (source === 'push') bumpMeshcoreNodeLastHeardFromRpc(nodeId);
+    },
+    [bumpMeshcoreNodeLastHeardFromRpc],
+  );
+
   const requestTelemetry = useCallback(
     async (nodeId: number, opts?: { timeoutMs?: number }) => {
       setMeshcoreRepeaterRpcPending((prev) =>
@@ -5981,91 +6083,7 @@ export function useMeshcoreRuntime() {
               repeaterRemoteRpcRef.current,
               awaitMeshcoreRepeaterAdminRfIdle,
             );
-            let entries: CayenneLppEntry[] = [];
-            const lppSensorData = raw.lppSensorData;
-            if (lppSensorData) {
-              try {
-                entries = CayenneLpp.parse(lppSensorData) as CayenneLppEntry[];
-              } catch (parseErr: unknown) {
-                console.warn(
-                  '[useMeshcoreRuntime] requestTelemetry CayenneLpp.parse error ' +
-                    errLikeToLogString(parseErr),
-                );
-              }
-            }
-            const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
-            const temps = assignCayenneTemperatureFields(entries, CayenneLpp.LPP_TEMPERATURE);
-            result.temperature = temps.temperature;
-            result.mcuTemperature = temps.mcuTemperature;
-            for (const entry of entries) {
-              if (entry.type === CayenneLpp.LPP_TEMPERATURE) {
-                // handled above (env vs MCU by channel)
-              } else if (
-                entry.type === CayenneLpp.LPP_RELATIVE_HUMIDITY &&
-                typeof entry.value === 'number'
-              ) {
-                result.relativeHumidity = entry.value;
-              } else if (
-                entry.type === CayenneLpp.LPP_BAROMETRIC_PRESSURE &&
-                typeof entry.value === 'number'
-              ) {
-                result.barometricPressure = entry.value;
-              } else if (entry.type === CayenneLpp.LPP_VOLTAGE && typeof entry.value === 'number') {
-                result.voltage = entry.value;
-              } else if (
-                entry.type === CayenneLpp.LPP_GPS &&
-                typeof entry.value === 'object' &&
-                entry.value !== null
-              ) {
-                result.gps = entry.value;
-              }
-            }
-            setMeshcoreNodeTelemetry((prev) => {
-              const next = new Map(prev);
-              next.set(nodeId, result);
-              return next;
-            });
-            setMeshcoreTelemetryErrors((prev) => {
-              const next = new Map(prev);
-              next.delete(nodeId);
-              return next;
-            });
-            const hasEnv =
-              result.temperature != null ||
-              result.mcuTemperature != null ||
-              result.relativeHumidity != null ||
-              result.barometricPressure != null;
-            if (hasEnv) {
-              const pt: EnvironmentTelemetryPoint = {
-                timestamp: result.fetchedAt,
-                nodeNum: nodeId,
-                temperature: result.temperature,
-                mcuTemperature: result.mcuTemperature,
-                relativeHumidity: result.relativeHumidity,
-                barometricPressure: result.barometricPressure,
-              };
-              setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
-              recordEnvironmentReading(
-                'meshcore',
-                nodeId,
-                {
-                  temperature: result.temperature,
-                  relativeHumidity: result.relativeHumidity,
-                  barometricPressure: result.barometricPressure,
-                },
-                'rpc',
-              );
-            }
-            const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);
-            if (altM !== undefined) {
-              setNodes((prev) => {
-                const cur = prev.get(nodeId);
-                if (!cur) return prev;
-                const next = new Map(prev);
-                next.set(nodeId, { ...cur, altitude: altM });
-                return next;
-              });
-            }
+            applyMeshcoreTelemetryLpp(nodeId, raw.lppSensorData, 'rpc');
           } catch (e: unknown) {
             const rawErr = e instanceof Error ? e.message : String(e);
             const errMsg = rawErr && rawErr !== 'undefined' ? rawErr : MESHCORE_ERR_REQUEST_FAILED;
@@ -6090,10 +6108,66 @@ export function useMeshcoreRuntime() {
         );
       }
     },
-    [ensureNodePubKey, makeRepeaterLoginOpts, resolveMeshcoreConn],
+    [applyMeshcoreTelemetryLpp, ensureNodePubKey, makeRepeaterLoginOpts, resolveMeshcoreConn],
   );
 
   requestTelemetryMeshCoreRef.current = requestTelemetry;
+
+  /** Binary request to a sensor after the same login path as Sensor telemetry. */
+  const sendMeshcoreSensorRequest = useCallback(
+    async (nodeId: number, payload: Uint8Array): Promise<Uint8Array> => {
+      const pubKey = await ensureNodePubKey(nodeId);
+      if (!pubKey) throw new Error(MESHCORE_ERR_NODE_NOT_FOUND);
+      const conn = resolveMeshcoreConn();
+      if (!conn) throw new Error(MESHCORE_ERR_NOT_CONNECTED);
+      await awaitMeshcoreRepeaterPingSettleForNode(nodeId);
+      await meshcoreTryRemoteServerLogin(
+        conn,
+        nodeId,
+        pubKey,
+        getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
+        repeaterRemoteRpcRef.current,
+        makeRepeaterLoginOpts(conn, nodeId, pubKey),
+      );
+      return runMeshcoreRepeaterBinaryRequest(
+        conn,
+        pubKey,
+        payload,
+        MESHCORE_TELEMETRY_TIMEOUT_MS,
+        repeaterRemoteRpcRef.current,
+        awaitMeshcoreRepeaterAdminRfIdle,
+      );
+    },
+    [ensureNodePubKey, makeRepeaterLoginOpts, resolveMeshcoreConn],
+  );
+
+  const getMeshcoreTelemetryChannels = useCallback(
+    async (nodeId: number): Promise<readonly MeshcoreLppChannelEntry[]> => {
+      const cached = meshcoreTelemetryChannelsRef.current.get(nodeId);
+      if (cached && cached.length > 0) return cached;
+      await requestTelemetry(nodeId);
+      return meshcoreTelemetryChannelsRef.current.get(nodeId) ?? [];
+    },
+    [requestTelemetry],
+  );
+
+  const onMeshcoreTelemetryPush = useCallback(
+    (nodeId: number, lpp: Uint8Array) => {
+      applyMeshcoreTelemetryLpp(nodeId, lpp, 'push');
+    },
+    [applyMeshcoreTelemetryLpp],
+  );
+
+  const telemetryPush = useMeshcoreTelemetryPush({
+    connRef,
+    connected: state.status === 'configured' || state.status === 'connected',
+    getTelemetryChannels: getMeshcoreTelemetryChannels,
+    sendSensorRequest: sendMeshcoreSensorRequest,
+    onPushTelemetry: onMeshcoreTelemetryPush,
+  });
+  useEffect(() => {
+    meshcoreTelemetryPushClearRef.current = telemetryPush.clearAll;
+  }, [telemetryPush.clearAll]);
 
   const requestNeighbors = useCallback(
     async (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => {
@@ -8618,6 +8692,7 @@ export function useMeshcoreRuntime() {
       reboot,
       companionCli,
       companionRemote,
+      telemetryPush,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
@@ -8773,6 +8848,7 @@ export function useMeshcoreRuntime() {
       reboot,
       companionCli,
       companionRemote,
+      telemetryPush,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,

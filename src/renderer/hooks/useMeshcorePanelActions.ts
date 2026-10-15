@@ -36,6 +36,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       applyMeshcoreTelemetryPrivacy: runtime.applyMeshcoreTelemetryPrivacyPolicy,
       companionCli: runtime.companionCli,
       companionRemote: runtime.companionRemote,
+      telemetryPush: runtime.telemetryPush,
       getPickerStyleNodeLabel: runtime.getPickerStyleNodeLabel,
       setRadioParams: runtime.setRadioParams,
       refreshMeshcoreAutoaddFromDevice: runtime.refreshMeshcoreAutoaddFromDevice,

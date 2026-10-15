@@ -4172,6 +4172,11 @@ function AppContent() {
               }
             : undefined
         }
+        meshcoreTelemetryPush={
+          detailModalCapabilities.hasCompanionCli && meshcorePanelActions.companionCli.available
+            ? meshcorePanelActions.telemetryPush
+            : undefined
+        }
       />
     </Suspense>
   );

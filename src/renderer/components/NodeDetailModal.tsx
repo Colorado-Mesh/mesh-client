@@ -23,6 +23,7 @@ import { touch } from '@/shared/touch';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
+import type { MeshcoreTelemetryPushActions } from '../hooks/meshcore/useMeshcoreTelemetryPush';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
@@ -84,6 +85,7 @@ import { HelpTooltip } from './HelpTooltip';
 import MeshcoreRemoteCliSection from './MeshcoreRemoteCliSection';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
+import MeshcoreTelemetryPushSection from './MeshcoreTelemetryPushSection';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
@@ -163,6 +165,8 @@ interface NodeDetailModalProps {
     history: readonly CliHistoryEntry[];
     onClearHistory?: (nodeId: number) => void;
   };
+  /** Companion CLI capability: telemetry push subscriptions on v1.18+ sensors. */
+  meshcoreTelemetryPush?: MeshcoreTelemetryPushActions;
 }
 
 function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
@@ -276,6 +280,7 @@ export default function NodeDetailModal({
   onConfigureRemotely,
   hasRemoteAdminKey,
   meshcoreRemoteCli,
+  meshcoreTelemetryPush,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1442,6 +1447,17 @@ export default function NodeDetailModal({
                   </>
                 )}
               </div>
+            </div>
+          )}
+
+          {meshcoreTelemetryPush && !isOurNode && node.hw_model === 'Sensor' && (
+            <div className="mt-3">
+              <MeshcoreTelemetryPushSection
+                nodeId={node.node_id}
+                push={meshcoreTelemetryPush}
+                ensureAccess={() => ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')}
+                disabled={!isConnected}
+              />
             </div>
           )}
 

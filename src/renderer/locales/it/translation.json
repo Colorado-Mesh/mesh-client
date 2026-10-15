@@ -7365,5 +7365,25 @@
       "message": "Questo contatto sarà in grado di modificare qualsiasi impostazione sulla radio, riavviarla o spegnerla. Consenti solo i contatti di cui ti fidi completamente.",
       "confirm": "Consenti"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Telemetria in tempo reale",
+    "enableLabel": "Invia aggiornamenti da questo sensore",
+    "enableDescription": "Il sensore invia una lettura quando un valore cambia di più rispetto agli importi indicati di seguito. Richiede il firmware del sensore v1.18 o successivo. L'app rinnova l'abbonamento durante la connessione.",
+    "thresholdsLegend": "Invia quando la modifica è almeno",
+    "thresholdsHint": "Lascia un campo vuoto per ignorare quel valore. Vengono osservati solo i valori riportati dai sensori.",
+    "metric": {
+      "temperature": "Temperatura (°C)",
+      "humidity": "Umidità (%)",
+      "voltage": "Voltaggio (V)",
+      "pressure": "Pressione (hPa)"
+    },
+    "leaseLabel": "Durata dell'abbonamento (minuti)",
+    "leaseHint": "Se l'app va offline, il sensore smette di inviare dopo questo tempo.",
+    "waitingForPush": "Sottoscritto. In attesa del primo cambiamento.",
+    "lastPush": "Ultimo aggiornamento alle {{time}}",
+    "errorNoMetrics": "Questo sensore non segnala nessuno dei valori selezionati. Richiedi prima la telemetria o imposta una soglia.",
+    "errorRejected": "Il sensore ha rifiutato l'abbonamento. Controlla la versione del firmware e il tuo login.",
+    "errorFailed": "Impossibile raggiungere il sensore. Riprova."
   }
 }

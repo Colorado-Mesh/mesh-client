@@ -7365,5 +7365,25 @@
       "message": "Bu kişi radyonuzdaki herhangi bir ayarı değiştirebilir, yeniden başlatabilir veya kapatabilir. Yalnızca tamamen güvendiğiniz kişilere izin verin.",
       "confirm": "İzin ver"
     }
+  },
+  "meshcoreTelemetryPush": {
+    "summary": "Canlı telemetri",
+    "enableLabel": "Bu sensörden güncellemeleri aktarın",
+    "enableDescription": "Bir değer aşağıdaki miktarlardan daha fazla değiştiğinde sensör bir okuma gönderir. Sensör donanım yazılımı v1.18 veya daha yeni bir sürüme ihtiyaç duyar. Uygulama, bağlıyken aboneliği yeniler.",
+    "thresholdsLegend": "Değişiklik en azından olduğunda gönder",
+    "thresholdsHint": "Bu değeri yoksaymak için bir alanı boş bırakın. Yalnızca sensör raporlarının izlendiği değerler izlenir.",
+    "metric": {
+      "temperature": "Sıcaklık (°C)",
+      "humidity": "Nem (%)",
+      "voltage": "Gerilim (V)",
+      "pressure": "Basınç (hPa)"
+    },
+    "leaseLabel": "Abonelik süresi (dakika)",
+    "leaseHint": "Uygulama çevrimdışı olursa sensör bu kadar süre sonra gönderimi durdurur.",
+    "waitingForPush": "Abone olundu. İlk değişikliği bekliyorum.",
+    "lastPush": "Son güncelleme: {{time}}",
+    "errorNoMetrics": "Bu sensör seçilen değerlerden hiçbirini raporlamaz. Önce telemetri isteyin veya bir eşik ayarlayın.",
+    "errorRejected": "Sensör aboneliği reddetti. Ürün yazılımı sürümünü ve oturum açma bilgilerinizi kontrol edin.",
+    "errorFailed": "Sensöre ulaşılamadı. Tekrar deneyin."
   }
 }

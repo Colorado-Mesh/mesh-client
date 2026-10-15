@@ -261,6 +261,12 @@ const {
       setRemoteCliAllowed: vi.fn().mockResolvedValue(null),
       sendRemoteCli: vi.fn().mockResolvedValue(''),
     },
+    telemetryPush: {
+      subscriptions: new Map(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn().mockResolvedValue(undefined),
+      clearAll: vi.fn(),
+    },
     applyMeshcoreContactAutoAdd: vi.fn().mockResolvedValue(undefined),
     refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
     clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),

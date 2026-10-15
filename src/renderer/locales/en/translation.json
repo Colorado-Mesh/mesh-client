@@ -2975,6 +2975,26 @@
     "contactCount_one": "{{count}} contact",
     "contactCount_other": "{{count}} contacts"
   },
+  "meshcoreTelemetryPush": {
+    "summary": "Live telemetry",
+    "enableLabel": "Push updates from this sensor",
+    "enableDescription": "The sensor sends a reading when a value changes by more than the amounts below. Needs sensor firmware v1.18 or newer. The app renews the subscription while connected.",
+    "thresholdsLegend": "Send when the change is at least",
+    "thresholdsHint": "Leave a field empty to ignore that value. Only values the sensor reports are watched.",
+    "metric": {
+      "temperature": "Temperature (°C)",
+      "humidity": "Humidity (%)",
+      "voltage": "Voltage (V)",
+      "pressure": "Pressure (hPa)"
+    },
+    "leaseLabel": "Subscription length (minutes)",
+    "leaseHint": "If the app goes offline, the sensor stops sending after this long.",
+    "waitingForPush": "Subscribed. Waiting for the first change.",
+    "lastPush": "Last update at {{time}}",
+    "errorNoMetrics": "This sensor does not report any of the selected values. Request telemetry first or set a threshold.",
+    "errorRejected": "The sensor refused the subscription. Check its firmware version and your login.",
+    "errorFailed": "Could not reach the sensor. Try again."
+  },
   "meshcoreRemoteCli": {
     "summary": "Remote command line",
     "allowLabel": "Allow this contact to run commands on my radio",
