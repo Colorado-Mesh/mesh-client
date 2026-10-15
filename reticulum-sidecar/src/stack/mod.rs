@@ -62,6 +62,8 @@ mod live_tasks;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
+mod lxmf_reception;
+#[cfg(feature = "rns-stack")]
 mod nomad_page_acl;
 #[cfg(feature = "rns-stack")]
 mod nomad_server;

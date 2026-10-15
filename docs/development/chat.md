@@ -86,9 +86,16 @@ with partial reports and 1/2/3-byte hashes rendered by `hopReportParse.ts` as hu
 
 Meshtastic reports use local packet measurements and RF reply IDs. Hybrid RF/MQTT merges
 retain the local RF measurements in either arrival order and never substitute a gateway's
-signal or hop count. Reticulum replies use LXMF message hashes and the message's recorded
-transport, including BLE and explicit RF/mixed labels. When numeric measurements are absent,
-the same action sends only a receipt such as `ack: received via RF` or `ack: received via BLE`.
-Reticulum currently exposes transport provenance without message-level SNR/RSSI; the receipt
-does not infer measurements from the peer's current route or an unrelated raw packet. A BLE
-label is reported as BLE and does not assert a LoRa path.
+signal or hop count. Reticulum replies use LXMF message hashes. The sidecar binds
+opportunistic LXMF messages to an exact locally captured, destination-encrypted RX frame on
+a configured RF/BLE interface, carrying `rx_radio_transport` and available SNR/RSSI/hops
+through live and catch-up ingest. A bounded frame index preserves the first observed radio
+measurements. Missing/lagged captures leave the action unavailable. Cached peer-route labels
+are display hints and never qualify a Reticulum message for this action. Direct link,
+resource and propagated delivery remain unavailable until those delivery paths expose
+per-message ingress evidence. These measurements are session-only and are not inferred for
+restored database history.
+
+When a verified reception has no numeric measurements, the action sends only a receipt such
+as `ack: received via RF` or `ack: received via BLE`. A BLE label is reported as BLE and does
+not assert a LoRa path.

@@ -443,6 +443,8 @@ export interface ChatMessage {
   /** Signal measurements recorded for this message's RF reception, not current node telemetry. */
   rxSnr?: number;
   rxRssi?: number;
+  /** Verified per-message radio ingress; Reticulum route labels alone are insufficient. */
+  rxRadioTransport?: 'rf' | 'ble';
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
   /** MeshCore room server BBS post (not a DM). */

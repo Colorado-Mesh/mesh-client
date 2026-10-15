@@ -77,6 +77,7 @@ import {
   hasRfMessageReception,
   type MessageReceptionStats,
   messageReceptionStats,
+  radioMessageReceptionTransport,
 } from '@/renderer/lib/chatSignalReport';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -1960,7 +1961,7 @@ function ChatPanel({
           replyKey,
           useKeyedReplies: isMeshcoreOpenWireCompatEnabled(),
         });
-      const text = formatChatSignalReport(stats, budget, message.receivedVia);
+      const text = formatChatSignalReport(stats, budget, radioMessageReceptionTransport(message));
       if (!text) {
         setChatActionError({ message: t('chatPanel.signalReportUnavailable'), viewKey });
         return;

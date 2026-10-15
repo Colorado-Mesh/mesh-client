@@ -6957,6 +6957,10 @@ describe('Signal report quick replies', () => {
     { isConnected: false },
     { isMqttOnly: true },
     { protocol: 'reticulum' as const, messages: [{ ...message, receivedVia: 'tcp' as const }] },
+    {
+      protocol: 'reticulum' as const,
+      messages: [{ ...message, reticulum_message_hash: 'ab'.repeat(32) }],
+    },
   ])('hides the RF action when unavailable: %j', async (overrides) => {
     renderSignalPanel(overrides);
     await waitForComposer();
@@ -6979,6 +6983,7 @@ describe('Signal report quick replies', () => {
             to: 99,
             reticulum_sender_hash: 'cd'.repeat(16),
             reticulum_message_hash: parentHash,
+            rxRadioTransport: 'rf',
             rxSnr: undefined,
             rxRssi: undefined,
             rxHops: undefined,

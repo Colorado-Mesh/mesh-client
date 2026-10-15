@@ -55,6 +55,11 @@ export interface ReticulumLxmfPayload {
   direction?: string;
   reaction_target?: string;
   received_via?: string;
+  /** Sidecar evidence bound to the exact decrypted LXMF frame, never a peer route. */
+  rx_radio_transport?: 'rf' | 'ble';
+  rx_snr?: number | null;
+  rx_rssi?: number | null;
+  rx_hops?: number;
   sent_via?: string;
   delivery_status?: string;
   delivery_method?: string;
@@ -159,6 +164,10 @@ function payloadToMessageRecord(
   const isReaction = Boolean(p.reaction_target);
   const receivedVia = resolvePayloadTransport(p);
   const status = mapDeliveryStatusToMessageStatus(p.delivery_status, p.direction);
+  const radioTransport =
+    p.direction === 'inbound' && (p.rx_radio_transport === 'rf' || p.rx_radio_transport === 'ble')
+      ? p.rx_radio_transport
+      : undefined;
 
   const deliveryMethod = parseReticulumDeliveryMethod(p.delivery_method);
   const replyToHash = isReaction ? p.reaction_target : p.reply_to_hash;
@@ -174,6 +183,16 @@ function payloadToMessageRecord(
     timestamp,
     status,
     ...(receivedVia ? { receivedVia } : {}),
+    ...(radioTransport
+      ? {
+          rxRadioTransport: radioTransport,
+          ...(p.rx_snr != null && Number.isFinite(p.rx_snr) ? { rxSnr: p.rx_snr } : {}),
+          ...(p.rx_rssi != null && Number.isFinite(p.rx_rssi) ? { rxRssi: p.rx_rssi } : {}),
+          ...(p.rx_hops != null && Number.isInteger(p.rx_hops) && p.rx_hops >= 0
+            ? { rxHops: p.rx_hops }
+            : {}),
+        }
+      : {}),
     reticulumMessageHash: messageHash,
     reticulumSenderHash: p.sender_hash,
     ...(isReaction

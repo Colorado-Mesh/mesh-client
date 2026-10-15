@@ -26,6 +26,7 @@ use tokio::sync::{Mutex as TokioMutex, RwLock, mpsc};
 
 use super::config;
 use super::live_tasks::LiveTasks;
+use super::lxmf_reception::LxmfReception;
 use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
@@ -221,6 +222,7 @@ pub fn spawn_lxmf_inbound_receiver(
     identity: &Identity,
     lxmf_dest_hash: [u8; 16],
     router: Arc<TokioMutex<LxmRouter>>,
+    reception: Arc<LxmfReception>,
 ) {
     let delivery_rx = register_destination(&transport_tx, lxmf_dest_hash, LXMF_APP);
     // Unbounded: rsReticulum LinkManager::set_link_packet_channel requires UnboundedSender.
@@ -269,7 +271,7 @@ pub fn spawn_lxmf_inbound_receiver(
                 }
                 Some(raw) = inbound_raw_rx.recv() => {
                     rate_limited_opportunistic_recv_warn(raw.len());
-                    handle_opportunistic_raw_packet(&router, &identity_for_raw, lxmf_dest_hash, &raw)
+                    handle_opportunistic_raw_packet(&router, &identity_for_raw, lxmf_dest_hash, &raw, &reception)
                         .await;
                 }
                 else => break,
@@ -437,6 +439,7 @@ async fn handle_opportunistic_raw_packet(
     identity: &Identity,
     lxmf_dest_hash: [u8; 16],
     raw: &[u8],
+    reception: &LxmfReception,
 ) {
     let plaintext = match decrypt_opportunistic_payload(identity, raw) {
         Ok(p) => p,
@@ -453,7 +456,10 @@ async fn handle_opportunistic_raw_packet(
             return;
         }
     };
-    deliver_unpacked_lxmf(router, &msg, "opportunistic").await;
+    let router = router.lock().await;
+    if let Some(ref cb) = router.delivery_callback {
+        reception.with_message(msg.hash, raw, || cb(&msg));
+    }
 }
 
 #[cfg(test)]
@@ -627,13 +633,38 @@ mod tests {
         .unwrap();
         let raw = build_opportunistic_raw(&recipient, lxmf_hash, &msg.pack().unwrap());
 
-        let seen = Arc::new(Mutex::new(None::<String>));
-        let router = router_with_content_callback(seen.clone()).await;
-        handle_opportunistic_raw_packet(&router, &recipient, lxmf_hash, &raw).await;
-        assert_eq!(
-            seen.lock().expect("seen").as_deref(),
-            Some("hello from sideband")
+        let reception = Arc::new(LxmfReception::default());
+        let interface: super::super::types::InterfaceRow = serde_json::from_value(
+            serde_json::json!({"id":"radio", "name":"radio", "type":"rnode", "enabled":true, "status":"up"}),
+        ).unwrap();
+        let packet = rns_transport::messages::PacketTapEvent::from_wire(
+            rns_transport::messages::PacketTapDirection::Rx,
+            1,
+            "radio".into(),
+            &raw,
+            Some(-98.0),
+            Some(0.0),
+            None,
         );
+        reception.observe(&packet, lxmf_hash, &[interface]);
+        let seen = Arc::new(Mutex::new(None));
+        let seen_cb = seen.clone();
+        let reception_cb = reception.clone();
+        let router = Arc::new(TokioMutex::new(LxmRouter::new(RouterConfig::default())));
+        router.lock().await.register_delivery_callback(move |msg| {
+            *seen_cb.lock().unwrap() = Some((
+                msg.content.clone(),
+                serde_json::to_value(reception_cb.take(msg.hash)).unwrap(),
+            ));
+        });
+        handle_opportunistic_raw_packet(&router, &recipient, lxmf_hash, &raw, &reception).await;
+        let seen = seen.lock().unwrap();
+        let (text, stats) = seen.as_ref().unwrap();
+        assert_eq!(text, "hello from sideband");
+        assert_eq!(stats["rx_radio_transport"], "rf");
+        assert_eq!(stats["rx_snr"], 0.0);
+        assert_eq!(stats["rx_rssi"], -98.0);
+        assert_eq!(stats["rx_hops"], 0);
     }
 
     #[tokio::test]
@@ -659,7 +690,14 @@ mod tests {
 
         let seen = Arc::new(Mutex::new(None::<String>));
         let router = router_with_content_callback(seen.clone()).await;
-        handle_opportunistic_raw_packet(&router, &identity, lxmf_hash, &raw).await;
+        handle_opportunistic_raw_packet(
+            &router,
+            &identity,
+            lxmf_hash,
+            &raw,
+            &LxmfReception::default(),
+        )
+        .await;
         assert_eq!(
             seen.lock().expect("seen").as_deref(),
             Some("loopback self-send")
