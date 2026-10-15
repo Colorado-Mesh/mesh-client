@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi",
     "serialReselect": "USB seri bağlantısı kesildi — cihazınızı tekrar seçin",
     "serialReselectAction": "Seri port seçin",
-    "statusRegion": "Bağlantı durumu"
+    "statusRegion": "Bağlantı durumu",
+    "rebootingReconnectAttempt": "Radyo yeniden başlatılıyor. Yeniden bağlanıyor… {{attempt}}/{{max}} denemesi"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Maksimum MQTT yeniden bağlanma denemesi",
@@ -7208,5 +7209,142 @@
       "viewport": "Geçerli harita alanı"
     },
     "fitTraffic": "Trafiğe odaklan"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Refakatçi cihaz ayarları",
+    "description": "Bağlı yardımcı radyoda depolanan ayarlar, komut satırıyla okunur ve yazılır (MeshCore bellenim v1.18 veya daha yeni).",
+    "requiresFirmware": "Bu ayarları kullanmak için refakatçiyi MeshCore firmware v1.18 veya daha yenisine güncelleyin.",
+    "loading": "Radyodan ayarlar okunuyor…",
+    "loadFailed": "Radyodan ayarlar okunamadı. Bağlantıyı kontrol edin ve tekrar deneyin.",
+    "refresh": "Radyodan yenile",
+    "apply": "Uygula",
+    "applying": "Uygulayan",
+    "applied": "Refakatçi ayarları kaydedildi.",
+    "appliedWithErrors": "Bazı ayarlar kaydedilmedi ({{count}}). Vurgulanan alanlara bakın.",
+    "applyFailed": "Radyo bu değeri kabul etmedi.",
+    "unsupported": "Bu radyo tarafından desteklenmiyor",
+    "secretPlaceholder": "Değişemedi",
+    "showSecret": "Göster",
+    "hideSecret": "Gizle",
+    "revealFailed": "Kaydedilen şifre radyodan okunamadı.",
+    "rebootPending": "Bazı değişiklikler radyo yeniden başlatıldıktan sonra yürürlüğe girer.",
+    "rebootNow": "Şimdi yeniden başlat",
+    "rebooting": "Radyonun yeniden başlatılması. mesh-client otomatik olarak yeniden bağlanacaktır.",
+    "actionFailed": "Radyo bu eylemi tamamlamadı.",
+    "reboot": "Yeniden başlatın ve yeniden bağlanın",
+    "powerOff": "Güç kapalı",
+    "powerHint": "Yeniden başlatma, aynı bağlantıda otomatik olarak yeniden bağlanır. Kapatma bağlantısı kesilir; yeniden bağlanmak için radyoyu tekrar açın.",
+    "clearWifi": "WiFi yapılandırmasını temizle",
+    "copyIp": "IP Adresini Kopyala@ action: inmenu interface connection properties",
+    "ipCopied": "IP adresi kopyalandı.",
+    "wifiTcpHint": "WiFi üzerinden bağlanmak için Bağlantı'da TCP/IP'yi seçin ve {{ip}} girin.",
+    "wifiUnsupported": "Bu radyonun ürün yazılımı WiFi olmadan oluşturulmuştur.",
+    "consoleHint": "Panoya özgü olanlar da dahil olmak üzere herhangi bir yardımcı komutu çalıştırın. Yanıtlar aşağıda görünür.",
+    "consoleLog": "Refakatçi komuta geçmişi",
+    "consoleInput": "Refakatçi komutu",
+    "consolePlaceholder": "ör. get radio",
+    "consoleSend": "Gönder",
+    "groups": {
+      "device": "Cihaz",
+      "radio": "Radyo ayarlama",
+      "wifi": "WiFi",
+      "power": "Güç",
+      "console": "Komuta konsolu"
+    },
+    "validation": {
+      "required": "Bir değer girin",
+      "notNumber": "Bir sayı girin.",
+      "notInteger": "Lütfen bir tam sayı girin.",
+      "outOfRange": "Değer aralık dışında",
+      "tooLong": "Değer fazla uzun.",
+      "invalidChars": "Satır sonlarına izin verilmez.",
+      "pinFormat": "Rastgele bir PIN kodu için 6 basamak veya 0 girin."
+    },
+    "settings": {
+      "ver": {
+        "label": "Cihaz yazılım sürümü"
+      },
+      "board": {
+        "label": "Kart"
+      },
+      "tz_offset": {
+        "label": "Saat dilimi farkı (saat)",
+        "hint": "Radyonun kendi ekranı tarafından kullanılır. -12 'den +14' e kadar."
+      },
+      "pin": {
+        "label": "Bluetooth PIN",
+        "hint": "6 hane veya rastgele bir PIN için 0. Yeniden başlatmadan sonra etkinleşir; tekrar eşleştirmeniz gerekecektir."
+      },
+      "af": {
+        "label": "Yayın süresi faktörü",
+        "hint": "0 ila 9. Daha yüksek değerler iletimler arasında daha uzun süre bekler."
+      },
+      "dutycycle": {
+        "label": "Görev döngüsü"
+      },
+      "int_thresh": {
+        "label": "Parazit eşiği",
+        "hint": "0 ila 255. 0 girişim algılamayı kapatır."
+      },
+      "cad": {
+        "label": "Kanal etkinliği algılama",
+        "hint": "İletmeden önce dinleyin."
+      },
+      "radio_rxgain": {
+        "label": "Arttırılmış kazanç",
+        "hint": "Her radyo çipi bunu desteklemez."
+      },
+      "rxdelay": {
+        "label": "Gecikme matrahını al",
+        "hint": "0 ila 20"
+      },
+      "agc_reset_interval": {
+        "label": "AGC sıfırlama aralığı (saniye)",
+        "hint": "0 ila 1020, 4 'ün katlarına yuvarlanır. 0 onu kapatır."
+      },
+      "txdelay": {
+        "label": "Taşkın iletim gecikme faktörü",
+        "hint": "To 2:"
+      },
+      "direct_txdelay": {
+        "label": "Doğrudan iletim gecikme faktörü",
+        "hint": "To 2:"
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Yeniden başlatmadan sonra etkinleşir."
+      },
+      "wifi_ssid": {
+        "label": "Ağ adı (SSID)",
+        "hint": "32 karaktere kadar. Yeniden başlatmadan sonra etkinleşir."
+      },
+      "wifi_pwd": {
+        "label": "Şifre",
+        "hint": "63 karaktere kadar. Açık bir ağ için boş bırakın. Yeniden başlatmadan sonra etkinleşir."
+      },
+      "wifi_status": {
+        "label": "Durum"
+      },
+      "wifi_ip": {
+        "label": "IP adresi"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Radyoyu yeniden başlat?",
+        "message": "Radyo yeniden başlatılır ve mesh-client otomatik olarak yeniden bağlanır. Yeniden başlatma sırasında gönderilen mesajlar sıraya alındı.",
+        "confirm": "Yeniden başlat"
+      },
+      "poweroff": {
+        "title": "Radyoyu kapat?",
+        "message": "Radyo kapanır ve mesh-client bağlantısı kesilir. Tekrar açmak için fiziksel erişime ihtiyacınız olacak.",
+        "confirm": "Güç kapalı"
+      },
+      "clearWifi": {
+        "title": "WiFi yapılandırması silinsin mi?",
+        "message": "Kaydedilen ağ adı ve parola silinir. WiFi, bir sonraki yeniden başlatmadan sonra durur.",
+        "confirm": "Temizle"
+      }
+    }
   }
 }

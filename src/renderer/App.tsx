@@ -4262,6 +4262,7 @@ function AppContent() {
                 serialNeedsReselect={activeConnectionView.state.serialNeedsReselect}
                 connectionType={activeConnectionView.state.connectionType}
                 reconnectAttempt={activeConnectionView.state.reconnectAttempt}
+                plannedReboot={activeConnectionView.state.plannedReboot}
                 onReconnect={handleReconnect}
               />
               {operationalAlertSettings.mecpStandingAlertEnabled ? (
@@ -5155,6 +5156,11 @@ function AppContent() {
                                     onApplyMeshcoreTelemetryPrivacy={
                                       capabilities.hasCompanionTelemetryPrivacyConfig
                                         ? meshcorePanelActions.applyMeshcoreTelemetryPrivacy
+                                        : undefined
+                                    }
+                                    meshcoreCompanionCli={
+                                      capabilities.hasCompanionCli
+                                        ? meshcorePanelActions.companionCli
                                         : undefined
                                     }
                                     meshcoreAutoadd={
@@ -6155,6 +6161,7 @@ function ConnectionBanner({
   serialNeedsReselect,
   connectionType,
   reconnectAttempt,
+  plannedReboot,
   onReconnect,
 }: {
   status: string;
@@ -6162,6 +6169,7 @@ function ConnectionBanner({
   serialNeedsReselect?: boolean;
   connectionType?: string | null;
   reconnectAttempt?: number;
+  plannedReboot?: boolean;
   onReconnect: () => void;
 }) {
   const { t } = useTranslation();
@@ -6251,10 +6259,15 @@ function ConnectionBanner({
           ⟳
         </span>
         <span className="text-sm text-orange-200">
-          {t('connectionBanner.reconnectingAttempt', {
-            attempt: reconnectAttempt ?? 1,
-            max: reconnectBannerMaxAttempts(connectionType),
-          })}
+          {t(
+            plannedReboot
+              ? 'connectionBanner.rebootingReconnectAttempt'
+              : 'connectionBanner.reconnectingAttempt',
+            {
+              attempt: reconnectAttempt ?? 1,
+              max: reconnectBannerMaxAttempts(connectionType),
+            },
+          )}
         </span>
       </div>
     );

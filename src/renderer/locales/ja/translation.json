@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目",
     "serialReselect": "USBシリアル接続が失われました—デバイスを再度選択してください",
     "serialReselectAction": "シリアルポートを選択",
-    "statusRegion": "接続状態"
+    "statusRegion": "接続状態",
+    "rebootingReconnectAttempt": "無線を再起動しています。再接続しています… {{attempt}}/{{max}}を試みてください"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",
@@ -7208,5 +7209,142 @@
       "viewport": "現在の地図範囲"
     },
     "fitTraffic": "トラフィックに合わせて表示"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "コンパニオンデバイスの設定",
+    "description": "接続されたコンパニオンラジオに保存され、コマンドライン（ MeshCoreファームウェアv 1.18以降）で読み書きされた設定。",
+    "requiresFirmware": "これらの設定を使用するには、コンパニオンをMeshCoreファームウェアv 1.18以降に更新してください。",
+    "loading": "ラジオから設定を読み取っています…",
+    "loadFailed": "ラジオから設定を読み取れませんでした。接続を確認して、もう一度お試しください。",
+    "refresh": "ラジオからリフレッシュ",
+    "apply": "申し込む",
+    "applying": "適応中…",
+    "applied": "コンパニオン設定が保存されました。",
+    "appliedWithErrors": "一部の設定が保存されませんでした（ {{count}} ）。強調表示されたフィールドを参照してください。",
+    "applyFailed": "ラジオはこの値を受け入れませんでした。",
+    "unsupported": "このラジオではサポートされていません",
+    "secretPlaceholder": "変更なし",
+    "showSecret": "表示",
+    "hideSecret": "非表示",
+    "revealFailed": "ラジオから保存されたパスワードを読み取れませんでした。",
+    "rebootPending": "一部の変更は、ラジオが再起動した後に有効になります。",
+    "rebootNow": "今すぐ再起動する",
+    "rebooting": "ラジオを再起動しています。mesh-clientは自動的に再接続します。",
+    "actionFailed": "ラジオはそのアクションを完了しませんでした。",
+    "reboot": "再起動して再接続",
+    "powerOff": "電源を切る",
+    "powerHint": "リブートは、同じ接続で自動的に再接続されます。電源を切ると切断されます。ラジオを再度オンにして再接続してください。",
+    "clearWifi": "Wi-Fi設定をクリア",
+    "copyIp": "IPアドレス",
+    "ipCopied": "IPアドレスをコピーしました。",
+    "wifiTcpHint": "Wi-Fi経由で接続するには、接続でTCP/IPを選択し、{{ip}}と入力します。",
+    "wifiUnsupported": "このラジオのファームウェアはWiFiなしで構築されました。",
+    "consoleHint": "ボード固有のコマンドを含む任意のコンパニオンコマンドを実行します。返信は以下に表示されます。",
+    "consoleLog": "コンパニオンコマンドの履歴",
+    "consoleInput": "コンパニオンコマンド",
+    "consolePlaceholder": "例： GET RADIO",
+    "consoleSend": "送信",
+    "groups": {
+      "device": "デバイス",
+      "radio": "ラジオチューニング",
+      "wifi": "WiFi",
+      "power": "出力",
+      "console": "コマンドコンソール"
+    },
+    "validation": {
+      "required": "値を入力してください",
+      "notNumber": "半角数字で入力してください。",
+      "notInteger": "整数を入力してください。",
+      "outOfRange": "値が範囲外です。",
+      "tooLong": "値が長すぎます。",
+      "invalidChars": "改行は許可されていません。",
+      "pinFormat": "6桁の数字を入力するか、ランダムな暗証番号を0にしてください。"
+    },
+    "settings": {
+      "ver": {
+        "label": "ファームウェアのバージョン"
+      },
+      "board": {
+        "label": "ボード"
+      },
+      "tz_offset": {
+        "label": "タイムゾーンオフセット（時間）",
+        "hint": "ラジオ自体のディスプレイで使用されます。-12から+14。"
+      },
+      "pin": {
+        "label": "Bluetooth PIN",
+        "hint": "6桁、またはランダムなPINの場合は0です。再起動後に有効になります。再度ペアリングする必要があります。"
+      },
+      "af": {
+        "label": "Airtime factor",
+        "hint": "0 ～ 9。値が高いほど、トランスミッション間の待ち時間が長くなります。"
+      },
+      "dutycycle": {
+        "label": "デューティ比"
+      },
+      "int_thresh": {
+        "label": "干渉閾値",
+        "hint": "0 ～ 255. 0は、干渉検出をオフにします。"
+      },
+      "cad": {
+        "label": "チャネルアクティビティ検出",
+        "hint": "送信する前に耳を傾けてください。"
+      },
+      "radio_rxgain": {
+        "label": "ブーストされた受信ゲイン",
+        "hint": "すべてのラジオチップがこれをサポートしているわけではありません"
+      },
+      "rxdelay": {
+        "label": "受信遅延ベース",
+        "hint": "0〜20.0％"
+      },
+      "agc_reset_interval": {
+        "label": "AGCリセット間隔（秒）",
+        "hint": "0から1020、4の倍数に丸めます。0はそれをオフにします。"
+      },
+      "txdelay": {
+        "label": "フラッド送信遅延係数",
+        "hint": "0～2"
+      },
+      "direct_txdelay": {
+        "label": "直接送信遅延係数",
+        "hint": "0～2"
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "再起動後に有効になります。"
+      },
+      "wifi_ssid": {
+        "label": "ネットワーク名 (SSID)",
+        "hint": "最大32文字。再起動後に有効になります。"
+      },
+      "wifi_pwd": {
+        "label": "パスワード",
+        "hint": "最大63文字。オープンネットワークの場合は空白のままにします。再起動後に有効になります。"
+      },
+      "wifi_status": {
+        "label": "ステータス"
+      },
+      "wifi_ip": {
+        "label": "IP アドレス"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "ラジオを再起動しますか？",
+        "message": "ラジオが再起動し、mesh-clientが自動的に再接続します。再起動中に送信されたメッセージはキューイングされます。",
+        "confirm": "再起動"
+      },
+      "poweroff": {
+        "title": "ラジオの電源を切りますか？",
+        "message": "ラジオがオフになり、mesh-clientが切断されます。再度オンにするには、物理的なアクセスが必要です。",
+        "confirm": "電源を切る"
+      },
+      "clearWifi": {
+        "title": "Wi-Fi設定をクリアしますか？",
+        "message": "保存されたネットワーク名とパスワードは消去されます。次回の再起動後、Wi-Fiが停止します。",
+        "confirm": "クリア"
+      }
+    }
   }
 }

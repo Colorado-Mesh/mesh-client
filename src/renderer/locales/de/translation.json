@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Wiederverbinden… Versuch {{attempt}}/{{max}}",
     "serialReselect": "USB-Seriellverbindung unterbrochen — wählen Sie Ihr Gerät erneut aus",
     "serialReselectAction": "Serielle Schnittstelle auswählen",
-    "statusRegion": "Verbindungsstatus"
+    "statusRegion": "Verbindungsstatus",
+    "rebootingReconnectAttempt": "Neustart des Radios. Wiederverbindung wird hergestellt… Versuch {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",
@@ -7208,5 +7209,142 @@
       "viewport": "Aktueller Kartenausschnitt"
     },
     "fitTraffic": "Verkehr einpassen"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Companion-Geräteeinstellungen",
+    "description": "Auf dem angeschlossenen Begleitfunkgerät gespeicherte Einstellungen, die mit der Befehlszeile gelesen und geschrieben werden (MeshCore Firmware v1.18 oder neuer).",
+    "requiresFirmware": "Aktualisieren Sie den Begleiter auf MeshCore Firmware v1.18 oder neuer, um diese Einstellungen zu verwenden.",
+    "loading": "Leseeinstellungen aus dem Radio...",
+    "loadFailed": "Die Einstellungen konnten nicht aus dem Radio gelesen werden. Überprüfen Sie die Verbindung und versuchen Sie es erneut.",
+    "refresh": "Vom Radio aktualisieren",
+    "apply": "Anwenden",
+    "applying": "Anwenden",
+    "applied": "Companion-Einstellungen gespeichert.",
+    "appliedWithErrors": "Einige Einstellungen wurden nicht gespeichert ({{count}}). Siehe die hervorgehobenen Felder.",
+    "applyFailed": "Das Radio hat diesen Wert nicht akzeptiert.",
+    "unsupported": "Von diesem Funkgerät nicht unterstützt",
+    "secretPlaceholder": "Unverändert",
+    "showSecret": "Anzeigen",
+    "hideSecret": "Ausblenden",
+    "revealFailed": "Das gespeicherte Passwort konnte nicht aus dem Radio gelesen werden.",
+    "rebootPending": "Einige Änderungen werden nach dem Neustart des Radios wirksam.",
+    "rebootNow": "Jetzt neu starten",
+    "rebooting": "Neustart des Radios. mesh-client verbindet sich automatisch wieder.",
+    "actionFailed": "Das Radio hat diese Aktion nicht abgeschlossen.",
+    "reboot": "Neustarten und neu verbinden",
+    "powerOff": "Strom ausgeschaltet",
+    "powerHint": "Der Neustart verbindet sich automatisch mit derselben Verbindung. Das Ausschalten trennt die Verbindung; schalten Sie das Radio wieder ein, um die Verbindung wiederherzustellen.",
+    "clearWifi": "WLAN-Konfiguration löschen",
+    "copyIp": "IP-Adresse kopieren @action:inmenu interface connection properties",
+    "ipCopied": "Adresse kopiert",
+    "wifiTcpHint": "Um eine Verbindung über WLAN herzustellen, wähle TCP/IP in Verbindung und gib {{ip}} ein.",
+    "wifiUnsupported": "Die Firmware dieses Radios wurde ohne WLAN erstellt.",
+    "consoleHint": "Führen Sie einen beliebigen Begleitbefehl aus, einschließlich brettspezifischer Befehle. Die Antworten finden Sie unten.",
+    "consoleLog": "Companion-Befehlsverlauf",
+    "consoleInput": "Begleitkommando",
+    "consolePlaceholder": "z.B. Radio holen",
+    "consoleSend": "Senden",
+    "groups": {
+      "device": "Gerät",
+      "radio": "Radio-Tuning",
+      "wifi": "WiFi",
+      "power": "Leistung",
+      "console": "Bedienerkonsole"
+    },
+    "validation": {
+      "required": "Geben Sie einen Wert ein.",
+      "notNumber": "Geben Sie eine Zahl ein.",
+      "notInteger": "Geben Sie eine ganze Zahl ein.",
+      "outOfRange": "Wert '{0}' ist außerhalb des Bereichs.",
+      "tooLong": "Wert ist zu lang",
+      "invalidChars": "Zeilenumbrüche sind nicht zulässig.",
+      "pinFormat": "Geben Sie 6 Ziffern oder 0 für eine zufällige PIN ein."
+    },
+    "settings": {
+      "ver": {
+        "label": "Firmware-Version"
+      },
+      "board": {
+        "label": "Vorstand"
+      },
+      "tz_offset": {
+        "label": "Zeitzonenversatz (Stunden)",
+        "hint": "Wird vom eigenen Display des Radios verwendet. Von -12 bis +14."
+      },
+      "pin": {
+        "label": "Bluetooth-PIN",
+        "hint": "6 Ziffern oder 0 für eine zufällige PIN. Wird nach einem Neustart wirksam; Sie müssen erneut koppeln."
+      },
+      "af": {
+        "label": "Airtime-Faktor",
+        "hint": "0 bis 9. Höhere Werte warten länger zwischen den Übertragungen."
+      },
+      "dutycycle": {
+        "label": "Arbeitszyklus"
+      },
+      "int_thresh": {
+        "label": "Störschwelle",
+        "hint": "0 bis 255. 0 schaltet die Störungserkennung aus."
+      },
+      "cad": {
+        "label": "Kanalaktivitätserkennung",
+        "hint": "Hören Sie zu, bevor Sie senden."
+      },
+      "radio_rxgain": {
+        "label": "Erhöhter Empfangsgewinn",
+        "hint": "Nicht jeder Funkchip unterstützt dies."
+      },
+      "rxdelay": {
+        "label": "Empfangsverzögerungsbasis",
+        "hint": "0 bis 20"
+      },
+      "agc_reset_interval": {
+        "label": "AGC-Reset-Intervall (Sekunden)",
+        "hint": "0 bis 1020, gerundet auf ein Vielfaches von 4. 0 schaltet es aus."
+      },
+      "txdelay": {
+        "label": "Faktor für Flood-Sendeverzögerung",
+        "hint": "0 bis 2"
+      },
+      "direct_txdelay": {
+        "label": "Direkter Übertragungsverzögerungsfaktor",
+        "hint": "0 bis 2"
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Wird nach einem Neustart wirksam."
+      },
+      "wifi_ssid": {
+        "label": "WiFi-Netzwerkname (SSID)",
+        "hint": "Bis zu 32 Zeichen. Wird nach einem Neustart wirksam."
+      },
+      "wifi_pwd": {
+        "label": "Passwort",
+        "hint": "Bis zu 63 Zeichen. Leer lassen für ein offenes Netzwerk. Wird nach einem Neustart wirksam."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "IP-Adresse"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Radio neu starten?",
+        "message": "Das Funkgerät wird neu gestartet und mesh-client verbindet sich automatisch wieder. Während des Neustarts gesendete Nachrichten werden in die Warteschlange gestellt.",
+        "confirm": "Reboot"
+      },
+      "poweroff": {
+        "title": "Radio ausschalten?",
+        "message": "Das Funkgerät schaltet sich aus und mesh-client trennt die Verbindung. Sie benötigen physischen Zugriff, um es wieder einzuschalten.",
+        "confirm": "Strom ausgeschaltet"
+      },
+      "clearWifi": {
+        "title": "WLAN-Konfiguration löschen?",
+        "message": "Der gespeicherte Netzwerkname und das Kennwort werden gelöscht. WLAN stoppt nach dem nächsten Neustart.",
+        "confirm": "Löschen"
+      }
+    }
   }
 }

@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Reconectando… tentativa {{attempt}}/{{max}}",
     "serialReselect": "Conexão serial USB perdida — selecione seu dispositivo novamente",
     "serialReselectAction": "Selecionar porta serial",
-    "statusRegion": "Status da conexão"
+    "statusRegion": "Status da conexão",
+    "rebootingReconnectAttempt": "Reinicialização do rádio. Reconectando… tentativa {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Tentativas máximas de reconexão do MQTT",
@@ -7208,5 +7209,142 @@
       "viewport": "Área atual do mapa"
     },
     "fitTraffic": "Enquadrar tráfego"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Configurações do dispositivo complementar",
+    "description": "Configurações armazenadas no rádio complementar conectado, lidas e gravadas com sua linha de comando (MeshCore firmware v1.18 ou mais recente).",
+    "requiresFirmware": "Atualize o complemento para o firmware MeshCore v1.18 ou mais recente para usar essas configurações.",
+    "loading": "Lendo as configurações do rádio...",
+    "loadFailed": "Não foi possível ler as configurações do rádio. Verifique a conexão e tente novamente.",
+    "refresh": "Atualizar do rádio",
+    "apply": "Inscrever",
+    "applying": "Aplicando",
+    "applied": "Configurações de acompanhante salvas.",
+    "appliedWithErrors": "Algumas configurações não foram salvas ({{count}}). Veja os campos destacados.",
+    "applyFailed": "O rádio não aceitou esse valor.",
+    "unsupported": "Não suportado por esta rádio",
+    "secretPlaceholder": "Inalterado",
+    "showSecret": "Exibir",
+    "hideSecret": "Ocultar",
+    "revealFailed": "Não foi possível ler a senha salva do rádio.",
+    "rebootPending": "Algumas alterações entram em vigor após a reinicialização do rádio.",
+    "rebootNow": "Reinicie agora",
+    "rebooting": "Reiniciar o rádio. mesh-client será reconectado automaticamente.",
+    "actionFailed": "O rádio não completou essa ação.",
+    "reboot": "Reiniciar e reconectar",
+    "powerOff": "Desligar",
+    "powerHint": "A reinicialização é reconectada automaticamente na mesma conexão. Desligar desconecta; ligue o rádio novamente para reconectar.",
+    "clearWifi": "Limpar configuração de Wi-Fi",
+    "copyIp": "Endereço de IP",
+    "ipCopied": "Endereço copiado",
+    "wifiTcpHint": "Para se conectar via Wi-Fi, escolha TCP/IP em Conexão e digite {{ip}}.",
+    "wifiUnsupported": "O firmware deste rádio foi construído sem Wi-Fi.",
+    "consoleHint": "Execute qualquer comando complementar, incluindo os específicos do tabuleiro. As respostas aparecem abaixo.",
+    "consoleLog": "Histórico de comandos do acompanhante",
+    "consoleInput": "Comando acompanhante",
+    "consolePlaceholder": "por exemplo, obter rádio",
+    "consoleSend": "Enviar",
+    "groups": {
+      "device": "Dispositivo",
+      "radio": "...",
+      "wifi": "WiFi",
+      "power": "Energia",
+      "console": "CONSOLE DE COMANDO"
+    },
+    "validation": {
+      "required": "Insira um valor",
+      "notNumber": "Insira um número",
+      "notInteger": "Digite um número completo.",
+      "outOfRange": "Valor está fora do limite",
+      "tooLong": "O valor é muito longo",
+      "invalidChars": "Quebras de linha não são permitidas.",
+      "pinFormat": "Insira 6 dígitos ou 0 para um PIN aleatório."
+    },
+    "settings": {
+      "ver": {
+        "label": "Versão de Firmware"
+      },
+      "board": {
+        "label": "Conselho"
+      },
+      "tz_offset": {
+        "label": "Desvio de fuso horário (horas)",
+        "hint": "Usado pelo próprio visor do rádio. De -12 a +14."
+      },
+      "pin": {
+        "label": "PIN BLUETOOTH",
+        "hint": "6 dígitos ou 0 para um PIN aleatório. Toma efeito após uma reinicialização; você precisará emparelhar novamente."
+      },
+      "af": {
+        "label": "Fator de tempo de antena",
+        "hint": "0 a 9. Valores mais altos aguardam mais tempo entre as transmissões."
+      },
+      "dutycycle": {
+        "label": "Ciclo de trabalho"
+      },
+      "int_thresh": {
+        "label": "Limiar de interferência",
+        "hint": "0 a 255. 0 desliga a detecção de interferência."
+      },
+      "cad": {
+        "label": "Detecção de atividade do canal",
+        "hint": "Ouça antes de transmitir."
+      },
+      "radio_rxgain": {
+        "label": "Ganho de recebimento impulsionado",
+        "hint": "Nem todos os chips de rádio suportam isso."
+      },
+      "rxdelay": {
+        "label": "Base de atraso de recebimento",
+        "hint": "0 a 20"
+      },
+      "agc_reset_interval": {
+        "label": "Intervalo de reinicialização do AGC (segundos)",
+        "hint": "0 a 1020, arredondado para múltiplos de 4, 0 desliga."
+      },
+      "txdelay": {
+        "label": "Fator de atraso de transmissão Flood",
+        "hint": "0 a 2"
+      },
+      "direct_txdelay": {
+        "label": "Fator de atraso de transmissão direta",
+        "hint": "0 a 2"
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Toma efeito após uma reinicialização."
+      },
+      "wifi_ssid": {
+        "label": "Nome da Rede (SSID)",
+        "hint": "Até 32 caracteres. Toma efeito após uma reinicialização."
+      },
+      "wifi_pwd": {
+        "label": "Palavra-passe",
+        "hint": "Até 63 caracteres. Deixe em branco para uma rede aberta. Toma efeito após uma reinicialização."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "Endereço de IP"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Reiniciar o rádio?",
+        "message": "O rádio reinicia e mesh-client se reconecta automaticamente. As mensagens enviadas durante a reinicialização são enfileiradas.",
+        "confirm": "Reiniciar"
+      },
+      "poweroff": {
+        "title": "Desligue o Rádio",
+        "message": "O rádio desliga e mesh-client desconecta. Você precisará de acesso físico para ativá-lo novamente.",
+        "confirm": "Desligar"
+      },
+      "clearWifi": {
+        "title": "Limpar configuração de Wi-Fi?",
+        "message": "O nome e a senha da rede salvos são apagados. O Wi-Fi para após a próxima reinicialização.",
+        "confirm": "Limpar"
+      }
+    }
   }
 }

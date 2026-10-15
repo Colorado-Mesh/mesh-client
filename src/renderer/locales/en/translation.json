@@ -1072,6 +1072,7 @@
     "staleLoss": "Connection may be lost — no data received recently",
     "reconnect": "Reconnect",
     "reconnectingAttempt": "Reconnecting… attempt {{attempt}}/{{max}}",
+    "rebootingReconnectAttempt": "Radio rebooting. Reconnecting… attempt {{attempt}}/{{max}}",
     "serialReselect": "USB serial connection lost — reselect the port, or power-cycle the radio if it still will not connect",
     "serialReselectAction": "Select serial port",
     "statusRegion": "Connection status"
@@ -2973,6 +2974,143 @@
     "applyButton": "Apply telemetry privacy",
     "contactCount_one": "{{count}} contact",
     "contactCount_other": "{{count}} contacts"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Companion device settings",
+    "description": "Settings stored on the connected companion radio, read and written with its command line (MeshCore firmware v1.18 or newer).",
+    "requiresFirmware": "Update the companion to MeshCore firmware v1.18 or newer to use these settings.",
+    "loading": "Reading settings from the radio…",
+    "loadFailed": "Could not read settings from the radio. Check the connection and try again.",
+    "refresh": "Refresh from radio",
+    "apply": "Apply",
+    "applying": "Applying…",
+    "applied": "Companion settings saved.",
+    "appliedWithErrors": "Some settings were not saved ({{count}}). See the highlighted fields.",
+    "applyFailed": "The radio did not accept this value.",
+    "unsupported": "Not supported by this radio",
+    "secretPlaceholder": "Unchanged",
+    "showSecret": "Show",
+    "hideSecret": "Hide",
+    "revealFailed": "Could not read the saved password from the radio.",
+    "rebootPending": "Some changes take effect after the radio reboots.",
+    "rebootNow": "Reboot now",
+    "rebooting": "Rebooting the radio. mesh-client will reconnect automatically.",
+    "actionFailed": "The radio did not complete that action.",
+    "reboot": "Reboot and reconnect",
+    "powerOff": "Power off",
+    "powerHint": "Rebooting reconnects automatically on the same connection. Powering off disconnects; turn the radio back on to reconnect.",
+    "clearWifi": "Clear WiFi config",
+    "copyIp": "Copy IP address",
+    "ipCopied": "IP address copied.",
+    "wifiTcpHint": "To connect over WiFi, choose TCP/IP in Connection and enter {{ip}}.",
+    "wifiUnsupported": "This radio's firmware was built without WiFi.",
+    "consoleHint": "Run any companion command, including board-specific ones. Replies appear below.",
+    "consoleLog": "Companion command history",
+    "consoleInput": "Companion command",
+    "consolePlaceholder": "e.g. get radio",
+    "consoleSend": "Send",
+    "groups": {
+      "device": "Device",
+      "radio": "Radio tuning",
+      "wifi": "WiFi",
+      "power": "Power",
+      "console": "Command console"
+    },
+    "validation": {
+      "required": "Enter a value.",
+      "notNumber": "Enter a number.",
+      "notInteger": "Enter a whole number.",
+      "outOfRange": "Value is out of range.",
+      "tooLong": "Value is too long.",
+      "invalidChars": "Line breaks are not allowed.",
+      "pinFormat": "Enter 6 digits, or 0 for a random PIN."
+    },
+    "settings": {
+      "ver": {
+        "label": "Firmware version"
+      },
+      "board": {
+        "label": "Board"
+      },
+      "tz_offset": {
+        "label": "Timezone offset (hours)",
+        "hint": "Used by the radio's own display. From -12 to +14."
+      },
+      "pin": {
+        "label": "Bluetooth PIN",
+        "hint": "6 digits, or 0 for a random PIN. Takes effect after a reboot; you will need to pair again."
+      },
+      "af": {
+        "label": "Airtime factor",
+        "hint": "0 to 9. Higher values wait longer between transmissions."
+      },
+      "dutycycle": {
+        "label": "Duty cycle"
+      },
+      "int_thresh": {
+        "label": "Interference threshold",
+        "hint": "0 to 255. 0 turns interference detection off."
+      },
+      "cad": {
+        "label": "Channel activity detection",
+        "hint": "Listen before transmitting."
+      },
+      "radio_rxgain": {
+        "label": "Boosted receive gain",
+        "hint": "Not every radio chip supports this."
+      },
+      "rxdelay": {
+        "label": "Receive delay base",
+        "hint": "0 to 20."
+      },
+      "agc_reset_interval": {
+        "label": "AGC reset interval (seconds)",
+        "hint": "0 to 1020, rounded to multiples of 4. 0 turns it off."
+      },
+      "txdelay": {
+        "label": "Flood transmit delay factor",
+        "hint": "0 to 2."
+      },
+      "direct_txdelay": {
+        "label": "Direct transmit delay factor",
+        "hint": "0 to 2."
+      },
+      "wifi_enabled": {
+        "label": "WiFi",
+        "hint": "Takes effect after a reboot."
+      },
+      "wifi_ssid": {
+        "label": "Network name (SSID)",
+        "hint": "Up to 32 characters. Takes effect after a reboot."
+      },
+      "wifi_pwd": {
+        "label": "Password",
+        "hint": "Up to 63 characters. Leave empty for an open network. Takes effect after a reboot."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "IP address"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Reboot the radio?",
+        "message": "The radio restarts and mesh-client reconnects automatically. Messages sent during the restart are queued.",
+        "confirm": "Reboot"
+      },
+      "poweroff": {
+        "title": "Power off the radio?",
+        "message": "The radio turns off and mesh-client disconnects. You will need physical access to turn it back on.",
+        "confirm": "Power off"
+      },
+      "clearWifi": {
+        "title": "Clear WiFi config?",
+        "message": "The saved network name and password are erased. WiFi stops after the next reboot.",
+        "confirm": "Clear"
+      }
+    }
   },
   "messageStatusBadge": {
     "queuedTooltip": "Queued — will send when connected",

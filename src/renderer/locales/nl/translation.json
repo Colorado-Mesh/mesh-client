@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Opnieuw verbinden… poging {{attempt}}/{{max}}",
     "serialReselect": "USB seriële verbinding verbroken — selecteer uw apparaat opnieuw",
     "serialReselectAction": "Seriële poort selecteren",
-    "statusRegion": "Verbindingsstatus"
+    "statusRegion": "Verbindingsstatus",
+    "rebootingReconnectAttempt": "Radio wordt opnieuw opgestart. Opnieuw verbinden... poging {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-pogingen om opnieuw verbinding te maken",
@@ -7208,5 +7209,142 @@
       "viewport": "Huidig kaartgebied"
     },
     "fitTraffic": "Verkeer in beeld brengen"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Instellingen van begeleidende apparaten",
+    "description": "Instellingen opgeslagen op de aangesloten metgezelradio, gelezen en geschreven met de opdrachtregel (MeshCore firmware v1.18 of nieuwer).",
+    "requiresFirmware": "Werk de companion bij naar MeshCore firmware v1.18 of nieuwer om deze instellingen te gebruiken.",
+    "loading": "Instellingen van de radio lezen...",
+    "loadFailed": "Kon de instellingen van de radio niet lezen. Controleer de verbinding en probeer het opnieuw.",
+    "refresh": "Vernieuwen vanaf radio",
+    "apply": "Toepassen",
+    "applying": "Toepassen…",
+    "applied": "Begeleidende instellingen opgeslagen.",
+    "appliedWithErrors": "Sommige instellingen zijn niet opgeslagen ({{count}}). Zie de gemarkeerde velden.",
+    "applyFailed": "De radio accepteerde deze waarde niet.",
+    "unsupported": "Niet ondersteund door deze radio",
+    "secretPlaceholder": "Ongewijzigd",
+    "showSecret": "Weergeven",
+    "hideSecret": "Verberger",
+    "revealFailed": "Kon het opgeslagen wachtwoord van de radio niet lezen.",
+    "rebootPending": "Sommige wijzigingen worden van kracht nadat de radio opnieuw is opgestart.",
+    "rebootNow": "Nu opnieuw opstarten",
+    "rebooting": "De radio opnieuw opstarten. mesh-client maakt automatisch opnieuw verbinding.",
+    "actionFailed": "De radio heeft die actie niet voltooid.",
+    "reboot": "Opnieuw opstarten en opnieuw verbinden",
+    "powerOff": "Uitschakelen",
+    "powerHint": "Opnieuw opstarten maakt automatisch opnieuw verbinding op dezelfde verbinding. Uitschakelen verbreekt de verbinding; schakel de radio weer in om opnieuw verbinding te maken.",
+    "clearWifi": "Wifi-configuratie wissen",
+    "copyIp": "IP-adres kopiëren @action:inmenu interface connection properties",
+    "ipCopied": "Adres gekopieerd",
+    "wifiTcpHint": "Om via wifi verbinding te maken, kies je TCP/IP in Verbinding en voer je {{ip}} in.",
+    "wifiUnsupported": "De firmware van deze radio is gebouwd zonder WiFi.",
+    "consoleHint": "Voer een begeleidend commando uit, inclusief bordspecifieke commando's. Antwoorden worden hieronder weergegeven.",
+    "consoleLog": "Begeleidende opdrachtgeschiedenis",
+    "consoleInput": "Begeleidingsopdracht",
+    "consolePlaceholder": "bijv. haal radio",
+    "consoleSend": "Verzenden",
+    "groups": {
+      "device": "Toestel",
+      "radio": "Radiotuning",
+      "wifi": "Wifi",
+      "power": "Vermogen",
+      "console": "besturingskast"
+    },
+    "validation": {
+      "required": "U moet een waarde invoeren.",
+      "notNumber": "Voer een getal in.",
+      "notInteger": "Voer een geheel getal in",
+      "outOfRange": "Deze waarde ligt buiten bereik",
+      "tooLong": "Waarde is te lang",
+      "invalidChars": "Regeleinden zijn niet toegestaan.",
+      "pinFormat": "Voer 6 cijfers in, of 0 voor een willekeurige PINCODE."
+    },
+    "settings": {
+      "ver": {
+        "label": "Firmwareversie"
+      },
+      "board": {
+        "label": "Bestuur"
+      },
+      "tz_offset": {
+        "label": "Offset tijdzone (uren)",
+        "hint": "Gebruikt door het eigen display van de radio. Van -12 tot +14."
+      },
+      "pin": {
+        "label": "Bluetooth PIN",
+        "hint": "6 cijfers, of 0 voor een willekeurige PINCODE. Wordt van kracht na een herstart; u moet opnieuw koppelen."
+      },
+      "af": {
+        "label": "Airtime factor",
+        "hint": "0 tot 9. Hogere waarden wachten langer tussen transmissies."
+      },
+      "dutycycle": {
+        "label": "Bedrijfscyclus"
+      },
+      "int_thresh": {
+        "label": "Interferentiedrempel",
+        "hint": "0 tot 255. 0 schakelt interferentiedetectie uit."
+      },
+      "cad": {
+        "label": "Kanaalactiviteitsdetectie",
+        "hint": "Luister voordat u uitzendt."
+      },
+      "radio_rxgain": {
+        "label": "Verhoogde ontvangstwinst",
+        "hint": "Niet elke radiochip ondersteunt dit."
+      },
+      "rxdelay": {
+        "label": "Ontvang vertragingsbasis",
+        "hint": "0 tot 20"
+      },
+      "agc_reset_interval": {
+        "label": "AGC-resetinterval (seconden)",
+        "hint": "0 tot 1020, afgerond op veelvouden van 4. 0 schakelt het uit."
+      },
+      "txdelay": {
+        "label": "Factor voor Flood-zendvertraging",
+        "hint": "0 tot 2"
+      },
+      "direct_txdelay": {
+        "label": "Vertragingsfactor voor directe verzending",
+        "hint": "0 tot 2"
+      },
+      "wifi_enabled": {
+        "label": "Wifi",
+        "hint": "Het wordt van kracht na het herstarten."
+      },
+      "wifi_ssid": {
+        "label": "Netwerknaam (SSID)",
+        "hint": "Maximaal 32 tekens. Wordt van kracht na een reboot."
+      },
+      "wifi_pwd": {
+        "label": "Wachtwoord",
+        "hint": "Maximaal 63 tekens. Laat leeg voor een open netwerk. Wordt van kracht na een reboot."
+      },
+      "wifi_status": {
+        "label": "Status"
+      },
+      "wifi_ip": {
+        "label": "IP-adres"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "De radio opnieuw opstarten?",
+        "message": "De radio start opnieuw op en mesh-client maakt automatisch opnieuw verbinding. Berichten die tijdens de herstart worden verzonden, worden in de wachtrij geplaatst.",
+        "confirm": "Opnieuw opstarten"
+      },
+      "poweroff": {
+        "title": "De radio uitschakelen?",
+        "message": "De radio wordt uitgeschakeld en de verbinding met mesh-client wordt verbroken. Je hebt fysieke toegang nodig om het weer in te schakelen.",
+        "confirm": "Uitschakelen"
+      },
+      "clearWifi": {
+        "title": "Wifi-configuratie wissen?",
+        "message": "De opgeslagen netwerknaam en het opgeslagen wachtwoord worden gewist. WiFi stopt na de volgende herstart.",
+        "confirm": "Wissen"
+      }
+    }
   }
 }

@@ -1043,7 +1043,8 @@
     "reconnectingAttempt": "Reconnexion... tentative {{attempt}}/{{max}}",
     "serialReselect": "Connexion série USB perdue — sélectionnez à nouveau votre appareil",
     "serialReselectAction": "Sélectionner le port série",
-    "statusRegion": "État des connexions"
+    "statusRegion": "État des connexions",
+    "rebootingReconnectAttempt": "Redémarrage de la radio. Reconnexion… tentative {{attempt}}/{{max}}"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Nombre maximal de tentatives de reconnexion MQTT",
@@ -7208,5 +7209,142 @@
       "viewport": "Zone actuelle de la carte"
     },
     "fitTraffic": "Cadrer le trafic"
+  },
+  "meshcoreCompanionCli": {
+    "summary": "Paramètres de l'appareil compagnon",
+    "description": "Paramètres stockés sur la radio compagnon connectée, lus et écrits avec sa ligne de commande (firmware MeshCore v1.18 ou plus récent).",
+    "requiresFirmware": "Mettez à jour le compagnon vers le micrologiciel MeshCore v1.18 ou plus récent pour utiliser ces paramètres.",
+    "loading": "Lecture des paramètres de la radio…",
+    "loadFailed": "Impossible de lire les paramètres de la radio. Vérifiez la connexion et réessayez.",
+    "refresh": "Actualiser à partir de la radio",
+    "apply": "Appliquer",
+    "applying": "Application…",
+    "applied": "Paramètres du compagnon enregistrés.",
+    "appliedWithErrors": "Certains paramètres n'ont pas été enregistrés ({{count}}). Voir les champs en surbrillance.",
+    "applyFailed": "La radio n'a pas accepté cette valeur.",
+    "unsupported": "Non pris en charge par cette radio",
+    "secretPlaceholder": "Inchangé",
+    "showSecret": "Afficher",
+    "hideSecret": "Masquer",
+    "revealFailed": "Impossible de lire le mot de passe enregistré à partir de la radio.",
+    "rebootPending": "Certaines modifications prennent effet après le redémarrage de la radio.",
+    "rebootNow": "Redémarrer maintenant",
+    "rebooting": "Redémarrage de la radio. mesh-client se reconnecte automatiquement.",
+    "actionFailed": "La radio n'a pas terminé cette action.",
+    "reboot": "Redémarrer et reconnecter",
+    "powerOff": "Hors tension",
+    "powerHint": "Le redémarrage se reconnecte automatiquement sur la même connexion. Mise hors tension des déconnexions ; rallumez la radio pour vous reconnecter.",
+    "clearWifi": "Effacer la configuration WiFi",
+    "copyIp": "Copier l'adresse IP",
+    "ipCopied": "Adresse IP copiée.",
+    "wifiTcpHint": "Pour vous connecter via WiFi, choisissez TCP/IP dans Connexion et entrez {{ip}}.",
+    "wifiUnsupported": "Le firmware de cette radio a été construit sans WiFi.",
+    "consoleHint": "Exécutez n'importe quelle commande compagnon, y compris celles spécifiques au tableau. Les réponses apparaissent ci-dessous.",
+    "consoleLog": "Historique des commandes compagnon",
+    "consoleInput": "Commande compagnon",
+    "consolePlaceholder": "par exemple, obtenir la radio",
+    "consoleSend": "Envoyer",
+    "groups": {
+      "device": "Dispositif",
+      "radio": "Réglage radio",
+      "wifi": "Wi-Fi",
+      "power": "Puissance",
+      "console": "baie de commande"
+    },
+    "validation": {
+      "required": "Saisir une valeur.",
+      "notNumber": "Saisir un nombre.",
+      "notInteger": "Nombre attendu de parties prenantes.",
+      "outOfRange": "la valeur est hors portée.",
+      "tooLong": "La valeur est trop longue",
+      "invalidChars": "Les sauts de ligne ne sont pas autorisés.",
+      "pinFormat": "Entrez 6 chiffres ou 0 pour un CODE PIN aléatoire."
+    },
+    "settings": {
+      "ver": {
+        "label": "Version du micrologiciel"
+      },
+      "board": {
+        "label": "Membre du conseil d'administration"
+      },
+      "tz_offset": {
+        "label": "Décalage de fuseau horaire (heures)",
+        "hint": "Utilisé par le propre écran de la radio. De -12 à +14."
+      },
+      "pin": {
+        "label": "PIN BLUETOOTH",
+        "hint": "6 chiffres, ou 0 pour un CODE PIN aléatoire. Prend effet après un redémarrage ; vous devrez vous apparier à nouveau."
+      },
+      "af": {
+        "label": "Facteur de temps d'antenne",
+        "hint": "0 à 9. Les valeurs plus élevées attendent plus longtemps entre les transmissions."
+      },
+      "dutycycle": {
+        "label": "Cycle d'activité"
+      },
+      "int_thresh": {
+        "label": "Seuil d'interférence",
+        "hint": "0 à 255. 0 désactive la détection des interférences."
+      },
+      "cad": {
+        "label": "Détection d'activité de canal",
+        "hint": "Écoutez avant de transmettre."
+      },
+      "radio_rxgain": {
+        "label": "Augmentation du gain de réception",
+        "hint": "Toutes les puces radio ne le prennent pas en charge."
+      },
+      "rxdelay": {
+        "label": "Base de délai de réception",
+        "hint": "0 à 20"
+      },
+      "agc_reset_interval": {
+        "label": "Intervalle de réinitialisation AGC (secondes)",
+        "hint": "0 à 1020, arrondi à des multiples de 4. 0 l'éteint."
+      },
+      "txdelay": {
+        "label": "Facteur de délai d'émission Flood",
+        "hint": "0 à 2 %."
+      },
+      "direct_txdelay": {
+        "label": "Facteur de retard de transmission directe",
+        "hint": "0 à 2 %."
+      },
+      "wifi_enabled": {
+        "label": "Wi-Fi",
+        "hint": "Prend effet après un redémarrage."
+      },
+      "wifi_ssid": {
+        "label": "le nom du réseau (SSID);",
+        "hint": "Jusqu'à 32 caractères. Prend effet après un redémarrage."
+      },
+      "wifi_pwd": {
+        "label": "Mot de passe",
+        "hint": "Jusqu'à 63 caractères. Laissez vide pour un réseau ouvert. Prend effet après un redémarrage."
+      },
+      "wifi_status": {
+        "label": "Statut"
+      },
+      "wifi_ip": {
+        "label": "Adresse IP"
+      }
+    },
+    "confirm": {
+      "reboot": {
+        "title": "Redémarrer la radio ?",
+        "message": "La radio redémarre et mesh-client se reconnecte automatiquement. Les messages envoyés lors du redémarrage sont mis en file d'attente.",
+        "confirm": "Redémarrer"
+      },
+      "poweroff": {
+        "title": "Éteindre la radio ?",
+        "message": "La radio s'éteint et mesh-client se déconnecte. Vous aurez besoin d'un accès physique pour le rallumer.",
+        "confirm": "Hors tension"
+      },
+      "clearWifi": {
+        "title": "Effacer la configuration WiFi ?",
+        "message": "Le nom de réseau et le mot de passe enregistrés sont effacés. Le WiFi s'arrête après le prochain redémarrage.",
+        "confirm": "Effacer"
+      }
+    }
   }
 }

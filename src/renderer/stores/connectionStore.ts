@@ -25,6 +25,8 @@ export interface ConnectionRecord {
   connectionLoss?: boolean;
   /** Serial auto-reconnect exhausted; user must pick the port again via requestPort(). */
   serialNeedsReselect?: boolean;
+  /** MeshCore: reconnecting after a user-requested companion reboot (not a link failure). */
+  plannedReboot?: boolean;
   reconnectAttempt: number;
   myNodeNum: number;
   lastDataReceivedAt?: Date;

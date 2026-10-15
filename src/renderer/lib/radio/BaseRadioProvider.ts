@@ -64,6 +64,11 @@ export interface ProtocolCapabilities {
   hasCompanionContactManagementConfig: boolean;
   /** MeshCore companion: telemetry request / location / environment privacy (NodePrefs telemetry modes) */
   hasCompanionTelemetryPrivacyConfig: boolean;
+  /**
+   * MeshCore companion: local CLI (CMD_RUN_CLI_COMMAND) settings, remote companion CLI and
+   * sensor telemetry push. Also requires companion protocol v14+ at runtime.
+   */
+  hasCompanionCli: boolean;
   /** Whether shutdown button is available */
   hasShutdown: boolean;
   /** Whether Reset NodeDB button is available */
@@ -210,6 +215,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
+  hasCompanionCli: false,
   hasShutdown: true,
   hasNodeDbReset: true,
   hasFactoryReset: true,
@@ -293,6 +299,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: true,
   hasCompanionTelemetryPrivacyConfig: true,
+  hasCompanionCli: true,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,
@@ -375,6 +382,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
+  hasCompanionCli: false,
   hasShutdown: false,
   hasNodeDbReset: false,
   hasFactoryReset: false,

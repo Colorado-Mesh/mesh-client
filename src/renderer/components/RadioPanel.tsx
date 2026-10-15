@@ -103,6 +103,7 @@ function setOwnerApplyErrorMessage(
   }
   return err instanceof Error ? err.message : t('common.unknown');
 }
+import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import {
   type OffloadContactsFromRadioFn,
   useMeshcoreContactCapacity,
@@ -142,6 +143,7 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import LockdownSection from './LockdownSection';
+import MeshcoreCompanionCliSection from './MeshcoreCompanionCliSection';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
 import {
   type MeshcoreFloodScopeHandle,
@@ -242,6 +244,8 @@ interface Props {
     telemetryModeLoc: number;
     telemetryModeEnv: number;
   }) => Promise<void>;
+  /** MeshCore companion CLI (firmware v1.18+): device, radio tuning, WiFi, power, console. */
+  meshcoreCompanionCli?: MeshcoreCompanionCliActions;
   meshcoreAutoadd?: MeshcoreAutoaddWireState | null;
   meshtasticLoraConfig?: MeshtasticLoraConfig | null;
   /** Cached Meshtastic ModuleConfig slices for merge-on-apply (local device or remote snapshot). */
@@ -848,6 +852,7 @@ export default function RadioPanel({
   meshcoreSelfInfo,
   meshcoreContactsForTelemetry,
   onApplyMeshcoreTelemetryPrivacy,
+  meshcoreCompanionCli,
   meshcoreAutoadd,
   onApplyMeshcoreContactAutoAdd,
   onRefreshMeshcoreAutoaddFromDevice,
@@ -2903,6 +2908,15 @@ export default function RadioPanel({
             }}
           />
         )}
+
+      {capabilities?.hasCompanionCli && meshcoreCompanionCli && (
+        <MeshcoreCompanionCliSection
+          key={identityId ?? 'meshcore-companion-cli'}
+          cli={meshcoreCompanionCli}
+          disabled={disabled}
+          onToast={addToast}
+        />
+      )}
 
       {/* ═══ WiFi / Network ═══ */}
       {capabilities?.hasWifiConfig !== false && (
