@@ -22,6 +22,35 @@ describe('parseHopReport: clientAck', () => {
       parseHopReport(', ack: SNR -5.0 dB, RSSI -108 dBm, 7 hops via 7C, 0A, 4A, 68, 69, E2, D0'),
     ).toMatchObject({ source: 'clientAck', hops: 7, snr: -5, rssi: -108 });
   });
+
+  it.each(['ack: SNR 12.0 dB', 'ack: RSSI -40 dBm', 'ack: 3 hops'])(
+    'parses a partial ack %j',
+    (text) => {
+      expect(parseHopReport(text)?.source).toBe('clientAck');
+    },
+  );
+
+  it('parses 6-character path hashes', () => {
+    expect(parseHopReport('ack: 2 hops via ABCDEF, 001122')).toMatchObject({
+      source: 'clientAck',
+      hops: 2,
+      path: 'ABCDEF, 001122',
+    });
+  });
+
+  it('rejects a receipt that is not a measurement', () => {
+    expect(parseHopReport('ack: received via RF')).toBeNull();
+  });
+
+  it('accepts 228 characters and rejects anything longer', () => {
+    const ack = 'ack: 3 hops';
+    expect(parseHopReport(ack.padEnd(228, ' '))).toEqual({
+      source: 'clientAck',
+      hops: 3,
+      direct: false,
+    });
+    expect(parseHopReport(ack.padEnd(229, ' '))).toBeNull();
+  });
 });
 
 describe('parseHopReport: hopReport', () => {

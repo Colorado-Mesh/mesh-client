@@ -595,6 +595,13 @@ describe('chatViewKeyForMessage', () => {
       chatViewKeyForMessage(msg({ channel: -1, to: 0, sender_id: 2 }), 'meshcore', ownNodes),
     ).toBe('dm:2');
   });
+
+  it('maps MeshCore DM with to unset to dm:sender', () => {
+    expect(resolveChatDmPeer(msg({ channel: -1, sender_id: 2 }), ownNodes, 'meshcore')).toBe(2);
+    expect(chatViewKeyForMessage(msg({ channel: -1, sender_id: 2 }), 'meshcore', ownNodes)).toBe(
+      'dm:2',
+    );
+  });
 });
 
 describe('hasAudibleBackgroundMessages', () => {

@@ -72,8 +72,12 @@ fetch a loader at runtime. Credits and license notices are in `docs/credits.md`.
 Incoming messages with RF or BLE reception provenance expose **Send signal report** beside
 Reply across all chat protocols while connected. TCP/network-only, MQTT-only, paper and
 unknown-provenance messages do not expose the action.
-The action sends one reply through the existing destination and saved flood-scope path,
-preserves the composer draft and selected reply, and blocks duplicate clicks during a send.
+The action sends one reply to the same DM peer as the conversation (`resolveChatDmPeer`),
+or to the message channel when it is not a DM, and restores the saved flood-scope path.
+A direct message whose peer cannot be resolved is not sent, so a MeshCore DM stored with
+`channel: -1` and no `to` cannot fall through to public channel 0. Reticulum uses the
+normalized LXMF peer. The action preserves the composer draft and selected reply, and
+blocks duplicate clicks during a send.
 Reports use message-level SNR/RSSI/hops, including legitimate zero values. MeshCore channel
 routes and signal measurements are recovered on demand from local RF captures only after
 matching the channel key, sender, text and sender timestamp. Missing captures fall back to

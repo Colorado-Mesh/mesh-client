@@ -19,6 +19,13 @@ import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScr
 import { computeChannelUnreadCounts } from '../lib/chatUnreadCounts';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
+import {
+  clearReticulumHashRegistry,
+  registerReticulumDestinationHash,
+  reticulumHashToNodeId,
+} from '../lib/reticulum/destHash';
+import { LXMF_DELIVERY_ASPECT } from '../lib/reticulum/resolveReticulumChatLxmfDest';
+import { LXST_TELEPHONY_ASPECT } from '../lib/reticulumVoiceCapability';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import {
@@ -26,6 +33,7 @@ import {
   setLiveChannelKeys,
 } from '../stores/liveChannelKeyStore';
 import type { MessageRecord } from '../stores/messageStore';
+import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel } from './chat/ChatChannelSwitcher';
@@ -6877,6 +6885,40 @@ describe('Signal report quick replies', () => {
     expect(button).toBeEnabled();
   });
 
+  it('sends a MeshCore DM with to unset to the sender and not public channel 0', async () => {
+    const { props } = renderSignalPanel({
+      messages: [{ ...message, channel: -1, to: undefined }],
+      initialDmTarget: 2,
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+    await waitFor(() => {
+      expect(props.onSend).toHaveBeenCalledExactlyOnceWith(
+        'ack: SNR 12.0 dB, RSSI -4 dBm, 6 hops',
+        0,
+        2,
+        12345,
+      );
+    });
+    expect(props.onSend).not.toHaveBeenCalledWith(
+      expect.anything(),
+      0,
+      undefined,
+      expect.anything(),
+    );
+  });
+
+  it('refuses to send a signal report when a DM peer cannot be resolved', async () => {
+    const { props } = renderSignalPanel({
+      messages: [{ ...message, channel: -1, to: undefined, sender_id: 0 }],
+      initialDmTarget: 0,
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.t('chatPanel.signalReportUnavailable'),
+    );
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
+
   it('sends DM reports back to the sender and restores the saved flood scope on failure', async () => {
     saveFloodScopeOverride('meshcore', 'dm:2', '#test');
     const applyScope = vi.fn().mockResolvedValue(undefined);
@@ -6972,31 +7014,118 @@ describe('Signal report quick replies', () => {
     async (platform) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const parentHash = 'ab'.repeat(32);
-      const { props } = renderSignalPanel({
-        protocol: 'reticulum',
-        dmOnlyChat: true,
-        lxmfReplyHashReplies: true,
-        initialDmTarget: 2,
-        messages: [
-          {
-            ...message,
-            to: 99,
-            reticulum_sender_hash: 'cd'.repeat(16),
-            reticulum_message_hash: parentHash,
-            rxRadioTransport: 'rf',
-            rxSnr: undefined,
-            rxRssi: undefined,
-            rxHops: undefined,
-          },
-        ],
-      });
-      const composer = await waitForComposer();
-      fireEvent.change(composer, { target: { value: 'Reticulum draft' } });
-      fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
-      await waitFor(() => {
-        expect(props.onSend).toHaveBeenCalledWith('ack: received via RF', 0, 2, parentHash);
-      });
-      expect(composer).toHaveValue('Reticulum draft');
+      const senderHash = 'cd'.repeat(16);
+      const normalizedPeer = reticulumHashToNodeId(senderHash);
+      clearReticulumHashRegistry();
+      registerReticulumDestinationHash(message.sender_id, senderHash);
+      try {
+        const { props } = renderSignalPanel({
+          protocol: 'reticulum',
+          dmOnlyChat: true,
+          lxmfReplyHashReplies: true,
+          initialDmTarget: 2,
+          messages: [
+            {
+              ...message,
+              to: 99,
+              reticulum_sender_hash: senderHash,
+              reticulum_message_hash: parentHash,
+              rxRadioTransport: 'rf',
+              rxSnr: undefined,
+              rxRssi: undefined,
+              rxHops: undefined,
+            },
+          ],
+        });
+        const composer = await waitForComposer();
+        fireEvent.change(composer, { target: { value: 'Reticulum draft' } });
+        fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+        await waitFor(() => {
+          expect(props.onSend).toHaveBeenCalledWith(
+            'ack: received via RF',
+            0,
+            normalizedPeer,
+            parentHash,
+          );
+        });
+        expect(normalizedPeer).not.toBe(message.sender_id);
+        expect(composer).toHaveValue('Reticulum draft');
+      } finally {
+        clearReticulumHashRegistry();
+      }
     },
   );
+
+  it('sends a Reticulum signal report to the normalized LXMF peer', async () => {
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const lxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const telephony = 'ab1d53d6923d6983dfb4451e3869b878';
+    const telephonyId = reticulumHashToNodeId(telephony) >>> 0;
+    const lxmfId = reticulumHashToNodeId(lxmf) >>> 0;
+    clearReticulumHashRegistry();
+    registerReticulumDestinationHash(telephonyId, telephony);
+    registerReticulumDestinationHash(lxmfId, lxmf);
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          telephony,
+          [
+            {
+              destination_hash: telephony,
+              aspect: LXST_TELEPHONY_ASPECT,
+              identity_hash: identity,
+              last_seen: 200,
+            },
+          ],
+        ],
+        [
+          lxmf,
+          [
+            {
+              destination_hash: lxmf,
+              aspect: LXMF_DELIVERY_ASPECT,
+              identity_hash: identity,
+              last_seen: 150,
+            },
+          ],
+        ],
+      ]),
+    });
+    const parentHash = 'ab'.repeat(32);
+    const view = renderSignalPanel({
+      protocol: 'reticulum',
+      dmOnlyChat: true,
+      lxmfReplyHashReplies: true,
+      initialDmTarget: telephonyId,
+      messages: [
+        {
+          ...message,
+          sender_id: telephonyId,
+          to: 99,
+          reticulum_sender_hash: telephony,
+          reticulum_message_hash: parentHash,
+          rxRadioTransport: 'rf',
+          rxSnr: undefined,
+          rxRssi: undefined,
+          rxHops: undefined,
+        },
+      ],
+    });
+    try {
+      fireEvent.click(await screen.findByRole('button', { name: 'Send signal report' }));
+      await waitFor(() => {
+        expect(view.props.onSend).toHaveBeenCalledWith(
+          'ack: received via RF',
+          0,
+          lxmfId,
+          parentHash,
+        );
+      });
+      expect(lxmfId).not.toBe(telephonyId);
+    } finally {
+      view.unmount();
+      clearReticulumHashRegistry();
+      useReticulumIdentityActivityStore.setState({ byDestination: new Map() });
+    }
+  });
 });

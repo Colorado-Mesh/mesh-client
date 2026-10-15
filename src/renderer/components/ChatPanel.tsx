@@ -1927,11 +1927,13 @@ function ChatPanel({
       !hasRfMessageReception(message)
     )
       return;
-    const destination =
-      message.reticulum_sender_hash ||
-      (message.to != null && !isMeshtasticBroadcastNodeNum(message.to))
-        ? message.sender_id
-        : undefined;
+    // Same peer as the DM view and unread badges. A channel -1 DM with no
+    // resolved peer must not fall through to public channel 0.
+    const destination = resolveDmPeer(message);
+    if (message.channel === -1 && destination == null) {
+      setChatActionError({ message: t('chatPanel.signalReportUnavailable'), viewKey });
+      return;
+    }
     const replyKey =
       protocol === 'meshtastic' ? message.packetId : (message.packetId ?? message.timestamp);
     const replyRef = message.reticulum_message_hash ?? replyKey;

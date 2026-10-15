@@ -97,6 +97,18 @@ export function resolveChatDmPeer(
       if (options?.excludeDmPeer?.(peerU32)) return undefined;
       return peerU32;
     }
+    // Inbound MeshCore DMs can be stored with channel -1 and `to` unset when our
+    // node number was not known yet. The peer is the sender, same as `to: 0`.
+    if (
+      protocol === 'meshcore' &&
+      msg.channel === -1 &&
+      msg.sender_id > 0 &&
+      !isOwn(msg.sender_id)
+    ) {
+      const peerU32 = msg.sender_id >>> 0;
+      if (options?.excludeDmPeer?.(peerU32)) return undefined;
+      return peerU32;
+    }
     return undefined;
   }
   let peer: number | undefined;
