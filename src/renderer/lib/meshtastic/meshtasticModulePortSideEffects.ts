@@ -9,6 +9,9 @@
  * Failure point: none — these maps are display-only session memory; an unknown
  * `portLabel` is ignored.
  */
+import { fromBinary, type Message } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
+import { Mesh } from '@meshtastic/protobufs';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
@@ -16,10 +19,13 @@ import { toPacketPayloadBytes } from '../packetPayload';
 import type { MeshtasticModulePortEvent } from '../protocols/Protocol';
 import { appendToRingMap } from '../sessionMemoryCaps';
 import type { IdentityId } from '../types';
+import { decodeMeshBeacon } from './meshBeaconCodec';
 import {
   appendModulePortEvent,
   appendPaxHistory,
+  type HeardMeshBeacon,
   type ModulePortEvent,
+  type NodeStatusEntry,
   type PaxCounterPoint,
 } from './meshtasticModuleEvents';
 
@@ -61,6 +67,25 @@ export interface MeshtasticModulePortSideEffectsDeps {
     SetStateAction<Map<number, { from: number; data: unknown; timestamp: number }>>
   >;
   setPrivateMessages: RawMessageMapSetter;
+  setMeshBeacons: Dispatch<SetStateAction<Map<number, HeardMeshBeacon>>>;
+  setNodeStatuses: Dispatch<SetStateAction<Map<number, NodeStatusEntry>>>;
+}
+
+const StatusMessageSchema = (
+  Mesh as unknown as {
+    StatusMessageSchema: GenMessage<Message<'meshtastic.StatusMessage'> & { status?: unknown }>;
+  }
+).StatusMessageSchema;
+
+/** Decode a `NODE_STATUS_APP` payload (`meshtastic.StatusMessage`); null on malformed bytes. */
+export function decodeNodeStatus(bytes: Uint8Array): string | null {
+  try {
+    const msg: { status?: unknown } = fromBinary(StatusMessageSchema, bytes);
+    return typeof msg.status === 'string' ? msg.status : '';
+  } catch (err) {
+    console.debug('[meshtasticModulePortSideEffects] malformed NODE_STATUS_APP payload', err);
+    return null;
+  }
 }
 
 /** Append to a per-node ring of raw module payloads (`keep` is the retained tail length). */
@@ -147,14 +172,43 @@ function handleModulePort(
     case 'private':
       appendRawMessage(deps.setPrivateMessages, entry, 50);
       break;
+    case 'meshBeacon': {
+      const beacon = decodeMeshBeacon(entry.data);
+      if (beacon) {
+        deps.setMeshBeacons((prev) =>
+          setBoundedMapEntry(prev, from, { ...beacon, from, timestamp }),
+        );
+      }
+      break;
+    }
+    case 'nodeStatus': {
+      const status = decodeNodeStatus(entry.data);
+      if (status != null) {
+        deps.setNodeStatuses((prev) => {
+          const next = new Map(prev);
+          if (status.trim() === '') {
+            next.delete(from);
+            return next;
+          }
+          return setBoundedMapEntry(prev, from, { from, status, timestamp });
+        });
+      }
+      break;
+    }
     // Portnums added in protobufs 2.8.0 with no dedicated panel yet. They are labeled
     // here and reach the Sniffer through the raw packet stream; listing them keeps the
     // switch an accurate record of what the app knows about.
     // ALERT_APP is decoded as text_message in MeshtasticProtocol (MECP / critical alerts).
+    // PAGING_APP has no published PagingPacket schema yet.
     case 'keyVerification':
     case 'remoteShell':
-    case 'nodeStatus':
-    case 'meshBeacon':
+    case 'storeForwardPlusPlus':
+    case 'paging':
+    case 'loraWanBridge':
+    case 'reticulumTunnel':
+    case 'cayenne':
+    case 'loraOta':
+    case 'groupAlarm':
       break;
     default:
       break;

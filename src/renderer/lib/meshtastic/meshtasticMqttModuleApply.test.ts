@@ -27,7 +27,11 @@ describe('meshtasticMqttModuleApply', () => {
         address: 'broker.example.com',
         proxyToClientEnabled: true,
         mapReportingEnabled: true,
-        mapReportSettings: { publishIntervalSecs: 3600, positionPrecision: 12 },
+        mapReportSettings: {
+          publishIntervalSecs: 3600,
+          positionPrecision: 12,
+          shouldReportLocation: true,
+        },
       },
       {
         enabled: true,
@@ -47,6 +51,7 @@ describe('meshtasticMqttModuleApply', () => {
     expect(value.mapReportSettings).toEqual({
       publishIntervalSecs: 3600,
       positionPrecision: 12,
+      shouldReportLocation: true,
     });
     expect(value.enabled).toBe(true);
     expect(value).not.toHaveProperty('$typeName');
@@ -72,7 +77,28 @@ describe('meshtasticMqttModuleApply', () => {
     expect(value.mapReportSettings).toEqual({
       publishIntervalSecs: 0,
       positionPrecision: 10,
+      shouldReportLocation: false,
     });
+  });
+
+  it('applies the UI location choice to map report settings', () => {
+    const value = buildMeshtasticMqttModuleApplyValue(
+      { mapReportSettings: { shouldReportLocation: true } },
+      {
+        enabled: true,
+        address: 'broker.example.com',
+        username: '',
+        password: '',
+        encryptionEnabled: false,
+        jsonEnabled: false,
+        tlsEnabled: false,
+        root: '',
+        mapReportingEnabled: true,
+        mapReportShouldReportLocation: false,
+        proxyToClientEnabled: false,
+      },
+    );
+    expect(value.mapReportSettings).toMatchObject({ shouldReportLocation: false });
   });
 
   it('detects default MQTT server', () => {

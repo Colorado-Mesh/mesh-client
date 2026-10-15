@@ -4135,6 +4135,9 @@ function AppContent() {
         paxCounterData={
           detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined
         }
+        nodeStatuses={
+          detailModalCapabilities.hasNodeStatusMessage ? meshtasticRuntime.nodeStatuses : undefined
+        }
         detectionSensorEvents={
           detailModalCapabilities.hasDetectionSensor
             ? meshtasticRuntime.detectionSensorEvents
@@ -5364,6 +5367,16 @@ function AppContent() {
                               <ModulePanel
                                 configTarget={configTarget}
                                 moduleConfigs={effectiveModuleConfigs}
+                                channelConfigs={effectiveChannelConfigs}
+                                meshBeacons={
+                                  isRemoteConfigureTarget
+                                    ? undefined
+                                    : meshtasticRuntime.meshBeacons
+                                }
+                                getNodeName={meshtasticPanelActions.getNodeName}
+                                loraConfig={effectiveLoraConfig}
+                                onSetChannel={meshtasticPanelActions.setDeviceChannel}
+                                onSetConfig={meshtasticPanelActions.setConfig}
                                 onSetModuleConfig={meshtasticPanelActions.setModuleConfig}
                                 onSetCannedMessages={meshtasticPanelActions.setCannedMessages}
                                 onSetRingtone={meshtasticPanelActions.setRingtone}

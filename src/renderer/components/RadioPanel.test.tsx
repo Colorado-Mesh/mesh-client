@@ -496,6 +496,89 @@ describe('RadioPanel remote target safeguards', () => {
     });
   });
 
+  it('writes the real smart-position field and 2.8 position/device extras', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    const position = {
+      positionBroadcastSecs: 900,
+      positionBroadcastSmartEnabled: true,
+      positionFlags: 1,
+      rxGpio: 34,
+    };
+    const device = { role: 0, buzzerMode: 0 };
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetConfig={onSetConfig}
+          onCommit={vi.fn().mockResolvedValue(undefined)}
+          meshtasticConfigSlices={{ position, device }}
+        />
+      </ToastProvider>,
+    );
+
+    const openSection = async (title: string) => {
+      const details = [...document.querySelectorAll('details')].find(
+        (d) => d.querySelector(':scope > summary > span')?.textContent?.trim() === title,
+      );
+      await user.click(details!.querySelector('summary')!);
+      return details!;
+    };
+
+    const positionDetails = await openSection('Position / GPS');
+    await user.click(within(positionDetails).getByRole('checkbox', { name: 'Heading' }));
+    await user.click(screen.getByRole('button', { name: 'Apply Position / GPS' }));
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalledTimes(1);
+    });
+    expect(onSetConfig.mock.calls[0][0]).toMatchObject({
+      payloadVariant: {
+        case: 'position',
+        value: { positionBroadcastSmartEnabled: true, positionFlags: 1 | 256, rxGpio: 34 },
+      },
+    });
+    expect(
+      (onSetConfig.mock.calls[0][0] as { payloadVariant: { value: object } }).payloadVariant.value,
+    ).not.toHaveProperty('smartPositionEnabled');
+
+    await openSection('Device Role');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Buzzer mode' }), 'Silent');
+    await user.click(screen.getByRole('button', { name: 'Apply Device Role' }));
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalledTimes(2);
+    });
+    expect(onSetConfig.mock.calls[1][0]).toMatchObject({
+      payloadVariant: { case: 'device', value: { buzzerMode: 1 } },
+    });
+  });
+
+  it('blocks a network apply with an invalid static IP', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetConfig={onSetConfig}
+          onCommit={vi.fn().mockResolvedValue(undefined)}
+          meshtasticConfigSlices={{ network: { wifiEnabled: true, addressMode: 1 } }}
+        />
+      </ToastProvider>,
+    );
+    const details = [...document.querySelectorAll('details')].find((d) =>
+      d.querySelector(':scope > summary > span')?.textContent?.includes('WiFi'),
+    );
+    await user.click(details!.querySelector('summary')!);
+    await user.type(within(details!).getByRole('textbox', { name: 'IP address' }), '10.1');
+    await user.click(within(details!).getByRole('button', { name: /^Apply / }));
+    expect(onSetConfig).not.toHaveBeenCalled();
+    expect(within(details!).getAllByText(/before applying/).length).toBeGreaterThan(0);
+  });
+
   it('does not apply LoRa from a leftover slice when live LoRa config is absent', async () => {
     const user = userEvent.setup();
     const onSetConfig = vi.fn().mockResolvedValue(undefined);

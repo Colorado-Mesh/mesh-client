@@ -22,6 +22,8 @@ export const REMOTE_ADMIN_MODULE_CONFIG_FETCHES: {
     key: 'trafficManagement',
   },
   { type: Admin.AdminMessage_ModuleConfigType.TAK_CONFIG, key: 'tak' },
+  { type: Admin.AdminMessage_ModuleConfigType.STATUSMESSAGE_CONFIG, key: 'statusmessage' },
+  { type: Admin.AdminMessage_ModuleConfigType.MESHBEACON_CONFIG, key: 'meshBeacon' },
 ];
 
 export const REMOTE_ADMIN_MODULE_CONFIG_FETCH_COUNT = REMOTE_ADMIN_MODULE_CONFIG_FETCHES.length;

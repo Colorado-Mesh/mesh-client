@@ -220,6 +220,38 @@ const modulesEntries: readonly SettingSearchEntry[] = [
     visible: hasModulePanel,
   },
   {
+    id: 'modules.statusMessage',
+    slot: 'Modules',
+    labelKey: 'modulePanel.sectionStatusMessage',
+    sectionKey: MODULES,
+    keywords: ['status', 'node status', 'away', 'presence'],
+    visible: hasModulePanel,
+  },
+  {
+    id: 'modules.meshBeacon',
+    slot: 'Modules',
+    labelKey: 'modulePanel.sectionMeshBeacon',
+    sectionKey: MODULES,
+    keywords: ['beacon', 'discover', 'advertise', 'offer', 'join mesh'],
+    visible: hasModulePanel,
+  },
+  {
+    id: 'modules.meshBeacon.broadcast',
+    slot: 'Modules',
+    labelKey: 'modulePanel.fields.mbBroadcastEnabled',
+    sectionKey: 'modulePanel.sectionMeshBeacon',
+    keywords: ['beacon', 'broadcast', 'interval', 'targets'],
+    visible: hasModulePanel,
+  },
+  {
+    id: 'modules.audio',
+    slot: 'Modules',
+    labelKey: 'modulePanel.sectionAudio',
+    sectionKey: MODULES,
+    keywords: ['audio', 'codec2', 'voice', 'push to talk', 'i2s'],
+    visible: hasModulePanel,
+  },
+  {
     id: 'modules.rtttlRingtone',
     slot: 'Modules',
     labelKey: 'modulePanel.sectionRtttlRingtone',
@@ -231,12 +263,19 @@ const modulesEntries: readonly SettingSearchEntry[] = [
 
 export const modulesSurface: SettingsSearchSurface = {
   entries: modulesEntries,
-  files: [{ path: 'src/renderer/components/ModulePanel.tsx', sweepAllKeys: true }],
+  files: [
+    { path: 'src/renderer/components/ModulePanel.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/moduleConfigControls.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/MeshBeaconModuleSection.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/MeshBeaconHeardList.tsx', sweepAllKeys: true },
+  ],
   exempt: {
     'modulePanel.fields.*':
       'row inside an indexed module section (the jump opens the section); key rows are indexed',
     'modulePanel.apply*': 'Apply button of an indexed module section',
     'modulePanel.status*': 'read-only module packet status',
+    'modulePanel.beacon.*':
+      'heard-beacon list, join buttons and confirmation dialogs inside the indexed Mesh Beacon section',
     'modulePanel.debug*': 'read-only packet counters in the status-only Debug Modules section',
     'modulePanel.remoteHardwareConfirm*':
       'confirmation dialog copy for the remote hardware toggles',
@@ -251,7 +290,7 @@ export const modulesSurface: SettingsSearchSurface = {
     'modulePanel.waitingForModuleConfig': 'loading banner, not a control',
     'modulePanel.ambientColors.rgbComponents': 'read-only RGB readout of the ambient color',
     'modulePanel.selectPreset': 'placeholder option of the ringtone preset picker',
-    'modulePanel.sectionAudio': 'status-only section with no settings',
+    'meshtasticExtraConfig.*': 'row, pin list or validation toast inside an indexed module section',
     'modulePanel.sectionDebugModules': 'status-only section with no settings',
     'modulePanel.sectionIpTunnel': 'status-only section with no settings',
     'configureNode.loading': 'remote config loading text, not a control',

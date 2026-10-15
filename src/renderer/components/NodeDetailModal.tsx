@@ -61,6 +61,7 @@ import {
   computeRangeTestLossRate,
   latestPaxPoint,
   type ModulePortEvent,
+  type NodeStatusEntry,
   parseRangeTestPayload,
   type PaxCounterPoint,
 } from '../lib/meshtastic/meshtasticModuleEvents';
@@ -134,6 +135,8 @@ interface NodeDetailModalProps {
   meshcoreNeighborError?: string;
   /** PaxCounter history from Meshtastic (capped session series per node) */
   paxCounterData?: Map<number, PaxCounterPoint[]>;
+  /** Latest NODE_STATUS_APP status string per node (session memory) */
+  nodeStatuses?: ReadonlyMap<number, NodeStatusEntry>;
   /** DetectionSensor events from Meshtastic (capped session list per node) */
   detectionSensorEvents?: Map<number, ModulePortEvent[]>;
   /** Range Test packets from Meshtastic (capped session list per node) */
@@ -266,6 +269,7 @@ export default function NodeDetailModal({
   onRequestNeighbors,
   meshcoreNeighborError,
   paxCounterData,
+  nodeStatuses,
   detectionSensorEvents,
   rangeTestPackets,
   mapReports,
@@ -1837,6 +1841,29 @@ export default function NodeDetailModal({
               </div>
             </div>
           )}
+
+          {(() => {
+            const entry = nodeStatuses?.get(node.node_id);
+            if (!entry) return null;
+            return (
+              <div className="space-y-2 px-5 pb-2">
+                <h4 className="text-ink-300 text-xs font-semibold">
+                  {t('nodeDetailModal.nodeStatus.heading')}
+                </h4>
+                <div className="bg-secondary-dark space-y-1 rounded p-2 text-xs">
+                  <p className="text-ink-200 break-words">{entry.status}</p>
+                  <p className="text-muted">
+                    {t('nodeDetailModal.nodeStatus.updated', {
+                      ago: formatSecondsAgo(
+                        Math.max(0, Math.floor((Date.now() - entry.timestamp) / 1000)),
+                        t,
+                      ),
+                    })}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* PaxCounter section (Meshtastic only) */}
           {protocol === 'meshtastic' &&

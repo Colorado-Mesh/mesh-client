@@ -665,4 +665,92 @@ describe('ModulePanel', () => {
       ).not.toBeDisabled();
     });
   });
+
+  it('applies the Status Message module with a trimmed status', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{ ...baseProps.moduleConfigs, statusmessage: { nodeStatus: 'Old' } }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+    await user.click(screen.getByText('Status Message Module'));
+    const input = screen.getByRole('textbox', { name: 'Node status' });
+    await user.clear(input);
+    await user.type(input, '  At base  ');
+    await user.click(screen.getByRole('button', { name: 'Apply Status Message Module' }));
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: { case: 'statusmessage', value: { nodeStatus: 'At base' } },
+      });
+    });
+  });
+
+  it('applies Audio module config and keeps the pin fields', async () => {
+    const user = userEvent.setup();
+    const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          audio: { codec2Enabled: false, bitrate: 0, pttPin: 12, i2sSck: 5 },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+      />,
+    );
+    await user.click(screen.getByText('Audio module'));
+    await user.click(screen.getByRole('switch', { name: 'Codec2 voice enabled' }));
+    await user.click(screen.getByRole('button', { name: 'Apply Audio module' }));
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalledWith({
+        payloadVariant: {
+          case: 'audio',
+          value: expect.objectContaining({ codec2Enabled: true, pttPin: 12, i2sSck: 5 }),
+        },
+      });
+    });
+  });
+
+  it('lists remote hardware pins read-only', () => {
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          remoteHardware: {
+            enabled: true,
+            availablePins: [{ gpioPin: 4, name: 'Relay', type: 2 }],
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText('GPIO 4: Relay (Digital Write)')).toBeInTheDocument();
+  });
+
+  it('shows 2.8 module sections only when the radio reports them', () => {
+    const { unmount } = renderWithToast(<ModulePanel {...baseProps} />);
+    expect(screen.queryByText('Mesh Beacon Module')).toBeNull();
+    expect(screen.queryByText('Status Message Module')).toBeNull();
+    unmount();
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          ...baseProps.moduleConfigs,
+          meshBeacon: { flags: 1, broadcastIntervalSecs: 3600 },
+          statusmessage: { nodeStatus: '' },
+        }}
+        meshBeacons={new Map()}
+        onSetChannel={vi.fn().mockResolvedValue(undefined)}
+        onSetConfig={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    expect(screen.getByText('Mesh Beacon Module')).toBeInTheDocument();
+    expect(screen.getByText('Status Message Module')).toBeInTheDocument();
+    expect(screen.getByText('Heard beacons')).toBeInTheDocument();
+  });
 });

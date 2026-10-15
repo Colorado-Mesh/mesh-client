@@ -30,6 +30,7 @@ export interface MqttModuleUiValues {
   mapReportingEnabled: boolean;
   mapReportPublishIntervalSecs?: number;
   mapReportPositionPrecision?: number;
+  mapReportShouldReportLocation?: boolean;
   proxyToClientEnabled: boolean;
 }
 
@@ -77,6 +78,8 @@ export function buildMeshtasticMqttModuleApplyValue(
       publishIntervalSecs:
         ui.mapReportPublishIntervalSecs ?? cfgNum(existing.publishIntervalSecs, 0),
       positionPrecision: ui.mapReportPositionPrecision ?? cfgNum(existing.positionPrecision, 10),
+      shouldReportLocation:
+        ui.mapReportShouldReportLocation ?? cfgBool(existing.shouldReportLocation, false),
     };
   }
 

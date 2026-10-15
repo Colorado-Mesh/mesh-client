@@ -91,6 +91,8 @@ export interface ProtocolCapabilities {
   hasRangeTest: boolean;
   /** Whether Pax Counter (people counter) is available */
   hasPaxCounter: boolean;
+  /** Whether nodes broadcast a free-text status (Meshtastic NODE_STATUS_APP) */
+  hasNodeStatusMessage: boolean;
   /** Whether Audio packets are available */
   hasAudio: boolean;
   /** Whether Detection Sensor packets are available */
@@ -227,6 +229,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasSerial: true,
   hasRangeTest: true,
   hasPaxCounter: true,
+  hasNodeStatusMessage: true,
   hasAudio: true,
   hasDetectionSensor: true,
   hasStoreForward: true,
@@ -311,6 +314,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,
+  hasNodeStatusMessage: false,
   hasAudio: false,
   hasDetectionSensor: false,
   hasStoreForward: false,
@@ -394,6 +398,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,
+  hasNodeStatusMessage: false,
   hasAudio: false,
   hasDetectionSensor: false,
   hasStoreForward: false,

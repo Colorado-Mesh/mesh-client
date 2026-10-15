@@ -12,6 +12,8 @@ describe('meshtasticRemoteAdminModuleFetches', () => {
       'trafficManagement',
     );
     expect(REMOTE_ADMIN_MODULE_CONFIG_FETCHES.map((entry) => entry.key)).toContain('tak');
+    expect(REMOTE_ADMIN_MODULE_CONFIG_FETCHES.map((entry) => entry.key)).toContain('meshBeacon');
+    expect(REMOTE_ADMIN_MODULE_CONFIG_FETCHES.map((entry) => entry.key)).toContain('statusmessage');
     expect(REMOTE_ADMIN_MODULE_CONFIG_FETCHES.map((entry) => entry.key)).not.toContain('audio');
   });
 });
