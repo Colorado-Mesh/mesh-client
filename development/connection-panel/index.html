@@ -1565,6 +1565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1899,6 +1901,34 @@
     
   
     MeshCore Rooms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-companion-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore companion CLI
   
 
     
@@ -2268,6 +2298,7 @@
 <li><strong>Last connection / reconnect rehydrate:</strong> <code>lastConnectionStorage.ts</code> — <code>mesh-client:lastConnection:&lt;protocol&gt;</code> and BLE fallback keys; rebuild RF params after wake or GATT disconnect.</li>
 <li><strong>Storage migrations:</strong> <code>connectionPanelStorageMigrations.ts</code> — idempotent localStorage fixes on ConnectionPanel mount and from <code>main.tsx</code> before React mount (MeshCore MQTT preset reconcile, Colorado port 443 migration, Colorado region-ack auto-launch gate, and IATA topic-prefix normalization).</li>
 <li><strong>MeshCore chat channel filter:</strong> <code>meshcoreConfiguredChatChannels.ts</code> — zero-PSK slots excluded from unread badges and chat channel pills.</li>
+<li><strong>Planned-reboot reconnect (MeshCore):</strong> a companion reboot from the CLI settings sets <code>meshcorePlannedRebootRef</code>; the reconnect cycle then sets <code>plannedReboot</code> on the connection record (<code>connectionStore</code> → <code>useConnectionView</code>) and the App banner shows <code>connectionBanner.rebootingReconnectAttempt</code> instead of a connection-loss message. The first reconnect attempt waits at least <code>MESHCORE_PLANNED_REBOOT_RECONNECT_DELAY_MS</code> (8 s, <code>firstAttemptMinDelayMs</code>) for boot and BLE re-advertising; exhaustion or a manual disconnect clears the flag. See <a href="../meshcore-companion-cli/">meshcore-companion-cli.md</a>.</li>
 </ul>
 
 
@@ -2289,7 +2320,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 15, 2026 19:40:12 UTC">September 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 15, 2026 20:31:17 UTC">October 15, 2026</span>
   </span>
 
     

@@ -1565,6 +1565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1899,6 +1901,34 @@
     
   
     MeshCore Rooms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-companion-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore companion CLI
   
 
     
@@ -2275,6 +2305,9 @@
 <li><strong>Static GPS:</strong> <code>src/renderer/lib/gpsSource.ts</code> — the active saved location (App tab <strong>Saved locations</strong>, <code>lib/savedLocations.ts</code>) is the static override; it syncs to self-node, map, and radio <code>setPosition</code>. Only a radio fix from this session counts as <code>device</code> source; static coordinates echoed back by the radio do not. Diagnostics trust rules: <a href="../../diagnostics/"><code>diagnostics.md</code></a>.</li>
 <li><strong>Firmware 2.7 / 2.8 parity (#1148):</strong> LoRa <strong>Apply</strong> is gated until the <code>lora</code> slice hydrates. Long names are capped at <strong>24 UTF-8 bytes</strong> (<code>src/shared/meshtasticLongNameLimits.ts</code>). Firmware 2.8 <code>FromRadio.region_presets</code> is decoded by <code>lib/meshtastic/meshtasticRegionPresets.ts</code> into <code>meshtasticConfigSlices.regionPresets</code> (allowed presets, default, licensed-only per region; missing map = unrestricted; cleared on disconnect); Radio panel filters modem presets with it. Bandwidth is sent as the wire code. <strong>Node renumbering:</strong> when a node with a known public key appears under a new number, <code>lib/meshtastic/meshtasticNodeRenumber.ts</code> + main <code>meshtasticNodeRenumber.ts</code> migrate messages and remote-admin keys only if the new number equals <code>crc32(public key)</code> (<code>src/shared/meshtasticNodeNumFromPublicKey.ts</code>) and the destination row has no different key. Own-node number history is keyed by the radio's public key and restored from SQLite at startup.</li>
 <li><strong>Firmware 2.8 inbound decode (#1146):</strong> <code>patches/@jsr__meshtastic__core@2.6.6.patch</code> ignores new 2.8 ports (node status, port 36) and <code>regionPresets</code> frames, warns once on unknown ones, and guards each decoded frame so one bad packet cannot end the <code>fromDevice</code> stream; any pipe failure triggers an immediate reconnect.</li>
+<li><strong>Mesh Beacon module (2.8):</strong> <code>ModuleConfig.MeshBeaconConfig</code> lives in <code>moduleConfigs.meshBeacon</code> and is edited in <code>MeshBeaconModuleSection.tsx</code> (flags bitfield, 60-byte message, interval ≥ 3600 s, channel/region/preset/slot offer, up to 8 <code>broadcastTargets</code>); helpers in <code>lib/meshtastic/meshBeaconConfig.ts</code>. <code>MESH_BEACON_APP</code> (port 37) payloads are decoded by <code>meshBeaconCodec.ts</code> (schema rebuilt from the upstream descriptor because the package does not export it) into <code>meshtasticRuntime.meshBeacons</code>. <code>MeshBeaconHeardList.tsx</code> offers <strong>Join channel</strong> (first free secondary slot, never the primary) and <strong>Use radio settings</strong> (<code>meshBeaconJoin.ts</code> <code>planMeshBeaconLora</code>: never changes an already-set region). Join is hidden for remote <strong>Configure node</strong> targets.</li>
+<li><strong>Status Message module (2.8):</strong> <code>moduleConfigs.statusmessage.nodeStatus</code> is edited in ModulePanel; inbound <code>NODE_STATUS_APP</code> (port 36) fills <code>meshtasticRuntime.nodeStatuses</code>, shown in NodeDetailModal when <code>hasNodeStatusMessage</code>. Other 2.8 ports without a published payload schema (paging, S&amp;F++, LoRaWAN bridge, Reticulum tunnel, Cayenne, LoRa OTA, group alarm) are label-only entries in <code>UNTYPED_MODULE_PORTS</code>.</li>
+<li><strong>Declarative extra config fields:</strong> Less common Radio / Security / Module fields (buzzer mode, position flags, GPS / I2S / INA pins, static IPv4, rsyslog, ignore list, FEM LNA, packet signature policy, Audio module, detection trigger, Pax thresholds, health telemetry, range-test clear-on-reboot) are specs in <code>lib/meshtastic/meshtasticExtraConfigFields.ts</code>, held by <code>useMeshtasticExtraConfigFields</code> and rendered by <code>MeshtasticExtraConfigField.tsx</code>. Each section spreads the hook's <code>result.overrides</code> into its apply payload; a parse failure (bad IPv4, out-of-range number, bad node id) blocks the apply. IPv4 is a little-endian fixed32 (first octet in the low byte); nested keys such as <code>ipv4Config.ip</code> merge into a copy of the device sub-message. Position applies write <code>positionBroadcastSmartEnabled</code> (the proto field), and map reports carry <code>mapReportSettings.shouldReportLocation</code>.</li>
 <li><strong>ALERT_APP (port 11):</strong> Decoded as UTF-8 text like <code>TEXT_MESSAGE_APP</code> in <code>MeshtasticProtocol</code> and MQTT (<code>mqtt-manager.ts</code>) so MECP / critical alerts reach chat + <code>useMecpAlertWatcher</code>. See <a href="../mecp/"><code>mecp.md</code></a>.</li>
 </ul>
 
@@ -2297,7 +2330,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 4, 2026 20:14:09 UTC">October 4, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 15, 2026 20:31:17 UTC">October 15, 2026</span>
   </span>
 
     
