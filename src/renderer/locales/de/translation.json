@@ -7346,5 +7346,24 @@
         "confirm": "Löschen"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Fern-Befehlszeile",
+    "allowLabel": "Erlauben Sie diesem Kontakt, Befehle auf meinem Funkgerät auszuführen",
+    "allowDescription": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, kann dieser Kontakt jede Einstellung an deinem Begleitfunkgerät ändern, einschließlich WLAN und der BLE-PIN.",
+    "notOnRadio": "Dieser Kontakt befindet sich nicht in Ihrem Funkgerät, daher kann seine Remote-Befehlszeilenberechtigung nicht festgelegt werden.",
+    "flagReadFailed": "Die Berechtigung dieses Kontakts konnte nicht von Ihrem Funkgerät gelesen werden.",
+    "flagWriteFailed": "Die Berechtigung dieses Kontakts in Ihrem Funkgerät konnte nicht aktualisiert werden.",
+    "consoleHint": "Führt Befehle auf dem Begleitfunk dieses Kontakts aus. Es benötigt MeshCore Firmware v1.18 oder neuer und muss es Ihrem Funkgerät ermöglichen, Befehle auszuführen. Ohne das erhalten Befehle keine Antwort.",
+    "consoleLog": "Remote-Befehlszeilenausgabe",
+    "consoleInput": "Fernbefehl",
+    "consolePlaceholder": "z.B. ver",
+    "send": "Senden",
+    "sending": "Senden…",
+    "confirmAllow": {
+      "title": "Remote-Befehle zulassen?",
+      "message": "Dieser Kontakt kann jede Einstellung Ihres Radios ändern, es neu starten oder ausschalten. Erlaube nur Kontakte, denen du voll und ganz vertraust.",
+      "confirm": "Erlauben"
+    }
   }
 }

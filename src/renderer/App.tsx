@@ -4161,6 +4161,17 @@ function AppContent() {
         }
         positionHistory={selectedNodeHistory}
         onShowOnMap={handleShowOnMap}
+        meshcoreRemoteCli={
+          detailModalCapabilities.hasCompanionCli &&
+          meshcorePanelActions.companionCli.available &&
+          selectedNode
+            ? {
+                remote: meshcorePanelActions.companionRemote,
+                history: meshcoreRuntime.meshcoreCliHistories.get(selectedNode.node_id) ?? [],
+                onClearHistory: meshcorePanelActions.clearCliHistory,
+              }
+            : undefined
+        }
       />
     </Suspense>
   );

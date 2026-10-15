@@ -7346,5 +7346,24 @@
         "confirm": "책임"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "원격 명령줄",
+    "allowLabel": "이 연락처가 내 라디오에서 명령을 실행하도록 허용",
+    "allowDescription": "기본적으로 꺼져 있습니다. 켜져 있는 경우, 이 연락처는 WiFi 및 BLE 핀을 포함하여 동반자 라디오의 모든 설정을 변경할 수 있습니다.",
+    "notOnRadio": "이 연락처는 라디오에 있지 않으므로 원격 명령줄 권한을 설정할 수 없습니다.",
+    "flagReadFailed": "라디오에서 이 연락처의 권한을 읽을 수 없습니다.",
+    "flagWriteFailed": "라디오에서 이 연락처의 권한을 업데이트할 수 없습니다.",
+    "consoleHint": "이 연락처의 동반 무전기에서 명령을 실행합니다. MeshCore 펌웨어 v1.18 이상이 필요하며 라디오가 명령을 실행할 수 있도록 허용해야 합니다. 그렇지 않으면 명령에 응답이 없습니다.",
+    "consoleLog": "원격 명령줄 출력",
+    "consoleInput": "원격 명령",
+    "consolePlaceholder": "예를 들어 버전",
+    "send": "보내다",
+    "sending": "배상…",
+    "confirmAllow": {
+      "title": "원격 명령을 허용하시겠습니까?",
+      "message": "이 연락처는 무전기의 모든 설정을 변경하거나 재부팅하거나 전원을 끌 수 있습니다. 완전히 신뢰하는 연락처만 허용하세요.",
+      "confirm": "허용"
+    }
   }
 }

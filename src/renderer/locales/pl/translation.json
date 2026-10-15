@@ -7468,5 +7468,24 @@
         "confirm": "Clear"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Zdalny wiersz poleceń",
+    "allowLabel": "Zezwól temu kontaktowi na uruchamianie poleceń w moim radiu",
+    "allowDescription": "Domyślnie wyłączone. Gdy włączone, ten kontakt może zmienić dowolne ustawienie w radiu towarzyszącym, w tym Wi-Fi i BLE PIN.",
+    "notOnRadio": "Ten kontakt nie znajduje się w Twoim radiu, więc nie można ustawić jego zdalnego dostępu do wiersza poleceń.",
+    "flagReadFailed": "Nie można odczytać zgody tego kontaktu z Twojego radia.",
+    "flagWriteFailed": "Nie można zaktualizować uprawnień tego kontaktu w Twoim radiu.",
+    "consoleHint": "Uruchamia polecenia na radiu towarzyszącym tego kontaktu. Potrzebuje oprogramowania sprzętowego MeshCore w wersji1.18 lub nowszej i musi umożliwiać uruchamianie poleceń przez radio. Bez tego polecenia nie otrzymują odpowiedzi.",
+    "consoleLog": "Wyjście zdalnego wiersza poleceń",
+    "consoleInput": "Polecenie zdalne",
+    "consolePlaceholder": "np. ver",
+    "send": "Wyślij",
+    "sending": "Wysyłanie…",
+    "confirmAllow": {
+      "title": "Zezwolić na polecenia zdalne?",
+      "message": "Ten kontakt będzie mógł zmienić dowolne ustawienie w radiu, zrestartować je lub wyłączyć. Zezwalaj tylko na kontakty, którym w pełni ufasz.",
+      "confirm": "Zezwalaj"
+    }
   }
 }

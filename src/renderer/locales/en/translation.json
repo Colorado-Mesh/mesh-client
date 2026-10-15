@@ -2975,6 +2975,25 @@
     "contactCount_one": "{{count}} contact",
     "contactCount_other": "{{count}} contacts"
   },
+  "meshcoreRemoteCli": {
+    "summary": "Remote command line",
+    "allowLabel": "Allow this contact to run commands on my radio",
+    "allowDescription": "Off by default. When on, this contact can change any setting on your companion radio, including WiFi and the BLE PIN.",
+    "notOnRadio": "This contact isn't on your radio, so its remote command line permission can't be set.",
+    "flagReadFailed": "Couldn't read this contact's permission from your radio.",
+    "flagWriteFailed": "Couldn't update this contact's permission on your radio.",
+    "consoleHint": "Runs commands on this contact's companion radio. It needs MeshCore firmware v1.18 or newer and must allow your radio to run commands. Without that, commands get no reply.",
+    "consoleLog": "Remote command line output",
+    "consoleInput": "Remote command",
+    "consolePlaceholder": "e.g. ver",
+    "send": "Send",
+    "sending": "Sending…",
+    "confirmAllow": {
+      "title": "Allow remote commands?",
+      "message": "This contact will be able to change any setting on your radio, reboot it or power it off. Only allow contacts you fully trust.",
+      "confirm": "Allow"
+    }
+  },
   "meshcoreCompanionCli": {
     "summary": "Companion device settings",
     "description": "Settings stored on the connected companion radio, read and written with its command line (MeshCore firmware v1.18 or newer).",

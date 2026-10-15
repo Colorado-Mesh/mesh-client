@@ -22,6 +22,7 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { touch } from '@/shared/touch';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
+import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
@@ -67,6 +68,7 @@ import { Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import { nodeBearingRange } from '../lib/nodeBearingRange';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import type { CliHistoryEntry } from '../lib/repeaterCommandService';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
@@ -79,6 +81,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { BotBadge } from './BotBadge';
 import { HelpTooltip } from './HelpTooltip';
+import MeshcoreRemoteCliSection from './MeshcoreRemoteCliSection';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
@@ -154,6 +157,12 @@ interface NodeDetailModalProps {
   onConfigureRemotely?: (nodeNum: number) => void;
   /** Saved admin key for this node (enables configure remotely). */
   hasRemoteAdminKey?: boolean;
+  /** Companion CLI capability: remote CLI and the per-contact permission (flag 0x10). */
+  meshcoreRemoteCli?: {
+    remote: MeshcoreCompanionRemoteActions;
+    history: readonly CliHistoryEntry[];
+    onClearHistory?: (nodeId: number) => void;
+  };
 }
 
 function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
@@ -266,6 +275,7 @@ export default function NodeDetailModal({
   onSaveRemoteAdminKey,
   onConfigureRemotely,
   hasRemoteAdminKey,
+  meshcoreRemoteCli,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1432,6 +1442,18 @@ export default function NodeDetailModal({
                   </>
                 )}
               </div>
+            </div>
+          )}
+
+          {meshcoreRemoteCli && !isOurNode && node.hw_model === 'Chat' && (
+            <div className="mt-3">
+              <MeshcoreRemoteCliSection
+                nodeId={node.node_id}
+                remote={meshcoreRemoteCli.remote}
+                history={meshcoreRemoteCli.history}
+                onClearHistory={meshcoreRemoteCli.onClearHistory}
+                disabled={!isConnected}
+              />
             </div>
           )}
 

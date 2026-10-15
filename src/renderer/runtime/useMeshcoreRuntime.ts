@@ -87,6 +87,7 @@ import {
   upgradeMeshcoreCrossTransportMessage,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreCompanionCli } from '../hooks/meshcore/useMeshcoreCompanionCli';
+import { useMeshcoreCompanionRemote } from '../hooks/meshcore/useMeshcoreCompanionRemote';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -240,6 +241,7 @@ import {
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import {
   buildMeshcoreOutboundTapbackWire,
+  MESHCORE_TXT_TYPE_CLI_COMMAND,
   MESHCORE_TXT_TYPE_CLI_DATA,
   MESHCORE_TXT_TYPE_PLAIN,
   meshcoreChatMessagesForDisplay,
@@ -6229,6 +6231,7 @@ export function useMeshcoreRuntime() {
       const connectionAtRequest = connRef.current;
       const identityAtRequest = meshcoreIdentityIdRef.current;
       const setupGenerationAtRequest = meshcoreSetupGenerationRef.current;
+      const isCompanionTarget = opts?.target === 'companion';
       const assertRequestCurrent = () => {
         if (
           (opts?.isCurrent && !opts.isCurrent()) ||
@@ -6337,7 +6340,9 @@ export function useMeshcoreRuntime() {
                   nodeId,
                 )?.hw_model;
                 const loginOpts = makeRepeaterLoginOpts(conn, nodeId, pubKey);
-                if (hwModelForCli === 'Room') {
+                if (isCompanionTarget) {
+                  // Companion targets have no login; their contact flag 0x10 is the permission.
+                } else if (hwModelForCli === 'Room') {
                   const adminPw = resolveRoomAdminPassword(
                     nodeId,
                     meshcoreGetRoomSession(nodeId)?.adminPassword,
@@ -6432,7 +6437,9 @@ export function useMeshcoreRuntime() {
                         await conn.sendTextMessage(
                           pubKey,
                           commandWithToken,
-                          MESHCORE_TXT_TYPE_CLI_DATA,
+                          isCompanionTarget
+                            ? MESHCORE_TXT_TYPE_CLI_COMMAND
+                            : MESHCORE_TXT_TYPE_CLI_DATA,
                         );
                       },
                       { rejectErrMsg: 'radio rejected repeater CLI command' },
@@ -6450,7 +6457,9 @@ export function useMeshcoreRuntime() {
                   }
                   throw sendErr;
                 }
-                if (isMeshcoreRepeaterRebootCommand(trimmed)) rebootCommandSent = true;
+                if (!isCompanionTarget && isMeshcoreRepeaterRebootCommand(trimmed)) {
+                  rebootCommandSent = true;
+                }
                 const cliSendWaitMs = Date.now() - cliSendStartedAt;
                 console.debug(
                   `[useMeshcoreRuntime] CLI sent node=0x${nodeId.toString(16)} token=${cliPendingToken ?? '?'} sendWaitMs=${cliSendWaitMs}`,
@@ -6549,6 +6558,8 @@ export function useMeshcoreRuntime() {
       scheduleRepeaterPostRebootStatus,
     ],
   );
+
+  const companionRemote = useMeshcoreCompanionRemote({ connRef, sendRepeaterCliCommand });
 
   const resolveRoomLoginHopsForNode = useCallback((nodeId: number): number => {
     return resolveMeshcoreRoomLoginHopsAway(
@@ -8606,6 +8617,7 @@ export function useMeshcoreRuntime() {
       refreshContacts,
       reboot,
       companionCli,
+      companionRemote,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,
@@ -8760,6 +8772,7 @@ export function useMeshcoreRuntime() {
       refreshContacts,
       reboot,
       companionCli,
+      companionRemote,
       deleteNode,
       clearAllRepeaters,
       clearAllMeshcoreContacts,

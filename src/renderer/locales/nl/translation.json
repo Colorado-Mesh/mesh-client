@@ -7346,5 +7346,24 @@
         "confirm": "Wissen"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Externe opdrachtregel",
+    "allowLabel": "Laat dit contact opdrachten uitvoeren op mijn radio",
+    "allowDescription": "Standaard uitgeschakeld. Wanneer dit contact is ingeschakeld, kan het elke instelling op je metgezelradio wijzigen, inclusief wifi en de BLE-pincode.",
+    "notOnRadio": "Dit contact staat niet op uw radio, dus de machtiging voor de externe opdrachtregel kan niet worden ingesteld.",
+    "flagReadFailed": "Kan de toestemming van dit contact niet lezen van uw radio.",
+    "flagWriteFailed": "Kan de toestemming van deze contactpersoon op uw radio niet bijwerken.",
+    "consoleHint": "Voert opdrachten uit op de metgezelradio van dit contact. Het heeft MeshCore firmware v1.18 of nieuwer nodig en moet je radio in staat stellen om opdrachten uit te voeren. Zonder dat krijgen commando's geen antwoord.",
+    "consoleLog": "Uitgang opdrachtregel op afstand",
+    "consoleInput": "Externe opdracht",
+    "consolePlaceholder": "bijv. ver",
+    "send": "Verzenden",
+    "sending": "Versturen...",
+    "confirmAllow": {
+      "title": "Externe opdrachten toestaan?",
+      "message": "Dit contact kan elke instelling op uw radio wijzigen, opnieuw opstarten of uitschakelen. Sta alleen contacten toe die u volledig vertrouwt.",
+      "confirm": "Toestaan"
+    }
   }
 }

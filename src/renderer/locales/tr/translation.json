@@ -7346,5 +7346,24 @@
         "confirm": "Temizle"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Uzaktan komut satırı",
+    "allowLabel": "Bu kişinin radyomda komut çalıştırmasına izin ver",
+    "allowDescription": "Varsayılan olarak kapalıdır. Bu kişi açık olduğunda, WiFi ve BLE PIN dahil olmak üzere arkadaşınızın radyosundaki herhangi bir ayarı değiştirebilir.",
+    "notOnRadio": "Bu kişi telsizinizde olmadığından uzak komut satırı izni ayarlanamıyor.",
+    "flagReadFailed": "Bu kişinin izni radyonuzdan okunamadı.",
+    "flagWriteFailed": "Bu kişinin radyonuzdaki izni güncellenemedi.",
+    "consoleHint": "Bu kişinin yardımcı radyosunda komutları çalıştırır. MeshCore donanım yazılımı v1.18 veya daha yenisine ihtiyaç duyar ve telsizinizin komutları çalıştırmasına izin vermelidir. Bu olmadan komutlara yanıt verilmez.",
+    "consoleLog": "Uzaktan komut satırı çıkışı",
+    "consoleInput": "Uzaktan komut",
+    "consolePlaceholder": "örneğin ver",
+    "send": "Göndermek",
+    "sending": "Gönderiliyor…",
+    "confirmAllow": {
+      "title": "Uzaktan komutlara izin verilsin mi?",
+      "message": "Bu kişi radyonuzdaki herhangi bir ayarı değiştirebilir, yeniden başlatabilir veya kapatabilir. Yalnızca tamamen güvendiğiniz kişilere izin verin.",
+      "confirm": "İzin ver"
+    }
   }
 }

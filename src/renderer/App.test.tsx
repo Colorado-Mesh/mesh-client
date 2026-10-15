@@ -250,6 +250,17 @@ const {
     deleteMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
     setRadioParams: vi.fn().mockResolvedValue(undefined),
     applyMeshcoreTelemetryPrivacyPolicy: vi.fn().mockResolvedValue(undefined),
+    companionCli: {
+      available: false,
+      run: vi.fn(),
+      rebootAndReconnect: vi.fn().mockResolvedValue(undefined),
+      powerOff: vi.fn().mockResolvedValue(undefined),
+    },
+    companionRemote: {
+      getRemoteCliAllowed: vi.fn().mockResolvedValue(null),
+      setRemoteCliAllowed: vi.fn().mockResolvedValue(null),
+      sendRemoteCli: vi.fn().mockResolvedValue(''),
+    },
     applyMeshcoreContactAutoAdd: vi.fn().mockResolvedValue(undefined),
     refreshMeshcoreAutoaddFromDevice: vi.fn().mockResolvedValue(undefined),
     clearAllMeshcoreContacts: vi.fn().mockResolvedValue(undefined),

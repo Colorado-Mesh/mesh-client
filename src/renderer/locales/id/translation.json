@@ -7346,5 +7346,24 @@
         "confirm": "Kosongkan"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Baris perintah jarak jauh",
+    "allowLabel": "Izinkan kontak ini menjalankan perintah di radio saya",
+    "allowDescription": "Mati secara default. Jika aktif, kontak ini dapat mengubah pengaturan apa pun di radio pendamping Anda, termasuk WiFi dan PIN BLE.",
+    "notOnRadio": "Kontak ini tidak ada di radio Anda, sehingga izin baris perintah jarak jauhnya tidak dapat disetel.",
+    "flagReadFailed": "Tidak dapat membaca izin kontak ini dari radio Anda.",
+    "flagWriteFailed": "Tidak dapat memperbarui izin kontak ini di radio Anda.",
+    "consoleHint": "Menjalankan perintah di radio pendamping kontak ini. Diperlukan firmware MeshCore v1.18 atau lebih baru dan harus memungkinkan radio Anda menjalankan perintah. Tanpa itu, perintah tidak mendapat balasan.",
+    "consoleLog": "Output baris perintah jarak jauh",
+    "consoleInput": "Perintah jarak jauh",
+    "consolePlaceholder": "misalnya ver",
+    "send": "Mengirim",
+    "sending": "Mengirim…",
+    "confirmAllow": {
+      "title": "Izinkan perintah jarak jauh?",
+      "message": "Kontak ini akan dapat mengubah pengaturan apa pun di radio Anda, menyalakan ulang, atau mematikannya. Hanya izinkan kontak yang Anda percayai sepenuhnya.",
+      "confirm": "Izinkan"
+    }
   }
 }

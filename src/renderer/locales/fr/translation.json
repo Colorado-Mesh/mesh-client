@@ -7346,5 +7346,24 @@
         "confirm": "Effacer"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Ligne de commande à distance",
+    "allowLabel": "Autoriser ce contact à exécuter des commandes sur ma radio",
+    "allowDescription": "Désactivé par défaut. Lorsqu'il est activé, ce contact peut modifier n'importe quel paramètre de votre radio compagnon, y compris le Wi-Fi et le code PIN BLE.",
+    "notOnRadio": "Ce contact n'est pas sur votre radio, donc son autorisation de ligne de commande à distance ne peut pas être définie.",
+    "flagReadFailed": "Impossible de lire l'autorisation de ce contact sur votre radio.",
+    "flagWriteFailed": "Impossible de mettre à jour l'autorisation de ce contact sur votre radio.",
+    "consoleHint": "Exécute les commandes sur la radio compagnon de ce contact. Il nécessite un micrologiciel MeshCore v1.18 ou plus récent et doit permettre à votre radio d'exécuter des commandes. Sans cela, les commandes n'obtiennent aucune réponse.",
+    "consoleLog": "Sortie de ligne de commande à distance",
+    "consoleInput": "Commande à distance",
+    "consolePlaceholder": "par ex. ver",
+    "send": "Envoyer",
+    "sending": "Envoi en cours...",
+    "confirmAllow": {
+      "title": "Autoriser les commandes à distance ?",
+      "message": "Ce contact pourra modifier n'importe quel paramètre de votre radio, le redémarrer ou l'éteindre. N'autorisez que les contacts en qui vous avez pleinement confiance.",
+      "confirm": "Autoriser"
+    }
   }
 }

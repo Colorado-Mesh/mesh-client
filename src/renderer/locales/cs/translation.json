@@ -7419,5 +7419,24 @@
         "confirm": "Vymazat"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Vzdálený příkazový řádek",
+    "allowLabel": "Povolit tomuto kontaktu spouštět příkazy v mém rádiu",
+    "allowDescription": "Ve výchozím nastavení vypnuto. Když je tento kontakt zapnutý, může změnit jakékoli nastavení rádia, včetně Wi-Fi a PIN kód BLE.",
+    "notOnRadio": "Tento kontakt není ve vašem rádiu, takže nelze nastavit oprávnění vzdáleného příkazového řádku.",
+    "flagReadFailed": "Ze svého rádia se nepodařilo přečíst svolení tohoto kontaktu.",
+    "flagWriteFailed": "Oprávnění tohoto kontaktu ve vašem rádiu se nepodařilo aktualizovat.",
+    "consoleHint": "Spustí příkazy na rádiu společníka tohoto kontaktu. Potřebuje MeshCore firmware v1.18 nebo novější a musí umožnit vašemu rádiu spouštět příkazy. Bez toho nedostanou příkazy žádnou odpověď.",
+    "consoleLog": "Výstup vzdáleného příkazového řádku",
+    "consoleInput": "Vzdálený příkaz",
+    "consolePlaceholder": "např. ver",
+    "send": "Odeslat",
+    "sending": "Odesílání...",
+    "confirmAllow": {
+      "title": "Povolit vzdálené příkazy?",
+      "message": "Tento kontakt bude moci změnit jakékoli nastavení rádia, restartovat jej nebo vypnout. Povolte pouze kontakty, kterým plně důvěřujete.",
+      "confirm": "Povolit"
+    }
   }
 }

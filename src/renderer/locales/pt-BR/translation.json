@@ -7346,5 +7346,24 @@
         "confirm": "Limpar"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "Linha de comando remota",
+    "allowLabel": "Permitir que este contato execute comandos no meu rádio",
+    "allowDescription": "Desativado por padrão. Quando ativado, este contato pode alterar qualquer configuração no seu rádio complementar, incluindo Wi-Fi e o PIN BLE.",
+    "notOnRadio": "Este contato não está no seu rádio, portanto, sua permissão de linha de comando remota não pode ser definida.",
+    "flagReadFailed": "Não foi possível ler a permissão deste contato no seu rádio.",
+    "flagWriteFailed": "Não foi possível atualizar a permissão deste contato no seu rádio.",
+    "consoleHint": "Executa comandos no rádio complementar deste contato. Ele precisa do firmware MeshCore v1.18 ou mais recente e deve permitir que seu rádio execute comandos. Sem isso, os comandos não recebem resposta.",
+    "consoleLog": "Saída de linha de comando remota",
+    "consoleInput": "Comando remoto",
+    "consolePlaceholder": "por exemplo, ver",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "confirmAllow": {
+      "title": "Permitir comandos remotos?",
+      "message": "Este contato poderá alterar qualquer configuração do seu rádio, reiniciá-lo ou desligá-lo. Permita apenas contatos em que você confia totalmente.",
+      "confirm": "Permitir"
+    }
   }
 }

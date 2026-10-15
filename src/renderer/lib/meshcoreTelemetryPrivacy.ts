@@ -14,6 +14,8 @@ export const MESHCORE_TELEM_MODE_ALLOW_ALL = 2;
 export const MESHCORE_CONTACT_FLAG_TELEM_BASE = 0x02;
 export const MESHCORE_CONTACT_FLAG_TELEM_LOCATION = 0x04;
 export const MESHCORE_CONTACT_FLAG_TELEM_ENVIRONMENT = 0x08;
+/** Companion v1.18+: contact may run CLI commands on our radio (`isRemoteCLIAllowed`). */
+export const MESHCORE_CONTACT_FLAG_REMOTE_CLI = 0x10;
 
 export type MeshcoreTelemetryTriState = 'deny' | 'allow_flags' | 'allow_all';
 

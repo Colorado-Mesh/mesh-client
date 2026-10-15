@@ -7346,5 +7346,24 @@
         "confirm": "清空"
       }
     }
+  },
+  "meshcoreRemoteCli": {
+    "summary": "远程命令行",
+    "allowLabel": "允许此联系人在我的收音机上运行命令",
+    "allowDescription": "默认情况下关闭。开启后，此联系人可以更改随行收音机上的任何设置，包括WiFi和BLE PIN。",
+    "notOnRadio": "此联系人不在您的收音机上，因此无法设置其远程命令行权限。",
+    "flagReadFailed": "无法从您的收音机中读取此联系人的权限。",
+    "flagWriteFailed": "无法在您的收音机上更新此联系人的权限。",
+    "consoleHint": "在此联系人的伴随收音机上运行命令。它需要MeshCore固件v 1.18或更高版本，并且必须允许您的收音机运行命令。否则，命令得不到回复。",
+    "consoleLog": "远程命令行输出",
+    "consoleInput": "远程命令",
+    "consolePlaceholder": "例如： ver",
+    "send": "傳送",
+    "sending": "发送中…",
+    "confirmAllow": {
+      "title": "是否允许远程命令？",
+      "message": "此联系人将能够更改收音机上的任何设置，重新启动或关闭收音机。仅允许您完全信任的联系人。",
+      "confirm": "允许"
+    }
   }
 }
