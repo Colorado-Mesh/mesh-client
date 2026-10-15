@@ -9,7 +9,11 @@ vi.mock('electron', () => ({
   app: { getPath: () => userDataDir },
 }));
 
-import { DEFAULT_TAK_STYLE_SETTINGS, type TakStyleSettings } from '../../shared/tak-types';
+import {
+  DEFAULT_TAK_STYLE_SETTINGS,
+  TAK_GEOOPS_ICONS,
+  type TakStyleSettings,
+} from '../../shared/tak-types';
 import {
   loadTakStyleSettings,
   parseTakStyleSettings,
@@ -134,6 +138,41 @@ describe('parseTakStyleSettings relay icon', () => {
     ['over the length cap', `uid/WildFire/${'x'.repeat(260)}.png`],
   ])('rejects %s', (_label, relayIconsetPath) => {
     expect(() => parseTakStyleSettings({ ...VALID, relayIconsetPath })).toThrow(/relayIconsetPath/);
+  });
+
+  it('keeps a room server icon apart from the relay icon', () => {
+    const room = 'uid/WildFire/Ranger Station.png';
+    expect(
+      parseTakStyleSettings({ ...VALID, relayIconsetPath: ICON, roomIconsetPath: ` ${room} ` }),
+    ).toMatchObject({ relayIconsetPath: ICON, roomIconsetPath: room });
+    expect(parseTakStyleSettings({ ...VALID, roomIconsetPath: '' })).not.toHaveProperty(
+      'roomIconsetPath',
+    );
+    expect(() => parseTakStyleSettings({ ...VALID, roomIconsetPath: 'Ranger.png' })).toThrow(
+      /roomIconsetPath/,
+    );
+  });
+});
+
+describe('parseTakStyleSettings GeoOps presets', () => {
+  it('accepts every preset as a repeater or room server icon', () => {
+    for (const icon of TAK_GEOOPS_ICONS) {
+      expect(
+        parseTakStyleSettings({
+          ...VALID,
+          relayIconsetPath: icon.path,
+          roomIconsetPath: icon.path,
+        }),
+      ).toMatchObject({ relayIconsetPath: icon.path, roomIconsetPath: icon.path });
+    }
+  });
+
+  it('ignores an icon on a filter style, which has no icon of its own', () => {
+    const raw = {
+      ...VALID,
+      filters: [{ ...VALID.filters[0], style: { cotType: 'a-f-G-I', iconsetPath: 'a/b/c.png' } }],
+    };
+    expect(parseTakStyleSettings(raw).filters[0].style).toEqual({ cotType: 'a-f-G-I' });
   });
 });
 
