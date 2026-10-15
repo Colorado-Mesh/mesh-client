@@ -26,6 +26,7 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'modulePanel.inputEvents.', suffixes: ['label'] },
   { prefix: 'modulePanel.serialModes.', suffixes: ['label'] },
   { prefix: 'modulePanel.takTeamColors.', suffixes: ['label'] },
+  { prefix: 'modulePanel.fields.mbTargetErrors.', leafKeys: true },
   { prefix: 'modulePanel.teamRoles.', suffixes: ['label'] },
   { prefix: 'radioPanel.displayUnits.', suffixes: ['label'] },
   { prefix: 'radioPanel.lockdown.states.', leafKeys: true },

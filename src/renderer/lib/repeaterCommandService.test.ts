@@ -40,6 +40,9 @@ describe('RepeaterCommandService', () => {
     it('redacts password-change echoes without a token and retains ordinary replies', () => {
       expect(service.redactResponseForHistory('password now: secret')).toBe('[redacted]');
       expect(service.redactResponseForHistory('EF|> Repeater')).toBe('> Repeater');
+      expect(service.redactResponseForHistory('EF|> wifi.pwd = secret')).toBe(
+        '> wifi.pwd: [redacted]',
+      );
     });
   });
 

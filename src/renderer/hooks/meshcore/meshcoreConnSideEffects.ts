@@ -11,6 +11,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { getIdentityChatMessages } from '@/renderer/lib/identityStoreReads';
+import { redactMeshcoreCliSecretsInText } from '@/shared/meshcoreCliSecrets';
 import { withTimeout } from '@/shared/withTimeout';
 
 import { packetRouter } from '../../lib/drivers/PacketRouter';
@@ -759,7 +760,7 @@ export function attachMeshcoreConnSideEffects(
         type: 'received',
         text:
           service?.redactResponseForHistory(payload.text) ??
-          body.replace(/^password now:.*$/i, '[redacted]'),
+          redactMeshcoreCliSecretsInText(body.replace(/^password now:.*$/i, '[redacted]')),
         timestamp: Date.now(),
       });
     }

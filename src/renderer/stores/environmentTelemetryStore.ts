@@ -172,7 +172,10 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
         series.push({
           t: row.recorded_at,
           reading,
-          source: row.source === 'mqtt' || row.source === 'rpc' ? row.source : 'rf',
+          source:
+            row.source === 'mqtt' || row.source === 'rpc' || row.source === 'push'
+              ? row.source
+              : 'rf',
         });
         nodes.set(row.node_id, series);
       }

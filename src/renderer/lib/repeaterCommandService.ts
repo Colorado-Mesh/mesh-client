@@ -1,3 +1,5 @@
+import { MESHCORE_CLI_REDACTED, redactMeshcoreCliSecretsInText } from '@/shared/meshcoreCliSecrets';
+
 import { redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
 
 export interface PendingCommand {
@@ -225,8 +227,8 @@ export class RepeaterCommandService {
   redactResponseForHistory(rawResponse: string): string {
     const { token, body } = this.parseResponseToken(rawResponse);
     return (token && this.sensitiveTokens.has(token)) || /^password now:/i.test(body.trim())
-      ? '[redacted]'
-      : body;
+      ? MESHCORE_CLI_REDACTED
+      : redactMeshcoreCliSecretsInText(body);
   }
 
   handleError(token: string, error: Error): boolean {

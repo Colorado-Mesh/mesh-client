@@ -43,6 +43,9 @@ describe('infrastructure CLI command queue', () => {
     'get guest.password',
     'get prv.key',
     'set prv.key secret',
+    'set wifi.pwd secret',
+    'get wifi.pwd',
+    'set pin secret',
   ])('redacts both command and reply for %s', (command) => {
     expect(redactMeshcoreCliSecrets(command)).not.toContain('secret');
     expect(redactMeshcoreCliSecrets(command, '> secret')).toBe('[redacted]');
@@ -57,5 +60,11 @@ describe('infrastructure CLI command queue', () => {
 
   it('retains normal CLI history', () => {
     expect(redactMeshcoreCliSecrets('get name', '> Repeater')).toBe('> Repeater');
+  });
+
+  it('scrubs a wifi.pwd value echoed in a reply to an ordinary command', () => {
+    expect(redactMeshcoreCliSecrets('get all', 'wifi.ssid: home\nwifi.pwd: secret')).toBe(
+      'wifi.ssid: home\nwifi.pwd: [redacted]',
+    );
   });
 });

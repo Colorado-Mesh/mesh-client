@@ -78,6 +78,14 @@ const securityEntries: readonly SettingSearchEntry[] = [
     visible: hasMeshtasticAdmin,
   },
   {
+    id: 'security.adminSettings.packetSignaturePolicy',
+    slot: 'Security',
+    labelKey: 'meshtasticExtraConfig.packetSignaturePolicy',
+    sectionKey: ADMIN_SETTINGS,
+    keywords: ['signature', 'signed', 'strict', 'verify'],
+    visible: hasMeshtasticAdmin,
+  },
+  {
     id: 'security.keyBackup.backupRestore',
     slot: 'Security',
     labelKey: 'securityPanel.sectionKeyBackup',
@@ -113,6 +121,7 @@ export const securitySurface: SettingsSearchSurface = {
   entries: securityEntries,
   files: [{ path: 'src/renderer/components/SecurityPanel.tsx', sweepAllKeys: true }],
   exempt: {
+    'meshtasticExtraConfig.applyInvalid': 'validation toast, not a control',
     'securityPanel.*Desc': 'description text; its control is indexed',
     'securityPanel.*Hint': 'help text under an indexed row',
     'securityPanel.*Placeholder': 'placeholder of an indexed field',

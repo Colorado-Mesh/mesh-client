@@ -1,3 +1,10 @@
+import {
+  isMeshcoreCliSecretCommand,
+  MESHCORE_CLI_REDACTED,
+  redactMeshcoreCliSecretCommand,
+  redactMeshcoreCliSecretsInText,
+} from '@/shared/meshcoreCliSecrets';
+
 /** Serializes complete CLI exchanges, including the reply, without coalescing distinct commands. */
 export function createMeshcoreRepeaterCliQueue() {
   const tails = new Map<string, Promise<unknown>>();
@@ -17,14 +24,10 @@ export function createMeshcoreRepeaterCliQueue() {
 
 export function redactMeshcoreCliSecrets(command: string, response?: string): string {
   const trimmed = command.trim();
-  if (/^(?:password\b|(?:get|set)\s+(?:guest\.password|prv\.key)\b)/i.test(trimmed)) {
-    if (response !== undefined) return '[redacted]';
-    return trimmed.replace(
-      /^(password|(?:get|set)\s+(?:guest\.password|prv\.key))\b.*/i,
-      '$1 [redacted]',
-    );
+  if (isMeshcoreCliSecretCommand(trimmed)) {
+    return response !== undefined ? MESHCORE_CLI_REDACTED : redactMeshcoreCliSecretCommand(trimmed);
   }
-  return response ?? command;
+  return response !== undefined ? redactMeshcoreCliSecretsInText(response) : command;
 }
 
 /** Keep the argument delimiter when clearing a firmware string preference. */

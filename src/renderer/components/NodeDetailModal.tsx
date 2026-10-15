@@ -22,6 +22,8 @@ import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { touch } from '@/shared/touch';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
+import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
+import type { MeshcoreTelemetryPushActions } from '../hooks/meshcore/useMeshcoreTelemetryPush';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
@@ -59,6 +61,7 @@ import {
   computeRangeTestLossRate,
   latestPaxPoint,
   type ModulePortEvent,
+  type NodeStatusEntry,
   parseRangeTestPayload,
   type PaxCounterPoint,
 } from '../lib/meshtastic/meshtasticModuleEvents';
@@ -67,6 +70,7 @@ import { Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import { nodeBearingRange } from '../lib/nodeBearingRange';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
+import type { CliHistoryEntry } from '../lib/repeaterCommandService';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
@@ -79,8 +83,10 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { BotBadge } from './BotBadge';
 import { HelpTooltip } from './HelpTooltip';
+import MeshcoreRemoteCliSection from './MeshcoreRemoteCliSection';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
+import MeshcoreTelemetryPushSection from './MeshcoreTelemetryPushSection';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
@@ -129,6 +135,8 @@ interface NodeDetailModalProps {
   meshcoreNeighborError?: string;
   /** PaxCounter history from Meshtastic (capped session series per node) */
   paxCounterData?: Map<number, PaxCounterPoint[]>;
+  /** Latest NODE_STATUS_APP status string per node (session memory) */
+  nodeStatuses?: ReadonlyMap<number, NodeStatusEntry>;
   /** DetectionSensor events from Meshtastic (capped session list per node) */
   detectionSensorEvents?: Map<number, ModulePortEvent[]>;
   /** Range Test packets from Meshtastic (capped session list per node) */
@@ -154,6 +162,14 @@ interface NodeDetailModalProps {
   onConfigureRemotely?: (nodeNum: number) => void;
   /** Saved admin key for this node (enables configure remotely). */
   hasRemoteAdminKey?: boolean;
+  /** Companion CLI capability: remote CLI and the per-contact permission (flag 0x10). */
+  meshcoreRemoteCli?: {
+    remote: MeshcoreCompanionRemoteActions;
+    history: readonly CliHistoryEntry[];
+    onClearHistory?: (nodeId: number) => void;
+  };
+  /** Companion CLI capability: telemetry push subscriptions on v1.18+ sensors. */
+  meshcoreTelemetryPush?: MeshcoreTelemetryPushActions;
 }
 
 function meshcorePublicKeyToHex(publicKey: Uint8Array): string {
@@ -253,6 +269,7 @@ export default function NodeDetailModal({
   onRequestNeighbors,
   meshcoreNeighborError,
   paxCounterData,
+  nodeStatuses,
   detectionSensorEvents,
   rangeTestPackets,
   mapReports,
@@ -266,6 +283,8 @@ export default function NodeDetailModal({
   onSaveRemoteAdminKey,
   onConfigureRemotely,
   hasRemoteAdminKey,
+  meshcoreRemoteCli,
+  meshcoreTelemetryPush,
 }: NodeDetailModalProps) {
   const { t, i18n } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1435,6 +1454,29 @@ export default function NodeDetailModal({
             </div>
           )}
 
+          {meshcoreTelemetryPush && !isOurNode && node.hw_model === 'Sensor' && (
+            <div className="mt-3">
+              <MeshcoreTelemetryPushSection
+                nodeId={node.node_id}
+                push={meshcoreTelemetryPush}
+                ensureAccess={() => ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')}
+                disabled={!isConnected}
+              />
+            </div>
+          )}
+
+          {meshcoreRemoteCli && !isOurNode && node.hw_model === 'Chat' && (
+            <div className="mt-3">
+              <MeshcoreRemoteCliSection
+                nodeId={node.node_id}
+                remote={meshcoreRemoteCli.remote}
+                history={meshcoreRemoteCli.history}
+                onClearHistory={meshcoreRemoteCli.onClearHistory}
+                disabled={!isConnected}
+              />
+            </div>
+          )}
+
           {/* MeshCore: neighbors (from Repeater) */}
           {protocol === 'meshcore' && !isOurNode && meshcoreNeighbors && showMeshcoreNeighbors && (
             <div className="mt-3 space-y-1">
@@ -1799,6 +1841,29 @@ export default function NodeDetailModal({
               </div>
             </div>
           )}
+
+          {(() => {
+            const entry = nodeStatuses?.get(node.node_id);
+            if (!entry) return null;
+            return (
+              <div className="space-y-2 px-5 pb-2">
+                <h4 className="text-ink-300 text-xs font-semibold">
+                  {t('nodeDetailModal.nodeStatus.heading')}
+                </h4>
+                <div className="bg-secondary-dark space-y-1 rounded p-2 text-xs">
+                  <p className="text-ink-200 break-words">{entry.status}</p>
+                  <p className="text-muted">
+                    {t('nodeDetailModal.nodeStatus.updated', {
+                      ago: formatSecondsAgo(
+                        Math.max(0, Math.floor((Date.now() - entry.timestamp) / 1000)),
+                        t,
+                      ),
+                    })}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* PaxCounter section (Meshtastic only) */}
           {protocol === 'meshtastic' &&

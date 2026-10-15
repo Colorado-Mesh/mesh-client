@@ -416,6 +416,59 @@ describe('buildSupportBundleZip', () => {
     expect(backup).toBe('rotated\n');
   });
 
+  it('scrubs MeshCore CLI secrets from both logs and the debug snapshot', async () => {
+    await fs.promises.writeFile(
+      logPath,
+      '[INFO] [useMeshcoreCompanionCli] set wifi.pwd hunter2 -> OK\n[INFO] password admin-secret\n[INFO] password now: admin-secret\nkeep me\n',
+      'utf8',
+    );
+    await fs.promises.writeFile(
+      path.join(workDir, 'mesh-client.log.1'),
+      '[DEBUG] cli a1|set pin 123456\n[DEBUG] reply wifi.pwd: hunter2\n',
+      'utf8',
+    );
+    const snapshot = JSON.stringify(
+      {
+        meshcore: {
+          cliHistory: ['get wifi.pwd -> hunter2', 'password admin-secret', 'ver'],
+          wifi: { 'wifi.pwd': 'hunter2' },
+        },
+      },
+      null,
+      2,
+    );
+    const dest = path.join(workDir, 'github-secrets.zip');
+    await buildSupportBundleZip(dest, 'github', snapshot);
+
+    const zip = await JSZip.loadAsync(await fs.promises.readFile(dest));
+    const log = await zip.file('mesh-client.log')!.async('string');
+    const backup = await zip.file('mesh-client.log.1')!.async('string');
+    const snap = await zip.file('debug-snapshot.json')!.async('string');
+    for (const text of [log, backup, snap]) {
+      expect(text).not.toContain('hunter2');
+      expect(text).not.toContain('123456');
+      expect(text).not.toContain('admin-secret');
+    }
+    expect(log).toBe(
+      '[INFO] [useMeshcoreCompanionCli] set wifi.pwd [redacted]\n[INFO] password [redacted]\n[INFO] password now: [redacted]\nkeep me\n',
+    );
+    expect(backup).toContain('a1|set pin [redacted]');
+    expect(JSON.parse(snap)).toEqual({
+      meshcore: {
+        cliHistory: ['get wifi.pwd [redacted]', 'password [redacted]', 'ver'],
+        wifi: { 'wifi.pwd': '[redacted]' },
+      },
+    });
+  });
+
+  it('keeps the debug snapshot byte-for-byte when there is nothing to scrub', async () => {
+    const snapshot = '{"ok":true}';
+    const dest = path.join(workDir, 'github-clean.zip');
+    await buildSupportBundleZip(dest, 'github', snapshot);
+    const zip = await JSZip.loadAsync(await fs.promises.readFile(dest));
+    expect(await zip.file('debug-snapshot.json')!.async('string')).toBe(snapshot);
+  });
+
   it('tail-caps oversized backup log to the final 10 MiB', async () => {
     const tenMiB = 10 * 1024 * 1024;
     const oversized = Buffer.alloc(tenMiB + 4096, 0x61);

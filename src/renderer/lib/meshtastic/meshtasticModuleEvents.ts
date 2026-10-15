@@ -5,6 +5,8 @@
 
 import { trimArrayTail } from '@/renderer/lib/sessionMemoryCaps';
 
+import type { MeshBeaconPayload } from './meshBeaconCodec';
+
 /** Cap for Pax Counter time-series points per node (session memory). */
 export const MAX_PAX_HISTORY_POINTS = 50;
 
@@ -23,6 +25,19 @@ export interface ModulePortEvent {
   timestamp: number;
   /** UTF-8 decoded payload when valid printable text; otherwise undefined. */
   text?: string;
+}
+
+/** Latest `MESH_BEACON_APP` heard from one node. */
+export interface HeardMeshBeacon extends MeshBeaconPayload {
+  from: number;
+  timestamp: number;
+}
+
+/** Latest `NODE_STATUS_APP` status string from one node. */
+export interface NodeStatusEntry {
+  from: number;
+  status: string;
+  timestamp: number;
 }
 
 export interface RangeTestDecoded {

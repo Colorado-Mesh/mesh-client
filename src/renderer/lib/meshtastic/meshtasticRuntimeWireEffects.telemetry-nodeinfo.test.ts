@@ -143,6 +143,8 @@ function makeDeps() {
       setPingResponses: vi.fn(),
       setIpTunnelMessages: vi.fn(),
       setPaxCounterData: vi.fn(),
+      setMeshBeacons: vi.fn(),
+      setNodeStatuses: vi.fn(),
       setSerialMessages: vi.fn(),
       setStoreForwardMessages: vi.fn(),
       setRangeTestPackets: vi.fn(),
