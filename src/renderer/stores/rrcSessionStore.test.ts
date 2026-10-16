@@ -1,11 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
 import { clearRrcActiveRoom, loadRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   migrateLegacyWhispersForHub,
   resetRrcLegacyWhispersMigrateForTests,
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
 import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
+import {
+  loadPersistedRrcLastRead,
+  openingRrcReadWatermark,
+  rrcLastReadStorageKey,
+  rrcReadKey,
+} from '@/renderer/lib/rrcReadWatermark';
 
 import {
   resetRrcRememberedRoomForTests,
@@ -14,6 +21,64 @@ import {
 } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      [false, true].map((futureHistory) => ({ platform, futureHistory })),
+    ),
+  )(
+    'keeps normally timed arrivals eligible on $platform (future history=$futureHistory)',
+    ({ platform, futureHistory }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let now = 1800000000000;
+      vi.spyOn(Date, 'now').mockImplementation(() => now);
+      const hub = 'dc'.repeat(16);
+      const key = rrcReadKey(hub, '#lobby');
+      localStorage.setItem(rrcLastReadStorageKey(), JSON.stringify({ [key]: now + 180000 }));
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hub, 'Community');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#other');
+      if (futureHistory)
+        store.addMessage({
+          id: 'future',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'Future timestamp',
+          sender_hash: 'bb'.repeat(16),
+          timestamp: now + 120000,
+        });
+      store.setActiveRoom('#lobby');
+      expect(loadPersistedRrcLastRead()[key]).toBe(now);
+      expect(JSON.parse(localStorage.getItem(rrcLastReadStorageKey()) ?? '{}')).toMatchObject({
+        [key]: now,
+      });
+      expect(openingRrcReadWatermark(hub, '#lobby')).toBe(now);
+      store.setActiveRoom('#other');
+      now += 1000;
+      store.addMessage(
+        {
+          id: 'normal',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'Normal arrival',
+          sender_hash: 'bb'.repeat(16),
+          timestamp: now,
+        },
+        { bumpUnread: true },
+      );
+      store.setActiveRoom('#lobby');
+      expect(loadPersistedRrcLastRead()[key]).toBe(now);
+      const message = { at: now, sender: 'Alice', body: 'Normal arrival' };
+      expect(
+        selectSummaryMessages({
+          messages: [message],
+          scope: { kind: 'unread' },
+          watermark: openingRrcReadWatermark(hub, '#lobby'),
+        }),
+      ).toEqual([message]);
+    },
+  );
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');

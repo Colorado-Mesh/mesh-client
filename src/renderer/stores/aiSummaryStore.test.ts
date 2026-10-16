@@ -73,6 +73,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe('AI summary request correlation', () => {
+  it('reports oversized collected input without inference when no complete message fits', async () => {
+    await runSummary('chat', { ...request, messages: [] }, true, 1);
+    expect(api.summarize).not.toHaveBeenCalled();
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      collectedMessageCount: 1,
+      messageCount: 0,
+      truncated: true,
+      error: 'tooLarge',
+      streaming: false,
+    });
+  });
+
   it('does not call offered messages included until main confirms prompt coverage', async () => {
     let acknowledge!: (value: {
       ok: boolean;

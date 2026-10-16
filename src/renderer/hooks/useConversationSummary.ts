@@ -97,9 +97,13 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       let chars = 0;
       const bounded: AiSummaryMessage[] = [];
       for (const message of selected.reverse()) {
-        if (bounded.length >= AI_MAX_MESSAGES || chars + message.body.length > AI_MAX_TOTAL_CHARS) {
+        if (bounded.length >= AI_MAX_MESSAGES) {
           truncated = true;
           break;
+        }
+        if (chars + message.body.length > AI_MAX_TOTAL_CHARS) {
+          truncated = true;
+          continue;
         }
         bounded.push(message);
         chars += message.body.length;

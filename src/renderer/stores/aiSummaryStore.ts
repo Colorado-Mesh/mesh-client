@@ -166,7 +166,10 @@ export async function runSummary(
     summaries: { ...Object.fromEntries(Object.entries(state.summaries).slice(-49)), [key]: entry },
   }));
   if (!request.messages.length) {
-    patch(key, id, { streaming: false, error: 'noMessages' });
+    patch(key, id, {
+      streaming: false,
+      error: collectedMessageCount > 0 ? 'tooLarge' : 'noMessages',
+    });
     return;
   }
   const ownsBundled = status.engine === 'bundled';

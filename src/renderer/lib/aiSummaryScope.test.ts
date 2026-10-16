@@ -1,16 +1,44 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { mergeSummaryMessages, selectSummaryMessages } from './aiSummaryScope';
 import {
   loadPersistedRrcLastRead,
   mergeRrcReadWatermark,
   openingRrcReadWatermark,
+  rrcLastReadStorageKey,
   rrcReadKey,
   snapshotRrcReadWatermark,
 } from './rrcReadWatermark';
 
 describe('AI summary scope and RRC read boundaries', () => {
+  it('keeps repaired and valid read boundaries stable when storage repair cannot be written', () => {
+    localStorage.clear();
+    let now = 1800000000000;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    localStorage.setItem(
+      rrcLastReadStorageKey(),
+      JSON.stringify({ past: now - 1000, future: now + 180000 }),
+    );
+    const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('read-only');
+    });
+    const dispatch = vi.spyOn(window, 'dispatchEvent');
+    try {
+      const expected = { past: now - 1000, future: now };
+      expect(loadPersistedRrcLastRead()).toEqual(expected);
+      now += 1000;
+      expect(loadPersistedRrcLastRead()).toEqual(expected);
+      expect(write).toHaveBeenCalledOnce();
+      expect(dispatch).not.toHaveBeenCalled();
+    } finally {
+      clock.mockRestore();
+      write.mockRestore();
+      dispatch.mockRestore();
+      localStorage.clear();
+    }
+  });
+
   const messages = [
     { at: 1, sender: 'A', body: 'old' },
     { at: 3600001, sender: 'B', body: 'new' },
@@ -117,8 +145,6 @@ describe('AI summary scope and RRC read boundaries', () => {
     snapshotRrcReadWatermark(hub, 'room', 1, [{ timestamp: 100 }, { timestamp: 200 }]);
     expect(openingRrcReadWatermark(hub, 'room')).toBe(199);
     mergeRrcReadWatermark(hub, 'room', Date.now() + 1e12);
-    expect(loadPersistedRrcLastRead()[rrcReadKey(hub, 'room')]).toBeLessThanOrEqual(
-      Date.now() + 300000,
-    );
+    expect(loadPersistedRrcLastRead()[rrcReadKey(hub, 'room')]).toBeLessThanOrEqual(Date.now());
   });
 });

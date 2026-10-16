@@ -158,6 +158,28 @@ describe('AI prompts and validation', () => {
     expect(prompt.system).toContain('untrusted');
     expect(prompt.user).not.toContain('old old');
   });
+  it.each(['chars', 'bytes'] as const)(
+    'skips an oversized newest message under the %s budget',
+    (limit) => {
+      const prompt = buildSummaryPrompt({
+        conversationLabel: '#Public',
+        protocol: 'meshcore',
+        surface: 'channel',
+        locale: 'en',
+        messages: [
+          { at: 1, sender: 'Alice', body: 'Net at 20:00.' },
+          { at: 2, sender: 'Bob', body: 'x'.repeat(10000) },
+        ],
+        maxChars: limit === 'chars' ? 80 : 20000,
+        maxPromptBytes: limit === 'bytes' ? 1100 : 3500,
+      });
+      expect(prompt.included).toBe(1);
+      expect(prompt.truncated).toBe(true);
+      expect(prompt.user).toContain('Net at 20:00.');
+      expect(prompt.user).not.toContain('x'.repeat(100));
+    },
+  );
+
   it.each(['漢', '😀'])('budgets the complete escaped UTF-8 prompt for %s', (glyph) => {
     const prompt = buildSummaryPrompt({
       conversationLabel: '全体',

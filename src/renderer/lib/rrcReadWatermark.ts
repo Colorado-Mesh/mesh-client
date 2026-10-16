@@ -3,21 +3,39 @@ import { parseStoredJson } from './parseStoredJson';
 import { rrcRoomMatchKey } from './rrcRoomName';
 
 const openings = new Map<string, number>();
+let failedRepair: { raw: string | null; value: Partial<Record<string, number>> } | undefined;
 export const rrcLastReadStorageKey = () => 'mesh-client:lastRead:rrc';
 export const rrcReadKey = (hub: string, room: string) =>
   `${hub.trim().toLowerCase()}::${rrcRoomMatchKey(room) || room.trim().toLowerCase()}`;
 export function loadPersistedRrcLastRead(): Partial<Record<string, number>> {
   try {
-    const value = parseStoredJson<Record<string, unknown>>(
-      localStorage.getItem(rrcLastReadStorageKey()),
-      'RRC last read',
-    );
+    const raw = localStorage.getItem(rrcLastReadStorageKey());
+    const now = Date.now();
+    if (failedRepair?.raw === raw)
+      return Object.fromEntries(
+        Object.entries(failedRepair.value).map(([key, at]) => [
+          key,
+          clampReadWatermarkMs(at ?? 0, now, 0),
+        ]),
+      );
+    failedRepair = undefined;
+    const value = parseStoredJson<Record<string, unknown>>(raw, 'RRC last read');
     if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, v]) => typeof v === 'number')
-        .map(([k, v]) => [k, clampReadWatermarkMs(Number(v))]),
+    const entries = Object.entries(value).filter(([, v]) => typeof v === 'number');
+    const clamped = Object.fromEntries(
+      entries.map(([k, v]) => [k, clampReadWatermarkMs(Number(v), now, 0)]),
     );
+    // Persist legacy repairs once so the boundary cannot advance on every read.
+    // This getter can run during render; do not emit a store change event here.
+    if (entries.some(([key, at]) => clamped[key] !== at)) {
+      try {
+        localStorage.setItem(rrcLastReadStorageKey(), JSON.stringify(clamped));
+      } catch {
+        // catch-no-log-ok keep the repaired boundary stable in memory if storage is read-only
+        failedRepair = { raw, value: clamped };
+      }
+    }
+    return clamped;
   } catch {
     // catch-no-log-ok unavailable storage leaves messages unread
     return {};
@@ -34,7 +52,11 @@ export function savePersistedRrcLastRead(value: Partial<Record<string, number>>)
 export function mergeRrcReadWatermark(hub: string, room: string, at: number): void {
   const value = loadPersistedRrcLastRead();
   const key = rrcReadKey(hub, room);
-  value[key] = Math.max(value[key] ?? 0, clampReadWatermarkMs(at));
+  const now = Date.now();
+  value[key] = Math.max(
+    clampReadWatermarkMs(value[key] ?? 0, now, 0),
+    clampReadWatermarkMs(at, now, 0),
+  );
   savePersistedRrcLastRead(value);
 }
 export function snapshotRrcReadWatermark(

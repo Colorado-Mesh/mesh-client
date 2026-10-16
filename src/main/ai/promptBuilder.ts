@@ -32,7 +32,7 @@ export function buildSummaryPrompt(input: {
       size + line.length + 1 > input.maxChars ||
       promptBytes + bytes > (input.maxPromptBytes ?? Infinity)
     )
-      break;
+      continue;
     lines.push(line);
     size += line.length + 1;
     promptBytes += bytes;

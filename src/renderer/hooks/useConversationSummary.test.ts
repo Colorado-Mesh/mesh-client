@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUtils';
 import { isWeatherPost } from '@/renderer/lib/weatherPosts';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
-import type { AiProviderStatus, AiSummaryMessage } from '@/shared/ai-types';
+import {
+  AI_MAX_TOTAL_CHARS,
+  type AiProviderStatus,
+  type AiSummaryMessage,
+} from '@/shared/ai-types';
 
 import { useConversationSummary } from './useConversationSummary';
 
@@ -36,6 +40,28 @@ beforeEach(() => {
   vi.mocked(window.electronAPI.ai.summarize).mockResolvedValue({ ok: true });
 });
 describe('conversation summary async boundaries', () => {
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'keeps older eligible %s messages when the newest exceeds the renderer limit',
+    async (protocol) => {
+      const older = { at: 1, sender: 'Alice', body: 'Net at 20:00.' };
+      const { result } = renderHook(() =>
+        useConversationSummary({
+          ...input,
+          protocol,
+          history: null,
+          messages: [older, { at: 2, sender: 'Bob', body: 'x'.repeat(AI_MAX_TOTAL_CHARS + 1) }],
+        }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+        expect.objectContaining({ messages: [older] }),
+      );
+      expect(result.current.state).toMatchObject({ collectedMessageCount: 2, truncated: true });
+    },
+  );
+
   it('normalizes legacy MeshCore names and payloads before weather filtering and overlap merging', async () => {
     vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
       { at: 1, sender: 'WX', senderId: null, body: 'Morning report' },

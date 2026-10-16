@@ -60,8 +60,9 @@ max-output-token option in this API; its helper uses a conservative 1,000-charac
 HTTP adapters parse bounded SSE/NDJSON, require a completion marker, support fragmented UTF-8
 and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budgets; Gemini
 thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
-is independently capped at 1,000 characters. Context budgets preserve complete newest messages and disclose
-truncation. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
+is independently capped at 1,000 characters. Context budgets select whole messages newest first, skip messages that do not fit, and disclose
+truncation. An oversized newest message does not block older eligible input; when no complete message
+fits, the request reports an input-size error without inference. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
 to 3,500 bytes for both Apple’s and the WASM engine’s 4,096-token contexts.
 This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote context
 capacity remains model-dependent, with a 64,000-byte prompt cap.
@@ -86,7 +87,8 @@ History/live overlap uses a multiset union: matching copies across sources count
 messages with identical timestamp/sender/body within either source retain their multiplicity.
 The card reports a fixed collected count from the selected range at request start, then the actual
 included count after main prepares the prompt. Neither count claims all historical traffic still exists;
-new arrivals can increase the live unread badge while a summary runs. The pending card never labels
+new arrivals can increase the live unread badge while a summary runs. Legacy future RRC read values
+are repaired in storage once, without emitting change events from the read helper. The pending card never labels
 offered messages as included before main confirms coverage.
 Channel summaries apply the same default/custom weather patterns and marked-sender rules to fetched
 history as to visible chat when hiding weather is enabled. Numeric sender metadata stays local and
