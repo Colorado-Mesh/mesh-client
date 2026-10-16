@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} mesaj toplandı",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} toplanan mesajlar",
     "offlineSummaryHint": "İndirmeler interneti bir kez kullanır. Özetler bu cihazda çevrimdışı çalışır. İndirilen modellerle büyük konuşmalar birkaç dakika sürebilir. Daha büyük modeller daha fazla belleğe ihtiyaç duyar.",
-    "smallModelLimitations": "Deneysel: önemli gerçekleri gözden kaçırabilir, gönderenleri yanlış tanımlayabilir veya kendini tekrarlayabilir. Arayı kapatmak için 1.5B modelini tercih edin.",
     "countSnapshot": "Sayımlar bu özet anlık görüntüsünü açıklar; canlı okunmamış rozetler farklı olabilir.",
-    "balancedModelGuidance": "Daha büyük model; daha fazla bellek ve zamana ihtiyaç duyar. Orijinal mesajlardaki önemli ayrıntıları doğrulayın."
+    "compactModelGuidance": "Daha küçük indirme ve bellek kullanımı. Ayrıntıları kaçırabilir; orijinal mesajları kontrol edin.",
+    "englishModelGuidance": "İngilizce odaklı. Ayrıntıları yanlış okuyabilir veya tersine çevirebilir; orijinal mesajları doğrulayabilir.",
+    "multilingualModelGuidance": "Çok dilli seçenek. Daha büyük indirme ve bellek kullanımı; orijinal mesajları kontrol edin."
   }
 }

@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} mensaje recopilado",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} mensajes recopilados",
     "offlineSummaryHint": "Las descargas usan Internet una vez. Los resúmenes se ejecutan sin conexión en este dispositivo. Las conversaciones grandes pueden tardar unos minutos con los modelos descargados. Los modelos más grandes necesitan más memoria.",
-    "smallModelLimitations": "Experimental: puede pasar por alto hechos clave, atribuir erróneamente a los remitentes o repetirse. Prefiera el modelo 1.5B para ponerse al día.",
     "countSnapshot": "Los recuentos describen esta instantánea de resumen; las insignias en vivo no leídas pueden diferir.",
-    "balancedModelGuidance": "Modelo más grande; necesita más memoria y tiempo. Verifica los detalles importantes en los mensajes originales."
+    "compactModelGuidance": "Menor descarga y uso de memoria. Puede pasar por alto los detalles; revise los mensajes originales.",
+    "englishModelGuidance": "Enfocado al inglés. Puede leer mal o revertir detalles; verificar los mensajes originales.",
+    "multilingualModelGuidance": "Opción multilingüe. Mayor descarga y uso de memoria; compruebe los mensajes originales."
   }
 }

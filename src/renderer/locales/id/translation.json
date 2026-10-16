@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} pesan terkumpul",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} pesan terkumpul",
     "offlineSummaryHint": "Unduhan menggunakan internet satu kali. Ringkasan berjalan offline di perangkat ini. Percakapan besar dapat memakan waktu beberapa menit dengan model yang diunduh. Model yang lebih besar membutuhkan lebih banyak memori.",
-    "smallModelLimitations": "Eksperimental: dapat melewatkan fakta utama, salah kirim pengirim atau mengulanginya sendiri. Lebih suka model 1.5B untuk catch - up.",
     "countSnapshot": "Hitungan menggambarkan snapshot ringkasan ini; lencana langsung yang belum dibaca mungkin berbeda.",
-    "balancedModelGuidance": "Model yang lebih besar; membutuhkan lebih banyak memori dan waktu. Verifikasi detail penting dalam pesan asli."
+    "compactModelGuidance": "Pengunduhan dan penggunaan memori yang lebih kecil. Dapat melewatkan detail; periksa pesan asli.",
+    "englishModelGuidance": "Berfokus pada bahasa Inggris. Dapat salah membaca atau membalikkan detail; verifikasi pesan asli.",
+    "multilingualModelGuidance": "Opsi multibahasa. Unduhan dan penggunaan memori yang lebih besar; periksa pesan asli."
   }
 }

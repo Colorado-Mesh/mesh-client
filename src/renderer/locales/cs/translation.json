@@ -7707,8 +7707,9 @@
     "offlineSummaryHint": "Stažené soubory používají internet pouze jednou. Souhrny běží na tomto zařízení offline. Se staženými modely mohou velké konverzace trvat několik minut. Větší modely potřebují více paměti.",
     "providerIncluded_few": "{{provider}} · {{model}} · zahrnuto {{included}} z {{count}} shromážděných zpráv",
     "providerCollected_few": "{{provider}} · {{model}} · {{count}} shromážděné zprávy",
-    "smallModelLimitations": "Experimentální: může přehlédnout klíčová fakta, chybně přiřazovat odesílatele nebo se opakovat. Pro dohánění upřednostňujte model 1,5B.",
     "countSnapshot": "Počty popisují tento souhrnný snímek; živé nepřečtené odznaky se mohou lišit.",
-    "balancedModelGuidance": "Větší model; potřebuje více paměti a času. Ověřte důležité podrobnosti v původních zprávách."
+    "compactModelGuidance": "Menší stahování a využití paměti. Mohou chybět podrobnosti; zkontrolujte původní zprávy.",
+    "englishModelGuidance": "Zaměřeno na angličtinu. Může nesprávně přečíst nebo zvrátit podrobnosti; ověřte původní zprávy.",
+    "multilingualModelGuidance": "Vícejazyčná možnost. Větší stahování a využití paměti; zkontrolujte původní zprávy."
   }
 }

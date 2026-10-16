@@ -12,6 +12,7 @@ import type { RrcChatMessage } from '@/shared/rrc-types';
 import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
 
 const mockScrollToEnd = vi.fn();
+const mockScrollToIndex = vi.fn();
 const mockMeasure = vi.fn();
 const mockMeasureElement = vi.fn();
 let mockIsAtEnd = true;
@@ -39,7 +40,7 @@ vi.mock('@tanstack/react-virtual', () => ({
       containerRef: { current: null },
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
-      scrollToIndex: vi.fn(),
+      scrollToIndex: mockScrollToIndex,
       scrollDirection: 'forward' as const,
       shouldAdjustScrollPositionOnItemSizeChange: undefined as
         ((item: { index: number }) => boolean) | undefined,
@@ -77,6 +78,201 @@ const baseProps = {
   onSendChunk: vi.fn().mockResolvedValue(undefined),
   onInterceptSend: vi.fn().mockResolvedValue(false),
 };
+
+describe.each(['linux', 'darwin', 'win32'] as const)('RRC unread markers on %s', (platform) => {
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+    mockIsAtEnd = false;
+    mockScrollToIndex.mockClear();
+    mockScrollToEnd.mockClear();
+  });
+  afterEach(() => {
+    mockIsAtEnd = true;
+  });
+
+  it('opens at the first incoming message, excluding self and grouped hub notices', async () => {
+    const hub = 'aa'.repeat(16);
+    const own = 'cc'.repeat(16);
+    const messages = [
+      makeMsg({ id: 'old', body: 'Read already', timestamp: 100 }),
+      makeMsg({ id: 'self', body: 'My message', timestamp: 101, sender_hash: own }),
+      makeMsg({
+        id: 'notice1',
+        body: 'Welcome to Community.',
+        kind: 'notice',
+        timestamp: 102,
+        sender_hash: hub,
+        nickname: null,
+      }),
+      makeMsg({
+        id: 'notice2',
+        body: 'Welcome to Community.',
+        kind: 'notice',
+        timestamp: 103,
+        sender_hash: hub,
+        nickname: null,
+      }),
+      makeMsg({ id: 'unread', body: 'First incoming', timestamp: 104 }),
+    ];
+    const caughtUp = vi.fn();
+    const { container, rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hub}
+        localIdentityHash={own}
+        unreadWatermark={100}
+        messages={messages}
+        onCaughtUp={caughtUp}
+      />,
+    );
+    const divider = screen.getByRole('separator', { name: 'chatPanel.newMessagesDivider' });
+    expect(divider.closest('[data-testid="rrc-chat-line"]')).toHaveTextContent('First incoming');
+    expect(mockScrollToIndex).toHaveBeenCalledWith(3, { align: 'center' });
+    expect(lastVirtualizerOpts?.estimateSize(3)).toBe(62);
+    expect(caughtUp).not.toHaveBeenCalled();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash={hub}
+        localIdentityHash={own}
+        unreadWatermark={null}
+        messages={messages}
+      />,
+    );
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+  });
+
+  it('waits for history before positioning or marking a room read', () => {
+    const caughtUp = vi.fn();
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        historyReady={false}
+        unreadWatermark={100}
+        messages={[]}
+        onCaughtUp={caughtUp}
+      />,
+    );
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    expect(caughtUp).not.toHaveBeenCalled();
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        historyReady
+        unreadWatermark={100}
+        messages={[
+          makeMsg({ id: 'old', body: 'Older', timestamp: 99 }),
+          makeMsg({ id: 'new', body: 'Unread', timestamp: 101 }),
+        ]}
+        onCaughtUp={caughtUp}
+      />,
+    );
+    expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center' });
+    expect(screen.getByRole('separator')).toBeInTheDocument();
+  });
+
+  it('preserves a reader’s position when new unread traffic arrives', () => {
+    const messages = [makeMsg({ id: 'old', body: 'Read already', timestamp: 100 })];
+    const reading = vi.fn();
+    const { rerender } = render(
+      <RrcChatView {...baseProps} messages={messages} onReadingLatestChange={reading} />,
+    );
+    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
+    expect(reading).toHaveBeenLastCalledWith(false);
+    mockScrollToIndex.mockClear();
+    mockScrollToEnd.mockClear();
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        unreadWatermark={100}
+        messages={[...messages, makeMsg({ id: 'new', body: 'Incoming', timestamp: 101 })]}
+        onReadingLatestChange={reading}
+      />,
+    );
+    expect(screen.getByRole('separator')).toBeInTheDocument();
+    expect(mockScrollToIndex).not.toHaveBeenCalled();
+    expect(mockScrollToEnd).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.jumpToUnread' }));
+    expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center', behavior: 'smooth' });
+  });
+
+  it('marks an incoming whisper and isolates openings for the same room on another hub', () => {
+    const messages = [
+      makeMsg({ id: 'whisper', body: 'Private update', kind: 'notice', timestamp: 101 }),
+    ];
+    const props = {
+      ...baseProps,
+      activeRoom: '@' + 'bb'.repeat(16),
+      unreadWatermark: 100,
+      messages,
+    };
+    const { rerender } = render(<RrcChatView {...props} hubDestHash={'aa'.repeat(16)} />);
+    expect(screen.getByRole('separator')).toBeInTheDocument();
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center' });
+    mockScrollToIndex.mockClear();
+    rerender(<RrcChatView {...props} hubDestHash={'cc'.repeat(16)} />);
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center' });
+  });
+
+  it('ignores scroll frames queued by a previous room', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const previousCaughtUp = vi.fn();
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        activeRoom="#old"
+        messages={[makeMsg({ id: 'old', body: 'Unread', timestamp: 101 })]}
+        unreadWatermark={100}
+        onCaughtUp={previousCaughtUp}
+      />,
+    );
+    const previousFrames = frames.splice(0);
+    rerender(<RrcChatView {...baseProps} activeRoom="#new" messages={[]} unreadWatermark={null} />);
+    mockIsAtEnd = true;
+    act(() => {
+      for (const frame of previousFrames) frame(0);
+    });
+    expect(previousCaughtUp).not.toHaveBeenCalled();
+    vi.mocked(window.requestAnimationFrame).mockRestore();
+  });
+
+  it('does not restore another hub’s scroll offset after an inactive switch', () => {
+    const messages = [makeMsg({ id: 'new', body: 'Unread', timestamp: 101 })];
+    const { rerender } = render(
+      <RrcChatView {...baseProps} hubDestHash="hub-a" messages={messages} />,
+    );
+    const stream = screen.getByTestId('rrc-message-stream');
+    Object.defineProperty(stream, 'scrollTop', { configurable: true, writable: true, value: 500 });
+    fireEvent.scroll(stream);
+    rerender(
+      <RrcChatView {...baseProps} hubDestHash="hub-a" messages={messages} isActive={false} />,
+    );
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        hubDestHash="hub-b"
+        messages={messages}
+        isActive={false}
+        unreadWatermark={100}
+      />,
+    );
+    stream.scrollTop = 0;
+    mockScrollToIndex.mockClear();
+    rerender(
+      <RrcChatView {...baseProps} hubDestHash="hub-b" messages={messages} unreadWatermark={100} />,
+    );
+    expect(mockScrollToIndex).toHaveBeenCalledWith(0, { align: 'center' });
+    expect(stream.scrollTop).toBe(0);
+  });
+});
 
 describe('estimateRrcRowHeight', () => {
   afterEach(() => {

@@ -118,15 +118,29 @@ only for completed, non-error output. These controls do not establish factual ac
 the sandboxed renderer. Model installs stream to a unique temporary directory, hash incrementally
 without buffering a gigabyte in memory, verify exact size/SHA-256 and publish by rename.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
-checked on 2026-10-15. The two Qwen2.5 weight sets use Apache-2.0. Wllama and llama.cpp use MIT;
-the npm license report covers the runtime. Model attribution belongs here, not in that report. The proposed 360M option was removed
-after synthetic checks showed repetition and incorrect sender/question attribution. The catalog
-is not an accuracy guarantee; users must verify summaries against original traffic. The 0.5B
-model can also miss key facts, misread an unresolved request as a commitment or repeat itself, so its
-catalog guidance labels it experimental. The larger model needs more memory/time and also requires
-source verification. Real-model trials are bounded checks, not an accuracy guarantee: the revised
-prompt extracted concrete outage, coverage, inspection and net-time details from a 41-message
-synthetic chat, but the 1.5B model still omitted an open policy-link request.
+checked on 2026-10-16. The catalog offers Llama 3.2 1B, Qwen2.5 1.5B and SmolLM2 1.7B,
+all Q4_K_M. Qwen and SmolLM2 use Apache-2.0; Llama uses the Llama 3.2 Community License.
+Its full license and Meta NOTICE are verified and atomically installed beside the GGUF;
+inline notices use the same size/hash verification as downloaded assets. Built with Llama.
+Wllama and llama.cpp use MIT. The npm license report covers runtime dependencies;
+model attribution belongs in credits. No weights ship in the installer.
+
+Qwen 0.5B was removed after unreliable real-model trials. A saved selection of a removed model
+becomes not-ready; the app never silently selects or downloads a replacement. Choose explicitly
+from the new catalog. Qwen remains available for multilingual traffic; SmolLM2 is English-focused.
+None is an accuracy guarantee. Identical 41-message synthetic trials completed in about 86 seconds
+for Llama and 187 seconds for SmolLM2 using the production worker. Llama omitted useful facts and
+added a weak attribution bullet; SmolLM2 misattributed speakers and reversed one routing instruction.
+These trials establish runtime compatibility and limitations, not that either model improves on Qwen.
+
+RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
+without marking the transcript read. The first incoming prose/whisper row carries a measured
+New messages divider; hub notices and self echoes do not anchor it. Opening/jumping navigates to
+that row after history hydration. Arrivals while scrolled up preserve position and unread badges,
+including the selected room. Only a visible, focused reader at the latest messages clears the badge
+and divider and advances persisted read state. AI unread then uses that persisted watermark.
+Scroll frames and tab snapshots are scoped to the canonical hub/room so an old view cannot mark
+another view read. Linux, macOS and Windows share this lifecycle.
 
 ## Validation
 

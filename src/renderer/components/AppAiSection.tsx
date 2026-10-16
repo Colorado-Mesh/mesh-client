@@ -203,9 +203,11 @@ export function AppAiSection() {
                         {item.license}
                       </p>
                       <p className="text-muted text-xs">
-                        {item.id === 'qwen2.5-0.5b-instruct-q4'
-                          ? t('aiSummary.smallModelLimitations')
-                          : t('aiSummary.balancedModelGuidance')}
+                        {item.qualityNote === 'compact'
+                          ? t('aiSummary.compactModelGuidance')
+                          : item.qualityNote === 'english'
+                            ? t('aiSummary.englishModelGuidance')
+                            : t('aiSummary.multilingualModelGuidance')}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {downloading ? (

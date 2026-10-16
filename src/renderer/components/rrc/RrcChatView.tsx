@@ -21,6 +21,7 @@ import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
   CHAT_SCROLL_END_THRESHOLD,
+  CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
@@ -56,6 +57,7 @@ import {
 } from '@/renderer/lib/rrcNoticeGrouping';
 import { rrcReplyMention } from '@/renderer/lib/rrcReplyMention';
 import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
+import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -361,6 +363,10 @@ export interface RrcChatViewProps {
   isActive?: boolean;
   /** Called when the user has scrolled to (or restored) the latest messages. */
   onCaughtUp?: () => void;
+  unreadWatermark?: number | null;
+  historyReady?: boolean;
+  historyEpoch?: number;
+  onReadingLatestChange?: (readingLatest: boolean) => void;
   /** Open a Chat DM for an LXMF destination hash posted in a message. */
   onOpenDm?: (destinationHash: string) => void;
   /** Plain chat / action chunk send (ChatComposer may call multiple times when splitting). */
@@ -388,6 +394,10 @@ export function RrcChatView({
   placeholder,
   isActive = true,
   onCaughtUp,
+  unreadWatermark = null,
+  historyReady = true,
+  historyEpoch = 0,
+  onReadingLatestChange,
   onOpenDm,
   onSendChunk,
   onInterceptSend,
@@ -433,15 +443,58 @@ export function RrcChatView({
   const unreadStartIndexRef = useRef(-1);
   const savedScrollTopRef = useRef<number | null>(null);
   const savedWasPinnedToBottomRef = useRef(false);
+  const savedScrollKeyRef = useRef<string | null>(null);
   const wasActiveRef = useRef(isActive);
   const prevStreamKeyRef = useRef<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const streamKey = activeRoom
+    ? `${hubDestHash?.trim().toLowerCase() ?? ''}::${rrcRoomMatchKey(activeRoom)}::${historyEpoch}`
+    : null;
+  const scrollContext = useMemo(
+    () => ({ streamKey, isActive, appWindowInactive, historyReady }),
+    [streamKey, isActive, appWindowInactive, historyReady],
+  );
+  const currentScrollContextRef = useRef<object>(scrollContext);
+  currentScrollContextRef.current = scrollContext;
+  const queueScrollFrame = useCallback((work: () => void) => {
+    const context = currentScrollContextRef.current;
+    requestAnimationFrame(() => {
+      if (currentScrollContextRef.current === context) work();
+    });
+  }, []);
+  useEffect(
+    () => () => {
+      currentScrollContextRef.current = {};
+    },
+    [],
+  );
 
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
   const displayRows = useMemo(
     () => groupRrcNoticeRows(visibleMessages, hubDestHash),
     [visibleMessages, hubDestHash],
   );
+  const unreadStartIndex = useMemo(() => {
+    if (unreadWatermark === null) return -1;
+    return displayRows.findIndex((row) => {
+      if (row.type !== 'message') return false;
+      const msg = row.msg;
+      const own =
+        rrcIdentityHashesMatch(msg.sender_hash ?? '', localIdentityHash ?? '') ||
+        (!msg.sender_hash && Boolean(nickname.trim()) && msg.nickname === nickname);
+      const prose =
+        msg.kind === 'msg' ||
+        msg.kind === 'action' ||
+        (isRrcWhisperRoom(activeRoom) &&
+          msg.kind === 'notice' &&
+          Boolean(msg.nickname || msg.sender_hash));
+      return prose && !own && msg.timestamp > unreadWatermark;
+    });
+  }, [displayRows, unreadWatermark, localIdentityHash, nickname, activeRoom]);
+  unreadStartIndexRef.current = unreadStartIndex;
+  const unreadPositionedForRef = useRef<string | null>(null);
+  const pendingOpeningScrollRef = useRef(true);
+  const measuredUnreadIndexRef = useRef(-1);
   const [expandedNoticeIds, setExpandedNoticeIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -505,8 +558,10 @@ export function RrcChatView({
   const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
 
   const estimateSize = useCallback(
-    (index: number) => estimateRrcDisplayRowHeight(displayRows[index], expandedNoticeIds),
-    [displayRows, expandedNoticeIds],
+    (index: number) =>
+      estimateRrcDisplayRowHeight(displayRows[index], expandedNoticeIds) +
+      (index === unreadStartIndex ? CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX : 0),
+    [displayRows, expandedNoticeIds, unreadStartIndex],
   );
 
   const measureElement = useMemo(
@@ -522,7 +577,7 @@ export function RrcChatView({
     overscan: 10,
     getItemKey: (index) => rrcDisplayRowVirtualizerKey(displayRows[index], index),
     anchorTo: 'end',
-    followOnAppend: true,
+    followOnAppend: isActive && !appWindowInactive && unreadStartIndex < 0,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
@@ -561,39 +616,49 @@ export function RrcChatView({
     if (streamPinRef.current) {
       isPinnedToBottomRef.current = true;
       setShowScrollButton(false);
+      onReadingLatestChange?.(isActive && historyReady && !appWindowInactive);
       return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
     }
     const atEnd = computeIsAtChatEnd();
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
+    onReadingLatestChange?.(isActive && historyReady && !appWindowInactive && atEnd);
     return getDistFromChatBottom(scrollContainerRef.current, messagesEndRef.current, null);
-  }, [computeIsAtChatEnd]);
+  }, [computeIsAtChatEnd, onReadingLatestChange, isActive, appWindowInactive, historyReady]);
 
   const applyNearBottomCaughtUp = useCallback(
     (distFromBottom: number) => {
-      if (!isActive || appWindowInactive || distFromBottom >= 50) return;
+      if (
+        !isActive ||
+        !historyReady ||
+        appWindowInactive ||
+        !isPinnedToBottomRef.current ||
+        distFromBottom >= 50
+      )
+        return;
       onCaughtUp?.();
     },
-    [appWindowInactive, isActive, onCaughtUp],
+    [appWindowInactive, isActive, historyReady, onCaughtUp],
   );
 
   const handleStreamScroll = useCallback(() => {
+    if (historyReady) pendingOpeningScrollRef.current = false;
     streamPinRef.current = false;
     const distFromBottom = updateScrollButtonVisibility();
     if (distFromBottom != null) applyNearBottomCaughtUp(distFromBottom);
-  }, [applyNearBottomCaughtUp, updateScrollButtonVisibility]);
+  }, [applyNearBottomCaughtUp, updateScrollButtonVisibility, historyReady]);
 
   const scrollToBottom = useCallback(
     (behavior: ScrollBehavior = 'auto') => {
       messageVirtualizerRef.current.scrollToEnd({ behavior });
       isPinnedToBottomRef.current = true;
       setShowScrollButton(false);
-      requestAnimationFrame(() => {
+      queueScrollFrame(() => {
         const dist = updateScrollButtonVisibility();
         if (dist != null) applyNearBottomCaughtUp(dist);
       });
     },
-    [applyNearBottomCaughtUp, updateScrollButtonVisibility],
+    [applyNearBottomCaughtUp, updateScrollButtonVisibility, queueScrollFrame],
   );
 
   /** Last visible id — rooms at the 500-message cap grow without length change. */
@@ -603,10 +668,10 @@ export function RrcChatView({
   // Follow new messages when pinned (Rooms/Chat contract).
   useEffect(() => {
     if (!isActive || appWindowInactive || !activeRoom) return;
-    if (isPinnedToBottomRef.current) {
+    if (isPinnedToBottomRef.current && historyReady) {
       messageVirtualizerRef.current.scrollToEnd();
     }
-    requestAnimationFrame(() => {
+    queueScrollFrame(() => {
       const dist = updateScrollButtonVisibility();
       if (dist != null) applyNearBottomCaughtUp(dist);
     });
@@ -616,29 +681,59 @@ export function RrcChatView({
     isActive,
     activeRoom,
     appWindowInactive,
+    historyReady,
     updateScrollButtonVisibility,
     applyNearBottomCaughtUp,
+    queueScrollFrame,
   ]);
 
   // Hub and/or room switch while active → pin + scroll to end.
   // Same room name on another hub (e.g. general) must still re-pin; room-only key missed that.
   useLayoutEffect(() => {
-    const streamKey =
-      activeRoom && hubDestHash
-        ? `${hubDestHash.toLowerCase()}::${activeRoom}`
-        : activeRoom
-          ? `::${activeRoom}`
-          : null;
+    if (!isActive) return;
     const prevKey = prevStreamKeyRef.current;
     prevStreamKeyRef.current = streamKey;
-    if (!isActive) return;
     if (!streamKey) return;
-    if (prevKey === streamKey) return;
-    streamPinRef.current = true;
-    isPinnedToBottomRef.current = true;
-    messageVirtualizerRef.current.scrollToEnd();
-    setShowScrollButton(false);
-  }, [activeRoom, hubDestHash, isActive]);
+    if (prevKey === streamKey && (wasActiveRef.current || !savedWasPinnedToBottomRef.current))
+      return;
+    unreadPositionedForRef.current = null;
+    pendingOpeningScrollRef.current = true;
+    streamPinRef.current = false;
+    isPinnedToBottomRef.current = false;
+    setShowScrollButton(unreadWatermark !== null);
+  }, [streamKey, isActive, unreadWatermark]);
+
+  useLayoutEffect(() => {
+    if (measuredUnreadIndexRef.current !== unreadStartIndex) {
+      measuredUnreadIndexRef.current = unreadStartIndex;
+      messageVirtualizerRef.current.measure();
+    }
+    if (!isActive || !historyReady || !pendingOpeningScrollRef.current) return;
+    const key = `${hubDestHash}::${activeRoom}::${unreadWatermark}`;
+    if (unreadPositionedForRef.current === key) return;
+    unreadPositionedForRef.current = key;
+    pendingOpeningScrollRef.current = false;
+    streamPinRef.current = unreadStartIndex < 0;
+    isPinnedToBottomRef.current = unreadStartIndex < 0;
+    onReadingLatestChange?.(unreadStartIndex < 0 && !appWindowInactive);
+    if (unreadStartIndex >= 0)
+      messageVirtualizerRef.current.scrollToIndex(unreadStartIndex, { align: 'center' });
+    else messageVirtualizerRef.current.scrollToEnd();
+    setShowScrollButton(unreadStartIndex >= 0);
+  }, [
+    activeRoom,
+    hubDestHash,
+    isActive,
+    historyReady,
+    appWindowInactive,
+    onReadingLatestChange,
+    unreadStartIndex,
+    unreadWatermark,
+  ]);
+
+  useEffect(() => {
+    if (!isActive || appWindowInactive) onReadingLatestChange?.(false);
+  }, [isActive, appWindowInactive, onReadingLatestChange]);
 
   // Tab exit snapshot / tab return restore (Rooms contract).
   useLayoutEffect(() => {
@@ -647,20 +742,27 @@ export function RrcChatView({
     wasActiveRef.current = isActive;
 
     if (!isActive) {
-      if (el) {
+      if (wasActive && el) {
         savedScrollTopRef.current = el.scrollTop;
         savedWasPinnedToBottomRef.current = isPinnedToBottomRef.current;
+        savedScrollKeyRef.current = streamKey;
       }
       return;
     }
 
     if (!wasActive) {
-      if (savedScrollTopRef.current !== null) {
-        if (savedWasPinnedToBottomRef.current) {
+      if (savedScrollTopRef.current !== null && savedScrollKeyRef.current === streamKey) {
+        if (
+          savedWasPinnedToBottomRef.current &&
+          unreadWatermark !== null &&
+          (unreadStartIndex >= 0 || !historyReady)
+        ) {
+          // The opening unread scroll owns this return, including delayed history.
+        } else if (savedWasPinnedToBottomRef.current) {
           messageVirtualizerRef.current.scrollToEnd();
           isPinnedToBottomRef.current = true;
           setShowScrollButton(false);
-          requestAnimationFrame(() => {
+          queueScrollFrame(() => {
             const dist = updateScrollButtonVisibility();
             if (dist != null) applyNearBottomCaughtUp(dist);
           });
@@ -671,7 +773,16 @@ export function RrcChatView({
         savedWasPinnedToBottomRef.current = false;
       }
     }
-  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
+  }, [
+    applyNearBottomCaughtUp,
+    isActive,
+    updateScrollButtonVisibility,
+    unreadWatermark,
+    unreadStartIndex,
+    historyReady,
+    streamKey,
+    queueScrollFrame,
+  ]);
 
   // Row estimates are px, calibrated to the current root scale. Cached measurements
   // for off-screen rows survive a scale change, so drop them and re-anchor.
@@ -689,7 +800,7 @@ export function RrcChatView({
   useEffect(() => {
     if (!isActive) return;
     const onFocus = () => {
-      requestAnimationFrame(() => {
+      queueScrollFrame(() => {
         const dist = updateScrollButtonVisibility();
         if (dist != null) applyNearBottomCaughtUp(dist);
       });
@@ -698,13 +809,13 @@ export function RrcChatView({
     return () => {
       window.removeEventListener('focus', onFocus);
     };
-  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility]);
+  }, [applyNearBottomCaughtUp, isActive, updateScrollButtonVisibility, queueScrollFrame]);
 
   useLayoutEffect(() => {
-    requestAnimationFrame(() => {
+    queueScrollFrame(() => {
       updateScrollButtonVisibility();
     });
-  }, [updateScrollButtonVisibility]);
+  }, [updateScrollButtonVisibility, queueScrollFrame]);
 
   const gridColsClass = rrcGridColsClass(showTimestamps, use24HourTime);
 
@@ -936,6 +1047,19 @@ export function RrcChatView({
                     className={`absolute top-0 left-0 w-full ${line.lineClass}`}
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
+                    {vi.index === unreadStartIndex && (
+                      <div
+                        role="separator"
+                        aria-label={t('chatPanel.newMessagesDivider')}
+                        className="flex items-center gap-3 py-2"
+                      >
+                        <div className="flex-1 border-t border-red-500/50" />
+                        <span className="text-label shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 font-semibold text-red-300">
+                          {t('chatPanel.newMessagesDivider')}
+                        </span>
+                        <div className="flex-1 border-t border-red-500/50" />
+                      </div>
+                    )}
                     {line.inner}
                   </div>
                 );
@@ -948,13 +1072,18 @@ export function RrcChatView({
           <button
             type="button"
             onClick={() => {
-              scrollToBottom('smooth');
+              if (unreadStartIndex >= 0)
+                messageVirtualizerRef.current.scrollToIndex(unreadStartIndex, {
+                  align: 'center',
+                  behavior: 'smooth',
+                });
+              else scrollToBottom('smooth');
             }}
             className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark shadow-level-3 text-ink-200 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all"
-            aria-label={t('rrc.jumpToLatest')}
+            aria-label={t(unreadStartIndex >= 0 ? 'roomsPanel.jumpToUnread' : 'rrc.jumpToLatest')}
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
-            {t('rrc.jumpToLatest')}
+            {t(unreadStartIndex >= 0 ? 'roomsPanel.jumpToUnread' : 'rrc.jumpToLatest')}
           </button>
         )}
       </div>

@@ -150,7 +150,7 @@ test.describe('AI conversation summaries', () => {
     });
     const section = await openAiSettings(launched);
     await section.getByRole('combobox', { name: 'Engine', exact: true }).selectOption('bundled');
-    for (const modelId of ['qwen2.5-0.5b-instruct-q4', 'qwen2.5-1.5b-instruct-q4']) {
+    for (const modelId of ['llama3.2-1b-instruct-q4', 'qwen2.5-1.5b-instruct-q4']) {
       const installed = await launched.page.evaluate(async (id) => {
         const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
         const result = await api.ai.installLocalModel(id);

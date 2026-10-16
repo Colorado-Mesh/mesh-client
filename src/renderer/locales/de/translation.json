@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} Nachricht erfasst",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} gesammelte Nachrichten",
     "offlineSummaryHint": "Downloads nutzen das Internet einmalig. Zusammenfassungen werden auf diesem Gerät offline ausgeführt. Große Gespräche können mit heruntergeladenen Modellen einige Minuten dauern. Größere Modelle benötigen mehr Speicher.",
-    "smallModelLimitations": "Experimentell: Kann wichtige Fakten übersehen, Absender falsch zuordnen oder sich wiederholen. Bevorzugen Sie das 1,5B-Modell für den Nachholbedarf.",
     "countSnapshot": "Zählungen beschreiben diesen zusammenfassenden Schnappschuss; ungelesene Live-Abzeichen können abweichen.",
-    "balancedModelGuidance": "Größeres Modell; benötigt mehr Speicher und Zeit. Überprüfen Sie wichtige Details in den ursprünglichen Nachrichten."
+    "compactModelGuidance": "Geringerer Download- und Speicherverbrauch. Kann Details verpassen; überprüfen Sie die ursprünglichen Nachrichten.",
+    "englishModelGuidance": "Englisch-fokussiert. Kann Details falsch lesen oder umkehren; überprüfen Sie die ursprünglichen Nachrichten.",
+    "multilingualModelGuidance": "Mehrsprachige Option. Größere Download- und Speichernutzung; Überprüfen Sie die ursprünglichen Nachrichten."
   }
 }

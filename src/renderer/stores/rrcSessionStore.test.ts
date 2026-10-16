@@ -21,6 +21,81 @@ import {
 } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps selected-room unread until caught up on %s',
+    (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let now = 1800000000000;
+      vi.spyOn(Date, 'now').mockImplementation(() => now);
+      const hub = 'ea'.repeat(16);
+      const key = rrcReadKey(hub, '#lobby');
+      localStorage.setItem(rrcLastReadStorageKey(), JSON.stringify({ [key]: now - 1000 }));
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hub, 'Community');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#other');
+      const arrive = (id: string) => {
+        store.addMessage(
+          {
+            id,
+            room: '#lobby',
+            kind: 'msg',
+            body: id,
+            sender_hash: 'bb'.repeat(16),
+            timestamp: now,
+          },
+          { bumpUnread: true },
+        );
+      };
+      arrive('first');
+      store.setActiveRoom('#lobby');
+      store.setRrcPanelFocused(true);
+      expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+      expect(useRrcSessionStore.getState().rrcReadBoundary).toBe(now - 1000);
+      expect(loadPersistedRrcLastRead()[key]).toBe(now - 1000);
+      now++;
+      arrive('second');
+      expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(2);
+      store.setRrcReadingLatest('wrong-hub', '#lobby', true);
+      expect(useRrcSessionStore.getState().rrcReadingLatest).toBe(false);
+      store.setRrcReadingLatest(hub, '#lobby', true);
+      store.clearUnread('#lobby', hub);
+      expect(useRrcSessionStore.getState().rrcReadBoundary).toBeNull();
+      expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
+      expect(loadPersistedRrcLastRead()[key]).toBe(now);
+      store.setRrcReadingLatest(hub, '#lobby', false);
+      expect(useRrcSessionStore.getState().rrcReadBoundary).toBe(now);
+      now++;
+      arrive('third');
+      expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+    },
+  );
+
+  it('restores a read boundary on automatic focus and resets it when the room parts', () => {
+    const hub = 'eb'.repeat(16);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setFocusedHub(null);
+    store.addMessage(
+      {
+        id: 'offscreen',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'Unread',
+        timestamp: Date.now(),
+        sender_hash: 'bb'.repeat(16),
+      },
+      { hubDestHash: hub, bumpUnread: true },
+    );
+    store.applyStatus('active', hub, 'Community');
+    expect(useRrcSessionStore.getState().rrcReadingLatest).toBe(false);
+    expect(useRrcSessionStore.getState().rrcReadBoundary).not.toBeNull();
+    store.roomParted('#lobby', undefined, hub);
+    expect(useRrcSessionStore.getState().rrcReadBoundary).toBeNull();
+    expect(useRrcSessionStore.getState().rrcReadingLatest).toBe(false);
+  });
   it.each(
     (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
       [false, true].map((futureHistory) => ({ platform, futureHistory })),
@@ -67,7 +142,7 @@ describe('rrcSessionStore', () => {
         { bumpUnread: true },
       );
       store.setActiveRoom('#lobby');
-      expect(loadPersistedRrcLastRead()[key]).toBe(now);
+      expect(loadPersistedRrcLastRead()[key]).toBe(now - 1000);
       const message = { at: now, sender: 'Alice', body: 'Normal arrival' };
       expect(
         selectSummaryMessages({
@@ -237,12 +312,13 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
   });
 
-  it('does not bump unread for active room when RRC panel is focused', () => {
+  it('does not bump unread while the focused room is reading latest', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
     store.roomJoined('#lobby');
     store.setActiveRoom('#lobby');
     store.setRrcPanelFocused(true);
+    store.setRrcReadingLatest('28c7c1a68c735693aa8e6b8193ed44b2', '#lobby', true);
     store.addMessage(
       {
         id: '1',

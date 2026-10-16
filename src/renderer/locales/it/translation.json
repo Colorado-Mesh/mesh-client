@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} messaggio raccolto",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} messaggi raccolti",
     "offlineSummaryHint": "I download utilizzano Internet una sola volta. I riepiloghi vengono eseguiti offline su questo dispositivo. Le conversazioni di grandi dimensioni possono richiedere alcuni minuti con i modelli scaricati. I modelli più grandi hanno bisogno di più memoria.",
-    "smallModelLimitations": "Sperimentale: può perdere fatti chiave, attribuire erroneamente i mittenti o ripetersi. Preferire il modello 1.5B per il recupero.",
     "countSnapshot": "I conteggi descrivono questa istantanea di riepilogo; i badge live non letti possono differire.",
-    "balancedModelGuidance": "Modello più grande; ha bisogno di più memoria e tempo. Verifica i dettagli importanti nei messaggi originali."
+    "compactModelGuidance": "Download e utilizzo della memoria ridotti. Può perdere i dettagli; controlla i messaggi originali.",
+    "englishModelGuidance": "Orientata all'inglese. Può fraintendere o invertire i dettagli; verifica i messaggi originali.",
+    "multilingualModelGuidance": "Opzione multilingue. Download e utilizzo della memoria più grandi; controllare i messaggi originali."
   }
 }

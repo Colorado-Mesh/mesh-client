@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} 메시지 수집 완료",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} 메시지 수집 완료",
     "offlineSummaryHint": "다운로드는 인터넷을 한 번 사용합니다. 요약은 이 장치에서 오프라인으로 실행됩니다. 다운로드한 모델에서 대규모 대화는 몇 분 정도 걸릴 수 있습니다. 더 큰 모델에는 더 많은 메모리가 필요합니다.",
-    "smallModelLimitations": "실험적: 주요 사실을 누락하거나, 발신자를 잘못 평가하거나, 반복할 수 있습니다. 따라잡기 위해 1.5B 모델을 선호합니다.",
     "countSnapshot": "개수는 이 요약 스냅샷을 설명합니다. 읽지 않은 라이브 배지는 다를 수 있습니다.",
-    "balancedModelGuidance": "더 큰 모델; 더 많은 메모리와 시간이 필요합니다. 기존 메시지에서 중요한 세부 정보를 확인하세요."
+    "compactModelGuidance": "다운로드 및 메모리 사용량 감소. 세부 정보를 놓칠 수 있습니다. 원래 메시지를 확인하세요.",
+    "englishModelGuidance": "영어에 중점을 둡니다. 세부 정보를 잘못 읽거나 되돌릴 수 있습니다. 원래 메시지를 확인합니다.",
+    "multilingualModelGuidance": "다국어 옵션. 더 큰 다운로드 및 메모리 사용. 원본 메시지를 확인하십시오."
   }
 }

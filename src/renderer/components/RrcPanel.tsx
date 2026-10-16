@@ -28,6 +28,7 @@ import { SegmentedControl } from '@/renderer/components/ui/SegmentedControl';
 import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDot';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatBadgeCount, NAV_BADGE_FILL_CLASS } from '@/renderer/lib/navBadges';
@@ -67,9 +68,10 @@ import {
 import { hydrateRrcHubNicks } from '@/renderer/lib/rrcNickCacheHydrate';
 import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
-import { openingRrcReadWatermark } from '@/renderer/lib/rrcReadWatermark';
+import { loadPersistedRrcLastRead, rrcReadKey } from '@/renderer/lib/rrcReadWatermark';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcRoomHistory';
+import { rrcRoomHistoryEpoch } from '@/renderer/lib/rrcRoomHistoryHydration';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import {
   resolveRrcJoinRoomName,
@@ -207,6 +209,8 @@ export default function RrcPanel({
   const setActiveRoom = useRrcSessionStore((s) => s.setActiveRoom);
   const setShowTimestamps = useRrcSessionStore((s) => s.setShowTimestamps);
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
+  const readBoundary = useRrcSessionStore((s) => s.rrcReadBoundary);
+  const setReadingLatest = useRrcSessionStore((s) => s.setRrcReadingLatest);
   const clearActiveRoomMessages = useRrcSessionStore((s) => s.clearActiveRoomMessages);
   const addMessage = useRrcSessionStore((s) => s.addMessage);
   const markPartIntent = useRrcSessionStore((s) => s.markPartIntent);
@@ -253,10 +257,24 @@ export default function RrcPanel({
     }
   }, [setNickname]);
 
+  const historyViewKey = hubDestHash && activeRoom ? rrcReadKey(hubDestHash, activeRoom) : '';
+  const historyEpoch = hubDestHash ? rrcRoomHistoryEpoch(hubDestHash) : 0;
+  const historyContext = useMemo(
+    () => ({ key: historyViewKey, epoch: historyEpoch }),
+    [historyViewKey, historyEpoch],
+  );
+  const [hydratedContext, setHydratedContext] = useState<typeof historyContext | null>(null);
+  const historyReady = hydratedContext === historyContext;
   useEffect(() => {
     if (!hubDestHash || !activeRoom) return;
-    void hydrateRrcRoomMessages(hubDestHash, activeRoom);
-  }, [hubDestHash, activeRoom]);
+    let cancelled = false;
+    void hydrateRrcRoomMessages(hubDestHash, activeRoom).then(() => {
+      if (!cancelled) setHydratedContext(historyContext);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hubDestHash, activeRoom, historyContext]);
 
   useEffect(() => {
     if (!hubDestHash) return;
@@ -331,9 +349,25 @@ export default function RrcPanel({
   }, [conversationVisible, setRrcPanelFocused]);
 
   const handleCaughtUp = useCallback(() => {
-    if (!conversationVisible || !activeRoom || !hubDestHash) return;
+    if (!conversationVisible || !historyReady || !activeRoom || !hubDestHash) return;
+    const current = useRrcSessionStore.getState();
+    if (
+      !current.rrcPanelFocused ||
+      !current.rrcReadingLatest ||
+      isAppWindowInactive() ||
+      current.focusedHubHash !== hubDestHash ||
+      !rrcRoomsMatch(current.activeRoom ?? '', activeRoom)
+    )
+      return;
     clearUnread(activeRoom, hubDestHash);
-  }, [conversationVisible, activeRoom, hubDestHash, clearUnread]);
+  }, [conversationVisible, historyReady, activeRoom, hubDestHash, clearUnread]);
+  const handleReadingLatestChange = useCallback(
+    (readingLatest: boolean) => {
+      if (hubDestHash && activeRoom)
+        setReadingLatest(hubDestHash, activeRoom, conversationVisible && readingLatest);
+    },
+    [hubDestHash, activeRoom, conversationVisible, setReadingLatest],
+  );
 
   /**
    * Stock rrcd `/who` uses emit_notice → a single Packet.send (no chunk/resource),
@@ -1288,7 +1322,11 @@ export default function RrcPanel({
     protocol: 'reticulum',
     surface: 'rrc',
     messages: summaryMessages,
-    watermark: hubDestHash && activeRoom ? openingRrcReadWatermark(hubDestHash, activeRoom) : 0,
+    watermark:
+      readBoundary ??
+      (hubDestHash && activeRoom
+        ? (loadPersistedRrcLastRead()[rrcReadKey(hubDestHash, activeRoom)] ?? 0)
+        : 0),
     available: !!hubDestHash && !!activeRoom,
     history:
       hubDestHash && activeRoom
@@ -1607,7 +1645,11 @@ export default function RrcPanel({
           members={chatCompleteMembers}
           alwaysShowMessageActions={alwaysShowMessageActions}
           placeholder={whisperComposerPlaceholder}
-          isActive={isActive}
+          isActive={conversationVisible}
+          unreadWatermark={readBoundary}
+          historyReady={historyReady}
+          historyEpoch={historyEpoch}
+          onReadingLatestChange={handleReadingLatestChange}
           onCaughtUp={handleCaughtUp}
           onOpenDm={onOpenDm}
           composeSeed={composeSeed}

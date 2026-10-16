@@ -7759,8 +7759,9 @@
     "providerIncluded_many": "{{provider}} · {{model}} · uwzględniono {{included}} z {{count}} zebranych wiadomości",
     "providerCollected_few": "{{provider}} · {{model}} · zebrano {{count}} wiadomości",
     "providerCollected_many": "{{provider}} · {{model}} · zebrano {{count}} wiadomości",
-    "smallModelLimitations": "Eksperymentalne: może pominąć kluczowe fakty, błędnie przypisać nadawców lub powtórzyć się. Preferuj model 1,5B do nadrabiania zaległości.",
     "countSnapshot": "Liczniki opisują tę migawkę podsumowania; znaczki nieprzeczytane na żywo mogą się różnić.",
-    "balancedModelGuidance": "Większy model; wymaga więcej pamięci i czasu. Zweryfikuj ważne szczegóły w oryginalnych wiadomościach."
+    "compactModelGuidance": "Mniejsze pobieranie i wykorzystanie pamięci. Może przegapić szczegóły; sprawdź oryginalne wiadomości.",
+    "englishModelGuidance": "Skupiony na języku angielskim. Może błędnie odczytać lub odwrócić szczegóły; zweryfikuj oryginalne wiadomości.",
+    "multilingualModelGuidance": "Opcja wielojęzyczna. Większe pobieranie i wykorzystanie pamięci; sprawdź oryginalne wiadomości."
   }
 }

@@ -112,7 +112,7 @@ export interface AiModelInfo {
   downloadBytes: number;
   diskBytes: number;
   license: string;
-  qualityNote: string;
+  qualityNote: 'compact' | 'multilingual' | 'english';
   installed: boolean;
 }
 

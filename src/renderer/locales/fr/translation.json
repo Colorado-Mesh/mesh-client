@@ -7631,8 +7631,9 @@
     "providerCollected_one": "{{provider}} · {{model}} · {{count}} message collecté",
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} messages collectés",
     "offlineSummaryHint": "Les téléchargements utilisent Internet une fois. Les résumés s'exécutent hors ligne sur cet appareil. Les grandes conversations peuvent prendre quelques minutes avec les modèles téléchargés. Les modèles plus grands ont besoin de plus de mémoire.",
-    "smallModelLimitations": "Expérimental : peut manquer des faits clés, mal attribuer les expéditeurs ou se répéter. Préférez le modèle 1.5B pour le rattrapage.",
     "countSnapshot": "Les comptes décrivent cet instantané récapitulatif ; les badges non lus en direct peuvent différer.",
-    "balancedModelGuidance": "Modèle plus grand ; nécessite plus de mémoire et de temps. Vérifiez les détails importants dans les messages d'origine."
+    "compactModelGuidance": "Téléchargement et utilisation de la mémoire plus petits. Peut manquer des détails ; vérifiez les messages originaux.",
+    "englishModelGuidance": "Axé sur l'anglais. Peut mal lire ou inverser les détails ; vérifier les messages d'origine.",
+    "multilingualModelGuidance": "Option multilingue. Téléchargement et utilisation de la mémoire plus importants ; vérifiez les messages originaux."
   }
 }

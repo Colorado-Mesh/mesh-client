@@ -230,7 +230,10 @@ export class AiModelPackManager {
     resetDeadline();
     try {
       const signal = AbortSignal.any([job.abort.signal, idle.signal]);
-      const response = await this.deps.fetch(asset.url, { signal, redirect: 'follow' });
+      const response =
+        asset.content !== undefined
+          ? new Response(asset.content)
+          : await this.deps.fetch(asset.url, { signal, redirect: 'follow' });
       if (!response.ok || !response.body) {
         await response.body?.cancel().catch(() => {
           // catch-no-log-ok failed download cleanup must not hide the HTTP failure

@@ -686,8 +686,9 @@ export const appSurface: SettingsSearchSurface = {
     { path: 'src/renderer/components/AppTranslationSection.tsx', sweepAllKeys: true },
   ],
   exempt: {
-    'aiSummary.smallModelLimitations': 'Catalog guidance; its model catalog setting is indexed',
-    'aiSummary.balancedModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
+    'aiSummary.compactModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
+    'aiSummary.englishModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
+    'aiSummary.multilingualModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
     'aiSummary.bundledEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.cancel': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.chooseEngine': 'AI setting help, option, status or child action; parent is indexed',

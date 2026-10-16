@@ -15,7 +15,7 @@ const manifest: AiLocalModel[] = [
     id: 'model-1',
     name: 'Test',
     paramsLabel: '1',
-    qualityNote: 'test',
+    qualityNote: 'compact',
     license: 'MIT',
     assets: [
       {
@@ -72,6 +72,40 @@ describe('AI verified model downloads', () => {
     await packs.delete('model-1');
     expect(await fs.readdir(path.join(temp, 'models'))).toEqual([]);
   });
+  it.each(['linux', 'darwin', 'win32'])(
+    'verifies inline attribution with model assets on %s',
+    async () => {
+      const notice = 'Synthetic attribution\n';
+      const fetchImpl = vi.fn(async () => new Response(data));
+      const packs = new AiModelPackManager({
+        directory: () => path.join(temp, 'models'),
+        enabled: () => true,
+        fetch: fetchImpl,
+        onProgress: vi.fn(),
+        manifest: [
+          {
+            ...manifest[0],
+            assets: [
+              ...manifest[0].assets,
+              {
+                file: 'NOTICE.txt',
+                content: notice,
+                size: Buffer.byteLength(notice),
+                sha256: createHash('sha256').update(notice).digest('hex'),
+              },
+            ],
+          },
+        ],
+      });
+      expect(await packs.install('model-1')).toEqual({ ok: true });
+      expect(fetchImpl).toHaveBeenCalledOnce();
+      const noticePath = packs.assetPath('model-1', 'NOTICE.txt');
+      expect(await fs.readFile(noticePath, 'utf8')).toBe(notice);
+      expect(await packs.verify('model-1')).toBe(true);
+      await fs.writeFile(noticePath, notice.replace('Synthetic', 'Incorrect'));
+      expect(await packs.verify('model-1')).toBe(false);
+    },
+  );
   it('does not publish mismatched bytes and cancellation cannot resurrect a removed model', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
