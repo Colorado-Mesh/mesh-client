@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { MeshProtocol } from '@/shared/meshProtocol';
 import type { TAKInboundChat } from '@/shared/tak-types';
 
 import {
@@ -19,6 +20,12 @@ import {
   TAK_MESH_SEND_TIMEOUT_MS,
   type TakMeshSendFn,
 } from './takInboundChat';
+
+/** The identity each protocol's tab uses now, as the identity store resolves it. */
+const currentIdentity: Partial<Record<MeshProtocol, string>> = { meshcore: 'mc', meshtastic: 'mt' };
+vi.mock('../identityByProtocol', () => ({
+  getIdentityIdForProtocol: (protocol: MeshProtocol) => currentIdentity[protocol] ?? null,
+}));
 
 const NOW = Date.parse('2026-10-11T12:00:00Z');
 const OPS = '0123456789abcdef';
@@ -225,6 +232,16 @@ describe('direct messages from TAK', () => {
     expect(findTakSendTargets(direct('meshtastic', 456))).toEqual([]);
     setTakRadio('meshcore', null);
     expect(findTakSendTargets(direct('meshcore', 123))).toEqual([]);
+  });
+
+  it('sends nothing while the recorded radio is no longer the one in use for the protocol', () => {
+    setTakRadio('meshcore', 'mc');
+    useTakRelayPrefsStore.getState().setDirectMessages('mc', true);
+    // Another MeshCore radio has just become active; the recorded radio catches up a render later.
+    currentIdentity.meshcore = 'mc-2';
+    expect(findTakSendTargets(direct('meshcore', 123))).toEqual([]);
+    currentIdentity.meshcore = 'mc';
+    expect(findTakSendTargets(direct('meshcore', 123))).toHaveLength(1);
   });
 
   it('sends the prefixed text as a direct message, with no echo to wait for', async () => {
