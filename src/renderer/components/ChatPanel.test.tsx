@@ -2311,6 +2311,9 @@ describe('ChatPanel unread watermarks', () => {
         vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
       }
     },
+    // Each case renders the whole panel twice (2-5 s alone), so the 5 s default fails under the
+    // load of a full CI shard.
+    30_000,
   );
 
   it('keeps DM tab open after unread clears when conversation was opened via DM tab', async () => {

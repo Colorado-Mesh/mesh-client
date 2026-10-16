@@ -11,5 +11,7 @@ describe('locale translation files', () => {
       cwd: projectRoot,
     });
     expect(output).toContain('check:i18n passed');
-  });
+    // Runs the whole i18n checker in a child process (about 5 s alone), so the 5 s default
+    // fails under the load of a full test run.
+  }, 30_000);
 });
