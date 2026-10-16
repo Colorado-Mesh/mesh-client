@@ -198,6 +198,12 @@ export interface TakRelayExtras {
   stale_sec?: number;
   /** Fixed network infrastructure with no advertised role, such as an RMAP interface. */
   infrastructure?: boolean;
+  /**
+   * This app can send the node a direct message: a MeshCore contact whose key it holds, or any
+   * Meshtastic node. Main gives the marker a chat endpoint only when the node is a companion and
+   * direct messages are on for its radio.
+   */
+  chatReachable?: boolean;
 }
 
 /** One node position pushed from the renderer to the TAK sinks. */
@@ -262,15 +268,39 @@ export interface TAKChannelChatMessage {
   longitude?: number;
 }
 
-/** A message a local TAK client sent to a served channel's contact, for the mesh. */
+/** Radios whose companions TAK clients may message directly. */
+export const TAK_DM_PROTOCOLS = ['meshcore', 'meshtastic'] as const;
+export type TakDmProtocol = (typeof TAK_DM_PROTOCOLS)[number];
+
+export function isTakDmProtocol(value: unknown): value is TakDmProtocol {
+  return (TAK_DM_PROTOCOLS as readonly unknown[]).includes(value);
+}
+
+/** Where a TAK client's message goes: a served channel, or one companion as a direct message. */
+export type TakChatTarget =
+  | { kind: 'channel'; channelKey: string }
+  | { kind: 'direct'; protocol: TakDmProtocol; nodeId: number };
+
+/** A message a local TAK client sent to a channel's or a companion's contact, for the mesh. */
 export interface TAKInboundChat {
-  /** Identity key of the channel whose contact the client messaged. */
-  channelKey: string;
+  target: TakChatTarget;
   senderCallsign: string;
   text: string;
   /** Server-side id of the client connection that sent it. */
   clientId: string;
   /** When the server received it, epoch milliseconds. */
+  timeMs: number;
+}
+
+/** A direct message heard from a companion, for TAK clients. */
+export interface TAKDirectMessage {
+  protocol: TakDmProtocol;
+  /** The companion's node id; its ATAK contact uid comes from it. */
+  nodeId: number;
+  /** Its name as heard, used when TAK has no marker for it. */
+  senderCallsign: string;
+  text: string;
+  /** When the message was sent, epoch milliseconds. */
   timeMs: number;
 }
 

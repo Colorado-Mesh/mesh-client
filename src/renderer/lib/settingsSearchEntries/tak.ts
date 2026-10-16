@@ -186,6 +186,20 @@ const takEntries: readonly SettingSearchEntry[] = [
       'mqtt',
     ],
   },
+  {
+    id: 'tak.directMessages.meshtastic',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.directMessages',
+    sectionKey: 'takServerPanel.messagingTitleMeshtastic',
+    keywords: ['tak', 'atak', 'meshtastic', 'dm', 'direct message', 'companion', 'contact', 'chat'],
+  },
+  {
+    id: 'tak.directMessages.meshcore',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.directMessages',
+    sectionKey: 'takServerPanel.messagingTitleMeshcore',
+    keywords: ['tak', 'atak', 'meshcore', 'dm', 'direct message', 'companion', 'contact', 'chat'],
+  },
 ];
 
 export const takSurface: SettingsSearchSurface = {

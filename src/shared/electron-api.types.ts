@@ -77,6 +77,8 @@ import type {
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
+  TAKDirectMessage,
+  TakDmProtocol,
   TAKEnrollmentRequest,
   TAKInboundChat,
   TAKNodeUpdate,
@@ -1459,6 +1461,13 @@ export interface ElectronAPI {
      * ignored while no sink has started.
      */
     retireChatRooms: (rooms: string[]) => Promise<void>;
+    /** Deliver one direct message heard from a companion to TAK clients; dropped with no sink. */
+    pushDirectMessage: (message: TAKDirectMessage) => Promise<void>;
+    /**
+     * Set the radios whose companions TAK clients may message; ignored while no sink has
+     * started.
+     */
+    setDirectMessaging: (protocols: TakDmProtocol[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */

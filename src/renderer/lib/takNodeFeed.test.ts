@@ -179,6 +179,28 @@ describe('collectTakNodeUpdates', () => {
     expect(updates.at(-1)).toMatchObject({ long_name: 'Base', last_heard: NOW_SEC });
   });
 
+  it('marks the nodes this app can send a direct message to', () => {
+    const updates = collectTakNodeUpdates({
+      ...sources({
+        nodesByProtocol: {
+          meshtastic: new Map([[1, node({ node_id: 1 })]]),
+          meshcore: new Map([[2, node({ node_id: 2 })]]),
+          reticulum: new Map(),
+        },
+      }),
+      canDirectMessage: (n, protocol) => protocol === 'meshcore' && n.node_id === 2,
+    });
+    expect(updates.map((u) => [takNodeUpdateKey(u), u.chatReachable])).toEqual([
+      ['meshtastic:1', false],
+      ['meshcore:2', true],
+    ]);
+    // Gaining or losing it is a change worth sending.
+    const mc = updates[1];
+    expect(takNodeUpdateSignature(mc)).not.toBe(
+      takNodeUpdateSignature({ ...mc, chatReachable: false }),
+    );
+  });
+
   it('leaves out our Reticulum position when it is the (0, 0) placeholder', () => {
     const updates = collectTakNodeUpdates(
       sources({ reticulumSelf: { nodeId: 77, name: 'Base', latitude: 0, longitude: 0 } }),

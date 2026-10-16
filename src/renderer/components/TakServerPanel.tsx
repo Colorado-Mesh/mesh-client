@@ -11,7 +11,7 @@ import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
 import type { IdentityId } from '../lib/types';
-import TakChannelRelaySection from './TakChannelRelaySection';
+import TakChannelRelaySection, { TakDirectMessagesToggle } from './TakChannelRelaySection';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
 import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
@@ -307,7 +307,12 @@ export default function TakServerPanel({
         description={t('takServerPanel.messagingIntroMeshtastic')}
         emptyText={t('takServerPanel.channelRelayNoChannelsMeshtastic')}
         anchorId="tak.channelRelay.meshtastic"
-      />
+      >
+        <TakDirectMessagesToggle
+          identityId={meshtasticIdentityId ?? null}
+          anchorId="tak.directMessages.meshtastic"
+        />
+      </TakChannelRelaySection>
 
       <TakChannelRelaySection
         identityId={meshcoreIdentityId ?? null}
@@ -316,7 +321,12 @@ export default function TakServerPanel({
         description={t('takServerPanel.messagingIntroMeshcore')}
         emptyText={t('takServerPanel.channelRelayNoChannels')}
         anchorId="tak.channelRelay.trackers"
-      />
+      >
+        <TakDirectMessagesToggle
+          identityId={meshcoreIdentityId ?? null}
+          anchorId="tak.directMessages.meshcore"
+        />
+      </TakChannelRelaySection>
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (

@@ -3,11 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   buildChannelChatCot,
   buildChannelContactCot,
+  buildDirectChatCot,
+  buildDirectContactCot,
   buildGeochatCot,
   channelContactUid,
   geochatSenderUid,
   parseTakChannelChatMessage,
   parseTakChatChannels,
+  parseTakDirectMessage,
+  parseTakDmProtocols,
   parseTakRetiredRooms,
   retiredRoomContactUid,
 } from './geochat-cot';
@@ -168,6 +172,73 @@ describe('parseTakChatChannels', () => {
     ['no remote flag', [{ key: KEY, name: '#MC Ops', send: true }]],
   ])('rejects %s', (_label, raw) => {
     expect(() => parseTakChatChannels(raw)).toThrow(/tak:setChatChannels/);
+  });
+});
+
+describe('direct messages', () => {
+  const ALICE = { uid: 'MC-123', callsign: 'Alice' };
+  const VIPER = { uid: 'ANDROID-1', callsign: 'VIPER' };
+
+  it('builds a message from the companion to one device, filed under the companion', () => {
+    const cot = buildDirectChatCot(
+      ALICE,
+      { text: 'meet <here>', timeMs: NOW - 5000 },
+      VIPER,
+      NOW,
+      'm1',
+    );
+    expect(cot).toContain('uid="GeoChat.MC-123.ANDROID-1.m1"');
+    expect(cot).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Alice"');
+    expect(cot).toContain('<chatgrp uid0="MC-123" uid1="ANDROID-1" id="ANDROID-1"/>');
+    expect(cot).toContain('time="2026-10-09T11:59:55.000Z">meet &lt;here&gt;</remarks>');
+  });
+
+  it('builds a reachable contact at 0, 0 that goes stale a day after the last message', () => {
+    const cot = buildDirectContactCot({ uid: 'MC-123', callsign: 'A&B' }, NOW - 60_000, NOW);
+    expect(cot).toContain('uid="MC-123" type="a-f-G-U-C"');
+    expect(cot).toContain('<point lat="0" lon="0"');
+    expect(cot).toContain('<contact callsign="A&amp;B" endpoint="*:-1:stcp"/>');
+    expect(cot).toContain('stale="2026-10-10T11:59:00.000Z"');
+  });
+
+  it('accepts a heard direct message and rejects malformed ones', () => {
+    const msg = {
+      protocol: 'meshcore',
+      nodeId: 123,
+      senderCallsign: ' Alice ',
+      text: ' hi ',
+      timeMs: NOW,
+    };
+    expect(parseTakDirectMessage(msg)).toEqual({
+      protocol: 'meshcore',
+      nodeId: 123,
+      senderCallsign: 'Alice',
+      text: 'hi',
+      timeMs: NOW,
+    });
+    for (const bad of [
+      null,
+      { ...msg, protocol: 'reticulum' },
+      { ...msg, nodeId: 0 },
+      { ...msg, nodeId: 2 ** 32 },
+      { ...msg, nodeId: 1.5 },
+      { ...msg, senderCallsign: 'a\nb' },
+      { ...msg, text: ' ' },
+      { ...msg, text: 'x'.repeat(1025) },
+      { ...msg, timeMs: -1 },
+    ]) {
+      expect(() => parseTakDirectMessage(bad)).toThrow(/^tak:pushDirectMessage: /);
+    }
+  });
+
+  it('accepts the radios with direct messages on, without repeats', () => {
+    expect(parseTakDmProtocols(['meshcore', 'meshtastic', 'meshcore'])).toEqual([
+      'meshcore',
+      'meshtastic',
+    ]);
+    expect(parseTakDmProtocols([])).toEqual([]);
+    expect(() => parseTakDmProtocols(['reticulum'])).toThrow(/tak:setDirectMessaging/);
+    expect(() => parseTakDmProtocols('meshcore')).toThrow(/tak:setDirectMessaging/);
   });
 });
 

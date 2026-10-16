@@ -5803,7 +5803,9 @@
     "channelSendFor": "Laat ATAK-apparaten naar {{channel}} sturen",
     "channelRemote": "Server",
     "channelRemoteFor": "Stream {{channel}} naar de externe TAK -server",
-    "channelTrackersFor": "Trackerfixes van {{channel}}"
+    "channelTrackersFor": "Trackerfixes van {{channel}}",
+    "directMessages": "Directe berichten",
+    "directMessagesHint": "Laat ATAK-apparaten berichten sturen naar de metgezellen van deze radio. Elke metgezel van dit radiobericht krijgt een chatoptie in ATAK en er gaat een bericht naar toe van deze radio, voorafgegaan door het roepnaam van de afzender. De antwoorden gaan naar het ATAK-apparaat dat er het laatst naar heeft geschreven, of naar elk apparaat dat er geen heeft. Een metgezel zonder positie verschijnt een dag na een bericht op 0, 0."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

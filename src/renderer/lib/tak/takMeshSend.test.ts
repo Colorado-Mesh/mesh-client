@@ -126,6 +126,28 @@ describe('sendTakTextOnMesh', () => {
     ]);
   });
 
+  it('sends a direct message through the Chat path without waiting for its ack', async () => {
+    // The companion has not answered yet: a channel send would still be waiting here.
+    const sendSpy = vi
+      .spyOn(meshcoreProtocol, 'sendMessage')
+      .mockImplementation(() => new Promise(() => {}));
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+    addMeshcoreIdentity();
+
+    await sendTakTextOnMesh(
+      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: 123 },
+      '[VIPER] meet at the gate',
+    );
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      { kind: 'rf' },
+      expect.objectContaining({ text: '[VIPER] meet at the gate', destination: 123 }),
+    );
+    expect(rows(ID_MC)).toEqual([
+      expect.objectContaining({ to: 123, channelIndex: -1, status: 'sending' }),
+    ]);
+  });
+
   it('rejects when the MeshCore send fails, leaving the message failed in Chat', async () => {
     mockConsoleWarn();
     vi.spyOn(meshcoreProtocol, 'sendMessage').mockRejectedValue(new Error('rf down'));

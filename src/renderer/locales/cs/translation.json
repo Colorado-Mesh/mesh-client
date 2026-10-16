@@ -5848,7 +5848,9 @@
     "channelSendFor": "Nechte zařízení Atak odeslat na {{channel}}",
     "channelRemote": "Vzdálená",
     "channelRemoteFor": "Stream {{channel}} na vzdálený TAK server",
-    "channelTrackersFor": "Opravy trackeru od {{channel}}"
+    "channelTrackersFor": "Opravy trackeru od {{channel}}",
+    "directMessages": "Přímé zprávy:",
+    "directMessagesHint": "Nechte zařízení Atak odeslat zprávu společníkům tohoto rádia. Každý společník, kterému může toto rádio poslat zprávu, dostane možnost chatu v atak a zpráva na něj vyjde z tohoto rádia s předponou volací značky odesílatele. Jeho odpovědi jdou do zařízení atak, které na něj naposledy napsalo, nebo do každého zařízení, pokud žádné nemá. Společník bez pozice se zobrazí na 0, 0 po dobu jednoho dne po zprávě."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

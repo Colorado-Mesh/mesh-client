@@ -36,6 +36,8 @@ export interface TakFeedSources {
   reticulumSelf: TakReticulumSelf | null;
   /** Latest `!MT1` fix per tracker heard on an enabled MeshCore channel. */
   trackerFixes?: readonly TakTrackerEntry[];
+  /** Whether this app can send a mesh node a direct message; unset, none can be. */
+  canDirectMessage?: (node: MeshNode, protocol: MeshProtocol) => boolean;
 }
 
 /** A tracker fix while it is still valid; expired fixes drop off. */
@@ -130,7 +132,9 @@ export function collectTakNodeUpdates(sources: TakFeedSources): TAKNodeUpdate[] 
   for (const protocol of REGISTERED_MESH_PROTOCOLS) {
     for (const node of sources.nodesByProtocol[protocol].values()) {
       const update = meshNodeToTakUpdate(node, protocol);
-      if (update) out.push(update);
+      if (!update) continue;
+      update.chatReachable = sources.canDirectMessage?.(node, protocol) ?? false;
+      out.push(update);
     }
   }
   for (const row of sources.rmapRows) {
@@ -180,5 +184,6 @@ export function takNodeUpdateSignature(update: TAKNodeUpdate): string {
     update.course ?? '',
     update.sequence ?? '',
     update.stale_sec ?? '',
+    update.chatReachable ? 'dm' : '',
   ].join('|');
 }

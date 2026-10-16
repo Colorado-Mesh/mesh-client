@@ -5803,7 +5803,9 @@
     "channelSendFor": "让ATAK设备发送到{{channel}}",
     "channelRemote": "远程服务器",
     "channelRemoteFor": "将{{channel}}流式传输到远程TAK服务器",
-    "channelTrackersFor": "来自{{channel}}的跟踪器修复"
+    "channelTrackersFor": "来自{{channel}}的跟踪器修复",
+    "directMessages": "实时消息",
+    "directMessagesHint": "让ATAK设备向此收音机的同伴发送消息。此收音机CAN消息的每个伴侣都会在ATAK中获得聊天选项，并从此收音机发出消息，前缀为发件人的呼号。它的回复会发送到上次写入它的ATAK设备，或者在没有设备时发送到每个设备。没有位置的伴侣在消息后一天出现在0 ， 0。"
   },
   "telemetryPanel": {
     "title": "遥测",

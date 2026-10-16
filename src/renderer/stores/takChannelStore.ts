@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { ChannelIdentityProtocol } from '@/shared/channelIdentityKey';
+import type { TakDmProtocol } from '@/shared/tak-types';
 
 import type { IdentityId } from '../lib/types';
 
@@ -19,10 +20,13 @@ export interface TakChannelInfo {
 interface TakChannelStoreState {
   /** Each radio's configured channels, in slot order. */
   channelsByIdentity: Record<IdentityId, readonly TakChannelInfo[]>;
+  /** The radio TAK uses for each protocol: the one whose channels it serves and DMs it sends. */
+  radioByProtocol: Partial<Record<TakDmProtocol, IdentityId>>;
 }
 
 export const useTakChannelStore = create<TakChannelStoreState>()(() => ({
   channelsByIdentity: {},
+  radioByProtocol: {},
 }));
 
 const NO_CHANNELS: readonly TakChannelInfo[] = [];
@@ -51,4 +55,19 @@ export function setTakChannels(identityId: IdentityId, channels: readonly TakCha
 
 export function getTakChannels(identityId: IdentityId): readonly TakChannelInfo[] {
   return useTakChannelStore.getState().channelsByIdentity[identityId] ?? NO_CHANNELS;
+}
+
+/** Record the radio TAK uses for `protocol`, or that there is none. */
+export function setTakRadio(protocol: TakDmProtocol, identityId: IdentityId | null): void {
+  useTakChannelStore.setState((s) => {
+    if ((s.radioByProtocol[protocol] ?? null) === identityId) return s;
+    const others = Object.fromEntries(
+      Object.entries(s.radioByProtocol).filter(([p]) => p !== protocol),
+    ) as Partial<Record<TakDmProtocol, IdentityId>>;
+    return { radioByProtocol: identityId ? { ...others, [protocol]: identityId } : others };
+  });
+}
+
+export function getTakRadio(protocol: TakDmProtocol): IdentityId | undefined {
+  return useTakChannelStore.getState().radioByProtocol[protocol];
 }
