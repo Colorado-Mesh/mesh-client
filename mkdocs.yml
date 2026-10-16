@@ -103,6 +103,8 @@ nav:
   - Home: index.md
   - Install: install.md
   - Features: features.md
+  - Release notes:
+      - Catch up (unreleased): release-notes/ai-catch-up.md
   - User Guide:
       - Live Traffic Map: live-traffic-map.md
       - Reticulum Setup Guide: reticulum-setup-guide.md

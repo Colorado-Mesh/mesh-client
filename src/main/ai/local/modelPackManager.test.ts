@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 /* eslint-disable @typescript-eslint/require-await -- deterministic async fetch/runtime test doubles */
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
@@ -10,9 +11,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AiLocalModel } from './modelManifest';
 import { AiModelPackManager } from './modelPackManager';
 
-vi.mock('node:fs', { spy: true });
-
 const data = Buffer.from('synthetic model');
+const hashReads = vi.fn((file: string) => createReadStream(file));
 const manifest: AiLocalModel[] = [
   {
     id: 'model-1',
@@ -31,6 +31,7 @@ const manifest: AiLocalModel[] = [
 ];
 let temp: string;
 beforeEach(async () => {
+  hashReads.mockClear();
   temp = await fs.mkdtemp(path.join(os.tmpdir(), 'mesh-ai-'));
 });
 afterEach(async () => {
@@ -43,6 +44,7 @@ const create = (fetchImpl: typeof fetch, enabled = () => true) =>
     fetch: fetchImpl,
     onProgress: vi.fn(),
     manifest,
+    openHashStream: hashReads,
   });
 describe('AI verified model downloads', () => {
   it.each(['linux', 'darwin', 'win32'])('keeps disabled state inert on %s', async () => {
@@ -139,7 +141,6 @@ it.each(['linux', 'darwin', 'win32'])(
     const packs = create(async () => new Response(data));
     expect(await packs.install('model-1')).toEqual({ ok: true });
     expect(await packs.verify('model-1')).toBe(true);
-    const hashReads = vi.mocked(createReadStream);
     hashReads.mockClear();
     try {
       const restarted = create(vi.fn());
@@ -203,3 +204,45 @@ it('throttles byte progress while delivering every state transition and final by
   expect(events.at(-1)?.receivedBytes).toBe(data.length);
   now.mockRestore();
 });
+
+it('rehashes instead of trusting an oversized advisory record', async () => {
+  const packs = create(async () => new Response(data));
+  await packs.install('model-1');
+  await packs.verify('model-1');
+  await fs.writeFile(path.join(temp, 'models/model-1/.verified.json'), 'x'.repeat(16384));
+  hashReads.mockClear();
+  expect((await create(vi.fn()).list())[0].installed).toBe(true);
+  expect(hashReads).toHaveBeenCalledOnce();
+});
+// OS-specific: creating file symlinks on Windows requires privileges unavailable to normal test runs.
+it.skipIf(process.platform === 'win32')(
+  'rehashes instead of following advisory metadata symlinks',
+  async () => {
+    const packs = create(async () => new Response(data));
+    await packs.install('model-1');
+    await packs.verify('model-1');
+    const cache = path.join(temp, 'models/model-1/.verified.json');
+    const external = path.join(temp, 'record.json');
+    await fs.rename(cache, external);
+    await fs.symlink(external, cache);
+    hashReads.mockClear();
+    expect((await create(vi.fn()).list())[0].installed).toBe(true);
+    expect(hashReads).toHaveBeenCalledOnce();
+  },
+);
+
+// OS-specific: named pipes are Unix filesystem objects; Windows uses a different pipe namespace.
+it.skipIf(process.platform === 'win32')(
+  'does not block on a named pipe used as advisory metadata',
+  async () => {
+    const packs = create(async () => new Response(data));
+    await packs.install('model-1');
+    await packs.verify('model-1');
+    const cache = path.join(temp, 'models/model-1/.verified.json');
+    await fs.unlink(cache);
+    execFileSync('mkfifo', [cache]);
+    hashReads.mockClear();
+    expect((await create(vi.fn()).list())[0].installed).toBe(true);
+    expect(hashReads).toHaveBeenCalledOnce();
+  },
+);

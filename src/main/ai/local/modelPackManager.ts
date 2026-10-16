@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { constants, createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -21,6 +21,7 @@ export interface PackManagerDependencies {
   onProgress: (progress: AiModelProgress) => void;
   manifest?: AiLocalModel[];
   timeoutMs?: number;
+  openHashStream?: (file: string) => ReturnType<typeof createReadStream>;
 }
 
 /** No constructor I/O. Installs publish a complete verified directory in one rename. */
@@ -75,16 +76,34 @@ export class AiModelPackManager {
       if (advisory) {
         try {
           const recordPath = path.join(this.deps.directory(), id, '.verified.json');
-          const stat = await fs.lstat(recordPath);
-          if (stat.isFile() && !stat.isSymbolicLink() && stat.size < 16384) {
-            const record: unknown = JSON.parse(await fs.readFile(recordPath, 'utf8'));
+          const handle = await fs.open(
+            recordPath,
+            constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0),
+          );
+          try {
+            const stat = await handle.stat();
+            // Some platforms lack O_NOFOLLOW; confirm this handle still names a regular cache file.
+            const link = await fs.lstat(recordPath);
             if (
-              record &&
-              typeof record === 'object' &&
-              'signature' in record &&
-              record.signature === signature
-            )
-              return true;
+              stat.isFile() &&
+              !link.isSymbolicLink() &&
+              link.dev === stat.dev &&
+              link.ino === stat.ino &&
+              stat.size < 16384
+            ) {
+              const bytes = Buffer.alloc(16384);
+              const { bytesRead } = await handle.read(bytes, 0, bytes.length, 0);
+              const record: unknown = JSON.parse(bytes.toString('utf8', 0, bytesRead));
+              if (
+                record &&
+                typeof record === 'object' &&
+                'signature' in record &&
+                record.signature === signature
+              )
+                return true;
+            }
+          } finally {
+            await handle.close();
           }
         } catch {
           // catch-no-log-ok missing/corrupt advisory metadata falls back to hashing
@@ -93,7 +112,9 @@ export class AiModelPackManager {
       let valid = true;
       for (const asset of pack.assets) {
         const digest = createHash('sha256');
-        for await (const chunk of createReadStream(this.assetPath(id, asset.file)))
+        for await (const chunk of (this.deps.openHashStream ?? createReadStream)(
+          this.assetPath(id, asset.file),
+        ))
           digest.update(chunk as Buffer);
         if (digest.digest('hex') !== asset.sha256) {
           valid = false;
