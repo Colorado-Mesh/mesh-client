@@ -97,6 +97,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/ingest/meshtasticIngest.test.ts',
   'src/renderer/lib/ingest/meshcoreIngest.test.ts',
   'src/renderer/lib/tak/takChannelRelay.test.ts',
+  'src/renderer/lib/tak/takMeshSend.test.ts',
   'src/renderer/lib/letsMeshJwt.test.ts',
   'src/renderer/lib/messageRetention.test.ts',
   'src/renderer/lib/rrcMessagePersist.test.ts',
