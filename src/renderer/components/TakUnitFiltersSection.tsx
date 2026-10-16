@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import { type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 import {
+  isTakIconsetPath,
+  TAK_GEOOPS_ICONS,
   TAK_ICONSET_PATH_MAX_LEN,
   TAK_MATCH_OPS,
   TAK_NODE_KINDS,
@@ -61,6 +63,93 @@ const PROTOCOL_LABELS: Record<MeshProtocol, string> = {
 };
 
 const DEFAULT_COLOR = '#22C55E';
+
+interface IconsetPathFieldProps {
+  /** Visible label above the field; omit to rely on `ariaLabel` alone. */
+  label?: string;
+  /** Accessible name of the path field. */
+  ariaLabel: string;
+  /** Accessible name of the preset menu. */
+  presetAriaLabel: string;
+  value: string;
+  disabled: boolean;
+  onChange: (next: string) => void;
+  /** Help shown under the field while the path is valid or empty. */
+  hint?: string;
+}
+
+/**
+ * An icon set path typed by hand or filled from the GeoOps presets. Choosing a preset puts its
+ * path in the field and returns the menu to its prompt, so the menu never shows a stale choice.
+ */
+function IconsetPathField({
+  label,
+  ariaLabel,
+  presetAriaLabel,
+  value,
+  disabled,
+  onChange,
+  hint,
+}: IconsetPathFieldProps) {
+  const { t } = useTranslation();
+  const id = useId();
+  const trimmed = value.trim();
+  const invalid = trimmed !== '' && !isTakIconsetPath(trimmed);
+  const describedBy = invalid || hint ? `${id}-hint` : undefined;
+  return (
+    <div className="min-w-0 flex-1 basis-64">
+      {label && (
+        <label htmlFor={`${id}-path`} className="text-ink-400 mb-1 block text-xs">
+          {label}
+        </label>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={`${id}-path`}
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          disabled={disabled}
+          maxLength={TAK_ICONSET_PATH_MAX_LEN}
+          spellCheck={false}
+          aria-label={ariaLabel}
+          aria-invalid={invalid}
+          aria-describedby={describedBy}
+          className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 basis-48`}
+        />
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) onChange(e.target.value);
+          }}
+          disabled={disabled}
+          aria-label={presetAriaLabel}
+          className={SELECT_BOX_SM_CLASS}
+        >
+          <option value="">{t('takServerPanel.unitIconPresetPrompt')}</option>
+          {TAK_GEOOPS_ICONS.map((icon) => (
+            <option key={icon.path} value={icon.path}>
+              {icon.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {invalid ? (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-red-300">
+          {t('takServerPanel.unitIconInvalid')}
+        </p>
+      ) : (
+        hint && (
+          <p id={`${id}-hint`} className="text-ink-400 mt-1 text-xs">
+            {hint}
+          </p>
+        )
+      )}
+    </div>
+  );
+}
 
 /** Editable filter row; patterns stay as typed until saved. */
 interface DraftFilter {
@@ -342,6 +431,7 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
   const [drafts, setDrafts] = useState<DraftFilter[]>(() => initial.filters.map(toDraft));
   const [sendUnmatched, setSendUnmatched] = useState(initial.sendUnmatched);
   const [relayIcon, setRelayIcon] = useState(initial.relayIconsetPath ?? '');
+  const [roomIcon, setRoomIcon] = useState(initial.roomIconsetPath ?? '');
   const [previewName, setPreviewName] = useState('');
   const [previewKind, setPreviewKind] = useState<TakNodeKind>('companion');
   const [previewProtocol, setPreviewProtocol] = useState<MeshProtocol>('meshcore');
@@ -376,6 +466,8 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
     const relayIconsetPath = relayIcon.trim();
     const next: TakStyleSettings = { filters, sendUnmatched };
     if (relayIconsetPath) next.relayIconsetPath = relayIconsetPath;
+    const roomIconsetPath = roomIcon.trim();
+    if (roomIconsetPath) next.roomIconsetPath = roomIconsetPath;
     if (await onSave(next)) setSaved(true);
   };
 
@@ -399,27 +491,32 @@ function UnitFiltersForm({ initial, isSaving, onSave }: FormProps) {
       </div>
 
       <div data-setting-anchor="tak.styles.relayIcon">
-        <label htmlFor={`${id}-relay-icon`} className="text-ink-400 mb-1 block text-xs">
-          {t('takServerPanel.unitStylesRelayIcon')}
-        </label>
-        <input
-          id={`${id}-relay-icon`}
-          type="text"
+        <IconsetPathField
+          label={t('takServerPanel.unitStylesRepeaterIcon')}
+          ariaLabel={t('takServerPanel.unitStylesRepeaterIcon')}
+          presetAriaLabel={t('takServerPanel.unitStylesRepeaterIconPreset')}
           value={relayIcon}
-          onChange={(e) => {
-            setSaved(false);
-            setRelayIcon(e.target.value);
-          }}
           disabled={isSaving}
-          maxLength={TAK_ICONSET_PATH_MAX_LEN}
-          spellCheck={false}
-          aria-label={t('takServerPanel.unitStylesRelayIcon')}
-          aria-describedby={`${id}-relay-icon-hint`}
-          className={`${INPUT_BOX_SM_CLASS} w-full`}
+          onChange={(next) => {
+            setSaved(false);
+            setRelayIcon(next);
+          }}
         />
-        <p id={`${id}-relay-icon-hint`} className="text-ink-400 mt-1 text-xs">
-          {t('takServerPanel.unitStylesRelayIconHint')}
-        </p>
+      </div>
+
+      <div data-setting-anchor="tak.styles.roomIcon">
+        <IconsetPathField
+          label={t('takServerPanel.unitStylesRoomIcon')}
+          ariaLabel={t('takServerPanel.unitStylesRoomIcon')}
+          presetAriaLabel={t('takServerPanel.unitStylesRoomIconPreset')}
+          hint={t('takServerPanel.unitStylesRelayIconHint')}
+          value={roomIcon}
+          disabled={isSaving}
+          onChange={(next) => {
+            setSaved(false);
+            setRoomIcon(next);
+          }}
+        />
       </div>
 
       {drafts.length > 0 && (

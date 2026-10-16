@@ -116,14 +116,14 @@ describe('resolveTakStyle relay icon', () => {
     relayIconsetPath: ICON,
   });
 
-  it('adds the configured icon to advertised relays of any protocol', () => {
+  it('adds the repeater icon to repeaters of any protocol, but not to room servers', () => {
     const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
     expect(resolveTakStyle(withIcon(), repeater, 'meshcore')?.style).toEqual({
       ...TAK_RELAY_STYLE,
       iconsetPath: ICON,
     });
     const room = node({ long_name: 'Lobby', hw_model: 'Room' });
-    expect(resolveTakStyle(withIcon(), room, 'meshcore')?.style.iconsetPath).toBe(ICON);
+    expect(resolveTakStyle(withIcon(), room, 'meshcore')?.style).toBe(TAK_RELAY_STYLE);
     const router = node({ long_name: 'Tower', role: 2 });
     expect(resolveTakStyle(withIcon(), router, 'meshtastic')?.style.iconsetPath).toBe(ICON);
   });
@@ -133,13 +133,68 @@ describe('resolveTakStyle relay icon', () => {
     expect(TAK_RELAY_STYLE).not.toHaveProperty('iconsetPath');
   });
 
-  it('does not add it to companions, filter matches, or when unset', () => {
+  it('does not add it to companions or when unset', () => {
     const companion = node({ long_name: 'Ridge', hw_model: 'Chat' });
     expect(resolveTakStyle(withIcon(), companion, 'meshcore')?.style).toBe(TAK_PERSON_STYLE);
-    const matched = node({ long_name: 'Medic 12', hw_model: 'Repeater' });
-    expect(resolveTakStyle(withIcon([filter()]), matched, 'meshcore')?.style).toBe(EMS);
+    const matchedCompanion = node({ long_name: 'Medic 12', hw_model: 'Chat' });
+    expect(resolveTakStyle(withIcon([filter()]), matchedCompanion, 'meshcore')?.style).toBe(EMS);
     const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
     expect(resolveTakStyle(settings([]), repeater, 'meshcore')?.style).toBe(TAK_RELAY_STYLE);
+  });
+
+  it('gives room servers their own icon when one is set, and only them', () => {
+    const ROOM_ICON = 'geoops/WildFire/Ranger Station.png';
+    const s: TakStyleSettings = { ...withIcon(), roomIconsetPath: ROOM_ICON };
+    const room = node({ long_name: 'Lobby', hw_model: 'Room' });
+    expect(resolveTakStyle(s, room, 'meshcore')?.style.iconsetPath).toBe(ROOM_ICON);
+    const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
+    expect(resolveTakStyle(s, repeater, 'meshcore')?.style.iconsetPath).toBe(ICON);
+  });
+
+  it('gives room servers an icon of their own even with no repeater icon', () => {
+    const ROOM_ICON = 'geoops/WildFire/Ranger Station.png';
+    const s: TakStyleSettings = { ...settings([]), roomIconsetPath: ROOM_ICON };
+    const room = node({ long_name: 'Lobby', hw_model: 'Room' });
+    expect(resolveTakStyle(s, room, 'meshcore')?.style.iconsetPath).toBe(ROOM_ICON);
+    const repeater = node({ long_name: 'Ridge', hw_model: 'Repeater' });
+    expect(resolveTakStyle(s, repeater, 'meshcore')?.style).toBe(TAK_RELAY_STYLE);
+  });
+});
+
+describe('resolveTakStyle icons on filtered nodes', () => {
+  const REPEATER_ICON = 'geoops/WildFire/Repeater.png';
+  const ROOM_ICON = 'geoops/WildFire/Repeater Mobile Relay.png';
+  const RTO = { cotType: 'a-f-G-I', group: 'Purple', role: 'RTO' };
+  const icons = (filters: TakUnitFilter[]): TakStyleSettings => ({
+    ...settings(filters),
+    relayIconsetPath: REPEATER_ICON,
+    roomIconsetPath: ROOM_ICON,
+  });
+
+  it('keeps the room server icon when a filter sets its team and role', () => {
+    const s = icons([filter({ nodeKind: 'room', patterns: [], style: RTO })]);
+    const room = node({ long_name: 'Lobby', hw_model: 'Room' });
+    expect(resolveTakStyle(s, room, 'meshcore')).toEqual({
+      style: { ...RTO, iconsetPath: ROOM_ICON },
+      callsign: 'Lobby',
+      matched: true,
+    });
+    expect(RTO).not.toHaveProperty('iconsetPath');
+  });
+
+  it('keeps the repeater icon when a name filter restyles a repeater', () => {
+    const repeater = node({ long_name: 'Medic relay', hw_model: 'Repeater' });
+    expect(resolveTakStyle(icons([filter()]), repeater, 'meshcore')?.style).toEqual({
+      ...EMS,
+      iconsetPath: REPEATER_ICON,
+    });
+  });
+
+  it('adds no icon to companions or sensors a filter restyles', () => {
+    const s = icons([filter()]);
+    for (const hw_model of ['Chat', 'Sensor']) {
+      expect(resolveTakStyle(s, node({ hw_model }), 'meshcore')?.style).toBe(EMS);
+    }
   });
 });
 

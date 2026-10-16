@@ -127,9 +127,16 @@ const takEntries: readonly SettingSearchEntry[] = [
   {
     id: 'tak.styles.relayIcon',
     slot: 'TAK',
-    labelKey: 'takServerPanel.unitStylesRelayIcon',
+    labelKey: 'takServerPanel.unitStylesRepeaterIcon',
     sectionKey: STYLES,
-    keywords: ['tak', 'cot', 'icon', 'iconset', 'repeater', 'room server', 'router', 'symbol'],
+    keywords: ['tak', 'cot', 'icon', 'iconset', 'geoops', 'repeater', 'router', 'symbol'],
+  },
+  {
+    id: 'tak.styles.roomIcon',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.unitStylesRoomIcon',
+    sectionKey: STYLES,
+    keywords: ['tak', 'cot', 'icon', 'iconset', 'geoops', 'room server', 'symbol'],
   },
   {
     id: 'tak.styles.addFilter',
@@ -201,6 +208,8 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.unitStylesSave*': 'save button and status for the indexed unit filter rows',
     'takServerPanel.unitStylesPreview*': 'name tester for the indexed unit filters, not a setting',
     'takServerPanel.unitFilter*': 'fields of a filter row added by the indexed Add filter control',
+    'takServerPanel.unitStyles*IconPreset': 'GeoOps menu beside an indexed icon path field',
+    'takServerPanel.unitIcon*': 'preset prompt and validation note of the indexed icon fields',
     'takServerPanel.channelRelayTitle': 'section heading; its channel rows are indexed',
     'takServerPanel.channelRelayRoom*': 'GeoChat room field in each indexed channel row',
     'takServerPanel.channelRelaySend*': 'TAK send opt-in in each indexed channel row',

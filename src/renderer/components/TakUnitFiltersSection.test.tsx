@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
-import type { TakStyleSettings } from '@/shared/tak-types';
+import { TAK_GEOOPS_ICONSET_UID, type TakStyleSettings } from '@/shared/tak-types';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import TakUnitFiltersSection from './TakUnitFiltersSection';
@@ -71,12 +71,17 @@ describe('TakUnitFiltersSection', () => {
     expect(await screen.findByText('Saved and applied')).toBeInTheDocument();
   });
 
+  it('offers no icon field on a filter row', async () => {
+    await renderSection();
+    expect(screen.queryByLabelText(/icon for filter/i)).not.toBeInTheDocument();
+  });
+
   it('fills and saves the relay icon path, and omits it when cleared', async () => {
     const icon = 'abc123/WildFire/Repeater.png';
     vi.mocked(tak().getStyleSettings).mockResolvedValue({ ...SAVED, relayIconsetPath: icon });
     const user = userEvent.setup();
     await renderSection();
-    const input = screen.getByLabelText('Icon for repeaters, routers and room servers');
+    const input = screen.getByLabelText('Icon for repeaters and routers');
     expect(input).toHaveValue(icon);
 
     await user.clear(input);
@@ -90,6 +95,35 @@ describe('TakUnitFiltersSection', () => {
     await user.clear(input);
     await user.click(screen.getByRole('button', { name: 'Save styles' }));
     expect(tak().setStyleSettings).toHaveBeenLastCalledWith(SAVED);
+  });
+
+  it('saves a room server icon apart from the repeater icon', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.selectOptions(
+      screen.getByLabelText('GeoOps icon for repeaters and routers'),
+      'Repeater',
+    );
+    const roomPreset = screen.getByLabelText('GeoOps icon for room servers');
+    await user.selectOptions(roomPreset, 'Repeater Mobile Relay');
+    expect(roomPreset).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Save styles' }));
+    expect(tak().setStyleSettings).toHaveBeenLastCalledWith({
+      ...SAVED,
+      relayIconsetPath: `${TAK_GEOOPS_ICONSET_UID}/WildFire/Repeater.png`,
+      roomIconsetPath: `${TAK_GEOOPS_ICONSET_UID}/WildFire/Repeater Mobile Relay.png`,
+    });
+  });
+
+  it('flags an icon path that is not set UID/group/file name', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    const input = screen.getByLabelText('Icon for room servers');
+    await user.type(input, 'Lookout.png');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Use set UID/group/file name.')).toBeInTheDocument();
+    await user.clear(input);
+    expect(input).toHaveAttribute('aria-invalid', 'false');
   });
 
   it('saves a filter that matches by node type and protocol with no name pattern', async () => {

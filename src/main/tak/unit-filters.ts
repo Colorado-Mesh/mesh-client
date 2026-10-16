@@ -1,7 +1,7 @@
 import type { MeshProtocol } from '../../shared/meshProtocol';
-import type { TakStyleSettings, TakUnitStyle } from '../../shared/tak-types';
+import type { TakNodeKind, TakStyleSettings, TakUnitStyle } from '../../shared/tak-types';
 import { matchTakUnitFilter } from '../../shared/takUnitFilterMatch';
-import { advertisedNodeKind, advertisedTakStyle, TAK_RELAY_STYLE } from './advertised-style';
+import { advertisedNodeKind, advertisedTakStyle } from './advertised-style';
 import { cotCallsignFor, type CotRelayNode } from './cot-converter';
 
 export interface ResolvedTakStyle {
@@ -11,11 +11,19 @@ export interface ResolvedTakStyle {
   matched: boolean;
 }
 
+/** The configured icon for nodes of `kind`: repeaters and room servers each have their own. */
+function kindIcon(settings: TakStyleSettings, kind: TakNodeKind): string | undefined {
+  if (kind === 'repeater') return settings.relayIconsetPath;
+  if (kind === 'room') return settings.roomIconsetPath;
+  return undefined;
+}
+
 /**
  * Style and callsign for a relayed node: the first enabled filter whose name, node kind and
- * protocol conditions it meets, else the style the node advertises, with the configured relay
- * icon on advertised relays. Returns null when no filter matches and unmatched nodes are not
- * relayed.
+ * protocol conditions it meets, else the style the node advertises. Repeaters and room servers
+ * then get their kind's configured icon either way, as MeshCore TAK Bridge draws them, so a
+ * filter can set their team and role without losing the icon. Returns null when no filter
+ * matches and unmatched nodes are not relayed.
  */
 export function resolveTakStyle(
   settings: TakStyleSettings,
@@ -23,16 +31,17 @@ export function resolveTakStyle(
   protocol: MeshProtocol,
 ): ResolvedTakStyle | null {
   const callsign = cotCallsignFor(node, protocol);
+  const kind = advertisedNodeKind(node, protocol);
+  const icon = kindIcon(settings, kind);
+  const withIcon = (style: TakUnitStyle): TakUnitStyle =>
+    icon ? { ...style, iconsetPath: icon } : style;
   const match = matchTakUnitFilter(settings.filters, callsign, node.long_name || '', {
-    kind: advertisedNodeKind(node, protocol),
+    kind,
     protocol,
   });
-  if (match) return { style: match.filter.style, callsign: match.callsign, matched: true };
+  if (match) {
+    return { style: withIcon(match.filter.style), callsign: match.callsign, matched: true };
+  }
   if (!settings.sendUnmatched) return null;
-  const advertised = advertisedTakStyle(node, protocol);
-  const style =
-    advertised === TAK_RELAY_STYLE && settings.relayIconsetPath
-      ? { ...advertised, iconsetPath: settings.relayIconsetPath }
-      : advertised;
-  return { style, callsign, matched: false };
+  return { style: withIcon(advertisedTakStyle(node, protocol)), callsign, matched: false };
 }
