@@ -265,7 +265,7 @@ export function ChatChannelSwitcher({
                 <p className="text-muted px-2.5 py-3 text-center text-xs">{emptyLabel}</p>
               ) : (
                 filtered.map((ch) => {
-                  const unread = ch.index === activeIndex ? 0 : (unreadCounts.get(ch.index) ?? 0);
+                  const unread = unreadCounts.get(ch.index) ?? 0;
                   const rowMecp = unread > 0 ? mecpSeverityByIndex?.get(ch.index) : undefined;
                   const highlighted = ch.index === activeOption?.index;
                   const selected = ch.index === activeIndex;
