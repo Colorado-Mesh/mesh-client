@@ -83,6 +83,7 @@ export function parseTakNodeUpdate(raw: unknown): TakNodeUpdate | null {
   if (hops !== undefined) update.hops_away = hops;
   if (n.source === 'rf' || n.source === 'mqtt') update.source = n.source;
   if (n.infrastructure === true) update.infrastructure = true;
+  if (typeof n.chatReachable === 'boolean') update.chatReachable = n.chatReachable;
 
   if (n.uid !== undefined) {
     if (typeof n.uid !== 'string' || !TAK_TRACKER_UID_RE.test(n.uid)) return null;

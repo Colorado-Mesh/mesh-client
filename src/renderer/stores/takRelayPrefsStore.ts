@@ -42,6 +42,8 @@ export interface TakRelayIdentityPrefs {
    * gets its automatic name.
    */
   atakNames: Record<string, string>;
+  /** TAK devices may message this radio's companions, and hear their direct messages. */
+  directMessages: boolean;
   /** Settings from before the upgrade, by slot, until the radio's channels are known. */
   pendingSlots?: TakPendingSlotPrefs;
 }
@@ -67,6 +69,7 @@ const EMPTY_PREFS: TakRelayIdentityPrefs = {
   sendChannels: [],
   remoteChannels: [],
   atakNames: {},
+  directMessages: false,
 };
 
 const CONTROL_CHARS_RE = /\p{Cc}/u;
@@ -164,7 +167,7 @@ function fromVersion1(v: Record<string, unknown>): {
  */
 function channelPrefs(
   v: Record<string, unknown>,
-): Omit<TakRelayIdentityPrefs, 'trackerChannels' | 'channelMode'> {
+): Omit<TakRelayIdentityPrefs, 'trackerChannels' | 'channelMode' | 'directMessages'> {
   const stored =
     v.pendingSlots && typeof v.pendingSlots === 'object'
       ? (v.pendingSlots as Record<string, unknown>)
@@ -210,7 +213,12 @@ function sanitizeStore(raw: unknown): {
     const channelMode = CHANNEL_MODES.includes(v.channelMode as TakChannelMode)
       ? (v.channelMode as TakChannelMode)
       : 'off';
-    byIdentity[identityId] = { trackerChannels, channelMode, ...channelPrefs(v) };
+    byIdentity[identityId] = {
+      trackerChannels,
+      channelMode,
+      ...channelPrefs(v),
+      directMessages: v.directMessages === true,
+    };
   }
   return { byIdentity, contactRooms: [...contactRooms] };
 }
@@ -248,6 +256,8 @@ interface TakRelayPrefsState {
    * refuse (too long, or with a line break) is ignored.
    */
   setAtakName: (identityId: IdentityId, key: string, name: string) => void;
+  /** Let TAK devices message this radio's companions. */
+  setDirectMessages: (identityId: IdentityId, enabled: boolean) => void;
 }
 
 export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
@@ -315,6 +325,11 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
             if (clean !== null) atakNames[key] = clean;
             return { ...prev, atakNames };
           });
+        },
+        setDirectMessages: (identityId, enabled) => {
+          update(identityId, (prev) =>
+            prev.directMessages === enabled ? null : { ...prev, directMessages: enabled },
+          );
         },
       };
     },

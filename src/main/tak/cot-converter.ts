@@ -31,6 +31,28 @@ const COT_UID_PREFIX: Record<MeshProtocol, string> = {
 /** Every uid prefix this app writes; inbound CoT with one of these is our own node echoed back. */
 export const COT_UID_PREFIXES: readonly string[] = Object.values(COT_UID_PREFIX);
 
+/**
+ * `<contact endpoint>` saying a contact is reached through the server connection. ATAK only
+ * offers chat with a contact that has one.
+ */
+export const COT_CHAT_ENDPOINT = '*:-1:stcp';
+
+const MESH_NODE_UID_RE = /^(MESH|MC|RN)-([1-9]\d{0,9})$/;
+const PROTOCOL_BY_PREFIX: Record<string, MeshProtocol> = {
+  MESH: 'meshtastic',
+  MC: 'meshcore',
+  RN: 'reticulum',
+};
+
+/** The mesh node a marker uid (`MC-123`) names, or null for any other uid. */
+export function parseMeshNodeUid(uid: string): { protocol: MeshProtocol; nodeId: number } | null {
+  const m = MESH_NODE_UID_RE.exec(uid);
+  if (!m) return null;
+  const nodeId = Number(m[2]);
+  if (nodeId > 0xffffffff) return null;
+  return { protocol: PROTOCOL_BY_PREFIX[m[1]], nodeId };
+}
+
 const PROTOCOL_LABEL: Record<MeshProtocol, string> = {
   meshtastic: 'Meshtastic',
   meshcore: 'MeshCore',
@@ -54,6 +76,8 @@ export interface CotRenderOptions {
   style?: TakUnitStyle;
   /** Overrides the callsign derived from the node's names. */
   callsign?: string;
+  /** Make the marker a contact ATAK can message ({@link COT_CHAT_ENDPOINT}). */
+  chatEndpoint?: boolean;
   nowMs?: number;
 }
 
@@ -167,7 +191,8 @@ export function meshNodeToCot(
   const remarks = escapeXml(heardRemarks(node, protocol, heardMs));
   const battery = node.battery ?? 0;
 
-  let detail = `<contact callsign="${callsign}"/>`;
+  const endpoint = opts.chatEndpoint ? ` endpoint="${COT_CHAT_ENDPOINT}"` : '';
+  let detail = `<contact callsign="${callsign}"${endpoint}/>`;
   if (style.group || style.role) {
     const name = style.group ? ` name="${escapeXml(style.group)}"` : '';
     const role = style.role ? ` role="${escapeXml(style.role)}"` : '';

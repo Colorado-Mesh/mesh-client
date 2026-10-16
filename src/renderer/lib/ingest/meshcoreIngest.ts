@@ -54,6 +54,7 @@ import {
 import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { DomainEvent } from '../protocols/Protocol';
 import { relayMeshcoreChannelToTak } from '../tak/takChannelRelay';
+import { relayDirectMessageToTak } from '../tak/takDirectMessages';
 import type { ChatMessage, IdentityId } from '../types';
 
 export interface MeshcoreIngestOptions {
@@ -360,6 +361,16 @@ function handleTextMessage(
       ...(senderNode?.latitude != null && senderNode.longitude != null
         ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
         : {}),
+    });
+  }
+  // PacketRouter has stored a DM before this runs, so `inserted` cannot tell a first copy from
+  // a retry; the TAK relay drops retried copies itself.
+  if (isDm && !isEcho && mayBumpDmSender && senderId > 0) {
+    relayDirectMessageToTak(identityId, 'meshcore', {
+      nodeId: senderId,
+      senderName: displayName,
+      text: stored.payload,
+      timestampMs: wireTimestampMs,
     });
   }
   if (!isEcho && mayBumpDmSender && senderId > 0) {

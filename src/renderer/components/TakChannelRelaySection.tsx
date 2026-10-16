@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
@@ -104,12 +104,15 @@ interface Props {
   emptyText: string;
   /** Settings search anchor for the section. */
   anchorId: string;
+  /** Shown at the end of the section: the radio's direct message switch. */
+  children?: ReactNode;
 }
 
 /**
- * One radio's channels in ATAK: which become contacts (off, all, or selected ones), and for each
- * served channel whether TAK devices may send to it and whether it streams to the remote server.
- * Also the per-channel `!MT1` tracker opt-in when supported. Only shown while a TAK sink is up.
+ * One radio's messaging in ATAK: which channels become contacts (off, all, or selected ones),
+ * and for each served channel whether TAK devices may send to it and whether it streams to the
+ * remote server; the per-channel `!MT1` tracker opt-in when supported; and whether TAK devices
+ * may message the radio's companions. Only shown while a TAK sink is up.
  */
 export default function TakChannelRelaySection({
   identityId,
@@ -118,6 +121,7 @@ export default function TakChannelRelaySection({
   description,
   emptyText,
   anchorId,
+  children,
 }: Props) {
   const { t } = useTranslation();
   const sinkActive = useTakSinkStore((s) => s.active);
@@ -236,6 +240,44 @@ export default function TakChannelRelaySection({
           })}
         </ul>
       )}
+      {children}
+    </div>
+  );
+}
+
+interface DirectMessagesProps {
+  identityId: IdentityId | null;
+  /** Settings search anchor for the switch. */
+  anchorId: string;
+}
+
+/** The switch letting TAK devices message one radio's companions; shown inside its section. */
+export function TakDirectMessagesToggle({ identityId, anchorId }: DirectMessagesProps) {
+  const { t } = useTranslation();
+  const enabled = useTakRelayPrefsStore((s) =>
+    identityId ? (s.byIdentity[identityId]?.directMessages ?? false) : false,
+  );
+  const setDirectMessages = useTakRelayPrefsStore((s) => s.setDirectMessages);
+  if (!identityId) return null;
+  const id = `tak-direct-messages-${identityId}`;
+  return (
+    <div data-setting-anchor={anchorId} className="space-y-1 text-xs">
+      <label htmlFor={id} className="text-ink-300 flex items-center gap-2">
+        <input
+          id={id}
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => {
+            setDirectMessages(identityId, e.target.checked);
+          }}
+          aria-describedby={`${id}-hint`}
+          className={CHECKBOX_CLASS}
+        />
+        {t('takServerPanel.directMessages')}
+      </label>
+      <p id={`${id}-hint`} className="text-ink-400">
+        {t('takServerPanel.directMessagesHint')}
+      </p>
     </div>
   );
 }

@@ -810,11 +810,18 @@ const SELF = (uid: string, callsign: string) =>
  */
 const CHAT = (
   text: string,
-  opts: { room?: string; channel?: TakChatChannel; sender?: string; callsign?: string } = {},
+  opts: {
+    room?: string;
+    /** The contact uid the message is addressed to; defaults to the room's or channel's. */
+    id?: string;
+    channel?: TakChatChannel;
+    sender?: string;
+    callsign?: string;
+  } = {},
 ) => {
   const channel = opts.channel ?? OPS;
   const room = opts.room ?? channel.name;
-  const id = opts.room ?? channelContactUid(channel.key);
+  const id = opts.id ?? opts.room ?? channelContactUid(channel.key);
   const sender = opts.sender ?? 'ANDROID-1';
   const callsign = opts.callsign ?? ' senderCallsign="VIPER"';
   return (
@@ -1066,7 +1073,7 @@ describe('TakServerManager chat from local clients', () => {
 
     expect(inbound).toEqual([
       {
-        channelKey: OPS.key,
+        target: { kind: 'channel', channelKey: OPS.key },
         senderCallsign: 'VIPER',
         text: 'on scene',
         clientId: manager.getConnectedClients()[0]?.id,
@@ -1203,5 +1210,286 @@ describe('TakServerManager chat from local clients', () => {
     sender.emit('data', Buffer.from(CHAT('after the window')));
     expect(inbound).toHaveLength(11);
     warn.mockRestore();
+  });
+});
+
+describe('TakServerManager direct messages', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** A manager with the local server running and direct messages on for both radios. */
+  function dmManager(): TakServerManager {
+    const manager = chatManager([]);
+    manager.setDirectMessaging(['meshcore', 'meshtastic']);
+    return manager;
+  }
+
+  const ALICE = {
+    node_id: 123,
+    protocol: 'meshcore' as const,
+    latitude: 39.7,
+    longitude: -105,
+    long_name: 'Alice',
+    hw_model: 'Chat',
+    chatReachable: true,
+  };
+
+  /** A client message to a mesh node's contact, as ATAK sends a direct message. */
+  const DM = (text: string, to: string, opts: { sender?: string; room?: string } = {}) =>
+    CHAT(text, { room: opts.room ?? 'Alice', id: to, sender: opts.sender });
+
+  const heardDm = (text: string, nodeId = 123) => ({
+    protocol: 'meshcore' as const,
+    nodeId,
+    senderCallsign: 'Alice heard',
+    text,
+    timeMs: Date.now(),
+  });
+
+  const chats = (socket: tls.TLSSocket) =>
+    written(socket).filter((l) => l.includes('type="b-t-f"'));
+
+  function listen(manager: TakServerManager): TAKInboundChat[] {
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    return inbound;
+  }
+
+  it('makes the marker of a companion it can message a chat contact, for local clients only', () => {
+    const manager = dmManager();
+    const remote = { isConnected: () => true, write: vi.fn() };
+    (manager as unknown as ChatInternals).remote = remote;
+    const socket = connect(manager);
+    manager.onNodeUpdate(ALICE);
+    manager.onNodeUpdate({ ...ALICE, node_id: 7, long_name: 'Hilltop', hw_model: 'Repeater' });
+    manager.onNodeUpdate({ ...ALICE, node_id: 8, long_name: 'Bob', chatReachable: false });
+    const local = written(socket);
+    expect(local.find((l) => l.includes('uid="MC-123"'))).toContain(
+      '<contact callsign="Alice" endpoint="*:-1:stcp"/>',
+    );
+    // A repeater reads chat from its admin as a command, so it never gets an endpoint.
+    expect(local.find((l) => l.includes('uid="MC-7"'))).toContain('<contact callsign="Hilltop"/>');
+    expect(local.find((l) => l.includes('uid="MC-8"'))).toContain('<contact callsign="Bob"/>');
+    // Direct messages are never relayed to the remote server, so its copy has no endpoint.
+    const remoteCot = remote.write.mock.calls.map((c) => String(c[0]));
+    expect(remoteCot.find((l) => l.includes('uid="MC-123"'))).toContain(
+      '<contact callsign="Alice"/>',
+    );
+  });
+
+  it('adds and removes endpoints when direct messages are turned on or off for a radio', () => {
+    const manager = chatManager([]);
+    const socket = connect(manager);
+    manager.onNodeUpdate(ALICE);
+    expect(written(socket)[0]).toContain('<contact callsign="Alice"/>');
+    vi.mocked(socket.write).mockClear();
+
+    manager.setDirectMessaging(['meshcore']);
+    expect(written(socket)).toHaveLength(1);
+    expect(written(socket)[0]).toContain('endpoint="*:-1:stcp"');
+    vi.mocked(socket.write).mockClear();
+
+    // Unchanged setting: nothing is re-sent.
+    manager.setDirectMessaging(['meshcore']);
+    expect(written(socket)).toEqual([]);
+
+    manager.setDirectMessaging([]);
+    expect(written(socket)).toHaveLength(1);
+    expect(written(socket)[0]).toContain('<contact callsign="Alice"/>');
+  });
+
+  it("takes a message to a companion's contact as a direct message, kept from other clients", () => {
+    const manager = dmManager();
+    manager.onNodeUpdate(ALICE);
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+
+    sender.emit('data', Buffer.from(DM('meet at the gate', 'MC-123')));
+
+    expect(inbound).toEqual([
+      {
+        target: { kind: 'direct', protocol: 'meshcore', nodeId: 123 },
+        senderCallsign: 'VIPER',
+        text: 'meet at the gate',
+        clientId: manager.getConnectedClients()[0]?.id,
+        timeMs: expect.any(Number),
+      },
+    ]);
+    expect(sender.write).not.toHaveBeenCalled();
+    expect(other.write).not.toHaveBeenCalled();
+  });
+
+  it('answers a direct message it cannot send with a note saying why', () => {
+    const manager = chatManager([]);
+    manager.setDirectMessaging(['meshcore']);
+    manager.onNodeUpdate(ALICE);
+    manager.onNodeUpdate({ ...ALICE, protocol: 'meshtastic', node_id: 456, short_name: 'MT1' });
+    manager.onNodeUpdate({ ...ALICE, node_id: 7, long_name: 'Hilltop', hw_model: 'Repeater' });
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+
+    sender.emit('data', Buffer.from(DM('a', 'MESH-456')));
+    sender.emit('data', Buffer.from(DM('bb', 'MC-7')));
+    sender.emit('data', Buffer.from(DM('ccc', 'MC-999')));
+    sender.emit('data', Buffer.from(DM('dddd', 'RN-42')));
+
+    expect(inbound).toEqual([]);
+    const notes = chats(sender);
+    expect(notes).toHaveLength(4);
+    expect(notes[0]).toContain('uid0="MESH-456"');
+    expect(notes[0]).toContain('mesh-client: Not sent: direct messages are off for this radio.');
+    for (const [i, uid] of [
+      [1, 'MC-7'],
+      [2, 'MC-999'],
+      [3, 'RN-42'],
+    ] as const) {
+      expect(notes[i]).toContain(`uid0="${uid}"`);
+      expect(notes[i]).toContain(
+        'mesh-client: Not sent: not a mesh contact this radio can message.',
+      );
+    }
+    // Each note comes from the contact written to, into the sender's conversation with it.
+    expect(notes[1]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Hilltop"');
+  });
+
+  it('still passes a direct message between two TAK devices on to the other clients', () => {
+    const manager = dmManager();
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+    sender.emit('data', Buffer.from(DM('hi eagle', 'ANDROID-2', { room: 'EAGLE' })));
+    expect(inbound).toEqual([]);
+    expect(chats(other)).toHaveLength(1);
+    expect(chats(other)[0]).toContain('>hi eagle</remarks>');
+  });
+
+  it('sends a reply only to the device that wrote, holding it while that device is away', () => {
+    const manager = dmManager();
+    manager.onNodeUpdate(ALICE);
+    const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+    const eagle = connect(manager, ['ANDROID-2', 'EAGLE']);
+    viper.emit('data', Buffer.from(DM('there?', 'MC-123')));
+    vi.mocked(viper.write).mockClear();
+
+    manager.sendDirectMessage(heardDm('yes'));
+    expect(chats(viper)).toHaveLength(1);
+    expect(chats(viper)[0]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Alice"');
+    expect(chats(viper)[0]).toContain('uid0="MC-123"');
+    expect(chats(viper)[0]).toContain('>yes</remarks>');
+    expect(chats(eagle)).toEqual([]);
+
+    // The device reconnects under the same uid and gets what came while it was away.
+    viper.emit('close');
+    manager.sendDirectMessage(heardDm('still there?'));
+    expect(chats(eagle)).toEqual([]);
+    const back = connect(manager);
+    back.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    expect(chats(back).map((l) => />([^<]*)<\/remarks>/.exec(l)?.[1])).toEqual(['still there?']);
+  });
+
+  it('sends a direct message from a companion nobody has written to to every device', () => {
+    const manager = dmManager();
+    manager.onNodeUpdate(ALICE);
+    const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+    const eagle = connect(manager, ['ANDROID-2', 'EAGLE']);
+    manager.sendDirectMessage(heardDm('anyone?'));
+    expect(chats(viper)).toHaveLength(1);
+    expect(chats(eagle)).toHaveLength(1);
+    expect(chats(eagle)[0]).toContain('chatroom="EAGLE" id="ANDROID-2" senderCallsign="Alice"');
+  });
+
+  it("drops a repeater's or room server's direct message, which is a login or command reply", () => {
+    const manager = dmManager();
+    manager.onNodeUpdate({ ...ALICE, node_id: 77, hw_model: 'Repeater' });
+    manager.onNodeUpdate({ ...ALICE, node_id: 78, hw_model: 'Room' });
+    const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+    vi.mocked(viper.write).mockClear();
+    manager.sendDirectMessage(heardDm('Logged in', 77));
+    manager.sendDirectMessage(heardDm('Bot Stats (24h):', 78));
+    expect(written(viper)).toEqual([]);
+  });
+
+  it('holds a direct message while no device is connected, for the first to identify', () => {
+    const manager = dmManager();
+    manager.onNodeUpdate(ALICE);
+    manager.sendDirectMessage(heardDm('later'));
+    const viper = connect(manager);
+    expect(chats(viper)).toEqual([]);
+    viper.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    expect(chats(viper)).toHaveLength(1);
+    expect(chats(viper)[0]).toContain('>later</remarks>');
+  });
+
+  it('gives a companion with no marker a contact at 0, 0 for a day after the last message', () => {
+    const manager = dmManager();
+    const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.sendDirectMessage(heardDm('no fix', 55));
+    const lines = written(socket);
+    const contact = lines.find((l) => l.includes('uid="MC-55"') && l.includes('a-f-G-U-C'));
+    expect(contact).toContain('<point lat="0" lon="0"');
+    expect(contact).toContain('<contact callsign="Alice heard" endpoint="*:-1:stcp"/>');
+    const now = Date.now();
+    expect(contact).toContain(`stale="${new Date(now + 24 * 60 * 60 * 1000).toISOString()}"`);
+    // The contact comes before the message, so ATAK has somewhere to file it.
+    expect(lines.indexOf(contact!)).toBeLessThan(lines.findIndex((l) => l.includes('b-t-f')));
+
+    // A client connecting later gets the contact too.
+    const lateSocket = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(lateSocket);
+    expect(written(lateSocket).some((l) => l.includes('uid="MC-55"'))).toBe(true);
+
+    // A day on, it is no longer announced.
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000);
+    const dayLater = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(dayLater);
+    expect(written(dayLater).some((l) => l.includes('uid="MC-55"'))).toBe(false);
+  });
+
+  it('lets a client reply to a companion known only from its 0, 0 contact', () => {
+    const manager = dmManager();
+    const inbound = listen(manager);
+    const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.sendDirectMessage(heardDm('no fix', 55));
+    viper.emit('data', Buffer.from(DM('copy', 'MC-55')));
+    expect(inbound).toHaveLength(1);
+    expect(inbound[0]?.target).toEqual({ kind: 'direct', protocol: 'meshcore', nodeId: 55 });
+  });
+
+  it('sends no 0, 0 contact for a companion whose marker is on the map', () => {
+    const manager = dmManager();
+    const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.onNodeUpdate(ALICE);
+    vi.mocked(socket.write).mockClear();
+    manager.sendDirectMessage(heardDm('hi'));
+    expect(
+      written(socket).filter((l) => l.startsWith('<event version="2.0" uid="MC-123"')),
+    ).toEqual([]);
+    expect(chats(socket)).toHaveLength(1);
+  });
+
+  it('drops direct messages for a radio with them off, and retracts its contacts when turned off', () => {
+    const manager = chatManager([]);
+    manager.setDirectMessaging(['meshtastic']);
+    const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.sendDirectMessage(heardDm('ignored'));
+    expect(written(socket)).toEqual([]);
+
+    manager.setDirectMessaging(['meshcore', 'meshtastic']);
+    manager.sendDirectMessage(heardDm('seen', 55));
+    socket.emit('close');
+    manager.sendDirectMessage(heardDm('held', 55));
+    const watcher = connect(manager);
+    manager.setDirectMessaging(['meshtastic']);
+    const lines = written(watcher);
+    expect(lines.some((l) => l.includes('t-x-d-d') && l.includes('<link uid="MC-55"'))).toBe(true);
+    // The held message went with its contact.
+    watcher.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    expect(chats(watcher)).toEqual([]);
   });
 });

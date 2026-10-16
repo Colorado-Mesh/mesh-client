@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../../renderer/lib/types';
-import { cotDeleteEvent, cotPongEvent, meshNodeToCot } from './cot-converter';
+import { cotDeleteEvent, cotPongEvent, meshNodeToCot, parseMeshNodeUid } from './cot-converter';
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -294,5 +294,34 @@ describe('meshNodeToCot user icon', () => {
     });
     expect(cot).toContain('<usericon iconsetpath="uid/A&amp;B/x.png"/>');
     expect(meshNodeToCot(node, 'meshcore')).not.toContain('<usericon');
+  });
+});
+
+describe('chat endpoint', () => {
+  it('makes the marker a chat contact only when asked', () => {
+    expect(meshNodeToCot(makeNode(), 'meshcore', { chatEndpoint: true })).toContain(
+      '<contact callsign="Test Node" endpoint="*:-1:stcp"/>',
+    );
+    expect(meshNodeToCot(makeNode(), 'meshcore')).toContain('<contact callsign="Test Node"/>');
+  });
+
+  it('reads the mesh node a marker uid names', () => {
+    expect(parseMeshNodeUid('MC-123')).toEqual({ protocol: 'meshcore', nodeId: 123 });
+    expect(parseMeshNodeUid('MESH-4294967295')).toEqual({
+      protocol: 'meshtastic',
+      nodeId: 4294967295,
+    });
+    expect(parseMeshNodeUid('RN-9')).toEqual({ protocol: 'reticulum', nodeId: 9 });
+    for (const uid of [
+      'MC-0',
+      'MC-012',
+      'MC-4294967296',
+      'MC-',
+      'ANDROID-1',
+      'MC-1 ',
+      'meshtracker-0a1b2c3d',
+    ]) {
+      expect(parseMeshNodeUid(uid)).toBeNull();
+    }
   });
 });

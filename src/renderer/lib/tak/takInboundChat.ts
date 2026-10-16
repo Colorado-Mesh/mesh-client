@@ -1,5 +1,7 @@
-import type { TAKInboundChat } from '@/shared/tak-types';
+import type { TakChatTarget, TAKInboundChat } from '@/shared/tak-types';
 
+import { getTakRadio } from '../../stores/takChannelStore';
+import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { IdentityId } from '../types';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
@@ -52,12 +54,23 @@ export interface TakSendTarget {
   identityId: IdentityId;
   protocol: 'meshtastic' | 'meshcore';
   channelIndex: number;
+  /** The companion a direct message goes to; unset for a channel message. */
+  destination?: number;
 }
 
-/** Served channels with `channelKey` that TAK clients may send to, on every radio serving it. */
-export function findTakSendTargets(channelKey: string): TakSendTarget[] {
+/**
+ * Where a TAK client's message goes out: for a channel, every radio serving it with sending
+ * allowed; for a companion, the radio TAK uses for its protocol, if that radio has direct
+ * messages on.
+ */
+export function findTakSendTargets(target: TakChatTarget): TakSendTarget[] {
+  if (target.kind === 'direct') {
+    const identityId = getTakRadio(target.protocol);
+    if (!identityId || !getTakRelayPrefs(identityId).directMessages) return [];
+    return [{ identityId, protocol: target.protocol, channelIndex: 0, destination: target.nodeId }];
+  }
   return listTakServedChannels()
-    .filter((c) => c.key === channelKey && c.send)
+    .filter((c) => c.key === target.channelKey && c.send)
     .map((c) => ({ identityId: c.identityId, protocol: c.protocol, channelIndex: c.index }));
 }
 
@@ -83,26 +96,29 @@ function withSendTimeout(send: Promise<void>): Promise<void> {
 }
 
 /**
- * Transmit one TAK client's message on the served channel it was sent to, on every radio serving
- * that channel with sending allowed. Does nothing when none allows it. Returns how many radios it
- * was sent on; a failed send is logged and does not stop the others.
+ * Transmit one TAK client's message: on the served channel it was sent to, on every radio
+ * serving that channel with sending allowed, or as a direct message to the companion it was
+ * sent to. Does nothing when nothing allows it. Returns how many radios it was sent on; a
+ * failed send is logged and does not stop the others.
  */
 export async function relayTakChatToMesh(
   message: TAKInboundChat,
   sendFn: TakMeshSendFn,
   nowMs: number = Date.now(),
 ): Promise<number> {
-  const targets = findTakSendTargets(message.channelKey);
+  const targets = findTakSendTargets(message.target);
   if (targets.length === 0) return 0;
   const text = formatTakMeshText(message.senderCallsign, message.text);
   let sent = 0;
   for (const target of targets) {
-    rememberTakSend(target.identityId, target.channelIndex, text, nowMs);
+    // Only a channel message is heard back off the mesh; a direct message has no echo.
+    const onChannel = target.destination === undefined;
+    if (onChannel) rememberTakSend(target.identityId, target.channelIndex, text, nowMs);
     try {
       await withSendTimeout(sendFn(target, text));
       sent++;
     } catch (e) {
-      consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
+      if (onChannel) consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
       console.warn('[TakInboundChat] mesh send failed ' + errLikeToLogString(e));
     }
   }

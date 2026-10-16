@@ -18,6 +18,8 @@ import { enrollTakClientCertificate } from '../tak/enrollment';
 import {
   parseTakChannelChatMessage,
   parseTakChatChannels,
+  parseTakDirectMessage,
+  parseTakDmProtocols,
   parseTakRetiredRooms,
 } from '../tak/geochat-cot';
 import { parseTakNodeUpdate } from '../tak/node-update';
@@ -277,6 +279,33 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     if (!m) return;
     retiredRoomUpdates.checkOrThrow();
     m.retireChatRooms(parseTakRetiredRooms(rooms));
+  });
+
+  const directPushes = createIpcRateLimiter({
+    max: 120,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:pushDirectMessage',
+  });
+  ipcMain.handle('tak:pushDirectMessage', (event, message: unknown) => {
+    assertIpcSender(event, 'tak:pushDirectMessage');
+    const m = getTakServerManager();
+    if (!m?.hasActiveSink()) return;
+    directPushes.checkOrThrow();
+    m.sendDirectMessage(parseTakDirectMessage(message));
+  });
+
+  const directMessagingUpdates = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:setDirectMessaging',
+  });
+  ipcMain.handle('tak:setDirectMessaging', (event, protocols: unknown) => {
+    assertIpcSender(event, 'tak:setDirectMessaging');
+    // As for channels: the renderer sends the setting again when a sink starts.
+    const m = getTakServerManager();
+    if (!m) return;
+    directMessagingUpdates.checkOrThrow();
+    m.setDirectMessaging(parseTakDmProtocols(protocols));
   });
 
   // ─── Relayed node styling ────────────────────────────────────────

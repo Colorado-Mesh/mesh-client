@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { isChannelIdentityKey } from '../../shared/channelIdentityKey';
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
+  isTakDmProtocol,
   TAK_CHAT_CHANNELS_MAX,
   TAK_CHAT_ROOM_UID_PREFIX,
   TAK_GEOCHAT_CALLSIGN_MAX_LEN,
@@ -10,9 +11,12 @@ import {
   TAK_GEOCHAT_TEXT_MAX_LEN,
   type TAKChannelChatMessage,
   type TakChatChannel,
+  type TAKDirectMessage,
+  type TakDmProtocol,
   type TAKGeochatMessage,
 } from '../../shared/tak-types';
 import { escapeXml } from '../../shared/xmlEscape';
+import { COT_CHAT_ENDPOINT } from './cot-converter';
 
 /** GeoChat messages stay in ATAK's history; stale only bounds how long servers relay them. */
 const GEOCHAT_STALE_MS = 24 * 60 * 60 * 1000;
@@ -112,7 +116,7 @@ export function buildChannelContactCot(
   const uid = escapeXml(channelContactUid(channel.key));
   const time = new Date(nowMs).toISOString();
   const stale = new Date(nowMs + CHAT_ROOM_CONTACT_STALE_MS).toISOString();
-  const endpoint = channel.send ? ' endpoint="*:-1:stcp"' : '';
+  const endpoint = channel.send ? ` endpoint="${COT_CHAT_ENDPOINT}"` : '';
   return (
     `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="${time}" start="${time}"` +
     ` stale="${stale}" how="h-g-i-g-o">` +
@@ -174,6 +178,20 @@ function label(value: unknown, max: number, field: string, channel: string): str
   return trimmed;
 }
 
+/** Message text of 1 to the GeoChat maximum, and a positive send time; throws otherwise. */
+function textAndTime(
+  m: Record<string, unknown>,
+  channel: string,
+): { text: string; timeMs: number } {
+  if (typeof m.text !== 'string' || !m.text.trim() || m.text.length > TAK_GEOCHAT_TEXT_MAX_LEN) {
+    throw new Error(`${channel}: text must be 1-${TAK_GEOCHAT_TEXT_MAX_LEN} characters`);
+  }
+  if (typeof m.timeMs !== 'number' || !Number.isFinite(m.timeMs) || m.timeMs <= 0) {
+    throw new Error(`${channel}: timeMs must be a positive number`);
+  }
+  return { text: m.text.trim(), timeMs: m.timeMs };
+}
+
 /** Validate an untrusted heard channel message from the renderer. Throws when malformed. */
 export function parseTakChannelChatMessage(raw: unknown): TAKChannelChatMessage {
   if (!raw || typeof raw !== 'object') {
@@ -190,17 +208,10 @@ export function parseTakChannelChatMessage(raw: unknown): TAKChannelChatMessage 
     'senderCallsign',
     'tak:pushChatMessage',
   );
-  if (typeof m.text !== 'string' || !m.text.trim() || m.text.length > TAK_GEOCHAT_TEXT_MAX_LEN) {
-    throw new Error(`tak:pushChatMessage: text must be 1-${TAK_GEOCHAT_TEXT_MAX_LEN} characters`);
-  }
-  if (typeof m.timeMs !== 'number' || !Number.isFinite(m.timeMs) || m.timeMs <= 0) {
-    throw new Error('tak:pushChatMessage: timeMs must be a positive number');
-  }
   const msg: TAKChannelChatMessage = {
     channelKey,
     senderCallsign,
-    text: m.text.trim(),
-    timeMs: m.timeMs,
+    ...textAndTime(m, 'tak:pushChatMessage'),
   };
   if (m.latitude != null || m.longitude != null) {
     if (
@@ -214,6 +225,106 @@ export function parseTakChannelChatMessage(raw: unknown): TAKChannelChatMessage 
     msg.longitude = m.longitude;
   }
   return msg;
+}
+
+const MAX_NODE_ID = 0xffffffff;
+
+/** Validate an untrusted heard direct message from the renderer. Throws when malformed. */
+export function parseTakDirectMessage(raw: unknown): TAKDirectMessage {
+  const channel = 'tak:pushDirectMessage';
+  if (!raw || typeof raw !== 'object') throw new Error(`${channel}: message must be an object`);
+  const m = raw as Record<string, unknown>;
+  if (!isTakDmProtocol(m.protocol)) {
+    throw new Error(`${channel}: protocol must be meshcore or meshtastic`);
+  }
+  const nodeId = m.nodeId;
+  if (
+    typeof nodeId !== 'number' ||
+    !Number.isInteger(nodeId) ||
+    nodeId <= 0 ||
+    nodeId > MAX_NODE_ID
+  ) {
+    throw new Error(`${channel}: nodeId must be a node number`);
+  }
+  return {
+    protocol: m.protocol,
+    nodeId,
+    senderCallsign: label(
+      m.senderCallsign,
+      TAK_GEOCHAT_CALLSIGN_MAX_LEN,
+      'senderCallsign',
+      channel,
+    ),
+    ...textAndTime(m, channel),
+  };
+}
+
+/** Validate the renderer's list of radios with direct messages on. Throws when malformed. */
+export function parseTakDmProtocols(raw: unknown): TakDmProtocol[] {
+  if (!Array.isArray(raw) || !raw.every(isTakDmProtocol)) {
+    throw new Error('tak:setDirectMessaging: expected a list of meshcore and meshtastic');
+  }
+  return [...new Set(raw)];
+}
+
+/** How long a companion keeps its contact without a marker after the last direct message. */
+export const DIRECT_CONTACT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** A companion as a chat contact: its marker's uid and the callsign ATAK shows for it. */
+export interface DirectChatContact {
+  uid: string;
+  callsign: string;
+}
+
+/** One line of a direct conversation. */
+export interface DirectChatLine {
+  text: string;
+  timeMs: number;
+}
+
+/**
+ * Contact for a companion a direct message has passed with but that has no marker on the map
+ * (no position, or hidden by the filters or the age limit). It sits at 0, 0, under the marker's
+ * uid, so a marker arriving later takes its place, and goes stale a day after `lastDmMs`.
+ */
+export function buildDirectContactCot(
+  contact: DirectChatContact,
+  lastDmMs: number,
+  nowMs: number = Date.now(),
+): string {
+  const time = new Date(nowMs).toISOString();
+  const stale = new Date(Math.max(lastDmMs + DIRECT_CONTACT_TTL_MS, nowMs)).toISOString();
+  return (
+    `<event version="2.0" uid="${escapeXml(contact.uid)}" type="a-f-G-U-C" time="${time}"` +
+    ` start="${time}" stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
+    `<detail>` +
+    `<contact callsign="${escapeXml(contact.callsign)}" endpoint="${COT_CHAT_ENDPOINT}"/>` +
+    `</detail>` +
+    `</event>`
+  );
+}
+
+/**
+ * A direct message to `recipient` from a companion's contact. ATAK files it under that contact,
+ * and a reply there comes back addressed to the companion's uid.
+ */
+export function buildDirectChatCot(
+  contact: DirectChatContact,
+  line: DirectChatLine,
+  recipient: GeochatRecipient,
+  nowMs: number = Date.now(),
+  messageId: string = randomUUID(),
+): string {
+  return geochatEvent(
+    { room: contact.callsign, senderCallsign: contact.callsign, ...line },
+    contact.uid,
+    contact.callsign,
+    recipient.callsign,
+    recipient.uid,
+    nowMs,
+    messageId,
+  );
 }
 
 /**

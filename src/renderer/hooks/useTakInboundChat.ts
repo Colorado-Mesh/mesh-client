@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
 
-import type { TakChatChannel } from '@/shared/tak-types';
+import type { TakChatChannel, TakDmProtocol } from '@/shared/tak-types';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { listTakDmProtocols } from '../lib/tak/takDirectMessages';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -12,7 +13,7 @@ import {
   toTakChatChannels,
 } from '../lib/tak/takServedChannels';
 import type { IdentityId } from '../lib/types';
-import { setTakChannels, type TakChannelInfo } from '../stores/takChannelStore';
+import { setTakChannels, setTakRadio, type TakChannelInfo } from '../stores/takChannelStore';
 import {
   bindTakPendingSlots,
   getTakRetiredRooms,
@@ -24,6 +25,45 @@ import { useTakSinkStore } from '../stores/takSinkStore';
 export const TAK_SEND_ROOMS_RETRY_MS = 5_000;
 export const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
 
+/**
+ * Keep main told a setting while a sink is up: `value` (JSON) is sent whenever a sink starts or
+ * it changes. A refused update (main's rate limit, say) would leave main with an old value, so it
+ * is retried, waiting longer each time, until it lands or a newer value or unmount replaces it.
+ */
+function useSendWhileSinkActive(
+  sinkActive: boolean,
+  valueJson: string,
+  send: (value: unknown) => Promise<void>,
+  label: string,
+): void {
+  useEffect(() => {
+    // Main keeps the setting only while a sink exists, so it is sent again whenever one starts.
+    if (!sinkActive) return;
+    const value: unknown = JSON.parse(valueJson);
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let delayMs = TAK_SEND_ROOMS_RETRY_MS;
+    const attempt = (): void => {
+      send(value).catch((e: unknown) => {
+        if (cancelled) return;
+        console.warn(`[TakInboundChat] ${label} failed; retrying ` + errLikeToLogString(e));
+        retryTimer = setTimeout(attempt, delayMs);
+        delayMs = Math.min(delayMs * 2, TAK_SEND_ROOMS_RETRY_MAX_MS);
+      });
+    };
+    attempt();
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
+  }, [sinkActive, valueJson, send, label]);
+}
+
+const sendChatChannels = (value: unknown): Promise<void> =>
+  window.electronAPI.tak.setChatChannels(value as TakChatChannel[]);
+const sendDirectMessaging = (value: unknown): Promise<void> =>
+  window.electronAPI.tak.setDirectMessaging(value as TakDmProtocol[]);
+
 /** Each radio's identity and its runtime channel list, as App has them. */
 export interface TakChannelSources {
   meshcore: { identityId: IdentityId | null; channels: readonly unknown[] };
@@ -31,10 +71,11 @@ export interface TakChannelSources {
 }
 
 /**
- * Serves mesh channels to TAK clients. Publishes each radio's channels (with their ATAK names)
- * for the TAK panel and the relay, keeps main told which channels are served, and sends what TAK
- * clients write to a channel out on the mesh, one message at a time in arrival order.
- * Mount once from AppContent.
+ * Serves mesh channels and direct messages to TAK clients. Publishes each radio's channels (with
+ * their ATAK names) for the TAK panel and the relay, and which radio TAK uses per protocol; keeps
+ * main told which channels are served and which radios take direct messages; and sends what TAK
+ * clients write to a channel or a companion out on the mesh, one message at a time in arrival
+ * order. Mount once from AppContent.
  */
 export function useTakInboundChat(sources: TakChannelSources): void {
   const meshcoreId = sources.meshcore.identityId;
@@ -62,6 +103,11 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     bindTakPendingSlots(meshcoreId, meshcoreInfos);
     setTakChannels(meshcoreId, meshcoreInfos);
   }, [meshcoreId, meshcoreInfos]);
+
+  useEffect(() => {
+    setTakRadio('meshcore', meshcoreId);
+    setTakRadio('meshtastic', meshtasticId);
+  }, [meshcoreId, meshtasticId]);
 
   useEffect(() => {
     if (!meshtasticId) return;
@@ -93,27 +139,13 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     () => JSON.stringify(toTakChatChannels(listTakServedChannels(channelsByIdentity, relayPrefs))),
     [channelsByIdentity, relayPrefs],
   );
-  useEffect(() => {
-    // Main keeps the list only while a sink exists, so it is sent again whenever one starts.
-    if (!sinkActive) return;
-    const channels = JSON.parse(channelsJson) as TakChatChannel[];
-    // A refused update (main's rate limit, say) would leave main with an old list, so it is
-    // retried, waiting longer each time, until it lands or a newer list or unmount replaces it.
-    let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    let delayMs = TAK_SEND_ROOMS_RETRY_MS;
-    const send = (): void => {
-      window.electronAPI.tak.setChatChannels(channels).catch((e: unknown) => {
-        if (cancelled) return;
-        console.warn('[TakInboundChat] setChatChannels failed; retrying ' + errLikeToLogString(e));
-        retryTimer = setTimeout(send, delayMs);
-        delayMs = Math.min(delayMs * 2, TAK_SEND_ROOMS_RETRY_MAX_MS);
-      });
-    };
-    send();
-    return () => {
-      cancelled = true;
-      clearTimeout(retryTimer);
-    };
-  }, [sinkActive, channelsJson]);
+  useSendWhileSinkActive(sinkActive, channelsJson, sendChatChannels, 'setChatChannels');
+
+  const dmJson = useMemo(() => {
+    const radios: Partial<Record<TakDmProtocol, IdentityId>> = {};
+    if (meshcoreId) radios.meshcore = meshcoreId;
+    if (meshtasticId) radios.meshtastic = meshtasticId;
+    return JSON.stringify(listTakDmProtocols(radios, relayPrefs));
+  }, [meshcoreId, meshtasticId, relayPrefs]);
+  useSendWhileSinkActive(sinkActive, dmJson, sendDirectMessaging, 'setDirectMessaging');
 }

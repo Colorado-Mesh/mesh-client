@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { TAKInboundChat } from '@/shared/tak-types';
 
-import { getTakChannels, setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
+import {
+  getTakChannels,
+  setTakChannels,
+  setTakRadio,
+  useTakChannelStore,
+} from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { consumeTakEcho, resetTakEchoForTests } from './takEchoGuard';
 import {
@@ -22,7 +27,7 @@ const OTHER = 'fedcba9876543210';
 /** An inbound TAK chat message with overridable fields. */
 function message(overrides: Partial<TAKInboundChat> = {}): TAKInboundChat {
   return {
-    channelKey: OPS,
+    target: { kind: 'channel', channelKey: OPS },
     senderCallsign: 'VIPER',
     text: 'on scene',
     clientId: 'client-1',
@@ -30,6 +35,13 @@ function message(overrides: Partial<TAKInboundChat> = {}): TAKInboundChat {
     ...overrides,
   };
 }
+
+const channel = (channelKey: string) => ({ kind: 'channel' as const, channelKey });
+const direct = (protocol: 'meshcore' | 'meshtastic', nodeId: number) => ({
+  kind: 'direct' as const,
+  protocol,
+  nodeId,
+});
 
 /** Serve one channel of a radio to TAK, with sending allowed or not. */
 function serve(
@@ -52,12 +64,12 @@ function serve(
 beforeEach(() => {
   resetTakEchoForTests();
   useTakRelayPrefsStore.setState({ byIdentity: {} });
-  useTakChannelStore.setState({ channelsByIdentity: {} });
+  useTakChannelStore.setState({ channelsByIdentity: {}, radioByProtocol: {} });
 });
 
 afterEach(() => {
   useTakRelayPrefsStore.setState({ byIdentity: {} });
-  useTakChannelStore.setState({ channelsByIdentity: {} });
+  useTakChannelStore.setState({ channelsByIdentity: {}, radioByProtocol: {} });
 });
 
 describe('formatTakMeshText', () => {
@@ -85,7 +97,7 @@ describe('findTakSendTargets', () => {
     serve('mc', 'meshcore', 3, OTHER, true);
     serve('mc2', 'meshcore', 5, OPS, true);
     serve('mt', 'meshtastic', 0, OPS, false);
-    expect(findTakSendTargets(OPS)).toEqual([
+    expect(findTakSendTargets(channel(OPS))).toEqual([
       { identityId: 'mc', protocol: 'meshcore', channelIndex: 2 },
       { identityId: 'mc2', protocol: 'meshcore', channelIndex: 5 },
     ]);
@@ -97,9 +109,9 @@ describe('findTakSendTargets', () => {
       { protocol: 'meshtastic', index: 1, key: OTHER, name: 'x', atakName: '#MT x' },
     ]);
     useTakRelayPrefsStore.getState().setChatSend('mt', OTHER, true);
-    expect(findTakSendTargets(OPS)).toEqual([]);
-    expect(findTakSendTargets(OTHER)).toEqual([]);
-    expect(findTakSendTargets('0000000000000000')).toEqual([]);
+    expect(findTakSendTargets(channel(OPS))).toEqual([]);
+    expect(findTakSendTargets(channel(OTHER))).toEqual([]);
+    expect(findTakSendTargets(channel('0000000000000000'))).toEqual([]);
   });
 });
 
@@ -108,7 +120,7 @@ describe('relayTakChatToMesh', () => {
     serve('mc', 'meshcore', 2, OPS, false);
     const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
     expect(await relayTakChatToMesh(message(), send, NOW)).toBe(0);
-    expect(await relayTakChatToMesh(message({ channelKey: OTHER }), send, NOW)).toBe(0);
+    expect(await relayTakChatToMesh(message({ target: channel(OTHER) }), send, NOW)).toBe(0);
     expect(send).not.toHaveBeenCalled();
   });
 
@@ -198,5 +210,34 @@ describe('enqueueTakChatRelay', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('mesh send timed out'));
     expect(consumeTakEcho('mc', 2, '[VIPER] stuck')).toBe(false);
     warn.mockRestore();
+  });
+});
+
+describe('direct messages from TAK', () => {
+  it("goes to the companion on the protocol's TAK radio when it has direct messages on", () => {
+    setTakRadio('meshcore', 'mc');
+    setTakRadio('meshtastic', 'mt');
+    useTakRelayPrefsStore.getState().setDirectMessages('mc', true);
+    expect(findTakSendTargets(direct('meshcore', 123))).toEqual([
+      { identityId: 'mc', protocol: 'meshcore', channelIndex: 0, destination: 123 },
+    ]);
+    // Direct messages are off for the Meshtastic radio, and there may be no radio at all.
+    expect(findTakSendTargets(direct('meshtastic', 456))).toEqual([]);
+    setTakRadio('meshcore', null);
+    expect(findTakSendTargets(direct('meshcore', 123))).toEqual([]);
+  });
+
+  it('sends the prefixed text as a direct message, with no echo to wait for', async () => {
+    setTakRadio('meshtastic', 'mt');
+    useTakRelayPrefsStore.getState().setDirectMessages('mt', true);
+    const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
+    expect(
+      await relayTakChatToMesh(message({ target: direct('meshtastic', 456) }), send, NOW),
+    ).toBe(1);
+    expect(send).toHaveBeenCalledWith(
+      { identityId: 'mt', protocol: 'meshtastic', channelIndex: 0, destination: 456 },
+      '[VIPER] on scene',
+    );
+    expect(consumeTakEcho('mt', 0, '[VIPER] on scene', NOW + 1000)).toBe(false);
   });
 });

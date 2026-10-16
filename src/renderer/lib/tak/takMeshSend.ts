@@ -58,18 +58,22 @@ export function waitForOutboundSettled(
 }
 
 /**
- * Send a TAK client's channel text on one identity through the same path as Chat, so it shows
- * in Chat, is stored, and gets "Heard by" on MeshCore. Resolves once the message is on its way:
- * for MeshCore when the companion accepts it, for Meshtastic once it is queued (its ack arrives
- * later, as for any Chat message). Rejects when nothing was sent or the send failed.
+ * Send a TAK client's text on one identity through the same path as Chat, so it shows in Chat,
+ * is stored, and gets "Heard by" on MeshCore. Resolves once the message is on its way: for a
+ * MeshCore channel when the companion accepts it; for Meshtastic, and for any direct message,
+ * once it is started (its ack, and any automatic resend, follow as for a message typed in
+ * Chat). Rejects when nothing was sent or the send failed.
  */
 export const sendTakTextOnMesh: TakMeshSendFn = async (target, text) => {
   const storeId = sendChatOnIdentity(target.identityId, {
     text,
     channelIndex: target.channelIndex,
+    ...(target.destination !== undefined ? { destination: target.destination } : {}),
   });
   if (storeId == null) throw new Error(`${target.protocol} send was not started`);
-  if (target.protocol === 'meshtastic') return;
+  // A MeshCore DM stays `sending` until its ack, which can take longer than the send queue
+  // should wait; delivery is tracked by the message store.
+  if (target.protocol === 'meshtastic' || target.destination !== undefined) return;
   const outcome = await waitForOutboundSettled(target.identityId, storeId);
   if (outcome === 'failed') throw new Error('MeshCore send failed');
   if (outcome === 'timeout') throw new Error('mesh send timed out');
