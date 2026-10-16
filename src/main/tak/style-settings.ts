@@ -72,6 +72,19 @@ function parseStyle(raw: unknown): TakUnitStyle {
   return style;
 }
 
+/**
+ * An optional icon path: undefined when absent or blank, else the trimmed
+ * `<icon set uid>/<group>/<file>`. Throws naming `field` when it is malformed.
+ */
+function parseIconsetPath(raw: unknown, field: string): string | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== 'string') fail(`${field} must be a string`);
+  const iconPath = raw.trim();
+  if (!iconPath) return undefined;
+  if (!isTakIconsetPath(iconPath)) fail(`${field} must be <icon set uid>/<group>/<file>`);
+  return iconPath;
+}
+
 function parseFilter(raw: unknown): TakUnitFilter {
   if (!raw || typeof raw !== 'object') fail('filter must be an object');
   const f = raw as Record<string, unknown>;
@@ -125,16 +138,10 @@ export function parseTakStyleSettings(raw: unknown): TakStyleSettings {
     filters: (s.filters as unknown[]).map(parseFilter),
     sendUnmatched: s.sendUnmatched,
   };
-  if (s.relayIconsetPath !== undefined) {
-    if (typeof s.relayIconsetPath !== 'string') fail('relayIconsetPath must be a string');
-    const iconPath = s.relayIconsetPath.trim();
-    if (iconPath) {
-      if (!isTakIconsetPath(iconPath)) {
-        fail('relayIconsetPath must be <icon set uid>/<group>/<file>');
-      }
-      settings.relayIconsetPath = iconPath;
-    }
-  }
+  const relayIconsetPath = parseIconsetPath(s.relayIconsetPath, 'relayIconsetPath');
+  if (relayIconsetPath) settings.relayIconsetPath = relayIconsetPath;
+  const roomIconsetPath = parseIconsetPath(s.roomIconsetPath, 'roomIconsetPath');
+  if (roomIconsetPath) settings.roomIconsetPath = roomIconsetPath;
   return settings;
 }
 

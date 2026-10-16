@@ -63,6 +63,25 @@ export function isTakIconsetPath(value: string): boolean {
   return segments.length === 3 && segments.every(isIconsetPathSegment);
 }
 
+/** Uid of the GeoOps icon set, as ATAK names it once the set is imported. */
+export const TAK_GEOOPS_ICONSET_UID =
+  '83198b4872a8c34eb9c549da8a4de5a28f07821185b39a2277948f66c24ac17a';
+
+/**
+ * GeoOps WildFire icons that suit radio sites and the people around them, offered as presets
+ * for an icon path. Names are the ones the set gives each icon, so they are not translated.
+ * The list matches MeshCore TAK Bridge's, so both apps draw the same sites alike.
+ */
+export const TAK_GEOOPS_ICONS: readonly { name: string; path: string }[] = [
+  'Repeater',
+  'Repeater Mobile Relay',
+  'Internet Access',
+  'Telephone',
+  'Lookout',
+  'Incident Command Post',
+  'Ranger Station',
+].map((name) => ({ name, path: `${TAK_GEOOPS_ICONSET_UID}/WildFire/${name}.png` }));
+
 /** ATAK team colors accepted as `<__group name>`. */
 export const TAK_TEAM_COLORS = [
   'White',
@@ -154,10 +173,12 @@ export interface TakStyleSettings {
   /** Relay nodes no filter matches; off sends only matched nodes. */
   sendUnmatched: boolean;
   /**
-   * Icon set path for nodes that advertise a relay role (repeaters, routers, room servers,
-   * interfaces) and that no filter matches. Unset keeps the plain installation symbol.
+   * Icon set path for repeaters (MeshCore repeaters, Meshtastic routers, Reticulum
+   * interfaces), whether or not a filter restyles them. Unset keeps the unit type's symbol.
    */
   relayIconsetPath?: string;
+  /** Icon set path for room servers, in the same way. Unset keeps the unit type's symbol. */
+  roomIconsetPath?: string;
 }
 
 export const DEFAULT_TAK_STYLE_SETTINGS: TakStyleSettings = { filters: [], sendUnmatched: true };
