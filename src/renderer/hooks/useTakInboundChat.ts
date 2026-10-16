@@ -4,6 +4,7 @@ import type { TakChatChannel, TakDmProtocol } from '@/shared/tak-types';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { listTakDmProtocols } from '../lib/tak/takDirectMessages';
+import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -103,6 +104,9 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     bindTakPendingSlots(meshcoreId, meshcoreInfos);
     setTakChannels(meshcoreId, meshcoreInfos);
   }, [meshcoreId, meshcoreInfos]);
+
+  // Tell each device how its direct messages went, as their automatic resends settle.
+  useEffect(() => startTakDmStatus(), []);
 
   useEffect(() => {
     setTakRadio('meshcore', meshcoreId);

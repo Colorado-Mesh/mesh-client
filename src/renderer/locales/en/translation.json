@@ -6804,7 +6804,7 @@
     "channelRelayNoChannelsMeshtastic": "Connect a Meshtastic radio to list its channels.",
     "channelRelayUnnamed": "Channel {{n}}",
     "directMessages": "Direct messages",
-    "directMessagesHint": "Let ATAK devices message this radio's companions. Each companion this radio can message gets a chat option in ATAK, and a message to it goes out from this radio, prefixed with the sender's callsign. Its replies go to the ATAK device that last wrote to it, or to every device when none has. A companion with no position appears at 0, 0 for a day after a message."
+    "directMessagesHint": "Let ATAK devices message this radio's companions. Each companion this radio can message gets a chat option in ATAK, and a message to it goes out from this radio, prefixed with the sender's callsign. ATAK marks it delivered when the companion acknowledges it, or shows a note if it is still unacknowledged after the automatic resends. Its replies go to the ATAK device that last wrote to it, or to every device when none has. A companion with no position appears at 0, 0 for a day after a message."
   },
   "telemetryPanel": {
     "title": "Telemetry",

@@ -240,4 +240,45 @@ describe('direct messages from TAK', () => {
     );
     expect(consumeTakEcho('mt', 0, '[VIPER] on scene', NOW + 1000)).toBe(false);
   });
+
+  describe('outcomes', () => {
+    const DM_REF = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';
+    const dmStatus = vi.fn().mockResolvedValue(undefined);
+    beforeEach(() => {
+      dmStatus.mockClear();
+      vi.stubGlobal('window', { electronAPI: { tak: { dmStatus } } });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('hands the message reference on to the send, for its outcome', async () => {
+      setTakRadio('meshtastic', 'mt');
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', true);
+      const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
+      await relayTakChatToMesh(
+        message({ target: direct('meshtastic', 456), dmRef: DM_REF }),
+        send,
+        NOW,
+      );
+      expect(send.mock.calls[0]?.[0]).toMatchObject({ destination: 456, dmRef: DM_REF });
+      expect(dmStatus).not.toHaveBeenCalled();
+    });
+
+    it('reports a direct message not sent when the send fails or no radio can send it', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      setTakRadio('meshtastic', 'mt');
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', true);
+      const failing = vi.fn<TakMeshSendFn>().mockRejectedValue(new Error('rf down'));
+      const msg = message({ target: direct('meshtastic', 456), dmRef: DM_REF });
+      expect(await relayTakChatToMesh(msg, failing, NOW)).toBe(0);
+      expect(dmStatus).toHaveBeenLastCalledWith({ dmRef: DM_REF, outcome: 'not-sent' });
+
+      dmStatus.mockClear();
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', false);
+      expect(await relayTakChatToMesh(msg, failing, NOW)).toBe(0);
+      expect(dmStatus).toHaveBeenCalledWith({ dmRef: DM_REF, outcome: 'not-sent' });
+      warn.mockRestore();
+    });
+  });
 });

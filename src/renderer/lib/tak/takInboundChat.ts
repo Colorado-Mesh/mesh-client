@@ -4,6 +4,7 @@ import { getTakRadio } from '../../stores/takChannelStore';
 import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { IdentityId } from '../types';
+import { reportTakDmOutcome } from './takDmStatus';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
 import { listTakServedChannels } from './takServedChannels';
 
@@ -56,6 +57,8 @@ export interface TakSendTarget {
   channelIndex: number;
   /** The companion a direct message goes to; unset for a channel message. */
   destination?: number;
+  /** Main's id for a direct message, under which its outcome is reported. */
+  dmRef?: string;
 }
 
 /**
@@ -106,8 +109,14 @@ export async function relayTakChatToMesh(
   sendFn: TakMeshSendFn,
   nowMs: number = Date.now(),
 ): Promise<number> {
-  const targets = findTakSendTargets(message.target);
-  if (targets.length === 0) return 0;
+  const targets = findTakSendTargets(message.target).map((t) =>
+    t.destination !== undefined && message.dmRef ? { ...t, dmRef: message.dmRef } : t,
+  );
+  if (targets.length === 0) {
+    // Main let it through, so the device is waiting to hear how it went.
+    if (message.dmRef) reportTakDmOutcome(message.dmRef, 'not-sent');
+    return 0;
+  }
   const text = formatTakMeshText(message.senderCallsign, message.text);
   let sent = 0;
   for (const target of targets) {
@@ -119,6 +128,7 @@ export async function relayTakChatToMesh(
       sent++;
     } catch (e) {
       if (onChannel) consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
+      if (target.dmRef) reportTakDmOutcome(target.dmRef, 'not-sent');
       console.warn('[TakInboundChat] mesh send failed ' + errLikeToLogString(e));
     }
   }
