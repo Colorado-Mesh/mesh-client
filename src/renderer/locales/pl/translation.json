@@ -5889,7 +5889,9 @@
     "channelRemoteFor": "Przesyłaj strumieniowo {{channel}} na zdalny serwer TAK",
     "channelTrackersFor": "Poprawki trackera od {{channel}}",
     "directMessages": "Bezpośrednie wiadomości",
-    "directMessagesHint": "Niech urządzenia atak wyślą wiadomość do towarzyszy tego radia. Każdy towarzysz tej wiadomości can radiowej otrzymuje opcję czatu w atak, a wiadomość do niego wychodzi z tego radia, poprzedzoną znakiem wywoławczym nadawcy. Jego odpowiedzi trafiają do urządzenia atak, które ostatnio do niego pisało, lub do każdego urządzenia, gdy żadne tego nie zrobiło. Towarzysz bez pozycji pojawia się w 0, 0 przez dzień po wiadomości."
+    "directMessagesHint": "Niech urządzenia atak wyślą wiadomość do towarzyszy tego radia. Każdy towarzysz tej wiadomości can radiowej otrzymuje opcję czatu w atak, a wiadomość do niego wychodzi z tego radia, poprzedzoną znakiem wywoławczym nadawcy. Jego odpowiedzi trafiają do urządzenia atak, które ostatnio do niego pisało, lub do każdego urządzenia, gdy żadne tego nie zrobiło. Towarzysz bez pozycji pojawia się w 0, 0 przez dzień po wiadomości.",
+    "messagingTitleReticulum": "Reticulum wiadomości w atak",
+    "messagingIntroReticulum": "Pozwól, aby urządzenia Atak wysłały wiadomość do współpracowników LXMF. Rówieśnik z pozycją może otrzymywać wiadomości ze swojego znacznika; osoba bez pozycji pojawia się w 0, 0, gdy mesh-client prowadzi z nią rozmowę, więc lista kontaktów nie wypełnia się każdym usłyszanym rówieśnikiem."
   },
   "telemetryPanel": {
     "title": "Telemetria",
