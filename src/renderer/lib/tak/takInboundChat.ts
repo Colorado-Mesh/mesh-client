@@ -3,6 +3,7 @@ import type { TakChatTarget, TAKInboundChat } from '@/shared/tak-types';
 import { getTakRadio } from '../../stores/takChannelStore';
 import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { getIdentityIdForProtocol } from '../identityByProtocol';
 import type { IdentityId } from '../types';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
 import { listTakServedChannels } from './takServedChannels';
@@ -67,6 +68,9 @@ export function findTakSendTargets(target: TakChatTarget): TakSendTarget[] {
   if (target.kind === 'direct') {
     const identityId = getTakRadio(target.protocol);
     if (!identityId || !getTakRelayPrefs(identityId).directMessages) return [];
+    // The radio is recorded after a render, so for a moment after a switch to another radio of
+    // the same protocol it can still name the old one; never send from that.
+    if (identityId !== getIdentityIdForProtocol(target.protocol)) return [];
     return [{ identityId, protocol: target.protocol, channelIndex: 0, destination: target.nodeId }];
   }
   return listTakServedChannels()
