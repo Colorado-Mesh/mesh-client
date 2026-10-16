@@ -127,7 +127,8 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
     }
     if (c.engine === 'bundled') {
-      const ok = !!c.localModelId && (await packs.verify(c.localModelId));
+      const model = AI_LOCAL_MODELS.find((model) => model.id === c.localModelId);
+      const ok = !!model && (await packs.verify(model.id));
       return ok ? { ok } : { ok, reason: 'engineNotReady' };
     }
     const policy = validateAiEndpointUrl(c.baseUrl, c.allowRemote);

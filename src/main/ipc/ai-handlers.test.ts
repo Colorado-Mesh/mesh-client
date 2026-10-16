@@ -113,6 +113,33 @@ describe('AI IPC lifecycle and opt-in', () => {
       verify.mockRestore();
     }
   });
+  it('reports a removed saved model as not ready without verifying an unknown pack', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'removed-model',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify');
+    try {
+      expect(await handler('ai:testConfig')({})).toEqual({ ok: false, reason: 'engineNotReady' });
+      expect(verify).not.toHaveBeenCalled();
+      expect(await handler('ai:summarize')({}, request)).toEqual({
+        ok: false,
+        reason: 'engineNotReady',
+      });
+      expect(await handler('ai:getStatus')({})).toMatchObject({
+        localEngine: { ready: false, modelId: null },
+      });
+      expect(await fs.readdir(fixture.directory)).toEqual([]);
+    } finally {
+      verify.mockRestore();
+    }
+  });
   it('streams exactly one terminal event and hides stored API keys', async () => {
     await handler('ai:setEnabled')({}, true);
     const status = await handler('ai:setConfig')(
