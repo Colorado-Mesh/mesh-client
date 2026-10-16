@@ -3,7 +3,12 @@ import type { Wllama } from '@wllama/wllama/esm/index';
 import type { AiLocalJob } from '@/shared/ai-types';
 import { AI_MAX_OUTPUT_TOKENS } from '@/shared/ai-types';
 
+import { hasRepetitiveAiOutput, RepetitiveAiOutputError } from './aiSummaryOutput';
+
 export type AiWorkerPhase = 'loadingModel' | 'readingMessages';
+
+// Wllama forwards these llama.cpp wire names unchanged; its v3 types use older names.
+const sampling = { repeat_penalty: 1.1, repeat_last_n: 64 };
 
 // Wllama owns the dedicated WASM worker. No runtime, worker or assets load at import time.
 export class AiWorkerHost {
@@ -46,6 +51,8 @@ export class AiWorkerHost {
           });
         if (signal.aborted) cancel();
       });
+    let completed = false;
+    let cleanupFailure: { cause: unknown } | undefined;
     try {
       const [{ Wllama }, { default: wasmUrl }] = await raced(
         Promise.all([
@@ -81,8 +88,10 @@ export class AiWorkerHost {
       );
       signal.throwIfAborted();
       onPhase?.('readingMessages');
-      const stream = await raced(
+      let text = '';
+      await raced(
         runtime.createChatCompletion({
+          ...sampling,
           messages: [
             { role: 'system', content: job.system },
             { role: 'user', content: job.user },
@@ -92,21 +101,31 @@ export class AiWorkerHost {
           top_p: 0.9,
           stream: true,
           abortSignal: signal,
+          onData: (chunk) => {
+            signal.throwIfAborted();
+            const delta = chunk.choices[0]?.delta.content;
+            if (!delta) return;
+            text += delta;
+            if (hasRepetitiveAiOutput(text)) throw new RepetitiveAiOutputError();
+            onDelta(delta);
+          },
         }),
       );
-      const iterator = stream[Symbol.asyncIterator]();
-      while (true) {
-        const next = await raced(iterator.next());
-        signal.throwIfAborted();
-        if (next.done) break;
-        const delta = next.value.choices[0]?.delta.content;
-        if (delta) onDelta(delta);
-      }
+      signal.throwIfAborted();
+      if (hasRepetitiveAiOutput(text)) throw new RepetitiveAiOutputError();
+      completed = true;
     } finally {
       signal.removeEventListener('abort', abort);
-      await this.dispose();
-      this.busy = false;
+      try {
+        await this.dispose();
+      } catch (error) {
+        // catch-no-log-ok preserve an existing generation failure if teardown also fails
+        if (completed) cleanupFailure = { cause: error };
+      } finally {
+        this.busy = false;
+      }
     }
+    if (cleanupFailure) throw cleanupFailure.cause;
   }
   async dispose(): Promise<void> {
     const runtime = this.runtime;

@@ -7573,8 +7573,6 @@
     "working": "正在准备摘要…",
     "sentTo": "已发送至{{host}}",
     "onDevice": "已在此设备上处理",
-    "provider_one": "{{provider}} · {{model}} · {{count}}消息",
-    "provider_other": "{{provider}} · {{model}} · {{count}}消息",
     "truncated": "仅包括适合的最新消息。较早的历史也可能因保留而被删除。",
     "verify": "人工智能摘要可能会遗漏或误读详细信息。请查看原始消息。",
     "settingsTitle": "AI对话摘要",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI ： {{model}}",
     "osUnavailable": "在此设备或安装上不可用",
     "catalog": "离线模特",
-    "offlineHint": "下载使用互联网一次。推理在计划工作站上离线运行，可能需要一分钟。较大的型号需要更多内存。",
     "download": "下载",
     "downloadModel": "下载{{model}}",
     "remove": "移除",
@@ -7624,11 +7621,18 @@
       "httpError": "提供程序请求失败。检查连接和凭据。",
       "invalidResponse": "引擎返回了不完整或不受支持的响应。",
       "cancelled": "摘要已取消。",
-      "error": "无法汇总。请检查AI设置并重试。"
+      "error": "无法汇总。请检查AI设置并重试。",
+      "repetitiveOutput": "模型开始自我重复。尝试更大的型号或更短的范围。"
     },
-    "smallModel": "基础摘要；可能误读发送者或未回答的问题",
-    "balancedModel": "更好的多语言摘要；更慢",
     "loadingModel": "正在此设备上加载模型...",
-    "readingMessages": "正在读取此设备上的消息。CPU处理可能需要几分钟时间..."
+    "readingMessages": "正在读取此设备上的消息。CPU处理可能需要几分钟时间...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}}/{{count}}包含已收集的消息",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}}/{{count}}包含已收集的消息",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}}已收集消息",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}}已收集消息",
+    "offlineSummaryHint": "下载使用互联网一次。摘要在此设备上离线运行。使用下载的模型进行大型对话可能需要几分钟时间。较大的型号需要更多内存。",
+    "smallModelLimitations": "实验性：可能会错过关键事实、错误归因发件人或重复。首选1.5B型号进行追赶。",
+    "countSnapshot": "计数描述此摘要快照；实时未读徽章可能有所不同。",
+    "balancedModelGuidance": "较大的型号；需要更多内存和时间。验证原始消息中的重要详细信息。"
   }
 }

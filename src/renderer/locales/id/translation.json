@@ -7573,8 +7573,6 @@
     "working": "Mempersiapkan ringkasan…",
     "sentTo": "Dikirim ke {{host}}",
     "onDevice": "Diproses pada perangkat ini",
-    "provider_one": "{{provider}} · {{model}} · {{count}} pesan",
-    "provider_other": "{{provider}} · {{model}} · {{count}} pesan",
     "truncated": "Hanya pesan terbaru yang sesuai yang disertakan. Riwayat yang lebih lama mungkin juga telah dihapus oleh retensi.",
     "verify": "Ringkasan AI dapat melewatkan atau salah membaca detail. Periksa pesan asli.",
     "settingsTitle": "Ringkasan percakapan AI",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Tidak tersedia di perangkat atau instalasi ini",
     "catalog": "Model offline",
-    "offlineHint": "Unduhan menggunakan internet satu kali. Inferensi berjalan offline pada CPU dan mungkin memakan waktu satu menit. Model yang lebih besar membutuhkan lebih banyak memori.",
     "download": "Unduh",
     "downloadModel": "Unduh {{model}}",
     "remove": "Hapus",
@@ -7624,11 +7621,18 @@
       "httpError": "Permintaan penyedia gagal. Periksa koneksi dan kredensial.",
       "invalidResponse": "Mesin mengembalikan respons yang tidak lengkap atau tidak didukung.",
       "cancelled": "Ringkasan dibatalkan.",
-      "error": "Tidak dapat meringkas. Periksa pengaturan AI dan coba lagi."
+      "error": "Tidak dapat meringkas. Periksa pengaturan AI dan coba lagi.",
+      "repetitiveOutput": "Model mulai berulang. Coba model yang lebih besar atau rentang yang lebih pendek."
     },
-    "smallModel": "Ringkasan dasar; dapat salah menafsirkan pengirim atau pertanyaan yang belum terjawab",
-    "balancedModel": "Ringkasan multibahasa yang lebih baik; lebih lambat",
     "loadingModel": "Memuat model pada perangkat ini...",
-    "readingMessages": "Membaca pesan di perangkat ini. Pemrosesan CPU mungkin memakan waktu beberapa menit..."
+    "readingMessages": "Membaca pesan di perangkat ini. Pemrosesan CPU mungkin memakan waktu beberapa menit...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} dari {{count}} pesan terkumpul disertakan",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} dari {{count}} pesan terkumpul disertakan",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} pesan terkumpul",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} pesan terkumpul",
+    "offlineSummaryHint": "Unduhan menggunakan internet satu kali. Ringkasan berjalan offline di perangkat ini. Percakapan besar dapat memakan waktu beberapa menit dengan model yang diunduh. Model yang lebih besar membutuhkan lebih banyak memori.",
+    "smallModelLimitations": "Eksperimental: dapat melewatkan fakta utama, salah kirim pengirim atau mengulanginya sendiri. Lebih suka model 1.5B untuk catch - up.",
+    "countSnapshot": "Hitungan menggambarkan snapshot ringkasan ini; lencana langsung yang belum dibaca mungkin berbeda.",
+    "balancedModelGuidance": "Model yang lebih besar; membutuhkan lebih banyak memori dan waktu. Verifikasi detail penting dalam pesan asli."
   }
 }

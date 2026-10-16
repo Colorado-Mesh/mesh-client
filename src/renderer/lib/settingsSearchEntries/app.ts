@@ -686,8 +686,8 @@ export const appSurface: SettingsSearchSurface = {
     { path: 'src/renderer/components/AppTranslationSection.tsx', sweepAllKeys: true },
   ],
   exempt: {
-    'aiSummary.smallModel': 'Catalog guidance; its model catalog setting is indexed',
-    'aiSummary.balancedModel': 'Catalog guidance; its model catalog setting is indexed',
+    'aiSummary.smallModelLimitations': 'Catalog guidance; its model catalog setting is indexed',
+    'aiSummary.balancedModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
     'aiSummary.bundledEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.cancel': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.chooseEngine': 'AI setting help, option, status or child action; parent is indexed',
@@ -696,7 +696,8 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.downloadModel': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.keySaved': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.localEngine': 'AI setting help, option, status or child action; parent is indexed',
-    'aiSummary.offlineHint': 'AI setting help, option, status or child action; parent is indexed',
+    'aiSummary.offlineSummaryHint':
+      'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.optIn': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.osEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.osUnavailable': 'AI setting help, option, status or child action; parent is indexed',

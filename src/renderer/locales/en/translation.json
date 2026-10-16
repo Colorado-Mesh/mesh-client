@@ -7584,8 +7584,6 @@
     "working": "Preparing summary…",
     "sentTo": "Sent to {{host}}",
     "onDevice": "Processed on this device",
-    "provider_one": "{{provider}} · {{model}} · {{count}} message",
-    "provider_other": "{{provider}} · {{model}} · {{count}} messages",
     "truncated": "Only the newest messages that fit were included. Older history may also have been removed by retention.",
     "verify": "AI summaries can miss or misread details. Check the original messages.",
     "settingsTitle": "AI conversation summaries",
@@ -7600,7 +7598,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Unavailable on this device or installation",
     "catalog": "Offline models",
-    "offlineHint": "Downloads use the internet once. Inference runs offline on the CPU and may take a minute. Larger models need more memory.",
     "download": "Download",
     "downloadModel": "Download {{model}}",
     "remove": "Remove",
@@ -7635,11 +7632,18 @@
       "httpError": "The provider request failed. Check the connection and credentials.",
       "invalidResponse": "The engine returned an incomplete or unsupported response.",
       "cancelled": "Summary cancelled.",
-      "error": "Could not summarize. Check AI settings and retry."
+      "error": "Could not summarize. Check AI settings and retry.",
+      "repetitiveOutput": "The model started repeating itself. Try a larger model or a shorter range."
     },
-    "smallModel": "Basic summaries; may misread senders or unanswered questions",
-    "balancedModel": "Better multilingual summaries; slower",
     "loadingModel": "Loading model on this device...",
-    "readingMessages": "Reading messages on this device. CPU processing may take a few minutes..."
+    "readingMessages": "Reading messages on this device. CPU processing may take a few minutes...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} of {{count}} collected message included",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} of {{count}} collected messages included",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} message collected",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} messages collected",
+    "countSnapshot": "Counts describe this summary snapshot; live unread badges may differ.",
+    "offlineSummaryHint": "Downloads use the internet once. Summaries run offline on this device. Large conversations can take a few minutes with downloaded models. Larger models need more memory.",
+    "smallModelLimitations": "Experimental: can miss key facts, misattribute senders or repeat itself. Prefer the 1.5B model for catch-up.",
+    "balancedModelGuidance": "Larger model; needs more memory and time. Verify important details in the original messages."
   }
 }

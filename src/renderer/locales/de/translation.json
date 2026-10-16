@@ -7573,8 +7573,6 @@
     "working": "Zusammenfassung wird vorbereitet...",
     "sentTo": "Gesendet an {{host}}",
     "onDevice": "Auf diesem Gerät verarbeitet",
-    "provider_one": "{{provider}} · {{model}} · {{count}} Nachricht",
-    "provider_other": "{{provider}} · {{model}} · {{count}} Nachrichten",
     "truncated": "Es wurden nur die neuesten Nachrichten aufgenommen, die passen. Ältere Anamnese kann auch durch Aufbewahrung entfernt worden sein.",
     "verify": "KI-Zusammenfassungen können Details verpassen oder falsch interpretieren. Überprüfen Sie die ursprünglichen Nachrichten.",
     "settingsTitle": "KI-Gesprächszusammenfassungen",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Auf diesem Gerät oder dieser Installation nicht verfügbar",
     "catalog": "Offline-Modelle",
-    "offlineHint": "Downloads nutzen das Internet einmalig. Die Inferenz läuft offline auf der CPU und kann eine Minute dauern. Größere Modelle benötigen mehr Speicher.",
     "download": "Herunterladen",
     "downloadModel": "Herunterladen {{model}}",
     "remove": "Entlassen",
@@ -7624,11 +7621,18 @@
       "httpError": "Die Anbieteranfrage ist fehlgeschlagen. Überprüfen Sie die Verbindung und die Anmeldeinformationen.",
       "invalidResponse": "Der Motor gab eine unvollständige oder nicht unterstützte Antwort zurück.",
       "cancelled": "Zusammenfassung abgebrochen.",
-      "error": "Konnte nicht zusammengefasst werden. Überprüfen Sie die KI-Einstellungen und versuchen Sie es erneut."
+      "error": "Konnte nicht zusammengefasst werden. Überprüfen Sie die KI-Einstellungen und versuchen Sie es erneut.",
+      "repetitiveOutput": "Das Modell begann sich zu wiederholen. Probieren Sie ein größeres Modell oder eine kürzere Reichweite aus."
     },
-    "smallModel": "Einfache Zusammenfassungen; Absender oder offene Fragen können falsch erkannt werden",
-    "balancedModel": "Bessere mehrsprachige Zusammenfassungen; langsamer",
     "loadingModel": "Modell auf diesem Gerät wird geladen...",
-    "readingMessages": "Lesen von Nachrichten auf diesem Gerät. Die CPU-Verarbeitung kann einige Minuten dauern..."
+    "readingMessages": "Lesen von Nachrichten auf diesem Gerät. Die CPU-Verarbeitung kann einige Minuten dauern...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} von {{count}} gesammelte Nachricht enthalten",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} von {{count}} gesammelten Nachrichten enthalten",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} Nachricht erfasst",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} gesammelte Nachrichten",
+    "offlineSummaryHint": "Downloads nutzen das Internet einmalig. Zusammenfassungen werden auf diesem Gerät offline ausgeführt. Große Gespräche können mit heruntergeladenen Modellen einige Minuten dauern. Größere Modelle benötigen mehr Speicher.",
+    "smallModelLimitations": "Experimentell: Kann wichtige Fakten übersehen, Absender falsch zuordnen oder sich wiederholen. Bevorzugen Sie das 1,5B-Modell für den Nachholbedarf.",
+    "countSnapshot": "Zählungen beschreiben diesen zusammenfassenden Schnappschuss; ungelesene Live-Abzeichen können abweichen.",
+    "balancedModelGuidance": "Größeres Modell; benötigt mehr Speicher und Zeit. Überprüfen Sie wichtige Details in den ursprünglichen Nachrichten."
   }
 }

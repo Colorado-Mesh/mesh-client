@@ -7573,8 +7573,6 @@
     "working": "Özet hazırlanıyor…",
     "sentTo": "{{host}} adresine gönderildi",
     "onDevice": "Bu cihazda işlendi",
-    "provider_one": "{{provider}} · {{model}} · {{count}} mesaj",
-    "provider_other": "{{provider}} · {{model}} · {{count}} mesajlar",
     "truncated": "Yalnızca en yeni uygun mesajlar dahil edildi. Eski tarih de saklama ile kaldırılmış olabilir.",
     "verify": "Yapay zeka özetleri ayrıntıları gözden kaçırabilir veya yanlış okuyabilir. Orijinal mesajları kontrol edin.",
     "settingsTitle": "Yapay zeka konuşma özetleri",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Bu cihazda veya kurulumda kullanılamıyor",
     "catalog": "Çevrimdışı modeller",
-    "offlineHint": "İndirmeler interneti bir kez kullanır. Çıkarım CPU'da çevrimdışı çalışır ve bir dakika sürebilir. Daha büyük modeller daha fazla belleğe ihtiyaç duyar.",
     "download": "İndir",
     "downloadModel": "İndir {{model}}",
     "remove": "Kaldır",
@@ -7624,11 +7621,18 @@
       "httpError": "Sağlayıcı isteği başarısız oldu. Bağlantıyı ve kimlik bilgilerini kontrol edin.",
       "invalidResponse": "Motor eksik veya desteklenmeyen bir yanıt verdi.",
       "cancelled": "Özet iptal edildi.",
-      "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin."
+      "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin.",
+      "repetitiveOutput": "Model kendini tekrarlamaya başladı. Daha büyük bir model veya daha kısa bir aralık deneyin."
     },
-    "smallModel": "Temel özetler; gönderenleri veya yanıtsız soruları yanlış yorumlayabilir",
-    "balancedModel": "Daha iyi çok dilli özetler; daha yavaş",
     "loadingModel": "Model bu cihaza yükleniyor...",
-    "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir..."
+    "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} of {{count}} toplanan mesaj dahil",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} of {{count}} toplanan mesajlar dahil",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} mesaj toplandı",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} toplanan mesajlar",
+    "offlineSummaryHint": "İndirmeler interneti bir kez kullanır. Özetler bu cihazda çevrimdışı çalışır. İndirilen modellerle büyük konuşmalar birkaç dakika sürebilir. Daha büyük modeller daha fazla belleğe ihtiyaç duyar.",
+    "smallModelLimitations": "Deneysel: önemli gerçekleri gözden kaçırabilir, gönderenleri yanlış tanımlayabilir veya kendini tekrarlayabilir. Arayı kapatmak için 1.5B modelini tercih edin.",
+    "countSnapshot": "Sayımlar bu özet anlık görüntüsünü açıklar; canlı okunmamış rozetler farklı olabilir.",
+    "balancedModelGuidance": "Daha büyük model; daha fazla bellek ve zamana ihtiyaç duyar. Orijinal mesajlardaki önemli ayrıntıları doğrulayın."
   }
 }

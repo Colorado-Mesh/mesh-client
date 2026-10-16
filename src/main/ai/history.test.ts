@@ -13,6 +13,21 @@ afterEach(() => {
   db.close();
 });
 describe('AI history conversation boundaries', () => {
+  it('retains missing MeshCore sender identity for renderer display normalization', () => {
+    db.prepareOnce(
+      "INSERT INTO meshcore_messages (sender_id,sender_name,payload,channel_idx,timestamp) VALUES (NULL,NULL,'WX: Morning report',0,100)",
+    ).run();
+    expect(
+      querySummaryHistory(db, {
+        protocol: 'meshcore',
+        surface: 'channel',
+        channel: 0,
+        sinceMs: 0,
+        untilMs: 200,
+      }),
+    ).toEqual([{ at: 100, sender: 'Unknown', senderId: null, body: 'WX: Morning report' }]);
+  });
+
   it.each(['meshtastic', 'meshcore'] as const)(
     'filters %s peer/channel/room before capping with inclusive range',
     (protocol) => {
@@ -36,6 +51,7 @@ describe('AI history conversation boundaries', () => {
         ownNodeIds: [1],
       });
       expect(rows.map((m) => m.body)).toEqual(['out', 'in']);
+      expect(rows.map((m) => m.senderId)).toEqual([1, 2]);
       expect(
         querySummaryHistory(db, {
           protocol,

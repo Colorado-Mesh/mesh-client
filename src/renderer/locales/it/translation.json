@@ -7573,8 +7573,6 @@
     "working": "Preparazione del riepilogo in corso...",
     "sentTo": "Inviato a {{host}}",
     "onDevice": "Elaborato su questo dispositivo",
-    "provider_one": "{{provider}} · {{model}} · {{count}} messaggio",
-    "provider_other": "{{provider}} · {{model}} · {{count}} messaggi",
     "truncated": "Sono stati inclusi solo i messaggi più recenti che si adattano. La cronologia precedente potrebbe anche essere stata rimossa dalla conservazione.",
     "verify": "I riepiloghi AI possono perdere o leggere erroneamente i dettagli. Controlla i messaggi originali.",
     "settingsTitle": "Riepiloghi delle conversazioni AI",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Non disponibile su questo dispositivo o installazione",
     "catalog": "Modelli offline",
-    "offlineHint": "I download utilizzano Internet una sola volta. Inference viene eseguito offline sulla CPU e potrebbe richiedere alcuni minuti. I modelli più grandi hanno bisogno di più memoria.",
     "download": "Download",
     "downloadModel": "Scarica {{model}}",
     "remove": "Rimuovi",
@@ -7624,11 +7621,18 @@
       "httpError": "La richiesta del provider non è riuscita. Controllare la connessione e le credenziali.",
       "invalidResponse": "Il motore ha restituito una risposta incompleta o non supportata.",
       "cancelled": "Riepilogo annullato.",
-      "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova."
+      "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova.",
+      "repetitiveOutput": "Il modello ha iniziato a ripetersi. Prova un modello più grande o una gamma più corta."
     },
-    "smallModel": "Riepiloghi di base; possono interpretare male mittenti o domande senza risposta",
-    "balancedModel": "Riepiloghi multilingue migliori; più lenti",
     "loadingModel": "Caricamento del modello su questo dispositivo in corso...",
-    "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti..."
+    "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} di {{count}} messaggio raccolto incluso",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} di {{count}} messaggi raccolti inclusi",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} messaggio raccolto",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} messaggi raccolti",
+    "offlineSummaryHint": "I download utilizzano Internet una sola volta. I riepiloghi vengono eseguiti offline su questo dispositivo. Le conversazioni di grandi dimensioni possono richiedere alcuni minuti con i modelli scaricati. I modelli più grandi hanno bisogno di più memoria.",
+    "smallModelLimitations": "Sperimentale: può perdere fatti chiave, attribuire erroneamente i mittenti o ripetersi. Preferire il modello 1.5B per il recupero.",
+    "countSnapshot": "I conteggi descrivono questa istantanea di riepilogo; i badge live non letti possono differire.",
+    "balancedModelGuidance": "Modello più grande; ha bisogno di più memoria e tempo. Verifica i dettagli importanti nei messaggi originali."
   }
 }

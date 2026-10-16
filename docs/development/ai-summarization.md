@@ -81,8 +81,18 @@ watermarks through `rrcReadWatermark.ts`, snapshots before selection clears unre
 that boundary while caught-up updates the live watermark. An absent watermark can fall back to
 the live unread count when enough opening history exists. Without that history or a known
 read boundary, the unread scope starts at opening time; choose an explicit time range to include
-older traffic. Derived boundaries cannot lead the local clock. History retention can remove older traffic, so counts refer to text
-actually included, never an assertion that all historical traffic still exists.
+older traffic. Derived boundaries cannot lead the local clock. History retention can remove older traffic.
+History/live overlap uses a multiset union: matching copies across sources count once, while distinct
+messages with identical timestamp/sender/body within either source retain their multiplicity.
+The card reports a fixed collected count from the selected range at request start, then the actual
+included count after main prepares the prompt. Neither count claims all historical traffic still exists;
+new arrivals can increase the live unread badge while a summary runs. The pending card never labels
+offered messages as included before main confirms coverage.
+Channel summaries apply the same default/custom weather patterns and marked-sender rules to fetched
+history as to visible chat when hiding weather is enabled. Numeric sender metadata stays local and
+is stripped by request validation. DMs and rooms retain weather text. The raw 501-row history cap
+still applies before visibility filtering; preserve its truncation disclosure even if filtering leaves
+fewer messages.
 
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
@@ -94,6 +104,13 @@ errors fail the request without retaining their potentially sensitive details. C
 model loading and generation; endpoint/native requests retain the one-minute deadline.
 The renderer deadline also covers stalled main-process acknowledgements and runtime imports. Abort races
 initialization and terminates the worker even if upstream model loading has not settled.
+Downloaded-model settings explain that large conversations can take a few minutes. The prompt
+asks for concrete updates, callsigns, times/places and stated answers, compresses greetings/banter,
+and keeps unresolved questions open. Bundled sampling supplies llama.cpp's `repeat_penalty` and
+`repeat_last_n` wire names (the pinned wllama types still use older names). Callback streaming
+rejects sustained repeated phrases or sentences and releases the runtime through the same failure
+path. Rejected text is cleared, with a larger-model/shorter-range retry suggestion. Copy is enabled
+only for completed, non-error output. These controls do not establish factual accuracy.
 
 `mesh-ai:` serves only enabled, verified manifest assets, with realpath containment and CORS for
 the sandboxed renderer. Model installs stream to a unique temporary directory, hash incrementally
@@ -103,8 +120,11 @@ checked on 2026-10-15. The two Qwen2.5 weight sets use Apache-2.0. Wllama and ll
 the npm license report covers the runtime. Model attribution belongs here, not in that report. The proposed 360M option was removed
 after synthetic checks showed repetition and incorrect sender/question attribution. The catalog
 is not an accuracy guarantee; users must verify summaries against original traffic. The 0.5B
-model can also misread an unresolved request as a commitment, so its catalog guidance explicitly
-warns about sender/question attribution. The scored real-model smoke uses the 1.5B option.
+model can also miss key facts, misread an unresolved request as a commitment or repeat itself, so its
+catalog guidance labels it experimental. The larger model needs more memory/time and also requires
+source verification. Real-model trials are bounded checks, not an accuracy guarantee: the revised
+prompt extracted concrete outage, coverage, inspection and net-time details from a 41-message
+synthetic chat, but the 1.5B model still omitted an open policy-link request.
 
 ## Validation
 

@@ -1,5 +1,5 @@
-import type { AiHistoryQuery } from '../../shared/ai-history';
-import { AI_MAX_MESSAGES, type AiSummaryMessage } from '../../shared/ai-types';
+import type { AiHistoryMessage, AiHistoryQuery } from '../../shared/ai-history';
+import { AI_MAX_MESSAGES } from '../../shared/ai-types';
 import { MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC } from '../../shared/messageTimestampSkew';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
 import type { NodeSqliteDB } from '../db-compat';
@@ -37,7 +37,7 @@ export function querySummaryHistory(
   db: NodeSqliteDB,
   q: AiHistoryQuery,
   now = Date.now(),
-): AiSummaryMessage[] {
+): AiHistoryMessage[] {
   const args: (string | number)[] = [];
   const where: string[] = [];
   let table: string;
@@ -62,6 +62,7 @@ export function querySummaryHistory(
     const meshcore = q.protocol === 'meshcore';
     table = meshcore ? 'meshcore_messages' : 'messages';
     if (meshcore) {
+      sender = "COALESCE(sender_name, 'Unknown')";
       timestamp = 'CASE WHEN timestamp <= 0 OR timestamp > ? THEN ? ELSE timestamp END';
       args.push(now + MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC * MS_PER_SECOND, now);
     }
@@ -104,12 +105,12 @@ export function querySummaryHistory(
   } else throw new Error('Invalid AI conversation');
   // Normalize MeshCore clock skew before both the range predicate and ordering, without
   // changing the insertion-order semantics of existing unbounded chat history APIs.
-  const sql = `SELECT at, sender, body FROM (SELECT ${timestamp} AS at, ${sender} AS sender, ${body} AS body, id FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE at >= ? AND at <= ? ORDER BY at DESC, id DESC LIMIT ?`;
+  const senderId =
+    q.protocol === 'meshtastic' || q.protocol === 'meshcore' ? ', sender_id AS senderId' : '';
+  const sql = `SELECT at, sender, body${senderId ? ', senderId' : ''} FROM (SELECT ${timestamp} AS at, ${sender} AS sender, ${body} AS body, id${senderId} FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE at >= ? AND at <= ? ORDER BY at DESC, id DESC LIMIT ?`;
   return (
-    db.prepareOnce(sql).all(...args, q.sinceMs, q.untilMs, AI_MAX_MESSAGES + 1) as {
-      at: number;
-      sender: string;
-      body: string;
-    }[]
+    db
+      .prepareOnce(sql)
+      .all(...args, q.sinceMs, q.untilMs, AI_MAX_MESSAGES + 1) as AiHistoryMessage[]
   ).reverse();
 }

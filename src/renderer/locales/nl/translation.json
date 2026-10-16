@@ -7573,8 +7573,6 @@
     "working": "Samenvatting wordt voorbereid...",
     "sentTo": "Verzonden naar {{host}}",
     "onDevice": "Verwerkt op dit apparaat",
-    "provider_one": "{{provider}} · {{model}} · {{count}} bericht",
-    "provider_other": "{{provider}} · {{model}} · {{count}} berichten",
     "truncated": "Alleen de nieuwste berichten die pasten werden opgenomen. Oudere geschiedenis kan ook zijn verwijderd door retentie.",
     "verify": "AI-samenvattingen kunnen details missen of verkeerd lezen. Controleer de originele berichten.",
     "settingsTitle": "Samenvatting van de gesprekken",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Niet beschikbaar op dit apparaat of deze installatie",
     "catalog": "Offline modellen",
-    "offlineHint": "Downloads maken eenmalig gebruik van internet. Inferentie wordt offline uitgevoerd op de CPU en kan een minuut duren. Grotere modellen hebben meer geheugen nodig.",
     "download": "Download",
     "downloadModel": "Download {{model}}",
     "remove": "Verwijderen",
@@ -7624,11 +7621,18 @@
       "httpError": "Het verzoek van de zorgverlener is mislukt. Controleer de verbinding en inloggegevens.",
       "invalidResponse": "De motor heeft een onvolledig of niet-ondersteund antwoord geretourneerd",
       "cancelled": "Samenvatting geannuleerd.",
-      "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw."
+      "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw.",
+      "repetitiveOutput": "Het model begon zich te herhalen. Probeer een groter model of een korter bereik."
     },
-    "smallModel": "Eenvoudige samenvattingen; kunnen afzenders of open vragen verkeerd interpreteren",
-    "balancedModel": "Betere meertalige samenvattingen; langzamer",
     "loadingModel": "Model laden op dit apparaat...",
-    "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren..."
+    "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} van {{count}} verzameld bericht inbegrepen",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} van {{count}} verzamelde berichten inbegrepen",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} bericht verzameld",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} berichten verzameld",
+    "offlineSummaryHint": "Downloads maken eenmalig gebruik van internet. Samenvattingen worden offline uitgevoerd op dit apparaat. Grote gesprekken kunnen een paar minuten duren met gedownloade modellen. Grotere modellen hebben meer geheugen nodig.",
+    "smallModelLimitations": "Experimenteel: kan belangrijke feiten missen, afzenders verkeerd toewijzen of zichzelf herhalen. Geef de voorkeur aan het 1.5B-model voor inhalen.",
+    "countSnapshot": "Tellingen beschrijven deze samenvattende momentopname; live ongelezen badges kunnen verschillen.",
+    "balancedModelGuidance": "Groter model; heeft meer geheugen en tijd nodig. Verifieer belangrijke details in de originele berichten."
   }
 }

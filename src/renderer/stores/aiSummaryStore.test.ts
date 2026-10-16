@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
+import { AiWorkerHost } from '@/renderer/lib/aiWorkerHost';
 import type {
   AiAPI,
   AiProviderStatus,
@@ -71,6 +73,70 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe('AI summary request correlation', () => {
+  it('does not call offered messages included until main confirms prompt coverage', async () => {
+    let acknowledge!: (value: {
+      ok: boolean;
+      summaryInput: { messageCount: number; truncated: boolean };
+    }) => void;
+    vi.mocked(api.summarize).mockReturnValueOnce(
+      new Promise((resolve) => {
+        acknowledge = resolve;
+      }),
+    );
+    const pending = runSummary('chat', request, false, 44);
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      messageCount: null,
+      collectedMessageCount: 44,
+    });
+    acknowledge({ ok: true, summaryInput: { messageCount: 1, truncated: true } });
+    await pending;
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      messageCount: 1,
+      collectedMessageCount: 44,
+      truncated: true,
+    });
+  });
+
+  it('clears rejected bundled output, reports repetition and permits a manual retry', async () => {
+    useAiSummaryStore.getState().setStatus({
+      ...ready,
+      engine: 'bundled',
+      localEngine: { ready: true, modelId: 'test', downloading: false },
+    });
+    vi.mocked(api.summarize).mockResolvedValue({
+      ok: true,
+      localJob: {
+        modelUrl: 'mesh-ai://test/model.gguf',
+        system: 'system',
+        user: 'fixture',
+        model: 'test',
+        messageCount: 1,
+        truncated: false,
+      },
+    });
+    vi.spyOn(AiWorkerHost.prototype, 'generate')
+      .mockImplementationOnce((_job, _signal, delta) => {
+        delta('Partial text');
+        return Promise.reject(new RepetitiveAiOutputError());
+      })
+      .mockImplementationOnce((_job, _signal, delta) => {
+        delta('East repeater is working.');
+        return Promise.resolve();
+      });
+    await runSummary('chat', request);
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      text: '',
+      streaming: false,
+      error: 'repetitiveOutput',
+    });
+    await runSummary('chat', { ...request, requestId: 'retry' });
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      text: 'East repeater is working.',
+      streaming: false,
+    });
+    expect(useAiSummaryStore.getState().summaries.chat?.error).toBeUndefined();
+  });
+
   it('shows an empty range without probing or starting inference', async () => {
     await runSummary('chat', { ...request, messages: [] });
     expect(api.summarize).not.toHaveBeenCalled();

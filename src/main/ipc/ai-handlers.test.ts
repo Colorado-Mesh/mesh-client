@@ -220,7 +220,10 @@ describe('AI IPC lifecycle and opt-in', () => {
     vi.mocked(net.fetch).mockResolvedValue(
       new Response('data: {"choices":[{"delta":{"content":"summary"}}]}\n\ndata: [DONE]\n\n'),
     );
-    expect(await handler('ai:summarize')({}, request)).toEqual({ ok: true });
+    expect(await handler('ai:summarize')({}, request)).toEqual({
+      ok: true,
+      summaryInput: { messageCount: 1, truncated: false },
+    });
     await vi.waitFor(() => {
       expect(send).toHaveBeenCalledWith(
         'ai:summaryDone',

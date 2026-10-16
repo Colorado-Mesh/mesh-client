@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
 import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
 import type {
@@ -21,7 +22,8 @@ export interface ConversationSummary {
   phase?: AiWorkerPhase;
   provider: string;
   model: string;
-  messageCount: number;
+  messageCount: number | null;
+  collectedMessageCount: number;
   truncated: boolean;
   error?: AiSummaryErrorReason;
   disclosure: string;
@@ -138,6 +140,7 @@ export async function runSummary(
   key: string,
   request: AiSummaryRequest,
   historyTruncated = false,
+  collectedMessageCount = request.messages.length,
 ): Promise<void> {
   if (useAiSummaryStore.getState().summaries[key]?.streaming) return;
   const status = useAiSummaryStore.getState().status;
@@ -154,7 +157,8 @@ export async function runSummary(
     streaming: true,
     provider: status.engine ?? '',
     model: status.model,
-    messageCount: request.messages.length,
+    messageCount: request.messages.length ? null : 0,
+    collectedMessageCount,
     truncated: historyTruncated,
     disclosure,
   };
@@ -212,6 +216,12 @@ export async function runSummary(
       patch(key, id, { error: result.reason as AiSummaryErrorReason, streaming: false });
       return;
     }
+    if (result.summaryInput) {
+      patch(key, id, {
+        messageCount: result.summaryInput.messageCount,
+        truncated: result.summaryInput.truncated || historyTruncated,
+      });
+    }
     if (result.localJob) {
       const job = result.localJob;
       const { AiWorkerHost } = await Promise.race([import('@/renderer/lib/aiWorkerHost'), aborted]);
@@ -242,10 +252,18 @@ export async function runSummary(
         ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
       });
     }
-  } catch {
+  } catch (error) {
     // catch-no-log-ok never retain runtime error details containing conversation content
     if (before === revision)
-      patch(key, id, { streaming: false, error: signal.aborted ? abortReason() : 'error' });
+      patch(key, id, {
+        streaming: false,
+        text: '',
+        error: signal.aborted
+          ? abortReason()
+          : error instanceof RepetitiveAiOutputError
+            ? 'repetitiveOutput'
+            : 'error',
+      });
   } finally {
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);

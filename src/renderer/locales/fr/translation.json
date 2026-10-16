@@ -7573,8 +7573,6 @@
     "working": "Préparation du résumé…",
     "sentTo": "Envoyé à {{host}}",
     "onDevice": "Traité sur cet appareil",
-    "provider_one": "Message {{provider}} · {{model}} · {{count}}",
-    "provider_other": "Messages {{provider}} · {{model}} · {{count}}",
     "truncated": "Seuls les messages les plus récents qui correspondaient ont été inclus. Les antécédents plus anciens peuvent également avoir été supprimés par rétention.",
     "verify": "Les résumés d'IA peuvent manquer ou mal interpréter les détails. Vérifiez les messages originaux.",
     "settingsTitle": "Résumés de conversations IA",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI : {{model}}",
     "osUnavailable": "Non disponible sur cet appareil ou cette installation",
     "catalog": "Modèles hors ligne",
-    "offlineHint": "Les téléchargements utilisent Internet une fois. L'inférence s'exécute hors ligne sur le processeur et peut prendre une minute. Les modèles plus grands ont besoin de plus de mémoire.",
     "download": "Télécharger",
     "downloadModel": "Télécharger {{model}}",
     "remove": "Supprimer",
@@ -7624,11 +7621,18 @@
       "httpError": "La demande du fournisseur a échoué. Vérifiez la connexion et les informations d'identification.",
       "invalidResponse": "Le moteur a renvoyé une réponse incomplète ou non prise en charge.",
       "cancelled": "Résumé annulé.",
-      "error": "Impossible de résumer. Vérifiez les paramètres de l'IA et réessayez."
+      "error": "Impossible de résumer. Vérifiez les paramètres de l'IA et réessayez.",
+      "repetitiveOutput": "Le modèle a commencé à se répéter. Essayez un modèle plus grand ou une gamme plus courte."
     },
-    "smallModel": "Résumés simples ; peuvent mal interpréter les auteurs ou les questions sans réponse",
-    "balancedModel": "De meilleurs résumés multilingues ; plus lent",
     "loadingModel": "Chargement du modèle sur cet appareil...",
-    "readingMessages": "Lecture des messages sur cet appareil. Le traitement par le processeur peut prendre quelques minutes..."
+    "readingMessages": "Lecture des messages sur cet appareil. Le traitement par le processeur peut prendre quelques minutes...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}} sur {{count}} message collecté inclus",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}} de {{count}} messages collectés inclus",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} message collecté",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} messages collectés",
+    "offlineSummaryHint": "Les téléchargements utilisent Internet une fois. Les résumés s'exécutent hors ligne sur cet appareil. Les grandes conversations peuvent prendre quelques minutes avec les modèles téléchargés. Les modèles plus grands ont besoin de plus de mémoire.",
+    "smallModelLimitations": "Expérimental : peut manquer des faits clés, mal attribuer les expéditeurs ou se répéter. Préférez le modèle 1.5B pour le rattrapage.",
+    "countSnapshot": "Les comptes décrivent cet instantané récapitulatif ; les badges non lus en direct peuvent différer.",
+    "balancedModelGuidance": "Modèle plus grand ; nécessite plus de mémoire et de temps. Vérifiez les détails importants dans les messages d'origine."
   }
 }

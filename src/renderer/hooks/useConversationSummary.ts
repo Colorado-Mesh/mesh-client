@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
+import { mergeSummaryMessages, selectSummaryMessages } from '@/renderer/lib/aiSummaryScope';
+import { meshcoreDbMessageDisplay } from '@/renderer/lib/meshcoreChannelText';
 import {
   aiReady,
   cancelSummary,
@@ -9,7 +10,7 @@ import {
   runSummary,
   useAiSummaryStore,
 } from '@/renderer/stores/aiSummaryStore';
-import type { AiHistoryQuery } from '@/shared/ai-history';
+import type { AiHistoryMessage, AiHistoryQuery } from '@/shared/ai-history';
 import {
   AI_MAX_MESSAGES,
   AI_MAX_TOTAL_CHARS,
@@ -27,6 +28,7 @@ export interface ConversationSummaryInput {
   messages: AiSummaryMessage[];
   watermark: number;
   history: Omit<AiHistoryQuery, 'sinceMs' | 'untilMs'> | null;
+  includeHistoryMessage?: (message: AiHistoryMessage) => boolean;
   available?: boolean;
 }
 export function useConversationSummary(input: ConversationSummaryInput) {
@@ -63,9 +65,29 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           sinceMs: Math.max(0, sinceMs),
           untilMs: now,
         });
-        const merged = new Map<string, AiSummaryMessage>();
-        for (const m of [...history, ...messages]) merged.set(`${m.at}:${m.sender}:${m.body}`, m);
-        messages = [...merged.values()];
+        const normalized =
+          input.protocol === 'meshcore'
+            ? history.map((message) => {
+                const display = meshcoreDbMessageDisplay({
+                  sender_id: message.senderId,
+                  sender_name: message.sender,
+                  payload: message.body,
+                });
+                return {
+                  at: message.at,
+                  sender: display.sender_name,
+                  body: display.payload,
+                  senderId: display.sender_id,
+                };
+              })
+            : history;
+        const visible = input.includeHistoryMessage
+          ? normalized.filter(input.includeHistoryMessage)
+          : normalized;
+        messages = mergeSummaryMessages(
+          visible.map(({ at, sender, body }) => ({ at, sender, body })),
+          messages,
+        );
         truncated = history.length > AI_MAX_MESSAGES;
       }
       if (current.current !== key || generation.current !== runRevision) return;
@@ -94,6 +116,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           scope,
         },
         truncated,
+        selected.length,
       );
     } catch {
       // catch-no-log-ok history errors expose only a fixed actionable summary error
@@ -108,6 +131,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
               provider: '',
               model: '',
               messageCount: 0,
+              collectedMessageCount: 0,
               truncated: false,
               disclosure: '',
               error: 'error',

@@ -330,6 +330,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       const model = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId)!;
       return {
         ok: true,
+        summaryInput: { messageCount: prompt.included, truncated: prompt.truncated },
         localJob: {
           modelUrl: `mesh-ai://${model.id}/${model.assets[0].file}`,
           system: prompt.system,
@@ -414,7 +415,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         if (active.get(request.requestId) === controller) active.delete(request.requestId);
       }
     })();
-    return { ok: true };
+    return {
+      ok: true,
+      summaryInput: { messageCount: prompt.included, truncated: prompt.truncated },
+    };
   });
   app
     .whenReady()

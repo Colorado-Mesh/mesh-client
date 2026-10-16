@@ -191,7 +191,7 @@ export function AppAiSection() {
             {engine === 'bundled' && (
               <div data-setting-anchor="app.aiProvider.catalog" className="space-y-3">
                 <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
-                <p className="text-muted text-xs">{t('aiSummary.offlineHint')}</p>
+                <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
                 {models.map((item) => {
                   const p = progress.find((p) => p.modelId === item.id);
                   const downloading = p && ['queued', 'downloading', 'verifying'].includes(p.state);
@@ -204,8 +204,8 @@ export function AppAiSection() {
                       </p>
                       <p className="text-muted text-xs">
                         {item.id === 'qwen2.5-0.5b-instruct-q4'
-                          ? t('aiSummary.smallModel')
-                          : t('aiSummary.balancedModel')}
+                          ? t('aiSummary.smallModelLimitations')
+                          : t('aiSummary.balancedModelGuidance')}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {downloading ? (

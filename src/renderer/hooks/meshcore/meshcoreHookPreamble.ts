@@ -19,9 +19,9 @@ import {
 } from '../../lib/meshcore/meshcorePubKeyRegistry';
 import {
   meshcoreChatMessagesForDisplay,
+  meshcoreDbMessageDisplay,
   meshcoreMessageMatchesReplyKey,
   meshcorePayloadIsTapbackEmojiOnly,
-  normalizeMeshcoreIncomingText,
 } from '../../lib/meshcoreChannelText';
 import {
   isMeshcoreLocallyDeletedContact,
@@ -883,26 +883,6 @@ export interface MeshcoreMessageDbRow {
   channel_key?: string | null;
 }
 
-/**
- * Legacy DB rows may store the full RF line `DisplayName: body` with no usable sender_name.
- * Only then run wire-style normalize; otherwise persisted payload is already display text
- * (re-applying normalize breaks any body containing `:` e.g. `Re: …`, `12:30 …`).
- */
-function shouldLegacyNormalizeMeshcoreDbPayload(
-  senderName: string | null | undefined,
-  payload: string,
-): boolean {
-  if (senderName && senderName !== 'Unknown') return false;
-  const t = payload.trim();
-  const ci = t.indexOf(':');
-  if (ci <= 0 || t[ci + 1] !== ' ' || ci >= t.length - 1) return false;
-  const left = t.slice(0, ci).trim();
-  const right = t.slice(ci + 1).trim();
-  if (left.length < 6 || right.length < 1) return false;
-  if (left.includes('\n')) return false;
-  return true;
-}
-
 function coerceOptionalDbInt(v: number | string | null | undefined): number | undefined {
   if (v == null) return undefined;
   if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
@@ -1147,25 +1127,11 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
   const mapped: ChatMessage[] = [];
   for (const r of rows) {
     if (isMeshcoreTransportStatusChatLine(r.payload)) continue;
-    let displayPayload = r.payload;
-    const normalized = normalizeMeshcoreIncomingText(r.payload);
-    let displayName = r.sender_name && r.sender_name !== 'Unknown' ? r.sender_name : 'Unknown';
-    if (normalized.senderName) {
-      const storedName = r.sender_name?.trim();
-      if (!storedName || storedName === 'Unknown') {
-        displayPayload = normalized.payload;
-        displayName = normalized.senderName;
-      } else if (normalized.senderName === storedName) {
-        displayPayload = normalized.payload;
-      }
-    } else if (shouldLegacyNormalizeMeshcoreDbPayload(r.sender_name, r.payload)) {
-      displayPayload = normalized.payload;
-      displayName = normalized.senderName ?? displayName;
-    }
-    let senderId = r.sender_id ?? 0;
-    if (senderId === 0 && displayName && displayName !== 'Unknown') {
-      senderId = meshcoreChatStubNodeIdFromDisplayName(displayName);
-    }
+    const {
+      payload: displayPayload,
+      sender_name: displayName,
+      sender_id: senderId,
+    } = meshcoreDbMessageDisplay(r);
     const localOrder = r.local_order ?? r.id;
     observeMeshcoreMessageLocalOrder(localOrder);
     mapped.push({

@@ -11,6 +11,7 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
   const [copyError, setCopyError] = useState(false);
   const state = summary.state;
   if (!summary.canSummarize || !state) return null;
+  const canCopy = !summary.pending && !state.streaming && !state.error && !!state.text.trim();
   return (
     <section
       className="border-ink-700 bg-deep-black mx-3 my-2 max-h-80 shrink-0 overflow-y-auto rounded-lg border p-3 text-sm"
@@ -25,12 +26,20 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
         </span>
       </div>
       <p className="text-muted text-xs">
-        {t('aiSummary.provider', {
-          provider: state.provider,
-          model: state.model,
-          count: state.messageCount,
-        })}
+        {state.messageCount === null
+          ? t('aiSummary.providerCollected', {
+              provider: state.provider,
+              model: state.model,
+              count: state.collectedMessageCount,
+            })
+          : t('aiSummary.providerIncluded', {
+              provider: state.provider,
+              model: state.model,
+              count: state.collectedMessageCount,
+              included: state.messageCount,
+            })}
       </p>
+      <p className="text-muted text-xs">{t('aiSummary.countSnapshot')}</p>
       <div
         role="status"
         aria-live="polite"
@@ -52,7 +61,7 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
         <Button
           size="sm"
           aria-label={t('aiSummary.copy')}
-          disabled={!state.text}
+          disabled={!canCopy}
           onClick={() => {
             void navigator.clipboard.writeText(state.text).then(
               () => {

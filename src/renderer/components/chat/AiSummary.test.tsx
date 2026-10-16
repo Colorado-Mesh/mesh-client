@@ -1,17 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { ConversationSummaryController } from '@/renderer/hooks/useConversationSummary';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import i18n from '@/renderer/lib/i18n';
 
 import { CatchUpButton } from './CatchUpButton';
 import { ChatSummaryCard } from './ChatSummaryCard';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
-}));
+beforeEach(async () => {
+  await i18n.changeLanguage('en');
+});
 const create = (): ConversationSummaryController & {
   state: NonNullable<ConversationSummaryController['state']>;
 } => ({
@@ -28,7 +29,8 @@ const create = (): ConversationSummaryController & {
     streaming: false,
     provider: 'provider.test',
     model: 'model',
-    messageCount: 3,
+    messageCount: 41,
+    collectedMessageCount: 44,
     truncated: true,
     disclosure: 'provider.test',
   },
@@ -54,19 +56,52 @@ describe('AI catch up controls', () => {
       </>,
     );
     expect(container.querySelector('img')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'aiSummary.catchUp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
     expect(summary.run).toHaveBeenCalledOnce();
-    fireEvent.change(screen.getByRole('combobox', { name: 'aiSummary.scope' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Summary range' }), {
       target: { value: '24' },
     });
     expect(summary.setScope).toHaveBeenCalledWith({ kind: 'hours', hours: 24 });
-    fireEvent.click(screen.getByRole('button', { name: 'aiSummary.dismiss' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(summary.dismiss).toHaveBeenCalledOnce();
-    expect(screen.getByText('aiSummary.sentTo')).toBeInTheDocument();
-    expect(screen.getByText('aiSummary.truncated')).toBeInTheDocument();
+    expect(screen.getByText('Sent to provider.test')).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('aiSummary.truncated'))).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
+  it('distinguishes 41 included messages from the 44 collected at the start', () => {
+    render(<ChatSummaryCard summary={create()} />);
+    expect(
+      screen.getByText('provider.test · model · 41 of 44 collected messages included'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Counts describe this summary snapshot; live unread badges may differ.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeEnabled();
+  });
+
+  it('does not claim the offered count was included while preparation is pending', () => {
+    const summary = create();
+    summary.state.messageCount = null;
+    summary.state.streaming = true;
+    summary.pending = true;
+    render(<ChatSummaryCard summary={summary} />);
+    expect(screen.getByText('provider.test · model · 44 messages collected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled();
+  });
+
+  it('does not expose or allow copying a rejected repetitive result', () => {
+    const summary = create();
+    summary.state.error = 'repetitiveOutput';
+    summary.state.text = 'morning time, '.repeat(30);
+    render(<ChatSummaryCard summary={summary} />);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The model started repeating itself. Try a larger model or a shorter range.',
+    );
+    expect(screen.queryByText(/morning time/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled();
+  });
+
   it('keeps custom hours editable when typing a preset prefix', () => {
     function Controls() {
       const [scope, setScope] = useState<ConversationSummaryController['scope']>({
@@ -87,8 +122,8 @@ describe('AI catch up controls', () => {
     const summary = { ...create(), pending: true };
     summary.state.streaming = true;
     render(<ChatSummaryCard summary={summary} />);
-    fireEvent.click(screen.getByRole('button', { name: 'aiSummary.cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(summary.cancel).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('button', { name: 'aiSummary.regenerate' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Regenerate' })).toBeNull();
   });
 });

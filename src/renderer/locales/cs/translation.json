@@ -7646,8 +7646,6 @@
     "working": "Připravuje se shrnutí...",
     "sentTo": "Odesláno uživateli {{host}}",
     "onDevice": "Zpracováno na tomto zařízení",
-    "provider_one": "{{provider}} · {{model}} · {{count}} zpráva",
-    "provider_other": "{{provider}} · {{model}} · {{count}} zprávy",
     "truncated": "Byly zahrnuty pouze nejnovější zprávy, které se hodí. Starší historie mohla být také odstraněna retencí.",
     "verify": "Souhrny umělé inteligence mohou přehlédnout nebo špatně přečíst podrobnosti. Zkontrolujte původní zprávy.",
     "settingsTitle": "Shrnutí konverzace AI",
@@ -7662,7 +7660,6 @@
     "osAvailability": "OS AI: {{model}}",
     "osUnavailable": "Na tomto zařízení nebo instalaci není k dispozici",
     "catalog": "Offline modely",
-    "offlineHint": "Stažené soubory používají internet pouze jednou. Inference běží na CPU offline a může to chvíli trvat. Větší modely potřebují více paměti.",
     "download": "Stáhnout",
     "downloadModel": "Stáhnout {{model}}",
     "remove": "Odstranit",
@@ -7697,13 +7694,21 @@
       "httpError": "Požadavek poskytovatele se nezdařil. Zkontrolujte připojení a přihlašovací údaje.",
       "invalidResponse": "Motor vrátil neúplnou nebo nepodporovanou odpověď.",
       "cancelled": "Shrnutí bylo zrušeno.",
-      "error": "Nelze shrnout. Zkontrolujte nastavení AI a zkuste to znovu."
+      "error": "Nelze shrnout. Zkontrolujte nastavení AI a zkuste to znovu.",
+      "repetitiveOutput": "Model se začal opakovat. Vyzkoušejte větší model nebo kratší řadu."
     },
     "hours_few": "Poslední {{count}} hodiny",
-    "provider_few": "{{provider}} · {{model}} · {{count}} zprávy",
-    "smallModel": "Základní souhrny; mohou chybně určit odesílatele či nezodpovězené otázky",
-    "balancedModel": "Lepší vícejazyčné shrnutí; pomalejší",
     "loadingModel": "Načítání modelu na tomto zařízení...",
-    "readingMessages": "Čtení zpráv na tomto zařízení. Zpracování procesoru může trvat několik minut..."
+    "readingMessages": "Čtení zpráv na tomto zařízení. Zpracování procesoru může trvat několik minut...",
+    "providerIncluded_one": "{{provider}} · {{model}} · zahrnuto {{included}} z {{count}} shromážděné zprávy",
+    "providerIncluded_other": "{{provider}} · {{model}} · zahrnuto {{included}} z {{count}} shromážděných zpráv",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}} shromážděná zpráva",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}} shromážděných zpráv",
+    "offlineSummaryHint": "Stažené soubory používají internet pouze jednou. Souhrny běží na tomto zařízení offline. Se staženými modely mohou velké konverzace trvat několik minut. Větší modely potřebují více paměti.",
+    "providerIncluded_few": "{{provider}} · {{model}} · zahrnuto {{included}} z {{count}} shromážděných zpráv",
+    "providerCollected_few": "{{provider}} · {{model}} · {{count}} shromážděné zprávy",
+    "smallModelLimitations": "Experimentální: může přehlédnout klíčová fakta, chybně přiřazovat odesílatele nebo se opakovat. Pro dohánění upřednostňujte model 1,5B.",
+    "countSnapshot": "Počty popisují tento souhrnný snímek; živé nepřečtené odznaky se mohou lišit.",
+    "balancedModelGuidance": "Větší model; potřebuje více paměti a času. Ověřte důležité podrobnosti v původních zprávách."
   }
 }

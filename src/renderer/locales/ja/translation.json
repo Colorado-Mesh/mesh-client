@@ -7573,8 +7573,6 @@
     "working": "概要を準備しています…",
     "sentTo": "{{host}}に送信済み",
     "onDevice": "このデバイスで処理されました",
-    "provider_one": "{{provider}} · {{model}} · {{count}}メッセージ",
-    "provider_other": "{{provider}} · {{model}} · {{count}}メッセージ",
     "truncated": "該当する最新のメッセージのみが含まれていました。古い履歴も保持によって削除された可能性があります。",
     "verify": "AIサマリーは、詳細を見落としたり誤読したりする可能性があります。元のメッセージを確認してください。",
     "settingsTitle": "AI会話の要約",
@@ -7589,7 +7587,6 @@
     "osAvailability": "OS AI ： {{model}}",
     "osUnavailable": "このデバイスまたはインストールでは使用できません",
     "catalog": "オフラインモデル",
-    "offlineHint": "ダウンロードは一度インターネットを使用します。推論はCPU上でオフラインで実行され、数分かかる場合があります。より大きなモデルには、より多くのメモリが必要です。",
     "download": "ダウンロード",
     "downloadModel": "ダウンロード{{model}}",
     "remove": "削除する",
@@ -7624,11 +7621,18 @@
       "httpError": "プロバイダーの要求に失敗しました。接続と認証情報を確認します。",
       "invalidResponse": "エンジンが不完全またはサポートされていない応答を返しました。",
       "cancelled": "サマリーがキャンセルされました。",
-      "error": "要約できませんでした。AI設定を確認して再試行してください。"
+      "error": "要約できませんでした。AI設定を確認して再試行してください。",
+      "repetitiveOutput": "モデルはそれ自体を繰り返し始めました。より大きなモデルまたはより短い範囲をお試しください。"
     },
-    "smallModel": "基本的な要約。送信者や未回答の質問を誤って解釈する場合があります",
-    "balancedModel": "より良い多言語サマリー、より遅い",
     "loadingModel": "このデバイスにモデルを読み込んでいます...",
-    "readingMessages": "このデバイスでメッセージを読んでいます。CPUの処理には数分かかる場合があります..."
+    "readingMessages": "このデバイスでメッセージを読んでいます。CPUの処理には数分かかる場合があります...",
+    "providerIncluded_one": "{{provider}} · {{model}} · {{included}}/{{count}}収集したメッセージが含まれています",
+    "providerIncluded_other": "{{provider}} · {{model}} · {{included}}/{{count}}収集したメッセージが含まれています",
+    "providerCollected_one": "{{provider}} · {{model}} · {{count}}メッセージが収集されました",
+    "providerCollected_other": "{{provider}} · {{model}} · {{count}}メッセージを収集しました",
+    "offlineSummaryHint": "ダウンロードは一度インターネットを使用します。要約はこのデバイスでオフラインで実行されます。ダウンロードしたモデルでは、大規模な会話に数分かかる場合があります。より大きなモデルには、より多くのメモリが必要です。",
+    "smallModelLimitations": "実験的：重要な事実を見逃したり、発言者を取り違えたり、同じ内容を繰り返したりする場合があります。要約には1.5Bモデルを推奨します。",
+    "countSnapshot": "件数はこの要約の作成時点のものです。現在の未読バッジの件数とは異なる場合があります。",
+    "balancedModelGuidance": "より大きなモデル。より多くのメモリと時間が必要です。元のメッセージの重要な詳細を確認します。"
   }
 }

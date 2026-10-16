@@ -43,9 +43,10 @@ export function compileWeatherPattern(pattern: string): RegExp | null | 'invalid
   }
 }
 
-const cache = new WeakMap<ChatMessage, { config: WeatherPostConfig; value: boolean }>();
+type WeatherPostMessage = Pick<ChatMessage, 'sender_id' | 'payload'>;
+const cache = new WeakMap<WeatherPostMessage, { config: WeatherPostConfig; value: boolean }>();
 
-function matchWeatherPost(msg: ChatMessage, config: WeatherPostConfig): boolean {
+function matchWeatherPost(msg: WeatherPostMessage, config: WeatherPostConfig): boolean {
   if (config.markedSenders.has(msg.sender_id)) return true;
   const text = msg.payload;
   if (!text) return false;
@@ -54,7 +55,7 @@ function matchWeatherPost(msg: ChatMessage, config: WeatherPostConfig): boolean 
 }
 
 /** True when `msg` looks like a weather post (default patterns, custom pattern, or marked sender). */
-export function isWeatherPost(msg: ChatMessage, config: WeatherPostConfig): boolean {
+export function isWeatherPost(msg: WeatherPostMessage, config: WeatherPostConfig): boolean {
   const hit = cache.get(msg);
   if (hit?.config === config) return hit.value;
   const value = matchWeatherPost(msg, config);

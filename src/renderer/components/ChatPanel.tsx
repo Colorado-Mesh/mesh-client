@@ -2799,6 +2799,14 @@ function ChatPanel({
     protocol,
     surface: viewMode === 'dm' ? 'dm' : 'channel',
     messages: summaryMessages,
+    includeHistoryMessage:
+      viewMode === 'channels' && weatherHideInChannels
+        ? (message) =>
+            !isWeatherPost(
+              { sender_id: message.senderId ?? -1, payload: message.body },
+              weatherConfig,
+            )
+        : undefined,
     watermark: unreadDividerTimestamp || persistedLastRead[readKey] || 0,
     available: viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null),
     history: {

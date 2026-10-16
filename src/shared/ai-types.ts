@@ -1,4 +1,4 @@
-import type { AiHistoryQuery } from './ai-history';
+import type { AiHistoryMessage, AiHistoryQuery } from './ai-history';
 
 export type AiWireFormat = 'openai' | 'anthropic' | 'gemini' | 'ollama';
 /** The engine the user picked. `local` and `remote` both use the endpoint adapters above. */
@@ -60,6 +60,7 @@ export type AiSummaryErrorReason =
   | 'tooLarge'
   | 'httpError'
   | 'invalidResponse'
+  | 'repetitiveOutput'
   | 'cancelled'
   | 'error';
 
@@ -133,6 +134,8 @@ export interface AiLocalJob {
 
 export interface AiActionResult {
   localJob?: AiLocalJob;
+  /** Actual prepared prompt coverage, before generation starts. */
+  summaryInput?: { messageCount: number; truncated: boolean };
   ok: boolean;
   reason?: string;
 }
@@ -147,7 +150,7 @@ export const AI_REQUEST_TIMEOUT_MS = 60_000;
 export const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * 60_000;
 
 export interface AiAPI {
-  getHistory: (query: AiHistoryQuery) => Promise<AiSummaryMessage[]>;
+  getHistory: (query: AiHistoryQuery) => Promise<AiHistoryMessage[]>;
   onStatusChanged: (cb: (status: AiProviderStatus) => void) => () => void;
   getStatus: () => Promise<AiProviderStatus>;
   setEnabled: (enabled: boolean) => Promise<AiProviderStatus>;

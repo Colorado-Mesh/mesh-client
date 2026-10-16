@@ -1,4 +1,9 @@
-import type { AiSummaryRequest } from './ai-types';
+import type { AiSummaryMessage, AiSummaryRequest } from './ai-types';
+
+export interface AiHistoryMessage extends AiSummaryMessage {
+  /** Local identity for channel visibility filters; never part of the model prompt. */
+  senderId?: number | null;
+}
 
 export interface AiHistoryQuery {
   protocol: AiSummaryRequest['protocol'];
