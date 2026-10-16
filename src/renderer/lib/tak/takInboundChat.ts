@@ -1,14 +1,9 @@
 import type { TAKInboundChat } from '@/shared/tak-types';
 
-import { type IdentityRecord, useIdentityStore } from '../../stores/identityStore';
-import {
-  getTakRelayPrefs,
-  type TakRelayIdentityPrefs,
-  useTakRelayPrefsStore,
-} from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { IdentityId } from '../types';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
+import { listTakServedChannels } from './takServedChannels';
 
 /**
  * UTF-8 budget for one mesh message sent on behalf of a TAK client, callsign prefix included.
@@ -59,43 +54,11 @@ export interface TakSendTarget {
   channelIndex: number;
 }
 
-/** Channels bridged to `room` whose identity opted in to sending. Room names match exactly. */
-export function findTakSendTargets(room: string): TakSendTarget[] {
-  const targets: TakSendTarget[] = [];
-  for (const identity of Object.values(useIdentityStore.getState().identities)) {
-    const protocol = identity.protocol.type;
-    if (protocol !== 'meshtastic' && protocol !== 'meshcore') continue;
-    const prefs = getTakRelayPrefs(identity.id);
-    for (const channelIndex of prefs.chatSendChannels) {
-      if (prefs.chatBridges[channelIndex] === room) {
-        targets.push({ identityId: identity.id, protocol, channelIndex });
-      }
-    }
-  }
-  return targets;
-}
-
-/**
- * Every room at least one loaded identity lets TAK clients send to, sorted, without repeats.
- * Reads the stores unless given their state.
- */
-export function listTakSendRooms(
-  identities: Record<IdentityId, IdentityRecord> = useIdentityStore.getState().identities,
-  prefsByIdentity: Record<IdentityId, TakRelayIdentityPrefs> = useTakRelayPrefsStore.getState()
-    .byIdentity,
-): string[] {
-  const rooms = new Set<string>();
-  for (const identity of Object.values(identities)) {
-    const protocol = identity.protocol.type;
-    if (protocol !== 'meshtastic' && protocol !== 'meshcore') continue;
-    const prefs = prefsByIdentity[identity.id] as TakRelayIdentityPrefs | undefined;
-    if (!prefs) continue;
-    for (const channelIndex of prefs.chatSendChannels) {
-      const room = prefs.chatBridges[channelIndex];
-      if (room) rooms.add(room);
-    }
-  }
-  return [...rooms].sort();
+/** Served channels with `channelKey` that TAK clients may send to, on every radio serving it. */
+export function findTakSendTargets(channelKey: string): TakSendTarget[] {
+  return listTakServedChannels()
+    .filter((c) => c.key === channelKey && c.send)
+    .map((c) => ({ identityId: c.identityId, protocol: c.protocol, channelIndex: c.index }));
 }
 
 export type TakMeshSendFn = (target: TakSendTarget, text: string) => Promise<void>;
@@ -120,8 +83,8 @@ function withSendTimeout(send: Promise<void>): Promise<void> {
 }
 
 /**
- * Transmit one TAK client's GeoChat message on every mesh channel bridged to its room that
- * allows sending. Does nothing for a room no channel opted in for. Returns how many channels it
+ * Transmit one TAK client's message on the served channel it was sent to, on every radio serving
+ * that channel with sending allowed. Does nothing when none allows it. Returns how many radios it
  * was sent on; a failed send is logged and does not stop the others.
  */
 export async function relayTakChatToMesh(
@@ -129,7 +92,7 @@ export async function relayTakChatToMesh(
   sendFn: TakMeshSendFn,
   nowMs: number = Date.now(),
 ): Promise<number> {
-  const targets = findTakSendTargets(message.room);
+  const targets = findTakSendTargets(message.channelKey);
   if (targets.length === 0) return 0;
   const text = formatTakMeshText(message.senderCallsign, message.text);
   let sent = 0;

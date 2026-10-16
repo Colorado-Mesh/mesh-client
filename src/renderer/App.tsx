@@ -1260,7 +1260,13 @@ function AppContent() {
         : null,
     [reticulumStackUp, reticulumSelfNodeId, reticulumSelfName],
   );
-  useTakInboundChat();
+  useTakInboundChat({
+    meshcore: { identityId: meshcoreIdentityId ?? null, channels: meshcoreRuntime.channels },
+    meshtastic: {
+      identityId: meshtasticIdentityId ?? null,
+      channelConfigs: meshtasticRuntime.channelConfigs,
+    },
+  });
   useTakNodeReplicator({
     active: takStatus.running || takRemoteStatus.state !== 'disconnected',
     nodesByProtocol: uiNodesByProtocol,
@@ -5649,7 +5655,6 @@ function AppContent() {
                                 }
                                 capabilities={capabilities}
                                 meshtasticIdentityId={meshtasticIdentityId}
-                                meshtasticRuntimeChannels={meshtasticRuntime.channels}
                                 meshcoreIdentityId={meshcoreIdentityId}
                               />
                             </Suspense>

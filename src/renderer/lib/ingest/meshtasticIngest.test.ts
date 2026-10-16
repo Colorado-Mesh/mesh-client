@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useMessageStore } from '../../stores/messageStore';
 import { upsertNode } from '../../stores/nodeStore';
+import { setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import { packetRouter } from '../drivers/PacketRouter';
@@ -316,13 +317,23 @@ describe('meshtastic ingest TAK channel relay', () => {
     vi.spyOn(window.electronAPI.tak, 'pushChatMessage').mockImplementation(pushChatMessage);
     pushChatMessage.mockClear();
     useTakRelayPrefsStore.setState({ byIdentity: {} });
-    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 1, 'Mesh Ops');
+    setTakChannels(TAK_ID, [
+      {
+        protocol: 'meshtastic',
+        index: 1,
+        key: '0123456789abcdef',
+        name: 'Ops',
+        atakName: '#MT Ops',
+      },
+    ]);
+    useTakRelayPrefsStore.getState().setChannelMode(TAK_ID, 'all');
     setTakSinkActive(true);
   });
 
   afterEach(() => {
     setTakSinkActive(false);
     useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
     useMessageStore.setState({ messages: {} });
     vi.restoreAllMocks();
   });
@@ -336,7 +347,7 @@ describe('meshtastic ingest TAK channel relay', () => {
     dispatchText('501', 0xaaaa, 'on scene');
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
     expect(pushChatMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ room: 'Mesh Ops', text: 'on scene' }),
+      expect.objectContaining({ channelKey: '0123456789abcdef', text: 'on scene' }),
     );
     session.detach();
   });

@@ -1,39 +1,65 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { type IdentityRecord, useIdentityStore } from '../stores/identityStore';
+import { computeChannelIdentityKey } from '@/shared/channelIdentityKey';
+import type { TakChatChannel } from '@/shared/tak-types';
+
+import { getTakChannels, useTakChannelStore } from '../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
-import { TAK_SEND_ROOMS_RETRY_MS, useTakInboundChat } from './useTakInboundChat';
+import {
+  TAK_SEND_ROOMS_RETRY_MS,
+  type TakChannelSources,
+  useTakInboundChat,
+} from './useTakInboundChat';
 
-/** The mocked IPC call the hook reports the room list through. */
-const setChatSendRooms = () => vi.mocked(window.electronAPI.tak.setChatSendRooms);
+/** The mocked IPC call the hook reports the served channels through. */
+const setChatChannels = () => vi.mocked(window.electronAPI.tak.setChatChannels);
 
-/** A minimal identity record of the given protocol. */
-function identity(id: string, type: string): IdentityRecord {
-  return { id, protocol: { type }, signature: id, transports: [] } as unknown as IdentityRecord;
-}
+const PUBLIC = Uint8Array.from('8b3387e9c5cdea6ac9e5edbaa115cd72'.match(/../g) ?? [], (b) =>
+  parseInt(b, 16),
+);
+const PRIVATE = Uint8Array.from({ length: 16 }, (_, i) => i + 1);
+const MESHCORE_CHANNELS = [
+  { index: 0, name: 'Public', secret: PUBLIC },
+  { index: 2, name: 'Ops', secret: PRIVATE },
+];
+const PUBLIC_KEY = computeChannelIdentityKey('meshcore', 'Public', PUBLIC);
+const OPS: TakChatChannel = {
+  key: computeChannelIdentityKey('meshcore', 'Ops', PRIVATE),
+  name: '#MC \u{1F512} Ops',
+  send: true,
+  remote: false,
+};
 
-describe('useTakInboundChat send-room list', () => {
+describe('useTakInboundChat', () => {
   let unmount: (() => void) | undefined;
+  let rerender: ((sources: TakChannelSources) => void) | undefined;
+
+  const sources = (meshcore: readonly unknown[] = MESHCORE_CHANNELS): TakChannelSources => ({
+    meshcore: { identityId: 'mc', channels: meshcore },
+    meshtastic: { identityId: null, channelConfigs: [] },
+  });
 
   /** Render the hook; it is unmounted after the test, before the stores are reset. */
-  function mount(): void {
-    ({ unmount } = renderHook(() => {
-      useTakInboundChat();
-    }));
+  function mount(initial: TakChannelSources = sources()): void {
+    ({ unmount, rerender } = renderHook(
+      (props: TakChannelSources) => {
+        useTakInboundChat(props);
+      },
+      { initialProps: initial },
+    ));
   }
+
   beforeEach(() => {
-    setChatSendRooms().mockClear();
+    setChatChannels().mockClear();
     useTakSinkStore.setState({ active: false });
     useTakRelayPrefsStore.setState({ byIdentity: {} });
-    useIdentityStore.setState({
-      identities: { mc: identity('mc', 'meshcore') },
-      activeIdentityId: null,
-    });
-    const { setChatBridge, setChatSend } = useTakRelayPrefsStore.getState();
-    setChatBridge('mc', 2, 'Mesh Ops');
-    setChatSend('mc', 2, true);
+    useTakChannelStore.setState({ channelsByIdentity: {} });
+    const { setChannelMode, setChatChannel, setChatSend } = useTakRelayPrefsStore.getState();
+    setChannelMode('mc', 'selected');
+    setChatChannel('mc', OPS.key, true);
+    setChatSend('mc', OPS.key, true);
   });
 
   afterEach(() => {
@@ -41,40 +67,103 @@ describe('useTakInboundChat send-room list', () => {
     unmount = undefined;
     useTakSinkStore.setState({ active: false });
     useTakRelayPrefsStore.setState({ byIdentity: {} });
-    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
   });
 
-  it('sends the list when a sink starts and again only when the list changes', () => {
+  it("publishes each radio's channels with their ATAK names", () => {
     mount();
-    expect(setChatSendRooms()).not.toHaveBeenCalled();
+    expect(getTakChannels('mc').map((c) => [c.index, c.atakName])).toEqual([
+      [0, '#MC Public'],
+      [2, '#MC \u{1F512} Ops'],
+    ]);
+    act(() => {
+      rerender?.(sources([MESHCORE_CHANNELS[0]]));
+    });
+    expect(getTakChannels('mc').map((c) => c.index)).toEqual([0]);
+  });
+
+  it("binds settings saved by slot to the radio's channels as it reports them", () => {
+    useTakRelayPrefsStore.setState({
+      byIdentity: {
+        mc: {
+          trackerChannels: [],
+          channelMode: 'selected',
+          chatChannels: [],
+          sendChannels: [],
+          remoteChannels: [],
+          atakNames: {},
+          pendingSlots: {
+            chatChannels: [2],
+            sendChannels: [2],
+            remoteChannels: [],
+            atakNames: { 2: 'Ops' },
+          },
+        },
+      },
+    });
+    // The radio has not loaded its channels yet: nothing binds.
+    mount(sources([]));
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc?.pendingSlots).toBeDefined();
+    act(() => {
+      rerender?.(sources());
+    });
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc).toMatchObject({
+      chatChannels: [OPS.key],
+      sendChannels: [OPS.key],
+      atakNames: { [OPS.key]: 'Ops' },
+    });
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc?.pendingSlots).toBeUndefined();
+  });
+
+  it("tells main to drop the previous version's room contacts while a sink is up", () => {
+    const retire = vi.mocked(window.electronAPI.tak.retireChatRooms);
+    retire.mockClear();
+    useTakRelayPrefsStore.setState({
+      retiredRooms: { rooms: ['Ops'], untilMs: Date.now() + 60_000 },
+    });
+    mount();
+    expect(retire).not.toHaveBeenCalled();
+    act(() => {
+      useTakSinkStore.setState({ active: true });
+    });
+    expect(retire).toHaveBeenCalledExactlyOnceWith(['Ops']);
+    useTakRelayPrefsStore.setState({ retiredRooms: null });
+  });
+
+  it('sends the served list when a sink starts and again only when it changes', () => {
+    mount();
+    expect(setChatChannels()).not.toHaveBeenCalled();
 
     act(() => {
       useTakSinkStore.setState({ active: true });
     });
-    expect(setChatSendRooms()).toHaveBeenLastCalledWith(['Mesh Ops']);
-    expect(setChatSendRooms()).toHaveBeenCalledTimes(1);
+    expect(setChatChannels()).toHaveBeenLastCalledWith([OPS]);
+    expect(setChatChannels()).toHaveBeenCalledTimes(1);
 
-    // Store updates that leave the room list as it was send nothing.
+    // Store updates that leave the served list as it was send nothing.
     act(() => {
       useTakRelayPrefsStore.getState().setTrackerChannel('mc', 1, true);
-      useIdentityStore.setState({
-        identities: { mc: identity('mc', 'meshcore'), x: identity('x', 'reticulum') },
-      });
+      useTakRelayPrefsStore.getState().setChatSend('mc', PUBLIC_KEY, true);
+      rerender?.(sources([...MESHCORE_CHANNELS]));
     });
-    expect(setChatSendRooms()).toHaveBeenCalledTimes(1);
+    expect(setChatChannels()).toHaveBeenCalledTimes(1);
 
     act(() => {
-      useTakRelayPrefsStore.getState().setChatSend('mc', 2, false);
+      useTakRelayPrefsStore.getState().setChatSend('mc', OPS.key, false);
     });
-    expect(setChatSendRooms()).toHaveBeenLastCalledWith([]);
-    expect(setChatSendRooms()).toHaveBeenCalledTimes(2);
+    expect(setChatChannels()).toHaveBeenLastCalledWith([{ ...OPS, send: false }]);
+    act(() => {
+      useTakRelayPrefsStore.getState().setChannelMode('mc', 'off');
+    });
+    expect(setChatChannels()).toHaveBeenLastCalledWith([]);
+    expect(setChatChannels()).toHaveBeenCalledTimes(3);
   });
 
   it('retries a refused update until it lands', async () => {
     vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      setChatSendRooms()
+      setChatChannels()
         .mockRejectedValueOnce(new Error('rate limited'))
         .mockRejectedValueOnce(new Error('rate limited'))
         .mockResolvedValue(undefined);
@@ -83,28 +172,28 @@ describe('useTakInboundChat send-room list', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
-      expect(setChatSendRooms()).toHaveBeenCalledTimes(1);
+      expect(setChatChannels()).toHaveBeenCalledTimes(1);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(TAK_SEND_ROOMS_RETRY_MS);
       });
-      expect(setChatSendRooms()).toHaveBeenCalledTimes(2);
+      expect(setChatChannels()).toHaveBeenCalledTimes(2);
 
       // The wait doubles after each refusal.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(TAK_SEND_ROOMS_RETRY_MS);
       });
-      expect(setChatSendRooms()).toHaveBeenCalledTimes(2);
+      expect(setChatChannels()).toHaveBeenCalledTimes(2);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(TAK_SEND_ROOMS_RETRY_MS);
       });
-      expect(setChatSendRooms()).toHaveBeenCalledTimes(3);
+      expect(setChatChannels()).toHaveBeenCalledTimes(3);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10 * TAK_SEND_ROOMS_RETRY_MS);
       });
-      expect(setChatSendRooms()).toHaveBeenCalledTimes(3);
-      expect(setChatSendRooms()).toHaveBeenLastCalledWith(['Mesh Ops']);
+      expect(setChatChannels()).toHaveBeenCalledTimes(3);
+      expect(setChatChannels()).toHaveBeenLastCalledWith([OPS]);
     } finally {
       warn.mockRestore();
       vi.useRealTimers();
@@ -115,7 +204,7 @@ describe('useTakInboundChat send-room list', () => {
     vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      setChatSendRooms()
+      setChatChannels()
         .mockRejectedValueOnce(new Error('rate limited'))
         .mockResolvedValue(undefined);
       useTakSinkStore.setState({ active: true });
@@ -124,12 +213,15 @@ describe('useTakInboundChat send-room list', () => {
         await vi.advanceTimersByTimeAsync(0);
       });
       act(() => {
-        useTakRelayPrefsStore.getState().setChatSend('mc', 2, false);
+        useTakRelayPrefsStore.getState().setChatSend('mc', OPS.key, false);
       });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10 * TAK_SEND_ROOMS_RETRY_MS);
       });
-      expect(setChatSendRooms().mock.calls.map((c) => c[0])).toEqual([['Mesh Ops'], []]);
+      expect(setChatChannels().mock.calls.map((c) => c[0])).toEqual([
+        [OPS],
+        [{ ...OPS, send: false }],
+      ]);
     } finally {
       warn.mockRestore();
       vi.useRealTimers();

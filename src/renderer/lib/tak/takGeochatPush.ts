@@ -1,9 +1,9 @@
-import type { TAKGeochatMessage } from '@/shared/tak-types';
+import type { TAKChannelChatMessage } from '@/shared/tak-types';
 
 import { errLikeToLogString } from '../errLikeToLogString';
 
-/** Fire-and-forget mirror of one heard channel message into TAK GeoChat. */
-export function pushTakGeochat(msg: TAKGeochatMessage): void {
+/** Fire-and-forget hand-off of one heard channel message to TAK clients. */
+export function pushTakGeochat(msg: TAKChannelChatMessage): void {
   window.electronAPI.tak.pushChatMessage(msg).catch((e: unknown) => {
     console.warn('[TakGeochat] pushChatMessage failed ' + errLikeToLogString(e));
   });

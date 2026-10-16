@@ -73,11 +73,12 @@ import type {
 import type { ServiceAnnouncementFetchResult } from './serviceAnnouncementFeed';
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
+  TAKChannelChatMessage,
+  TakChatChannel,
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
   TAKEnrollmentRequest,
-  TAKGeochatMessage,
   TAKInboundChat,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
@@ -1448,13 +1449,18 @@ export interface ElectronAPI {
     remoteEnroll: (request: TAKEnrollmentRequest) => Promise<TAKRemoteCredentialSummary>;
     remoteClearCredentials: () => Promise<TAKRemoteCredentialSummary>;
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
-    /** Mirror one heard mesh channel message into TAK GeoChat; dropped while no sink is active. */
-    pushChatMessage: (message: TAKGeochatMessage) => Promise<void>;
+    /** Deliver one message heard on a served channel to TAK clients; dropped with no sink. */
+    pushChatMessage: (message: TAKChannelChatMessage) => Promise<void>;
     /**
-     * Replace the GeoChat rooms TAK clients may send to. Each is announced to clients as a
-     * contact they can message; ignored while no sink has started.
+     * Replace the mesh channels served to TAK clients. Each is announced to clients as a
+     * contact; ignored while no sink has started.
      */
-    setChatSendRooms: (rooms: string[]) => Promise<void>;
+    setChatChannels: (channels: TakChatChannel[]) => Promise<void>;
+    /**
+     * Name the previous version's GeoChat rooms, whose contacts TAK clients should drop;
+     * ignored while no sink has started.
+     */
+    retireChatRooms: (rooms: string[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */
