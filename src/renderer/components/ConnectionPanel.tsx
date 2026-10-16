@@ -957,9 +957,38 @@ export default function ConnectionPanel({
   const onAutoConnectRef = useRef(onAutoConnect);
   onAutoConnectRef.current = onAutoConnect;
 
-  // Reload last connection when protocol switches (each protocol has its own key)
+  // Reload last connection + host fields when protocol switches (one panel instance for all protocols).
+  // Without rehydrating tcpHost/httpAddress/tcpAddress, a Meshtastic-first mount leaves MeshCore
+  // TCP at default localhost and a later configured-save overwrites the real stored IP.
   useEffect(() => {
-    setLastConnection(loadLastConnection(protocol));
+    const loaded = loadLastConnection(protocol);
+    setLastConnection(loaded);
+    if (protocol === 'meshcore') {
+      if (loaded?.type === 'http' && loaded.httpAddress) {
+        const { host, port } = parseTcpAddress(loaded.httpAddress);
+        setTcpHost(host);
+        setTcpPortStr(String(port));
+        setConnectionType('http');
+      } else if (loaded?.type === 'ble' || loaded?.type === 'serial') {
+        setConnectionType(loaded.type);
+      } else {
+        setConnectionType('ble');
+      }
+    } else if (protocol === 'meshtastic') {
+      if (loaded?.type === 'http' && loaded.httpAddress) {
+        setHttpAddress(loaded.httpAddress);
+        setConnectionType('http');
+      } else if (loaded?.type === 'tcp' && loaded.httpAddress) {
+        setTcpAddress(loaded.httpAddress);
+        setConnectionType('tcp');
+      } else if (loaded?.type === 'ble' || loaded?.type === 'serial') {
+        setConnectionType(loaded.type);
+      } else {
+        setConnectionType('ble');
+        setHttpAddress('meshtastic.local');
+        setTcpAddress('meshtastic.local:4403');
+      }
+    }
   }, [protocol]);
 
   useEffect(() => {
@@ -992,8 +1021,12 @@ export default function ConnectionPanel({
   }, [protocol]);
 
   // Update connection stage based on state transitions, and save last connection on success
+  const prevProtocolForSaveRef = useRef(protocol);
 
   useEffect(() => {
+    const protocolChanged = prevProtocolForSaveRef.current !== protocol;
+    prevProtocolForSaveRef.current = protocol;
+
     if (state.status === 'connecting') {
       if (showPinPrompt) return;
       if (showBlePicker) setConnectionStage('connectionPanel.stageSelectDevice');
@@ -1013,8 +1046,9 @@ export default function ConnectionPanel({
         clearTimeout(autoConnectTimeoutRef.current);
         autoConnectTimeoutRef.current = null;
       }
-      // Persist connection details for next startup
-      if (state.connectionType) {
+      // Persist only for this protocol's configure transition — not when switching the shared
+      // panel onto an already-configured protocol (stale tcpHost would clobber the stored IP).
+      if (state.connectionType && !protocolChanged) {
         const conn: LastConnection = { type: state.connectionType };
         if (state.connectionType === 'http' || state.connectionType === 'tcp') {
           conn.httpAddress = activeHostAddress;

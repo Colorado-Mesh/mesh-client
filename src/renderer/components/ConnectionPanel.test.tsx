@@ -1562,6 +1562,58 @@ describe('ConnectionPanel ProtocolAutoConnectCoordinator cancel', () => {
   });
 });
 
+describe('ConnectionPanel MeshCore TCP address persistence', () => {
+  it('does not overwrite stored MeshCore TCP host with localhost when switching from Meshtastic while configured', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const stored = { type: 'http' as const, httpAddress: '192.168.1.172:5000' };
+    localStorage.setItem(lastConnKey, JSON.stringify(stored));
+
+    const meshcoreConfigured: DeviceState = {
+      status: 'configured',
+      myNodeNum: 1,
+      reconnectAttempt: 0,
+      connectionType: 'http',
+    };
+
+    const props = {
+      onConnect: vi.fn().mockResolvedValue(undefined),
+      onAutoConnect: vi.fn().mockResolvedValue(undefined),
+      onDisconnect: vi.fn().mockResolvedValue(undefined),
+      mqttStatus: 'disconnected' as const,
+    };
+
+    try {
+      // Shared ConnectionPanel instance: first mount as Meshtastic leaves tcpHost at default localhost.
+      const view = render(
+        <ConnectionPanel {...props} state={disconnectedState} protocol="meshtastic" />,
+      );
+
+      // MeshCore auto-connected in the background; user switches protocol to MeshCore.
+      view.rerender(<ConnectionPanel {...props} state={meshcoreConfigured} protocol="meshcore" />);
+
+      await waitFor(() => {
+        const raw = localStorage.getItem(lastConnKey);
+        expect(raw).toBeTruthy();
+        expect(JSON.parse(raw!)).toEqual(stored);
+      });
+
+      // Disconnect so the TCP host field is visible, then confirm UI rehydrated.
+      view.rerender(<ConnectionPanel {...props} state={disconnectedState} protocol="meshcore" />);
+      const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+      expect(radioCard).toBeTruthy();
+      await userEvent
+        .setup()
+        .click(within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i }));
+      expect(within(radioCard as HTMLElement).getByLabelText(/^Host$/i)).toHaveValue(
+        '192.168.1.172',
+      );
+      expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+});
+
 describe('ConnectionPanel MeshCore TCP port field', () => {
   it('renders host and port inputs with default port 5000 when TCP/IP is selected', async () => {
     const user = userEvent.setup();
