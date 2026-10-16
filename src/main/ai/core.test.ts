@@ -158,6 +158,59 @@ describe('AI prompts and validation', () => {
     expect(prompt.system).toContain('untrusted');
     expect(prompt.user).not.toContain('old old');
   });
+  it.each(['漢', '😀'])('budgets the complete escaped UTF-8 prompt for %s', (glyph) => {
+    const prompt = buildSummaryPrompt({
+      conversationLabel: '全体',
+      protocol: 'meshcore',
+      surface: 'channel',
+      locale: 'ja',
+      messages: [
+        { at: 1, sender: 'old', body: glyph.repeat(500) },
+        { at: 2, sender: 'new', body: 'Question remains open.' },
+      ],
+      maxChars: 9000,
+      maxPromptBytes: 1100,
+    });
+    expect(prompt.included).toBe(1);
+    expect(prompt.truncated).toBe(true);
+    expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(1100);
+    expect(prompt.user).toContain('Question remains open');
+    expect(prompt.user).not.toContain(glyph.repeat(10));
+  });
+  it('returns only fields validated for the selected engine', () => {
+    expect(
+      validateAiConfig({
+        engine: 'os',
+        model: 123,
+        baseUrl: {},
+        wireFormat: [],
+        apiKey: 'ignored',
+        extra: 'ignored',
+      }),
+    ).toEqual({ engine: 'os' });
+    expect(validateAiConfig({ engine: 'bundled', model: false, localModelId: null })).toEqual({
+      engine: 'bundled',
+      localModelId: null,
+    });
+    expect(
+      validateAiConfig({
+        engine: 'local',
+        wireFormat: 'openai',
+        baseUrl: 'http://localhost',
+        model: 'test',
+        apiKey: 'key',
+        allowRemote: false,
+        extra: 'ignored',
+      }),
+    ).toEqual({
+      engine: 'local',
+      wireFormat: 'openai',
+      baseUrl: 'http://localhost',
+      model: 'test',
+      apiKey: 'key',
+      allowRemote: false,
+    });
+  });
   it('rejects invalid scopes, limits and primitive fields', () => {
     expect(validateAiRequest(request).messages).toHaveLength(1);
     for (const patch of [
@@ -287,6 +340,18 @@ describe('AI bounded streaming client', () => {
     ))
       text += delta;
     expect(text).toHaveLength(1000);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+  it('releases a rejected provider response', async () => {
+    const cancel = vi.fn();
+    const client = new AiClient(
+      async () => new Response(new ReadableStream({ cancel }), { status: 503 }),
+    );
+    const consume = async () => {
+      for await (const _part of client.stream('openai', input, true, new AbortController().signal))
+        expect(_part).toBeDefined();
+    };
+    await expect(consume()).rejects.toThrow('httpError');
     expect(cancel).toHaveBeenCalledOnce();
   });
   it('rejects incomplete streams, caps responses and gates before fetch', async () => {

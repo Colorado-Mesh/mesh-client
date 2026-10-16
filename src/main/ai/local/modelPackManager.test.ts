@@ -51,6 +51,18 @@ describe('AI verified model downloads', () => {
     expect(await fs.readdir(temp)).toEqual([]);
     expect(() => packs.assetPath('../model', 'model.gguf')).toThrow();
   });
+  it('releases a rejected download response without publishing a model', async () => {
+    const cancel = vi.fn();
+    const packs = create(async () => new Response(new ReadableStream({ cancel }), { status: 503 }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(await packs.install('model-1')).toMatchObject({ ok: false });
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(await packs.verify('model-1')).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
   it('streams, verifies, atomically publishes and removes models', async () => {
     const packs = create(async () => new Response(data));
     expect(await packs.install('model-1')).toEqual({ ok: true });

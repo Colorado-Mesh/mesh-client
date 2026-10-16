@@ -231,8 +231,12 @@ export class AiModelPackManager {
     try {
       const signal = AbortSignal.any([job.abort.signal, idle.signal]);
       const response = await this.deps.fetch(asset.url, { signal, redirect: 'follow' });
-      if (!response.ok || !response.body)
+      if (!response.ok || !response.body) {
+        await response.body?.cancel().catch(() => {
+          // catch-no-log-ok failed download cleanup must not hide the HTTP failure
+        });
         throw new Error(`AI download HTTP ${response.status} (${asset.file})`);
+      }
       resetDeadline();
       const rawPath = path.join(directory, `${asset.file}.download`);
       const handle = await fs.open(rawPath, 'wx+', 0o600);

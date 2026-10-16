@@ -91,7 +91,8 @@ export class OsAiHelper {
           if (reply.type !== 'probe' && reply.type !== 'error') return;
           clearTimeout(timer);
           this.listeners.delete(listener);
-          resolve(reply);
+          if (reply.type === 'error') reject(new AiFailure('error'));
+          else resolve(reply);
         };
         this.listeners.add(listener);
         this.send({ type: 'probe' });
@@ -106,6 +107,7 @@ export class OsAiHelper {
       return this.cached;
     } catch {
       // catch-no-log-ok unavailable helpers are an expected platform condition
+      if (this.process) this.scheduleIdle();
       return {
         available: false,
         platform,

@@ -61,7 +61,10 @@ HTTP adapters parse bounded SSE/NDJSON, require a completion marker, support fra
 and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budgets; Gemini
 thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
 is independently capped at 1,000 characters. Context budgets preserve complete newest messages and disclose
-truncation. Apple uses a smaller budget for its 4,096-token context.
+truncation. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
+to 3,500 bytes for Apple’s 4,096-token context and 7,600 bytes for the 8,192-token WASM context.
+This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote context
+capacity remains model-dependent, with a 64,000-byte prompt cap.
 
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
 inclusive time bounds and exact conversation filters **before** its 501-row cap. The extra row

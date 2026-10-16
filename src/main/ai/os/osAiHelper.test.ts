@@ -55,6 +55,16 @@ describe('OS AI helper boundary', () => {
     child.stdout.write('{"type":"probe","available":false}\n');
     expect(await again).toMatchObject({ available: false });
   });
+  it('retries transient probe errors without caching them as disabled', async () => {
+    const first = helper.probe();
+    child.stdout.write('{"type":"error"}\n');
+    expect(await first).toMatchObject({ available: false, reason: 'probe-failed' });
+    child.stdin.read();
+    const retry = helper.probe();
+    expect(child.stdin.read()?.toString()).toContain('"type":"probe"');
+    child.stdout.write('{"type":"probe","available":true}\n');
+    expect(await retry).toMatchObject({ available: true });
+  });
   it('rejects callback failures without throwing into readline and kills the helper', async () => {
     const running = helper.generate(
       { requestId: 'id', system: 'x', user: 'x', maxTokens: 1 },

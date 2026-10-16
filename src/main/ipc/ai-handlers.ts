@@ -126,11 +126,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       osStatus = await os.probe();
       return { ok: osStatus.available, reason: osStatus.available ? undefined : 'engineNotReady' };
     }
-    if (c.engine === 'bundled')
-      return {
-        ok: !!c.localModelId && (await packs.verify(c.localModelId)),
-        reason: 'engineNotReady',
-      };
+    if (c.engine === 'bundled') {
+      const ok = !!c.localModelId && (await packs.verify(c.localModelId));
+      return ok ? { ok } : { ok, reason: 'engineNotReady' };
+    }
     const policy = validateAiEndpointUrl(c.baseUrl, c.allowRemote);
     if (
       !policy.ok ||
@@ -308,6 +307,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const prompt = buildSummaryPrompt({
       ...request,
       maxChars: c.engine === 'os' ? 9000 : c.engine === 'bundled' ? 20000 : 60000,
+      maxPromptBytes: c.engine === 'os' ? 3500 : c.engine === 'bundled' ? 7600 : 64000,
     });
     if (!prompt.included) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);

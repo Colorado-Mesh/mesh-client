@@ -31,7 +31,20 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
     (value.localModelId != null && !text(value.localModelId, 128))
   )
     throw new Error('Invalid AI configuration');
-  return value as unknown as AiEndpointConfig;
+  const endpoint = value.engine === 'local' || value.engine === 'remote';
+  return {
+    engine: value.engine as AiEndpointConfig['engine'],
+    ...(endpoint
+      ? {
+          wireFormat: value.wireFormat as AiEndpointConfig['wireFormat'],
+          baseUrl: value.baseUrl as string,
+          model: value.model as string,
+          ...(value.apiKey !== undefined ? { apiKey: value.apiKey } : {}),
+          ...(value.allowRemote !== undefined ? { allowRemote: value.allowRemote } : {}),
+        }
+      : {}),
+    ...(value.localModelId !== undefined ? { localModelId: value.localModelId } : {}),
+  };
 }
 export function validateAiRequest(value: unknown): AiSummaryRequest {
   if (

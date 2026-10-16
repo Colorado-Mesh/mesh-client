@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ipcMain, net } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
 
@@ -91,6 +92,26 @@ describe('AI IPC lifecycle and opt-in', () => {
         ),
       ).rejects.toThrow();
     expect(net.fetch).not.toHaveBeenCalled();
+  });
+  it('reports bundled readiness without a failure reason on success', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen2.5-0.5b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      expect(await handler('ai:testConfig')({})).toEqual({ ok: true });
+      verify.mockResolvedValue(false);
+      expect(await handler('ai:testConfig')({})).toEqual({ ok: false, reason: 'engineNotReady' });
+    } finally {
+      verify.mockRestore();
+    }
   });
   it('streams exactly one terminal event and hides stored API keys', async () => {
     await handler('ai:setEnabled')({}, true);

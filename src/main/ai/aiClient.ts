@@ -13,7 +13,12 @@ export class AiClient {
     if (!validateAiEndpointUrl(endpoint.href, allowRemote).ok)
       throw new AiFailure('remoteNotAcknowledged');
     const response = await this.fetchImpl(url, { ...init, redirect: 'error' });
-    if (!response.ok || !response.body) throw new AiFailure('httpError');
+    if (!response.ok || !response.body) {
+      await response.body?.cancel().catch(() => {
+        // catch-no-log-ok cleanup errors must not expose private provider details
+      });
+      throw new AiFailure('httpError');
+    }
     return response;
   }
   async *stream(
