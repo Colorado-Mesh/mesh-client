@@ -492,7 +492,12 @@ describe('tak:pushChatMessage', () => {
     return handle.mock.calls.find((c) => c[0] === 'tak:pushChatMessage')?.[1] as Handler;
   }
 
-  const MSG = { room: 'Mesh', senderCallsign: 'Bob', text: 'hi', timeMs: 1_700_000_000_000 };
+  const MSG = {
+    channelKey: '0123456789abcdef',
+    senderCallsign: 'Bob',
+    text: 'hi',
+    timeMs: 1_700_000_000_000,
+  };
 
   it('validates and forwards to the manager while a sink is active', async () => {
     const sendChat = vi.fn();
@@ -512,15 +517,15 @@ describe('tak:pushChatMessage', () => {
   it('rejects malformed messages', async () => {
     const sendChat = vi.fn();
     const handler = await register({ hasActiveSink: () => true, sendChat });
-    expect(() => handler({}, { ...MSG, room: '' })).toThrow(/tak:pushChatMessage/);
+    expect(() => handler({}, { ...MSG, channelKey: 'Mesh' })).toThrow(/tak:pushChatMessage/);
     expect(sendChat).not.toHaveBeenCalled();
   });
 });
 
-describe('tak:setChatSendRooms', () => {
+describe('tak:setChatChannels', () => {
   type Handler = (event: unknown, arg?: unknown) => unknown;
 
-  /** Register the TAK handlers against `manager` and return the tak:setChatSendRooms handler. */
+  /** Register the TAK handlers against `manager` and return the tak:setChatChannels handler. */
   async function register(manager: unknown): Promise<Handler> {
     const { ipcMain } = await import('electron');
     const handle = vi.mocked(ipcMain.handle);
@@ -531,25 +536,54 @@ describe('tak:setChatSendRooms', () => {
       getTakServerManager: () => manager as never,
       validateTakSettings: vi.fn(),
     });
-    return handle.mock.calls.find((c) => c[0] === 'tak:setChatSendRooms')?.[1] as Handler;
+    return handle.mock.calls.find((c) => c[0] === 'tak:setChatChannels')?.[1] as Handler;
   }
 
-  it('validates the rooms and hands them to the manager', async () => {
-    const setChatSendRooms = vi.fn();
-    const handler = await register({ setChatSendRooms });
-    handler({}, [' Public ', 'Mesh Ops']);
-    expect(setChatSendRooms).toHaveBeenCalledWith(['Public', 'Mesh Ops']);
-    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setChatSendRooms');
+  const OPS = { key: '0123456789abcdef', name: '#MC Ops', send: true, remote: false };
+
+  it('validates the channels and hands them to the manager', async () => {
+    const setChatChannels = vi.fn();
+    const handler = await register({ setChatChannels });
+    handler({}, [{ ...OPS, name: ' #MC Ops ' }]);
+    expect(setChatChannels).toHaveBeenCalledWith([OPS]);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setChatChannels');
   });
 
   it('does nothing before a sink has started', async () => {
-    expect((await register(null))({}, ['Public'])).toBeUndefined();
+    expect((await register(null))({}, [OPS])).toBeUndefined();
   });
 
   it('rejects a malformed list', async () => {
-    const setChatSendRooms = vi.fn();
-    const handler = await register({ setChatSendRooms });
-    expect(() => handler({}, ['a\nb'])).toThrow(/tak:setChatSendRooms/);
-    expect(setChatSendRooms).not.toHaveBeenCalled();
+    const setChatChannels = vi.fn();
+    const handler = await register({ setChatChannels });
+    expect(() => handler({}, [{ ...OPS, name: 'a\nb' }])).toThrow(/tak:setChatChannels/);
+    expect(setChatChannels).not.toHaveBeenCalled();
+  });
+});
+
+describe('tak:retireChatRooms', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  async function register(manager: unknown): Promise<Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return handle.mock.calls.find((c) => c[0] === 'tak:retireChatRooms')?.[1] as Handler;
+  }
+
+  it('validates the room names and hands them to the manager, once it exists', async () => {
+    const retireChatRooms = vi.fn();
+    const handler = await register({ retireChatRooms });
+    handler({}, [' Ops ']);
+    expect(retireChatRooms).toHaveBeenCalledWith(['Ops']);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:retireChatRooms');
+    expect(() => handler({}, 'Ops')).toThrow(/tak:retireChatRooms/);
+    expect((await register(null))({}, ['Ops'])).toBeUndefined();
   });
 });

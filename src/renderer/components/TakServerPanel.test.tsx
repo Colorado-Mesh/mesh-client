@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { setDeviceChannels, useDeviceStore } from '../stores/deviceStore';
+import { setTakChannels, useTakChannelStore } from '../stores/takChannelStore';
 import { setTakSinkActive } from '../stores/takSinkStore';
 import TakServerPanel from './TakServerPanel';
 
@@ -138,41 +138,41 @@ describe('TakServerPanel', () => {
     expect(screen.getByText('ALPHA')).toBeInTheDocument();
   });
 
-  describe('Meshtastic channel relay channels', () => {
+  describe('messaging in ATAK', () => {
     const MESHTASTIC_ID = 'tak-panel-meshtastic';
 
     beforeEach(() => {
-      useDeviceStore.setState({ devices: {} });
+      useTakChannelStore.setState({ channelsByIdentity: {} });
       setTakSinkActive(true);
     });
 
     afterEach(() => {
       setTakSinkActive(false);
-      useDeviceStore.setState({ devices: {} });
+      useTakChannelStore.setState({ channelsByIdentity: {} });
     });
 
-    it('falls back to runtime channels when the device store has none (MQTT-only)', async () => {
-      render(
-        <TakServerPanel
-          meshtasticIdentityId={MESHTASTIC_ID}
-          meshtasticRuntimeChannels={[{ index: 1, name: 'LongFast' }]}
-        />,
-      );
+    it("shows the Meshtastic radio's channels from the TAK channel list", async () => {
+      setTakChannels(MESHTASTIC_ID, [
+        {
+          protocol: 'meshtastic',
+          index: 0,
+          key: '0123456789abcdef',
+          name: 'LongFast',
+          atakName: '#MT LongFast',
+        },
+      ]);
+      render(<TakServerPanel meshtasticIdentityId={MESHTASTIC_ID} />);
       await act(async () => {});
-      expect(screen.getByLabelText('GeoChat room for LongFast')).toBeInTheDocument();
+      expect(screen.getByText('Meshtastic messaging in ATAK')).toBeInTheDocument();
+      expect(screen.getByLabelText('Channels in ATAK')).toHaveValue('off');
     });
 
-    it('prefers stored channels over runtime channels', async () => {
-      setDeviceChannels(MESHTASTIC_ID, [{ index: 0, name: 'Radio' }], []);
-      render(
-        <TakServerPanel
-          meshtasticIdentityId={MESHTASTIC_ID}
-          meshtasticRuntimeChannels={[{ index: 1, name: 'LongFast' }]}
-        />,
-      );
+    it('says a radio must connect before it has channels to list', async () => {
+      render(<TakServerPanel meshtasticIdentityId={MESHTASTIC_ID} />);
       await act(async () => {});
-      expect(screen.getByLabelText('GeoChat room for Radio')).toBeInTheDocument();
-      expect(screen.queryByLabelText('GeoChat room for LongFast')).toBeNull();
+      expect(
+        screen.getByText('Connect a Meshtastic radio to list its channels.'),
+      ).toBeInTheDocument();
     });
   });
 

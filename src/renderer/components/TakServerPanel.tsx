@@ -11,8 +11,7 @@ import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
 import type { IdentityId } from '../lib/types';
-import { useDeviceStore } from '../stores/deviceStore';
-import TakChannelRelaySection, { type TakRelayChannel } from './TakChannelRelaySection';
+import TakChannelRelaySection from './TakChannelRelaySection';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
 import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
@@ -59,39 +58,22 @@ function formatTimeAgo(ts: number, t: TFunction): string {
 interface Props {
   atakMessages?: Map<number, AtakMessage[]>;
   capabilities?: ProtocolCapabilities;
-  /** Meshtastic identity whose channels may feed GeoChat into TAK. */
+  /** Meshtastic identity whose channels may be served to TAK. */
   meshtasticIdentityId?: IdentityId | null;
-  /** Runtime Meshtastic channels; used when the device store has none (MQTT-only, no radio). */
-  meshtasticRuntimeChannels?: readonly TakRelayChannel[];
-  /** MeshCore identity whose channels may feed tracker fixes and GeoChat into TAK. */
+  /** MeshCore identity whose channels may feed tracker fixes and be served to TAK. */
   meshcoreIdentityId?: IdentityId | null;
 }
-
-const NO_CHANNELS: readonly TakRelayChannel[] = [];
 
 export default function TakServerPanel({
   atakMessages,
   capabilities,
   meshtasticIdentityId,
-  meshtasticRuntimeChannels,
   meshcoreIdentityId,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
   const meshtasticCaps = useRadioProvider('meshtastic');
   const meshcoreCaps = useRadioProvider('meshcore');
-  const storedMeshtasticChannels = useDeviceStore((s) =>
-    meshtasticIdentityId ? (s.devices[meshtasticIdentityId]?.channels ?? NO_CHANNELS) : NO_CHANNELS,
-  );
-  const meshcoreChannels = useDeviceStore((s) =>
-    meshcoreIdentityId
-      ? (s.devices[meshcoreIdentityId]?.meshcoreChannels ?? NO_CHANNELS)
-      : NO_CHANNELS,
-  );
-  const meshtasticChannels =
-    storedMeshtasticChannels.length > 0
-      ? storedMeshtasticChannels
-      : (meshtasticRuntimeChannels ?? NO_CHANNELS);
   const {
     status,
     clients,
@@ -320,20 +302,18 @@ export default function TakServerPanel({
 
       <TakChannelRelaySection
         identityId={meshtasticIdentityId ?? null}
-        channels={meshtasticChannels}
         showTrackers={meshtasticCaps.hasTakTrackerChannels}
-        title={t('takServerPanel.channelRelayTitleMeshtastic')}
-        description={t('takServerPanel.channelRelayIntroMeshtastic')}
+        title={t('takServerPanel.messagingTitleMeshtastic')}
+        description={t('takServerPanel.messagingIntroMeshtastic')}
         emptyText={t('takServerPanel.channelRelayNoChannelsMeshtastic')}
         anchorId="tak.channelRelay.meshtastic"
       />
 
       <TakChannelRelaySection
         identityId={meshcoreIdentityId ?? null}
-        channels={meshcoreChannels}
         showTrackers={meshcoreCaps.hasTakTrackerChannels}
-        title={t('takServerPanel.channelRelayTitle')}
-        description={t('takServerPanel.channelRelayIntro')}
+        title={t('takServerPanel.messagingTitleMeshcore')}
+        description={t('takServerPanel.messagingIntroMeshcore')}
         emptyText={t('takServerPanel.channelRelayNoChannels')}
         anchorId="tak.channelRelay.trackers"
       />
