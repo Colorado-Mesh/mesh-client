@@ -2436,11 +2436,14 @@ describe('ChatPanel unread watermarks', () => {
             <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
           </ToastProvider>,
         );
-        const selected = screen.getByRole('button', { name: 'General 69' });
+        const selected = within(screen.getByRole('region', { name: 'Channels' })).getByRole(
+          'button',
+          { name: 'General 69' },
+        );
         expect(selected).toHaveAttribute('aria-pressed', 'true');
         expect(selected).toHaveAttribute('data-channel-unread', '69');
         if (platform === 'linux') {
-          hydrateAxeThemeColors(container);
+          hydrateAxeThemeColors(selected);
           expect(await axe(selected)).toHaveNoViolations();
         }
         expect(totalUnreadCount(messages, stored(), new Set([1]), protocol)).toBe(69);
