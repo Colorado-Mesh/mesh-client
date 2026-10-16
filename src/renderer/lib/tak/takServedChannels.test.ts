@@ -96,6 +96,7 @@ describe('served channels', () => {
     chatChannels: [2],
     sendChannels: [2],
     remoteChannels: [0],
+    atakNames: {},
   };
 
   it('serves nothing when off, everything when all, and the picked ones when selected', () => {
@@ -114,6 +115,16 @@ describe('served channels', () => {
     expect(
       servedChannelsFor('mc', channels, { ...prefs, channelMode: 'selected' }).map((c) => c.index),
     ).toEqual([2]);
+  });
+
+  it('sends a name the user chose in place of the automatic one', () => {
+    const served = servedChannelsFor('mc', channels, {
+      ...prefs,
+      channelMode: 'all',
+      atakNames: { 2: 'Ops Net' },
+    });
+    expect(served.map((c) => c.atakName)).toEqual(['#MC Public', 'Ops Net']);
+    expect(toTakChatChannels(served).map((c) => c.name)).toEqual(['#MC Public', 'Ops Net']);
   });
 
   it('finds a served channel by radio and slot, reading the stores', () => {

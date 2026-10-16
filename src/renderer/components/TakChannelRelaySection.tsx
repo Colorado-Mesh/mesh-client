@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
 
 import type { IdentityId } from '../lib/types';
 import { type TakChannelInfo, useTakChannelStore } from '../stores/takChannelStore';
 import { type TakChannelMode, useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
-import { CHECKBOX_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+import { CHECKBOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 const NO_CHANNELS: readonly TakChannelInfo[] = [];
 
@@ -37,6 +40,56 @@ function RowCheck({ id, checked, onChange, label, ariaLabel }: CheckProps) {
         className={CHECKBOX_CLASS}
       />
       {label}
+    </label>
+  );
+}
+
+interface NameFieldProps {
+  id: string;
+  /** The name the user chose, or empty for the automatic one. */
+  saved: string;
+  /** The automatic name, shown while the field is empty. */
+  automatic: string;
+  onSave: (name: string) => void;
+  ariaLabel: string;
+  label: string;
+}
+
+/**
+ * The name a channel's contact gets in ATAK. Saved when the field loses focus or on Enter, not
+ * per keystroke, since each change is sent to every ATAK device; Escape puts the saved name
+ * back, and an emptied field goes back to the automatic name.
+ */
+function AtakNameField({ id, saved, automatic, onSave, ariaLabel, label }: NameFieldProps) {
+  const [draft, setDraft] = useState(saved);
+  const [shownSaved, setShownSaved] = useState(saved);
+  if (saved !== shownSaved) {
+    setShownSaved(saved);
+    setDraft(saved);
+  }
+  return (
+    <label htmlFor={id} className="text-ink-300 flex items-center gap-1">
+      {label}
+      <input
+        id={id}
+        type="text"
+        value={draft}
+        placeholder={automatic}
+        maxLength={TAK_GEOCHAT_ROOM_MAX_LEN}
+        spellCheck={false}
+        onChange={(e) => {
+          setDraft(e.target.value);
+        }}
+        onBlur={() => {
+          if (draft.trim() !== saved) onSave(draft);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') setDraft(saved);
+        }}
+        aria-label={ariaLabel}
+        className={`${INPUT_BOX_SM_CLASS} w-40`}
+      />
     </label>
   );
 }
@@ -77,6 +130,7 @@ export default function TakChannelRelaySection({
   const setChatChannel = useTakRelayPrefsStore((s) => s.setChatChannel);
   const setChatSend = useTakRelayPrefsStore((s) => s.setChatSend);
   const setChatRemote = useTakRelayPrefsStore((s) => s.setChatRemote);
+  const setAtakName = useTakRelayPrefsStore((s) => s.setAtakName);
   if (!sinkActive || !identityId) return null;
 
   const mode = prefs?.channelMode ?? 'off';
@@ -130,17 +184,22 @@ export default function TakChannelRelaySection({
                     onChange={(on) => {
                       setChatChannel(identityId, ch.index, on);
                     }}
-                    label={t('takServerPanel.channelAtakName', { name: ch.atakName })}
+                    label={t('takServerPanel.channelServe')}
                     ariaLabel={t('takServerPanel.channelServeFor', { channel: name })}
                   />
                 )}
-                {mode === 'all' && (
-                  <span className="text-ink-400">
-                    {t('takServerPanel.channelAtakName', { name: ch.atakName })}
-                  </span>
-                )}
                 {served && (
                   <>
+                    <AtakNameField
+                      id={`${rowId}-name`}
+                      saved={prefs?.atakNames[ch.index] ?? ''}
+                      automatic={ch.atakName}
+                      onSave={(atakName) => {
+                        setAtakName(identityId, ch.index, atakName);
+                      }}
+                      label={t('takServerPanel.channelAtakNameLabel')}
+                      ariaLabel={t('takServerPanel.channelAtakNameFor', { channel: name })}
+                    />
                     <RowCheck
                       id={`${rowId}-send`}
                       checked={prefs?.sendChannels.includes(ch.index) ?? false}

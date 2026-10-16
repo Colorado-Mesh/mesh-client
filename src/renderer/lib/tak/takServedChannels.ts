@@ -110,6 +110,8 @@ export function servedChannelsFor(
       : channels.filter((c) => prefs.chatChannels.includes(c.index));
   return served.map((c) => ({
     ...c,
+    // A name the user chose wins over the automatic one.
+    atakName: prefs.atakNames[c.index] ?? c.atakName,
     identityId,
     send: prefs.sendChannels.includes(c.index),
     remote: prefs.remoteChannels.includes(c.index),

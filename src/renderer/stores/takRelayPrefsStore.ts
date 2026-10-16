@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
+
 import type { IdentityId } from '../lib/types';
 
 /** Which of a radio's channels become ATAK contacts. */
@@ -20,6 +22,11 @@ export interface TakRelayIdentityPrefs {
   sendChannels: number[];
   /** Served channels also streamed, read only, to the remote TAK server. */
   remoteChannels: number[];
+  /**
+   * Names the user chose for channels' ATAK contacts, by channel index. A channel without one
+   * gets its automatic name.
+   */
+  atakNames: Record<number, string>;
 }
 
 /** MeshCore channel slots are a single byte. */
@@ -31,7 +38,33 @@ const EMPTY_PREFS: TakRelayIdentityPrefs = {
   chatChannels: [],
   sendChannels: [],
   remoteChannels: [],
+  atakNames: {},
 };
+
+const CONTROL_CHARS_RE = /\p{Cc}/u;
+
+/**
+ * A usable ATAK contact name: trimmed, one line, 1 to {@link TAK_GEOCHAT_ROOM_MAX_LEN} UTF-16
+ * units (what main accepts); null otherwise.
+ */
+export function cleanAtakName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const name = raw.trim();
+  if (!name || name.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(name)) return null;
+  return name;
+}
+
+/** Valid custom names from a stored map, by channel index. */
+function atakNameMap(raw: unknown): Record<number, string> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<number, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const index = Number(k);
+    const name = cleanAtakName(v);
+    if (isChannelIndex(index) && name) out[index] = name;
+  }
+  return out;
+}
 
 function isChannelIndex(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_CHANNEL_INDEX;
@@ -49,7 +82,9 @@ function channelList(raw: unknown): number[] {
  * remote server, where its room went before; the room names are dropped, since names now come
  * from the channel.
  */
-function fromVersion1(v: Record<string, unknown>): Omit<TakRelayIdentityPrefs, 'trackerChannels'> {
+function fromVersion1(
+  v: Record<string, unknown>,
+): Omit<TakRelayIdentityPrefs, 'trackerChannels' | 'atakNames'> {
   const bridged =
     v.chatBridges && typeof v.chatBridges === 'object'
       ? channelList(
@@ -76,7 +111,7 @@ export function sanitizePrefs(raw: unknown): Record<IdentityId, TakRelayIdentity
     const v = value as Record<string, unknown>;
     const trackerChannels = channelList(v.trackerChannels);
     if (!('channelMode' in v)) {
-      out[identityId] = { trackerChannels, ...fromVersion1(v) };
+      out[identityId] = { trackerChannels, ...fromVersion1(v), atakNames: {} };
       continue;
     }
     const channelMode = CHANNEL_MODES.includes(v.channelMode as TakChannelMode)
@@ -88,6 +123,7 @@ export function sanitizePrefs(raw: unknown): Record<IdentityId, TakRelayIdentity
       chatChannels: channelList(v.chatChannels),
       sendChannels: channelList(v.sendChannels),
       remoteChannels: channelList(v.remoteChannels),
+      atakNames: atakNameMap(v.atakNames),
     };
   }
   return out;
@@ -105,6 +141,11 @@ interface TakRelayPrefsState {
   setChatSend: (identityId: IdentityId, channel: number, enabled: boolean) => void;
   /** Stream a served channel to the remote TAK server. */
   setChatRemote: (identityId: IdentityId, channel: number, enabled: boolean) => void;
+  /**
+   * Name a channel's ATAK contact. A blank name goes back to the automatic one; one main would
+   * refuse (too long, or with a line break) is ignored.
+   */
+  setAtakName: (identityId: IdentityId, channel: number, name: string) => void;
 }
 
 export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
@@ -149,6 +190,20 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
         },
         setChatRemote: (identityId, channel, enabled) => {
           toggle('remoteChannels', identityId, channel, enabled);
+        },
+        setAtakName: (identityId, channel, name) => {
+          if (!isChannelIndex(channel)) return;
+          const clean = cleanAtakName(name);
+          if (clean === null && name.trim() !== '') return;
+          set((s) => {
+            const prev = s.byIdentity[identityId] ?? EMPTY_PREFS;
+            if ((prev.atakNames[channel] ?? null) === clean) return s;
+            const atakNames = Object.fromEntries(
+              Object.entries(prev.atakNames).filter(([k]) => Number(k) !== channel),
+            ) as Record<number, string>;
+            if (clean !== null) atakNames[channel] = clean;
+            return { byIdentity: { ...s.byIdentity, [identityId]: { ...prev, atakNames } } };
+          });
         },
       };
     },

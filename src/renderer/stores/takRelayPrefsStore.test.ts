@@ -13,6 +13,7 @@ const EMPTY = {
   chatChannels: [],
   sendChannels: [],
   remoteChannels: [],
+  atakNames: {},
 };
 
 async function rehydrate(byIdentity: unknown, version: number): Promise<void> {
@@ -87,6 +88,7 @@ describe('takRelayPrefsStore', () => {
       chatChannels: [0, 2],
       sendChannels: [2],
       remoteChannels: [0],
+      atakNames: { 2: 'Ops Net' },
     };
     await rehydrate({ a: saved }, 2);
     expect(getTakRelayPrefs('a')).toEqual(saved);
@@ -101,6 +103,7 @@ describe('takRelayPrefsStore', () => {
           chatChannels: [3, 3, -1],
           sendChannels: 'all',
           remoteChannels: [2],
+          atakNames: { 0: ' Ops ', 1: '', 2: 'two\nlines', 3: 'x'.repeat(65), 999: 'Big', x: 'X' },
         },
         b: 'nope',
       },
@@ -113,8 +116,24 @@ describe('takRelayPrefsStore', () => {
         chatChannels: [3],
         sendChannels: [],
         remoteChannels: [2],
+        atakNames: { 0: 'Ops' },
       },
     });
+  });
+
+  it('names a channel for ATAK, back to automatic when blanked, ignoring names main refuses', () => {
+    const { setAtakName } = useTakRelayPrefsStore.getState();
+    setAtakName('a', 2, '  Ops Net ');
+    expect(getTakRelayPrefs('a').atakNames).toEqual({ 2: 'Ops Net' });
+    const before = useTakRelayPrefsStore.getState().byIdentity;
+    setAtakName('a', 2, 'Ops Net');
+    expect(useTakRelayPrefsStore.getState().byIdentity).toBe(before);
+    setAtakName('a', 2, 'x'.repeat(65));
+    setAtakName('a', 2, 'two\nlines');
+    setAtakName('a', 300, 'Big');
+    expect(getTakRelayPrefs('a').atakNames).toEqual({ 2: 'Ops Net' });
+    setAtakName('a', 2, '   ');
+    expect(getTakRelayPrefs('a').atakNames).toEqual({});
   });
 
   describe('from version 1', () => {
@@ -135,6 +154,7 @@ describe('takRelayPrefsStore', () => {
         chatChannels: [0, 2],
         sendChannels: [2],
         remoteChannels: [0, 2],
+        atakNames: {},
       });
     });
 

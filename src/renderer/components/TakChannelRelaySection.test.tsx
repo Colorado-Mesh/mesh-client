@@ -69,7 +69,7 @@ describe('TakChannelRelaySection', () => {
     expect(screen.getByLabelText('Channels in ATAK')).toHaveValue('off');
     expect(screen.getAllByLabelText(/^Tracker fixes from/)).toHaveLength(2);
     expect(screen.queryByLabelText('Let ATAK devices send to Public')).toBeNull();
-    expect(screen.queryByText('In ATAK as #MC Public')).toBeNull();
+    expect(screen.queryByLabelText('ATAK name for Public')).toBeNull();
   });
 
   it('enables tracker fixes per channel', async () => {
@@ -84,8 +84,12 @@ describe('TakChannelRelaySection', () => {
     render(<Section showTrackers={false} />);
     await user.selectOptions(screen.getByLabelText('Channels in ATAK'), 'all');
     expect(getTakRelayPrefs(ID).channelMode).toBe('all');
-    expect(screen.getByText('In ATAK as #MC Public')).toBeInTheDocument();
-    expect(screen.getByText('In ATAK as #MC sar')).toBeInTheDocument();
+    // Each name field shows the automatic name until the user types one.
+    expect(screen.getByLabelText('ATAK name for Public')).toHaveAttribute(
+      'placeholder',
+      '#MC Public',
+    );
+    expect(screen.getByLabelText('ATAK name for #sar')).toHaveValue('');
 
     await user.click(screen.getByLabelText('Let ATAK devices send to #sar'));
     await user.click(screen.getByLabelText('Stream Public to the remote TAK server'));
@@ -104,7 +108,30 @@ describe('TakChannelRelaySection', () => {
     expect(getTakRelayPrefs(ID).chatChannels).toEqual([2]);
     expect(screen.getByLabelText('Let ATAK devices send to #sar')).toBeInTheDocument();
     expect(screen.queryByLabelText('Let ATAK devices send to Public')).toBeNull();
-    expect(screen.getByText('In ATAK as #MC sar')).toBeInTheDocument();
+    expect(screen.getByLabelText('ATAK name for #sar')).toHaveAttribute('placeholder', '#MC sar');
+    expect(screen.queryByLabelText('ATAK name for Public')).toBeNull();
+  });
+
+  it('saves a custom ATAK name on Enter or leaving the field, and blanks back to automatic', async () => {
+    const user = userEvent.setup();
+    useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+    render(<Section showTrackers={false} />);
+    const field = screen.getByLabelText('ATAK name for #sar');
+
+    await user.type(field, 'Search and Rescue');
+    // Nothing is sent to ATAK while typing.
+    expect(getTakRelayPrefs(ID).atakNames).toEqual({});
+    await user.keyboard('{Enter}');
+    expect(getTakRelayPrefs(ID).atakNames).toEqual({ 2: 'Search and Rescue' });
+
+    await user.type(field, ' team');
+    await user.keyboard('{Escape}');
+    expect(field).toHaveValue('Search and Rescue');
+
+    await user.clear(field);
+    await user.tab();
+    expect(getTakRelayPrefs(ID).atakNames).toEqual({});
+    expect(field).toHaveAttribute('placeholder', '#MC sar');
   });
 
   it('shows the empty text without channels', () => {
