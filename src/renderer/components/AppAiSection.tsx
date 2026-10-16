@@ -138,6 +138,15 @@ export function AppAiSection() {
       return false;
     }
   })();
+  const configurationDirty =
+    engine !== status?.engine ||
+    Number(timeoutSeconds) !== status?.timeoutSeconds ||
+    ((engine === 'local' || engine === 'remote') &&
+      (format !== status?.wireFormat ||
+        baseUrl !== status?.baseUrl ||
+        model !== status?.model ||
+        apiKey !== undefined ||
+        (engine === 'remote' && ack !== status?.allowRemote)));
   const save = async () => {
     if (!engine) return;
     const input: AiEndpointConfig = {
@@ -152,6 +161,7 @@ export function AppAiSection() {
     };
     const next = await window.electronAPI.ai.setConfig(input);
     useAiSummaryStore.getState().setStatus(next);
+    setBaseUrl(next.baseUrl);
     setApiKey(undefined);
     setNotice(t('aiSummary.saved'));
   };
@@ -485,7 +495,7 @@ export function AppAiSection() {
               </Button>
               <Button
                 size="sm"
-                disabled={busy || !status.engine}
+                disabled={busy || !status.engine || configurationDirty}
                 aria-label={t('aiSummary.test')}
                 onClick={() => {
                   void action(async () => {

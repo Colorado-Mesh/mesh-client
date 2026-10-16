@@ -178,3 +178,65 @@ it.each(['http://localhost:1234', 'http://127.0.0.1:1234', 'http://[::1]:1234'])
     expect(screen.queryByRole('alert')).toBeNull();
   },
 );
+
+it('requires saving endpoint and key edits before testing the connection', async () => {
+  await openSettings({
+    engine: 'local',
+    wireFormat: 'openai',
+    baseUrl: 'http://ollama.local:1234',
+    model: 'test',
+    hasApiKey: true,
+  });
+  const test = screen.getByRole('button', { name: 'Test connection' });
+  expect(test).toBeEnabled();
+  fireEvent.change(screen.getByLabelText('Server base URL'), {
+    target: { value: 'https://ollama.local:1234' },
+  });
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(test).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('Server base URL'), {
+    target: { value: 'http://ollama.local:1234' },
+  });
+  expect(test).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear saved key' }));
+  expect(test).toBeDisabled();
+});
+
+it('reenables connection testing after saving a canonicalized URL', async () => {
+  await openSettings({
+    engine: 'local',
+    wireFormat: 'openai',
+    baseUrl: 'http://ollama.local:1234',
+    model: 'test',
+    hasApiKey: true,
+  });
+  const test = screen.getByRole('button', { name: 'Test connection' });
+  fireEvent.change(screen.getByLabelText('Server base URL'), {
+    target: { value: 'http://ollama.local:1234/' },
+  });
+  expect(test).toBeDisabled();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save configuration' }));
+    await Promise.resolve();
+  });
+  expect(screen.getByLabelText('Server base URL')).toHaveValue('http://ollama.local:1234');
+  expect(test).toBeEnabled();
+});
+it.each(['os', 'bundled'] as const)(
+  'allows testing a saved %s configuration until its timeout changes',
+  async (engine) => {
+    await openSettings({
+      engine,
+      osAi: {
+        available: engine === 'os',
+        platform: engine === 'os' ? 'apple-foundation-models' : null,
+      },
+    });
+    const test = screen.getByRole('button', { name: 'Test connection' });
+    expect(test).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Summary timeout (seconds)'), {
+      target: { value: '900' },
+    });
+    expect(test).toBeDisabled();
+  },
+);
