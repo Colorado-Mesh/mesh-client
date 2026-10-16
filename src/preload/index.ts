@@ -50,11 +50,12 @@ import type {
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type { ServiceAnnouncementFetchResult } from '../shared/serviceAnnouncementFeed';
 import type {
+  TAKChannelChatMessage,
+  TakChatChannel,
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
   TAKEnrollmentRequest,
-  TAKGeochatMessage,
   TAKInboundChat,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
@@ -1375,10 +1376,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('tak:remoteStatus', handler);
       return () => ipcRenderer.off('tak:remoteStatus', handler);
     },
-    pushChatMessage: (message: TAKGeochatMessage): Promise<void> =>
+    pushChatMessage: (message: TAKChannelChatMessage): Promise<void> =>
       ipcRenderer.invoke('tak:pushChatMessage', message),
-    setChatSendRooms: (rooms: string[]): Promise<void> =>
-      ipcRenderer.invoke('tak:setChatSendRooms', rooms),
+    setChatChannels: (channels: TakChatChannel[]): Promise<void> =>
+      ipcRenderer.invoke('tak:setChatChannels', channels),
     getStyleSettings: (): Promise<TakStyleSettings> => ipcRenderer.invoke('tak:getStyleSettings'),
     setStyleSettings: (settings: TakStyleSettings): Promise<TakStyleSettings> =>
       ipcRenderer.invoke('tak:setStyleSettings', settings),

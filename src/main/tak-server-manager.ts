@@ -8,6 +8,8 @@ import tls from 'tls';
 import type { MeshNode } from '../renderer/lib/types';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import type {
+  TAKChannelChatMessage,
+  TakChatChannel,
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
@@ -20,6 +22,7 @@ import type {
   TAKSettings,
   TakStyleSettings,
 } from '../shared/tak-types';
+import { TAK_CHAT_HELD_MAX } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
 import {
   type CertBundle,
@@ -45,11 +48,13 @@ import {
 } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import {
-  buildChatRoomContactCot,
+  buildChannelChatCot,
+  buildChannelContactCot,
   buildGeochatCot,
-  buildRoomContactChatCot,
+  CHANNEL_NOTE_SENDER,
+  type ChannelChatLine,
+  channelContactUid,
   CHAT_ROOM_CONTACT_STALE_MS,
-  chatRoomContactUid,
   type GeochatRecipient,
 } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
@@ -88,6 +93,18 @@ const TAK_CLIENT_CHAT_MAX_PER_WINDOW = 10;
 const TAK_CLIENT_CHAT_WINDOW_MS = 60 * 1000;
 /** Disconnect idle clients after 24h without inbound data. */
 const TAK_CLIENT_IDLE_MS = 24 * 60 * 60 * 1000;
+/** A held channel message older than this is dropped rather than delivered late. */
+const TAK_CHAT_HELD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** Written into a receive-only channel's conversation when a client messages it. */
+const RECEIVE_ONLY_NOTE =
+  'Not sent: this channel is receive only. Turn on "ATAK can send" for it in mesh-client.';
+
+/** A heard channel message waiting for the first TAK client to identify itself. */
+interface HeldChannelChat {
+  channelKey: string;
+  line: ChannelChatLine;
+  heldAtMs: number;
+}
 
 export class TakServerManager extends EventEmitter {
   private server: tls.Server | null = null;
@@ -108,8 +125,10 @@ export class TakServerManager extends EventEmitter {
     port: DEFAULT_TAK_REMOTE_PORT,
   };
   private readonly contacts = new TakContactCache();
-  /** Rooms TAK clients may send to, keyed by the uid of the contact that stands for each. */
-  private chatSendRooms = new Map<string, string>();
+  /** Channels served to TAK clients, keyed by the uid of the contact that stands for each. */
+  private chatChannels = new Map<string, TakChatChannel>();
+  /** Heard channel messages held while no local client could be addressed, oldest first. */
+  private heldChat: HeldChannelChat[] = [];
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
@@ -304,43 +323,80 @@ export class TakServerManager extends EventEmitter {
   }
 
   /**
-   * Mirror one heard mesh channel message into TAK GeoChat on every sink. A room clients may
-   * send to reaches each local client as a message from the room's contact; other rooms, and the
-   * remote relay, get the plain room form.
+   * Deliver one message heard on a served channel. Each local client that has identified itself
+   * gets it from the channel's contact; with none yet, it is held for the first that does. A
+   * channel streamed to the remote server also goes there, as a plain GeoChat room.
    */
-  sendChat(msg: TAKGeochatMessage): void {
-    if (!this.hasConnectedSink()) return;
-    const groupCot = buildGeochatCot(msg);
-    if (!this.chatSendRooms.has(chatRoomContactUid(msg.room))) {
-      this.broadcast(groupCot);
-      return;
+  sendChat(msg: TAKChannelChatMessage): void {
+    const channel = this.chatChannels.get(channelContactUid(msg.channelKey));
+    if (!channel) return;
+    const line: ChannelChatLine = {
+      senderCallsign: msg.senderCallsign,
+      text: msg.text,
+      timeMs: msg.timeMs,
+    };
+    if (channel.remote && this.remote?.isConnected()) {
+      const room: TAKGeochatMessage = { room: channel.name, ...line };
+      if (msg.latitude != null && msg.longitude != null) {
+        room.latitude = msg.latitude;
+        room.longitude = msg.longitude;
+      }
+      this.remote.write(buildGeochatCot(room));
     }
-    if (this.remote?.isConnected()) this.remote.write(groupCot);
-    this.writeRoomChat(msg, groupCot);
+    if (!this._status.running) return;
+    if (!this.writeChannelChat(channel, line)) this.holdChat(msg.channelKey, line);
+  }
+
+  /** Keep a message for the next client to identify itself, dropping the oldest past the cap. */
+  private holdChat(channelKey: string, line: ChannelChatLine): void {
+    this.heldChat.push({ channelKey, line, heldAtMs: Date.now() });
+    if (this.heldChat.length > TAK_CHAT_HELD_MAX) {
+      this.heldChat.splice(0, this.heldChat.length - TAK_CHAT_HELD_MAX);
+    }
+  }
+
+  /** Hand the held messages, oldest first, to a client that has just identified itself. */
+  private flushHeldChat(id: string, client: ConnectedClient): void {
+    if (this.heldChat.length === 0) return;
+    const recipient = this.recipientFor(client);
+    if (!recipient) return;
+    const held = this.heldChat;
+    this.heldChat = [];
+    const now = Date.now();
+    for (const item of held) {
+      if (now - item.heldAtMs > TAK_CHAT_HELD_MAX_AGE_MS) continue;
+      const channel = this.chatChannels.get(channelContactUid(item.channelKey));
+      if (!channel) continue;
+      this.writeToClient(id, client, buildChannelChatCot(channel, item.line, recipient, now));
+    }
   }
 
   /**
-   * Replace the set of rooms TAK clients may send to. Each gets a contact announced to every
-   * local client; a room that left the set has its contact removed.
+   * Replace the set of channels served to TAK clients. A new channel's contact is announced to
+   * every local client, and announced again when its name or send setting changes; a channel
+   * no longer served has its contact removed.
    */
-  setChatSendRooms(rooms: string[]): void {
-    const next = new Map(rooms.map((room) => [chatRoomContactUid(room), room]));
+  setChatChannels(channels: TakChatChannel[]): void {
+    const next = new Map(channels.map((c) => [channelContactUid(c.key), c]));
     const now = Date.now();
-    for (const uid of this.chatSendRooms.keys()) {
+    for (const uid of this.chatChannels.keys()) {
       if (!next.has(uid)) this.writeToClients(cotDeleteEvent(uid, now));
     }
-    for (const [uid, room] of next) {
-      if (!this.chatSendRooms.has(uid)) this.writeToClients(buildChatRoomContactCot(room, now));
+    for (const [uid, channel] of next) {
+      const prev = this.chatChannels.get(uid);
+      if (prev?.name === channel.name && prev.send === channel.send) continue;
+      this.writeToClients(buildChannelContactCot(channel, now));
     }
-    this.chatSendRooms = next;
+    this.chatChannels = next;
+    this.heldChat = this.heldChat.filter((h) => next.has(channelContactUid(h.channelKey)));
     this.scheduleChatRoomAnnouncements();
   }
 
-  /** Re-announce room contacts well inside their stale time so they do not expire in ATAK. */
+  /** Re-announce channel contacts well inside their stale time so they do not expire in ATAK. */
   private scheduleChatRoomAnnouncements(): void {
     if (this.chatRoomAnnounceTimer) clearInterval(this.chatRoomAnnounceTimer);
     this.chatRoomAnnounceTimer = null;
-    if (this.chatSendRooms.size === 0) return;
+    if (this.chatChannels.size === 0) return;
     this.chatRoomAnnounceTimer = setInterval(() => {
       this.forEachChatRoomContact((cot) => {
         this.writeToClients(cot);
@@ -349,10 +405,10 @@ export class TakServerManager extends EventEmitter {
     this.chatRoomAnnounceTimer.unref();
   }
 
-  /** Build the contact event for every room open for sending and pass each to `send`. */
+  /** Build the contact event for every served channel and pass each to `send`. */
   private forEachChatRoomContact(send: (cot: string) => void): void {
     const now = Date.now();
-    for (const room of this.chatSendRooms.values()) send(buildChatRoomContactCot(room, now));
+    for (const channel of this.chatChannels.values()) send(buildChannelContactCot(channel, now));
   }
 
   /** The uid and callsign a client reported for itself, once it has reported both. */
@@ -362,22 +418,26 @@ export class TakServerManager extends EventEmitter {
   }
 
   /**
-   * Deliver one message in a send-enabled room to local clients, skipping `exceptId`. A client
-   * that has not said who it is yet cannot be addressed directly and gets the plain room form.
+   * Deliver one channel line to every local client that has identified itself, skipping
+   * `exceptId`. Returns whether any client received it; one that has not said who it is yet
+   * cannot be addressed and is passed over.
    */
-  private writeRoomChat(
-    msg: TAKGeochatMessage,
-    groupCot: string,
+  private writeChannelChat(
+    channel: TakChatChannel,
+    line: ChannelChatLine,
     exceptId?: string,
     messageId?: string,
-  ): void {
+  ): boolean {
     const now = Date.now();
+    let delivered = false;
     for (const [id, client] of this.clients) {
       if (id === exceptId) continue;
       const recipient = this.recipientFor(client);
-      const cot = recipient ? buildRoomContactChatCot(msg, recipient, now, messageId) : groupCot;
-      this.writeToClient(id, client, cot);
+      if (!recipient) continue;
+      this.writeToClient(id, client, buildChannelChatCot(channel, line, recipient, now, messageId));
+      delivered = true;
     }
+    return delivered;
   }
 
   getStyleSettings(): TakStyleSettings {
@@ -577,6 +637,7 @@ export class TakServerManager extends EventEmitter {
     if (contact.uid !== client.selfUid || contact.callsign === client.info.callsign) return;
     client.info = { ...client.info, callsign: contact.callsign };
     this.emit('client-updated', { ...client.info });
+    this.flushHeldChat(client.info.id, client);
   }
 
   /** Answer a client keepalive so the EUD does not time out a connection with no mesh traffic. */
@@ -612,10 +673,11 @@ export class TakServerManager extends EventEmitter {
   }
 
   /**
-   * A GeoChat message from a local client: pass it on to the other local clients, as a TAK
-   * server does, and hand it to the renderer, which decides whether its room is bridged to a
-   * mesh channel that allows sending. Rebuilt from the parsed fields, never forwarded raw, and
-   * only under the connection's own uid and callsign.
+   * A GeoChat message from a local client. One to a served channel's contact goes to the other
+   * local clients from that contact and to the renderer, which sends it on the channel; a
+   * receive-only channel gets a note back instead. Any other message is passed on to the other
+   * local clients, as a TAK server does. Rebuilt from the parsed fields, never forwarded raw,
+   * and only under the connection's own uid and callsign.
    */
   private handleClientChat(
     id: string,
@@ -635,20 +697,38 @@ export class TakServerManager extends EventEmitter {
     }
     // The callsign from the connection's own position report wins over the one in the message.
     const senderCallsign = client.info.callsign || chat.senderCallsign || chat.senderUid;
-    // A message to a room's contact is for that room, whatever name the client filed it under.
-    const sendRoom = chat.roomId ? this.chatSendRooms.get(chat.roomId) : undefined;
-    const room = sendRoom ?? chat.room;
-    const message: TAKGeochatMessage = { room, senderCallsign, text: chat.text, timeMs: nowMs };
-    const groupCot = buildGeochatCot(message, nowMs, chat.messageId, chat.senderUid);
-    if (sendRoom) {
-      this.writeRoomChat(message, groupCot, id, chat.messageId);
-    } else {
+    // A message to a channel's contact is for that channel, whatever name the client filed it
+    // under. Anything else is GeoChat between TAK clients, passed on as a TAK server does.
+    const channel = chat.roomId ? this.chatChannels.get(chat.roomId) : undefined;
+    if (!channel) {
+      const message: TAKGeochatMessage = {
+        room: chat.room,
+        senderCallsign,
+        text: chat.text,
+        timeMs: nowMs,
+      };
+      const groupCot = buildGeochatCot(message, nowMs, chat.messageId, chat.senderUid);
       for (const [otherId, other] of this.clients) {
         if (otherId !== id) this.writeToClient(otherId, other, groupCot);
       }
+      return;
     }
+    if (!channel.send) {
+      const recipient = this.recipientFor(client);
+      if (recipient) {
+        const note = {
+          senderCallsign: CHANNEL_NOTE_SENDER,
+          text: RECEIVE_ONLY_NOTE,
+          timeMs: nowMs,
+        };
+        this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));
+      }
+      return;
+    }
+    const line: ChannelChatLine = { senderCallsign, text: chat.text, timeMs: nowMs };
+    this.writeChannelChat(channel, line, id, chat.messageId);
     const inbound: TAKInboundChat = {
-      room,
+      channelKey: channel.key,
       senderCallsign,
       text: chat.text,
       clientId: id,

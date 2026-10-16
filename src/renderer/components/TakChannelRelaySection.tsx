@@ -1,74 +1,65 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
-
 import type { IdentityId } from '../lib/types';
-import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
+import { type TakChannelInfo, useTakChannelStore } from '../stores/takChannelStore';
+import { type TakChannelMode, useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
-import { CHECKBOX_CLASS, INPUT_BOX_SM_CLASS } from './ui/formClasses';
+import { CHECKBOX_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
-interface RoomInputProps {
-  identityId: IdentityId;
-  channel: number;
-  channelName: string;
-  saved: string;
+const NO_CHANNELS: readonly TakChannelInfo[] = [];
+
+const MODE_LABEL_KEYS: Record<TakChannelMode, string> = {
+  off: 'takServerPanel.channelModeOff',
+  all: 'takServerPanel.channelModeAll',
+  selected: 'takServerPanel.channelModeSelected',
+};
+
+interface CheckProps {
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  ariaLabel: string;
 }
 
-/** Commits on blur or Enter so trimming does not fight typing. */
-function RoomInput({ identityId, channel, channelName, saved }: RoomInputProps) {
-  const { t } = useTranslation();
-  const setChatBridge = useTakRelayPrefsStore((s) => s.setChatBridge);
-  const [draft, setDraft] = useState(saved);
-  const commit = () => {
-    setChatBridge(identityId, channel, draft);
-  };
+/** A small labelled checkbox in a channel row. */
+function RowCheck({ id, checked, onChange, label, ariaLabel }: CheckProps) {
   return (
-    <input
-      type="text"
-      value={draft}
-      maxLength={TAK_GEOCHAT_ROOM_MAX_LEN}
-      spellCheck={false}
-      placeholder={t('takServerPanel.channelRelayRoomPlaceholder')}
-      aria-label={t('takServerPanel.channelRelayRoom', { channel: channelName })}
-      onChange={(e) => {
-        setDraft(e.target.value);
-      }}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') commit();
-      }}
-      className={`${INPUT_BOX_SM_CLASS} w-40`}
-    />
+    <label htmlFor={id} className="text-ink-300 flex items-center gap-1">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => {
+          onChange(e.target.checked);
+        }}
+        aria-label={ariaLabel}
+        className={CHECKBOX_CLASS}
+      />
+      {label}
+    </label>
   );
 }
 
-export interface TakRelayChannel {
-  index: number;
-  name: string;
-}
-
 interface Props {
-  /** The identity whose channels can feed TAK; channel slots are device-specific. */
+  /** The radio whose channels can feed TAK; channel slots are device-specific. */
   identityId: IdentityId | null;
-  channels: readonly TakRelayChannel[];
   /** Offer the `!MT1` tracker-fix checkbox (protocol capability `hasTakTrackerChannels`). */
   showTrackers: boolean;
   title: string;
   description: string;
   emptyText: string;
-  /** Settings search anchor for the channel list. */
+  /** Settings search anchor for the section. */
   anchorId: string;
 }
 
 /**
- * Per-channel opt-ins for what a heard channel feeds into TAK: `!MT1` tracker fixes as markers
- * (when supported) and plain messages as a GeoChat room, one-way unless the channel also lets
- * TAK clients send. Only shown while a TAK sink is up.
+ * One radio's channels in ATAK: which become contacts (off, all, or selected ones), and for each
+ * served channel whether TAK devices may send to it and whether it streams to the remote server.
+ * Also the per-channel `!MT1` tracker opt-in when supported. Only shown while a TAK sink is up.
  */
 export default function TakChannelRelaySection({
   identityId,
-  channels,
   showTrackers,
   title,
   description,
@@ -77,65 +68,109 @@ export default function TakChannelRelaySection({
 }: Props) {
   const { t } = useTranslation();
   const sinkActive = useTakSinkStore((s) => s.active);
+  const channels = useTakChannelStore((s) =>
+    identityId ? (s.channelsByIdentity[identityId] ?? NO_CHANNELS) : NO_CHANNELS,
+  );
   const prefs = useTakRelayPrefsStore((s) => (identityId ? s.byIdentity[identityId] : undefined));
   const setTrackerChannel = useTakRelayPrefsStore((s) => s.setTrackerChannel);
+  const setChannelMode = useTakRelayPrefsStore((s) => s.setChannelMode);
+  const setChatChannel = useTakRelayPrefsStore((s) => s.setChatChannel);
   const setChatSend = useTakRelayPrefsStore((s) => s.setChatSend);
-
+  const setChatRemote = useTakRelayPrefsStore((s) => s.setChatRemote);
   if (!sinkActive || !identityId) return null;
 
+  const mode = prefs?.channelMode ?? 'off';
+  const modeId = `tak-channel-mode-${identityId}`;
+  const showList = channels.length > 0 && (mode !== 'off' || showTrackers);
+
   return (
-    <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
+    <div
+      data-setting-anchor={anchorId}
+      className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4"
+    >
       <h3 className="text-ink-300 text-sm font-medium">{title}</h3>
       <p className="text-ink-400 text-xs">{description}</p>
       {channels.length === 0 ? (
         <p className="text-muted text-xs">{emptyText}</p>
       ) : (
-        <ul data-setting-anchor={anchorId} className="space-y-2">
+        <div className="flex items-center gap-2 text-xs">
+          <label htmlFor={modeId} className="text-ink-300">
+            {t('takServerPanel.channelModeLabel')}
+          </label>
+          <select
+            id={modeId}
+            value={mode}
+            onChange={(e) => {
+              setChannelMode(identityId, e.target.value as TakChannelMode);
+            }}
+            className={SELECT_BOX_SM_CLASS}
+          >
+            {(Object.keys(MODE_LABEL_KEYS) as TakChannelMode[]).map((m) => (
+              <option key={m} value={m}>
+                {t(MODE_LABEL_KEYS[m])}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {showList && (
+        <ul className="space-y-2">
           {channels.map((ch) => {
-            const name = ch.name.trim() || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
-            const tracker = prefs?.trackerChannels.includes(ch.index) ?? false;
-            const room = prefs?.chatBridges[ch.index] ?? '';
-            const canSend = prefs?.chatSendChannels.includes(ch.index) ?? false;
-            const checkboxId = `tak-channel-relay-${identityId}-${ch.index}`;
-            const sendCheckboxId = `tak-channel-send-${identityId}-${ch.index}`;
+            const name = ch.name || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
+            const picked = prefs?.chatChannels.includes(ch.index) ?? false;
+            const served = mode === 'all' || (mode === 'selected' && picked);
+            const rowId = `tak-channel-${identityId}-${ch.index}`;
             return (
               <li key={ch.index} className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="text-ink-200 min-w-24 font-medium">{name}</span>
-                {showTrackers && (
-                  <label htmlFor={checkboxId} className="text-ink-300 flex items-center gap-1">
-                    <input
-                      id={checkboxId}
-                      type="checkbox"
-                      checked={tracker}
-                      onChange={(e) => {
-                        setTrackerChannel(identityId, ch.index, e.target.checked);
-                      }}
-                      className={CHECKBOX_CLASS}
-                    />
-                    {t('takServerPanel.channelRelayTrackers')}
-                  </label>
+                {mode === 'selected' && (
+                  <RowCheck
+                    id={`${rowId}-serve`}
+                    checked={picked}
+                    onChange={(on) => {
+                      setChatChannel(identityId, ch.index, on);
+                    }}
+                    label={t('takServerPanel.channelAtakName', { name: ch.atakName })}
+                    ariaLabel={t('takServerPanel.channelServeFor', { channel: name })}
+                  />
                 )}
-                <RoomInput
-                  key={`${identityId}-${ch.index}-${room}`}
-                  identityId={identityId}
-                  channel={ch.index}
-                  channelName={name}
-                  saved={room}
-                />
-                {room && (
-                  <label htmlFor={sendCheckboxId} className="text-ink-300 flex items-center gap-1">
-                    <input
-                      id={sendCheckboxId}
-                      type="checkbox"
-                      checked={canSend}
-                      onChange={(e) => {
-                        setChatSend(identityId, ch.index, e.target.checked);
+                {mode === 'all' && (
+                  <span className="text-ink-400">
+                    {t('takServerPanel.channelAtakName', { name: ch.atakName })}
+                  </span>
+                )}
+                {served && (
+                  <>
+                    <RowCheck
+                      id={`${rowId}-send`}
+                      checked={prefs?.sendChannels.includes(ch.index) ?? false}
+                      onChange={(on) => {
+                        setChatSend(identityId, ch.index, on);
                       }}
-                      aria-label={t('takServerPanel.channelRelaySendFor', { channel: name })}
-                      className={CHECKBOX_CLASS}
+                      label={t('takServerPanel.channelSend')}
+                      ariaLabel={t('takServerPanel.channelSendFor', { channel: name })}
                     />
-                    {t('takServerPanel.channelRelaySend')}
-                  </label>
+                    <RowCheck
+                      id={`${rowId}-remote`}
+                      checked={prefs?.remoteChannels.includes(ch.index) ?? false}
+                      onChange={(on) => {
+                        setChatRemote(identityId, ch.index, on);
+                      }}
+                      label={t('takServerPanel.channelRemote')}
+                      ariaLabel={t('takServerPanel.channelRemoteFor', { channel: name })}
+                    />
+                  </>
+                )}
+                {showTrackers && (
+                  <RowCheck
+                    id={`${rowId}-tracker`}
+                    checked={prefs?.trackerChannels.includes(ch.index) ?? false}
+                    onChange={(on) => {
+                      setTrackerChannel(identityId, ch.index, on);
+                    }}
+                    label={t('takServerPanel.channelRelayTrackers')}
+                    ariaLabel={t('takServerPanel.channelTrackersFor', { channel: name })}
+                  />
                 )}
               </li>
             );

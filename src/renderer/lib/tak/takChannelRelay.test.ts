@@ -4,6 +4,7 @@ import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
 import { TAK_GEOCHAT_TEXT_MAX_LEN } from '@/shared/tak-types';
 
 import { useNodeStore } from '../../stores/nodeStore';
+import { setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import type { ChatMessage } from '../types';
@@ -13,6 +14,7 @@ import { rememberTakSend, resetTakEchoForTests } from './takEchoGuard';
 const ID = 'tak-channel-relay-meshtastic';
 const SENDER = 0x1234abcd;
 const NOW = Date.parse('2026-10-09T12:00:00Z');
+const KEY = '0123456789abcdef';
 
 function chat(overrides: Partial<ChatMessage> = {}): ChatMessage {
   return {
@@ -32,7 +34,12 @@ describe('relayMeshtasticChatToTak', () => {
     vi.spyOn(window.electronAPI.tak, 'pushChatMessage').mockImplementation(pushChatMessage);
     pushChatMessage.mockClear();
     useTakRelayPrefsStore.setState({ byIdentity: {} });
-    useTakRelayPrefsStore.getState().setChatBridge(ID, 1, 'Mesh Ops');
+    setTakChannels(ID, [
+      { protocol: 'meshtastic', index: 1, key: KEY, name: 'Ops', atakName: '#MT Ops' },
+      { protocol: 'meshtastic', index: 2, key: 'fedcba9876543210', name: 'B', atakName: '#MT B' },
+    ]);
+    useTakRelayPrefsStore.getState().setChannelMode(ID, 'selected');
+    useTakRelayPrefsStore.getState().setChatChannel(ID, 1, true);
     useNodeStore.setState({ nodes: {} });
     setTakSinkActive(true);
   });
@@ -40,6 +47,7 @@ describe('relayMeshtasticChatToTak', () => {
   afterEach(() => {
     setTakSinkActive(false);
     useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
     useNodeStore.setState({ nodes: {} });
     vi.restoreAllMocks();
   });
@@ -53,11 +61,11 @@ describe('relayMeshtasticChatToTak', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('mirrors a broadcast channel message into the bridged GeoChat room', () => {
+  it('hands a broadcast message on a served channel to TAK clients by channel key', () => {
     relayMeshtasticChatToTak(ID, chat());
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
     expect(pushChatMessage).toHaveBeenCalledWith({
-      room: 'Mesh Ops',
+      channelKey: KEY,
       senderCallsign: 'Bob',
       text: 'on scene',
       timeMs: NOW,
@@ -90,11 +98,20 @@ describe('relayMeshtasticChatToTak', () => {
     ['a DM', chat({ to: 0x0badf00d })],
     ['a reaction', chat({ emoji: 1 })],
     ['history', chat({ isHistory: true })],
-    ['an unbridged channel', chat({ channel: 2 })],
+    ['a channel that is not served', chat({ channel: 2 })],
+    ['a channel the radio does not have', chat({ channel: 7 })],
     ['an empty message', chat({ payload: '   ' })],
-  ])('does not mirror %s', (_label, message) => {
+  ])('does not hand on %s', (_label, message) => {
     relayMeshtasticChatToTak(ID, message);
     expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('hands on every channel when the radio serves all of them', () => {
+    useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+    relayMeshtasticChatToTak(ID, chat({ channel: 2 }));
+    expect(pushChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ channelKey: 'fedcba9876543210' }),
+    );
   });
 
   it('does nothing without an active TAK sink', () => {

@@ -221,7 +221,7 @@ export interface TAKNodeUpdate extends TakRelayExtras {
   source?: 'rf' | 'mqtt';
 }
 
-/** A heard mesh channel message mirrored one way into a TAK GeoChat room. */
+/** One GeoChat line in a named room: what the CoT builders write. */
 export interface TAKGeochatMessage {
   /** GeoChat room (chatroom) name. */
   room: string;
@@ -234,10 +234,38 @@ export interface TAKGeochatMessage {
   longitude?: number;
 }
 
-/** A GeoChat message a local TAK client sent to the server, for the mesh channel bridge. */
+/**
+ * A mesh channel served to TAK clients as one contact. Messages heard on it reach them from the
+ * contact; when `send` is on, a message to the contact goes out on the channel.
+ */
+export interface TakChatChannel {
+  /** Channel identity key (`channelIdentityKey.ts`, 16 hex digits); the contact uid comes from it. */
+  key: string;
+  /** Contact name shown in ATAK, e.g. `#MC Public` or `#MT 🔒 Ops`. */
+  name: string;
+  /** TAK clients may send to the channel; off, it is receive only. */
+  send: boolean;
+  /** Also stream the channel to the remote TAK server, read only. */
+  remote: boolean;
+}
+
+/** A message heard on a served mesh channel, for TAK clients. */
+export interface TAKChannelChatMessage {
+  /** Identity key of the served channel it was heard on. */
+  channelKey: string;
+  senderCallsign: string;
+  text: string;
+  /** When the message was sent, epoch milliseconds. */
+  timeMs: number;
+  /** Sender's last known position; omitted when unknown. */
+  latitude?: number;
+  longitude?: number;
+}
+
+/** A message a local TAK client sent to a served channel's contact, for the mesh. */
 export interface TAKInboundChat {
-  /** GeoChat room (chatroom) the client addressed. */
-  room: string;
+  /** Identity key of the channel whose contact the client messaged. */
+  channelKey: string;
   senderCallsign: string;
   text: string;
   /** Server-side id of the client connection that sent it. */
@@ -247,12 +275,14 @@ export interface TAKInboundChat {
 }
 
 /**
- * Uid prefix of the contact that stands for a GeoChat room TAK clients may send to. A client
- * reaches the room's mesh channel by messaging that contact.
+ * Uid prefix of the contact that stands for a served mesh channel. A client reaches the channel
+ * by messaging that contact.
  */
 export const TAK_CHAT_ROOM_UID_PREFIX = 'MESHROOM-';
-/** Most rooms the renderer may register as open for TAK clients to send to. */
-export const TAK_CHAT_SEND_ROOMS_MAX = 64;
+/** Most channels the renderer may serve to TAK clients. */
+export const TAK_CHAT_CHANNELS_MAX = 64;
+/** Heard channel messages held while no TAK client is connected. */
+export const TAK_CHAT_HELD_MAX = 50;
 
 export const TAK_GEOCHAT_TEXT_MAX_LEN = 1024;
 export const TAK_GEOCHAT_ROOM_MAX_LEN = 64;

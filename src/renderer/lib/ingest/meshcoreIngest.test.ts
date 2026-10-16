@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { getTakChannels, setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import { clearTakTrackerFixes, useTakTrackerStore } from '../../stores/takTrackerStore';
@@ -699,6 +700,16 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
   });
 });
 
+/** Serve one channel of a radio to TAK, as the TAK panel does. */
+function serveTakChannel(identityId: string, index: number, key: string): void {
+  setTakChannels(identityId, [
+    ...getTakChannels(identityId),
+    { protocol: 'meshcore', index, key, name: `Ch ${index}`, atakName: `#Ch ${index}` },
+  ]);
+  useTakRelayPrefsStore.getState().setChannelMode(identityId, 'selected');
+  useTakRelayPrefsStore.getState().setChatChannel(identityId, index, true);
+}
+
 describe('meshcore ingest TAK channel relay', () => {
   const TAK_ID = 'meshcore-ingest-tak-test';
   const pushChatMessage = vi.fn().mockResolvedValue(undefined);
@@ -723,6 +734,7 @@ describe('meshcore ingest TAK channel relay', () => {
     pushChatMessage.mockClear();
     useMessageStore.setState({ messages: {} });
     useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
     clearTakTrackerFixes();
     setTakSinkActive(true);
   });
@@ -730,6 +742,7 @@ describe('meshcore ingest TAK channel relay', () => {
   afterEach(() => {
     setTakSinkActive(false);
     useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
     clearTakTrackerFixes();
     vi.restoreAllMocks();
   });
@@ -751,24 +764,28 @@ describe('meshcore ingest TAK channel relay', () => {
   it('does nothing without an active TAK sink', () => {
     setTakSinkActive(false);
     useTakRelayPrefsStore.getState().setTrackerChannel(TAK_ID, 3, true);
-    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 3, 'Mesh');
+    serveTakChannel(TAK_ID, 3, '0123456789abcdef');
     channelMessage(FIX);
     channelMessage('Bob: hello');
     expect(useTakTrackerStore.getState().fixes).toEqual({});
     expect(pushChatMessage).not.toHaveBeenCalled();
   });
 
-  it('mirrors messages on a bridged channel into its GeoChat room once', () => {
-    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 3, 'Mesh Ops');
+  it('hands messages on a served channel to TAK clients once', () => {
+    serveTakChannel(TAK_ID, 3, '0123456789abcdef');
     channelMessage('Bob: on scene');
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
     expect(pushChatMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ room: 'Mesh Ops', senderCallsign: 'Bob', text: 'on scene' }),
+      expect.objectContaining({
+        channelKey: '0123456789abcdef',
+        senderCallsign: 'Bob',
+        text: 'on scene',
+      }),
     );
   });
 
-  it('does not mirror channels without a bridge', () => {
-    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 4, 'Other');
+  it('does not hand on channels that are not served', () => {
+    serveTakChannel(TAK_ID, 4, 'fedcba9876543210');
     channelMessage('Bob: on scene');
     expect(pushChatMessage).not.toHaveBeenCalled();
   });

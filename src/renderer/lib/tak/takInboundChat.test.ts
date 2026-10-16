@@ -2,14 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { TAKInboundChat } from '@/shared/tak-types';
 
-import { type IdentityRecord, useIdentityStore } from '../../stores/identityStore';
+import { getTakChannels, setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { consumeTakEcho, resetTakEchoForTests } from './takEchoGuard';
 import {
   enqueueTakChatRelay,
   findTakSendTargets,
   formatTakMeshText,
-  listTakSendRooms,
   relayTakChatToMesh,
   TAK_MESH_SEND_MAX_BYTES,
   TAK_MESH_SEND_TIMEOUT_MS,
@@ -17,16 +16,13 @@ import {
 } from './takInboundChat';
 
 const NOW = Date.parse('2026-10-11T12:00:00Z');
-
-/** A minimal identity record of the given protocol. */
-function identity(id: string, type: string): IdentityRecord {
-  return { id, protocol: { type }, signature: id, transports: [] } as unknown as IdentityRecord;
-}
+const OPS = '0123456789abcdef';
+const OTHER = 'fedcba9876543210';
 
 /** An inbound TAK chat message with overridable fields. */
 function message(overrides: Partial<TAKInboundChat> = {}): TAKInboundChat {
   return {
-    room: 'Mesh Ops',
+    channelKey: OPS,
     senderCallsign: 'VIPER',
     text: 'on scene',
     clientId: 'client-1',
@@ -35,29 +31,33 @@ function message(overrides: Partial<TAKInboundChat> = {}): TAKInboundChat {
   };
 }
 
-/** Bridge a channel to a room and set whether TAK may send to it. */
-function bridge(identityId: string, channel: number, room: string, send: boolean): void {
-  const { setChatBridge, setChatSend } = useTakRelayPrefsStore.getState();
-  setChatBridge(identityId, channel, room);
-  setChatSend(identityId, channel, send);
+/** Serve one channel of a radio to TAK, with sending allowed or not. */
+function serve(
+  identityId: string,
+  protocol: 'meshcore' | 'meshtastic',
+  index: number,
+  key: string,
+  send: boolean,
+): void {
+  setTakChannels(identityId, [
+    ...getTakChannels(identityId),
+    { protocol, index, key, name: `Ch ${index}`, atakName: `#Ch ${index}` },
+  ]);
+  const { setChannelMode, setChatChannel, setChatSend } = useTakRelayPrefsStore.getState();
+  setChannelMode(identityId, 'selected');
+  setChatChannel(identityId, index, true);
+  setChatSend(identityId, index, send);
 }
 
 beforeEach(() => {
   resetTakEchoForTests();
   useTakRelayPrefsStore.setState({ byIdentity: {} });
-  useIdentityStore.setState({
-    identities: {
-      mc: identity('mc', 'meshcore'),
-      mt: identity('mt', 'meshtastic'),
-      rn: identity('rn', 'reticulum'),
-    },
-    activeIdentityId: null,
-  });
+  useTakChannelStore.setState({ channelsByIdentity: {} });
 });
 
 afterEach(() => {
   useTakRelayPrefsStore.setState({ byIdentity: {} });
-  useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+  useTakChannelStore.setState({ channelsByIdentity: {} });
 });
 
 describe('formatTakMeshText', () => {
@@ -80,53 +80,41 @@ describe('formatTakMeshText', () => {
 });
 
 describe('findTakSendTargets', () => {
-  it('returns bridged channels that allow sending, on every protocol that has them', () => {
-    bridge('mc', 2, 'Mesh Ops', true);
-    bridge('mc', 3, 'Mesh Ops', false);
-    bridge('mc', 4, 'Other', true);
-    bridge('mt', 0, 'Mesh Ops', true);
-    bridge('rn', 1, 'Mesh Ops', true);
-    expect(findTakSendTargets('Mesh Ops')).toEqual([
+  it('returns the served channel with that key that allows sending, on every radio serving it', () => {
+    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mc', 'meshcore', 3, OTHER, true);
+    serve('mc2', 'meshcore', 5, OPS, true);
+    serve('mt', 'meshtastic', 0, OPS, false);
+    expect(findTakSendTargets(OPS)).toEqual([
       { identityId: 'mc', protocol: 'meshcore', channelIndex: 2 },
-      { identityId: 'mt', protocol: 'meshtastic', channelIndex: 0 },
+      { identityId: 'mc2', protocol: 'meshcore', channelIndex: 5 },
     ]);
   });
 
-  it('matches the room name exactly', () => {
-    bridge('mc', 2, 'Mesh Ops', true);
-    expect(findTakSendTargets('mesh ops')).toEqual([]);
-    expect(findTakSendTargets('Mesh')).toEqual([]);
-  });
-
-  it('ignores prefs for an identity that is no longer loaded', () => {
-    bridge('gone', 2, 'Mesh Ops', true);
-    expect(findTakSendTargets('Mesh Ops')).toEqual([]);
-  });
-});
-
-describe('listTakSendRooms', () => {
-  it('lists each room some loaded identity lets TAK send to, once', () => {
-    bridge('mc', 2, 'Mesh Ops', true);
-    bridge('mc', 3, 'Listen Only', false);
-    bridge('mt', 0, 'Mesh Ops', true);
-    bridge('mt', 1, 'Alpha', true);
-    bridge('gone', 2, 'Ghost', true);
-    expect(listTakSendRooms()).toEqual(['Alpha', 'Mesh Ops']);
+  it('finds nothing for a receive-only channel, an unserved one, or an unknown key', () => {
+    serve('mc', 'meshcore', 2, OPS, false);
+    setTakChannels('mt', [
+      { protocol: 'meshtastic', index: 1, key: OTHER, name: 'x', atakName: '#MT x' },
+    ]);
+    useTakRelayPrefsStore.getState().setChatSend('mt', 1, true);
+    expect(findTakSendTargets(OPS)).toEqual([]);
+    expect(findTakSendTargets(OTHER)).toEqual([]);
+    expect(findTakSendTargets('0000000000000000')).toEqual([]);
   });
 });
 
 describe('relayTakChatToMesh', () => {
-  it('sends nothing for a room that is not bridged or does not allow sending', async () => {
-    bridge('mc', 2, 'Mesh Ops', false);
+  it('sends nothing for a channel that does not allow sending', async () => {
+    serve('mc', 'meshcore', 2, OPS, false);
     const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
     expect(await relayTakChatToMesh(message(), send, NOW)).toBe(0);
-    expect(await relayTakChatToMesh(message({ room: 'Elsewhere' }), send, NOW)).toBe(0);
+    expect(await relayTakChatToMesh(message({ channelKey: OTHER }), send, NOW)).toBe(0);
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('transmits the prefixed text on each allowed channel and remembers it as an echo', async () => {
-    bridge('mc', 2, 'Mesh Ops', true);
-    bridge('mt', 0, 'Mesh Ops', true);
+  it('transmits the prefixed text on each radio serving the channel and remembers it as an echo', async () => {
+    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mc2', 'meshcore', 0, OPS, true);
     const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
 
     expect(await relayTakChatToMesh(message(), send, NOW)).toBe(2);
@@ -136,17 +124,17 @@ describe('relayTakChatToMesh', () => {
       '[VIPER] on scene',
     );
     expect(send).toHaveBeenCalledWith(
-      { identityId: 'mt', protocol: 'meshtastic', channelIndex: 0 },
+      { identityId: 'mc2', protocol: 'meshcore', channelIndex: 0 },
       '[VIPER] on scene',
     );
     expect(consumeTakEcho('mc', 2, '[VIPER] on scene', NOW + 1000)).toBe(true);
-    expect(consumeTakEcho('mt', 0, '[VIPER] on scene', NOW + 1000)).toBe(true);
+    expect(consumeTakEcho('mc2', 0, '[VIPER] on scene', NOW + 1000)).toBe(true);
   });
 
   it('keeps going when one channel fails and forgets the echo for the failed send', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    bridge('mc', 2, 'Mesh Ops', true);
-    bridge('mt', 0, 'Mesh Ops', true);
+    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mc2', 'meshcore', 0, OPS, true);
     const send = vi
       .fn<TakMeshSendFn>()
       .mockRejectedValueOnce(new Error('MeshCore not connected'))
@@ -157,7 +145,7 @@ describe('relayTakChatToMesh', () => {
     expect(send).toHaveBeenCalledTimes(2);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('mesh send failed'));
     expect(consumeTakEcho('mc', 2, '[VIPER] on scene', NOW + 1000)).toBe(false);
-    expect(consumeTakEcho('mt', 0, '[VIPER] on scene', NOW + 1000)).toBe(true);
+    expect(consumeTakEcho('mc2', 0, '[VIPER] on scene', NOW + 1000)).toBe(true);
     warn.mockRestore();
   });
 });
@@ -168,7 +156,7 @@ describe('enqueueTakChatRelay', () => {
   });
 
   it('finishes each message before starting the next, in arrival order', async () => {
-    bridge('mc', 2, 'Mesh Ops', true);
+    serve('mc', 'meshcore', 2, OPS, true);
     const started: string[] = [];
     const releases: (() => void)[] = [];
     const send: TakMeshSendFn = (_target, text) =>
@@ -195,7 +183,7 @@ describe('enqueueTakChatRelay', () => {
   it('times out a send that never settles and carries on with the next message', async () => {
     vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    bridge('mc', 2, 'Mesh Ops', true);
+    serve('mc', 'meshcore', 2, OPS, true);
     const send = vi
       .fn<TakMeshSendFn>()
       .mockImplementationOnce(() => new Promise<void>(() => {}))

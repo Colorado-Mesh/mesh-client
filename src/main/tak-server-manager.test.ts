@@ -84,6 +84,7 @@ vi.mock('./tak/style-settings', () => ({
 }));
 
 import type {
+  TakChatChannel,
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
@@ -93,7 +94,7 @@ import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager'
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
 import { COT_FRAME_MAX_BYTES } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
-import { chatRoomContactUid } from './tak/geochat-cot';
+import { channelContactUid } from './tak/geochat-cot';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
@@ -788,41 +789,78 @@ describe('TakServerManager inbound CoT from local clients', () => {
   });
 });
 
-describe('TakServerManager GeoChat', () => {
-  it('writes a GeoChat event to local clients only while one is connected', () => {
-    const manager = new TakServerManager();
-    const msg = { room: 'Mesh', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() };
-    manager.sendChat(msg);
-    const internals = manager as unknown as {
-      clients: Map<string, unknown>;
-      _handleClient: (socket: tls.TLSSocket) => void;
-    };
-    internals.clients = new Map();
-    const socket = mockTlsSocket();
-    internals._handleClient(socket);
-    vi.mocked(socket.write).mockClear();
-    manager.sendChat(msg);
-    const line = String(vi.mocked(socket.write).mock.calls[0]?.[0]);
-    expect(line).toContain('type="b-t-f"');
-    expect(line).toContain('chatroom="Mesh"');
-  });
-});
+/** Shared helpers for the chat tests: clients, their own reports, and what they were sent. */
+const OPS: TakChatChannel = { key: '0123456789abcdef', name: '#MC Ops', send: true, remote: false };
+const WATCH: TakChatChannel = {
+  key: 'fedcba9876543210',
+  name: '#MT LongFast',
+  send: false,
+  remote: false,
+};
 
-describe('TakServerManager rooms TAK clients may send to', () => {
-  /** A client's own position report, which binds a uid and callsign to its connection. */
-  const SELF = (uid: string, callsign: string) =>
-    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
-    `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
-    `<detail><contact callsign="${callsign}"/></detail></event>`;
+/** A client's own position report, which binds a uid and callsign to its connection. */
+const SELF = (uid: string, callsign: string) =>
+  `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
+  `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
+  `<detail><contact callsign="${callsign}"/></detail></event>`;
 
-  /** A direct message from `sender` to the contact that stands for `room`. */
-  const TO_ROOM = (sender: string, room: string, text: string) =>
-    `<event version="2.0" uid="GeoChat.${sender}.${chatRoomContactUid(room)}.m-1" type="b-t-f" ` +
+/**
+ * A client GeoChat event. By default it is a message to the contact of `channel` (OPS); pass
+ * `room` for a plain GeoChat room. `callsign` is the raw senderCallsign attribute, or empty.
+ */
+const CHAT = (
+  text: string,
+  opts: { room?: string; channel?: TakChatChannel; sender?: string; callsign?: string } = {},
+) => {
+  const channel = opts.channel ?? OPS;
+  const room = opts.room ?? channel.name;
+  const id = opts.room ?? channelContactUid(channel.key);
+  const sender = opts.sender ?? 'ANDROID-1';
+  const callsign = opts.callsign ?? ' senderCallsign="VIPER"';
+  return (
+    `<event version="2.0" uid="GeoChat.${sender}.${id}.msg-${text.length}" type="b-t-f" ` +
     `time="2026-10-11T12:00:00Z" start="2026-10-11T12:00:00Z" stale="2026-10-12T12:00:00Z" ` +
     `how="h-g-i-g-o"><point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/><detail>` +
-    `<__chat parent="RootContactGroup" chatroom="${room}" id="${chatRoomContactUid(room)}" ` +
-    `senderCallsign="VIPER"/><remarks>${text}</remarks></detail></event>`;
+    `<__chat parent="RootContactGroup" chatroom="${room}" id="${id}"${callsign}/>` +
+    `<remarks>${text}</remarks></detail></event>`
+  );
+};
 
+interface ChatInternals {
+  _handleClient: (socket: tls.TLSSocket) => void;
+  _status: { running: boolean };
+  remote: { isConnected: () => boolean; write: (cot: string) => void } | null;
+}
+
+/** A manager whose local server counts as running, serving `channels`. */
+function chatManager(channels: TakChatChannel[] = [OPS]): TakServerManager {
+  const manager = new TakServerManager();
+  (manager as unknown as ChatInternals)._status.running = true;
+  manager.setChatChannels(channels);
+  return manager;
+}
+
+/** Connect a mock client, optionally sending its own position report, then forget the writes. */
+function connect(manager: TakServerManager, self?: [string, string]): tls.TLSSocket {
+  const socket = mockTlsSocket();
+  (manager as unknown as ChatInternals)._handleClient(socket);
+  if (self) socket.emit('data', Buffer.from(SELF(...self)));
+  vi.mocked(socket.write).mockClear();
+  return socket;
+}
+
+/** Everything written to a mock client socket, one string per write. */
+const written = (socket: tls.TLSSocket) =>
+  vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
+
+const heard = (text: string, channel: TakChatChannel = OPS) => ({
+  channelKey: channel.key,
+  senderCallsign: 'Bob',
+  text,
+  timeMs: Date.now(),
+});
+
+describe('TakServerManager served channels', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -831,102 +869,154 @@ describe('TakServerManager rooms TAK clients may send to', () => {
     vi.useRealTimers();
   });
 
-  /** Connect a mock client, optionally sending its own position report as `[uid, callsign]`. */
-  function connect(manager: TakServerManager, self?: [string, string]): tls.TLSSocket {
-    const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
-    const socket = mockTlsSocket();
-    internals._handleClient(socket);
-    if (self) socket.emit('data', Buffer.from(SELF(...self)));
-    return socket;
-  }
-
-  /** Everything written to a mock client socket, one string per write. */
-  const written = (socket: tls.TLSSocket) =>
-    vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
-
-  it('announces each room as a contact, to connected clients and to ones that connect later', () => {
+  it('announces each channel as a contact, to connected clients and to ones that connect later', () => {
     const manager = new TakServerManager();
     const early = connect(manager);
-    manager.setChatSendRooms(['Public']);
-    const late = connect(manager);
-    for (const socket of [early, late]) {
-      const contact = written(socket).find((l) => l.includes(chatRoomContactUid('Public')));
-      expect(contact).toContain('<contact callsign="Public" endpoint="*:-1:stcp"/>');
+    manager.setChatChannels([OPS, WATCH]);
+    const lateSocket = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(lateSocket);
+    for (const socket of [early, lateSocket]) {
+      const lines = written(socket);
+      expect(lines.find((l) => l.includes(channelContactUid(OPS.key)))).toContain(
+        '<contact callsign="#MC Ops" endpoint="*:-1:stcp"/>',
+      );
+      // A receive-only channel has no endpoint, so ATAK offers no way to type to it.
+      expect(lines.find((l) => l.includes(channelContactUid(WATCH.key)))).toContain(
+        '<contact callsign="#MT LongFast"/>',
+      );
     }
   });
 
-  it('removes the contact of a room that is no longer open for sending', () => {
+  it('announces a channel again only when its name or send setting changes', () => {
     const manager = new TakServerManager();
     const socket = connect(manager);
-    manager.setChatSendRooms(['Public']);
+    manager.setChatChannels([OPS]);
     vi.mocked(socket.write).mockClear();
-    manager.setChatSendRooms([]);
+    manager.setChatChannels([{ ...OPS, remote: true }]);
+    expect(written(socket)).toEqual([]);
+    manager.setChatChannels([{ ...OPS, send: false }]);
+    expect(written(socket)).toHaveLength(1);
+    expect(written(socket)[0]).toContain('<contact callsign="#MC Ops"/>');
+  });
+
+  it('removes the contact of a channel no longer served', () => {
+    const manager = new TakServerManager();
+    const socket = connect(manager);
+    manager.setChatChannels([OPS]);
+    vi.mocked(socket.write).mockClear();
+    manager.setChatChannels([]);
     const lines = written(socket);
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('type="t-x-d-d"');
-    expect(lines[0]).toContain(`<link uid="${chatRoomContactUid('Public')}"`);
+    expect(lines[0]).toContain(`<link uid="${channelContactUid(OPS.key)}"`);
   });
 
-  it("delivers a mesh message in such a room as a message from the room's contact", () => {
-    const manager = new TakServerManager();
-    manager.setChatSendRooms(['Public']);
-    const known = connect(manager, ['ANDROID-1', 'VIPER']);
-    const unknown = connect(manager);
-    vi.mocked(known.write).mockClear();
-    vi.mocked(unknown.write).mockClear();
-
-    manager.sendChat({ room: 'Public', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() });
-
-    expect(written(known)[0]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Public"');
-    expect(written(known)[0]).toContain('>Bob: hi</remarks>');
-    // A client that has not reported who it is cannot be addressed, so it gets the room form.
-    expect(written(unknown)[0]).toContain('chatroom="Public" id="Public"');
+  it("delivers a heard message as a message from the channel's contact to each client", () => {
+    const manager = chatManager();
+    const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+    const eagle = connect(manager, ['ANDROID-2', 'EAGLE']);
+    manager.sendChat(heard('hi'));
+    expect(written(viper)[0]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="#MC Ops"');
+    expect(written(eagle)[0]).toContain('chatroom="EAGLE" id="ANDROID-2" senderCallsign="#MC Ops"');
+    expect(written(viper)[0]).toContain('>Bob: hi</remarks>');
   });
 
-  it('leaves a room that is not open for sending in the room form', () => {
-    const manager = new TakServerManager();
-    manager.setChatSendRooms(['Public']);
+  it('ignores a message heard on a channel that is not served', () => {
+    const manager = chatManager();
     const socket = connect(manager, ['ANDROID-1', 'VIPER']);
-    vi.mocked(socket.write).mockClear();
-    manager.sendChat({ room: 'Listen', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() });
-    expect(written(socket)[0]).toContain('chatroom="Listen" id="Listen"');
+    manager.sendChat(heard('hi', WATCH));
+    expect(written(socket)).toEqual([]);
   });
 
-  it("takes a message to a room's contact as a message for that room", () => {
-    const manager = new TakServerManager();
-    manager.setChatSendRooms(['Public']);
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
-    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
-    vi.mocked(sender.write).mockClear();
-    vi.mocked(other.write).mockClear();
+  it('holds heard messages until a client says who it is, then hands them over oldest first', () => {
+    const manager = chatManager();
+    manager.sendChat(heard('one'));
+    const socket = connect(manager);
+    manager.sendChat(heard('two'));
+    expect(written(socket)).toEqual([]);
 
-    sender.emit('data', Buffer.from(TO_ROOM('ANDROID-1', 'Public', 'on scene')));
+    socket.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    const lines = written(socket).filter((l) => l.includes('type="b-t-f"'));
+    expect(lines.map((l) => /Bob: (\w+)</.exec(l)?.[1])).toEqual(['one', 'two']);
 
-    expect(inbound).toMatchObject([{ room: 'Public', senderCallsign: 'VIPER', text: 'on scene' }]);
-    expect(sender.write).not.toHaveBeenCalled();
-    // The other client sees it in the same conversation it would reply in.
-    expect(written(other)[0]).toContain('chatroom="EAGLE" id="ANDROID-2" senderCallsign="Public"');
-    expect(written(other)[0]).toContain('>VIPER: on scene</remarks>');
+    // Handed over once only: a second client does not get them again.
+    const late = connect(manager, ['ANDROID-2', 'EAGLE']);
+    expect(written(late).filter((l) => l.includes('type="b-t-f"'))).toEqual([]);
+  });
+
+  it('holds at most 50 messages, dropping the oldest', () => {
+    const manager = chatManager();
+    manager.sendChat(heard('stale'));
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
+    for (let i = 0; i < 52; i++) manager.sendChat(heard(`m${i}`));
+    const viper = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(viper);
+    viper.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    const texts = written(viper)
+      .filter((l) => l.includes('type="b-t-f"'))
+      .map((l) => /Bob: (\w+)</.exec(l)?.[1]);
+    expect(texts).toHaveLength(50);
+    expect(texts[0]).toBe('m2');
+    expect(texts.at(-1)).toBe('m51');
+  });
+
+  it('drops a held message older than a day', () => {
+    const manager = chatManager();
+    manager.sendChat(heard('stale'));
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
+    manager.sendChat(heard('fresh'));
+    const viper = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(viper);
+    viper.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    const texts = written(viper)
+      .filter((l) => l.includes('type="b-t-f"'))
+      .map((l) => /Bob: (\w+)</.exec(l)?.[1]);
+    expect(texts).toEqual(['fresh']);
+  });
+
+  it('drops held messages for a channel that stops being served', () => {
+    const manager = chatManager([OPS, { ...WATCH, send: true }]);
+    manager.sendChat(heard('ops'));
+    manager.sendChat(heard('watch', WATCH));
+    manager.setChatChannels([OPS]);
+    const socket = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(socket);
+    socket.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    const chats = written(socket).filter((l) => l.includes('type="b-t-f"'));
+    expect(chats).toHaveLength(1);
+    expect(chats[0]).toContain('>Bob: ops</remarks>');
+  });
+
+  it('streams a channel ticked for the remote server there as a read-only room', () => {
+    const manager = chatManager([
+      { ...OPS, remote: true },
+      { ...WATCH, send: true },
+    ]);
+    const remote = { isConnected: () => true, write: vi.fn() };
+    (manager as unknown as ChatInternals).remote = remote;
+    manager.sendChat({ ...heard('streamed'), latitude: 39.7, longitude: -105 });
+    manager.sendChat(heard('local only', WATCH));
+    expect(remote.write).toHaveBeenCalledTimes(1);
+    const cot = String(remote.write.mock.calls[0]?.[0]);
+    expect(cot).toContain('chatroom="#MC Ops" id="#MC Ops"');
+    expect(cot).toContain('<point lat="39.7" lon="-105"');
+    expect(cot).toContain('>streamed</remarks>');
+  });
+
+  it('does not hold messages while only the remote server is running', () => {
+    const manager = chatManager([{ ...OPS, remote: true }]);
+    (manager as unknown as ChatInternals)._status.running = false;
+    (manager as unknown as ChatInternals).remote = { isConnected: () => true, write: vi.fn() };
+    manager.sendChat(heard('remote'));
+    (manager as unknown as ChatInternals)._status.running = true;
+    const socket = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(socket);
+    socket.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    expect(written(socket).filter((l) => l.includes('type="b-t-f"'))).toEqual([]);
   });
 });
 
 describe('TakServerManager chat from local clients', () => {
-  /** A client GeoChat event; `callsign` is the raw senderCallsign attribute, or empty for none. */
-  const CHAT = (text: string, opts: { room?: string; sender?: string; callsign?: string } = {}) => {
-    const room = opts.room ?? 'Mesh Ops';
-    const sender = opts.sender ?? 'ANDROID-1';
-    const callsign = opts.callsign ?? ' senderCallsign="VIPER"';
-    return (
-      `<event version="2.0" uid="GeoChat.${sender}.${room}.msg-${text.length}" type="b-t-f" ` +
-      `time="2026-10-11T12:00:00Z" start="2026-10-11T12:00:00Z" stale="2026-10-12T12:00:00Z" ` +
-      `how="h-g-i-g-o"><point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/><detail>` +
-      `<__chat parent="RootContactGroup" chatroom="${room}" id="${room}"${callsign}/>` +
-      `<remarks>${text}</remarks></detail></event>`
-    );
-  };
-
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -935,29 +1025,75 @@ describe('TakServerManager chat from local clients', () => {
     vi.useRealTimers();
   });
 
-  /** Connect a mock client and forget the writes made on connect. */
-  function connect(manager: TakServerManager): tls.TLSSocket {
-    const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
-    const socket = mockTlsSocket();
-    internals._handleClient(socket);
-    vi.mocked(socket.write).mockClear();
-    return socket;
+  function listen(manager: TakServerManager): TAKInboundChat[] {
+    const inbound: TAKInboundChat[] = [];
+    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    return inbound;
   }
 
-  /** A client's own position report, which is what binds a uid and callsign to its connection. */
-  const SELF = (uid: string, callsign: string) =>
-    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
-    `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
-    `<detail><contact callsign="${callsign}"/></detail></event>`;
+  it("takes a message to a channel's contact as a message for that channel", () => {
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+
+    sender.emit('data', Buffer.from(CHAT('on scene')));
+
+    expect(inbound).toEqual([
+      {
+        channelKey: OPS.key,
+        senderCallsign: 'VIPER',
+        text: 'on scene',
+        clientId: manager.getConnectedClients()[0]?.id,
+        timeMs: expect.any(Number),
+      },
+    ]);
+    expect(sender.write).not.toHaveBeenCalled();
+    // The other client sees it in the same conversation it would reply in.
+    expect(written(other)[0]).toContain('chatroom="EAGLE" id="ANDROID-2" senderCallsign="#MC Ops"');
+    expect(written(other)[0]).toContain('>VIPER: on scene</remarks>');
+    expect(manager.getContacts().filter((c) => c.uid.startsWith('GeoChat'))).toEqual([]);
+  });
+
+  it('answers a message to a receive-only channel with a note, and sends nothing on', () => {
+    const manager = chatManager([WATCH]);
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+
+    sender.emit('data', Buffer.from(CHAT('anyone?', { channel: WATCH })));
+
+    expect(inbound).toEqual([]);
+    expect(other.write).not.toHaveBeenCalled();
+    expect(written(sender)).toHaveLength(1);
+    expect(written(sender)[0]).toContain('senderCallsign="#MT LongFast"');
+    expect(written(sender)[0]).toContain('>mesh-client: Not sent: this channel is receive only.');
+  });
+
+  it('passes plain GeoChat on to the other clients without sending it to the mesh', () => {
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const sender = connect(manager);
+    const other = connect(manager);
+
+    sender.emit('data', Buffer.from(CHAT('on scene', { room: 'Mesh Ops' })));
+
+    expect(inbound).toEqual([]);
+    expect(sender.write).not.toHaveBeenCalled();
+    expect(other.write).toHaveBeenCalledTimes(1);
+    const line = String(vi.mocked(other.write).mock.calls[0]?.[0]);
+    expect(line.startsWith('<event ')).toBe(true);
+    expect(line).toContain('uid="GeoChat.ANDROID-1.Mesh Ops.msg-8"');
+    expect(line).toContain('chatroom="Mesh Ops"');
+    expect(line).toContain('>on scene</remarks>');
+  });
 
   it("drops chat sent under a uid other than the connection's own", () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const sender = connect(manager);
-    const other = connect(manager);
-    sender.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
 
     sender.emit('data', Buffer.from(CHAT('spoofed', { sender: 'ANDROID-9' })));
     expect(inbound).toEqual([]);
@@ -971,12 +1107,10 @@ describe('TakServerManager chat from local clients', () => {
 
   it('drops chat sent under a uid another connected client holds', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const victim = connect(manager);
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const victim = connect(manager, ['ANDROID-1', 'VIPER']);
     const impostor = connect(manager);
-    victim.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
 
     impostor.emit('data', Buffer.from(CHAT('as viper', { sender: 'ANDROID-1' })));
     expect(inbound).toEqual([]);
@@ -991,9 +1125,8 @@ describe('TakServerManager chat from local clients', () => {
 
   it('binds a connection to the first uid it chats as when it sent no position report', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const manager = chatManager();
+    const inbound = listen(manager);
     const sender = connect(manager);
     sender.emit('data', Buffer.from(CHAT('first', { sender: 'ANDROID-1' })));
     sender.emit('data', Buffer.from(CHAT('switched', { sender: 'ANDROID-2' })));
@@ -1002,66 +1135,28 @@ describe('TakServerManager chat from local clients', () => {
   });
 
   it("uses the callsign from the connection's own report over the one in the message", () => {
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const sender = connect(manager);
-    const other = connect(manager);
-    sender.emit('data', Buffer.from(SELF('ANDROID-1', 'GHOST')));
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'GHOST']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
     sender.emit('data', Buffer.from(CHAT('hello', { callsign: ' senderCallsign="COMMAND"' })));
     expect(inbound[0]?.senderCallsign).toBe('GHOST');
-    expect(String(vi.mocked(other.write).mock.calls[0]?.[0])).toContain('senderCallsign="GHOST"');
-  });
-
-  it('hands a client message to the renderer and passes it on to the other clients only', () => {
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const sender = connect(manager);
-    const other = connect(manager);
-
-    sender.emit('data', Buffer.from(CHAT('on scene')));
-
-    expect(inbound).toHaveLength(1);
-    expect(inbound[0]).toMatchObject({
-      room: 'Mesh Ops',
-      senderCallsign: 'VIPER',
-      text: 'on scene',
-      clientId: manager.getConnectedClients()[0]?.id,
-    });
-    expect(sender.write).not.toHaveBeenCalled();
-    expect(other.write).toHaveBeenCalledTimes(1);
-    const line = String(vi.mocked(other.write).mock.calls[0]?.[0]);
-    expect(line.startsWith('<event ')).toBe(true);
-    expect(line).toContain('uid="GeoChat.ANDROID-1.Mesh Ops.msg-8"');
-    expect(line).toContain('chatroom="Mesh Ops"');
-    expect(line).toContain('>on scene</remarks>');
-    expect(manager.getContacts()).toEqual([]);
+    expect(written(other)[0]).toContain('>GHOST: hello</remarks>');
   });
 
   it('falls back to the client callsign from its position report', () => {
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const socket = connect(manager);
-    socket.emit(
-      'data',
-      Buffer.from(
-        `<event version="2.0" uid="ANDROID-1" type="a-f-G-U-C" time="2026-10-11T12:00:00Z" ` +
-          `stale="2026-10-11T12:05:00Z"><point lat="39.7" lon="-105"/>` +
-          `<detail><contact callsign="GHOST"/></detail></event>`,
-      ),
-    );
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const socket = connect(manager, ['ANDROID-1', 'GHOST']);
     socket.emit('data', Buffer.from(CHAT('hello', { callsign: '' })));
     expect(inbound[0]?.senderCallsign).toBe('GHOST');
   });
 
   it('ignores mirrored mesh messages sent back by a client', () => {
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
+    const manager = chatManager();
+    const inbound = listen(manager);
     const sender = connect(manager);
-    const other = connect(manager);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
     sender.emit('data', Buffer.from(CHAT('loop', { sender: 'MESHCHAT-0a1b2c3d' })));
     expect(inbound).toEqual([]);
     expect(other.write).not.toHaveBeenCalled();
@@ -1069,11 +1164,10 @@ describe('TakServerManager chat from local clients', () => {
 
   it('drops a client chat past the rate limit and recovers after the window', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const manager = new TakServerManager();
-    const inbound: TAKInboundChat[] = [];
-    manager.on('client-chat', (m: TAKInboundChat) => inbound.push(m));
-    const sender = connect(manager);
-    const other = connect(manager);
+    const manager = chatManager();
+    const inbound = listen(manager);
+    const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+    const other = connect(manager, ['ANDROID-2', 'EAGLE']);
 
     for (let i = 0; i < 12; i++) sender.emit('data', Buffer.from(CHAT('x'.repeat(i + 1))));
     expect(inbound).toHaveLength(10);

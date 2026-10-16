@@ -1,12 +1,15 @@
 import { randomUUID } from 'crypto';
 
+import { isChannelIdentityKey } from '../../shared/channelIdentityKey';
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
+  TAK_CHAT_CHANNELS_MAX,
   TAK_CHAT_ROOM_UID_PREFIX,
-  TAK_CHAT_SEND_ROOMS_MAX,
   TAK_GEOCHAT_CALLSIGN_MAX_LEN,
   TAK_GEOCHAT_ROOM_MAX_LEN,
   TAK_GEOCHAT_TEXT_MAX_LEN,
+  type TAKChannelChatMessage,
+  type TakChatChannel,
   type TAKGeochatMessage,
 } from '../../shared/tak-types';
 import { escapeXml } from '../../shared/xmlEscape';
@@ -33,27 +36,35 @@ export function geochatSenderUid(callsign: string): string {
   return `MESHCHAT-${fnv1aHex(callsign)}`;
 }
 
-/** Stable uid of the contact that stands for a room TAK clients may send to. */
-export function chatRoomContactUid(room: string): string {
-  return `${TAK_CHAT_ROOM_UID_PREFIX}${fnv1aHex(room)}`;
+/**
+ * Stable uid of the contact that stands for a served channel, from the channel's identity key:
+ * a channel moved to another slot, or renamed in ATAK's eyes, keeps its contact and history.
+ */
+export function channelContactUid(channelKey: string): string {
+  return `${TAK_CHAT_ROOM_UID_PREFIX}${fnv1aHex(channelKey)}`;
 }
 
-/** Validate the renderer's list of rooms TAK clients may send to. Throws when malformed. */
-export function parseTakChatSendRooms(raw: unknown): string[] {
-  const bad = () =>
-    new Error(
-      `tak:setChatSendRooms: expected up to ${TAK_CHAT_SEND_ROOMS_MAX} rooms of 1-${TAK_GEOCHAT_ROOM_MAX_LEN} printable characters`,
-    );
-  if (!Array.isArray(raw) || raw.length > TAK_CHAT_SEND_ROOMS_MAX) throw bad();
-  const rooms = new Set<string>();
-  for (const room of raw) {
-    const trimmed = typeof room === 'string' ? room.trim() : '';
-    if (!trimmed || trimmed.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(trimmed)) {
-      throw bad();
-    }
-    rooms.add(trimmed);
+/** Validate the renderer's list of channels served to TAK clients. Throws when malformed. */
+export function parseTakChatChannels(raw: unknown): TakChatChannel[] {
+  const bad = (why: string) => new Error(`tak:setChatChannels: ${why}`);
+  if (!Array.isArray(raw) || raw.length > TAK_CHAT_CHANNELS_MAX) {
+    throw bad(`expected an array of at most ${TAK_CHAT_CHANNELS_MAX} channels`);
   }
-  return [...rooms];
+  const byKey = new Map<string, TakChatChannel>();
+  for (const item of raw as unknown[]) {
+    if (!item || typeof item !== 'object') throw bad('each channel must be an object');
+    const c = item as Record<string, unknown>;
+    if (!isChannelIdentityKey(c.key)) throw bad('key must be a channel identity key');
+    const name = typeof c.name === 'string' ? c.name.trim() : '';
+    if (!name || name.length > TAK_GEOCHAT_ROOM_MAX_LEN || CONTROL_CHARS_RE.test(name)) {
+      throw bad(`name must be 1-${TAK_GEOCHAT_ROOM_MAX_LEN} printable characters`);
+    }
+    if (typeof c.send !== 'boolean' || typeof c.remote !== 'boolean') {
+      throw bad('send and remote must be booleans');
+    }
+    byKey.set(c.key, { key: c.key, name, send: c.send, remote: c.remote });
+  }
+  return [...byKey.values()];
 }
 
 /** A TAK client the server can address: the uid and callsign from its own position report. */
@@ -62,51 +73,67 @@ export interface GeochatRecipient {
   callsign: string;
 }
 
-/** How long a room contact stays in ATAK without being announced again. */
+/** How long a channel contact stays in ATAK without being announced again. */
 export const CHAT_ROOM_CONTACT_STALE_MS = GEOCHAT_STALE_MS;
 
+/** Sender name on notes the server itself writes into a channel's conversation. */
+export const CHANNEL_NOTE_SENDER = 'mesh-client';
+
 /**
- * The contact that stands for a room TAK clients may send to. ATAK only transmits chat to a
- * contact it can reach, and `endpoint="*:-1:stcp"` says this one is reached through the server
- * connection. A contact needs a point; a room has no place, so it sits at 0, 0.
+ * The contact that stands for a served channel. ATAK only transmits chat to a contact it can
+ * reach, and `endpoint="*:-1:stcp"` says this one is reached through the server connection, so
+ * only a channel TAK clients may send to carries it: a receive-only channel offers no way to
+ * type to it. A contact needs a point; a channel has no place, so it sits at 0, 0.
  */
-export function buildChatRoomContactCot(room: string, nowMs: number = Date.now()): string {
-  const uid = escapeXml(chatRoomContactUid(room));
+export function buildChannelContactCot(
+  channel: TakChatChannel,
+  nowMs: number = Date.now(),
+): string {
+  const uid = escapeXml(channelContactUid(channel.key));
   const time = new Date(nowMs).toISOString();
   const stale = new Date(nowMs + CHAT_ROOM_CONTACT_STALE_MS).toISOString();
+  const endpoint = channel.send ? ' endpoint="*:-1:stcp"' : '';
   return (
     `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="${time}" start="${time}"` +
     ` stale="${stale}" how="h-g-i-g-o">` +
     `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
     `<detail>` +
-    `<contact callsign="${escapeXml(room)}" endpoint="*:-1:stcp"/>` +
+    `<contact callsign="${escapeXml(channel.name)}"${endpoint}/>` +
     `<__group name="White" role="Team Member"/>` +
     `</detail>` +
     `</event>`
   );
 }
 
+/** One line in a channel's conversation: who said it, what, and when. */
+export interface ChannelChatLine {
+  senderCallsign: string;
+  text: string;
+  timeMs: number;
+}
+
 /**
- * One message in a send-enabled room, as a direct message to `recipient` from the room's
- * contact. ATAK files it under that contact, and a reply there comes back addressed to the
- * contact's uid, which names the room. The original sender's name leads the text because every
- * line in the conversation comes from the same contact.
+ * One line on a served channel, as a direct message to `recipient` from the channel's contact.
+ * ATAK files it under that contact, and a reply there comes back addressed to the contact's
+ * uid, which names the channel. The original sender's name leads the text because every line
+ * in the conversation comes from the same contact.
  */
-export function buildRoomContactChatCot(
-  msg: TAKGeochatMessage,
+export function buildChannelChatCot(
+  channel: TakChatChannel,
+  line: ChannelChatLine,
   recipient: GeochatRecipient,
   nowMs: number = Date.now(),
   messageId: string = randomUUID(),
 ): string {
   return geochatEvent(
     {
-      ...msg,
-      latitude: undefined,
-      longitude: undefined,
-      text: `${msg.senderCallsign}: ${msg.text}`,
+      room: channel.name,
+      senderCallsign: line.senderCallsign,
+      timeMs: line.timeMs,
+      text: `${line.senderCallsign}: ${line.text}`,
     },
-    chatRoomContactUid(msg.room),
-    msg.room,
+    channelContactUid(channel.key),
+    channel.name,
     recipient.callsign,
     recipient.uid,
     nowMs,
@@ -124,13 +151,16 @@ function label(value: unknown, max: number, field: string): string {
   return trimmed;
 }
 
-/** Validate an untrusted GeoChat message from the renderer. Throws when malformed. */
-export function parseTakGeochatMessage(raw: unknown): TAKGeochatMessage {
+/** Validate an untrusted heard channel message from the renderer. Throws when malformed. */
+export function parseTakChannelChatMessage(raw: unknown): TAKChannelChatMessage {
   if (!raw || typeof raw !== 'object') {
     throw new Error('tak:pushChatMessage: message must be an object');
   }
   const m = raw as Record<string, unknown>;
-  const room = label(m.room, TAK_GEOCHAT_ROOM_MAX_LEN, 'room');
+  if (!isChannelIdentityKey(m.channelKey)) {
+    throw new Error('tak:pushChatMessage: channelKey must be a channel identity key');
+  }
+  const channelKey = m.channelKey;
   const senderCallsign = label(m.senderCallsign, TAK_GEOCHAT_CALLSIGN_MAX_LEN, 'senderCallsign');
   if (typeof m.text !== 'string' || !m.text.trim() || m.text.length > TAK_GEOCHAT_TEXT_MAX_LEN) {
     throw new Error(`tak:pushChatMessage: text must be 1-${TAK_GEOCHAT_TEXT_MAX_LEN} characters`);
@@ -138,7 +168,12 @@ export function parseTakGeochatMessage(raw: unknown): TAKGeochatMessage {
   if (typeof m.timeMs !== 'number' || !Number.isFinite(m.timeMs) || m.timeMs <= 0) {
     throw new Error('tak:pushChatMessage: timeMs must be a positive number');
   }
-  const msg: TAKGeochatMessage = { room, senderCallsign, text: m.text.trim(), timeMs: m.timeMs };
+  const msg: TAKChannelChatMessage = {
+    channelKey,
+    senderCallsign,
+    text: m.text.trim(),
+    timeMs: m.timeMs,
+  };
   if (m.latitude != null || m.longitude != null) {
     if (
       typeof m.latitude !== 'number' ||
