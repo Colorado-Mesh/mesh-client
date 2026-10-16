@@ -17,7 +17,7 @@ import {
   saveFloodScopeOverride,
 } from '../lib/chatPanelProtocolStorage';
 import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
-import { computeChannelUnreadCounts } from '../lib/chatUnreadCounts';
+import { computeChannelUnreadCounts, totalUnreadCount } from '../lib/chatUnreadCounts';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
 import {
@@ -718,7 +718,7 @@ describe('ChatPanel accessibility', () => {
     );
 
     expect(screen.queryByText('Private hello')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Alice 1' }));
     await waitFor(() => {
       expect(screen.getByText('Private hello')).toBeInTheDocument();
     });
@@ -837,10 +837,10 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alice 1' })).toBeInTheDocument();
     await user.click(screen.getByTitle('Close DM'));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Alice 1' })).toBeInTheDocument();
     });
 
     rerender(
@@ -893,7 +893,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alice 2' })).toBeInTheDocument();
   });
 
   it('shows close button for inferred DM tabs in MeshCore', () => {
@@ -2300,6 +2300,81 @@ describe('ChatPanel unread watermarks', () => {
     },
   );
 
+  it.each(
+    (['meshtastic', 'meshcore'] as const).flatMap((protocol) =>
+      (['linux', 'darwin', 'win32'] as const).map((platform) => ({ protocol, platform })),
+    ),
+  )(
+    'keeps selected channel unread visible until read ($protocol, $platform)',
+    async ({ protocol, platform }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      const ts = Date.now() - 120_000;
+      localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ 'ch:0': ts }));
+      const messages: ChatMessage[] = Array.from({ length: 69 }, (_, index) => ({
+        sender_id: 2,
+        sender_name: 'Alice',
+        channel: 0,
+        payload: `Unread ${index}`,
+        timestamp: ts + index + 1,
+        status: 'acked',
+      }));
+      const { container, rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} isActive={false} messages={messages} />
+        </ToastProvider>,
+      );
+      const stored = () =>
+        JSON.parse(localStorage.getItem(lastReadStorageKey(protocol)) ?? '{}') as Record<
+          string,
+          number
+        >;
+      try {
+        rerender(
+          <ToastProvider>
+            <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
+          </ToastProvider>,
+        );
+        const selected = screen.getByRole('button', { name: 'General 69' });
+        expect(selected).toHaveAttribute('aria-pressed', 'true');
+        expect(selected).toHaveAttribute('data-channel-unread', '69');
+        if (platform === 'linux') {
+          hydrateAxeThemeColors(container);
+          expect(await axe(selected)).toHaveNoViolations();
+        }
+        expect(totalUnreadCount(messages, stored(), new Set([1]), protocol)).toBe(69);
+
+        const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
+        Object.defineProperties(stream, {
+          scrollHeight: { value: 2000, configurable: true },
+          clientHeight: { value: 400, configurable: true },
+          scrollTop: { value: 1000, writable: true, configurable: true },
+        });
+        hasFocus.mockReturnValue(true);
+        await act(async () => {
+          fireEvent(window, new Event('focus'));
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => {
+              resolve();
+            }),
+          );
+        });
+        expect(selected).toHaveAttribute('data-channel-unread', '69');
+        expect(stored()['ch:0']).toBe(ts);
+
+        stream.scrollTop = 1600;
+        fireEvent.scroll(stream);
+        await waitFor(() => {
+          expect(selected).toHaveAttribute('data-channel-unread', '0');
+          expect(totalUnreadCount(messages, stored(), new Set([1]), protocol)).toBe(0);
+        });
+      } finally {
+        hasFocus.mockRestore();
+        vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      }
+    },
+  );
+
   it('keeps DM tab open after unread clears when conversation was opened via DM tab', async () => {
     const user = userEvent.setup();
     const ts = Date.now();
@@ -2342,7 +2417,7 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Alice 1' }));
 
     rerender(
       <ToastProvider>
@@ -2415,11 +2490,11 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
-    const aliceTab = screen.getByRole('button', { name: 'Alice' }).parentElement;
+    expect(screen.getByRole('button', { name: 'Alice 1' })).toBeInTheDocument();
+    const aliceTab = screen.getByRole('button', { name: 'Alice 1' }).parentElement;
     expect(aliceTab?.querySelector('.bg-red-600')?.textContent).toBe('1');
 
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Alice 1' }));
     expect(screen.getByText('orphan DM')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'General' }));
 
@@ -2471,10 +2546,10 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alice 1' })).toBeInTheDocument();
     await user.click(screen.getByTitle('Close DM'));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Alice 1' })).toBeInTheDocument();
     });
   });
 
@@ -2851,7 +2926,7 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Alice 1' }));
 
     await waitFor(() => {
       const stored = JSON.parse(
@@ -2905,7 +2980,7 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Alice' }));
+    await user.click(screen.getByRole('button', { name: 'Alice 1' }));
     await waitFor(() => {
       expect(screen.getByText('first')).toBeInTheDocument();
     });
@@ -2943,21 +3018,22 @@ describe('ChatPanel unread watermarks', () => {
     });
   });
 
-  it.each(['linux', 'darwin', 'win32'] as const)(
-    'holds unread on the open DM while the window is visible but unfocused, then clears on refocus (%s)',
-    async (platform) => {
+  it.each(
+    (['meshtastic', 'meshcore', 'reticulum'] as const).flatMap((protocol) =>
+      (['linux', 'darwin', 'win32'] as const).map((platform) => ({ protocol, platform })),
+    ),
+  )(
+    'holds unread on the open DM while the window is visible but unfocused, then clears on refocus ($protocol, $platform)',
+    async ({ protocol, platform }) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const user = userEvent.setup();
       const ts = Date.now();
       const selfId = 0x12345678;
       const peerId = 2;
       // Seed the open DM as already read so any advance is attributable to the new inbound.
-      localStorage.setItem(
-        'mesh-client:lastRead:meshcore',
-        JSON.stringify({ [`dm:${peerId}`]: ts }),
-      );
+      localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ [`dm:${peerId}`]: ts }));
       const readStored = () =>
-        JSON.parse(localStorage.getItem('mesh-client:lastRead:meshcore') ?? '{}') as Record<
+        JSON.parse(localStorage.getItem(lastReadStorageKey(protocol)) ?? '{}') as Record<
           string,
           number
         >;
@@ -2990,7 +3066,8 @@ describe('ChatPanel unread watermarks', () => {
         <ToastProvider>
           <ChatPanel
             {...baseProps}
-            protocol="meshcore"
+            protocol={protocol}
+            dmOnlyChat={protocol === 'reticulum'}
             myNodeNum={selfId}
             ownNodeIds={[selfId]}
             nodes={nodes}
@@ -2999,7 +3076,9 @@ describe('ChatPanel unread watermarks', () => {
         </ToastProvider>,
       );
 
-      await user.click(screen.getByRole('button', { name: 'Alice' }));
+      if (protocol !== 'reticulum') {
+        await user.click(screen.getByRole('button', { name: 'Alice' }));
+      }
       await waitFor(() => {
         expect(screen.getByText('first')).toBeInTheDocument();
       });
@@ -3007,46 +3086,59 @@ describe('ChatPanel unread watermarks', () => {
       // Window is visible but not focused (e.g. user switched to another app).
       const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
 
-      const secondTs = ts + 5000;
-      const withSecond = [
-        firstMsg,
-        {
-          sender_id: peerId,
-          sender_name: 'Alice',
-          payload: 'second',
-          channel: -1,
-          timestamp: secondTs,
-          status: 'acked' as const,
-          to: selfId,
-        },
-      ];
-      rerender(
-        <ToastProvider>
-          <ChatPanel
-            {...baseProps}
-            protocol="meshcore"
-            myNodeNum={selfId}
-            ownNodeIds={[selfId]}
-            nodes={nodes}
-            messages={withSecond}
-          />
-        </ToastProvider>,
-      );
+      try {
+        const secondTs = ts + 5000;
+        const withSecond = [
+          firstMsg,
+          {
+            sender_id: peerId,
+            sender_name: 'Alice',
+            payload: 'second',
+            channel: -1,
+            timestamp: secondTs,
+            status: 'acked' as const,
+            to: selfId,
+          },
+        ];
+        rerender(
+          <ToastProvider>
+            <ChatPanel
+              {...baseProps}
+              protocol={protocol}
+              dmOnlyChat={protocol === 'reticulum'}
+              myNodeNum={selfId}
+              ownNodeIds={[selfId]}
+              nodes={nodes}
+              messages={withSecond}
+            />
+          </ToastProvider>,
+        );
 
-      // Give the inbound mark-read effect (rAF) a chance to run and confirm it stayed read-gated.
-      await new Promise((resolve) => setTimeout(resolve, 30));
-      expect(readStored()[`dm:${peerId}`]).toBe(ts);
+        // Give the inbound mark-read effect (rAF) a chance to run and confirm it stayed read-gated.
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        expect(readStored()[`dm:${peerId}`]).toBe(ts);
+        expect(screen.getByRole('button', { name: 'Alice 1', pressed: true })).toHaveAttribute(
+          'data-dm-unread',
+          '1',
+        );
+        expect(totalUnreadCount(withSecond, readStored(), new Set([selfId]), protocol)).toBe(1);
 
-      // Refocusing (clicking the dock/taskbar badge) clears unread on the open conversation.
-      hasFocusSpy.mockReturnValue(true);
-      fireEvent(window, new Event('focus'));
+        // Refocusing (clicking the dock/taskbar badge) clears unread on the open conversation.
+        hasFocusSpy.mockReturnValue(true);
+        fireEvent(window, new Event('focus'));
 
-      await waitFor(() => {
-        expect(readStored()[`dm:${peerId}`]).toBe(secondTs);
-      });
-
-      hasFocusSpy.mockRestore();
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+        await waitFor(() => {
+          expect(readStored()[`dm:${peerId}`]).toBe(secondTs);
+          expect(screen.getByRole('button', { name: 'Alice', pressed: true })).toHaveAttribute(
+            'data-dm-unread',
+            '0',
+          );
+          expect(totalUnreadCount(withSecond, readStored(), new Set([selfId]), protocol)).toBe(0);
+        });
+      } finally {
+        hasFocusSpy.mockRestore();
+        vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      }
     },
   );
 });
@@ -4911,7 +5003,10 @@ describe('ChatPanel reticulum dm-only chat', () => {
       expect(screen.getByText('one message')).toBeInTheDocument();
     });
     expect(screen.queryByText('many one')).not.toBeInTheDocument();
-    const lastFocusedBtn = screen.getAllByRole('button', { name: 'Last Focused' })[0];
+    const lastFocusedBtn = screen.getByRole('button', {
+      name: /^Last Focused(?: 1)?$/,
+      pressed: true,
+    });
     expect(lastFocusedBtn).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem('mesh-client:activeDm:reticulum')).toBe(String(lastFocusedId));
   });
@@ -6617,7 +6712,7 @@ describe('ChatPanel — weather view', () => {
       screen
         .getAllByRole('button', { pressed: true })
         .find((b) => b.getAttribute('data-strip-active') === 'true');
-    expect(generalTab()?.getAttribute('aria-label')).toBe('General');
+    expect(generalTab()?.getAttribute('aria-label')).toBe(channelButtonLabel('General', 1));
 
     await user.click(screen.getByRole('button', { name: /Weather view/ }));
     expect(generalTab()?.getAttribute('aria-label')).toBe(channelButtonLabel('General', 1));
@@ -6773,7 +6868,7 @@ describe('ChatPanel — starred view', () => {
     const dmPlaceholder = i18n.t('chatPanel.composePlaceholderDm', { name: 'Alice' });
     const channelPlaceholder = i18n.t('chatPanel.composePlaceholderDefault');
     const channelWithShield = 'General 1, Unread MAYDAY MECP report';
-    await user.click(await screen.findByRole('button', { name: 'Alice' }));
+    await user.click(await screen.findByRole('button', { name: 'Alice 1' }));
     expect(await screen.findByPlaceholderText(dmPlaceholder)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Request or report with MECP' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: channelWithShield })).toBeInTheDocument();
