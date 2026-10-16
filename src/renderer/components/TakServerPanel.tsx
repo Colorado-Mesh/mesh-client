@@ -11,7 +11,10 @@ import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
 import type { IdentityId } from '../lib/types';
-import TakChannelRelaySection, { TakDirectMessagesToggle } from './TakChannelRelaySection';
+import TakChannelRelaySection, {
+  TakDirectMessagesSection,
+  TakDirectMessagesToggle,
+} from './TakChannelRelaySection';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
 import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
@@ -62,6 +65,8 @@ interface Props {
   meshtasticIdentityId?: IdentityId | null;
   /** MeshCore identity whose channels may feed tracker fixes and be served to TAK. */
   meshcoreIdentityId?: IdentityId | null;
+  /** Reticulum identity whose LXMF peers TAK devices may message. */
+  reticulumIdentityId?: IdentityId | null;
 }
 
 export default function TakServerPanel({
@@ -69,6 +74,7 @@ export default function TakServerPanel({
   capabilities,
   meshtasticIdentityId,
   meshcoreIdentityId,
+  reticulumIdentityId,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
@@ -327,6 +333,13 @@ export default function TakServerPanel({
           anchorId="tak.directMessages.meshcore"
         />
       </TakChannelRelaySection>
+
+      <TakDirectMessagesSection
+        identityId={reticulumIdentityId ?? null}
+        title={t('takServerPanel.messagingTitleReticulum')}
+        description={t('takServerPanel.messagingIntroReticulum')}
+        anchorId="tak.directMessages.reticulum"
+      />
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (

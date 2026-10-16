@@ -50,7 +50,13 @@ vi.mock('@/renderer/stores/nodeStore', () => ({
   },
 }));
 
+const relayDirectMessageToTak = vi.fn();
+vi.mock('@/renderer/lib/tak/takDirectMessages', () => ({
+  relayDirectMessageToTak: (...args: unknown[]) => relayDirectMessageToTak(...args),
+}));
+
 beforeEach(() => {
+  relayDirectMessageToTak.mockReset();
   upsertReticulumDestination.mockReset();
   upsertReticulumDestination.mockResolvedValue(undefined);
   saveReticulumMessage.mockReset();
@@ -515,4 +521,49 @@ describe('Reticulum per-message radio evidence', () => {
       expect(record.rxHops).toBeUndefined();
     },
   );
+});
+
+describe('reticulumIngest TAK relay', () => {
+  const SENDER = 'aa'.repeat(16);
+  const inbound = {
+    sender_hash: SENDER,
+    sender_name: 'Field Laptop',
+    text: 'are you there?',
+    timestamp: 1_700_000_000_000,
+    message_hash: 'cc'.repeat(16),
+    direction: 'inbound',
+  };
+
+  beforeEach(() => {
+    upsertMessage.mockClear();
+    messagesState = {};
+    useBlockStore.setState({
+      byProtocol: {
+        reticulum: { identityId: 'id-rt', hashes: new Set(), entries: [], loaded: true },
+      },
+    });
+  });
+
+  it('hands a newly stored LXMF message from a peer to TAK', () => {
+    expect(ingestReticulumLxmfPayload('id-rt', inbound)).toBe(true);
+    expect(relayDirectMessageToTak).toHaveBeenCalledExactlyOnceWith('id-rt', 'reticulum', {
+      nodeId: Number.parseInt(SENDER.slice(0, 12), 16) >>> 0,
+      senderName: 'Field Laptop',
+      text: 'are you there?',
+      timestampMs: 1_700_000_000_000,
+    });
+  });
+
+  it('leaves out a message already stored, our own sends, and reactions', () => {
+    messagesState = { 'id-rt': { ['cc'.repeat(16)]: { id: 'cc'.repeat(16) } as MessageRecord } };
+    ingestReticulumLxmfPayload('id-rt', inbound);
+    messagesState = {};
+    ingestReticulumLxmfPayload('id-rt', { ...inbound, direction: 'outbound' });
+    ingestReticulumLxmfPayload('id-rt', {
+      ...inbound,
+      message_hash: 'dd'.repeat(16),
+      reaction_target: 'bb'.repeat(16),
+    });
+    expect(relayDirectMessageToTak).not.toHaveBeenCalled();
+  });
 });

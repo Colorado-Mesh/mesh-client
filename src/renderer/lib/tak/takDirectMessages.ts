@@ -2,32 +2,52 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import {
   isTakDmProtocol,
+  TAK_DIRECT_PEERS_MAX,
   TAK_DM_PROTOCOLS,
   TAK_GEOCHAT_CALLSIGN_MAX_LEN,
   TAK_GEOCHAT_TEXT_MAX_LEN,
+  type TakDirectPeer,
   type TakDmProtocol,
 } from '@/shared/tak-types';
 
 import { getConnection } from '../../stores/connectionStore';
+import type { MessageRecord } from '../../stores/messageStore';
 import { type NodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { reticulumHashForNodeId } from '../../stores/reticulumPeerStore';
 import { getTakRadio } from '../../stores/takChannelStore';
 import { getTakRelayPrefs, type TakRelayIdentityPrefs } from '../../stores/takRelayPrefsStore';
 import { isTakSinkActive } from '../../stores/takSinkStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { isMeshcoreDmExcludedHwModel } from '../meshcoreUtils';
+import { resolveReticulumChatLxmfDestination } from '../reticulum/resolveReticulumChatLxmfDest';
 import type { IdentityId, MeshNode } from '../types';
 
 /**
+ * Whether a Reticulum peer's LXMF delivery destination is known under its own node id, so a
+ * direct message to its marker goes to it and its replies come back from the same contact. A
+ * peer whose LXMF address belongs to another destination (a telephony or bare identity hash
+ * remapped) stays a plain marker.
+ */
+function hasOwnLxmfDestination(nodeId: number): boolean {
+  const hash = reticulumHashForNodeId(nodeId);
+  if (!hash) return false;
+  const resolved = resolveReticulumChatLxmfDestination(hash);
+  return resolved.status === 'ok' && !resolved.remapped;
+}
+
+/**
  * Whether this app can send `node` a direct message on the radio TAK uses for `protocol`, by
- * the rule Chat and Rooms use: any other Meshtastic node, or a MeshCore node that is not a
- * repeater, room server or sensor and whose public key this app holds. Main still checks the
- * node is a companion and that direct messages are on for the radio.
+ * the rule Chat and Rooms use: any other Meshtastic node; a MeshCore node that is not a
+ * repeater, room server or sensor and whose public key this app holds; or a Reticulum peer
+ * whose LXMF delivery destination is known. Main still checks the node is a companion and
+ * that direct messages are on for the radio.
  */
 export function canTakDirectMessage(node: MeshNode, protocol: MeshProtocol): boolean {
   if (!isTakDmProtocol(protocol) || node.node_id <= 0) return false;
   const identityId = getTakRadio(protocol);
   if (!identityId || node.node_id === getConnection(identityId)?.myNodeNum) return false;
   if (protocol === 'meshtastic') return !isMeshtasticBroadcastNodeNum(node.node_id);
+  if (protocol === 'reticulum') return hasOwnLxmfDestination(node.node_id);
   return !isMeshcoreDmExcludedHwModel(node.hw_model) && Boolean(node.public_key_hex?.trim());
 }
 
@@ -111,4 +131,38 @@ export function relayDirectMessageToTak(
     .catch((e: unknown) => {
       console.warn('[TakDirectMessages] pushDirectMessage failed ' + errLikeToLogString(e));
     });
+}
+
+/**
+ * The Reticulum peers this app has a direct conversation with, most recent first, for main: a
+ * message sent to or heard from each, whether or not TAK was running then. Only peers whose
+ * LXMF destination is known are listed, so each can be messaged from ATAK; one with no marker
+ * gets a contact at 0, 0. A peer never messaged stays out of ATAK, however many are heard.
+ */
+export function listTakConversationPeers(
+  messages: Record<string, MessageRecord> | undefined,
+  nodes: Record<number, NodeRecord | undefined> | undefined,
+  selfNodeId: number,
+): TakDirectPeer[] {
+  const lastMs = new Map<number, number>();
+  for (const m of Object.values(messages ?? {})) {
+    if (m.tapback) continue;
+    const peer = (m.from === selfNodeId ? m.to : m.from) >>> 0;
+    if (peer === 0 || peer === selfNodeId) continue;
+    lastMs.set(peer, Math.max(lastMs.get(peer) ?? 0, m.timestamp));
+  }
+  const peers: TakDirectPeer[] = [];
+  for (const [nodeId] of [...lastMs].sort((a, b) => b[1] - a[1])) {
+    if (peers.length >= TAK_DIRECT_PEERS_MAX) break;
+    if (!hasOwnLxmfDestination(nodeId)) continue;
+    const node = nodes?.[nodeId];
+    const name = node?.longName?.trim() || node?.shortName?.trim() || '';
+    const callsign =
+      name
+        .replace(/\p{Cc}+/gu, ' ')
+        .slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN)
+        .trim() || String(nodeId);
+    peers.push({ protocol: 'reticulum', nodeId, callsign });
+  }
+  return peers;
 }

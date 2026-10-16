@@ -14,6 +14,7 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKDirectMessage,
+  TakDirectPeer,
   TakDmProtocol,
   TakDmStatusUpdate,
   TAKGeochatMessage,
@@ -181,6 +182,14 @@ type HeldChat =
       heldAtMs: number;
     };
 
+/** A peer this app already has a direct conversation with. */
+interface ConversationPeer {
+  uid: string;
+  protocol: TakDmProtocol;
+  nodeId: number;
+  callsign: string;
+}
+
 /** A companion a direct message has passed with, either way, in the last day. */
 interface DirectContact {
   uid: string;
@@ -233,6 +242,11 @@ export class TakServerManager extends EventEmitter {
   private lastWriters = new Map<string, string>();
   /** Direct messages from TAK clients awaiting their outcome, by dmRef, oldest first. */
   private pendingDms = new Map<string, PendingDm>();
+  /**
+   * Peers the renderer already has a direct conversation with, by uid. Each is messageable and,
+   * while it has no marker, has a contact at 0, 0.
+   */
+  private conversationPeers = new Map<string, ConversationPeer>();
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
@@ -493,7 +507,17 @@ export class TakServerManager extends EventEmitter {
     this.heldChat = this.heldChat.filter(
       (h) => h.kind === 'channel' || this.directContacts.has(h.uid),
     );
+    const previous = this.dmProtocols;
     this.dmProtocols = next;
+    for (const peer of this.conversationPeers.values()) {
+      if (next.has(peer.protocol) === previous.has(peer.protocol)) continue;
+      if (this.hasFreshMarker(peer.protocol, peer.nodeId, now)) continue;
+      this.writeToClients(
+        next.has(peer.protocol)
+          ? this.conversationPeerCot(peer, now)
+          : cotDeleteEvent(peer.uid, now),
+      );
+    }
     const cutoff = now - COT_STALE_MS;
     for (const node of this.nodeCache.values()) {
       if (node.cachedAtMs < cutoff || !changed.includes(node.protocol)) continue;
@@ -501,6 +525,40 @@ export class TakServerManager extends EventEmitter {
       if (cot) this.writeToClients(cot);
     }
     this.scheduleChatRoomAnnouncements();
+  }
+
+  /**
+   * Replace the peers the renderer has a direct conversation with. A peer with no marker gets
+   * its contact at 0, 0 at once, while direct messages are on for its radio; one dropped from
+   * the list loses it, unless a direct message passed with it in the last day.
+   */
+  setDirectPeers(peers: TakDirectPeer[]): void {
+    const now = Date.now();
+    const next = new Map<string, ConversationPeer>();
+    for (const peer of peers) {
+      const uid = cotUidFor({ node_id: peer.nodeId }, peer.protocol);
+      next.set(uid, { uid, ...peer });
+    }
+    const shown = (peer: ConversationPeer): boolean =>
+      this.dmProtocols.has(peer.protocol) &&
+      !this.directContacts.has(peer.uid) &&
+      !this.hasFreshMarker(peer.protocol, peer.nodeId, now);
+    for (const old of this.conversationPeers.values()) {
+      if (!next.has(old.uid) && shown(old)) this.writeToClients(cotDeleteEvent(old.uid, now));
+    }
+    for (const peer of next.values()) {
+      const old = this.conversationPeers.get(peer.uid);
+      if (old?.callsign === peer.callsign || !shown(peer)) continue;
+      this.writeToClients(this.conversationPeerCot(peer, now));
+    }
+    this.conversationPeers = next;
+    this.scheduleChatRoomAnnouncements();
+  }
+
+  /** A conversation peer's contact at 0, 0, under the name its marker would have. */
+  private conversationPeerCot(peer: ConversationPeer, nowMs: number): string {
+    const callsign = this.directCallsign(peer.protocol, peer.nodeId, peer.callsign);
+    return buildDirectContactCot({ uid: peer.uid, callsign }, nowMs, nowMs);
   }
 
   /** Keep a message for a client yet to identify itself, dropping the oldest past the cap. */
@@ -558,7 +616,10 @@ export class TakServerManager extends EventEmitter {
     if (node.uid !== undefined) return false;
     if (!isTakDmProtocol(node.protocol) || !this.dmProtocols.has(node.protocol)) return false;
     if (advertisedNodeKind(node, node.protocol) !== 'companion') return false;
-    return node.chatReachable === true || this.directContacts.has(cotUidFor(node, node.protocol));
+    const uid = cotUidFor(node, node.protocol);
+    return (
+      node.chatReachable === true || this.directContacts.has(uid) || this.conversationPeers.has(uid)
+    );
   }
 
   /** Whether local clients show the node's own marker now, standing in for its contact. */
@@ -675,7 +736,8 @@ export class TakServerManager extends EventEmitter {
    * expire in ATAK. Runs while there is any contact to announce.
    */
   private scheduleChatRoomAnnouncements(): void {
-    const needed = this.chatChannels.size > 0 || this.directContacts.size > 0;
+    const needed =
+      this.chatChannels.size > 0 || this.directContacts.size > 0 || this.conversationPeers.size > 0;
     if (needed === (this.chatRoomAnnounceTimer !== null)) return;
     if (this.chatRoomAnnounceTimer) {
       clearInterval(this.chatRoomAnnounceTimer);
@@ -706,6 +768,12 @@ export class TakServerManager extends EventEmitter {
       }
       if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
         send(buildDirectContactCot(contact, contact.lastDmMs, now));
+      }
+    }
+    for (const peer of this.conversationPeers.values()) {
+      if (!this.dmProtocols.has(peer.protocol) || this.directContacts.has(peer.uid)) continue;
+      if (!this.hasFreshMarker(peer.protocol, peer.nodeId, now)) {
+        send(this.conversationPeerCot(peer, now));
       }
     }
   }
@@ -1089,7 +1157,8 @@ export class TakServerManager extends EventEmitter {
       return;
     }
     const node = this.cachedNodeFor(protocol, nodeId);
-    if (!this.directContacts.has(uid) && !(node && this.isChatReachable(node))) {
+    const known = this.directContacts.has(uid) || this.conversationPeers.has(uid);
+    if (!known && !(node && this.isChatReachable(node))) {
       note(NOT_REACHABLE_NOTE);
       return;
     }

@@ -281,3 +281,32 @@ export function TakDirectMessagesToggle({ identityId, anchorId }: DirectMessages
     </div>
   );
 }
+
+interface DirectMessagesSectionProps {
+  identityId: IdentityId | null;
+  title: string;
+  description: string;
+  /** Settings search anchor for the switch. */
+  anchorId: string;
+}
+
+/**
+ * Messaging in ATAK for a radio with no channels to serve (Reticulum): its direct message
+ * switch alone. Only shown while a TAK sink is up.
+ */
+export function TakDirectMessagesSection({
+  identityId,
+  title,
+  description,
+  anchorId,
+}: DirectMessagesSectionProps) {
+  const sinkActive = useTakSinkStore((s) => s.active);
+  if (!sinkActive || !identityId) return null;
+  return (
+    <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
+      <h3 className="text-ink-300 text-sm font-medium">{title}</h3>
+      <p className="text-ink-400 text-xs">{description}</p>
+      <TakDirectMessagesToggle identityId={identityId} anchorId={anchorId} />
+    </div>
+  );
+}

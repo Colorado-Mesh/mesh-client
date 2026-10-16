@@ -23,6 +23,7 @@ import {
   reticulumMessageHashesEqual,
 } from '@/renderer/lib/reticulum/reticulumMessageHash';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
+import { relayDirectMessageToTak } from '@/renderer/lib/tak/takDirectMessages';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
@@ -214,10 +215,22 @@ export function ingestReticulumLxmfPayload(
   }
   const record = payloadToMessageRecord(p, identityId);
   if (!record) return false;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-  const existing = useMessageStore.getState().messages[identityId]?.[record.id];
+  // Either level can miss: no messages yet for the identity, or none with this id.
+  const bucket = useMessageStore.getState().messages[identityId] as
+    Record<string, MessageRecord | undefined> | undefined;
+  const existing = bucket?.[record.id];
   const merged = mergeReticulumIngestRecord(existing, record, p, ctx);
   upsertMessage(identityId, merged);
+  // A newly stored LXMF message from a peer goes on to TAK; status updates and our own sends
+  // come through here too and are left out.
+  if (!existing && p.direction === 'inbound' && !record.tapback) {
+    relayDirectMessageToTak(identityId, 'reticulum', {
+      nodeId: record.from,
+      senderName: record.senderName ?? '',
+      text: record.payload,
+      timestampMs: record.timestamp,
+    });
+  }
   return true;
 }
 
