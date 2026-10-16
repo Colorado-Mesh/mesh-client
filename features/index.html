@@ -2562,7 +2562,7 @@
 <li><strong>Data package generator</strong>: export ATAK-compatible (truststore.p12, client.p12, connection.pref) for direct import on TAK devices — connect host is your LAN IP and must match the server cert SAN; re-generate the package after certificate regeneration or a LAN IP change</li>
 <li><strong>Channel chat bridge</strong>: under <strong>channels to TAK</strong>, give a mesh channel a GeoChat room to mirror what is heard on it into that TAK chat room. Tick <strong>TAK can send</strong> for the channel and messages that devices connected to the local TAK server post in the room are transmitted on that channel from this radio, prefixed with the sender's callsign (<code>[VIPER] on scene</code>). Sending is off by default, cut to fit one mesh message, and limited to 10 messages a minute per device; chat from one connected device is also passed to the others</li>
 <li><strong>Unit filters</strong>: under <strong>Relayed unit styles</strong>, restyle relayed nodes by name, node type (companions and clients, repeaters and routers, room servers, sensors, trackers), protocol, or a combination, choosing the TAK unit type, team color, and team role. A filter with no name pattern applies to every node of its type or protocol; the first enabled filter that matches wins</li>
-<li><strong>Relay icon</strong>: under <strong>Relayed unit styles</strong>, set an ATAK icon set path (<code>&lt;set UID&gt;/&lt;group&gt;/&lt;file&gt;</code>, for example a repeater symbol) and repeaters, routers, room servers, and interfaces that no filter matches are sent with that icon. Each TAK device needs the same icon set installed; a device without it draws the standard installation symbol</li>
+<li><strong>Repeater and room server icons</strong>: under <strong>Relayed unit styles</strong>, give repeaters (MeshCore repeaters, Meshtastic routers, Reticulum interfaces) and room servers each an icon from an ATAK icon set, as a path (<code>&lt;set UID&gt;/&lt;group&gt;/&lt;file&gt;</code>) or from the GeoOps WildFire presets that MeshCore TAK Bridge offers (Repeater, Repeater Mobile Relay, Ranger Station and others). The icon follows the node type, so a filter can change a room server's team and role and it keeps its icon. Leave a field empty for the standard symbol. Each TAK device needs the same icon set installed; a device without it draws the standard symbol</li>
 <li>Auto-start option (off by default); status indicator in header when running</li>
 <li><strong>ATAK Plugin Messages</strong> (Meshtastic): incoming ATAK plugin packets from mesh nodes are displayed in the TAK tab with sender node and packet counts</li>
 </ul>
@@ -2866,7 +2866,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 15, 2026 21:05:59 UTC">October 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 16, 2026 02:53:38 UTC">October 16, 2026</span>
   </span>
 
     
