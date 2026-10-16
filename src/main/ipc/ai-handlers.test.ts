@@ -175,7 +175,7 @@ describe('AI IPC lifecycle and opt-in', () => {
       verify.mockRestore();
     }
   });
-  it.each(['removed-model', 'qwen2.5-0.5b-instruct-q4'])(
+  it.each(['removed-model', 'qwen2.5-0.5b-instruct-q4', 'smollm2-1.7b-instruct-q4'])(
     'reports removed model %s as not ready without verifying an unknown pack',
     async (localModelId) => {
       settings.set('aiEnabled', '1');
@@ -266,3 +266,63 @@ describe('AI IPC lifecycle and opt-in', () => {
     expect(send.mock.calls.filter(([channel]) => channel === 'ai:summaryDone')).toHaveLength(0);
   });
 });
+
+it.each(['linux', 'darwin', 'win32'])(
+  'keeps endpoint streaming alive beyond the old minute on %s',
+  async () => {
+    vi.useFakeTimers();
+    const deadline = vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+      const controller = new AbortController();
+      setTimeout(() => {
+        controller.abort(new DOMException('Timed out', 'TimeoutError'));
+      }, ms);
+      return controller.signal;
+    });
+    try {
+      await handler('ai:setEnabled')({}, true);
+      expect(
+        await handler('ai:setConfig')(
+          {},
+          {
+            engine: 'local',
+            wireFormat: 'openai',
+            model: 'test',
+            baseUrl: 'http://127.0.0.1:1234',
+            timeoutSeconds: 90,
+          },
+        ),
+      ).toMatchObject({ timeoutSeconds: 90 });
+      let finish!: () => void;
+      vi.mocked(net.fetch).mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              finish = () => {
+                controller.enqueue(
+                  new TextEncoder().encode(
+                    'data: {"choices":[{"delta":{"content":"summary"}}]}\n\ndata: [DONE]\n\n',
+                  ),
+                );
+                controller.close();
+              };
+            },
+          }),
+        ),
+      );
+      expect(await handler('ai:summarize')({}, request)).toMatchObject({ ok: true });
+      await vi.advanceTimersByTimeAsync(60001);
+      expect(send.mock.calls.filter(([channel]) => channel === 'ai:summaryError')).toHaveLength(0);
+      finish();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(send).toHaveBeenCalledWith(
+        'ai:summaryDone',
+        expect.objectContaining({ text: 'summary' }),
+      );
+      expect(deadline).toHaveBeenCalledWith(90000);
+    } finally {
+      deadline.mockRestore();
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  },
+);

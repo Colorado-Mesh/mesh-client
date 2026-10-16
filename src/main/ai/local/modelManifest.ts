@@ -1,5 +1,3 @@
-import type { AiModelInfo } from '../../../shared/ai-types';
-
 export type AiLocalAsset = {
   file: string;
   size: number;
@@ -9,7 +7,6 @@ export interface AiLocalModel {
   id: string;
   name: string;
   paramsLabel: string;
-  qualityNote: AiModelInfo['qualityNote'];
   license: string;
   assets: AiLocalAsset[];
 }
@@ -19,7 +16,6 @@ export const AI_LOCAL_MODELS: AiLocalModel[] = [
     id: 'llama3.2-1b-instruct-q4',
     name: 'Llama 3.2 1B Instruct Q4_K_M',
     paramsLabel: '1B',
-    qualityNote: 'compact',
     license: 'Llama 3.2 Community License',
     assets: [
       {
@@ -48,7 +44,6 @@ export const AI_LOCAL_MODELS: AiLocalModel[] = [
     id: 'qwen2.5-1.5b-instruct-q4',
     name: 'Qwen2.5 1.5B Instruct Q4_K_M',
     paramsLabel: '1.5B',
-    qualityNote: 'multilingual',
     license: 'Apache-2.0',
     assets: [
       {
@@ -56,22 +51,6 @@ export const AI_LOCAL_MODELS: AiLocalModel[] = [
         url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf',
         size: 1117320736,
         sha256: '6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e',
-      },
-    ],
-  },
-  {
-    id: 'smollm2-1.7b-instruct-q4',
-    name: 'SmolLM2 1.7B Instruct Q4_K_M',
-    paramsLabel: '1.7B',
-    qualityNote: 'english',
-    license: 'Apache-2.0',
-    assets: [
-      {
-        file: 'SmolLM2-1.7B-Instruct-Q4_K_M.gguf',
-        // eslint-disable-next-line no-secrets/no-secrets -- public, immutable model asset URL
-        url: 'https://huggingface.co/bartowski/SmolLM2-1.7B-Instruct-GGUF/resolve/1f03464768bfcc0319fc50da8ff5fb20b6417ba2/SmolLM2-1.7B-Instruct-Q4_K_M.gguf',
-        size: 1055609824,
-        sha256: '77665ea4815999596525c636fbeb56ba8b080b46ae85efef4f0d986a139834d7',
       },
     ],
   },

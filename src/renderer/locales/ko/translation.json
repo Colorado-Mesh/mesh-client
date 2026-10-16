@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} 메시지 수집 완료",
     "offlineSummaryHint": "다운로드는 인터넷을 한 번 사용합니다. 요약은 이 장치에서 오프라인으로 실행됩니다. 다운로드한 모델에서 대규모 대화는 몇 분 정도 걸릴 수 있습니다. 더 큰 모델에는 더 많은 메모리가 필요합니다.",
     "countSnapshot": "개수는 이 요약 스냅샷을 설명합니다. 읽지 않은 라이브 배지는 다를 수 있습니다.",
-    "compactModelGuidance": "다운로드 및 메모리 사용량 감소. 세부 정보를 놓칠 수 있습니다. 원래 메시지를 확인하세요.",
-    "englishModelGuidance": "영어에 중점을 둡니다. 세부 정보를 잘못 읽거나 되돌릴 수 있습니다. 원래 메시지를 확인합니다.",
-    "multilingualModelGuidance": "다국어 옵션. 더 큰 다운로드 및 메모리 사용. 원본 메시지를 확인하십시오."
+    "timeoutSeconds": "요약 시간 초과 (초)",
+    "timeoutHint": "모델 로딩을 포함하여 요약을 위한 최대 시간. 30 ~ 1800초를 선택하세요. 언제든지 취소하실 수 있습니다.",
+    "insecureKeyWarning": "이 HTTP 엔드포인트는 전송 암호화 없이 API 키와 메시지를 전송합니다. 네트워크의 서버에 HTTPS를 사용하십시오."
   }
 }

@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} gesammelte Nachrichten",
     "offlineSummaryHint": "Downloads nutzen das Internet einmalig. Zusammenfassungen werden auf diesem Gerät offline ausgeführt. Große Gespräche können mit heruntergeladenen Modellen einige Minuten dauern. Größere Modelle benötigen mehr Speicher.",
     "countSnapshot": "Zählungen beschreiben diesen zusammenfassenden Schnappschuss; ungelesene Live-Abzeichen können abweichen.",
-    "compactModelGuidance": "Geringerer Download- und Speicherverbrauch. Kann Details verpassen; überprüfen Sie die ursprünglichen Nachrichten.",
-    "englishModelGuidance": "Englisch-fokussiert. Kann Details falsch lesen oder umkehren; überprüfen Sie die ursprünglichen Nachrichten.",
-    "multilingualModelGuidance": "Mehrsprachige Option. Größere Download- und Speichernutzung; Überprüfen Sie die ursprünglichen Nachrichten."
+    "timeoutSeconds": "Zusammenfassende Zeitüberschreitung (Sekunden)",
+    "timeoutHint": "Maximale Zeit für eine Zusammenfassung, einschließlich Laden des Modells. Wählen Sie 30-1800 Sekunden. Sie können jederzeit stornieren.",
+    "insecureKeyWarning": "Dieser HTTP -Endpunkt sendet deinen API-Schlüssel und Nachrichten ohne Transportverschlüsselung. Verwenden Sie https für einen Server in Ihrem Netzwerk."
   }
 }

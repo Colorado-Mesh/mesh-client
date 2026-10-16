@@ -7760,8 +7760,8 @@
     "providerCollected_few": "{{provider}} · {{model}} · zebrano {{count}} wiadomości",
     "providerCollected_many": "{{provider}} · {{model}} · zebrano {{count}} wiadomości",
     "countSnapshot": "Liczniki opisują tę migawkę podsumowania; znaczki nieprzeczytane na żywo mogą się różnić.",
-    "compactModelGuidance": "Mniejsze pobieranie i wykorzystanie pamięci. Może przegapić szczegóły; sprawdź oryginalne wiadomości.",
-    "englishModelGuidance": "Skupiony na języku angielskim. Może błędnie odczytać lub odwrócić szczegóły; zweryfikuj oryginalne wiadomości.",
-    "multilingualModelGuidance": "Opcja wielojęzyczna. Większe pobieranie i wykorzystanie pamięci; sprawdź oryginalne wiadomości."
+    "timeoutSeconds": "Limit czasu podsumowania (sekundy)",
+    "timeoutHint": "Maksymalny czas na podsumowanie, w tym załadowanie modelu. Wybierz 30–1800 sekund. Możesz anulować w dowolnym momencie.",
+    "insecureKeyWarning": "Ten punkt końcowy HTTP wysyła klucz API i wiadomości bez szyfrowania transportowego. Użyj HTTPS dla serwera w swojej sieci."
   }
 }

@@ -13,10 +13,10 @@ import {
 import {
   AI_MAX_OUTPUT_TOKENS,
   AI_MAX_RESPONSE_BYTES,
-  AI_REQUEST_TIMEOUT_MS,
   type AiActionResult,
   type AiOsAiStatus,
   type AiProviderStatus,
+  aiSummaryTimeoutMs,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
 import { AiClient } from '../ai/aiClient';
@@ -105,13 +105,14 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       baseUrl: c.baseUrl,
       model: c.model,
       hasApiKey: Boolean(c.encryptedKey),
+      timeoutSeconds: aiSummaryTimeoutMs(c.engine, c.timeoutSeconds) / MS_PER_SECOND,
       allowRemote: c.allowRemote,
       isRemote: (() => {
         const policy = classifyEndpoint(c.baseUrl);
         return policy.ok && policy.cls === 'remote';
       })(),
       localEngine: {
-        ready: enabled() && !!selectedModel && (await packs.verify(selectedModel)),
+        ready: enabled() && !!selectedModel && (await packs.verify(selectedModel, true)),
         modelId: selectedModel,
         downloading: packs.progress().length > 0,
       },
@@ -341,7 +342,10 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         },
       };
     }
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS)]);
+    const signal = AbortSignal.any([
+      controller.signal,
+      AbortSignal.timeout(aiSummaryTimeoutMs(c.engine, c.timeoutSeconds)),
+    ]);
     void (async () => {
       let text = '';
       let pending = '';
@@ -373,6 +377,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
             },
             signal,
             delta,
+            aiSummaryTimeoutMs(c.engine, c.timeoutSeconds),
           );
         else {
           if (!c.wireFormat) throw new AiFailure('notConfigured');

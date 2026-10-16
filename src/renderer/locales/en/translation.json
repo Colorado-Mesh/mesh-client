@@ -7643,8 +7643,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} messages collected",
     "countSnapshot": "Counts describe this summary snapshot; live unread badges may differ.",
     "offlineSummaryHint": "Downloads use the internet once. Summaries run offline on this device. Large conversations can take a few minutes with downloaded models. Larger models need more memory.",
-    "compactModelGuidance": "Smaller download and memory use. Can miss details; check the original messages.",
-    "englishModelGuidance": "English-focused. Can misread or reverse details; verify the original messages.",
-    "multilingualModelGuidance": "Multilingual option. Larger download and memory use; check the original messages."
+    "timeoutSeconds": "Summary timeout (seconds)",
+    "timeoutHint": "Maximum time for a summary, including model loading. Choose 30–1800 seconds. You can cancel at any time.",
+    "insecureKeyWarning": "This HTTP endpoint sends your API key and messages without transport encryption. Use HTTPS for a server on your network."
   }
 }

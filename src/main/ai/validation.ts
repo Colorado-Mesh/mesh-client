@@ -1,6 +1,8 @@
 import {
   AI_MAX_MESSAGES,
+  AI_MAX_TIMEOUT_SECONDS,
   AI_MAX_TOTAL_CHARS,
+  AI_MIN_TIMEOUT_SECONDS,
   type AiEndpointConfig,
   type AiSummaryRequest,
 } from '../../shared/ai-types';
@@ -26,6 +28,11 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
       throw new Error('Invalid AI endpoint configuration');
   }
   if (
+    (value.timeoutSeconds !== undefined &&
+      (typeof value.timeoutSeconds !== 'number' ||
+        !Number.isInteger(value.timeoutSeconds) ||
+        value.timeoutSeconds < AI_MIN_TIMEOUT_SECONDS ||
+        value.timeoutSeconds > AI_MAX_TIMEOUT_SECONDS)) ||
     (value.apiKey !== undefined && !text(value.apiKey, 4096)) ||
     (value.allowRemote !== undefined && typeof value.allowRemote !== 'boolean') ||
     (value.localModelId != null && !text(value.localModelId, 128))
@@ -34,6 +41,7 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
   const endpoint = value.engine === 'local' || value.engine === 'remote';
   return {
     engine: value.engine as AiEndpointConfig['engine'],
+    ...(value.timeoutSeconds !== undefined ? { timeoutSeconds: value.timeoutSeconds } : {}),
     ...(endpoint
       ? {
           wireFormat: value.wireFormat as AiEndpointConfig['wireFormat'],

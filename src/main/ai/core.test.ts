@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await -- deterministic async fetch/runtime test doubles */
 import { describe, expect, it, vi } from 'vitest';
 
-import { AI_MAX_RESPONSE_BYTES } from '../../shared/ai-types';
+import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '../../shared/ai-types';
 import { buildRequest, parseDelta } from './adapters';
 import { AiClient } from './aiClient';
 import { AiConfig } from './config';
@@ -403,4 +403,29 @@ it('reports an elapsed timeout even when the native helper rejects as cancelled'
   const controller = new AbortController();
   controller.abort(new DOMException('deadline', 'TimeoutError'));
   expect(aiErrorReason(new AiFailure('cancelled'), controller.signal)).toBe('timeout');
+});
+
+it('validates and preserves a configurable summary deadline with safe legacy defaults', () => {
+  let stored: string | undefined;
+  const config = new AiConfig({
+    read: () => stored,
+    write: (value) => {
+      stored = value;
+    },
+    safeStorage: {
+      isEncryptionAvailable: () => true,
+      encryptString: vi.fn(),
+      decryptString: vi.fn(),
+    },
+  });
+  expect(aiSummaryTimeoutMs('bundled')).toBe(300000);
+  expect(aiSummaryTimeoutMs('local')).toBe(60000);
+  for (const timeoutSeconds of [0, 29, 1801, NaN, Infinity, 30.5, '300']) {
+    expect(() => validateAiConfig({ engine: 'bundled', timeoutSeconds })).toThrow();
+  }
+  config.write(validateAiConfig({ engine: 'bundled', timeoutSeconds: 900 }));
+  config.write({ engine: 'bundled', localModelId: 'model' });
+  expect(config.read().timeoutSeconds).toBe(900);
+  expect(aiSummaryTimeoutMs('bundled', config.read().timeoutSeconds)).toBe(900000);
+  expect(aiSummaryTimeoutMs('os', -1)).toBe(60000);
 });

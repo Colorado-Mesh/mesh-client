@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} toplanan mesajlar",
     "offlineSummaryHint": "İndirmeler interneti bir kez kullanır. Özetler bu cihazda çevrimdışı çalışır. İndirilen modellerle büyük konuşmalar birkaç dakika sürebilir. Daha büyük modeller daha fazla belleğe ihtiyaç duyar.",
     "countSnapshot": "Sayımlar bu özet anlık görüntüsünü açıklar; canlı okunmamış rozetler farklı olabilir.",
-    "compactModelGuidance": "Daha küçük indirme ve bellek kullanımı. Ayrıntıları kaçırabilir; orijinal mesajları kontrol edin.",
-    "englishModelGuidance": "İngilizce odaklı. Ayrıntıları yanlış okuyabilir veya tersine çevirebilir; orijinal mesajları doğrulayabilir.",
-    "multilingualModelGuidance": "Çok dilli seçenek. Daha büyük indirme ve bellek kullanımı; orijinal mesajları kontrol edin."
+    "timeoutSeconds": "Özet zaman aşımı (saniye)",
+    "timeoutHint": "Model yüklemesi de dahil olmak üzere bir özet için maksimum süre. 30 -1800 saniye seçin. İstediğiniz zaman iptal edebilirsiniz.",
+    "insecureKeyWarning": "Bu HTTP uç noktası, API anahtarınızı ve mesajlarınızı taşıma şifrelemesi olmadan gönderir. Ağınızdaki bir sunucu için https kullanın."
   }
 }

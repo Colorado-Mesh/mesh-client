@@ -19,6 +19,7 @@ const ready: AiProviderStatus = {
   baseUrl: 'http://127.0.0.1:1234',
   model: 'test',
   hasApiKey: false,
+  timeoutSeconds: 60,
   allowRemote: false,
   isRemote: false,
   localEngine: { ready: false, modelId: null, downloading: false },

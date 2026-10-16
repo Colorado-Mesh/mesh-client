@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} mensajes recopilados",
     "offlineSummaryHint": "Las descargas usan Internet una vez. Los resúmenes se ejecutan sin conexión en este dispositivo. Las conversaciones grandes pueden tardar unos minutos con los modelos descargados. Los modelos más grandes necesitan más memoria.",
     "countSnapshot": "Los recuentos describen esta instantánea de resumen; las insignias en vivo no leídas pueden diferir.",
-    "compactModelGuidance": "Menor descarga y uso de memoria. Puede pasar por alto los detalles; revise los mensajes originales.",
-    "englishModelGuidance": "Enfocado al inglés. Puede leer mal o revertir detalles; verificar los mensajes originales.",
-    "multilingualModelGuidance": "Opción multilingüe. Mayor descarga y uso de memoria; compruebe los mensajes originales."
+    "timeoutSeconds": "Tiempo de espera de resumen (segundos)",
+    "timeoutHint": "Tiempo máximo para un resumen, incluida la carga del modelo. Elige 30–1800 segundos. Puedes cancelar en cualquier momento.",
+    "insecureKeyWarning": "Este endpoint HTTP envía tu clave API y mensajes sin cifrado de transporte. Utilice HTTPS para un servidor de su red."
   }
 }

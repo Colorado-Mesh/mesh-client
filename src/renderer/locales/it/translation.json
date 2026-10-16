@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} messaggi raccolti",
     "offlineSummaryHint": "I download utilizzano Internet una sola volta. I riepiloghi vengono eseguiti offline su questo dispositivo. Le conversazioni di grandi dimensioni possono richiedere alcuni minuti con i modelli scaricati. I modelli più grandi hanno bisogno di più memoria.",
     "countSnapshot": "I conteggi descrivono questa istantanea di riepilogo; i badge live non letti possono differire.",
-    "compactModelGuidance": "Download e utilizzo della memoria ridotti. Può perdere i dettagli; controlla i messaggi originali.",
-    "englishModelGuidance": "Orientata all'inglese. Può fraintendere o invertire i dettagli; verifica i messaggi originali.",
-    "multilingualModelGuidance": "Opzione multilingue. Download e utilizzo della memoria più grandi; controllare i messaggi originali."
+    "timeoutSeconds": "Timeout riepilogo (secondi)",
+    "timeoutHint": "Tempo massimo per un riepilogo, incluso il caricamento del modello. Scegli 30–1800 secondi. Puoi annullare in qualsiasi momento.",
+    "insecureKeyWarning": "Questo endpoint HTTP invia la chiave API e i messaggi senza crittografia di trasporto. Usa HTTPS per un server sulla tua rete."
   }
 }

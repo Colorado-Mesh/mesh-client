@@ -12,6 +12,7 @@ interface InstallJob {
   abort: AbortController;
   promise: Promise<AiActionResult>;
   progress: AiModelProgress;
+  lastEmitted?: { state: AiModelProgress['state']; at: number };
 }
 export interface PackManagerDependencies {
   directory: () => string;
@@ -47,7 +48,7 @@ export class AiModelPackManager {
     return path.join(this.deps.directory(), id, file);
   }
 
-  async verify(id: string): Promise<boolean> {
+  async verify(id: string, advisory = false): Promise<boolean> {
     const pack = this.pack(id);
     try {
       const dir = await fs.lstat(path.join(this.deps.directory(), id));
@@ -63,10 +64,32 @@ export class AiModelPackManager {
       )
         return false;
       const signature = stats
-        .map((stat) => `${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`)
+        .map(
+          (stat, index) =>
+            `${pack.assets[index].sha256}:${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`,
+        )
         .join('|');
       const cached = this.verified.get(id);
       if (cached?.signature === signature) return cached.valid;
+      // Disk metadata is advisory for the catalog only; serving always verifies SHA-256.
+      if (advisory) {
+        try {
+          const recordPath = path.join(this.deps.directory(), id, '.verified.json');
+          const stat = await fs.lstat(recordPath);
+          if (stat.isFile() && !stat.isSymbolicLink() && stat.size < 16384) {
+            const record: unknown = JSON.parse(await fs.readFile(recordPath, 'utf8'));
+            if (
+              record &&
+              typeof record === 'object' &&
+              'signature' in record &&
+              record.signature === signature
+            )
+              return true;
+          }
+        } catch {
+          // catch-no-log-ok missing/corrupt advisory metadata falls back to hashing
+        }
+      }
       let valid = true;
       for (const asset of pack.assets) {
         const digest = createHash('sha256');
@@ -78,6 +101,26 @@ export class AiModelPackManager {
         }
       }
       this.verified.set(id, { signature, valid });
+      if (valid) {
+        let temporary: string | undefined;
+        try {
+          temporary = await fs.mkdtemp(path.join(this.deps.directory(), id, '.verify-'));
+          await fs.writeFile(path.join(temporary, 'record'), JSON.stringify({ signature }), {
+            mode: 0o600,
+          });
+          await fs.rename(
+            path.join(temporary, 'record'),
+            path.join(this.deps.directory(), id, '.verified.json'),
+          );
+        } catch {
+          // catch-no-log-ok advisory cache failure does not invalidate a verified model
+        } finally {
+          if (temporary)
+            await fs.rm(temporary, { recursive: true, force: true }).catch(() => {
+              // catch-no-log-ok advisory cache cleanup cannot affect model integrity
+            });
+        }
+      }
       return valid;
     } catch (error) {
       // catch-no-log-ok absent/unreadable packs are reported as not installed, never loaded
@@ -92,11 +135,10 @@ export class AiModelPackManager {
         id: pack.id,
         name: pack.name,
         paramsLabel: pack.paramsLabel,
-        qualityNote: pack.qualityNote,
         license: pack.license,
         downloadBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
         diskBytes: pack.assets.reduce((total, asset) => total + asset.size, 0),
-        installed: await this.verify(pack.id),
+        installed: await this.verify(pack.id, true),
       })),
     );
   }
@@ -172,6 +214,9 @@ export class AiModelPackManager {
   }
 
   private emit(job: InstallJob): void {
+    const now = Date.now();
+    if (job.lastEmitted?.state === job.progress.state && now - job.lastEmitted.at < 100) return;
+    job.lastEmitted = { state: job.progress.state, at: now };
     this.deps.onProgress({ ...job.progress });
   }
 

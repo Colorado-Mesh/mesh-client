@@ -429,6 +429,12 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['AI', 'summary', 'catch up', 'Ollama', 'offline', 'model'],
   },
   {
+    id: 'app.aiProvider.timeout',
+    slot: 'App',
+    labelKey: 'aiSummary.timeoutSeconds',
+    keywords: ['AI', 'summary', 'timeout', 'seconds', 'deadline'],
+  },
+  {
     id: 'app.aiProvider.format',
     slot: 'App',
     labelKey: 'aiSummary.format',
@@ -686,9 +692,6 @@ export const appSurface: SettingsSearchSurface = {
     { path: 'src/renderer/components/AppTranslationSection.tsx', sweepAllKeys: true },
   ],
   exempt: {
-    'aiSummary.compactModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
-    'aiSummary.englishModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
-    'aiSummary.multilingualModelGuidance': 'Catalog guidance; its model catalog setting is indexed',
     'aiSummary.bundledEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.cancel': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.chooseEngine': 'AI setting help, option, status or child action; parent is indexed',
@@ -710,6 +713,8 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.select': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.selected': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.test': 'AI setting help, option, status or child action; parent is indexed',
+    'aiSummary.timeoutHint': 'AI timeout help; its setting is indexed',
+    'aiSummary.insecureKeyWarning': 'AI endpoint help; its setting is indexed',
     'aiSummary.urlHint': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.useModel': 'AI setting help, option, status or child action; parent is indexed',
 

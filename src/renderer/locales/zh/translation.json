@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}}已收集消息",
     "offlineSummaryHint": "下载使用互联网一次。摘要在此设备上离线运行。使用下载的模型进行大型对话可能需要几分钟时间。较大的型号需要更多内存。",
     "countSnapshot": "计数描述此摘要快照；实时未读徽章可能有所不同。",
-    "compactModelGuidance": "更小的下载和内存使用。可能会遗漏详细信息；请查看原始消息。",
-    "englishModelGuidance": "以英文为重点。可以误读或反转细节；验证原始消息。",
-    "multilingualModelGuidance": "多语言选项。更大的下载和内存使用;检查原始消息。"
+    "timeoutSeconds": "摘要超时（秒）",
+    "timeoutHint": "摘要的最长时间，包括模型加载。选择30-1800秒，可随时取消。",
+    "insecureKeyWarning": "此HTTP端点在没有传输加密的情况下发送您的API密钥和消息。对网络上的服务器使用HTTPS。"
   }
 }

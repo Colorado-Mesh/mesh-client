@@ -14,6 +14,12 @@ import type {
   AiModelProgress,
   AiWireFormat,
 } from '@/shared/ai-types';
+import {
+  AI_MAX_TIMEOUT_SECONDS,
+  AI_MIN_TIMEOUT_SECONDS,
+  aiSummaryTimeoutMs,
+} from '@/shared/ai-types';
+import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { Button } from './ui/Button';
 import { CHECKBOX_CLASS, INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
@@ -27,6 +33,9 @@ export function AppAiSection() {
   const [baseUrl, setBaseUrl] = useState(status?.baseUrl ?? '');
   const [model, setModel] = useState(status?.model ?? '');
   const [apiKey, setApiKey] = useState<string | undefined>();
+  const [timeoutSeconds, setTimeoutSeconds] = useState(
+    String(status?.timeoutSeconds ?? aiSummaryTimeoutMs(status?.engine ?? null) / MS_PER_SECOND),
+  );
   const [ack, setAck] = useState(status?.allowRemote ?? false);
   const [models, setModels] = useState<AiModelInfo[]>([]);
   const [remoteModels, setRemoteModels] = useState<string[]>([]);
@@ -53,6 +62,7 @@ export function AppAiSection() {
             value?.baseUrl ?? '',
             value?.model ?? '',
             value?.allowRemote ?? false,
+            value?.timeoutSeconds,
           ]);
         if (configuration(next) === configuration(previous.status)) return;
         setEngine(next.engine ?? '');
@@ -60,6 +70,7 @@ export function AppAiSection() {
         setBaseUrl(next.baseUrl);
         setModel(next.model);
         setAck(next.allowRemote);
+        setTimeoutSeconds(String(next.timeoutSeconds));
       }),
     [],
   );
@@ -105,10 +116,33 @@ export function AppAiSection() {
       setBusy(false);
     }
   };
+  const insecureKey = (() => {
+    try {
+      const url = new URL(baseUrl);
+      const savedKey =
+        apiKey === undefined &&
+        status?.hasApiKey &&
+        engine === status.engine &&
+        url.href.replace(/\/+$/, '') === new URL(status.baseUrl).href.replace(/\/+$/, '');
+      if (!apiKey && !savedKey) return false;
+      const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+      return (
+        url.protocol === 'http:' &&
+        host !== 'localhost' &&
+        host !== '::1' &&
+        !/^127\.\d+\.\d+\.\d+$/.test(host) &&
+        !/^::ffff:7f[0-9a-f]{2}:/i.test(host)
+      );
+    } catch {
+      // catch-no-log-ok invalid endpoint is rejected on save
+      return false;
+    }
+  })();
   const save = async () => {
     if (!engine) return;
     const input: AiEndpointConfig = {
       engine,
+      timeoutSeconds: Number(timeoutSeconds),
       wireFormat: format,
       baseUrl,
       model,
@@ -165,7 +199,9 @@ export function AppAiSection() {
                 className={`${SELECT_BOX_CLASS} mt-1 w-full`}
                 value={engine}
                 onChange={(event) => {
-                  setEngine(event.target.value as AiEngine | '');
+                  const nextEngine = event.target.value as AiEngine | '';
+                  setEngine(nextEngine);
+                  setTimeoutSeconds(String(aiSummaryTimeoutMs(nextEngine || null) / MS_PER_SECOND));
                   setAck(false);
                   setApiKey(undefined);
                 }}
@@ -201,13 +237,6 @@ export function AppAiSection() {
                       <p className="text-muted text-xs">
                         {item.paramsLabel} · {(item.downloadBytes / 1024 / 1024).toFixed(0)} MB ·{' '}
                         {item.license}
-                      </p>
-                      <p className="text-muted text-xs">
-                        {item.qualityNote === 'compact'
-                          ? t('aiSummary.compactModelGuidance')
-                          : item.qualityNote === 'english'
-                            ? t('aiSummary.englishModelGuidance')
-                            : t('aiSummary.multilingualModelGuidance')}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {downloading ? (
@@ -384,6 +413,11 @@ export function AppAiSection() {
                     }}
                   />
                 </label>
+                {insecureKey && (
+                  <p role="alert" className="text-xs text-orange-400">
+                    {t('aiSummary.insecureKeyWarning')}
+                  </p>
+                )}
                 {status.hasApiKey && (
                   <Button
                     size="sm"
@@ -415,10 +449,33 @@ export function AppAiSection() {
                 <p className="text-muted text-xs">{t('aiSummary.urlHint')}</p>
               </>
             )}
+            <label data-setting-anchor="app.aiProvider.timeout" className="block text-sm">
+              {t('aiSummary.timeoutSeconds')}
+              <input
+                className={`${INPUT_BOX_CLASS} mt-1 w-full`}
+                aria-label={t('aiSummary.timeoutSeconds')}
+                type="number"
+                min={AI_MIN_TIMEOUT_SECONDS}
+                max={AI_MAX_TIMEOUT_SECONDS}
+                step={1}
+                value={timeoutSeconds}
+                onChange={(event) => {
+                  setTimeoutSeconds(event.target.value);
+                }}
+              />
+              <span className="text-muted mt-1 block text-xs">{t('aiSummary.timeoutHint')}</span>
+            </label>
             <div data-setting-anchor="app.aiProvider.test" className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                disabled={busy || !engine || (engine === 'remote' && !ack)}
+                disabled={
+                  busy ||
+                  !engine ||
+                  (engine === 'remote' && !ack) ||
+                  !Number.isInteger(Number(timeoutSeconds)) ||
+                  Number(timeoutSeconds) < AI_MIN_TIMEOUT_SECONDS ||
+                  Number(timeoutSeconds) > AI_MAX_TIMEOUT_SECONDS
+                }
                 aria-label={t('aiSummary.save')}
                 onClick={() => {
                   void action(save);

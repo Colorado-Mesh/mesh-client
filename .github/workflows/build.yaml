@@ -148,16 +148,9 @@ jobs:
           MESH_CLIENT_BUILD_WORKFLOW: Build Binaries (no release)
         run: node scripts/ci-write-build-info-env.mjs
 
-      - name: Set up .NET for Windows AI helper
-        if: runner.os == 'Windows'
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
-        with:
-          dotnet-version: '8.0.x'
-      - name: Build OS AI helper
-        if: runner.os == 'macOS' || runner.os == 'Windows'
-        env:
-          AI_LAF_TOKEN: ${{ secrets.WINDOWS_AI_LAF_TOKEN }}
-          AI_LAF_ATTESTATION: ${{ secrets.WINDOWS_AI_LAF_ATTESTATION }}
+      # Windows NSIS cannot use OS AI; do not ship its self-contained runtime.
+      - name: Build Apple AI helper
+        if: runner.os == 'macOS'
         run: node scripts/build-ai-helper.mjs
 
       - name: Build

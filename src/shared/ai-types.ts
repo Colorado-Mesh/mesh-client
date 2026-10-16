@@ -1,4 +1,5 @@
 import type { AiHistoryMessage, AiHistoryQuery } from './ai-history';
+import { MS_PER_MINUTE, MS_PER_SECOND } from './timeConstants';
 
 export type AiWireFormat = 'openai' | 'anthropic' | 'gemini' | 'ollama';
 /** The engine the user picked. `local` and `remote` both use the endpoint adapters above. */
@@ -82,6 +83,7 @@ export interface AiProviderStatus {
   baseUrl: string;
   model: string;
   hasApiKey: boolean;
+  timeoutSeconds: number;
   allowRemote: boolean;
   /** true when the configured endpoint is non-local */
   isRemote: boolean;
@@ -93,6 +95,8 @@ export interface AiProviderStatus {
 
 export interface AiEndpointConfig {
   engine: AiEngine;
+  /** Summary deadline in seconds (30–1800); omitted preserves the saved value. */
+  timeoutSeconds?: number;
   /** required for engine 'local' | 'remote' */
   wireFormat?: AiWireFormat;
   baseUrl?: string;
@@ -112,7 +116,6 @@ export interface AiModelInfo {
   downloadBytes: number;
   diskBytes: number;
   license: string;
-  qualityNote: 'compact' | 'multilingual' | 'english';
   installed: boolean;
 }
 
@@ -145,9 +148,21 @@ export const AI_MAX_MESSAGES = 500;
 export const AI_MAX_TOTAL_CHARS = 200_000;
 export const AI_MAX_OUTPUT_TOKENS = 250;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
-export const AI_REQUEST_TIMEOUT_MS = 60_000;
+export const AI_REQUEST_TIMEOUT_MS = MS_PER_MINUTE;
 /** CPU WASM also needs time to load and evaluate the downloaded model. */
-export const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * 60_000;
+export const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * MS_PER_MINUTE;
+export const AI_MIN_TIMEOUT_SECONDS = 30;
+export const AI_MAX_TIMEOUT_SECONDS = 1800;
+export function aiSummaryTimeoutMs(engine: AiEngine | null, seconds?: number): number {
+  return typeof seconds === 'number' &&
+    Number.isInteger(seconds) &&
+    seconds >= AI_MIN_TIMEOUT_SECONDS &&
+    seconds <= AI_MAX_TIMEOUT_SECONDS
+    ? seconds * MS_PER_SECOND
+    : engine === 'bundled'
+      ? AI_LOCAL_REQUEST_TIMEOUT_MS
+      : AI_REQUEST_TIMEOUT_MS;
+}
 
 export interface AiAPI {
   getHistory: (query: AiHistoryQuery) => Promise<AiHistoryMessage[]>;

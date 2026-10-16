@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} messages collectés",
     "offlineSummaryHint": "Les téléchargements utilisent Internet une fois. Les résumés s'exécutent hors ligne sur cet appareil. Les grandes conversations peuvent prendre quelques minutes avec les modèles téléchargés. Les modèles plus grands ont besoin de plus de mémoire.",
     "countSnapshot": "Les comptes décrivent cet instantané récapitulatif ; les badges non lus en direct peuvent différer.",
-    "compactModelGuidance": "Téléchargement et utilisation de la mémoire plus petits. Peut manquer des détails ; vérifiez les messages originaux.",
-    "englishModelGuidance": "Axé sur l'anglais. Peut mal lire ou inverser les détails ; vérifier les messages d'origine.",
-    "multilingualModelGuidance": "Option multilingue. Téléchargement et utilisation de la mémoire plus importants ; vérifiez les messages originaux."
+    "timeoutSeconds": "Délai d'expiration du résumé (secondes)",
+    "timeoutHint": "Temps maximum pour un résumé, y compris le chargement du modèle. Choisissez 30–1800 secondes. Vous pouvez annuler à tout moment.",
+    "insecureKeyWarning": "Ce point de terminaison HTTP envoie votre clé API et des messages sans chiffrement de transport. Utilisez HTTPS pour un serveur sur votre réseau."
   }
 }

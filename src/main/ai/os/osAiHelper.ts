@@ -119,6 +119,7 @@ export class OsAiHelper {
     input: { requestId: string; system: string; user: string; maxTokens: number },
     signal: AbortSignal,
     onDelta: (delta: string) => void,
+    timeoutMs = AI_REQUEST_TIMEOUT_MS,
   ): Promise<void> {
     this.start();
     return new Promise((resolve, reject) => {
@@ -156,7 +157,7 @@ export class OsAiHelper {
       const timer = setTimeout(() => {
         finish(new AiFailure('timeout'));
         this.kill();
-      }, AI_REQUEST_TIMEOUT_MS);
+      }, timeoutMs);
       this.listeners.add(listener);
       signal.addEventListener('abort', cancel, { once: true });
       if (signal.aborted) {

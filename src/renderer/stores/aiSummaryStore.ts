@@ -9,11 +9,7 @@ import type {
   AiSummaryErrorReason,
   AiSummaryRequest,
 } from '@/shared/ai-types';
-import {
-  AI_LOCAL_REQUEST_TIMEOUT_MS,
-  AI_MAX_RESPONSE_BYTES,
-  AI_REQUEST_TIMEOUT_MS,
-} from '@/shared/ai-types';
+import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
 
 export interface ConversationSummary {
   requestId: string;
@@ -182,7 +178,7 @@ export async function runSummary(
   controllers.set(key, controller);
   const signal = AbortSignal.any([
     controller.signal,
-    AbortSignal.timeout(ownsBundled ? AI_LOCAL_REQUEST_TIMEOUT_MS : AI_REQUEST_TIMEOUT_MS),
+    AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),
   ]);
   const abortReason = () =>
     signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError'

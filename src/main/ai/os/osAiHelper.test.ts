@@ -136,3 +136,23 @@ describe('OS AI helper boundary', () => {
     await running;
   });
 });
+
+it.each(['darwin', 'win32'])(
+  'honors the configured native deadline beyond the legacy minute on %s',
+  async (platform) => {
+    vi.useFakeTimers();
+    helper = new OsAiHelper(() => path.join(temp, 'helper'), platform as NodeJS.Platform);
+    const running = helper.generate(
+      { requestId: 'long', system: 'x', user: 'x', maxTokens: 1 },
+      new AbortController().signal,
+      vi.fn(),
+      90000,
+    );
+    const rejection = expect(running).rejects.toThrow('timeout');
+    await vi.advanceTimersByTimeAsync(60001);
+    expect(child.kill).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(29999);
+    await rejection;
+    expect(child.kill).toHaveBeenCalledOnce();
+  },
+);

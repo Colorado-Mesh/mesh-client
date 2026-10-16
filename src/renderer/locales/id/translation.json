@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} pesan terkumpul",
     "offlineSummaryHint": "Unduhan menggunakan internet satu kali. Ringkasan berjalan offline di perangkat ini. Percakapan besar dapat memakan waktu beberapa menit dengan model yang diunduh. Model yang lebih besar membutuhkan lebih banyak memori.",
     "countSnapshot": "Hitungan menggambarkan snapshot ringkasan ini; lencana langsung yang belum dibaca mungkin berbeda.",
-    "compactModelGuidance": "Pengunduhan dan penggunaan memori yang lebih kecil. Dapat melewatkan detail; periksa pesan asli.",
-    "englishModelGuidance": "Berfokus pada bahasa Inggris. Dapat salah membaca atau membalikkan detail; verifikasi pesan asli.",
-    "multilingualModelGuidance": "Opsi multibahasa. Unduhan dan penggunaan memori yang lebih besar; periksa pesan asli."
+    "timeoutSeconds": "Batas waktu ringkasan (detik)",
+    "timeoutHint": "Waktu maksimum untuk ringkasan, termasuk pemuatan model. Pilih 30 -1800 detik. Anda dapat membatalkan kapan saja.",
+    "insecureKeyWarning": "Endpoint HTTP ini mengirimkan kunci api dan pesan Anda tanpa enkripsi transport. Gunakan https untuk server di jaringan Anda."
   }
 }

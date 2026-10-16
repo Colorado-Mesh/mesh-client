@@ -7632,8 +7632,8 @@
     "providerCollected_other": "{{provider}} · {{model}} · {{count}} berichten verzameld",
     "offlineSummaryHint": "Downloads maken eenmalig gebruik van internet. Samenvattingen worden offline uitgevoerd op dit apparaat. Grote gesprekken kunnen een paar minuten duren met gedownloade modellen. Grotere modellen hebben meer geheugen nodig.",
     "countSnapshot": "Tellingen beschrijven deze samenvattende momentopname; live ongelezen badges kunnen verschillen.",
-    "compactModelGuidance": "Kleinere download en geheugengebruik. Kan details missen; controleer de originele berichten.",
-    "englishModelGuidance": "Engels gericht. Kan details verkeerd lezen of omkeren; controleer de originele berichten.",
-    "multilingualModelGuidance": "Meertalige optie. Groter download- en geheugengebruik; controleer de originele berichten."
+    "timeoutSeconds": "Samenvatting time-out (seconden)",
+    "timeoutHint": "Maximale tijd voor een samenvatting, inclusief het laden van het model. Kies 30–1800 seconden. Je kunt op elk moment annuleren.",
+    "insecureKeyWarning": "Dit HTTP eindpunt verzendt je API-sleutel en berichten zonder transportversleuteling. Gebruik https voor een server in uw netwerk."
   }
 }

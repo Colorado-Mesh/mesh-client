@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await -- deterministic async fetch/runtime test doubles */
 import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,13 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AiLocalModel } from './modelManifest';
 import { AiModelPackManager } from './modelPackManager';
 
+vi.mock('node:fs', { spy: true });
+
 const data = Buffer.from('synthetic model');
 const manifest: AiLocalModel[] = [
   {
     id: 'model-1',
     name: 'Test',
     paramsLabel: '1',
-    qualityNote: 'compact',
     license: 'MIT',
     assets: [
       {
@@ -129,4 +131,75 @@ describe('AI verified model downloads', () => {
       warn.mockRestore();
     }
   });
+});
+
+it.each(['linux', 'darwin', 'win32'])(
+  'uses advisory catalog metadata but hashes again before runtime use on %s',
+  async () => {
+    const packs = create(async () => new Response(data));
+    expect(await packs.install('model-1')).toEqual({ ok: true });
+    expect(await packs.verify('model-1')).toBe(true);
+    const hashReads = vi.mocked(createReadStream);
+    hashReads.mockClear();
+    try {
+      const restarted = create(vi.fn());
+      expect((await restarted.list())[0].installed).toBe(true);
+      expect(hashReads).not.toHaveBeenCalled();
+      expect(await restarted.verify('model-1')).toBe(true);
+      expect(hashReads).toHaveBeenCalledOnce();
+      await fs.writeFile(packs.assetPath('model-1', 'model.gguf'), Buffer.alloc(data.length));
+      expect(await restarted.verify('model-1')).toBe(false);
+      const third = create(vi.fn());
+      expect((await third.list())[0].installed).toBe(false);
+      expect(await third.verify('model-1')).toBe(false);
+    } finally {
+      hashReads.mockClear();
+    }
+  },
+);
+it('recovers from corrupt advisory metadata and rejects forged metadata before runtime use', async () => {
+  const packs = create(async () => new Response(data));
+  await packs.install('model-1');
+  await packs.verify('model-1');
+  const cache = path.join(temp, 'models/model-1/.verified.json');
+  await fs.writeFile(cache, '{');
+  expect((await create(vi.fn()).list())[0].installed).toBe(true);
+  await fs.writeFile(packs.assetPath('model-1', 'model.gguf'), Buffer.alloc(data.length));
+  const stat = await fs.lstat(packs.assetPath('model-1', 'model.gguf'));
+  const signature = `${manifest[0].assets[0].sha256}:${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`;
+  await fs.writeFile(cache, JSON.stringify({ signature }));
+  const restarted = create(vi.fn());
+  expect((await restarted.list())[0].installed).toBe(true);
+  expect(await restarted.verify('model-1')).toBe(false);
+});
+it('throttles byte progress while delivering every state transition and final bytes', async () => {
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
+  const onProgress = vi.fn();
+  const packs = new AiModelPackManager({
+    directory: () => path.join(temp, 'models'),
+    enabled: () => true,
+    manifest,
+    onProgress,
+    fetch: async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            for (const byte of data) controller.enqueue(Uint8Array.of(byte));
+            controller.close();
+          },
+        }),
+      ),
+  });
+  expect(await packs.install('model-1')).toEqual({ ok: true });
+  const events = onProgress.mock.calls.map(
+    ([value]) => value as { state: string; receivedBytes: number },
+  );
+  expect(events.map((event) => event.state)).toEqual([
+    'queued',
+    'downloading',
+    'verifying',
+    'installed',
+  ]);
+  expect(events.at(-1)?.receivedBytes).toBe(data.length);
+  now.mockRestore();
 });

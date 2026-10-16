@@ -20,7 +20,8 @@ are excluded from generic app-settings reads, and only validated `ai:*` writes m
 state, so generic preference writes cannot bypass disable teardown or endpoint validation.
 Remote engines require HTTPS plus an acknowledgment specific to the saved endpoint. Local
 engines accept literal loopback/private LAN and `.local` hosts. All endpoints disclose their
-host on the result, including LAN servers, which receive text off-device. Redirects fail closed.
+host on the result, including LAN servers, which receive text off-device. Settings warn when an
+API key would be sent to an unencrypted HTTP LAN endpoint, including an already saved key. Redirects fail closed.
 Gemini credentials use a header rather than the URL. Provider errors never include bodies or keys.
 
 Disable/configuration changes abort active main requests, terminate native helpers, cancel model
@@ -44,12 +45,12 @@ The existing Windows NSIS distribution does not supply the required package iden
 Microsoft-issued LAF credentials. The Windows helper therefore reports unavailable in that
 installation. Compilation alone does not establish Windows OS AI readiness. Its project accepts
 maintainer-provided `AiLafToken`/`AiLafAttestation` MSBuild properties; do not invent these values
-or request a model download during a probe. Build both Windows RIDs and select the matching staged
-helper in beforePack. The other engines are available without those Windows requirements.
+or request a model download during a probe. Native CI compiles both Windows RIDs, but NSIS packaging deliberately excludes the
+helper and its self-contained runtime until package identity is supported. The other engines are available without those Windows requirements.
 
 Native helper source lives in `native/ai/`; `scripts/build-ai-helper.mjs` stages binaries and
-runtime dependencies under `resources/ai-helper/`. Build/release CI compiles the helpers before
-packaging. Large binaries and Swift caches are excluded from Git and packaged resources.
+runtime dependencies under `resources/ai-helper/`. Build/release CI compiles the Apple helper before packaging. A missing optional helper
+warns and leaves OS AI unavailable; it does not block local distribution builds. Large binaries and Swift caches are excluded from Git and packaged resources.
 Swift returns cumulative snapshots, so its helper emits only new suffixes. Windows has no
 max-output-token option in this API; its helper uses a conservative 1,000-character bound.
 
@@ -117,9 +118,13 @@ only for completed, non-error output. These controls do not establish factual ac
 `mesh-ai:` serves only enabled, verified manifest assets, with realpath containment and CORS for
 the sandboxed renderer. Model installs stream to a unique temporary directory, hash incrementally
 without buffering a gigabyte in memory, verify exact size/SHA-256 and publish by rename.
+Byte-only download progress is throttled to 100 ms; state changes and terminal results emit immediately.
+Catalog/status use persisted advisory metadata bound to asset digests, size, mtime, ctime and file identity.
+The first runtime verification in a process always hashes the model before use; advisory records alone
+never authorize serving bytes. Missing/corrupt metadata falls back to hashing.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
-checked on 2026-10-16. The catalog offers Llama 3.2 1B, Qwen2.5 1.5B and SmolLM2 1.7B,
-all Q4_K_M. Qwen and SmolLM2 use Apache-2.0; Llama uses the Llama 3.2 Community License.
+checked on 2026-10-16. The catalog offers Llama 3.2 1B and Qwen2.5 1.5B,
+both Q4_K_M. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License.
 Its full license and Meta NOTICE are verified and atomically installed beside the GGUF;
 inline notices use the same size/hash verification as downloaded assets. Built with Llama.
 Wllama and llama.cpp use MIT. The npm license report covers runtime dependencies;
@@ -127,7 +132,8 @@ model attribution belongs in credits. No weights ship in the installer.
 
 Qwen 0.5B was removed after unreliable real-model trials. A saved selection of a removed model
 becomes not-ready; the app never silently selects or downloads a replacement. Choose explicitly
-from the new catalog. Qwen remains available for multilingual traffic; SmolLM2 is English-focused.
+from the catalog. SmolLM2 was also removed following transcript copying and timeout reports.
+Model cards show factual metadata (name, parameter count, bytes and license) without quality claims.
 None is an accuracy guarantee. Identical 41-message synthetic trials completed in about 86 seconds
 for Llama and 187 seconds for SmolLM2 using the production worker. Llama omitted useful facts and
 added a weak attribution bullet; SmolLM2 misattributed speakers and reversed one routing instruction.
@@ -142,6 +148,10 @@ and divider and advances persisted read state. AI unread then uses that persiste
 Scroll frames and tab snapshots are scoped to the canonical hub/room so an old view cannot mark
 another view read. Linux, macOS and Windows share this lifecycle.
 
+## Release notes
+
+See [Catch up release notes](../release-notes/ai-catch-up.md), including RRC behavior that applies with AI disabled.
+
 ## Validation
 
 Focused tests cover default-off IPC behavior, URL/key policy, all adapters, fragmented streams,
@@ -150,3 +160,8 @@ remap history, verified installs, native pipe/exit/callback failures, renderer r
 RRC watermarks and accessible controls. Run `pnpm run check:pr` before opening/updating the PR.
 Native compilation and real-model smoke tests are separate from deterministic unit tests.
 Windows runtime activation and hardware validation require an eligible, correctly packaged host.
+
+Summary deadlines are configurable in App > AI conversation summaries from 30 to 1800 seconds.
+The default remains five minutes for downloaded CPU models and one minute for other engines.
+The saved deadline applies to renderer cancellation, main endpoint streaming and native generation;
+connection tests, native probes and model-download idle limits remain separate.

@@ -6,6 +6,7 @@ export interface StoredAiConfig {
   wireFormat: AiWireFormat | null;
   baseUrl: string;
   model: string;
+  timeoutSeconds?: number;
   encryptedKey?: string;
   allowRemote: boolean;
   localModelId: string | null;
@@ -48,6 +49,7 @@ export class AiConfig {
           : null,
         baseUrl: c.baseUrl,
         model: c.model,
+        ...(typeof c.timeoutSeconds === 'number' ? { timeoutSeconds: c.timeoutSeconds } : {}),
         allowRemote: c.allowRemote === true,
         localModelId: typeof c.localModelId === 'string' ? c.localModelId : null,
         ...(typeof c.encryptedKey === 'string' ? { encryptedKey: c.encryptedKey } : {}),
@@ -89,6 +91,7 @@ export class AiConfig {
         wireFormat: input.wireFormat ?? null,
         baseUrl,
         model: input.model ?? '',
+        timeoutSeconds: input.timeoutSeconds ?? old.timeoutSeconds,
         encryptedKey,
         allowRemote: input.engine === 'remote' && input.allowRemote === true,
         localModelId: input.localModelId === undefined ? old.localModelId : input.localModelId,

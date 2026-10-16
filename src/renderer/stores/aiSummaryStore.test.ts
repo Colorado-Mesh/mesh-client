@@ -27,6 +27,7 @@ const ready: AiProviderStatus = {
   baseUrl: 'https://provider.test',
   model: 'test',
   hasApiKey: true,
+  timeoutSeconds: 60,
   allowRemote: true,
   isRemote: true,
   localEngine: { ready: false, modelId: null, downloading: false },
@@ -252,3 +253,26 @@ describe('AI summary request correlation', () => {
     expect(useAiSummaryStore.getState().summaries).toEqual({});
   });
 });
+
+it.each(['os', 'bundled', 'local', 'remote'] as const)(
+  'uses the configured deadline while awaiting %s',
+  async (engine) => {
+    const controller = new AbortController();
+    const deadline = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    useAiSummaryStore.setState({
+      status: {
+        ...ready,
+        engine,
+        timeoutSeconds: 720,
+        localEngine: { ready: true, modelId: 'model', downloading: false },
+      },
+    });
+    vi.mocked(api.summarize).mockReturnValue(new Promise(() => {}));
+    const running = runSummary('chat', request);
+    expect(deadline).toHaveBeenCalledWith(720000);
+    controller.abort(new DOMException('Timed out', 'TimeoutError'));
+    await running;
+    expect(useAiSummaryStore.getState().summaries.chat?.error).toBe('timeout');
+    expect(api.cancel).toHaveBeenCalledWith('id');
+  },
+);
