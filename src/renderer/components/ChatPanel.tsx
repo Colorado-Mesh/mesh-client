@@ -2974,7 +2974,8 @@ function ChatPanel({
           visibleDmTabs.map((nodeNum) => {
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
             const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
-            const showDmUnreadBadge = dmUnread > 0 && !isActiveDm;
+            const showDmUnreadBadge = dmUnread > 0;
+            const dmLabel = channelButtonLabel(getDmLabel(nodeNum), dmUnread);
             const dmMecpSeverity = unreadMecpSeverity.dms.get(nodeNum);
             const dmMuted = mutedViews.has(`dm:${nodeNum}`);
             const faceHash =
@@ -2999,8 +3000,8 @@ function ChatPanel({
                   type="button"
                   aria-label={
                     showDmUnreadBadge && dmMecpSeverity !== undefined
-                      ? `${getDmLabel(nodeNum)}, ${mecpUnreadLabel(dmMecpSeverity)}`
-                      : getDmLabel(nodeNum)
+                      ? `${dmLabel}, ${mecpUnreadLabel(dmMecpSeverity)}`
+                      : dmLabel
                   }
                   aria-pressed={isActiveDm}
                   data-dm-unread={showDmUnreadBadge ? dmUnread : 0}
@@ -3105,11 +3106,8 @@ function ChatPanel({
               <WrappingChannelList activeKey={channelViewActive ? channel : null}>
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
-                  // Weather shows a subset of the channel, so ordinary unread stays visible there.
-                  const unread =
-                    viewMode === 'channels' && channel === ch.index
-                      ? 0
-                      : (unreadCounts.get(ch.index) ?? 0);
+                  // Selection alone does not advance the read watermark.
+                  const unread = unreadCounts.get(ch.index) ?? 0;
                   const chMecpSeverity =
                     unread > 0 ? unreadMecpSeverity.channels.get(ch.index) : undefined;
                   const chLabel = channelButtonLabel(ch.name, unread);

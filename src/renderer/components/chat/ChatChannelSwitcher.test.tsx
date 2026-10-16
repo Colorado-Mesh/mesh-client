@@ -68,7 +68,9 @@ describe('ChatChannelSwitcher', () => {
     expect(
       screen.getByRole('option', { name: 'Ops 1, Unread ROUTINE MECP report' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Public' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: 'Public 4, Unread MAYDAY MECP report' }),
+    ).toBeInTheDocument();
     hydrateAxeThemeColors(baseElement);
     expect(await axe(screen.getByRole('listbox'))).toHaveNoViolations();
   });
@@ -89,7 +91,10 @@ describe('ChatChannelSwitcher', () => {
 
     const search = screen.getByRole('combobox', { name: 'Find a channel' });
     expect(search).toHaveFocus();
-    expect(screen.getByRole('option', { name: 'Public' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: 'Public 4' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(screen.getByRole('option', { name: 'Weather 99+' })).toBeInTheDocument();
     hydrateAxeThemeColors(baseElement);
     expect(await axe(screen.getByRole('listbox'))).toHaveNoViolations();
