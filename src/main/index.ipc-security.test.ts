@@ -453,6 +453,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:setStyleSettings',
     'tak:pushChatMessage',
     'tak:setChatChannels',
+    'tak:retireChatRooms',
   ] as const;
 
   it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {

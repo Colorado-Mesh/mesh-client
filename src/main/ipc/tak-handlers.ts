@@ -15,7 +15,11 @@ import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
 import { enrollTakClientCertificate } from '../tak/enrollment';
-import { parseTakChannelChatMessage, parseTakChatChannels } from '../tak/geochat-cot';
+import {
+  parseTakChannelChatMessage,
+  parseTakChatChannels,
+  parseTakRetiredRooms,
+} from '../tak/geochat-cot';
 import { parseTakNodeUpdate } from '../tak/node-update';
 import {
   clearTakRemoteCredentials,
@@ -259,6 +263,20 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     if (!m) return;
     chatChannelUpdates.checkOrThrow();
     m.setChatChannels(parseTakChatChannels(channels));
+  });
+
+  const retiredRoomUpdates = createIpcRateLimiter({
+    max: 10,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:retireChatRooms',
+  });
+  ipcMain.handle('tak:retireChatRooms', (event, rooms: unknown) => {
+    assertIpcSender(event, 'tak:retireChatRooms');
+    // As for channels: the renderer sends the list again when a sink starts.
+    const m = getTakServerManager();
+    if (!m) return;
+    retiredRoomUpdates.checkOrThrow();
+    m.retireChatRooms(parseTakRetiredRooms(rooms));
   });
 
   // ─── Relayed node styling ────────────────────────────────────────

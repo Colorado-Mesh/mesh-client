@@ -56,6 +56,7 @@ import {
   channelContactUid,
   CHAT_ROOM_CONTACT_STALE_MS,
   type GeochatRecipient,
+  retiredRoomContactUid,
 } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
@@ -125,6 +126,8 @@ export class TakServerManager extends EventEmitter {
     port: DEFAULT_TAK_REMOTE_PORT,
   };
   private readonly contacts = new TakContactCache();
+  /** Uids of the previous version's room contacts, which every client is told to drop. */
+  private retiredRoomUids = new Set<string>();
   /** Channels served to TAK clients, keyed by the uid of the contact that stands for each. */
   private chatChannels = new Map<string, TakChatChannel>();
   /** Heard channel messages held while no local client could be addressed, oldest first. */
@@ -390,6 +393,22 @@ export class TakServerManager extends EventEmitter {
     this.chatChannels = next;
     this.heldChat = this.heldChat.filter((h) => next.has(channelContactUid(h.channelKey)));
     this.scheduleChatRoomAnnouncements();
+  }
+
+  /**
+   * Retire the previous version's GeoChat room contacts: every local client is told to drop
+   * them now, and each client that connects while they are listed is told too. The renderer
+   * lists them for a day after the upgrade, as long as ATAK would have kept them.
+   */
+  retireChatRooms(rooms: string[]): void {
+    const next = new Set(rooms.map(retiredRoomContactUid));
+    const now = Date.now();
+    for (const uid of next) {
+      if (!this.retiredRoomUids.has(uid) && !this.chatChannels.has(uid)) {
+        this.writeToClients(cotDeleteEvent(uid, now));
+      }
+    }
+    this.retiredRoomUids = next;
   }
 
   /** Re-announce channel contacts well inside their stale time so they do not expire in ATAK. */
@@ -773,6 +792,10 @@ export class TakServerManager extends EventEmitter {
     this.forEachChatRoomContact((cot) => {
       this.writeToClient(id, client, cot);
     });
+    const now = Date.now();
+    for (const uid of this.retiredRoomUids) {
+      if (!this.chatChannels.has(uid)) this.writeToClient(id, client, cotDeleteEvent(uid, now));
+    }
 
     this.resetClientIdleTimer(id, client);
 

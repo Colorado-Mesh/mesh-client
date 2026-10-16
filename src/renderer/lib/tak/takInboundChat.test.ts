@@ -45,8 +45,8 @@ function serve(
   ]);
   const { setChannelMode, setChatChannel, setChatSend } = useTakRelayPrefsStore.getState();
   setChannelMode(identityId, 'selected');
-  setChatChannel(identityId, index, true);
-  setChatSend(identityId, index, send);
+  setChatChannel(identityId, key, true);
+  setChatSend(identityId, key, send);
 }
 
 beforeEach(() => {
@@ -96,7 +96,7 @@ describe('findTakSendTargets', () => {
     setTakChannels('mt', [
       { protocol: 'meshtastic', index: 1, key: OTHER, name: 'x', atakName: '#MT x' },
     ]);
-    useTakRelayPrefsStore.getState().setChatSend('mt', 1, true);
+    useTakRelayPrefsStore.getState().setChatSend('mt', OTHER, true);
     expect(findTakSendTargets(OPS)).toEqual([]);
     expect(findTakSendTargets(OTHER)).toEqual([]);
     expect(findTakSendTargets('0000000000000000')).toEqual([]);

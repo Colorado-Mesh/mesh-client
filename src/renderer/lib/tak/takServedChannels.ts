@@ -107,14 +107,14 @@ export function servedChannelsFor(
   const served =
     prefs.channelMode === 'all'
       ? channels
-      : channels.filter((c) => prefs.chatChannels.includes(c.index));
+      : channels.filter((c) => prefs.chatChannels.includes(c.key));
   return served.map((c) => ({
     ...c,
     // A name the user chose wins over the automatic one.
-    atakName: prefs.atakNames[c.index] ?? c.atakName,
+    atakName: prefs.atakNames[c.key] ?? c.atakName,
     identityId,
-    send: prefs.sendChannels.includes(c.index),
-    remote: prefs.remoteChannels.includes(c.index),
+    send: prefs.sendChannels.includes(c.key),
+    remote: prefs.remoteChannels.includes(c.key),
   }));
 }
 

@@ -39,7 +39,7 @@ describe('relayMeshtasticChatToTak', () => {
       { protocol: 'meshtastic', index: 2, key: 'fedcba9876543210', name: 'B', atakName: '#MT B' },
     ]);
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'selected');
-    useTakRelayPrefsStore.getState().setChatChannel(ID, 1, true);
+    useTakRelayPrefsStore.getState().setChatChannel(ID, KEY, true);
     useNodeStore.setState({ nodes: {} });
     setTakSinkActive(true);
   });

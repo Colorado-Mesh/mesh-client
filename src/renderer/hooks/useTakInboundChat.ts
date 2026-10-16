@@ -13,7 +13,11 @@ import {
 } from '../lib/tak/takServedChannels';
 import type { IdentityId } from '../lib/types';
 import { setTakChannels, type TakChannelInfo } from '../stores/takChannelStore';
-import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
+import {
+  bindTakPendingSlots,
+  getTakRetiredRooms,
+  useTakRelayPrefsStore,
+} from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
 
 /** First wait before re-sending a refused channel list; it doubles up to the maximum. */
@@ -52,12 +56,17 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     return out;
   }, [meshcoreId, meshcoreInfos, meshtasticId, meshtasticInfos]);
 
+  // Settings saved by slot before an upgrade go to the channels now in those slots.
   useEffect(() => {
-    if (meshcoreId) setTakChannels(meshcoreId, meshcoreInfos);
+    if (!meshcoreId) return;
+    bindTakPendingSlots(meshcoreId, meshcoreInfos);
+    setTakChannels(meshcoreId, meshcoreInfos);
   }, [meshcoreId, meshcoreInfos]);
 
   useEffect(() => {
-    if (meshtasticId) setTakChannels(meshtasticId, meshtasticInfos);
+    if (!meshtasticId) return;
+    bindTakPendingSlots(meshtasticId, meshtasticInfos);
+    setTakChannels(meshtasticId, meshtasticInfos);
   }, [meshtasticId, meshtasticInfos]);
 
   useEffect(() => {
@@ -68,6 +77,16 @@ export function useTakInboundChat(sources: TakChannelSources): void {
 
   const sinkActive = useTakSinkStore((s) => s.active);
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
+
+  // For a day after an upgrade, ATAK devices are told to drop the old GeoChat room contacts.
+  const retiredRooms = useTakRelayPrefsStore((s) => s.retiredRooms);
+  useEffect(() => {
+    const rooms = getTakRetiredRooms();
+    if (!sinkActive || rooms.length === 0) return;
+    window.electronAPI.tak.retireChatRooms(rooms).catch((e: unknown) => {
+      console.warn('[TakInboundChat] retireChatRooms failed ' + errLikeToLogString(e));
+    });
+  }, [sinkActive, retiredRooms]);
   // The stores change for many reasons that leave the served list alone. Keying the effect on
   // the list's contents sends main one update per real change, well inside its rate limit.
   const channelsJson = useMemo(

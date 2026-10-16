@@ -11,6 +11,8 @@ import { setTakSinkActive } from '../stores/takSinkStore';
 import TakChannelRelaySection from './TakChannelRelaySection';
 
 const ID = 'tak-channel-relay-test';
+const PUBLIC = '0123456789abcdef';
+const SAR = 'fedcba9876543210';
 
 function Section({
   identityId = ID,
@@ -37,11 +39,11 @@ beforeEach(() => {
     {
       protocol: 'meshcore',
       index: 0,
-      key: '0123456789abcdef',
+      key: PUBLIC,
       name: 'Public',
       atakName: '#MC Public',
     },
-    { protocol: 'meshcore', index: 2, key: 'fedcba9876543210', name: '#sar', atakName: '#MC sar' },
+    { protocol: 'meshcore', index: 2, key: SAR, name: '#sar', atakName: '#MC sar' },
   ]);
   setTakSinkActive(true);
 });
@@ -93,7 +95,7 @@ describe('TakChannelRelaySection', () => {
 
     await user.click(screen.getByLabelText('Let ATAK devices send to #sar'));
     await user.click(screen.getByLabelText('Stream Public to the remote TAK server'));
-    expect(getTakRelayPrefs(ID)).toMatchObject({ sendChannels: [2], remoteChannels: [0] });
+    expect(getTakRelayPrefs(ID)).toMatchObject({ sendChannels: [SAR], remoteChannels: [PUBLIC] });
     expect(screen.getByLabelText('Let ATAK devices send to #sar')).toBeChecked();
     expect(screen.getByLabelText('Let ATAK devices send to Public')).not.toBeChecked();
   });
@@ -105,7 +107,7 @@ describe('TakChannelRelaySection', () => {
     expect(screen.queryByLabelText('Let ATAK devices send to #sar')).toBeNull();
 
     await user.click(screen.getByLabelText('Show #sar in ATAK'));
-    expect(getTakRelayPrefs(ID).chatChannels).toEqual([2]);
+    expect(getTakRelayPrefs(ID).chatChannels).toEqual([SAR]);
     expect(screen.getByLabelText('Let ATAK devices send to #sar')).toBeInTheDocument();
     expect(screen.queryByLabelText('Let ATAK devices send to Public')).toBeNull();
     expect(screen.getByLabelText('ATAK name for #sar')).toHaveAttribute('placeholder', '#MC sar');
@@ -122,7 +124,7 @@ describe('TakChannelRelaySection', () => {
     // Nothing is sent to ATAK while typing.
     expect(getTakRelayPrefs(ID).atakNames).toEqual({});
     await user.keyboard('{Enter}');
-    expect(getTakRelayPrefs(ID).atakNames).toEqual({ 2: 'Search and Rescue' });
+    expect(getTakRelayPrefs(ID).atakNames).toEqual({ [SAR]: 'Search and Rescue' });
 
     await user.type(field, ' team');
     await user.keyboard('{Escape}');
@@ -143,9 +145,31 @@ describe('TakChannelRelaySection', () => {
 
   it.each([true, false])('has no axe violations (trackers %s)', async (showTrackers) => {
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'selected');
-    useTakRelayPrefsStore.getState().setChatChannel(ID, 2, true);
+    useTakRelayPrefsStore.getState().setChatChannel(ID, SAR, true);
     const { container } = render(<Section showTrackers={showTrackers} />);
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it("keeps a channel's settings with the channel when another takes its slot", async () => {
+    const user = userEvent.setup();
+    useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+    render(<Section showTrackers={false} />);
+    await user.click(screen.getByLabelText('Let ATAK devices send to #sar'));
+    expect(getTakRelayPrefs(ID).sendChannels).toEqual([SAR]);
+    // A different channel is now in slot 2: it does not inherit "ATAK can send".
+    act(() => {
+      setTakChannels(ID, [
+        { protocol: 'meshcore', index: 0, key: PUBLIC, name: 'Public', atakName: '#MC Public' },
+        {
+          protocol: 'meshcore',
+          index: 2,
+          key: 'aaaaaaaaaaaaaaaa',
+          name: 'Ops',
+          atakName: '#MC 🔒 Ops',
+        },
+      ]);
+    });
+    expect(screen.getByLabelText('Let ATAK devices send to Ops')).not.toBeChecked();
   });
 });

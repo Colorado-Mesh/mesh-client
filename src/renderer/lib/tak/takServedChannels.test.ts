@@ -91,11 +91,12 @@ describe('served channels', () => {
     { index: 0, name: 'Public', secret: PUBLIC },
     { index: 2, name: 'Ops', secret: PRIVATE },
   ]);
+  const [publicKey, opsKey] = channels.map((c) => c.key);
   const prefs = {
     trackerChannels: [],
-    chatChannels: [2],
-    sendChannels: [2],
-    remoteChannels: [0],
+    chatChannels: [opsKey],
+    sendChannels: [opsKey],
+    remoteChannels: [publicKey],
     atakNames: {},
   };
 
@@ -121,7 +122,7 @@ describe('served channels', () => {
     const served = servedChannelsFor('mc', channels, {
       ...prefs,
       channelMode: 'all',
-      atakNames: { 2: 'Ops Net' },
+      atakNames: { [opsKey]: 'Ops Net' },
     });
     expect(served.map((c) => c.atakName)).toEqual(['#MC Public', 'Ops Net']);
     expect(toTakChatChannels(served).map((c) => c.name)).toEqual(['#MC Public', 'Ops Net']);

@@ -24,6 +24,7 @@ const MESHCORE_CHANNELS = [
   { index: 0, name: 'Public', secret: PUBLIC },
   { index: 2, name: 'Ops', secret: PRIVATE },
 ];
+const PUBLIC_KEY = computeChannelIdentityKey('meshcore', 'Public', PUBLIC);
 const OPS: TakChatChannel = {
   key: computeChannelIdentityKey('meshcore', 'Ops', PRIVATE),
   name: '#MC \u{1F512} Ops',
@@ -57,8 +58,8 @@ describe('useTakInboundChat', () => {
     useTakChannelStore.setState({ channelsByIdentity: {} });
     const { setChannelMode, setChatChannel, setChatSend } = useTakRelayPrefsStore.getState();
     setChannelMode('mc', 'selected');
-    setChatChannel('mc', 2, true);
-    setChatSend('mc', 2, true);
+    setChatChannel('mc', OPS.key, true);
+    setChatSend('mc', OPS.key, true);
   });
 
   afterEach(() => {
@@ -81,6 +82,54 @@ describe('useTakInboundChat', () => {
     expect(getTakChannels('mc').map((c) => c.index)).toEqual([0]);
   });
 
+  it("binds settings saved by slot to the radio's channels as it reports them", () => {
+    useTakRelayPrefsStore.setState({
+      byIdentity: {
+        mc: {
+          trackerChannels: [],
+          channelMode: 'selected',
+          chatChannels: [],
+          sendChannels: [],
+          remoteChannels: [],
+          atakNames: {},
+          pendingSlots: {
+            chatChannels: [2],
+            sendChannels: [2],
+            remoteChannels: [],
+            atakNames: { 2: 'Ops' },
+          },
+        },
+      },
+    });
+    // The radio has not loaded its channels yet: nothing binds.
+    mount(sources([]));
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc?.pendingSlots).toBeDefined();
+    act(() => {
+      rerender?.(sources());
+    });
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc).toMatchObject({
+      chatChannels: [OPS.key],
+      sendChannels: [OPS.key],
+      atakNames: { [OPS.key]: 'Ops' },
+    });
+    expect(useTakRelayPrefsStore.getState().byIdentity.mc?.pendingSlots).toBeUndefined();
+  });
+
+  it("tells main to drop the previous version's room contacts while a sink is up", () => {
+    const retire = vi.mocked(window.electronAPI.tak.retireChatRooms);
+    retire.mockClear();
+    useTakRelayPrefsStore.setState({
+      retiredRooms: { rooms: ['Ops'], untilMs: Date.now() + 60_000 },
+    });
+    mount();
+    expect(retire).not.toHaveBeenCalled();
+    act(() => {
+      useTakSinkStore.setState({ active: true });
+    });
+    expect(retire).toHaveBeenCalledExactlyOnceWith(['Ops']);
+    useTakRelayPrefsStore.setState({ retiredRooms: null });
+  });
+
   it('sends the served list when a sink starts and again only when it changes', () => {
     mount();
     expect(setChatChannels()).not.toHaveBeenCalled();
@@ -94,13 +143,13 @@ describe('useTakInboundChat', () => {
     // Store updates that leave the served list as it was send nothing.
     act(() => {
       useTakRelayPrefsStore.getState().setTrackerChannel('mc', 1, true);
-      useTakRelayPrefsStore.getState().setChatSend('mc', 0, true);
+      useTakRelayPrefsStore.getState().setChatSend('mc', PUBLIC_KEY, true);
       rerender?.(sources([...MESHCORE_CHANNELS]));
     });
     expect(setChatChannels()).toHaveBeenCalledTimes(1);
 
     act(() => {
-      useTakRelayPrefsStore.getState().setChatSend('mc', 2, false);
+      useTakRelayPrefsStore.getState().setChatSend('mc', OPS.key, false);
     });
     expect(setChatChannels()).toHaveBeenLastCalledWith([{ ...OPS, send: false }]);
     act(() => {
@@ -164,7 +213,7 @@ describe('useTakInboundChat', () => {
         await vi.advanceTimersByTimeAsync(0);
       });
       act(() => {
-        useTakRelayPrefsStore.getState().setChatSend('mc', 2, false);
+        useTakRelayPrefsStore.getState().setChatSend('mc', OPS.key, false);
       });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10 * TAK_SEND_ROOMS_RETRY_MS);

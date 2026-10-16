@@ -1380,6 +1380,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tak:pushChatMessage', message),
     setChatChannels: (channels: TakChatChannel[]): Promise<void> =>
       ipcRenderer.invoke('tak:setChatChannels', channels),
+    retireChatRooms: (rooms: string[]): Promise<void> =>
+      ipcRenderer.invoke('tak:retireChatRooms', rooms),
     getStyleSettings: (): Promise<TakStyleSettings> => ipcRenderer.invoke('tak:getStyleSettings'),
     setStyleSettings: (settings: TakStyleSettings): Promise<TakStyleSettings> =>
       ipcRenderer.invoke('tak:setStyleSettings', settings),

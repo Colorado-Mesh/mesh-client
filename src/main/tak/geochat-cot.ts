@@ -40,6 +40,26 @@ export function geochatSenderUid(callsign: string): string {
  * Stable uid of the contact that stands for a served channel, from the channel's identity key:
  * a channel moved to another slot, or renamed in ATAK's eyes, keeps its contact and history.
  */
+/**
+ * Uid of the contact the previous version announced for a GeoChat room open for sending. Those
+ * contacts are retired: main tells ATAK devices to drop them after the upgrade.
+ */
+export function retiredRoomContactUid(room: string): string {
+  return `${TAK_CHAT_ROOM_UID_PREFIX}${fnv1aHex(room)}`;
+}
+
+/** Most retired rooms the renderer may hand main. */
+const RETIRED_ROOMS_MAX = 64;
+
+/** Validate the renderer's list of retired room names. Throws when malformed. */
+export function parseTakRetiredRooms(raw: unknown): string[] {
+  const channel = 'tak:retireChatRooms';
+  if (!Array.isArray(raw) || raw.length > RETIRED_ROOMS_MAX) {
+    throw new Error(`${channel}: expected a list of at most ${RETIRED_ROOMS_MAX} room names`);
+  }
+  return [...new Set(raw.map((r) => label(r, TAK_GEOCHAT_ROOM_MAX_LEN, 'room', channel)))];
+}
+
 export function channelContactUid(channelKey: string): string {
   return `${TAK_CHAT_ROOM_UID_PREFIX}${fnv1aHex(channelKey)}`;
 }
@@ -141,12 +161,15 @@ export function buildChannelChatCot(
   );
 }
 
-/** A trimmed single-line label of 1 to `max` characters; throws naming `field` otherwise. */
-function label(value: unknown, max: number, field: string): string {
-  if (typeof value !== 'string') throw new Error(`tak:pushChatMessage: ${field} must be a string`);
+/**
+ * A trimmed single-line label of 1 to `max` characters; throws naming the IPC `channel` and
+ * `field` otherwise.
+ */
+function label(value: unknown, max: number, field: string, channel: string): string {
+  if (typeof value !== 'string') throw new Error(`${channel}: ${field} must be a string`);
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > max || CONTROL_CHARS_RE.test(trimmed)) {
-    throw new Error(`tak:pushChatMessage: ${field} must be 1-${max} printable characters`);
+    throw new Error(`${channel}: ${field} must be 1-${max} printable characters`);
   }
   return trimmed;
 }
@@ -161,7 +184,12 @@ export function parseTakChannelChatMessage(raw: unknown): TAKChannelChatMessage 
     throw new Error('tak:pushChatMessage: channelKey must be a channel identity key');
   }
   const channelKey = m.channelKey;
-  const senderCallsign = label(m.senderCallsign, TAK_GEOCHAT_CALLSIGN_MAX_LEN, 'senderCallsign');
+  const senderCallsign = label(
+    m.senderCallsign,
+    TAK_GEOCHAT_CALLSIGN_MAX_LEN,
+    'senderCallsign',
+    'tak:pushChatMessage',
+  );
   if (typeof m.text !== 'string' || !m.text.trim() || m.text.length > TAK_GEOCHAT_TEXT_MAX_LEN) {
     throw new Error(`tak:pushChatMessage: text must be 1-${TAK_GEOCHAT_TEXT_MAX_LEN} characters`);
   }

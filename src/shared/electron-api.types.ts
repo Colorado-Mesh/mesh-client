@@ -1454,6 +1454,11 @@ export interface ElectronAPI {
      * contact; ignored while no sink has started.
      */
     setChatChannels: (channels: TakChatChannel[]) => Promise<void>;
+    /**
+     * Name the previous version's GeoChat rooms, whose contacts TAK clients should drop;
+     * ignored while no sink has started.
+     */
+    retireChatRooms: (rooms: string[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */

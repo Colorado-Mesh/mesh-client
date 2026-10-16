@@ -560,3 +560,30 @@ describe('tak:setChatChannels', () => {
     expect(setChatChannels).not.toHaveBeenCalled();
   });
 });
+
+describe('tak:retireChatRooms', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  async function register(manager: unknown): Promise<Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return handle.mock.calls.find((c) => c[0] === 'tak:retireChatRooms')?.[1] as Handler;
+  }
+
+  it('validates the room names and hands them to the manager, once it exists', async () => {
+    const retireChatRooms = vi.fn();
+    const handler = await register({ retireChatRooms });
+    handler({}, [' Ops ']);
+    expect(retireChatRooms).toHaveBeenCalledWith(['Ops']);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:retireChatRooms');
+    expect(() => handler({}, 'Ops')).toThrow(/tak:retireChatRooms/);
+    expect((await register(null))({}, ['Ops'])).toBeUndefined();
+  });
+});

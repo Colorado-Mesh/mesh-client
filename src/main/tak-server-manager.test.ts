@@ -94,7 +94,7 @@ import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager'
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
 import { COT_FRAME_MAX_BYTES } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
-import { channelContactUid } from './tak/geochat-cot';
+import { channelContactUid, retiredRoomContactUid } from './tak/geochat-cot';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
@@ -867,6 +867,31 @@ describe('TakServerManager served channels', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("tells clients to drop the previous version's room contacts, now and as they connect", () => {
+    const manager = new TakServerManager();
+    const early = connect(manager);
+    const deletes = (socket: tls.TLSSocket) =>
+      written(socket).filter((l) => l.includes('type="t-x-d-d"'));
+    manager.retireChatRooms(['Ops', 'Public']);
+    expect(deletes(early).map((l) => /<link uid="([^"]+)"/.exec(l)?.[1])).toEqual([
+      retiredRoomContactUid('Ops'),
+      retiredRoomContactUid('Public'),
+    ]);
+    // The same list again sends nothing new to a connected client.
+    vi.mocked(early.write).mockClear();
+    manager.retireChatRooms(['Ops', 'Public']);
+    expect(deletes(early)).toEqual([]);
+
+    const late = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(late);
+    expect(deletes(late)).toHaveLength(2);
+
+    manager.retireChatRooms([]);
+    const after = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(after);
+    expect(deletes(after)).toEqual([]);
   });
 
   it('announces each channel as a contact, to connected clients and to ones that connect later', () => {

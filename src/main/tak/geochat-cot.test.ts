@@ -8,6 +8,8 @@ import {
   geochatSenderUid,
   parseTakChannelChatMessage,
   parseTakChatChannels,
+  parseTakRetiredRooms,
+  retiredRoomContactUid,
 } from './geochat-cot';
 
 const NOW = Date.parse('2026-10-09T12:00:00.000Z');
@@ -166,5 +168,20 @@ describe('parseTakChatChannels', () => {
     ['no remote flag', [{ key: KEY, name: '#MC Ops', send: true }]],
   ])('rejects %s', (_label, raw) => {
     expect(() => parseTakChatChannels(raw)).toThrow(/tak:setChatChannels/);
+  });
+});
+
+describe('retired GeoChat rooms', () => {
+  it('names the contact the previous version announced for a room', () => {
+    expect(retiredRoomContactUid('Ops')).toMatch(/^MESHROOM-[0-9a-f]{8}$/);
+    expect(retiredRoomContactUid('Ops')).not.toBe(retiredRoomContactUid('ops'));
+    expect(retiredRoomContactUid('Ops')).not.toBe(channelContactUid(KEY));
+  });
+
+  it('accepts a list of room names, trimmed and without repeats', () => {
+    expect(parseTakRetiredRooms([' Ops ', 'Ops', 'Public'])).toEqual(['Ops', 'Public']);
+    for (const bad of ['Ops', [' '], ['a\nb'], ['x'.repeat(65)], Array(65).fill('Ops')]) {
+      expect(() => parseTakRetiredRooms(bad)).toThrow(/^tak:retireChatRooms: /);
+    }
   });
 });

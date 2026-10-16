@@ -400,6 +400,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       setStyleSettings: async (settings: TakStyleSettings) => settings,
       pushChatMessage: async () => {},
       setChatChannels: async () => {},
+      retireChatRooms: async () => {},
       onInboundChat: noopUnsub,
     },
     bleCoexistence: {

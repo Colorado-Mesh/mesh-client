@@ -171,18 +171,18 @@ export default function TakChannelRelaySection({
         <ul className="space-y-2">
           {channels.map((ch) => {
             const name = ch.name || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
-            const picked = prefs?.chatChannels.includes(ch.index) ?? false;
+            const picked = prefs?.chatChannels.includes(ch.key) ?? false;
             const served = mode === 'all' || (mode === 'selected' && picked);
             const rowId = `tak-channel-${identityId}-${ch.index}`;
             return (
-              <li key={ch.index} className="flex flex-wrap items-center gap-3 text-xs">
+              <li key={ch.key} className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="text-ink-200 min-w-24 font-medium">{name}</span>
                 {mode === 'selected' && (
                   <RowCheck
                     id={`${rowId}-serve`}
                     checked={picked}
                     onChange={(on) => {
-                      setChatChannel(identityId, ch.index, on);
+                      setChatChannel(identityId, ch.key, on);
                     }}
                     label={t('takServerPanel.channelServe')}
                     ariaLabel={t('takServerPanel.channelServeFor', { channel: name })}
@@ -192,28 +192,28 @@ export default function TakChannelRelaySection({
                   <>
                     <AtakNameField
                       id={`${rowId}-name`}
-                      saved={prefs?.atakNames[ch.index] ?? ''}
+                      saved={prefs?.atakNames[ch.key] ?? ''}
                       automatic={ch.atakName}
                       onSave={(atakName) => {
-                        setAtakName(identityId, ch.index, atakName);
+                        setAtakName(identityId, ch.key, atakName);
                       }}
                       label={t('takServerPanel.channelAtakNameLabel')}
                       ariaLabel={t('takServerPanel.channelAtakNameFor', { channel: name })}
                     />
                     <RowCheck
                       id={`${rowId}-send`}
-                      checked={prefs?.sendChannels.includes(ch.index) ?? false}
+                      checked={prefs?.sendChannels.includes(ch.key) ?? false}
                       onChange={(on) => {
-                        setChatSend(identityId, ch.index, on);
+                        setChatSend(identityId, ch.key, on);
                       }}
                       label={t('takServerPanel.channelSend')}
                       ariaLabel={t('takServerPanel.channelSendFor', { channel: name })}
                     />
                     <RowCheck
                       id={`${rowId}-remote`}
-                      checked={prefs?.remoteChannels.includes(ch.index) ?? false}
+                      checked={prefs?.remoteChannels.includes(ch.key) ?? false}
                       onChange={(on) => {
-                        setChatRemote(identityId, ch.index, on);
+                        setChatRemote(identityId, ch.key, on);
                       }}
                       label={t('takServerPanel.channelRemote')}
                       ariaLabel={t('takServerPanel.channelRemoteFor', { channel: name })}

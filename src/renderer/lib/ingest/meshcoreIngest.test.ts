@@ -707,7 +707,7 @@ function serveTakChannel(identityId: string, index: number, key: string): void {
     { protocol: 'meshcore', index, key, name: `Ch ${index}`, atakName: `#Ch ${index}` },
   ]);
   useTakRelayPrefsStore.getState().setChannelMode(identityId, 'selected');
-  useTakRelayPrefsStore.getState().setChatChannel(identityId, index, true);
+  useTakRelayPrefsStore.getState().setChatChannel(identityId, key, true);
 }
 
 describe('meshcore ingest TAK channel relay', () => {
