@@ -5803,7 +5803,9 @@
     "channelSendFor": "Permitir que los dispositivos ATAK se envíen a {{channel}}",
     "channelRemote": "Servidor remoto",
     "channelRemoteFor": "Transmite {{channel}} al servidor TAK remoto",
-    "channelTrackersFor": "Correcciones del rastreador de {{channel}}"
+    "channelTrackersFor": "Correcciones del rastreador de {{channel}}",
+    "directMessages": "Mensajes directos",
+    "directMessagesHint": "Deje que los dispositivos ATAK envíen mensajes a los compañeros de esta radio. Cada acompañante de este mensaje de radio Can recibe una opción de chat en ATAK, y sale un mensaje de esta radio, con el prefijo del indicativo del remitente. Sus respuestas van al dispositivo ATAK que le escribió por última vez, o a todos los dispositivos cuando ninguno lo ha hecho. Un compañero sin posición aparece en 0, 0 durante un día después de un mensaje."
   },
   "telemetryPanel": {
     "title": "Telemetría",

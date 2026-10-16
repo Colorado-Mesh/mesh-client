@@ -5803,7 +5803,9 @@
     "channelSendFor": "ATAK-Geräte an {{channel}} senden lassen",
     "channelRemote": "Remote Server",
     "channelRemoteFor": "{{channel}} zum entfernten TAK -Server streamen",
-    "channelTrackersFor": "Tracker-Fixes von {{channel}}"
+    "channelTrackersFor": "Tracker-Fixes von {{channel}}",
+    "directMessages": "Direktnachrichten",
+    "directMessagesHint": "Lassen Sie ATAK-Geräte die Begleiter dieses Radios benachrichtigen. Jeder Begleiter, der diese Funknachricht empfangen kann, erhält eine Chat-Option in ATAK, und eine Nachricht an ihn geht von diesem Funkgerät aus, der das Rufzeichen des Absenders vorangestellt ist. Die Antworten gehen an das ATAK-Gerät, das zuletzt an es geschrieben hat, oder an jedes Gerät, wenn dies nicht der Fall ist. Ein Begleiter ohne Position erscheint für einen Tag nach einer Nachricht bei 0, 0."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
