@@ -7638,6 +7638,8 @@
       "error": "Could not summarize. Check AI settings and retry."
     },
     "smallModel": "Basic summaries; may misread senders or unanswered questions",
-    "balancedModel": "Better multilingual summaries; slower"
+    "balancedModel": "Better multilingual summaries; slower",
+    "loadingModel": "Loading model on this device...",
+    "readingMessages": "Reading messages on this device. CPU processing may take a few minutes..."
   }
 }

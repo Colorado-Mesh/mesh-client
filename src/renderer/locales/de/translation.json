@@ -7627,6 +7627,8 @@
       "error": "Konnte nicht zusammengefasst werden. Überprüfen Sie die KI-Einstellungen und versuchen Sie es erneut."
     },
     "smallModel": "Einfache Zusammenfassungen; Absender oder offene Fragen können falsch erkannt werden",
-    "balancedModel": "Bessere mehrsprachige Zusammenfassungen; langsamer"
+    "balancedModel": "Bessere mehrsprachige Zusammenfassungen; langsamer",
+    "loadingModel": "Modell auf diesem Gerät wird geladen...",
+    "readingMessages": "Lesen von Nachrichten auf diesem Gerät. Die CPU-Verarbeitung kann einige Minuten dauern..."
   }
 }

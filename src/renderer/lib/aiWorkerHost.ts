@@ -3,6 +3,8 @@ import type { Wllama } from '@wllama/wllama/esm/index';
 import type { AiLocalJob } from '@/shared/ai-types';
 import { AI_MAX_OUTPUT_TOKENS } from '@/shared/ai-types';
 
+export type AiWorkerPhase = 'loadingModel' | 'readingMessages';
+
 // Wllama owns the dedicated WASM worker. No runtime, worker or assets load at import time.
 export class AiWorkerHost {
   private runtime: Wllama | null = null;
@@ -11,6 +13,7 @@ export class AiWorkerHost {
     job: AiLocalJob,
     signal: AbortSignal,
     onDelta: (value: string) => void,
+    onPhase?: (phase: AiWorkerPhase) => void,
   ): Promise<void> {
     if (this.busy) throw new Error('busy');
     this.busy = true;
@@ -20,39 +23,64 @@ export class AiWorkerHost {
       });
     };
     signal.addEventListener('abort', abort, { once: true });
+    let failRuntime!: () => void;
+    const fatal = new Promise<never>((_resolve, reject) => {
+      failRuntime = () => {
+        reject(new Error('engineNotReady'));
+      };
+    });
+    // A worker can fail before the first runtime operation attaches its race.
+    void fatal.catch(() => {
+      /* catch-no-log-ok the operation race reports a fixed runtime error */
+    });
     const raced = <T>(work: Promise<T>): Promise<T> =>
       new Promise<T>((resolve, reject) => {
         const cancel = () => {
           reject(new DOMException('AI generation cancelled', 'AbortError'));
         };
         signal.addEventListener('abort', cancel, { once: true });
-        work.then(resolve, reject).finally(() => {
-          signal.removeEventListener('abort', cancel);
-        });
+        Promise.race([work, fatal])
+          .then(resolve, reject)
+          .finally(() => {
+            signal.removeEventListener('abort', cancel);
+          });
         if (signal.aborted) cancel();
       });
     try {
-      const [{ Wllama }, { default: wasmUrl }] = await Promise.all([
-        import('@wllama/wllama/esm/index'),
-        import('@wllama/wllama/esm/wasm/wllama.wasm?url'), // source-policy-ok translation-no-bundled-models inert runtime, not model weights
-      ]);
+      const [{ Wllama }, { default: wasmUrl }] = await raced(
+        Promise.all([
+          import('@wllama/wllama/esm/index'),
+          import('@wllama/wllama/esm/wasm/wllama.wasm?url'), // source-policy-ok translation-no-bundled-models inert runtime, not model weights
+        ]),
+      );
       signal.throwIfAborted();
       const quiet = () => {};
       const runtime = new Wllama(
         { default: wasmUrl },
         {
           suppressNativeLog: true,
-          logger: { debug: quiet, log: quiet, warn: quiet, error: quiet },
+          logger: { debug: quiet, log: quiet, warn: quiet, error: failRuntime },
         },
       );
       runtime.setCompat(null);
       this.runtime = runtime;
-      const response = await fetch(job.modelUrl, { signal });
+      onPhase?.('loadingModel');
+      const response = await raced(fetch(job.modelUrl, { signal }));
       if (!response.ok) throw new Error('engineNotReady');
-      const blob = await response.blob();
+      const blob = await raced(response.blob());
       signal.throwIfAborted();
-      await raced(runtime.loadModel([blob], { n_ctx: 8192, n_threads: 1, n_gpu_layers: 0 }));
+      await raced(
+        runtime.loadModel([blob], {
+          n_ctx: 4096,
+          n_threads: 1,
+          n_gpu_layers: 0,
+          n_parallel: 1,
+          n_batch: 128,
+          n_ubatch: 128,
+        }),
+      );
       signal.throwIfAborted();
+      onPhase?.('readingMessages');
       const stream = await raced(
         runtime.createChatCompletion({
           messages: [

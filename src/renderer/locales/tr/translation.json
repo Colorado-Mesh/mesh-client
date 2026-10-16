@@ -7627,6 +7627,8 @@
       "error": "Özetlenemedi. AI ayarlarını kontrol edin ve yeniden deneyin."
     },
     "smallModel": "Temel özetler; gönderenleri veya yanıtsız soruları yanlış yorumlayabilir",
-    "balancedModel": "Daha iyi çok dilli özetler; daha yavaş"
+    "balancedModel": "Daha iyi çok dilli özetler; daha yavaş",
+    "loadingModel": "Model bu cihaza yükleniyor...",
+    "readingMessages": "Bu cihazdaki mesajlar okunuyor. CPU'nun işlenmesi birkaç dakika sürebilir..."
   }
 }

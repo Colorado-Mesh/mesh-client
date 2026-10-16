@@ -7627,6 +7627,8 @@
       "error": "Tidak dapat meringkas. Periksa pengaturan AI dan coba lagi."
     },
     "smallModel": "Ringkasan dasar; dapat salah menafsirkan pengirim atau pertanyaan yang belum terjawab",
-    "balancedModel": "Ringkasan multibahasa yang lebih baik; lebih lambat"
+    "balancedModel": "Ringkasan multibahasa yang lebih baik; lebih lambat",
+    "loadingModel": "Memuat model pada perangkat ini...",
+    "readingMessages": "Membaca pesan di perangkat ini. Pemrosesan CPU mungkin memakan waktu beberapa menit..."
   }
 }

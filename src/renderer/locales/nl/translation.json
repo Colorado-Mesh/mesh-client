@@ -7627,6 +7627,8 @@
       "error": "Kon het niet samenvatten. Controleer de AI-instellingen en probeer het opnieuw."
     },
     "smallModel": "Eenvoudige samenvattingen; kunnen afzenders of open vragen verkeerd interpreteren",
-    "balancedModel": "Betere meertalige samenvattingen; langzamer"
+    "balancedModel": "Betere meertalige samenvattingen; langzamer",
+    "loadingModel": "Model laden op dit apparaat...",
+    "readingMessages": "Berichten lezen op dit apparaat. CPU-verwerking kan een paar minuten duren..."
   }
 }

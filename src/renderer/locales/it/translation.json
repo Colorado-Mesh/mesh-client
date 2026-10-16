@@ -7627,6 +7627,8 @@
       "error": "Impossibile riepilogare. Controlla le impostazioni AI e riprova."
     },
     "smallModel": "Riepiloghi di base; possono interpretare male mittenti o domande senza risposta",
-    "balancedModel": "Riepiloghi multilingue migliori; più lenti"
+    "balancedModel": "Riepiloghi multilingue migliori; più lenti",
+    "loadingModel": "Caricamento del modello su questo dispositivo in corso...",
+    "readingMessages": "Lettura dei messaggi su questo dispositivo. L'elaborazione della CPU potrebbe richiedere alcuni minuti..."
   }
 }

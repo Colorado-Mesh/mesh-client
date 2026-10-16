@@ -7702,6 +7702,8 @@
     "hours_few": "Poslední {{count}} hodiny",
     "provider_few": "{{provider}} · {{model}} · {{count}} zprávy",
     "smallModel": "Základní souhrny; mohou chybně určit odesílatele či nezodpovězené otázky",
-    "balancedModel": "Lepší vícejazyčné shrnutí; pomalejší"
+    "balancedModel": "Lepší vícejazyčné shrnutí; pomalejší",
+    "loadingModel": "Načítání modelu na tomto zařízení...",
+    "readingMessages": "Čtení zpráv na tomto zařízení. Zpracování procesoru může trvat několik minut..."
   }
 }

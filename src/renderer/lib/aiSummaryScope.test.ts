@@ -34,6 +34,33 @@ describe('AI summary scope and RRC read boundaries', () => {
     expect(loadPersistedRrcLastRead()[rrcReadKey(hub, '#lobby')]).toBe(200);
     expect(openingRrcReadWatermark(hub, '#Lobby')).toBe(100);
   });
+  it('does not turn a caught-up legacy RRC room into all unread history', () => {
+    localStorage.clear();
+    const hub = 'ef'.repeat(16);
+    snapshotRrcReadWatermark(hub, 'room', 0, [{ timestamp: 100 }, { timestamp: 200 }]);
+    expect(openingRrcReadWatermark(hub, 'room')).toBe(200);
+    expect(
+      selectSummaryMessages({
+        messages: [{ at: 200, sender: 'A', body: 'already read' }],
+        scope: { kind: 'unread' },
+        watermark: openingRrcReadWatermark(hub, 'room'),
+      }),
+    ).toEqual([]);
+  });
+  it('excludes delayed historical hydration after opening an empty caught-up RRC room', () => {
+    localStorage.clear();
+    const hub = 'aa'.repeat(16);
+    const old = Date.now() - 5000;
+    snapshotRrcReadWatermark(hub, 'room', 0, []);
+    mergeRrcReadWatermark(hub, 'room', old);
+    expect(
+      selectSummaryMessages({
+        messages: [{ at: old, sender: 'A', body: 'hydrated read history' }],
+        scope: { kind: 'unread' },
+        watermark: openingRrcReadWatermark(hub, 'room'),
+      }),
+    ).toEqual([]);
+  });
   it('uses live unread count when no persistent watermark exists and clamps future timestamps', () => {
     localStorage.clear();
     const hub = 'cd'.repeat(16);

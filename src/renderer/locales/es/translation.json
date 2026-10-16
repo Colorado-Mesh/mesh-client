@@ -7627,6 +7627,8 @@
       "error": "No se ha podido resumir. Compruebe la configuración de IA y vuelva a intentarlo."
     },
     "smallModel": "Resúmenes básicos; pueden interpretar mal remitentes o preguntas sin respuesta",
-    "balancedModel": "Mejores resúmenes multilingües; más lento"
+    "balancedModel": "Mejores resúmenes multilingües; más lento",
+    "loadingModel": "Cargando modelo en este dispositivo...",
+    "readingMessages": "Leyendo mensajes en este dispositivo. El procesamiento de la CPU puede tardar unos minutos..."
   }
 }

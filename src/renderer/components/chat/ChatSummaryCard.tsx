@@ -37,7 +37,14 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
         aria-atomic="true"
         className="text-ink-100 my-2 whitespace-pre-wrap"
       >
-        {state.error ? t(`aiSummary.error.${state.error}`) : state.text || t('aiSummary.working')}
+        {state.error
+          ? t(`aiSummary.error.${state.error}`)
+          : state.text ||
+            (state.phase === 'loadingModel'
+              ? t('aiSummary.loadingModel')
+              : state.phase === 'readingMessages'
+                ? t('aiSummary.readingMessages')
+                : t('aiSummary.working'))}
       </div>
       {state.truncated && <p className="text-xs text-orange-300">{t('aiSummary.truncated')}</p>}
       <p className="text-muted text-xs">{t('aiSummary.verify')}</p>

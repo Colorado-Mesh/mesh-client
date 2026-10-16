@@ -28,11 +28,28 @@ const input = {
   history: { protocol: 'meshcore' as const, surface: 'channel' as const, channel: 0 },
 };
 beforeEach(() => {
+  vi.mocked(window.electronAPI.ai.summarize).mockClear();
   disposeAiSummaries();
   useAiSummaryStore.getState().setStatus(ready);
   vi.mocked(window.electronAPI.ai.summarize).mockResolvedValue({ ok: true });
 });
 describe('conversation summary async boundaries', () => {
+  it('preserves the opening unread boundary and excludes older fetched history', async () => {
+    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+      { at: 100, sender: 'Alice', body: 'read' },
+      { at: 200, sender: 'Bob', body: 'unread' },
+    ]);
+    const { result } = renderHook(() => useConversationSummary({ ...input, watermark: 100 }));
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [{ at: 200, sender: 'Bob', body: 'unread' }],
+        scope: { kind: 'unread' },
+      }),
+    );
+  });
   it('cancels history loading promptly and ignores a late failure after dismiss', async () => {
     let reject!: (error: Error) => void;
     vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
+import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
@@ -119,6 +120,8 @@ vi.mock('@tanstack/react-virtual', () => ({
 }));
 
 beforeEach(() => {
+  disposeAiSummaries();
+  useAiSummaryStore.setState({ status: null });
   localStorage.clear();
   mockIsAtEnd = true;
   mockScrollDirection = 'forward';
@@ -2237,6 +2240,65 @@ describe('ChatPanel unread watermarks', () => {
     nodes: new Map(),
     isActive: true,
   };
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'does not summarize read history after the %s unread divider clears',
+    async (protocol) => {
+      const ts = Date.now() - 1000;
+      const isDm = protocol === 'reticulum';
+      const readKey = isDm ? 'dm:2' : 'ch:0';
+      localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ [readKey]: ts - 1000 }));
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      const history = [{ at: ts, sender: 'Alice', body: 'Already read' }];
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue(history);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            dmOnlyChat={isDm}
+            initialDmTarget={isDm ? 2 : undefined}
+            messages={[
+              {
+                to: isDm ? 1 : undefined,
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Already read',
+                channel: 0,
+                timestamp: ts,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      await waitFor(() => {
+        const stored = JSON.parse(
+          localStorage.getItem(lastReadStorageKey(protocol)) ?? '{}',
+        ) as Record<string, number>;
+        expect(stored[readKey]).toBe(ts);
+      });
+      fireEvent.scroll(container.querySelector('[data-chat-scroll-root]')!);
+      await waitFor(() => {
+        expect(screen.queryByText('New messages')).not.toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+      await waitFor(() => {
+        expect(screen.getByRole('status')).toHaveTextContent('No messages in this range');
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sinceMs: ts }),
+      );
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    },
+  );
 
   it('keeps DM tab open after unread clears when conversation was opened via DM tab', async () => {
     const user = userEvent.setup();

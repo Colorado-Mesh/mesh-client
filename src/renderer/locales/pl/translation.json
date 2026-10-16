@@ -7753,6 +7753,8 @@
     "provider_many": "{{provider}} · {{model}} · {{count}} wiadomości",
     "provider_few": "{{provider}} · {{model}} · {{count}} wiadomości",
     "smallModel": "Podstawowe podsumowania; mogą błędnie rozpoznać nadawców lub pytania bez odpowiedzi",
-    "balancedModel": "Lepsze wielojęzyczne podsumowania; wolniej"
+    "balancedModel": "Lepsze wielojęzyczne podsumowania; wolniej",
+    "loadingModel": "Ładowanie modelu na to urządzenie...",
+    "readingMessages": "Odczytywanie wiadomości na tym urządzeniu. Przetwarzanie przez procesor może potrwać kilka minut..."
   }
 }

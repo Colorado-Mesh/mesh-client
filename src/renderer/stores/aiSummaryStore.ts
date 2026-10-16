@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
 import type {
   AiActionResult,
@@ -17,6 +18,7 @@ export interface ConversationSummary {
   requestId: string;
   text: string;
   streaming: boolean;
+  phase?: AiWorkerPhase;
   provider: string;
   model: string;
   messageCount: number;
@@ -159,6 +161,10 @@ export async function runSummary(
   useAiSummaryStore.setState((state) => ({
     summaries: { ...Object.fromEntries(Object.entries(state.summaries).slice(-49)), [key]: entry },
   }));
+  if (!request.messages.length) {
+    patch(key, id, { streaming: false, error: 'noMessages' });
+    return;
+  }
   const ownsBundled = status.engine === 'bundled';
   if (ownsBundled && bundledBusy) {
     patch(key, id, { streaming: false, error: 'busy' });
@@ -175,8 +181,28 @@ export async function runSummary(
     signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError'
       ? ('timeout' as const)
       : ('cancelled' as const);
+  const onAbort = () => {
+    patch(key, id, { streaming: false, error: abortReason() });
+    void window.electronAPI.ai.cancel(id).catch(() => {
+      // catch-no-log-ok local state already reflects cancellation
+    });
+  };
+  signal.addEventListener('abort', onAbort, { once: true });
+  let rejectAbort!: () => void;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    rejectAbort = () => {
+      reject(
+        signal.reason instanceof Error
+          ? signal.reason
+          : new DOMException('AI generation cancelled', 'AbortError'),
+      );
+    };
+    signal.addEventListener('abort', rejectAbort, { once: true });
+    if (signal.aborted) rejectAbort();
+  });
   try {
-    const result: AiActionResult = await window.electronAPI.ai.summarize(request);
+    const acknowledgement = window.electronAPI.ai.summarize(request);
+    const result: AiActionResult = await Promise.race([acknowledgement, aborted]);
     if (before !== revision || signal.aborted) {
       if (before === revision) patch(key, id, { streaming: false, error: abortReason() });
       await window.electronAPI.ai.cancel(id);
@@ -188,7 +214,7 @@ export async function runSummary(
     }
     if (result.localJob) {
       const job = result.localJob;
-      const { AiWorkerHost } = await import('@/renderer/lib/aiWorkerHost');
+      const { AiWorkerHost } = await Promise.race([import('@/renderer/lib/aiWorkerHost'), aborted]);
       signal.throwIfAborted();
       const host = new AiWorkerHost();
       let text = '';
@@ -197,11 +223,18 @@ export async function runSummary(
         messageCount: job.messageCount,
         truncated: job.truncated || historyTruncated,
       });
-      await host.generate(job, signal, (delta) => {
-        text += delta;
-        if (text.length > AI_MAX_RESPONSE_BYTES) throw new Error('tooLarge');
-        patch(key, id, { text });
-      });
+      await host.generate(
+        job,
+        signal,
+        (delta) => {
+          text += delta;
+          if (text.length > AI_MAX_RESPONSE_BYTES) throw new Error('tooLarge');
+          patch(key, id, { text });
+        },
+        (phase) => {
+          patch(key, id, { phase });
+        },
+      );
       signal.throwIfAborted();
       patch(key, id, {
         text,
@@ -214,6 +247,8 @@ export async function runSummary(
     if (before === revision)
       patch(key, id, { streaming: false, error: signal.aborted ? abortReason() : 'error' });
   } finally {
+    signal.removeEventListener('abort', onAbort);
+    signal.removeEventListener('abort', rejectAbort);
     if (ownsBundled) bundledBusy = false;
     if (controllers.get(key) === controller) controllers.delete(key);
   }

@@ -62,7 +62,7 @@ and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budg
 thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
 is independently capped at 1,000 characters. Context budgets preserve complete newest messages and disclose
 truncation. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
-to 3,500 bytes for Apple’s 4,096-token context and 7,600 bytes for the 8,192-token WASM context.
+to 3,500 bytes for both Apple’s and the WASM engine’s 4,096-token contexts.
 This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote context
 capacity remains model-dependent, with a 64,000-byte prompt cap.
 
@@ -74,7 +74,9 @@ Reticulum uses identity plus full destination hash; RRC uses canonical hub/room 
 MeshCore skew normalization occurs before range filtering. `idx_mc_msgs_room_ts` is additive and
 idempotent; no schema version change is needed.
 
-Chat and Rooms reuse their opening unread-divider snapshots. RRC persists canonical read
+Chat and Rooms reuse their opening unread-divider snapshots while the divider is active.
+After the divider is cleared, summaries use the current persisted read watermark; hiding a
+divider must never reset the unread range to all history. Empty ranges skip inference. RRC persists canonical read
 watermarks through `rrcReadWatermark.ts`, snapshots before selection clears unread and retains
 that boundary while caught-up updates the live watermark. An absent watermark can fall back to
 the live unread count. History retention can remove older traffic, so counts refer to text
@@ -84,8 +86,11 @@ Bundled inference returns a validated `localJob` from main and runs through a th
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
 The module is dynamically imported only for explicit generation, uses bundled WASM, disables
 CDN compatibility fallback and suppresses native logging. Single-thread CPU settings work
-without changing cross-origin isolation. A global latch bounds model concurrency. CPU inference has a five-minute deadline covering
-model loading and generation; endpoint/native requests retain the one-minute deadline. Abort races
+without changing cross-origin isolation. A global latch bounds model concurrency. The worker uses a single completion slot and bounded
+128-token batches. Model loading and transcript processing are shown separately; worker startup
+errors fail the request without retaining their potentially sensitive details. CPU inference has a five-minute deadline covering
+model loading and generation; endpoint/native requests retain the one-minute deadline.
+The renderer deadline also covers stalled main-process acknowledgements and runtime imports. Abort races
 initialization and terminates the worker even if upstream model loading has not settled.
 
 `mesh-ai:` serves only enabled, verified manifest assets, with realpath containment and CORS for

@@ -2799,7 +2799,7 @@ function ChatPanel({
     protocol,
     surface: viewMode === 'dm' ? 'dm' : 'channel',
     messages: summaryMessages,
-    watermark: unreadDividerTimestamp,
+    watermark: unreadDividerTimestamp || persistedLastRead[readKey] || 0,
     available: viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null),
     history: {
       protocol,

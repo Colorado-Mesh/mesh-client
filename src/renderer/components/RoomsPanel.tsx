@@ -459,7 +459,10 @@ export default function RoomsPanel({
     label: activeRoom?.long_name ?? `Room ${selectedRoomId}`,
     protocol: 'meshcore',
     surface: 'room',
-    watermark: unreadDividerTimestamp,
+    watermark:
+      unreadDividerTimestamp ||
+      (selectedRoomId != null ? persistedRoomsLastRead[selectedRoomId] : 0) ||
+      0,
     messages: summaryMessages,
     available: selectedRoomId != null,
     history:

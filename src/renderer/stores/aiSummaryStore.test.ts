@@ -71,6 +71,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe('AI summary request correlation', () => {
+  it('shows an empty range without probing or starting inference', async () => {
+    await runSummary('chat', { ...request, messages: [] });
+    expect(api.summarize).not.toHaveBeenCalled();
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      messageCount: 0,
+      streaming: false,
+      error: 'noMessages',
+    });
+  });
   it('single-flights each conversation, accumulates chunks and preserves history truncation', async () => {
     await runSummary('chat', request, true);
     await runSummary('chat', { ...request, requestId: 'other' });
@@ -109,7 +118,7 @@ describe('AI summary request correlation', () => {
     error({ requestId: 'id', reason: 'httpError' });
     expect(useAiSummaryStore.getState().summaries).toEqual({});
   });
-  it('finishes a timed-out request whose main acknowledgement arrives late', async () => {
+  it('times out before a stalled main acknowledgement and ignores its late result', async () => {
     const timeout = new AbortController();
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal);
     let acknowledge!: (value: { ok: boolean }) => void;
@@ -120,12 +129,31 @@ describe('AI summary request correlation', () => {
     );
     const pending = runSummary('chat', request);
     timeout.abort(new DOMException('Timed out', 'TimeoutError'));
-    acknowledge({ ok: true });
     await pending;
+    acknowledge({ ok: true });
+    await Promise.resolve();
     expect(api.cancel).toHaveBeenCalledWith('id');
     expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
       streaming: false,
       error: 'timeout',
+    });
+  });
+  it('cancels a stalled acknowledgement immediately and accepts a new request', async () => {
+    let acknowledge!: (value: { ok: boolean }) => void;
+    vi.mocked(api.summarize).mockReturnValueOnce(
+      new Promise((resolve) => {
+        acknowledge = resolve;
+      }),
+    );
+    const pending = runSummary('chat', request);
+    cancelSummary('chat');
+    await pending;
+    await runSummary('chat', { ...request, requestId: 'retry' });
+    acknowledge({ ok: true });
+    await Promise.resolve();
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      requestId: 'retry',
+      streaming: true,
     });
   });
   it('clears summaries when disabled or reconfigured and rejects stale status refreshes', async () => {

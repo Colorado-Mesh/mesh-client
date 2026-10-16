@@ -269,7 +269,9 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   ipcMain.handle('ai:cancel', (event, value: unknown) => {
     guard(event, 'ai:cancel', true);
     if (typeof value !== 'string' || value.length > 128) throw new Error('Invalid AI request id');
-    active.get(value)?.abort();
+    const controller = active.get(value);
+    active.delete(value);
+    controller?.abort();
   });
   ipcMain.handle('ai:summarize', async (event, value: unknown): Promise<AiActionResult> => {
     guard(event, 'ai:summarize');
@@ -280,12 +282,21 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     active.set(request.requestId, controller);
     const before = revision;
     let ready: AiActionResult;
+    let cancelReadiness!: () => void;
+    const cancelled = new Promise<never>((_resolve, reject) => {
+      cancelReadiness = () => {
+        reject(new AiFailure('cancelled'));
+      };
+      controller.signal.addEventListener('abort', cancelReadiness, { once: true });
+    });
     try {
-      ready = await check();
+      ready = await Promise.race([check(), cancelled]);
     } catch {
       // catch-no-log-ok readiness errors must not expose configuration
-      active.delete(request.requestId);
-      return { ok: false, reason: 'engineNotReady' };
+      if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      return { ok: false, reason: controller.signal.aborted ? 'cancelled' : 'engineNotReady' };
+    } finally {
+      controller.signal.removeEventListener('abort', cancelReadiness);
     }
     if (
       !ready.ok ||
@@ -308,7 +319,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const prompt = buildSummaryPrompt({
       ...request,
       maxChars: c.engine === 'os' ? 9000 : c.engine === 'bundled' ? 20000 : 60000,
-      maxPromptBytes: c.engine === 'os' ? 3500 : c.engine === 'bundled' ? 7600 : 64000,
+      maxPromptBytes: c.engine === 'os' || c.engine === 'bundled' ? 3500 : 64000,
     });
     if (!prompt.included) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);

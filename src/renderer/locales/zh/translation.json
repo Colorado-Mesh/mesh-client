@@ -7627,6 +7627,8 @@
       "error": "无法汇总。请检查AI设置并重试。"
     },
     "smallModel": "基础摘要；可能误读发送者或未回答的问题",
-    "balancedModel": "更好的多语言摘要；更慢"
+    "balancedModel": "更好的多语言摘要；更慢",
+    "loadingModel": "正在此设备上加载模型...",
+    "readingMessages": "正在读取此设备上的消息。CPU处理可能需要几分钟时间..."
   }
 }

@@ -7627,6 +7627,8 @@
       "error": "Impossible de résumer. Vérifiez les paramètres de l'IA et réessayez."
     },
     "smallModel": "Résumés simples ; peuvent mal interpréter les auteurs ou les questions sans réponse",
-    "balancedModel": "De meilleurs résumés multilingues ; plus lent"
+    "balancedModel": "De meilleurs résumés multilingues ; plus lent",
+    "loadingModel": "Chargement du modèle sur cet appareil...",
+    "readingMessages": "Lecture des messages sur cet appareil. Le traitement par le processeur peut prendre quelques minutes..."
   }
 }

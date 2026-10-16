@@ -8,9 +8,13 @@ const fixture = vi.hoisted(() => ({
   exit: vi.fn(),
   completion: vi.fn(),
   compat: vi.fn(),
+  logger: { error: () => {} },
 }));
 vi.mock('@wllama/wllama/esm/index', () => ({
   Wllama: class {
+    constructor(_paths: unknown, options: { logger: { error: () => void } }) {
+      fixture.logger = options.logger;
+    }
     loadModel = fixture.load;
     exit = fixture.exit;
     createChatCompletion = fixture.completion;
@@ -44,14 +48,48 @@ describe('bundled AI worker lifecycle', () => {
     const host = new AiWorkerHost();
     expect(fetchImpl).not.toHaveBeenCalled();
     const delta = vi.fn();
-    await host.generate(job, new AbortController().signal, delta);
+    const phase = vi.fn();
+    await host.generate(job, new AbortController().signal, delta, phase);
+    expect(phase.mock.calls).toEqual([['loadingModel'], ['readingMessages']]);
     expect(delta).toHaveBeenCalledWith('summary');
     expect(fixture.compat).toHaveBeenCalledWith(null);
     expect(fixture.load).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ n_threads: 1, n_gpu_layers: 0 }),
+      expect.objectContaining({
+        n_ctx: 4096,
+        n_threads: 1,
+        n_gpu_layers: 0,
+        n_parallel: 1,
+        n_batch: 128,
+        n_ubatch: 128,
+      }),
     );
     expect(fixture.exit).toHaveBeenCalledTimes(1);
+  });
+  it('settles a silenced upstream worker failure and can load another model', async () => {
+    fixture.exit.mockResolvedValue(undefined);
+    fixture.load.mockReturnValueOnce(new Promise(() => {})).mockResolvedValueOnce(undefined);
+    fixture.completion.mockResolvedValue(
+      (async function* () {
+        yield { choices: [{ delta: { content: 'retry summary' } }] };
+      })(),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('model')),
+    );
+    const host = new AiWorkerHost();
+    const pending = host.generate(job, new AbortController().signal, vi.fn());
+    const failure = expect(pending).rejects.toThrow('engineNotReady');
+    await vi.waitFor(() => {
+      expect(fixture.load).toHaveBeenCalled();
+    });
+    fixture.logger.error();
+    await failure;
+    expect(fixture.exit).toHaveBeenCalledOnce();
+    const delta = vi.fn();
+    await host.generate({ ...job, model: 'smaller model' }, new AbortController().signal, delta);
+    expect(delta).toHaveBeenCalledWith('retry summary');
   });
   it('terminates promptly when cancelled during an unresolved model load and can reload', async () => {
     fixture.exit.mockResolvedValue(undefined);

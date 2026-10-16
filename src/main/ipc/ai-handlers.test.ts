@@ -113,6 +113,54 @@ describe('AI IPC lifecycle and opt-in', () => {
       verify.mockRestore();
     }
   });
+  it('cancels stalled model verification and accepts a retry before it resolves', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'qwen2.5-0.5b-instruct-q4',
+      }),
+    );
+    let finish!: (value: boolean) => void;
+    const verify = vi
+      .spyOn(AiModelPackManager.prototype, 'verify')
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      )
+      .mockResolvedValue(true);
+    try {
+      const pending = handler('ai:summarize')({}, request);
+      await vi.waitFor(() => {
+        expect(verify).toHaveBeenCalledOnce();
+      });
+      await handler('ai:cancel')({}, request.requestId);
+      expect(await pending).toEqual({ ok: false, reason: 'cancelled' });
+      const retry = await handler('ai:summarize')(
+        {},
+        {
+          ...request,
+          requestId: 'retry',
+          messages: Array.from({ length: 98 }, (_, at) => ({
+            at,
+            sender: 'Alice',
+            body: 'Dense message '.repeat(8),
+          })),
+        },
+      );
+      expect(retry).toMatchObject({ ok: true, localJob: { truncated: true } });
+      const prompt = (retry as { localJob: { system: string; user: string } }).localJob;
+      expect(Buffer.byteLength(prompt.system + prompt.user)).toBeLessThanOrEqual(3500);
+      finish(true);
+      await Promise.resolve();
+    } finally {
+      verify.mockRestore();
+    }
+  });
   it('reports a removed saved model as not ready without verifying an unknown pack', async () => {
     settings.set('aiEnabled', '1');
     settings.set(
