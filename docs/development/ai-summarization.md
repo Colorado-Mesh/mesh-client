@@ -79,7 +79,9 @@ After the divider is cleared, summaries use the current persisted read watermark
 divider must never reset the unread range to all history. Empty ranges skip inference. RRC persists canonical read
 watermarks through `rrcReadWatermark.ts`, snapshots before selection clears unread and retains
 that boundary while caught-up updates the live watermark. An absent watermark can fall back to
-the live unread count. History retention can remove older traffic, so counts refer to text
+the live unread count when enough opening history exists. Without that history or a known
+read boundary, the unread scope starts at opening time; choose an explicit time range to include
+older traffic. Derived boundaries cannot lead the local clock. History retention can remove older traffic, so counts refer to text
 actually included, never an assertion that all historical traffic still exists.
 
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer

@@ -45,15 +45,20 @@ export function snapshotRrcReadWatermark(
 ): void {
   const key = rrcReadKey(hub, room);
   const stored = loadPersistedRrcLastRead()[key];
+  const now = Date.now();
+  const firstUnread =
+    unread !== undefined && unread > 0 && messages.length >= unread
+      ? messages[messages.length - unread]?.timestamp
+      : undefined;
   const fallback =
     unread !== undefined && unread > 0
-      ? messages.length >= unread
-        ? messages[messages.length - unread].timestamp - 1
-        : 0
+      ? firstUnread !== undefined && Number.isFinite(firstUnread) && firstUnread > 0
+        ? clampReadWatermarkMs(firstUnread - 1, now, 0)
+        : now
       : messages.reduce(
-          (latest, message) => Math.max(latest, message.timestamp),
-          messages.length ? 0 : Date.now(),
-        );
+          (latest, message) => Math.max(latest, clampReadWatermarkMs(message.timestamp, now, 0)),
+          0,
+        ) || now;
   openings.set(key, stored ?? fallback);
   if (openings.size > 200) openings.delete(openings.keys().next().value!);
 }

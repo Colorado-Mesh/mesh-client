@@ -61,6 +61,35 @@ describe('AI summary scope and RRC read boundaries', () => {
       }),
     ).toEqual([]);
   });
+  it('keeps unknown partial-history unread boundaries from widening to all history', () => {
+    localStorage.clear();
+    const hub = 'bb'.repeat(16);
+    const old = Date.now() - 10000;
+    snapshotRrcReadWatermark(hub, 'room', 10, [{ timestamp: old }]);
+    mergeRrcReadWatermark(hub, 'room', old);
+    expect(
+      selectSummaryMessages({
+        messages: [{ at: old, sender: 'A', body: 'hydrated old traffic' }],
+        scope: { kind: 'unread' },
+        watermark: openingRrcReadWatermark(hub, 'room'),
+      }),
+    ).toEqual([]);
+    const knownHub = 'cc'.repeat(16);
+    mergeRrcReadWatermark(knownHub, 'room', old - 1000);
+    snapshotRrcReadWatermark(knownHub, 'room', 10, [{ timestamp: old }]);
+    expect(openingRrcReadWatermark(knownHub, 'room')).toBe(old - 1000);
+  });
+  it('bounds a future opening timestamp so normally timed later traffic remains eligible', () => {
+    localStorage.clear();
+    const hub = 'dd'.repeat(16);
+    snapshotRrcReadWatermark(hub, 'room', 1, [{ timestamp: Date.now() + 1e12 }]);
+    const boundary = openingRrcReadWatermark(hub, 'room');
+    expect(boundary).toBeLessThanOrEqual(Date.now());
+    const later = { at: Date.now() + 1, sender: 'A', body: 'new traffic' };
+    expect(
+      selectSummaryMessages({ messages: [later], scope: { kind: 'unread' }, watermark: boundary }),
+    ).toEqual([later]);
+  });
   it('uses live unread count when no persistent watermark exists and clamps future timestamps', () => {
     localStorage.clear();
     const hub = 'cd'.repeat(16);

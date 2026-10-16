@@ -93,6 +93,20 @@ describe('AI IPC lifecycle and opt-in', () => {
       ).rejects.toThrow();
     expect(net.fetch).not.toHaveBeenCalled();
   });
+  it('distinguishes ready endpoint configuration from a missing model', async () => {
+    await handler('ai:setEnabled')({}, true);
+    await handler('ai:setConfig')(
+      {},
+      { engine: 'local', wireFormat: 'openai', baseUrl: 'http://127.0.0.1:1234', model: 'test' },
+    );
+    vi.mocked(net.fetch).mockResolvedValue(new Response('{"data":[{"id":"test"}]}'));
+    expect(await handler('ai:testConfig')({})).toEqual({ ok: true });
+    await handler('ai:setConfig')(
+      {},
+      { engine: 'local', wireFormat: 'openai', baseUrl: 'http://127.0.0.1:1234', model: '' },
+    );
+    expect(await handler('ai:testConfig')({})).toEqual({ ok: false, reason: 'notConfigured' });
+  });
   it('reports bundled readiness without a failure reason on success', async () => {
     settings.set('aiEnabled', '1');
     settings.set(

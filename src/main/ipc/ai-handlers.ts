@@ -138,7 +138,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       (c.engine === 'remote' && (!c.allowRemote || !c.baseUrl.startsWith('https:')))
     )
       return { ok: false, reason: 'remoteNotAcknowledged' };
-    return { ok: !!c.wireFormat && !!c.model, reason: 'notConfigured' };
+    return c.wireFormat && c.model ? { ok: true } : { ok: false, reason: 'notConfigured' };
   };
   const id = (value: unknown) => {
     if (typeof value !== 'string') throw new Error('Invalid AI model');
