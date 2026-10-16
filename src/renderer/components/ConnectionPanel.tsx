@@ -1046,12 +1046,20 @@ export default function ConnectionPanel({
         clearTimeout(autoConnectTimeoutRef.current);
         autoConnectTimeoutRef.current = null;
       }
-      // Persist only for this protocol's configure transition — not when switching the shared
-      // panel onto an already-configured protocol (stale tcpHost would clobber the stored IP).
-      if (state.connectionType && !protocolChanged) {
+      // Persist only on a real configure transition for the visible protocol. Switching the shared
+      // panel onto an already-configured radio (or rehydrate updating connectionType afterward)
+      // must not rewrite lastConnection with a stale tcpHost/httpAddress.
+      const becameConfigured = prevStoreStatusRef.current !== 'configured';
+      if (state.connectionType && becameConfigured && !protocolChanged) {
         const conn: LastConnection = { type: state.connectionType };
         if (state.connectionType === 'http' || state.connectionType === 'tcp') {
-          conn.httpAddress = activeHostAddress;
+          // Prefer the address field for the configured transport (not UI radio selection).
+          conn.httpAddress =
+            protocol === 'meshcore'
+              ? `${tcpHost}:${tcpPort}`
+              : state.connectionType === 'tcp'
+                ? tcpAddress
+                : httpAddress;
         } else if (state.connectionType === 'ble') {
           const prev = lastConnectionRef.current;
           const bleId = loadLastBleDevice(protocol) ?? prev?.bleDeviceId;
@@ -1106,7 +1114,9 @@ export default function ConnectionPanel({
     showPinPrompt,
     showSerialPicker,
     httpAddress,
-    activeHostAddress,
+    tcpAddress,
+    tcpHost,
+    tcpPort,
     connectionType,
     connecting,
     protocol,

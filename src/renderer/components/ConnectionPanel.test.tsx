@@ -1562,7 +1562,14 @@ describe('ConnectionPanel ProtocolAutoConnectCoordinator cancel', () => {
   });
 });
 
-describe('ConnectionPanel MeshCore TCP address persistence', () => {
+describe('ConnectionPanel last-connection restoration across protocol switches', () => {
+  const panelProps = {
+    onConnect: vi.fn().mockResolvedValue(undefined),
+    onAutoConnect: vi.fn().mockResolvedValue(undefined),
+    onDisconnect: vi.fn().mockResolvedValue(undefined),
+    mqttStatus: 'disconnected' as const,
+  };
+
   it('does not overwrite stored MeshCore TCP host with localhost when switching from Meshtastic while configured', async () => {
     const lastConnKey = 'mesh-client:lastConnection:meshcore';
     const stored = { type: 'http' as const, httpAddress: '192.168.1.172:5000' };
@@ -1575,21 +1582,16 @@ describe('ConnectionPanel MeshCore TCP address persistence', () => {
       connectionType: 'http',
     };
 
-    const props = {
-      onConnect: vi.fn().mockResolvedValue(undefined),
-      onAutoConnect: vi.fn().mockResolvedValue(undefined),
-      onDisconnect: vi.fn().mockResolvedValue(undefined),
-      mqttStatus: 'disconnected' as const,
-    };
-
     try {
       // Shared ConnectionPanel instance: first mount as Meshtastic leaves tcpHost at default localhost.
       const view = render(
-        <ConnectionPanel {...props} state={disconnectedState} protocol="meshtastic" />,
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
       );
 
       // MeshCore auto-connected in the background; user switches protocol to MeshCore.
-      view.rerender(<ConnectionPanel {...props} state={meshcoreConfigured} protocol="meshcore" />);
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={meshcoreConfigured} protocol="meshcore" />,
+      );
 
       await waitFor(() => {
         const raw = localStorage.getItem(lastConnKey);
@@ -1598,7 +1600,9 @@ describe('ConnectionPanel MeshCore TCP address persistence', () => {
       });
 
       // Disconnect so the TCP host field is visible, then confirm UI rehydrated.
-      view.rerender(<ConnectionPanel {...props} state={disconnectedState} protocol="meshcore" />);
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshcore" />,
+      );
       const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
       expect(radioCard).toBeTruthy();
       await userEvent
@@ -1607,6 +1611,109 @@ describe('ConnectionPanel MeshCore TCP address persistence', () => {
       expect(within(radioCard as HTMLElement).getByLabelText(/^Host$/i)).toHaveValue(
         '192.168.1.172',
       );
+      expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('does not replace a saved MeshCore BLE last-connection when switching onto a configured HTTP session', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshcore';
+    const lastBleKey = 'mesh-client:lastBleDevice:meshcore';
+    const stored = {
+      type: 'ble' as const,
+      bleDeviceId: 'aa-bb-cc-dd-ee-ff',
+      bleDeviceName: 'MeshCore-Saved',
+    };
+    localStorage.setItem(lastConnKey, JSON.stringify(stored));
+    localStorage.setItem(lastBleKey, stored.bleDeviceId);
+
+    const meshcoreConfiguredHttp: DeviceState = {
+      status: 'configured',
+      myNodeNum: 1,
+      reconnectAttempt: 0,
+      connectionType: 'http',
+    };
+
+    try {
+      const view = render(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={meshcoreConfiguredHttp} protocol="meshcore" />,
+      );
+
+      await waitFor(() => {
+        expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
+      });
+      // Allow rehydrate (connectionType → ble) to settle; must still not clobber BLE with HTTP.
+      await waitFor(() => {
+        expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
+      });
+    } finally {
+      localStorage.removeItem(lastConnKey);
+      localStorage.removeItem(lastBleKey);
+    }
+  });
+
+  it('restores Meshtastic HTTP address after switching away and back', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    const stored = { type: 'http' as const, httpAddress: '192.168.1.20' };
+    localStorage.setItem(lastConnKey, JSON.stringify(stored));
+
+    try {
+      const view = render(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshcore" />,
+      );
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+
+      await waitFor(() => {
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        expect(
+          within(radioCard as HTMLElement).getByRole('radio', { name: /wifi\/http/i }),
+        ).toBeChecked();
+        expect(within(radioCard as HTMLElement).getByLabelText(/device address/i)).toHaveValue(
+          '192.168.1.20',
+        );
+      });
+      expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
+    } finally {
+      localStorage.removeItem(lastConnKey);
+    }
+  });
+
+  it('restores Meshtastic TCP address after switching away and back', async () => {
+    const lastConnKey = 'mesh-client:lastConnection:meshtastic';
+    const stored = { type: 'tcp' as const, httpAddress: '192.168.1.50:4403' };
+    localStorage.setItem(lastConnKey, JSON.stringify(stored));
+
+    try {
+      const view = render(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshcore" />,
+      );
+      view.rerender(
+        <ConnectionPanel {...panelProps} state={disconnectedState} protocol="meshtastic" />,
+      );
+
+      await waitFor(() => {
+        const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+        expect(radioCard).toBeTruthy();
+        expect(
+          within(radioCard as HTMLElement).getByRole('radio', { name: /wifi\/tcp/i }),
+        ).toBeChecked();
+        expect(within(radioCard as HTMLElement).getByLabelText(/device address/i)).toHaveValue(
+          '192.168.1.50:4403',
+        );
+      });
       expect(JSON.parse(localStorage.getItem(lastConnKey)!)).toEqual(stored);
     } finally {
       localStorage.removeItem(lastConnKey);
