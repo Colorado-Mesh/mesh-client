@@ -2594,6 +2594,9 @@ function AppContent() {
   const effectiveModuleConfigs = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
     : meshtasticRuntime.moduleConfigs;
+  const effectiveLiveModuleConfigs = isRemoteConfigureTarget
+    ? effectiveModuleConfigs
+    : (meshtasticRuntime.liveModuleConfigs ?? effectiveModuleConfigs);
   const effectiveMeshtasticConfigSlices = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.configSlices ?? {})
     : meshtasticRuntime.meshtasticConfigSlices;
@@ -5385,6 +5388,7 @@ function AppContent() {
                               <ModulePanel
                                 configTarget={configTarget}
                                 moduleConfigs={effectiveModuleConfigs}
+                                liveModuleConfigs={effectiveLiveModuleConfigs}
                                 channelConfigs={effectiveChannelConfigs}
                                 meshBeacons={
                                   isRemoteConfigureTarget

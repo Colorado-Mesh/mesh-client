@@ -4789,12 +4789,30 @@ export function useMeshtasticRuntime() {
     schedulePushMqttChannelKeys();
   }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
-  const resolvedModuleConfigs = useMemo(() => {
+  const resolvedModuleConfigMaps = useMemo(() => {
+    const fromStore = meshtasticDeviceRecord?.moduleConfigs ?? {};
+    const fromLocal = moduleConfigs;
+    const cacheMatchesIdentity =
+      meshtasticIdentityId != null &&
+      lastKnownModuleConfigsIdentityRef.current === meshtasticIdentityId;
+    const lastKnown = cacheMatchesIdentity ? lastKnownModuleConfigsRef.current : {};
     if (!meshtasticIdentityId) {
-      return Object.keys(moduleConfigs).length > 0
-        ? moduleConfigs
-        : lastKnownModuleConfigsRef.current;
+      return resolveMeshtasticModuleConfigs({
+        fromStore: {},
+        fromLocal,
+        lastKnown: {},
+      });
     }
+    return resolveMeshtasticModuleConfigs({
+      fromStore,
+      fromLocal,
+      lastKnown,
+    });
+  }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
+
+  // Cache display map post-commit — never mutate the refs inside the useMemo above.
+  useEffect(() => {
+    if (!meshtasticIdentityId) return;
     if (
       lastKnownModuleConfigsIdentityRef.current != null &&
       lastKnownModuleConfigsIdentityRef.current !== meshtasticIdentityId
@@ -4802,16 +4820,13 @@ export function useMeshtasticRuntime() {
       lastKnownModuleConfigsRef.current = {};
     }
     lastKnownModuleConfigsIdentityRef.current = meshtasticIdentityId;
-    const resolved = resolveMeshtasticModuleConfigs({
-      fromStore: meshtasticDeviceRecord?.moduleConfigs ?? {},
-      fromLocal: moduleConfigs,
-      lastKnown: lastKnownModuleConfigsRef.current,
-    });
-    if (Object.keys(resolved).length > 0) {
-      lastKnownModuleConfigsRef.current = resolved;
+    if (Object.keys(resolvedModuleConfigMaps.display).length > 0) {
+      lastKnownModuleConfigsRef.current = resolvedModuleConfigMaps.display;
     }
-    return resolved;
-  }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
+  }, [meshtasticIdentityId, resolvedModuleConfigMaps]);
+
+  const resolvedModuleConfigs = resolvedModuleConfigMaps.display;
+  const resolvedLiveModuleConfigs = resolvedModuleConfigMaps.live;
 
   const resolvedMeshtasticConfigSlices = useMemo(() => {
     if (!meshtasticIdentityId) return {};
@@ -4962,6 +4977,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       moduleConfigs: resolvedModuleConfigs,
+      liveModuleConfigs: resolvedLiveModuleConfigs,
       meshtasticConfigSlices: resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
@@ -5072,6 +5088,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       resolvedModuleConfigs,
+      resolvedLiveModuleConfigs,
       resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,

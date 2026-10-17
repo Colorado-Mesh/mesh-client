@@ -59,6 +59,8 @@ export interface ProtocolRuntime {
   channels: unknown[];
   channelConfigs: unknown[];
   moduleConfigs: Record<string, unknown>;
+  /** Live Meshtastic module slices only (no last-known display merge). */
+  liveModuleConfigs?: Record<string, unknown>;
   waypoints: unknown[] | Map<number, MeshWaypoint>;
   telemetryEnabled: boolean | null;
   telemetryDeviceUpdateInterval: number | undefined;

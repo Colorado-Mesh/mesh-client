@@ -1,8 +1,9 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithToast } from '../lib/testRenderHelpers';
+import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '../lib/timeConstants';
 import ModulePanel from './ModulePanel';
 
 const baseProps = {
@@ -24,6 +25,10 @@ const baseProps = {
 describe('ModulePanel', () => {
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows connect banner when disconnected', () => {
@@ -231,6 +236,98 @@ describe('ModulePanel', () => {
     });
 
     resolveSet?.();
+  });
+
+  it('times out a hung setModuleConfig and unlocks Apply while still connected', async () => {
+    vi.useFakeTimers();
+    const onSetModuleConfig = vi.fn(() => new Promise<void>(() => {}));
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+          neighborInfo: {
+            enabled: false,
+            updateInterval: 900,
+            transmitOverLora: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Telemetry Module';
+    });
+    expect(telemetryDetails).toBeDefined();
+    fireEvent.click(telemetryDetails!.querySelector('summary')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Apply Telemetry Module' }));
+    expect(onSetModuleConfig).toHaveBeenCalled();
+
+    const neighborDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Neighbor Info Module';
+    });
+    expect(neighborDetails).toBeDefined();
+    fireEvent.click(neighborDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply Neighbor Info Module' })).toBeDisabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_MODULE_APPLY_TIMEOUT_MS);
+    });
+
+    expect(screen.getByText(/The device did not respond in time/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Neighbor Info Module' })).not.toBeDisabled();
+  });
+
+  it('does not treat last-known-only modules as Apply-ready', async () => {
+    const user = userEvent.setup();
+    renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+          tak: { team: 1, role: 2 },
+        }}
+        liveModuleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('TAK Module')).toBeInTheDocument();
+    const takDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'TAK Module';
+    });
+    expect(takDetails).toBeDefined();
+    await user.click(takDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply TAK Module' })).toBeDisabled();
+    expect(
+      screen.getByText(/Waiting for TAK Module settings from the device/i),
+    ).toBeInTheDocument();
   });
 
   it('preserves isServer and uses records field for Store & Forward apply', async () => {

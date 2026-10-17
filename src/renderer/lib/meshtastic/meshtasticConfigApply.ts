@@ -51,21 +51,34 @@ export function buildMeshtasticModuleApplyValue(
   return mergeMeshtasticConfigApplyValue(deviceCfg, uiOverrides);
 }
 
+export interface ResolvedMeshtasticModuleConfigs {
+  /**
+   * For UI visibility/forms: last-known modules under live slices so TAK etc. do not
+   * vanish mid-rehydrate. Never use this alone for Apply readiness or apply merge base.
+   */
+  display: Record<string, unknown>;
+  /** Live device/local slices only — Apply readiness and setModuleConfig merge base. */
+  live: Record<string, unknown>;
+}
+
 /**
  * Resolve module config maps for UI during (re)configure.
- * Prefer the device store when it has keys, but keep last-known modules underneath so a
- * partial configure stream cannot hide modules (e.g. TAK) mid-hydrate after a TCP reset.
+ * Live slices come only from the device store (or local hook state). Last-known is
+ * merged underneath for display so partial configure cannot hide modules (e.g. TAK).
  */
 export function resolveMeshtasticModuleConfigs(args: {
   fromStore: Record<string, unknown>;
   fromLocal: Record<string, unknown>;
   lastKnown: Record<string, unknown>;
-}): Record<string, unknown> {
-  if (Object.keys(args.fromStore).length > 0) {
-    return { ...args.lastKnown, ...args.fromStore };
-  }
-  if (Object.keys(args.fromLocal).length > 0) {
-    return args.fromLocal;
-  }
-  return args.lastKnown;
+}): ResolvedMeshtasticModuleConfigs {
+  const live =
+    Object.keys(args.fromStore).length > 0
+      ? args.fromStore
+      : Object.keys(args.fromLocal).length > 0
+        ? args.fromLocal
+        : {};
+  return {
+    live,
+    display: { ...args.lastKnown, ...live },
+  };
 }

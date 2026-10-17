@@ -82,7 +82,7 @@ describe('meshtasticConfigApply', () => {
     });
   });
 
-  it('resolveMeshtasticModuleConfigs keeps last-known modules under a partial store hydrate', () => {
+  it('resolveMeshtasticModuleConfigs keeps last-known on display only under a partial store hydrate', () => {
     const lastKnown = {
       mqtt: { enabled: true },
       tak: { team: 1 },
@@ -90,16 +90,20 @@ describe('meshtasticConfigApply', () => {
     };
     const fromStore = { mqtt: { enabled: false }, neighborInfo: { enabled: true } };
     expect(resolveMeshtasticModuleConfigs({ fromStore, fromLocal: {}, lastKnown })).toEqual({
-      mqtt: { enabled: false },
-      tak: { team: 1 },
-      neighborInfo: { enabled: true },
+      live: fromStore,
+      display: {
+        mqtt: { enabled: false },
+        tak: { team: 1 },
+        neighborInfo: { enabled: true },
+      },
     });
   });
 
-  it('resolveMeshtasticModuleConfigs falls back to last-known when store and local are empty', () => {
+  it('resolveMeshtasticModuleConfigs keeps last-known on display when live is empty', () => {
     const lastKnown = { tak: { team: 2 } };
-    expect(resolveMeshtasticModuleConfigs({ fromStore: {}, fromLocal: {}, lastKnown })).toEqual(
-      lastKnown,
-    );
+    expect(resolveMeshtasticModuleConfigs({ fromStore: {}, fromLocal: {}, lastKnown })).toEqual({
+      live: {},
+      display: lastKnown,
+    });
   });
 });

@@ -17,6 +17,10 @@ import {
   meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import {
+  isMeshtasticConfigApplyTimeout,
+  withMeshtasticConfigApplyTimeout,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApplyTimeout';
+import {
   AUDIO_MODULE_FIELDS,
   DETECTION_SENSOR_EXTRA_FIELDS,
   PAXCOUNTER_EXTRA_FIELDS,
@@ -33,7 +37,6 @@ import {
   validateMeshtasticMqttModuleApply,
 } from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
 import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/meshtasticSerialModuleApply';
-import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
@@ -71,7 +74,13 @@ function storeForwardRecordsFromCfg(cfg: Record<string, unknown>): number {
 
 interface Props {
   configTarget?: ConfigTargetContext;
+  /** Display map (may include last-known modules for visibility during rehydrate). */
   moduleConfigs: Record<string, unknown>;
+  /**
+   * Live device/local slices only. Apply readiness and merge base; defaults to
+   * `moduleConfigs` when omitted (tests / remote snapshot).
+   */
+  liveModuleConfigs?: Record<string, unknown>;
   onSetModuleConfig: (config: unknown) => Promise<void>;
   onSetCannedMessages: (messages: string[]) => Promise<void>;
   onSetRingtone?: (ringtone: string) => Promise<void>;
@@ -152,6 +161,7 @@ const EMPTY_CHANNEL_CONFIGS: readonly MeshBeaconChannelConfig[] = [];
 export default function ModulePanel({
   configTarget,
   moduleConfigs,
+  liveModuleConfigs,
   onSetModuleConfig,
   onSetCannedMessages,
   onSetRingtone,
@@ -217,7 +227,8 @@ export default function ModulePanel({
   );
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
-  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(moduleConfigs[key]);
+  const liveConfigs = liveModuleConfigs ?? moduleConfigs;
+  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(liveConfigs[key]);
   const moduleSectionProps = (key: string) => ({
     sliceReady: moduleSliceReady(key),
     showSliceWaiting: isConnected,
@@ -689,35 +700,21 @@ export default function ModulePanel({
     const applyGen = ++applyGenerationRef.current;
     setApplyingSection(moduleCase);
     const stillCurrent = () => applyGen === applyGenerationRef.current;
-    const withApplyTimeout = async <T,>(promise: Promise<T>): Promise<T> => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        return await Promise.race([
-          promise,
-          new Promise<T>((_resolve, reject) => {
-            timer = setTimeout(() => {
-              reject(new Error('TIMEOUT'));
-            }, MESHTASTIC_MODULE_APPLY_TIMEOUT_MS);
-          }),
-        ]);
-      } finally {
-        if (timer != null) clearTimeout(timer);
-      }
-    };
     try {
-      await withApplyTimeout(onSetModuleConfig({ payloadVariant: { case: moduleCase, value } }));
+      await withMeshtasticConfigApplyTimeout(
+        onSetModuleConfig({ payloadVariant: { case: moduleCase, value } }),
+      );
       if (!stillCurrent()) return;
       try {
-        await withApplyTimeout(onCommit());
+        await withMeshtasticConfigApplyTimeout(onCommit());
         if (!stillCurrent()) return;
         addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in module panel toast
         if (!stillCurrent()) return;
-        const timeout = err instanceof Error && err.message === 'TIMEOUT';
         addToast(
           t('modulePanel.commitFailed', {
-            message: timeout
+            message: isMeshtasticConfigApplyTimeout(err)
               ? t('modulePanel.errors.timeout')
               : formatMeshtasticModuleApplyError(err, t),
           }),
@@ -727,10 +724,9 @@ export default function ModulePanel({
     } catch (err: unknown) {
       if (!stillCurrent()) return;
       console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
-      const timeout = err instanceof Error && err.message === 'TIMEOUT';
       addToast(
         t('modulePanel.failed', {
-          message: timeout
+          message: isMeshtasticConfigApplyTimeout(err)
             ? t('modulePanel.errors.timeout')
             : formatMeshtasticModuleApplyError(err, t),
         }),
@@ -746,12 +742,13 @@ export default function ModulePanel({
   const applyMeshtasticModule = (
     sectionLabel: string,
     moduleCase: string,
-    deviceSlice: unknown,
+    _deviceSlice: unknown,
     uiOverrides: Record<string, unknown>,
   ) => {
     let value: unknown;
     try {
-      value = buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides);
+      // Apply base must be the live slice — never last-known-only display merge.
+      value = buildMeshtasticModuleApplyValue(moduleCase, liveConfigs[moduleCase], uiOverrides);
     } catch (err: unknown) {
       console.warn('[ModulePanel] build apply value failed ' + errLikeToLogString(err));
       addToast(
