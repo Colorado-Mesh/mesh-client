@@ -62,6 +62,44 @@ afterEach(async () => {
   await fs.rm(fixture.directory, { recursive: true, force: true });
 });
 describe('AI IPC lifecycle and opt-in', () => {
+  it('counts a multi-pass job once without rate-limiting its child map steps', async () => {
+    settings.set('aiEnabled', '1');
+    settings.set(
+      'aiProviderConfig',
+      JSON.stringify({
+        engine: 'bundled',
+        model: '',
+        baseUrl: '',
+        localModelId: 'llama3.2-1b-instruct-q4',
+      }),
+    );
+    const verify = vi.spyOn(AiModelPackManager.prototype, 'verify').mockResolvedValue(true);
+    try {
+      for (let index = 0; index < 181; index++) {
+        expect(
+          await handler('ai:summarize')(
+            {},
+            { ...request, requestId: `pass-${index}`, jobId: 'one-job', mode: 'map' },
+          ),
+        ).toMatchObject({ ok: true });
+      }
+      for (let index = 0; index < 119; index++)
+        expect(
+          await handler('ai:summarize')(
+            {},
+            { ...request, requestId: `new-${index}`, jobId: `new-job-${index}`, mode: 'map' },
+          ),
+        ).toMatchObject({ ok: true });
+      await expect(
+        handler('ai:summarize')(
+          {},
+          { ...request, requestId: 'too-many', jobId: 'too-many', mode: 'map' },
+        ),
+      ).rejects.toThrow();
+    } finally {
+      verify.mockRestore();
+    }
+  });
   it.each(['linux', 'darwin', 'win32'])('keeps disabled operations inert on %s', async () => {
     expect(await handler('ai:getStatus')({})).toMatchObject({ enabled: false, engine: null });
     expect(await handler('ai:summarize')({}, request)).toEqual({ ok: false, reason: 'disabled' });

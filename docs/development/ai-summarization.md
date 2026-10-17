@@ -69,11 +69,15 @@ max-output-token option in this API; its helper uses a conservative 1,000-charac
 HTTP adapters parse bounded SSE/NDJSON, require a completion marker, support fragmented UTF-8
 and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budgets; Gemini
 thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
-is independently capped at 1,000 characters. Context budgets select whole messages newest first and stop when the next message exceeds the
-remaining budget, so older questions cannot re-enter after their answers are omitted. A message
-that exceeds the entire budget by itself is skipped; truncation remains disclosed. An oversized
-newest message does not block older eligible input; when no complete message
-fits, the request reports an input-size error without inference. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
+is independently capped at 1,000 characters per pass. Chunk packing and main share the same
+prompt formatter, including escaped text, full local timestamps, conversation metadata and each
+map/reduce/final instruction. Source messages stay chronological, with stable ordering at equal
+timestamps. Oversized messages are split at Unicode code-point boundaries without losing text
+and count once in the completed source coverage. A pass that main cannot include completely
+fails rather than claiming a complete summary. Reduction must shrink the digests and is bounded
+to eight rounds, preventing a provider from looping forever. Intermediate and final digests are
+quoted without synthetic ordering timestamps, so the model cannot mistake sequence numbers for
+1970 chat dates. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
 to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (3,500) for both Apple’s and the WASM engine’s 4,096-token
 contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote
 context capacity remains model-dependent, with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
@@ -136,6 +140,10 @@ errors fail the request without retaining their potentially sensitive details. C
 model loading and generation; endpoint/native requests retain the one-minute deadline.
 The renderer deadline also covers stalled main-process acknowledgements and runtime imports. Abort races
 initialization and terminates the worker even if upstream model loading has not settled.
+Every pass also races acknowledgement and completion against cancellation, and removes its
+remote waiter on every exit path. Child map steps share the parent's rate-limit admission.
+Retained workers route fatal errors to the current pass and finish disposal before the queue
+releases them. The Windows helper clears its active job before publishing a terminal event.
 Downloaded-model settings explain that large conversations can take a few minutes. The prompt
 asks for concrete updates, callsigns, times/places and stated answers, compresses greetings/banter,
 and keeps unresolved questions open. Bundled sampling supplies llama.cpp's `repeat_penalty` and

@@ -89,7 +89,8 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   const multiPassJobs = new Set<string>();
   const guard = (event: IpcMainInvokeEvent, channel: string, write = false) => {
     assertIpcSender(event, channel);
-    (write ? writes : reads).checkOrThrow();
+    // Summary passes share the parent's admission; other calls use the read/write limits.
+    if (channel !== 'ai:summarize') (write ? writes : reads).checkOrThrow();
   };
   const stop = () => {
     revision++;
@@ -284,14 +285,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     guard(event, 'ai:summarize');
     const request = validateAiRequest(value);
     const mode = request.mode ?? 'final';
-    if (
-      request.jobId &&
-      (mode === 'reduce' || mode === 'final') &&
-      multiPassJobs.has(request.jobId)
-    ) {
+    if (request.jobId && multiPassJobs.has(request.jobId)) {
       // Child multi-pass step — already counted when the first map registered the job.
     } else if (request.jobId && mode === 'map') {
       summaries.checkOrThrow();
+      if (multiPassJobs.size >= 32) multiPassJobs.delete(multiPassJobs.values().next().value!);
       multiPassJobs.add(request.jobId);
     } else {
       summaries.checkOrThrow();
@@ -342,6 +340,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const budget = aiSummaryPromptBudget(c.engine);
     const prompt = buildSummaryPrompt({
       ...request,
+      digests: mode === 'reduce' || (mode === 'final' && !!request.jobId),
       mode: request.mode ?? 'final',
       maxChars: budget.maxChars,
       maxPromptBytes: budget.maxPromptBytes,

@@ -478,7 +478,7 @@ describe('summary multi-pass', () => {
           text,
           provider: 'OS AI',
           model: 'OS AI',
-          messageCount: req.mode === 'final' ? 1 : req.messages.length,
+          messageCount: req.messages.length,
           truncated: false,
         });
       }, 0);

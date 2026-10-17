@@ -1,59 +1,94 @@
 import type { AiEngine, AiSummaryMessage, AiSummaryPassMode } from './ai-types';
-import { AI_MAX_MESSAGES, AI_TYPICAL_SUMMARY_LINE_BYTES, aiSummaryPromptBudget } from './ai-types';
+import { AI_MAX_MESSAGES, aiSummaryPromptBudget } from './ai-types';
+import { buildAiSummaryPrompt } from './aiSummaryPrompt';
+
+export type AiSummaryPromptContext = Omit<
+  Parameters<typeof buildAiSummaryPrompt>[0],
+  'messages' | 'maxChars' | 'maxPromptBytes'
+>;
 
 const utf8Bytes = (value: string): number => new TextEncoder().encode(value).byteLength;
 
-/** Pack messages into contiguous chronological chunks that fit one engine prompt budget. */
+/** Pack the complete transcript using the same escaped prompt framing as main. */
 export function packAiSummaryChunks(
   messages: AiSummaryMessage[],
   engine: AiEngine,
-  typicalLineBytes = AI_TYPICAL_SUMMARY_LINE_BYTES,
+  context: Partial<AiSummaryPromptContext> = {},
 ): AiSummaryMessage[][] {
   if (!messages.length) return [];
-  const { maxPromptBytes, maxChars } = aiSummaryPromptBudget(engine);
-  // Leave headroom for system/framing (~900 bytes typical).
-  const framingReserve = 900;
-  const byteBudget = Math.max(typicalLineBytes, maxPromptBytes - framingReserve);
-  const charBudget = Math.max(80, maxChars - 400);
-  const ordered = [...messages].sort((a, b) => a.at - b.at || a.sender.localeCompare(b.sender));
+  const budget = aiSummaryPromptBudget(engine);
+  const frame = { conversationLabel: '', protocol: '', surface: '', locale: 'en', ...context };
+  const empty = buildAiSummaryPrompt({ ...frame, messages: [], maxChars: Infinity });
+  const framingBytes = utf8Bytes(empty.system + empty.user);
+  if (framingBytes >= budget.maxPromptBytes) throw new Error('tooLarge');
+  const cost = (message: AiSummaryMessage) => {
+    const prompt = buildAiSummaryPrompt({ ...frame, messages: [message], maxChars: Infinity });
+    return {
+      bytes: utf8Bytes(prompt.system + prompt.user) - framingBytes + 1,
+      chars: prompt.user.length - empty.user.length + 1,
+    };
+  };
+  const fits = (size: ReturnType<typeof cost>) =>
+    size.bytes + framingBytes <= budget.maxPromptBytes && size.chars <= budget.maxChars;
   const chunks: AiSummaryMessage[][] = [];
   let current: AiSummaryMessage[] = [];
-  let bytes = 0;
+  let bytes = framingBytes;
   let chars = 0;
-  for (const message of ordered) {
-    const lineBytes =
-      utf8Bytes(`[ts] ${JSON.stringify(message.sender)}: ${JSON.stringify(message.body)}`) + 1;
-    const lineChars = message.body.length + message.sender.length + 40;
-    const wouldExceed =
-      current.length >= AI_MAX_MESSAGES ||
-      bytes + lineBytes > byteBudget ||
-      chars + lineChars > charBudget;
-    if (wouldExceed && current.length) {
+  const append = (message: AiSummaryMessage) => {
+    const size = cost(message);
+    if (
+      current.length &&
+      (current.length >= AI_MAX_MESSAGES ||
+        bytes + size.bytes > budget.maxPromptBytes ||
+        chars + size.chars > budget.maxChars)
+    ) {
       chunks.push(current);
       current = [];
-      bytes = 0;
+      bytes = framingBytes;
       chars = 0;
     }
-    if (lineBytes > byteBudget || lineChars > charBudget || message.body.length > charBudget) {
-      // Oversized single message: skip rather than blocking the chunker.
+    current.push(message);
+    bytes += size.bytes;
+    chars += size.chars;
+  };
+  for (const message of [...messages].sort((a, b) => a.at - b.at)) {
+    if (fits(cost(message))) {
+      append(message);
       continue;
     }
-    current.push(message);
-    bytes += lineBytes;
-    chars += lineChars;
+    const body = Array.from(message.body);
+    let start = 0;
+    while (start < body.length) {
+      let low = 0;
+      let high = Math.min(body.length - start, budget.maxChars, budget.maxPromptBytes);
+      while (low < high) {
+        const length = Math.ceil((low + high) / 2);
+        if (fits(cost({ ...message, body: body.slice(start, start + length).join('') })))
+          low = length;
+        else high = length - 1;
+      }
+      if (!low) throw new Error('tooLarge');
+      append({ ...message, body: body.slice(start, start + low).join('') });
+      start += low;
+    }
+    if (!body.length) throw new Error('tooLarge');
   }
   if (current.length) chunks.push(current);
   return chunks;
 }
 
 /** Pack digest strings into reduce-sized batches as synthetic messages. */
-export function packAiDigestChunks(digests: string[], engine: AiEngine): AiSummaryMessage[][] {
+export function packAiDigestChunks(
+  digests: string[],
+  engine: AiEngine,
+  context: Partial<AiSummaryPromptContext> = {},
+): AiSummaryMessage[][] {
   const asMessages: AiSummaryMessage[] = digests.map((body, index) => ({
     at: index + 1,
     sender: `Part ${index + 1}`,
     body,
   }));
-  return packAiSummaryChunks(asMessages, engine);
+  return packAiSummaryChunks(asMessages, engine, { ...context, mode: 'reduce' });
 }
 
 export function needsMultiPass(messages: AiSummaryMessage[], engine: AiEngine): boolean {

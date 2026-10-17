@@ -43,6 +43,62 @@ const job = {
   model: 'model',
 };
 describe('bundled AI worker lifecycle', () => {
+  it('routes a retained runtime failure to the current pass and releases the model', async () => {
+    fixture.load.mockResolvedValue(undefined);
+    fixture.exit.mockResolvedValue(undefined);
+    fixture.completion
+      .mockImplementationOnce(complete('First digest.'))
+      .mockImplementation(() => new Promise(() => {}));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('model')),
+    );
+    const host = new AiWorkerHost();
+    await host.generate(job, new AbortController().signal, vi.fn(), undefined, { keepAlive: true });
+    const running = host.generate(job, new AbortController().signal, vi.fn(), undefined, {
+      keepAlive: true,
+    });
+    const outcome = running.catch((error: unknown) => error);
+    await vi.waitFor(() => {
+      expect(fixture.completion).toHaveBeenCalledTimes(2);
+    });
+    fixture.logger.error();
+    expect(await outcome).toMatchObject({ message: 'engineNotReady' });
+    expect(fixture.load).toHaveBeenCalledOnce();
+    expect(fixture.exit).toHaveBeenCalledOnce();
+  });
+
+  it('waits for an abort-triggered disposal before generation settles', async () => {
+    fixture.load.mockResolvedValue(undefined);
+    let finishDisposal!: () => void;
+    fixture.exit.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishDisposal = resolve;
+      }),
+    );
+    const controller = new AbortController();
+    fixture.completion.mockImplementation(() => {
+      controller.abort();
+      return Promise.resolve();
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('model')),
+    );
+    let settled = false;
+    const outcome = new AiWorkerHost()
+      .generate(job, controller.signal, vi.fn())
+      .catch((error: unknown) => error)
+      .finally(() => {
+        settled = true;
+      });
+    await vi.waitFor(() => {
+      expect(fixture.exit).toHaveBeenCalledOnce();
+    });
+    expect(settled).toBe(false);
+    finishDisposal();
+    expect(await outcome).toMatchObject({ name: 'AbortError' });
+  });
   it('stays inert until explicit generate and streams with bundled assets and no CDN fallback', async () => {
     fixture.load.mockResolvedValue(undefined);
     fixture.exit.mockResolvedValue(undefined);

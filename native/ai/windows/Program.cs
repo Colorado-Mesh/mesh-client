@@ -51,6 +51,7 @@ internal static class Program
     }
     private static async Task Generate(string id, string prompt, CancellationTokenSource cancellation)
     {
+        string? failure = null;
         try
         {
             using var model = await LanguageModel.CreateAsync();
@@ -71,9 +72,11 @@ internal static class Program
             try { var result = await operation; if (result.Status != LanguageModelResponseStatus.Complete) throw new InvalidOperationException("Generation unavailable"); }
             catch (OperationCanceledException) when (length >= 1000 && !cancellation.IsCancellationRequested) { }
             cancellation.Token.ThrowIfCancellationRequested();
-            Emit(new { type = "done", requestId = id });
         }
-        catch { Emit(new { type = "error", requestId = id, reason = cancellation.IsCancellationRequested ? "cancelled" : "error" }); }
+        catch { failure = cancellation.IsCancellationRequested ? "cancelled" : "error"; }
         finally { if (ReferenceEquals(active, cancellation)) active = null; cancellation.Dispose(); }
+        // The next pass may arrive as soon as the terminal event is written.
+        if (failure == null) Emit(new { type = "done", requestId = id });
+        else Emit(new { type = "error", requestId = id, reason = failure });
     }
 }

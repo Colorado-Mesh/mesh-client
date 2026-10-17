@@ -96,9 +96,7 @@ describe('AI catch up controls', () => {
   it('distinguishes 41 included messages from the 44 collected at the start', () => {
     render(<ChatSummaryCard summary={create()} />);
     expect(
-      screen.getByText(
-        'provider.test · model · used 41 of 44 messages (newest first; limited by model context)',
-      ),
+      screen.getByText('provider.test · model · 41 of 44 collected messages included'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Counts describe this summary snapshot; live unread badges may differ.'),

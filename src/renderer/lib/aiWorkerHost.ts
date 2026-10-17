@@ -20,6 +20,8 @@ export class AiWorkerHost {
   private runtime: Wllama | null = null;
   private loadedModelUrl: string | null = null;
   private busy = false;
+  private disposal: Promise<void> | null = null;
+  private failRuntime: () => void = () => {};
   async generate(
     job: AiLocalJob,
     signal: AbortSignal,
@@ -41,6 +43,7 @@ export class AiWorkerHost {
         reject(new Error('engineNotReady'));
       };
     });
+    this.failRuntime = failRuntime;
     // A worker can fail before the first runtime operation attaches its race.
     void fatal.catch(() => {
       /* catch-no-log-ok the operation race reports a fixed runtime error */
@@ -48,7 +51,11 @@ export class AiWorkerHost {
     const raced = <T>(work: Promise<T>): Promise<T> =>
       new Promise<T>((resolve, reject) => {
         const cancel = () => {
-          reject(new DOMException('AI generation cancelled', 'AbortError'));
+          reject(
+            signal.reason instanceof Error
+              ? signal.reason
+              : new DOMException('AI generation cancelled', 'AbortError'),
+          );
         };
         signal.addEventListener('abort', cancel, { once: true });
         Promise.race([work, fatal])
@@ -75,7 +82,14 @@ export class AiWorkerHost {
           { default: wasmUrl },
           {
             suppressNativeLog: true,
-            logger: { debug: quiet, log: quiet, warn: quiet, error: failRuntime },
+            logger: {
+              debug: quiet,
+              log: quiet,
+              warn: quiet,
+              error: () => {
+                this.failRuntime();
+              },
+            },
           },
         );
         runtime.setCompat(null);
@@ -139,9 +153,18 @@ export class AiWorkerHost {
     if (cleanupFailure) throw cleanupFailure.cause;
   }
   async dispose(): Promise<void> {
+    if (this.disposal) return this.disposal;
     const runtime = this.runtime;
     this.runtime = null;
     this.loadedModelUrl = null;
-    if (runtime) await runtime.exit();
+    if (runtime) {
+      const disposal = runtime.exit();
+      this.disposal = disposal;
+      try {
+        await disposal;
+      } finally {
+        this.disposal = null;
+      }
+    }
   }
 }

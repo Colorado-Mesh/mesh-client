@@ -407,6 +407,9 @@ export async function runSummary(
     signal.addEventListener('abort', rejectAbort, { once: true });
     if (signal.aborted) rejectAbort();
   });
+  void aborted.catch(() => {
+    /* catch-no-log-ok multi-pass cancellation is awaited through each pass */
+  });
   try {
     if (previous) await Promise.race([previous, aborted]);
     signal.throwIfAborted();
@@ -415,6 +418,7 @@ export async function runSummary(
     patch(key, id, { phase: undefined });
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);
+    const multiPass = status.engine && shouldUseMultiPass(request.messages, status.engine, request);
     signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),
@@ -426,7 +430,7 @@ export async function runSummary(
       patch(key, id, { streaming: false, error: 'notConfigured' });
       return;
     }
-    if (shouldUseMultiPass(request.messages, engine)) {
+    if (multiPass) {
       const result = await runMultiPassSummary({
         base: {
           conversationLabel: request.conversationLabel,
@@ -561,25 +565,27 @@ export async function runSummary(
         progress: null,
         error: signal.aborted
           ? abortReason()
-          : error instanceof RepetitiveAiOutputError
-            ? 'repetitiveOutput'
-            : error instanceof Error &&
-                [
-                  'disabled',
-                  'noMessages',
-                  'notConfigured',
-                  'engineNotReady',
-                  'remoteNotAcknowledged',
-                  'rateLimited',
-                  'busy',
-                  'timeout',
-                  'tooLarge',
-                  'httpError',
-                  'invalidResponse',
-                  'cancelled',
-                ].includes(error.message)
-              ? (error.message as AiSummaryErrorReason)
-              : 'error',
+          : error instanceof DOMException && error.name === 'TimeoutError'
+            ? 'timeout'
+            : error instanceof RepetitiveAiOutputError
+              ? 'repetitiveOutput'
+              : error instanceof Error &&
+                  [
+                    'disabled',
+                    'noMessages',
+                    'notConfigured',
+                    'engineNotReady',
+                    'remoteNotAcknowledged',
+                    'rateLimited',
+                    'busy',
+                    'timeout',
+                    'tooLarge',
+                    'httpError',
+                    'invalidResponse',
+                    'cancelled',
+                  ].includes(error.message)
+                ? (error.message as AiSummaryErrorReason)
+                : 'error',
       });
   } finally {
     signal.removeEventListener('abort', onAbort);

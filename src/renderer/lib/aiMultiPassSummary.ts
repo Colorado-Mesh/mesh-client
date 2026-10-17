@@ -7,8 +7,12 @@ import type {
   AiSummaryPassMode,
   AiSummaryRequest,
 } from '@/shared/ai-types';
-import { AI_MAX_RESPONSE_BYTES } from '@/shared/ai-types';
-import { packAiDigestChunks, packAiSummaryChunks } from '@/shared/aiSummaryChunking';
+import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
+import {
+  type AiSummaryPromptContext,
+  packAiDigestChunks,
+  packAiSummaryChunks,
+} from '@/shared/aiSummaryChunking';
 
 import { RepetitiveAiOutputError } from './aiSummaryOutput';
 import { AiWorkerHost } from './aiWorkerHost';
@@ -34,8 +38,29 @@ export interface MultiPassCallbacks {
   cancelRemoteWaiter: (requestId: string) => void;
 }
 
-export function shouldUseMultiPass(messages: AiSummaryMessage[], engine: AiEngine): boolean {
-  return packAiSummaryChunks(messages, engine).length > 1;
+export function shouldUseMultiPass(
+  messages: AiSummaryMessage[],
+  engine: AiEngine,
+  context: Partial<AiSummaryPromptContext> = {},
+): boolean {
+  return packAiSummaryChunks(messages, engine, { ...context, mode: 'final' }).length > 1;
+}
+
+function raceAbort<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const abort = () => {
+      reject(
+        signal.reason instanceof Error
+          ? signal.reason
+          : new DOMException('Cancelled', 'AbortError'),
+      );
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    work.then(resolve, reject).finally(() => {
+      signal.removeEventListener('abort', abort);
+    });
+    if (signal.aborted) abort();
+  });
 }
 
 async function runLocalJob(
@@ -70,37 +95,66 @@ async function executePass(
   stream: boolean,
   callbacks: MultiPassCallbacks,
   keepAlive: boolean,
+  timeoutMs: number,
 ): Promise<{ text: string; messageCount: number; truncated: boolean; host: AiWorkerHost | null }> {
+  signal = AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]);
   signal.throwIfAborted();
   // Register before summarize so remote done/chunk events cannot race the waiter.
   const remoteDone = stream
     ? callbacks.waitForStreamingRemoteDone(request.requestId)
     : callbacks.waitForSilentRemoteDone(request.requestId);
-  const result: AiActionResult = await window.electronAPI.ai.summarize(request);
-  if (!result.ok) {
+  void remoteDone.catch(() => {
+    /* catch-no-log-ok waiter may reject while acknowledgement is pending */
+  });
+  try {
+    const result: AiActionResult = await raceAbort(
+      window.electronAPI.ai.summarize(request),
+      signal,
+    );
+    signal.throwIfAborted();
+    if (!result.ok) throw new Error(result.reason ?? 'error');
+    const messageCount = result.summaryInput?.messageCount ?? result.localJob?.messageCount;
+    const truncated = result.summaryInput?.truncated ?? result.localJob?.truncated ?? false;
+    if (truncated || (messageCount !== undefined && messageCount !== request.messages.length))
+      throw new Error('tooLarge');
+    if (result.localJob) {
+      callbacks.cancelRemoteWaiter(request.requestId);
+      const nextHost = host ?? new AiWorkerHost();
+      try {
+        const text = await runLocalJob(
+          result.localJob,
+          signal,
+          nextHost,
+          stream,
+          callbacks,
+          keepAlive,
+        );
+        if (!text.trim()) throw new Error('invalidResponse');
+        if (stream) callbacks.onFinalText(text);
+        return {
+          text,
+          messageCount: request.messages.length,
+          truncated: false,
+          host: keepAlive ? nextHost : null,
+        };
+      } catch (error) {
+        await nextHost.dispose();
+        throw error;
+      }
+    }
+    const done = await raceAbort(remoteDone, signal);
+    if (done.messageCount !== request.messages.length) throw new Error('tooLarge');
+    if (!done.text.trim()) throw new Error('invalidResponse');
+    if (stream) callbacks.onFinalText(done.text);
+    return { text: done.text, messageCount: done.messageCount, truncated: false, host };
+  } finally {
     callbacks.cancelRemoteWaiter(request.requestId);
-    void remoteDone.catch(() => {
-      /* catch-no-log-ok abandoned waiter */
-    });
-    throw new Error(result.reason ?? 'error');
+    if (signal.aborted) {
+      void window.electronAPI.ai.cancel(request.requestId).catch(() => {
+        /* catch-no-log-ok cancelled pass never exposes provider details */
+      });
+    }
   }
-  const messageCount = result.summaryInput?.messageCount ?? request.messages.length;
-  const truncated = result.summaryInput?.truncated ?? false;
-  if (result.localJob) {
-    callbacks.cancelRemoteWaiter(request.requestId);
-    void remoteDone.catch(() => {
-      /* catch-no-log-ok bundled path */
-    });
-    const nextHost = host ?? new AiWorkerHost();
-    const text = await runLocalJob(result.localJob, signal, nextHost, stream, callbacks, keepAlive);
-    if (!text.trim()) throw new Error('invalidResponse');
-    if (stream) callbacks.onFinalText(text);
-    return { text, messageCount, truncated, host: keepAlive ? nextHost : null };
-  }
-  const done = await remoteDone;
-  if (!done.text.trim()) throw new Error('invalidResponse');
-  if (stream) callbacks.onFinalText(done.text);
-  return { text: done.text, messageCount, truncated, host };
 }
 
 function digestMessages(digests: string[]): AiSummaryMessage[] {
@@ -125,10 +179,10 @@ export async function runMultiPassSummary(input: {
   const engine = input.status.engine;
   if (!engine) throw new Error('notConfigured');
   const jobId = crypto.randomUUID();
-  const chunks = packAiSummaryChunks(input.messages, engine);
+  const chunks = packAiSummaryChunks(input.messages, engine, { ...input.base, mode: 'map' });
   if (!chunks.length) throw new Error('noMessages');
   let host: AiWorkerHost | null = null;
-  let included = 0;
+  const timeoutMs = aiSummaryTimeoutMs(engine, input.status.timeoutSeconds);
   let anyTruncated = false;
   const digests: string[] = [];
   try {
@@ -148,17 +202,26 @@ export async function runMultiPassSummary(input: {
         false,
         input.callbacks,
         true,
+        timeoutMs,
       );
       host = pass.host;
       digests.push(pass.text);
-      included += chunks[i].length;
       anyTruncated = anyTruncated || pass.truncated;
     }
 
     let level = digests;
+    let rounds = 0;
     while (true) {
-      const batches = packAiDigestChunks(level, engine);
-      if (batches.length <= 1) break;
+      if (
+        packAiSummaryChunks(digestMessages(level), engine, {
+          ...input.base,
+          mode: 'final',
+          digests: true,
+        }).length <= 1
+      )
+        break;
+      if (++rounds > 8) throw new Error('invalidResponse');
+      const batches = packAiDigestChunks(level, engine, input.base);
       input.callbacks.onProgress({ kind: 'merge', current: 1, total: batches.length });
       const next: string[] = [];
       for (let i = 0; i < batches.length; i++) {
@@ -177,11 +240,16 @@ export async function runMultiPassSummary(input: {
           false,
           input.callbacks,
           true,
+          timeoutMs,
         );
         host = pass.host;
         next.push(pass.text);
         anyTruncated = anyTruncated || pass.truncated;
       }
+      const bytes = (values: string[]) =>
+        values.reduce((sum, value) => sum + new TextEncoder().encode(value).byteLength, 0);
+      if (next.length >= level.length && bytes(next) >= bytes(level))
+        throw new Error('invalidResponse');
       level = next;
     }
 
@@ -201,10 +269,11 @@ export async function runMultiPassSummary(input: {
       true,
       input.callbacks,
       false,
+      timeoutMs,
     );
     host = null;
     anyTruncated = anyTruncated || final.truncated;
-    return { messageCount: included, truncated: anyTruncated };
+    return { messageCount: input.messages.length, truncated: anyTruncated };
   } catch (error) {
     await host?.dispose().catch(() => {
       /* catch-no-log-ok */

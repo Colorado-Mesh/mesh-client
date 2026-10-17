@@ -182,7 +182,7 @@ test.describe('AI conversation summaries', () => {
       const text = await status.innerText();
       expect(text.length).toBeGreaterThan(20);
       expect(text).not.toMatch(/Could not summarize|timed out|not ready|unsupported response/);
-      await expect(card).toContainText('Only the newest messages that fit this engine');
+      await expect(card).toContainText('98 of 98 collected messages included');
       await expect.poll(() => launched.page.workers().length).toBe(0);
       console.info(
         JSON.stringify({
