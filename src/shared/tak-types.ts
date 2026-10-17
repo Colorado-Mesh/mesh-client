@@ -290,6 +290,25 @@ export interface TAKInboundChat {
   clientId: string;
   /** When the server received it, epoch milliseconds. */
   timeMs: number;
+  /**
+   * For a direct message: main's id for it, handed back with {@link TakDmStatusUpdate} so the
+   * device that wrote hears how it went.
+   */
+  dmRef?: string;
+}
+
+/**
+ * How a direct message from a TAK client ended: acknowledged by the companion, still not
+ * acknowledged after the last automatic resend, or never sent at all.
+ */
+export const TAK_DM_OUTCOMES = ['delivered', 'unconfirmed', 'not-sent'] as const;
+export type TakDmOutcome = (typeof TAK_DM_OUTCOMES)[number];
+
+/** The outcome of one direct message from a TAK client, for main. */
+export interface TakDmStatusUpdate {
+  /** {@link TAKInboundChat.dmRef} of the message. */
+  dmRef: string;
+  outcome: TakDmOutcome;
 }
 
 /** A direct message heard from a companion, for TAK clients. */

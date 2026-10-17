@@ -9,6 +9,7 @@ import {
   useMessageStore,
 } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { resetAutoResendForTests, startAutoResend } from '../autoResend/autoResendController';
 import { connectionDriver } from '../drivers/ConnectionDriver';
 import { resetHeardRepeatWindowsForTests } from '../meshcore/heardRepeatTracker';
 import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
@@ -20,6 +21,7 @@ import {
   registerMeshtasticSession,
 } from '../sessions/meshtasticSession';
 import { mockConsoleWarn } from '../vitestConsoleMock';
+import { resetTakDmStatus, startTakDmStatus } from './takDmStatus';
 import { sendTakTextOnMesh, waitForOutboundSettled } from './takMeshSend';
 
 vi.mock('../drivers/ConnectionDriver', () => ({
@@ -146,6 +148,35 @@ describe('sendTakTextOnMesh', () => {
     expect(rows(ID_MC)).toEqual([
       expect.objectContaining({ to: 123, channelIndex: -1, status: 'sending' }),
     ]);
+  });
+
+  it('reports the direct message delivered to TAK once the companion acknowledges it', async () => {
+    vi.spyOn(meshcoreProtocol, 'sendMessage').mockImplementation(() => new Promise(() => {}));
+    vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+    const dmStatus = vi.spyOn(window.electronAPI.tak, 'dmStatus').mockResolvedValue(undefined);
+    addMeshcoreIdentity();
+    const stopResend = startAutoResend(
+      () => undefined,
+      (id) => (id === ID_MC ? 'meshcore' : null),
+    );
+    const stopStatus = startTakDmStatus();
+    const dmRef = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';
+
+    await sendTakTextOnMesh(
+      { identityId: ID_MC, protocol: 'meshcore', channelIndex: 0, destination: 123, dmRef },
+      '[VIPER] meet at the gate',
+    );
+    expect(dmStatus).not.toHaveBeenCalled();
+    const [row] = rows(ID_MC);
+    useMessageStore.setState((s) => ({
+      messages: { ...s.messages, [ID_MC]: { [row.id]: { ...row, status: 'acked' } } },
+    }));
+    expect(dmStatus).toHaveBeenCalledWith({ dmRef, outcome: 'delivered' });
+
+    stopStatus();
+    stopResend();
+    resetAutoResendForTests();
+    resetTakDmStatus();
   });
 
   it('rejects when the MeshCore send fails, leaving the message failed in Chat', async () => {

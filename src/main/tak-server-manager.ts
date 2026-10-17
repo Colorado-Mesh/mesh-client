@@ -15,6 +15,7 @@ import type {
   TAKContactsUpdate,
   TAKDirectMessage,
   TakDmProtocol,
+  TakDmStatusUpdate,
   TAKGeochatMessage,
   TAKInboundChat,
   TakRelayExtras,
@@ -57,6 +58,7 @@ import {
   buildChannelContactCot,
   buildDirectChatCot,
   buildDirectContactCot,
+  buildDirectReceiptCot,
   buildGeochatCot,
   CHANNEL_NOTE_SENDER,
   type ChannelChatLine,
@@ -115,6 +117,54 @@ const DM_OFF_NOTE =
 const NOT_REACHABLE_NOTE = 'Not sent: not a mesh contact this radio can message.';
 /** Companions remembered with the device that last wrote to them, and with a 0, 0 contact. */
 const DIRECT_PEERS_MAX = 512;
+/** Tries mesh-client makes at a direct message: the send and its automatic resends. */
+const DM_TRIES = 4;
+/**
+ * How long a direct message from a TAK client waits for its outcome. Its resends are over
+ * within about five minutes; this also covers a slow last acknowledgement.
+ */
+const PENDING_DM_TTL_MS = 30 * 60 * 1000;
+/** Direct messages from TAK clients awaiting their outcome. */
+const PENDING_DMS_MAX = 256;
+/** How much of a message a note about it quotes. */
+const NOTE_QUOTE_LEN = 40;
+
+/** A direct message a TAK client sent, until the renderer reports how it went. */
+interface PendingDm {
+  /** The companion's contact uid. */
+  uid: string;
+  protocol: TakDmProtocol;
+  nodeId: number;
+  /** Uid of the device that wrote it, which hears the outcome. */
+  deviceUid: string;
+  /** The conversation name the device filed it under. */
+  chatroom: string;
+  /** The device's id for the message, which a receipt names; unset when it sent none. */
+  messageId?: string;
+  text: string;
+  sentAtMs: number;
+}
+
+/** The note for a direct message that was not acknowledged, or never went out. */
+function dmOutcomeNote(
+  outcome: 'unconfirmed' | 'not-sent',
+  protocol: TakDmProtocol,
+  callsign: string,
+  text: string,
+): string {
+  const quote = text.length > NOTE_QUOTE_LEN ? `${text.slice(0, NOTE_QUOTE_LEN)}…` : text;
+  if (outcome === 'not-sent') return `Not sent to the mesh: ${quote}`;
+  // MeshCore DMs fail both ways, every try, while either radio holds an old contact for the
+  // other; channels keep working since they share a key. A flood advert refreshes both.
+  const hint =
+    protocol === 'meshcore'
+      ? ' If this keeps happening, send a flood advert from each radio so both have current contacts.'
+      : '';
+  return (
+    `Not confirmed: no acknowledgement from ${callsign} after ${DM_TRIES} tries.` +
+    ` It may not have arrived: ${quote}${hint}`
+  );
+}
 
 /**
  * A heard message waiting for a TAK client to identify itself: a channel line for the first one
@@ -181,6 +231,8 @@ export class TakServerManager extends EventEmitter {
   private directContacts = new Map<string, DirectContact>();
   /** Per companion uid, the uid of the TAK device that last sent it a direct message. */
   private lastWriters = new Map<string, string>();
+  /** Direct messages from TAK clients awaiting their outcome, by dmRef, oldest first. */
+  private pendingDms = new Map<string, PendingDm>();
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
@@ -1050,7 +1102,83 @@ export class TakServerManager extends EventEmitter {
       clientId: id,
       timeMs: nowMs,
     };
+    if (client.selfUid) {
+      inbound.dmRef = randomUUID();
+      this.prunePendingDms(nowMs);
+      const pending: PendingDm = {
+        uid,
+        protocol,
+        nodeId,
+        deviceUid: client.selfUid,
+        chatroom: chat.room,
+        text: chat.text,
+        sentAtMs: nowMs,
+      };
+      if (chat.messageId) pending.messageId = chat.messageId;
+      setNewest(this.pendingDms, inbound.dmRef, pending, PENDING_DMS_MAX);
+    }
     this.emit('client-chat', inbound);
+  }
+
+  /**
+   * Tell the device that wrote a direct message how it went: a delivery receipt when the
+   * companion acknowledged it, so ATAK marks it delivered, or a note in the conversation when
+   * it was not acknowledged after the last resend or never went out. A note for a device that
+   * is away waits for it with the held messages; a receipt is dropped.
+   */
+  reportDmOutcome(update: TakDmStatusUpdate): void {
+    const now = Date.now();
+    this.prunePendingDms(now);
+    const pending = this.pendingDms.get(update.dmRef);
+    if (!pending) return;
+    this.pendingDms.delete(update.dmRef);
+    if (!this._status.running) return;
+    const contact = {
+      uid: pending.uid,
+      callsign: this.directCallsign(pending.protocol, pending.nodeId, pending.chatroom),
+    };
+    const device = this.clientWithUid(pending.deviceUid);
+    if (update.outcome === 'delivered') {
+      if (!device || pending.messageId === undefined) return;
+      const [id, client, recipient] = device;
+      this.writeToClient(
+        id,
+        client,
+        buildDirectReceiptCot(contact, pending.chatroom, recipient, pending.messageId, now),
+      );
+      return;
+    }
+    const text = dmOutcomeNote(update.outcome, pending.protocol, contact.callsign, pending.text);
+    const line: DirectChatLine = { text: `${CHANNEL_NOTE_SENDER}: ${text}`, timeMs: now };
+    if (device) {
+      const [id, client, recipient] = device;
+      this.writeToClient(id, client, buildDirectChatCot(contact, line, recipient, now));
+    } else if (this.directContacts.has(pending.uid)) {
+      this.holdChat({
+        kind: 'direct',
+        uid: pending.uid,
+        line,
+        recipientUid: pending.deviceUid,
+        heldAtMs: now,
+      });
+    }
+  }
+
+  /** Forget direct messages that have waited too long for their outcome. */
+  private prunePendingDms(nowMs: number): void {
+    for (const [ref, pending] of this.pendingDms) {
+      if (nowMs - pending.sentAtMs < PENDING_DM_TTL_MS) return;
+      this.pendingDms.delete(ref);
+    }
+  }
+
+  /** The identified local client whose own uid is `uid`, with its recipient details. */
+  private clientWithUid(uid: string): [string, ConnectedClient, GeochatRecipient] | undefined {
+    for (const [id, client] of this.clients) {
+      const recipient = this.recipientFor(client);
+      if (recipient?.uid === uid) return [id, client, recipient];
+    }
+    return undefined;
   }
 
   private _handleClient(socket: tls.TLSSocket): void {
