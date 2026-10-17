@@ -1487,43 +1487,55 @@ export default function ModulePanel({
         anchorId="modules.cannedMessages"
         {...moduleSectionProps('cannedMessage')}
         onApply={async () => {
+          const applyGen = ++applyGenerationRef.current;
           setApplyingSection('cannedMessage');
+          const stillCurrent = () => applyGen === applyGenerationRef.current;
           try {
             const lines = cannedText
               .split('\n')
               .map((l) => l.trim())
               .filter(Boolean);
-            await onSetCannedMessages(lines);
-            await onSetModuleConfig({
-              payloadVariant: {
-                case: 'cannedMessage',
-                value: mergeMeshtasticConfigApplyValue(cannedCfg, {
-                  enabled: cannedEnabled,
-                  rotary1Enabled: cannedRotary1Enabled,
-                  inputbrokerPinA: cannedPinA,
-                  inputbrokerPinB: cannedPinB,
-                  inputbrokerPinPress: cannedPinPress,
-                  inputbrokerEventCw: cannedEventCw,
-                  inputbrokerEventCcw: cannedEventCcw,
-                  inputbrokerEventPress: cannedEventPress,
-                  updown1Enabled: cannedUpdown1Enabled,
-                  allowInputSource: cannedAllowInputSource,
-                  sendBell: cannedSendBell,
-                }),
-              },
-            });
-            await onCommit();
+            await withMeshtasticConfigApplyTimeout(onSetCannedMessages(lines));
+            if (!stillCurrent()) return;
+            await withMeshtasticConfigApplyTimeout(
+              onSetModuleConfig({
+                payloadVariant: {
+                  case: 'cannedMessage',
+                  value: mergeMeshtasticConfigApplyValue(liveConfigs.cannedMessage, {
+                    enabled: cannedEnabled,
+                    rotary1Enabled: cannedRotary1Enabled,
+                    inputbrokerPinA: cannedPinA,
+                    inputbrokerPinB: cannedPinB,
+                    inputbrokerPinPress: cannedPinPress,
+                    inputbrokerEventCw: cannedEventCw,
+                    inputbrokerEventCcw: cannedEventCcw,
+                    inputbrokerEventPress: cannedEventPress,
+                    updown1Enabled: cannedUpdown1Enabled,
+                    allowInputSource: cannedAllowInputSource,
+                    sendBell: cannedSendBell,
+                  }),
+                },
+              }),
+            );
+            if (!stillCurrent()) return;
+            await withMeshtasticConfigApplyTimeout(onCommit());
+            if (!stillCurrent()) return;
             addToast(t('modulePanel.cannedMessagesApplied'), 'success');
           } catch (err) {
+            if (!stillCurrent()) return;
             console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
             addToast(
               t('modulePanel.failed', {
-                message: formatMeshtasticModuleApplyError(err, t),
+                message: isMeshtasticConfigApplyTimeout(err)
+                  ? t('modulePanel.errors.timeout')
+                  : formatMeshtasticModuleApplyError(err, t),
               }),
               'error',
             );
           } finally {
-            setApplyingSection(null);
+            if (stillCurrent()) {
+              setApplyingSection(null);
+            }
           }
         }}
         applying={applyingSection === 'cannedMessage'}
@@ -2315,21 +2327,30 @@ export default function ModulePanel({
               addToast(t('modulePanel.fields.invalidRtttl'), 'error');
               return;
             }
+            const applyGen = ++applyGenerationRef.current;
             setApplyingSection('rtttlRingtone');
+            const stillCurrent = () => applyGen === applyGenerationRef.current;
             try {
-              await onSetRingtone(ringtoneText);
-              await onCommit();
+              await withMeshtasticConfigApplyTimeout(onSetRingtone(ringtoneText));
+              if (!stillCurrent()) return;
+              await withMeshtasticConfigApplyTimeout(onCommit());
+              if (!stillCurrent()) return;
               addToast(t('modulePanel.rtttlSaved'), 'success');
             } catch (err) {
+              if (!stillCurrent()) return;
               console.warn('[ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
               addToast(
                 t('modulePanel.failed', {
-                  message: formatMeshtasticModuleApplyError(err, t),
+                  message: isMeshtasticConfigApplyTimeout(err)
+                    ? t('modulePanel.errors.timeout')
+                    : formatMeshtasticModuleApplyError(err, t),
                 }),
                 'error',
               );
             } finally {
-              setApplyingSection(null);
+              if (stillCurrent()) {
+                setApplyingSection(null);
+              }
             }
           }}
           applying={applyingSection === 'rtttlRingtone'}

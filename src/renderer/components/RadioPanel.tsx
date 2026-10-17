@@ -1428,7 +1428,12 @@ export default function RadioPanel({
   const powerConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.power);
   const positionConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.position);
   const networkConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.network);
-  const deviceApplyDisabled = disabled || !deviceConfigReady;
+  const mqttModuleConfigReady = meshtasticConfigSliceHydrated(moduleConfigs?.mqtt);
+  // Client Mute follow-up writes MQTT module config; do not Apply until that slice is live.
+  const deviceApplyDisabled =
+    disabled ||
+    !deviceConfigReady ||
+    (deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && !!onSetModuleConfig && !mqttModuleConfigReady);
   const displayApplyDisabled = disabled || !displayConfigReady;
   const btFixedPinWireValue = parseMeshtasticBluetoothPin(btFixedPin);
   const bluetoothApplyDisabled =
@@ -2523,7 +2528,12 @@ export default function RadioPanel({
               },
               deviceExtra,
             );
-            if (applied && deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
+            if (
+              applied &&
+              deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE &&
+              onSetModuleConfig &&
+              mqttModuleConfigReady
+            ) {
               try {
                 clearMeshtasticClientNotification();
                 setApplyingSection('clientMuteGps');
