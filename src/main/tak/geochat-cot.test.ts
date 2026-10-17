@@ -12,6 +12,7 @@ import {
   parseTakChannelChatMessage,
   parseTakChatChannels,
   parseTakDirectMessage,
+  parseTakDirectPeers,
   parseTakDmProtocols,
   parseTakDmStatus,
   parseTakRetiredRooms,
@@ -220,7 +221,7 @@ describe('direct messages', () => {
     });
     for (const bad of [
       null,
-      { ...msg, protocol: 'reticulum' },
+      { ...msg, protocol: 'rrc' },
       { ...msg, nodeId: 0 },
       { ...msg, nodeId: 2 ** 32 },
       { ...msg, nodeId: 1.5 },
@@ -234,13 +235,32 @@ describe('direct messages', () => {
   });
 
   it('accepts the radios with direct messages on, without repeats', () => {
-    expect(parseTakDmProtocols(['meshcore', 'meshtastic', 'meshcore'])).toEqual([
+    expect(parseTakDmProtocols(['meshcore', 'meshtastic', 'reticulum', 'meshcore'])).toEqual([
       'meshcore',
       'meshtastic',
+      'reticulum',
     ]);
     expect(parseTakDmProtocols([])).toEqual([]);
-    expect(() => parseTakDmProtocols(['reticulum'])).toThrow(/tak:setDirectMessaging/);
+    expect(() => parseTakDmProtocols(['rrc'])).toThrow(/tak:setDirectMessaging/);
     expect(() => parseTakDmProtocols('meshcore')).toThrow(/tak:setDirectMessaging/);
+  });
+
+  it('accepts conversation peers, without repeats, and rejects malformed ones', () => {
+    const peer = { protocol: 'reticulum', nodeId: 789, callsign: ' Field Laptop ' };
+    expect(parseTakDirectPeers([peer, { ...peer, callsign: 'again' }])).toEqual([
+      { protocol: 'reticulum', nodeId: 789, callsign: 'Field Laptop' },
+    ]);
+    expect(parseTakDirectPeers([])).toEqual([]);
+    for (const bad of [
+      'peers',
+      [null],
+      [{ ...peer, protocol: 'rrc' }],
+      [{ ...peer, nodeId: 0 }],
+      [{ ...peer, callsign: 'a\nb' }],
+      Array.from({ length: 65 }, (_, i) => ({ ...peer, nodeId: i + 1 })),
+    ]) {
+      expect(() => parseTakDirectPeers(bad)).toThrow(/^tak:setDirectPeers: /);
+    }
   });
 
   const REF = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';

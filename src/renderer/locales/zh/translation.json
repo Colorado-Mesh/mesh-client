@@ -5805,7 +5805,9 @@
     "channelRemoteFor": "将{{channel}}流式传输到远程TAK服务器",
     "channelTrackersFor": "来自{{channel}}的跟踪器修复",
     "directMessages": "实时消息",
-    "directMessagesHint": "让ATAK设备向此收音机的同伴发送消息。此收音机CAN消息的每个伴侣都会在ATAK中获得聊天选项，并从此收音机发出消息，前缀为发件人的呼号。它的回复会发送到上次写入它的ATAK设备，或者在没有设备时发送到每个设备。没有位置的伴侣在消息后一天出现在0 ， 0。"
+    "directMessagesHint": "让ATAK设备向此收音机的同伴发送消息。此收音机CAN消息的每个伴侣都会在ATAK中获得聊天选项，并从此收音机发出消息，前缀为发件人的呼号。它的回复会发送到上次写入它的ATAK设备，或者在没有设备时发送到每个设备。没有位置的伴侣在消息后一天出现在0 ， 0。",
+    "messagingTitleReticulum": "ATAK中的Reticulum消息",
+    "messagingIntroReticulum": "让ATAK设备向LXMF个同行发送消息。可以从其标记向具有位置的同行发送消息；一旦mesh-client与之进行对话，没有位置的同行将显示为0、0 ，因此联系人列表中不会填写每个听到的同行。"
   },
   "telemetryPanel": {
     "title": "遥测",

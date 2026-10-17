@@ -19,6 +19,7 @@ import {
   parseTakChannelChatMessage,
   parseTakChatChannels,
   parseTakDirectMessage,
+  parseTakDirectPeers,
   parseTakDmProtocols,
   parseTakDmStatus,
   parseTakRetiredRooms,
@@ -307,6 +308,20 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     if (!m) return;
     directMessagingUpdates.checkOrThrow();
     m.setDirectMessaging(parseTakDmProtocols(protocols));
+  });
+
+  const directPeerUpdates = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:setDirectPeers',
+  });
+  ipcMain.handle('tak:setDirectPeers', (event, peers: unknown) => {
+    assertIpcSender(event, 'tak:setDirectPeers');
+    // As for channels: the renderer sends the list again when a sink starts.
+    const m = getTakServerManager();
+    if (!m) return;
+    directPeerUpdates.checkOrThrow();
+    m.setDirectPeers(parseTakDirectPeers(peers));
   });
 
   const dmStatusUpdates = createIpcRateLimiter({

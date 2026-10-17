@@ -620,6 +620,17 @@ describe('direct message handlers', () => {
     expect(idle).not.toHaveBeenCalled();
   });
 
+  it('hands the conversation peers to the manager, once it exists', async () => {
+    const setDirectPeers = vi.fn();
+    const handler = await register({ setDirectPeers }, 'tak:setDirectPeers');
+    const peer = { protocol: 'reticulum', nodeId: 789, callsign: 'Field Laptop' };
+    handler({}, [peer]);
+    expect(setDirectPeers).toHaveBeenCalledWith([peer]);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setDirectPeers');
+    expect(() => handler({}, 'peers')).toThrow(/tak:setDirectPeers/);
+    expect((await register(null, 'tak:setDirectPeers'))({}, [])).toBeUndefined();
+  });
+
   it('hands the radios with direct messages on to the manager, once it exists', async () => {
     const setDirectMessaging = vi.fn();
     const handler = await register({ setDirectMessaging }, 'tak:setDirectMessaging');

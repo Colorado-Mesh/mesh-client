@@ -404,6 +404,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       pushDirectMessage: async () => {},
       setDirectMessaging: async () => {},
       dmStatus: async () => {},
+      setDirectPeers: async () => {},
       onInboundChat: noopUnsub,
     },
     bleCoexistence: {
