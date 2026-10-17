@@ -8,7 +8,10 @@ import type { IdentityId } from '../lib/types';
 import { setTakChannels, useTakChannelStore } from '../stores/takChannelStore';
 import { getTakRelayPrefs, useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../stores/takSinkStore';
-import TakChannelRelaySection, { TakDirectMessagesToggle } from './TakChannelRelaySection';
+import TakChannelRelaySection, {
+  TakDirectMessagesSection,
+  TakDirectMessagesToggle,
+} from './TakChannelRelaySection';
 
 const ID = 'tak-channel-relay-test';
 const PUBLIC = '0123456789abcdef';
@@ -200,5 +203,30 @@ describe('TakChannelRelaySection', () => {
       ]);
     });
     expect(screen.getByLabelText('Let ATAK devices send to Ops')).not.toBeChecked();
+  });
+
+  it('gives Reticulum a section with its direct message switch alone, while a sink is up', async () => {
+    const user = userEvent.setup();
+    const section = (
+      <TakDirectMessagesSection
+        identityId="rn"
+        title="Reticulum messaging in ATAK"
+        description="Let ATAK devices message LXMF peers."
+        anchorId="tak.directMessages.reticulum"
+      />
+    );
+    const { container, rerender } = render(section);
+    expect(screen.getByText('Reticulum messaging in ATAK')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Channels in ATAK')).toBeNull();
+    await user.click(screen.getByLabelText('Direct messages'));
+    expect(getTakRelayPrefs('rn').directMessages).toBe(true);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    act(() => {
+      setTakSinkActive(false);
+    });
+    rerender(section);
+    expect(container).toBeEmptyDOMElement();
   });
 });

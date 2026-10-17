@@ -5805,7 +5805,9 @@
     "channelRemoteFor": "Trasmetti {{channel}} in streaming sul server TAK remoto",
     "channelTrackersFor": "Correzioni del tracker da {{channel}}",
     "directMessages": "Messaggi diretti",
-    "directMessagesHint": "Lascia che i dispositivi ATAK inviino messaggi ai compagni di questa radio. Ogni compagno di questo messaggio radio can ottiene un'opzione di chat in ATAK e da questa radio esce un messaggio ad esso, preceduto dal nominativo del mittente. Le sue risposte vanno al dispositivo ATAK che ha scritto per ultimo, o a ogni dispositivo quando nessuno ne ha scritto. Un compagno senza posizione appare a 0, 0 per un giorno dopo un messaggio."
+    "directMessagesHint": "Lascia che i dispositivi ATAK inviino messaggi ai compagni di questa radio. Ogni compagno di questo messaggio radio can ottiene un'opzione di chat in ATAK e da questa radio esce un messaggio ad esso, preceduto dal nominativo del mittente. Le sue risposte vanno al dispositivo ATAK che ha scritto per ultimo, o a ogni dispositivo quando nessuno ne ha scritto. Un compagno senza posizione appare a 0, 0 per un giorno dopo un messaggio.",
+    "messagingTitleReticulum": "Reticulum messaggi in ATAK",
+    "messagingIntroReticulum": "Lascia che i dispositivi ATAK inviino un messaggio ai colleghi LXMF. Un collega con una posizione può ricevere messaggi dal suo marcatore; uno senza posizione appare a 0, 0 una volta che mesh-client ha una conversazione con lui, quindi l'elenco dei contatti non viene riempito con tutti i colleghi ascoltati."
   },
   "telemetryPanel": {
     "title": "Telemetria",

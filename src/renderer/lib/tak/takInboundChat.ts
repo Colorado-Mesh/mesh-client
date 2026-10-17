@@ -5,6 +5,7 @@ import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityIdForProtocol } from '../identityByProtocol';
 import type { IdentityId } from '../types';
+import { hasOwnLxmfDestination } from './takDirectMessages';
 import { reportTakDmOutcome } from './takDmStatus';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
 import { listTakServedChannels } from './takServedChannels';
@@ -54,7 +55,7 @@ export function formatTakMeshText(
 
 export interface TakSendTarget {
   identityId: IdentityId;
-  protocol: 'meshtastic' | 'meshcore';
+  protocol: 'meshtastic' | 'meshcore' | 'reticulum';
   channelIndex: number;
   /** The companion a direct message goes to; unset for a channel message. */
   destination?: number;
@@ -74,6 +75,10 @@ export function findTakSendTargets(target: TakChatTarget): TakSendTarget[] {
     // The radio is recorded after a render, so for a moment after a switch to another radio of
     // the same protocol it can still name the old one; never send from that.
     if (identityId !== getIdentityIdForProtocol(target.protocol)) return [];
+    // A peer ATAK may still message (from an earlier DM, or a conversation) can have its LXMF
+    // address remap to another destination since; the message would go there, and the reply
+    // come back under a different contact.
+    if (target.protocol === 'reticulum' && !hasOwnLxmfDestination(target.nodeId)) return [];
     return [{ identityId, protocol: target.protocol, channelIndex: 0, destination: target.nodeId }];
   }
   return listTakServedChannels()

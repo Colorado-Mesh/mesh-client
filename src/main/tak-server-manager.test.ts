@@ -1222,10 +1222,10 @@ describe('TakServerManager direct messages', () => {
     vi.useRealTimers();
   });
 
-  /** A manager with the local server running and direct messages on for both radios. */
+  /** A manager with the local server running and direct messages on for every radio. */
   function dmManager(): TakServerManager {
     const manager = chatManager([]);
-    manager.setDirectMessaging(['meshcore', 'meshtastic']);
+    manager.setDirectMessaging(['meshcore', 'meshtastic', 'reticulum']);
     return manager;
   }
 
@@ -1343,12 +1343,16 @@ describe('TakServerManager direct messages', () => {
     expect(inbound).toEqual([]);
     const notes = chats(sender);
     expect(notes).toHaveLength(4);
-    expect(notes[0]).toContain('uid0="MESH-456"');
-    expect(notes[0]).toContain('mesh-client: Not sent: direct messages are off for this radio.');
+    for (const [i, uid] of [
+      [0, 'MESH-456'],
+      [3, 'RN-42'],
+    ] as const) {
+      expect(notes[i]).toContain(`uid0="${uid}"`);
+      expect(notes[i]).toContain('mesh-client: Not sent: direct messages are off for this radio.');
+    }
     for (const [i, uid] of [
       [1, 'MC-7'],
       [2, 'MC-999'],
-      [3, 'RN-42'],
     ] as const) {
       expect(notes[i]).toContain(`uid0="${uid}"`);
       expect(notes[i]).toContain(
@@ -1492,6 +1496,70 @@ describe('TakServerManager direct messages', () => {
     // The held message went with its contact.
     watcher.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
     expect(chats(watcher)).toEqual([]);
+  });
+
+  describe('conversation peers', () => {
+    const PEER = { protocol: 'reticulum' as const, nodeId: 789, callsign: 'Field Laptop' };
+    const contactFor = (socket: tls.TLSSocket, uid: string) =>
+      written(socket).filter((l) => l.includes(`uid="${uid}"`) && l.includes('a-f-G-U-C'));
+
+    it('gives a peer with no marker a contact at 0, 0, and takes it away when dropped', () => {
+      const manager = dmManager();
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setDirectPeers([PEER]);
+      const [contact] = contactFor(socket, 'RN-789');
+      expect(contact).toContain('<point lat="0" lon="0"');
+      expect(contact).toContain('<contact callsign="Field Laptop" endpoint="*:-1:stcp"/>');
+
+      // The same list again changes nothing.
+      vi.mocked(socket.write).mockClear();
+      manager.setDirectPeers([PEER]);
+      expect(written(socket)).toEqual([]);
+
+      // A device connecting later gets it with the channel contacts.
+      const late = mockTlsSocket();
+      (manager as unknown as ChatInternals)._handleClient(late);
+      expect(contactFor(late, 'RN-789')).toHaveLength(1);
+
+      manager.setDirectPeers([]);
+      expect(written(socket).some((l) => l.includes('uid="RN-789"') && l.includes('t-x-d-d'))).toBe(
+        true,
+      );
+    });
+
+    it('lets a device message a conversation peer, which has no marker', () => {
+      const manager = dmManager();
+      manager.setDirectPeers([PEER]);
+      const inbound = listen(manager);
+      const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+      viper.emit('data', Buffer.from(DM('carry on', 'RN-789', { room: 'Field Laptop' })));
+      expect(inbound.map((m) => m.target)).toEqual([
+        { kind: 'direct', protocol: 'reticulum', nodeId: 789 },
+      ]);
+    });
+
+    it('lets the marker stand in for a peer that has one', () => {
+      const manager = dmManager();
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.onNodeUpdate({ ...ALICE, protocol: 'reticulum', node_id: 789, chatReachable: false });
+      vi.mocked(socket.write).mockClear();
+      manager.setDirectPeers([PEER]);
+      expect(written(socket)).toEqual([]);
+    });
+
+    it('shows no contact while direct messages are off for the radio, and adds it when on', () => {
+      const manager = chatManager([]);
+      manager.setDirectMessaging(['meshcore']);
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setDirectPeers([PEER]);
+      expect(contactFor(socket, 'RN-789')).toEqual([]);
+      manager.setDirectMessaging(['meshcore', 'reticulum']);
+      expect(contactFor(socket, 'RN-789')).toHaveLength(1);
+      manager.setDirectMessaging(['meshcore']);
+      expect(written(socket).some((l) => l.includes('uid="RN-789"') && l.includes('t-x-d-d'))).toBe(
+        true,
+      );
+    });
   });
 
   describe('outcomes', () => {

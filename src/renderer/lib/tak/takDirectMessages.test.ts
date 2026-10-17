@@ -3,13 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
 
 import { setConnection, useConnectionStore } from '../../stores/connectionStore';
+import type { MessageRecord } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { useReticulumIdentityActivityStore } from '../../stores/reticulumIdentityActivityStore';
 import { setTakRadio, useTakChannelStore } from '../../stores/takChannelStore';
 import { getTakRelayPrefs, useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
+import {
+  clearReticulumHashRegistry,
+  registerReticulumDestinationHash,
+} from '../reticulum/destHash';
 import type { MeshNode } from '../types';
 import {
   canTakDirectMessage,
+  listTakConversationPeers,
   listTakDmProtocols,
   relayDirectMessageToTak,
   resetTakRelayedDirectMessages,
@@ -17,6 +24,8 @@ import {
 
 const MC = 'tak-dm-meshcore';
 const MT = 'tak-dm-meshtastic';
+const RN = 'tak-dm-reticulum';
+const LXMF = 'ab'.repeat(16);
 const NOW = Date.parse('2026-10-16T12:00:00Z');
 
 function node(overrides: Partial<MeshNode> = {}): MeshNode {
@@ -43,6 +52,10 @@ beforeEach(() => {
   setTakRadio('meshtastic', MT);
   setConnection(MC, { myNodeNum: 1 });
   setConnection(MT, { myNodeNum: 2 });
+  setTakRadio('reticulum', RN);
+  setConnection(RN, { myNodeNum: 3 });
+  clearReticulumHashRegistry();
+  useReticulumIdentityActivityStore.setState({ byDestination: new Map() });
 });
 
 afterEach(() => {
@@ -74,10 +87,110 @@ describe('canTakDirectMessage', () => {
     ).toBe(false);
   });
 
-  it('refuses everything without a TAK radio for the protocol, and Reticulum for now', () => {
-    expect(canTakDirectMessage(node(), 'reticulum')).toBe(false);
+  it('allows a Reticulum peer whose LXMF destination is known under its own id', () => {
+    const peer = node({ node_id: 789, public_key_hex: undefined, hw_model: undefined });
+    expect(canTakDirectMessage(peer, 'reticulum')).toBe(false);
+    registerReticulumDestinationHash(789, LXMF);
+    expect(canTakDirectMessage(peer, 'reticulum')).toBe(true);
+    expect(canTakDirectMessage({ ...peer, node_id: 3 }, 'reticulum')).toBe(false);
+  });
+
+  it("refuses a Reticulum peer whose LXMF address is another destination's", () => {
+    // A telephony destination of an identity whose LXMF delivery hash is a different one:
+    // replies would come from that other destination, not from this marker.
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    const lxmf = 'e3359f1314aff4fb6261400a8202149b';
+    const telephony = 'ab1d53d6923d6983dfb4451e3869b878';
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          telephony,
+          [
+            {
+              destination_hash: telephony,
+              aspect: 'lxst.telephony',
+              identity_hash: identity,
+              last_seen: 2,
+            },
+          ],
+        ],
+        [
+          lxmf,
+          [
+            {
+              destination_hash: lxmf,
+              aspect: 'lxmf.delivery',
+              identity_hash: identity,
+              last_seen: 1,
+            },
+          ],
+        ],
+      ]),
+    });
+    registerReticulumDestinationHash(790, telephony);
+    expect(canTakDirectMessage(node({ node_id: 790 }), 'reticulum')).toBe(false);
+  });
+
+  it('refuses everything without a TAK radio for the protocol', () => {
     setTakRadio('meshcore', null);
     expect(canTakDirectMessage(node(), 'meshcore')).toBe(false);
+  });
+});
+
+describe('listTakConversationPeers', () => {
+  const msg = (
+    id: string,
+    from: number,
+    to: number,
+    timestamp: number,
+    extra = {},
+  ): MessageRecord => ({
+    id,
+    from,
+    to,
+    payload: 'hi',
+    channelIndex: 0,
+    timestamp,
+    ...extra,
+  });
+
+  it('lists the peers with a conversation, most recent first, named as the node store has them', () => {
+    for (const id of [789, 790, 791]) registerReticulumDestinationHash(id, LXMF);
+    const messages = {
+      a: msg('a', 789, 3, 100),
+      b: msg('b', 3, 790, 300),
+      c: msg('c', 789, 3, 200),
+      // A reaction is not a conversation, and peers with no known LXMF destination stay out.
+      d: msg('d', 791, 3, 400, { tapback: true }),
+      e: msg('e', 792, 3, 500),
+    };
+    const nodes = {
+      789: { nodeId: 789, longName: ' Field Laptop ' },
+      790: { nodeId: 790, shortName: 'BOB' },
+    };
+    expect(listTakConversationPeers(messages, nodes, 3)).toEqual([
+      { protocol: 'reticulum', nodeId: 790, callsign: 'BOB' },
+      { protocol: 'reticulum', nodeId: 789, callsign: 'Field Laptop' },
+    ]);
+  });
+
+  it('names a peer with no name by its node id, and lists nothing without messages', () => {
+    registerReticulumDestinationHash(789, LXMF);
+    expect(listTakConversationPeers({ a: msg('a', 789, 3, 1) }, undefined, 3)).toEqual([
+      { protocol: 'reticulum', nodeId: 789, callsign: '789' },
+    ]);
+    expect(listTakConversationPeers(undefined, undefined, 3)).toEqual([]);
+  });
+
+  it('keeps the list to the most recent 64 peers', () => {
+    const messages: Record<string, MessageRecord> = {};
+    for (let i = 1; i <= 70; i++) {
+      registerReticulumDestinationHash(1000 + i, LXMF);
+      messages[String(i)] = msg(String(i), 1000 + i, 3, i);
+    }
+    const peers = listTakConversationPeers(messages, undefined, 3);
+    expect(peers).toHaveLength(64);
+    expect(peers[0]?.nodeId).toBe(1070);
   });
 });
 

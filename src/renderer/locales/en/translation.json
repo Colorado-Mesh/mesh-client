@@ -6786,6 +6786,8 @@
     "messagingIntroMeshcore": "Choose which MeshCore channels appear in ATAK. Each becomes a contact on every connected ATAK device, and what the channel hears arrives from that contact. With ATAK can send on, a message to the contact goes out on the channel from this radio, prefixed with the sender's callsign; with it off, the channel is receive only. Remote server also streams the channel, read only, to the remote TAK server. Tracker fixes turns MeshCore tracker position messages (!MT1) into map markers. Messages heard while no ATAK device is connected (up to 50, for a day) are held for the first device that connects, and only that one.",
     "messagingTitleMeshtastic": "Meshtastic messaging in ATAK",
     "messagingIntroMeshtastic": "Choose which Meshtastic channels appear in ATAK. Each becomes a contact on every connected ATAK device, and what the channel hears, including over MQTT, arrives from that contact. With ATAK can send on, a message to the contact goes out on the channel from this radio, prefixed with the sender's callsign; with it off, the channel is receive only. Remote server also streams the channel, read only, to the remote TAK server. Messages heard while no ATAK device is connected (up to 50, for a day) are held for the first device that connects, and only that one.",
+    "messagingTitleReticulum": "Reticulum messaging in ATAK",
+    "messagingIntroReticulum": "Let ATAK devices message LXMF peers. A peer with a position can be messaged from its marker; one with no position appears at 0, 0 once mesh-client has a conversation with it, so the contact list does not fill with every peer heard.",
     "channelModeLabel": "Channels in ATAK",
     "channelModeOff": "Off",
     "channelModeAll": "All channels",

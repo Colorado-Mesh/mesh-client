@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { computeChannelIdentityKey } from '@/shared/channelIdentityKey';
 import type { TakChatChannel } from '@/shared/tak-types';
 
+import {
+  clearReticulumHashRegistry,
+  registerReticulumDestinationHash,
+} from '../lib/reticulum/destHash';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import { addMessage, useMessageStore } from '../stores/messageStore';
 import { getTakChannels, getTakRadio, useTakChannelStore } from '../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
@@ -16,6 +22,7 @@ import {
 /** The mocked IPC call the hook reports the served channels through. */
 const setChatChannels = () => vi.mocked(window.electronAPI.tak.setChatChannels);
 const setDirectMessaging = () => vi.mocked(window.electronAPI.tak.setDirectMessaging);
+const setDirectPeers = () => vi.mocked(window.electronAPI.tak.setDirectPeers);
 
 const PUBLIC = Uint8Array.from('8b3387e9c5cdea6ac9e5edbaa115cd72'.match(/../g) ?? [], (b) =>
   parseInt(b, 16),
@@ -55,6 +62,7 @@ describe('useTakInboundChat', () => {
   beforeEach(() => {
     setChatChannels().mockClear();
     setDirectMessaging().mockClear();
+    setDirectPeers().mockClear();
     useTakSinkStore.setState({ active: false });
     useTakRelayPrefsStore.setState({ byIdentity: {} });
     useTakChannelStore.setState({ channelsByIdentity: {} });
@@ -92,6 +100,38 @@ describe('useTakInboundChat', () => {
       rerender?.({ ...sources(), meshtastic: { identityId: 'mt', channelConfigs: [] } });
     });
     expect(getTakRadio('meshtastic')).toBe('mt');
+  });
+
+  it('tells main which LXMF peers have a conversation, once Reticulum takes direct messages', () => {
+    clearReticulumHashRegistry();
+    registerReticulumDestinationHash(789, 'ab'.repeat(16));
+    useMessageStore.setState({ messages: {} });
+    useConnectionStore.setState({ connections: {} });
+    setConnection('rn', { myNodeNum: 3 });
+    addMessage('rn', { id: 'a', from: 789, to: 3, payload: 'hi', channelIndex: 0, timestamp: 1 });
+    mount({ ...sources(), reticulum: { identityId: 'rn' } });
+    expect(getTakRadio('reticulum')).toBe('rn');
+    act(() => {
+      useTakSinkStore.setState({ active: true });
+    });
+    // Off by default: no peers go to ATAK.
+    expect(setDirectPeers()).toHaveBeenLastCalledWith([]);
+    act(() => {
+      useTakRelayPrefsStore.getState().setDirectMessages('rn', true);
+    });
+    expect(setDirectMessaging()).toHaveBeenLastCalledWith(['reticulum']);
+    expect(setDirectPeers()).toHaveBeenLastCalledWith([
+      { protocol: 'reticulum', nodeId: 789, callsign: '789' },
+    ]);
+    // A conversation with another peer adds it.
+    registerReticulumDestinationHash(790, 'cd'.repeat(16));
+    act(() => {
+      addMessage('rn', { id: 'b', from: 3, to: 790, payload: 'yo', channelIndex: 0, timestamp: 2 });
+    });
+    expect(setDirectPeers().mock.lastCall?.[0].map((p) => p.nodeId)).toEqual([790, 789]);
+    useMessageStore.setState({ messages: {} });
+    useConnectionStore.setState({ connections: {} });
+    clearReticulumHashRegistry();
   });
 
   it('tells main which radios take direct messages, when a sink starts and when it changes', () => {
