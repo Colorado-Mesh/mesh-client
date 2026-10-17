@@ -168,6 +168,84 @@ describe('Catch up availability', () => {
     expect(useAiSummaryStore.getState().summaries).toEqual({});
     expect(result.current.pending).toBe(false);
   });
+  it('invalidates pending history after unmount without blocking a remounted conversation', async () => {
+    let resolveHistory!: (messages: AiSummaryMessage[]) => void;
+    vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveHistory = resolve;
+      }),
+    );
+    const original = renderHook(() => useConversationSummary(input));
+    let running!: Promise<void>;
+    act(() => {
+      running = original.result.current.run();
+    });
+    original.unmount();
+    const remounted = renderHook(() => useConversationSummary(input));
+    await act(async () => {
+      resolveHistory([{ at: 1, sender: 'Alice', body: 'Old unmounted request' }]);
+      await running;
+    });
+    expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    expect(useAiSummaryStore.getState().summaries).toEqual({});
+    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+      { at: 2, sender: 'Alice', body: 'New mounted request' },
+    ]);
+    await act(async () => {
+      await remounted.result.current.run();
+    });
+    expect(window.electronAPI.ai.summarize).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        messages: [{ at: 2, sender: 'Alice', body: 'New mounted request' }],
+      }),
+    );
+  });
+  it.each(['reconfigure', 'disable and re-enable'])(
+    'releases a stalled history request immediately after %s and preserves a fresh request',
+    async (change) => {
+      let resolveHistory!: (messages: AiSummaryMessage[]) => void;
+      vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveHistory = resolve;
+        }),
+      );
+      const { result } = renderHook(() => useConversationSummary(input));
+      let stale!: Promise<void>;
+      act(() => {
+        stale = result.current.run();
+      });
+      expect(result.current.pending).toBe(true);
+      act(() => {
+        useAiSummaryStore
+          .getState()
+          .setStatus(
+            change === 'reconfigure'
+              ? { ...ready, model: 'new-model' }
+              : { ...ready, enabled: false },
+          );
+        if (change !== 'reconfigure') useAiSummaryStore.getState().setStatus(ready);
+      });
+      expect(result.current.pending).toBe(false);
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+        { at: 2, sender: 'Alice', body: 'New configured request' },
+      ]);
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(result.current.pending).toBe(true);
+      await act(async () => {
+        resolveHistory([{ at: 1, sender: 'Alice', body: 'Old configuration request' }]);
+        await stale;
+      });
+      expect(window.electronAPI.ai.summarize).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          messages: [{ at: 2, sender: 'Alice', body: 'New configured request' }],
+        }),
+      );
+      expect(result.current.pending).toBe(true);
+      expect(result.current.state?.error).toBeUndefined();
+    },
+  );
 });
 describe('conversation summary async boundaries', () => {
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(

@@ -47,8 +47,23 @@ export function useConversationSummary(input: ConversationSummaryInput) {
   const current = useRef(input.key);
   const generation = useRef(0);
   useEffect(() => {
+    const invalidate = () => {
+      generation.current++;
+    };
     current.current = input.key;
-    generation.current++;
+    invalidate();
+    let configurationRevision = getAiSummaryRevision();
+    const unsubscribe = useAiSummaryStore.subscribe(() => {
+      const nextRevision = getAiSummaryRevision();
+      if (nextRevision === configurationRevision) return;
+      configurationRevision = nextRevision;
+      invalidate();
+      setLoadingRequest(null);
+    });
+    return () => {
+      invalidate();
+      unsubscribe();
+    };
   }, [input.key]);
   const run = useCallback(async () => {
     if (
