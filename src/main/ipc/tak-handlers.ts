@@ -19,7 +19,9 @@ import {
   parseTakChannelChatMessage,
   parseTakChatChannels,
   parseTakDirectMessage,
+  parseTakDirectPeers,
   parseTakDmProtocols,
+  parseTakDmStatus,
   parseTakRetiredRooms,
 } from '../tak/geochat-cot';
 import { parseTakNodeUpdate } from '../tak/node-update';
@@ -306,6 +308,33 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     if (!m) return;
     directMessagingUpdates.checkOrThrow();
     m.setDirectMessaging(parseTakDmProtocols(protocols));
+  });
+
+  const directPeerUpdates = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:setDirectPeers',
+  });
+  ipcMain.handle('tak:setDirectPeers', (event, peers: unknown) => {
+    assertIpcSender(event, 'tak:setDirectPeers');
+    // As for channels: the renderer sends the list again when a sink starts.
+    const m = getTakServerManager();
+    if (!m) return;
+    directPeerUpdates.checkOrThrow();
+    m.setDirectPeers(parseTakDirectPeers(peers));
+  });
+
+  const dmStatusUpdates = createIpcRateLimiter({
+    max: 120,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:dmStatus',
+  });
+  ipcMain.handle('tak:dmStatus', (event, update: unknown) => {
+    assertIpcSender(event, 'tak:dmStatus');
+    const m = getTakServerManager();
+    if (!m?.hasActiveSink()) return;
+    dmStatusUpdates.checkOrThrow();
+    m.reportDmOutcome(parseTakDmStatus(update));
   });
 
   // ─── Relayed node styling ────────────────────────────────────────

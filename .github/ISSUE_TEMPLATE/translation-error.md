@@ -2,7 +2,7 @@
 name: Translation Error
 about: Report a translation error
 title: ''
-labels: ''
+labels: 'bug'
 assignees: ''
 ---
 

@@ -168,6 +168,8 @@ export interface RrcHubSessionState {
   /** Sticky moderation / remote-takedown banner. */
   moderationBanner: string | null;
   unreadByRoom: Map<string, number>;
+  /** Timestamp of the first alert-eligible arrival in each unread run. */
+  unreadStartedAtByRoom: Map<string, number>;
   /** True while a local PART is in flight (voluntary leave). */
   partIntentRooms: Set<string>;
   /** True when user requested disconnect (not hub drop). */
@@ -199,6 +201,7 @@ export function emptyHubSession(): RrcHubSessionState {
     lastError: null,
     moderationBanner: null,
     unreadByRoom: new Map(),
+    unreadStartedAtByRoom: new Map(),
     partIntentRooms: new Set(),
     disconnectIntent: false,
     whoRequestedRooms: new Set(),
@@ -279,6 +282,7 @@ function mutateHubSession(
       room,
       nextSession.unreadByRoom.get(roomStorageKey(room)),
       s.messages.get(msgKey(hub, room)) ?? [],
+      nextSession.unreadStartedAtByRoom.get(roomStorageKey(room)),
     );
     boundary = openingRrcReadWatermark(hub, room);
   }
@@ -333,6 +337,7 @@ function removeHubSession(s: RrcSessionStoreState, hub: string): Partial<RrcSess
       nextSession.activeRoom,
       nextSession.unreadByRoom.get(roomStorageKey(nextSession.activeRoom)),
       messages.get(msgKey(nextFocused, nextSession.activeRoom)) ?? [],
+      nextSession.unreadStartedAtByRoom.get(roomStorageKey(nextSession.activeRoom)),
     );
   return {
     sessionsByHub,
@@ -613,6 +618,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           room,
           session.unreadByRoom.get(roomStorageKey(room)),
           s.messages.get(msgKey(hub, room)) ?? [],
+          session.unreadStartedAtByRoom.get(roomStorageKey(room)),
         );
       }
       return {
@@ -639,6 +645,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         room,
         state.unreadByRoom.get(roomStorageKey(room)),
         state.messages.get(msgKey(hub, room)) ?? [],
+        state.sessionsByHub.get(hub)?.unreadStartedAtByRoom.get(roomStorageKey(room)),
       );
     }
     if (
@@ -651,8 +658,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       snapshotRrcReadWatermark(
         state.focusedHubHash,
         state.activeRoom,
-        undefined,
+        state.unreadByRoom.get(roomStorageKey(state.activeRoom)),
         state.messages.get(msgKey(state.focusedHubHash, state.activeRoom)) ?? [],
+        state.sessionsByHub
+          .get(state.focusedHubHash)
+          ?.unreadStartedAtByRoom.get(roomStorageKey(state.activeRoom)),
       );
     set({
       rrcPanelFocused: focused,
@@ -670,7 +680,13 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     readingLatest = readingLatest && state.rrcPanelFocused && !isAppWindowInactive();
     if (state.rrcReadingLatest === readingLatest) return;
     if (!readingLatest && state.rrcReadBoundary === null) {
-      snapshotRrcReadWatermark(hub, room, undefined, state.messages.get(msgKey(hub, room)) ?? []);
+      snapshotRrcReadWatermark(
+        hub,
+        room,
+        state.unreadByRoom.get(roomStorageKey(room)),
+        state.messages.get(msgKey(hub, room)) ?? [],
+        state.sessionsByHub.get(hub)?.unreadStartedAtByRoom.get(roomStorageKey(room)),
+      );
     }
     set({
       rrcReadingLatest: readingLatest,
@@ -980,8 +996,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         const rooms = new Map(session.rooms);
         rooms.delete(room);
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
         for (const [rk] of session.unreadByRoom) {
-          if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+          if (rrcRoomsMatch(rk, room)) {
+            unreadByRoom.delete(rk);
+            unreadStartedAtByRoom.delete(rk);
+          }
         }
         const activeGone = session.activeRoom != null && rrcRoomsMatch(session.activeRoom, room);
         let nextActive = activeGone ? null : session.activeRoom;
@@ -998,6 +1018,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           ...session,
           rooms,
           unreadByRoom,
+          unreadStartedAtByRoom,
           activeRoom: nextActive,
         };
       });
@@ -1044,6 +1065,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           nextSession.activeRoom,
           nextSession.unreadByRoom.get(roomStorageKey(nextSession.activeRoom)),
           s.messages.get(msgKey(targetHub, nextSession.activeRoom)) ?? [],
+          nextSession.unreadStartedAtByRoom.get(roomStorageKey(nextSession.activeRoom)),
         );
       return {
         sessionsByHub,
@@ -1150,8 +1172,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       }
 
       const unreadByRoom = new Map(existing.unreadByRoom);
+      const unreadStartedAtByRoom = new Map(existing.unreadStartedAtByRoom);
       for (const [rk] of existing.unreadByRoom) {
-        if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+        if (rrcRoomsMatch(rk, room)) {
+          unreadByRoom.delete(rk);
+          unreadStartedAtByRoom.delete(rk);
+        }
       }
       const partIntentRooms = new Set(existing.partIntentRooms);
       for (const k of [...partIntentRooms]) {
@@ -1172,6 +1198,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         ...existing,
         rooms,
         unreadByRoom,
+        unreadStartedAtByRoom,
         partIntentRooms,
         whoRequestedRooms,
         whoTranscriptShownRooms,
@@ -1240,8 +1267,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       let nextSession = session;
       if (opts?.bumpUnread && !isSelf && !viewing) {
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
+        if (!unreadByRoom.get(roomKey)) unreadStartedAtByRoom.set(roomKey, msg.timestamp);
         unreadByRoom.set(roomKey, (unreadByRoom.get(roomKey) ?? 0) + 1);
-        nextSession = { ...session, unreadByRoom };
+        nextSession = { ...session, unreadByRoom, unreadStartedAtByRoom };
       }
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(hub, nextSession);
@@ -1299,10 +1328,14 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       if (!hub) return {};
       const sessionMut = mutateHubSession(s, hub, (session) => {
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
         for (const [rk] of session.unreadByRoom) {
-          if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+          if (rrcRoomsMatch(rk, room)) {
+            unreadByRoom.delete(rk);
+            unreadStartedAtByRoom.delete(rk);
+          }
         }
-        return { ...session, unreadByRoom };
+        return { ...session, unreadByRoom, unreadStartedAtByRoom };
       });
       if (Object.keys(sessionMut).length === 0) return {};
       const unreadByHub = new Map(s.unreadByHub);

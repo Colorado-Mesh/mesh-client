@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
-import type { TakChatChannel, TakDmProtocol } from '@/shared/tak-types';
+import type { TakChatChannel, TakDirectPeer, TakDmProtocol } from '@/shared/tak-types';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
-import { listTakDmProtocols } from '../lib/tak/takDirectMessages';
+import { listTakConversationPeers, listTakDmProtocols } from '../lib/tak/takDirectMessages';
+import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -13,6 +14,9 @@ import {
   toTakChatChannels,
 } from '../lib/tak/takServedChannels';
 import type { IdentityId } from '../lib/types';
+import { useConnectionStore } from '../stores/connectionStore';
+import { useMessageStore } from '../stores/messageStore';
+import { useNodeStore } from '../stores/nodeStore';
 import { setTakChannels, setTakRadio, type TakChannelInfo } from '../stores/takChannelStore';
 import {
   bindTakPendingSlots,
@@ -63,11 +67,15 @@ const sendChatChannels = (value: unknown): Promise<void> =>
   window.electronAPI.tak.setChatChannels(value as TakChatChannel[]);
 const sendDirectMessaging = (value: unknown): Promise<void> =>
   window.electronAPI.tak.setDirectMessaging(value as TakDmProtocol[]);
+const sendDirectPeers = (value: unknown): Promise<void> =>
+  window.electronAPI.tak.setDirectPeers(value as TakDirectPeer[]);
 
 /** Each radio's identity and its runtime channel list, as App has them. */
 export interface TakChannelSources {
   meshcore: { identityId: IdentityId | null; channels: readonly unknown[] };
   meshtastic: { identityId: IdentityId | null; channelConfigs: readonly unknown[] };
+  /** The Reticulum identity, whose LXMF peers TAK clients may message; it has no channels. */
+  reticulum?: { identityId: IdentityId | null };
 }
 
 /**
@@ -82,6 +90,7 @@ export function useTakInboundChat(sources: TakChannelSources): void {
   const meshcoreChannels = sources.meshcore.channels;
   const meshtasticId = sources.meshtastic.identityId;
   const meshtasticConfigs = sources.meshtastic.channelConfigs;
+  const reticulumId = sources.reticulum?.identityId ?? null;
 
   const meshcoreInfos = useMemo(() => meshcoreTakChannels(meshcoreChannels), [meshcoreChannels]);
   const meshtasticInfos = useMemo(
@@ -104,10 +113,14 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     setTakChannels(meshcoreId, meshcoreInfos);
   }, [meshcoreId, meshcoreInfos]);
 
+  // Tell each device how its direct messages went, as their automatic resends settle.
+  useEffect(() => startTakDmStatus(), []);
+
   useEffect(() => {
     setTakRadio('meshcore', meshcoreId);
     setTakRadio('meshtastic', meshtasticId);
-  }, [meshcoreId, meshtasticId]);
+    setTakRadio('reticulum', reticulumId);
+  }, [meshcoreId, meshtasticId, reticulumId]);
 
   useEffect(() => {
     if (!meshtasticId) return;
@@ -145,7 +158,32 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     const radios: Partial<Record<TakDmProtocol, IdentityId>> = {};
     if (meshcoreId) radios.meshcore = meshcoreId;
     if (meshtasticId) radios.meshtastic = meshtasticId;
+    if (reticulumId) radios.reticulum = reticulumId;
     return JSON.stringify(listTakDmProtocols(radios, relayPrefs));
-  }, [meshcoreId, meshtasticId, relayPrefs]);
+  }, [meshcoreId, meshtasticId, reticulumId, relayPrefs]);
   useSendWhileSinkActive(sinkActive, dmJson, sendDirectMessaging, 'setDirectMessaging');
+
+  // LXMF peers with a conversation in mesh-client, so ATAK can carry it on with peers that
+  // have no marker. Worked out only while TAK is up and the Reticulum radio takes DMs.
+  const reticulumDms =
+    reticulumId !== null && sinkActive && relayPrefs[reticulumId]?.directMessages;
+  const reticulumMessages = useMessageStore((s) =>
+    reticulumDms && reticulumId ? s.messages[reticulumId] : undefined,
+  );
+  const reticulumNodes = useNodeStore((s) =>
+    reticulumDms && reticulumId ? s.nodes[reticulumId] : undefined,
+  );
+  const reticulumSelf = useConnectionStore((s) =>
+    reticulumId ? (s.connections[reticulumId]?.myNodeNum ?? 0) : 0,
+  );
+  const peersJson = useMemo(
+    () =>
+      JSON.stringify(
+        reticulumDms
+          ? listTakConversationPeers(reticulumMessages, reticulumNodes, reticulumSelf)
+          : [],
+      ),
+    [reticulumDms, reticulumMessages, reticulumNodes, reticulumSelf],
+  );
+  useSendWhileSinkActive(sinkActive, peersJson, sendDirectPeers, 'setDirectPeers');
 }

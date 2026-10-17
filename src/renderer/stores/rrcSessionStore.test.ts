@@ -71,6 +71,91 @@ describe('rrcSessionStore', () => {
     },
   );
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'anchors a first unread arrival before later non-alert traffic on %s',
+    (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let now = 1800000000000;
+      vi.spyOn(Date, 'now').mockImplementation(() => now);
+      const hub = 'e1'.repeat(16);
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hub, 'Community');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#other');
+      const incomingAt = now++;
+      store.addMessage(
+        {
+          id: 'incoming',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'Unread update',
+          sender_hash: 'bb'.repeat(16),
+          timestamp: incomingAt,
+        },
+        { bumpUnread: true },
+      );
+      store.addMessage({
+        id: 'hub-notice',
+        room: 'lobby',
+        kind: 'notice',
+        body: 'Roster updated',
+        sender_hash: hub,
+        timestamp: now++,
+      });
+      store.addMessage(
+        {
+          id: 'self',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'My message',
+          nickname: store.nickname,
+          timestamp: now++,
+        },
+        { bumpUnread: true },
+      );
+      store.setActiveRoom('lobby');
+      store.setRrcPanelFocused(true);
+      expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+      expect(useRrcSessionStore.getState().rrcReadBoundary).toBe(incomingAt - 1);
+      expect(loadPersistedRrcLastRead()[rrcReadKey(hub, '#lobby')]).toBeUndefined();
+    },
+  );
+
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      ['panel', 'reading'].map((transition) => ({ platform, transition })),
+    ),
+  )('keeps an arrival racing $transition blur unread on $platform', ({ platform, transition }) => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+    const focus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    const hub = 'e2'.repeat(16);
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.setRrcPanelFocused(true);
+    store.setRrcReadingLatest(hub, '#lobby', true);
+    store.clearUnread('#lobby', hub);
+    focus.mockReturnValue(false);
+    const incomingAt = Date.now();
+    store.addMessage(
+      {
+        id: 'blur-arrival',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'Unread during blur',
+        sender_hash: 'bb'.repeat(16),
+        timestamp: incomingAt,
+      },
+      { bumpUnread: true },
+    );
+    if (transition === 'panel') store.setRrcPanelFocused(false);
+    else store.setRrcReadingLatest(hub, '#lobby', false);
+    expect(useRrcSessionStore.getState().rrcReadBoundary).toBe(incomingAt - 1);
+    store.setRrcPanelFocused(true);
+    expect(useRrcSessionStore.getState().rrcReadBoundary).toBe(incomingAt - 1);
+  });
+
   it('restores a read boundary on automatic focus and resets it when the room parts', () => {
     const hub = 'eb'.repeat(16);
     const store = useRrcSessionStore.getState();

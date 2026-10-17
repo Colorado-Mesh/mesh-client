@@ -268,8 +268,8 @@ export interface TAKChannelChatMessage {
   longitude?: number;
 }
 
-/** Radios whose companions TAK clients may message directly. */
-export const TAK_DM_PROTOCOLS = ['meshcore', 'meshtastic'] as const;
+/** Radios whose companions (on Reticulum, LXMF peers) TAK clients may message directly. */
+export const TAK_DM_PROTOCOLS = ['meshcore', 'meshtastic', 'reticulum'] as const;
 export type TakDmProtocol = (typeof TAK_DM_PROTOCOLS)[number];
 
 export function isTakDmProtocol(value: unknown): value is TakDmProtocol {
@@ -290,7 +290,40 @@ export interface TAKInboundChat {
   clientId: string;
   /** When the server received it, epoch milliseconds. */
   timeMs: number;
+  /**
+   * For a direct message: main's id for it, handed back with {@link TakDmStatusUpdate} so the
+   * device that wrote hears how it went.
+   */
+  dmRef?: string;
 }
+
+/**
+ * How a direct message from a TAK client ended: acknowledged by the companion, still not
+ * acknowledged after the last automatic resend, or never sent at all.
+ */
+export const TAK_DM_OUTCOMES = ['delivered', 'unconfirmed', 'not-sent'] as const;
+export type TakDmOutcome = (typeof TAK_DM_OUTCOMES)[number];
+
+/** The outcome of one direct message from a TAK client, for main. */
+export interface TakDmStatusUpdate {
+  /** {@link TAKInboundChat.dmRef} of the message. */
+  dmRef: string;
+  outcome: TakDmOutcome;
+}
+
+/**
+ * A peer this app already has a direct conversation with, which TAK clients may message even
+ * with no marker on the map: main gives it a contact at 0, 0 while it has none.
+ */
+export interface TakDirectPeer {
+  protocol: TakDmProtocol;
+  nodeId: number;
+  /** The name it is shown by when it has no marker. */
+  callsign: string;
+}
+
+/** Most conversation peers the renderer hands main; the most recent come first. */
+export const TAK_DIRECT_PEERS_MAX = 64;
 
 /** A direct message heard from a companion, for TAK clients. */
 export interface TAKDirectMessage {

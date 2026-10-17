@@ -35,6 +35,7 @@ export interface ConversationSummaryInput {
 export function useConversationSummary(input: ConversationSummaryInput) {
   const { i18n } = useTranslation();
   const status = useAiSummaryStore((s) => s.status);
+  const enabled = useAiSummaryStore((s) => s.status?.enabled ?? s.cachedEnabled);
   const state = useAiSummaryStore((s) => s.summaries[input.key]);
   const [scope, setScope] = useState<AiSummaryScope>({ kind: 'unread' });
   const [loadingRequest, setLoadingRequest] = useState<{ key: string; owner: number } | null>(null);
@@ -180,7 +181,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     cancelSummary(input.key);
   };
   return {
-    showCatchUp: status?.enabled === true && input.available !== false,
+    showCatchUp: enabled && input.available !== false,
     canSummarize: aiReady(status) && input.available !== false,
     scope,
     setScope,

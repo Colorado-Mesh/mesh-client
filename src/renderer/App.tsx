@@ -1266,6 +1266,7 @@ function AppContent() {
       identityId: meshtasticIdentityId ?? null,
       channelConfigs: meshtasticRuntime.channelConfigs,
     },
+    reticulum: { identityId: reticulumIdentityId ?? null },
   });
   useTakNodeReplicator({
     active: takStatus.running || takRemoteStatus.state !== 'disconnected',
@@ -5656,6 +5657,7 @@ function AppContent() {
                                 capabilities={capabilities}
                                 meshtasticIdentityId={meshtasticIdentityId}
                                 meshcoreIdentityId={meshcoreIdentityId}
+                                reticulumIdentityId={reticulumIdentityId}
                               />
                             </Suspense>
                           </ErrorBoundary>

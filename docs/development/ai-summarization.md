@@ -16,6 +16,11 @@ A saved OS choice exposes Catch up after restart; the first click rechecks nativ
 After opt-in, an incomplete engine configuration or a missing/removed downloaded model shows
 **Set up Catch up**, which opens App > AI conversation summaries. Choosing a ready engine restores
 the range and generation controls. Setup does not read conversation history or start inference.
+While startup status is unavailable, a strictly true saved opt-in exposes only this setup action.
+Authoritative disabled status overrides the cache. Status reads have a ten-second deadline,
+three startup attempts and another opportunity on window focus; teardown cancels recovery.
+Only an authoritative ready status permits history access or inference. Late status results
+cannot overwrite newer requests or configuration changes.
 
 The main process owns endpoint requests and API keys. `AiConfig` encrypts keys with safeStorage,
 rejects insecure OS storage and drops a key when its endpoint or engine changes. Provider blobs
@@ -124,7 +129,9 @@ without buffering a gigabyte in memory, verify exact size/SHA-256 and publish by
 Byte-only download progress is throttled to 100 ms; state changes and terminal results emit immediately.
 Catalog/status use persisted advisory metadata bound to asset digests, size, mtime, ctime and file identity.
 The first runtime verification in a process always hashes the model before use; advisory records alone
-never authorize serving bytes. Missing/corrupt metadata falls back to hashing.
+never authorize serving bytes. Missing/corrupt metadata falls back to hashing. Concurrent
+full verifications of the same model and file signature share one hash operation; advisory
+metadata hits cannot satisfy runtime verification.
 The pinned catalog records immutable Hugging Face revisions and publisher LFS SHA-256 values
 checked on 2026-10-16. The catalog offers Llama 3.2 1B and Qwen2.5 1.5B,
 both Q4_K_M. Qwen uses Apache-2.0; Llama uses the Llama 3.2 Community License.
@@ -144,7 +151,10 @@ These trials establish runtime compatibility and limitations, not that either mo
 
 RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
 without marking the transcript read. The first incoming prose/whisper row carries a measured
-New messages divider; hub notices and self echoes do not anchor it. Opening/jumping navigates to
+New messages divider; hub notices and self echoes do not anchor it. Without saved read state,
+the first actual alert-eligible arrival supplies the opening boundary. Later notices, self
+messages and focus transitions cannot move that boundary past unread traffic. The captured
+arrival belongs to the hub session and is removed with its unread count on read, part or DM close. Opening/jumping navigates to
 that row after history hydration. Arrivals while scrolled up preserve position and unread badges,
 including the selected room. Only a visible, focused reader at the latest messages clears the badge
 and divider and advances persisted read state. AI unread then uses that persisted watermark.

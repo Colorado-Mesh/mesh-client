@@ -79,7 +79,9 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKDirectMessage,
+  TakDirectPeer,
   TakDmProtocol,
+  TakDmStatusUpdate,
   TAKEnrollmentRequest,
   TAKInboundChat,
   TAKNodeUpdate,
@@ -1470,6 +1472,16 @@ export interface ElectronAPI {
      * started.
      */
     setDirectMessaging: (protocols: TakDmProtocol[]) => Promise<void>;
+    /**
+     * Report how a TAK client's direct message ended, so its device gets a receipt or a note;
+     * dropped with no sink.
+     */
+    dmStatus: (update: TakDmStatusUpdate) => Promise<void>;
+    /**
+     * Set the peers this app has a direct conversation with, which TAK clients may message even
+     * with no marker; ignored while no sink has started.
+     */
+    setDirectPeers: (peers: TakDirectPeer[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */

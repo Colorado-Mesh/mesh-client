@@ -127,6 +127,31 @@ describe('privileged workflow boundaries', () => {
     );
   });
 
+  it('labels PRs from the trusted base ref only', () => {
+    const workflow = loadWorkflow('labeler');
+    const source = read('.github/workflows/labeler.yaml');
+    expect(workflow.on.pull_request_target.types).toEqual([
+      'opened',
+      'edited',
+      'reopened',
+      'synchronize',
+      'ready_for_review',
+    ]);
+    expect(workflow.permissions).toEqual({
+      contents: 'read',
+      'pull-requests': 'write',
+    });
+    const checkout = workflow.jobs.label.steps.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout.with).toMatchObject({
+      ref: '${{ github.event.pull_request.base.sha }}',
+      'persist-credentials': false,
+    });
+    expect(source).not.toContain('github.event.pull_request.head');
+    expect(source).not.toContain('pull_request.head.sha');
+  });
+
   it('keeps the completed one-time secret migration removed', () => {
     expect(existsSync('.github/workflows/migrate-release-secrets.yaml')).toBe(false);
   });

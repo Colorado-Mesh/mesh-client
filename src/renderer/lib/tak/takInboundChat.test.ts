@@ -22,7 +22,17 @@ import {
 } from './takInboundChat';
 
 /** The identity each protocol's tab uses now, as the identity store resolves it. */
-const currentIdentity: Partial<Record<MeshProtocol, string>> = { meshcore: 'mc', meshtastic: 'mt' };
+const currentIdentity: Partial<Record<MeshProtocol, string>> = {
+  meshcore: 'mc',
+  meshtastic: 'mt',
+  reticulum: 'rn',
+};
+/** Reticulum peers whose LXMF destination is known under their own node id. */
+const ownLxmf = new Set<number>();
+vi.mock('./takDirectMessages', () => ({
+  hasOwnLxmfDestination: (nodeId: number) => ownLxmf.has(nodeId),
+}));
+
 vi.mock('../identityByProtocol', () => ({
   getIdentityIdForProtocol: (protocol: MeshProtocol) => currentIdentity[protocol] ?? null,
 }));
@@ -234,6 +244,19 @@ describe('direct messages from TAK', () => {
     expect(findTakSendTargets(direct('meshcore', 123))).toEqual([]);
   });
 
+  it('sends to a Reticulum peer only while its LXMF destination is its own', () => {
+    setTakRadio('reticulum', 'rn');
+    useTakRelayPrefsStore.getState().setDirectMessages('rn', true);
+    const peer = { kind: 'direct' as const, protocol: 'reticulum' as const, nodeId: 789 };
+    ownLxmf.add(789);
+    expect(findTakSendTargets(peer)).toEqual([
+      { identityId: 'rn', protocol: 'reticulum', channelIndex: 0, destination: 789 },
+    ]);
+    // Its address now remaps to another destination: nothing is sent.
+    ownLxmf.delete(789);
+    expect(findTakSendTargets(peer)).toEqual([]);
+  });
+
   it('sends nothing while the recorded radio is no longer the one in use for the protocol', () => {
     setTakRadio('meshcore', 'mc');
     useTakRelayPrefsStore.getState().setDirectMessages('mc', true);
@@ -256,5 +279,46 @@ describe('direct messages from TAK', () => {
       '[VIPER] on scene',
     );
     expect(consumeTakEcho('mt', 0, '[VIPER] on scene', NOW + 1000)).toBe(false);
+  });
+
+  describe('outcomes', () => {
+    const DM_REF = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';
+    const dmStatus = vi.fn().mockResolvedValue(undefined);
+    beforeEach(() => {
+      dmStatus.mockClear();
+      vi.stubGlobal('window', { electronAPI: { tak: { dmStatus } } });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('hands the message reference on to the send, for its outcome', async () => {
+      setTakRadio('meshtastic', 'mt');
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', true);
+      const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
+      await relayTakChatToMesh(
+        message({ target: direct('meshtastic', 456), dmRef: DM_REF }),
+        send,
+        NOW,
+      );
+      expect(send.mock.calls[0]?.[0]).toMatchObject({ destination: 456, dmRef: DM_REF });
+      expect(dmStatus).not.toHaveBeenCalled();
+    });
+
+    it('reports a direct message not sent when the send fails or no radio can send it', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      setTakRadio('meshtastic', 'mt');
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', true);
+      const failing = vi.fn<TakMeshSendFn>().mockRejectedValue(new Error('rf down'));
+      const msg = message({ target: direct('meshtastic', 456), dmRef: DM_REF });
+      expect(await relayTakChatToMesh(msg, failing, NOW)).toBe(0);
+      expect(dmStatus).toHaveBeenLastCalledWith({ dmRef: DM_REF, outcome: 'not-sent' });
+
+      dmStatus.mockClear();
+      useTakRelayPrefsStore.getState().setDirectMessages('mt', false);
+      expect(await relayTakChatToMesh(msg, failing, NOW)).toBe(0);
+      expect(dmStatus).toHaveBeenCalledWith({ dmRef: DM_REF, outcome: 'not-sent' });
+      warn.mockRestore();
+    });
   });
 });

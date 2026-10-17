@@ -21,7 +21,7 @@ export interface PackManagerDependencies {
   onProgress: (progress: AiModelProgress) => void;
   manifest?: AiLocalModel[];
   timeoutMs?: number;
-  openHashStream?: (file: string) => ReturnType<typeof createReadStream>;
+  openHashStream?: (file: string) => AsyncIterable<Uint8Array>;
 }
 
 /** No constructor I/O. Installs publish a complete verified directory in one rename. */
@@ -30,6 +30,7 @@ export class AiModelPackManager {
   private readonly jobs = new Map<string, InstallJob>();
   private tail: Promise<unknown> = Promise.resolve();
   private readonly verified = new Map<string, { signature: string; valid: boolean }>();
+  private readonly verifying = new Map<string, Promise<boolean>>();
 
   constructor(private readonly deps: PackManagerDependencies) {
     this.manifest = deps.manifest ?? AI_LOCAL_MODELS;
@@ -109,45 +110,59 @@ export class AiModelPackManager {
           // catch-no-log-ok missing/corrupt advisory metadata falls back to hashing
         }
       }
-      let valid = true;
-      for (const asset of pack.assets) {
-        const digest = createHash('sha256');
-        for await (const chunk of (this.deps.openHashStream ?? createReadStream)(
-          this.assetPath(id, asset.file),
-        ))
-          digest.update(chunk as Buffer);
-        if (digest.digest('hex') !== asset.sha256) {
-          valid = false;
-          break;
-        }
+      const key = `${id}:${signature}`;
+      let pending = this.verifying.get(key);
+      if (!pending) {
+        pending = this.verifyFiles(pack, signature);
+        this.verifying.set(key, pending);
       }
-      this.verified.set(id, { signature, valid });
-      if (valid) {
-        let temporary: string | undefined;
-        try {
-          temporary = await fs.mkdtemp(path.join(this.deps.directory(), id, '.verify-'));
-          await fs.writeFile(path.join(temporary, 'record'), JSON.stringify({ signature }), {
-            mode: 0o600,
-          });
-          await fs.rename(
-            path.join(temporary, 'record'),
-            path.join(this.deps.directory(), id, '.verified.json'),
-          );
-        } catch {
-          // catch-no-log-ok advisory cache failure does not invalidate a verified model
-        } finally {
-          if (temporary)
-            await fs.rm(temporary, { recursive: true, force: true }).catch(() => {
-              // catch-no-log-ok advisory cache cleanup cannot affect model integrity
-            });
-        }
+      try {
+        return await pending;
+      } finally {
+        if (this.verifying.get(key) === pending) this.verifying.delete(key);
       }
-      return valid;
     } catch (error) {
       // catch-no-log-ok absent/unreadable packs are reported as not installed, never loaded
       if (!(error instanceof Error)) throw error;
       return false;
     }
+  }
+
+  private async verifyFiles(pack: AiLocalModel, signature: string): Promise<boolean> {
+    let valid = true;
+    for (const asset of pack.assets) {
+      const digest = createHash('sha256');
+      const stream: AsyncIterable<Uint8Array> = (this.deps.openHashStream ?? createReadStream)(
+        this.assetPath(pack.id, asset.file),
+      );
+      for await (const chunk of stream) digest.update(chunk);
+      if (digest.digest('hex') !== asset.sha256) {
+        valid = false;
+        break;
+      }
+    }
+    this.verified.set(pack.id, { signature, valid });
+    if (valid) {
+      let temporary: string | undefined;
+      try {
+        temporary = await fs.mkdtemp(path.join(this.deps.directory(), pack.id, '.verify-'));
+        await fs.writeFile(path.join(temporary, 'record'), JSON.stringify({ signature }), {
+          mode: 0o600,
+        });
+        await fs.rename(
+          path.join(temporary, 'record'),
+          path.join(this.deps.directory(), pack.id, '.verified.json'),
+        );
+      } catch {
+        // catch-no-log-ok advisory cache failure does not invalidate a verified model
+      } finally {
+        if (temporary)
+          await fs.rm(temporary, { recursive: true, force: true }).catch(() => {
+            // catch-no-log-ok advisory cache cleanup cannot affect model integrity
+          });
+      }
+    }
+    return valid;
   }
 
   async list(): Promise<AiModelInfo[]> {

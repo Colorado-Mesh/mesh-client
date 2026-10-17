@@ -5,6 +5,8 @@ import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityIdForProtocol } from '../identityByProtocol';
 import type { IdentityId } from '../types';
+import { hasOwnLxmfDestination } from './takDirectMessages';
+import { reportTakDmOutcome } from './takDmStatus';
 import { consumeTakEcho, rememberTakSend } from './takEchoGuard';
 import { listTakServedChannels } from './takServedChannels';
 
@@ -53,10 +55,12 @@ export function formatTakMeshText(
 
 export interface TakSendTarget {
   identityId: IdentityId;
-  protocol: 'meshtastic' | 'meshcore';
+  protocol: 'meshtastic' | 'meshcore' | 'reticulum';
   channelIndex: number;
   /** The companion a direct message goes to; unset for a channel message. */
   destination?: number;
+  /** Main's id for a direct message, under which its outcome is reported. */
+  dmRef?: string;
 }
 
 /**
@@ -71,6 +75,10 @@ export function findTakSendTargets(target: TakChatTarget): TakSendTarget[] {
     // The radio is recorded after a render, so for a moment after a switch to another radio of
     // the same protocol it can still name the old one; never send from that.
     if (identityId !== getIdentityIdForProtocol(target.protocol)) return [];
+    // A peer ATAK may still message (from an earlier DM, or a conversation) can have its LXMF
+    // address remap to another destination since; the message would go there, and the reply
+    // come back under a different contact.
+    if (target.protocol === 'reticulum' && !hasOwnLxmfDestination(target.nodeId)) return [];
     return [{ identityId, protocol: target.protocol, channelIndex: 0, destination: target.nodeId }];
   }
   return listTakServedChannels()
@@ -110,8 +118,14 @@ export async function relayTakChatToMesh(
   sendFn: TakMeshSendFn,
   nowMs: number = Date.now(),
 ): Promise<number> {
-  const targets = findTakSendTargets(message.target);
-  if (targets.length === 0) return 0;
+  const targets = findTakSendTargets(message.target).map((t) =>
+    t.destination !== undefined && message.dmRef ? { ...t, dmRef: message.dmRef } : t,
+  );
+  if (targets.length === 0) {
+    // Main let it through, so the device is waiting to hear how it went.
+    if (message.dmRef) reportTakDmOutcome(message.dmRef, 'not-sent');
+    return 0;
+  }
   const text = formatTakMeshText(message.senderCallsign, message.text);
   let sent = 0;
   for (const target of targets) {
@@ -123,6 +137,7 @@ export async function relayTakChatToMesh(
       sent++;
     } catch (e) {
       if (onChannel) consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
+      if (target.dmRef) reportTakDmOutcome(target.dmRef, 'not-sent');
       console.warn('[TakInboundChat] mesh send failed ' + errLikeToLogString(e));
     }
   }

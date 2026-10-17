@@ -602,6 +602,35 @@ describe('direct message handlers', () => {
     expect(sendDirectMessage).not.toHaveBeenCalled();
   });
 
+  const STATUS = { dmRef: '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e', outcome: 'delivered' };
+
+  it('validates a direct message outcome and hands it on while a sink is active', async () => {
+    const reportDmOutcome = vi.fn();
+    const handler = await register({ hasActiveSink: () => true, reportDmOutcome }, 'tak:dmStatus');
+    handler({}, STATUS);
+    expect(reportDmOutcome).toHaveBeenCalledWith(STATUS);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:dmStatus');
+    expect(() => handler({}, { ...STATUS, outcome: 'read' })).toThrow(/tak:dmStatus/);
+    expect(reportDmOutcome).toHaveBeenCalledTimes(1);
+    const idle = vi.fn();
+    (await register({ hasActiveSink: () => false, reportDmOutcome: idle }, 'tak:dmStatus'))(
+      {},
+      STATUS,
+    );
+    expect(idle).not.toHaveBeenCalled();
+  });
+
+  it('hands the conversation peers to the manager, once it exists', async () => {
+    const setDirectPeers = vi.fn();
+    const handler = await register({ setDirectPeers }, 'tak:setDirectPeers');
+    const peer = { protocol: 'reticulum', nodeId: 789, callsign: 'Field Laptop' };
+    handler({}, [peer]);
+    expect(setDirectPeers).toHaveBeenCalledWith([peer]);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setDirectPeers');
+    expect(() => handler({}, 'peers')).toThrow(/tak:setDirectPeers/);
+    expect((await register(null, 'tak:setDirectPeers'))({}, [])).toBeUndefined();
+  });
+
   it('hands the radios with direct messages on to the manager, once it exists', async () => {
     const setDirectMessaging = vi.fn();
     const handler = await register({ setDirectMessaging }, 'tak:setDirectMessaging');

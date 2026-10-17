@@ -5805,7 +5805,9 @@
     "channelRemoteFor": "Flux {{channel}} vers le serveur TAK distant",
     "channelTrackersFor": "Correctifs de suivi de {{channel}}",
     "directMessages": "Messages directs",
-    "directMessagesHint": "Laissez les appareils ATAK envoyer un message aux compagnons de cette radio. Chaque compagnon de ce message radio CAN obtient une option de chat dans ATAK, et un message lui est envoyé par cette radio, précédé de l'indicatif d'appel de l'expéditeur. Ses réponses vont à l'appareil ATAK qui lui a écrit en dernier, ou à chaque appareil quand aucun ne l'a fait. Un compagnon sans position apparaît à 0, 0 pendant un jour après un message."
+    "directMessagesHint": "Laissez les appareils ATAK envoyer un message aux compagnons de cette radio. Chaque compagnon de ce message radio CAN obtient une option de chat dans ATAK, et un message lui est envoyé par cette radio, précédé de l'indicatif d'appel de l'expéditeur. Ses réponses vont à l'appareil ATAK qui lui a écrit en dernier, ou à chaque appareil quand aucun ne l'a fait. Un compagnon sans position apparaît à 0, 0 pendant un jour après un message.",
+    "messagingTitleReticulum": "Messagerie Reticulum dans ATAK",
+    "messagingIntroReticulum": "Laissez les appareils ATAK envoyer un message à LXMF pairs. Un pair avec un poste peut être envoyé par message à partir de son marqueur ; celui sans poste apparaît à 0, 0 une fois que mesh-client a une conversation avec lui, de sorte que la liste de contacts ne se remplit pas avec tous les pairs entendus."
   },
   "telemetryPanel": {
     "title": "Télémétrie",

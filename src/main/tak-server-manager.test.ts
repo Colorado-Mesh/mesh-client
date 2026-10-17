@@ -1222,10 +1222,10 @@ describe('TakServerManager direct messages', () => {
     vi.useRealTimers();
   });
 
-  /** A manager with the local server running and direct messages on for both radios. */
+  /** A manager with the local server running and direct messages on for every radio. */
   function dmManager(): TakServerManager {
     const manager = chatManager([]);
-    manager.setDirectMessaging(['meshcore', 'meshtastic']);
+    manager.setDirectMessaging(['meshcore', 'meshtastic', 'reticulum']);
     return manager;
   }
 
@@ -1319,6 +1319,7 @@ describe('TakServerManager direct messages', () => {
         text: 'meet at the gate',
         clientId: manager.getConnectedClients()[0]?.id,
         timeMs: expect.any(Number),
+        dmRef: expect.any(String),
       },
     ]);
     expect(sender.write).not.toHaveBeenCalled();
@@ -1342,12 +1343,16 @@ describe('TakServerManager direct messages', () => {
     expect(inbound).toEqual([]);
     const notes = chats(sender);
     expect(notes).toHaveLength(4);
-    expect(notes[0]).toContain('uid0="MESH-456"');
-    expect(notes[0]).toContain('mesh-client: Not sent: direct messages are off for this radio.');
+    for (const [i, uid] of [
+      [0, 'MESH-456'],
+      [3, 'RN-42'],
+    ] as const) {
+      expect(notes[i]).toContain(`uid0="${uid}"`);
+      expect(notes[i]).toContain('mesh-client: Not sent: direct messages are off for this radio.');
+    }
     for (const [i, uid] of [
       [1, 'MC-7'],
       [2, 'MC-999'],
-      [3, 'RN-42'],
     ] as const) {
       expect(notes[i]).toContain(`uid0="${uid}"`);
       expect(notes[i]).toContain(
@@ -1491,5 +1496,164 @@ describe('TakServerManager direct messages', () => {
     // The held message went with its contact.
     watcher.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
     expect(chats(watcher)).toEqual([]);
+  });
+
+  describe('conversation peers', () => {
+    const PEER = { protocol: 'reticulum' as const, nodeId: 789, callsign: 'Field Laptop' };
+    const contactFor = (socket: tls.TLSSocket, uid: string) =>
+      written(socket).filter((l) => l.includes(`uid="${uid}"`) && l.includes('a-f-G-U-C'));
+
+    it('gives a peer with no marker a contact at 0, 0, and takes it away when dropped', () => {
+      const manager = dmManager();
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setDirectPeers([PEER]);
+      const [contact] = contactFor(socket, 'RN-789');
+      expect(contact).toContain('<point lat="0" lon="0"');
+      expect(contact).toContain('<contact callsign="Field Laptop" endpoint="*:-1:stcp"/>');
+
+      // The same list again changes nothing.
+      vi.mocked(socket.write).mockClear();
+      manager.setDirectPeers([PEER]);
+      expect(written(socket)).toEqual([]);
+
+      // A device connecting later gets it with the channel contacts.
+      const late = mockTlsSocket();
+      (manager as unknown as ChatInternals)._handleClient(late);
+      expect(contactFor(late, 'RN-789')).toHaveLength(1);
+
+      manager.setDirectPeers([]);
+      expect(written(socket).some((l) => l.includes('uid="RN-789"') && l.includes('t-x-d-d'))).toBe(
+        true,
+      );
+    });
+
+    it('lets a device message a conversation peer, which has no marker', () => {
+      const manager = dmManager();
+      manager.setDirectPeers([PEER]);
+      const inbound = listen(manager);
+      const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+      viper.emit('data', Buffer.from(DM('carry on', 'RN-789', { room: 'Field Laptop' })));
+      expect(inbound.map((m) => m.target)).toEqual([
+        { kind: 'direct', protocol: 'reticulum', nodeId: 789 },
+      ]);
+    });
+
+    it('lets the marker stand in for a peer that has one', () => {
+      const manager = dmManager();
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.onNodeUpdate({ ...ALICE, protocol: 'reticulum', node_id: 789, chatReachable: false });
+      vi.mocked(socket.write).mockClear();
+      manager.setDirectPeers([PEER]);
+      expect(written(socket)).toEqual([]);
+    });
+
+    it('shows no contact while direct messages are off for the radio, and adds it when on', () => {
+      const manager = chatManager([]);
+      manager.setDirectMessaging(['meshcore']);
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setDirectPeers([PEER]);
+      expect(contactFor(socket, 'RN-789')).toEqual([]);
+      manager.setDirectMessaging(['meshcore', 'reticulum']);
+      expect(contactFor(socket, 'RN-789')).toHaveLength(1);
+      manager.setDirectMessaging(['meshcore']);
+      expect(written(socket).some((l) => l.includes('uid="RN-789"') && l.includes('t-x-d-d'))).toBe(
+        true,
+      );
+    });
+  });
+
+  describe('outcomes', () => {
+    const receipts = (socket: tls.TLSSocket) =>
+      written(socket).filter((l) => l.includes('type="b-t-f-d"'));
+    const remarks = (socket: tls.TLSSocket) =>
+      chats(socket).map((l) => />([^<]*)<\/remarks>/.exec(l)?.[1]);
+
+    /** Viper writes to Alice; returns what the renderer was handed. */
+    function sendFromViper(text = 'on my way') {
+      const manager = dmManager();
+      manager.onNodeUpdate(ALICE);
+      const inbound = listen(manager);
+      const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+      const eagle = connect(manager, ['ANDROID-2', 'EAGLE']);
+      viper.emit('data', Buffer.from(DM(text, 'MC-123')));
+      vi.mocked(viper.write).mockClear();
+      vi.mocked(eagle.write).mockClear();
+      const dmRef = inbound[0]?.dmRef;
+      expect(dmRef).toMatch(/^[0-9a-f-]{36}$/);
+      return { manager, viper, eagle, dmRef: dmRef! };
+    }
+
+    it('sends the device that wrote a delivery receipt naming its message', () => {
+      const { manager, viper, eagle, dmRef } = sendFromViper();
+      manager.reportDmOutcome({ dmRef, outcome: 'delivered' });
+      const [receipt] = receipts(viper);
+      expect(receipt).toContain('uid="msg-9" type="b-t-f-d"');
+      expect(receipt).toContain(
+        '<__chatreceipt parent="RootContactGroup" groupOwner="false" messageId="msg-9"' +
+          ' chatroom="Alice" id="MC-123" senderCallsign="Alice">',
+      );
+      expect(receipt).toContain('<chatgrp uid0="ANDROID-1" uid1="MC-123" id="MC-123"/>');
+      expect(written(eagle)).toEqual([]);
+      // Reported once; a second report for the same message does nothing.
+      manager.reportDmOutcome({ dmRef, outcome: 'delivered' });
+      expect(receipts(viper)).toHaveLength(1);
+    });
+
+    it('writes a "Not confirmed" note with the advert hint after the last resend', () => {
+      const { manager, viper, dmRef } = sendFromViper('x'.repeat(50));
+      manager.reportDmOutcome({ dmRef, outcome: 'unconfirmed' });
+      expect(receipts(viper)).toEqual([]);
+      expect(remarks(viper)).toEqual([
+        `mesh-client: Not confirmed: no acknowledgement from Alice after 4 tries. It may not` +
+          ` have arrived: ${'x'.repeat(40)}… If this keeps happening, send a flood advert` +
+          ` from each radio so both have current contacts.`,
+      ]);
+      expect(chats(viper)[0]).toContain('chatroom="VIPER" id="ANDROID-1" senderCallsign="Alice"');
+    });
+
+    it('leaves the advert hint out for Meshtastic, and says when a message never went out', () => {
+      const manager = dmManager();
+      manager.onNodeUpdate({ ...ALICE, protocol: 'meshtastic', node_id: 456, short_name: 'ALC' });
+      const inbound = listen(manager);
+      const viper = connect(manager, ['ANDROID-1', 'VIPER']);
+      viper.emit('data', Buffer.from(DM('one', 'MESH-456')));
+      viper.emit('data', Buffer.from(DM('two', 'MESH-456')));
+      vi.mocked(viper.write).mockClear();
+      manager.reportDmOutcome({ dmRef: inbound[0].dmRef!, outcome: 'unconfirmed' });
+      manager.reportDmOutcome({ dmRef: inbound[1].dmRef!, outcome: 'not-sent' });
+      expect(remarks(viper)).toEqual([
+        'mesh-client: Not confirmed: no acknowledgement from ALC after 4 tries. It may not have arrived: one',
+        'mesh-client: Not sent to the mesh: two',
+      ]);
+    });
+
+    it('holds a note for a device that is away, and drops its receipt', () => {
+      const first = sendFromViper();
+      first.viper.emit('close');
+      first.manager.reportDmOutcome({ dmRef: first.dmRef, outcome: 'unconfirmed' });
+      expect(chats(first.eagle)).toEqual([]);
+      const back = connect(first.manager);
+      back.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+      expect(remarks(back)[0]).toMatch(/^mesh-client: Not confirmed:/);
+
+      const second = sendFromViper();
+      second.viper.emit('close');
+      second.manager.reportDmOutcome({ dmRef: second.dmRef, outcome: 'delivered' });
+      const again = connect(second.manager);
+      again.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
+      expect(receipts(again)).toEqual([]);
+    });
+
+    it('ignores outcomes it is not waiting for, and forgets messages after half an hour', () => {
+      const { manager, viper, dmRef } = sendFromViper();
+      manager.reportDmOutcome({
+        dmRef: '00000000-0000-4000-8000-000000000000',
+        outcome: 'unconfirmed',
+      });
+      expect(written(viper)).toEqual([]);
+      vi.setSystemTime(Date.now() + 30 * 60 * 1000);
+      manager.reportDmOutcome({ dmRef, outcome: 'unconfirmed' });
+      expect(written(viper)).toEqual([]);
+    });
   });
 });

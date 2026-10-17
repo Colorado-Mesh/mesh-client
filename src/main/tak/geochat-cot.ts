@@ -6,13 +6,19 @@ import {
   isTakDmProtocol,
   TAK_CHAT_CHANNELS_MAX,
   TAK_CHAT_ROOM_UID_PREFIX,
+  TAK_DIRECT_PEERS_MAX,
+  TAK_DM_OUTCOMES,
+  TAK_DM_PROTOCOLS,
   TAK_GEOCHAT_CALLSIGN_MAX_LEN,
   TAK_GEOCHAT_ROOM_MAX_LEN,
   TAK_GEOCHAT_TEXT_MAX_LEN,
   type TAKChannelChatMessage,
   type TakChatChannel,
   type TAKDirectMessage,
+  type TakDirectPeer,
+  type TakDmOutcome,
   type TakDmProtocol,
+  type TakDmStatusUpdate,
   type TAKGeochatMessage,
 } from '../../shared/tak-types';
 import { escapeXml } from '../../shared/xmlEscape';
@@ -235,7 +241,7 @@ export function parseTakDirectMessage(raw: unknown): TAKDirectMessage {
   if (!raw || typeof raw !== 'object') throw new Error(`${channel}: message must be an object`);
   const m = raw as Record<string, unknown>;
   if (!isTakDmProtocol(m.protocol)) {
-    throw new Error(`${channel}: protocol must be meshcore or meshtastic`);
+    throw new Error(`${channel}: protocol must be one of ${TAK_DM_PROTOCOLS.join(', ')}`);
   }
   const nodeId = m.nodeId;
   if (
@@ -262,9 +268,54 @@ export function parseTakDirectMessage(raw: unknown): TAKDirectMessage {
 /** Validate the renderer's list of radios with direct messages on. Throws when malformed. */
 export function parseTakDmProtocols(raw: unknown): TakDmProtocol[] {
   if (!Array.isArray(raw) || !raw.every(isTakDmProtocol)) {
-    throw new Error('tak:setDirectMessaging: expected a list of meshcore and meshtastic');
+    throw new Error(`tak:setDirectMessaging: expected a list of ${TAK_DM_PROTOCOLS.join(', ')}`);
   }
   return [...new Set(raw)];
+}
+
+/** Validate the renderer's list of conversation peers. Throws when malformed. */
+export function parseTakDirectPeers(raw: unknown): TakDirectPeer[] {
+  const channel = 'tak:setDirectPeers';
+  if (!Array.isArray(raw) || raw.length > TAK_DIRECT_PEERS_MAX) {
+    throw new Error(`${channel}: expected a list of at most ${TAK_DIRECT_PEERS_MAX} peers`);
+  }
+  const byKey = new Map<string, TakDirectPeer>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') throw new Error(`${channel}: peer must be an object`);
+    const p = item as Record<string, unknown>;
+    if (!isTakDmProtocol(p.protocol)) {
+      throw new Error(`${channel}: protocol must be one of ${TAK_DM_PROTOCOLS.join(', ')}`);
+    }
+    const nodeId = p.nodeId;
+    if (
+      typeof nodeId !== 'number' ||
+      !Number.isInteger(nodeId) ||
+      nodeId <= 0 ||
+      nodeId > MAX_NODE_ID
+    ) {
+      throw new Error(`${channel}: nodeId must be a node number`);
+    }
+    const callsign = label(p.callsign, TAK_GEOCHAT_CALLSIGN_MAX_LEN, 'callsign', channel);
+    const key = `${p.protocol}:${nodeId}`;
+    if (!byKey.has(key)) byKey.set(key, { protocol: p.protocol, nodeId, callsign });
+  }
+  return [...byKey.values()];
+}
+
+const DM_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Validate an untrusted direct message outcome from the renderer. Throws when malformed. */
+export function parseTakDmStatus(raw: unknown): TakDmStatusUpdate {
+  const channel = 'tak:dmStatus';
+  if (!raw || typeof raw !== 'object') throw new Error(`${channel}: update must be an object`);
+  const m = raw as Record<string, unknown>;
+  if (typeof m.dmRef !== 'string' || !DM_REF_RE.test(m.dmRef)) {
+    throw new Error(`${channel}: dmRef must be a message reference`);
+  }
+  if (!(TAK_DM_OUTCOMES as readonly unknown[]).includes(m.outcome)) {
+    throw new Error(`${channel}: outcome must be one of ${TAK_DM_OUTCOMES.join(', ')}`);
+  }
+  return { dmRef: m.dmRef, outcome: m.outcome as TakDmOutcome };
 }
 
 /** How long a companion keeps its contact without a marker after the last direct message. */
@@ -324,6 +375,38 @@ export function buildDirectChatCot(
     recipient.uid,
     nowMs,
     messageId,
+  );
+}
+
+/**
+ * Delivery receipt (`b-t-f-d`) for the message `messageId` a TAK client sent to a companion's
+ * contact: the companion acknowledged it, so ATAK marks it delivered. It describes that
+ * conversation as the client filed it (`chatroom`, the companion's uid as its id) and comes
+ * from the companion's contact.
+ */
+export function buildDirectReceiptCot(
+  contact: DirectChatContact,
+  chatroom: string,
+  recipient: GeochatRecipient,
+  messageId: string,
+  nowMs: number = Date.now(),
+): string {
+  const time = new Date(nowMs).toISOString();
+  const stale = new Date(nowMs + GEOCHAT_STALE_MS).toISOString();
+  const uid = escapeXml(contact.uid);
+  const id = escapeXml(messageId);
+  return (
+    `<event version="2.0" uid="${id}" type="b-t-f-d" time="${time}" start="${time}"` +
+    ` stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
+    `<detail>` +
+    `<__chatreceipt parent="RootContactGroup" groupOwner="false" messageId="${id}"` +
+    ` chatroom="${escapeXml(chatroom)}" id="${uid}" senderCallsign="${escapeXml(contact.callsign)}">` +
+    `<chatgrp uid0="${escapeXml(recipient.uid)}" uid1="${uid}" id="${uid}"/>` +
+    `</__chatreceipt>` +
+    `<link uid="${uid}" type="a-f-G-U-C" relation="p-p"/>` +
+    `</detail>` +
+    `</event>`
   );
 }
 

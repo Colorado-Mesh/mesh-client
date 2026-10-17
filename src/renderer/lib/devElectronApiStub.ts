@@ -403,6 +403,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       retireChatRooms: async () => {},
       pushDirectMessage: async () => {},
       setDirectMessaging: async () => {},
+      dmStatus: async () => {},
+      setDirectPeers: async () => {},
       onInboundChat: noopUnsub,
     },
     bleCoexistence: {

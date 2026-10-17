@@ -71,6 +71,28 @@ describe('Catch up availability', () => {
       expect(result.current).toMatchObject({ showCatchUp: false, canSummarize: false });
     },
   );
+  it.each(platforms.flatMap((platform) => protocols.map((protocol) => ({ platform, protocol }))))(
+    'offers setup from saved opt-in while status is unavailable for $protocol on $platform',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      useAiSummaryStore.setState({ status: null, cachedEnabled: true });
+      const { result } = renderHook(() => useConversationSummary({ ...input, protocol }));
+      expect(result.current).toMatchObject({ showCatchUp: true, canSummarize: false });
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.getHistory).not.toHaveBeenCalled();
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+      act(() => {
+        useAiSummaryStore.getState().setStatus({ ...ready, enabled: false });
+      });
+      expect(result.current).toMatchObject({ showCatchUp: false, canSummarize: false });
+      act(() => {
+        useAiSummaryStore.setState({ status: null, cachedEnabled: false });
+      });
+      expect(result.current).toMatchObject({ showCatchUp: false, canSummarize: false });
+    },
+  );
   it.each([
     { engine: null },
     { engine: 'local' as const, model: '' },

@@ -5805,7 +5805,9 @@
     "channelRemoteFor": "원격 TAK 서버로 {{channel}} 스트리밍",
     "channelTrackersFor": "{{channel}} 의 트래커 보완 사항",
     "directMessages": "다이렉트 메시지",
-    "directMessagesHint": "ATAK 장치가 이 라디오의 동반자에게 메시지를 보냅니다. 이 라디오 캔 메시지의 각 동반자는 ATAK의 채팅 옵션을 받게 되며, 이 라디오에서 발신자의 콜사인이 붙은 메시지가 나옵니다. 응답은 마지막으로 쓴 ATAK 장치 또는 아무도 없는 모든 장치로 전송됩니다. 포지션이 없는 동반자는 메시지 후 하루 동안 0, 0으로 나타납니다."
+    "directMessagesHint": "ATAK 장치가 이 라디오의 동반자에게 메시지를 보냅니다. 이 라디오 캔 메시지의 각 동반자는 ATAK의 채팅 옵션을 받게 되며, 이 라디오에서 발신자의 콜사인이 붙은 메시지가 나옵니다. 응답은 마지막으로 쓴 ATAK 장치 또는 아무도 없는 모든 장치로 전송됩니다. 포지션이 없는 동반자는 메시지 후 하루 동안 0, 0으로 나타납니다.",
+    "messagingTitleReticulum": "Reticulum ATAK에서 메시지 보내기",
+    "messagingIntroReticulum": "ATAK 장치가 LXMF 피어에게 메시지를 보냅니다. 포지션이 있는 피어는 마커에서 메시지를 보낼 수 있습니다. 포지션이 없는 피어는 mesh-client 이 (가) 대화를 나누면 0, 0으로 표시되므로 연락처 목록이 들리는 모든 피어로 채워지지 않습니다."
   },
   "telemetryPanel": {
     "title": "원격 측정",

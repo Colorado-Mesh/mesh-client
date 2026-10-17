@@ -64,14 +64,16 @@ export function snapshotRrcReadWatermark(
   room: string,
   unread?: number,
   messages: readonly { timestamp: number }[] = [],
+  firstUnreadAt?: number,
 ): void {
   const key = rrcReadKey(hub, room);
   const stored = loadPersistedRrcLastRead()[key];
   const now = Date.now();
   const firstUnread =
-    unread !== undefined && unread > 0 && messages.length >= unread
+    firstUnreadAt ??
+    (unread !== undefined && unread > 0 && messages.length >= unread
       ? messages[messages.length - unread]?.timestamp
-      : undefined;
+      : undefined);
   const fallback =
     unread !== undefined && unread > 0
       ? firstUnread !== undefined && Number.isFinite(firstUnread) && firstUnread > 0

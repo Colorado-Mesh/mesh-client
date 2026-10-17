@@ -2,7 +2,8 @@ import { create } from 'zustand';
 
 import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
 import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
-import { mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
+import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import type {
   AiActionResult,
   AiProviderStatus,
@@ -10,6 +11,7 @@ import type {
   AiSummaryRequest,
 } from '@/shared/ai-types';
 import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
+import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 export interface ConversationSummary {
   requestId: string;
@@ -26,6 +28,8 @@ export interface ConversationSummary {
 }
 interface AiState {
   status: AiProviderStatus | null;
+  /** Saved opt-in exposes setup only while authoritative status is unavailable. */
+  cachedEnabled: boolean;
   summaries: Partial<Record<string, ConversationSummary>>;
   setStatus: (status: AiProviderStatus) => void;
 }
@@ -33,11 +37,15 @@ const controllers = new Map<string, AbortController>();
 let bundledBusy = false;
 let revision = 0;
 let unsubscribe: (() => void) | undefined;
+const statusRequests = new Set<AbortController>();
+let statusSequence = 0;
+let stopInitialization: (() => void) | undefined;
 export function getAiSummaryRevision(): number {
   return revision;
 }
 export const useAiSummaryStore = create<AiState>((set) => ({
   status: null,
+  cachedEnabled: false,
   summaries: {},
   setStatus: (status) => {
     revision++;
@@ -94,16 +102,95 @@ export function subscribeAiEvents(): void {
   };
 }
 export async function refreshAiStatus(): Promise<void> {
+  const controller = new AbortController();
+  statusRequests.add(controller);
+  const sequence = ++statusSequence;
   const before = revision;
-  const status = await window.electronAPI.ai.getStatus();
-  if (before !== revision) return;
-  useAiSummaryStore.setState({ status });
-  if (status.enabled) subscribeAiEvents();
+  const timer = setTimeout(() => {
+    controller.abort(new Error('AI status request timed out'));
+  }, 10 * MS_PER_SECOND);
+  let onAbort: () => void = () => {};
+  try {
+    const aborted = new Promise<never>((_, reject) => {
+      onAbort = () => {
+        const reason: unknown = controller.signal.reason;
+        reject(
+          reason instanceof Error ? reason : new DOMException('AI status cancelled', 'AbortError'),
+        );
+      };
+      controller.signal.addEventListener('abort', onAbort, { once: true });
+    });
+    const status = await Promise.race([window.electronAPI.ai.getStatus(), aborted]);
+    if (before !== revision || sequence !== statusSequence) return;
+    useAiSummaryStore.setState({ status });
+    if (status.enabled) subscribeAiEvents();
+  } finally {
+    clearTimeout(timer);
+    controller.signal.removeEventListener('abort', onAbort);
+    statusRequests.delete(controller);
+  }
 }
 export function initializeAi(): void {
-  void refreshAiStatus().catch(() => {
-    // catch-no-log-ok unavailable bridge leaves AI hidden
-  });
+  stopInitialization?.();
+  try {
+    const cached = parseStoredJson<{ aiEnabled?: unknown }>(getAppSettingsRaw(), 'AI settings');
+    useAiSummaryStore.setState({ cachedEnabled: cached?.aiEnabled === true });
+  } catch {
+    // catch-no-log-ok unavailable preferences cannot establish opt-in
+    useAiSummaryStore.setState({ cachedEnabled: false });
+  }
+  const before = revision;
+  let stopped = false;
+  let attempts = 0;
+  let inFlight = false;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  const attempt = () => {
+    if (
+      stopped ||
+      inFlight ||
+      before !== revision ||
+      (attempts > 0 && useAiSummaryStore.getState().status !== null)
+    )
+      return;
+    clearTimeout(retry);
+    inFlight = true;
+    attempts++;
+    void refreshAiStatus()
+      .catch((error: unknown) => {
+        if (
+          stopped ||
+          before !== revision ||
+          useAiSummaryStore.getState().status !== null ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        )
+          return;
+        console.warn('[ai] Startup status unavailable; setup remains available for saved opt-in.');
+      })
+      .finally(() => {
+        inFlight = false;
+        if (
+          !stopped &&
+          before === revision &&
+          useAiSummaryStore.getState().status === null &&
+          attempts < 3
+        )
+          retry = setTimeout(attempt, attempts * MS_PER_SECOND);
+      });
+  };
+  const onFocus = () => {
+    if (useAiSummaryStore.getState().status !== null || inFlight) return;
+    attempts = 0;
+    attempt();
+  };
+  window.addEventListener('focus', onFocus);
+  stopInitialization = () => {
+    stopped = true;
+    clearTimeout(retry);
+    window.removeEventListener('focus', onFocus);
+    for (const request of statusRequests) request.abort();
+    stopInitialization = undefined;
+  };
+  attempt();
 }
 export function aiReady(status: AiProviderStatus | null): boolean {
   return (
@@ -275,6 +362,9 @@ export async function runSummary(
 }
 
 export function disposeAiSummaries(): void {
+  stopInitialization?.();
+  for (const request of statusRequests) request.abort();
+  statusSequence++;
   revision++;
   for (const controller of controllers.values()) controller.abort();
   controllers.clear();

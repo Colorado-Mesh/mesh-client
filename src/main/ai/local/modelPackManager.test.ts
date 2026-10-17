@@ -246,3 +246,46 @@ it.skipIf(process.platform === 'win32')(
     expect(hashReads).toHaveBeenCalledOnce();
   },
 );
+
+it.each([false, true])(
+  'shares stalled hash work without trusting corrupt bytes (corrupt=%s)',
+  async (corrupt) => {
+    const installed = create(async () => new Response(data));
+    await installed.install('model-1');
+    if (corrupt)
+      await fs.writeFile(installed.assetPath('model-1', 'model.gguf'), Buffer.alloc(data.length));
+    await fs.rm(path.join(temp, 'models/model-1/.verified.json'), { force: true });
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const openHashStream = vi.fn(async function* (file: string) {
+      await wait;
+      yield* createReadStream(file);
+    });
+    const restarted = new AiModelPackManager({
+      directory: () => path.join(temp, 'models'),
+      enabled: () => true,
+      fetch: vi.fn(),
+      onProgress: vi.fn(),
+      manifest,
+      openHashStream,
+    });
+    const first = restarted.verify('model-1', true);
+    await vi.waitFor(() => {
+      expect(openHashStream).toHaveBeenCalledOnce();
+    });
+    const runtime = restarted.verify('model-1');
+    const secondStatus = restarted.verify('model-1', true);
+    // Let stat/advisory reads reach the shared pending hash before releasing it.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(openHashStream).toHaveBeenCalledOnce();
+    release();
+    expect(await Promise.all([first, runtime, secondStatus])).toEqual([
+      !corrupt,
+      !corrupt,
+      !corrupt,
+    ]);
+    expect(openHashStream).toHaveBeenCalledOnce();
+  },
+);
