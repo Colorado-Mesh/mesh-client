@@ -144,10 +144,11 @@ Qwen 0.5B was removed after unreliable real-model trials. A saved selection of a
 becomes not-ready; the app never silently selects or downloads a replacement. Choose explicitly
 from the catalog. SmolLM2 was also removed following transcript copying and timeout reports.
 Model cards show factual metadata (name, parameter count, bytes and license) without quality claims.
-None is an accuracy guarantee. Identical 41-message synthetic trials completed in about 86 seconds
-for Llama and 187 seconds for SmolLM2 using the production worker. Llama omitted useful facts and
-added a weak attribution bullet; SmolLM2 misattributed speakers and reversed one routing instruction.
-These trials establish runtime compatibility and limitations, not that either model improves on Qwen.
+None is an accuracy guarantee. Synthetic 41-message trials using the production worker completed
+in about 86 seconds for Llama 3.2 1B and about 136 seconds for Qwen2.5 1.5B. Llama omitted useful
+facts and added a weak attribution bullet. A historical trial of the removed SmolLM2 model took
+about 187 seconds, misattributed speakers and reversed one routing instruction. These bounded
+checks establish runtime compatibility and limitations, not summary accuracy or comparative quality.
 
 RRC unread UI works with AI disabled. Room selection snapshots an observable opening boundary
 without marking the transcript read. The first incoming prose/whisper row carries a measured
