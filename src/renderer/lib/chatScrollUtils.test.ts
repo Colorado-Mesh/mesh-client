@@ -81,7 +81,6 @@ describe('createChatScrollAdjustPredicate', () => {
       isAtEnd: () => atEnd,
       itemSizeCache: new Map<string, number>(opts.measured === false ? [] : [[item.key, 96]]),
       scrollOffset: opts.scrollOffset ?? 0,
-      scrollAdjustments: 0,
     };
   }
 
