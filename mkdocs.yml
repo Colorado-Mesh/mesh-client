@@ -103,6 +103,8 @@ nav:
   - Home: index.md
   - Install: install.md
   - Features: features.md
+  - Release notes:
+      - Catch up (unreleased): release-notes/ai-catch-up.md
   - User Guide:
       - Live Traffic Map: live-traffic-map.md
       - Reticulum Setup Guide: reticulum-setup-guide.md
@@ -141,6 +143,7 @@ nav:
           - Renderer hooks: development/renderer-hooks.md
           - BLE and serial: development/ble-serial.md
           - Chat: development/chat.md
+          - AI summaries: development/ai-summarization.md
           - Connection panel: development/connection-panel.md
           - Meshtastic: development/meshtastic.md
           - MQTT: development/mqtt.md

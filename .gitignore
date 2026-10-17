@@ -58,3 +58,9 @@ docs/contributing.md
 docs/install.md
 docs/features.md
 __pycache__/
+
+# Generated native AI helpers
+resources/ai-helper/*
+!resources/ai-helper/README.md
+native/ai/windows/bin/
+native/ai/windows/obj/

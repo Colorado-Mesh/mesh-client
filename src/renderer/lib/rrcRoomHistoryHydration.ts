@@ -4,9 +4,15 @@
  * when hub teardown clears both messages and hydration cache.
  */
 const hydratedRoomKeys = new Set<string>();
+const hubHistoryEpochs = new Map<string, number>();
+
+export function rrcRoomHistoryEpoch(hub: string): number {
+  return hubHistoryEpochs.get(hub) ?? 0;
+}
 
 export function resetRrcRoomHistoryHydrationForTests(): void {
   hydratedRoomKeys.clear();
+  hubHistoryEpochs.clear();
 }
 
 export function hasHydratedRrcRoomKey(key: string): boolean {
@@ -24,6 +30,7 @@ export function unmarkHydratedRrcRoomKey(key: string): void {
 /** Drop hydration markers for every room under `hub` (32-hex lowercase). */
 export function clearHydratedRrcRoomKeysForHub(hub: string): void {
   if (!hub) return;
+  hubHistoryEpochs.set(hub, rrcRoomHistoryEpoch(hub) + 1);
   const prefix = `${hub}::`;
   for (const key of hydratedRoomKeys) {
     if (key.startsWith(prefix)) {

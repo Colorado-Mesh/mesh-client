@@ -195,6 +195,54 @@ export function normalizeMeshcoreIncomingText(rawText: string): MeshcoreNormaliz
   return { senderName: senderCandidate, payload };
 }
 
+/** Use the same stored-message display fields in chat and history-backed summaries. */
+export function meshcoreDbMessageDisplay(r: {
+  sender_id?: number | null;
+  sender_name?: string | null;
+  payload: string;
+}): Pick<ChatMessage, 'sender_id' | 'sender_name' | 'payload'> {
+  let displayPayload = r.payload;
+  const normalized = normalizeMeshcoreIncomingText(r.payload);
+  let displayName = r.sender_name && r.sender_name !== 'Unknown' ? r.sender_name : 'Unknown';
+  if (normalized.senderName) {
+    const storedName = r.sender_name?.trim();
+    if (!storedName || storedName === 'Unknown') {
+      displayPayload = normalized.payload;
+      displayName = normalized.senderName;
+    } else if (normalized.senderName === storedName) {
+      displayPayload = normalized.payload;
+    }
+  } else if (shouldLegacyNormalizeMeshcoreDbPayload(r.sender_name, r.payload)) {
+    displayPayload = normalized.payload;
+    displayName = normalized.senderName ?? displayName;
+  }
+  let senderId = r.sender_id ?? 0;
+  if (senderId === 0 && displayName && displayName !== 'Unknown') {
+    senderId = meshcoreChatStubNodeIdFromDisplayName(displayName);
+  }
+  return { sender_id: senderId, sender_name: displayName, payload: displayPayload };
+}
+
+/**
+ * Legacy DB rows may store the full RF line `DisplayName: body` with no usable sender_name.
+ * Only then run wire-style normalize; otherwise persisted payload is already display text
+ * (re-applying normalize breaks any body containing `:` e.g. `Re: …`, `12:30 …`).
+ */
+function shouldLegacyNormalizeMeshcoreDbPayload(
+  senderName: string | null | undefined,
+  payload: string,
+): boolean {
+  if (senderName && senderName !== 'Unknown') return false;
+  const t = payload.trim();
+  const ci = t.indexOf(':');
+  if (ci <= 0 || t[ci + 1] !== ' ' || ci >= t.length - 1) return false;
+  const left = t.slice(0, ci).trim();
+  const right = t.slice(ci + 1).trim();
+  if (left.length < 6 || right.length < 1) return false;
+  if (left.includes('\n')) return false;
+  return true;
+}
+
 /** True when `payload` is a single grapheme cluster and normalizes as a reaction emoji. */
 export function meshcorePayloadIsTapbackEmojiOnly(payload: string): boolean {
   const t = payload.trim();

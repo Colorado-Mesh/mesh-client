@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
+import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import {
   type BatchedMessageAnnouncer,
   createBatchedMessageAnnouncer,
@@ -131,6 +132,7 @@ import {
 import { senderInitials } from '@/renderer/lib/senderInitials';
 import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { getLiveChannelKey } from '@/renderer/stores/liveChannelKeyStore';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
@@ -242,7 +244,9 @@ import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { BotBadge } from './BotBadge';
+import { CatchUpButton } from './chat/CatchUpButton';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
+import { ChatSummaryCard } from './chat/ChatSummaryCard';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
@@ -2769,10 +2773,6 @@ function ChatPanel({
     };
   }, [clearReactionCapture]);
 
-  const isDmMode = viewMode === 'dm' && activeDmNode != null;
-  const nowMs = useNowMs(isDmMode);
-  const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
-
   const reticulumDmDestinationHash = useMemo(() => {
     if (protocol !== 'reticulum' || activeDmNode == null) return null;
     return resolveReticulumDmFaceHash(
@@ -2780,6 +2780,54 @@ function ChatPanel({
       nodes.get(activeDmNode)?.reticulum_destination_hash,
     );
   }, [activeDmNode, nodes, protocol]);
+
+  const aiEnabled = useAiSummaryStore((s) => s.status?.enabled === true);
+  const summaryMessages = useMemo(
+    () =>
+      aiEnabled
+        ? viewMessages.map((m) => ({
+            at: m.timestamp,
+            sender: m.sender_name.slice(0, 120),
+            body: m.payload,
+          }))
+        : [],
+    [aiEnabled, viewMessages],
+  );
+  const summary = useConversationSummary({
+    key: `${identityId ?? protocol}:${protocol}:${viewKey}:${viewMode === 'channels' && protocol !== 'reticulum' ? (getLiveChannelKey(protocol, channel) ?? '') : ''}`,
+    label: viewMode === 'dm' ? getDmLabel(activeDmNode ?? 0) : `#${channel}`,
+    protocol,
+    surface: viewMode === 'dm' ? 'dm' : 'channel',
+    messages: summaryMessages,
+    includeHistoryMessage:
+      viewMode === 'channels' && weatherHideInChannels
+        ? (message) =>
+            !isWeatherPost(
+              { sender_id: message.senderId ?? -1, payload: message.body },
+              weatherConfig,
+            )
+        : undefined,
+    watermark: unreadDividerTimestamp || persistedLastRead[readKey] || 0,
+    available: viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null),
+    history: {
+      protocol,
+      surface: viewMode === 'dm' ? 'dm' : 'channel',
+      channel,
+      peerId: activeDmNode ?? undefined,
+      ownNodeIds: [...ownNodeIdSet],
+      radioNodeId: protocol !== 'reticulum' && myNodeNum > 0 ? myNodeNum : undefined,
+      identityId: identityId ?? undefined,
+      peerHash: reticulumDmDestinationHash ?? undefined,
+      channelKey:
+        viewMode === 'channels' && protocol !== 'reticulum'
+          ? (getLiveChannelKey(protocol, channel) ?? undefined)
+          : undefined,
+    },
+  });
+
+  const isDmMode = viewMode === 'dm' && activeDmNode != null;
+  const nowMs = useNowMs(isDmMode);
+  const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
 
   const reticulumDmBoundHash = useMemo(() => {
     if (protocol !== 'reticulum' || activeDmNode == null) return null;
@@ -3261,6 +3309,7 @@ function ChatPanel({
           aria-label={t('chatPanel.toolbarLabel')}
           className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 justify-self-end rounded-lg border p-0.5"
         >
+          <CatchUpButton summary={summary} />
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
             aria-pressed={showDatePicker}
@@ -3780,6 +3829,7 @@ function ChatPanel({
         </div>
       )}
 
+      <ChatSummaryCard summary={summary} />
       {/* Messages area */}
       <div
         className={`relative flex-1 ${dmOnlyChat ? 'min-h-6' : 'min-h-12'} ${viewMode === 'starred' ? 'hidden' : ''}`}

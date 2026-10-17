@@ -16,6 +16,11 @@ import { shouldShowRrcWhoTranscript } from '@/renderer/lib/rrcMessageDisplay';
 import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
 import { isCacheableRrcIdentityHash, persistRrcNick } from '@/renderer/lib/rrcNickPersist';
 import { removeRrcOpenDm, upsertRrcOpenDm } from '@/renderer/lib/rrcOpenDms';
+import {
+  mergeRrcReadWatermark,
+  openingRrcReadWatermark,
+  snapshotRrcReadWatermark,
+} from '@/renderer/lib/rrcReadWatermark';
 import { clearHydratedRrcRoomKeysForHub } from '@/renderer/lib/rrcRoomHistoryHydration';
 import {
   coalesceRrcMemberRoster,
@@ -163,6 +168,8 @@ export interface RrcHubSessionState {
   /** Sticky moderation / remote-takedown banner. */
   moderationBanner: string | null;
   unreadByRoom: Map<string, number>;
+  /** Timestamp of the first alert-eligible arrival in each unread run. */
+  unreadStartedAtByRoom: Map<string, number>;
   /** True while a local PART is in flight (voluntary leave). */
   partIntentRooms: Set<string>;
   /** True when user requested disconnect (not hub drop). */
@@ -194,6 +201,7 @@ export function emptyHubSession(): RrcHubSessionState {
     lastError: null,
     moderationBanner: null,
     unreadByRoom: new Map(),
+    unreadStartedAtByRoom: new Map(),
     partIntentRooms: new Set(),
     disconnectIntent: false,
     whoRequestedRooms: new Set(),
@@ -265,7 +273,26 @@ function mutateHubSession(
   const sessionsByHub = new Map(s.sessionsByHub);
   sessionsByHub.set(hub, nextSession);
   const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
-  return { sessionsByHub, ...mirror };
+  const changedRoom = hub === s.focusedHubHash && nextSession.activeRoom !== existing.activeRoom;
+  let boundary = s.rrcReadBoundary;
+  if (changedRoom && nextSession.activeRoom) {
+    const room = nextSession.activeRoom;
+    snapshotRrcReadWatermark(
+      hub,
+      room,
+      nextSession.unreadByRoom.get(roomStorageKey(room)),
+      s.messages.get(msgKey(hub, room)) ?? [],
+      nextSession.unreadStartedAtByRoom.get(roomStorageKey(room)),
+    );
+    boundary = openingRrcReadWatermark(hub, room);
+  }
+  return {
+    sessionsByHub,
+    ...mirror,
+    ...(changedRoom
+      ? { rrcReadingLatest: false, rrcReadBoundary: nextSession.activeRoom ? boundary : null }
+      : {}),
+  };
 }
 
 /**
@@ -274,6 +301,7 @@ function mutateHubSession(
  * Shared by `applyStatus('disconnected', hub)` and `clearHubSession(hub)`.
  */
 function removeHubSession(s: RrcSessionStoreState, hub: string): Partial<RrcSessionStoreState> {
+  clearHydratedRrcRoomKeysForHub(hub);
   const session = s.sessionsByHub.get(hub);
   // Advance ceiling so an in-flight reconcile that captured the old generation cannot
   // mistreat a clear+reconnect as still "current".
@@ -303,11 +331,24 @@ function removeHubSession(s: RrcSessionStoreState, hub: string): Partial<RrcSess
   const nextSession = nextFocused
     ? (sessionsByHub.get(nextFocused) ?? emptyHubSession())
     : emptyHubSession();
+  if (nextFocused && nextSession.activeRoom)
+    snapshotRrcReadWatermark(
+      nextFocused,
+      nextSession.activeRoom,
+      nextSession.unreadByRoom.get(roomStorageKey(nextSession.activeRoom)),
+      messages.get(msgKey(nextFocused, nextSession.activeRoom)) ?? [],
+      nextSession.unreadStartedAtByRoom.get(roomStorageKey(nextSession.activeRoom)),
+    );
   return {
     sessionsByHub,
     unreadByHub,
     messages,
     focusedHubHash: nextFocused,
+    rrcReadingLatest: false,
+    rrcReadBoundary:
+      nextFocused && nextSession.activeRoom
+        ? openingRrcReadWatermark(nextFocused, nextSession.activeRoom)
+        : null,
     ...mirrorFromSession(nextFocused, nextSession),
   };
 }
@@ -365,6 +406,9 @@ interface RrcSessionStoreState {
    * the focused hub's activeRoom — sticky activeRoom alone must not suppress.
    */
   rrcPanelFocused: boolean;
+  rrcReadingLatest: boolean;
+  /** Opening/reading boundary stays fixed until the visible transcript is caught up. */
+  rrcReadBoundary: number | null;
 
   // ── Mirror fields: always reflect `sessionsByHub.get(focusedHubHash)`. ──
   status: RrcSessionStatus;
@@ -385,6 +429,7 @@ interface RrcSessionStoreState {
   setFocusedHub: (hash: string | null) => void;
   /** Whether the RRC panel is the focused tab (drives unread suppress). */
   setRrcPanelFocused: (focused: boolean) => void;
+  setRrcReadingLatest: (hub: string, room: string, readingLatest: boolean) => void;
   setNickname: (nick: string) => void;
   setLocalIdentityHash: (hash: string | null) => void;
   setActiveRoom: (room: string | null, hubHash?: string) => void;
@@ -545,6 +590,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   unreadByHub: new Map(),
   showTimestamps: false,
   rrcPanelFocused: false,
+  rrcReadingLatest: false,
+  rrcReadBoundary: null,
 
   status: 'disconnected',
   hubDestHash: null,
@@ -564,12 +611,89 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     const hub = normHub(hash);
     set((s) => {
       const session = hub ? (s.sessionsByHub.get(hub) ?? emptyHubSession()) : emptyHubSession();
-      return { focusedHubHash: hub, ...mirrorFromSession(hub, session) };
+      if (hub && session.activeRoom && s.focusedHubHash !== hub) {
+        const room = session.activeRoom;
+        snapshotRrcReadWatermark(
+          hub,
+          room,
+          session.unreadByRoom.get(roomStorageKey(room)),
+          s.messages.get(msgKey(hub, room)) ?? [],
+          session.unreadStartedAtByRoom.get(roomStorageKey(room)),
+        );
+      }
+      return {
+        focusedHubHash: hub,
+        ...mirrorFromSession(hub, session),
+        ...(hub !== s.focusedHubHash
+          ? {
+              rrcReadingLatest: false,
+              rrcReadBoundary:
+                hub && session.activeRoom ? openingRrcReadWatermark(hub, session.activeRoom) : null,
+            }
+          : {}),
+      };
     });
   },
 
   setRrcPanelFocused: (focused) => {
-    set({ rrcPanelFocused: focused });
+    const state = get();
+    if (focused && !state.rrcPanelFocused && state.focusedHubHash && state.activeRoom) {
+      const hub = state.focusedHubHash;
+      const room = state.activeRoom;
+      snapshotRrcReadWatermark(
+        hub,
+        room,
+        state.unreadByRoom.get(roomStorageKey(room)),
+        state.messages.get(msgKey(hub, room)) ?? [],
+        state.sessionsByHub.get(hub)?.unreadStartedAtByRoom.get(roomStorageKey(room)),
+      );
+    }
+    if (
+      !focused &&
+      state.rrcPanelFocused &&
+      state.rrcReadBoundary === null &&
+      state.focusedHubHash &&
+      state.activeRoom
+    )
+      snapshotRrcReadWatermark(
+        state.focusedHubHash,
+        state.activeRoom,
+        state.unreadByRoom.get(roomStorageKey(state.activeRoom)),
+        state.messages.get(msgKey(state.focusedHubHash, state.activeRoom)) ?? [],
+        state.sessionsByHub
+          .get(state.focusedHubHash)
+          ?.unreadStartedAtByRoom.get(roomStorageKey(state.activeRoom)),
+      );
+    set({
+      rrcPanelFocused: focused,
+      ...(!focused ? { rrcReadingLatest: false } : {}),
+      ...(focused !== state.rrcPanelFocused && state.focusedHubHash && state.activeRoom
+        ? { rrcReadBoundary: openingRrcReadWatermark(state.focusedHubHash, state.activeRoom) }
+        : {}),
+    });
+  },
+
+  setRrcReadingLatest: (hub, room, readingLatest) => {
+    const state = get();
+    if (normHub(hub) !== state.focusedHubHash || !rrcRoomsMatch(state.activeRoom ?? '', room))
+      return;
+    readingLatest = readingLatest && state.rrcPanelFocused && !isAppWindowInactive();
+    if (state.rrcReadingLatest === readingLatest) return;
+    if (!readingLatest && state.rrcReadBoundary === null) {
+      snapshotRrcReadWatermark(
+        hub,
+        room,
+        state.unreadByRoom.get(roomStorageKey(room)),
+        state.messages.get(msgKey(hub, room)) ?? [],
+        state.sessionsByHub.get(hub)?.unreadStartedAtByRoom.get(roomStorageKey(room)),
+      );
+    }
+    set({
+      rrcReadingLatest: readingLatest,
+      ...(!readingLatest && state.rrcReadBoundary === null
+        ? { rrcReadBoundary: openingRrcReadWatermark(hub, room) }
+        : {}),
+    });
   },
 
   setNickname: (nick) => {
@@ -588,12 +712,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         if (!room) return { ...session, activeRoom: null };
         const soft = [...session.rooms.keys()].find((k) => rrcRoomsMatch(k, room));
         const key = soft ?? normRoom(room);
-        const unreadByRoom = new Map(session.unreadByRoom);
-        for (const [rk] of session.unreadByRoom) {
-          if (rrcRoomsMatch(rk, key)) unreadByRoom.delete(rk);
-        }
         chosen.key = key;
-        return { ...session, activeRoom: key, unreadByRoom };
+        return { ...session, activeRoom: key };
       }),
     );
     // The hub stream is a fallback for system lines, not a room to come back to.
@@ -876,8 +996,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         const rooms = new Map(session.rooms);
         rooms.delete(room);
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
         for (const [rk] of session.unreadByRoom) {
-          if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+          if (rrcRoomsMatch(rk, room)) {
+            unreadByRoom.delete(rk);
+            unreadStartedAtByRoom.delete(rk);
+          }
         }
         const activeGone = session.activeRoom != null && rrcRoomsMatch(session.activeRoom, room);
         let nextActive = activeGone ? null : session.activeRoom;
@@ -894,6 +1018,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           ...session,
           rooms,
           unreadByRoom,
+          unreadStartedAtByRoom,
           activeRoom: nextActive,
         };
       });
@@ -934,7 +1059,28 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
       const focusedHubHash = s.focusedHubHash ?? targetHub;
       const mirror = focusedHubHash === targetHub ? mirrorFromSession(targetHub, nextSession) : {};
-      return { sessionsByHub, unreadByHub, focusedHubHash, ...mirror };
+      if (focusedHubHash !== s.focusedHubHash && nextSession.activeRoom)
+        snapshotRrcReadWatermark(
+          targetHub,
+          nextSession.activeRoom,
+          nextSession.unreadByRoom.get(roomStorageKey(nextSession.activeRoom)),
+          s.messages.get(msgKey(targetHub, nextSession.activeRoom)) ?? [],
+          nextSession.unreadStartedAtByRoom.get(roomStorageKey(nextSession.activeRoom)),
+        );
+      return {
+        sessionsByHub,
+        unreadByHub,
+        focusedHubHash,
+        ...mirror,
+        ...(focusedHubHash !== s.focusedHubHash
+          ? {
+              rrcReadingLatest: false,
+              rrcReadBoundary: nextSession.activeRoom
+                ? openingRrcReadWatermark(targetHub, nextSession.activeRoom)
+                : null,
+            }
+          : {}),
+      };
     });
   },
 
@@ -1026,8 +1172,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       }
 
       const unreadByRoom = new Map(existing.unreadByRoom);
+      const unreadStartedAtByRoom = new Map(existing.unreadStartedAtByRoom);
       for (const [rk] of existing.unreadByRoom) {
-        if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+        if (rrcRoomsMatch(rk, room)) {
+          unreadByRoom.delete(rk);
+          unreadStartedAtByRoom.delete(rk);
+        }
       }
       const partIntentRooms = new Set(existing.partIntentRooms);
       for (const k of [...partIntentRooms]) {
@@ -1048,6 +1198,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         ...existing,
         rooms,
         unreadByRoom,
+        unreadStartedAtByRoom,
         partIntentRooms,
         whoRequestedRooms,
         whoTranscriptShownRooms,
@@ -1058,7 +1209,14 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(hub, nextSession);
       const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
-      return { sessionsByHub, messages, ...mirror };
+      return {
+        sessionsByHub,
+        messages,
+        ...mirror,
+        ...(hub === s.focusedHubHash && activeGone
+          ? { rrcReadingLatest: false, rrcReadBoundary: null }
+          : {}),
+      };
     });
   },
 
@@ -1100,6 +1258,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       // counts as viewing; read focus here so an arriving event cannot race a React effect.
       const viewing =
         s.rrcPanelFocused &&
+        s.rrcReadingLatest &&
         !isAppWindowInactive() &&
         hub === s.focusedHubHash &&
         session.activeRoom != null &&
@@ -1108,8 +1267,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       let nextSession = session;
       if (opts?.bumpUnread && !isSelf && !viewing) {
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
+        if (!unreadByRoom.get(roomKey)) unreadStartedAtByRoom.set(roomKey, msg.timestamp);
         unreadByRoom.set(roomKey, (unreadByRoom.get(roomKey) ?? 0) + 1);
-        nextSession = { ...session, unreadByRoom };
+        nextSession = { ...session, unreadByRoom, unreadStartedAtByRoom };
       }
       const sessionsByHub = new Map(s.sessionsByHub);
       sessionsByHub.set(hub, nextSession);
@@ -1156,20 +1317,36 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearUnread: (room, hubHash) => {
+    const readHub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
+    if (readHub) {
+      const history = get().messages.get(msgKey(readHub, room)) ?? [];
+      if (history.length)
+        mergeRrcReadWatermark(readHub, room, Math.max(...history.map((m) => m.timestamp)));
+    }
     set((s) => {
       const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
       if (!hub) return {};
       const sessionMut = mutateHubSession(s, hub, (session) => {
         const unreadByRoom = new Map(session.unreadByRoom);
+        const unreadStartedAtByRoom = new Map(session.unreadStartedAtByRoom);
         for (const [rk] of session.unreadByRoom) {
-          if (rrcRoomsMatch(rk, room)) unreadByRoom.delete(rk);
+          if (rrcRoomsMatch(rk, room)) {
+            unreadByRoom.delete(rk);
+            unreadStartedAtByRoom.delete(rk);
+          }
         }
-        return { ...session, unreadByRoom };
+        return { ...session, unreadByRoom, unreadStartedAtByRoom };
       });
       if (Object.keys(sessionMut).length === 0) return {};
       const unreadByHub = new Map(s.unreadByHub);
       unreadByHub.delete(hub);
-      return { ...sessionMut, unreadByHub };
+      return {
+        ...sessionMut,
+        unreadByHub,
+        ...(hub === s.focusedHubHash && rrcRoomsMatch(s.activeRoom ?? '', room)
+          ? { rrcReadBoundary: null }
+          : {}),
+      };
     });
   },
 
@@ -1185,12 +1362,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearSession: () => {
+    for (const hub of get().sessionsByHub.keys()) clearHydratedRrcRoomKeysForHub(hub);
     resetRrcHubGenerationCeilings();
     set(() => ({
       sessionsByHub: new Map(),
       focusedHubHash: null,
       messages: new Map(),
       unreadByHub: new Map(),
+      rrcReadingLatest: false,
+      rrcReadBoundary: null,
       ...mirrorFromSession(null, emptyHubSession()),
     }));
   },
@@ -1199,7 +1379,6 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     set((s) => {
       const hub = normHub(hubHash);
       if (!hub) return {};
-      clearHydratedRrcRoomKeysForHub(hub);
       return removeHubSession(s, hub);
     });
   },

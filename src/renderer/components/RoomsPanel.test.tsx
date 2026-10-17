@@ -37,6 +37,7 @@ import {
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
+import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
@@ -134,10 +135,68 @@ function renderRoomsPanel(
 
 describe('RoomsPanel', () => {
   beforeEach(() => {
+    disposeAiSummaries();
+    useAiSummaryStore.setState({ status: null });
     mockIsAtEnd = false;
     localStorage.clear();
     meshcoreClearAllRoomSessions();
     clearAllMeshcoreRoomAutoLoginFailures();
+  });
+
+  it('does not summarize room history after its unread divider clears', async () => {
+    const dist = vi.spyOn(chatScrollUtils, 'getDistFromChatBottom').mockReturnValue(0);
+    const focus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      const ts = Date.now() - 1000;
+      const room = makeRoom(0x1001, 'Test Room');
+      savePersistedRoomsLastRead({ [room.node_id]: ts - 1000 });
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue([
+        { at: ts, sender: 'Alice', body: 'Already read' },
+      ]);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      meshcoreApplyRoomSession(room.node_id, {
+        guestPassword: '',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+      renderRoomsPanel(new Map([[room.node_id, room]]), {
+        initialRoomTarget: room.node_id,
+        isActive: true,
+        messages: [
+          buildMeshcoreRoomIncomingMessage({
+            roomServerId: room.node_id,
+            authorId: 2,
+            authorName: 'Alice',
+            rawText: 'Already read',
+            timestamp: ts,
+            receivedVia: 'rf',
+          }),
+        ],
+      });
+      await waitFor(() => {
+        const stored = JSON.parse(
+          localStorage.getItem('mesh-client:roomsLastRead:meshcore') ?? '{}',
+        ) as Record<string, number>;
+        expect(stored[room.node_id]).toBe(ts);
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'aiSummary.catchUp' }));
+      await waitFor(() => {
+        expect(screen.getByRole('region', { name: 'aiSummary.catchUp' })).toHaveTextContent(
+          'aiSummary.error.noMessages',
+        );
+      });
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    } finally {
+      dist.mockRestore();
+      focus.mockRestore();
+    }
   });
 
   it('shows login overlay for selected room when not logged in', () => {

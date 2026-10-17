@@ -363,6 +363,7 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_dest ON reticulum_identity_activity(destination_hash)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_identity ON reticulum_identity_activity(identity_hash)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_dest_last_heard ON reticulum_destinations(last_heard)',
+  'CREATE INDEX IF NOT EXISTS idx_mc_msgs_room_ts ON meshcore_messages(room_server_id, timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_radio_channel_key ON meshcore_messages(radio_node_id, channel_key)',

@@ -23,6 +23,10 @@ publish:
   releaseType: draft
 beforePack: scripts/electron-builder-before-pack.mjs
 extraResources:
+  - from: resources/ai-helper/active
+    to: ai-helper
+    filter:
+      - '**/*'
   - from: resources/icons/win/colorado-mesh.ico
     to: colorado-mesh.ico
   - from: resources/reticulum-sidecar

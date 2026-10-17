@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
+import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
@@ -119,6 +120,8 @@ vi.mock('@tanstack/react-virtual', () => ({
 }));
 
 beforeEach(() => {
+  disposeAiSummaries();
+  useAiSummaryStore.setState({ status: null });
   localStorage.clear();
   mockIsAtEnd = true;
   mockScrollDirection = 'forward';
@@ -2238,6 +2241,166 @@ describe('ChatPanel unread watermarks', () => {
 
   it.each(
     (['meshtastic', 'meshcore'] as const).flatMap((protocol) =>
+      [
+        { range: 'unread', hide: true },
+        { range: '1', hide: true },
+        { range: 'unread', hide: false },
+      ].map((options) => ({ protocol, ...options })),
+    ),
+  )(
+    'respects history weather visibility ($protocol, $range, hide=$hide)',
+    async ({ protocol, range, hide }) => {
+      const weather = useWeatherFilterStore.getState();
+      weather.setHideInChannels(hide);
+      weather.setPattern('^CUSTOMWX');
+      weather.setSenderMarked(protocol, 7, true);
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      const at = Date.now() - 1000;
+      const history = [
+        { at, sender: 'Weather', senderId: 7, body: 'Morning report' },
+        { at, sender: 'Weather', senderId: 8, body: 'Ordinary check-in' },
+        { at, sender: 'Bot', senderId: 9, body: 'Forecast: 60F now' },
+        { at, sender: 'Bot', senderId: 10, body: 'CUSTOMWX report' },
+        { at, sender: 'Alice', senderId: 2, body: 'East repeater is online.' },
+      ];
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue(history);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      const { unmount } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} messages={[]} />
+        </ToastProvider>,
+      );
+      try {
+        if (range !== 'unread')
+          fireEvent.change(screen.getByRole('combobox', { name: 'Summary range' }), {
+            target: { value: range },
+          });
+        fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+        await waitFor(() => {
+          expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+        });
+        const request = vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0];
+        expect(request.messages.map((message) => message.body)).toEqual(
+          (hide ? [history[1], history[4]] : history).map((message) => message.body),
+        );
+      } finally {
+        unmount();
+        weather.setHideInChannels(false);
+        weather.setPattern('');
+        weather.setSenderMarked(protocol, 7, false);
+      }
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'retains weather text in %s DM history with channel hiding enabled',
+    async (protocol) => {
+      useWeatherFilterStore.getState().setHideInChannels(true);
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      const history = [
+        { at: Date.now() - 1000, sender: 'Alice', senderId: 2, body: 'Forecast: 60F now' },
+      ];
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue(history);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      const { unmount } = render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            dmOnlyChat
+            initialDmTarget={2}
+            messages={[]}
+          />
+        </ToastProvider>,
+      );
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+        await waitFor(() => {
+          expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+        });
+        expect(vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0].messages).toEqual(
+          history.map(({ at, sender, body }) => ({ at, sender, body })),
+        );
+      } finally {
+        unmount();
+        useWeatherFilterStore.getState().setHideInChannels(false);
+      }
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'does not summarize read history after the %s unread divider clears',
+    async (protocol) => {
+      const ts = Date.now() - 1000;
+      const isDm = protocol === 'reticulum';
+      const readKey = isDm ? 'dm:2' : 'ch:0';
+      localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({ [readKey]: ts - 1000 }));
+      useAiSummaryStore.getState().setStatus({
+        ...(await window.electronAPI.ai.getStatus()),
+        enabled: true,
+        engine: 'local',
+        model: 'test',
+        baseUrl: 'http://127.0.0.1:1234',
+      });
+      const history = [{ at: ts, sender: 'Alice', body: 'Already read' }];
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValue(history);
+      vi.mocked(window.electronAPI.ai.summarize).mockClear();
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            dmOnlyChat={isDm}
+            initialDmTarget={isDm ? 2 : undefined}
+            messages={[
+              {
+                to: isDm ? 1 : undefined,
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'Already read',
+                channel: 0,
+                timestamp: ts,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      await waitFor(() => {
+        const stored = JSON.parse(
+          localStorage.getItem(lastReadStorageKey(protocol)) ?? '{}',
+        ) as Record<string, number>;
+        expect(stored[readKey]).toBe(ts);
+      });
+      fireEvent.scroll(container.querySelector('[data-chat-scroll-root]')!);
+      await waitFor(() => {
+        expect(screen.queryByText('New messages')).not.toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+      await waitFor(() => {
+        expect(screen.getByRole('status')).toHaveTextContent('No messages in this range');
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sinceMs: ts }),
+      );
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(
+    (['meshtastic', 'meshcore'] as const).flatMap((protocol) =>
       (['linux', 'darwin', 'win32'] as const).map((platform) => ({ protocol, platform })),
     ),
   )(
@@ -2271,11 +2434,14 @@ describe('ChatPanel unread watermarks', () => {
             <ChatPanel {...baseProps} protocol={protocol} messages={messages} />
           </ToastProvider>,
         );
-        const selected = screen.getByRole('button', { name: 'General 69' });
+        const selected = within(screen.getByRole('region', { name: 'Channels' })).getByRole(
+          'button',
+          { name: 'General 69' },
+        );
         expect(selected).toHaveAttribute('aria-pressed', 'true');
         expect(selected).toHaveAttribute('data-channel-unread', '69');
         if (platform === 'linux') {
-          hydrateAxeThemeColors(container);
+          hydrateAxeThemeColors(selected);
           expect(await axe(selected)).toHaveNoViolations();
         }
         expect(totalUnreadCount(messages, stored(), new Set([1]), protocol)).toBe(69);

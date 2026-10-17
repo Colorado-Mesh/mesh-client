@@ -26,7 +26,9 @@ import { RrcRoomSidebar } from '@/renderer/components/rrc/RrcRoomSidebar';
 import { Button, IconButton } from '@/renderer/components/ui/Button';
 import { SegmentedControl } from '@/renderer/components/ui/SegmentedControl';
 import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDot';
+import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatBadgeCount, NAV_BADGE_FILL_CLASS } from '@/renderer/lib/navBadges';
@@ -66,8 +68,10 @@ import {
 import { hydrateRrcHubNicks } from '@/renderer/lib/rrcNickCacheHydrate';
 import { buildRrcWhisperCompleteMembers } from '@/renderer/lib/rrcNickComplete';
 import { loadRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
+import { loadPersistedRrcLastRead, rrcReadKey } from '@/renderer/lib/rrcReadWatermark';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcRoomHistory';
+import { rrcRoomHistoryEpoch } from '@/renderer/lib/rrcRoomHistoryHydration';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import {
   resolveRrcJoinRoomName,
@@ -89,6 +93,7 @@ import {
   RRC_HELP_I18N_KEYS,
 } from '@/renderer/lib/rrcSlashCommands';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
+import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
@@ -100,6 +105,9 @@ import {
 } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
+
+import { CatchUpButton } from './chat/CatchUpButton';
+import { ChatSummaryCard } from './chat/ChatSummaryCard';
 
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
@@ -201,6 +209,8 @@ export default function RrcPanel({
   const setActiveRoom = useRrcSessionStore((s) => s.setActiveRoom);
   const setShowTimestamps = useRrcSessionStore((s) => s.setShowTimestamps);
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
+  const readBoundary = useRrcSessionStore((s) => s.rrcReadBoundary);
+  const setReadingLatest = useRrcSessionStore((s) => s.setRrcReadingLatest);
   const clearActiveRoomMessages = useRrcSessionStore((s) => s.clearActiveRoomMessages);
   const addMessage = useRrcSessionStore((s) => s.addMessage);
   const markPartIntent = useRrcSessionStore((s) => s.markPartIntent);
@@ -247,10 +257,24 @@ export default function RrcPanel({
     }
   }, [setNickname]);
 
+  const historyViewKey = hubDestHash && activeRoom ? rrcReadKey(hubDestHash, activeRoom) : '';
+  const historyEpoch = hubDestHash ? rrcRoomHistoryEpoch(hubDestHash) : 0;
+  const historyContext = useMemo(
+    () => ({ key: historyViewKey, epoch: historyEpoch }),
+    [historyViewKey, historyEpoch],
+  );
+  const [hydratedContext, setHydratedContext] = useState<typeof historyContext | null>(null);
+  const historyReady = hydratedContext === historyContext;
   useEffect(() => {
     if (!hubDestHash || !activeRoom) return;
-    void hydrateRrcRoomMessages(hubDestHash, activeRoom);
-  }, [hubDestHash, activeRoom]);
+    let cancelled = false;
+    void hydrateRrcRoomMessages(hubDestHash, activeRoom).then(() => {
+      if (!cancelled) setHydratedContext(historyContext);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hubDestHash, activeRoom, historyContext]);
 
   useEffect(() => {
     if (!hubDestHash) return;
@@ -325,9 +349,25 @@ export default function RrcPanel({
   }, [conversationVisible, setRrcPanelFocused]);
 
   const handleCaughtUp = useCallback(() => {
-    if (!conversationVisible || !activeRoom || !hubDestHash) return;
+    if (!conversationVisible || !historyReady || !activeRoom || !hubDestHash) return;
+    const current = useRrcSessionStore.getState();
+    if (
+      !current.rrcPanelFocused ||
+      !current.rrcReadingLatest ||
+      isAppWindowInactive() ||
+      current.focusedHubHash !== hubDestHash ||
+      !rrcRoomsMatch(current.activeRoom ?? '', activeRoom)
+    )
+      return;
     clearUnread(activeRoom, hubDestHash);
-  }, [conversationVisible, activeRoom, hubDestHash, clearUnread]);
+  }, [conversationVisible, historyReady, activeRoom, hubDestHash, clearUnread]);
+  const handleReadingLatestChange = useCallback(
+    (readingLatest: boolean) => {
+      if (hubDestHash && activeRoom)
+        setReadingLatest(hubDestHash, activeRoom, conversationVisible && readingLatest);
+    },
+    [hubDestHash, activeRoom, conversationVisible, setReadingLatest],
+  );
 
   /**
    * Stock rrcd `/who` uses emit_notice → a single Packet.send (no chunk/resource),
@@ -1262,6 +1302,38 @@ export default function RrcPanel({
   const memberCount = activeRoomInfo?.members?.length ?? activeRoomInfo?.member_count;
   const headerTitle =
     activeRoomHeaderLabel ?? hubName ?? hubDestHash?.slice(0, 8) ?? t('rrc.selectHubPrompt');
+  const aiEnabled = useAiSummaryStore((s) => s.status?.enabled === true);
+  const summaryMessages = useMemo(
+    () =>
+      aiEnabled
+        ? activeMessages
+            .filter((m) => m.kind === 'msg' || m.kind === 'action')
+            .map((m) => ({
+              at: m.timestamp,
+              sender: (m.nickname ?? m.sender_hash ?? '').slice(0, 120),
+              body: m.body,
+            }))
+        : [],
+    [aiEnabled, activeMessages],
+  );
+  const summary = useConversationSummary({
+    key: `reticulum:rrc:${hubDestHash}::${activeRoom}`,
+    label: activeRoom ?? '',
+    protocol: 'reticulum',
+    surface: 'rrc',
+    messages: summaryMessages,
+    watermark:
+      readBoundary ??
+      (hubDestHash && activeRoom
+        ? (loadPersistedRrcLastRead()[rrcReadKey(hubDestHash, activeRoom)] ?? 0)
+        : 0),
+    available: !!hubDestHash && !!activeRoom,
+    history:
+      hubDestHash && activeRoom
+        ? { protocol: 'reticulum', surface: 'rrc', hubHash: hubDestHash, room: activeRoom }
+        : null,
+  });
+
   const headerHub = activeRoomHeaderLabel ? (hubName ?? hubDestHash?.slice(0, 8)) : null;
   const statusDotTone: StatusDotTone =
     status === 'active'
@@ -1419,6 +1491,7 @@ export default function RrcPanel({
   const conversation = (
     <>
       <header className="border-ink-800 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
+        <CatchUpButton summary={summary} />
         {layoutMode.compact ? (
           <span className="relative inline-flex">
             <IconButton
@@ -1556,6 +1629,7 @@ export default function RrcPanel({
           </button>
         </div>
       )}
+      <ChatSummaryCard summary={summary} />
       <div className="flex min-h-0 flex-1">
         <RrcChatView
           connected={connected}
@@ -1571,7 +1645,11 @@ export default function RrcPanel({
           members={chatCompleteMembers}
           alwaysShowMessageActions={alwaysShowMessageActions}
           placeholder={whisperComposerPlaceholder}
-          isActive={isActive}
+          isActive={conversationVisible}
+          unreadWatermark={readBoundary}
+          historyReady={historyReady}
+          historyEpoch={historyEpoch}
+          onReadingLatestChange={handleReadingLatestChange}
           onCaughtUp={handleCaughtUp}
           onOpenDm={onOpenDm}
           composeSeed={composeSeed}
