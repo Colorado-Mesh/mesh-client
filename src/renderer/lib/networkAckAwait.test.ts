@@ -62,6 +62,13 @@ describe('isPeerMecpNetworkAck', () => {
     ['bare R01 with other severity', 'MECP/0/M01', 'MECP/2/R01', false],
     ['B02 for our beacon', 'MECP/0/B01', 'MECP/0/B02 heard you', true],
     ['B02 for a non-beacon', 'MECP/0/M01', 'MECP/0/B02', false],
+    ['test B02 for a real beacon', 'MECP/0/B01', 'MECP/0/B02 D02', false],
+    ['real B02 for a test beacon', 'MECP/0/B01 D02', 'MECP/0/B02', false],
+    ['test B02 for a test beacon', 'MECP/0/B01 D02', 'MECP/0/B02 D02', true],
+    ['test R01 for a real report', 'MECP/0/M01', 'MECP/0/R01 M01 D02', false],
+    ['real R01 for a test report', 'MECP/0/M01 D02', 'MECP/0/R01 M01', false],
+    ['bare real R01 for a test report', 'MECP/0/M01 D02', 'MECP/0/R01', false],
+    ['test R01 for a test report', 'MECP/0/M01 D02', 'MECP/0/R01 M01 D02', true],
     ['relayed copy', 'MECP/0/M01 ridge', 'MECP/0/M01 ridge', true],
     ['different report', 'MECP/0/M01 ridge', 'MECP/1/T04 valley', false],
   ])('%s → %s', (_label, ours, incoming, expected) => {
@@ -192,6 +199,33 @@ describe('awaitNetworkAck', () => {
     addMessage(
       IDENTITY,
       record({ id: 'peer-1', from: PEER_NODE, payload: 'MECP/0/R01 M01', status: undefined }),
+    );
+    await expect(wait).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ['MECP/0/B02 D02', 'MECP/0/B02'],
+    ['MECP/0/R01 M01 D02', 'MECP/0/R01 M01'],
+  ])('keeps waiting for a real report after receiving %s', async (testAck, realAck) => {
+    const payload = 'MECP/0/B01 M01';
+    addMessage(IDENTITY, record({ id: 'real-report', payload }));
+    const wait = awaitNetworkAck({
+      protocol: 'meshcore',
+      sendResult: 'real-report',
+      payload,
+    });
+    const settled = vi.fn();
+    wait.then(settled, settled);
+    addMessage(
+      IDENTITY,
+      record({ id: 'test-ack', from: PEER_NODE, payload: testAck, status: undefined }),
+    );
+    await Promise.resolve();
+    expect(settled).not.toHaveBeenCalled();
+
+    addMessage(
+      IDENTITY,
+      record({ id: 'real-ack', from: PEER_NODE, payload: realAck, status: undefined }),
     );
     await expect(wait).resolves.toBeUndefined();
   });

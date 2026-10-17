@@ -6786,7 +6786,14 @@
       "requestTitle": "Запрос или отчет MECP",
       "responseTitle": "Ответ MECP",
       "showAllCodes": "Показать все коды MECP",
-      "openRequest": "Запрос или отчет в MECP"
+      "openRequest": "Запрос или отчет в MECP",
+      "wirePreview": "Что увидят другие приложения",
+      "includeExplanation": "Добавить пояснение",
+      "explanationLanguage": "Язык пояснения",
+      "explanationHint": "Выберите язык, понятный получателям. Эти слова занимают место в сообщении.",
+      "includeHelpLink": "Добавить ссылку на справку MECP",
+      "helpLinkHint": "Добавляет https://mecp.radio для тех, у кого есть доступ к интернету.",
+      "optionalTextOverLimit": "Сообщение слишком длинное. Отключите дополнение или сократите заметки."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

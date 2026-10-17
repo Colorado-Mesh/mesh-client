@@ -89,9 +89,9 @@ describe('EMCOMM safety invariants (source contracts)', () => {
   });
 
   it('S7: composed beacon ACK carries B02; composed general ACK never does', () => {
-    expect(composeBeaconAck(0)).toMatch(/^MECP\/0\/B02/);
+    expect(composeBeaconAck(0)).toBe('MECP/0/B02');
     expect(composeGeneralAck(0, ['B01', 'B02', 'M01'])).not.toMatch(/\/B02|\bB02\b/);
-    expect(composeGeneralAck(0, ['M01'])).toMatch(/^MECP\/0\/R01 M01/);
+    expect(composeGeneralAck(0, ['M01'])).toBe('MECP/0/R01 M01');
   });
 
   it('S8: IncidentPanel is lazy-exported and mounted in App', () => {
@@ -133,6 +133,10 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(ack).not.toMatch(/sendEmergencyText\(/);
     expect(ack).toMatch(/incidentAckViewKey\(/);
     expect(ack).toMatch(/if \(outcome === 'sent'\) \{[\s\S]*?confirmBeacon[\s\S]*?recordAck/);
+    expect(ack).toMatch(/composeIncidentAck\(incident,\s*\{\s*maxBytes: Math\.min\(/);
+    expect(ack).toMatch(/composerContext: route\.toNode == null \? 'channel' : 'dm'/);
+    expect(ack).toMatch(/senderDisplayName: meshcoreSenderDisplayName/);
+    expect(ack).toMatch(/catch \(e: unknown\) \{[\s\S]*?ackFailed[\s\S]*?return;\s*\}/);
   });
 
   it('originated beacon resolve sends B03 through the emergency outbox', () => {

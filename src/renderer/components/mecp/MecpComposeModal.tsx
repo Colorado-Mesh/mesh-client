@@ -5,8 +5,6 @@ import { mecpCodeInComposeMode, type MecpComposeMode } from '@/renderer/lib/mecp
 import {
   CATEGORIES,
   type CategoryLetter,
-  encode,
-  getByteLength,
   getCachedMecpLanguage,
   loadMecpLanguage,
   MAX_MESSAGE_BYTES,
@@ -14,8 +12,12 @@ import {
   type Severity,
   severityLabelKey,
 } from '@/renderer/lib/mecp/mecpMessages';
+import {
+  encodeReadableMecp,
+  MECP_EXPLANATION_LANGUAGES,
+} from '@/renderer/lib/mecp/mecpReadableText';
 
-import { TEXTAREA_BOX_CLASS } from '../ui/formClasses';
+import { CHECKBOX_CLASS, SELECT_CLASS, TEXTAREA_BOX_CLASS } from '../ui/formClasses';
 import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
 
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
@@ -39,18 +41,24 @@ interface MecpComposeModalProps {
   /** App GPS waterfall (device → static → browser → IP). Prefer over raw geolocation. */
   resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
   mode?: MecpComposeMode;
+  maxMessageBytes?: number;
 }
 
 const DEFAULT_MECP_SEVERITY: Severity = 3;
 const DEFAULT_MECP_CATEGORY: CategoryLetter = 'D';
 const DEFAULT_MECP_CODES: string[] = [];
 
-export function MecpComposeModal({
+export function MecpComposeModal(props: MecpComposeModalProps) {
+  return props.open ? <MecpComposeSession {...props} /> : null;
+}
+
+function MecpComposeSession({
   open,
   onClose,
   onSend,
   resolveGps,
   mode = 'all',
+  maxMessageBytes = MAX_MESSAGE_BYTES,
 }: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
   const [severity, setSeverity] = useState<Severity>(DEFAULT_MECP_SEVERITY);
@@ -59,6 +67,13 @@ export function MecpComposeModal({
   const [showAllCodes, setShowAllCodes] = useState(mode === 'all');
   const [codes, setCodes] = useState<string[]>(() => [...DEFAULT_MECP_CODES]);
   const [freetext, setFreetext] = useState('');
+  const [includeExplanation, setIncludeExplanation] = useState(false);
+  const [includeHelpLink, setIncludeHelpLink] = useState(false);
+  const [explanationLanguageOverride, setExplanationLanguageOverride] = useState<string | null>(
+    null,
+  );
+  const explanationLanguage =
+    explanationLanguageOverride ?? mecpLanguageForAppLocale(i18n.language || 'en');
   const [langFile, setLangFile] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
@@ -73,7 +88,13 @@ export function MecpComposeModal({
   }, [onClose]);
 
   useEffect(() => {
-    void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then(setLangFile);
+    let cancelled = false;
+    void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then((language) => {
+      if (!cancelled) setLangFile(language);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [i18n.language]);
 
   useEffect(() => {
@@ -149,11 +170,24 @@ export function MecpComposeModal({
   const responseMode = mode === 'response';
 
   const encoded = useMemo(
-    () => encode(severity, codes, freetext.trim() || undefined),
-    [severity, codes, freetext],
+    () =>
+      encodeReadableMecp(severity, codes, freetext.trim() || undefined, maxMessageBytes, {
+        explanationLanguage: includeExplanation ? explanationLanguage : undefined,
+        includeHelpLink,
+      }),
+    [
+      severity,
+      codes,
+      freetext,
+      maxMessageBytes,
+      includeExplanation,
+      explanationLanguage,
+      includeHelpLink,
+    ],
   );
 
-  const byteLen = encoded.byteLength || getByteLength(encoded.message);
+  const byteLen = encoded.byteLength;
+  const byteLimit = Math.min(MAX_MESSAGE_BYTES, maxMessageBytes);
   const canSend = codes.length > 0 && !encoded.overLimit && !sending;
 
   const clearError = useCallback(() => {
@@ -210,6 +244,9 @@ export function MecpComposeModal({
       setCategory(initialCategory);
       setFreetext('');
       setSeverity(DEFAULT_MECP_SEVERITY);
+      setIncludeExplanation(false);
+      setIncludeHelpLink(false);
+      setExplanationLanguageOverride(null);
     } catch (e) {
       console.warn('[MecpComposeModal] send failed', e instanceof Error ? e.message : e);
       const msg = e instanceof Error && e.message.trim() ? e.message : t('mecp.compose.sendFailed');
@@ -390,12 +427,90 @@ export function MecpComposeModal({
           </button>
         </div>
 
-        <p className="text-ink-300 mb-1 font-mono text-xs break-all">{encoded.message || '—'}</p>
+        <div className="mb-3 space-y-3">
+          <div>
+            <label className="text-ink-300 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                className={CHECKBOX_CLASS}
+                checked={includeExplanation}
+                aria-label={t('mecp.compose.includeExplanation')}
+                aria-describedby="mecp-explanation-hint"
+                onChange={(event) => {
+                  clearError();
+                  setIncludeExplanation(event.target.checked);
+                }}
+              />
+              {t('mecp.compose.includeExplanation')}
+            </label>
+            <p id="mecp-explanation-hint" className="text-muted mt-1 text-xs">
+              {t('mecp.compose.explanationHint')}
+            </p>
+            {includeExplanation && (
+              <div className="mt-2">
+                <label
+                  htmlFor="mecp-explanation-language"
+                  className="text-muted mb-1 block text-xs"
+                >
+                  {t('mecp.compose.explanationLanguage')}
+                </label>
+                <select
+                  id="mecp-explanation-language"
+                  className={SELECT_CLASS}
+                  value={explanationLanguage}
+                  aria-label={t('mecp.compose.explanationLanguage')}
+                  onChange={(event) => {
+                    clearError();
+                    setExplanationLanguageOverride(event.target.value);
+                  }}
+                >
+                  {MECP_EXPLANATION_LANGUAGES.map((language) => (
+                    <option key={language.id} value={language.id} lang={language.id}>
+                      {language.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="text-ink-300 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                className={CHECKBOX_CLASS}
+                checked={includeHelpLink}
+                aria-label={t('mecp.compose.includeHelpLink')}
+                aria-describedby="mecp-help-link-hint"
+                onChange={(event) => {
+                  clearError();
+                  setIncludeHelpLink(event.target.checked);
+                }}
+              />
+              {t('mecp.compose.includeHelpLink')}
+            </label>
+            <p id="mecp-help-link-hint" className="text-muted mt-1 text-xs">
+              {t('mecp.compose.helpLinkHint')}
+            </p>
+          </div>
+        </div>
+
+        <p id="mecp-wire-preview-label" className="text-ink-400 mb-1 text-xs">
+          {t('mecp.compose.wirePreview')}
+        </p>
+        <p
+          className="text-ink-300 mb-1 font-mono text-xs break-all"
+          aria-labelledby="mecp-wire-preview-label"
+        >
+          {encoded.message || '—'}
+        </p>
         <p
           className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-muted'}`}
           role="status"
         >
-          {t('mecp.compose.byteBudget', { used: byteLen, max: MAX_MESSAGE_BYTES })}
+          {t('mecp.compose.byteBudget', { used: byteLen, max: byteLimit })}
+          {encoded.overLimit && (
+            <span className="mt-1 block">{t('mecp.compose.optionalTextOverLimit')}</span>
+          )}
         </p>
 
         {error ? (

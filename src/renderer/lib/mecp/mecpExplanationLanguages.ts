@@ -1,0 +1,17 @@
+export const MECP_EXPLANATION_LANGUAGES = [
+  { id: 'cs', name: 'Čeština' },
+  { id: 'de', name: 'Deutsch' },
+  { id: 'en', name: 'English' },
+  { id: 'es', name: 'Español' },
+  { id: 'fr', name: 'Français' },
+  { id: 'it', name: 'Italiano' },
+  { id: 'ja', name: '日本語' },
+  { id: 'nl', name: 'Nederlands' },
+  { id: 'pl', name: 'Polski' },
+  { id: 'pt', name: 'Português' },
+  { id: 'ru', name: 'Русский' },
+  { id: 'tr', name: 'Türkçe' },
+  { id: 'uk', name: 'Українська' },
+  { id: 'zh-cn', name: '简体中文' },
+  { id: 'zh-tw', name: '繁體中文' },
+] as const;

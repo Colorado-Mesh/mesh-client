@@ -52,6 +52,7 @@ export function networkAckTimeoutMs(protocol: MeshProtocol): number {
  */
 export function isPeerMecpNetworkAck(ours: MecpParsed, incoming: MecpParsed): boolean {
   if (ours.severity == null || incoming.severity == null) return false;
+  if (ours.isDrill !== incoming.isDrill) return false;
   if (isGeneralAck(incoming.codes)) {
     const echoed = echoedAckCodes(incoming.codes);
     if (echoed.length === 0) return incoming.severity === ours.severity;

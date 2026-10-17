@@ -6680,7 +6680,14 @@
       "requestTitle": "MECP talebi veya raporu",
       "responseTitle": "MECP yanıtı",
       "showAllCodes": "Tüm MECP kodlarını göster",
-      "openRequest": "MECP ile talepte bulunun veya rapor verin"
+      "openRequest": "MECP ile talepte bulunun veya rapor verin",
+      "wirePreview": "Diğer uygulamaların göreceği metin",
+      "includeExplanation": "Açıklama ekle",
+      "explanationLanguage": "Açıklama dili",
+      "explanationHint": "Alıcıların anlayacağı bir dil seçin. Bu sözcükler mesajda yer kaplar.",
+      "includeHelpLink": "MECP yardım bağlantısı ekle",
+      "helpLinkHint": "İnternet erişimi olanlar için https://mecp.radio bağlantısını ekler.",
+      "optionalTextOverLimit": "Mesaj çok uzun. Bir eklemeyi kapatın veya notlarınızı kısaltın."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

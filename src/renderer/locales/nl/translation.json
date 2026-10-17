@@ -6680,7 +6680,14 @@
       "requestTitle": "MECP-aanvraag of -rapport",
       "responseTitle": "MECP-respons",
       "showAllCodes": "Alle MECP-codes weergeven",
-      "openRequest": "Aanvragen of melden bij MECP"
+      "openRequest": "Aanvragen of melden bij MECP",
+      "wirePreview": "Wat andere apps zullen tonen",
+      "includeExplanation": "Een uitleg toevoegen",
+      "explanationLanguage": "Taal van de uitleg",
+      "explanationHint": "Kies een taal die je ontvangers begrijpen. Deze woorden nemen ruimte in het bericht in.",
+      "includeHelpLink": "Een MECP-helplink toevoegen",
+      "helpLinkHint": "Voegt https://mecp.radio toe voor mensen met internettoegang.",
+      "optionalTextOverLimit": "Het bericht is te lang. Schakel een toevoeging uit of verkort je notities."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

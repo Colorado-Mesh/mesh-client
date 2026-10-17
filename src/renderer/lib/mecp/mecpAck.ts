@@ -7,8 +7,9 @@
  */
 
 import type { Severity } from './engine';
-import { CODE_REGEX, encode, getByteLength, isBeaconAck, MAX_MESSAGE_BYTES } from './engine';
+import { CODE_REGEX, isBeaconAck } from './engine';
 import type { EmergencyIncident } from './incidentTypes';
+import { encodeReadableMecp, type MecpWireTextOptions } from './mecpReadableText';
 
 export const MECP_ACK_CODE = 'R01';
 export const MECP_BEACON_CODE = 'B01';
@@ -38,66 +39,62 @@ function sanitizeCallsign(callsign: string | undefined): string {
   return callsign.replace(/[^A-Za-z0-9]/g, '').slice(0, CALLSIGN_MAX_LEN);
 }
 
-function truncateToBytes(text: string, maxBytes: number): string {
-  if (maxBytes <= 0) return '';
-  if (getByteLength(text) <= maxBytes) return text;
-  const chars = Array.from(text);
-  while (chars.length > 0 && getByteLength(chars.join('')) > maxBytes) {
-    chars.pop();
-  }
-  return chars.join('').trimEnd();
+export interface MecpAckOptions extends MecpWireTextOptions {
+  freetext?: string;
+  maxBytes?: number;
+  /** Preserve drill/test suppression when acknowledging or cancelling a test beacon. */
+  drillCodes?: readonly string[];
 }
 
-/**
- * Encode keeping the result within MAX_MESSAGE_BYTES: freetext is truncated first
- * (the `~CALLSIGN` suffix is preserved), then trailing echoed codes are dropped.
- */
+/** Keep reference codes and operator notes intact; an oversized ACK must not be sent. */
 function composeWithinLimit(
   severity: Severity,
-  requiredCodes: string[],
-  optionalCodes: string[],
+  codes: string[],
   freetext: string,
-  suffix: string,
+  opts: MecpAckOptions | undefined,
 ): string {
-  const codes = [...requiredCodes, ...optionalCodes];
-  const buildFreetext = (body: string): string => [body, suffix].filter(Boolean).join(' ');
-
-  const minimal = encode(severity, codes, suffix);
-  if (!minimal.overLimit) {
-    const budget = MAX_MESSAGE_BYTES - minimal.byteLength - 1;
-    const body = truncateToBytes(freetext.trim().replace(/\s+/g, ' '), budget);
-    return encode(severity, codes, buildFreetext(body)).message;
+  const result = encodeReadableMecp(severity, codes, freetext, opts?.maxBytes, opts);
+  if (result.overLimit) {
+    throw new RangeError(result.warnings.join('; '));
   }
+  return result.message;
+}
 
-  const kept = [...optionalCodes];
-  while (kept.length > 0 && encode(severity, [...requiredCodes, ...kept], suffix).overLimit) {
-    kept.pop();
-  }
-  return encode(severity, [...requiredCodes, ...kept], suffix).message;
+function beaconDrillCodes(codes: readonly string[] | undefined): string[] {
+  return [...new Set(codes?.filter((code) => code === 'D01' || code === 'D02') ?? [])];
 }
 
 export function composeGeneralAck(
   severity: Severity,
   codes: string[],
-  opts?: { callsign?: string; freetext?: string },
+  opts?: MecpAckOptions & { callsign?: string },
 ): string {
   const echoed = echoedAckCodes(codes.filter((c) => CODE_REGEX.test(c)));
   const callsign = sanitizeCallsign(opts?.callsign);
   return composeWithinLimit(
     severity,
-    [MECP_ACK_CODE],
-    echoed,
-    opts?.freetext ?? '',
-    callsign ? `~${callsign}` : '',
+    [MECP_ACK_CODE, ...echoed],
+    [opts?.freetext, callsign ? `~${callsign}` : ''].filter(Boolean).join(' '),
+    opts,
   );
 }
 
-export function composeBeaconAck(severity: Severity, opts?: { freetext?: string }): string {
-  return composeWithinLimit(severity, [MECP_BEACON_ACK_CODE], [], opts?.freetext ?? '', '');
+export function composeBeaconAck(severity: Severity, opts?: MecpAckOptions): string {
+  return composeWithinLimit(
+    severity,
+    [MECP_BEACON_ACK_CODE, ...beaconDrillCodes(opts?.drillCodes)],
+    opts?.freetext ?? '',
+    opts,
+  );
 }
 
-export function composeBeaconCancel(severity: Severity, opts?: { freetext?: string }): string {
-  return composeWithinLimit(severity, [MECP_BEACON_CANCEL_CODE], [], opts?.freetext ?? '', '');
+export function composeBeaconCancel(severity: Severity, opts?: MecpAckOptions): string {
+  return composeWithinLimit(
+    severity,
+    [MECP_BEACON_CANCEL_CODE, ...beaconDrillCodes(opts?.drillCodes)],
+    opts?.freetext ?? '',
+    opts,
+  );
 }
 
 /**
@@ -109,7 +106,7 @@ export function composeBeaconCancel(severity: Severity, opts?: { freetext?: stri
  */
 export function findOpenIncidentForAck(
   incidents: readonly EmergencyIncident[],
-  parsed: { severity: number; codes: string[]; senderId?: string },
+  parsed: { severity: number; codes: string[]; senderId?: string; isDrill?: boolean },
   opts?: { preferSenderId?: string },
 ): EmergencyIncident | null {
   const ackSender = parsed.senderId;
@@ -117,11 +114,14 @@ export function findOpenIncidentForAck(
     opts?.preferSenderId && opts.preferSenderId !== ackSender ? opts.preferSenderId : undefined;
   const echoed = echoedAckCodes(parsed.codes);
   const beaconAck = isBeaconAck(parsed.codes);
+  const ackIsDrill =
+    parsed.isDrill ?? parsed.codes.some((code) => code === 'D01' || code === 'D02');
 
   let best: EmergencyIncident | null = null;
   let bestScore = -1;
   for (const inc of incidents) {
     if (inc.status === 'resolved') continue;
+    if (inc.isDrill !== ackIsDrill) continue;
     if (ackSender && inc.senderId === ackSender) continue;
 
     const overlap = echoed.filter((c) => inc.codes.includes(c)).length;

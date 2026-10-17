@@ -98,6 +98,7 @@ export interface BeaconCancelDeps {
   isSendAvailable: (protocol: MeshProtocol) => boolean;
   sendFn: (protocol: MeshProtocol) => EmergencySendDeps['sendFn'];
   queueOutbox: EmergencySendDeps['queueOutbox'];
+  messageByteLimit?: (route: BeaconCancelRoute) => number;
 }
 
 export type BeaconCancelResult =
@@ -130,7 +131,14 @@ export async function resolveIncidentWithBeaconCancel(
 
   inFlight.add(incident.id);
   try {
-    const text = composeBeaconCancel(current.severity);
+    const drillCodes =
+      current.isDrill && !current.codes.some((code) => code === 'D01' || code === 'D02')
+        ? ['D02']
+        : current.codes;
+    const text = composeBeaconCancel(current.severity, {
+      drillCodes,
+      maxBytes: deps.messageByteLimit?.(route),
+    });
     const outcome = await sendEmergencyText(text, {
       isSendAvailable: deps.isSendAvailable(route.protocol),
       sendFn: deps.sendFn(route.protocol),

@@ -6680,7 +6680,14 @@
       "requestTitle": "Richiesta o segnalazione MeCP",
       "responseTitle": "Risposta MeCP",
       "showAllCodes": "Mostra tutti i codici MeCP",
-      "openRequest": "Richiedi o segnala con MeCP"
+      "openRequest": "Richiedi o segnala con MeCP",
+      "wirePreview": "Cosa vedranno le altre app",
+      "includeExplanation": "Includi una spiegazione",
+      "explanationLanguage": "Lingua della spiegazione",
+      "explanationHint": "Scegli una lingua che i destinatari comprendano. Queste parole occupano spazio nel messaggio.",
+      "includeHelpLink": "Includi un link alla guida MECP",
+      "helpLinkHint": "Aggiunge https://mecp.radio per chi ha accesso a Internet.",
+      "optionalTextOverLimit": "Il messaggio è troppo lungo. Disattiva un’aggiunta o accorcia le note."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
