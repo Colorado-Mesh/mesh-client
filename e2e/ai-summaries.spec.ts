@@ -169,9 +169,12 @@ test.describe('AI conversation summaries', () => {
       await expect(status).toContainText('Loading model on this device', { timeout: 15000 });
       await expect(status).toContainText('Reading messages on this device', { timeout: 45000 });
       const loadedMs = Date.now() - started;
-      await expect(status).not.toContainText(/Loading model|Reading messages|Preparing summary/, {
-        timeout: 310000,
-      });
+      await expect(status).not.toContainText(
+        /Loading model|Reading messages|Preparing summary|another summary is generating/,
+        {
+          timeout: 310000,
+        },
+      );
       const firstTokenMs = Date.now() - started;
       await expect(card.getByRole('button', { name: 'Regenerate', exact: true })).toBeVisible({
         timeout: 310000,
@@ -179,7 +182,7 @@ test.describe('AI conversation summaries', () => {
       const text = await status.innerText();
       expect(text.length).toBeGreaterThan(20);
       expect(text).not.toMatch(/Could not summarize|timed out|not ready|unsupported response/);
-      await expect(card).toContainText('Only the newest messages that fit were included');
+      await expect(card).toContainText('Only the newest messages that fit this engine');
       await expect.poll(() => launched.page.workers().length).toBe(0);
       console.info(
         JSON.stringify({

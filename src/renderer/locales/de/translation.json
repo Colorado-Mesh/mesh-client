@@ -7659,6 +7659,9 @@
     "timeoutSeconds": "Zusammenfassende Zeitüberschreitung (Sekunden)",
     "timeoutHint": "Maximale Zeit für eine Zusammenfassung, einschließlich Laden des Modells. Wählen Sie 30-1800 Sekunden. Sie können jederzeit stornieren.",
     "insecureKeyWarning": "Dieser HTTP -Endpunkt sendet deinen API-Schlüssel und Nachrichten ohne Transportverschlüsselung. Verwenden Sie https für einen Server in Ihrem Netzwerk.",
-    "setupCatchUp": "Zusammenfassungen einrichten"
+    "setupCatchUp": "Zusammenfassungen einrichten",
+    "queued": "Bitte warten — eine weitere Zusammenfassung wird erstellt...",
+    "capacityHint": "Über {{count}} typische Mesh-Nachrichten passen zu einer Zusammenfassung mit dieser Engine (neuere Nachrichten zuerst). Längere Nachrichten verbrauchen mehr Geld. Beschäftigte Netze: Wählen Sie einen lokalen oder Remote-Server für ein größeres Budget oder einen kürzeren Aufholbereich (ungelesen / letzte Stunden). Eine Zusammenfassung kann noch nicht einen vollen 1000-Nachrichten-Backlog abdecken.",
+    "capacityHintChooseEngine": "Die integrierte Betriebssystem-KI und die heruntergeladenen Modelle passen zu {{onDevice}} typischen Mesh-Nachrichten pro Zusammenfassung. Ein lokaler oder Remote-Server passt etwa {{endpoint}} (bis zu 500). Bevorzugen Sie eine Server-Engine oder einen kürzeren Aufholbereich bei ausgelasteten Netzwerken; eine Zusammenfassung kann noch nicht den gesamten 1000-Nachrichten-Backlog abdecken."
   }
 }

@@ -7787,6 +7787,9 @@
     "timeoutSeconds": "Limit czasu podsumowania (sekundy)",
     "timeoutHint": "Maksymalny czas na podsumowanie, w tym załadowanie modelu. Wybierz 30–1800 sekund. Możesz anulować w dowolnym momencie.",
     "insecureKeyWarning": "Ten punkt końcowy HTTP wysyła klucz API i wiadomości bez szyfrowania transportowego. Użyj HTTPS dla serwera w swojej sieci.",
-    "setupCatchUp": "Konfiguruj podsumowania"
+    "setupCatchUp": "Konfiguruj podsumowania",
+    "queued": "Proszę czekać — generowane jest inne podsumowanie…",
+    "capacityHint": "Około {{count}} typowych wiadomości siatkowych pasuje do jednego podsumowania w tym silniku (najpierw nowsze wiadomości). Dłuższe wiadomości zużywają więcej środków budżetowych. Zajęte siatki: wybierz lokalny lub zdalny serwer dla większego budżetu lub krótszego zasięgu nadrabiania zaległości (nieprzeczytane / ostatnie godziny). Jedno podsumowanie nie może jeszcze pokryć pełnego 1000-komunikatowego zaległości.",
+    "capacityHintChooseEngine": "Wbudowana sztuczna inteligencja systemu operacyjnego i pobrane modele pasują do około {{onDevice}} typowych komunikatów siatki na podsumowanie. Lokalny lub zdalny serwer mieści około {{endpoint}} (do 500). Preferuj silnik serwera lub krótszy zasięg nadrabiania zaległości w przypadku zajętych siatek; jedno podsumowanie nie może jeszcze obejmować pełnego 1000-komunikatowego zaległości."
   }
 }

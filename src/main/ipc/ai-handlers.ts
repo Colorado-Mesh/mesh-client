@@ -16,6 +16,7 @@ import {
   type AiActionResult,
   type AiOsAiStatus,
   type AiProviderStatus,
+  aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
@@ -317,10 +318,15 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       };
     }
     const c = config.read();
+    if (!c.engine) {
+      if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      return { ok: false, reason: 'notConfigured' };
+    }
+    const budget = aiSummaryPromptBudget(c.engine);
     const prompt = buildSummaryPrompt({
       ...request,
-      maxChars: c.engine === 'os' ? 9000 : c.engine === 'bundled' ? 20000 : 60000,
-      maxPromptBytes: c.engine === 'os' || c.engine === 'bundled' ? 3500 : 64000,
+      maxChars: budget.maxChars,
+      maxPromptBytes: budget.maxPromptBytes,
     });
     if (!prompt.included) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);

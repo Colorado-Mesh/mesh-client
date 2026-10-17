@@ -7735,6 +7735,9 @@
     "timeoutSeconds": "Souhrnný časový limit (sekundy)",
     "timeoutHint": "Maximální doba pro shrnutí, včetně načtení modelu. Vyber 30–1800 sekund. Rezervaci můžeš kdykoliv zrušit.",
     "insecureKeyWarning": "Tento koncový bod HTTP odesílá váš klíč API a zprávy bez šifrování přenosu. Použijte https pro server ve vaší síti.",
-    "setupCatchUp": "Nastavit souhrny"
+    "setupCatchUp": "Nastavit souhrny",
+    "queued": "Čekejte prosím — generuje se další shrnutí...",
+    "capacityHint": "Typické síťové zprávy {{count}} odpovídají jednomu shrnutí s tímto modulem (novější zprávy jako první). Delší zprávy využívají více rozpočtu. Zaneprázdněné sítě: vyberte si místní nebo vzdálený server s větším rozpočtem nebo kratším dosahem (nepřečtené / poslední hodiny). Jedno shrnutí zatím nemůže pokrýt všech 1000 nevyřízených zpráv.",
+    "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým síťovým zprávám na souhrn. Místní nebo vzdálený server se vejde asi {{endpoint}} (až 500). Preferujte serverový engine nebo kratší rozsah dohánění na rušných sítích; jedno shrnutí zatím nemůže pokrýt plný počet nevyřízených zpráv 1000."
   }
 }

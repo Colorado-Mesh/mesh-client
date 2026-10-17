@@ -96,7 +96,9 @@ describe('AI catch up controls', () => {
   it('distinguishes 41 included messages from the 44 collected at the start', () => {
     render(<ChatSummaryCard summary={create()} />);
     expect(
-      screen.getByText('provider.test · model · 41 of 44 collected messages included'),
+      screen.getByText(
+        'provider.test · model · used 41 of 44 messages (newest first; limited by model context)',
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Counts describe this summary snapshot; live unread badges may differ.'),
@@ -112,6 +114,18 @@ describe('AI catch up controls', () => {
     render(<ChatSummaryCard summary={summary} />);
     expect(screen.getByText('provider.test · model · 44 messages collected')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeDisabled();
+  });
+
+  it('explains when another summary is already generating', () => {
+    const summary = create();
+    summary.state.streaming = true;
+    summary.state.text = '';
+    summary.state.phase = 'queued';
+    summary.pending = true;
+    render(<ChatSummaryCard summary={summary} />);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Please wait — another summary is generating…',
+    );
   });
 
   it('does not expose or allow copying a rejected repetitive result', () => {

@@ -7659,6 +7659,9 @@
     "timeoutSeconds": "Timeout riepilogo (secondi)",
     "timeoutHint": "Tempo massimo per un riepilogo, incluso il caricamento del modello. Scegli 30–1800 secondi. Puoi annullare in qualsiasi momento.",
     "insecureKeyWarning": "Questo endpoint HTTP invia la chiave API e i messaggi senza crittografia di trasporto. Usa HTTPS per un server sulla tua rete.",
-    "setupCatchUp": "Configura riepiloghi"
+    "setupCatchUp": "Configura riepiloghi",
+    "queued": "Attendere: è in corso la generazione di un altro riepilogo...",
+    "capacityHint": "Circa {{count}} i messaggi mesh tipici si adattano a un riepilogo con questo motore (prima i messaggi più recenti). I messaggi più lunghi utilizzano più budget. Busy mesh: scegli un server locale o remoto per un budget maggiore o un intervallo di recupero più breve (non letto / ultime ore). Un riepilogo non può ancora coprire un backlog completo di 1000 messaggi.",
+    "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi mesh tipici per riepilogo. Un server locale o remoto può ospitare circa {{endpoint}} (fino a 500). Preferisci un motore server o un intervallo di recupero più breve su mesh occupate; un riepilogo non può ancora coprire un backlog completo di 1000 messaggi."
   }
 }

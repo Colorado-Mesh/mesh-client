@@ -18,6 +18,7 @@ import {
   AI_MAX_TIMEOUT_SECONDS,
   AI_MIN_TIMEOUT_SECONDS,
   aiSummaryTimeoutMs,
+  estimateAiSummaryMessageCapacity,
 } from '@/shared/ai-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
@@ -227,6 +228,16 @@ export function AppAiSection() {
                 <option value="remote">{t('aiSummary.remoteEngine')}</option>
               </select>
             </label>
+            <p data-setting-anchor="app.aiProvider.capacity" className="text-muted text-xs">
+              {engine
+                ? t('aiSummary.capacityHint', {
+                    count: estimateAiSummaryMessageCapacity(engine),
+                  })
+                : t('aiSummary.capacityHintChooseEngine', {
+                    onDevice: estimateAiSummaryMessageCapacity('os'),
+                    endpoint: estimateAiSummaryMessageCapacity('local'),
+                  })}
+            </p>
             <div data-setting-anchor="app.aiProvider.osAi" className="text-muted text-xs">
               {t('aiSummary.osAvailability', {
                 model: status.osAi.available

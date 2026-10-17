@@ -14,11 +14,14 @@ import type {
 import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
+/** UI status while a summary is pending; `queued` is renderer-only (FIFO wait). */
+export type AiSummaryPhase = AiWorkerPhase | 'queued';
+
 export interface ConversationSummary {
   requestId: string;
   text: string;
   streaming: boolean;
-  phase?: AiWorkerPhase;
+  phase?: AiSummaryPhase;
   provider: string;
   model: string;
   messageCount: number | null;
@@ -290,6 +293,7 @@ export async function runSummary(
   void tail.then(() => {
     if (queueTail === tail) queueTail = undefined;
   });
+  if (previous) patch(key, id, { phase: 'queued' });
   let signal = controller.signal;
   let stopWatching: (() => void) | undefined;
   const abortReason = () =>
@@ -320,6 +324,7 @@ export async function runSummary(
     signal.throwIfAborted();
     if (before !== revision || useAiSummaryStore.getState().summaries[key]?.requestId !== id)
       return;
+    patch(key, id, { phase: undefined });
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);
     signal = AbortSignal.any([

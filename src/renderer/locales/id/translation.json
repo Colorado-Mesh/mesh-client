@@ -7659,6 +7659,9 @@
     "timeoutSeconds": "Batas waktu ringkasan (detik)",
     "timeoutHint": "Waktu maksimum untuk ringkasan, termasuk pemuatan model. Pilih 30 -1800 detik. Anda dapat membatalkan kapan saja.",
     "insecureKeyWarning": "Endpoint HTTP ini mengirimkan kunci api dan pesan Anda tanpa enkripsi transport. Gunakan https untuk server di jaringan Anda.",
-    "setupCatchUp": "Siapkan ringkasan"
+    "setupCatchUp": "Siapkan ringkasan",
+    "queued": "Harap tunggu — ringkasan lain sedang dibuat…",
+    "capacityHint": "Tentang {{count}} pesan jala biasa sesuai dengan satu ringkasan dengan mesin ini (pesan yang lebih baru terlebih dahulu). Pesan yang lebih panjang menggunakan lebih banyak anggaran. Jalinan sibuk: pilih server lokal atau jarak jauh untuk anggaran yang lebih besar, atau rentang Catch up yang lebih pendek (belum dibaca /jam terakhir). Satu ringkasan belum dapat mencakup backlog 1000 pesan penuh.",
+    "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan jala khas per ringkasan. Server lokal atau jarak jauh cocok untuk {{endpoint}} (hingga 500). Lebih suka mesin server atau rentang Catch up yang lebih pendek pada jerat yang sibuk; satu ringkasan belum dapat mencakup backlog 1000 pesan penuh."
   }
 }

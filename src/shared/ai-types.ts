@@ -148,6 +148,18 @@ export const AI_MAX_MESSAGES = 500;
 export const AI_MAX_TOTAL_CHARS = 200_000;
 export const AI_MAX_OUTPUT_TOKENS = 250;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
+/** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
+export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 3500;
+/** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */
+export const AI_ENDPOINT_MAX_PROMPT_BYTES = 64_000;
+export const AI_OS_MAX_CHARS = 9000;
+export const AI_BUNDLED_MAX_CHARS = 20_000;
+export const AI_ENDPOINT_MAX_CHARS = 60_000;
+/**
+ * Approximate UTF-8 size of one transcript line (timestamp + callsign + short body)
+ * used only for App → AI capacity estimates — not a hard limit.
+ */
+export const AI_TYPICAL_SUMMARY_LINE_BYTES = 120;
 export const AI_REQUEST_TIMEOUT_MS = MS_PER_MINUTE;
 /** CPU WASM also needs time to load and evaluate the downloaded model. */
 export const AI_LOCAL_REQUEST_TIMEOUT_MS = 5 * MS_PER_MINUTE;
@@ -162,6 +174,30 @@ export function aiSummaryTimeoutMs(engine: AiEngine | null, seconds?: number): n
     : engine === 'bundled'
       ? AI_LOCAL_REQUEST_TIMEOUT_MS
       : AI_REQUEST_TIMEOUT_MS;
+}
+
+/** Prompt char/byte budgets used by main when preparing a Catch up request. */
+export function aiSummaryPromptBudget(engine: AiEngine): {
+  maxChars: number;
+  maxPromptBytes: number;
+} {
+  if (engine === 'os')
+    return { maxChars: AI_OS_MAX_CHARS, maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES };
+  if (engine === 'bundled')
+    return { maxChars: AI_BUNDLED_MAX_CHARS, maxPromptBytes: AI_ON_DEVICE_MAX_PROMPT_BYTES };
+  return { maxChars: AI_ENDPOINT_MAX_CHARS, maxPromptBytes: AI_ENDPOINT_MAX_PROMPT_BYTES };
+}
+
+/**
+ * Rough count of typical mesh messages that fit one summary for this engine.
+ * Clipped by AI_MAX_MESSAGES; actual inclusion depends on message length.
+ */
+export function estimateAiSummaryMessageCapacity(engine: AiEngine): number {
+  const { maxPromptBytes } = aiSummaryPromptBudget(engine);
+  return Math.min(
+    AI_MAX_MESSAGES,
+    Math.max(1, Math.floor(maxPromptBytes / AI_TYPICAL_SUMMARY_LINE_BYTES)),
+  );
 }
 
 export interface AiAPI {

@@ -74,9 +74,10 @@ remaining budget, so older questions cannot re-enter after their answers are omi
 that exceeds the entire budget by itself is skipped; truncation remains disclosed. An oversized
 newest message does not block older eligible input; when no complete message
 fits, the request reports an input-size error without inference. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
-to 3,500 bytes for both Apple’s and the WASM engine’s 4,096-token contexts.
-This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote context
-capacity remains model-dependent, with a 64,000-byte prompt cap.
+to `AI_ON_DEVICE_MAX_PROMPT_BYTES` (3,500) for both Apple’s and the WASM engine’s 4,096-token
+contexts. This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote
+context capacity remains model-dependent, with an `AI_ENDPOINT_MAX_PROMPT_BYTES` (64,000) cap.
+These budgets are shared via `aiSummaryPromptBudget` so App → AI capacity copy stays aligned.
 
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
 inclusive time bounds and exact conversation filters **before** its 501-row cap. The extra row
@@ -113,10 +114,17 @@ The module is dynamically imported only for explicit generation, uses bundled WA
 CDN compatibility fallback and suppresses native logging. Single-thread CPU settings work
 without changing cross-origin isolation. A renderer FIFO queue serializes summaries across engines
 and conversations until streaming or worker completion, rather than just main-process acknowledgement.
+While a Catch up waits behind another job, the card shows a queued status
+(“Please wait — another summary is generating…”) instead of the generic preparing copy.
 Waiting requests can be cancelled; configuration changes and teardown abort active and queued work.
 Each generation deadline starts when its queue slot opens. Queue failures release the next job;
 worker cleanup completes before the next downloaded model starts. Conversation range selections
 live in the session store, so regenerate keeps the selected range after tab/protocol switches.
+App → AI shows an approximate per-engine message capacity derived from the shared prompt budgets
+(`estimateAiSummaryMessageCapacity`) so busy-mesh users can prefer a local/remote server or a
+shorter Catch up range. The Catch up card reports collected vs included counts after the prompt
+budget is applied (newest first) and explains truncation when the engine context cannot fit the
+whole range. One-pass summarization does not yet cover a full 1000-message backlog.
 Prompt metadata identifies the local IANA timezone, and every transcript timestamp includes its
 local date and UTC offset, including across midnight and daylight-saving transitions. The worker uses a single completion slot and bounded
 128-token batches. Model loading and transcript processing are shown separately; worker startup

@@ -7659,6 +7659,9 @@
     "timeoutSeconds": "Özet zaman aşımı (saniye)",
     "timeoutHint": "Model yüklemesi de dahil olmak üzere bir özet için maksimum süre. 30 -1800 saniye seçin. İstediğiniz zaman iptal edebilirsiniz.",
     "insecureKeyWarning": "Bu HTTP uç noktası, API anahtarınızı ve mesajlarınızı taşıma şifrelemesi olmadan gönderir. Ağınızdaki bir sunucu için https kullanın.",
-    "setupCatchUp": "Özetleri ayarla"
+    "setupCatchUp": "Özetleri ayarla",
+    "queued": "Lütfen bekleyin — başka bir özet oluşturuluyor...",
+    "capacityHint": "Yaklaşık {{count}} tipik mesh mesajları bu motorla bir özete uyar (önce daha yeni mesajlar). Daha uzun mesajlar bütçenin daha fazlasını kullanır. Meşgul ağlar: Daha büyük bir bütçe için yerel veya uzak bir sunucu veya daha kısa bir Yakalama aralığı (okunmamış / son saatler) seçin. Bir özet henüz tam bir 1000 mesajlık iş listesini kapsayamaz.",
+    "capacityHintChooseEngine": "Dahili işletim sistemi yapay zekası ve indirilen modeller özet başına yaklaşık {{onDevice}} tipik mesh mesajına uyar. Yerel veya uzak bir sunucu yaklaşık {{endpoint}} (500 'e kadar) sığar. Meşgul ağlarda bir sunucu motorunu veya daha kısa bir Yakalama aralığını tercih edin; bir özet henüz tam bir 1000 mesajlık iş yığınını kapsayamaz."
   }
 }

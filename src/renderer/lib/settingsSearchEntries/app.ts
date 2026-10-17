@@ -417,6 +417,21 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['AI', 'summary', 'catch up', 'Ollama', 'offline', 'model'],
   },
   {
+    id: 'app.aiProvider.capacity',
+    slot: 'App',
+    labelKey: 'aiSummary.capacityHint',
+    keywords: [
+      'AI',
+      'summary',
+      'catch up',
+      'context',
+      'messages',
+      'capacity',
+      'busy mesh',
+      'limit',
+    ],
+  },
+  {
     id: 'app.aiProvider.osAi',
     slot: 'App',
     labelKey: 'aiSummary.osAvailability',
@@ -694,6 +709,8 @@ export const appSurface: SettingsSearchSurface = {
   exempt: {
     'aiSummary.bundledEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.cancel': 'AI setting help, option, status or child action; parent is indexed',
+    'aiSummary.capacityHintChooseEngine':
+      'AI capacity help when no engine selected; capacityHint is indexed',
     'aiSummary.chooseEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.clearKey': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.download': 'AI setting help, option, status or child action; parent is indexed',

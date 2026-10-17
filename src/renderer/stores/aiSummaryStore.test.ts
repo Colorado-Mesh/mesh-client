@@ -453,6 +453,25 @@ describe('AI startup status recovery', () => {
 });
 
 describe('summary queue', () => {
+  it('marks waiting jobs as queued until their slot opens', async () => {
+    const first = runSummary('one', request);
+    const second = runSummary('two', { ...request, requestId: 'two' });
+    await Promise.resolve();
+    expect(useAiSummaryStore.getState().summaries.one?.phase).toBeUndefined();
+    expect(useAiSummaryStore.getState().summaries.two).toMatchObject({
+      streaming: true,
+      phase: 'queued',
+    });
+    finish('id');
+    await first;
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalledTimes(2);
+      expect(useAiSummaryStore.getState().summaries.two?.phase).toBeUndefined();
+    });
+    finish('two');
+    await second;
+  });
+
   it.each(['os', 'local', 'remote'] as const)(
     'drains %s requests in order after terminal stream events',
     async (engine) => {

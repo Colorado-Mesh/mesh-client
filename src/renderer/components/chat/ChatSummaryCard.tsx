@@ -49,11 +49,13 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
         {state.error
           ? t(`aiSummary.error.${state.error}`)
           : state.text ||
-            (state.phase === 'loadingModel'
-              ? t('aiSummary.loadingModel')
-              : state.phase === 'readingMessages'
-                ? t('aiSummary.readingMessages')
-                : t('aiSummary.working'))}
+            (state.phase === 'queued'
+              ? t('aiSummary.queued')
+              : state.phase === 'loadingModel'
+                ? t('aiSummary.loadingModel')
+                : state.phase === 'readingMessages'
+                  ? t('aiSummary.readingMessages')
+                  : t('aiSummary.working'))}
       </div>
       {state.truncated && <p className="text-xs text-orange-300">{t('aiSummary.truncated')}</p>}
       <p className="text-muted text-xs">{t('aiSummary.verify')}</p>

@@ -7659,6 +7659,9 @@
     "timeoutSeconds": "Délai d'expiration du résumé (secondes)",
     "timeoutHint": "Temps maximum pour un résumé, y compris le chargement du modèle. Choisissez 30–1800 secondes. Vous pouvez annuler à tout moment.",
     "insecureKeyWarning": "Ce point de terminaison HTTP envoie votre clé API et des messages sans chiffrement de transport. Utilisez HTTPS pour un serveur sur votre réseau.",
-    "setupCatchUp": "Configurer les résumés"
+    "setupCatchUp": "Configurer les résumés",
+    "queued": "Veuillez patienter — un autre résumé est en cours de génération…",
+    "capacityHint": "Environ {{count}} messages maillés typiques correspondent à un résumé avec ce moteur (messages plus récents en premier). Les messages plus longs utilisent plus de budget. Maillages occupés : choisissez un serveur local ou distant pour un budget plus important, ou une portée de rattrapage plus courte (non lu / dernières heures). Un résumé ne peut pas encore couvrir un arriéré complet de 1000 messages.",
+    "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages maillés typiques par résumé. Un serveur local ou distant peut contenir environ {{endpoint}} (jusqu'à 500). Préférez un moteur de serveur ou une plage de rattrapage plus courte sur les maillages occupés ; un résumé ne peut pas encore couvrir un backlog complet de 1000 messages."
   }
 }
