@@ -527,3 +527,33 @@ it.each(['linux', 'darwin', 'win32'] as const)(
     }
   },
 );
+
+it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+  'keeps a newest window under the %s renderer budget instead of reintroducing an answered question',
+  async (protocol) => {
+    const newest = { at: 3, sender: 'Carol', body: 'Next net at 20:00. '.repeat(20) };
+    const { result } = renderHook(() =>
+      useConversationSummary({
+        ...input,
+        protocol,
+        history: null,
+        messages: [
+          { at: 1, sender: 'Alice', body: 'Can someone check the repeater?' },
+          {
+            at: 2,
+            sender: 'Bob',
+            body: 'The repeater is operational. ' + 'x'.repeat(AI_MAX_TOTAL_CHARS - 128),
+          },
+          newest,
+        ],
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.summarize).toHaveBeenLastCalledWith(
+      expect.objectContaining({ messages: [newest] }),
+    );
+    expect(result.current.state).toMatchObject({ collectedMessageCount: 3, truncated: true });
+  },
+);

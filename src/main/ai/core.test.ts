@@ -180,6 +180,33 @@ describe('AI prompts and validation', () => {
     },
   );
 
+  it.each(['chars', 'bytes'] as const)(
+    'does not include an older question after its answer exhausts the remaining %s budget',
+    (limit) => {
+      const input = { ...request, maxChars: 20000 };
+      const empty = buildSummaryPrompt({ ...input, messages: [] }, 'UTC');
+      const framingBytes = Buffer.byteLength(empty.system + empty.user);
+      const prompt = buildSummaryPrompt(
+        {
+          ...input,
+          messages: [
+            { at: 1, sender: 'Alice', body: 'Can someone check the repeater?' },
+            { at: 2, sender: 'Bob', body: 'The repeater is operational. '.repeat(3) },
+            { at: 3, sender: 'Carol', body: 'Next net at 20:00.' },
+          ],
+          maxChars: limit === 'chars' ? 170 : 20000,
+          maxPromptBytes: limit === 'bytes' ? framingBytes + 170 : undefined,
+        },
+        'UTC',
+      );
+      expect(prompt.included).toBe(1);
+      expect(prompt.truncated).toBe(true);
+      expect(prompt.user).toContain('Next net at 20:00.');
+      expect(prompt.user).not.toContain('Can someone check');
+      expect(prompt.user).not.toContain('The repeater is operational');
+    },
+  );
+
   it.each(['漢', '😀'])('budgets the complete escaped UTF-8 prompt for %s', (glyph) => {
     const prompt = buildSummaryPrompt({
       conversationLabel: '全体',

@@ -28,7 +28,9 @@ export function buildSummaryPrompt(
     hourCycle: 'h23',
     timeZoneName: 'longOffset',
   });
-  let promptBytes = Buffer.byteLength(system + prefix + suffix);
+  const baseBytes = Buffer.byteLength(system + prefix + suffix);
+  const maxBytes = input.maxPromptBytes ?? Infinity;
+  let promptBytes = baseBytes;
   const ordered = [...input.messages].sort((a, b) => a.at - b.at);
   const lines: string[] = [];
   let size = 0;
@@ -41,11 +43,10 @@ export function buildSummaryPrompt(
     // JSON quoting prevents senders from forging transcript delimiters or additional lines.
     const line = `[${stamp}] ${JSON.stringify(message.sender.slice(0, 120))}: ${JSON.stringify(message.body)}`;
     const bytes = Buffer.byteLength(line) + 1;
-    if (
-      size + line.length + 1 > input.maxChars ||
-      promptBytes + bytes > (input.maxPromptBytes ?? Infinity)
-    )
-      continue;
+    if (size + line.length + 1 > input.maxChars || promptBytes + bytes > maxBytes) {
+      if (line.length + 1 > input.maxChars || baseBytes + bytes > maxBytes) continue;
+      break;
+    }
     lines.push(line);
     size += line.length + 1;
     promptBytes += bytes;

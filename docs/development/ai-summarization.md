@@ -69,8 +69,10 @@ max-output-token option in this API; its helper uses a conservative 1,000-charac
 HTTP adapters parse bounded SSE/NDJSON, require a completion marker, support fragmented UTF-8
 and emit coalesced IPC chunks. OpenAI reasoning models use completion-token budgets; Gemini
 thinking settings are model-aware. Hidden reasoning has a bounded allowance, while visible text
-is independently capped at 1,000 characters. Context budgets select whole messages newest first, skip messages that do not fit, and disclose
-truncation. An oversized newest message does not block older eligible input; when no complete message
+is independently capped at 1,000 characters. Context budgets select whole messages newest first and stop when the next message exceeds the
+remaining budget, so older questions cannot re-enter after their answers are omitted. A message
+that exceeds the entire budget by itself is skipped; truncation remains disclosed. An oversized
+newest message does not block older eligible input; when no complete message
 fits, the request reports an input-size error without inference. The complete UTF-8 prompt, including framing and metadata, is conservatively bounded
 to 3,500 bytes for both Apple’s and the WASM engine’s 4,096-token contexts.
 This leaves output/template headroom for CJK, emoji and ASCII tokenization. Remote context

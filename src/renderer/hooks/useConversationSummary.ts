@@ -136,7 +136,8 @@ export function useConversationSummary(input: ConversationSummaryInput) {
         }
         if (chars + message.body.length > AI_MAX_TOTAL_CHARS) {
           truncated = true;
-          continue;
+          if (message.body.length > AI_MAX_TOTAL_CHARS) continue;
+          break;
         }
         bounded.push(message);
         chars += message.body.length;
