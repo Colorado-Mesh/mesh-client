@@ -4,6 +4,9 @@
 - Offer Llama 3.2 1B and Qwen2.5 1.5B Q4_K_M downloads. Remove Qwen 0.5B and SmolLM2; choose a replacement explicitly if a removed model was selected.
 - Keep a Set up Catch up action visible after enabling AI when the engine or model is not ready. It opens AI settings without reading history or starting a summary.
 - Recover from failed or stalled startup status reads. Saved opt-in keeps the setup shortcut available while readiness is unknown; generation still requires a ready engine.
+- Start waiting summaries automatically when the active summary finishes, fails or is cancelled. Preserve cancellation and timeouts after endpoint acknowledgement.
+- Preserve each conversation's summary range when switching tabs/protocols and regenerating, including custom hour ranges.
+- Identify local dates, timezone and UTC offsets in summary prompts so transcript times are not mistaken for UTC.
 - Add an App settings summary timeout (30–1800 seconds), including model loading. Downloaded models can take several minutes.
 - Keep local packaging working when the optional Apple AI helper is absent. Exclude the unusable Windows OS AI helper from NSIS installers.
 

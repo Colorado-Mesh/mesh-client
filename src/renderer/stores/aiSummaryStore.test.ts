@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
@@ -48,8 +49,20 @@ const request = {
   scope: { kind: 'unread' as const },
   messages: [{ at: 1, sender: 'Alice', body: 'hello' }],
 };
-beforeEach(() => {
+function finish(requestId: string) {
+  done({
+    requestId,
+    text: 'Completed',
+    provider: 'test',
+    model: 'test',
+    messageCount: 1,
+    truncated: false,
+  });
+}
+beforeEach(async () => {
   disposeAiSummaries();
+  await Promise.resolve();
+  await Promise.resolve();
   api = {
     getStatus: vi.fn().mockResolvedValue(ready),
     summarize: vi.fn().mockResolvedValue({ ok: true }),
@@ -104,6 +117,10 @@ describe('AI summary request correlation', () => {
       collectedMessageCount: 44,
     });
     acknowledge({ ok: true, summaryInput: { messageCount: 1, truncated: true } });
+    await waitFor(() => {
+      expect(useAiSummaryStore.getState().summaries.chat?.messageCount).toBe(1);
+    });
+    finish('id');
     await pending;
     expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
       messageCount: 1,
@@ -162,7 +179,8 @@ describe('AI summary request correlation', () => {
     });
   });
   it('single-flights each conversation, accumulates chunks and preserves history truncation', async () => {
-    await runSummary('chat', request, true);
+    const running = runSummary('chat', request, true);
+    await Promise.resolve();
     await runSummary('chat', { ...request, requestId: 'other' });
     expect(api.summarize).toHaveBeenCalledOnce();
     chunk({ requestId: 'id', delta: 'a' });
@@ -181,10 +199,13 @@ describe('AI summary request correlation', () => {
       truncated: true,
       disclosure: 'provider.test',
     });
+    await running;
   });
   it('ignores late chunks and completion after cancel/dismiss and isolates errors by id', async () => {
-    await runSummary('one', request);
+    const running = runSummary('one', request);
+    await Promise.resolve();
     cancelSummary('one');
+    await running;
     chunk({ requestId: 'id', delta: 'late' });
     done({
       requestId: 'id',
@@ -229,16 +250,22 @@ describe('AI summary request correlation', () => {
     const pending = runSummary('chat', request);
     cancelSummary('chat');
     await pending;
-    await runSummary('chat', { ...request, requestId: 'retry' });
+    const retry = runSummary('chat', { ...request, requestId: 'retry' });
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalledTimes(2);
+    });
     acknowledge({ ok: true });
     await Promise.resolve();
     expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
       requestId: 'retry',
       streaming: true,
     });
+    finish('retry');
+    await retry;
   });
   it('clears summaries when disabled or reconfigured and rejects stale status refreshes', async () => {
-    await runSummary('chat', request);
+    const running = runSummary('chat', request);
+    await Promise.resolve();
     let resolve!: (status: AiProviderStatus) => void;
     vi.mocked(api.getStatus).mockReturnValueOnce(
       new Promise((r) => {
@@ -249,6 +276,7 @@ describe('AI summary request correlation', () => {
     useAiSummaryStore.getState().setStatus({ ...ready, enabled: false });
     resolve(ready);
     await pending;
+    await running;
     expect(useAiSummaryStore.getState().status?.enabled).toBe(false);
     expect(useAiSummaryStore.getState().summaries).toEqual({});
     chunk({ requestId: 'id', delta: 'late' });
@@ -422,4 +450,173 @@ describe('AI startup status recovery', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(useAiSummaryStore.getState().status).toBeNull();
   });
+});
+
+describe('summary queue', () => {
+  it.each(['os', 'local', 'remote'] as const)(
+    'drains %s requests in order after terminal stream events',
+    async (engine) => {
+      useAiSummaryStore.getState().setStatus({ ...ready, engine });
+      const first = runSummary('one', request);
+      const second = runSummary('two', { ...request, requestId: 'two' });
+      const third = runSummary('three', { ...request, requestId: 'three' });
+      await Promise.resolve();
+      expect(api.summarize).toHaveBeenCalledTimes(1);
+      expect(useAiSummaryStore.getState().summaries.two?.streaming).toBe(true);
+      finish('id');
+      await first;
+      await waitFor(() => {
+        expect(api.summarize).toHaveBeenCalledTimes(2);
+      });
+      error({ requestId: 'two', reason: 'httpError' });
+      await second;
+      await waitFor(() => {
+        expect(api.summarize).toHaveBeenCalledTimes(3);
+      });
+      finish('three');
+      await third;
+      expect(vi.mocked(api.summarize).mock.calls.map(([value]) => value.requestId)).toEqual([
+        'id',
+        'two',
+        'three',
+      ]);
+    },
+  );
+  it('skips a cancelled queued job without letting a later job pass the running one', async () => {
+    const first = runSummary('one', request);
+    const cancelled = runSummary('two', { ...request, requestId: 'two' });
+    cancelSummary('two');
+    await cancelled;
+    const third = runSummary('three', { ...request, requestId: 'three' });
+    await Promise.resolve();
+    expect(api.summarize).toHaveBeenCalledTimes(1);
+    finish('id');
+    await first;
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalledTimes(2);
+    });
+    finish('three');
+    await third;
+    expect(vi.mocked(api.summarize).mock.calls.map(([value]) => value.requestId)).toEqual([
+      'id',
+      'three',
+    ]);
+  });
+  it.each(['cancel', 'timeout', 'reconfigure', 'dispose'] as const)(
+    'handles %s while acknowledged work has a waiting job',
+    async (action) => {
+      const deadline = new AbortController();
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal);
+      const first = runSummary('one', request);
+      const second = runSummary('two', { ...request, requestId: 'two' });
+      await Promise.resolve();
+      expect(api.summarize).toHaveBeenCalledTimes(1);
+      if (action === 'cancel') cancelSummary('one');
+      else if (action === 'timeout') deadline.abort(new DOMException('Timed out', 'TimeoutError'));
+      else if (action === 'reconfigure') useAiSummaryStore.getState().setStatus(ready);
+      else disposeAiSummaries();
+      await first;
+      if (action === 'cancel' || action === 'timeout') {
+        await waitFor(() => {
+          expect(api.summarize).toHaveBeenCalledTimes(2);
+        });
+        finish('two');
+      }
+      await second;
+      expect(api.summarize).toHaveBeenCalledTimes(
+        action === 'cancel' || action === 'timeout' ? 2 : 1,
+      );
+    },
+  );
+  it('holds bundled jobs until the worker finishes, then starts the next model job', async () => {
+    useAiSummaryStore.getState().setStatus({
+      ...ready,
+      engine: 'bundled',
+      localEngine: { ready: true, modelId: 'test', downloading: false },
+    });
+    vi.mocked(api.summarize).mockResolvedValue({
+      ok: true,
+      localJob: {
+        modelUrl: 'mesh-ai://test/model.gguf',
+        system: 'system',
+        user: 'fixture',
+        model: 'test',
+        messageCount: 1,
+        truncated: false,
+      },
+    });
+    let release!: () => void;
+    const generate = vi
+      .spyOn(AiWorkerHost.prototype, 'generate')
+      .mockImplementationOnce((_job, _signal, delta) => {
+        delta('First');
+        return new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      })
+      .mockImplementationOnce((_job, _signal, delta) => {
+        delta('Second');
+        return Promise.resolve();
+      });
+    const first = runSummary('one', request);
+    const second = runSummary('two', { ...request, requestId: 'two' });
+    await waitFor(() => {
+      expect(generate).toHaveBeenCalledTimes(1);
+    });
+    expect(api.summarize).toHaveBeenCalledTimes(1);
+    release();
+    await Promise.all([first, second]);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(useAiSummaryStore.getState().summaries.two).toMatchObject({
+      text: 'Second',
+      streaming: false,
+    });
+  });
+});
+
+it('waits for cancelled bundled worker cleanup before starting the next job', async () => {
+  useAiSummaryStore.getState().setStatus({
+    ...ready,
+    engine: 'bundled',
+    localEngine: { ready: true, modelId: 'test', downloading: false },
+  });
+  vi.mocked(api.summarize).mockResolvedValue({
+    ok: true,
+    localJob: {
+      modelUrl: 'mesh-ai://test/model.gguf',
+      system: 'system',
+      user: 'fixture',
+      model: 'test',
+      messageCount: 1,
+      truncated: false,
+    },
+  });
+  let disposeWorker!: () => void;
+  const generate = vi
+    .spyOn(AiWorkerHost.prototype, 'generate')
+    .mockImplementationOnce(
+      (_job, signal) =>
+        new Promise<void>((_resolve, reject) => {
+          disposeWorker = () => {
+            expect(signal.aborted).toBe(true);
+            reject(new DOMException('Worker disposed', 'AbortError'));
+          };
+        }),
+    )
+    .mockImplementationOnce((_job, _signal, delta) => {
+      delta('Next');
+      return Promise.resolve();
+    });
+  const first = runSummary('one', request);
+  const second = runSummary('two', { ...request, requestId: 'two' });
+  await waitFor(() => {
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+  cancelSummary('one');
+  await Promise.resolve();
+  expect(api.summarize).toHaveBeenCalledTimes(1);
+  disposeWorker();
+  await Promise.all([first, second]);
+  expect(generate).toHaveBeenCalledTimes(2);
+  expect(useAiSummaryStore.getState().summaries.two?.text).toBe('Next');
 });

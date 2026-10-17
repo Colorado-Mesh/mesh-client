@@ -32,12 +32,17 @@ export interface ConversationSummaryInput {
   includeHistoryMessage?: (message: AiHistoryMessage) => boolean;
   available?: boolean;
 }
+const UNREAD_SCOPE: AiSummaryScope = { kind: 'unread' };
+
 export function useConversationSummary(input: ConversationSummaryInput) {
   const { i18n } = useTranslation();
   const status = useAiSummaryStore((s) => s.status);
   const enabled = useAiSummaryStore((s) => s.status?.enabled ?? s.cachedEnabled);
   const state = useAiSummaryStore((s) => s.summaries[input.key]);
-  const [scope, setScope] = useState<AiSummaryScope>({ kind: 'unread' });
+  const scope = useAiSummaryStore((s) => s.scopes[input.key] ?? UNREAD_SCOPE);
+  const setScope = (next: AiSummaryScope) => {
+    useAiSummaryStore.getState().setScope(input.key, next);
+  };
   const [loadingRequest, setLoadingRequest] = useState<{ key: string; owner: number } | null>(null);
   const [previousKey, setPreviousKey] = useState(input.key);
   if (previousKey !== input.key) {
@@ -181,6 +186,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     cancelSummary(input.key);
   };
   return {
+    key: input.key,
     showCatchUp: enabled && input.available !== false,
     canSummarize: aiReady(status) && input.available !== false,
     scope,

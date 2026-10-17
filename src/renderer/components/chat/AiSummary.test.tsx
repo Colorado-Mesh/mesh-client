@@ -17,6 +17,7 @@ beforeEach(async () => {
 const create = (): ConversationSummaryController & {
   state: NonNullable<ConversationSummaryController['state']>;
 } => ({
+  key: 'chat',
   showCatchUp: true,
   canSummarize: true,
   scope: { kind: 'unread' },
@@ -149,4 +150,17 @@ describe('AI catch up controls', () => {
     expect(summary.cancel).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Regenerate' })).toBeNull();
   });
+});
+
+it('restores a saved custom range and resets draft controls when conversations change', () => {
+  const summary = { ...create(), scope: { kind: 'hours' as const, hours: 18 } };
+  const { rerender } = render(<CatchUpButton summary={summary} />);
+  expect(screen.getByRole('combobox')).toHaveValue('custom');
+  expect(screen.getByRole('spinbutton')).toHaveValue(18);
+  rerender(<CatchUpButton summary={{ ...create(), key: 'other' }} />);
+  expect(screen.getByRole('combobox')).toHaveValue('unread');
+  expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+  rerender(<CatchUpButton summary={summary} />);
+  expect(screen.getByRole('combobox')).toHaveValue('custom');
+  expect(screen.getByRole('spinbutton')).toHaveValue(18);
 });

@@ -9,6 +9,7 @@ import type {
   AiProviderStatus,
   AiSummaryErrorReason,
   AiSummaryRequest,
+  AiSummaryScope,
 } from '@/shared/ai-types';
 import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
@@ -31,10 +32,12 @@ interface AiState {
   /** Saved opt-in exposes setup only while authoritative status is unavailable. */
   cachedEnabled: boolean;
   summaries: Partial<Record<string, ConversationSummary>>;
+  scopes: Partial<Record<string, AiSummaryScope>>;
+  setScope: (key: string, scope: AiSummaryScope) => void;
   setStatus: (status: AiProviderStatus) => void;
 }
 const controllers = new Map<string, AbortController>();
-let bundledBusy = false;
+let queueTail: Promise<void> | undefined;
 let revision = 0;
 let unsubscribe: (() => void) | undefined;
 const statusRequests = new Set<AbortController>();
@@ -47,6 +50,12 @@ export const useAiSummaryStore = create<AiState>((set) => ({
   status: null,
   cachedEnabled: false,
   summaries: {},
+  scopes: {},
+  setScope: (key, scope) => {
+    set((state) => ({
+      scopes: { ...Object.fromEntries(Object.entries(state.scopes).slice(-49)), [key]: scope },
+    }));
+  },
   setStatus: (status) => {
     revision++;
     for (const controller of controllers.values()) controller.abort();
@@ -249,7 +258,18 @@ export async function runSummary(
     disclosure,
   };
   useAiSummaryStore.setState((state) => ({
-    summaries: { ...Object.fromEntries(Object.entries(state.summaries).slice(-49)), [key]: entry },
+    summaries: {
+      ...Object.fromEntries(
+        Object.entries(state.summaries)
+          .filter(([, value]) => value?.streaming)
+          .concat(
+            Object.entries(state.summaries)
+              .filter(([, value]) => !value?.streaming)
+              .slice(-49),
+          ),
+      ),
+      [key]: entry,
+    },
   }));
   if (!request.messages.length) {
     patch(key, id, {
@@ -258,18 +278,20 @@ export async function runSummary(
     });
     return;
   }
-  const ownsBundled = status.engine === 'bundled';
-  if (ownsBundled && bundledBusy) {
-    patch(key, id, { streaming: false, error: 'busy' });
-    return;
-  }
-  if (ownsBundled) bundledBusy = true;
   const controller = new AbortController();
   controllers.set(key, controller);
-  const signal = AbortSignal.any([
-    controller.signal,
-    AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),
-  ]);
+  const previous = queueTail;
+  let release!: () => void;
+  const finished = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const tail = previous ? previous.then(() => finished) : finished;
+  queueTail = tail;
+  void tail.then(() => {
+    if (queueTail === tail) queueTail = undefined;
+  });
+  let signal = controller.signal;
+  let stopWatching: (() => void) | undefined;
   const abortReason = () =>
     signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError'
       ? ('timeout' as const)
@@ -294,6 +316,26 @@ export async function runSummary(
     if (signal.aborted) rejectAbort();
   });
   try {
+    if (previous) await Promise.race([previous, aborted]);
+    signal.throwIfAborted();
+    if (before !== revision || useAiSummaryStore.getState().summaries[key]?.requestId !== id)
+      return;
+    signal.removeEventListener('abort', onAbort);
+    signal.removeEventListener('abort', rejectAbort);
+    signal = AbortSignal.any([
+      controller.signal,
+      AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),
+    ]);
+    signal.addEventListener('abort', onAbort, { once: true });
+    signal.addEventListener('abort', rejectAbort, { once: true });
+    const completed = new Promise<void>((resolve) => {
+      const check = () => {
+        const current = useAiSummaryStore.getState().summaries[key];
+        if (current?.requestId !== id || !current.streaming) resolve();
+      };
+      stopWatching = useAiSummaryStore.subscribe(check);
+      check();
+    });
     const acknowledgement = window.electronAPI.ai.summarize(request);
     const result: AiActionResult = await Promise.race([acknowledgement, aborted]);
     if (before !== revision || signal.aborted) {
@@ -340,6 +382,8 @@ export async function runSummary(
         streaming: false,
         ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
       });
+    } else {
+      await Promise.race([completed, aborted]);
     }
   } catch (error) {
     // catch-no-log-ok never retain runtime error details containing conversation content
@@ -356,8 +400,11 @@ export async function runSummary(
   } finally {
     signal.removeEventListener('abort', onAbort);
     signal.removeEventListener('abort', rejectAbort);
-    if (ownsBundled) bundledBusy = false;
+    controller.signal.removeEventListener('abort', onAbort);
+    controller.signal.removeEventListener('abort', rejectAbort);
+    stopWatching?.();
     if (controllers.get(key) === controller) controllers.delete(key);
+    release();
   }
 }
 
@@ -369,5 +416,5 @@ export function disposeAiSummaries(): void {
   for (const controller of controllers.values()) controller.abort();
   controllers.clear();
   unsubscribe?.();
-  useAiSummaryStore.setState({ summaries: {} });
+  useAiSummaryStore.setState({ summaries: {}, scopes: {} });
 }

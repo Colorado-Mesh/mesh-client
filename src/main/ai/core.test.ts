@@ -199,6 +199,39 @@ describe('AI prompts and validation', () => {
     expect(prompt.user).toContain('Question remains open');
     expect(prompt.user).not.toContain(glyph.repeat(10));
   });
+  it.each([
+    { timeZone: 'America/Denver', at: '2026-10-17T05:30:00Z', stamp: '2026-10-16 23:30 UTC-06:00' },
+    { timeZone: 'America/Denver', at: '2026-01-17T06:30:00Z', stamp: '2026-01-16 23:30 UTC-07:00' },
+    { timeZone: 'Asia/Kathmandu', at: '2026-10-17T00:00:00Z', stamp: '2026-10-17 05:45 UTC+05:45' },
+    { timeZone: 'UTC', at: '2026-10-17T00:00:00Z', stamp: '2026-10-17 00:00 UTC+00:00' },
+  ])('identifies local transcript time in $timeZone at $at', ({ timeZone, at, stamp }) => {
+    const prompt = buildSummaryPrompt(
+      {
+        ...request,
+        messages: [{ at: Date.parse(at), sender: 'Alice', body: 'Repeater restored.' }],
+        maxChars: 9000,
+      },
+      timeZone,
+    );
+    expect(prompt.user).toContain(`"timeZone":"${timeZone}"`);
+    expect(prompt.user).toContain(`[${stamp}]`);
+    expect(prompt.system).toContain('user-local time');
+  });
+  it('distinguishes repeated hours across daylight saving fallback', () => {
+    const prompt = buildSummaryPrompt(
+      {
+        ...request,
+        messages: [
+          { at: Date.parse('2026-11-01T07:30:00Z'), sender: 'Alice', body: 'Before fallback' },
+          { at: Date.parse('2026-11-01T08:30:00Z'), sender: 'Bob', body: 'After fallback' },
+        ],
+        maxChars: 9000,
+      },
+      'America/Denver',
+    );
+    expect(prompt.user).toContain('[2026-11-01 01:30 UTC-06:00]');
+    expect(prompt.user).toContain('[2026-11-01 01:30 UTC-07:00]');
+  });
   it('returns only fields validated for the selected engine', () => {
     expect(
       validateAiConfig({

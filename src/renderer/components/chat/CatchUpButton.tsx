@@ -8,9 +8,17 @@ import { Button } from '../ui/Button';
 import { INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
 
 export function CatchUpButton({ summary }: { summary: ConversationSummaryController }) {
+  return <CatchUpControls key={summary.key} summary={summary} />;
+}
+
+function CatchUpControls({ summary }: { summary: ConversationSummaryController }) {
   const { t } = useTranslation();
-  const [custom, setCustom] = useState('12');
-  const [customMode, setCustomMode] = useState(false);
+  const [custom, setCustom] = useState(
+    summary.scope.kind === 'hours' ? String(summary.scope.hours) : '12',
+  );
+  const [customMode, setCustomMode] = useState(
+    summary.scope.kind === 'hours' && ![1, 6, 24].includes(summary.scope.hours),
+  );
   if (!summary.showCatchUp) return null;
   if (!summary.canSummarize)
     return (

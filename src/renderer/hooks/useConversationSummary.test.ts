@@ -7,6 +7,7 @@ import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSumma
 import {
   AI_MAX_TOTAL_CHARS,
   type AiProviderStatus,
+  type AiSummaryDone,
   type AiSummaryMessage,
 } from '@/shared/ai-types';
 
@@ -37,9 +38,25 @@ const input = {
 beforeEach(() => {
   vi.mocked(window.electronAPI.ai.summarize).mockClear();
   vi.mocked(window.electronAPI.ai.getHistory).mockClear();
+  vi.mocked(window.electronAPI.ai.cancel).mockResolvedValue(undefined);
   disposeAiSummaries();
   useAiSummaryStore.getState().setStatus(ready);
-  vi.mocked(window.electronAPI.ai.summarize).mockResolvedValue({ ok: true });
+  let complete!: (value: AiSummaryDone) => void;
+  vi.mocked(window.electronAPI.ai.onSummaryDone).mockImplementation((callback) => {
+    complete = callback;
+    return () => {};
+  });
+  vi.mocked(window.electronAPI.ai.summarize).mockImplementation((request) => {
+    complete({
+      requestId: request.requestId,
+      text: 'Summary',
+      provider: 'test',
+      model: 'test',
+      messageCount: request.messages.length,
+      truncated: false,
+    });
+    return Promise.resolve({ ok: true });
+  });
 });
 describe('Catch up availability', () => {
   const platforms = ['linux', 'darwin', 'win32'] as const;
@@ -251,8 +268,12 @@ describe('Catch up availability', () => {
       vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
         { at: 2, sender: 'Alice', body: 'New configured request' },
       ]);
+      vi.mocked(window.electronAPI.ai.summarize).mockResolvedValueOnce({ ok: true });
+      let fresh!: Promise<void>;
       await act(async () => {
-        await result.current.run();
+        fresh = result.current.run();
+        await Promise.resolve();
+        await Promise.resolve();
       });
       expect(result.current.pending).toBe(true);
       await act(async () => {
@@ -266,6 +287,10 @@ describe('Catch up availability', () => {
       );
       expect(result.current.pending).toBe(true);
       expect(result.current.state?.error).toBeUndefined();
+      await act(async () => {
+        result.current.cancel();
+        await fresh;
+      });
     },
   );
 });
@@ -373,10 +398,11 @@ describe('conversation summary async boundaries', () => {
       }));
       messages.push(...messages.slice(0, 3));
       vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce(messages);
-      vi.mocked(window.electronAPI.ai.summarize).mockResolvedValueOnce({
-        ok: true,
+      const summarize = vi.mocked(window.electronAPI.ai.summarize).getMockImplementation()!;
+      vi.mocked(window.electronAPI.ai.summarize).mockImplementationOnce(async (request) => ({
+        ...(await summarize(request)),
         summaryInput: { messageCount: 41, truncated: true },
-      });
+      }));
       const { result, rerender } = renderHook(
         ({ messages }) => useConversationSummary({ ...input, protocol, messages }),
         { initialProps: { messages } },
@@ -460,3 +486,44 @@ describe('conversation summary async boundaries', () => {
     expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
   });
 });
+
+it.each(['linux', 'darwin', 'win32'] as const)(
+  'retains protocol and conversation ranges across switches and remounts on %s',
+  async (platform) => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+    for (const protocol of ['meshtastic', 'meshcore', 'reticulum'] as const) {
+      const first = {
+        ...input,
+        protocol,
+        history: null,
+        messages: [{ at: Date.now(), sender: 'A', body: 'Status' }],
+      };
+      const { result, rerender, unmount } = renderHook(
+        ({ key }) => useConversationSummary({ ...first, key }),
+        { initialProps: { key: 'one' } },
+      );
+      act(() => {
+        result.current.setScope({ kind: 'hours', hours: 12 });
+      });
+      rerender({ key: 'two' });
+      expect(result.current.scope).toEqual({ kind: 'unread' });
+      act(() => {
+        result.current.setScope({ kind: 'loaded' });
+      });
+      rerender({ key: 'one' });
+      expect(result.current.scope).toEqual({ kind: 'hours', hours: 12 });
+      unmount();
+      const remounted = renderHook(() => useConversationSummary(first));
+      expect(remounted.result.current.scope).toEqual({ kind: 'hours', hours: 12 });
+      await act(async () => {
+        await remounted.result.current.run();
+      });
+      expect(window.electronAPI.ai.summarize).toHaveBeenLastCalledWith(
+        expect.objectContaining({ protocol, scope: { kind: 'hours', hours: 12 } }),
+      );
+      remounted.unmount();
+      disposeAiSummaries();
+      useAiSummaryStore.getState().setStatus(ready);
+    }
+  },
+);

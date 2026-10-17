@@ -109,7 +109,14 @@ Bundled inference returns a validated `localJob` from main and runs through a th
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
 The module is dynamically imported only for explicit generation, uses bundled WASM, disables
 CDN compatibility fallback and suppresses native logging. Single-thread CPU settings work
-without changing cross-origin isolation. A global latch bounds model concurrency. The worker uses a single completion slot and bounded
+without changing cross-origin isolation. A renderer FIFO queue serializes summaries across engines
+and conversations until streaming or worker completion, rather than just main-process acknowledgement.
+Waiting requests can be cancelled; configuration changes and teardown abort active and queued work.
+Each generation deadline starts when its queue slot opens. Queue failures release the next job;
+worker cleanup completes before the next downloaded model starts. Conversation range selections
+live in the session store, so regenerate keeps the selected range after tab/protocol switches.
+Prompt metadata identifies the local IANA timezone, and every transcript timestamp includes its
+local date and UTC offset, including across midnight and daylight-saving transitions. The worker uses a single completion slot and bounded
 128-token batches. Model loading and transcript processing are shown separately; worker startup
 errors fail the request without retaining their potentially sensitive details. CPU inference has a five-minute deadline covering
 model loading and generation; endpoint/native requests retain the one-minute deadline.
