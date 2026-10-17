@@ -16,6 +16,13 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
 import {
+  clearSfHistoryFetch,
+  getLastSfHistoryFetchMs,
+  recordSfHistoryFetch,
+  registerSfHistoryWirePacket,
+  resetSfHistoryWirePacketsForTests,
+} from '../meshtasticBacklogUtils';
+import {
   resetMeshtasticLateConfigureRetryableSwallowForTests,
   shouldSwallowLateMeshtasticConfigureRetryableRejection,
 } from './meshtasticConfigureRetry';
@@ -81,6 +88,7 @@ function seedOutbound(rows: SeedRow[]): void {
 describe('meshtasticSdkRoutingErrorLog', () => {
   beforeEach(() => {
     resetMeshtasticOutboundCoordinationForTests();
+    resetSfHistoryWirePacketsForTests();
     vi.mocked(updateMessageStatus).mockClear();
     clearStoreMessages();
     vi.stubGlobal('window', {
@@ -94,6 +102,7 @@ describe('meshtasticSdkRoutingErrorLog', () => {
 
   afterEach(() => {
     resetMeshtasticOutboundCoordinationForTests();
+    resetSfHistoryWirePacketsForTests();
   });
 
   it('parses SDK packet timeout log lines', () => {
@@ -287,6 +296,26 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(applied).toBe(false);
     expect(updateMessageStatus).not.toHaveBeenCalled();
     expect(onMissingRecipientKey).not.toHaveBeenCalled();
+  });
+
+  it('clears SF history fetch cooldown on PKI NAK for a registered CLIENT_HISTORY wire id', () => {
+    const server = 0xfcb1dafb;
+    const wireId = 2443960974;
+    const requested = new Set<number>([server]);
+    recordSfHistoryFetch(server, Date.now());
+    registerMeshtasticNonChatWirePacketId(wireId);
+    registerSfHistoryWirePacket(wireId, server, requested);
+    seedOutbound([{ packetId: 55, to: 0x1234, timestamp: Date.now() }]);
+
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      `Error received for packet ${wireId}: PKI_SEND_FAIL_PUBLIC_KEY`,
+      { myNodeNum: 42, identityId: IDENTITY },
+    );
+    expect(applied).toBe(true);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+    expect(getLastSfHistoryFetchMs(server)).toBeNull();
+    expect(requested.has(server)).toBe(false);
+    clearSfHistoryFetch(server);
   });
 
   it('skips fallback while non-chat outbound is in flight', () => {

@@ -1,4 +1,5 @@
 import i18n from '@/renderer/lib/i18n';
+import { clearSfHistoryFetchForWirePacket } from '@/renderer/lib/meshtasticBacklogUtils';
 import { meshtasticPacketIdsEqual } from '@/renderer/lib/meshtasticMessageDedup';
 import { resolveMeshtasticOutboundStoreKey } from '@/renderer/lib/sessions/meshtasticSession';
 import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters';
@@ -204,10 +205,18 @@ export function applyMeshtasticOutboundRoutingError(
   }
   const errorText = i18n.t(i18nKey);
   const { identityId } = ctx;
-  // Known non-chat packet (e.g. share-location Waypoint): its NAK must never be
-  // applied to a chat row — the same log line is re-applied asynchronously via
-  // the main-process log echo after the in-flight window closes.
+  // Known non-chat packet (e.g. share-location Waypoint / S&F CLIENT_HISTORY):
+  // its NAK must never be applied to a chat row — the same log line is
+  // re-applied asynchronously via the main-process log echo after the in-flight
+  // window closes. PKI NAKs on registered CLIENT_HISTORY wire ids clear the
+  // false "history fetched" cooldown so auto-history can retry.
   if (isMeshtasticNonChatWirePacketId(parsed.packetId)) {
+    if (
+      isMeshtasticMissingRecipientKeyError(parsed.errorName) &&
+      clearSfHistoryFetchForWirePacket(parsed.packetId)
+    ) {
+      return true;
+    }
     return false;
   }
   const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx, parsed.errorName);

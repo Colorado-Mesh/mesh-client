@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildStoreForwardHistoryRequestBytes,
   buildStoreForwardHistoryToRadioBytes,
+  clearSfHistoryFetch,
+  clearSfHistoryFetchForWirePacket,
   decodeStoreForwardTextPayload,
   getLastSfHistoryFetchMs,
   isDuplicateHistoryMessage,
@@ -16,8 +18,10 @@ import {
   parseStoreForwardHeartbeat,
   parseStoreForwardHistory,
   recordSfHistoryFetch,
+  registerSfHistoryWirePacket,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
+  resetSfHistoryWirePacketsForTests,
   resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
   resolveStoreForwardHistoryTuning,
@@ -33,6 +37,7 @@ import {
   shouldRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
+import { meshtasticNodePublicKeyBytesFromHex } from './meshtasticRemoteAdmin';
 
 function sfPacket(
   rr: StoreForward.StoreAndForward_RequestResponse,
@@ -300,6 +305,8 @@ describe('meshtasticBacklogUtils', () => {
           channel?: number;
           id?: number;
           wantAck?: boolean;
+          pkiEncrypted?: boolean;
+          publicKey?: Uint8Array;
           payloadVariant?: {
             case?: string;
             value?: { portnum?: number; wantResponse?: boolean; payload?: Uint8Array };
@@ -314,11 +321,58 @@ describe('meshtasticBacklogUtils', () => {
     expect(pkt?.channel).toBe(1);
     expect(pkt?.id).toBe(99);
     expect(pkt?.wantAck).toBe(false);
+    expect(pkt?.pkiEncrypted).toBeFalsy();
     expect(pkt?.payloadVariant?.case).toBe('decoded');
     const decoded = pkt?.payloadVariant?.value;
     expect(decoded?.portnum).toBe(Portnums.PortNum.STORE_FORWARD_APP);
     expect(decoded?.wantResponse).toBe(false);
     expect(decoded?.payload?.length).toBeGreaterThan(0);
+  });
+
+  it('attaches pkiEncrypted and publicKey on CLIENT_HISTORY when provided', () => {
+    const publicKey = meshtasticNodePublicKeyBytesFromHex(
+      '4852b69364572b52efa1b6bb3e6d0abed4f389a1cbfbb60a9bba2cce649caf0e',
+    )!;
+    const bytes = buildStoreForwardHistoryToRadioBytes({
+      from: 0x11111111,
+      to: 0x22222222,
+      channel: 0,
+      packetId: 7,
+      publicKey,
+    });
+    const toRadio = fromBinary(Mesh.ToRadioSchema, bytes) as unknown as {
+      payloadVariant: {
+        case?: string;
+        value?: {
+          pkiEncrypted?: boolean;
+          publicKey?: Uint8Array;
+        };
+      };
+    };
+    expect(toRadio.payloadVariant.value?.pkiEncrypted).toBe(true);
+    expect(toRadio.payloadVariant.value?.publicKey).toEqual(publicKey);
+  });
+
+  it('clears SF history fetch cooldown for a registered CLIENT_HISTORY wire id', () => {
+    resetSfHistoryWirePacketsForTests();
+    const server = 0x6983201c;
+    const wireId = 0x12345678;
+    const requested = new Set<number>([server]);
+    recordSfHistoryFetch(server, 99_000);
+    expect(getLastSfHistoryFetchMs(server)).toBe(99_000);
+    registerSfHistoryWirePacket(wireId, server, requested);
+    expect(clearSfHistoryFetchForWirePacket(wireId)).toBe(true);
+    expect(getLastSfHistoryFetchMs(server)).toBeNull();
+    expect(requested.has(server)).toBe(false);
+    expect(clearSfHistoryFetchForWirePacket(wireId)).toBe(false);
+  });
+
+  it('clearSfHistoryFetch removes only the target server', () => {
+    recordSfHistoryFetch(1, 10);
+    recordSfHistoryFetch(2, 20);
+    clearSfHistoryFetch(1);
+    expect(getLastSfHistoryFetchMs(1)).toBeNull();
+    expect(getLastSfHistoryFetchMs(2)).toBe(20);
   });
 
   it('gates heartbeat-triggered history requests', () => {
