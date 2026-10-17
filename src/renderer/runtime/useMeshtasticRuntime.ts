@@ -34,6 +34,7 @@ import {
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
   recordSfHistoryFetch,
+  registerSfHistoryWirePacket,
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
@@ -59,6 +60,10 @@ import {
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
+import {
+  buildLocalAddContactToRadioBytes,
+  canBuildMeshtasticSharedContact,
+} from '@/renderer/lib/meshtasticSharedContact';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import {
@@ -1947,6 +1952,62 @@ export function useMeshtasticRuntime() {
         }
       }
 
+      const serverNode = getIdentityNode(meshtasticIdentityIdRef.current, serverNodeId);
+      const destPublicKey = resolveMeshtasticDestPublicKeyBytes({
+        publicKeyHex: serverNode?.public_key_hex,
+      });
+      const canJitContact =
+        destPublicKey != null &&
+        canBuildMeshtasticSharedContact({
+          publicKeyHex: serverNode?.public_key_hex,
+          longName: serverNode?.long_name,
+          shortName: serverNode?.short_name,
+        });
+
+      if (canJitContact && serverNode && destPublicKey) {
+        const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
+        registerMeshtasticNonChatWirePacketId(contactPacketId);
+        try {
+          const contactBytes = buildLocalAddContactToRadioBytes({
+            myNodeNum: myNode,
+            packetId: contactPacketId,
+            nodeNum: serverNodeId,
+            longName: serverNode.long_name,
+            shortName: serverNode.short_name,
+            publicKey: destPublicKey,
+          });
+          await writeToRadioWithoutQueue(activeDevice, contactBytes);
+          console.debug(
+            `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
+          );
+        } catch (e: unknown) {
+          // catch-no-log-ok continue with history; radio may already hold the key
+          console.debug(
+            '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
+              errLikeToLogString(e),
+          );
+        }
+      } else if (!destPublicKey) {
+        // App NodeDB lacks the router key — ask for NODEINFO so a later heartbeat can JIT.
+        const lastNi = lastNodeInfoRequestAtRef.current.get(serverNodeId) ?? 0;
+        if (now - lastNi >= 120_000) {
+          lastNodeInfoRequestAtRef.current.set(serverNodeId, now);
+          void activeDevice
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+            .sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, serverNodeId)
+            .then(() => {
+              console.debug(
+                `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${serverNodeId.toString(16)}`,
+              );
+            })
+            .catch((e: unknown) => {
+              console.debug(
+                '[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e),
+              );
+            });
+        }
+      }
+
       const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
       const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
         from: myNode,
@@ -1955,9 +2016,15 @@ export function useMeshtasticRuntime() {
         packetId,
         windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
         messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : historyTuning.messageCap,
+        ...(destPublicKey ? { publicKey: destPublicKey } : {}),
       });
       // Routing NAKs for this id (e.g. PKI_SEND_FAIL_PUBLIC_KEY) must not fail a pending chat row.
       registerMeshtasticNonChatWirePacketId(packetId);
+      registerSfHistoryWirePacket(
+        packetId,
+        serverNodeId,
+        manual ? null : sfHistoryRequestedServersRef.current,
+      );
 
       try {
         await writeToRadioWithoutQueue(activeDevice, toRadioBytes);

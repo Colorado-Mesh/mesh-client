@@ -90,6 +90,12 @@ export interface BuildStoreForwardHistoryToRadioParams {
   windowMinutes?: number;
   lastRequest?: number;
   messageCap?: number;
+  /**
+   * When set (32 bytes), mark the MeshPacket PKI so firmware uses this key for the
+   * single-dest CLIENT_HISTORY (Android / remote-admin pattern). Requires the radio
+   * NodeDB to hold a matching contact — push SharedContact just-in-time first.
+   */
+  publicKey?: Uint8Array;
 }
 
 export interface ShouldRequestStoreForwardHistoryParams {
@@ -177,6 +183,7 @@ export function buildStoreForwardHistoryToRadioBytes(
     lastRequest: params.lastRequest,
     messageCap: params.messageCap,
   });
+  const publicKey = params.publicKey?.length === 32 ? params.publicKey : undefined;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const meshPacket = create(Mesh.MeshPacketSchema, {
     payloadVariant: {
@@ -193,6 +200,12 @@ export function buildStoreForwardHistoryToRadioBytes(
     id: params.packetId,
     wantAck: false,
     channel: params.channel,
+    ...(publicKey
+      ? {
+          pkiEncrypted: true,
+          publicKey,
+        }
+      : {}),
   });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
   const toRadio = create(Mesh.ToRadioSchema, {
@@ -341,6 +354,23 @@ export function recordSfHistoryFetch(
   return state;
 }
 
+/** Remove a server from the fetch cooldown map (e.g. after a PKI NAK on CLIENT_HISTORY). */
+export function clearSfHistoryFetch(serverNodeId: number): SfHistoryFetchState {
+  const key = String(serverNodeId);
+  const state: SfHistoryFetchState = {};
+  for (const [k, v] of Object.entries(loadSfHistoryFetchState())) {
+    if (k !== key) state[k] = v;
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(SF_HISTORY_FETCH_STATE_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // catch-no-log-ok quota or private mode
+    }
+  }
+  return state;
+}
+
 /** Reserve a one-shot history request for this server per session; false if already reserved. */
 export function reserveStoreForwardHistoryRequest(
   requestedServers: Set<number>,
@@ -357,6 +387,65 @@ export function releaseStoreForwardHistoryRequest(
   serverNodeId: number,
 ): void {
   requestedServers.delete(serverNodeId);
+}
+
+/** CLIENT_HISTORY wire id → server; late PKI NAKs clear fetch cooldown via this map. */
+const SF_HISTORY_WIRE_TTL_MS = 5 * 60_000;
+interface SfHistoryWireEntry {
+  serverNodeId: number;
+  requestedServers: Set<number> | null;
+  at: number;
+}
+const sfHistoryWirePackets = new Map<number, SfHistoryWireEntry>();
+
+function pruneSfHistoryWirePackets(now: number): void {
+  for (const [id, entry] of sfHistoryWirePackets) {
+    if (now - entry.at > SF_HISTORY_WIRE_TTL_MS) sfHistoryWirePackets.delete(id);
+  }
+}
+
+/** Remember a CLIENT_HISTORY wire id so a later PKI NAK can clear fetch cooldown. */
+export function registerSfHistoryWirePacket(
+  packetId: number,
+  serverNodeId: number,
+  requestedServers: Set<number> | null = null,
+): void {
+  if (!Number.isFinite(packetId)) return;
+  const now = Date.now();
+  pruneSfHistoryWirePackets(now);
+  sfHistoryWirePackets.set(packetId >>> 0, {
+    serverNodeId: serverNodeId >>> 0,
+    requestedServers,
+    at: now,
+  });
+}
+
+/**
+ * If `packetId` is a registered CLIENT_HISTORY wire id, clear that server's fetch
+ * timestamp and session reservation so auto-history can retry. Returns true when
+ * state was cleared (caller may demote SDK console.error noise).
+ */
+export function clearSfHistoryFetchForWirePacket(packetId: number): boolean {
+  const entry = sfHistoryWirePackets.get(packetId >>> 0);
+  if (!entry) return false;
+  if (Date.now() - entry.at > SF_HISTORY_WIRE_TTL_MS) {
+    sfHistoryWirePackets.delete(packetId >>> 0);
+    return false;
+  }
+  sfHistoryWirePackets.delete(packetId >>> 0);
+  clearSfHistoryFetch(entry.serverNodeId);
+  if (entry.requestedServers) {
+    releaseStoreForwardHistoryRequest(entry.requestedServers, entry.serverNodeId);
+  }
+  console.debug(
+    `[meshtasticBacklogUtils] Store & Forward history PKI NAK; cleared fetch state for 0x${entry.serverNodeId.toString(16)}`,
+  );
+  return true;
+}
+
+/** Test helper — reset SF wire-id registry. */
+export function resetSfHistoryWirePacketsForTests(): void {
+  sfHistoryWirePackets.clear();
 }
 
 /** Max share of control bytes (excluding tab/LF/CR) before payload is treated as non-chat. */
