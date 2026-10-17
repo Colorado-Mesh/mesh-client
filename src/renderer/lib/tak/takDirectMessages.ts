@@ -28,7 +28,7 @@ import type { IdentityId, MeshNode } from '../types';
  * peer whose LXMF address belongs to another destination (a telephony or bare identity hash
  * remapped) stays a plain marker.
  */
-function hasOwnLxmfDestination(nodeId: number): boolean {
+export function hasOwnLxmfDestination(nodeId: number): boolean {
   const hash = reticulumHashForNodeId(nodeId);
   if (!hash) return false;
   const resolved = resolveReticulumChatLxmfDestination(hash);
