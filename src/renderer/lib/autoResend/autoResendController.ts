@@ -66,6 +66,49 @@ interface TrackedOutbound {
   protocol: MeshProtocol;
   /** Automatic resends already spent on this message's lineage. */
   resendsUsed: number;
+  /** Store id of the lineage's first send, before any re-key or resend. */
+  originId: string;
+}
+
+/**
+ * How a tracked send's lineage ended: acknowledged, or given up on (still failed after the last
+ * automatic resend, or a resend that could not start). A manual Resend or a cancelled retry
+ * ends it without an outcome.
+ */
+export interface AutoResendOutcome {
+  identityId: IdentityId;
+  protocol: MeshProtocol;
+  /** Store id the lineage's first send had when it was made. */
+  originId: string;
+  outcome: 'acked' | 'gave-up';
+}
+
+const outcomeListeners = new Set<(outcome: AutoResendOutcome) => void>();
+
+/** Hear how each tracked send's lineage ends. Returns an unsubscribe. */
+export function subscribeAutoResendOutcomes(
+  listener: (outcome: AutoResendOutcome) => void,
+): () => void {
+  outcomeListeners.add(listener);
+  return () => {
+    outcomeListeners.delete(listener);
+  };
+}
+
+function emitOutcome(info: TrackedOutbound, outcome: AutoResendOutcome['outcome']): void {
+  const event: AutoResendOutcome = {
+    identityId: info.identityId,
+    protocol: info.protocol,
+    originId: info.originId,
+    outcome,
+  };
+  for (const listener of outcomeListeners) {
+    try {
+      listener(event);
+    } catch (err: unknown) {
+      console.warn('[autoResend] outcome listener failed ' + errLikeToLogString(err));
+    }
+  }
 }
 
 /** Bound on tracked session sends; oldest are dropped first (Map insertion order). */
@@ -147,19 +190,30 @@ function fireResend(key: string): void {
   const record = recordFor(entry.identityId, entry.messageId);
   // Superseded meanwhile (manual Resend, Reticulum announce resend, late ACK).
   if (record?.status !== 'failed') return;
+  const info: TrackedOutbound = tracked.get(key) ?? {
+    identityId: entry.identityId,
+    protocol: entry.protocol,
+    resendsUsed: entry.attempt - 1,
+    originId: entry.messageId,
+  };
   tracked.delete(key);
   let newId: string | undefined;
   try {
     newId = sendFn(entry.protocol, resendArgsFor(record));
   } catch (err: unknown) {
     console.warn('[autoResend] resend failed to start ' + errLikeToLogString(err));
+    emitOutcome(info, 'gave-up');
     return;
   }
-  if (newId == null || newId === '') return;
+  if (newId == null || newId === '') {
+    emitOutcome(info, 'gave-up');
+    return;
+  }
   trackOutbound(autoResendKey(entry.protocol, newId), {
     identityId: entry.identityId,
     protocol: entry.protocol,
     resendsUsed: entry.attempt,
+    originId: info.originId,
   });
   if (newId !== entry.messageId) {
     removeSupersededBubble(entry.protocol, entry.identityId, entry.messageId);
@@ -193,11 +247,13 @@ export function evaluateTrackedOutbound(now: number = Date.now()): void {
     if (record.status === 'acked') {
       tracked.delete(key);
       clearEntry(key);
+      emitOutcome(info, 'acked');
       continue;
     }
     if (record.status !== 'failed' || Object.hasOwn(entries, key)) continue;
     if (info.resendsUsed >= REGULAR_MESSAGE_MAX_AUTO_RESENDS) {
       tracked.delete(key);
+      emitOutcome(info, 'gave-up');
       continue;
     }
     schedule(key, info, messageId, now);
@@ -245,7 +301,12 @@ export function startAutoResend(
     if (protocol == null || !isAutoResendEligible(protocol, record)) return;
     const key = autoResendKey(protocol, record.id);
     if (!tracked.has(key)) {
-      trackOutbound(key, { identityId: event.identityId, protocol, resendsUsed: 0 });
+      trackOutbound(key, {
+        identityId: event.identityId,
+        protocol,
+        resendsUsed: 0,
+        originId: record.id,
+      });
     }
   });
   const unsubStore = useMessageStore.subscribe(() => {
@@ -263,6 +324,7 @@ export function resetAutoResendForTests(): void {
   for (const timer of timers.values()) clearTimeout(timer);
   timers.clear();
   tracked.clear();
+  outcomeListeners.clear();
   sendFn = null;
   resolveProtocol = () => null;
   useAutoResendStore.setState({ entries: {} });

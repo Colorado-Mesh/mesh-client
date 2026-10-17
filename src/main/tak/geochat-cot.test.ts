@@ -5,6 +5,7 @@ import {
   buildChannelContactCot,
   buildDirectChatCot,
   buildDirectContactCot,
+  buildDirectReceiptCot,
   buildGeochatCot,
   channelContactUid,
   geochatSenderUid,
@@ -12,6 +13,7 @@ import {
   parseTakChatChannels,
   parseTakDirectMessage,
   parseTakDmProtocols,
+  parseTakDmStatus,
   parseTakRetiredRooms,
   retiredRoomContactUid,
 } from './geochat-cot';
@@ -239,6 +241,48 @@ describe('direct messages', () => {
     expect(parseTakDmProtocols([])).toEqual([]);
     expect(() => parseTakDmProtocols(['reticulum'])).toThrow(/tak:setDirectMessaging/);
     expect(() => parseTakDmProtocols('meshcore')).toThrow(/tak:setDirectMessaging/);
+  });
+
+  const REF = '0c2f8e1a-5b3d-4c7e-9a10-2b4d6f8a0c1e';
+
+  it('accepts a direct message outcome for a message reference', () => {
+    for (const outcome of ['delivered', 'unconfirmed', 'not-sent'] as const) {
+      expect(parseTakDmStatus({ dmRef: REF, outcome, extra: 1 })).toEqual({ dmRef: REF, outcome });
+    }
+    for (const bad of [
+      null,
+      'delivered',
+      { dmRef: REF, outcome: 'read' },
+      { dmRef: 'msg-1', outcome: 'delivered' },
+      { dmRef: REF.toUpperCase(), outcome: 'delivered' },
+      { outcome: 'delivered' },
+    ]) {
+      expect(() => parseTakDmStatus(bad)).toThrow(/^tak:dmStatus: /);
+    }
+  });
+});
+
+describe('buildDirectReceiptCot', () => {
+  it('is a b-t-f-d receipt for the message, from the companion, in the conversation as filed', () => {
+    const cot = buildDirectReceiptCot(
+      { uid: 'MC-123', callsign: 'Al & co' },
+      'Alice',
+      { uid: 'ANDROID-1', callsign: 'VIPER' },
+      'abc-123',
+      Date.UTC(2026, 9, 16, 12),
+    );
+    expect(cot).toBe(
+      '<event version="2.0" uid="abc-123" type="b-t-f-d" time="2026-10-16T12:00:00.000Z"' +
+        ' start="2026-10-16T12:00:00.000Z" stale="2026-10-17T12:00:00.000Z" how="h-g-i-g-o">' +
+        '<point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/>' +
+        '<detail>' +
+        '<__chatreceipt parent="RootContactGroup" groupOwner="false" messageId="abc-123"' +
+        ' chatroom="Alice" id="MC-123" senderCallsign="Al &amp; co">' +
+        '<chatgrp uid0="ANDROID-1" uid1="MC-123" id="MC-123"/>' +
+        '</__chatreceipt>' +
+        '<link uid="MC-123" type="a-f-G-U-C" relation="p-p"/>' +
+        '</detail></event>',
+    );
   });
 });
 

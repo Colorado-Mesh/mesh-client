@@ -16,6 +16,7 @@ import {
   isAutoResendEligible,
   resetAutoResendForTests,
   startAutoResend,
+  subscribeAutoResendOutcomes,
   useAutoResendStore,
 } from './autoResendController';
 import { AUTO_RESEND_DELAYS_MS, REGULAR_MESSAGE_MAX_AUTO_RESENDS } from './autoResendPolicy';
@@ -179,5 +180,62 @@ describe('startAutoResend', () => {
     renameMessageId(identityId, '1', '555');
     setStatus(identityId, '555', 'failed');
     expect(useAutoResendStore.getState().entries[autoResendKey('meshtastic', '555')]).toBeDefined();
+  });
+
+  describe('outcomes', () => {
+    let outcomes: unknown[];
+    beforeEach(() => {
+      outcomes = [];
+      subscribeAutoResendOutcomes((o) => outcomes.push(o));
+    });
+
+    it('reports an ack under the first send, through a re-key and a resend', () => {
+      const identityId = identityFor('meshtastic');
+      addMessage(identityId, dm('1'));
+      renameMessageId(identityId, '1', '555');
+      setStatus(identityId, '555', 'failed');
+      vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[0]);
+      expect(outcomes).toEqual([]);
+      setStatus(identityId, String(nextId), 'acked');
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshtastic', originId: '1', outcome: 'acked' },
+      ]);
+    });
+
+    it('reports giving up once the last resend has failed too', () => {
+      const identityId = identityFor('meshcore');
+      addMessage(identityId, dm('1'));
+      let currentId = '1';
+      for (let attempt = 1; attempt <= REGULAR_MESSAGE_MAX_AUTO_RESENDS; attempt += 1) {
+        setStatus(identityId, currentId, 'failed');
+        vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[attempt - 1]);
+        currentId = String(nextId);
+      }
+      expect(outcomes).toEqual([]);
+      setStatus(identityId, currentId, 'failed');
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshcore', originId: '1', outcome: 'gave-up' },
+      ]);
+    });
+
+    it('reports giving up when a resend cannot start', () => {
+      const identityId = identityFor('meshtastic');
+      send.mockReturnValueOnce(undefined);
+      addMessage(identityId, dm('1'));
+      setStatus(identityId, '1', 'failed');
+      vi.advanceTimersByTime(AUTO_RESEND_DELAYS_MS[0]);
+      expect(outcomes).toEqual([
+        { identityId, protocol: 'meshtastic', originId: '1', outcome: 'gave-up' },
+      ]);
+    });
+
+    it('reports nothing for a cancelled retry', () => {
+      const identityId = identityFor('meshtastic');
+      addMessage(identityId, dm('1'));
+      setStatus(identityId, '1', 'failed');
+      cancelAutoResend('meshtastic', '1');
+      vi.advanceTimersByTime(60 * 60 * 1000);
+      expect(outcomes).toEqual([]);
+    });
   });
 });

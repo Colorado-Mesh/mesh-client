@@ -5,6 +5,7 @@ import {
 } from '../../stores/messageStore';
 import { sendChatOnIdentity } from '../sendChatOnIdentity';
 import type { IdentityId } from '../types';
+import { watchTakDirectMessage } from './takDmStatus';
 import { TAK_MESH_SEND_TIMEOUT_MS, type TakMeshSendFn } from './takInboundChat';
 
 export type OutboundSettlement = 'acked' | 'failed' | 'timeout';
@@ -71,6 +72,9 @@ export const sendTakTextOnMesh: TakMeshSendFn = async (target, text) => {
     ...(target.destination !== undefined ? { destination: target.destination } : {}),
   });
   if (storeId == null) throw new Error(`${target.protocol} send was not started`);
+  if (target.destination !== undefined && target.dmRef) {
+    watchTakDirectMessage(target.identityId, storeId, target.dmRef);
+  }
   // A MeshCore DM stays `sending` until its ack, which can take longer than the send queue
   // should wait; delivery is tracked by the message store.
   if (target.protocol === 'meshtastic' || target.destination !== undefined) return;
