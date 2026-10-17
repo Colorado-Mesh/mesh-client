@@ -27,4 +27,25 @@ describe('useMeshtasticRuntime Store & Forward history request (contract)', () =
     expect(contactIdx).toBeGreaterThan(-1);
     expect(historyIdx).toBeGreaterThan(contactIdx);
   });
+
+  it('records SF fetch cooldown before CLIENT_HISTORY write and clears on write failure', () => {
+    const historyBuildIdx = SOURCE.indexOf('buildStoreForwardHistoryToRadioBytes({');
+    expect(historyBuildIdx).toBeGreaterThan(-1);
+    const afterHistory = SOURCE.slice(historyBuildIdx);
+    const registerIdx = afterHistory.indexOf('registerSfHistoryWirePacket(');
+    const recordIdx = afterHistory.indexOf('recordSfHistoryFetch(serverNodeId, now)');
+    const writeIdx = afterHistory.indexOf('writeToRadioWithoutQueue(activeDevice, toRadioBytes)');
+    expect(registerIdx).toBeGreaterThan(-1);
+    expect(recordIdx).toBeGreaterThan(registerIdx);
+    expect(writeIdx).toBeGreaterThan(recordIdx);
+    expect(afterHistory).toContain('clearSfHistoryFetch(serverNodeId)');
+  });
+
+  it('sends local owner User bytes for S&F NODEINFO requests', () => {
+    expect(SOURCE).toContain('ownerUserBytes');
+    expect(SOURCE).toContain(
+      '.sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, serverNodeId)',
+    );
+    expect(SOURCE).toContain('radioHasMatchingDestKey');
+  });
 });

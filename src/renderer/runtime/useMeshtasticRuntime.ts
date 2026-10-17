@@ -30,6 +30,7 @@ import {
 } from '@/renderer/lib/meshtastic/meshtasticLockdown';
 import {
   buildStoreForwardHistoryToRadioBytes,
+  clearSfHistoryFetch,
   getLastSfHistoryFetchMs,
   MQTT_RECONNECT_BACKLOG_MS,
   mqttMessageTreatAsHistory,
@@ -1964,6 +1965,10 @@ export function useMeshtasticRuntime() {
           shortName: serverNode?.short_name,
         });
 
+      // Only attach publicKey on CLIENT_HISTORY when the radio NodeDB is known to hold a
+      // matching key (successful SharedContact push). If push is skipped/failed, omit the
+      // wire key so firmware can still auto-PKI from a preexisting NodeDB entry.
+      let radioHasMatchingDestKey = false;
       if (canJitContact && serverNode && destPublicKey) {
         const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
         registerMeshtasticNonChatWirePacketId(contactPacketId);
@@ -1977,6 +1982,7 @@ export function useMeshtasticRuntime() {
             publicKey: destPublicKey,
           });
           await writeToRadioWithoutQueue(activeDevice, contactBytes);
+          radioHasMatchingDestKey = true;
           console.debug(
             `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
           );
@@ -1989,12 +1995,30 @@ export function useMeshtasticRuntime() {
         }
       } else if (!destPublicKey) {
         // App NodeDB lacks the router key — ask for NODEINFO so a later heartbeat can JIT.
+        // Send our User (not empty bytes): firmware applies the request payload to the
+        // sender's NodeDB entry before replying.
+        const selfNode = getIdentityNode(meshtasticIdentityIdRef.current, myNode);
+        const selfLong = selfNode?.long_name?.trim() ?? '';
+        const selfShort = selfNode?.short_name?.trim() ?? '';
         const lastNi = lastNodeInfoRequestAtRef.current.get(serverNodeId) ?? 0;
-        if (now - lastNi >= 120_000) {
+        if (selfLong && selfShort && now - lastNi >= 120_000) {
           lastNodeInfoRequestAtRef.current.set(serverNodeId, now);
+          const selfPublicKey = resolveMeshtasticDestPublicKeyBytes({
+            publicKeyHex: selfNode?.public_key_hex,
+          });
+          const ownerUser = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {
+            id: formatMeshtasticNodeId(myNode),
+            longName: selfLong,
+            shortName: selfShort,
+            ...(selfPublicKey ? { publicKey: selfPublicKey } : {}),
+          });
+          const ownerUserBytes = toBinary(
+            meshtasticMeshProtobuf.UserSchema,
+            ownerUser as Parameters<typeof toBinary>[1],
+          );
           void activeDevice
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
-            .sendPacket(new Uint8Array(), Portnums.PortNum.NODEINFO_APP, serverNodeId)
+            .sendPacket(ownerUserBytes, Portnums.PortNum.NODEINFO_APP, serverNodeId)
             .then(() => {
               console.debug(
                 `[useMeshtasticRuntime] NODEINFO request sent for S&F router 0x${serverNodeId.toString(16)}`,
@@ -2016,7 +2040,7 @@ export function useMeshtasticRuntime() {
         packetId,
         windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
         messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : historyTuning.messageCap,
-        ...(destPublicKey ? { publicKey: destPublicKey } : {}),
+        ...(radioHasMatchingDestKey && destPublicKey ? { publicKey: destPublicKey } : {}),
       });
       // Routing NAKs for this id (e.g. PKI_SEND_FAIL_PUBLIC_KEY) must not fail a pending chat row.
       registerMeshtasticNonChatWirePacketId(packetId);
@@ -2025,15 +2049,18 @@ export function useMeshtasticRuntime() {
         serverNodeId,
         manual ? null : sfHistoryRequestedServersRef.current,
       );
+      // Record before write: a local PKI NAK can arrive before the write promise resolves;
+      // clearSfHistoryFetchForWirePacket must see an existing cooldown entry to clear.
+      recordSfHistoryFetch(serverNodeId, now);
 
       try {
         await writeToRadioWithoutQueue(activeDevice, toRadioBytes);
-        recordSfHistoryFetch(serverNodeId, now);
         console.debug(
           `[useMeshtasticRuntime] Store & Forward CLIENT_HISTORY sent to 0x${serverNodeId.toString(16)} ch=${channel} manual=${manual}`,
         );
         return { ok: true };
       } catch (e: unknown) {
+        clearSfHistoryFetch(serverNodeId);
         if (!manual) {
           releaseStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId);
         }
