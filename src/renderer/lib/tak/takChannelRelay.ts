@@ -1,6 +1,7 @@
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import { TAK_GEOCHAT_CALLSIGN_MAX_LEN, TAK_GEOCHAT_TEXT_MAX_LEN } from '@/shared/tak-types';
 
+import { getConnection } from '../../stores/connectionStore';
 import { type NodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { isTakSinkActive } from '../../stores/takSinkStore';
@@ -8,6 +9,7 @@ import { recordTakTrackerFix } from '../../stores/takTrackerStore';
 import { parseMt1Payload } from '../meshcore/mt1Tracker';
 import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { ChatMessage, IdentityId } from '../types';
+import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
 import { findServedChannel } from './takServedChannels';
@@ -65,13 +67,24 @@ export function relayMeshcoreChannelToTak(identityId: IdentityId, msg: TakChanne
 }
 
 /**
- * Hand one newly heard Meshtastic channel message (RF or MQTT) to TAK clients, if its channel is
- * served. Skips DMs, reactions and history replay. This direction never transmits on RF.
+ * Hand one newly heard Meshtastic message (RF or MQTT) to TAK clients: a channel message if its
+ * channel is served, a direct message to this radio if direct messages are on for it. Skips
+ * reactions, history replay and DMs between other nodes. This direction never transmits on RF.
  */
 export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessage): void {
   if (!isTakSinkActive()) return;
   if (chat.emoji || chat.isHistory) return;
-  if (chat.to != null && !isMeshtasticBroadcastNodeNum(chat.to)) return;
+  if (chat.to != null && !isMeshtasticBroadcastNodeNum(chat.to)) {
+    const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+    if (myNodeNum <= 0 || chat.to !== myNodeNum || chat.sender_id === myNodeNum) return;
+    relayDirectMessageToTak(identityId, 'meshtastic', {
+      nodeId: chat.sender_id,
+      senderName: chat.sender_name,
+      text: chat.payload,
+      timestampMs: effectiveMessageTimestampMs(chat.timestamp),
+    });
+    return;
+  }
   const identityNodes = useNodeStore.getState().nodes[identityId] as
     Record<number, NodeRecord | undefined> | undefined;
   const sender = identityNodes?.[chat.sender_id];

@@ -5803,7 +5803,9 @@
     "channelSendFor": "ATAKデバイスを{{channel}}に送信する",
     "channelRemote": "リモートサーバ",
     "channelRemoteFor": "リモートのTAKサーバーに{{channel}}をストリーミング",
-    "channelTrackersFor": "{{channel}}からのトラッカーの修正"
+    "channelTrackersFor": "{{channel}}からのトラッカーの修正",
+    "directMessages": "ダイレクトメッセージ",
+    "directMessagesHint": "ATAKデバイスがこのラジオの仲間にメッセージを送るようにしましょう。このラジオCANメッセージの各コンパニオンは、ATAKでチャットオプションを取得し、送信者のコールサインをプレフィックスしたメッセージがこのラジオから送信されます。応答は、最後に書き込まれたATAKデバイス、または書き込まれていないすべてのデバイスに送信されます。メッセージの1日後、位置のないコンパニオンが0、0に表示されます。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

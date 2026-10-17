@@ -5803,7 +5803,9 @@
     "channelSendFor": "Atak cihazlarının {{channel}} adresine göndermesine izin verin",
     "channelRemote": "Uzak sunucu",
     "channelRemoteFor": "{{channel}} 'ı uzaktaki TAK sunucusuna aktarın",
-    "channelTrackersFor": "{{channel}} 'dan itibaren izleyici düzeltmeleri"
+    "channelTrackersFor": "{{channel}} 'dan itibaren izleyici düzeltmeleri",
+    "directMessages": "Direkt Mesajlar",
+    "directMessagesHint": "Atak cihazları bu radyonun arkadaşlarına mesaj göndersin. Bu telsiz mesajının her arkadaşı atak'ta bir sohbet seçeneği alır ve bu telsizden gönderenin çağrı işareti ile başlayan bir mesaj çıkar. Yanıtları, en son kendisine yazan atak cihazına veya hiçbiri yazmadığında her cihaza gider. Pozisyonu olmayan bir refakatçi, bir mesajdan sonra bir gün boyunca 0, 0 'da görünür."
   },
   "telemetryPanel": {
     "title": "Telemetri",

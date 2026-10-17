@@ -3,12 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
 import { TAK_GEOCHAT_TEXT_MAX_LEN } from '@/shared/tak-types';
 
+import { setConnection, useConnectionStore } from '../../stores/connectionStore';
 import { useNodeStore } from '../../stores/nodeStore';
-import { setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
+import { setTakChannels, setTakRadio, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import type { ChatMessage } from '../types';
 import { relayMeshtasticChatToTak } from './takChannelRelay';
+import { resetTakRelayedDirectMessages } from './takDirectMessages';
 import { rememberTakSend, resetTakEchoForTests } from './takEchoGuard';
 
 const ID = 'tak-channel-relay-meshtastic';
@@ -104,6 +106,33 @@ describe('relayMeshtasticChatToTak', () => {
   ])('does not hand on %s', (_label, message) => {
     relayMeshtasticChatToTak(ID, message);
     expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('hands a direct message to this radio on as one, when direct messages are on', () => {
+    const pushDirectMessage = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.tak, 'pushDirectMessage').mockImplementation(pushDirectMessage);
+    resetTakRelayedDirectMessages();
+    setConnection(ID, { myNodeNum: 0x0badf00d });
+    setTakRadio('meshtastic', ID);
+    const dm = chat({ to: 0x0badf00d, payload: 'just you' });
+    relayMeshtasticChatToTak(ID, dm);
+    expect(pushDirectMessage).not.toHaveBeenCalled();
+
+    useTakRelayPrefsStore.getState().setDirectMessages(ID, true);
+    relayMeshtasticChatToTak(ID, dm);
+    relayMeshtasticChatToTak(ID, chat({ to: 0x0badf00d, sender_id: 0x0badf00d }));
+    relayMeshtasticChatToTak(ID, chat({ to: 0x11111111 }));
+    expect(pushDirectMessage).toHaveBeenCalledTimes(1);
+    expect(pushDirectMessage).toHaveBeenCalledWith({
+      protocol: 'meshtastic',
+      nodeId: SENDER,
+      senderCallsign: 'Bob',
+      text: 'just you',
+      timeMs: NOW,
+    });
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    setTakRadio('meshtastic', null);
+    useConnectionStore.setState({ connections: {} });
   });
 
   it('hands on every channel when the radio serves all of them', () => {

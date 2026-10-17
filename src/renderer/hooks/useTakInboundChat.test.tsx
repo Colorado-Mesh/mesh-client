@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { computeChannelIdentityKey } from '@/shared/channelIdentityKey';
 import type { TakChatChannel } from '@/shared/tak-types';
 
-import { getTakChannels, useTakChannelStore } from '../stores/takChannelStore';
+import { getTakChannels, getTakRadio, useTakChannelStore } from '../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
 import {
@@ -15,6 +15,7 @@ import {
 
 /** The mocked IPC call the hook reports the served channels through. */
 const setChatChannels = () => vi.mocked(window.electronAPI.tak.setChatChannels);
+const setDirectMessaging = () => vi.mocked(window.electronAPI.tak.setDirectMessaging);
 
 const PUBLIC = Uint8Array.from('8b3387e9c5cdea6ac9e5edbaa115cd72'.match(/../g) ?? [], (b) =>
   parseInt(b, 16),
@@ -53,6 +54,7 @@ describe('useTakInboundChat', () => {
 
   beforeEach(() => {
     setChatChannels().mockClear();
+    setDirectMessaging().mockClear();
     useTakSinkStore.setState({ active: false });
     useTakRelayPrefsStore.setState({ byIdentity: {} });
     useTakChannelStore.setState({ channelsByIdentity: {} });
@@ -82,6 +84,34 @@ describe('useTakInboundChat', () => {
     expect(getTakChannels('mc').map((c) => c.index)).toEqual([0]);
   });
 
+  it('records the radio TAK uses for each protocol', () => {
+    mount();
+    expect(getTakRadio('meshcore')).toBe('mc');
+    expect(getTakRadio('meshtastic')).toBeUndefined();
+    act(() => {
+      rerender?.({ ...sources(), meshtastic: { identityId: 'mt', channelConfigs: [] } });
+    });
+    expect(getTakRadio('meshtastic')).toBe('mt');
+  });
+
+  it('tells main which radios take direct messages, when a sink starts and when it changes', () => {
+    mount();
+    expect(setDirectMessaging()).not.toHaveBeenCalled();
+    act(() => {
+      useTakSinkStore.setState({ active: true });
+    });
+    expect(setDirectMessaging()).toHaveBeenLastCalledWith([]);
+    act(() => {
+      useTakRelayPrefsStore.getState().setDirectMessages('mc', true);
+    });
+    expect(setDirectMessaging()).toHaveBeenLastCalledWith(['meshcore']);
+    // A change elsewhere in the settings sends nothing new.
+    act(() => {
+      useTakRelayPrefsStore.getState().setChatRemote('mc', OPS.key, true);
+    });
+    expect(setDirectMessaging()).toHaveBeenCalledTimes(2);
+  });
+
   it("binds settings saved by slot to the radio's channels as it reports them", () => {
     useTakRelayPrefsStore.setState({
       byIdentity: {
@@ -92,6 +122,7 @@ describe('useTakInboundChat', () => {
           sendChannels: [],
           remoteChannels: [],
           atakNames: {},
+          directMessages: false,
           pendingSlots: {
             chatChannels: [2],
             sendChannels: [2],

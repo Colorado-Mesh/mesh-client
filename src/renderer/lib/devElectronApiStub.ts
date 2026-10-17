@@ -401,6 +401,8 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       pushChatMessage: async () => {},
       setChatChannels: async () => {},
       retireChatRooms: async () => {},
+      pushDirectMessage: async () => {},
+      setDirectMessaging: async () => {},
       onInboundChat: noopUnsub,
     },
     bleCoexistence: {

@@ -20,6 +20,7 @@ const EMPTY = {
   sendChannels: [],
   remoteChannels: [],
   atakNames: {},
+  directMessages: false,
 };
 
 const PUBLIC = '0123456789abcdef';
@@ -77,6 +78,18 @@ describe('takRelayPrefsStore', () => {
     });
   });
 
+  it('turns direct messages on and off per radio', () => {
+    const { setDirectMessages } = useTakRelayPrefsStore.getState();
+    setDirectMessages('a', true);
+    expect(getTakRelayPrefs('a').directMessages).toBe(true);
+    expect(getTakRelayPrefs('b').directMessages).toBe(false);
+    const before = useTakRelayPrefsStore.getState().byIdentity;
+    setDirectMessages('a', true);
+    expect(useTakRelayPrefsStore.getState().byIdentity).toBe(before);
+    setDirectMessages('a', false);
+    expect(getTakRelayPrefs('a').directMessages).toBe(false);
+  });
+
   it('ignores invalid tracker slots and channel keys', () => {
     const state = useTakRelayPrefsStore.getState();
     state.setTrackerChannel('a', -1, true);
@@ -109,6 +122,7 @@ describe('takRelayPrefsStore', () => {
       sendChannels: [OPS],
       remoteChannels: [PUBLIC],
       atakNames: { [OPS]: 'Ops Net' },
+      directMessages: true,
     };
     await rehydrate({ byIdentity: { a: saved } }, 3);
     expect(getTakRelayPrefs('a')).toEqual(saved);
@@ -125,6 +139,7 @@ describe('takRelayPrefsStore', () => {
             sendChannels: 'all',
             remoteChannels: [PUBLIC],
             atakNames: { [OPS]: ' Ops ', [PUBLIC]: '', [SAR]: 'two\nlines', x: 'X' },
+            directMessages: 'yes',
           },
           b: 'nope',
         },
@@ -139,6 +154,7 @@ describe('takRelayPrefsStore', () => {
         sendChannels: [],
         remoteChannels: [PUBLIC],
         atakNames: { [OPS]: 'Ops' },
+        directMessages: false,
       },
     });
   });

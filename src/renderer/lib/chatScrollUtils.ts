@@ -179,16 +179,14 @@ export function createChatScrollAdjustPredicate(deps: ChatScrollAdjustDeps) {
     _delta: number,
     instance: Pick<
       Virtualizer<HTMLDivElement, Element>,
-      'scrollDirection' | 'isAtEnd' | 'itemSizeCache' | 'scrollOffset' | 'scrollAdjustments'
+      'scrollDirection' | 'isAtEnd' | 'itemSizeCache' | 'scrollOffset'
     >,
   ): boolean => {
     // First measurement of a row above the fold: the estimate→actual delta must be
     // compensated in either direction, or content shifts under the reader while
     // scrolling up into unmeasured history.
-    if (
-      !instance.itemSizeCache.has(item.key) &&
-      item.start < (instance.scrollOffset ?? 0) + instance.scrollAdjustments
-    ) {
+    // scrollOffset alone: TanStack folds corrections into it (scrollAdjustments is always 0).
+    if (!instance.itemSizeCache.has(item.key) && item.start < (instance.scrollOffset ?? 0)) {
       return true;
     }
     if (instance.scrollDirection === 'backward') return false;

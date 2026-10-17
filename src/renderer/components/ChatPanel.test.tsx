@@ -1301,7 +1301,6 @@ describe('ChatPanel scroll pinning', () => {
         isAtEnd: () => boolean;
         itemSizeCache: Map<string, number>;
         scrollOffset: number;
-        scrollAdjustments: number;
       },
     ) => boolean;
     expect(adjust).toBeTypeOf('function');
@@ -1309,7 +1308,6 @@ describe('ChatPanel scroll pinning', () => {
     const measured = {
       itemSizeCache: new Map([['k0', 96]]),
       scrollOffset: 0,
-      scrollAdjustments: 0,
     };
     expect(adjust(row, 0, { scrollDirection: 'forward', isAtEnd: () => true, ...measured })).toBe(
       true,

@@ -8,7 +8,7 @@ import type { IdentityId } from '../lib/types';
 import { setTakChannels, useTakChannelStore } from '../stores/takChannelStore';
 import { getTakRelayPrefs, useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../stores/takSinkStore';
-import TakChannelRelaySection from './TakChannelRelaySection';
+import TakChannelRelaySection, { TakDirectMessagesToggle } from './TakChannelRelaySection';
 
 const ID = 'tak-channel-relay-test';
 const PUBLIC = '0123456789abcdef';
@@ -151,6 +151,35 @@ describe('TakChannelRelaySection', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('turns direct messages on and off for the radio, inside its section', async () => {
+    render(
+      <TakChannelRelaySection
+        identityId={ID}
+        showTrackers={false}
+        title="MeshCore messaging in ATAK"
+        description="Choose channels."
+        emptyText="No channels."
+        anchorId="tak.channelRelay.test"
+      >
+        <TakDirectMessagesToggle identityId={ID} anchorId="tak.directMessages.test" />
+      </TakChannelRelaySection>,
+    );
+    const toggle = screen.getByLabelText('Direct messages');
+    expect(toggle).not.toBeChecked();
+    expect(toggle).toHaveAccessibleDescription(/last wrote to it/);
+    await userEvent.click(toggle);
+    expect(getTakRelayPrefs(ID).directMessages).toBe(true);
+    expect(toggle).toBeChecked();
+    await userEvent.click(toggle);
+    expect(getTakRelayPrefs(ID).directMessages).toBe(false);
+  });
+
+  it('shows no direct message switch without a radio', () => {
+    const { container } = render(
+      <TakDirectMessagesToggle identityId={null} anchorId="tak.directMessages.test" />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
   it("keeps a channel's settings with the channel when another takes its slot", async () => {
     const user = userEvent.setup();
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');

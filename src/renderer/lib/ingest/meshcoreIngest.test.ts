@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
-import { getTakChannels, setTakChannels, useTakChannelStore } from '../../stores/takChannelStore';
+import {
+  getTakChannels,
+  setTakChannels,
+  setTakRadio,
+  useTakChannelStore,
+} from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import { clearTakTrackerFixes, useTakTrackerStore } from '../../stores/takTrackerStore';
@@ -16,6 +21,7 @@ import {
 import { getNodeStatus } from '../nodeStatus';
 import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
 import { messageRecordToChatMessage } from '../storeRecordAdapters';
+import { resetTakRelayedDirectMessages } from '../tak/takDirectMessages';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -788,5 +794,48 @@ describe('meshcore ingest TAK channel relay', () => {
     serveTakChannel(TAK_ID, 4, 'fedcba9876543210');
     channelMessage('Bob: on scene');
     expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  describe('direct messages', () => {
+    const pushDirectMessage = vi.fn().mockResolvedValue(undefined);
+    const PEER = 0xabcd;
+
+    /** A DM as PacketRouter stores it before the ingest listener runs. */
+    function directMessage(payload: string, timestamp = 1_700_000_500_000) {
+      const id = `${PEER}:${timestamp / 1000}`;
+      const record = { id, from: PEER, to: 0, payload, channelIndex: -1, timestamp };
+      upsertMessage(TAK_ID, { ...record, senderName: 'Alice' });
+      meshcoreIngestHandleTextMessage(TAK_ID, { type: 'text_message', payload: record });
+    }
+
+    beforeEach(() => {
+      vi.spyOn(window.electronAPI.tak, 'pushDirectMessage').mockImplementation(pushDirectMessage);
+      pushDirectMessage.mockClear();
+      resetTakRelayedDirectMessages();
+      setTakRadio('meshcore', TAK_ID);
+    });
+
+    afterEach(() => {
+      setTakRadio('meshcore', null);
+    });
+
+    it('hands a heard DM to TAK clients when direct messages are on, once', () => {
+      directMessage('meet at the gate');
+      expect(pushDirectMessage).not.toHaveBeenCalled();
+
+      useTakRelayPrefsStore.getState().setDirectMessages(TAK_ID, true);
+      directMessage('meet at the gate', 1_700_000_600_000);
+      // The sender did not hear the ack and sent it again.
+      directMessage('meet at the gate', 1_700_000_600_000);
+      expect(pushDirectMessage).toHaveBeenCalledTimes(1);
+      expect(pushDirectMessage).toHaveBeenCalledWith({
+        protocol: 'meshcore',
+        nodeId: PEER,
+        senderCallsign: 'Alice',
+        text: 'meet at the gate',
+        timeMs: 1_700_000_600_000,
+      });
+      expect(pushChatMessage).not.toHaveBeenCalled();
+    });
   });
 });

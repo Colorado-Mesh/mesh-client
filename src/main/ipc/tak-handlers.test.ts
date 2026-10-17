@@ -561,6 +561,58 @@ describe('tak:setChatChannels', () => {
   });
 });
 
+describe('direct message handlers', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  async function register(manager: unknown, channel: string): Promise<Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return handle.mock.calls.find((c) => c[0] === channel)?.[1] as Handler;
+  }
+
+  const DM = { protocol: 'meshcore', nodeId: 123, senderCallsign: 'Alice', text: 'hi', timeMs: 1 };
+
+  it('validates a heard direct message and forwards it while a sink is active', async () => {
+    const sendDirectMessage = vi.fn();
+    const handler = await register(
+      { hasActiveSink: () => true, sendDirectMessage },
+      'tak:pushDirectMessage',
+    );
+    handler({}, DM);
+    expect(sendDirectMessage).toHaveBeenCalledWith(DM);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:pushDirectMessage');
+    expect(() => handler({}, { ...DM, nodeId: -1 })).toThrow(/tak:pushDirectMessage/);
+    expect(sendDirectMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops heard direct messages while no sink is active', async () => {
+    const sendDirectMessage = vi.fn();
+    (await register({ hasActiveSink: () => false, sendDirectMessage }, 'tak:pushDirectMessage'))(
+      {},
+      DM,
+    );
+    (await register(null, 'tak:pushDirectMessage'))({}, DM);
+    expect(sendDirectMessage).not.toHaveBeenCalled();
+  });
+
+  it('hands the radios with direct messages on to the manager, once it exists', async () => {
+    const setDirectMessaging = vi.fn();
+    const handler = await register({ setDirectMessaging }, 'tak:setDirectMessaging');
+    handler({}, ['meshtastic']);
+    expect(setDirectMessaging).toHaveBeenCalledWith(['meshtastic']);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setDirectMessaging');
+    expect(() => handler({}, ['lora'])).toThrow(/tak:setDirectMessaging/);
+    expect((await register(null, 'tak:setDirectMessaging'))({}, [])).toBeUndefined();
+  });
+});
+
 describe('tak:retireChatRooms', () => {
   type Handler = (event: unknown, arg?: unknown) => unknown;
 

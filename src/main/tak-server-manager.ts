@@ -13,6 +13,8 @@ import type {
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
+  TAKDirectMessage,
+  TakDmProtocol,
   TAKGeochatMessage,
   TAKInboundChat,
   TakRelayExtras,
@@ -22,8 +24,9 @@ import type {
   TAKSettings,
   TakStyleSettings,
 } from '../shared/tak-types';
-import { TAK_CHAT_HELD_MAX } from '../shared/tak-types';
+import { isTakDmProtocol, TAK_CHAT_HELD_MAX, TAK_DM_PROTOCOLS } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
+import { advertisedNodeKind } from './tak/advertised-style';
 import {
   type CertBundle,
   loadOrGenerateCerts,
@@ -33,10 +36,12 @@ import {
 import { TakContactCache } from './tak/contact-cache';
 import {
   COT_STALE_MS,
+  cotCallsignFor,
   cotDeleteEvent,
   cotPongEvent,
   cotUidFor,
   meshNodeToCot,
+  parseMeshNodeUid,
 } from './tak/cot-converter';
 import {
   CotFramer,
@@ -50,11 +55,15 @@ import { generateDataPackage } from './tak/data-package';
 import {
   buildChannelChatCot,
   buildChannelContactCot,
+  buildDirectChatCot,
+  buildDirectContactCot,
   buildGeochatCot,
   CHANNEL_NOTE_SENDER,
   type ChannelChatLine,
   channelContactUid,
   CHAT_ROOM_CONTACT_STALE_MS,
+  DIRECT_CONTACT_TTL_MS,
+  type DirectChatLine,
   type GeochatRecipient,
   retiredRoomContactUid,
 } from './tak/geochat-cot';
@@ -99,12 +108,46 @@ const TAK_CHAT_HELD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Written into a receive-only channel's conversation when a client messages it. */
 const RECEIVE_ONLY_NOTE =
   'Not sent: this channel is receive only. Turn on "ATAK can send" for it in mesh-client.';
+/** Written into a companion's conversation when its radio has direct messages off. */
+const DM_OFF_NOTE =
+  'Not sent: direct messages are off for this radio. Turn on "Direct messages" for it in mesh-client.';
+/** Written into a conversation with a node this app cannot send a direct message to. */
+const NOT_REACHABLE_NOTE = 'Not sent: not a mesh contact this radio can message.';
+/** Companions remembered with the device that last wrote to them, and with a 0, 0 contact. */
+const DIRECT_PEERS_MAX = 512;
 
-/** A heard channel message waiting for the first TAK client to identify itself. */
-interface HeldChannelChat {
-  channelKey: string;
-  line: ChannelChatLine;
-  heldAtMs: number;
+/**
+ * A heard message waiting for a TAK client to identify itself: a channel line for the first one
+ * that does, or a direct message for the device the companion's last DM came from (any device
+ * when none has written to it).
+ */
+type HeldChat =
+  | { kind: 'channel'; channelKey: string; line: ChannelChatLine; heldAtMs: number }
+  | {
+      kind: 'direct';
+      uid: string;
+      line: DirectChatLine;
+      recipientUid?: string;
+      heldAtMs: number;
+    };
+
+/** A companion a direct message has passed with, either way, in the last day. */
+interface DirectContact {
+  uid: string;
+  protocol: TakDmProtocol;
+  nodeId: number;
+  callsign: string;
+  lastDmMs: number;
+}
+
+/** Insert or move `key` to the newest end of a map, dropping the oldest entries past `max`. */
+function setNewest<V>(map: Map<string, V>, key: string, value: V, max: number): void {
+  map.delete(key);
+  map.set(key, value);
+  for (const old of map.keys()) {
+    if (map.size <= max) return;
+    map.delete(old);
+  }
 }
 
 export class TakServerManager extends EventEmitter {
@@ -130,8 +173,14 @@ export class TakServerManager extends EventEmitter {
   private retiredRoomUids = new Set<string>();
   /** Channels served to TAK clients, keyed by the uid of the contact that stands for each. */
   private chatChannels = new Map<string, TakChatChannel>();
-  /** Heard channel messages held while no local client could be addressed, oldest first. */
-  private heldChat: HeldChannelChat[] = [];
+  /** Heard messages held while no local client could be addressed, oldest first. */
+  private heldChat: HeldChat[] = [];
+  /** Radios whose companions TAK clients may message. */
+  private dmProtocols = new Set<TakDmProtocol>();
+  /** Companions a direct message passed with in the last day, by uid, oldest first. */
+  private directContacts = new Map<string, DirectContact>();
+  /** Per companion uid, the uid of the TAK device that last sent it a direct message. */
+  private lastWriters = new Map<string, string>();
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
@@ -195,7 +244,7 @@ export class TakServerManager extends EventEmitter {
       this.emit('remote-status', { ...status });
     });
     remote.on('connected', () => {
-      this.forEachFreshCot((cot) => remote.write(cot));
+      this.forEachFreshCot((cot) => remote.write(cot), false);
     });
     remote.on('cot', (contact: TAKContact) => {
       if (this.remote === remote) this.contacts.upsert(contact);
@@ -321,8 +370,7 @@ export class TakServerManager extends EventEmitter {
     if (merged.latitude == null || merged.longitude == null) return;
     if (!this.hasConnectedSink()) return;
 
-    const cot = this.toCot(merged);
-    if (cot) this.broadcast(cot);
+    this.broadcastNode(merged);
   }
 
   /**
@@ -347,18 +395,75 @@ export class TakServerManager extends EventEmitter {
       this.remote.write(buildGeochatCot(room));
     }
     if (!this._status.running) return;
-    if (!this.writeChannelChat(channel, line)) this.holdChat(msg.channelKey, line);
+    if (!this.writeChannelChat(channel, line)) {
+      this.holdChat({ kind: 'channel', channelKey: msg.channelKey, line, heldAtMs: Date.now() });
+    }
   }
 
-  /** Keep a message for the next client to identify itself, dropping the oldest past the cap. */
-  private holdChat(channelKey: string, line: ChannelChatLine): void {
-    this.heldChat.push({ channelKey, line, heldAtMs: Date.now() });
+  /**
+   * Deliver one direct message heard from a companion: to the device that last wrote to it, or
+   * to every identified local client when none has. Held when nobody it is for is connected.
+   * Never sent to the remote server.
+   */
+  sendDirectMessage(msg: TAKDirectMessage): void {
+    if (!this._status.running || !this.dmProtocols.has(msg.protocol)) return;
+    // A repeater's or room server's reply to a login or command is not a conversation.
+    const node = this.cachedNodeFor(msg.protocol, msg.nodeId);
+    if (node && advertisedNodeKind(node, msg.protocol) !== 'companion') return;
+    const now = Date.now();
+    const contact = this.touchDirectContact(msg.protocol, msg.nodeId, msg.senderCallsign, now);
+    const line: DirectChatLine = { text: msg.text, timeMs: msg.timeMs };
+    const recipientUid = this.lastWriters.get(contact.uid);
+    if (!this.writeDirectChat(contact, line, recipientUid)) {
+      this.holdChat({ kind: 'direct', uid: contact.uid, line, recipientUid, heldAtMs: now });
+    }
+  }
+
+  /**
+   * Turn direct messages from TAK clients on or off per radio. A radio turned off loses its
+   * companions' 0, 0 contacts and held direct messages; markers of a radio that changed are
+   * sent again, so they gain or lose their chat endpoint at once.
+   */
+  setDirectMessaging(protocols: TakDmProtocol[]): void {
+    const next = new Set(protocols);
+    const changed: readonly string[] = TAK_DM_PROTOCOLS.filter(
+      (p) => next.has(p) !== this.dmProtocols.has(p),
+    );
+    if (changed.length === 0) return;
+    const now = Date.now();
+    for (const contact of [...this.directContacts.values()]) {
+      if (next.has(contact.protocol)) continue;
+      this.directContacts.delete(contact.uid);
+      if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
+        this.writeToClients(cotDeleteEvent(contact.uid, now));
+      }
+    }
+    this.heldChat = this.heldChat.filter(
+      (h) => h.kind === 'channel' || this.directContacts.has(h.uid),
+    );
+    this.dmProtocols = next;
+    const cutoff = now - COT_STALE_MS;
+    for (const node of this.nodeCache.values()) {
+      if (node.cachedAtMs < cutoff || !changed.includes(node.protocol)) continue;
+      const cot = this.toCot(node, true);
+      if (cot) this.writeToClients(cot);
+    }
+    this.scheduleChatRoomAnnouncements();
+  }
+
+  /** Keep a message for a client yet to identify itself, dropping the oldest past the cap. */
+  private holdChat(item: HeldChat): void {
+    this.heldChat.push(item);
     if (this.heldChat.length > TAK_CHAT_HELD_MAX) {
       this.heldChat.splice(0, this.heldChat.length - TAK_CHAT_HELD_MAX);
     }
   }
 
-  /** Hand the held messages, oldest first, to a client that has just identified itself. */
+  /**
+   * Hand a client that has just identified itself the held messages for it, oldest first:
+   * every channel line, and each direct message for it or for no device in particular. Direct
+   * messages for another device stay held for that one.
+   */
   private flushHeldChat(id: string, client: ConnectedClient): void {
     if (this.heldChat.length === 0) return;
     const recipient = this.recipientFor(client);
@@ -368,10 +473,110 @@ export class TakServerManager extends EventEmitter {
     const now = Date.now();
     for (const item of held) {
       if (now - item.heldAtMs > TAK_CHAT_HELD_MAX_AGE_MS) continue;
-      const channel = this.chatChannels.get(channelContactUid(item.channelKey));
-      if (!channel) continue;
-      this.writeToClient(id, client, buildChannelChatCot(channel, item.line, recipient, now));
+      if (item.kind === 'channel') {
+        const channel = this.chatChannels.get(channelContactUid(item.channelKey));
+        if (channel) {
+          this.writeToClient(id, client, buildChannelChatCot(channel, item.line, recipient, now));
+        }
+        continue;
+      }
+      if (item.recipientUid !== undefined && item.recipientUid !== recipient.uid) {
+        this.heldChat.push(item);
+        continue;
+      }
+      const contact = this.directContacts.get(item.uid);
+      if (!contact) continue;
+      if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
+        this.writeToClient(id, client, buildDirectContactCot(contact, contact.lastDmMs, now));
+      }
+      this.writeToClient(id, client, buildDirectChatCot(contact, item.line, recipient, now));
     }
+  }
+
+  /** The cached entry for a mesh node, if one has been heard. */
+  private cachedNodeFor(protocol: MeshProtocol, nodeId: number): CachedTakNode | undefined {
+    return this.nodeCache.get(`${protocol}:${nodeId}`);
+  }
+
+  /**
+   * Whether TAK clients may message this node: a companion, on a radio with direct messages on,
+   * that the renderer can send a DM to or that a DM has passed with.
+   */
+  private isChatReachable(node: CachedTakNode): boolean {
+    if (node.uid !== undefined) return false;
+    if (!isTakDmProtocol(node.protocol) || !this.dmProtocols.has(node.protocol)) return false;
+    if (advertisedNodeKind(node, node.protocol) !== 'companion') return false;
+    return node.chatReachable === true || this.directContacts.has(cotUidFor(node, node.protocol));
+  }
+
+  /** Whether local clients show the node's own marker now, standing in for its contact. */
+  private hasFreshMarker(protocol: MeshProtocol, nodeId: number, nowMs: number): boolean {
+    const node = this.cachedNodeFor(protocol, nodeId);
+    return (
+      node !== undefined && node.cachedAtMs >= nowMs - COT_STALE_MS && !!this.toCot(node, true)
+    );
+  }
+
+  /** The callsign ATAK shows for a companion: its marker's, or else the name it was heard by. */
+  private directCallsign(protocol: MeshProtocol, nodeId: number, fallback: string): string {
+    const node = this.cachedNodeFor(protocol, nodeId);
+    if (!node) return fallback;
+    return (
+      resolveTakStyle(this.styleSettings, node, protocol)?.callsign ||
+      cotCallsignFor(node, protocol)
+    );
+  }
+
+  /**
+   * Record that a direct message passed with a companion now. A companion with no marker shown
+   * gets (or refreshes) its 0, 0 contact; one whose marker had no endpoint gets it again with
+   * one.
+   */
+  private touchDirectContact(
+    protocol: TakDmProtocol,
+    nodeId: number,
+    heardCallsign: string,
+    nowMs: number,
+  ): DirectContact {
+    const uid = cotUidFor({ node_id: nodeId }, protocol);
+    const isNew = !this.directContacts.has(uid);
+    const contact: DirectContact = {
+      uid,
+      protocol,
+      nodeId,
+      callsign: this.directCallsign(protocol, nodeId, heardCallsign),
+      lastDmMs: nowMs,
+    };
+    setNewest(this.directContacts, uid, contact, DIRECT_PEERS_MAX);
+    const node = this.cachedNodeFor(protocol, nodeId);
+    if (!this.hasFreshMarker(protocol, nodeId, nowMs)) {
+      this.writeToClients(buildDirectContactCot(contact, nowMs, nowMs));
+    } else if (isNew && node && node.chatReachable !== true) {
+      const cot = this.toCot(node, true);
+      if (cot) this.writeToClients(cot);
+    }
+    if (isNew) this.scheduleChatRoomAnnouncements();
+    return contact;
+  }
+
+  /**
+   * Deliver one direct message from `contact` to the identified local client whose uid is
+   * `recipientUid`, or to every identified client when it is unset. Returns whether any got it.
+   */
+  private writeDirectChat(
+    contact: DirectContact,
+    line: DirectChatLine,
+    recipientUid: string | undefined,
+  ): boolean {
+    const now = Date.now();
+    let delivered = false;
+    for (const [id, client] of this.clients) {
+      const recipient = this.recipientFor(client);
+      if (!recipient || (recipientUid !== undefined && recipient.uid !== recipientUid)) continue;
+      this.writeToClient(id, client, buildDirectChatCot(contact, line, recipient, now));
+      delivered = true;
+    }
+    return delivered;
   }
 
   /**
@@ -391,7 +596,9 @@ export class TakServerManager extends EventEmitter {
       this.writeToClients(buildChannelContactCot(channel, now));
     }
     this.chatChannels = next;
-    this.heldChat = this.heldChat.filter((h) => next.has(channelContactUid(h.channelKey)));
+    this.heldChat = this.heldChat.filter(
+      (h) => h.kind === 'direct' || next.has(channelContactUid(h.channelKey)),
+    );
     this.scheduleChatRoomAnnouncements();
   }
 
@@ -411,23 +618,44 @@ export class TakServerManager extends EventEmitter {
     this.retiredRoomUids = next;
   }
 
-  /** Re-announce channel contacts well inside their stale time so they do not expire in ATAK. */
+  /**
+   * Re-announce channel and companion contacts well inside their stale time so they do not
+   * expire in ATAK. Runs while there is any contact to announce.
+   */
   private scheduleChatRoomAnnouncements(): void {
-    if (this.chatRoomAnnounceTimer) clearInterval(this.chatRoomAnnounceTimer);
-    this.chatRoomAnnounceTimer = null;
-    if (this.chatChannels.size === 0) return;
+    const needed = this.chatChannels.size > 0 || this.directContacts.size > 0;
+    if (needed === (this.chatRoomAnnounceTimer !== null)) return;
+    if (this.chatRoomAnnounceTimer) {
+      clearInterval(this.chatRoomAnnounceTimer);
+      this.chatRoomAnnounceTimer = null;
+      return;
+    }
     this.chatRoomAnnounceTimer = setInterval(() => {
       this.forEachChatRoomContact((cot) => {
         this.writeToClients(cot);
       });
+      this.scheduleChatRoomAnnouncements();
     }, CHAT_ROOM_CONTACT_STALE_MS / 4);
     this.chatRoomAnnounceTimer.unref();
   }
 
-  /** Build the contact event for every served channel and pass each to `send`. */
+  /**
+   * Build the contact event for every served channel, and for every companion a direct message
+   * passed with in the last day that has no marker shown, and pass each to `send`. Companions
+   * past the day are forgotten; their contact has gone stale in ATAK by then.
+   */
   private forEachChatRoomContact(send: (cot: string) => void): void {
     const now = Date.now();
     for (const channel of this.chatChannels.values()) send(buildChannelContactCot(channel, now));
+    for (const contact of [...this.directContacts.values()]) {
+      if (now - contact.lastDmMs >= DIRECT_CONTACT_TTL_MS) {
+        this.directContacts.delete(contact.uid);
+        continue;
+      }
+      if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
+        send(buildDirectContactCot(contact, contact.lastDmMs, now));
+      }
+    }
   }
 
   /** The uid and callsign a client reported for itself, once it has reported both. */
@@ -474,10 +702,8 @@ export class TakServerManager extends EventEmitter {
     const cutoff = Date.now() - COT_STALE_MS;
     for (const node of this.nodeCache.values()) {
       if (node.cachedAtMs < cutoff) continue;
-      const cot = this.toCot(node);
-      if (cot) {
-        this.broadcast(cot);
-      } else if (
+      if (this.broadcastNode(node)) continue;
+      if (
         node.latitude != null &&
         node.longitude != null &&
         resolveTakStyle(previous, node, node.protocol)
@@ -497,6 +723,19 @@ export class TakServerManager extends EventEmitter {
     this.writeToClients(cot);
   }
 
+  /**
+   * Send a node's marker to every sink: local clients get its chat endpoint when it has one,
+   * the remote server never does, since direct messages are not relayed there. Returns false
+   * when the node has no marker to send.
+   */
+  private broadcastNode(node: CachedTakNode): boolean {
+    const local = this.toCot(node, true);
+    if (!local) return false;
+    if (this.remote?.isConnected()) this.remote.write(this.toCot(node, false) ?? local);
+    this.writeToClients(local);
+    return true;
+  }
+
   /** Write one CoT event to every local client. */
   private writeToClients(cot: string): void {
     for (const [id, client] of this.clients) this.writeToClient(id, client, cot);
@@ -511,13 +750,17 @@ export class TakServerManager extends EventEmitter {
     }
   }
 
-  /** Styled CoT for a cached node, or null when it has no position or filters exclude it. */
-  private toCot(node: CachedTakNode): string | null {
+  /**
+   * Styled CoT for a cached node, or null when it has no position or filters exclude it. For
+   * `local` clients a companion they may message carries a chat endpoint.
+   */
+  private toCot(node: CachedTakNode, local: boolean): string | null {
     const resolved = resolveTakStyle(this.styleSettings, node, node.protocol);
     if (!resolved) return null;
     return meshNodeToCot(node, node.protocol, {
       style: resolved.style,
       callsign: resolved.callsign,
+      chatEndpoint: local && this.isChatReachable(node),
     });
   }
 
@@ -526,11 +769,11 @@ export class TakServerManager extends EventEmitter {
    * connected. Older entries would already have gone stale on a client that was connected all
    * along, so sending them now would present old positions as current.
    */
-  private forEachFreshCot(send: (cot: string) => void): void {
+  private forEachFreshCot(send: (cot: string) => void, local: boolean): void {
     const cutoff = Date.now() - COT_STALE_MS;
     for (const node of this.nodeCache.values()) {
       if (node.cachedAtMs < cutoff) continue;
-      const cot = this.toCot(node);
+      const cot = this.toCot(node, local);
       if (cot) send(cot);
     }
   }
@@ -694,9 +937,10 @@ export class TakServerManager extends EventEmitter {
   /**
    * A GeoChat message from a local client. One to a served channel's contact goes to the other
    * local clients from that contact and to the renderer, which sends it on the channel; a
-   * receive-only channel gets a note back instead. Any other message is passed on to the other
-   * local clients, as a TAK server does. Rebuilt from the parsed fields, never forwarded raw,
-   * and only under the connection's own uid and callsign.
+   * receive-only channel gets a note back instead. One to a mesh node's contact is a direct
+   * message (see handleClientDirectChat). Any other message is passed on to the other local
+   * clients, as a TAK server does. Rebuilt from the parsed fields, never forwarded raw, and
+   * only under the connection's own uid and callsign.
    */
   private handleClientChat(
     id: string,
@@ -716,6 +960,11 @@ export class TakServerManager extends EventEmitter {
     }
     // The callsign from the connection's own position report wins over the one in the message.
     const senderCallsign = client.info.callsign || chat.senderCallsign || chat.senderUid;
+    const node = chat.roomId ? parseMeshNodeUid(chat.roomId) : null;
+    if (node) {
+      this.handleClientDirectChat(id, client, chat, node, senderCallsign, nowMs);
+      return;
+    }
     // A message to a channel's contact is for that channel, whatever name the client filed it
     // under. Anything else is GeoChat between TAK clients, passed on as a TAK server does.
     const channel = chat.roomId ? this.chatChannels.get(chat.roomId) : undefined;
@@ -747,7 +996,55 @@ export class TakServerManager extends EventEmitter {
     const line: ChannelChatLine = { senderCallsign, text: chat.text, timeMs: nowMs };
     this.writeChannelChat(channel, line, id, chat.messageId);
     const inbound: TAKInboundChat = {
-      channelKey: channel.key,
+      target: { kind: 'channel', channelKey: channel.key },
+      senderCallsign,
+      text: chat.text,
+      clientId: id,
+      timeMs: nowMs,
+    };
+    this.emit('client-chat', inbound);
+  }
+
+  /**
+   * A local client's message to a mesh node's contact. It goes to the renderer, which sends it
+   * as a direct message, when the node is a companion TAK clients may message; the device is
+   * then the one the companion's replies go to. Otherwise a note in the conversation says why
+   * it was not sent. It is never passed on to other clients.
+   */
+  private handleClientDirectChat(
+    id: string,
+    client: ConnectedClient,
+    chat: CotGeochat,
+    target: { protocol: MeshProtocol; nodeId: number },
+    senderCallsign: string,
+    nowMs: number,
+  ): void {
+    const { protocol, nodeId } = target;
+    const uid = cotUidFor({ node_id: nodeId }, protocol);
+    const note = (text: string): void => {
+      const recipient = this.recipientFor(client);
+      if (!recipient) return;
+      const contact = { uid, callsign: this.directCallsign(protocol, nodeId, chat.room) };
+      const line = { text: `${CHANNEL_NOTE_SENDER}: ${text}`, timeMs: nowMs };
+      this.writeToClient(id, client, buildDirectChatCot(contact, line, recipient, nowMs));
+    };
+    if (!isTakDmProtocol(protocol)) {
+      note(NOT_REACHABLE_NOTE);
+      return;
+    }
+    if (!this.dmProtocols.has(protocol)) {
+      note(DM_OFF_NOTE);
+      return;
+    }
+    const node = this.cachedNodeFor(protocol, nodeId);
+    if (!this.directContacts.has(uid) && !(node && this.isChatReachable(node))) {
+      note(NOT_REACHABLE_NOTE);
+      return;
+    }
+    if (client.selfUid) setNewest(this.lastWriters, uid, client.selfUid, DIRECT_PEERS_MAX);
+    this.touchDirectContact(protocol, nodeId, chat.room, nowMs);
+    const inbound: TAKInboundChat = {
+      target: { kind: 'direct', protocol, nodeId },
       senderCallsign,
       text: chat.text,
       clientId: id,
@@ -788,7 +1085,7 @@ export class TakServerManager extends EventEmitter {
       } catch {
         // catch-no-log-ok: socket may close between connection and flush; not actionable
       }
-    });
+    }, true);
     this.forEachChatRoomContact((cot) => {
       this.writeToClient(id, client, cot);
     });

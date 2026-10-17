@@ -98,6 +98,7 @@ describe('served channels', () => {
     sendChannels: [opsKey],
     remoteChannels: [publicKey],
     atakNames: {},
+    directMessages: false,
   };
 
   it('serves nothing when off, everything when all, and the picked ones when selected', () => {

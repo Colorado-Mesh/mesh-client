@@ -126,3 +126,14 @@ describe('parseTakNodeUpdate', () => {
     expect(update?.long_name).toHaveLength(256);
   });
 });
+
+describe('parseTakNodeUpdate chatReachable', () => {
+  it('keeps a boolean and ignores anything else', () => {
+    const base = { node_id: 1, protocol: 'meshcore' };
+    expect(parseTakNodeUpdate({ ...base, chatReachable: true })?.chatReachable).toBe(true);
+    expect(parseTakNodeUpdate({ ...base, chatReachable: false })?.chatReachable).toBe(false);
+    expect(parseTakNodeUpdate({ ...base, chatReachable: 'yes' })).not.toHaveProperty(
+      'chatReachable',
+    );
+  });
+});

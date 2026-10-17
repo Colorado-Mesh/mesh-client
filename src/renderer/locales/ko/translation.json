@@ -5803,7 +5803,9 @@
     "channelSendFor": "ATAK 장치가 {{channel}} (으) 로 전송되도록 합니다.",
     "channelRemote": "원격 서버",
     "channelRemoteFor": "원격 TAK 서버로 {{channel}} 스트리밍",
-    "channelTrackersFor": "{{channel}} 의 트래커 보완 사항"
+    "channelTrackersFor": "{{channel}} 의 트래커 보완 사항",
+    "directMessages": "다이렉트 메시지",
+    "directMessagesHint": "ATAK 장치가 이 라디오의 동반자에게 메시지를 보냅니다. 이 라디오 캔 메시지의 각 동반자는 ATAK의 채팅 옵션을 받게 되며, 이 라디오에서 발신자의 콜사인이 붙은 메시지가 나옵니다. 응답은 마지막으로 쓴 ATAK 장치 또는 아무도 없는 모든 장치로 전송됩니다. 포지션이 없는 동반자는 메시지 후 하루 동안 0, 0으로 나타납니다."
   },
   "telemetryPanel": {
     "title": "원격 측정",
