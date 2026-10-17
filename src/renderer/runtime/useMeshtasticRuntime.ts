@@ -156,6 +156,7 @@ import {
   MESHTASTIC_PRIMARY_CHANNEL,
   toMeshtasticChannelNumber,
 } from '../lib/meshtastic/meshtasticChannelNumber';
+import { resolveMeshtasticModuleConfigs } from '../lib/meshtastic/meshtasticConfigApply';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
@@ -614,6 +615,9 @@ export function useMeshtasticRuntime() {
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
+  /** Survives transient deviceStore clears / partial configure so Modules UI keeps hydrated keys. */
+  const lastKnownModuleConfigsRef = useRef<Record<string, unknown>>({});
+  const lastKnownModuleConfigsIdentityRef = useRef<string | null>(null);
   const mqttClientProxyBridgeRef = useRef<MeshtasticMqttClientProxyBridge | null>(null);
   const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
   const lastRfDisconnectAtRef = useRef<number | null>(null);
@@ -4785,13 +4789,44 @@ export function useMeshtasticRuntime() {
     schedulePushMqttChannelKeys();
   }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
-  const resolvedModuleConfigs = useMemo(() => {
-    if (!meshtasticIdentityId) return moduleConfigs;
-    if (meshtasticDeviceRecord && Object.keys(meshtasticDeviceRecord.moduleConfigs).length > 0) {
-      return meshtasticDeviceRecord.moduleConfigs;
+  const resolvedModuleConfigMaps = useMemo(() => {
+    const fromStore = meshtasticDeviceRecord?.moduleConfigs ?? {};
+    const fromLocal = moduleConfigs;
+    const cacheMatchesIdentity =
+      meshtasticIdentityId != null &&
+      lastKnownModuleConfigsIdentityRef.current === meshtasticIdentityId;
+    const lastKnown = cacheMatchesIdentity ? lastKnownModuleConfigsRef.current : {};
+    if (!meshtasticIdentityId) {
+      return resolveMeshtasticModuleConfigs({
+        fromStore: {},
+        fromLocal,
+        lastKnown: {},
+      });
     }
-    return moduleConfigs;
+    return resolveMeshtasticModuleConfigs({
+      fromStore,
+      fromLocal,
+      lastKnown,
+    });
   }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
+
+  // Cache display map post-commit — never mutate the refs inside the useMemo above.
+  useEffect(() => {
+    if (!meshtasticIdentityId) return;
+    if (
+      lastKnownModuleConfigsIdentityRef.current != null &&
+      lastKnownModuleConfigsIdentityRef.current !== meshtasticIdentityId
+    ) {
+      lastKnownModuleConfigsRef.current = {};
+    }
+    lastKnownModuleConfigsIdentityRef.current = meshtasticIdentityId;
+    if (Object.keys(resolvedModuleConfigMaps.display).length > 0) {
+      lastKnownModuleConfigsRef.current = resolvedModuleConfigMaps.display;
+    }
+  }, [meshtasticIdentityId, resolvedModuleConfigMaps]);
+
+  const resolvedModuleConfigs = resolvedModuleConfigMaps.display;
+  const resolvedLiveModuleConfigs = resolvedModuleConfigMaps.live;
 
   const resolvedMeshtasticConfigSlices = useMemo(() => {
     if (!meshtasticIdentityId) return {};
@@ -4942,6 +4977,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       moduleConfigs: resolvedModuleConfigs,
+      liveModuleConfigs: resolvedLiveModuleConfigs,
       meshtasticConfigSlices: resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,
@@ -5052,6 +5088,7 @@ export function useMeshtasticRuntime() {
       sendWaypoint,
       deleteWaypoint,
       resolvedModuleConfigs,
+      resolvedLiveModuleConfigs,
       resolvedMeshtasticConfigSlices,
       setModuleConfig,
       setCannedMessages,

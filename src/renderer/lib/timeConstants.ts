@@ -260,6 +260,12 @@ export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECO
 export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 120 * MS_PER_SECOND;
 
 /**
+ * ModulePanel setModuleConfig + commitEditSettings can hang when the TCP/BLE link drops
+ * mid-admin without rejecting the SDK promise — unlock Apply after this budget.
+ */
+export const MESHTASTIC_MODULE_APPLY_TIMEOUT_MS = 45 * MS_PER_SECOND;
+
+/**
  * Coalesce `mqtt.updateChannelKeys` while RF channel configs stream in one-by-one.
  * Main-process topic→index is also merge-safe; this cuts IPC churn during configure.
  */

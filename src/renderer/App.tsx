@@ -2599,6 +2599,10 @@ function AppContent() {
   const effectiveModuleConfigs = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.moduleConfigs ?? {})
     : meshtasticRuntime.moduleConfigs;
+  /** Live slices only (no display/last-known fallback) for Apply readiness and RadioPanel. */
+  const effectiveLiveModuleConfigs = isRemoteConfigureTarget
+    ? effectiveModuleConfigs
+    : (meshtasticRuntime.liveModuleConfigs ?? {});
   const effectiveMeshtasticConfigSlices = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.configSlices ?? {})
     : meshtasticRuntime.meshtasticConfigSlices;
@@ -5127,7 +5131,7 @@ function AppContent() {
                                     }
                                     moduleConfigs={
                                       capabilities.hasChannelConfig
-                                        ? effectiveModuleConfigs
+                                        ? effectiveLiveModuleConfigs
                                         : undefined
                                     }
                                     onSetModuleConfig={
@@ -5390,6 +5394,7 @@ function AppContent() {
                               <ModulePanel
                                 configTarget={configTarget}
                                 moduleConfigs={effectiveModuleConfigs}
+                                liveModuleConfigs={effectiveLiveModuleConfigs}
                                 channelConfigs={effectiveChannelConfigs}
                                 meshBeacons={
                                   isRemoteConfigureTarget
