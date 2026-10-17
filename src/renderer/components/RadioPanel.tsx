@@ -32,6 +32,10 @@ import {
   stripMeshtasticProtobufMeta,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import {
+  isMeshtasticConfigApplyTimeout,
+  withMeshtasticConfigApplyTimeout,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApplyTimeout';
+import {
   DEVICE_EXTRA_FIELDS,
   DISPLAY_EXTRA_FIELDS,
   LORA_EXTRA_FIELDS,
@@ -1233,6 +1237,14 @@ export default function RadioPanel({
 
   // ─── Shared state ─────────────────────────────────────────────
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  const applyGenerationRef = useRef(0);
+  // Unlock Apply when the radio drops mid-setConfig/commit (SDK promise may never settle).
+  useEffect(() => {
+    if (isConnected) return;
+    if (applyingSection == null) return;
+    applyGenerationRef.current += 1;
+    setApplyingSection(null);
+  }, [isConnected, applyingSection]);
   /** Current status plus the section it belongs to; a null section means panel-level. */
   const [status, setStatus] = useState<(PanelStatus & { section: string | null }) | null>(null);
   /** Report an apply result inline under the given section's Apply button. */
@@ -1416,7 +1428,12 @@ export default function RadioPanel({
   const powerConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.power);
   const positionConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.position);
   const networkConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.network);
-  const deviceApplyDisabled = disabled || !deviceConfigReady;
+  const mqttModuleConfigReady = meshtasticConfigSliceHydrated(moduleConfigs?.mqtt);
+  // Client Mute follow-up writes MQTT module config; do not Apply until that slice is live.
+  const deviceApplyDisabled =
+    disabled ||
+    !deviceConfigReady ||
+    (deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && !!onSetModuleConfig && !mqttModuleConfigReady);
   const displayApplyDisabled = disabled || !displayConfigReady;
   const btFixedPinWireValue = parseMeshtasticBluetoothPin(btFixedPin);
   const bluetoothApplyDisabled =
@@ -1470,7 +1487,13 @@ export default function RadioPanel({
       return false;
     }
     clearMeshtasticClientNotification();
+    const applyGen = ++applyGenerationRef.current;
     setApplyingSection(configCase);
+    const stillCurrent = () => applyGen === applyGenerationRef.current;
+    const formatApplyErr = (err: unknown): string =>
+      isMeshtasticConfigApplyTimeout(err)
+        ? t('modulePanel.errors.timeout')
+        : formatMeshtasticModuleApplyError(err, t);
     showSectionStatus(
       configCase,
       t('radioPanel.applyStatusApplying', { section: sectionLabel }),
@@ -1482,14 +1505,18 @@ export default function RadioPanel({
         : meshtasticConfigSlices?.[configCase];
     const merged = mergeMeshtasticConfigApplyValue(deviceSlice, configValue);
     try {
-      await onSetConfig({
-        payloadVariant: {
-          case: configCase,
-          value: merged,
-        },
-      });
+      await withMeshtasticConfigApplyTimeout(
+        onSetConfig({
+          payloadVariant: {
+            case: configCase,
+            value: merged,
+          },
+        }),
+      );
+      if (!stillCurrent()) return false;
       try {
-        await onCommit();
+        await withMeshtasticConfigApplyTimeout(onCommit());
+        if (!stillCurrent()) return false;
         showSectionStatus(
           configCase,
           t('radioPanel.applyStatusSuccess', { section: sectionLabel }),
@@ -1498,28 +1525,32 @@ export default function RadioPanel({
         return true;
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in panel status text
+        if (!stillCurrent()) return false;
         showSectionStatus(
           configCase,
           t('radioPanel.applyStatusCommitFailed', {
             section: sectionLabel,
-            message: formatMeshtasticModuleApplyError(err, t),
+            message: formatApplyErr(err),
           }),
           'error',
         );
         return false;
       }
     } catch (err) {
+      if (!stillCurrent()) return false;
       console.warn('[RadioPanel] apply section failed ' + errLikeToLogString(err));
       showSectionStatus(
         configCase,
         t('radioPanel.applyStatusFailed', {
-          message: formatMeshtasticModuleApplyError(err, t),
+          message: formatApplyErr(err),
         }),
         'error',
       );
       return false;
     } finally {
-      setApplyingSection(null);
+      if (stillCurrent()) {
+        setApplyingSection(null);
+      }
     }
   };
 
@@ -2497,7 +2528,12 @@ export default function RadioPanel({
               },
               deviceExtra,
             );
-            if (applied && deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE && onSetModuleConfig) {
+            if (
+              applied &&
+              deviceRole === MESHTASTIC_CLIENT_MUTE_ROLE &&
+              onSetModuleConfig &&
+              mqttModuleConfigReady
+            ) {
               try {
                 clearMeshtasticClientNotification();
                 setApplyingSection('clientMuteGps');

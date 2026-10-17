@@ -6,6 +6,7 @@ import {
   meshtasticConfigSignature,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
+  resolveMeshtasticModuleConfigs,
   stripMeshtasticProtobufMeta,
 } from './meshtasticConfigApply';
 
@@ -78,6 +79,31 @@ describe('meshtasticConfigApply', () => {
       overrideConsoleSerialPort: true,
       enabled: true,
       echo: false,
+    });
+  });
+
+  it('resolveMeshtasticModuleConfigs keeps last-known on display only under a partial store hydrate', () => {
+    const lastKnown = {
+      mqtt: { enabled: true },
+      tak: { team: 1 },
+      neighborInfo: { enabled: false },
+    };
+    const fromStore = { mqtt: { enabled: false }, neighborInfo: { enabled: true } };
+    expect(resolveMeshtasticModuleConfigs({ fromStore, fromLocal: {}, lastKnown })).toEqual({
+      live: fromStore,
+      display: {
+        mqtt: { enabled: false },
+        tak: { team: 1 },
+        neighborInfo: { enabled: true },
+      },
+    });
+  });
+
+  it('resolveMeshtasticModuleConfigs keeps last-known on display when live is empty', () => {
+    const lastKnown = { tak: { team: 2 } };
+    expect(resolveMeshtasticModuleConfigs({ fromStore: {}, fromLocal: {}, lastKnown })).toEqual({
+      live: {},
+      display: lastKnown,
     });
   });
 });

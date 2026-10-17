@@ -283,6 +283,7 @@ export const modulesSurface: SettingsSearchSurface = {
     'modulePanel.*Hint': 'help text under a section; the section is indexed',
     'modulePanel.*Failed': 'error toast, not a control',
     'modulePanel.failed': 'error toast, not a control',
+    'modulePanel.errors.*': 'apply/error toast copy, not a control',
     'modulePanel.sectionSent': 'success toast, not a control',
     'modulePanel.cannedMessagesApplied': 'success toast, not a control',
     'modulePanel.rtttlSaved': 'success toast, not a control',

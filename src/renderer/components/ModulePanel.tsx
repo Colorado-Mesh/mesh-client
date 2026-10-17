@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -16,6 +16,10 @@ import {
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
+import {
+  isMeshtasticConfigApplyTimeout,
+  withMeshtasticConfigApplyTimeout,
+} from '@/renderer/lib/meshtastic/meshtasticConfigApplyTimeout';
 import {
   AUDIO_MODULE_FIELDS,
   DETECTION_SENSOR_EXTRA_FIELDS,
@@ -70,7 +74,13 @@ function storeForwardRecordsFromCfg(cfg: Record<string, unknown>): number {
 
 interface Props {
   configTarget?: ConfigTargetContext;
+  /** Display map (may include last-known modules for visibility during rehydrate). */
   moduleConfigs: Record<string, unknown>;
+  /**
+   * Live device/local slices only. Apply readiness and merge base; defaults to
+   * `moduleConfigs` when omitted (tests / remote snapshot).
+   */
+  liveModuleConfigs?: Record<string, unknown>;
   onSetModuleConfig: (config: unknown) => Promise<void>;
   onSetCannedMessages: (messages: string[]) => Promise<void>;
   onSetRingtone?: (ringtone: string) => Promise<void>;
@@ -151,6 +161,7 @@ const EMPTY_CHANNEL_CONFIGS: readonly MeshBeaconChannelConfig[] = [];
 export default function ModulePanel({
   configTarget,
   moduleConfigs,
+  liveModuleConfigs,
   onSetModuleConfig,
   onSetCannedMessages,
   onSetRingtone,
@@ -216,13 +227,23 @@ export default function ModulePanel({
   );
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const remoteTarget = configTarget?.mode === 'remote';
-  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(moduleConfigs[key]);
+  const liveConfigs = liveModuleConfigs ?? moduleConfigs;
+  const moduleSliceReady = (key: string) => meshtasticConfigSliceHydrated(liveConfigs[key]);
   const moduleSectionProps = (key: string) => ({
     sliceReady: moduleSliceReady(key),
     showSliceWaiting: isConnected,
     globalApplyLocked: applyingSection !== null,
   });
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  const applyGenerationRef = useRef(0);
+  // Unlock Apply when the radio drops mid-setModuleConfig/commit (SDK promise may never settle).
+  useEffect(() => {
+    if (isConnected) return;
+    if (applyingSection == null) return;
+    applyGenerationRef.current += 1;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- transport drop mid-admin; SDK promises may never settle
+    setApplyingSection(null);
+  }, [isConnected, applyingSection]);
   const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
@@ -676,43 +697,58 @@ export default function ModulePanel({
 
   const applyModule = async (sectionLabel: string, moduleCase: string, value: unknown) => {
     clearMeshtasticClientNotification();
+    const applyGen = ++applyGenerationRef.current;
     setApplyingSection(moduleCase);
+    const stillCurrent = () => applyGen === applyGenerationRef.current;
     try {
-      await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
+      await withMeshtasticConfigApplyTimeout(
+        onSetModuleConfig({ payloadVariant: { case: moduleCase, value } }),
+      );
+      if (!stillCurrent()) return;
       try {
-        await onCommit();
+        await withMeshtasticConfigApplyTimeout(onCommit());
+        if (!stillCurrent()) return;
         addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in module panel toast
+        if (!stillCurrent()) return;
         addToast(
           t('modulePanel.commitFailed', {
-            message: formatMeshtasticModuleApplyError(err, t),
+            message: isMeshtasticConfigApplyTimeout(err)
+              ? t('modulePanel.errors.timeout')
+              : formatMeshtasticModuleApplyError(err, t),
           }),
           'error',
         );
       }
     } catch (err: unknown) {
+      if (!stillCurrent()) return;
       console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
       addToast(
         t('modulePanel.failed', {
-          message: formatMeshtasticModuleApplyError(err, t),
+          message: isMeshtasticConfigApplyTimeout(err)
+            ? t('modulePanel.errors.timeout')
+            : formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );
     } finally {
-      setApplyingSection(null);
+      if (stillCurrent()) {
+        setApplyingSection(null);
+      }
     }
   };
 
   const applyMeshtasticModule = (
     sectionLabel: string,
     moduleCase: string,
-    deviceSlice: unknown,
+    _deviceSlice: unknown,
     uiOverrides: Record<string, unknown>,
   ) => {
     let value: unknown;
     try {
-      value = buildMeshtasticModuleApplyValue(moduleCase, deviceSlice, uiOverrides);
+      // Apply base must be the live slice — never last-known-only display merge.
+      value = buildMeshtasticModuleApplyValue(moduleCase, liveConfigs[moduleCase], uiOverrides);
     } catch (err: unknown) {
       console.warn('[ModulePanel] build apply value failed ' + errLikeToLogString(err));
       addToast(
@@ -1451,43 +1487,55 @@ export default function ModulePanel({
         anchorId="modules.cannedMessages"
         {...moduleSectionProps('cannedMessage')}
         onApply={async () => {
+          const applyGen = ++applyGenerationRef.current;
           setApplyingSection('cannedMessage');
+          const stillCurrent = () => applyGen === applyGenerationRef.current;
           try {
             const lines = cannedText
               .split('\n')
               .map((l) => l.trim())
               .filter(Boolean);
-            await onSetCannedMessages(lines);
-            await onSetModuleConfig({
-              payloadVariant: {
-                case: 'cannedMessage',
-                value: mergeMeshtasticConfigApplyValue(cannedCfg, {
-                  enabled: cannedEnabled,
-                  rotary1Enabled: cannedRotary1Enabled,
-                  inputbrokerPinA: cannedPinA,
-                  inputbrokerPinB: cannedPinB,
-                  inputbrokerPinPress: cannedPinPress,
-                  inputbrokerEventCw: cannedEventCw,
-                  inputbrokerEventCcw: cannedEventCcw,
-                  inputbrokerEventPress: cannedEventPress,
-                  updown1Enabled: cannedUpdown1Enabled,
-                  allowInputSource: cannedAllowInputSource,
-                  sendBell: cannedSendBell,
-                }),
-              },
-            });
-            await onCommit();
+            await withMeshtasticConfigApplyTimeout(onSetCannedMessages(lines));
+            if (!stillCurrent()) return;
+            await withMeshtasticConfigApplyTimeout(
+              onSetModuleConfig({
+                payloadVariant: {
+                  case: 'cannedMessage',
+                  value: mergeMeshtasticConfigApplyValue(liveConfigs.cannedMessage, {
+                    enabled: cannedEnabled,
+                    rotary1Enabled: cannedRotary1Enabled,
+                    inputbrokerPinA: cannedPinA,
+                    inputbrokerPinB: cannedPinB,
+                    inputbrokerPinPress: cannedPinPress,
+                    inputbrokerEventCw: cannedEventCw,
+                    inputbrokerEventCcw: cannedEventCcw,
+                    inputbrokerEventPress: cannedEventPress,
+                    updown1Enabled: cannedUpdown1Enabled,
+                    allowInputSource: cannedAllowInputSource,
+                    sendBell: cannedSendBell,
+                  }),
+                },
+              }),
+            );
+            if (!stillCurrent()) return;
+            await withMeshtasticConfigApplyTimeout(onCommit());
+            if (!stillCurrent()) return;
             addToast(t('modulePanel.cannedMessagesApplied'), 'success');
           } catch (err) {
+            if (!stillCurrent()) return;
             console.warn('[ModulePanel] canned messages failed ' + errLikeToLogString(err));
             addToast(
               t('modulePanel.failed', {
-                message: formatMeshtasticModuleApplyError(err, t),
+                message: isMeshtasticConfigApplyTimeout(err)
+                  ? t('modulePanel.errors.timeout')
+                  : formatMeshtasticModuleApplyError(err, t),
               }),
               'error',
             );
           } finally {
-            setApplyingSection(null);
+            if (stillCurrent()) {
+              setApplyingSection(null);
+            }
           }
         }}
         applying={applyingSection === 'cannedMessage'}
@@ -2279,21 +2327,30 @@ export default function ModulePanel({
               addToast(t('modulePanel.fields.invalidRtttl'), 'error');
               return;
             }
+            const applyGen = ++applyGenerationRef.current;
             setApplyingSection('rtttlRingtone');
+            const stillCurrent = () => applyGen === applyGenerationRef.current;
             try {
-              await onSetRingtone(ringtoneText);
-              await onCommit();
+              await withMeshtasticConfigApplyTimeout(onSetRingtone(ringtoneText));
+              if (!stillCurrent()) return;
+              await withMeshtasticConfigApplyTimeout(onCommit());
+              if (!stillCurrent()) return;
               addToast(t('modulePanel.rtttlSaved'), 'success');
             } catch (err) {
+              if (!stillCurrent()) return;
               console.warn('[ModulePanel] RTTTL apply failed ' + errLikeToLogString(err));
               addToast(
                 t('modulePanel.failed', {
-                  message: formatMeshtasticModuleApplyError(err, t),
+                  message: isMeshtasticConfigApplyTimeout(err)
+                    ? t('modulePanel.errors.timeout')
+                    : formatMeshtasticModuleApplyError(err, t),
                 }),
                 'error',
               );
             } finally {
-              setApplyingSection(null);
+              if (stillCurrent()) {
+                setApplyingSection(null);
+              }
             }
           }}
           applying={applyingSection === 'rtttlRingtone'}

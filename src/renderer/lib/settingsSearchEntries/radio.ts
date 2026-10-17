@@ -1160,6 +1160,7 @@ export const radioSurface: SettingsSearchSurface = {
     'appPanel.meshcorePathHashDeviceReported': 'status text under the indexed path hash mode',
     'modulePanel.applySection': 'section Apply button; the section is indexed',
     'modulePanel.applyingButton': 'busy label of a section Apply button',
+    'modulePanel.errors.*': 'apply/error toast copy shared with Modules, not a control',
     'configureNode.loading': 'remote config loading status text',
     'qrIngest.*': 'QR paste hint and import toasts, not a setting',
     'meshcoreContactSettings.*Desc': 'help text under a control; the control is indexed',
