@@ -7654,6 +7654,7 @@
     "countSnapshot": "Sayımlar bu özet anlık görüntüsünü açıklar; canlı okunmamış rozetler farklı olabilir.",
     "timeoutSeconds": "Özet zaman aşımı (saniye)",
     "timeoutHint": "Model yüklemesi de dahil olmak üzere bir özet için maksimum süre. 30 -1800 saniye seçin. İstediğiniz zaman iptal edebilirsiniz.",
-    "insecureKeyWarning": "Bu HTTP uç noktası, API anahtarınızı ve mesajlarınızı taşıma şifrelemesi olmadan gönderir. Ağınızdaki bir sunucu için https kullanın."
+    "insecureKeyWarning": "Bu HTTP uç noktası, API anahtarınızı ve mesajlarınızı taşıma şifrelemesi olmadan gönderir. Ağınızdaki bir sunucu için https kullanın.",
+    "setupCatchUp": "Özetleri ayarla"
   }
 }

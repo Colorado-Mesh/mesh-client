@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 import type { ConversationSummaryController } from '@/renderer/hooks/useConversationSummary';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import i18n from '@/renderer/lib/i18n';
+import { subscribeOpenSettingRequests } from '@/renderer/lib/openSettingRequest';
 
 import { CatchUpButton } from './CatchUpButton';
 import { ChatSummaryCard } from './ChatSummaryCard';
@@ -16,6 +17,7 @@ beforeEach(async () => {
 const create = (): ConversationSummaryController & {
   state: NonNullable<ConversationSummaryController['state']>;
 } => ({
+  showCatchUp: true,
   canSummarize: true,
   scope: { kind: 'unread' },
   setScope: vi.fn(),
@@ -37,7 +39,7 @@ const create = (): ConversationSummaryController & {
 });
 describe('AI catch up controls', () => {
   it('renders nothing before opt-in', () => {
-    const summary = { ...create(), canSummarize: false };
+    const summary = { ...create(), showCatchUp: false, canSummarize: false };
     const { container } = render(
       <>
         <CatchUpButton summary={summary} />
@@ -45,6 +47,27 @@ describe('AI catch up controls', () => {
       </>,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+  it('offers settings when opted in without a ready engine, then restores generation controls', async () => {
+    const summary = { ...create(), canSummarize: false };
+    const openSetting = vi.fn();
+    const unsubscribe = subscribeOpenSettingRequests(openSetting);
+    try {
+      const { container, rerender } = render(<CatchUpButton summary={summary} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Set up Catch up' }));
+      expect(openSetting).toHaveBeenCalledExactlyOnceWith({ slot: 'App', id: 'app.aiProvider' });
+      expect(summary.run).not.toHaveBeenCalled();
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+
+      rerender(<CatchUpButton summary={{ ...summary, canSummarize: true }} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+      expect(summary.run).toHaveBeenCalledOnce();
+      expect(screen.getByRole('combobox', { name: 'Summary range' })).toBeInTheDocument();
+    } finally {
+      unsubscribe();
+    }
   });
   it('has accessible controls and source disclosure without HTML execution', async () => {
     const summary = create();

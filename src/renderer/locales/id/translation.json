@@ -7654,6 +7654,7 @@
     "countSnapshot": "Hitungan menggambarkan snapshot ringkasan ini; lencana langsung yang belum dibaca mungkin berbeda.",
     "timeoutSeconds": "Batas waktu ringkasan (detik)",
     "timeoutHint": "Waktu maksimum untuk ringkasan, termasuk pemuatan model. Pilih 30 -1800 detik. Anda dapat membatalkan kapan saja.",
-    "insecureKeyWarning": "Endpoint HTTP ini mengirimkan kunci api dan pesan Anda tanpa enkripsi transport. Gunakan https untuk server di jaringan Anda."
+    "insecureKeyWarning": "Endpoint HTTP ini mengirimkan kunci api dan pesan Anda tanpa enkripsi transport. Gunakan https untuk server di jaringan Anda.",
+    "setupCatchUp": "Siapkan ringkasan"
   }
 }

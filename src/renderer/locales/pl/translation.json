@@ -7782,6 +7782,7 @@
     "countSnapshot": "Liczniki opisują tę migawkę podsumowania; znaczki nieprzeczytane na żywo mogą się różnić.",
     "timeoutSeconds": "Limit czasu podsumowania (sekundy)",
     "timeoutHint": "Maksymalny czas na podsumowanie, w tym załadowanie modelu. Wybierz 30–1800 sekund. Możesz anulować w dowolnym momencie.",
-    "insecureKeyWarning": "Ten punkt końcowy HTTP wysyła klucz API i wiadomości bez szyfrowania transportowego. Użyj HTTPS dla serwera w swojej sieci."
+    "insecureKeyWarning": "Ten punkt końcowy HTTP wysyła klucz API i wiadomości bez szyfrowania transportowego. Użyj HTTPS dla serwera w swojej sieci.",
+    "setupCatchUp": "Konfiguruj podsumowania"
   }
 }

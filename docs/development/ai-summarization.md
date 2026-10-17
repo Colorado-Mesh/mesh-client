@@ -13,6 +13,9 @@ settings search expose the feature before opt-in. The optional startup `ai:getSt
 settings without downloading, probing OS AI, creating a model directory or starting workers.
 Native availability probes run only in open AI settings or on an explicit test/summary request.
 A saved OS choice exposes Catch up after restart; the first click rechecks native readiness.
+After opt-in, an incomplete engine configuration or a missing/removed downloaded model shows
+**Set up Catch up**, which opens App > AI conversation summaries. Choosing a ready engine restores
+the range and generation controls. Setup does not read conversation history or start inference.
 
 The main process owns endpoint requests and API keys. `AiConfig` encrypts keys with safeStorage,
 rejects insecure OS storage and drops a key when its endpoint or engine changes. Provider blobs

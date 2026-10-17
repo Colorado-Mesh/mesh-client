@@ -7654,6 +7654,7 @@
     "countSnapshot": "Los recuentos describen esta instantánea de resumen; las insignias en vivo no leídas pueden diferir.",
     "timeoutSeconds": "Tiempo de espera de resumen (segundos)",
     "timeoutHint": "Tiempo máximo para un resumen, incluida la carga del modelo. Elige 30–1800 segundos. Puedes cancelar en cualquier momento.",
-    "insecureKeyWarning": "Este endpoint HTTP envía tu clave API y mensajes sin cifrado de transporte. Utilice HTTPS para un servidor de su red."
+    "insecureKeyWarning": "Este endpoint HTTP envía tu clave API y mensajes sin cifrado de transporte. Utilice HTTPS para un servidor de su red.",
+    "setupCatchUp": "Configurar resúmenes"
   }
 }

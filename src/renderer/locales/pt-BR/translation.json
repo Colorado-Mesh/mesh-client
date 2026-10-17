@@ -7654,6 +7654,7 @@
     "countSnapshot": "As contagens descrevem este resumo instantâneo; os emblemas não lidos em tempo real podem ser diferentes.",
     "timeoutSeconds": "Tempo limite do resumo (segundos)",
     "timeoutHint": "Tempo máximo para um resumo, incluindo o carregamento do modelo. Escolha 30–1800 segundos. Pode cancelar a qualquer momento.",
-    "insecureKeyWarning": "Este ponto de extremidade HTTP envia sua chave de API e mensagens sem criptografia de transporte. Use HTTPS para um servidor em sua rede."
+    "insecureKeyWarning": "Este ponto de extremidade HTTP envia sua chave de API e mensagens sem criptografia de transporte. Use HTTPS para um servidor em sua rede.",
+    "setupCatchUp": "Configurar resumos"
   }
 }

@@ -7,6 +7,7 @@ import {
   aiReady,
   cancelSummary,
   dismissSummary,
+  getAiSummaryRevision,
   runSummary,
   useAiSummaryStore,
 } from '@/renderer/stores/aiSummaryStore';
@@ -50,9 +51,20 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     generation.current++;
   }, [input.key]);
   const run = useCallback(async () => {
-    if (loading || state?.streaming) return;
+    if (
+      loading ||
+      state?.streaming ||
+      input.available === false ||
+      !aiReady(useAiSummaryStore.getState().status)
+    )
+      return;
     const key = input.key;
     const runRevision = ++generation.current;
+    const configurationRevision = getAiSummaryRevision();
+    const isCurrent = () =>
+      current.current === key &&
+      generation.current === runRevision &&
+      getAiSummaryRevision() === configurationRevision;
     setLoadingRequest({ key: input.key, owner: runRevision });
     try {
       const now = Date.now();
@@ -90,7 +102,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
         );
         truncated = history.length > AI_MAX_MESSAGES;
       }
-      if (current.current !== key || generation.current !== runRevision) return;
+      if (!isCurrent()) return;
       const selected = selectSummaryMessages({ messages, scope, watermark: input.watermark, now })
         .filter((m) => m.body.trim())
         .sort((a, b) => a.at - b.at);
@@ -124,7 +136,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       );
     } catch {
       // catch-no-log-ok history errors expose only a fixed actionable summary error
-      if (current.current === key && generation.current === runRevision)
+      if (isCurrent())
         useAiSummaryStore.setState((s) => ({
           summaries: {
             ...s.summaries,
@@ -153,6 +165,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     cancelSummary(input.key);
   };
   return {
+    showCatchUp: status?.enabled === true && input.available !== false,
     canSummarize: aiReady(status) && input.available !== false,
     scope,
     setScope,

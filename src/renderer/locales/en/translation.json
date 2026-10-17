@@ -7578,6 +7578,7 @@
   },
   "aiSummary": {
     "catchUp": "Catch up",
+    "setupCatchUp": "Set up Catch up",
     "scope": "Summary range",
     "unread": "All unread",
     "hours_one": "Last {{count}} hour",

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConversationSummaryController } from '@/renderer/hooks/useConversationSummary';
+import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
 
 import { Button } from '../ui/Button';
 import { INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
@@ -10,7 +11,20 @@ export function CatchUpButton({ summary }: { summary: ConversationSummaryControl
   const { t } = useTranslation();
   const [custom, setCustom] = useState('12');
   const [customMode, setCustomMode] = useState(false);
-  if (!summary.canSummarize) return null;
+  if (!summary.showCatchUp) return null;
+  if (!summary.canSummarize)
+    return (
+      <Button
+        size="sm"
+        aria-label={t('aiSummary.setupCatchUp')}
+        title={t('aiSummary.settings')}
+        onClick={() => {
+          requestOpenSetting({ slot: 'App', id: 'app.aiProvider' });
+        }}
+      >
+        {t('aiSummary.setupCatchUp')}
+      </Button>
+    );
   const value = summary.scope.kind === 'hours' ? String(summary.scope.hours) : summary.scope.kind;
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1">

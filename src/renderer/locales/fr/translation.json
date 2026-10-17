@@ -7654,6 +7654,7 @@
     "countSnapshot": "Les comptes décrivent cet instantané récapitulatif ; les badges non lus en direct peuvent différer.",
     "timeoutSeconds": "Délai d'expiration du résumé (secondes)",
     "timeoutHint": "Temps maximum pour un résumé, y compris le chargement du modèle. Choisissez 30–1800 secondes. Vous pouvez annuler à tout moment.",
-    "insecureKeyWarning": "Ce point de terminaison HTTP envoie votre clé API et des messages sans chiffrement de transport. Utilisez HTTPS pour un serveur sur votre réseau."
+    "insecureKeyWarning": "Ce point de terminaison HTTP envoie votre clé API et des messages sans chiffrement de transport. Utilisez HTTPS pour un serveur sur votre réseau.",
+    "setupCatchUp": "Configurer les résumés"
   }
 }

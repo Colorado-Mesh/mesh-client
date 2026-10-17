@@ -7654,6 +7654,7 @@
     "countSnapshot": "计数描述此摘要快照；实时未读徽章可能有所不同。",
     "timeoutSeconds": "摘要超时（秒）",
     "timeoutHint": "摘要的最长时间，包括模型加载。选择30-1800秒，可随时取消。",
-    "insecureKeyWarning": "此HTTP端点在没有传输加密的情况下发送您的API密钥和消息。对网络上的服务器使用HTTPS。"
+    "insecureKeyWarning": "此HTTP端点在没有传输加密的情况下发送您的API密钥和消息。对网络上的服务器使用HTTPS。",
+    "setupCatchUp": "设置摘要"
   }
 }

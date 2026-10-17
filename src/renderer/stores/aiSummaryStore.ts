@@ -33,6 +33,9 @@ const controllers = new Map<string, AbortController>();
 let bundledBusy = false;
 let revision = 0;
 let unsubscribe: (() => void) | undefined;
+export function getAiSummaryRevision(): number {
+  return revision;
+}
 export const useAiSummaryStore = create<AiState>((set) => ({
   status: null,
   summaries: {},

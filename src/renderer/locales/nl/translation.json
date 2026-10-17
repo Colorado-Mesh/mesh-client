@@ -7654,6 +7654,7 @@
     "countSnapshot": "Tellingen beschrijven deze samenvattende momentopname; live ongelezen badges kunnen verschillen.",
     "timeoutSeconds": "Samenvatting time-out (seconden)",
     "timeoutHint": "Maximale tijd voor een samenvatting, inclusief het laden van het model. Kies 30–1800 seconden. Je kunt op elk moment annuleren.",
-    "insecureKeyWarning": "Dit HTTP eindpunt verzendt je API-sleutel en berichten zonder transportversleuteling. Gebruik https voor een server in uw netwerk."
+    "insecureKeyWarning": "Dit HTTP eindpunt verzendt je API-sleutel en berichten zonder transportversleuteling. Gebruik https voor een server in uw netwerk.",
+    "setupCatchUp": "Samenvattingen instellen"
   }
 }

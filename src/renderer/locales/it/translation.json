@@ -7654,6 +7654,7 @@
     "countSnapshot": "I conteggi descrivono questa istantanea di riepilogo; i badge live non letti possono differire.",
     "timeoutSeconds": "Timeout riepilogo (secondi)",
     "timeoutHint": "Tempo massimo per un riepilogo, incluso il caricamento del modello. Scegli 30–1800 secondi. Puoi annullare in qualsiasi momento.",
-    "insecureKeyWarning": "Questo endpoint HTTP invia la chiave API e i messaggi senza crittografia di trasporto. Usa HTTPS per un server sulla tua rete."
+    "insecureKeyWarning": "Questo endpoint HTTP invia la chiave API e i messaggi senza crittografia di trasporto. Usa HTTPS per un server sulla tua rete.",
+    "setupCatchUp": "Configura riepiloghi"
   }
 }

@@ -7654,6 +7654,7 @@
     "countSnapshot": "Zählungen beschreiben diesen zusammenfassenden Schnappschuss; ungelesene Live-Abzeichen können abweichen.",
     "timeoutSeconds": "Zusammenfassende Zeitüberschreitung (Sekunden)",
     "timeoutHint": "Maximale Zeit für eine Zusammenfassung, einschließlich Laden des Modells. Wählen Sie 30-1800 Sekunden. Sie können jederzeit stornieren.",
-    "insecureKeyWarning": "Dieser HTTP -Endpunkt sendet deinen API-Schlüssel und Nachrichten ohne Transportverschlüsselung. Verwenden Sie https für einen Server in Ihrem Netzwerk."
+    "insecureKeyWarning": "Dieser HTTP -Endpunkt sendet deinen API-Schlüssel und Nachrichten ohne Transportverschlüsselung. Verwenden Sie https für einen Server in Ihrem Netzwerk.",
+    "setupCatchUp": "Zusammenfassungen einrichten"
   }
 }

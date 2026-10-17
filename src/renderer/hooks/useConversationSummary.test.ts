@@ -36,9 +36,138 @@ const input = {
 };
 beforeEach(() => {
   vi.mocked(window.electronAPI.ai.summarize).mockClear();
+  vi.mocked(window.electronAPI.ai.getHistory).mockClear();
   disposeAiSummaries();
   useAiSummaryStore.getState().setStatus(ready);
   vi.mocked(window.electronAPI.ai.summarize).mockResolvedValue({ ok: true });
+});
+describe('Catch up availability', () => {
+  const platforms = ['linux', 'darwin', 'win32'] as const;
+  const protocols = ['meshtastic', 'meshcore', 'reticulum'] as const;
+  it.each(platforms.flatMap((platform) => protocols.map((protocol) => ({ platform, protocol }))))(
+    'keeps setup discoverable for $protocol on $platform after a missing or removed model',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      useAiSummaryStore.getState().setStatus({ ...ready, engine: 'bundled' });
+      const { result } = renderHook(() => useConversationSummary({ ...input, protocol }));
+      expect(result.current).toMatchObject({ showCatchUp: true, canSummarize: false });
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.getHistory).not.toHaveBeenCalled();
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+
+      act(() => {
+        useAiSummaryStore.getState().setStatus({
+          ...ready,
+          engine: 'bundled',
+          localEngine: { ready: true, modelId: 'llama-3.2-1b', downloading: false },
+        });
+      });
+      expect(result.current).toMatchObject({ showCatchUp: true, canSummarize: true });
+      act(() => {
+        useAiSummaryStore.getState().setStatus({ ...ready, enabled: false });
+      });
+      expect(result.current).toMatchObject({ showCatchUp: false, canSummarize: false });
+    },
+  );
+  it.each([
+    { engine: null },
+    { engine: 'local' as const, model: '' },
+    { engine: 'remote' as const, baseUrl: '' },
+  ])('offers setup for an incomplete configuration: %j', async (configuration) => {
+    useAiSummaryStore.getState().setStatus({ ...ready, ...configuration });
+    const { result, rerender } = renderHook(
+      ({ available }) => useConversationSummary({ ...input, available }),
+      { initialProps: { available: true } },
+    );
+    expect(result.current).toMatchObject({ showCatchUp: true, canSummarize: false });
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.getHistory).not.toHaveBeenCalled();
+    expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    rerender({ available: false });
+    expect(result.current).toMatchObject({ showCatchUp: false, canSummarize: false });
+  });
+  it('does not query history through a stale ready callback after disable', async () => {
+    const { result } = renderHook(() => useConversationSummary(input));
+    const run = result.current.run;
+    await act(async () => {
+      useAiSummaryStore.getState().setStatus({ ...ready, enabled: false });
+      await run();
+    });
+    expect(window.electronAPI.ai.getHistory).not.toHaveBeenCalled();
+    expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+  });
+  it.each(['reconfigure', 'disable and re-enable'])(
+    'discards pending history after %s, including a switch back to the same status',
+    async (change) => {
+      let resolveHistory!: (messages: AiSummaryMessage[]) => void;
+      vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveHistory = resolve;
+        }),
+      );
+      const { result } = renderHook(() => useConversationSummary(input));
+      let running!: Promise<void>;
+      act(() => {
+        running = result.current.run();
+      });
+      act(() => {
+        useAiSummaryStore
+          .getState()
+          .setStatus(
+            change === 'reconfigure'
+              ? { ...ready, baseUrl: 'http://127.0.0.1:5678', model: 'other' }
+              : { ...ready, enabled: false },
+          );
+        useAiSummaryStore.getState().setStatus(ready);
+      });
+      await act(async () => {
+        resolveHistory([{ at: 1, sender: 'Alice', body: 'Old engine request' }]);
+        await running;
+      });
+      expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+      expect(result.current.pending).toBe(false);
+      expect(useAiSummaryStore.getState().summaries).toEqual({});
+
+      vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([
+        { at: 2, sender: 'Alice', body: 'Explicit new request' },
+      ]);
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.summarize).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          messages: [{ at: 2, sender: 'Alice', body: 'Explicit new request' }],
+        }),
+      );
+    },
+  );
+  it('does not restore an error from pending history after disable', async () => {
+    let rejectHistory!: (error: Error) => void;
+    vi.mocked(window.electronAPI.ai.getHistory).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectHistory = reject;
+      }),
+    );
+    const { result } = renderHook(() => useConversationSummary(input));
+    let running!: Promise<void>;
+    act(() => {
+      running = result.current.run();
+    });
+    act(() => {
+      useAiSummaryStore.getState().setStatus({ ...ready, enabled: false });
+    });
+    await act(async () => {
+      rejectHistory(new Error('History failed'));
+      await running;
+    });
+    expect(window.electronAPI.ai.summarize).not.toHaveBeenCalled();
+    expect(useAiSummaryStore.getState().summaries).toEqual({});
+    expect(result.current.pending).toBe(false);
+  });
 });
 describe('conversation summary async boundaries', () => {
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
