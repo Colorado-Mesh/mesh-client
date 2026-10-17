@@ -7737,7 +7737,12 @@
     "insecureKeyWarning": "Tento koncový bod HTTP odesílá váš klíč API a zprávy bez šifrování přenosu. Použijte https pro server ve vaší síti.",
     "setupCatchUp": "Nastavit souhrny",
     "queued": "Čekejte prosím — generuje se další shrnutí...",
-    "capacityHint": "Typické síťové zprávy {{count}} odpovídají jednomu shrnutí s tímto modulem (novější zprávy jako první). Delší zprávy využívají více rozpočtu. Zaneprázdněné sítě: vyberte si místní nebo vzdálený server s větším rozpočtem nebo kratším dosahem (nepřečtené / poslední hodiny). Jedno shrnutí zatím nemůže pokrýt všech 1000 nevyřízených zpráv.",
-    "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým síťovým zprávám na souhrn. Místní nebo vzdálený server se vejde asi {{endpoint}} (až 500). Preferujte serverový engine nebo kratší rozsah dohánění na rušných sítích; jedno shrnutí zatím nemůže pokrýt plný počet nevyřízených zpráv 1000."
+    "chunkProgress": "Shrnutí části {{current}} z {{total}}…",
+    "mergeProgress": "Slučování trávníků {{current}} z {{total}}…",
+    "ceilingTruncated": "Zastaveno po {{count}} zprávách — zvyš limit pro zprávy Catch up v nastavení AI a přidej další.",
+    "maxCollectedMessages": "Limit pro dohánění zpráv",
+    "maxCollectedMessagesHint": "Maximální počet zpráv, které může jeden dohnat (100–5000). Výchozí 2000. Vyšší hodnoty trvají déle a mohou vyžadovat delší časový limit.",
+    "capacityHint": "Typické síťové zprávy {{count}} odpovídají jednomu inferenčnímu průchodu s tímto motorem (novější jako první). Dohnat můžeš až {{ceiling}} zpráv prostřednictvím více průkazů. Delší zprávy používají více z každého průchodu. Velké rozsahy vyžadují delší časový limit.",
+    "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým zprávám na jeden průchod; místní nebo vzdálený server přibližně {{endpoint}}. Dohánění může pokrýt až {{ceiling}} zprávy s více průchody. Zvyšte limit zpráv a časový limit pro zaneprázdněné sítě."
   }
 }

@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 
+import {
+  type MultiPassProgress,
+  runMultiPassSummary,
+  shouldUseMultiPass,
+} from '@/renderer/lib/aiMultiPassSummary';
 import { RepetitiveAiOutputError } from '@/renderer/lib/aiSummaryOutput';
 import type { AiWorkerPhase } from '@/renderer/lib/aiWorkerHost';
 import { getAppSettingsRaw, mergeAppSettingsPartial } from '@/renderer/lib/appSettingsStorage';
@@ -15,18 +20,21 @@ import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '@/shared/ai-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 /** UI status while a summary is pending; `queued` is renderer-only (FIFO wait). */
-export type AiSummaryPhase = AiWorkerPhase | 'queued';
+export type AiSummaryPhase = AiWorkerPhase | 'queued' | 'chunking' | 'merging';
 
 export interface ConversationSummary {
   requestId: string;
   text: string;
   streaming: boolean;
   phase?: AiSummaryPhase;
+  progress?: MultiPassProgress | null;
   provider: string;
   model: string;
   messageCount: number | null;
   collectedMessageCount: number;
   truncated: boolean;
+  /** True when collection stopped at the user maxCollectedMessages ceiling. */
+  ceilingTruncated?: boolean;
   error?: AiSummaryErrorReason;
   disclosure: string;
 }
@@ -46,6 +54,15 @@ let unsubscribe: (() => void) | undefined;
 const statusRequests = new Set<AbortController>();
 let statusSequence = 0;
 let stopInitialization: (() => void) | undefined;
+/** Maps in-flight pass requestIds to conversation keys (multi-pass child IDs). */
+const passOwners = new Map<string, string>();
+interface RemoteWaiter {
+  resolve: (value: { text: string; messageCount: number }) => void;
+  reject: (reason?: unknown) => void;
+  silent: boolean;
+}
+/** Remote pass waiters (silent map/reduce or streaming final). */
+const remoteWaiters = new Map<string, RemoteWaiter>();
 export function getAiSummaryRevision(): number {
   return revision;
 }
@@ -79,30 +96,74 @@ export function subscribeAiEvents(): void {
   if (unsubscribe) return;
   const api = window.electronAPI.ai;
   const keyFor = (id: string) =>
+    passOwners.get(id) ??
     Object.keys(useAiSummaryStore.getState().summaries).find(
       (key) => useAiSummaryStore.getState().summaries[key]?.requestId === id,
     );
   const unsubs = [
     api.onSummaryChunk((value) => {
+      const waiter = remoteWaiters.get(value.requestId);
+      if (waiter?.silent) return;
       const key = keyFor(value.requestId);
       if (key) {
         const current = useAiSummaryStore.getState().summaries[key];
-        if (current?.streaming) patch(key, value.requestId, { text: current.text + value.delta });
+        if (current?.streaming) patch(key, current.requestId, { text: current.text + value.delta });
       }
     }),
     api.onSummaryDone((value) => {
+      const ownerKey = passOwners.get(value.requestId);
+      const waiter = remoteWaiters.get(value.requestId);
+      if (waiter) {
+        remoteWaiters.delete(value.requestId);
+        if (!waiter.silent && ownerKey) {
+          const currentId = useAiSummaryStore.getState().summaries[ownerKey]?.requestId;
+          if (currentId)
+            patch(ownerKey, currentId, {
+              text: value.text,
+              provider: value.provider,
+              model: value.model,
+              truncated:
+                useAiSummaryStore.getState().summaries[ownerKey]?.truncated === true ||
+                value.truncated,
+              progress: null,
+              phase: undefined,
+            });
+        }
+        passOwners.delete(value.requestId);
+        waiter.resolve({ text: value.text, messageCount: value.messageCount });
+        return;
+      }
       const key = keyFor(value.requestId);
-      if (key && useAiSummaryStore.getState().summaries[key]?.streaming)
-        patch(key, value.requestId, {
-          ...value,
+      if (key && useAiSummaryStore.getState().summaries[key]?.streaming) {
+        const currentId = useAiSummaryStore.getState().summaries[key]!.requestId;
+        patch(key, currentId, {
+          text: value.text,
+          provider: value.provider,
+          model: value.model,
+          messageCount: value.messageCount,
           truncated:
             useAiSummaryStore.getState().summaries[key]?.truncated === true || value.truncated,
           streaming: false,
+          progress: null,
+          phase: undefined,
         });
+      }
+      passOwners.delete(value.requestId);
     }),
     api.onSummaryError((value) => {
+      const waiter = remoteWaiters.get(value.requestId);
+      if (waiter) {
+        remoteWaiters.delete(value.requestId);
+        passOwners.delete(value.requestId);
+        waiter.reject(new Error(value.reason));
+        return;
+      }
       const key = keyFor(value.requestId);
-      if (key) patch(key, value.requestId, { error: value.reason, streaming: false });
+      if (key) {
+        const currentId = useAiSummaryStore.getState().summaries[key]!.requestId;
+        patch(key, currentId, { error: value.reason, streaming: false, progress: null });
+      }
+      passOwners.delete(value.requestId);
     }),
     api.onStatusChanged((value) => {
       useAiSummaryStore.getState().setStatus(value);
@@ -112,6 +173,25 @@ export function subscribeAiEvents(): void {
     for (const unsub of unsubs) unsub();
     unsubscribe = undefined;
   };
+}
+
+function waitForRemotePassDone(
+  requestId: string,
+  conversationKey: string,
+  silent: boolean,
+): Promise<{ text: string; messageCount: number }> {
+  passOwners.set(requestId, conversationKey);
+  return new Promise((resolve, reject) => {
+    remoteWaiters.set(requestId, { resolve, reject, silent });
+  });
+}
+
+function cancelRemoteWaiter(requestId: string): void {
+  const waiter = remoteWaiters.get(requestId);
+  if (!waiter) return;
+  remoteWaiters.delete(requestId);
+  passOwners.delete(requestId);
+  waiter.reject(new DOMException('AI generation cancelled', 'AbortError'));
 }
 export async function refreshAiStatus(): Promise<void> {
   const controller = new AbortController();
@@ -239,6 +319,7 @@ export async function runSummary(
   request: AiSummaryRequest,
   historyTruncated = false,
   collectedMessageCount = request.messages.length,
+  ceilingTruncated = false,
 ): Promise<void> {
   if (useAiSummaryStore.getState().summaries[key]?.streaming) return;
   const status = useAiSummaryStore.getState().status;
@@ -257,7 +338,8 @@ export async function runSummary(
     model: status.model,
     messageCount: request.messages.length ? null : 0,
     collectedMessageCount,
-    truncated: historyTruncated,
+    truncated: historyTruncated || ceilingTruncated,
+    ceilingTruncated,
     disclosure,
   };
   useAiSummaryStore.setState((state) => ({
@@ -296,12 +378,18 @@ export async function runSummary(
   if (previous) patch(key, id, { phase: 'queued' });
   let signal = controller.signal;
   let stopWatching: (() => void) | undefined;
+  const activePassIds = new Set<string>();
   const abortReason = () =>
     signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError'
       ? ('timeout' as const)
       : ('cancelled' as const);
   const onAbort = () => {
-    patch(key, id, { streaming: false, error: abortReason() });
+    patch(key, id, { streaming: false, error: abortReason(), progress: null });
+    for (const passId of activePassIds) {
+      void window.electronAPI.ai.cancel(passId).catch(() => {
+        // catch-no-log-ok local state already reflects cancellation
+      });
+    }
     void window.electronAPI.ai.cancel(id).catch(() => {
       // catch-no-log-ok local state already reflects cancellation
     });
@@ -333,6 +421,77 @@ export async function runSummary(
     ]);
     signal.addEventListener('abort', onAbort, { once: true });
     signal.addEventListener('abort', rejectAbort, { once: true });
+    const engine = status.engine;
+    if (!engine) {
+      patch(key, id, { streaming: false, error: 'notConfigured' });
+      return;
+    }
+    if (shouldUseMultiPass(request.messages, engine)) {
+      const result = await runMultiPassSummary({
+        base: {
+          conversationLabel: request.conversationLabel,
+          protocol: request.protocol,
+          surface: request.surface,
+          locale: request.locale,
+          scope: request.scope,
+        },
+        messages: request.messages,
+        status,
+        signal,
+        callbacks: {
+          onProgress: (progress) => {
+            patch(key, id, {
+              progress,
+              phase: progress?.kind === 'merge' ? 'merging' : 'chunking',
+            });
+          },
+          onPhase: (phase) => {
+            patch(key, id, { phase });
+          },
+          onFinalDelta: (delta) => {
+            const current = useAiSummaryStore.getState().summaries[key];
+            if (current?.streaming)
+              patch(key, id, {
+                text: (current.text || '') + delta,
+                phase: undefined,
+                progress: null,
+              });
+          },
+          onFinalText: (text) => {
+            patch(key, id, { text, phase: undefined, progress: null });
+          },
+          waitForSilentRemoteDone: (requestId) => {
+            activePassIds.add(requestId);
+            return waitForRemotePassDone(requestId, key, true).finally(() => {
+              activePassIds.delete(requestId);
+            });
+          },
+          waitForStreamingRemoteDone: (requestId) => {
+            activePassIds.add(requestId);
+            return waitForRemotePassDone(requestId, key, false).finally(() => {
+              activePassIds.delete(requestId);
+            });
+          },
+          cancelRemoteWaiter: (requestId) => {
+            activePassIds.delete(requestId);
+            cancelRemoteWaiter(requestId);
+          },
+        },
+      });
+      signal.throwIfAborted();
+      patch(key, id, {
+        messageCount: result.messageCount,
+        truncated: result.truncated || historyTruncated || ceilingTruncated,
+        streaming: false,
+        progress: null,
+        phase: undefined,
+        ...(!useAiSummaryStore.getState().summaries[key]?.text.trim()
+          ? { error: 'invalidResponse' as const }
+          : {}),
+      });
+      return;
+    }
+
     const completed = new Promise<void>((resolve) => {
       const check = () => {
         const current = useAiSummaryStore.getState().summaries[key];
@@ -341,7 +500,9 @@ export async function runSummary(
       stopWatching = useAiSummaryStore.subscribe(check);
       check();
     });
-    const acknowledgement = window.electronAPI.ai.summarize(request);
+    const singleRequest = { ...request, mode: 'final' as const };
+    activePassIds.add(id);
+    const acknowledgement = window.electronAPI.ai.summarize(singleRequest);
     const result: AiActionResult = await Promise.race([acknowledgement, aborted]);
     if (before !== revision || signal.aborted) {
       if (before === revision) patch(key, id, { streaming: false, error: abortReason() });
@@ -355,7 +516,7 @@ export async function runSummary(
     if (result.summaryInput) {
       patch(key, id, {
         messageCount: result.summaryInput.messageCount,
-        truncated: result.summaryInput.truncated || historyTruncated,
+        truncated: result.summaryInput.truncated || historyTruncated || ceilingTruncated,
       });
     }
     if (result.localJob) {
@@ -367,7 +528,7 @@ export async function runSummary(
       patch(key, id, {
         model: job.model,
         messageCount: job.messageCount,
-        truncated: job.truncated || historyTruncated,
+        truncated: job.truncated || historyTruncated || ceilingTruncated,
       });
       await host.generate(
         job,
@@ -388,6 +549,7 @@ export async function runSummary(
         ...(!text.trim() ? { error: 'invalidResponse' as const } : {}),
       });
     } else {
+      passOwners.set(id, key);
       await Promise.race([completed, aborted]);
     }
   } catch (error) {
@@ -396,11 +558,28 @@ export async function runSummary(
       patch(key, id, {
         streaming: false,
         text: '',
+        progress: null,
         error: signal.aborted
           ? abortReason()
           : error instanceof RepetitiveAiOutputError
             ? 'repetitiveOutput'
-            : 'error',
+            : error instanceof Error &&
+                [
+                  'disabled',
+                  'noMessages',
+                  'notConfigured',
+                  'engineNotReady',
+                  'remoteNotAcknowledged',
+                  'rateLimited',
+                  'busy',
+                  'timeout',
+                  'tooLarge',
+                  'httpError',
+                  'invalidResponse',
+                  'cancelled',
+                ].includes(error.message)
+              ? (error.message as AiSummaryErrorReason)
+              : 'error',
       });
   } finally {
     signal.removeEventListener('abort', onAbort);
@@ -408,6 +587,8 @@ export async function runSummary(
     controller.signal.removeEventListener('abort', onAbort);
     controller.signal.removeEventListener('abort', rejectAbort);
     stopWatching?.();
+    for (const passId of activePassIds) passOwners.delete(passId);
+    activePassIds.clear();
     if (controllers.get(key) === controller) controllers.delete(key);
     release();
   }

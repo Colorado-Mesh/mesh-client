@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Dieser HTTP -Endpunkt sendet deinen API-Schlüssel und Nachrichten ohne Transportverschlüsselung. Verwenden Sie https für einen Server in Ihrem Netzwerk.",
     "setupCatchUp": "Zusammenfassungen einrichten",
     "queued": "Bitte warten — eine weitere Zusammenfassung wird erstellt...",
-    "capacityHint": "Über {{count}} typische Mesh-Nachrichten passen zu einer Zusammenfassung mit dieser Engine (neuere Nachrichten zuerst). Längere Nachrichten verbrauchen mehr Geld. Beschäftigte Netze: Wählen Sie einen lokalen oder Remote-Server für ein größeres Budget oder einen kürzeren Aufholbereich (ungelesen / letzte Stunden). Eine Zusammenfassung kann noch nicht einen vollen 1000-Nachrichten-Backlog abdecken.",
-    "capacityHintChooseEngine": "Die integrierte Betriebssystem-KI und die heruntergeladenen Modelle passen zu {{onDevice}} typischen Mesh-Nachrichten pro Zusammenfassung. Ein lokaler oder Remote-Server passt etwa {{endpoint}} (bis zu 500). Bevorzugen Sie eine Server-Engine oder einen kürzeren Aufholbereich bei ausgelasteten Netzwerken; eine Zusammenfassung kann noch nicht den gesamten 1000-Nachrichten-Backlog abdecken."
+    "chunkProgress": "Zusammenfassender Teil {{current}} von {{total}}…",
+    "mergeProgress": "Zusammenführen von Digests {{current}} von {{total}}…",
+    "ceilingTruncated": "Nach {{count}} Nachrichten gestoppt — erhöhe das Limit für Aufholnachrichten in den KI-Einstellungen, um mehr hinzuzufügen.",
+    "maxCollectedMessages": "Nachrichtenlimit aufholen",
+    "maxCollectedMessagesHint": "Maximale Anzahl von Nachrichten, die ein Catch-up sammeln kann (100–5000). Standard 2000. Höhere Werte dauern länger und benötigen möglicherweise eine längere Zeitüberschreitung.",
+    "capacityHint": "Über {{count}} typische Mesh-Nachrichten passen zu einem Inferenzdurchgang mit dieser Engine (neuere zuerst). Nachholen kann bis zu {{ceiling}} Nachrichten über mehrere Durchgänge verarbeiten. Längere Nachrichten verbrauchen mehr von jedem Durchgang. Große Reichweiten benötigen ein längeres Timeout.",
+    "capacityHintChooseEngine": "Die integrierte Betriebssystem-KI und heruntergeladene Modelle passen zu {{onDevice}} typischen Nachrichten pro Durchgang; ein lokaler oder Remote-Server zu {{endpoint}}. Nachholen kann bis zu {{ceiling}} Nachrichten mit Multi-Pass abdecken. Erhöhen Sie das Nachrichtenlimit und die Zeitüberschreitung für ausgelastete Netze."
   }
 }

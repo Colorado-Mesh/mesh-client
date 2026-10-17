@@ -18,9 +18,16 @@ export interface AiSummaryMessage {
 export type AiSummaryScope =
   { kind: 'unread' } | { kind: 'hours'; hours: number } | { kind: 'loaded' };
 
+/** Prompt role for multi-pass Catch up (default final = existing five-bullet UX). */
+export type AiSummaryPassMode = 'map' | 'reduce' | 'final';
+
 export interface AiSummaryRequest {
   /** Unique per call; used to correlate stream events and cancellation. */
   requestId: string;
+  /** Unique per Catch up job; child map/reduce passes share this for rate-limit exemption. */
+  jobId?: string;
+  /** Prompt mode; omitted means final (single-pass compatibility). */
+  mode?: AiSummaryPassMode;
   /** Conversation label shown to the model, e.g. "#general", "DM with KX4ABC", "Room: NodeChat". */
   conversationLabel: string;
   protocol: 'meshtastic' | 'meshcore' | 'reticulum';
@@ -84,6 +91,8 @@ export interface AiProviderStatus {
   model: string;
   hasApiKey: boolean;
   timeoutSeconds: number;
+  /** Max messages one Catch up may collect (multi-pass); clamped to product bounds. */
+  maxCollectedMessages: number;
   allowRemote: boolean;
   /** true when the configured endpoint is non-local */
   isRemote: boolean;
@@ -97,6 +106,8 @@ export interface AiEndpointConfig {
   engine: AiEngine;
   /** Summary deadline in seconds (30–1800); omitted preserves the saved value. */
   timeoutSeconds?: number;
+  /** Catch up collection ceiling (100–5000); omitted preserves the saved value. */
+  maxCollectedMessages?: number;
   /** required for engine 'local' | 'remote' */
   wireFormat?: AiWireFormat;
   baseUrl?: string;
@@ -144,8 +155,15 @@ export interface AiActionResult {
 }
 
 /** Limits enforced in main before any request is made. */
+/** Max messages in a single ai:summarize IPC (one map/reduce/final chunk). */
 export const AI_MAX_MESSAGES = 500;
-export const AI_MAX_TOTAL_CHARS = 200_000;
+/** Body-char budget sized for the hard collection ceiling (~250 chars × 5000). */
+export const AI_MAX_TOTAL_CHARS = 1_250_000;
+/** Default Catch up collection ceiling (user-configurable). */
+export const AI_DEFAULT_MAX_COLLECTED_MESSAGES = 2000;
+export const AI_MIN_MAX_COLLECTED_MESSAGES = 100;
+/** Hard product ceiling for one Catch up collection. */
+export const AI_MAX_MAX_COLLECTED_MESSAGES = 5000;
 export const AI_MAX_OUTPUT_TOKENS = 250;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
 /** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
@@ -174,6 +192,17 @@ export function aiSummaryTimeoutMs(engine: AiEngine | null, seconds?: number): n
     : engine === 'bundled'
       ? AI_LOCAL_REQUEST_TIMEOUT_MS
       : AI_REQUEST_TIMEOUT_MS;
+}
+
+export function clampAiMaxCollectedMessages(value: unknown): number {
+  if (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= AI_MIN_MAX_COLLECTED_MESSAGES &&
+    value <= AI_MAX_MAX_COLLECTED_MESSAGES
+  )
+    return value;
+  return AI_DEFAULT_MAX_COLLECTED_MESSAGES;
 }
 
 /** Prompt char/byte budgets used by main when preparing a Catch up request. */

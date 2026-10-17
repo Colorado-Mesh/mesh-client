@@ -25,7 +25,7 @@ describe('AI history conversation boundaries', () => {
         sinceMs: 0,
         untilMs: 200,
       }),
-    ).toEqual([{ at: 100, sender: 'Unknown', senderId: null, body: 'WX: Morning report' }]);
+    ).toEqual([{ at: 100, id: 1, sender: 'Unknown', senderId: null, body: 'WX: Morning report' }]);
   });
 
   it.each(['meshtastic', 'meshcore'] as const)(

@@ -128,6 +128,17 @@ describe('AI catch up controls', () => {
     );
   });
 
+  it('shows multi-pass chunk progress', () => {
+    const summary = create();
+    summary.state.streaming = true;
+    summary.state.text = '';
+    summary.state.phase = 'chunking';
+    summary.state.progress = { kind: 'chunk', current: 2, total: 5 };
+    summary.pending = true;
+    render(<ChatSummaryCard summary={summary} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Summarizing part 2 of 5…');
+  });
+
   it('does not expose or allow copying a rejected repetitive result', () => {
     const summary = create();
     summary.state.error = 'repetitiveOutput';

@@ -13,6 +13,7 @@ import {
 } from '@/renderer/stores/aiSummaryStore';
 import type { AiHistoryMessage, AiHistoryQuery } from '@/shared/ai-history';
 import {
+  AI_DEFAULT_MAX_COLLECTED_MESSAGES,
   AI_MAX_MESSAGES,
   AI_MAX_TOTAL_CHARS,
   type AiSummaryMessage,
@@ -33,6 +34,52 @@ export interface ConversationSummaryInput {
   available?: boolean;
 }
 const UNREAD_SCOPE: AiSummaryScope = { kind: 'unread' };
+
+async function fetchHistoryPages(
+  base: Omit<AiHistoryQuery, 'sinceMs' | 'untilMs' | 'limit' | 'beforeAt' | 'beforeId'>,
+  sinceMs: number,
+  untilMs: number,
+  maxCollected: number,
+): Promise<{ messages: AiHistoryMessage[]; truncated: boolean }> {
+  /** Newest-first across pages (page 1 = newest batch). */
+  const newestFirst: AiHistoryMessage[] = [];
+  let beforeAt: number | undefined;
+  let beforeId: number | undefined;
+  let truncated = false;
+  while (newestFirst.length < maxCollected) {
+    const pageLimit = Math.min(AI_MAX_MESSAGES, maxCollected - newestFirst.length);
+    const page = await window.electronAPI.ai.getHistory({
+      ...base,
+      sinceMs,
+      untilMs,
+      limit: pageLimit,
+      ...(beforeAt !== undefined && beforeId !== undefined ? { beforeAt, beforeId } : {}),
+    });
+    if (!page.length) break;
+    // page is oldest→newest; LIMIT pageLimit+1 ⇒ length > pageLimit when older rows remain.
+    const hasMore = page.length > pageLimit;
+    const usable = hasMore ? page.slice(1) : page;
+    if (!usable.length) break;
+    for (const row of [...usable].reverse()) {
+      if (newestFirst.length >= maxCollected) {
+        truncated = true;
+        break;
+      }
+      newestFirst.push(row);
+    }
+    truncated = truncated || hasMore;
+    if (!hasMore || newestFirst.length >= maxCollected) break;
+    const oldest = usable[0];
+    if (oldest?.id == null) break;
+    beforeAt = oldest.at;
+    beforeId = oldest.id;
+  }
+  if (newestFirst.length > maxCollected) {
+    truncated = true;
+    newestFirst.length = maxCollected;
+  }
+  return { messages: [...newestFirst].reverse(), truncated };
+}
 
 export function useConversationSummary(input: ConversationSummaryInput) {
   const { i18n } = useTranslation();
@@ -89,15 +136,21 @@ export function useConversationSummary(input: ConversationSummaryInput) {
     setLoadingRequest({ key: input.key, owner: runRevision });
     try {
       const now = Date.now();
+      const maxCollected =
+        useAiSummaryStore.getState().status?.maxCollectedMessages ??
+        AI_DEFAULT_MAX_COLLECTED_MESSAGES;
       let messages = input.messages;
       let truncated = false;
+      let ceilingTruncated = false;
       if (scope.kind !== 'loaded' && input.history) {
         const sinceMs = scope.kind === 'unread' ? input.watermark : now - scope.hours * MS_PER_HOUR;
-        const history = await window.electronAPI.ai.getHistory({
-          ...input.history,
-          sinceMs: Math.max(0, sinceMs),
-          untilMs: now,
-        });
+        const { messages: history, truncated: historyTruncated } = await fetchHistoryPages(
+          input.history,
+          Math.max(0, sinceMs),
+          now,
+          maxCollected,
+        );
+        truncated = historyTruncated;
         const normalized =
           input.protocol === 'meshcore'
             ? history.map((message) => {
@@ -121,7 +174,6 @@ export function useConversationSummary(input: ConversationSummaryInput) {
           visible.map(({ at, sender, body }) => ({ at, sender, body })),
           messages,
         );
-        truncated = history.length > AI_MAX_MESSAGES;
       }
       if (!isCurrent()) return;
       const selected = selectSummaryMessages({ messages, scope, watermark: input.watermark, now })
@@ -130,7 +182,8 @@ export function useConversationSummary(input: ConversationSummaryInput) {
       let chars = 0;
       const bounded: AiSummaryMessage[] = [];
       for (const message of selected.reverse()) {
-        if (bounded.length >= AI_MAX_MESSAGES) {
+        if (bounded.length >= maxCollected) {
+          ceilingTruncated = true;
           truncated = true;
           break;
         }
@@ -155,6 +208,7 @@ export function useConversationSummary(input: ConversationSummaryInput) {
         },
         truncated,
         selected.length,
+        ceilingTruncated,
       );
     } catch {
       // catch-no-log-ok history errors expose only a fixed actionable summary error

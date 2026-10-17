@@ -31,6 +31,7 @@ const ready: AiProviderStatus = {
   model: 'test',
   hasApiKey: true,
   timeoutSeconds: 60,
+  maxCollectedMessages: 2000,
   allowRemote: true,
   isRemote: true,
   localEngine: { ready: false, modelId: null, downloading: false },
@@ -294,6 +295,7 @@ it.each(['os', 'bundled', 'local', 'remote'] as const)(
         ...ready,
         engine,
         timeoutSeconds: 720,
+        maxCollectedMessages: 2000,
         localEngine: { ready: true, modelId: 'model', downloading: false },
       },
     });
@@ -449,6 +451,52 @@ describe('AI startup status recovery', () => {
     release(ready);
     await vi.advanceTimersByTimeAsync(0);
     expect(useAiSummaryStore.getState().status).toBeNull();
+  });
+});
+
+describe('summary multi-pass', () => {
+  it('runs map then final when the conversation exceeds one prompt budget', async () => {
+    const long = Array.from({ length: 80 }, (_, i) => ({
+      at: i + 1,
+      sender: `N${i}`,
+      body: `update about site ${i} with enough text to fill the on-device budget`,
+    }));
+    useAiSummaryStore.getState().setStatus({
+      ...ready,
+      engine: 'os',
+      model: 'OS AI',
+    });
+    const texts = ['digest a', 'digest b', 'final bullets'];
+    let call = 0;
+    vi.mocked(api.summarize).mockImplementation((req) => {
+      const requestId = req.requestId;
+      const text = texts[Math.min(call, texts.length - 1)] ?? 'final bullets';
+      call++;
+      setTimeout(() => {
+        done({
+          requestId,
+          text,
+          provider: 'OS AI',
+          model: 'OS AI',
+          messageCount: req.mode === 'final' ? 1 : req.messages.length,
+          truncated: false,
+        });
+      }, 0);
+      return Promise.resolve({
+        ok: true,
+        summaryInput: { messageCount: req.messages.length, truncated: false },
+      });
+    });
+    await runSummary('chat', { ...request, messages: long }, false, long.length);
+    expect(api.summarize).toHaveBeenCalled();
+    expect(vi.mocked(api.summarize).mock.calls.some(([value]) => value.mode === 'map')).toBe(true);
+    expect(vi.mocked(api.summarize).mock.calls.some(([value]) => value.mode === 'final')).toBe(
+      true,
+    );
+    expect(useAiSummaryStore.getState().summaries.chat).toMatchObject({
+      streaming: false,
+      text: 'final bullets',
+    });
   });
 });
 

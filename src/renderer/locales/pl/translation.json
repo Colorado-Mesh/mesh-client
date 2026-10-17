@@ -7789,7 +7789,12 @@
     "insecureKeyWarning": "Ten punkt końcowy HTTP wysyła klucz API i wiadomości bez szyfrowania transportowego. Użyj HTTPS dla serwera w swojej sieci.",
     "setupCatchUp": "Konfiguruj podsumowania",
     "queued": "Proszę czekać — generowane jest inne podsumowanie…",
-    "capacityHint": "Około {{count}} typowych wiadomości siatkowych pasuje do jednego podsumowania w tym silniku (najpierw nowsze wiadomości). Dłuższe wiadomości zużywają więcej środków budżetowych. Zajęte siatki: wybierz lokalny lub zdalny serwer dla większego budżetu lub krótszego zasięgu nadrabiania zaległości (nieprzeczytane / ostatnie godziny). Jedno podsumowanie nie może jeszcze pokryć pełnego 1000-komunikatowego zaległości.",
-    "capacityHintChooseEngine": "Wbudowana sztuczna inteligencja systemu operacyjnego i pobrane modele pasują do około {{onDevice}} typowych komunikatów siatki na podsumowanie. Lokalny lub zdalny serwer mieści około {{endpoint}} (do 500). Preferuj silnik serwera lub krótszy zasięg nadrabiania zaległości w przypadku zajętych siatek; jedno podsumowanie nie może jeszcze obejmować pełnego 1000-komunikatowego zaległości."
+    "chunkProgress": "Podsumowanie części {{current}} z {{total}}…",
+    "mergeProgress": "Scalanie skrótów {{current}} z {{total}}…",
+    "ceilingTruncated": "Zatrzymano po wiadomościach {{count}} — zwiększ limit wiadomości do nadrobienia w ustawieniach sztucznej inteligencji, aby uwzględnić więcej.",
+    "maxCollectedMessages": "Limit wiadomości do nadrobienia",
+    "maxCollectedMessagesHint": "Maksymalna liczba wiadomości, które może zebrać jedna osoba do nadrobienia zaległości (100–5000). Domyślnie 2000. Wyższe wartości trwają dłużej i mogą wymagać większego limitu czasu.",
+    "capacityHint": "Około {{count}} typowych wiadomości siatkowych pasuje do jednego przejścia wnioskowania w tym silniku (najpierw nowsze). Nadrabianie zaległości pozwala przetworzyć do {{ceiling}} wiadomości za pomocą wielu przejść. Dłuższe wiadomości zużywają więcej z każdego przejścia. Duże zasięgi wymagają dłuższego czasu oczekiwania.",
+    "capacityHintChooseEngine": "Wbudowana sztuczna inteligencja systemu operacyjnego i pobrane modele pasują do około {{onDevice}} typowych wiadomości na przejazd; lokalny lub zdalny serwer około {{endpoint}}. Nadrabianie zaległości może pokryć do {{ceiling}} wiadomości za pomocą wielu przepustek. Zwiększ limit komunikatów i limit czasu dla zajętych siatek."
   }
 }

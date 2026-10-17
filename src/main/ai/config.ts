@@ -7,6 +7,7 @@ export interface StoredAiConfig {
   baseUrl: string;
   model: string;
   timeoutSeconds?: number;
+  maxCollectedMessages?: number;
   encryptedKey?: string;
   allowRemote: boolean;
   localModelId: string | null;
@@ -50,6 +51,9 @@ export class AiConfig {
         baseUrl: c.baseUrl,
         model: c.model,
         ...(typeof c.timeoutSeconds === 'number' ? { timeoutSeconds: c.timeoutSeconds } : {}),
+        ...(typeof c.maxCollectedMessages === 'number'
+          ? { maxCollectedMessages: c.maxCollectedMessages }
+          : {}),
         allowRemote: c.allowRemote === true,
         localModelId: typeof c.localModelId === 'string' ? c.localModelId : null,
         ...(typeof c.encryptedKey === 'string' ? { encryptedKey: c.encryptedKey } : {}),
@@ -92,6 +96,7 @@ export class AiConfig {
         baseUrl,
         model: input.model ?? '',
         timeoutSeconds: input.timeoutSeconds ?? old.timeoutSeconds,
+        maxCollectedMessages: input.maxCollectedMessages ?? old.maxCollectedMessages,
         encryptedKey,
         allowRemote: input.engine === 'remote' && input.allowRemote === true,
         localModelId: input.localModelId === undefined ? old.localModelId : input.localModelId,

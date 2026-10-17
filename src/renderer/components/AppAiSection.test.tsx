@@ -24,6 +24,7 @@ it('explains offline processing time in the downloaded-model settings', async ()
     model: '',
     hasApiKey: false,
     timeoutSeconds: 60,
+    maxCollectedMessages: 2000,
     allowRemote: false,
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
@@ -76,6 +77,7 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
     model: '',
     hasApiKey: false,
     timeoutSeconds: 300,
+    maxCollectedMessages: 2000,
     allowRemote: false,
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
@@ -85,8 +87,12 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
   const unsubscribe = () => () => {};
   const setConfig = vi
     .fn()
-    .mockImplementation((input: { timeoutSeconds?: number }) =>
-      Promise.resolve({ ...status, timeoutSeconds: input.timeoutSeconds ?? status.timeoutSeconds }),
+    .mockImplementation((input: { timeoutSeconds?: number; maxCollectedMessages?: number }) =>
+      Promise.resolve({
+        ...status,
+        timeoutSeconds: input.timeoutSeconds ?? status.timeoutSeconds,
+        maxCollectedMessages: input.maxCollectedMessages ?? status.maxCollectedMessages,
+      }),
     );
   Object.defineProperty(window, 'electronAPI', {
     configurable: true,

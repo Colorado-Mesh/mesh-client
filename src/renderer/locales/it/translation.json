@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Questo endpoint HTTP invia la chiave API e i messaggi senza crittografia di trasporto. Usa HTTPS per un server sulla tua rete.",
     "setupCatchUp": "Configura riepiloghi",
     "queued": "Attendere: è in corso la generazione di un altro riepilogo...",
-    "capacityHint": "Circa {{count}} i messaggi mesh tipici si adattano a un riepilogo con questo motore (prima i messaggi più recenti). I messaggi più lunghi utilizzano più budget. Busy mesh: scegli un server locale o remoto per un budget maggiore o un intervallo di recupero più breve (non letto / ultime ore). Un riepilogo non può ancora coprire un backlog completo di 1000 messaggi.",
-    "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi mesh tipici per riepilogo. Un server locale o remoto può ospitare circa {{endpoint}} (fino a 500). Preferisci un motore server o un intervallo di recupero più breve su mesh occupate; un riepilogo non può ancora coprire un backlog completo di 1000 messaggi."
+    "chunkProgress": "Riassumendo la parte {{current}} di {{total}}...",
+    "mergeProgress": "Unione dei digest {{current}} di {{total}}…",
+    "ceilingTruncated": "Interrotto dopo i messaggi {{count}}: aumenta il limite dei messaggi di recupero nelle impostazioni AI per includerne altri.",
+    "maxCollectedMessages": "Raggiungi il limite di messaggi",
+    "maxCollectedMessagesHint": "Numero massimo di messaggi che un Recupero può raccogliere (100–5000). Valore predefinito 2000. I valori più alti richiedono più tempo e potrebbero richiedere un timeout maggiore.",
+    "capacityHint": "Circa {{count}} i messaggi mesh tipici si adattano a un passaggio di inferenza con questo motore (prima i più recenti). Il recupero può elaborare fino a {{ceiling}} messaggi tramite più passaggi. I messaggi più lunghi utilizzano più di ogni passaggio. Le grandi gamme richiedono un timeout più lungo.",
+    "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi tipici per passaggio; un server locale o remoto a circa {{endpoint}}. Il recupero può coprire fino a {{ceiling}} messaggi con multi-pass. Aumentare il limite di messaggi e il timeout per le mesh occupate."
   }
 }

@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Ce point de terminaison HTTP envoie votre clé API et des messages sans chiffrement de transport. Utilisez HTTPS pour un serveur sur votre réseau.",
     "setupCatchUp": "Configurer les résumés",
     "queued": "Veuillez patienter — un autre résumé est en cours de génération…",
-    "capacityHint": "Environ {{count}} messages maillés typiques correspondent à un résumé avec ce moteur (messages plus récents en premier). Les messages plus longs utilisent plus de budget. Maillages occupés : choisissez un serveur local ou distant pour un budget plus important, ou une portée de rattrapage plus courte (non lu / dernières heures). Un résumé ne peut pas encore couvrir un arriéré complet de 1000 messages.",
-    "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages maillés typiques par résumé. Un serveur local ou distant peut contenir environ {{endpoint}} (jusqu'à 500). Préférez un moteur de serveur ou une plage de rattrapage plus courte sur les maillages occupés ; un résumé ne peut pas encore couvrir un backlog complet de 1000 messages."
+    "chunkProgress": "Résumer la partie {{current}} de {{total}}…",
+    "mergeProgress": "Fusion des condensats {{current}} de {{total}}…",
+    "ceilingTruncated": "Arrêté après les messages {{count}} — augmentez la limite de messages de rattrapage dans les paramètres d'IA pour en inclure plus.",
+    "maxCollectedMessages": "Limite de messages de rattrapage",
+    "maxCollectedMessagesHint": "Nombre maximum de messages qu'un Rattrapage peut collecter (100–5000). 2000 par défaut. Les valeurs plus élevées prennent plus de temps et peuvent nécessiter un délai d'attente plus long.",
+    "capacityHint": "Environ {{count}} messages maillés typiques correspondent à une passe d'inférence avec ce moteur (plus récent en premier). Le rattrapage peut traiter jusqu'à {{ceiling}} messages via plusieurs passes. Les messages plus longs utilisent plus de chaque passe. Les grandes plages nécessitent un délai d'attente plus long.",
+    "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages typiques par passage ; un serveur local ou distant à propos de {{endpoint}}. Le rattrapage peut couvrir jusqu'à {{ceiling}} messages avec plusieurs passes. Augmentez la limite de message et le délai d'expiration pour les maillages occupés."
   }
 }

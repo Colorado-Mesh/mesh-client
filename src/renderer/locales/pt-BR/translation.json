@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Este ponto de extremidade HTTP envia sua chave de API e mensagens sem criptografia de transporte. Use HTTPS para um servidor em sua rede.",
     "setupCatchUp": "Configurar resumos",
     "queued": "Aguarde — outro resumo está sendo gerado...",
-    "capacityHint": "Sobre {{count}} mensagens de malha típicas cabem em um resumo com este mecanismo (mensagens mais recentes primeiro). Mensagens mais longas usam mais do orçamento. Malhas ocupadas: escolha um servidor local ou remoto para um orçamento maior ou um intervalo de atualização mais curto (não lido / últimas horas). Um resumo ainda não pode cobrir um backlog completo de 1000 mensagens.",
-    "capacityHintChooseEngine": "Os modelos integrados de OS AI e baixados se encaixam em cerca de {{onDevice}} mensagens de malha típicas por resumo. Um servidor local ou remoto se encaixa em cerca de {{endpoint}} (até 500). Prefira um mecanismo de servidor ou um intervalo de atualização mais curto em malhas ocupadas; um resumo ainda não pode cobrir um backlog completo de 1000 mensagens."
+    "chunkProgress": "Resumindo a parte {{current}} de {{total}}…",
+    "mergeProgress": "Mesclando resumos {{current}} de {{total}}…",
+    "ceilingTruncated": "Parado após {{count}} mensagens — aumente o limite de mensagens de atualização nas configurações de IA para incluir mais.",
+    "maxCollectedMessages": "Limite de mensagens de recuperação",
+    "maxCollectedMessagesHint": "Máximo de mensagens que um Catch up pode coletar (100–5000). Padrão 2000. Valores mais altos demoram mais e podem precisar de um tempo limite maior.",
+    "capacityHint": "Sobre {{count}} mensagens de malha típicas cabem uma passagem de inferência com este mecanismo (mais recentes primeiro). A atualização pode processar até {{ceiling}} mensagens através de vários passes. Mensagens mais longas usam mais de cada passagem. Grandes faixas precisam de um tempo limite mais longo.",
+    "capacityHintChooseEngine": "Os modelos integrados de OS AI e baixados se encaixam em cerca de {{onDevice}} mensagens típicas por passagem; um servidor local ou remoto sobre {{endpoint}}. A atualização pode cobrir até {{ceiling}} mensagens com várias passagens. Aumente o limite de mensagens e o tempo limite para malhas ocupadas."
   }
 }

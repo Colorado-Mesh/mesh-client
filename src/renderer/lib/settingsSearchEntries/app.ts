@@ -450,6 +450,12 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['AI', 'summary', 'timeout', 'seconds', 'deadline'],
   },
   {
+    id: 'app.aiProvider.maxCollectedMessages',
+    slot: 'App',
+    labelKey: 'aiSummary.maxCollectedMessages',
+    keywords: ['AI', 'summary', 'catch up', 'messages', 'limit', 'ceiling', '2000'],
+  },
+  {
     id: 'app.aiProvider.format',
     slot: 'App',
     labelKey: 'aiSummary.format',
@@ -711,6 +717,7 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.cancel': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.capacityHintChooseEngine':
       'AI capacity help when no engine selected; capacityHint is indexed',
+    'aiSummary.maxCollectedMessagesHint': 'AI collect ceiling help; its setting is indexed',
     'aiSummary.chooseEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.clearKey': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.download': 'AI setting help, option, status or child action; parent is indexed',

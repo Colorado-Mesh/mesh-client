@@ -15,7 +15,10 @@ import type {
   AiWireFormat,
 } from '@/shared/ai-types';
 import {
+  AI_DEFAULT_MAX_COLLECTED_MESSAGES,
+  AI_MAX_MAX_COLLECTED_MESSAGES,
   AI_MAX_TIMEOUT_SECONDS,
+  AI_MIN_MAX_COLLECTED_MESSAGES,
   AI_MIN_TIMEOUT_SECONDS,
   aiSummaryTimeoutMs,
   estimateAiSummaryMessageCapacity,
@@ -36,6 +39,9 @@ export function AppAiSection() {
   const [apiKey, setApiKey] = useState<string | undefined>();
   const [timeoutSeconds, setTimeoutSeconds] = useState(
     String(status?.timeoutSeconds ?? aiSummaryTimeoutMs(status?.engine ?? null) / MS_PER_SECOND),
+  );
+  const [maxCollectedMessages, setMaxCollectedMessages] = useState(
+    String(status?.maxCollectedMessages ?? AI_DEFAULT_MAX_COLLECTED_MESSAGES),
   );
   const [ack, setAck] = useState(status?.allowRemote ?? false);
   const [models, setModels] = useState<AiModelInfo[]>([]);
@@ -64,6 +70,7 @@ export function AppAiSection() {
             value?.model ?? '',
             value?.allowRemote ?? false,
             value?.timeoutSeconds,
+            value?.maxCollectedMessages,
           ]);
         if (configuration(next) === configuration(previous.status)) return;
         setEngine(next.engine ?? '');
@@ -72,6 +79,7 @@ export function AppAiSection() {
         setModel(next.model);
         setAck(next.allowRemote);
         setTimeoutSeconds(String(next.timeoutSeconds));
+        setMaxCollectedMessages(String(next.maxCollectedMessages));
       }),
     [],
   );
@@ -142,6 +150,7 @@ export function AppAiSection() {
   const configurationDirty =
     engine !== status?.engine ||
     Number(timeoutSeconds) !== status?.timeoutSeconds ||
+    Number(maxCollectedMessages) !== status?.maxCollectedMessages ||
     ((engine === 'local' || engine === 'remote') &&
       (format !== status?.wireFormat ||
         baseUrl !== status?.baseUrl ||
@@ -153,6 +162,7 @@ export function AppAiSection() {
     const input: AiEndpointConfig = {
       engine,
       timeoutSeconds: Number(timeoutSeconds),
+      maxCollectedMessages: Number(maxCollectedMessages),
       wireFormat: format,
       baseUrl,
       model,
@@ -232,10 +242,12 @@ export function AppAiSection() {
               {engine
                 ? t('aiSummary.capacityHint', {
                     count: estimateAiSummaryMessageCapacity(engine),
+                    ceiling: Number(maxCollectedMessages) || AI_DEFAULT_MAX_COLLECTED_MESSAGES,
                   })
                 : t('aiSummary.capacityHintChooseEngine', {
                     onDevice: estimateAiSummaryMessageCapacity('os'),
                     endpoint: estimateAiSummaryMessageCapacity('local'),
+                    ceiling: Number(maxCollectedMessages) || AI_DEFAULT_MAX_COLLECTED_MESSAGES,
                   })}
             </p>
             <div data-setting-anchor="app.aiProvider.osAi" className="text-muted text-xs">
@@ -486,6 +498,27 @@ export function AppAiSection() {
               />
               <span className="text-muted mt-1 block text-xs">{t('aiSummary.timeoutHint')}</span>
             </label>
+            <label
+              data-setting-anchor="app.aiProvider.maxCollectedMessages"
+              className="block text-sm"
+            >
+              {t('aiSummary.maxCollectedMessages')}
+              <input
+                className={`${INPUT_BOX_CLASS} mt-1 w-full`}
+                aria-label={t('aiSummary.maxCollectedMessages')}
+                type="number"
+                min={AI_MIN_MAX_COLLECTED_MESSAGES}
+                max={AI_MAX_MAX_COLLECTED_MESSAGES}
+                step={1}
+                value={maxCollectedMessages}
+                onChange={(event) => {
+                  setMaxCollectedMessages(event.target.value);
+                }}
+              />
+              <span className="text-muted mt-1 block text-xs">
+                {t('aiSummary.maxCollectedMessagesHint')}
+              </span>
+            </label>
             <div data-setting-anchor="app.aiProvider.test" className="flex flex-wrap gap-2">
               <Button
                 size="sm"
@@ -495,7 +528,10 @@ export function AppAiSection() {
                   (engine === 'remote' && !ack) ||
                   !Number.isInteger(Number(timeoutSeconds)) ||
                   Number(timeoutSeconds) < AI_MIN_TIMEOUT_SECONDS ||
-                  Number(timeoutSeconds) > AI_MAX_TIMEOUT_SECONDS
+                  Number(timeoutSeconds) > AI_MAX_TIMEOUT_SECONDS ||
+                  !Number.isInteger(Number(maxCollectedMessages)) ||
+                  Number(maxCollectedMessages) < AI_MIN_MAX_COLLECTED_MESSAGES ||
+                  Number(maxCollectedMessages) > AI_MAX_MAX_COLLECTED_MESSAGES
                 }
                 aria-label={t('aiSummary.save')}
                 onClick={() => {

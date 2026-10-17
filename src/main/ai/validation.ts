@@ -1,9 +1,12 @@
 import {
+  AI_MAX_MAX_COLLECTED_MESSAGES,
   AI_MAX_MESSAGES,
   AI_MAX_TIMEOUT_SECONDS,
   AI_MAX_TOTAL_CHARS,
+  AI_MIN_MAX_COLLECTED_MESSAGES,
   AI_MIN_TIMEOUT_SECONDS,
   type AiEndpointConfig,
+  type AiSummaryPassMode,
   type AiSummaryRequest,
 } from '../../shared/ai-types';
 
@@ -11,6 +14,7 @@ const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const text = (value: unknown, cap: number): value is string =>
   typeof value === 'string' && value.length <= cap;
+const PASS_MODES: AiSummaryPassMode[] = ['map', 'reduce', 'final'];
 export function validateAiConfig(value: unknown): AiEndpointConfig {
   if (
     !record(value) ||
@@ -33,6 +37,11 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
         !Number.isInteger(value.timeoutSeconds) ||
         value.timeoutSeconds < AI_MIN_TIMEOUT_SECONDS ||
         value.timeoutSeconds > AI_MAX_TIMEOUT_SECONDS)) ||
+    (value.maxCollectedMessages !== undefined &&
+      (typeof value.maxCollectedMessages !== 'number' ||
+        !Number.isInteger(value.maxCollectedMessages) ||
+        value.maxCollectedMessages < AI_MIN_MAX_COLLECTED_MESSAGES ||
+        value.maxCollectedMessages > AI_MAX_MAX_COLLECTED_MESSAGES)) ||
     (value.apiKey !== undefined && !text(value.apiKey, 4096)) ||
     (value.allowRemote !== undefined && typeof value.allowRemote !== 'boolean') ||
     (value.localModelId != null && !text(value.localModelId, 128))
@@ -42,6 +51,9 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
   return {
     engine: value.engine as AiEndpointConfig['engine'],
     ...(value.timeoutSeconds !== undefined ? { timeoutSeconds: value.timeoutSeconds } : {}),
+    ...(value.maxCollectedMessages !== undefined
+      ? { maxCollectedMessages: value.maxCollectedMessages }
+      : {}),
     ...(endpoint
       ? {
           wireFormat: value.wireFormat as AiEndpointConfig['wireFormat'],
@@ -78,6 +90,12 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
       value.scope.hours > 8760)
   )
     throw new Error('Invalid AI hours');
+  if (
+    (value.jobId !== undefined && (!text(value.jobId, 128) || !value.jobId)) ||
+    (value.mode !== undefined &&
+      (typeof value.mode !== 'string' || !PASS_MODES.includes(value.mode as AiSummaryPassMode)))
+  )
+    throw new Error('Invalid AI summary request');
   if (!Array.isArray(value.messages) || value.messages.length > AI_MAX_MESSAGES)
     throw new Error('Invalid AI messages');
   let chars = 0;
@@ -101,5 +119,10 @@ export function validateAiRequest(value: unknown): AiSummaryRequest {
       body: message.body.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ''),
     };
   });
-  return { ...(value as unknown as AiSummaryRequest), messages };
+  return {
+    ...(value as unknown as AiSummaryRequest),
+    messages,
+    ...(value.jobId !== undefined ? { jobId: value.jobId } : {}),
+    ...(value.mode !== undefined ? { mode: value.mode as AiSummaryPassMode } : {}),
+  };
 }

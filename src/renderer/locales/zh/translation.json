@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "此HTTP端点在没有传输加密的情况下发送您的API密钥和消息。对网络上的服务器使用HTTPS。",
     "setupCatchUp": "设置摘要",
     "queued": "请稍候—正在生成另一个摘要…",
-    "capacityHint": "关于{{count}}的典型网格消息适合此引擎的一个摘要（首先是较新的消息）。较长的消息会占用更多的预算。繁忙的网格：选择本地或远程服务器以获得更大的预算，或更短的追赶范围（未读/最后几个小时）。一个摘要还不能覆盖完整的1000条消息积压。",
-    "capacityHintChooseEngine": "内置的操作系统AI和下载的模型适用于每个摘要的{{onDevice}}典型网格消息。本地或远程服务器可容纳约{{endpoint}} （最多500 ）。在繁忙的网格上首选服务器引擎或更短的追赶范围；一个摘要还不能覆盖完整的1000条消息积压。"
+    "chunkProgress": "总结{{total}}的{{current}}部分……",
+    "mergeProgress": "正在合并摘要{{current}} ，共{{total}} …",
+    "ceilingTruncated": "在{{count}}消息后停止—提高AI设置中的追赶消息限制以包括更多信息。",
+    "maxCollectedMessages": "追赶消息限制",
+    "maxCollectedMessagesHint": "一个Catch up可以收集的最大消息数（ 100–5000 ）。默认值2000。更高的值需要更长的时间，可能需要更大的超时时间。",
+    "capacityHint": "关于{{count}}的典型网格消息适合此引擎的一个推理通道（首先是较新的）。Catch up可以通过多次通行证处理最多{{ceiling}}条消息。较长的消息每次使用通行证的使用次数较多。较大的范围需要较长的超时时间。",
+    "capacityHintChooseEngine": "内置操作系统的人工智能和下载的模型每通约适合{{onDevice}}条典型消息；本地或远程服务器约适合{{endpoint}}条。使用多重通行证，最多可以覆盖{{ceiling}}条消息。提高繁忙网格的消息限制和超时。"
   }
 }

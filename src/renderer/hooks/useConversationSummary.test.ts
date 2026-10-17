@@ -21,6 +21,7 @@ const ready: AiProviderStatus = {
   model: 'test',
   hasApiKey: false,
   timeoutSeconds: 60,
+  maxCollectedMessages: 2000,
   allowRemote: false,
   isRemote: false,
   localEngine: { ready: false, modelId: null, downloading: false },
@@ -352,13 +353,15 @@ describe('conversation summary async boundaries', () => {
   });
 
   it('filters fetched history before counting and bounding while retaining raw-query truncation', async () => {
+    // Oldest→newest page with LIMIT+1 overflow: first row is the sentinel; newest 500 are kept.
     const hidden = Array.from({ length: 500 }, (_, at) => ({
-      at: at + 2,
+      at: at + 1,
+      id: at + 1,
       sender: 'Weather',
       body: 'hidden',
     }));
-    const visible = { at: 1, sender: 'Alice', body: 'East repeater is online.' };
-    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([visible, ...hidden]);
+    const visible = { at: 1000, id: 1000, sender: 'Alice', body: 'East repeater is online.' };
+    vi.mocked(window.electronAPI.ai.getHistory).mockResolvedValueOnce([...hidden, visible]);
     const { result } = renderHook(() =>
       useConversationSummary({
         ...input,
@@ -369,7 +372,9 @@ describe('conversation summary async boundaries', () => {
       await result.current.run();
     });
     expect(window.electronAPI.ai.summarize).toHaveBeenCalledWith(
-      expect.objectContaining({ messages: [visible] }),
+      expect.objectContaining({
+        messages: [{ at: visible.at, sender: visible.sender, body: visible.body }],
+      }),
     );
     expect(result.current.state).toMatchObject({ collectedMessageCount: 1, truncated: true });
   });

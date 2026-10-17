@@ -18,6 +18,7 @@ import {
   type AiProviderStatus,
   aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
+  clampAiMaxCollectedMessages,
 } from '../../shared/ai-types';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '../../shared/timeConstants';
 import { AiClient } from '../ai/aiClient';
@@ -80,10 +81,12 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   const reads = createIpcRateLimiter({ max: 180, windowMs: MS_PER_MINUTE, label: 'ai:read' });
   const writes = createIpcRateLimiter({ max: 60, windowMs: MS_PER_MINUTE, label: 'ai:write' });
   const summaries = createIpcRateLimiter({
-    max: 10,
+    max: 120,
     windowMs: MS_PER_MINUTE,
     label: 'ai:summarize',
   });
+  /** Parent Catch up jobs whose child map/reduce passes skip the summarize rate limiter. */
+  const multiPassJobs = new Set<string>();
   const guard = (event: IpcMainInvokeEvent, channel: string, write = false) => {
     assertIpcSender(event, channel);
     (write ? writes : reads).checkOrThrow();
@@ -92,6 +95,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     revision++;
     for (const controller of active.values()) controller.abort();
     active.clear();
+    multiPassJobs.clear();
     os.kill();
   };
   const status = async (): Promise<AiProviderStatus> => {
@@ -107,6 +111,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       model: c.model,
       hasApiKey: Boolean(c.encryptedKey),
       timeoutSeconds: aiSummaryTimeoutMs(c.engine, c.timeoutSeconds) / MS_PER_SECOND,
+      maxCollectedMessages: clampAiMaxCollectedMessages(c.maxCollectedMessages),
       allowRemote: c.allowRemote,
       isRemote: (() => {
         const policy = classifyEndpoint(c.baseUrl);
@@ -277,8 +282,20 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:summarize', async (event, value: unknown): Promise<AiActionResult> => {
     guard(event, 'ai:summarize');
-    summaries.checkOrThrow();
     const request = validateAiRequest(value);
+    const mode = request.mode ?? 'final';
+    if (
+      request.jobId &&
+      (mode === 'reduce' || mode === 'final') &&
+      multiPassJobs.has(request.jobId)
+    ) {
+      // Child multi-pass step — already counted when the first map registered the job.
+    } else if (request.jobId && mode === 'map') {
+      summaries.checkOrThrow();
+      multiPassJobs.add(request.jobId);
+    } else {
+      summaries.checkOrThrow();
+    }
     if (active.size >= 1) return { ok: false, reason: 'busy' };
     const controller = new AbortController();
     active.set(request.requestId, controller);
@@ -325,15 +342,18 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     const budget = aiSummaryPromptBudget(c.engine);
     const prompt = buildSummaryPrompt({
       ...request,
+      mode: request.mode ?? 'final',
       maxChars: budget.maxChars,
       maxPromptBytes: budget.maxPromptBytes,
     });
     if (!prompt.included) {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      if (request.jobId && request.mode === 'final') multiPassJobs.delete(request.jobId);
       return { ok: false, reason: 'tooLarge' };
     }
     if (c.engine === 'bundled') {
       if (active.get(request.requestId) === controller) active.delete(request.requestId);
+      if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
       const model = AI_LOCAL_MODELS.find((m) => m.id === c.localModelId)!;
       return {
         ok: true,
@@ -424,6 +444,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       } finally {
         clearTimeout(timer);
         if (active.get(request.requestId) === controller) active.delete(request.requestId);
+        if (request.jobId && mode === 'final') multiPassJobs.delete(request.jobId);
       }
     })();
     return {

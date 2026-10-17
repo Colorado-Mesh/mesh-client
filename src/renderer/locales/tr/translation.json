@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Bu HTTP uç noktası, API anahtarınızı ve mesajlarınızı taşıma şifrelemesi olmadan gönderir. Ağınızdaki bir sunucu için https kullanın.",
     "setupCatchUp": "Özetleri ayarla",
     "queued": "Lütfen bekleyin — başka bir özet oluşturuluyor...",
-    "capacityHint": "Yaklaşık {{count}} tipik mesh mesajları bu motorla bir özete uyar (önce daha yeni mesajlar). Daha uzun mesajlar bütçenin daha fazlasını kullanır. Meşgul ağlar: Daha büyük bir bütçe için yerel veya uzak bir sunucu veya daha kısa bir Yakalama aralığı (okunmamış / son saatler) seçin. Bir özet henüz tam bir 1000 mesajlık iş listesini kapsayamaz.",
-    "capacityHintChooseEngine": "Dahili işletim sistemi yapay zekası ve indirilen modeller özet başına yaklaşık {{onDevice}} tipik mesh mesajına uyar. Yerel veya uzak bir sunucu yaklaşık {{endpoint}} (500 'e kadar) sığar. Meşgul ağlarda bir sunucu motorunu veya daha kısa bir Yakalama aralığını tercih edin; bir özet henüz tam bir 1000 mesajlık iş yığınını kapsayamaz."
+    "chunkProgress": "{{total}} 'in {{current}} bölümü özetleniyor…",
+    "mergeProgress": "Sindirimlerin birleştirilmesi {{current}} of {{total}}…",
+    "ceilingTruncated": "{{count}} mesajdan sonra durduruldu — daha fazlasını eklemek için Yapay Zeka ayarlarındaki Yakalama mesajı sınırını yükseltin.",
+    "maxCollectedMessages": "Mesaj sınırını yakala",
+    "maxCollectedMessagesHint": "Bir Yakalamanın toplayabileceği maksimum mesaj (100 -5000). Varsayılan 2000. Daha yüksek değerler daha uzun sürer ve daha büyük bir zaman aşımı gerekebilir.",
+    "capacityHint": "Yaklaşık {{count}} tipik mesh mesajları bu motorla bir çıkarım geçişine uyar (önce daha yeni). Yetişme, birden fazla paso aracılığıyla {{ceiling}} kadar mesajı işleyebilir. Daha uzun mesajlarda her pasodan daha fazla kullanılır. Büyük aralıkların daha uzun bir zaman aşımına ihtiyacı vardır.",
+    "capacityHintChooseEngine": "Yerleşik işletim sistemi yapay zekası ve indirilen modeller, geçiş başına yaklaşık {{onDevice}} tipik mesaja uyar; {{endpoint}} hakkında yerel veya uzak bir sunucu. Arayı kapatmak {{ceiling}} kadar mesajı çoklu geçişle kapatabilir. Meşgul ağlar için mesaj sınırını ve zaman aşımını artırın."
   }
 }

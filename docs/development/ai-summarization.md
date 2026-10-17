@@ -80,12 +80,13 @@ context capacity remains model-dependent, with an `AI_ENDPOINT_MAX_PROMPT_BYTES`
 These budgets are shared via `aiSummaryPromptBudget` so App → AI capacity copy stays aligned.
 
 A dedicated `ai:getHistory` query preserves existing generic DB query semantics while adding
-inclusive time bounds and exact conversation filters **before** its 501-row cap. The extra row
-signals truncation. Channels follow keyed identities across slot/radio changes; unkeyed legacy
-rows use the existing current/null-radio fallback. DMs and rooms use peer/server and radio filters;
-Reticulum uses identity plus full destination hash; RRC uses canonical hub/room and prose kinds.
-MeshCore skew normalization occurs before range filtering. `idx_mc_msgs_room_ts` is additive and
-idempotent; no schema version change is needed.
+inclusive time bounds and exact conversation filters **before** each page’s limit (default 500,
+plus one overflow row). Optional `beforeAt`/`beforeId` cursors page older history until the user’s
+`maxCollectedMessages` ceiling. Channels follow keyed identities across slot/radio changes; unkeyed
+legacy rows use the existing current/null-radio fallback. DMs and rooms use peer/server and radio
+filters; Reticulum uses identity plus full destination hash; RRC uses canonical hub/room and prose
+kinds. MeshCore skew normalization occurs before range filtering. `idx_mc_msgs_room_ts` is additive
+and idempotent; no schema version change is needed.
 
 Chat and Rooms reuse their opening unread-divider snapshots while the divider is active.
 After the divider is cleared, summaries use the current persisted read watermark; hiding a
@@ -104,9 +105,8 @@ are repaired in storage once, without emitting change events from the read helpe
 offered messages as included before main confirms coverage.
 Channel summaries apply the same default/custom weather patterns and marked-sender rules to fetched
 history as to visible chat when hiding weather is enabled. Numeric sender metadata stays local and
-is stripped by request validation. DMs and rooms retain weather text. The raw 501-row history cap
-still applies before visibility filtering; preserve its truncation disclosure even if filtering leaves
-fewer messages.
+is stripped by request validation. DMs and rooms retain weather text. Per-page overflow and the user
+collection ceiling still disclose truncation even if visibility filtering leaves fewer messages.
 
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
@@ -120,11 +120,15 @@ Waiting requests can be cancelled; configuration changes and teardown abort acti
 Each generation deadline starts when its queue slot opens. Queue failures release the next job;
 worker cleanup completes before the next downloaded model starts. Conversation range selections
 live in the session store, so regenerate keeps the selected range after tab/protocol switches.
-App → AI shows an approximate per-engine message capacity derived from the shared prompt budgets
-(`estimateAiSummaryMessageCapacity`) so busy-mesh users can prefer a local/remote server or a
-shorter Catch up range. The Catch up card reports collected vs included counts after the prompt
-budget is applied (newest first) and explains truncation when the engine context cannot fit the
-whole range. One-pass summarization does not yet cover a full 1000-message backlog.
+App → AI shows an approximate per-engine **per-pass** message capacity
+(`estimateAiSummaryMessageCapacity`) and a user-configurable **Catch up message limit**
+(`maxCollectedMessages`, default 2000, range 100–5000). When the collected range exceeds one
+prompt budget, Catch up runs hierarchical multi-pass summarization (map digests → reduce → final
+five-bullet catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
+History is paginated until the configured ceiling. Bundled WASM reuses a loaded model across
+map/reduce steps. The whole job shares the configured timeout; large ranges often need 10–30
+minutes on downloaded models. The Catch up card reports progress (`part i of n` / merging),
+collected vs included counts, and ceiling truncation when the user limit stops collection.
 Prompt metadata identifies the local IANA timezone, and every transcript timestamp includes its
 local date and UTC offset, including across midnight and daylight-saving transitions. The worker uses a single completion slot and bounded
 128-token batches. Model loading and transcript processing are shown separately; worker startup

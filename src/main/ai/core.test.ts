@@ -300,7 +300,7 @@ describe('AI prompts and validation', () => {
       { protocol: 'other' },
       { messages: [{ at: NaN, sender: 'x', body: 'x' }] },
       { messages: Array.from({ length: 501 }, () => request.messages[0]) },
-      { messages: [{ at: 1, sender: 'x', body: 'x'.repeat(200001) }] },
+      { messages: [{ at: 1, sender: 'x', body: 'x'.repeat(1_250_001) }] },
     ])
       expect(() => validateAiRequest({ ...request, ...patch })).toThrow();
     expect(() => validateAiConfig({ engine: 'remote', wireFormat: 'bad' })).toThrow();
@@ -488,4 +488,9 @@ it('validates and preserves a configurable summary deadline with safe legacy def
   expect(config.read().timeoutSeconds).toBe(900);
   expect(aiSummaryTimeoutMs('bundled', config.read().timeoutSeconds)).toBe(900000);
   expect(aiSummaryTimeoutMs('os', -1)).toBe(60000);
+  for (const maxCollectedMessages of [0, 99, 5001, NaN, 12.5, '2000']) {
+    expect(() => validateAiConfig({ engine: 'bundled', maxCollectedMessages })).toThrow();
+  }
+  config.write(validateAiConfig({ engine: 'bundled', maxCollectedMessages: 2500 }));
+  expect(config.read().maxCollectedMessages).toBe(2500);
 });

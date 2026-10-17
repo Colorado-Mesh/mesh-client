@@ -51,12 +51,27 @@ export function ChatSummaryCard({ summary }: { summary: ConversationSummaryContr
           : state.text ||
             (state.phase === 'queued'
               ? t('aiSummary.queued')
-              : state.phase === 'loadingModel'
-                ? t('aiSummary.loadingModel')
-                : state.phase === 'readingMessages'
-                  ? t('aiSummary.readingMessages')
-                  : t('aiSummary.working'))}
+              : state.phase === 'chunking' && state.progress
+                ? t('aiSummary.chunkProgress', {
+                    current: state.progress.current,
+                    total: state.progress.total,
+                  })
+                : state.phase === 'merging' && state.progress
+                  ? t('aiSummary.mergeProgress', {
+                      current: state.progress.current,
+                      total: state.progress.total,
+                    })
+                  : state.phase === 'loadingModel'
+                    ? t('aiSummary.loadingModel')
+                    : state.phase === 'readingMessages'
+                      ? t('aiSummary.readingMessages')
+                      : t('aiSummary.working'))}
       </div>
+      {state.ceilingTruncated && (
+        <p className="text-xs text-orange-300">
+          {t('aiSummary.ceilingTruncated', { count: state.collectedMessageCount })}
+        </p>
+      )}
       {state.truncated && <p className="text-xs text-orange-300">{t('aiSummary.truncated')}</p>}
       <p className="text-muted text-xs">{t('aiSummary.verify')}</p>
       <div className="mt-2 flex flex-wrap gap-2">

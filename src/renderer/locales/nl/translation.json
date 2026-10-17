@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Dit HTTP eindpunt verzendt je API-sleutel en berichten zonder transportversleuteling. Gebruik https voor een server in uw netwerk.",
     "setupCatchUp": "Samenvattingen instellen",
     "queued": "Even geduld a.u.b. — een andere samenvatting wordt gegenereerd...",
-    "capacityHint": "Over {{count}} typische mesh-berichten passen in één samenvatting van deze engine (nieuwere berichten eerst). Langere berichten gebruiken meer van het budget. Drukke mazen: kies een lokale of externe server voor een groter budget of een korter inhaalbereik (ongelezen / laatste uren). Eén samenvatting kan nog geen volledige achterstand van 1000 berichten dekken.",
-    "capacityHintChooseEngine": "Ingebouwde OS AI en gedownloade modellen passen ongeveer {{onDevice}} typische mesh-berichten per samenvatting. Een lokale of externe server past op ongeveer {{endpoint}} (tot 500). Geef de voorkeur aan een serverengine of een korter inhaalbereik op drukke mazen; één samenvatting kan nog geen volledige 1000-message backlog dekken."
+    "chunkProgress": "Samenvattend deel {{current}} van {{total}}…",
+    "mergeProgress": "Samenvoegen van digests {{current}} van {{total}}…",
+    "ceilingTruncated": "Gestopt na {{count}} berichten — verhoog de limiet voor het inhalen van berichten in AI-instellingen om meer berichten op te nemen.",
+    "maxCollectedMessages": "Berichtenlimiet inhalen",
+    "maxCollectedMessagesHint": "Maximaal aantal berichten dat een Catch-up mag verzamelen (100–5000). Standaard 2000. Hogere waarden duren langer en hebben mogelijk een grotere time-out nodig.",
+    "capacityHint": "Over {{count}} typische mesh-berichten passen in één inferentiepass met deze engine (eerst nieuwer). Bijpraten kan tot {{ceiling}} berichten via meerdere doorgangen verwerken. Langere berichten gebruiken meer van elke doorgang. Grote reeksen hebben een langere time-out nodig.",
+    "capacityHintChooseEngine": "Ingebouwde OS AI en gedownloade modellen passen ongeveer {{onDevice}} typische berichten per pas; een lokale of externe server over {{endpoint}}. Met multi-pass kun je tot {{ceiling}} berichten inhalen. Verhoog de berichtlimiet en time-out voor drukke mazen."
   }
 }

@@ -7661,7 +7661,12 @@
     "insecureKeyWarning": "Endpoint HTTP ini mengirimkan kunci api dan pesan Anda tanpa enkripsi transport. Gunakan https untuk server di jaringan Anda.",
     "setupCatchUp": "Siapkan ringkasan",
     "queued": "Harap tunggu — ringkasan lain sedang dibuat…",
-    "capacityHint": "Tentang {{count}} pesan jala biasa sesuai dengan satu ringkasan dengan mesin ini (pesan yang lebih baru terlebih dahulu). Pesan yang lebih panjang menggunakan lebih banyak anggaran. Jalinan sibuk: pilih server lokal atau jarak jauh untuk anggaran yang lebih besar, atau rentang Catch up yang lebih pendek (belum dibaca /jam terakhir). Satu ringkasan belum dapat mencakup backlog 1000 pesan penuh.",
-    "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan jala khas per ringkasan. Server lokal atau jarak jauh cocok untuk {{endpoint}} (hingga 500). Lebih suka mesin server atau rentang Catch up yang lebih pendek pada jerat yang sibuk; satu ringkasan belum dapat mencakup backlog 1000 pesan penuh."
+    "chunkProgress": "Meringkas bagian {{current}} dari {{total}}…",
+    "mergeProgress": "Menggabungkan intisari {{current}} dari {{total}}…",
+    "ceilingTruncated": "Dihentikan setelah {{count}} pesan — naikkan batas Menangkap pesan di pengaturan AI untuk menyertakan lebih banyak pesan.",
+    "maxCollectedMessages": "Menangkap batas pesan",
+    "maxCollectedMessagesHint": "Pesan maksimum yang dapat dikumpulkan oleh satu Penangkapan (100 -5000). Default 2000. Nilai yang lebih tinggi membutuhkan waktu lebih lama dan mungkin memerlukan batas waktu yang lebih besar.",
+    "capacityHint": "Tentang {{count}} pesan mesh biasa sesuai dengan satu pass inferensi dengan mesin ini (lebih baru terlebih dahulu). Mengejar ketinggalan bisa memproses hingga {{ceiling}} pesan melalui beberapa pass. Pesan yang lebih panjang menggunakan lebih banyak pass. Rentang yang besar membutuhkan batas waktu yang lebih lama.",
+    "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan khas per pass; server lokal atau jarak jauh untuk {{endpoint}}. Kejar - kejaran bisa mencakup hingga {{ceiling}} pesan dengan multi - pass. Naikkan batas pesan dan batas waktu untuk jerat yang sibuk."
   }
 }

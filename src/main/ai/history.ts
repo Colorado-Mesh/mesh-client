@@ -31,6 +31,21 @@ export function validateHistoryQuery(value: unknown): AiHistoryQuery {
       q.ownNodeIds.some((n) => !Number.isSafeInteger(n) || n < 0 || n > 0xffffffff))
   )
     throw new Error('Invalid AI identities');
+  if (
+    q.limit !== undefined &&
+    (!Number.isSafeInteger(q.limit) || q.limit < 1 || q.limit > AI_MAX_MESSAGES)
+  )
+    throw new Error('Invalid AI history limit');
+  if (
+    (q.beforeAt !== undefined || q.beforeId !== undefined) &&
+    (typeof q.beforeAt !== 'number' ||
+      !Number.isFinite(q.beforeAt) ||
+      q.beforeAt < 0 ||
+      typeof q.beforeId !== 'number' ||
+      !Number.isSafeInteger(q.beforeId) ||
+      q.beforeId < 0)
+  )
+    throw new Error('Invalid AI history cursor');
   return q;
 }
 export function querySummaryHistory(
@@ -107,10 +122,15 @@ export function querySummaryHistory(
   // changing the insertion-order semantics of existing unbounded chat history APIs.
   const senderId =
     q.protocol === 'meshtastic' || q.protocol === 'meshcore' ? ', sender_id AS senderId' : '';
-  const sql = `SELECT at, sender, body${senderId ? ', senderId' : ''} FROM (SELECT ${timestamp} AS at, ${sender} AS sender, ${body} AS body, id${senderId} FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE at >= ? AND at <= ? ORDER BY at DESC, id DESC LIMIT ?`;
-  return (
-    db
-      .prepareOnce(sql)
-      .all(...args, q.sinceMs, q.untilMs, AI_MAX_MESSAGES + 1) as AiHistoryMessage[]
-  ).reverse();
+  const cursor =
+    q.beforeAt !== undefined && q.beforeId !== undefined
+      ? ' AND (at < ? OR (at = ? AND id < ?))'
+      : '';
+  const page = q.limit ?? AI_MAX_MESSAGES;
+  const sql = `SELECT at, sender, body, id${senderId ? ', senderId' : ''} FROM (SELECT ${timestamp} AS at, ${sender} AS sender, ${body} AS body, id${senderId} FROM ${table} ${where.length ? 'WHERE ' + where.join(' AND ') : ''}) WHERE at >= ? AND at <= ?${cursor} ORDER BY at DESC, id DESC LIMIT ?`;
+  const bound =
+    q.beforeAt !== undefined && q.beforeId !== undefined
+      ? [...args, q.sinceMs, q.untilMs, q.beforeAt, q.beforeAt, q.beforeId, page + 1]
+      : [...args, q.sinceMs, q.untilMs, page + 1];
+  return (db.prepareOnce(sql).all(...bound) as AiHistoryMessage[]).reverse();
 }
