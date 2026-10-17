@@ -156,6 +156,7 @@ import {
   MESHTASTIC_PRIMARY_CHANNEL,
   toMeshtasticChannelNumber,
 } from '../lib/meshtastic/meshtasticChannelNumber';
+import { resolveMeshtasticModuleConfigs } from '../lib/meshtastic/meshtasticConfigApply';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
@@ -614,6 +615,9 @@ export function useMeshtasticRuntime() {
   const [waypoints, setWaypoints] = useState<Map<number, MeshWaypoint>>(new Map());
   const [moduleConfigs, setModuleConfigs] = useState<Record<string, unknown>>({});
   const moduleConfigsRef = useRef(moduleConfigs);
+  /** Survives transient deviceStore clears / partial configure so Modules UI keeps hydrated keys. */
+  const lastKnownModuleConfigsRef = useRef<Record<string, unknown>>({});
+  const lastKnownModuleConfigsIdentityRef = useRef<string | null>(null);
   const mqttClientProxyBridgeRef = useRef<MeshtasticMqttClientProxyBridge | null>(null);
   const sfHistoryRequestedServersRef = useRef<Set<number>>(new Set());
   const lastRfDisconnectAtRef = useRef<number | null>(null);
@@ -4786,11 +4790,27 @@ export function useMeshtasticRuntime() {
   }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
   const resolvedModuleConfigs = useMemo(() => {
-    if (!meshtasticIdentityId) return moduleConfigs;
-    if (meshtasticDeviceRecord && Object.keys(meshtasticDeviceRecord.moduleConfigs).length > 0) {
-      return meshtasticDeviceRecord.moduleConfigs;
+    if (!meshtasticIdentityId) {
+      return Object.keys(moduleConfigs).length > 0
+        ? moduleConfigs
+        : lastKnownModuleConfigsRef.current;
     }
-    return moduleConfigs;
+    if (
+      lastKnownModuleConfigsIdentityRef.current != null &&
+      lastKnownModuleConfigsIdentityRef.current !== meshtasticIdentityId
+    ) {
+      lastKnownModuleConfigsRef.current = {};
+    }
+    lastKnownModuleConfigsIdentityRef.current = meshtasticIdentityId;
+    const resolved = resolveMeshtasticModuleConfigs({
+      fromStore: meshtasticDeviceRecord?.moduleConfigs ?? {},
+      fromLocal: moduleConfigs,
+      lastKnown: lastKnownModuleConfigsRef.current,
+    });
+    if (Object.keys(resolved).length > 0) {
+      lastKnownModuleConfigsRef.current = resolved;
+    }
+    return resolved;
   }, [meshtasticIdentityId, moduleConfigs, meshtasticDeviceRecord]);
 
   const resolvedMeshtasticConfigSlices = useMemo(() => {

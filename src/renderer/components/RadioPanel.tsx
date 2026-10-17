@@ -1233,6 +1233,12 @@ export default function RadioPanel({
 
   // ─── Shared state ─────────────────────────────────────────────
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  // Unlock Apply when the radio drops mid-setConfig/commit (SDK promise may never settle).
+  useEffect(() => {
+    if (isConnected) return;
+    if (applyingSection == null) return;
+    setApplyingSection(null);
+  }, [isConnected, applyingSection]);
   /** Current status plus the section it belongs to; a null section means panel-level. */
   const [status, setStatus] = useState<(PanelStatus & { section: string | null }) | null>(null);
   /** Report an apply result inline under the given section's Apply button. */

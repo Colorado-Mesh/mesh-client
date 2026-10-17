@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -33,6 +33,7 @@ import {
   validateMeshtasticMqttModuleApply,
 } from '@/renderer/lib/meshtastic/meshtasticMqttModuleApply';
 import { validateMeshtasticSerialModuleApply } from '@/renderer/lib/meshtastic/meshtasticSerialModuleApply';
+import { MESHTASTIC_MODULE_APPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { ConfigApplyNotice } from './ConfigApplyNotice';
@@ -223,6 +224,15 @@ export default function ModulePanel({
     globalApplyLocked: applyingSection !== null,
   });
   const [applyingSection, setApplyingSection] = useState<string | null>(null);
+  const applyGenerationRef = useRef(0);
+  // Unlock Apply when the radio drops mid-setModuleConfig/commit (SDK promise may never settle).
+  useEffect(() => {
+    if (isConnected) return;
+    if (applyingSection == null) return;
+    applyGenerationRef.current += 1;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- transport drop mid-admin; SDK promises may never settle
+    setApplyingSection(null);
+  }, [isConnected, applyingSection]);
   const [rhPendingConfirm, setRhPendingConfirm] = useState<'enable' | 'undefinedPins' | null>(null);
 
   // ─── Telemetry module ──────────────────────────────────────────
@@ -676,31 +686,60 @@ export default function ModulePanel({
 
   const applyModule = async (sectionLabel: string, moduleCase: string, value: unknown) => {
     clearMeshtasticClientNotification();
+    const applyGen = ++applyGenerationRef.current;
     setApplyingSection(moduleCase);
-    try {
-      await onSetModuleConfig({ payloadVariant: { case: moduleCase, value } });
+    const stillCurrent = () => applyGen === applyGenerationRef.current;
+    const withApplyTimeout = async <T,>(promise: Promise<T>): Promise<T> => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        await onCommit();
+        return await Promise.race([
+          promise,
+          new Promise<T>((_resolve, reject) => {
+            timer = setTimeout(() => {
+              reject(new Error('TIMEOUT'));
+            }, MESHTASTIC_MODULE_APPLY_TIMEOUT_MS);
+          }),
+        ]);
+      } finally {
+        if (timer != null) clearTimeout(timer);
+      }
+    };
+    try {
+      await withApplyTimeout(onSetModuleConfig({ payloadVariant: { case: moduleCase, value } }));
+      if (!stillCurrent()) return;
+      try {
+        await withApplyTimeout(onCommit());
+        if (!stillCurrent()) return;
         addToast(t('modulePanel.sectionSent', { name: sectionLabel }), 'success');
       } catch (err: unknown) {
         // catch-no-log-ok commit failure surfaced in module panel toast
+        if (!stillCurrent()) return;
+        const timeout = err instanceof Error && err.message === 'TIMEOUT';
         addToast(
           t('modulePanel.commitFailed', {
-            message: formatMeshtasticModuleApplyError(err, t),
+            message: timeout
+              ? t('modulePanel.errors.timeout')
+              : formatMeshtasticModuleApplyError(err, t),
           }),
           'error',
         );
       }
     } catch (err: unknown) {
+      if (!stillCurrent()) return;
       console.warn('[ModulePanel] apply failed ' + errLikeToLogString(err));
+      const timeout = err instanceof Error && err.message === 'TIMEOUT';
       addToast(
         t('modulePanel.failed', {
-          message: formatMeshtasticModuleApplyError(err, t),
+          message: timeout
+            ? t('modulePanel.errors.timeout')
+            : formatMeshtasticModuleApplyError(err, t),
         }),
         'error',
       );
     } finally {
-      setApplyingSection(null);
+      if (stillCurrent()) {
+        setApplyingSection(null);
+      }
     }
   };
 

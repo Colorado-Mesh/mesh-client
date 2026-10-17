@@ -50,3 +50,22 @@ export function buildMeshtasticModuleApplyValue(
 ): Record<string, unknown> {
   return mergeMeshtasticConfigApplyValue(deviceCfg, uiOverrides);
 }
+
+/**
+ * Resolve module config maps for UI during (re)configure.
+ * Prefer the device store when it has keys, but keep last-known modules underneath so a
+ * partial configure stream cannot hide modules (e.g. TAK) mid-hydrate after a TCP reset.
+ */
+export function resolveMeshtasticModuleConfigs(args: {
+  fromStore: Record<string, unknown>;
+  fromLocal: Record<string, unknown>;
+  lastKnown: Record<string, unknown>;
+}): Record<string, unknown> {
+  if (Object.keys(args.fromStore).length > 0) {
+    return { ...args.lastKnown, ...args.fromStore };
+  }
+  if (Object.keys(args.fromLocal).length > 0) {
+    return args.fromLocal;
+  }
+  return args.lastKnown;
+}

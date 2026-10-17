@@ -127,6 +127,112 @@ describe('ModulePanel', () => {
     });
   });
 
+  it('unlocks global Apply lock when the radio disconnects mid-apply', async () => {
+    const user = userEvent.setup();
+    let resolveSet: (() => void) | undefined;
+    const onSetModuleConfig = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSet = resolve;
+        }),
+    );
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+
+    const { rerender } = renderWithToast(
+      <ModulePanel
+        {...baseProps}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+          neighborInfo: {
+            enabled: false,
+            updateInterval: 900,
+            transmitOverLora: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    const telemetryDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Telemetry Module';
+    });
+    expect(telemetryDetails).toBeDefined();
+    await user.click(telemetryDetails!.querySelector('summary')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Telemetry Module' }));
+
+    await waitFor(() => {
+      expect(onSetModuleConfig).toHaveBeenCalled();
+    });
+
+    const neighborDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Neighbor Info Module';
+    });
+    expect(neighborDetails).toBeDefined();
+    await user.click(neighborDetails!.querySelector('summary')!);
+    expect(screen.getByRole('button', { name: 'Apply Neighbor Info Module' })).toBeDisabled();
+
+    rerender(
+      <ModulePanel
+        {...baseProps}
+        isConnected={false}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+          neighborInfo: {
+            enabled: false,
+            updateInterval: 900,
+            transmitOverLora: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    rerender(
+      <ModulePanel
+        {...baseProps}
+        isConnected={true}
+        moduleConfigs={{
+          telemetry: {
+            deviceUpdateInterval: 1800,
+            environmentUpdateInterval: 1800,
+            environmentMeasurementEnabled: false,
+            powerMeasurementEnabled: false,
+            airQualityEnabled: false,
+          },
+          neighborInfo: {
+            enabled: false,
+            updateInterval: 900,
+            transmitOverLora: false,
+          },
+        }}
+        onSetModuleConfig={onSetModuleConfig}
+        onCommit={onCommit}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Apply Neighbor Info Module' })).not.toBeDisabled();
+    });
+
+    resolveSet?.();
+  });
+
   it('preserves isServer and uses records field for Store & Forward apply', async () => {
     const user = userEvent.setup();
     const onSetModuleConfig = vi.fn().mockResolvedValue(undefined);

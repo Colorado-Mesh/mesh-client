@@ -6,6 +6,7 @@ import {
   meshtasticConfigSignature,
   meshtasticConfigSlice,
   meshtasticConfigSliceHydrated,
+  resolveMeshtasticModuleConfigs,
   stripMeshtasticProtobufMeta,
 } from './meshtasticConfigApply';
 
@@ -79,5 +80,26 @@ describe('meshtasticConfigApply', () => {
       enabled: true,
       echo: false,
     });
+  });
+
+  it('resolveMeshtasticModuleConfigs keeps last-known modules under a partial store hydrate', () => {
+    const lastKnown = {
+      mqtt: { enabled: true },
+      tak: { team: 1 },
+      neighborInfo: { enabled: false },
+    };
+    const fromStore = { mqtt: { enabled: false }, neighborInfo: { enabled: true } };
+    expect(resolveMeshtasticModuleConfigs({ fromStore, fromLocal: {}, lastKnown })).toEqual({
+      mqtt: { enabled: false },
+      tak: { team: 1 },
+      neighborInfo: { enabled: true },
+    });
+  });
+
+  it('resolveMeshtasticModuleConfigs falls back to last-known when store and local are empty', () => {
+    const lastKnown = { tak: { team: 2 } };
+    expect(resolveMeshtasticModuleConfigs({ fromStore: {}, fromLocal: {}, lastKnown })).toEqual(
+      lastKnown,
+    );
   });
 });
