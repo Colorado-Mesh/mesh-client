@@ -69,6 +69,21 @@ describe('canTakDirectMessage', () => {
     expect(canTakDirectMessage(node(), 'meshcore')).toBe(true);
   });
 
+  it('finds a MeshCore key on the node record, where MeshCore keeps contact keys', () => {
+    // A map node from a MeshCore radio usually has no public_key_hex.
+    const companion = node({ public_key_hex: undefined });
+    expect(canTakDirectMessage(companion, 'meshcore')).toBe(false);
+    useNodeStore.setState({
+      nodes: { [MC]: { 123: { nodeId: 123, publicKey: new Uint8Array(32).fill(7) } } },
+    });
+    expect(canTakDirectMessage(companion, 'meshcore')).toBe(true);
+    useNodeStore.setState({
+      nodes: { [MC]: { 123: { nodeId: 123, publicKey: new Uint8Array(6) } } },
+    });
+    expect(canTakDirectMessage(companion, 'meshcore')).toBe(false);
+    useNodeStore.setState({ nodes: {} });
+  });
+
   it.each([
     ['without a key', node({ public_key_hex: ' ' })],
     ['a repeater', node({ hw_model: 'Repeater' })],
