@@ -3057,50 +3057,49 @@
 <p>Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables users can change in App &gt; Appearance &gt; Colors (<code>src/renderer/lib/themeColors.ts</code>); hard-coded hex ignores their choice and is only allowed in canvas drawing and Leaflet marker HTML.</p>
 <p><code>themeColors.ts</code> writes the theme tokens onto <code>:root</code> as inline styles at boot, which overrides the <code>@theme</code> block in <code>styles.css</code>. A changed default must change in both <code>styles.css</code> and <code>DEFAULT_THEME_COLORS</code>; <code>styleTokens.test.ts</code> fails when they drift.</p>
 <h3 id="neutrals-ink">Neutrals (ink)<a class="headerlink" href="#neutrals-ink" title="Permanent link">&para;</a></h3>
-<p>Neutrals come from the Midnight Serenity palette picked during review: Ink Black <code>#11151c</code> (950), Deep Space Blue <code>#212d40</code> (800) and Charcoal Blue <code>#364156</code> (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is <code>--color-ink-*</code> in <code>styles.css</code>, and a <a href="#themes">theme</a> surface swaps all eleven steps at runtime.</p>
-<p>Use <code>ink-*</code> utilities or the tokens below; <code>slate-*</code>, <code>zinc-*</code> and <code>gray-*</code> are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.</p>
+<p>Neutrals are the <code>--color-ink-*</code> scale in <code>styles.css</code>. The default surface is Slate (Tailwind slate). App &gt; Appearance can swap all eleven steps at runtime (Midnight Serenity and other families). Use <code>ink-*</code> utilities or the tokens below; <code>slate-*</code>, <code>zinc-*</code> and <code>gray-*</code> are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.</p>
 <table>
 <thead>
 <tr>
 <th>Token / class</th>
-<th>Default (ink)</th>
+<th>Default (ink / Slate)</th>
 <th>Use</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>bg-app-bg</code></td>
-<td><code>#11151c</code> (950)</td>
+<td><code>#020617</code> (950)</td>
 <td>App background, section header, main viewport</td>
 </tr>
 <tr>
 <td><code>bg-deep-black</code></td>
-<td><code>#19212d</code> (900)</td>
+<td><code>#0f172a</code> (900)</td>
 <td>Rail, status bar, cards, panels, menus, launcher</td>
 </tr>
 <tr>
 <td><code>bg-sidebar-active-bg</code></td>
-<td><code>#212d40</code> (800)</td>
+<td><code>#1e293b</code> (800)</td>
 <td>Active nav item, selected row, hover fill</td>
 </tr>
 <tr>
 <td><code>border-ink-800</code></td>
-<td><code>#212d40</code></td>
+<td><code>#1e293b</code></td>
 <td>Hairlines between shell parts and inside cards</td>
 </tr>
 <tr>
 <td><code>bg-secondary-dark</code> / <code>border-secondary-dark</code></td>
-<td><code>#364156</code> (700)</td>
+<td><code>#334155</code> (700)</td>
 <td>Secondary control fill, field borders, stronger lines</td>
 </tr>
 <tr>
 <td><code>text-muted</code></td>
-<td><code>#93a0b7</code> (400)</td>
+<td><code>#94a3b8</code> (400)</td>
 <td>Secondary text, placeholders, inactive icons</td>
 </tr>
 <tr>
 <td><code>text-ink-300</code> / <code>text-ink-200</code></td>
-<td><code>#cdd4e2</code> / <code>#e3e8f0</code></td>
+<td><code>#cbd5e1</code> / <code>#e2e8f0</code></td>
 <td>Body text / primary text</td>
 </tr>
 </tbody>
@@ -3152,7 +3151,7 @@
 </table>
 <p>Reticulum is yellow, not amber, so it never reads as a warning. Protocol classes live in <code>lib/protocolTheme.ts</code> and are fixed: they keep their identity under every theme.</p>
 <h3 id="accent-theme">Accent (theme)<a class="headerlink" href="#accent-theme" title="Permanent link">&para;</a></h3>
-<p>The accent tokens follow the selected theme preset; the default preset is Meshtastic.</p>
+<p>The accent tokens follow the selected theme preset; the default preset is Sky.</p>
 <table>
 <thead>
 <tr>
@@ -3164,7 +3163,7 @@
 <tbody>
 <tr>
 <td><code>text-bright-green</code> / <code>bg-brand-green</code></td>
-<td><code>#67e8b4</code> meshtastic-500</td>
+<td><code>#38bdf8</code> sky base</td>
 <td>Accent: active nav, selection, focus ring, links, primary buttons</td>
 </tr>
 <tr>
@@ -3174,12 +3173,12 @@
 </tr>
 <tr>
 <td><code>bg-readable-green</code></td>
-<td><code>#047857</code> meshtastic-700</td>
+<td><code>#0369a1</code> sky fill</td>
 <td>Fills under white text; must keep 4.5:1 with white (<code>themeColors.test.ts</code>)</td>
 </tr>
 <tr>
 <td><code>--color-chat-outgoing-bg</code> / <code>-border</code></td>
-<td>700 at 22% / 500 at 25%</td>
+<td>fill 22% / base 25%</td>
 <td>Own chat bubbles</td>
 </tr>
 </tbody>
@@ -3238,8 +3237,8 @@
 <h3 id="themes">Themes<a class="headerlink" href="#themes" title="Permanent link">&para;</a></h3>
 <p>App &gt; Appearance &gt; Colors has two one-click choices (<code>lib/themePresets.ts</code>, <code>components/ThemePicker.tsx</code>). Any surface pairs with any accent, and single tokens can still be edited afterwards.</p>
 <ul>
-<li><strong>Surfaces</strong> replace the whole neutral scale (every <code>ink-*</code> class, through <code>--color-ink-*</code> on <code>:root</code>) and the neutral tokens: Midnight (default), Slate, Zinc, Graphite, Deep sea, Dusk, Evergreen and High contrast. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11).</li>
-<li><strong>Accents</strong> set the accent and the sent-message bubbles: Meshtastic (default), MeshCore, Reticulum, Sky and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.</li>
+<li><strong>Surfaces</strong> replace the whole neutral scale (every <code>ink-*</code> class, through <code>--color-ink-*</code> on <code>:root</code>) and the neutral tokens: Slate (default), Midnight, Zinc, Graphite, Deep sea, Dusk, Evergreen and High contrast. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11).</li>
+<li><strong>Accents</strong> set the accent and the sent-message bubbles: Sky (default), Meshtastic, MeshCore, Reticulum and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.</li>
 </ul>
 <p><code>themePresets.test.ts</code> checks every surface's text pairs and every surface and accent pair against the guards in <code>themeColors.ts</code>, so no combination is ever reset. A light theme needs a sweep of hard-coded dark text first.</p>
 <p>Never use <code>#000000</code> or <code>#ffffff</code> as a surface, gradients, glows, text shadows, or left-border accent stripes on cards and rows.</p>
@@ -3746,7 +3745,7 @@
 <h2 id="open-items">Open items<a class="headerlink" href="#open-items" title="Permanent link">&para;</a></h2>
 <ul>
 <li>From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors and type are already exact.</li>
-<li>Neutrals: Midnight Serenity gives three dark steps. The light steps used for text (ink-50 to ink-600) are derived; exact values from the designer drop into <code>--color-ink-*</code>.</li>
+<li>Neutrals: default Slate ships eleven ink steps in <code>--color-ink-*</code>; other surfaces (including Midnight Serenity) swap the same variables at runtime.</li>
 <li>Protocol colors outside <code>protocolTheme.ts</code> (for example some Reticulum panels and data ramps) still use Tailwind's <code>emerald</code> / <code>cyan</code> / <code>yellow</code> classes; move the ones that mark a protocol to the scale tokens.</li>
 <li>Status text still uses Tailwind's <code>-400</code> steps (v4 oklch values) next to the exact Main tokens used by dots.</li>
 <li>The Main success green (<code>#34d399</code>) sits close to the Meshtastic base (<code>#67e8b4</code>); status dots always come with text, so "online" is never color alone.</li>
@@ -3776,7 +3775,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 20:17:48 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 18, 2026 13:01:20 UTC">October 18, 2026</span>
   </span>
 
     
