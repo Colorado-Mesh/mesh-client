@@ -36,33 +36,31 @@
    * theme tokens below as inline styles on :root at boot, so a changed default must change in
    * DEFAULT_THEME_COLORS too or this file appears to do nothing.
    */
-  --color-app-bg: #11151c; /* ink-950 */
-  --color-sidebar-active-bg: #212d40; /* ink-800 */
-  --color-brand-green: #67e8b4; /* meshtastic-500 */
+  --color-app-bg: #020617; /* ink-950 (Slate) */
+  --color-sidebar-active-bg: #1e293b; /* ink-800 */
+  --color-brand-green: #38bdf8; /* sky base */
   --color-bright-green: var(--color-brand-green);
-  --color-readable-green: #047857; /* meshtastic-700 */
-  --color-deep-black: #19212d; /* ink-900 */
-  --color-secondary-dark: #364156; /* ink-700 */
-  --color-muted: #93a0b7; /* ink-400 */
+  --color-readable-green: #0369a1; /* sky fill */
+  --color-deep-black: #0f172a; /* ink-900 */
+  --color-secondary-dark: #334155; /* ink-700 */
+  --color-muted: #94a3b8; /* ink-400 */
 
   /*
-   * Neutrals: the ink scale, from the Midnight Serenity palette. 950 Ink Black, 800 Deep Space Blue
-   * and 700 Charcoal Blue are the palette's swatches; 900 sits halfway between 950 and 800 in OKLCH,
-   * and the other steps keep Tailwind slate's lightness per step (so text contrast holds) with the
-   * palette's hue and chroma. Use ink-* for every neutral; slate, zinc and gray are rejected by
-   * source policy.
+   * Neutrals: the ink scale. Default surface is Slate (Tailwind slate). App > Appearance can swap
+   * the whole scale at runtime (Midnight Serenity and other families). Use ink-* for every
+   * neutral; slate, zinc and gray utility classes are rejected by source policy.
    */
-  --color-ink-50: #f9fafc;
-  --color-ink-100: #f2f5f9;
-  --color-ink-200: #e3e8f0;
-  --color-ink-300: #cdd4e2;
-  --color-ink-400: #93a0b7;
-  --color-ink-500: #65738c;
-  --color-ink-600: #48556a;
-  --color-ink-700: #364156;
-  --color-ink-800: #212d40;
-  --color-ink-900: #19212d;
-  --color-ink-950: #11151c;
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0;
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b8;
+  --color-ink-500: #64748b;
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+  --color-ink-950: #020617;
 
   /*
    * Protocol scales (100 / 300 / 500 base / 700 / 900), contrast-checked per tier on light and dark
@@ -148,16 +146,16 @@
     monospace;
   /* Chat incoming (channel): opaque border + rgba fill so the edge never
      color-mixes to a light/white ring on Chromium/Electron. */
-  --color-chat-incoming-bg: rgb(33 45 64 / 0.85);
-  --color-chat-incoming-border: #364156;
-  /* Own messages: readable (meshtastic-700) fill at 22%, accent (meshtastic-500) border at 25%. */
-  --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
-  --color-chat-outgoing-border: rgb(103 232 180 / 0.25);
+  --color-chat-incoming-bg: rgb(30 41 59 / 0.85);
+  --color-chat-incoming-border: #334155;
+  /* Own messages: readable (sky fill) fill at 22%, accent (sky base) border at 25%. */
+  --color-chat-outgoing-bg: rgb(3 105 161 / 0.22);
+  --color-chat-outgoing-border: rgb(56 189 248 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
-  --color-message-actions-bar-bg: rgb(25 33 45 / 0);
+  --color-message-actions-bar-bg: rgb(15 23 42 / 0);
   /* Message action button hover color */
-  --color-message-action-button-hover: #93a0b7;
+  --color-message-action-button-hover: #94a3b8;
 }
 
 /*
@@ -219,7 +217,7 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 /* Leaflet zoom, locate and attribution follow the dark map controls (MAP_CONTROL_CLASS). Leaflet's
    own CSS loads later with the map chunk, so every rule carries an extra class to win on specificity. */
 .leaflet-container .leaflet-control.leaflet-bar {
-  border: 1px solid var(--color-ink-700, #364156);
+  border: 1px solid var(--color-ink-700, #334155);
   border-radius: 0.5rem;
   box-shadow: var(--shadow-level-2);
   overflow: hidden;
@@ -227,22 +225,22 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
 .leaflet-container .leaflet-bar a,
 .leaflet-container .leaflet-bar .leaflet-bar-part {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
-  border-bottom-color: var(--color-ink-700, #364156);
-  color: var(--color-ink-200, #e3e8f0);
+  border-bottom-color: var(--color-ink-700, #334155);
+  color: var(--color-ink-200, #e2e8f0);
 }
 .leaflet-container .leaflet-bar a:hover,
 .leaflet-container .leaflet-bar a:focus-visible,
 .leaflet-container .leaflet-bar .leaflet-bar-part:hover {
-  background-color: var(--color-ink-800, #212d40);
+  background-color: var(--color-ink-800, #1e293b);
   color: #fff;
 }
 .leaflet-container .leaflet-bar a.leaflet-disabled {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
-  color: var(--color-ink-500, #65738c);
+  color: var(--color-ink-500, #64748b);
 }
 .leaflet-container .leaflet-control.leaflet-control-attribution {
   background-color: color-mix(in srgb, var(--color-deep-black) 80%, transparent);
-  color: var(--color-ink-300, #cdd4e2);
+  color: var(--color-ink-300, #cbd5e1);
 }
 .leaflet-container .leaflet-control-attribution a {
   color: var(--color-bright-green);
@@ -257,7 +255,7 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-secondary-dark, #364156);
+  background: var(--color-secondary-dark, #334155);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -292,10 +290,10 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   scrollbar-gutter: stable;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb {
-  background: #65738c;
+  background: #64748b;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb:hover {
-  background: #93a0b7;
+  background: #94a3b8;
 }
 
 /* IBM Plex Sans (400, 500, 600) and Mono (400, 500): latin, latin-ext and cyrillic subsets,

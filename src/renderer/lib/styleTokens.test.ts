@@ -71,9 +71,10 @@ describe('style guide tokens (styles.css)', () => {
     }
   });
 
-  it('the default accent is the Meshtastic scale', () => {
-    expect(DEFAULT_THEME_COLORS.brandGreen).toBe(token('--color-meshtastic-500'));
-    expect(DEFAULT_THEME_COLORS.readableGreen).toBe(token('--color-meshtastic-700'));
+  it('the default accent is Sky', () => {
+    const sky = THEME_ACCENTS.find((a) => a.id === 'sky');
+    expect(DEFAULT_THEME_COLORS.brandGreen).toBe(sky?.base);
+    expect(DEFAULT_THEME_COLORS.readableGreen).toBe(sky?.fill);
   });
 
   it('each protocol accent is its own scale: 500 for the accent, 700 for fills', () => {
@@ -85,9 +86,9 @@ describe('style guide tokens (styles.css)', () => {
   });
 
   it('the default surface is the ink scale styles.css ships, step for step', () => {
-    const midnight = themeSurface(DEFAULT_THEME_SURFACE_ID);
+    const slate = themeSurface(DEFAULT_THEME_SURFACE_ID);
     for (const step of INK_STEPS) {
-      expect(midnight.scale[step], `ink-${step}`).toBe(token(`--color-ink-${step}`));
+      expect(slate.scale[step], `ink-${step}`).toBe(token(`--color-ink-${step}`));
     }
   });
 
@@ -97,13 +98,13 @@ describe('style guide tokens (styles.css)', () => {
     }
   });
 
-  it('the ink neutrals carry the Midnight Serenity swatches and keep muted text at 4.5:1', () => {
+  it('the ink neutrals are the Slate default and keep muted text at 4.5:1', () => {
     for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
       expect(token(`--color-ink-${step}`)).toMatch(/^#[0-9a-f]{6}$/);
     }
-    expect(token('--color-ink-950')).toBe('#11151c'); // Ink Black
-    expect(token('--color-ink-800')).toBe('#212d40'); // Deep Space Blue
-    expect(token('--color-ink-700')).toBe('#364156'); // Charcoal Blue
+    expect(token('--color-ink-950')).toBe('#020617');
+    expect(token('--color-ink-800')).toBe('#1e293b');
+    expect(token('--color-ink-700')).toBe('#334155');
     expect(DEFAULT_THEME_COLORS.muted).toBe(token('--color-ink-400'));
     for (const surface of [950, 900, 800]) {
       expect(

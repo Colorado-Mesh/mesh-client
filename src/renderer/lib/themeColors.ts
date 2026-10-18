@@ -52,22 +52,22 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
   messageActionButtonHover: '--color-message-action-button-hover',
 };
 
-/** Default hex values — must match src/renderer/styles.css @theme block. */
+/** Default hex values — must match src/renderer/styles.css @theme block (Slate + Sky). */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  appBg: '#11151c',
-  sidebarActiveBg: '#212d40',
-  brandGreen: '#67e8b4',
-  brightGreen: '#67e8b4',
-  readableGreen: '#047857',
-  deepBlack: '#19212d',
-  secondaryDark: '#364156',
-  muted: '#93a0b7',
-  chatIncomingBg: '#212d40',
-  chatIncomingBorder: '#364156',
-  chatOutgoingBg: '#047857',
-  chatOutgoingBorder: '#67e8b4',
-  messageActionsBarBg: '#19212d',
-  messageActionButtonHover: '#93a0b7',
+  appBg: '#020617',
+  sidebarActiveBg: '#1e293b',
+  brandGreen: '#38bdf8',
+  brightGreen: '#38bdf8',
+  readableGreen: '#0369a1',
+  deepBlack: '#0f172a',
+  secondaryDark: '#334155',
+  muted: '#94a3b8',
+  chatIncomingBg: '#1e293b',
+  chatIncomingBorder: '#334155',
+  chatOutgoingBg: '#0369a1',
+  chatOutgoingBorder: '#38bdf8',
+  messageActionsBarBg: '#0f172a',
+  messageActionButtonHover: '#94a3b8',
 };
 
 export interface ThemeTokenMeta {
