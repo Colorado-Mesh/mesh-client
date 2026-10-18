@@ -40,12 +40,27 @@ export function connectionPanelConnectionTypeLabel(
     case 'tcp':
       return t('connectionPanel.wifiTcp');
     case 'http':
+      // MeshCore reuses the `'http'` ConnectionType for its WiFi companion TCP link
+      // (binary protocol on TCP :5000 — not HTTP). Meshtastic `'http'` is WiFi/HTTP.
       return protocol === 'meshcore' ? t('connectionPanel.tcpIp') : t('connectionPanel.wifiHttp');
     default: {
       const _x: never = type;
       return _x;
     }
   }
+}
+
+/**
+ * Status-bar transport token. Same copy as Connection type tiles/selector so MeshCore
+ * TCP (stored as `'http'`) never surfaces as raw "HTTP".
+ */
+export function statusBarTransportLabel(
+  t: TFunction,
+  type: ConnectionType | null | undefined,
+  protocol: MeshProtocol,
+): string {
+  if (type == null) return '';
+  return connectionPanelConnectionTypeLabel(t, type, protocol);
 }
 
 /** MQTT link status for the Connection tiles (sentence case, reuses `app.deviceStatus`). */
