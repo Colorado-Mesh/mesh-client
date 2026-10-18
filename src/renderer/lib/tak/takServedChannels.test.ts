@@ -97,6 +97,7 @@ describe('served channels', () => {
     chatChannels: [opsKey],
     sendChannels: [opsKey],
     remoteChannels: [publicKey],
+    noCallsignChannels: [publicKey],
     atakNames: {},
     directMessages: false,
   };
@@ -109,10 +110,11 @@ describe('served channels', () => {
         c.index,
         c.send,
         c.remote,
+        c.callsign,
       ]),
     ).toEqual([
-      [0, false, true],
-      [2, true, false],
+      [0, false, true, false],
+      [2, true, false, true],
     ]);
     expect(
       servedChannelsFor('mc', channels, { ...prefs, channelMode: 'selected' }).map((c) => c.index),

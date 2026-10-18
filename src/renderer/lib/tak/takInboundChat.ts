@@ -41,14 +41,16 @@ function truncateUtf8(text: string, maxBytes: number): string {
 
 /**
  * Text to transmit for a TAK client's message: `[CALLSIGN] text`, since every bridged message
- * leaves from this app's own node. Cut to the byte budget with an ellipsis when it is too long.
+ * leaves from this app's own node, or the text alone when `withCallsign` is false. Cut to the
+ * byte budget with an ellipsis when it is too long.
  */
 export function formatTakMeshText(
   senderCallsign: string,
   text: string,
   maxBytes: number = TAK_MESH_SEND_MAX_BYTES,
+  withCallsign = true,
 ): string {
-  const full = `[${senderCallsign.trim()}] ${text.trim()}`;
+  const full = withCallsign ? `[${senderCallsign.trim()}] ${text.trim()}` : text.trim();
   if (utf8Length(full) <= maxBytes) return full;
   return truncateUtf8(full, maxBytes - utf8Length(ELLIPSIS)).trimEnd() + ELLIPSIS;
 }
@@ -61,6 +63,8 @@ export interface TakSendTarget {
   destination?: number;
   /** Main's id for a direct message, under which its outcome is reported. */
   dmRef?: string;
+  /** False for a channel set to send messages exactly as typed, with no callsign in front. */
+  callsign?: boolean;
 }
 
 /**
@@ -83,7 +87,12 @@ export function findTakSendTargets(target: TakChatTarget): TakSendTarget[] {
   }
   return listTakServedChannels()
     .filter((c) => c.key === target.channelKey && c.send)
-    .map((c) => ({ identityId: c.identityId, protocol: c.protocol, channelIndex: c.index }));
+    .map((c) => ({
+      identityId: c.identityId,
+      protocol: c.protocol,
+      channelIndex: c.index,
+      ...(c.callsign ? {} : { callsign: false }),
+    }));
 }
 
 export type TakMeshSendFn = (target: TakSendTarget, text: string) => Promise<void>;
@@ -126,9 +135,14 @@ export async function relayTakChatToMesh(
     if (message.dmRef) reportTakDmOutcome(message.dmRef, 'not-sent');
     return 0;
   }
-  const text = formatTakMeshText(message.senderCallsign, message.text);
   let sent = 0;
   for (const target of targets) {
+    const text = formatTakMeshText(
+      message.senderCallsign,
+      message.text,
+      TAK_MESH_SEND_MAX_BYTES,
+      target.callsign !== false,
+    );
     // Only a channel message is heard back off the mesh; a direct message has no echo.
     const onChannel = target.destination === undefined;
     if (onChannel) rememberTakSend(target.identityId, target.channelIndex, text, nowMs);

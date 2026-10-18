@@ -95,6 +95,8 @@ export interface TakServedChannel extends TakChannelInfo {
   send: boolean;
   /** Streamed to the remote TAK server. */
   remote: boolean;
+  /** What TAK clients send goes out with their callsign in front. */
+  callsign: boolean;
 }
 
 /** One radio's channels that its preferences serve to TAK. */
@@ -115,6 +117,7 @@ export function servedChannelsFor(
     identityId,
     send: prefs.sendChannels.includes(c.key),
     remote: prefs.remoteChannels.includes(c.key),
+    callsign: !prefs.noCallsignChannels.includes(c.key),
   }));
 }
 

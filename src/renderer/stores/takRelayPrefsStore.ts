@@ -38,6 +38,12 @@ export interface TakRelayIdentityPrefs {
   /** Served channels also streamed, read only, to the remote TAK server, by channel key. */
   remoteChannels: string[];
   /**
+   * Sending channels whose messages from TAK go out exactly as typed, by channel key; the rest
+   * put the sender's callsign in front. A bot channel needs this, since a bot looks for its
+   * command at the start of the message.
+   */
+  noCallsignChannels: string[];
+  /**
    * Names the user chose for channels' ATAK contacts, by channel key. A channel without one
    * gets its automatic name.
    */
@@ -68,6 +74,7 @@ const EMPTY_PREFS: TakRelayIdentityPrefs = {
   chatChannels: [],
   sendChannels: [],
   remoteChannels: [],
+  noCallsignChannels: [],
   atakNames: {},
   directMessages: false,
 };
@@ -184,6 +191,7 @@ function channelPrefs(
     chatChannels: keyList(v.chatChannels),
     sendChannels: keyList(v.sendChannels),
     remoteChannels: keyList(v.remoteChannels),
+    noCallsignChannels: keyList(v.noCallsignChannels),
     atakNames: nameMap(v.atakNames, parseChannelKey),
     ...(hasPending(pendingSlots) ? { pendingSlots } : {}),
   };
@@ -237,7 +245,7 @@ function sanitizeRetired(raw: unknown, nowMs: number): TakRetiredRooms | null {
   return rooms.length > 0 ? { rooms, untilMs: r.untilMs } : null;
 }
 
-type ChannelKeyList = 'chatChannels' | 'sendChannels' | 'remoteChannels';
+type ChannelKeyList = 'chatChannels' | 'sendChannels' | 'remoteChannels' | 'noCallsignChannels';
 
 interface TakRelayPrefsState {
   byIdentity: Record<IdentityId, TakRelayIdentityPrefs>;
@@ -251,6 +259,8 @@ interface TakRelayPrefsState {
   setChatSend: (identityId: IdentityId, key: string, enabled: boolean) => void;
   /** Stream a served channel to the remote TAK server. */
   setChatRemote: (identityId: IdentityId, key: string, enabled: boolean) => void;
+  /** Put the sender's callsign in front of what TAK clients send to a channel; on by default. */
+  setChatCallsign: (identityId: IdentityId, key: string, enabled: boolean) => void;
   /**
    * Name a channel's ATAK contact. A blank name goes back to the automatic one; one main would
    * refuse (too long, or with a line break) is ignored.
@@ -312,6 +322,9 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
         },
         setChatRemote: (identityId, key, enabled) => {
           toggle('remoteChannels', identityId, key, enabled);
+        },
+        setChatCallsign: (identityId, key, enabled) => {
+          toggle('noCallsignChannels', identityId, key, !enabled);
         },
         setAtakName: (identityId, key, name) => {
           if (!isChannelIdentityKey(key)) return;

@@ -161,6 +161,7 @@ describe('useTakInboundChat', () => {
           chatChannels: [],
           sendChannels: [],
           remoteChannels: [],
+          noCallsignChannels: [],
           atakNames: {},
           directMessages: false,
           pendingSlots: {
