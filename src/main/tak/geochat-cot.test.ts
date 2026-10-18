@@ -204,6 +204,23 @@ describe('direct messages', () => {
     expect(cot).toContain('stale="2026-10-10T11:59:00.000Z"');
   });
 
+  it("styles the 0, 0 contact as the companion's marker would be", () => {
+    const cot = buildDirectContactCot({ uid: 'RN-789', callsign: 'Field' }, NOW, NOW, {
+      cotType: 'a-f-G-U-C-I',
+      group: 'Cyan',
+      role: 'Team Member',
+      color: '#00ffff',
+      iconsetPath: 'set/group/icon.png',
+    });
+    expect(cot).toContain('uid="RN-789" type="a-f-G-U-C-I"');
+    expect(cot).toContain(
+      '<contact callsign="Field" endpoint="*:-1:stcp"/>' +
+        '<__group name="Cyan" role="Team Member"/>' +
+        `<color argb="${0xff00ffff | 0}"/>` +
+        '<usericon iconsetpath="set/group/icon.png"/>',
+    );
+  });
+
   it('accepts a heard direct message and rejects malformed ones', () => {
     const msg = {
       protocol: 'meshcore',

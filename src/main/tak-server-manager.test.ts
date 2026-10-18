@@ -1527,6 +1527,47 @@ describe('TakServerManager direct messages', () => {
       );
     });
 
+    it('styles the contact by the unit filters, as its marker would be, and on change', () => {
+      const manager = dmManager();
+      const style = { cotType: 'a-f-G-U-C', group: 'Cyan', role: 'Team Member' };
+      manager.setStyleSettings({
+        sendUnmatched: true,
+        filters: [
+          {
+            enabled: true,
+            op: 'contains',
+            patterns: [],
+            protocol: 'reticulum',
+            stripMatch: false,
+            style,
+          },
+        ],
+      });
+      const socket = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setDirectPeers([PEER]);
+      expect(contactFor(socket, 'RN-789')[0]).toContain(
+        '<__group name="Cyan" role="Team Member"/>',
+      );
+
+      vi.mocked(socket.write).mockClear();
+      manager.setStyleSettings({
+        sendUnmatched: true,
+        filters: [
+          {
+            enabled: true,
+            op: 'contains',
+            patterns: [],
+            protocol: 'reticulum',
+            stripMatch: false,
+            style: { ...style, group: 'Green' },
+          },
+        ],
+      });
+      expect(contactFor(socket, 'RN-789')[0]).toContain(
+        '<__group name="Green" role="Team Member"/>',
+      );
+    });
+
     it('lets a device message a conversation peer, which has no marker', () => {
       const manager = dmManager();
       manager.setDirectPeers([PEER]);

@@ -110,6 +110,23 @@ function hexToArgb(hex: string): number | undefined {
   return 0xff000000 | parseInt(m[1], 16) | 0;
 }
 
+/**
+ * The `<detail>` elements a unit style adds after `<contact>`: team and role, colour, and icon.
+ * Markers and companions' 0, 0 contacts use the same, so both look as the unit filters say.
+ */
+export function cotStyleDetail(style: TakUnitStyle): string {
+  let detail = '';
+  if (style.group || style.role) {
+    const name = style.group ? ` name="${escapeXml(style.group)}"` : '';
+    const role = style.role ? ` role="${escapeXml(style.role)}"` : '';
+    detail += `<__group${name}${role}/>`;
+  }
+  const argb = style.color ? hexToArgb(style.color) : undefined;
+  if (argb != null) detail += `<color argb="${argb}"/>`;
+  if (style.iconsetPath) detail += `<usericon iconsetpath="${escapeXml(style.iconsetPath)}"/>`;
+  return detail;
+}
+
 function heardRemarks(node: CotRelayNode, protocol: MeshProtocol, heardMs?: number): string {
   const parts: string[] = [];
   if (node.long_name) parts.push(node.long_name);
@@ -193,14 +210,7 @@ export function meshNodeToCot(
 
   const endpoint = opts.chatEndpoint ? ` endpoint="${COT_CHAT_ENDPOINT}"` : '';
   let detail = `<contact callsign="${callsign}"${endpoint}/>`;
-  if (style.group || style.role) {
-    const name = style.group ? ` name="${escapeXml(style.group)}"` : '';
-    const role = style.role ? ` role="${escapeXml(style.role)}"` : '';
-    detail += `<__group${name}${role}/>`;
-  }
-  const argb = style.color ? hexToArgb(style.color) : undefined;
-  if (argb != null) detail += `<color argb="${argb}"/>`;
-  if (style.iconsetPath) detail += `<usericon iconsetpath="${escapeXml(style.iconsetPath)}"/>`;
+  detail += cotStyleDetail(style);
   detail += `<status battery="${battery}"/>`;
   if (finite(node.speed) || finite(node.course)) {
     const course = finite(node.course) ? ` course="${node.course}"` : '';
