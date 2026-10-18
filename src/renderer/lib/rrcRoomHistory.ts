@@ -8,6 +8,7 @@ import {
   hasHydratedRrcRoomKey,
   markHydratedRrcRoomKey,
   resetRrcRoomHistoryHydrationForTests,
+  rrcRoomHistoryEpoch,
   unmarkHydratedRrcRoomKey,
 } from '@/renderer/lib/rrcRoomHistoryHydration';
 import { RRC_ROOM_HISTORY_LOAD_COUNT } from '@/renderer/lib/sessionMemoryCaps';
@@ -35,12 +36,14 @@ export async function hydrateRrcRoomMessages(
   if (!hub || !roomKey) return;
   const key = `${hub}::${roomKey}`;
   if (!opts?.force && hasHydratedRrcRoomKey(key)) return;
+  const epoch = rrcRoomHistoryEpoch(hub);
   try {
     const rows = await window.electronAPI.db.listRrcMessages(
       hub,
       roomKey,
       RRC_ROOM_HISTORY_LOAD_COUNT,
     );
+    if (epoch !== rrcRoomHistoryEpoch(hub)) return;
     markHydratedRrcRoomKey(key);
     const mapped: RrcChatMessage[] = [];
     for (const row of rows) {

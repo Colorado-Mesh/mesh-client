@@ -3,7 +3,7 @@
  * resources/reticulum-sidecar/ so extraResources bundles the correct binary.
  * Also attaches SCHEMA-UPGRADE.txt when CI wrote a schema-bump notice.
  */
-import { copyFileSync, existsSync, mkdirSync, statSync } from 'fs';
+import { copyFileSync, cpSync, rmSync, existsSync, mkdirSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -16,6 +16,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const SCHEMA_UPGRADE_TXT = path.join(projectRoot, 'resources', 'SCHEMA-UPGRADE.txt');
 
+/** Stage only usable helpers, clearing any previous platform's files first. */
+export function stageOptionalAiHelper(root, platform) {
+  const active = path.join(root, 'resources/ai-helper/active');
+  rmSync(active, { recursive: true, force: true });
+  mkdirSync(active, { recursive: true });
+  // OS-specific: Windows NSIS has no package identity/systemAIModels entitlement.
+  if (platform !== 'darwin') return;
+  const staged = path.join(root, 'resources/ai-helper/staged/darwin');
+  if (!existsSync(path.join(staged, 'mesh-ai'))) {
+    console.warn(
+      '[beforePack] Optional OS AI helper missing; Apple Intelligence will be unavailable.',
+    );
+    return;
+  }
+  cpSync(staged, active, { recursive: true });
+}
+
 /**
  * @param {import('app-builder-lib').BeforePackContext} context
  */
@@ -24,6 +41,8 @@ export default async function beforePack(context) {
   if (platform !== 'win32' && platform !== 'linux' && platform !== 'darwin') {
     throw new Error(`[beforePack] Unsupported electronPlatformName: ${platform}`);
   }
+
+  stageOptionalAiHelper(projectRoot, platform);
 
   const stagedPath = resolveStagedSidecarPathForPackContext(projectRoot, platform, context.arch);
   if (!existsSync(stagedPath)) {

@@ -1,0 +1,37 @@
+name: OS AI helpers
+on:
+  pull_request:
+    paths:
+      - 'native/ai/**'
+      - 'scripts/build-ai-helper.mjs'
+      - '.github/workflows/ai-helper.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/ai/**'
+      - 'scripts/build-ai-helper.mjs'
+      - '.github/workflows/ai-helper.yaml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Native AI (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        if: runner.os == 'Windows'
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build both installer architectures
+        run: node scripts/build-ai-helper.mjs

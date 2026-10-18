@@ -1,5 +1,6 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type { AiAPI } from './ai-types';
 import type { BeaconFeedApi } from './beacon';
 import type {
   EnvironmentReading,
@@ -383,6 +384,7 @@ export type BleCoexistenceAcquireScanResult =
 export interface ElectronAPI {
   beacon: BeaconFeedApi;
   translation: TranslationAPI;
+  ai: AiAPI;
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
     saveMessage: (message: {

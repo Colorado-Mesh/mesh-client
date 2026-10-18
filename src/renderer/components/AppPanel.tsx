@@ -89,6 +89,7 @@ import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { AppAiSection } from './AppAiSection';
 import { AppTranslationSection } from './AppTranslationSection';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
@@ -2413,6 +2414,7 @@ export default function AppPanel({
       </div>
 
       <AppTranslationSection />
+      <AppAiSection />
 
       <details className="group rounded-lg border border-red-900/40 bg-red-950/10">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 hover:bg-red-950/30 [&::-webkit-details-marker]:hidden">

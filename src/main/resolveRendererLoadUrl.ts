@@ -113,6 +113,8 @@ export async function resolveRendererLoadUrl(
     );
   }
 
+  // file:// keeps the historical renderer origin so localStorage last-read / settings
+  // watermarks stay intact. (mesh-client:// would isolate SharedArrayBuffer but resets origin.)
   const indexUrl = pathToFileURL(path.resolve(options.distIndexPath)).toString();
   return {
     url: indexUrl,

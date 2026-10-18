@@ -25,6 +25,7 @@ describe('meshcorePathHashMode', () => {
     expect(
       appPanelSettingsPersistPayload({
         chatCompactMode: true,
+        aiEnabled: false,
         translationEnabled: false,
         translationTargetLanguage: 'en',
         translationReadLanguages: ['en'],

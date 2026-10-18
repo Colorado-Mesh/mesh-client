@@ -1357,14 +1357,14 @@ describe('App accessibility', () => {
     renderApp();
 
     const deviceLabel = await within(screen.getByRole('contentinfo')).findByRole('button', {
-      name: /^Radio: Reconnecting \(BLE\)/,
+      name: /^Radio: Reconnecting \(Bluetooth\)/,
     });
     const deviceText = deviceLabel.querySelector('span.truncate');
     expect(deviceText).toHaveClass('text-red-400');
     expect(deviceText).not.toHaveClass('animate-pulse');
     expect(deviceLabel.querySelector('.rounded-full')).toHaveClass('animate-pulse');
     expect(
-      screen.getByText('Reconnecting (BLE)', { selector: '[role="status"]' }),
+      screen.getByText('Reconnecting (Bluetooth)', { selector: '[role="status"]' }),
     ).toBeInTheDocument();
   });
 

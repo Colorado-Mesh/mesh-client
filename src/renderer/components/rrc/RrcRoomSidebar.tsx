@@ -143,14 +143,21 @@ export function RrcRoomSidebar({
             type="button"
             aria-current={selected ? 'true' : undefined}
             className="min-w-0 flex-1 px-2 py-1.5 text-left text-sm"
-            aria-label={t('rrc.selectRoom', { name: label })}
+            aria-label={
+              unread > 0
+                ? t('aria.tabWithUnread', {
+                    label: t('rrc.selectRoom', { name: label }),
+                    count: unread,
+                  })
+                : t('rrc.selectRoom', { name: label })
+            }
             onClick={() => {
               onSelectRoom(name, { join: opts?.joined === false });
             }}
           >
             <div className="flex items-center justify-between gap-1">
               <span className="truncate">{label}</span>
-              {unread > 0 && !selected && (
+              {unread > 0 && (
                 <span className="text-2xs ml-1 rounded-full bg-red-600 px-1.5 font-semibold text-white">
                   {unread > 99 ? '99+' : unread}
                 </span>

@@ -97,6 +97,15 @@ export async function buildMainProcess(opts = {}) {
     );
   }
 
+  const aiNoticeDirectory = path.resolve(absWorkingDir, path.dirname(outfile), 'ai-licenses');
+  fs.mkdirSync(aiNoticeDirectory, { recursive: true });
+  for (const notice of ['LICENSE-wllama.txt', 'LICENSE-llama-cpp.txt']) {
+    fs.copyFileSync(
+      path.resolve(absWorkingDir, 'src/main/ai/vendor', notice),
+      path.join(aiNoticeDirectory, notice),
+    );
+  }
+
   if (metafilePath && result.metafile) {
     const outPath = path.resolve(absWorkingDir, metafilePath);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });

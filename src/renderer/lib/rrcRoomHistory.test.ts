@@ -76,6 +76,38 @@ describe('rrcRoomHistory', () => {
     expect(RRC_ROOM_HISTORY_LOAD_COUNT).toBe(500);
   });
 
+  it('ignores a history response from a disconnected hub generation', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', HUB, 'Hub');
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockImplementationOnce(async () => {
+      await wait;
+      return [
+        {
+          message_id: 'old-generation',
+          hub_hash: HUB,
+          room: 'lobby',
+          sender_hash: null,
+          nickname: 'Alice',
+          kind: 'msg',
+          body: 'Stale response',
+          timestamp: 100,
+        },
+      ];
+    });
+    const pending = hydrateRrcRoomMessages(HUB, 'lobby');
+    store.clearHubSession(HUB);
+    store.applyStatus('active', HUB, 'Hub');
+    release();
+    await pending;
+    expect(useRrcSessionStore.getState().messages.get(`${HUB}::lobby`)).toBeUndefined();
+    await hydrateRrcRoomMessages(HUB, 'lobby');
+    expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalledTimes(2);
+  });
+
   it('force:true reloads after an initial hydrate', async () => {
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
     await hydrateRrcRoomMessages(HUB, 'lobby');

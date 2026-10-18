@@ -132,6 +132,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
@@ -230,6 +231,10 @@ try {
 
 // Custom scheme for offline map tiles (must register before app.whenReady).
 protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'mesh-ai',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
   {
     scheme: 'mesh-tiles',
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
@@ -3651,6 +3656,20 @@ registerGeoIpcHandlers();
 registerBeaconIpcHandlers();
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
+const disposeAi = registerAiHandlers({
+  getSetting: (key) =>
+    (
+      getDatabase().prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as
+        { value: string } | undefined
+    )?.value,
+  setSetting: (key, value) => {
+    getDatabase()
+      .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
+      .run(key, value);
+  },
+  getWebContents: () => mainWindow?.webContents,
+});
+app.on('before-quit', disposeAi);
 const disposeTranslation = registerTranslationHandlers({
   getSetting: (key) =>
     (
@@ -3896,7 +3915,11 @@ ipcMain.handle('appSettings:get', (event) => {
     }[];
     const out: Record<string, string> = {};
     for (const row of rows) {
-      if (typeof row.key === 'string' && typeof row.value === 'string') {
+      if (
+        row.key !== 'aiProviderConfig' &&
+        typeof row.key === 'string' &&
+        typeof row.value === 'string'
+      ) {
         out[row.key] = row.value;
       }
     }

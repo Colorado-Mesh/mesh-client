@@ -923,6 +923,54 @@ describe('RrcPanel', () => {
     }
   });
 
+  it('waits for fresh history when reconnecting the same room', async () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    render(<RrcPanel isActive />);
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().rrcReadingLatest).toBe(true);
+    });
+    let release!: () => void;
+    const wait = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockClear();
+    vi.mocked(window.electronAPI.db.listRrcMessages).mockImplementationOnce(async () => {
+      await wait;
+      return [];
+    });
+    act(() => {
+      store.applyStatus('disconnected', hubA);
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#lobby');
+    });
+    await waitFor(() => {
+      expect(window.electronAPI.db.listRrcMessages).toHaveBeenCalledOnce();
+    });
+    expect(useRrcSessionStore.getState().rrcReadingLatest).toBe(false);
+    act(() => {
+      store.addMessage(
+        {
+          id: 'during-reconnect',
+          room: '#lobby',
+          kind: 'msg',
+          body: 'Unread during hydration',
+          timestamp: Date.now(),
+          sender_hash: 'dd'.repeat(16),
+        },
+        { bumpUnread: true },
+      );
+    });
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+    await act(async () => {
+      release();
+      await wait;
+    });
+  });
+
   it('keeps selected-room messages unread while blurred and clears them on return', async () => {
     const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     const store = useRrcSessionStore.getState();

@@ -139,5 +139,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Enable SharedArrayBuffer for multi-thread bundled Catch up under `pnpm run dev`
+    // (http://localhost). Packaged/`pnpm start` still loads file:// and stays single-thread.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
   },
 });

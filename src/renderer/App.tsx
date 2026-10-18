@@ -132,6 +132,7 @@ import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import { disposeAiSummaries, initializeAi } from '@/renderer/stores/aiSummaryStore';
 import {
   type EmergencyIncident,
   incidentTabBadgeCount,
@@ -293,7 +294,7 @@ import {
   reconnectBannerMaxAttempts,
   takHeaderVariant,
 } from './lib/connectionHeaderStatus';
-import { takStatusBarLabels } from './lib/connectionPanelLabels';
+import { statusBarTransportLabel, takStatusBarLabels } from './lib/connectionPanelLabels';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
@@ -558,6 +559,10 @@ export default function App() {
 }
 
 function AppContent() {
+  useEffect(() => {
+    initializeAi();
+    return disposeAiSummaries;
+  }, []);
   const { t } = useTranslation();
   const { addToast } = useToast();
   useEffect(() => {
@@ -3916,7 +3921,12 @@ function AppContent() {
           ? t('app.mqttError')
           : t('app.mqttDisconnected');
   const deviceStatusLabel = deviceConnectionStatusLabel(t, activeConnectionView.state.status);
-  const deviceStatusText = `${deviceStatusLabel}${activeConnectionView.state.connectionType ? ` (${activeConnectionView.state.connectionType.toUpperCase()})` : ''}`;
+  const radioTransport = statusBarTransportLabel(
+    t,
+    activeConnectionView.state.connectionType,
+    protocol,
+  );
+  const deviceStatusText = `${deviceStatusLabel}${radioTransport ? ` (${radioTransport})` : ''}`;
   const showStatusBarNode =
     headerMyNodeNum > 0 &&
     Boolean(headerSelfNodeLabel) &&
@@ -3924,7 +3934,6 @@ function AppContent() {
       ? isConnectedOrOperational
       : !capabilities.prefersDeviceOwnerLongNameInHeader ||
         activeConnectionView.state.status === 'configured');
-  const radioTransport = activeConnectionView.state.connectionType?.toUpperCase() ?? '';
   const radioStatusText = showStatusBarNode
     ? t('shell.status.radioNode', {
         node: headerSelfNodeLabel,

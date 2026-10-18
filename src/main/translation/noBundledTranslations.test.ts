@@ -20,12 +20,17 @@ describe('translation packaging boundary', () => {
       ['**/*.wasm', '**/model*.bin', '**/lex.*', '**/*vocab*.spm', '**/lid*.ftz'],
       { cwd: root, exclude: ['node_modules/**', '.git/**', '**/target/**'] },
     );
-    // Existing MeshCore signature verification is independent of translation.
+    // MeshCore signatures and the AI inference runtime are independent of translation.
     const signatureAssets = new Set([
       'dist/renderer/orlp-ed25519.wasm',
       'dist/renderer/assets/orlp-ed25519.wasm',
     ]);
-    expect(files.filter((file) => !signatureAssets.has(file))).toEqual([]);
+    expect(
+      files.filter(
+        (file) =>
+          !signatureAssets.has(file) && !/^dist\/renderer\/assets\/wllama-[\w-]+\.wasm$/.test(file),
+      ),
+    ).toEqual([]);
   });
   it('adds no translation assets to electron-builder resources or ASAR unpack lists', () => {
     const config = yaml.load(readFileSync(path.join(root, 'electron-builder.yml'), 'utf8'));

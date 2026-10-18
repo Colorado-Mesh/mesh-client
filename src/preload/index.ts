@@ -1,5 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { AiHistoryQuery } from '../shared/ai-history';
+import type {
+  AiEndpointConfig,
+  AiModelProgress,
+  AiProviderStatus,
+  AiSummaryChunk,
+  AiSummaryDone,
+  AiSummaryError,
+  AiSummaryRequest,
+} from '../shared/ai-types';
 import type { BeaconConnectRequest, BeaconConnectResult, BeaconFeedUpdate } from '../shared/beacon';
 import type {
   BlePeripheralOwner,
@@ -93,6 +103,57 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('beacon:update', handler);
       return () => ipcRenderer.removeListener('beacon:update', handler);
+    },
+  },
+  ai: {
+    getHistory: (query: AiHistoryQuery) => ipcRenderer.invoke('ai:getHistory', query),
+    getStatus: () => ipcRenderer.invoke('ai:getStatus'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('ai:setEnabled', enabled),
+    probeOsAi: () => ipcRenderer.invoke('ai:probeOsAi'),
+    setConfig: (config: AiEndpointConfig) => ipcRenderer.invoke('ai:setConfig', config),
+    testConfig: () => ipcRenderer.invoke('ai:testConfig'),
+    listEndpointModels: () => ipcRenderer.invoke('ai:listEndpointModels'),
+    listLocalModels: () => ipcRenderer.invoke('ai:listLocalModels'),
+    installLocalModel: (id: string) => ipcRenderer.invoke('ai:installLocalModel', id),
+    cancelLocalModel: (id: string) => ipcRenderer.invoke('ai:cancelLocalModel', id),
+    removeLocalModel: (id: string) => ipcRenderer.invoke('ai:removeLocalModel', id),
+    selectLocalModel: (id: string | null) => ipcRenderer.invoke('ai:selectLocalModel', id),
+    summarize: (request: AiSummaryRequest) => ipcRenderer.invoke('ai:summarize', request),
+    cancel: (requestId: string) => ipcRenderer.invoke('ai:cancel', requestId),
+    onSummaryChunk: (cb: (value: AiSummaryChunk) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: AiSummaryChunk) => {
+        cb(value);
+      };
+      ipcRenderer.on('ai:summaryChunk', handler);
+      return () => ipcRenderer.removeListener('ai:summaryChunk', handler);
+    },
+    onSummaryDone: (cb: (value: AiSummaryDone) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: AiSummaryDone) => {
+        cb(value);
+      };
+      ipcRenderer.on('ai:summaryDone', handler);
+      return () => ipcRenderer.removeListener('ai:summaryDone', handler);
+    },
+    onSummaryError: (cb: (value: AiSummaryError) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: AiSummaryError) => {
+        cb(value);
+      };
+      ipcRenderer.on('ai:summaryError', handler);
+      return () => ipcRenderer.removeListener('ai:summaryError', handler);
+    },
+    onModelProgress: (cb: (value: AiModelProgress) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: AiModelProgress) => {
+        cb(value);
+      };
+      ipcRenderer.on('ai:modelProgress', handler);
+      return () => ipcRenderer.removeListener('ai:modelProgress', handler);
+    },
+    onStatusChanged: (cb: (value: AiProviderStatus) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: AiProviderStatus) => {
+        cb(value);
+      };
+      ipcRenderer.on('ai:statusChanged', handler);
+      return () => ipcRenderer.removeListener('ai:statusChanged', handler);
     },
   },
   translation: {
