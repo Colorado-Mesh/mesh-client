@@ -5807,7 +5807,10 @@
     "directMessages": "Directe berichten",
     "directMessagesHint": "Laat ATAK-apparaten berichten sturen naar de metgezellen van deze radio. Elke metgezel van dit radiobericht krijgt een chatoptie in ATAK en er gaat een bericht naar toe van deze radio, voorafgegaan door het roepnaam van de afzender. De antwoorden gaan naar het ATAK-apparaat dat er het laatst naar heeft geschreven, of naar elk apparaat dat er geen heeft. Een metgezel zonder positie verschijnt een dag na een bericht op 0, 0.",
     "messagingTitleReticulum": "Reticulum berichten in ATAK",
-    "messagingIntroReticulum": "Laat ATAK-apparaten LXMF peers berichten. Een collega met een functie kan worden gecommuniceerd vanuit de markering; een zonder positie verschijnt op 0, 0 zodra mesh-client er een gesprek mee heeft, dus de lijst met contactpersonen wordt niet gevuld met elke collega die wordt gehoord."
+    "messagingIntroReticulum": "Laat ATAK-apparaten LXMF peers berichten. Een collega met een functie kan worden gecommuniceerd vanuit de markering; een zonder positie verschijnt op 0, 0 zodra mesh-client er een gesprek mee heeft, dus de lijst met contactpersonen wordt niet gevuld met elke collega die wordt gehoord.",
+    "channelCallsign": "Oproepen toevoegen",
+    "channelCallsignFor": "Zet het ATAK-oproepteken van de afzender voor berichten die naar {{channel}} worden verzonden",
+    "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

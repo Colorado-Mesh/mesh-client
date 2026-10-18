@@ -5807,7 +5807,10 @@
     "directMessages": "Direktnachrichten",
     "directMessagesHint": "Lassen Sie ATAK-Geräte die Begleiter dieses Radios benachrichtigen. Jeder Begleiter, der diese Funknachricht empfangen kann, erhält eine Chat-Option in ATAK, und eine Nachricht an ihn geht von diesem Funkgerät aus, der das Rufzeichen des Absenders vorangestellt ist. Die Antworten gehen an das ATAK-Gerät, das zuletzt an es geschrieben hat, oder an jedes Gerät, wenn dies nicht der Fall ist. Ein Begleiter ohne Position erscheint für einen Tag nach einer Nachricht bei 0, 0.",
     "messagingTitleReticulum": "Reticulum Messaging in ATAK",
-    "messagingIntroReticulum": "Lassen Sie ATAK-Geräte LXMF Kollegen benachrichtigen. Ein Kollege mit einer Position kann von seinem Marker aus benachrichtigt werden; einer ohne Position erscheint bei 0, 0, sobald mesh-client ein Gespräch mit ihm führt, so dass die Kontaktliste nicht mit jedem gehörten Kollegen gefüllt wird."
+    "messagingIntroReticulum": "Lassen Sie ATAK-Geräte LXMF Kollegen benachrichtigen. Ein Kollege mit einer Position kann von seinem Marker aus benachrichtigt werden; einer ohne Position erscheint bei 0, 0, sobald mesh-client ein Gespräch mit ihm führt, so dass die Kontaktliste nicht mit jedem gehörten Kollegen gefüllt wird.",
+    "channelCallsign": "Rufzeichen hinzufügen",
+    "channelCallsignFor": "Setzen Sie das ATAK-Rufzeichen des Absenders vor Nachrichten, die an {{channel}} gesendet werden",
+    "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
