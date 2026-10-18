@@ -191,32 +191,41 @@ describe('AppPanel: theme presets', () => {
         <AppPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const midnight = await screen.findByRole('button', { name: 'Midnight' });
-    const meshtastic = screen.getByRole('button', { name: 'Meshtastic' });
-    expect(midnight).toHaveAttribute('aria-pressed', 'true');
-    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    const slate = await screen.findByRole('button', { name: 'Slate' });
+    const sky = screen.getByRole('button', { name: 'Sky' });
+    expect(slate).toHaveAttribute('aria-pressed', 'true');
+    expect(sky).toHaveAttribute('aria-pressed', 'true');
 
-    // Slate replaces the neutrals everywhere (every ink-* class) and keeps the accent.
-    fireEvent.click(screen.getByRole('button', { name: 'Slate' }));
-    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
-    expect(midnight).toHaveAttribute('aria-pressed', 'false');
-    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    // Midnight replaces the neutrals everywhere (every ink-* class) and keeps the accent.
+    fireEvent.click(screen.getByRole('button', { name: 'Midnight' }));
+    expect(screen.getByRole('button', { name: 'Midnight' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(slate).toHaveAttribute('aria-pressed', 'false');
+    expect(sky).toHaveAttribute('aria-pressed', 'true');
     const root = document.documentElement;
-    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#1e293b');
-    expect(root.style.getPropertyValue('--color-app-bg')).toBe('#020617');
-    expect(localStorage.getItem('mesh-client:themeSurface')).toBe('slate');
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
+    expect(root.style.getPropertyValue('--color-app-bg')).toBe('#11151c');
+    expect(localStorage.getItem('mesh-client:themeSurface')).toBe('midnight');
 
-    // Sky changes the accent and sent bubbles and keeps Slate.
-    fireEvent.click(screen.getByRole('button', { name: 'Sky' }));
-    expect(screen.getByRole('button', { name: 'Sky' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
-    expect(root.style.getPropertyValue('--color-brand-green')).toBe('#38bdf8');
+    // Meshtastic changes the accent and sent bubbles and keeps Midnight.
+    fireEvent.click(screen.getByRole('button', { name: 'Meshtastic' }));
+    expect(screen.getByRole('button', { name: 'Meshtastic' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Midnight' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(root.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');
 
-    fireEvent.click(midnight);
-    fireEvent.click(meshtastic);
+    fireEvent.click(slate);
+    fireEvent.click(sky);
     expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
     expect(localStorage.getItem('mesh-client:themeSurface')).toBeNull();
-    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#1e293b');
   });
 
   it('says so when an unreadable accent is put back to the default', async () => {
@@ -228,7 +237,7 @@ describe('AppPanel: theme presets', () => {
     const accentSwatches = await screen.findByRole('group', { name: /^Accent Primary/ });
     fireEvent.click(within(accentSwatches).getByRole('button', { name: 'Slate 950 #020617' }));
     expect(await screen.findByText(/too close to the app background to read/)).toBeInTheDocument();
-    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');
+    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#38bdf8');
   });
 });
 

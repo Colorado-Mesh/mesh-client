@@ -46,19 +46,17 @@ Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables
 
 ### Neutrals (ink)
 
-Neutrals come from the Midnight Serenity palette picked during review: Ink Black `#11151c` (950), Deep Space Blue `#212d40` (800) and Charcoal Blue `#364156` (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is `--color-ink-*` in `styles.css`, and a [theme](#themes) surface swaps all eleven steps at runtime.
+Neutrals are the `--color-ink-*` scale in `styles.css`. The default surface is Slate (Tailwind slate). App > Appearance can swap all eleven steps at runtime (Midnight Serenity and other families). Use `ink-*` utilities or the tokens below; `slate-*`, `zinc-*` and `gray-*` are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.
 
-Use `ink-*` utilities or the tokens below; `slate-*`, `zinc-*` and `gray-*` are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.
-
-| Token / class                                 | Default (ink)         | Use                                                   |
+| Token / class                                 | Default (ink / Slate) | Use                                                   |
 | --------------------------------------------- | --------------------- | ----------------------------------------------------- |
-| `bg-app-bg`                                   | `#11151c` (950)       | App background, section header, main viewport         |
-| `bg-deep-black`                               | `#19212d` (900)       | Rail, status bar, cards, panels, menus, launcher      |
-| `bg-sidebar-active-bg`                        | `#212d40` (800)       | Active nav item, selected row, hover fill             |
-| `border-ink-800`                              | `#212d40`             | Hairlines between shell parts and inside cards        |
-| `bg-secondary-dark` / `border-secondary-dark` | `#364156` (700)       | Secondary control fill, field borders, stronger lines |
-| `text-muted`                                  | `#93a0b7` (400)       | Secondary text, placeholders, inactive icons          |
-| `text-ink-300` / `text-ink-200`               | `#cdd4e2` / `#e3e8f0` | Body text / primary text                              |
+| `bg-app-bg`                                   | `#020617` (950)       | App background, section header, main viewport         |
+| `bg-deep-black`                               | `#0f172a` (900)       | Rail, status bar, cards, panels, menus, launcher      |
+| `bg-sidebar-active-bg`                        | `#1e293b` (800)       | Active nav item, selected row, hover fill             |
+| `border-ink-800`                              | `#1e293b`             | Hairlines between shell parts and inside cards        |
+| `bg-secondary-dark` / `border-secondary-dark` | `#334155` (700)       | Secondary control fill, field borders, stronger lines |
+| `text-muted`                                  | `#94a3b8` (400)       | Secondary text, placeholders, inactive icons          |
+| `text-ink-300` / `text-ink-200`               | `#cbd5e1` / `#e2e8f0` | Body text / primary text                              |
 
 `ink-500` and darker are never text on dark surfaces (under 4.5:1).
 
@@ -76,14 +74,14 @@ Reticulum is yellow, not amber, so it never reads as a warning. Protocol classes
 
 ### Accent (theme)
 
-The accent tokens follow the selected theme preset; the default preset is Meshtastic.
+The accent tokens follow the selected theme preset; the default preset is Sky.
 
-| Token / class                          | Default                  | Use                                                                        |
-| -------------------------------------- | ------------------------ | -------------------------------------------------------------------------- |
-| `text-bright-green` / `bg-brand-green` | `#67e8b4` meshtastic-500 | Accent: active nav, selection, focus ring, links, primary buttons          |
-| `text-app-bg` on `bg-brand-green`      |                          | Primary button label (dark on accent, about 13:1)                          |
-| `bg-readable-green`                    | `#047857` meshtastic-700 | Fills under white text; must keep 4.5:1 with white (`themeColors.test.ts`) |
-| `--color-chat-outgoing-bg` / `-border` | 700 at 22% / 500 at 25%  | Own chat bubbles                                                           |
+| Token / class                          | Default             | Use                                                                        |
+| -------------------------------------- | ------------------- | -------------------------------------------------------------------------- |
+| `text-bright-green` / `bg-brand-green` | `#38bdf8` sky base  | Accent: active nav, selection, focus ring, links, primary buttons          |
+| `text-app-bg` on `bg-brand-green`      |                     | Primary button label (dark on accent, about 13:1)                          |
+| `bg-readable-green`                    | `#0369a1` sky fill  | Fills under white text; must keep 4.5:1 with white (`themeColors.test.ts`) |
+| `--color-chat-outgoing-bg` / `-border` | fill 22% / base 25% | Own chat bubbles                                                           |
 
 The token names say "green" for history; they hold whatever accent the theme sets.
 
@@ -109,8 +107,8 @@ Allowed exceptions: favourite stars are `yellow-400`; search highlights are yell
 
 App > Appearance > Colors has two one-click choices (`lib/themePresets.ts`, `components/ThemePicker.tsx`). Any surface pairs with any accent, and single tokens can still be edited afterwards.
 
-- **Surfaces** replace the whole neutral scale (every `ink-*` class, through `--color-ink-*` on `:root`) and the neutral tokens: Midnight (default), Slate, Zinc, Graphite, Deep sea, Dusk, Evergreen and High contrast. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11).
-- **Accents** set the accent and the sent-message bubbles: Meshtastic (default), MeshCore, Reticulum, Sky and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.
+- **Surfaces** replace the whole neutral scale (every `ink-*` class, through `--color-ink-*` on `:root`) and the neutral tokens: Slate (default), Midnight, Zinc, Graphite, Deep sea, Dusk, Evergreen and High contrast. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11).
+- **Accents** set the accent and the sent-message bubbles: Sky (default), Meshtastic, MeshCore, Reticulum and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.
 
 `themePresets.test.ts` checks every surface's text pairs and every surface and accent pair against the guards in `themeColors.ts`, so no combination is ever reset. A light theme needs a sweep of hard-coded dark text first.
 
@@ -326,7 +324,7 @@ Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-comm
 ## Open items
 
 - From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors and type are already exact.
-- Neutrals: Midnight Serenity gives three dark steps. The light steps used for text (ink-50 to ink-600) are derived; exact values from the designer drop into `--color-ink-*`.
+- Neutrals: default Slate ships eleven ink steps in `--color-ink-*`; other surfaces (including Midnight Serenity) swap the same variables at runtime.
 - Protocol colors outside `protocolTheme.ts` (for example some Reticulum panels and data ramps) still use Tailwind's `emerald` / `cyan` / `yellow` classes; move the ones that mark a protocol to the scale tokens.
 - Status text still uses Tailwind's `-400` steps (v4 oklch values) next to the exact Main tokens used by dots.
 - The Main success green (`#34d399`) sits close to the Meshtastic base (`#67e8b4`); status dots always come with text, so "online" is never color alone.

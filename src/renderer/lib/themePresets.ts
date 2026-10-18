@@ -33,7 +33,7 @@ function scale(values: readonly string[]): InkScale {
 
 /**
  * Surface families for App > Appearance > Colors, dark only (many older panels hard-code light
- * text). Midnight is the default and must match the `--color-ink-*` values in styles.css. The
+ * text). Slate is the default and must match the `--color-ink-*` values in styles.css. The
  * tinted families keep Midnight's lightness and chroma per step with another hue, so every family
  * passes the same text and border contrast pairs (`themePresets.test.ts`).
  */
@@ -199,8 +199,8 @@ export const THEME_ACCENTS: readonly ThemeAccent[] = [
   { id: 'classic', labelKey: 'appPanel.themeAccents.classic', base: '#86efac', fill: '#15803d' },
 ];
 
-export const DEFAULT_THEME_SURFACE_ID: ThemeSurfaceId = 'midnight';
-export const DEFAULT_THEME_ACCENT_ID: ThemeAccentId = 'meshtastic';
+export const DEFAULT_THEME_SURFACE_ID: ThemeSurfaceId = 'slate';
+export const DEFAULT_THEME_ACCENT_ID: ThemeAccentId = 'sky';
 
 /** Which ink step each surface theme token takes. */
 const SURFACE_TOKEN_STEPS = {
