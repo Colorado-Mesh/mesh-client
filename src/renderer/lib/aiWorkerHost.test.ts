@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RepetitiveAiOutputError } from './aiSummaryOutput';
-import { AiWorkerHost } from './aiWorkerHost';
+import { AiWorkerHost, bundledWllamaThreadCount } from './aiWorkerHost';
 
 const fixture = vi.hoisted(() => ({
   load: vi.fn(),
@@ -41,7 +41,20 @@ const job = {
   messageCount: 1,
   truncated: false,
   model: 'model',
+  maxTokens: 250,
 };
+describe('bundledWllamaThreadCount', () => {
+  it('stays single-threaded without cross-origin isolation', () => {
+    expect(bundledWllamaThreadCount(12, false)).toBe(1);
+  });
+
+  it('uses about half of logical cores when isolated, capped at 8', () => {
+    expect(bundledWllamaThreadCount(12, true)).toBe(6);
+    expect(bundledWllamaThreadCount(2, true)).toBe(1);
+    expect(bundledWllamaThreadCount(32, true)).toBe(8);
+  });
+});
+
 describe('bundled AI worker lifecycle', () => {
   it('routes a retained runtime failure to the current pass and releases the model', async () => {
     fixture.load.mockResolvedValue(undefined);
@@ -117,7 +130,7 @@ describe('bundled AI worker lifecycle', () => {
       expect.any(Array),
       expect.objectContaining({
         n_ctx: 4096,
-        n_threads: 1,
+        n_threads: bundledWllamaThreadCount(),
         n_gpu_layers: 0,
         n_parallel: 1,
         n_batch: 128,

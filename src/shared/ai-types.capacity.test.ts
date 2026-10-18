@@ -3,11 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   AI_DEFAULT_MAX_COLLECTED_MESSAGES,
   AI_ENDPOINT_MAX_PROMPT_BYTES,
+  AI_MAP_OUTPUT_TOKENS,
   AI_MAX_MAX_COLLECTED_MESSAGES,
   AI_MAX_MESSAGES,
+  AI_MAX_OUTPUT_TOKENS,
   AI_MIN_MAX_COLLECTED_MESSAGES,
   AI_ON_DEVICE_MAX_PROMPT_BYTES,
+  AI_REDUCE_OUTPUT_TOKENS,
   AI_TYPICAL_SUMMARY_LINE_BYTES,
+  aiSummaryOutputTokens,
   aiSummaryPromptBudget,
   clampAiMaxCollectedMessages,
   estimateAiSummaryMessageCapacity,
@@ -39,6 +43,13 @@ describe('AI summary capacity helpers', () => {
     );
     expect(estimateAiSummaryMessageCapacity('local')).toBe(AI_MAX_MESSAGES);
     expect(estimateAiSummaryMessageCapacity('remote')).toBe(AI_MAX_MESSAGES);
+  });
+
+  it('uses shorter completion budgets for map and reduce passes', () => {
+    expect(aiSummaryOutputTokens('map')).toBe(AI_MAP_OUTPUT_TOKENS);
+    expect(aiSummaryOutputTokens('reduce')).toBe(AI_REDUCE_OUTPUT_TOKENS);
+    expect(aiSummaryOutputTokens('final')).toBe(AI_MAX_OUTPUT_TOKENS);
+    expect(AI_MAP_OUTPUT_TOKENS).toBeLessThan(AI_MAX_OUTPUT_TOKENS);
   });
 
   it('clamps the user collection ceiling', () => {

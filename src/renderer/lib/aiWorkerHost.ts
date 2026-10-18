@@ -15,6 +15,20 @@ export interface AiWorkerGenerateOptions {
 // Wllama forwards these llama.cpp wire names unchanged; its v3 types use older names.
 const sampling = { repeat_penalty: 1.1, repeat_last_n: 64 };
 
+/**
+ * Thread count for bundled CPU WASM. Multi-thread needs SharedArrayBuffer
+ * (`crossOriginIsolated`); otherwise wllama falls back to 1 regardless.
+ * Cap leaves headroom for the UI while using about half of logical cores.
+ */
+export function bundledWllamaThreadCount(
+  cores: number = typeof navigator !== 'undefined' ? Math.max(1, navigator.hardwareConcurrency) : 1,
+  isolated: boolean = typeof crossOriginIsolated === 'boolean' ? crossOriginIsolated : false,
+): number {
+  if (!isolated) return 1;
+  const half = Math.floor(Math.max(1, cores) / 2);
+  return Math.max(1, Math.min(8, half));
+}
+
 // Wllama owns the dedicated WASM worker. No runtime, worker or assets load at import time.
 export class AiWorkerHost {
   private runtime: Wllama | null = null;
@@ -102,7 +116,7 @@ export class AiWorkerHost {
         await raced(
           runtime.loadModel([blob], {
             n_ctx: 4096,
-            n_threads: 1,
+            n_threads: bundledWllamaThreadCount(),
             n_gpu_layers: 0,
             n_parallel: 1,
             n_batch: 128,
@@ -121,7 +135,7 @@ export class AiWorkerHost {
             { role: 'system', content: job.system },
             { role: 'user', content: job.user },
           ],
-          max_tokens: AI_MAX_OUTPUT_TOKENS,
+          max_tokens: job.maxTokens > 0 ? job.maxTokens : AI_MAX_OUTPUT_TOKENS,
           temperature: 0.2,
           top_p: 0.9,
           stream: true,

@@ -115,8 +115,11 @@ collection ceiling still disclose truncation even if visibility filtering leaves
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
 The module is dynamically imported only for explicit generation, uses bundled WASM, disables
-CDN compatibility fallback and suppresses native logging. Single-thread CPU settings work
-without changing cross-origin isolation. A renderer FIFO queue serializes summaries across engines
+CDN compatibility fallback and suppresses native logging. The Vite dev server sets `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: credentialless` so `SharedArrayBuffer` is available in `pnpm run
+dev`. Packaged/`pnpm start` still uses `file://` (keeps localStorage last-read watermarks); there
+the worker stays single-threaded. When `crossOriginIsolated` is true the worker uses about half of
+`navigator.hardwareConcurrency` (capped at 8). A renderer FIFO queue serializes summaries across engines
 and conversations until streaming or worker completion, rather than just main-process acknowledgement.
 While a Catch up waits behind another job, the card shows a queued status
 (“Please wait — another summary is generating…”) instead of the generic preparing copy.
@@ -130,8 +133,11 @@ App → AI shows an approximate per-engine **per-pass** message capacity
 prompt budget, Catch up runs hierarchical multi-pass summarization (map digests → reduce → final
 five-bullet catch-up) while keeping on-device ~3.5 KB / endpoint 64 KB budgets per inference.
 History is paginated until the configured ceiling. Bundled WASM reuses a loaded model across
-map/reduce steps. The whole job shares the configured timeout; large ranges often need 10–30
-minutes on downloaded models. The Catch up card reports progress (`part i of n` / merging),
+map/reduce steps. Map and reduce passes use a lower completion token budget than the final
+five-bullet pass so multi-pass wall time stays closer to proportional to coverage rather than
+maxing out every intermediate digest. The whole job shares the configured timeout; large ranges
+often need several minutes on downloaded CPU models (a local/remote server is much faster for
+1000+ messages). The Catch up card reports progress (`part i of n` / merging),
 collected vs included counts, and ceiling truncation when the user limit stops collection.
 Prompt metadata identifies the local IANA timezone, and every transcript timestamp includes its
 local date and UTC offset, including across midnight and daylight-saving transitions. The worker uses a single completion slot and bounded

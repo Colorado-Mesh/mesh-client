@@ -30,6 +30,8 @@ export function createAiModelProtocol(deps: {
       const headers = new Headers(response.headers);
       headers.set('Access-Control-Allow-Origin', '*');
       headers.set('Cache-Control', 'no-store');
+      // Explicit CORP so COEP-isolated renderers can fetch model bytes over mesh-ai:.
+      headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
       return new Response(response.body, { status: response.status, headers });
     } catch {
       // catch-no-log-ok unreadable models are unavailable; never expose filesystem paths

@@ -11,11 +11,11 @@ import {
 } from 'electron';
 
 import {
-  AI_MAX_OUTPUT_TOKENS,
   AI_MAX_RESPONSE_BYTES,
   type AiActionResult,
   type AiOsAiStatus,
   type AiProviderStatus,
+  aiSummaryOutputTokens,
   aiSummaryPromptBudget,
   aiSummaryTimeoutMs,
   clampAiMaxCollectedMessages,
@@ -364,9 +364,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
           messageCount: prompt.included,
           truncated: prompt.truncated,
           model: model.name,
+          maxTokens: aiSummaryOutputTokens(mode),
         },
       };
     }
+    const outputTokens = aiSummaryOutputTokens(mode);
     const signal = AbortSignal.any([
       controller.signal,
       AbortSignal.timeout(aiSummaryTimeoutMs(c.engine, c.timeoutSeconds)),
@@ -398,7 +400,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
               requestId: request.requestId,
               system: prompt.system,
               user: prompt.user,
-              maxTokens: AI_MAX_OUTPUT_TOKENS,
+              maxTokens: outputTokens,
             },
             signal,
             delta,
@@ -414,7 +416,7 @@ export function registerAiHandlers(deps: Dependencies): () => void {
               apiKey: config.key(),
               system: prompt.system,
               user: prompt.user,
-              maxTokens: AI_MAX_OUTPUT_TOKENS,
+              maxTokens: outputTokens,
             },
             c.allowRemote,
             signal,

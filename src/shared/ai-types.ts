@@ -144,6 +144,8 @@ export interface AiLocalJob {
   messageCount: number;
   truncated: boolean;
   model: string;
+  /** Completion budget; map/reduce use a lower cap than final. */
+  maxTokens: number;
 }
 
 export interface AiActionResult {
@@ -164,8 +166,21 @@ export const AI_DEFAULT_MAX_COLLECTED_MESSAGES = 2000;
 export const AI_MIN_MAX_COLLECTED_MESSAGES = 100;
 /** Hard product ceiling for one Catch up collection. */
 export const AI_MAX_MAX_COLLECTED_MESSAGES = 5000;
+/** Final catch-up bullet list (and single-pass summaries). */
 export const AI_MAX_OUTPUT_TOKENS = 250;
+/**
+ * Map digests are intermediate; capping decode tokens cuts multi-pass wall time
+ * roughly in proportion (bundled WASM decode dominates over prompt eval).
+ */
+export const AI_MAP_OUTPUT_TOKENS = 96;
+export const AI_REDUCE_OUTPUT_TOKENS = 128;
 export const AI_MAX_RESPONSE_BYTES = 256 * 1024;
+
+export function aiSummaryOutputTokens(mode: AiSummaryPassMode = 'final'): number {
+  if (mode === 'map') return AI_MAP_OUTPUT_TOKENS;
+  if (mode === 'reduce') return AI_REDUCE_OUTPUT_TOKENS;
+  return AI_MAX_OUTPUT_TOKENS;
+}
 /** Whole-prompt UTF-8 ceiling for OS AI and downloaded WASM (~4K-token contexts). */
 export const AI_ON_DEVICE_MAX_PROMPT_BYTES = 3500;
 /** Whole-prompt UTF-8 ceiling for local/remote HTTP engines. */

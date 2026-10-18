@@ -137,6 +137,7 @@ describe('multi-pass summary orchestration', () => {
           modelUrl: 'mesh-ai://model/model.gguf',
           messageCount: request.messages.length,
           truncated: false,
+          maxTokens: request.mode === 'map' ? 96 : request.mode === 'reduce' ? 128 : 250,
         },
       });
     });

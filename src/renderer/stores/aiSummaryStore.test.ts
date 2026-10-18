@@ -145,6 +145,7 @@ describe('AI summary request correlation', () => {
         model: 'test',
         messageCount: 1,
         truncated: false,
+        maxTokens: 250,
       },
     });
     vi.spyOn(AiWorkerHost.prototype, 'generate')
@@ -610,6 +611,7 @@ describe('summary queue', () => {
         model: 'test',
         messageCount: 1,
         truncated: false,
+        maxTokens: 250,
       },
     });
     let release!: () => void;
@@ -656,6 +658,7 @@ it('waits for cancelled bundled worker cleanup before starting the next job', as
       model: 'test',
       messageCount: 1,
       truncated: false,
+      maxTokens: 250,
     },
   });
   let disposeWorker!: () => void;
