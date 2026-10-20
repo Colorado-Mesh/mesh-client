@@ -3290,7 +3290,9 @@
       "networkIdentity": "Identyfikacja sieciowa",
       "networkIdentityAria": "Ścieżka do pliku identyfikacyjnego sieci do szyfrowania i odszyfrowywania wykrywania",
       "networkIdentityPlaceholder": "~/.reticulum/przechowywanie/tożsamości/my_network",
-      "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt)."
+      "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt).",
+      "slowRfAnnounceFilter": "Ogłoszenia limitu na powolnych interfejsach RF (niestandardowe)",
+      "slowRfAnnounceFilterHint": "Domyślnie włączone. Zapobiega ponownemu rozsyłaniu niechcianych komunikatów internetowych przez łącza o niskiej przepustowości RNode, w których nigdy nie mogą się wyczerpać. Lokalne i RF-learned destynacje nadal ogłaszają, a destynacje internetowe nadal odpowiadają na prośby o trasy na żądanie. Wyłącz dla zachowania ogłaszania zapasów Reticulum."
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",

@@ -3234,7 +3234,9 @@
       "networkIdentity": "Identidad de la red",
       "networkIdentityAria": "Ruta al archivo de identidad de red para el cifrado y descifrado de descubrimiento",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Opcional. Requerido para desencriptar anuncios de descubrimiento encriptados (y para encriptar al publicar con discovery_encrypt)."
+      "networkIdentityHint": "Opcional. Requerido para desencriptar anuncios de descubrimiento encriptados (y para encriptar al publicar con discovery_encrypt).",
+      "slowRfAnnounceFilter": "Anuncios de límite en interfaces de RF lentas (no estándar)",
+      "slowRfAnnounceFilterHint": "Activado de forma predeterminada. Evita que los anuncios de Internet no solicitados se retransmitan a través de enlaces RNode de bajo ancho de banda, donde nunca pueden agotarse. Los destinos locales y aprendidos por RF aún se anuncian, y los destinos de Internet aún responden a las solicitudes de ruta a pedido. Desactivar para stock Reticulum anunciar comportamiento."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",

@@ -1,0 +1,235 @@
+--- a/crates/rns-transport/src/messages.rs
++++ b/crates/rns-transport/src/messages.rs
+@@ -827,6 +827,12 @@
+         dest: [u8; 16],
+     },
+     DropAnnounceQueues,
++    /// mesh-client policy (non-standard, default on): enable/disable the
++    /// slow-RF announce filter — unsolicited fast-interface announces are not
++    /// queued onto interfaces at or below 10 kbps. Response: `Ok`.
++    SetSlowRfAnnounceFilter {
++        enabled: bool,
++    },
+     GetBlackholedIdentities,
+     BlackholeIdentity {
+         hash: [u8; 16],
+--- a/crates/rns-transport/src/actor/mod.rs
++++ b/crates/rns-transport/src/actor/mod.rs
+@@ -42,6 +42,11 @@
+ // endpoints are owned by this actor. Real interface ids are allocated upward
+ // from zero by the runtime, so reserve the top two values for this private
+ // duplex route. They never appear on the wire or in the interface registry.
++/// Bitrate ceiling for the mesh-client slow-RF announce filter: interfaces at
++/// or below this (LoRa RNode profiles, ~0.3-5.5 kbps) cannot drain an
++/// internet-scale announce backlog at `ANNOUNCE_CAP` spacing.
++const SLOW_RF_ANNOUNCE_MAX_BITRATE_BPS: u64 = 10_000;
++
+ const LOCAL_LINK_INITIATOR_INTERFACE: InterfaceId = InterfaceId::MAX;
+ const LOCAL_LINK_RESPONDER_INTERFACE: InterfaceId = InterfaceId::MAX - 1;
+ 
+@@ -185,6 +190,13 @@
+     last_held_announce_check: f64,
+ 
+     pub is_transport_enabled: bool,
++    /// mesh-client policy (non-standard, default on): when true, unsolicited
++    /// announces learned on fast interfaces are not queued for rebroadcast
++    /// onto slow RF interfaces (bitrate <= `SLOW_RF_ANNOUNCE_MAX_BITRATE_BPS`).
++    /// Local destinations, destinations learned over RF/internal edges, and
++    /// attached cached path responses are still admitted. Set via
++    /// `TransportQuery::SetSlowRfAnnounceFilter`; Python has no equivalent.
++    pub slow_rf_announce_filter_enabled: bool,
+     /// Wire-facing transport identity (Python `Transport.identity`): HEADER_2
+     /// path responses, link-request transport_id matching, local next-hop
+     /// answers. On non-transport nodes this rotates per boot by default —
+@@ -434,6 +446,7 @@
+             last_rate_cull: 0.0,
+             last_held_announce_check: 0.0,
+             is_transport_enabled: false,
++            slow_rf_announce_filter_enabled: true,
+             transport_identity_hash: None,
+             internal_identity_hash: None,
+             ephemeral_identity_hash: None,
+@@ -1939,6 +1952,43 @@
+             accepted |= sent;
+         }
+         accepted
++    }
++
++    /// mesh-client slow-RF announce policy: should an unsolicited rebroadcast
++    /// of `destination_hash` be queued onto interface `target`?
++    ///
++    /// Python queues every mode-eligible announce onto every interface. On a
++    /// node bridging fast boundary hubs (thousands of destinations) onto a
++    /// LoRa RNode (~3 kbps, `ANNOUNCE_CAP` spacing \u2248 2-3 announces/min), that
++    /// backlog can never drain and starves fresh local announces. When the
++    /// filter is enabled, a slow-RF target only accepts destinations that are
++    /// local to this instance or whose live path was learned over an RF or
++    /// internal/local-client edge (i.e. the RF segment's own mesh traffic).
++    /// Internet destinations remain reachable from RF peers on demand: path
++    /// requests are answered with attached cached responses
++    /// (`admit_cached_response`), which bypass this queue entirely.
++    fn slow_rf_announce_admitted(&self, target: InterfaceId, destination_hash: &[u8; 16]) -> bool {
++        if !self.slow_rf_announce_filter_enabled {
++            return true;
++        }
++        let Some(entry) = self.interfaces.get(&target) else {
++            return false;
++        };
++        // Unknown bitrate (0) is treated as fast: only known-slow RF is gated.
++        if entry.bitrate == 0 || entry.bitrate > SLOW_RF_ANNOUNCE_MAX_BITRATE_BPS {
++            return true;
++        }
++        if self.local_destinations.contains(destination_hash) {
++            return true;
++        }
++        if let Some(path) = self.path_table.get_live(destination_hash)
++            && let Some(source) = self.interfaces.get(&path.interface_id)
++        {
++            return (source.bitrate > 0 && source.bitrate <= SLOW_RF_ANNOUNCE_MAX_BITRATE_BPS)
++                || source.mode == InterfaceMode::Internal
++                || source.role == InterfaceRole::LocalClient;
++        }
++        false
+     }
+ 
+     /// Enqueue an announce on every eligible outbound interface (except
+@@ -1963,6 +2013,7 @@
+             .keys()
+             .copied()
+             .filter(|id| self.interface_allows_announce(*id, &destination_hash, except))
++            .filter(|id| self.slow_rf_announce_admitted(*id, &destination_hash))
+             .collect();
+ 
+         for id in ids {
+@@ -8095,7 +8146,92 @@
+         assert!(
+             rx.try_recv().is_err(),
+             "second drain before announce_allowed_at must not release the next entry"
++        );
++    }
++
++    /// mesh-client slow-RF announce filter (default on): a slow interface
++    /// must not queue internet-learned announces, but must queue local and
++    /// RF-learned destinations; disabling the filter restores stock queueing.
++    #[test]
++    fn slow_rf_filter_suppresses_internet_learned_announces() {
++        let (mut actor, _tx) = TransportActor::new();
++        assert!(actor.slow_rf_announce_filter_enabled, "filter defaults on");
++
++        let (mut slow, _slow_rx) = make_test_interface("rnode_lora");
++        slow.bitrate = 3_125;
++        actor.interfaces.insert(1, slow);
++        let (fast, _fast_rx) = make_test_interface("tcp_hub");
++        actor.interfaces.insert(2, fast);
++
++        // Internet-learned destination: live path via the fast hub.
++        let (raw_net, dest_net) = make_valid_announce("test.slowrf.net", 0);
++        actor.path_table.insert(
++            dest_net,
++            crate::path_table::PathEntry::new(None, 1, 2, InterfaceMode::Gateway),
+         );
++        actor.broadcast_announce_on_interfaces(&raw_net, None);
++        assert_eq!(
++            actor.interfaces.get(&1).unwrap().announce_queue.len(),
++            0,
++            "slow RF must not queue internet-learned announces"
++        );
++        assert_eq!(
++            actor.interfaces.get(&2).unwrap().announce_queue.len(),
++            1,
++            "fast interfaces keep stock queueing"
++        );
++
++        // RF-learned destination: live path via the slow interface itself.
++        let (raw_rf, dest_rf) = make_valid_announce("test.slowrf.rf", 0);
++        actor.path_table.insert(
++            dest_rf,
++            crate::path_table::PathEntry::new(None, 1, 1, InterfaceMode::Gateway),
++        );
++        actor.broadcast_announce_on_interfaces(&raw_rf, None);
++        assert!(
++            actor
++                .interfaces
++                .get(&1)
++                .unwrap()
++                .announce_queue
++                .iter()
++                .any(|q| q.destination_hash == dest_rf),
++            "slow RF must queue RF-learned (mesh) announces"
++        );
++
++        // Local destination on the slow interface.
++        let (raw_local, dest_local) = make_valid_announce("test.slowrf.local", 0);
++        actor.local_destinations.insert(dest_local);
++        actor.broadcast_announce_on_interfaces(&raw_local, None);
++        assert!(
++            actor
++                .interfaces
++                .get(&1)
++                .unwrap()
++                .announce_queue
++                .iter()
++                .any(|q| q.destination_hash == dest_local),
++            "slow RF must queue local announces"
++        );
++
++        // Filter off: stock behaviour — internet announce now queues on RF.
++        actor.slow_rf_announce_filter_enabled = false;
++        let (raw_net2, dest_net2) = make_valid_announce("test.slowrf.net2", 0);
++        actor.path_table.insert(
++            dest_net2,
++            crate::path_table::PathEntry::new(None, 1, 2, InterfaceMode::Gateway),
++        );
++        actor.broadcast_announce_on_interfaces(&raw_net2, None);
++        assert!(
++            actor
++                .interfaces
++                .get(&1)
++                .unwrap()
++                .announce_queue
++                .iter()
++                .any(|q| q.destination_hash == dest_net2),
++            "filter off must restore stock queueing onto slow RF"
++        );
+     }
+ 
+     /// Python 1.3.8 Transport.py:1286-1308 keeps one queued announce per
+--- a/crates/rns-transport/src/actor/rpc.rs
++++ b/crates/rns-transport/src/actor/rpc.rs
+@@ -302,6 +302,36 @@
+             TransportQuery::DropAnnounceQueues => {
+                 for entry in self.interfaces.values_mut() {
+                     entry.announce_queue.clear();
++                }
++                TransportQueryResponse::Ok
++            }
++            TransportQuery::SetSlowRfAnnounceFilter { enabled } => {
++                self.slow_rf_announce_filter_enabled = enabled;
++                if enabled {
++                    // Prune backlog entries the filter would never admit so
++                    // enabling it mid-run drains stale queues immediately.
++                    let ids: Vec<InterfaceId> = self.interfaces.keys().copied().collect();
++                    for id in ids {
++                        let admitted: Vec<bool> = self
++                            .interfaces
++                            .get(&id)
++                            .map(|entry| {
++                                entry
++                                    .announce_queue
++                                    .iter()
++                                    .map(|q| {
++                                        self.slow_rf_announce_admitted(id, &q.destination_hash)
++                                    })
++                                    .collect()
++                            })
++                            .unwrap_or_default();
++                        if let Some(entry) = self.interfaces.get_mut(&id) {
++                            let mut keep = admitted.into_iter();
++                            entry
++                                .announce_queue
++                                .retain(|_| keep.next().unwrap_or(false));
++                        }
++                    }
+                 }
+                 TransportQueryResponse::Ok
+             }

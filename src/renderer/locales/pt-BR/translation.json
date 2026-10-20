@@ -3234,7 +3234,9 @@
       "networkIdentity": "Caminho de identidade de rede",
       "networkIdentityAria": "Caminho para o arquivo de identidade de rede para descoberta criptografar e descriptografar",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Opcional. Necessário para descriptografar anúncios de descoberta criptografados (e criptografar ao publicar com discovery_encrypt)."
+      "networkIdentityHint": "Opcional. Necessário para descriptografar anúncios de descoberta criptografados (e criptografar ao publicar com discovery_encrypt).",
+      "slowRfAnnounceFilter": "Anúncios de limite em interfaces de RF lentas (não padrão)",
+      "slowRfAnnounceFilterHint": "Ativado por padrão. Impede que anúncios de internet não solicitados sejam retransmitidos em links RNode de baixa largura de banda, onde nunca podem ser drenados. Os destinos locais e aprendidos por RF ainda anunciam, e os destinos da Internet ainda atendem às solicitações de caminho sob demanda. Desativar para estoque Reticulum anunciar comportamento."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",

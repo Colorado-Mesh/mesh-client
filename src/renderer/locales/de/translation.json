@@ -3234,7 +3234,9 @@
       "networkIdentity": "Netzwerkidentitätspfad",
       "networkIdentityAria": "Pfad zur Netzwerkidentitätsdatei zur Erkennung, Verschlüsselung und Entschlüsselung",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln)."
+      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln).",
+      "slowRfAnnounceFilter": "Limit-Ankündigungen auf langsamen HF-Schnittstellen (nicht standardmäßig)",
+      "slowRfAnnounceFilterHint": "Standardmäßig aktiviert. Hält unerwünschte Internet-Ankündigungen davon ab, über Links mit geringer Bandbreite RNode erneut gesendet zu werden, wo sie niemals ablaufen können. Lokale und RF-gelernte Ziele kündigen sich immer noch an, und Internetziele beantworten auf Anfrage immer noch Pfadanfragen. Deaktivieren für Lagerbestand Reticulum Ankündigungsverhalten."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",

@@ -3234,7 +3234,9 @@
       "networkIdentity": "Jalur identitas jaringan",
       "networkIdentityAria": "Jalur ke file identitas jaringan untuk enkripsi dan dekripsi penemuan",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identity/my_network",
-      "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt)."
+      "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt).",
+      "slowRfAnnounceFilter": "Batasi pengumuman pada antarmuka RF yang lambat (non - standar)",
+      "slowRfAnnounceFilterHint": "Secara default. Menghentikan internet yang tidak diminta mengumumkan agar tidak disiarkan ulang melalui tautan RNode bandwidth rendah, yang tidak akan pernah bisa dikeringkan. Destinasi lokal dan RF masih mengumumkan, dan destinasi internet masih menjawab permintaan jalur sesuai permintaan. Nonaktifkan untuk perilaku pengumuman stok Reticulum."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",

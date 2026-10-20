@@ -3234,7 +3234,9 @@
       "networkIdentity": "Identité réseau",
       "networkIdentityAria": "Chemin vers le fichier d'identité réseau pour la découverte chiffrer et déchiffrer",
       "networkIdentityPlaceholder": "~/.reticulum/stockage/identités/mon_réseau",
-      "networkIdentityHint": "Facultatif. Obligatoire pour déchiffrer les annonces de découverte chiffrées (et pour chiffrer lors de la publication avec discovery_encrypt)."
+      "networkIdentityHint": "Facultatif. Obligatoire pour déchiffrer les annonces de découverte chiffrées (et pour chiffrer lors de la publication avec discovery_encrypt).",
+      "slowRfAnnounceFilter": "Annonce de limite sur les interfaces RF lentes (non standard)",
+      "slowRfAnnounceFilterHint": "Activé par défaut. Empêche les annonces Internet non sollicitées d'être rediffusées sur des liens RNode à faible bande passante, où elles ne peuvent jamais s'écouler. Les destinations locales et RF-learned annoncent toujours, et les destinations Internet répondent toujours aux demandes de chemin à la demande. Désactiver pour le stock Reticulum annoncer le comportement."
     },
     "reticulumConfigImport": {
       "title": "Importer la configuration du Reticulum",

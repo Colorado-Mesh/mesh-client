@@ -3234,7 +3234,9 @@
       "networkIdentity": "ネットワーク ID",
       "networkIdentityAria": "検出のためのネットワークIDファイルへのパスの暗号化と復号化",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。"
+      "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。",
+      "slowRfAnnounceFilter": "低速RFインターフェースでのリミットアナウンス（非標準）",
+      "slowRfAnnounceFilterHint": "デフォルトでオンになっています。要求されていないインターネットアナウンスが低帯域幅のRNodeリンクで再放送されるのを停止します。これらのリンクは消耗することはありません。ローカルおよびRF学習の宛先は引き続きアナウンスされ、インターネットの宛先は引き続きオンデマンドでパスリクエストに応答します。在庫Reticulumの動作を通知する場合はオフにします。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",

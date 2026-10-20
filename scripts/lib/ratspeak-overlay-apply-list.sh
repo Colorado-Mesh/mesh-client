@@ -14,6 +14,7 @@ RS_RETICULUM_APPLY_SCRIPTS=(
   apply-rsReticulum-path-medium-slots.sh
   apply-rsReticulum-inbound-raw-saturation-log.sh
   apply-rsReticulum-interface-tx-queue-stats.sh
+  apply-rsReticulum-slow-rf-announce-filter.sh
   apply-rsReticulum-ble-rnode-flow-control-ready-timeout.sh
   apply-rsReticulum-ble-rnode-host-rssi-cache.sh
   apply-rsReticulum-response-resource-window-fast.sh

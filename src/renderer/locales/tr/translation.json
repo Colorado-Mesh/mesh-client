@@ -3234,7 +3234,9 @@
       "networkIdentity": "Ağ kimliği yolu",
       "networkIdentityAria": "Keşif şifrelemesi ve şifresinin çözülmesi için ağ kimlik dosyasının yolu",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir."
+      "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir.",
+      "slowRfAnnounceFilter": "Yavaş RF arayüzlerinde limit anonsları (standart dışı)",
+      "slowRfAnnounceFilterHint": "Varsayılan olarak açıktır. İstenmeyen internet duyurularının, asla boşalamayacakları düşük bant genişliği RNode bağlantıları üzerinden yeniden yayınlanmasını durdurur. Yerel ve RF tarafından öğrenilen destinasyonlar hala duyuruluyor ve internet destinasyonları hala talep üzerine yol taleplerini yanıtlıyor. Hisse senedi Reticulum anons davranışı için kapatın."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",

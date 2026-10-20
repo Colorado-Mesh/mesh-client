@@ -3234,7 +3234,9 @@
       "networkIdentity": "Netwerkidentiteit",
       "networkIdentityAria": "Pad naar netwerkidentiteitsbestand voor detectie versleutelen en ontsleutelen",
       "networkIdentityPlaceholder": "~/.reticulum/opslag/identiteiten/mijn_netwerk",
-      "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt)."
+      "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt).",
+      "slowRfAnnounceFilter": "Limietaankondigingen op langzame RF-interfaces (niet-standaard)",
+      "slowRfAnnounceFilterHint": "Standaard ingeschakeld. Voorkomt dat ongevraagde internetaankondigingen opnieuw worden uitgezonden via RNode -links met een lage bandbreedte, waar ze nooit kunnen uitlekken. Lokale en RF-geleerde bestemmingen worden nog steeds aangekondigd en internetbestemmingen beantwoorden nog steeds padaanvragen op aanvraag. Schakel uit voor voorraad Reticulum om gedrag aan te kondigen."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",

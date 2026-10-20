@@ -3265,7 +3265,9 @@
       "networkIdentity": "Síťová identita",
       "networkIdentityAria": "Cesta k souboru síťové identity pro šifrování a dešifrování zjišťování",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Volitelné. Vyžadováno k dešifrování šifrovaných oznámení o objevení (a k šifrování při publikování pomocí Discovery_Encrypt)."
+      "networkIdentityHint": "Volitelné. Vyžadováno k dešifrování šifrovaných oznámení o objevení (a k šifrování při publikování pomocí Discovery_Encrypt).",
+      "slowRfAnnounceFilter": "Hlášení limitů na pomalých RF rozhraních (nestandardní)",
+      "slowRfAnnounceFilterHint": "Ve výchozím nastavení zapnuto. Zastaví nevyžádaná internetová oznámení před opětovným vysíláním přes odkazy s nízkou šířkou pásma RNode, kde se nikdy nevyčerpají. Místní a RF naučené destinace stále oznamují a internetové destinace stále reagují na žádosti o trasy na vyžádání. Vypnout pro chování oznamování zásob Reticulum."
     },
     "reticulumConfigImport": {
       "title": "Import konfigurace Reticulum",
