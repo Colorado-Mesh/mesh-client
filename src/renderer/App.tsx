@@ -7,6 +7,7 @@
  */
 import { Crosshair, Search, TriangleAlert } from 'lucide-react-motion';
 import {
+  startTransition,
   Suspense,
   useCallback,
   useEffect,
@@ -2348,11 +2349,18 @@ function AppContent() {
 
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
-      setActiveTab(targetTab);
 
       useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
-      setProtocol(newProtocol);
+      // Protocol switches remount per-protocol panels and can take hundreds
+      // of ms of render work after time away (large peer/message stores).
+      // As a transition, React keeps the current UI interactive and renders
+      // the incoming protocol's tree interruptibly instead of freezing input
+      // on one blocking commit.
+      startTransition(() => {
+        setActiveTab(targetTab);
+        setProtocol(newProtocol);
+      });
     },
     [protocol, activeTab, activePanelIndex, tabsByProtocol],
   );
@@ -2361,6 +2369,16 @@ function AppContent() {
     const fallback = enabledProtocols[0];
     if (fallback && !enabledProtocols.includes(protocol)) handleProtocolChange(fallback);
   }, [enabledProtocols, protocol, handleProtocolChange]);
+
+  // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
+  // whose commit can block for hundreds of ms after time away. Rendering the
+  // switch as a transition keeps the current panel interactive while the
+  // incoming panel's tree renders interruptibly.
+  const handleTabSelect = useCallback((tabIndex: number) => {
+    startTransition(() => {
+      setActiveTab(tabIndex);
+    });
+  }, []);
 
   const allConnectionActionsRef = useRef(allConnectionActions);
   useEffect(() => {
@@ -4257,7 +4275,7 @@ function AppContent() {
               onSectionSelect={handleNavSectionSelect}
               pins={railPins}
               activeTabIndex={activeTab}
-              onPinSelect={setActiveTab}
+              onPinSelect={handleTabSelect}
             />
           )}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -4266,7 +4284,7 @@ function AppContent() {
               sectionLabel={activeNavSection ? t(NAV_SECTION_LABEL_KEYS[activeNavSection.id]) : ''}
               activeTabIndex={activeTab}
               badgeCounts={navBadgeCounts}
-              onTabSelect={setActiveTab}
+              onTabSelect={handleTabSelect}
               actions={
                 <>
                   {capabilities.hasRoomServersPanel ? (
