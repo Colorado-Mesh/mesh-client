@@ -44,6 +44,17 @@ describe('parseReticulumStackSettingsPayload', () => {
     expect(parsed.network_identity).toBe('');
   });
 
+  it('defaults slow_rf_announce_filter on when absent and preserves explicit false', () => {
+    expect(parseReticulumStackSettingsPayload({}).slow_rf_announce_filter).toBe(true);
+    expect(
+      parseReticulumStackSettingsPayload({ slow_rf_announce_filter: false })
+        .slow_rf_announce_filter,
+    ).toBe(false);
+    expect(
+      parseReticulumStackSettingsPayload({ slow_rf_announce_filter: true }).slow_rf_announce_filter,
+    ).toBe(true);
+  });
+
   it('parses discovery consume fields', () => {
     const parsed = parseReticulumStackSettingsPayload({
       enable_transport: true,

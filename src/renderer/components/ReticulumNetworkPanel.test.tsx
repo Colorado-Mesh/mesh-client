@@ -187,6 +187,32 @@ describe('ReticulumNetworkPanel', () => {
     expect(putArg).not.toHaveProperty('share_instance');
   });
 
+  it('defaults the slow-RF announce filter on and saves toggling it off', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    const filterToggle = await screen.findByRole('checkbox', {
+      name: 'networkPanel.reticulumStackSettings.slowRfAnnounceFilter',
+    });
+    // beforeEach settings payload omits slow_rf_announce_filter -> default on.
+    expect(filterToggle).toBeChecked();
+
+    const saveBtn = await screen.findByRole('button', {
+      name: 'networkPanel.reticulumStackSettings.save',
+    });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
+    });
+    await user.click(filterToggle);
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+        slow_rf_announce_filter: false,
+      });
+    });
+  });
+
   it('skips stack settings PUT when the form is unchanged', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);

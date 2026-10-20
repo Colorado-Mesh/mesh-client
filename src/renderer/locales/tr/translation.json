@@ -475,7 +475,11 @@
     "autoUpdateDownload": "~Güncellemeleri otomatik olarak indir",
     "autoUpdateDownloadDesc": "Her kontrolden sonra arka plandaki en son güncellemeyi indirir. Kapalıyken, güncellemeler hala algılanır, ancak yalnızca İndir düğmesine bastığınızda indirilir — bir paket yöneticisi kurulumu gerçekleştirdiğinde kullanışlıdır.",
     "autoUpdateDownloadSaveFailed": "Otomatik güncelleme indirme ayarı kaydedilemedi.",
-    "clearAllRepeatersConfirm": "Bu işlem, favoriye eklenmemiş tüm MeshCore tekrarlayıcılarını bağlı telsizden ve yerel veritabanından kaldırır. Tekrarlayıcılar yeniden duyuru yaptıklarında tekrar görünür. Bu işlem geri alınamaz."
+    "clearAllRepeatersConfirm": "Bu işlem, favoriye eklenmemiş tüm MeshCore tekrarlayıcılarını bağlı telsizden ve yerel veritabanından kaldırır. Tekrarlayıcılar yeniden duyuru yaptıklarında tekrar görünür. Bu işlem geri alınamaz.",
+    "windowSection": "Pencere",
+    "closeToTray": "Sistem tepsisine yakın",
+    "closeToTraySaveFailed": "Tepsiye yakın ayarı kaydedilemedi.",
+    "closeToTrayDesc": "Bir cihaz veya MQTT bağlantısı etkin olduğunda, pencereyi kapatmak, Mesh-Client'ı en aza indirmek yerine sistem tepsisine gizler (macOS üzerindeki menü çubuğu), böylece arka planda çalışmaya devam eder. Tepsi simgesinden yeniden açın. Tepsi menüsünden veya uygulama menüsünden çıkın. Kapalıyken, kapatma pencereyi eskisi gibi simge durumuna küçültür."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "Ağ kimliği yolu",
       "networkIdentityAria": "Keşif şifrelemesi ve şifresinin çözülmesi için ağ kimlik dosyasının yolu",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir."
+      "networkIdentityHint": "İsteğe bağlı. Şifrelenmiş keşif duyurularının şifresini çözmek (ve DISCOVERY_CRYPT ile yayınlarken şifrelemek) için gereklidir.",
+      "slowRfAnnounceFilter": "Yavaş RF arayüzlerinde limit anonsları (standart dışı)",
+      "slowRfAnnounceFilterHint": "Varsayılan olarak açıktır. İstenmeyen internet duyurularının, asla boşalamayacakları düşük bant genişliği RNode bağlantıları üzerinden yeniden yayınlanmasını durdurur. Yerel ve RF tarafından öğrenilen destinasyonlar hala duyuruluyor ve internet destinasyonları hala talep üzerine yol taleplerini yanıtlıyor. Hisse senedi Reticulum anons davranışı için kapatın."
     },
     "reticulumConfigImport": {
       "title": "Reticulum yapılandırmasını içe aktar",

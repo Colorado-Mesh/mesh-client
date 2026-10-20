@@ -292,6 +292,7 @@ check_ratspeak_patches() {
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsReticulum-inbound-raw-saturation-log.patch|ratspeak/rsReticulum||rsReticulum inbound-raw saturation log|'
     'rsReticulum-interface-tx-queue-stats.patch|ratspeak/rsReticulum||rsReticulum interface TX queue stats|'
+    'rsReticulum-slow-rf-announce-filter.patch|ratspeak/rsReticulum||rsReticulum slow-RF announce filter (local + RF-learned + on-demand only)|'
     'rsReticulum-ble-rnode-flow-control-ready-timeout.patch|ratspeak/rsReticulum||rsReticulum BLE RNode flow-control READY timeout|'
     'rsReticulum-ble-rnode-host-rssi-cache.patch|ratspeak/rsReticulum||rsReticulum BLE RNode host-RSSI cache for Interface Signal meters|'
     'rsReticulum-response-resource-window-fast.patch|ratspeak/rsReticulum||rsReticulum response Resource WINDOW_MAX_FAST on sub-second RTT|'

@@ -12,6 +12,7 @@ import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityS
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
+import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
@@ -197,6 +198,8 @@ interface AppSettings {
   use24HourTime: boolean;
   /** Packaged builds download update artifacts after each check; App → Updates toggle. */
   autoUpdateDownloadEnabled: boolean;
+  /** Closing the window while connected hides it to the tray; App → Window toggle. */
+  closeToTray: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
@@ -369,6 +372,10 @@ export default function AppPanel({
   );
   /** User toggled auto-download before the mount getAll() resolved; skip its stale value. */
   const autoUpdateDownloadTouchedRef = useRef(false);
+  /** Last close-to-tray value SQLite confirmed; a missing row means the default (on). */
+  const closeToTrayConfirmedRef = useRef<boolean>(DEFAULT_APP_SETTINGS_SHARED.closeToTray);
+  /** User toggled close-to-tray before the mount getAll() resolved; skip its stale value. */
+  const closeToTrayTouchedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [themeSurfaceId, setThemeSurfaceId] = useState<ThemeSurfaceId>(loadThemeSurfaceId);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
@@ -563,6 +570,26 @@ export default function AppPanel({
     [addToast, t],
   );
 
+  const persistCloseToTray = useCallback(
+    (enabled: boolean) => {
+      closeToTrayTouchedRef.current = true;
+      void window.electronAPI.appSettings
+        .set('closeToTray', enabled ? '1' : '0')
+        .then(() => {
+          closeToTrayConfirmedRef.current = enabled;
+        })
+        .catch((err: unknown) => {
+          console.warn('[AppPanel] closeToTray persist failed ' + errLikeToLogString(err));
+          // Main reads only SQLite, so roll the UI back to what the close handler will use.
+          const confirmed = closeToTrayConfirmedRef.current;
+          setSettings((prev) => ({ ...prev, closeToTray: confirmed }));
+          mergeAppSetting('closeToTray', confirmed, 'AppPanel updateSetting');
+          addToast(t('appPanel.closeToTraySaveFailed'), 'error');
+        });
+    },
+    [addToast, t],
+  );
+
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     mergeAppSetting(key, value, 'AppPanel updateSetting');
@@ -583,6 +610,9 @@ export default function AppPanel({
     }
     if (key === 'autoUpdateDownloadEnabled') {
       persistAutoUpdateDownload(Boolean(value));
+    }
+    if (key === 'closeToTray') {
+      persistCloseToTray(Boolean(value));
     }
   };
 
@@ -618,17 +648,31 @@ export default function AppPanel({
               : { ...prev, autoUpdateDownloadEnabled: enabled },
           );
         }
+        if (!closeToTrayTouchedRef.current) {
+          const enabled = closeToTrayEnabledFromStored(raw?.closeToTray);
+          closeToTrayConfirmedRef.current = enabled;
+          setSettings((prev) =>
+            prev.closeToTray === enabled ? prev : { ...prev, closeToTray: enabled },
+          );
+        }
         const loaded = parseMessageRetention(raw);
         setRetention(loaded);
         lastSavedRetentionRef.current = loaded;
       })
       .catch((err: unknown) => {
         console.warn('[AppPanel] app settings hydrate failed ' + errLikeToLogString(err));
-        if (cancelled || autoUpdateDownloadTouchedRef.current) return;
-        autoUpdateDownloadConfirmedRef.current = false;
-        setSettings((prev) =>
-          prev.autoUpdateDownloadEnabled ? { ...prev, autoUpdateDownloadEnabled: false } : prev,
-        );
+        if (cancelled) return;
+        if (!autoUpdateDownloadTouchedRef.current) {
+          autoUpdateDownloadConfirmedRef.current = false;
+          setSettings((prev) =>
+            prev.autoUpdateDownloadEnabled ? { ...prev, autoUpdateDownloadEnabled: false } : prev,
+          );
+        }
+        if (!closeToTrayTouchedRef.current) {
+          // Main falls back to the default (on) when the flag cannot be read.
+          closeToTrayConfirmedRef.current = true;
+          setSettings((prev) => (prev.closeToTray ? prev : { ...prev, closeToTray: true }));
+        }
       });
     return () => {
       cancelled = true;
@@ -2042,6 +2086,30 @@ export default function AppPanel({
           >
             {t('appPanel.importMergeButton')}
           </button>
+        </div>
+      </div>
+
+      {/* Window — close button hides to the tray while connected. */}
+      <div className="space-y-2">
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.windowSection')}</h3>
+        <div
+          data-setting-anchor="app.window.closeToTray"
+          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
+        >
+          <input
+            type="checkbox"
+            id="closeToTray"
+            checked={settings.closeToTray}
+            onChange={(e) => {
+              updateSetting('closeToTray', e.target.checked);
+            }}
+            aria-label={t('appPanel.closeToTray')}
+            className="accent-brand-green"
+          />
+          <label htmlFor="closeToTray" className="text-ink-300 cursor-pointer text-sm">
+            {t('appPanel.closeToTray')}
+          </label>
+          <HelpTooltip text={t('appPanel.closeToTrayDesc')} />
         </div>
       </div>
 

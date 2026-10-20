@@ -475,7 +475,11 @@
     "autoUpdateDownload": "自動的に更新をダウンロード",
     "autoUpdateDownloadDesc": "各チェック後にバックグラウンドで最新のアップデートをダウンロードします。オフの場合、アップデートは検出されますが、ダウンロードボタンを押したときにのみダウンロードされます。これは、パッケージマネージャーがインストールを処理する場合に便利です。",
     "autoUpdateDownloadSaveFailed": "自動更新ダウンロード設定を保存できませんでした。",
-    "clearAllRepeatersConfirm": "接続中の無線機とローカルデータベースから、お気に入り以外のすべてのMeshCoreリピーターを削除します。リピーターは再びアドバタイズすると再表示されます。この操作は元に戻せません。"
+    "clearAllRepeatersConfirm": "接続中の無線機とローカルデータベースから、お気に入り以外のすべてのMeshCoreリピーターを削除します。リピーターは再びアドバタイズすると再表示されます。この操作は元に戻せません。",
+    "windowSection": "ウインドウ",
+    "closeToTray": "システムトレイの近く",
+    "closeToTraySaveFailed": "クローズドトレイ設定を保存できませんでした。",
+    "closeToTrayDesc": "デバイスまたはMQTT接続がアクティブな場合、ウィンドウを閉じると、最小化する代わりにシステムトレイ（ macOSのメニューバー）のメッシュクライアントが非表示になり、バックグラウンドで実行され続けます。トレイアイコンから再度開きます。トレイメニューまたはアプリメニューから終了します。オフの場合、閉じると以前のようにウィンドウが最小限に抑えられます。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "ネットワーク ID",
       "networkIdentityAria": "検出のためのネットワークIDファイルへのパスの暗号化と復号化",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。"
+      "networkIdentityHint": "オプション。暗号化された検出アナウンスを復号化する必要があります(およびDISCOVERY_ENCRYPTを使用して発行するときに暗号化する必要があります)。",
+      "slowRfAnnounceFilter": "低速RFインターフェースでのリミットアナウンス（非標準）",
+      "slowRfAnnounceFilterHint": "デフォルトでオンになっています。要求されていないインターネットアナウンスが低帯域幅のRNodeリンクで再放送されるのを停止します。これらのリンクは消耗することはありません。ローカルおよびRF学習の宛先は引き続きアナウンスされ、インターネットの宛先は引き続きオンデマンドでパスリクエストに応答します。在庫Reticulumの動作を通知する場合はオフにします。"
     },
     "reticulumConfigImport": {
       "title": "Reticulum 構成をインポートする",

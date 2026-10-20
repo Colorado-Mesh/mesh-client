@@ -491,7 +491,11 @@
     "autoUpdateDownload": "Pobieraj aktualizacje automatycznie",
     "autoUpdateDownloadDesc": "Pobiera najnowszą aktualizację w tle po każdej kontroli. Gdy wyłączone, aktualizacje są nadal wykrywane, ale pobierane tylko po naciśnięciu przycisku Pobierz — przydatne, gdy menedżer pakietów obsługuje instalację.",
     "autoUpdateDownloadSaveFailed": "Nie można zapisać ustawienia automatycznego pobierania aktualizacji.",
-    "clearAllRepeatersConfirm": "Spowoduje to usunięcie wszystkich nieulubionych przemienników MeshCore z podłączonego radia i lokalnej bazy danych. Przemienniki pojawią się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć."
+    "clearAllRepeatersConfirm": "Spowoduje to usunięcie wszystkich nieulubionych przemienników MeshCore z podłączonego radia i lokalnej bazy danych. Przemienniki pojawią się ponownie, gdy znów się ogłoszą. Tej czynności nie można cofnąć.",
+    "windowSection": "Oklenko",
+    "closeToTray": "Blisko tacki systemowej",
+    "closeToTraySaveFailed": "Nie można zapisać ustawienia zbliżonego do podajnika.",
+    "closeToTrayDesc": "Gdy urządzenie lub połączenie MQTT jest aktywne, zamknięcie okna ukrywa Mesh-Client do tacki systemowej (pasek menu na macOS) zamiast go minimalizować, dzięki czemu działa w tle. Otwórz go ponownie za pomocą ikony tacy. Wyjdź z menu tacki lub menu aplikacji. Gdy wyłączone, zamknięcie minimalizuje okno jak poprzednio."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -3290,7 +3294,9 @@
       "networkIdentity": "Identyfikacja sieciowa",
       "networkIdentityAria": "Ścieżka do pliku identyfikacyjnego sieci do szyfrowania i odszyfrowywania wykrywania",
       "networkIdentityPlaceholder": "~/.reticulum/przechowywanie/tożsamości/my_network",
-      "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt)."
+      "networkIdentityHint": "Opcjonalnie. Wymagane do odszyfrowania zaszyfrowanych ogłoszeń o wykryciu (i do zaszyfrowania podczas publikowania za pomocą discovery_encrypt).",
+      "slowRfAnnounceFilter": "Ogłoszenia limitu na powolnych interfejsach RF (niestandardowe)",
+      "slowRfAnnounceFilterHint": "Domyślnie włączone. Zapobiega ponownemu rozsyłaniu niechcianych komunikatów internetowych przez łącza o niskiej przepustowości RNode, w których nigdy nie mogą się wyczerpać. Lokalne i RF-learned destynacje nadal ogłaszają, a destynacje internetowe nadal odpowiadają na prośby o trasy na żądanie. Wyłącz dla zachowania ogłaszania zapasów Reticulum."
     },
     "reticulumConfigImport": {
       "title": "Importuj config Reticulum",
