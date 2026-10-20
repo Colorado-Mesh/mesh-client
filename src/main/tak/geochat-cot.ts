@@ -20,9 +20,10 @@ import {
   type TakDmProtocol,
   type TakDmStatusUpdate,
   type TAKGeochatMessage,
+  type TakUnitStyle,
 } from '../../shared/tak-types';
 import { escapeXml } from '../../shared/xmlEscape';
-import { COT_CHAT_ENDPOINT } from './cot-converter';
+import { COT_CHAT_ENDPOINT, cotStyleDetail } from './cot-converter';
 
 /** GeoChat messages stay in ATAK's history; stale only bounds how long servers relay them. */
 const GEOCHAT_STALE_MS = 24 * 60 * 60 * 1000;
@@ -336,21 +337,24 @@ export interface DirectChatLine {
 /**
  * Contact for a companion a direct message has passed with but that has no marker on the map
  * (no position, or hidden by the filters or the age limit). It sits at 0, 0, under the marker's
- * uid, so a marker arriving later takes its place, and goes stale a day after `lastDmMs`.
+ * uid, so a marker arriving later takes its place, and goes stale a day after `lastDmMs`. It
+ * carries the unit style its marker would (type, team, colour, icon), so it looks the same.
  */
 export function buildDirectContactCot(
   contact: DirectChatContact,
   lastDmMs: number,
   nowMs: number = Date.now(),
+  style: TakUnitStyle = { cotType: 'a-f-G-U-C' },
 ): string {
   const time = new Date(nowMs).toISOString();
   const stale = new Date(Math.max(lastDmMs + DIRECT_CONTACT_TTL_MS, nowMs)).toISOString();
   return (
-    `<event version="2.0" uid="${escapeXml(contact.uid)}" type="a-f-G-U-C" time="${time}"` +
-    ` start="${time}" stale="${stale}" how="h-g-i-g-o">` +
+    `<event version="2.0" uid="${escapeXml(contact.uid)}" type="${escapeXml(style.cotType)}"` +
+    ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
     `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>` +
     `<detail>` +
     `<contact callsign="${escapeXml(contact.callsign)}" endpoint="${COT_CHAT_ENDPOINT}"/>` +
+    cotStyleDetail(style) +
     `</detail>` +
     `</event>`
   );

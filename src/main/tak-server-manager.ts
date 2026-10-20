@@ -28,7 +28,7 @@ import type {
 } from '../shared/tak-types';
 import { isTakDmProtocol, TAK_CHAT_HELD_MAX, TAK_DM_PROTOCOLS } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
-import { advertisedNodeKind } from './tak/advertised-style';
+import { advertisedNodeKind, advertisedTakStyle } from './tak/advertised-style';
 import {
   type CertBundle,
   loadOrGenerateCerts,
@@ -41,6 +41,7 @@ import {
   cotCallsignFor,
   cotDeleteEvent,
   cotPongEvent,
+  type CotRelayNode,
   cotUidFor,
   meshNodeToCot,
   parseMeshNodeUid,
@@ -558,7 +559,33 @@ export class TakServerManager extends EventEmitter {
   /** A conversation peer's contact at 0, 0, under the name its marker would have. */
   private conversationPeerCot(peer: ConversationPeer, nowMs: number): string {
     const callsign = this.directCallsign(peer.protocol, peer.nodeId, peer.callsign);
-    return buildDirectContactCot({ uid: peer.uid, callsign }, nowMs, nowMs);
+    return this.directContactCot({ ...peer, callsign }, nowMs, nowMs);
+  }
+
+  /**
+   * A companion's or peer's contact at 0, 0, styled as its marker would be: by the unit filters
+   * and icons, from its cached node or, with none heard, from its name and protocol.
+   */
+  private directContactCot(
+    contact: { uid: string; callsign: string; protocol: MeshProtocol; nodeId: number },
+    lastDmMs: number,
+    nowMs: number,
+  ): string {
+    const node: CotRelayNode = this.cachedNodeFor(contact.protocol, contact.nodeId) ?? {
+      node_id: contact.nodeId,
+      long_name: contact.callsign,
+      short_name: '',
+      hw_model: '',
+      snr: 0,
+      battery: 0,
+      last_heard: 0,
+      latitude: null,
+      longitude: null,
+    };
+    const style =
+      resolveTakStyle(this.styleSettings, node, contact.protocol)?.style ??
+      advertisedTakStyle(node, contact.protocol);
+    return buildDirectContactCot(contact, lastDmMs, nowMs, style);
   }
 
   /** Keep a message for a client yet to identify itself, dropping the oldest past the cap. */
@@ -597,7 +624,7 @@ export class TakServerManager extends EventEmitter {
       const contact = this.directContacts.get(item.uid);
       if (!contact) continue;
       if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
-        this.writeToClient(id, client, buildDirectContactCot(contact, contact.lastDmMs, now));
+        this.writeToClient(id, client, this.directContactCot(contact, contact.lastDmMs, now));
       }
       this.writeToClient(id, client, buildDirectChatCot(contact, item.line, recipient, now));
     }
@@ -663,7 +690,7 @@ export class TakServerManager extends EventEmitter {
     setNewest(this.directContacts, uid, contact, DIRECT_PEERS_MAX);
     const node = this.cachedNodeFor(protocol, nodeId);
     if (!this.hasFreshMarker(protocol, nodeId, nowMs)) {
-      this.writeToClients(buildDirectContactCot(contact, nowMs, nowMs));
+      this.writeToClients(this.directContactCot(contact, nowMs, nowMs));
     } else if (isNew && node && node.chatReachable !== true) {
       const cot = this.toCot(node, true);
       if (cot) this.writeToClients(cot);
@@ -767,7 +794,7 @@ export class TakServerManager extends EventEmitter {
         continue;
       }
       if (!this.hasFreshMarker(contact.protocol, contact.nodeId, now)) {
-        send(buildDirectContactCot(contact, contact.lastDmMs, now));
+        send(this.directContactCot(contact, contact.lastDmMs, now));
       }
     }
     for (const peer of this.conversationPeers.values()) {
@@ -831,6 +858,10 @@ export class TakServerManager extends EventEmitter {
         this.broadcast(cotDeleteEvent(cotUidFor(node, node.protocol)));
       }
     }
+    // Channel and 0, 0 contacts take the new styles now, not at their next announcement.
+    this.forEachChatRoomContact((cot) => {
+      this.writeToClients(cot);
+    });
   }
 
   private hasConnectedSink(): boolean {
