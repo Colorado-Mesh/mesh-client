@@ -149,6 +149,16 @@ pub(crate) fn announce_queue_watchdog_needed(announce_queue: u64, bitrate_bps: u
         && bitrate_bps <= ANNOUNCE_QUEUE_WATCHDOG_MAX_BITRATE_BPS
 }
 
+/// Per-interface watchdog cooldown: an interface is due when it has never
+/// been pruned or its own last prune was at least the cooldown ago. Keying
+/// this by interface lets each qualifying queue be pruned independently.
+pub(crate) fn announce_queue_watchdog_due(last_pruned_at: Option<Instant>, now: Instant) -> bool {
+    match last_pruned_at {
+        None => true,
+        Some(t) => now.duration_since(t) >= ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN,
+    }
+}
+
 /// Live `GetInterfaceStats.mode` is only meaningful while the interface is online.
 pub(crate) fn live_interface_runtime_mode_if_online(online: bool, mode: &str) -> Option<String> {
     if online {
@@ -3127,7 +3137,8 @@ impl LiveBridge {
             let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
             let mut last_host_periodic_get_at: Option<Instant> = None;
             let mut host_periodic_get_rr: usize = 0;
-            let mut last_announce_queue_watchdog_at: Option<Instant> = None;
+            let mut last_announce_queue_watchdog_by_interface: HashMap<u64, Instant> =
+                HashMap::new();
             let mut slow_rf_filter_applied: Option<bool> = None;
             loop {
                 interval.tick().await;
@@ -3179,46 +3190,49 @@ impl LiveBridge {
                         // queue lets fresh announces (which peers re-send
                         // periodically) take the limited airtime instead.
                         {
-                            let watchdog_due = last_announce_queue_watchdog_at
-                                .map(|t| {
-                                    Instant::now().duration_since(t)
-                                        >= ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN
-                                })
-                                .unwrap_or(true);
+                            // Cooldown is per interface: only interfaces whose
+                            // own last prune is older than the cooldown (or
+                            // that were never pruned) are candidates, so one
+                            // interface's prune does not delay another's.
+                            let now = Instant::now();
                             let worst = stats
                                 .iter()
                                 .filter(|s| {
                                     announce_queue_watchdog_needed(
                                         s.announce_queue.unwrap_or(0),
                                         s.bitrate,
+                                    ) && announce_queue_watchdog_due(
+                                        last_announce_queue_watchdog_by_interface
+                                            .get(&s.id)
+                                            .copied(),
+                                        now,
                                     )
                                 })
                                 .max_by_key(|s| s.announce_queue.unwrap_or(0));
                             // No let-chains: declared Rust minimum is 1.85.
-                            if watchdog_due {
-                                if let Some(worst) = worst {
-                                    let queued = worst.announce_queue.unwrap_or(0);
-                                    match handle
-                                        .query_control(TransportQuery::DropAnnounceQueue {
-                                            interface_id: worst.id,
-                                        })
-                                        .await
-                                    {
-                                        Some(TransportQueryResponse::Ok) => {
-                                            last_announce_queue_watchdog_at = Some(Instant::now());
-                                            tracing::warn!(
-                                                interface = %worst.name,
-                                                announce_queue = queued,
-                                                bitrate = worst.bitrate,
-                                                "announce queue watchdog: dropping stale announce rebroadcast backlog for slow RF interface"
-                                            );
-                                        }
-                                        other => {
-                                            tracing::debug!(
-                                                ?other,
-                                                "announce queue watchdog: DropAnnounceQueue not confirmed"
-                                            );
-                                        }
+                            if let Some(worst) = worst {
+                                let queued = worst.announce_queue.unwrap_or(0);
+                                match handle
+                                    .query_control(TransportQuery::DropAnnounceQueue {
+                                        interface_id: worst.id,
+                                    })
+                                    .await
+                                {
+                                    Some(TransportQueryResponse::Ok) => {
+                                        last_announce_queue_watchdog_by_interface
+                                            .insert(worst.id, Instant::now());
+                                        tracing::warn!(
+                                            interface = %worst.name,
+                                            announce_queue = queued,
+                                            bitrate = worst.bitrate,
+                                            "announce queue watchdog: dropping stale announce rebroadcast backlog for slow RF interface"
+                                        );
+                                    }
+                                    other => {
+                                        tracing::debug!(
+                                            ?other,
+                                            "announce queue watchdog: DropAnnounceQueue not confirmed"
+                                        );
                                     }
                                 }
                             }
@@ -8920,10 +8934,25 @@ mod discovered_medium_reconcile_tests {
 
 #[cfg(test)]
 mod live_tx_queue_fields_tests {
+    use std::time::{Duration, Instant};
+
     use super::{
+        ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN, announce_queue_watchdog_due,
         announce_queue_watchdog_needed, live_interface_runtime_mode_if_online,
         live_interface_tx_queue_fields,
     };
+
+    #[test]
+    fn announce_queue_watchdog_cooldown_tracks_each_interface_independently() {
+        let now = Instant::now();
+        // Never pruned: due. Just pruned: not due until its own cooldown passes.
+        assert!(announce_queue_watchdog_due(None, now));
+        assert!(!announce_queue_watchdog_due(Some(now), now));
+        assert!(announce_queue_watchdog_due(
+            Some(now),
+            now + ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN + Duration::from_secs(1),
+        ));
+    }
 
     #[test]
     fn announce_queue_watchdog_only_for_slow_rf_backlog() {

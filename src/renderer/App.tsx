@@ -2029,13 +2029,17 @@ function AppContent() {
 
   const handleNavSectionSelect = useCallback(
     (id: NavSectionId) => {
+      // Same guard as handleTabSelect: sections are scoped to the displayed
+      // protocol, so ignore their selections while a protocol switch is
+      // pending instead of applying a stale protocol's tab index.
+      if (protocolSwitchPending) return;
       const section = navSections.find((s) => s.id === id);
       if (!section) return;
       setActiveTab(
         resolveSectionTargetTab(section, lastPanelBySectionRef.current.get(`${protocol}:${id}`)),
       );
     },
-    [navSections, protocol],
+    [navSections, protocol, protocolSwitchPending],
   );
 
   const openSlotPanel = useCallback(

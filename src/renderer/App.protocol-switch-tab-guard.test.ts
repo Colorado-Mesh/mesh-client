@@ -25,4 +25,15 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(body).toContain('if (protocolSwitchPending) return;');
     expect(body).toContain('setActiveTab(tabIndex)');
   });
+
+  it('ignores nav-section selections while a protocol switch is pending', () => {
+    const start = SOURCE.indexOf('const handleNavSectionSelect');
+    expect(start).toBeGreaterThan(-1);
+    const body = SOURCE.slice(start, start + 800);
+    expect(body).toContain('if (protocolSwitchPending) return;');
+    // The guard must run before the stale protocol's section resolves a tab.
+    expect(body.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      body.indexOf('setActiveTab('),
+    );
+  });
 });
