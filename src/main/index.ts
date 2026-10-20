@@ -35,6 +35,11 @@ import {
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { isChannelIdentityKey } from '../shared/channelIdentityKey';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
+import {
+  CLOSE_TO_TRAY_SETTING_KEY,
+  closeToTrayEnabledFromStored,
+  resolveWindowCloseAction,
+} from '../shared/closeToTray';
 import { parseConnectHostPort } from '../shared/connectHost';
 import { docsSitePageUrl } from '../shared/docsSite';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
@@ -1763,6 +1768,26 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
   return true;
 }
 
+/**
+ * Whether the App → Window "close to tray" setting is on. Main reads only SQLite
+ * (the renderer persists via appSettings:set), so no extra IPC channel is needed.
+ * A read error is not a stored "off" value; fall back to the first-run default (on).
+ */
+function readCloseToTrayEnabled(): boolean {
+  try {
+    const row = getDatabase()
+      .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+      .get(CLOSE_TO_TRAY_SETTING_KEY) as { value: string } | undefined;
+    return closeToTrayEnabledFromStored(row?.value);
+  } catch (e) {
+    console.debug(
+      '[main] close-to-tray flag read failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return true;
+  }
+}
+
 function createWindow() {
   rendererHeartbeatWatchdog.expectVisibleHeartbeat();
   const savedState = loadWindowState();
@@ -2146,17 +2171,25 @@ function createWindow() {
     }
   });
 
-  // Handle window close event (prevent-close when device connected)
+  // Handle window close event (prevent-close when device connected).
+  // Close-to-tray (default on) hides the window on every platform; hiding is safe
+  // even where a Linux desktop shows no tray icon, because relaunching the app
+  // restores the window via the second-instance handler.
   win.on('close', (event) => {
-    if (!isQuitting && (isConnected || isAnyMqttConnected())) {
-      event.preventDefault();
-      if (process.platform === 'darwin') {
-        console.debug('[main] window close event: hiding (macOS, device connected)');
-        win.hide();
-      } else {
-        console.debug('[main] window close event: minimizing (device connected)');
-        win.minimize();
-      }
+    const action = resolveWindowCloseAction({
+      platform: process.platform,
+      isQuitting,
+      hasConnection: isConnected || isAnyMqttConnected(),
+      closeToTrayEnabled: readCloseToTrayEnabled(),
+    });
+    if (action === 'allow') return;
+    event.preventDefault();
+    if (action === 'hide') {
+      console.debug('[main] window close event: hiding to tray (device connected)');
+      win.hide();
+    } else {
+      console.debug('[main] window close event: minimizing (device connected)');
+      win.minimize();
     }
   });
 
@@ -3855,6 +3888,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'reticulumAutostart',
   'reticulumAutoResendOnAnnounce',
   'autoUpdateDownloadEnabled',
+  'closeToTray',
   'reticulumLastSelfLxmfHash',
   'reticulumRmapAnnounceIntervalMin',
   'reticulumRmapReachableOn',

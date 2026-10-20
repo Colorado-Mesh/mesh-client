@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Scarica automaticamente gli aggiornamenti",
     "autoUpdateDownloadDesc": "Scarica l'ultimo aggiornamento in background dopo ogni controllo. Quando è spento, gli aggiornamenti vengono ancora rilevati ma scaricati solo quando si preme il pulsante Download, utile quando un gestore di pacchetti gestisce l'installazione.",
     "autoUpdateDownloadSaveFailed": "Impossibile salvare l'impostazione di download dell'aggiornamento automatico.",
-    "clearAllRepeatersConfirm": "Questo rimuove tutti i ripetitori MeshCore non preferiti dalla radio collegata e dal database locale. I ripetitori riappaiono quando si annunciano di nuovo. Questa operazione non può essere annullata."
+    "clearAllRepeatersConfirm": "Questo rimuove tutti i ripetitori MeshCore non preferiti dalla radio collegata e dal database locale. I ripetitori riappaiono quando si annunciano di nuovo. Questa operazione non può essere annullata.",
+    "windowSection": "Finestra",
+    "closeToTray": "Vicino al vassoio di sistema",
+    "closeToTraySaveFailed": "Impossibile salvare l'impostazione di chiusura del vassoio.",
+    "closeToTrayDesc": "Quando un dispositivo o una connessione MQTT è attiva, chiudendo la finestra si nasconde Mesh-Client nel vassoio di sistema (barra dei menu su macOS) invece di minimizzarlo, in modo che continui a funzionare in background. Riaprilo dall'icona del vassoio. Esci dal menu del vassoio o dal menu dell'app. Quando è spento, la chiusura riduce al minimo la finestra come prima."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

@@ -475,7 +475,11 @@
     "autoUpdateDownload": "自动下载更新",
     "autoUpdateDownloadDesc": "每次检查后在后台下载最新更新。关闭时，仍会检测到更新，但只有在按下“下载”按钮时才会下载，这在程序包管理器处理安装时非常有用。",
     "autoUpdateDownloadSaveFailed": "无法保存自动更新下载设置。",
-    "clearAllRepeatersConfirm": "这将从已连接的电台和本地数据库中删除所有未收藏的 MeshCore 中继器。中继器再次发送广播通告时会重新出现。此操作无法撤消。"
+    "clearAllRepeatersConfirm": "这将从已连接的电台和本地数据库中删除所有未收藏的 MeshCore 中继器。中继器再次发送广播通告时会重新出现。此操作无法撤消。",
+    "windowSection": "窗口",
+    "closeToTray": "关闭到系统托盘(&C)",
+    "closeToTraySaveFailed": "无法保存接近托盘的设置。",
+    "closeToTrayDesc": "当设备或MQTT连接处于活动状态时，关闭窗口会将Mesh-Client隐藏到系统托盘（ macOS上的菜单栏） ，而不是将其最小化，因此它继续在后台运行。从托盘图标重新打开它。从托盘菜单或应用菜单退出。关闭时，关闭会像以前一样最小化窗口。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

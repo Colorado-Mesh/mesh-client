@@ -14,6 +14,7 @@ const hasDestinationRetention = (ctx: SettingsSearchContext) =>
 const DANGER = 'appPanel.dangerZoneSection';
 const RETENTION = 'appPanel.retentionLimitsHeading';
 const UPDATES = 'appPanel.updatesSection';
+const WINDOW = 'appPanel.windowSection';
 
 const appEntries: readonly SettingSearchEntry[] = [
   {
@@ -312,6 +313,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     labelKey: 'appPanel.use24HourTime',
     sectionKey: 'appPanel.appearanceSection',
     keywords: ['clock', 'time format'],
+  },
+  {
+    id: 'app.window.closeToTray',
+    slot: 'App',
+    labelKey: 'appPanel.closeToTray',
+    sectionKey: WINDOW,
+    keywords: ['tray', 'minimize', 'minimise', 'close', 'background', 'system tray', 'hide'],
   },
   {
     id: 'app.updates.autoDownload',

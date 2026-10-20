@@ -50,6 +50,42 @@ describe('app lifecycle handlers', () => {
   });
 });
 
+describe('window close-to-tray behaviour', () => {
+  const closeHandlerBody = () => {
+    const start = INDEX_SOURCE.indexOf("win.on('close', (event)");
+    expect(start).toBeGreaterThan(-1);
+    return INDEX_SOURCE.slice(start, start + 900);
+  };
+
+  it('routes the close decision through resolveWindowCloseAction', () => {
+    const body = closeHandlerBody();
+    expect(body).toContain('resolveWindowCloseAction({');
+    expect(body).toContain('closeToTrayEnabled: readCloseToTrayEnabled()');
+    expect(body).toContain('hasConnection: isConnected || isAnyMqttConnected()');
+  });
+
+  it('hides to tray and keeps the minimize fallback', () => {
+    const body = closeHandlerBody();
+    expect(body).toContain("if (action === 'allow') return;");
+    expect(body).toContain('event.preventDefault();');
+    expect(body).toContain('win.hide();');
+    expect(body).toContain('win.minimize();');
+  });
+
+  it('reads the closeToTray flag from SQLite app_settings', () => {
+    const start = INDEX_SOURCE.indexOf('function readCloseToTrayEnabled()');
+    expect(start).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(start, start + 700);
+    expect(body).toContain('SELECT value FROM app_settings WHERE key = ?');
+    expect(body).toContain('closeToTrayEnabledFromStored(row?.value)');
+    expect(body).toContain('return true;');
+  });
+
+  it("allow-lists the 'closeToTray' app_settings key", () => {
+    expect(INDEX_SOURCE).toContain("'closeToTray',");
+  });
+});
+
 // ─── Navigation security ──────────────────────────────────────────────────────
 
 describe('navigation and window-open security', () => {

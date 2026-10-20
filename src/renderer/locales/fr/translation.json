@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Télécharger automatiquement les mises à jour",
     "autoUpdateDownloadDesc": "Télécharge la dernière mise à jour en arrière-plan après chaque vérification. Lorsqu'elle est désactivée, les mises à jour sont toujours détectées, mais seulement téléchargées lorsque vous appuyez sur le bouton Télécharger — utile lorsqu'un gestionnaire de paquets gère l'installation.",
     "autoUpdateDownloadSaveFailed": "Impossible d'enregistrer le paramètre de téléchargement de mise à jour automatique.",
-    "clearAllRepeatersConfirm": "Cela supprime tous les répéteurs MeshCore non favoris de la radio connectée et de la base de données locale. Les répéteurs réapparaissent lorsqu’ils s’annoncent à nouveau. Cette action est irréversible."
+    "clearAllRepeatersConfirm": "Cela supprime tous les répéteurs MeshCore non favoris de la radio connectée et de la base de données locale. Les répéteurs réapparaissent lorsqu’ils s’annoncent à nouveau. Cette action est irréversible.",
+    "windowSection": "Fenêtre",
+    "closeToTray": "Réduire vers la barre des tâches",
+    "closeToTraySaveFailed": "Impossible d'enregistrer le paramètre de proximité du plateau.",
+    "closeToTrayDesc": "Lorsqu'un appareil ou une connexion MQTT est active, la fermeture de la fenêtre masque Mesh-Client dans la barre d'état système (barre de menu sur macOS) au lieu de le minimiser, de sorte qu'il continue à s'exécuter en arrière-plan. Rouvrez-le à partir de l'icône du plateau. Quittez à partir du menu du plateau ou du menu de l'application. Lorsqu'elle est désactivée, la fermeture minimise la fenêtre comme avant."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

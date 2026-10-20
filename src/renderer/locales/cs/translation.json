@@ -483,7 +483,11 @@
     "autoUpdateDownload": "Automaticky stahovat aktualizace",
     "autoUpdateDownloadDesc": "Po každém šeku stáhne nejnovější aktualizaci na pozadí. Když je vypnuto, aktualizace jsou stále detekovány, ale stahovány pouze po stisknutí tlačítka Stáhnout — užitečné, když správce balíčků zpracovává instalaci.",
     "autoUpdateDownloadSaveFailed": "Nelze uložit nastavení automatické aktualizace stahování.",
-    "clearAllRepeatersConfirm": "Tím se z připojeného rádia a místní databáze odstraní všechny neoblíbené opakovače MeshCore. Opakovače se znovu objeví, jakmile se znovu ohlásí. Tuto akci nelze vrátit zpět."
+    "clearAllRepeatersConfirm": "Tím se z připojeného rádia a místní databáze odstraní všechny neoblíbené opakovače MeshCore. Opakovače se znovu objeví, jakmile se znovu ohlásí. Tuto akci nelze vrátit zpět.",
+    "windowSection": "Okno",
+    "closeToTray": "V blízkosti systémové lišty",
+    "closeToTraySaveFailed": "Nelze uložit nastavení v blízkosti zásobníku.",
+    "closeToTrayDesc": "Když je zařízení nebo připojení MQTT aktivní, zavřením okna skryje Mesh-Client na systémové liště (lišta nabídek na macOS), místo aby jej minimalizoval, takže stále běží na pozadí. Znovu jej otevřete z ikony zásobníku. Ukončete nabídku zásobníku nebo nabídku aplikace. Když je vypnuto, zavření minimalizuje okno jako dříve."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

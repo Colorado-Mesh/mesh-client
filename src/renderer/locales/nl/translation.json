@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Download de laatste update op de achtergrond na elke controle. Wanneer uitgeschakeld, worden updates nog steeds gedetecteerd, maar alleen gedownload wanneer u op de knop Downloaden drukt — handig wanneer een pakketbeheerder de installatie afhandelt.",
     "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan.",
-    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt."
+    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt.",
+    "windowSection": "Raam",
+    "closeToTray": "Dicht bij het systeemvak",
+    "closeToTraySaveFailed": "Kon de close-to-tray-instelling niet opslaan.",
+    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

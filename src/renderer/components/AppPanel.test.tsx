@@ -475,6 +475,143 @@ describe('AppPanel: auto-download updates toggle', () => {
   });
 });
 
+describe('AppPanel: close to tray toggle', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+    vi.mocked(window.electronAPI.appSettings.set).mockReset();
+    vi.mocked(window.electronAPI.appSettings.set).mockResolvedValue({ changes: 1 });
+  });
+
+  it('renders checked by default', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    expect(checkbox).toBeChecked();
+  });
+
+  it('unchecking persists 0 to localStorage and SQLite, rechecking persists 1', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    expect(checkbox).not.toBeChecked();
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.closeToTray).toBe(false);
+    expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith('closeToTray', '0');
+
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    expect(checkbox).toBeChecked();
+    expect(window.electronAPI.appSettings.set).toHaveBeenLastCalledWith('closeToTray', '1');
+  });
+
+  it('rolls back the checkbox and localStorage and shows an error when the SQLite write fails', async () => {
+    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('db locked'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    await waitFor(() => {
+      expect(checkbox).toBeChecked();
+    });
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.closeToTray).toBe(true);
+    expect(
+      await screen.findByText('Could not save the close-to-tray setting.'),
+    ).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[AppPanel] closeToTray persist'));
+    warn.mockRestore();
+  });
+
+  it('does not let a slow SQLite hydrate overwrite a change made while it was pending', async () => {
+    let resolveGetAll: (value: Record<string, string>) => void = () => {};
+    vi.mocked(window.electronAPI.appSettings.getAll).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGetAll = resolve;
+      }),
+    );
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    act(() => {
+      fireEvent.click(checkbox);
+    });
+    expect(checkbox).not.toBeChecked();
+
+    await act(async () => {
+      resolveGetAll({ closeToTray: '1' });
+      await Promise.resolve();
+    });
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('hydrates an off value from SQLite on mount', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      closeToTray: '0',
+    });
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    await waitFor(() => {
+      expect(checkbox).not.toBeChecked();
+    });
+  });
+
+  it('keeps the checkbox on when SQLite settings cannot be read', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockRejectedValueOnce(new Error('db down'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const checkbox = await screen.findByRole('checkbox', { name: /close to system tray/i });
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('[AppPanel] app settings hydrate failed'),
+      );
+    });
+    expect(checkbox).toBeChecked();
+    warn.mockRestore();
+  });
+});
+
 describe('AppPanel: RRC unread all room messages toggle', () => {
   const defaultProps = {
     nodeCount: 0,

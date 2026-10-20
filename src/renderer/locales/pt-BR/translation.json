@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Baixar atualizações automaticamente",
     "autoUpdateDownloadDesc": "Faz o download da atualização mais recente em segundo plano após cada verificação. Quando desligado, as atualizações ainda são detectadas, mas só são baixadas quando você pressiona o botão Download — útil quando um gerenciador de pacotes lida com a instalação.",
     "autoUpdateDownloadSaveFailed": "Não foi possível salvar a configuração de download de atualização automática.",
-    "clearAllRepeatersConfirm": "Isso remove todos os repetidores MeshCore não favoritos do rádio conectado e do banco de dados local. Repetidores reaparecem quando anunciam novamente. Isso não pode ser desfeito."
+    "clearAllRepeatersConfirm": "Isso remove todos os repetidores MeshCore não favoritos do rádio conectado e do banco de dados local. Repetidores reaparecem quando anunciam novamente. Isso não pode ser desfeito.",
+    "windowSection": "Janela",
+    "closeToTray": "Perto da bandeja do sistema",
+    "closeToTraySaveFailed": "Não foi possível salvar a configuração de perto da bandeja.",
+    "closeToTrayDesc": "Quando um dispositivo ou uma conexão MQTT está ativa, fechar a janela oculta o Mesh-Client na bandeja do sistema (barra de menus em macOS) em vez de minimizá-lo, para que ele continue sendo executado em segundo plano. Reabra-o a partir do ícone da bandeja. Saia do menu da bandeja ou do menu do aplicativo. Quando desligado, o fechamento minimiza a janela como antes."
   },
   "aria": {
     "closeDialog": "Fechar janela",
