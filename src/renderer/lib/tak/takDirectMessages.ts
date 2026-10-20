@@ -48,7 +48,25 @@ export function canTakDirectMessage(node: MeshNode, protocol: MeshProtocol): boo
   if (!identityId || node.node_id === getConnection(identityId)?.myNodeNum) return false;
   if (protocol === 'meshtastic') return !isMeshtasticBroadcastNodeNum(node.node_id);
   if (protocol === 'reticulum') return hasOwnLxmfDestination(node.node_id);
-  return !isMeshcoreDmExcludedHwModel(node.hw_model) && Boolean(node.public_key_hex?.trim());
+  return !isMeshcoreDmExcludedHwModel(node.hw_model) && hasMeshcoreContactKey(identityId, node);
+}
+
+/** MeshCore public keys are 32 bytes. */
+const MESHCORE_PUBLIC_KEY_BYTES = 32;
+
+/**
+ * Whether this app holds a MeshCore node's public key, as a DM to it needs. MeshCore keeps
+ * contact keys on the node record (`publicKey`), not on the map's MeshNode, which usually has
+ * no `public_key_hex`; the node detail panel reads them the same way.
+ */
+function hasMeshcoreContactKey(identityId: IdentityId, node: MeshNode): boolean {
+  if (node.public_key_hex?.trim()) return true;
+  const nodes = useNodeStore.getState().nodes[identityId] as
+    Record<number, NodeRecord | undefined> | undefined;
+  const record = nodes?.[node.node_id];
+  return (
+    record?.publicKey?.length === MESHCORE_PUBLIC_KEY_BYTES || Boolean(record?.publicKeyHex?.trim())
+  );
 }
 
 /** The protocols whose TAK radio has direct messages on, for main. */
