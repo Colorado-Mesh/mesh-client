@@ -475,7 +475,11 @@
     "autoUpdateDownload": "자동으로 업데이트 다운로드",
     "autoUpdateDownloadDesc": "각 확인 후 백그라운드에서 최신 업데이트를 다운로드합니다. 꺼져 있으면 업데이트가 여전히 감지되지만 다운로드 버튼을 누를 때만 다운로드됩니다. 패키지 관리자가 설치를 처리할 때 유용합니다.",
     "autoUpdateDownloadSaveFailed": "자동 업데이트 다운로드 설정을 저장할 수 없습니다.",
-    "clearAllRepeatersConfirm": "연결된 무선기와 로컬 데이터베이스에서 즐겨찾기하지 않은 모든 MeshCore 리피터를 제거합니다. 리피터는 다시 알림(advert)을 보내면 다시 나타납니다. 이 작업은 취소할 수 없습니다."
+    "clearAllRepeatersConfirm": "연결된 무선기와 로컬 데이터베이스에서 즐겨찾기하지 않은 모든 MeshCore 리피터를 제거합니다. 리피터는 다시 알림(advert)을 보내면 다시 나타납니다. 이 작업은 취소할 수 없습니다.",
+    "windowSection": "윈도우",
+    "closeToTray": "시스템 트레이에 가까움",
+    "closeToTraySaveFailed": "트레이에 가까운 설정을 저장할 수 없습니다.",
+    "closeToTrayDesc": "장치 또는 MQTT 연결이 활성화되면 창을 닫으면 최소화하는 대신 시스템 트레이 (macOS 의 메뉴 표시줄) 에 Mesh-Client가 숨겨져 백그라운드에서 계속 실행됩니다. 트레이 아이콘에서 다시 엽니다. 트레이 메뉴 또는 앱 메뉴에서 종료합니다. 꺼지면 닫으면 이전과 같이 창이 최소화됩니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "네트워크 ID",
       "networkIdentityAria": "검색 암호화 및 암호 해독을 위한 네트워크 ID 파일 경로",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "선택 사항. 암호화된 검색 알림을 해독하고 discovery_encrypt로 게시할 때 암호화해야 합니다."
+      "networkIdentityHint": "선택 사항. 암호화된 검색 알림을 해독하고 discovery_encrypt로 게시할 때 암호화해야 합니다.",
+      "slowRfAnnounceFilter": "제한은 느린 RF 인터페이스에 대해 발표합니다 (비표준)",
+      "slowRfAnnounceFilterHint": "기본적으로 켜짐. 요청하지 않은 인터넷이 절대 끊기지 않는 저대역폭 RNode 링크를 통해 재방송되는 것을 중지합니다. 지역 및 RF 학습 목적지는 여전히 발표되고 있으며, 인터넷 목적지는 여전히 온디맨드 경로 요청에 응답합니다. 재고 Reticulum 에 대한 알림 동작을 끄세요."
     },
     "reticulumConfigImport": {
       "title": "Reticulum config 가져오기",

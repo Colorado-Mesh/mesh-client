@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Unduh pembaruan secara otomatis",
     "autoUpdateDownloadDesc": "Mengunduh pembaruan terbaru di latar belakang setelah setiap pemeriksaan. Ketika mati, pembaruan masih terdeteksi tetapi hanya diunduh ketika Anda menekan tombol Unduh — berguna ketika manajer paket menangani instalasi.",
     "autoUpdateDownloadSaveFailed": "Tidak dapat menyimpan pengaturan unduhan pembaruan otomatis.",
-    "clearAllRepeatersConfirm": "Tindakan ini menghapus semua repeater MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Repeater akan muncul kembali saat mengirim pengumuman lagi. Tindakan ini tidak dapat diurungkan."
+    "clearAllRepeatersConfirm": "Tindakan ini menghapus semua repeater MeshCore yang tidak difavoritkan dari radio yang terhubung dan basis data lokal. Repeater akan muncul kembali saat mengirim pengumuman lagi. Tindakan ini tidak dapat diurungkan.",
+    "windowSection": "Jendela",
+    "closeToTray": "Dekat dengan baki sistem",
+    "closeToTraySaveFailed": "Tidak dapat menyimpan pengaturan close - to - tray.",
+    "closeToTrayDesc": "Saat perangkat atau koneksi MQTT aktif, tutup jendela sembunyikan Mesh-Client ke baki sistem (bilah menu pada macOS) alih - alih meminimalkannya, sehingga tetap berjalan di latar belakang. Buka kembali dari ikon baki. Keluar dari menu baki atau menu aplikasi. Saat mati, penutupan meminimalkan jendela seperti sebelumnya."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "Jalur identitas jaringan",
       "networkIdentityAria": "Jalur ke file identitas jaringan untuk enkripsi dan dekripsi penemuan",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identity/my_network",
-      "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt)."
+      "networkIdentityHint": "Opsional. Diperlukan untuk mendekripsi pengumuman penemuan terenkripsi (dan untuk mengenkripsi saat dipublikasikan dengan discovery_encrypt).",
+      "slowRfAnnounceFilter": "Batasi pengumuman pada antarmuka RF yang lambat (non - standar)",
+      "slowRfAnnounceFilterHint": "Secara default. Menghentikan internet yang tidak diminta mengumumkan agar tidak disiarkan ulang melalui tautan RNode bandwidth rendah, yang tidak akan pernah bisa dikeringkan. Destinasi lokal dan RF masih mengumumkan, dan destinasi internet masih menjawab permintaan jalur sesuai permintaan. Nonaktifkan untuk perilaku pengumuman stok Reticulum."
     },
     "reticulumConfigImport": {
       "title": "Impor config Reticulum",
