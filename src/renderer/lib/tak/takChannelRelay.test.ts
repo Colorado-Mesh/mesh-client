@@ -63,6 +63,17 @@ describe('relayMeshtasticChatToTak', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
+  it("passes on another node's message that matches a send, as a bot command may", () => {
+    resetTakEchoForTests();
+    setConnection(ID, { myNodeNum: 0x0badf00d });
+    rememberTakSend(ID, 1, '!ping');
+    relayMeshtasticChatToTak(ID, chat({ payload: '!ping' }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    relayMeshtasticChatToTak(ID, chat({ payload: '!ping', sender_id: 0x0badf00d }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    useConnectionStore.setState({ connections: {} });
+  });
+
   it('hands a broadcast message on a served channel to TAK clients by channel key', () => {
     relayMeshtasticChatToTak(ID, chat());
     expect(pushChatMessage).toHaveBeenCalledTimes(1);

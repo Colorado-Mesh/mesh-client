@@ -134,6 +134,7 @@ export default function TakChannelRelaySection({
   const setChatChannel = useTakRelayPrefsStore((s) => s.setChatChannel);
   const setChatSend = useTakRelayPrefsStore((s) => s.setChatSend);
   const setChatRemote = useTakRelayPrefsStore((s) => s.setChatRemote);
+  const setChatCallsign = useTakRelayPrefsStore((s) => s.setChatCallsign);
   const setAtakName = useTakRelayPrefsStore((s) => s.setAtakName);
   if (!sinkActive || !identityId) return null;
 
@@ -177,6 +178,7 @@ export default function TakChannelRelaySection({
             const name = ch.name || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
             const picked = prefs?.chatChannels.includes(ch.key) ?? false;
             const served = mode === 'all' || (mode === 'selected' && picked);
+            const sending = prefs?.sendChannels.includes(ch.key) ?? false;
             const rowId = `tak-channel-${identityId}-${ch.index}`;
             return (
               <li key={ch.key} className="flex flex-wrap items-center gap-3 text-xs">
@@ -206,13 +208,24 @@ export default function TakChannelRelaySection({
                     />
                     <RowCheck
                       id={`${rowId}-send`}
-                      checked={prefs?.sendChannels.includes(ch.key) ?? false}
+                      checked={sending}
                       onChange={(on) => {
                         setChatSend(identityId, ch.key, on);
                       }}
                       label={t('takServerPanel.channelSend')}
                       ariaLabel={t('takServerPanel.channelSendFor', { channel: name })}
                     />
+                    {sending && (
+                      <RowCheck
+                        id={`${rowId}-callsign`}
+                        checked={!(prefs?.noCallsignChannels.includes(ch.key) ?? false)}
+                        onChange={(on) => {
+                          setChatCallsign(identityId, ch.key, on);
+                        }}
+                        label={t('takServerPanel.channelCallsign')}
+                        ariaLabel={t('takServerPanel.channelCallsignFor', { channel: name })}
+                      />
+                    )}
                     <RowCheck
                       id={`${rowId}-remote`}
                       checked={prefs?.remoteChannels.includes(ch.key) ?? false}
@@ -239,6 +252,9 @@ export default function TakChannelRelaySection({
             );
           })}
         </ul>
+      )}
+      {showList && mode !== 'off' && (
+        <p className="text-muted text-xs">{t('takServerPanel.channelCallsignHint')}</p>
       )}
       {children}
     </div>

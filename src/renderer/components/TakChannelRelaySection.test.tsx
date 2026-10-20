@@ -183,6 +183,22 @@ describe('TakChannelRelaySection', () => {
     );
     expect(container).toBeEmptyDOMElement();
   });
+  it('offers Add callsign once a channel can send, on by default, and turns it off', async () => {
+    const user = userEvent.setup();
+    useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+    render(<Section showTrackers={false} />);
+    expect(screen.queryByLabelText(/callsign in front of messages sent to #sar/)).toBeNull();
+    await user.click(screen.getByLabelText('Let ATAK devices send to #sar'));
+    const callsign = screen.getByLabelText(
+      "Put the sender's ATAK callsign in front of messages sent to #sar",
+    );
+    expect(callsign).toBeChecked();
+    await user.click(callsign);
+    expect(getTakRelayPrefs(ID).noCallsignChannels).toEqual([SAR]);
+    expect(callsign).not.toBeChecked();
+    expect(screen.getByText(/Turn it off for a bot channel/)).toBeInTheDocument();
+  });
+
   it("keeps a channel's settings with the channel when another takes its slot", async () => {
     const user = userEvent.setup();
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');

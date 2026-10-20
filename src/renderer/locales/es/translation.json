@@ -5813,7 +5813,10 @@
     "directMessages": "Mensajes directos",
     "directMessagesHint": "Deje que los dispositivos ATAK envíen mensajes a los compañeros de esta radio. Cada acompañante de este mensaje de radio Can recibe una opción de chat en ATAK, y sale un mensaje de esta radio, con el prefijo del indicativo del remitente. Sus respuestas van al dispositivo ATAK que le escribió por última vez, o a todos los dispositivos cuando ninguno lo ha hecho. Un compañero sin posición aparece en 0, 0 durante un día después de un mensaje.",
     "messagingTitleReticulum": "Reticulum mensajes en ATAK",
-    "messagingIntroReticulum": "Permite que los dispositivos ATAK envíen un mensaje a LXMF Peers. Se puede enviar un mensaje a un compañero con una posición desde su marcador; uno sin posición aparece en 0, 0 una vez que mesh-client tiene una conversación con él, por lo que la lista de contactos no se llena con todos los compañeros escuchados."
+    "messagingIntroReticulum": "Permite que los dispositivos ATAK envíen un mensaje a LXMF Peers. Se puede enviar un mensaje a un compañero con una posición desde su marcador; uno sin posición aparece en 0, 0 una vez que mesh-client tiene una conversación con él, por lo que la lista de contactos no se llena con todos los compañeros escuchados.",
+    "channelCallsign": "Añadir indicativo de llamada",
+    "channelCallsignFor": "Ponga el indicativo ATAK del remitente frente a los mensajes enviados a {{channel}}",
+    "channelCallsignHint": "Con Add callsign OFF, lo que envía un dispositivo ATAK se apaga exactamente como se escribió. Desactivarlo para un canal de bot: un bot busca su comando al comienzo del mensaje, por lo que pierde uno que comienza con un indicativo de llamada."
   },
   "telemetryPanel": {
     "title": "Telemetría",

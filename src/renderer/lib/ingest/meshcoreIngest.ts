@@ -357,6 +357,8 @@ function handleTextMessage(
       senderName: displayName,
       text: channelSender.payload,
       timestampMs: wireTimestampMs,
+      // This radio's own sends are left out above, so this is always another node.
+      fromOther: true,
       ...(hopCount != null ? { hops: hopCount } : {}),
       ...(senderNode?.latitude != null && senderNode.longitude != null
         ? { latitude: senderNode.latitude, longitude: senderNode.longitude }

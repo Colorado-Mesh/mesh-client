@@ -5813,7 +5813,10 @@
     "directMessages": "Direct message",
     "directMessagesHint": "Biarkan perangkat atak mengirim pesan ke pendamping radio ini. Setiap pendamping radio ini dapat mengirim pesan mendapatkan opsi obrolan di atak, dan pesan ke sana keluar dari radio ini, diawali dengan tanda panggil pengirim. Balasannya masuk ke perangkat atak yang terakhir menulisnya, atau ke setiap perangkat ketika tidak ada. Pendamping tanpa posisi muncul di 0, 0 untuk sehari setelah pesan.",
     "messagingTitleReticulum": "Reticulum pengiriman pesan di atak",
-    "messagingIntroReticulum": "Biarkan perangkat atak mengirimkan pesan kepada LXMF rekan. Seorang rekan dengan posisi dapat dikirimi pesan dari penanda; satu tanpa posisi muncul di 0, 0 setelah mesh-client melakukan percakapan dengannya, sehingga daftar kontak tidak diisi dengan setiap rekan yang didengar."
+    "messagingIntroReticulum": "Biarkan perangkat atak mengirimkan pesan kepada LXMF rekan. Seorang rekan dengan posisi dapat dikirimi pesan dari penanda; satu tanpa posisi muncul di 0, 0 setelah mesh-client melakukan percakapan dengannya, sehingga daftar kontak tidak diisi dengan setiap rekan yang didengar.",
+    "channelCallsign": "Tambahkan callsign",
+    "channelCallsignFor": "Letakkan tanda panggil atak pengirim di depan pesan yang dikirim ke {{channel}}",
+    "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil."
   },
   "telemetryPanel": {
     "title": "Telemetri",

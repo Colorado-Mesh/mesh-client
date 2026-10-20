@@ -22,6 +22,11 @@ export interface TakChannelMessage {
   text: string;
   timestampMs: number;
   hops?: number;
+  /**
+   * Known to come from another node, so it cannot be this radio's own send heard back. Matters
+   * for a message sent without a callsign, whose text another node may well send too (`!ping`).
+   */
+  fromOther?: boolean;
   /** Sender's last known position, for the GeoChat point. */
   latitude?: number;
   longitude?: number;
@@ -34,7 +39,7 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   const sender = msg.senderName.trim().slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN);
   if (!channel || !text) return;
   // A TAK client's own message heard back off the mesh: the clients already have it.
-  if (consumeTakEcho(identityId, msg.channelIndex, text)) return;
+  if (!msg.fromOther && consumeTakEcho(identityId, msg.channelIndex, text)) return;
   if (!sender) return;
   pushTakGeochat({
     channelKey: channel.key,
@@ -88,9 +93,11 @@ export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessa
   const identityNodes = useNodeStore.getState().nodes[identityId] as
     Record<number, NodeRecord | undefined> | undefined;
   const sender = identityNodes?.[chat.sender_id];
+  const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
   bridgeChannelToGeochat(identityId, {
     channelIndex: chat.channel,
     senderName: chat.sender_name,
+    ...(myNodeNum > 0 && chat.sender_id !== myNodeNum ? { fromOther: true } : {}),
     text: chat.payload,
     timestampMs: effectiveMessageTimestampMs(chat.timestamp),
     ...(sender?.latitude != null && sender.longitude != null

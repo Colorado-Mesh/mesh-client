@@ -19,6 +19,7 @@ const EMPTY = {
   chatChannels: [],
   sendChannels: [],
   remoteChannels: [],
+  noCallsignChannels: [],
   atakNames: {},
   directMessages: false,
 };
@@ -78,6 +79,19 @@ describe('takRelayPrefsStore', () => {
     });
   });
 
+  it('puts the callsign in front by default, and sends a channel as typed once turned off', async () => {
+    const { setChatCallsign } = useTakRelayPrefsStore.getState();
+    setChatCallsign('a', OPS, true);
+    expect(getTakRelayPrefs('a').noCallsignChannels).toEqual([]);
+    setChatCallsign('a', OPS, false);
+    setChatCallsign('a', 'not a key', false);
+    expect(getTakRelayPrefs('a').noCallsignChannels).toEqual([OPS]);
+    await rehydrate({ byIdentity: { a: { ...EMPTY, noCallsignChannels: [OPS, 'junk', OPS] } } }, 3);
+    expect(getTakRelayPrefs('a').noCallsignChannels).toEqual([OPS]);
+    useTakRelayPrefsStore.getState().setChatCallsign('a', OPS, true);
+    expect(getTakRelayPrefs('a').noCallsignChannels).toEqual([]);
+  });
+
   it('turns direct messages on and off per radio', () => {
     const { setDirectMessages } = useTakRelayPrefsStore.getState();
     setDirectMessages('a', true);
@@ -121,6 +135,7 @@ describe('takRelayPrefsStore', () => {
       chatChannels: [PUBLIC, OPS],
       sendChannels: [OPS],
       remoteChannels: [PUBLIC],
+      noCallsignChannels: [OPS],
       atakNames: { [OPS]: 'Ops Net' },
       directMessages: true,
     };
@@ -153,6 +168,7 @@ describe('takRelayPrefsStore', () => {
         chatChannels: [OPS],
         sendChannels: [],
         remoteChannels: [PUBLIC],
+        noCallsignChannels: [],
         atakNames: { [OPS]: 'Ops' },
         directMessages: false,
       },

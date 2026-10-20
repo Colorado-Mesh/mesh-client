@@ -5858,7 +5858,10 @@
     "directMessages": "Přímé zprávy:",
     "directMessagesHint": "Nechte zařízení Atak odeslat zprávu společníkům tohoto rádia. Každý společník, kterému může toto rádio poslat zprávu, dostane možnost chatu v atak a zpráva na něj vyjde z tohoto rádia s předponou volací značky odesílatele. Jeho odpovědi jdou do zařízení atak, které na něj naposledy napsalo, nebo do každého zařízení, pokud žádné nemá. Společník bez pozice se zobrazí na 0, 0 po dobu jednoho dne po zprávě.",
     "messagingTitleReticulum": "Reticulum zasílání zpráv v atak",
-    "messagingIntroReticulum": "Nechte zařízení atak komunikovat LXMF vrstevníky. Protějšek s pozicí může být odeslán ze své značky; ten, kdo nemá žádnou pozici, se objeví na 0, 0, jakmile s ním mesh-client konverzuje, takže seznam kontaktů se nezaplní každým slyšeným protějškem."
+    "messagingIntroReticulum": "Nechte zařízení atak komunikovat LXMF vrstevníky. Protějšek s pozicí může být odeslán ze své značky; ten, kdo nemá žádnou pozici, se objeví na 0, 0, jakmile s ním mesh-client konverzuje, takže seznam kontaktů se nezaplní každým slyšeným protějškem.",
+    "channelCallsign": "Přidat volací značku",
+    "channelCallsignFor": "Umístěte volací značku atak odesílatele před zprávy odeslané na {{channel}}",
+    "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

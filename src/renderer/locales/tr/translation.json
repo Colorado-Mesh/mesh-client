@@ -5813,7 +5813,10 @@
     "directMessages": "Direkt Mesajlar",
     "directMessagesHint": "Atak cihazları bu radyonun arkadaşlarına mesaj göndersin. Bu telsiz mesajının her arkadaşı atak'ta bir sohbet seçeneği alır ve bu telsizden gönderenin çağrı işareti ile başlayan bir mesaj çıkar. Yanıtları, en son kendisine yazan atak cihazına veya hiçbiri yazmadığında her cihaza gider. Pozisyonu olmayan bir refakatçi, bir mesajdan sonra bir gün boyunca 0, 0 'da görünür.",
     "messagingTitleReticulum": "Atak'ta Reticulum mesajlaşma",
-    "messagingIntroReticulum": "Atak cihazlarının LXMF akranlarına mesaj göndermesine izin verin. Bir pozisyona sahip bir akran, işaretçisinden mesajlaşabilir; mesh-client onunla bir konuşma yaptıktan sonra 0, 0 konumunda olmayan bir akran görünür, bu nedenle kişi listesi duyulan her akranla dolu değildir."
+    "messagingIntroReticulum": "Atak cihazlarının LXMF akranlarına mesaj göndermesine izin verin. Bir pozisyona sahip bir akran, işaretçisinden mesajlaşabilir; mesh-client onunla bir konuşma yaptıktan sonra 0, 0 konumunda olmayan bir akran görünür, bu nedenle kişi listesi duyulan her akranla dolu değildir.",
+    "channelCallsign": "Çağrı işareti ekle",
+    "channelCallsignFor": "{{channel}} adresine gönderilen mesajların önüne gönderenin atak çağrı işaretini koyun",
+    "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır."
   },
   "telemetryPanel": {
     "title": "Telemetri",

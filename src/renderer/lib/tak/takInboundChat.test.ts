@@ -101,6 +101,12 @@ describe('formatTakMeshText', () => {
     expect(out.endsWith('…')).toBe(true);
   });
 
+  it('sends the text alone, still cut to the budget, without the callsign', () => {
+    expect(formatTakMeshText('VIPER', ' !ping ', TAK_MESH_SEND_MAX_BYTES, false)).toBe('!ping');
+    const out = formatTakMeshText('VIPER', 'x'.repeat(500), 40, false);
+    expect(out).toBe('x'.repeat(37) + '…');
+  });
+
   it('never splits a multi-byte character', () => {
     const out = formatTakMeshText('V', '😀'.repeat(100), 40);
     expect(new TextEncoder().encode(out).length).toBeLessThanOrEqual(40);
@@ -158,6 +164,26 @@ describe('relayTakChatToMesh', () => {
     );
     expect(consumeTakEcho('mc', 2, '[VIPER] on scene', NOW + 1000)).toBe(true);
     expect(consumeTakEcho('mc2', 0, '[VIPER] on scene', NOW + 1000)).toBe(true);
+  });
+
+  it('sends exactly as typed on a radio whose channel has the callsign turned off', async () => {
+    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mt', 'meshtastic', 1, OPS, true);
+    useTakRelayPrefsStore.getState().setChatCallsign('mc', OPS, false);
+    const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
+
+    expect(await relayTakChatToMesh(message({ text: '!ping' }), send, NOW)).toBe(2);
+
+    expect(send).toHaveBeenCalledWith(
+      { identityId: 'mc', protocol: 'meshcore', channelIndex: 2, callsign: false },
+      '!ping',
+    );
+    expect(send).toHaveBeenCalledWith(
+      { identityId: 'mt', protocol: 'meshtastic', channelIndex: 1 },
+      '[VIPER] !ping',
+    );
+    expect(consumeTakEcho('mc', 2, '!ping', NOW + 1000)).toBe(true);
+    expect(consumeTakEcho('mt', 1, '[VIPER] !ping', NOW + 1000)).toBe(true);
   });
 
   it('keeps going when one channel fails and forgets the echo for the failed send', async () => {
