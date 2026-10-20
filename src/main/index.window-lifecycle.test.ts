@@ -61,6 +61,7 @@ describe('window close-to-tray behaviour', () => {
     const body = closeHandlerBody();
     expect(body).toContain('resolveWindowCloseAction({');
     expect(body).toContain('closeToTrayEnabled: readCloseToTrayEnabled()');
+    expect(body).toContain('trayAvailable: tray !== null');
     expect(body).toContain('hasConnection: isConnected || isAnyMqttConnected()');
   });
 

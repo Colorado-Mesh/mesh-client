@@ -27,6 +27,7 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: true,
         hasConnection: true,
         closeToTrayEnabled: true,
+        trayAvailable: true,
       }),
     ).toBe('allow');
   });
@@ -38,6 +39,7 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: false,
         hasConnection: false,
         closeToTrayEnabled: true,
+        trayAvailable: true,
       }),
     ).toBe('allow');
   });
@@ -49,8 +51,39 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: false,
         hasConnection: true,
         closeToTrayEnabled: true,
+        trayAvailable: true,
       }),
     ).toBe('hide');
+  });
+
+  it('falls back to legacy behaviour when enabled but no tray is available', () => {
+    expect(
+      resolveWindowCloseAction({
+        platform: 'darwin',
+        isQuitting: false,
+        hasConnection: true,
+        closeToTrayEnabled: true,
+        trayAvailable: false,
+      }),
+    ).toBe('hide');
+    expect(
+      resolveWindowCloseAction({
+        platform: 'linux',
+        isQuitting: false,
+        hasConnection: true,
+        closeToTrayEnabled: true,
+        trayAvailable: false,
+      }),
+    ).toBe('minimize');
+    expect(
+      resolveWindowCloseAction({
+        platform: 'win32',
+        isQuitting: false,
+        hasConnection: true,
+        closeToTrayEnabled: true,
+        trayAvailable: false,
+      }),
+    ).toBe('minimize');
   });
 
   it('preserves legacy fallback when the setting is off', () => {
@@ -60,6 +93,7 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: false,
         hasConnection: true,
         closeToTrayEnabled: false,
+        trayAvailable: true,
       }),
     ).toBe('hide');
     expect(
@@ -68,6 +102,7 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: false,
         hasConnection: true,
         closeToTrayEnabled: false,
+        trayAvailable: true,
       }),
     ).toBe('minimize');
     expect(
@@ -76,6 +111,7 @@ describe('resolveWindowCloseAction', () => {
         isQuitting: false,
         hasConnection: true,
         closeToTrayEnabled: false,
+        trayAvailable: true,
       }),
     ).toBe('minimize');
   });

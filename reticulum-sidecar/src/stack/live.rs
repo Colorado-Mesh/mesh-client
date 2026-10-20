@@ -3194,26 +3194,31 @@ impl LiveBridge {
                                     )
                                 })
                                 .max_by_key(|s| s.announce_queue.unwrap_or(0));
-                            if watchdog_due && let Some(worst) = worst {
-                                let queued = worst.announce_queue.unwrap_or(0);
-                                match handle
-                                    .query_control(TransportQuery::DropAnnounceQueues)
-                                    .await
-                                {
-                                    Some(TransportQueryResponse::Ok) => {
-                                        last_announce_queue_watchdog_at = Some(Instant::now());
-                                        tracing::warn!(
-                                            interface = %worst.name,
-                                            announce_queue = queued,
-                                            bitrate = worst.bitrate,
-                                            "announce queue watchdog: dropping stale announce rebroadcast backlog for slow RF interface"
-                                        );
-                                    }
-                                    other => {
-                                        tracing::debug!(
-                                            ?other,
-                                            "announce queue watchdog: DropAnnounceQueues not confirmed"
-                                        );
+                            // No let-chains: declared Rust minimum is 1.85.
+                            if watchdog_due {
+                                if let Some(worst) = worst {
+                                    let queued = worst.announce_queue.unwrap_or(0);
+                                    match handle
+                                        .query_control(TransportQuery::DropAnnounceQueue {
+                                            interface_id: worst.id,
+                                        })
+                                        .await
+                                    {
+                                        Some(TransportQueryResponse::Ok) => {
+                                            last_announce_queue_watchdog_at = Some(Instant::now());
+                                            tracing::warn!(
+                                                interface = %worst.name,
+                                                announce_queue = queued,
+                                                bitrate = worst.bitrate,
+                                                "announce queue watchdog: dropping stale announce rebroadcast backlog for slow RF interface"
+                                            );
+                                        }
+                                        other => {
+                                            tracing::debug!(
+                                                ?other,
+                                                "announce queue watchdog: DropAnnounceQueue not confirmed"
+                                            );
+                                        }
                                     }
                                 }
                             }

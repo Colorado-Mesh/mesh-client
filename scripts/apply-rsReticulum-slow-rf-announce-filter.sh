@@ -26,7 +26,8 @@ fi
 
 if [[ -f "${ACTOR_RS}" ]] \
   && grep -q 'slow_rf_announce_filter_enabled' "${ACTOR_RS}" \
-  && grep -q 'SetSlowRfAnnounceFilter' "${RNS_DIR}/crates/rns-transport/src/messages.rs"; then
+  && grep -q 'SetSlowRfAnnounceFilter' "${RNS_DIR}/crates/rns-transport/src/messages.rs" \
+  && grep -q 'DropAnnounceQueue {' "${RNS_DIR}/crates/rns-transport/src/messages.rs"; then
   echo "slow-rf-announce-filter overlay already applied on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi

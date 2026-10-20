@@ -18,16 +18,19 @@ export interface WindowCloseDecisionInput {
   isQuitting: boolean;
   hasConnection: boolean;
   closeToTrayEnabled: boolean;
+  /** False when tray creation failed, so hiding would strand the window. */
+  trayAvailable: boolean;
 }
 
 /**
  * Decide what a BrowserWindow 'close' event should do.
  * - Quitting, or nothing keeping the app alive, lets the window close.
- * - With close-to-tray on, the window hides to the tray/menu bar on every platform.
- * - With the setting off, preserve legacy behaviour: hide on macOS, minimize elsewhere.
+ * - With close-to-tray on and a tray present, the window hides to the tray/menu bar.
+ * - Otherwise (setting off, or no tray to hide to), preserve legacy behaviour:
+ *   hide on macOS, minimize elsewhere.
  */
 export function resolveWindowCloseAction(input: WindowCloseDecisionInput): WindowCloseAction {
   if (input.isQuitting || !input.hasConnection) return 'allow';
-  if (input.closeToTrayEnabled) return 'hide';
+  if (input.closeToTrayEnabled && input.trayAvailable) return 'hide';
   return input.platform === 'darwin' ? 'hide' : 'minimize';
 }

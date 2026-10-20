@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  useTransition,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -864,6 +865,7 @@ function AppContent() {
   }, []);
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
+  const [protocolSwitchPending, startProtocolTransition] = useTransition();
   const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
   const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
   const reticulumEnabled = enabledProtocols.includes('reticulum');
@@ -2357,7 +2359,7 @@ function AppContent() {
       // As a transition, React keeps the current UI interactive and renders
       // the incoming protocol's tree interruptibly instead of freezing input
       // on one blocking commit.
-      startTransition(() => {
+      startProtocolTransition(() => {
         setActiveTab(targetTab);
         setProtocol(newProtocol);
       });
@@ -2374,11 +2376,19 @@ function AppContent() {
   // whose commit can block for hundreds of ms after time away. Rendering the
   // switch as a transition keeps the current panel interactive while the
   // incoming panel's tree renders interruptibly.
-  const handleTabSelect = useCallback((tabIndex: number) => {
-    startTransition(() => {
-      setActiveTab(tabIndex);
-    });
-  }, []);
+  const handleTabSelect = useCallback(
+    (tabIndex: number) => {
+      // Tab indices are scoped to the protocol that rendered them. While a
+      // protocol switch is pending the visible tabs still belong to the old
+      // protocol, so ignore their selections instead of queueing an
+      // old-protocol index behind the switch's destination tab.
+      if (protocolSwitchPending) return;
+      startTransition(() => {
+        setActiveTab(tabIndex);
+      });
+    },
+    [protocolSwitchPending],
+  );
 
   const allConnectionActionsRef = useRef(allConnectionActions);
   useEffect(() => {

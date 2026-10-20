@@ -2172,15 +2172,16 @@ function createWindow() {
   });
 
   // Handle window close event (prevent-close when device connected).
-  // Close-to-tray (default on) hides the window on every platform; hiding is safe
-  // even where a Linux desktop shows no tray icon, because relaunching the app
-  // restores the window via the second-instance handler.
+  // Close-to-tray (default on) hides the window when a tray exists; if tray
+  // setup failed, the helper falls back to the legacy hide/minimize behaviour
+  // so the window is not stranded hidden with nothing to restore it from.
   win.on('close', (event) => {
     const action = resolveWindowCloseAction({
       platform: process.platform,
       isQuitting,
       hasConnection: isConnected || isAnyMqttConnected(),
       closeToTrayEnabled: readCloseToTrayEnabled(),
+      trayAvailable: tray !== null,
     });
     if (action === 'allow') return;
     event.preventDefault();
