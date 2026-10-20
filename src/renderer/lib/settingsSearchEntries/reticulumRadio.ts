@@ -30,6 +30,14 @@ const reticulumRadioEntries: readonly SettingSearchEntry[] = [
     visible: hasNetworkPanel,
   },
   {
+    id: 'radio.reticulumStack.slowRfAnnounceFilter',
+    slot: 'Radio',
+    labelKey: 'networkPanel.reticulumStackSettings.slowRfAnnounceFilter',
+    sectionKey: STACK,
+    keywords: ['announce', 'rnode', 'lora', 'rf', 'queue', 'bandwidth', 'rebroadcast'],
+    visible: hasNetworkPanel,
+  },
+  {
     id: 'radio.reticulumStack.logLevel',
     slot: 'Radio',
     labelKey: 'networkPanel.reticulumStackSettings.logLevel',

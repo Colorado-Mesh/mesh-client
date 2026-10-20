@@ -134,6 +134,31 @@ pub(crate) fn live_interface_tx_queue_fields(
     }
 }
 
+/// Announce-rebroadcast backlog at which a slow RF interface's queued
+/// announces are considered stale. At ANNOUNCE_CAP spacing (2%), an SF8
+/// RNode drains ~3 announces/min, so 1,000 queued entries already represent
+/// hours of airtime while new destinations keep arriving far faster.
+pub(crate) const ANNOUNCE_QUEUE_WATCHDOG_MAX: u64 = 1_000;
+/// Bitrate ceiling (bps) for "slow RF" interfaces covered by the watchdog.
+pub(crate) const ANNOUNCE_QUEUE_WATCHDOG_MAX_BITRATE_BPS: u64 = 10_000;
+/// Minimum spacing between watchdog drops so a refilling queue is not churned.
+pub(crate) const ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN: Duration = Duration::from_secs(600);
+
+pub(crate) fn announce_queue_watchdog_needed(announce_queue: u64, bitrate_bps: u64) -> bool {
+    announce_queue >= ANNOUNCE_QUEUE_WATCHDOG_MAX
+        && bitrate_bps <= ANNOUNCE_QUEUE_WATCHDOG_MAX_BITRATE_BPS
+}
+
+/// Per-interface watchdog cooldown: an interface is due when it has never
+/// been pruned or its own last prune was at least the cooldown ago. Keying
+/// this by interface lets each qualifying queue be pruned independently.
+pub(crate) fn announce_queue_watchdog_due(last_pruned_at: Option<Instant>, now: Instant) -> bool {
+    match last_pruned_at {
+        None => true,
+        Some(t) => now.duration_since(t) >= ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN,
+    }
+}
+
 /// Live `GetInterfaceStats.mode` is only meaningful while the interface is online.
 pub(crate) fn live_interface_runtime_mode_if_online(online: bool, mode: &str) -> Option<String> {
     if online {
@@ -3112,8 +3137,40 @@ impl LiveBridge {
             let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
             let mut last_host_periodic_get_at: Option<Instant> = None;
             let mut host_periodic_get_rr: usize = 0;
+            let mut last_announce_queue_watchdog_by_interface: HashMap<u64, Instant> =
+                HashMap::new();
+            let mut slow_rf_filter_applied: Option<bool> = None;
             loop {
                 interval.tick().await;
+                // Apply the slow-RF announce filter stack setting (default on)
+                // to the transport actor whenever it changes; no restart needed.
+                {
+                    let want = config::get_stack_settings(&config_dir)
+                        .map(|s| s.slow_rf_announce_filter)
+                        .unwrap_or(true);
+                    if slow_rf_filter_applied != Some(want) {
+                        match handle
+                            .query_control(TransportQuery::SetSlowRfAnnounceFilter {
+                                enabled: want,
+                            })
+                            .await
+                        {
+                            Some(TransportQueryResponse::Ok) => {
+                                slow_rf_filter_applied = Some(want);
+                                tracing::info!(
+                                    enabled = want,
+                                    "slow-RF announce filter applied (unsolicited internet announces onto <=10 kbps interfaces)"
+                                );
+                            }
+                            other => {
+                                tracing::debug!(
+                                    ?other,
+                                    "slow-RF announce filter: SetSlowRfAnnounceFilter not confirmed"
+                                );
+                            }
+                        }
+                    }
+                }
                 // Keep Auto / private-LAN policy inputs fresh (host from config, online from stats).
                 {
                     let config_rows =
@@ -3125,6 +3182,61 @@ impl LiveBridge {
                         )
                         .await
                     {
+                        // Slow-RF announce-rebroadcast backlog watchdog: queued
+                        // announces are deduped per destination but arrive from
+                        // fast boundary hubs far faster than ANNOUNCE_CAP spacing
+                        // can drain them over LoRa, so the backlog otherwise
+                        // grows for hours with stale destinations. Dropping the
+                        // queue lets fresh announces (which peers re-send
+                        // periodically) take the limited airtime instead.
+                        {
+                            // Cooldown is per interface: only interfaces whose
+                            // own last prune is older than the cooldown (or
+                            // that were never pruned) are candidates, so one
+                            // interface's prune does not delay another's.
+                            let now = Instant::now();
+                            let worst = stats
+                                .iter()
+                                .filter(|s| {
+                                    announce_queue_watchdog_needed(
+                                        s.announce_queue.unwrap_or(0),
+                                        s.bitrate,
+                                    ) && announce_queue_watchdog_due(
+                                        last_announce_queue_watchdog_by_interface
+                                            .get(&s.id)
+                                            .copied(),
+                                        now,
+                                    )
+                                })
+                                .max_by_key(|s| s.announce_queue.unwrap_or(0));
+                            // No let-chains: declared Rust minimum is 1.85.
+                            if let Some(worst) = worst {
+                                let queued = worst.announce_queue.unwrap_or(0);
+                                match handle
+                                    .query_control(TransportQuery::DropAnnounceQueue {
+                                        interface_id: worst.id,
+                                    })
+                                    .await
+                                {
+                                    Some(TransportQueryResponse::Ok) => {
+                                        last_announce_queue_watchdog_by_interface
+                                            .insert(worst.id, Instant::now());
+                                        tracing::warn!(
+                                            interface = %worst.name,
+                                            announce_queue = queued,
+                                            bitrate = worst.bitrate,
+                                            "announce queue watchdog: dropping stale announce rebroadcast backlog for slow RF interface"
+                                        );
+                                    }
+                                    other => {
+                                        tracing::debug!(
+                                            ?other,
+                                            "announce queue watchdog: DropAnnounceQueue not confirmed"
+                                        );
+                                    }
+                                }
+                            }
+                        }
                         let live_rows: Vec<InterfaceRow> = stats
                             .iter()
                             .enumerate()
@@ -8822,7 +8934,35 @@ mod discovered_medium_reconcile_tests {
 
 #[cfg(test)]
 mod live_tx_queue_fields_tests {
-    use super::{live_interface_runtime_mode_if_online, live_interface_tx_queue_fields};
+    use std::time::{Duration, Instant};
+
+    use super::{
+        ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN, announce_queue_watchdog_due,
+        announce_queue_watchdog_needed, live_interface_runtime_mode_if_online,
+        live_interface_tx_queue_fields,
+    };
+
+    #[test]
+    fn announce_queue_watchdog_cooldown_tracks_each_interface_independently() {
+        let now = Instant::now();
+        // Never pruned: due. Just pruned: not due until its own cooldown passes.
+        assert!(announce_queue_watchdog_due(None, now));
+        assert!(!announce_queue_watchdog_due(Some(now), now));
+        assert!(announce_queue_watchdog_due(
+            Some(now),
+            now + ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN + Duration::from_secs(1),
+        ));
+    }
+
+    #[test]
+    fn announce_queue_watchdog_only_for_slow_rf_backlog() {
+        // SF8 RNode (~3125 bps) with a stale backlog triggers.
+        assert!(announce_queue_watchdog_needed(2_461, 3_125));
+        assert!(announce_queue_watchdog_needed(1_000, 3_125));
+        // Below threshold, or a fast interface, does not.
+        assert!(!announce_queue_watchdog_needed(999, 3_125));
+        assert!(!announce_queue_watchdog_needed(5_000, 1_000_000));
+    }
 
     #[test]
     fn online_stats_populate_used_and_max() {

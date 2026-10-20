@@ -475,7 +475,11 @@
     "autoUpdateDownload": "App-Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Lädt nach jeder Prüfung das neueste Update im Hintergrund herunter. Wenn diese Option deaktiviert ist, werden Updates immer noch erkannt, aber nur heruntergeladen, wenn Sie auf die Schaltfläche Download klicken — nützlich, wenn ein Paketmanager die Installation übernimmt.",
     "autoUpdateDownloadSaveFailed": "Die automatische Update-Download-Einstellung konnte nicht gespeichert werden.",
-    "clearAllRepeatersConfirm": "Dadurch werden alle nicht favorisierten MeshCore-Repeater vom verbundenen Funkgerät und aus der lokalen Datenbank entfernt. Repeater erscheinen wieder, sobald sie sich erneut ankündigen. Dies kann nicht rückgängig gemacht werden."
+    "clearAllRepeatersConfirm": "Dadurch werden alle nicht favorisierten MeshCore-Repeater vom verbundenen Funkgerät und aus der lokalen Datenbank entfernt. Repeater erscheinen wieder, sobald sie sich erneut ankündigen. Dies kann nicht rückgängig gemacht werden.",
+    "windowSection": "Sichtscheibe",
+    "closeToTray": "In der Nähe der Taskleiste",
+    "closeToTraySaveFailed": "Die Einstellung in der Nähe des Fachs konnte nicht gespeichert werden.",
+    "closeToTrayDesc": "Wenn ein Gerät oder eine MQTT -Verbindung aktiv ist, blendet das Schließen des Fensters den Mesh-Client in der Taskleiste (Menüleiste auf macOS) aus, anstatt ihn zu minimieren, sodass er weiterhin im Hintergrund ausgeführt wird. Öffnen Sie es erneut über das Taskleistensymbol. Beenden Sie das Tray-Menü oder das App-Menü. Wenn es ausgeschaltet ist, minimiert das Schließen das Fenster wie zuvor."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "Netzwerkidentitätspfad",
       "networkIdentityAria": "Pfad zur Netzwerkidentitätsdatei zur Erkennung, Verschlüsselung und Entschlüsselung",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln)."
+      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln).",
+      "slowRfAnnounceFilter": "Limit-Ankündigungen auf langsamen HF-Schnittstellen (nicht standardmäßig)",
+      "slowRfAnnounceFilterHint": "Standardmäßig aktiviert. Hält unerwünschte Internet-Ankündigungen davon ab, über Links mit geringer Bandbreite RNode erneut gesendet zu werden, wo sie niemals ablaufen können. Lokale und RF-gelernte Ziele kündigen sich immer noch an, und Internetziele beantworten auf Anfrage immer noch Pfadanfragen. Deaktivieren für Lagerbestand Reticulum Ankündigungsverhalten."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",

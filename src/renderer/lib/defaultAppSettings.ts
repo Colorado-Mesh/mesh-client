@@ -84,6 +84,11 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    * Lets package-manager deployments own the artifact.
    */
   autoUpdateDownloadEnabled: true,
+  /**
+   * When true (default), closing the window while connected hides it to the
+   * system tray instead of minimizing (or quitting) — the app keeps running.
+   */
+  closeToTray: true,
   /** Retry failed LXMF messages to a peer when that peer announces. */
   reticulumAutoResendOnAnnounce: false,
   /**

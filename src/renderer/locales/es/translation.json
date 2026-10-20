@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Descargar actualizaciones automáticamente",
     "autoUpdateDownloadDesc": "Descarga la última actualización en segundo plano después de cada comprobación. Cuando está desactivado, las actualizaciones aún se detectan, pero solo se descargan cuando se pulsa el botón Descargar, útil cuando un gestor de paquetes se encarga de la instalación.",
     "autoUpdateDownloadSaveFailed": "No se ha podido guardar la configuración de descarga de actualización automática.",
-    "clearAllRepeatersConfirm": "Esto elimina todos los repetidores MeshCore no favoritos de la radio conectada y de la base de datos local. Los repetidores reaparecen cuando se anuncian de nuevo. Esto no se puede deshacer."
+    "clearAllRepeatersConfirm": "Esto elimina todos los repetidores MeshCore no favoritos de la radio conectada y de la base de datos local. Los repetidores reaparecen cuando se anuncian de nuevo. Esto no se puede deshacer.",
+    "windowSection": "Ventana",
+    "closeToTray": "Cerca de la bandeja del sistema",
+    "closeToTraySaveFailed": "No se ha podido guardar la configuración de cerca de la bandeja.",
+    "closeToTrayDesc": "Cuando un dispositivo o una conexión MQTT está activa, al cerrar la ventana se oculta Mesh-Client a la bandeja del sistema (barra de menú en macOS) en lugar de minimizarla, por lo que sigue funcionando en segundo plano. Vuelve a abrirlo desde el icono de la bandeja. Salir del menú de la bandeja o del menú de la app. Cuando está apagado, el cierre minimiza la ventana como antes."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "Identidad de la red",
       "networkIdentityAria": "Ruta al archivo de identidad de red para el cifrado y descifrado de descubrimiento",
       "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
-      "networkIdentityHint": "Opcional. Requerido para desencriptar anuncios de descubrimiento encriptados (y para encriptar al publicar con discovery_encrypt)."
+      "networkIdentityHint": "Opcional. Requerido para desencriptar anuncios de descubrimiento encriptados (y para encriptar al publicar con discovery_encrypt).",
+      "slowRfAnnounceFilter": "Anuncios de límite en interfaces de RF lentas (no estándar)",
+      "slowRfAnnounceFilterHint": "Activado de forma predeterminada. Evita que los anuncios de Internet no solicitados se retransmitan a través de enlaces RNode de bajo ancho de banda, donde nunca pueden agotarse. Los destinos locales y aprendidos por RF aún se anuncian, y los destinos de Internet aún responden a las solicitudes de ruta a pedido. Desactivar para stock Reticulum anunciar comportamiento."
     },
     "reticulumConfigImport": {
       "title": "Importar config Reticulum",
