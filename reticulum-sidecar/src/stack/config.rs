@@ -207,7 +207,7 @@ pub const DEFAULT_ANNOUNCE_INTERVAL_SEC: u32 = 3600;
 /// system/MeshChat `\0rns/default` (which skips spawning local TCP hubs).
 pub const DEFAULT_INSTANCE_NAME: &str = "mesh-client";
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct StackSettings {
     pub enable_transport: bool,
     pub share_instance: bool,
@@ -226,6 +226,32 @@ pub struct StackSettings {
     /// Path to network identity file for discovery encrypt/decrypt.
     #[serde(default)]
     pub network_identity: String,
+    /// mesh-client slow-RF announce filter (non-standard, default on): do not
+    /// queue unsolicited internet-learned announces onto <=10 kbps interfaces.
+    /// Local + RF-learned destinations and on-demand path responses still pass.
+    #[serde(default = "default_slow_rf_announce_filter")]
+    pub slow_rf_announce_filter: bool,
+}
+
+fn default_slow_rf_announce_filter() -> bool {
+    true
+}
+
+impl Default for StackSettings {
+    fn default() -> Self {
+        Self {
+            enable_transport: false,
+            share_instance: false,
+            loglevel: 0,
+            announce_interval_sec: 0,
+            autoconnect_discovered_interfaces: 0,
+            required_discovery_value: 0,
+            interface_discovery_sources: String::new(),
+            network_identity: String::new(),
+            // Non-standard policy must default on even for struct-literal users.
+            slow_rf_announce_filter: true,
+        }
+    }
 }
 
 fn default_required_discovery_value() -> u8 {
@@ -243,6 +269,7 @@ pub struct StackSettingsPatch {
     pub required_discovery_value: Option<u8>,
     pub interface_discovery_sources: Option<String>,
     pub network_identity: Option<String>,
+    pub slow_rf_announce_filter: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -325,6 +352,9 @@ pub fn apply_stack_settings_patch(
     if let Some(ref v) = patch.network_identity {
         settings.network_identity = v.clone();
     }
+    if let Some(v) = patch.slow_rf_announce_filter {
+        settings.slow_rf_announce_filter = v;
+    }
     set_stack_settings(config_dir, &settings)?;
     Ok(settings)
 }
@@ -353,6 +383,10 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
     parsed
         .reticulum
         .set("required_discovery_value", &stamp.to_string());
+    parsed.reticulum.set(
+        "slow_rf_announce_filter",
+        &bool_to_ini(settings.slow_rf_announce_filter),
+    );
     // Prefer the Python/manual key; drop the legacy alias so one source of truth remains.
     if parsed
         .reticulum
@@ -510,6 +544,11 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .get("network_identity")
             .map(str::to_string)
             .unwrap_or_default(),
+        // Absent key = filter on (mesh-client default for this policy).
+        slow_rf_announce_filter: parsed
+            .reticulum
+            .get_bool("slow_rf_announce_filter")
+            .unwrap_or(true),
     }
 }
 
@@ -3648,6 +3687,7 @@ loglevel = 4
                 required_discovery_value: 18,
                 interface_discovery_sources: "521c87a83afb8f29e4455e77930b973b".into(),
                 network_identity: "/tmp/mesh-net.id".into(),
+                slow_rf_announce_filter: true,
             },
         )
         .unwrap();
@@ -3716,6 +3756,34 @@ loglevel = 4
         );
         assert_eq!(updated.network_identity, "/tmp/mesh-net.id");
         assert_eq!(updated.loglevel, 4);
+        // Absent slow_rf_announce_filter key defaults on.
+        assert!(updated.slow_rf_announce_filter);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn slow_rf_announce_filter_round_trips_and_defaults_on() {
+        let dir = test_config_dir("slow-rf-filter");
+        // No key in config: default on.
+        let settings = get_stack_settings(&dir).unwrap();
+        assert!(settings.slow_rf_announce_filter);
+
+        let updated = apply_stack_settings_patch(
+            &dir,
+            &StackSettingsPatch {
+                slow_rf_announce_filter: Some(false),
+                ..StackSettingsPatch::default()
+            },
+        )
+        .unwrap();
+        assert!(!updated.slow_rf_announce_filter);
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains("slow_rf_announce_filter = No"),
+            "{content}"
+        );
+        let reread = get_stack_settings(&dir).unwrap();
+        assert!(!reread.slow_rf_announce_filter);
         let _ = fs::remove_dir_all(&dir);
     }
 

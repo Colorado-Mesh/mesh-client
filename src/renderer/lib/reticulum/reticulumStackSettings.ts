@@ -13,6 +13,8 @@ export interface ReticulumStackSettingsPayload {
   required_discovery_value: number;
   interface_discovery_sources: string;
   network_identity: string;
+  /** Non-standard mesh-client policy; true when the sidecar omits the key. */
+  slow_rf_announce_filter: boolean;
 }
 
 /** Coerce announce interval from stack settings JSON; preserves explicit `0`. */
@@ -74,6 +76,9 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     interface_discovery_sources:
       typeof obj.interface_discovery_sources === 'string' ? obj.interface_discovery_sources : '',
     network_identity: typeof obj.network_identity === 'string' ? obj.network_identity : '',
+    // Default on: older sidecars omit the key entirely.
+    slow_rf_announce_filter:
+      obj.slow_rf_announce_filter === undefined ? true : Boolean(obj.slow_rf_announce_filter),
   };
 }
 
@@ -100,6 +105,9 @@ export async function patchReticulumStackSettings(
     body.interface_discovery_sources = patch.interface_discovery_sources;
   }
   if (patch.network_identity !== undefined) body.network_identity = patch.network_identity;
+  if (patch.slow_rf_announce_filter !== undefined) {
+    body.slow_rf_announce_filter = patch.slow_rf_announce_filter;
+  }
   return (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', body)) as {
     ok?: boolean;
     error?: string;

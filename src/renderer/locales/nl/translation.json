@@ -475,7 +475,11 @@
     "autoUpdateDownload": "Updates automatisch downloaden",
     "autoUpdateDownloadDesc": "Download de laatste update op de achtergrond na elke controle. Wanneer uitgeschakeld, worden updates nog steeds gedetecteerd, maar alleen gedownload wanneer u op de knop Downloaden drukt — handig wanneer een pakketbeheerder de installatie afhandelt.",
     "autoUpdateDownloadSaveFailed": "Kon de instelling voor het automatisch downloaden van updates niet opslaan.",
-    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt."
+    "clearAllRepeatersConfirm": "Hiermee worden alle niet-favoriete MeshCore-repeaters van de verbonden radio en uit de lokale database verwijderd. Repeaters verschijnen weer wanneer ze zich opnieuw aankondigen. Dit kan niet ongedaan worden gemaakt.",
+    "windowSection": "Raam",
+    "closeToTray": "Dicht bij het systeemvak",
+    "closeToTraySaveFailed": "Kon de close-to-tray-instelling niet opslaan.",
+    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -3234,7 +3238,9 @@
       "networkIdentity": "Netwerkidentiteit",
       "networkIdentityAria": "Pad naar netwerkidentiteitsbestand voor detectie versleutelen en ontsleutelen",
       "networkIdentityPlaceholder": "~/.reticulum/opslag/identiteiten/mijn_netwerk",
-      "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt)."
+      "networkIdentityHint": "Optioneel. Vereist om versleutelde ontdekkingsaankondigingen te decoderen (en te coderen bij publicatie met discovery_encrypt).",
+      "slowRfAnnounceFilter": "Limietaankondigingen op langzame RF-interfaces (niet-standaard)",
+      "slowRfAnnounceFilterHint": "Standaard ingeschakeld. Voorkomt dat ongevraagde internetaankondigingen opnieuw worden uitgezonden via RNode -links met een lage bandbreedte, waar ze nooit kunnen uitlekken. Lokale en RF-geleerde bestemmingen worden nog steeds aangekondigd en internetbestemmingen beantwoorden nog steeds padaanvragen op aanvraag. Schakel uit voor voorraad Reticulum om gedrag aan te kondigen."
     },
     "reticulumConfigImport": {
       "title": "Importeer Reticulum-configuratie",
