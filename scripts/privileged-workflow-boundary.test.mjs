@@ -80,6 +80,17 @@ describe('privileged workflow boundaries', () => {
     }
   });
 
+  it('pins docs Python to a version with wheels for the hash-locked requirements', () => {
+    // pyyaml==6.0.3 (docs/requirements.txt, --only-binary=:all:) has no cp315
+    // wheel; unpinned 3.x intermittently resolves to 3.15 and the pip install
+    // fails with "No matching distribution found for pyyaml==6.0.3".
+    const workflow = yaml.load(read('.github/workflows/docs.yml'));
+    for (const job of [workflow.jobs.build, workflow.jobs.deploy]) {
+      const setupPython = job.steps.find((step) => step.uses?.startsWith('actions/setup-python@'));
+      expect(setupPython.with['python-version']).toBe('3.14');
+    }
+  });
+
   it('keeps license maintenance separate from release authority', () => {
     const licenses = loadWorkflow('third-party-licenses');
     const source = read('.github/workflows/third-party-licenses.yaml');

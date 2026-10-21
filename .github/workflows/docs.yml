@@ -36,9 +36,12 @@ jobs:
         with:
           node-version: '22'
       # actions/setup-python v6.3.0
+      # Pinned (not 3.x): pyyaml==6.0.3 in docs/requirements.txt has no cp315
+      # wheel and --only-binary forbids an sdist build; 3.x intermittently
+      # resolves to 3.15 and the install fails. Bump once PyYAML ships cp315.
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: 3.x
+          python-version: '3.14'
       - run: 'python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt'
       - run: node scripts/prepare-mkdocs.mjs
       - run: mkdocs build --strict
@@ -59,9 +62,10 @@ jobs:
         with:
           node-version: '22'
       # actions/setup-python v6.3.0
+      # Pinned (not 3.x): see the build job — pyyaml==6.0.3 has no cp315 wheel.
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: 3.x
+          python-version: '3.14'
       - run: 'python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt'
       - run: node scripts/prepare-mkdocs.mjs
       - run: mkdocs build --strict

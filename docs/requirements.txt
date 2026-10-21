@@ -1,4 +1,5 @@
 # Hash-locked wheel-only inputs for the docs site (CI and `pnpm run docs:install`).
+# Requires Python 3.14 (or older): pyyaml==6.0.3 below has no cp315 wheel yet.
 # Install with: python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt
 # Regenerate pins and hashes together from these floors:
 #   mkdocs

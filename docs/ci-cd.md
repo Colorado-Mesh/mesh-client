@@ -180,7 +180,7 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 Builds the documentation site with `mkdocs build --strict` on pull requests that touch `docs/**`, `README.md`, `CONTRIBUTING.md`, `mkdocs.yml`, or the MkDocs scripts. On every push to `main` it builds the site the same way and deploys it to GitHub Pages:
 
 1. Check out the code with full history (`fetch-depth: 0`) so the git-revision-date plugin can show "last updated" dates
-2. Set up Node 22 and Python 3.x
+2. Set up Node 22 and Python 3.14 (pinned, not `3.x`: `pyyaml==6.0.3` in `docs/requirements.txt` has no Python 3.15 wheel and the install is `--only-binary`)
 3. Install MkDocs dependencies (`docs/requirements.txt`)
 4. Run `node scripts/prepare-mkdocs.mjs`, which generates `docs/contributing.md` from `CONTRIBUTING.md`, plus `docs/install.md` and `docs/features.md` from the `<!-- docs-site:… -->` markers in `README.md`. It also rewrites repository-relative links for the site. These generated pages are gitignored.
 5. Run `mkdocs build --strict`
