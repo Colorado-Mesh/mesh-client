@@ -90,10 +90,15 @@ describe('Beacon public URL validation', () => {
   it.each(['127.0.0.1', '10.0.0.1', '169.254.169.254', '::1', 'fd00::1'])(
     'blocks DNS resolution to %s',
     async (address) => {
-      vi.spyOn(dns, 'lookup').mockResolvedValue({ address, family: address.includes(':') ? 6 : 4 });
+      const lookup = vi
+        .spyOn(dns, 'lookup')
+        .mockResolvedValue({ address, family: address.includes(':') ? 6 : 4 });
       const update = vi.fn();
       const client = new BeaconFeedClient(update);
       await expect(client.connect(request)).rejects.toThrow('public internet address');
+      expect(lookup).toHaveBeenCalledWith('map.meshcore.coloradomesh.org', {
+        order: 'verbatim',
+      });
       expect(update).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'error' }));
     },
   );

@@ -107,7 +107,7 @@ async function resolvePublicAddress(hostname: string): Promise<BeaconAddress> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
-      dns.lookup(hostname, { verbatim: true }),
+      dns.lookup(hostname, { order: 'verbatim' }),
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           reject(new Error('Regional map DNS lookup timed out.'));

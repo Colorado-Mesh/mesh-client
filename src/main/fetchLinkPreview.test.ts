@@ -154,6 +154,11 @@ describe('isBlockedHostnameResolved', () => {
     await expect(isBlockedHostnameResolved('example.com')).resolves.toBe(false);
   });
 
+  it('requests verbatim (unsorted) DNS results when resolving a hostname', async () => {
+    await expect(isBlockedHostnameResolved('example.com')).resolves.toBe(false);
+    expect(mockDnsLookup).toHaveBeenCalledWith('example.com', { order: 'verbatim' });
+  });
+
   it.each([
     '::ffff:7f00:1',
     '::ffff:c0a8:101',
