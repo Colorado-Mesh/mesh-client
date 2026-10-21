@@ -138,7 +138,7 @@ async function lookupHostname(hostname: string): Promise<string> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     const { address } = await Promise.race([
-      dns.lookup(hostname, { verbatim: true }),
+      dns.lookup(hostname, { order: 'verbatim' }),
       new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           reject(new Error('dns lookup timeout'));

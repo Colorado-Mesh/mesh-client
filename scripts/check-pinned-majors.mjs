@@ -34,7 +34,7 @@ export const PINNED_MAJOR_EXCEPTIONS = {
   'js-yaml':
     'app-builder-lib / electron-updater / builder-util require ^4 (markdownlint-cli2@0.23.2 can use 5; override keeps the tree on 4)',
   'markdown-it':
-    'scoped security floor for markdownlint-cli2 (still on markdown-it@14.x); 15.x is a separate upgrade',
+    'scoped security floors for markdownlint-cli2 (14.x line held <15; its pinned 15.0.1 lifted to patched 15.0.3)',
   undici: 'scoped floor lifting transitive 6.x/7.x consumers; the app depends on ^8 directly',
   'undici-types': '@types/node pins the 7.x line',
 };
