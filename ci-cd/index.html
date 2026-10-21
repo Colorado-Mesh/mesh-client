@@ -3447,7 +3447,7 @@ budgets live in
 <p>Builds the documentation site with <code>mkdocs build --strict</code> on pull requests that touch <code>docs/**</code>, <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>mkdocs.yml</code>, or the MkDocs scripts. On every push to <code>main</code> it builds the site the same way and deploys it to GitHub Pages:</p>
 <ol>
 <li>Check out the code with full history (<code>fetch-depth: 0</code>) so the git-revision-date plugin can show "last updated" dates</li>
-<li>Set up Node 22 and Python 3.x</li>
+<li>Set up Node 22 and Python 3.14 (pinned, not <code>3.x</code>: <code>pyyaml==6.0.3</code> in <code>docs/requirements.txt</code> has no Python 3.15 wheel and the install is <code>--only-binary</code>)</li>
 <li>Install MkDocs dependencies (<code>docs/requirements.txt</code>)</li>
 <li>Run <code>node scripts/prepare-mkdocs.mjs</code>, which generates <code>docs/contributing.md</code> from <code>CONTRIBUTING.md</code>, plus <code>docs/install.md</code> and <code>docs/features.md</code> from the <code>&lt;!-- docs-site:… --&gt;</code> markers in <code>README.md</code>. It also rewrites repository-relative links for the site. These generated pages are gitignored.</li>
 <li>Run <code>mkdocs build --strict</code></li>
@@ -3899,7 +3899,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 14, 2026 14:55:35 UTC">October 14, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 21, 2026 16:08:52 UTC">October 21, 2026</span>
   </span>
 
     
