@@ -3,12 +3,87 @@ import net from 'node:net';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  ENV_FORCE_FILE_ORIGIN,
+  ENV_SKIP_ORIGIN_MIGRATION,
+  ENV_USE_CUSTOM_PROTOCOL,
+  RENDERER_INDEX_URL,
+} from '../shared/rendererOrigin';
+import {
   DEFAULT_VITE_DEV_SERVER_URL,
   probeDevServerReachable,
   resolveRendererLoadUrl,
 } from './resolveRendererLoadUrl';
 
 describe('resolveRendererLoadUrl', () => {
+  it('loads the custom origin only after a packaged migration completes', async () => {
+    for (const migrationCompleted of [true, false, undefined]) {
+      const result = await resolveRendererLoadUrl({
+        packaged: true,
+        distIndexPath: '/dist/renderer/index.html',
+        customProtocolUrl: RENDERER_INDEX_URL,
+        migrationCompleted,
+        env: {},
+      });
+      expect(result.source).toBe(migrationCompleted ? 'custom-protocol' : 'dist');
+      expect(result.url.startsWith(migrationCompleted ? 'mesh-client:' : 'file:')).toBe(true);
+    }
+  });
+
+  it.each([ENV_FORCE_FILE_ORIGIN, ENV_SKIP_ORIGIN_MIGRATION])(
+    '%s retains file storage even with completion and custom/development overrides',
+    async (flag) => {
+      const result = await resolveRendererLoadUrl({
+        packaged: true,
+        distIndexPath: '/dist/renderer/index.html',
+        customProtocolUrl: RENDERER_INDEX_URL,
+        migrationCompleted: true,
+        devServerUrl: 'http://localhost:5173',
+        env: { [flag]: '1', [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+      });
+      expect(result.source).toBe('dist');
+      expect(result.url).toMatch(/^file:/);
+    },
+  );
+
+  it('permits the unpackaged COI test origin without migration', async () => {
+    const probe = vi.fn();
+    const result = await resolveRendererLoadUrl({
+      packaged: false,
+      distIndexPath: '/dist/renderer/index.html',
+      customProtocolUrl: RENDERER_INDEX_URL,
+      env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+      isDevServerReachable: probe,
+    });
+    expect(result).toEqual({
+      url: RENDERER_INDEX_URL,
+      source: 'custom-protocol',
+      openDevTools: false,
+    });
+    expect(probe).not.toHaveBeenCalled();
+  });
+
+  it('does not let the development COI flag bypass a packaged migration failure', async () => {
+    const result = await resolveRendererLoadUrl({
+      packaged: true,
+      distIndexPath: '/dist/renderer/index.html',
+      customProtocolUrl: RENDERER_INDEX_URL,
+      migrationCompleted: false,
+      env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+    });
+    expect(result.source).toBe('dist');
+  });
+
+  it('keeps an explicit E2E file URL ahead of the unpackaged COI flag', async () => {
+    const result = await resolveRendererLoadUrl({
+      packaged: false,
+      devServerUrl: 'file:///e2e/index.html',
+      distIndexPath: '/dist/renderer/index.html',
+      customProtocolUrl: RENDERER_INDEX_URL,
+      env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+    });
+    expect(result).toEqual({ url: 'file:///e2e/index.html', source: 'env', openDevTools: false });
+  });
+
   it('uses VITE_DEV_SERVER_URL when set', async () => {
     const resolved = await resolveRendererLoadUrl({
       packaged: false,

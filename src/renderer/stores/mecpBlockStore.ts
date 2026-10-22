@@ -1,7 +1,15 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { createDurableRendererSetting } from '@/renderer/lib/durableRendererSetting';
 import { isMeshProtocol, type MeshProtocol } from '@/shared/meshProtocol';
+import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
+
+const mecpBlockPersistence = createDurableRendererSetting(
+  'mesh-client:mecpBlockedSenders',
+  DURABLE_RENDERER_STORAGE_KEYS.mecpBlockedSenders,
+  JSON.stringify({ state: { blocked: {} }, version: 1 }),
+);
 
 /** One sender whose MECP reports no longer alert, open incidents, or get rebroadcast. */
 export interface MecpBlockedSender {
@@ -33,10 +41,14 @@ function sanitizeBlocked(raw: unknown): Record<string, MecpBlockedSender> {
       protocol,
       senderId,
       label: typeof label === 'string' && label !== '' ? label : senderId,
-      createdAt: typeof createdAt === 'number' ? createdAt : 0,
+      createdAt: typeof createdAt === 'number' && Number.isFinite(createdAt) ? createdAt : 0,
     };
   }
-  return out;
+  return Object.fromEntries(
+    Object.entries(out)
+      .sort(([, a], [, b]) => a.createdAt - b.createdAt)
+      .slice(-MAX_MECP_BLOCKED_SENDERS),
+  );
 }
 
 interface MecpBlockState {
@@ -79,6 +91,8 @@ export const useMecpBlockStore = create<MecpBlockState>()(
     }),
     {
       name: 'mesh-client:mecpBlockedSenders',
+      storage: createJSONStorage(() => mecpBlockPersistence.storage),
+      skipHydration: true,
       version: 1,
       partialize: (s) => ({ blocked: s.blocked }),
       merge: (persisted, current) => ({
@@ -88,6 +102,22 @@ export const useMecpBlockStore = create<MecpBlockState>()(
     },
   ),
 );
+
+mecpBlockPersistence.hydrateLocal(() => {
+  void useMecpBlockStore.persist.rehydrate();
+});
+
+export async function hydrateMecpBlockedSenders(settings: Record<string, string>): Promise<void> {
+  await mecpBlockPersistence.hydrate(settings, () => {
+    void useMecpBlockStore.persist.rehydrate();
+    mecpBlockPersistence.write(
+      JSON.stringify({
+        state: { blocked: useMecpBlockStore.getState().blocked },
+        version: 1,
+      }),
+    );
+  });
+}
 
 /** Non-React lookup for the watcher / ChatPanel alert paths. */
 export function isMecpSenderBlocked(protocol: MeshProtocol, senderId: string): boolean {

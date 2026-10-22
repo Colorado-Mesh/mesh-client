@@ -479,7 +479,18 @@
     "windowSection": "윈도우",
     "closeToTray": "시스템 트레이에 가까움",
     "closeToTraySaveFailed": "트레이에 가까운 설정을 저장할 수 없습니다.",
-    "closeToTrayDesc": "장치 또는 MQTT 연결이 활성화되면 창을 닫으면 최소화하는 대신 시스템 트레이 (macOS 의 메뉴 표시줄) 에 Mesh-Client가 숨겨져 백그라운드에서 계속 실행됩니다. 트레이 아이콘에서 다시 엽니다. 트레이 메뉴 또는 앱 메뉴에서 종료합니다. 꺼지면 닫으면 이전과 같이 창이 최소화됩니다."
+    "closeToTrayDesc": "장치 또는 MQTT 연결이 활성화되면 창을 닫으면 최소화하는 대신 시스템 트레이 (macOS 의 메뉴 표시줄) 에 Mesh-Client가 숨겨져 백그라운드에서 계속 실행됩니다. 트레이 아이콘에서 다시 엽니다. 트레이 메뉴 또는 앱 메뉴에서 종료합니다. 꺼지면 닫으면 이전과 같이 창이 최소화됩니다.",
+    "memoryTitle": "렌더러 메모리",
+    "memorySampleNow": "지금 측정",
+    "memorySampling": "측정 중…",
+    "memoryDescription": "추세를 확인하기 위한 브라우저 추정치로, 창이 표시되는 동안 약 5분마다 측정합니다. 앱 버전에 따라 값이 달라질 수 있습니다.",
+    "memoryIsolated": "교차 출처 격리가 활성화되어 있습니다.",
+    "memoryNotIsolated": "메모리 측정에는 교차 출처 격리가 필요하지만 이 세션에서는 사용할 수 없습니다.",
+    "memoryUnsupported": "이 브라우저는 메모리 측정을 지원하지 않습니다.",
+    "memoryFailed": "메모리 측정에 실패했습니다. 다시 시도할 수 있습니다.",
+    "memoryLatest": "최근 추정치: {{value}}",
+    "memoryEmpty": "아직 측정값이 없습니다. 측정을 시작하거나 창을 표시한 상태로 두세요.",
+    "memoryHistory": "최근 측정값"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

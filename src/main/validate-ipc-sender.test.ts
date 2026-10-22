@@ -37,6 +37,19 @@ describe('validateIpcSender', () => {
     expect(validateIpcSender(makeEvent('not-a-url'))).toBe(false);
   });
 
+  it.each([true, false])('rejects other custom-protocol authorities (packaged: %s)', (packaged) => {
+    isPackagedMock.value = packaged;
+    for (const url of [
+      'mesh-client://evil/index.html',
+      'mesh-client://renderer.evil/index.html',
+      'mesh-client://renderer:123/index.html',
+      'mesh-client://user:pass@renderer/index.html',
+      'mesh-client:/index.html',
+    ]) {
+      expect(validateIpcSender(makeEvent(url))).toBe(false);
+    }
+  });
+
   describe('packaged app', () => {
     beforeEach(() => {
       isPackagedMock.value = true;

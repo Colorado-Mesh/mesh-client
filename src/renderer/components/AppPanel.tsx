@@ -91,6 +91,7 @@ import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { AppAiSection } from './AppAiSection';
+import { AppSupportSection } from './AppSupportSection';
 import { AppTranslationSection } from './AppTranslationSection';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
@@ -1959,41 +1960,7 @@ export default function AppPanel({
         </div>
       </div>
 
-      {/* Support / Bug reports */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.supportSection')}</h3>
-        <p className="text-muted text-xs">{t('appPanel.supportSectionDesc')}</p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div data-setting-anchor="app.support.exportForGitHub" className="space-y-2">
-            <button
-              type="button"
-              aria-label={t('appPanel.exportForGitHub')}
-              disabled={supportBundleExporting !== null}
-              onClick={() => void handleExportSupportBundle('github')}
-              className={buttonClassName('primary', 'md')}
-            >
-              {supportBundleExporting === 'github'
-                ? t('common.loading')
-                : t('appPanel.exportForGitHubButton')}
-            </button>
-            <p className="text-muted text-xs">{t('appPanel.exportForGitHubDesc')}</p>
-          </div>
-          <div data-setting-anchor="app.support.exportForDeveloper" className="space-y-2">
-            <button
-              type="button"
-              aria-label={t('appPanel.exportForDeveloper')}
-              disabled={supportBundleExporting !== null}
-              onClick={() => void handleExportSupportBundle('developer')}
-              className="bg-secondary-dark text-ink-300 hover:bg-ink-600 w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {supportBundleExporting === 'developer'
-                ? t('common.loading')
-                : t('appPanel.exportForDeveloperButton')}
-            </button>
-            <p className="text-xs text-orange-300">{t('appPanel.exportForDeveloperWarning')}</p>
-          </div>
-        </div>
-      </div>
+      <AppSupportSection exporting={supportBundleExporting} onExport={handleExportSupportBundle} />
 
       {/* Data Management */}
       <div className="space-y-3">

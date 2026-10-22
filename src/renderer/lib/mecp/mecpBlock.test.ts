@@ -13,7 +13,11 @@ vi.hoisted(() => {
 });
 
 import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
-import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import {
+  flushIncidentPersistence,
+  hydrateIncidentStore,
+  useIncidentStore,
+} from '@/renderer/stores/incidentStore';
 import { isMecpSenderBlocked, useMecpBlockStore } from '@/renderer/stores/mecpBlockStore';
 
 import { blockMecpIncidentSender } from './mecpBlock';
@@ -37,6 +41,15 @@ describe('blockMecpIncidentSender', () => {
   beforeEach(() => {
     useIncidentStore.getState().clearAll();
     useMecpBlockStore.setState({ blocked: {} });
+  });
+
+  it('retains local incident operations when running without a browser or Electron bridge', async () => {
+    expect(typeof window).toBe('undefined');
+    await hydrateIncidentStore();
+    const inc = ingest('MECP/0/M01 local-only', 'local');
+    await flushIncidentPersistence();
+    expect(useIncidentStore.getState().incidents[inc.id]).toBe(inc);
+    expect(localStorage.getItem('mesh-client:incidents')).toContain(inc.id);
   });
 
   it('blocks the sender on the origin protocol without touching incidents by default', () => {

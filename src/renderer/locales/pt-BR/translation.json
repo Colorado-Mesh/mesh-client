@@ -479,7 +479,18 @@
     "windowSection": "Janela",
     "closeToTray": "Perto da bandeja do sistema",
     "closeToTraySaveFailed": "Não foi possível salvar a configuração de perto da bandeja.",
-    "closeToTrayDesc": "Quando um dispositivo ou uma conexão MQTT está ativa, fechar a janela oculta o Mesh-Client na bandeja do sistema (barra de menus em macOS) em vez de minimizá-lo, para que ele continue sendo executado em segundo plano. Reabra-o a partir do ícone da bandeja. Saia do menu da bandeja ou do menu do aplicativo. Quando desligado, o fechamento minimiza a janela como antes."
+    "closeToTrayDesc": "Quando um dispositivo ou uma conexão MQTT está ativa, fechar a janela oculta o Mesh-Client na bandeja do sistema (barra de menus em macOS) em vez de minimizá-lo, para que ele continue sendo executado em segundo plano. Reabra-o a partir do ícone da bandeja. Saia do menu da bandeja ou do menu do aplicativo. Quando desligado, o fechamento minimiza a janela como antes.",
+    "memoryTitle": "Memória do renderizador",
+    "memorySampleNow": "Medir agora",
+    "memorySampling": "Medindo…",
+    "memoryDescription": "Estimativas do navegador para observar tendências, medidas a cada cinco minutos aproximadamente enquanto a janela estiver visível. Os valores podem variar entre versões do aplicativo.",
+    "memoryIsolated": "O isolamento entre origens está ativado.",
+    "memoryNotIsolated": "A medição de memória requer isolamento entre origens, que não está disponível nesta sessão.",
+    "memoryUnsupported": "Este navegador não oferece suporte à medição de memória.",
+    "memoryFailed": "A medição de memória falhou. Você pode tentar novamente.",
+    "memoryLatest": "Última estimativa: {{value}}",
+    "memoryEmpty": "Ainda não há medições. Inicie uma medição ou mantenha a janela visível.",
+    "memoryHistory": "Medições recentes"
   },
   "aria": {
     "closeDialog": "Fechar janela",

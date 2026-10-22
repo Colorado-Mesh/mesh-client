@@ -84,6 +84,6 @@ If ever revisited, it needs at least: a dedicated ≥10s `ALERT_APP` pacer cover
 
 ## Incident Command
 
-Inbound MECP feeds the always-visible **Incident** tab (persistent `incidentStore`, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See [emcomm.md](emcomm.md).
+Inbound MECP feeds the always-visible **Incident** tab (SQLite-backed `incidentStore` with a preserved localStorage recovery cache, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See [emcomm.md](emcomm.md).
 
 Sound choices and volume are configurable per severity in App → Notifications. Original sounds remain defaults; MAYDAY/URGENT retain mute bypass and a 10% volume floor. See [notification-sounds.md](../notification-sounds.md).

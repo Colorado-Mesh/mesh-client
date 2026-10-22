@@ -141,6 +141,8 @@ nav:
           - Architecture quick reference: development/architecture-quick-ref.md
           - Common issues: development/common-issues.md
           - Renderer hooks: development/renderer-hooks.md
+          - Renderer storage: development/renderer-storage.md
+          - Renderer origin and recovery: development/renderer-origin-coi.md
           - BLE and serial: development/ble-serial.md
           - Chat: development/chat.md
           - AI summaries: development/ai-summarization.md

@@ -479,7 +479,18 @@
     "windowSection": "Jendela",
     "closeToTray": "Dekat dengan baki sistem",
     "closeToTraySaveFailed": "Tidak dapat menyimpan pengaturan close - to - tray.",
-    "closeToTrayDesc": "Saat perangkat atau koneksi MQTT aktif, tutup jendela sembunyikan Mesh-Client ke baki sistem (bilah menu pada macOS) alih - alih meminimalkannya, sehingga tetap berjalan di latar belakang. Buka kembali dari ikon baki. Keluar dari menu baki atau menu aplikasi. Saat mati, penutupan meminimalkan jendela seperti sebelumnya."
+    "closeToTrayDesc": "Saat perangkat atau koneksi MQTT aktif, tutup jendela sembunyikan Mesh-Client ke baki sistem (bilah menu pada macOS) alih - alih meminimalkannya, sehingga tetap berjalan di latar belakang. Buka kembali dari ikon baki. Keluar dari menu baki atau menu aplikasi. Saat mati, penutupan meminimalkan jendela seperti sebelumnya.",
+    "memoryTitle": "Memori perender",
+    "memorySampleNow": "Ukur sekarang",
+    "memorySampling": "Mengukur…",
+    "memoryDescription": "Perkiraan browser untuk melihat tren, diukur sekitar setiap lima menit saat jendela terlihat. Nilai dapat berbeda antarversi aplikasi.",
+    "memoryIsolated": "Isolasi lintas asal diaktifkan.",
+    "memoryNotIsolated": "Pengukuran memori memerlukan isolasi lintas asal, yang tidak tersedia dalam sesi ini.",
+    "memoryUnsupported": "Browser ini tidak mendukung pengukuran memori.",
+    "memoryFailed": "Pengukuran memori gagal. Anda dapat mencoba lagi.",
+    "memoryLatest": "Perkiraan terbaru: {{value}}",
+    "memoryEmpty": "Belum ada pengukuran. Mulai pengukuran atau biarkan jendela terlihat.",
+    "memoryHistory": "Pengukuran terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

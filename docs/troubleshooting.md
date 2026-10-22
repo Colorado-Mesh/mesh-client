@@ -52,16 +52,17 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 
 **What to read first in `debug-snapshot.json` (ignore misleading `offline-*` ids):**
 
-| Field                                                                   | Healthy connected example | Meaning                                                                                                    |
-| ----------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `sessionSummary.<protocol>.liveSession`                                 | `true`                    | RF/MQTT session is live                                                                                    |
-| `sessionSummary.<protocol>.sessionState`                                | `"live"`                  | Not DB-hydrated-only                                                                                       |
-| `activeTab.liveSession`                                                 | `true`                    | Active protocol tab is connected                                                                           |
-| `warnings`                                                              | `[]`                      | No stuck-chat signatures detected                                                                          |
-| `mainLiveness` (top-level)                                              | object                    | `mainUptimeSec`, `lastRendererHeartbeatAgeMs`, `rendererUnresponsiveSeen`, `rss`, `heapUsed` — hang triage |
-| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms tab badge (known room servers only)                                                         |
-| `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
-| `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
+| Field                                                                   | Healthy connected example | Meaning                                                                                                       |
+| ----------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `sessionSummary.<protocol>.liveSession`                                 | `true`                    | RF/MQTT session is live                                                                                       |
+| `sessionSummary.<protocol>.sessionState`                                | `"live"`                  | Not DB-hydrated-only                                                                                          |
+| `activeTab.liveSession`                                                 | `true`                    | Active protocol tab is connected                                                                              |
+| `warnings`                                                              | `[]`                      | No stuck-chat signatures detected                                                                             |
+| `mainLiveness` (top-level)                                              | object                    | `mainUptimeSec`, `lastRendererHeartbeatAgeMs`, `rendererUnresponsiveSeen`, `rss`, `heapUsed` — hang triage    |
+| `rendererMemory` (top-level)                                            | object                    | Isolation/API availability and up to 24 timestamped renderer memory totals; separate from main-process memory |
+| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms tab badge (known room servers only)                                                            |
+| `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                                  |
+| `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                           |
 
 Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). Only the private developer bundle includes **`mecp-received.log`** / **`mecp-received.log.1`** (durable MECP emergency audit trail — separate from the session app log); the public-safe GitHub report always omits them.
 
@@ -128,6 +129,23 @@ Clone, compile, and local packaging issues moved to [development-environment.md 
 ## Installation and packaged apps
 
 Installers, Flatpak, Gatekeeper, and first-launch failures.
+
+### Renderer migration: blank window or older preferences
+
+Packaged builds migrate localStorage from `file://` to `mesh-client://renderer` before using the
+new origin. If export, import, or verification fails, the app retains the file origin. Look for
+`Renderer origin migration/health check failed; retaining file origin` and the renderer load
+source in the startup log.
+
+For recovery, fully quit the app and launch it with `MESH_CLIENT_FORCE_FILE_ORIGIN=1` in the
+launcher's environment. This uses the retained legacy preferences; changes saved only at the new
+origin can look older, while SQLite-backed records are shared. Do not delete browser storage or
+the `migration/` directory to troubleshoot this transition. Preserve the logs and recovery files
+under the [local data directory](#reporting-bugs-export-for-github-app-tab), and follow the
+[origin recovery runbook](development/renderer-origin-coi.md#support-recovery) for verified repair.
+
+USB serial may ask you to choose the port again because browser grants belong to an origin.
+LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to migrate.
 
 ### Linux packaged app: `Cannot find module 'readable-stream'`
 
@@ -620,6 +638,14 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching; include the `.ips` and exported log when reporting.
 - **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
+
+**Renderer memory:** App → Support shows the latest browser estimate and recent samples. Use
+**Sample now**, or keep the window visible for automatic samples about every five minutes.
+The history retains 24 totals for the current session and is included as `rendererMemory` in
+support bundles and Copy Debug Snapshot. Sampling pauses while hidden. If isolation or the
+browser memory API is unavailable, the section explains why; file-origin recovery normally
+has no samples. Compare trends within a session, since browser estimates vary between app
+versions and do not measure the same allocations as `mainLiveness`.
 
 After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.
 

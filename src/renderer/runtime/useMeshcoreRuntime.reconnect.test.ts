@@ -177,7 +177,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toContain('resolveConnectedMeshcoreBleIdentity');
     expect(reconnectBody).toContain('commitConnectedMeshcoreBleSuppression');
-    expect(reconnectBody).toContain('readMeshcoreWebBluetoothDeviceId');
+    expect(reconnectBody).not.toContain('readMeshcoreWebBluetoothDeviceId');
     expect(reconnectBody).toMatch(
       /Reconnect succeeded[\s\S]*?commitConnectedMeshcoreBleSuppression\(bleIdentityOpts\)/,
     );
@@ -199,11 +199,11 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('sets MeshCore BLE identity after connect attach including Linux Web Bluetooth without blePeripheralId', () => {
+  it('sets MeshCore sidecar BLE identity after connect attach with remembered-id fallback', () => {
     const connectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'connect');
     expect(connectBody).toContain('resolveConnectedMeshcoreBleIdentity');
     expect(connectBody).toContain('commitConnectedMeshcoreBleSuppression');
-    expect(connectBody).toContain('readMeshcoreWebBluetoothDeviceId(opened.conn)');
+    expect(connectBody).not.toContain('readMeshcoreWebBluetoothDeviceId');
     expect(connectBody).toContain(
       "fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore')",
     );

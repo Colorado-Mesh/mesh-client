@@ -479,7 +479,18 @@
     "windowSection": "Finestra",
     "closeToTray": "Vicino al vassoio di sistema",
     "closeToTraySaveFailed": "Impossibile salvare l'impostazione di chiusura del vassoio.",
-    "closeToTrayDesc": "Quando un dispositivo o una connessione MQTT è attiva, chiudendo la finestra si nasconde Mesh-Client nel vassoio di sistema (barra dei menu su macOS) invece di minimizzarlo, in modo che continui a funzionare in background. Riaprilo dall'icona del vassoio. Esci dal menu del vassoio o dal menu dell'app. Quando è spento, la chiusura riduce al minimo la finestra come prima."
+    "closeToTrayDesc": "Quando un dispositivo o una connessione MQTT è attiva, chiudendo la finestra si nasconde Mesh-Client nel vassoio di sistema (barra dei menu su macOS) invece di minimizzarlo, in modo che continui a funzionare in background. Riaprilo dall'icona del vassoio. Esci dal menu del vassoio o dal menu dell'app. Quando è spento, la chiusura riduce al minimo la finestra come prima.",
+    "memoryTitle": "Memoria del renderer",
+    "memorySampleNow": "Misura ora",
+    "memorySampling": "Misurazione…",
+    "memoryDescription": "Stime del browser per osservare le tendenze, rilevate circa ogni cinque minuti con la finestra visibile. I valori possono variare tra le versioni dell’app.",
+    "memoryIsolated": "L’isolamento tra origini è attivo.",
+    "memoryNotIsolated": "La misurazione della memoria richiede l’isolamento tra origini, non disponibile in questa sessione.",
+    "memoryUnsupported": "Questo browser non supporta la misurazione della memoria.",
+    "memoryFailed": "Misurazione della memoria non riuscita. Puoi riprovare.",
+    "memoryLatest": "Ultima stima: {{value}}",
+    "memoryEmpty": "Nessuna misurazione. Avvia una misurazione o lascia la finestra visibile.",
+    "memoryHistory": "Misurazioni recenti"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

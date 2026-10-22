@@ -479,7 +479,18 @@
       "sky": "Sky",
       "classic": "Classic green"
     },
-    "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes"
+    "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes",
+    "memoryTitle": "Renderer memory",
+    "memorySampleNow": "Sample now",
+    "memorySampling": "Sampling…",
+    "memoryDescription": "Browser estimates for trends, sampled about every five minutes while visible. Values can change between app versions.",
+    "memoryIsolated": "Cross-origin isolation is enabled.",
+    "memoryNotIsolated": "Memory sampling requires cross-origin isolation, which is unavailable in this session.",
+    "memoryUnsupported": "This browser does not support memory sampling.",
+    "memoryFailed": "Memory sampling failed. You can try again.",
+    "memoryLatest": "Latest estimate: {{value}}",
+    "memoryEmpty": "No samples yet. Take a sample or leave the window visible.",
+    "memoryHistory": "Recent samples"
   },
   "aria": {
     "closeDialog": "Close dialog",

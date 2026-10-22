@@ -487,7 +487,18 @@
     "windowSection": "Okno",
     "closeToTray": "V blízkosti systémové lišty",
     "closeToTraySaveFailed": "Nelze uložit nastavení v blízkosti zásobníku.",
-    "closeToTrayDesc": "Když je zařízení nebo připojení MQTT aktivní, zavřením okna skryje Mesh-Client na systémové liště (lišta nabídek na macOS), místo aby jej minimalizoval, takže stále běží na pozadí. Znovu jej otevřete z ikony zásobníku. Ukončete nabídku zásobníku nebo nabídku aplikace. Když je vypnuto, zavření minimalizuje okno jako dříve."
+    "closeToTrayDesc": "Když je zařízení nebo připojení MQTT aktivní, zavřením okna skryje Mesh-Client na systémové liště (lišta nabídek na macOS), místo aby jej minimalizoval, takže stále běží na pozadí. Znovu jej otevřete z ikony zásobníku. Ukončete nabídku zásobníku nebo nabídku aplikace. Když je vypnuto, zavření minimalizuje okno jako dříve.",
+    "memoryTitle": "Paměť vykreslovacího procesu",
+    "memorySampleNow": "Změřit nyní",
+    "memorySampling": "Měření…",
+    "memoryDescription": "Odhady prohlížeče pro sledování vývoje, měřené přibližně každých pět minut při viditelném okně. Hodnoty se mohou mezi verzemi aplikace lišit.",
+    "memoryIsolated": "Izolace mezi původy je zapnutá.",
+    "memoryNotIsolated": "Měření paměti vyžaduje izolaci mezi původy, která v této relaci není dostupná.",
+    "memoryUnsupported": "Tento prohlížeč nepodporuje měření paměti.",
+    "memoryFailed": "Měření paměti selhalo. Můžete to zkusit znovu.",
+    "memoryLatest": "Poslední odhad: {{value}}",
+    "memoryEmpty": "Zatím žádná měření. Spusťte měření nebo ponechte okno viditelné.",
+    "memoryHistory": "Nedávná měření"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

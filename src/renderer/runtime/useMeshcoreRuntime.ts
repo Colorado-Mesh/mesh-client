@@ -11,7 +11,6 @@ import {
   commitConnectedMeshcoreBleSuppression,
   prearmMeshcoreBleMacSuppressionFromStorage,
   preserveOrClearMeshcoreBleSuppression,
-  readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
 } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { isDeviceChooserCancel } from '@/renderer/lib/deviceChooserCancel';
@@ -3758,7 +3757,6 @@ export function useMeshcoreRuntime() {
         if (params.rfType === 'ble') {
           const bleIdentityOpts = {
             blePeripheralId: params.blePeripheralId,
-            webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
             fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
           };
           const bleId = resolveConnectedMeshcoreBleIdentity(bleIdentityOpts);
@@ -4204,7 +4202,6 @@ export function useMeshcoreRuntime() {
           type === 'ble'
             ? {
                 blePeripheralId,
-                webBluetoothDeviceId: readMeshcoreWebBluetoothDeviceId(opened.conn),
                 fallbackLastBlePeripheralId: resolveLastBlePeripheralId('meshcore') ?? null,
               }
             : null;

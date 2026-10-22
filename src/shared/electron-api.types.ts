@@ -18,6 +18,7 @@ import type {
   GamesStatusResponse,
 } from './games-types';
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
+import type { IncidentSnapshot } from './incidentTypes';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
@@ -387,6 +388,9 @@ export interface ElectronAPI {
   ai: AiAPI;
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
+    getIncidents: () => Promise<IncidentSnapshot>;
+    saveIncidents: (snapshot: IncidentSnapshot) => Promise<void>;
+    seedIncidents: (legacyJson: string | null) => Promise<IncidentSnapshot>;
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

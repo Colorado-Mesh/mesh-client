@@ -33,6 +33,8 @@ extraResources:
     to: reticulum-sidecar
     filter:
       - '**/*'
+      # beforePack selects the active binary; staging contains both architectures.
+      - '!staged{,/**/*}'
   - from: resources/icons/linux/256x256.png
     to: 256x256.png
   - from: resources/geo

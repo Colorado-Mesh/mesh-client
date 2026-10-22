@@ -5,6 +5,7 @@ import { meshcoreChatStubNodeIdFromDisplayName } from '@/renderer/lib/meshcoreUt
 import { isWeatherPost } from '@/renderer/lib/weatherPosts';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import {
+  AI_MAX_MESSAGES,
   AI_MAX_TOTAL_CHARS,
   type AiProviderStatus,
   type AiSummaryDone,
@@ -296,6 +297,66 @@ describe('Catch up availability', () => {
   );
 });
 describe('conversation summary async boundaries', () => {
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'does not mark fully collected two-page %s history as partial',
+    async (protocol) => {
+      const history = Array.from({ length: AI_MAX_MESSAGES + 1 }, (_, index) => ({
+        id: index + 1,
+        at: index + 1,
+        sender: 'Alice',
+        body: `Message ${index + 1}`,
+      }));
+      vi.mocked(window.electronAPI.ai.getHistory)
+        .mockResolvedValueOnce(history)
+        .mockResolvedValueOnce([history[0]]);
+      const { result } = renderHook(() =>
+        useConversationSummary({
+          ...input,
+          protocol,
+          history: { ...input.history, protocol },
+        }),
+      );
+      await act(async () => {
+        await result.current.run();
+      });
+      expect(window.electronAPI.ai.getHistory).toHaveBeenCalledTimes(2);
+      expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ beforeAt: 2, beforeId: 2 }),
+      );
+      expect(result.current.state).toMatchObject({
+        collectedMessageCount: AI_MAX_MESSAGES + 1,
+        messageCount: AI_MAX_MESSAGES + 1,
+        truncated: false,
+      });
+    },
+  );
+
+  it('still marks history partial when the collection cap leaves an older row behind', async () => {
+    useAiSummaryStore.getState().setStatus({ ...ready, maxCollectedMessages: AI_MAX_MESSAGES + 1 });
+    const history = Array.from({ length: AI_MAX_MESSAGES + 2 }, (_, index) => ({
+      id: index + 1,
+      at: index + 1,
+      sender: 'Alice',
+      body: `Message ${index + 1}`,
+    }));
+    vi.mocked(window.electronAPI.ai.getHistory)
+      .mockResolvedValueOnce(history.slice(1))
+      .mockResolvedValueOnce(history.slice(0, 2));
+    const { result } = renderHook(() => useConversationSummary(input));
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(window.electronAPI.ai.getHistory).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.ai.getHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 1, beforeAt: 3, beforeId: 3 }),
+    );
+    expect(result.current.state).toMatchObject({
+      collectedMessageCount: AI_MAX_MESSAGES + 1,
+      messageCount: AI_MAX_MESSAGES + 1,
+      truncated: true,
+    });
+  });
+
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'keeps older eligible %s messages when the newest exceeds the renderer limit',
     async (protocol) => {

@@ -1,10 +1,21 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { createDurableRendererSetting } from '@/renderer/lib/durableRendererSetting';
 import { isChannelIdentityKey } from '@/shared/channelIdentityKey';
+import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
 import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
 
 import type { IdentityId } from '../lib/types';
+
+const takRelayPersistence = createDurableRendererSetting(
+  'mesh-client:takRelayPrefs',
+  DURABLE_RENDERER_STORAGE_KEYS.takRelayPrefs,
+  JSON.stringify({ state: { byIdentity: {}, retiredRooms: null }, version: 3 }),
+  // A first edit creates a full default row; replay only the fields the user changed.
+  (path) =>
+    path.length === 3 && path[0] === 'state' && path[1] === 'byIdentity' ? EMPTY_PREFS : undefined,
+);
 
 /** Which of a radio's channels become ATAK contacts. */
 export type TakChannelMode = 'off' | 'all' | 'selected';
@@ -348,6 +359,8 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
     },
     {
       name: 'mesh-client:takRelayPrefs',
+      storage: createJSONStorage(() => takRelayPersistence.storage),
+      skipHydration: true,
       version: 3,
       partialize: (s) => ({ byIdentity: s.byIdentity, retiredRooms: s.retiredRooms }),
       // sanitizeStore reads every earlier shape, so the stored state passes through to merge.
@@ -367,6 +380,18 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
     },
   ),
 );
+
+takRelayPersistence.hydrateLocal(() => {
+  void useTakRelayPrefsStore.persist.rehydrate();
+});
+
+export async function hydrateTakRelayPrefs(settings: Record<string, string>): Promise<void> {
+  await takRelayPersistence.hydrate(settings, () => {
+    void useTakRelayPrefsStore.persist.rehydrate();
+    const { byIdentity, retiredRooms } = useTakRelayPrefsStore.getState();
+    takRelayPersistence.write(JSON.stringify({ state: { byIdentity, retiredRooms }, version: 3 }));
+  });
+}
 
 export function getTakRelayPrefs(identityId: IdentityId): TakRelayIdentityPrefs {
   return useTakRelayPrefsStore.getState().byIdentity[identityId] ?? EMPTY_PREFS;

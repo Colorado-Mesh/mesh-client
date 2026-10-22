@@ -7,6 +7,46 @@ const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
 const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
 
+describe('renderer origin cutover (source contract)', () => {
+  it('registers the secure renderer protocol before creating a window', () => {
+    const privileges = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf('protocol.registerSchemesAsPrivileged'),
+      INDEX_SOURCE.indexOf('// Linux: SIGSEGV'),
+    );
+    expect(privileges).toContain('scheme: RENDERER_SCHEME');
+    expect(privileges).toContain('secure: true');
+    expect(privileges).toContain('allowServiceWorkers: false');
+    expect(privileges).not.toContain('bypassCSP');
+    const ready = INDEX_SOURCE.slice(INDEX_SOURCE.indexOf('void app\n  .whenReady()'));
+    expect(ready.indexOf('initDatabase()')).toBeLessThan(ready.indexOf('protocol.handle('));
+    expect(ready.indexOf('createRendererOriginProtocolHandler')).toBeLessThan(
+      ready.indexOf('createWindow()'),
+    );
+  });
+
+  it('uses verified migration completion and preserves a file-origin recovery path', () => {
+    expect(INDEX_SOURCE).toContain("migrationCompleted: migrationResult === 'completed'");
+    expect(INDEX_SOURCE).toContain('seedDurableRendererSettings(getDatabase(), entries)');
+    expect(INDEX_SOURCE).toContain(
+      "seedIncidentsOn(getDatabase(), entries['mesh-client:incidents'] ?? null)",
+    );
+    expect(INDEX_SOURCE).toContain("'../../dist/renderer/migration.html'");
+    expect(INDEX_SOURCE).toContain(
+      'checkRendererOriginStorageHealth(migrationOptions, win.webContents)',
+    );
+    expect(INDEX_SOURCE).toContain('trustedRendererUrl = pathToFileURL(distIndexPath).href');
+  });
+
+  it('hydrates operational state before mounting any protocol effects', () => {
+    const renderer = readFileSync(join(__dirname, '../renderer/main.tsx'), 'utf8');
+    const hydration = renderer.indexOf(
+      'await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()])',
+    );
+    expect(hydration).toBeGreaterThan(renderer.indexOf('installDevElectronApiStubIfNeeded();'));
+    expect(hydration).toBeLessThan(renderer.indexOf('createRoot(document'));
+  });
+});
+
 describe('notification audio metadata CSP', () => {
   it('permits local blob metadata probes without allowing remote media', () => {
     const html = readFileSync(join(__dirname, '../renderer/index.html'), 'utf-8');

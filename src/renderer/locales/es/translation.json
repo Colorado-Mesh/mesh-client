@@ -479,7 +479,18 @@
     "windowSection": "Ventana",
     "closeToTray": "Cerca de la bandeja del sistema",
     "closeToTraySaveFailed": "No se ha podido guardar la configuración de cerca de la bandeja.",
-    "closeToTrayDesc": "Cuando un dispositivo o una conexión MQTT está activa, al cerrar la ventana se oculta Mesh-Client a la bandeja del sistema (barra de menú en macOS) en lugar de minimizarla, por lo que sigue funcionando en segundo plano. Vuelve a abrirlo desde el icono de la bandeja. Salir del menú de la bandeja o del menú de la app. Cuando está apagado, el cierre minimiza la ventana como antes."
+    "closeToTrayDesc": "Cuando un dispositivo o una conexión MQTT está activa, al cerrar la ventana se oculta Mesh-Client a la bandeja del sistema (barra de menú en macOS) en lugar de minimizarla, por lo que sigue funcionando en segundo plano. Vuelve a abrirlo desde el icono de la bandeja. Salir del menú de la bandeja o del menú de la app. Cuando está apagado, el cierre minimiza la ventana como antes.",
+    "memoryTitle": "Memoria del renderizador",
+    "memorySampleNow": "Medir ahora",
+    "memorySampling": "Midiendo…",
+    "memoryDescription": "Estimaciones del navegador para observar tendencias, tomadas aproximadamente cada cinco minutos con la ventana visible. Los valores pueden variar entre versiones de la aplicación.",
+    "memoryIsolated": "El aislamiento entre orígenes está activado.",
+    "memoryNotIsolated": "La medición de memoria requiere aislamiento entre orígenes, que no está disponible en esta sesión.",
+    "memoryUnsupported": "Este navegador no admite la medición de memoria.",
+    "memoryFailed": "La medición de memoria falló. Puedes volver a intentarlo.",
+    "memoryLatest": "Última estimación: {{value}}",
+    "memoryEmpty": "Aún no hay mediciones. Inicia una o deja la ventana visible.",
+    "memoryHistory": "Mediciones recientes"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

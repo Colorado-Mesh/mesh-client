@@ -3,9 +3,15 @@ import https from 'node:https';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import {
+  ENV_FORCE_FILE_ORIGIN,
+  ENV_SKIP_ORIGIN_MIGRATION,
+  ENV_USE_CUSTOM_PROTOCOL,
+} from '../shared/rendererOrigin';
+
 export const DEFAULT_VITE_DEV_SERVER_URL = 'http://localhost:5173';
 
-export type RendererLoadSource = 'env' | 'vite-probe' | 'dist';
+export type RendererLoadSource = 'env' | 'vite-probe' | 'dist' | 'custom-protocol';
 
 export interface ResolveRendererLoadUrlOptions {
   packaged: boolean;
@@ -14,6 +20,9 @@ export interface ResolveRendererLoadUrlOptions {
   viteDevServerUrl?: string;
   probeTimeoutMs?: number;
   isDevServerReachable?: (url: string, timeoutMs: number) => Promise<boolean>;
+  customProtocolUrl?: string;
+  migrationCompleted?: boolean;
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface ResolvedRendererLoadUrl {
@@ -88,6 +97,16 @@ export async function resolveRendererLoadUrl(
   const viteUrl = options.viteDevServerUrl ?? DEFAULT_VITE_DEV_SERVER_URL;
   const probe = options.isDevServerReachable ?? probeDevServerReachable;
   const timeoutMs = options.probeTimeoutMs ?? 400;
+  const env = options.env ?? process.env;
+  const forceFile = env[ENV_FORCE_FILE_ORIGIN] === '1' || env[ENV_SKIP_ORIGIN_MIGRATION] === '1';
+  const fileResult: ResolvedRendererLoadUrl = {
+    url: pathToFileURL(path.resolve(options.distIndexPath)).toString(),
+    openDevTools: false,
+    source: 'dist',
+  };
+
+  // Recovery flags win even over a dev-server override in packaged builds.
+  if (options.packaged && forceFile) return fileResult;
 
   if (options.devServerUrl) {
     return {
@@ -95,6 +114,18 @@ export async function resolveRendererLoadUrl(
       // E2E uses an explicit file URL to bypass the Vite probe and load the production build.
       openDevTools: !/^file:/i.test(options.devServerUrl),
       source: 'env',
+    };
+  }
+
+  if (
+    !forceFile &&
+    options.customProtocolUrl &&
+    (options.packaged ? options.migrationCompleted === true : env[ENV_USE_CUSTOM_PROTOCOL] === '1')
+  ) {
+    return {
+      url: options.customProtocolUrl,
+      openDevTools: false,
+      source: 'custom-protocol',
     };
   }
 
@@ -113,12 +144,6 @@ export async function resolveRendererLoadUrl(
     );
   }
 
-  // file:// keeps the historical renderer origin so localStorage last-read / settings
-  // watermarks stay intact. (mesh-client:// would isolate SharedArrayBuffer but resets origin.)
-  const indexUrl = pathToFileURL(path.resolve(options.distIndexPath)).toString();
-  return {
-    url: indexUrl,
-    openDevTools: false,
-    source: 'dist',
-  };
+  // Until the origin copy verifies, retain the historical origin and all its localStorage.
+  return fileResult;
 }

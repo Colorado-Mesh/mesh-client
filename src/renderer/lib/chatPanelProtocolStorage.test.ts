@@ -578,6 +578,11 @@ describe('rooms last read storage', () => {
     expect(localStorage.getItem(roomsLastReadStorageKey())).toBeTruthy();
   });
 
+  it('does not persist non-finite room watermarks', () => {
+    savePersistedRoomsLastRead({ 1: 100, 2: Infinity, 3: NaN });
+    expect(loadPersistedRoomsLastRead()).toEqual({ 1: 100 });
+  });
+
   it('mergeRoomLastReadWatermark only advances forward', () => {
     expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 4000)).toEqual({ 0xabc: 5000 });
     expect(mergeRoomLastReadWatermark({ 0xabc: 5000 }, 0xabc, 6000)).toEqual({ 0xabc: 6000 });

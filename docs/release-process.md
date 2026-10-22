@@ -131,6 +131,40 @@ Fork workflows and local `pnpm run dist:mac` without these env vars produce **un
 
 ---
 
+## Windows signing readiness
+
+Windows NSIS installers are currently **unsigned**. The Windows release job does not pass
+signing credentials, and `electron-builder.yml` has no Windows signing provider configured.
+Microsoft account approval is a prerequisite for the intended signing service; it does not
+configure this repository or prove an installer is signed.
+
+Before declaring Windows signing ready:
+
+- [ ] Confirm the approved Microsoft signing service, account, certificate/profile, and expected
+      publisher identity. Record its required configuration without guessing service-specific values.
+- [ ] Configure that provider in the protected **`release`** environment and the Windows-only
+      official release job. Keep arbitrary-ref `build.yaml`, pull requests, and local unsigned
+      builds free of release credentials.
+- [ ] Fail the official Windows release job early when its required signing configuration is
+      missing. Require signing for that job so a provider failure cannot silently ship unsigned files.
+- [ ] Sign the application, bundled executable components (including the Reticulum sidecar), and
+      both x64 and arm64 NSIS installers. Check the final packaged payload, not just an intermediate
+      build directory.
+- [ ] Before upload, verify Authenticode signatures, expected publisher, and timestamp on both
+      installers and their installed executable payloads. Run the existing x64 and arm64 NSIS
+      installation smoke tests against those same artifacts.
+- [ ] Validate an update from the currently published unsigned release to the signed build, then
+      an update between signed builds. Preserve the exact installer names and `latest.yml` hashes;
+      do not sign or otherwise modify an installer after updater metadata is generated.
+
+The current `verify-win-packaging.mjs` checks executable presence/size, bundled sidecar presence,
+per-architecture installers, and updater metadata. `test-win-nsis-install.mjs` checks installed
+payloads on x64 and arm64. Neither currently verifies Authenticode signatures, publisher identity,
+or trusted timestamps. A green packaging job therefore proves packaging readiness only; Windows
+signing remains a separate release gate until the checks above are implemented and pass.
+
+---
+
 ## Manual verification (optional)
 
 If you need to run checks outside `release.sh`:

@@ -15,6 +15,7 @@ import {
   floodScopeOverridesStorageKey,
   lastReadStorageKey,
 } from './chatPanelProtocolStorage';
+import * as memorySampler from './coiMemorySampler';
 import {
   analyzeDebugSnapshot,
   buildDebugSnapshot,
@@ -690,6 +691,31 @@ describe('buildDebugSnapshotAsync', () => {
     resetDebugSnapshotUiContext();
     vi.mocked(window.electronAPI.reticulum.getStatus).mockReset();
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockReset();
+  });
+
+  it('includes bounded renderer memory separately from main-process liveness', async () => {
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: false,
+      port: 0,
+      pid: null,
+    });
+    const rendererMemory: memorySampler.CoiMemorySnapshot = {
+      crossOriginIsolated: true,
+      supported: true,
+      sampling: false,
+      failed: false,
+      samples: [{ at: 1234, bytes: 5678 }],
+    };
+    const snapshot = vi
+      .spyOn(memorySampler, 'getCoiMemorySnapshot')
+      .mockReturnValue(rendererMemory);
+    try {
+      const result = await buildDebugSnapshotAsync();
+      expect(result.rendererMemory).toEqual(rendererMemory);
+      expect(result).toHaveProperty('mainLiveness');
+    } finally {
+      snapshot.mockRestore();
+    }
   });
 
   it('includes live sidecar stack payload when running', async () => {

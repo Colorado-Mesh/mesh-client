@@ -45,6 +45,7 @@ import type {
 } from '../shared/environmentTelemetry';
 import type { FirmwareBackupSaveResult } from '../shared/firmwareBackup';
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from '../shared/geoPlace';
+import type { IncidentSnapshot } from '../shared/incidentTypes';
 import type {
   NotificationSoundEvent,
   NotificationSoundImport,
@@ -180,6 +181,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // ─── Database operations ────────────────────────────────────────
   db: {
+    getIncidents: () => ipcRenderer.invoke('db:getIncidents'),
+    saveIncidents: (snapshot: IncidentSnapshot) => ipcRenderer.invoke('db:saveIncidents', snapshot),
+    seedIncidents: (legacyJson: string | null) =>
+      ipcRenderer.invoke('db:seedIncidents', legacyJson),
     saveMessage: (message: {
       sender_id: number;
       sender_name: string;

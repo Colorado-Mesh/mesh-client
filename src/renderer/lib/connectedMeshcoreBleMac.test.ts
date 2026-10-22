@@ -8,7 +8,6 @@ import {
   MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY,
   prearmMeshcoreBleMacSuppressionFromStorage,
   preserveOrClearMeshcoreBleSuppression,
-  readMeshcoreWebBluetoothDeviceId,
   resetConnectedMeshcoreBleMacForTests,
   resolveConnectedMeshcoreBleIdentity,
   resolveConnectedMeshcoreBleMacForSuppression,
@@ -17,31 +16,28 @@ import {
 import { shouldSuppressMeshtasticNodeHear } from './meshcoreBleMacMeshtasticNodeId';
 
 describe('resolveConnectedMeshcoreBleIdentity', () => {
-  it('prefers explicit blePeripheralId over Web Bluetooth and last-id fallbacks', () => {
+  it('prefers explicit sidecar blePeripheralId over the remembered id', () => {
     expect(
       resolveConnectedMeshcoreBleIdentity({
         blePeripheralId: 'aa:bb:cc:dd:ee:ff',
-        webBluetoothDeviceId: 'web-bt-uuid',
         fallbackLastBlePeripheralId: 'stored-id',
       }),
     ).toBe('aa:bb:cc:dd:ee:ff');
   });
 
-  it('uses Web Bluetooth device id when peripheral id is missing (Linux reconnect identity)', () => {
+  it('preserves opaque CoreBluetooth peripheral UUIDs as reconnect identities', () => {
     expect(
       resolveConnectedMeshcoreBleIdentity({
-        blePeripheralId: undefined,
-        webBluetoothDeviceId: '  web-bt-uuid  ',
+        blePeripheralId: '  aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee  ',
         fallbackLastBlePeripheralId: 'stored-id',
       }),
-    ).toBe('web-bt-uuid');
+    ).toBe('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
   });
 
   it('falls back to last remembered BLE id', () => {
     expect(
       resolveConnectedMeshcoreBleIdentity({
         blePeripheralId: '',
-        webBluetoothDeviceId: null,
         fallbackLastBlePeripheralId: 'stored-mac',
       }),
     ).toBe('stored-mac');
@@ -51,7 +47,6 @@ describe('resolveConnectedMeshcoreBleIdentity', () => {
     expect(
       resolveConnectedMeshcoreBleIdentity({
         blePeripheralId: '  ',
-        webBluetoothDeviceId: undefined,
         fallbackLastBlePeripheralId: null,
       }),
     ).toBeNull();
@@ -59,21 +54,19 @@ describe('resolveConnectedMeshcoreBleIdentity', () => {
 });
 
 describe('resolveConnectedMeshcoreBleMacForSuppression', () => {
-  it('skips opaque Web Bluetooth UUIDs and prefers a parseable MAC fallback', () => {
+  it('skips opaque CoreBluetooth UUIDs and prefers a parseable MAC fallback', () => {
     expect(
       resolveConnectedMeshcoreBleMacForSuppression({
-        blePeripheralId: undefined,
-        webBluetoothDeviceId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        blePeripheralId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         fallbackLastBlePeripheralId: 'cc:2e:e3:da:2e:2f',
       }),
     ).toBe('cc:2e:e3:da:2e:2f');
   });
 
-  it('returns null when only opaque Linux Web Bluetooth ids are available', () => {
+  it('returns null when only opaque CoreBluetooth ids are available', () => {
     expect(
       resolveConnectedMeshcoreBleMacForSuppression({
-        blePeripheralId: undefined,
-        webBluetoothDeviceId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        blePeripheralId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         fallbackLastBlePeripheralId: 'stored-opaque-uuid',
       }),
     ).toBeNull();
@@ -85,7 +78,7 @@ describe('setConnectedMeshcoreBleMac', () => {
     resetConnectedMeshcoreBleMacForTests();
   });
 
-  it('stores parseable Noble MACs and persists them for cold-start pre-arm', () => {
+  it('stores parseable sidecar MACs and persists them for cold-start pre-arm', () => {
     setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
     expect(getConnectedMeshcoreBleMac()).toBe('cc:2e:e3:da:2e:2f');
     expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBe(
@@ -94,7 +87,7 @@ describe('setConnectedMeshcoreBleMac', () => {
     expect(shouldSuppressMeshtasticNodeHear(0xe3da2e2f, getConnectedMeshcoreBleMac())).toBe(true);
   });
 
-  it('clears in-memory value for opaque Web Bluetooth UUIDs without wiping sticky persistence', () => {
+  it('clears in-memory value for opaque CoreBluetooth UUIDs without wiping sticky persistence', () => {
     setConnectedMeshcoreBleMac('cc:2e:e3:da:2e:2f');
     setConnectedMeshcoreBleMac('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
     expect(getConnectedMeshcoreBleMac()).toBeNull();
@@ -129,21 +122,6 @@ describe('setConnectedMeshcoreBleMac', () => {
     expect(getConnectedMeshcoreBleMac()).toBeNull();
     expect(localStorage.getItem(MESHCORE_BLE_MAC_SUPPRESSION_STORAGE_KEY)).toBeNull();
     expect(prearmMeshcoreBleMacSuppressionFromStorage(null)).toBeNull();
-  });
-});
-
-describe('readMeshcoreWebBluetoothDeviceId', () => {
-  it('reads getWebBluetoothDeviceId from duck-typed connections', () => {
-    expect(
-      readMeshcoreWebBluetoothDeviceId({
-        getWebBluetoothDeviceId: () => 'linux-device-id',
-      }),
-    ).toBe('linux-device-id');
-  });
-
-  it('returns null for non-Web-Bluetooth handles', () => {
-    expect(readMeshcoreWebBluetoothDeviceId({})).toBeNull();
-    expect(readMeshcoreWebBluetoothDeviceId(null)).toBeNull();
   });
 });
 

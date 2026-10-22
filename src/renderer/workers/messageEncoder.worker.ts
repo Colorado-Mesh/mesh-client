@@ -13,10 +13,11 @@ const meshtasticPortnums = Portnums as unknown as {
 };
 const TEXT_MESSAGE_APP = meshtasticPortnums.PortNum.TEXT_MESSAGE_APP;
 
-// Only accept messages from our renderer (Electron: file/null in prod, localhost in Vite).
+// Only accept messages from our renderer (custom origin, legacy file/null, or local Vite).
 // Prefer Array.includes over Set.has — CodeQL js/missing-origin-check recognizes
 // InclusionTest (.includes) and EqualityTest (===), not Set.prototype.has (alert #110).
 const ALLOWED_ORIGINS = [
+  'mesh-client://renderer',
   'null',
   'file://',
   'http://localhost:5173',

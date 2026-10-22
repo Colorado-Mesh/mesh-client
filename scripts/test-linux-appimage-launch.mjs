@@ -9,8 +9,8 @@
  * extracts the AppImage and launches its `AppRun` under Xvfb with a throwaway
  * user-data dir, then asserts:
  *   1. the process stays alive past a startup threshold (no crash exit), and
- *   2. `mesh-client.log` shows the renderer actually loaded — a `[Startup] renderer URL:`
- *      line or a `[renderer` source line — and does not contain renderer-gone,
+ *   2. `mesh-client.log` shows the renderer actually loaded — a `[Startup] renderer loaded:`
+ *      line after the final `loadURL` resolves — and does not contain renderer-gone,
  *      failed-load, or child-process-gone lines.
  *
  * Only the native-arch AppImage is launched: an arm64 runtime cannot execute on
@@ -84,14 +84,14 @@ function isArm64Name(name) {
  *
  * `formatLine` in `src/main/log-service.ts` writes every main-process line as
  * `[level] [main] …`, so a bare `[main]` match is true for errors and for lines
- * written before any window exists. A real boot logs `[Startup] renderer URL:`
- * (console.debug, just before `loadURL`) and, once the page runs, renderer-source
- * lines (`[renderer]` / `[renderer:file:line]` via `forwardRendererConsoleMessage`).
+ * written before any window exists. The completion marker is logged only after
+ * the final `loadURL` resolves, including a migration fallback. The earlier URL-intent
+ * line and renderer console output can appear before navigation completes.
  * @param {string} logText
  */
 export function logShowsStartup(logText) {
   if (typeof logText !== 'string' || logText.length === 0) return false;
-  return /\[Startup\] renderer URL:|\[renderer/.test(logText);
+  return /\[Startup\] renderer loaded:/.test(logText);
 }
 
 /**
@@ -371,7 +371,7 @@ export async function launchAndAssert({
       if (!sawStartup && Date.now() >= logDeadline) {
         fail(
           `No renderer-loaded signal in ${LOG_FILENAME} within ${logWaitMs}ms ` +
-            '(expected "[Startup] renderer URL:" or a "[renderer" line).\n' +
+            '(expected "[Startup] renderer loaded:" after a successful loadURL).\n' +
             `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +
             `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
         );

@@ -37,6 +37,7 @@ describe('incidentStore', () => {
   beforeEach(() => {
     vi.resetModules();
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('mesh-client:incidentPending');
   });
 
   it('merges the same fingerprint across protocols', async () => {
@@ -561,7 +562,6 @@ describe('incidentStore', () => {
         }),
       );
       const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
-      await useIncidentStore.persist.rehydrate();
       expect(useIncidentStore.getState().incidents.old.seenAt).toBe(7);
       expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
     });

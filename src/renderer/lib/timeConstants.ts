@@ -14,6 +14,9 @@ export {
   MS_PER_SECOND,
 };
 
+/** Visible-window renderer memory sampling cadence, jittered by 20% either way. */
+export const COI_MEMORY_SAMPLE_INTERVAL_MS = 5 * MS_PER_MINUTE;
+
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
 /** Max wait for admin RPCs while a same-node ping RPC (incl. 0-hop direct retry) is still running. */

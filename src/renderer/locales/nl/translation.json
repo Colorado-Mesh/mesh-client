@@ -479,7 +479,18 @@
     "windowSection": "Raam",
     "closeToTray": "Dicht bij het systeemvak",
     "closeToTraySaveFailed": "Kon de close-to-tray-instelling niet opslaan.",
-    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen."
+    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen.",
+    "memoryTitle": "Geheugen van de renderer",
+    "memorySampleNow": "Nu meten",
+    "memorySampling": "Bezig met meten…",
+    "memoryDescription": "Browserschattingen om trends te volgen, ongeveer elke vijf minuten bij een zichtbaar venster. Waarden kunnen per appversie verschillen.",
+    "memoryIsolated": "Isolatie tussen oorsprongen is ingeschakeld.",
+    "memoryNotIsolated": "Geheugenmeting vereist isolatie tussen oorsprongen, die in deze sessie niet beschikbaar is.",
+    "memoryUnsupported": "Deze browser ondersteunt geen geheugenmeting.",
+    "memoryFailed": "Geheugenmeting mislukt. U kunt het opnieuw proberen.",
+    "memoryLatest": "Laatste schatting: {{value}}",
+    "memoryEmpty": "Nog geen metingen. Start een meting of laat het venster zichtbaar.",
+    "memoryHistory": "Recente metingen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

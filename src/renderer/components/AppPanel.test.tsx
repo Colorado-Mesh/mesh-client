@@ -750,24 +750,26 @@ describe('AppPanel: support bundle exports', () => {
     );
   });
 
-  it('invokes support.exportBundle with github mode', async () => {
-    render(
-      <ToastProvider>
-        <AppPanel {...defaultProps} protocol="meshtastic" />
-      </ToastProvider>,
-    );
-
-    fireEvent.click(
-      await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),
-    );
-
-    await waitFor(() => {
-      expect(window.electronAPI.support.exportBundle).toHaveBeenCalledWith(
-        'github',
-        expect.stringContaining('"capturedAt"'),
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'shows renderer memory and exports a GitHub bundle for %s',
+    async (protocol) => {
+      render(
+        <ToastProvider>
+          <AppPanel {...defaultProps} protocol={protocol} />
+        </ToastProvider>,
       );
-    });
-  });
+      expect(await screen.findByRole('button', { name: 'Sample now' })).toBeDisabled();
+      fireEvent.click(
+        await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),
+      );
+      await waitFor(() => {
+        expect(window.electronAPI.support.exportBundle).toHaveBeenCalledWith(
+          'github',
+          expect.stringContaining('"rendererMemory"'),
+        );
+      });
+    },
+  );
 
   it('invokes support.exportBundle with developer mode', async () => {
     render(

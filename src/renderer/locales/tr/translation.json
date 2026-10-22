@@ -479,7 +479,18 @@
     "windowSection": "Pencere",
     "closeToTray": "Sistem tepsisine yakın",
     "closeToTraySaveFailed": "Tepsiye yakın ayarı kaydedilemedi.",
-    "closeToTrayDesc": "Bir cihaz veya MQTT bağlantısı etkin olduğunda, pencereyi kapatmak, Mesh-Client'ı en aza indirmek yerine sistem tepsisine gizler (macOS üzerindeki menü çubuğu), böylece arka planda çalışmaya devam eder. Tepsi simgesinden yeniden açın. Tepsi menüsünden veya uygulama menüsünden çıkın. Kapalıyken, kapatma pencereyi eskisi gibi simge durumuna küçültür."
+    "closeToTrayDesc": "Bir cihaz veya MQTT bağlantısı etkin olduğunda, pencereyi kapatmak, Mesh-Client'ı en aza indirmek yerine sistem tepsisine gizler (macOS üzerindeki menü çubuğu), böylece arka planda çalışmaya devam eder. Tepsi simgesinden yeniden açın. Tepsi menüsünden veya uygulama menüsünden çıkın. Kapalıyken, kapatma pencereyi eskisi gibi simge durumuna küçültür.",
+    "memoryTitle": "İşleyici belleği",
+    "memorySampleNow": "Şimdi ölç",
+    "memorySampling": "Ölçülüyor…",
+    "memoryDescription": "Eğilimleri izlemek için tarayıcı tahminleri; pencere görünürken yaklaşık beş dakikada bir ölçülür. Değerler uygulama sürümleri arasında değişebilir.",
+    "memoryIsolated": "Kökenler arası yalıtım etkin.",
+    "memoryNotIsolated": "Bellek ölçümü, bu oturumda kullanılamayan kökenler arası yalıtım gerektirir.",
+    "memoryUnsupported": "Bu tarayıcı bellek ölçümünü desteklemiyor.",
+    "memoryFailed": "Bellek ölçümü başarısız oldu. Yeniden deneyebilirsiniz.",
+    "memoryLatest": "Son tahmin: {{value}}",
+    "memoryEmpty": "Henüz ölçüm yok. Bir ölçüm başlatın veya pencereyi görünür bırakın.",
+    "memoryHistory": "Son ölçümler"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

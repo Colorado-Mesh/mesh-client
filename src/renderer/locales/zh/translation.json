@@ -479,7 +479,18 @@
     "windowSection": "窗口",
     "closeToTray": "关闭到系统托盘(&C)",
     "closeToTraySaveFailed": "无法保存接近托盘的设置。",
-    "closeToTrayDesc": "当设备或MQTT连接处于活动状态时，关闭窗口会将Mesh-Client隐藏到系统托盘（ macOS上的菜单栏） ，而不是将其最小化，因此它继续在后台运行。从托盘图标重新打开它。从托盘菜单或应用菜单退出。关闭时，关闭会像以前一样最小化窗口。"
+    "closeToTrayDesc": "当设备或MQTT连接处于活动状态时，关闭窗口会将Mesh-Client隐藏到系统托盘（ macOS上的菜单栏） ，而不是将其最小化，因此它继续在后台运行。从托盘图标重新打开它。从托盘菜单或应用菜单退出。关闭时，关闭会像以前一样最小化窗口。",
+    "memoryTitle": "渲染进程内存",
+    "memorySampleNow": "立即测量",
+    "memorySampling": "正在测量…",
+    "memoryDescription": "用于观察趋势的浏览器估计值，在窗口可见时大约每五分钟测量一次。数值可能因应用版本而异。",
+    "memoryIsolated": "跨源隔离已启用。",
+    "memoryNotIsolated": "内存测量需要跨源隔离，但当前会话中不可用。",
+    "memoryUnsupported": "此浏览器不支持内存测量。",
+    "memoryFailed": "内存测量失败。您可以重试。",
+    "memoryLatest": "最新估计值：{{value}}",
+    "memoryEmpty": "暂无测量值。请开始测量或保持窗口可见。",
+    "memoryHistory": "近期测量值"
   },
   "aria": {
     "closeDialog": "关闭对话框",
