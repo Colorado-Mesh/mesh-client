@@ -210,7 +210,7 @@
     "@wllama/wllama": "3.8.1",
     "concurrently": "^9.2.5",
     "electron": "^44.1.1",
-    "electron-builder": "^26.17.0",
+    "electron-builder": "^26.18.0",
     "emoji-picker-element-data": "^1.8.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.13.0",
