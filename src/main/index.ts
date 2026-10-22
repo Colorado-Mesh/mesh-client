@@ -132,7 +132,7 @@ import {
   upsertNodePath,
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
-import { seedDurableRendererSettings } from './durableRendererSettings';
+import { resetDurableRendererData, seedDurableRendererSettings } from './durableRendererSettings';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import {
@@ -233,9 +233,11 @@ import { canAutoConnectTakRemote, loadTakRemoteSettings } from './tak/remote-set
 import type { TakServerManager } from './tak-server-manager';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
-import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
+import { assertIpcSender, suspendIpcSender, validateIpcSender } from './validate-ipc-sender';
 import {
+  beginRendererStorageReset,
   checkRendererOriginStorageHealth,
+  resumePendingRendererStorageReset,
   runWebStorageOriginMigration,
 } from './webStorageOriginMigration';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
@@ -466,6 +468,8 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let reloadMainRenderer: ((beforeLoad?: () => void) => Promise<void>) | null = null;
+let rendererLoadPromise: Promise<void> | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 let offlineTileCache: TileCache | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
@@ -2198,7 +2202,7 @@ function createWindow() {
   });
 
   // Load the app
-  void (async () => {
+  const loadRenderer = async (beforeLoad?: () => void) => {
     const distIndexPath = path.join(__dirname, '../../dist/renderer/index.html');
     const migrationOptions = {
       packaged: app.isPackaged,
@@ -2211,6 +2215,20 @@ function createWindow() {
         seedIncidentsOn(getDatabase(), entries['mesh-client:incidents'] ?? null);
       },
     };
+    // Explicit resets take priority over origin recovery flags and must finish before any UI loads.
+    await resumePendingRendererStorageReset({
+      ...migrationOptions,
+      clearSessionStorage: async () => {
+        await win.webContents.session.clearStorageData({
+          storages: ['cookies', 'localstorage', 'cachestorage', 'shadercache', 'serviceworkers'],
+        });
+        win.webContents.session.flushStorageData();
+        await win.webContents.session.clearCache();
+      },
+      resetDurableStorage: () => {
+        resetDurableRendererData(getDatabase());
+      },
+    });
     const migrationResult = await runWebStorageOriginMigration(migrationOptions);
     const resolved = await resolveRendererLoadUrl({
       packaged: app.isPackaged,
@@ -2220,6 +2238,7 @@ function createWindow() {
       migrationCompleted: migrationResult === 'completed',
     });
     if (win.isDestroyed()) return;
+    beforeLoad?.();
     trustedRendererUrl = resolved.url;
     console.debug('[Startup] renderer load source:', resolved.source);
     console.debug('[Startup] renderer URL:', sanitizeLogMessage(resolved.url));
@@ -2247,7 +2266,10 @@ function createWindow() {
     }
     await win.loadURL(resolved.url);
     console.debug('[Startup] renderer loaded:', sanitizeLogMessage(win.webContents.getURL()));
-  })().catch((e: unknown) => {
+  };
+  reloadMainRenderer = loadRenderer;
+  rendererLoadPromise = loadRenderer();
+  void rendererLoadPromise.catch((e: unknown) => {
     console.error(
       '[main] Failed to load renderer:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
@@ -2257,6 +2279,8 @@ function createWindow() {
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
+    reloadMainRenderer = null;
+    rendererLoadPromise = null;
   });
   win.on('close', () => {
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
@@ -5096,17 +5120,35 @@ ipcMain.handle('session:clearData', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
+  let resumeIpc: (() => void) | undefined;
+  let resetStarted = false;
   try {
-    const win = BrowserWindow.getAllWindows()[0];
-    if (!win) return;
-    await win.webContents.session.clearStorageData({
-      storages: ['cookies', 'localstorage', 'cachestorage', 'shadercache', 'serviceworkers'],
-    });
-    await win.webContents.session.clearCache();
+    const win = mainWindow;
+    const reload = reloadMainRenderer;
+    if (!reload || event.sender !== win?.webContents) {
+      throw new Error('Data reset requires the main renderer');
+    }
+    // Suspend synchronously: a second clear or queued store write cannot pass its IPC guard.
+    resumeIpc = suspendIpcSender(win.webContents);
+    // Finish any startup health probe before it can race the explicit reset baseline.
+    await rendererLoadPromise;
+    // A rename may persist the intent even if its final directory fsync throws: stay fenced.
+    resetStarted = true;
+    beginRendererStorageReset({ userDataPath: app.getPath('userData') });
+    // Destroy React stores and their retry journals before clearing persistent data. Queued IPC
+    // is fenced until reset and migration finish; branch-owned durable writes are synchronous.
+    await win.loadURL('about:blank');
+    rendererLoadPromise = reload(resumeIpc);
+    await rendererLoadPromise;
   } catch (err) {
+    if (!resetStarted) resumeIpc?.();
     console.error(
       '[IPC] session:clearData failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    dialog.showErrorBox(
+      'Mesh-Client — Data Reset Failed',
+      'The data reset could not finish. Restart Mesh Client to retry before opening your data.',
     );
     throw err;
   }

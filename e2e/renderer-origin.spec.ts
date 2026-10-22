@@ -237,4 +237,107 @@ test.describe('packaged renderer origin migration', () => {
     await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible();
     expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
   });
+
+  test('explicit clear reloads without restoring recovery data or queued durable writes', async () => {
+    test.setTimeout(180_000);
+    writeFileSync(
+      path.join(userDataDir, 'seed.json'),
+      JSON.stringify({
+        [LEGACY_MARKER]: 'must be deleted',
+        'mesh-client:mecpBlockedSenders': BLOCKED,
+      }),
+    );
+    await launch({ MESH_E2E_SEED_LEGACY: '1' });
+    await expect.poll(() => existsSync(path.join(userDataDir, 'seed-complete'))).toBe(true);
+    await stop();
+    await launch();
+    let page = await app!.firstWindow();
+    await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible();
+    await page.evaluate(async (blocked) => {
+      const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+      for (const key of [
+        'chatLastRead:meshtastic',
+        'chatLastRead:meshcore',
+        'chatLastRead:reticulum',
+        'roomsLastRead:meshcore',
+        'rrcLastRead',
+      ]) {
+        await api.appSettings.set(key, '{"saved":123}');
+      }
+      await api.appSettings.set('mecpBlockedSenders', blocked);
+      await api.appSettings.set(
+        'takRelayPrefs',
+        JSON.stringify({ state: { byIdentity: { old: {} }, retiredRooms: null }, version: 3 }),
+      );
+      await api.appSettings.set('locale', 'en');
+      await api.db.saveIncidents({ incidents: {}, resolvedTombstones: { old: Date.now() } });
+      localStorage.setItem(
+        'mesh-client:durablePending:mecpBlockedSenders',
+        JSON.stringify({ baseline: blocked, value: blocked }),
+      );
+    }, BLOCKED);
+    const reloaded = page.waitForEvent('framenavigated', {
+      predicate: (frame) =>
+        frame === page.mainFrame() && frame.url() === 'mesh-client://renderer/index.html',
+    });
+    await page.evaluate((blocked) => {
+      const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+      void api.clearSessionData().catch(() => {});
+      // Both requests are queued from the old trusted document. Reset must synchronously fence them.
+      void api.appSettings.set('mecpBlockedSenders', blocked).catch(() => {});
+      void api.clearSessionData().catch(() => {});
+      setTimeout(
+        () => void api.appSettings.set('mecpBlockedSenders', blocked).catch(() => {}),
+        100,
+      );
+    }, BLOCKED);
+    await reloaded;
+
+    async function expectCleared(): Promise<void> {
+      await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible();
+      const state = await page.evaluate(async () => {
+        const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+        return {
+          marker: localStorage.getItem('mesh-client:origin-e2e-marker'),
+          journal: localStorage.getItem('mesh-client:durablePending:mecpBlockedSenders'),
+          settings: await api.appSettings.getAll(),
+          incidents: await api.db.getIncidents(),
+        };
+      });
+      expect(state).toMatchObject({
+        marker: null,
+        journal: null,
+        incidents: { incidents: {}, resolvedTombstones: {} },
+        settings: {
+          'chatLastRead:meshtastic': '{}',
+          'chatLastRead:meshcore': '{}',
+          'chatLastRead:reticulum': '{}',
+          'roomsLastRead:meshcore': '{}',
+          rrcLastRead: '{}',
+          mecpBlockedSenders: '{"state":{"blocked":{}},"version":1}',
+          takRelayPrefs: '{"state":{"byIdentity":{},"retiredRooms":null},"version":3}',
+          locale: 'en',
+        },
+      });
+      expect(
+        JSON.parse(
+          readFileSync(
+            path.join(userDataDir, 'migration/legacy-file-origin-web-storage-v1.json'),
+            'utf8',
+          ),
+        ),
+      ).toMatchObject({ entries: {}, keyCount: 0 });
+    }
+    await expectCleared();
+    expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
+    await stop();
+    await launch();
+    page = await app!.firstWindow();
+    await expectCleared();
+    await stop();
+    await launch({ MESH_CLIENT_FORCE_FILE_ORIGIN: '1' });
+    page = await app!.firstWindow();
+    await expectCleared();
+    expect(page.url()).toMatch(/^file:/);
+  });
 });

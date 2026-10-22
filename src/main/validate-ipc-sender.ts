@@ -1,12 +1,28 @@
-import { app, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import { app, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from 'electron';
 
 import { RENDERER_HOST, RENDERER_SCHEME } from '@/shared/rendererOrigin';
 
+const suspendedSenders = new WeakSet<WebContents>();
+
+/** Fence queued renderer writes while explicit data reset unloads the old document. */
+export function suspendIpcSender(sender: WebContents): () => void {
+  suspendedSenders.add(sender);
+  return () => suspendedSenders.delete(sender);
+}
+
 /** Validate IPC sender origin to prevent untrusted renderers from invoking privileged handlers. */
 export function validateIpcSender(event: IpcMainInvokeEvent | IpcMainEvent): boolean {
+  if (suspendedSenders.has(event.sender)) return false;
   const frame = event.senderFrame;
   if (!frame) return false;
   try {
+    if (
+      frame.detached ||
+      event.processId !== frame.processId ||
+      event.frameId !== frame.routingId
+    ) {
+      return false;
+    }
     const url = new URL(frame.url);
     const isRendererOrigin =
       url.protocol === `${RENDERER_SCHEME}:` &&

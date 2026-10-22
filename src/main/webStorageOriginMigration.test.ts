@@ -19,10 +19,13 @@ import type {
   WebStorageOriginMigrationOptions,
 } from './webStorageOriginMigration';
 import {
+  beginRendererStorageReset,
   checkRendererOriginStorageHealth,
   LEGACY_STORAGE_EXPORT_FILENAME,
   RENDERER_ORIGIN_STATE_FILENAME,
   RENDERER_ORIGIN_STORAGE_SENTINEL_KEY,
+  RENDERER_STORAGE_RESET_FILENAME,
+  resumePendingRendererStorageReset,
   runWebStorageOriginMigration,
 } from './webStorageOriginMigration';
 
@@ -167,6 +170,155 @@ describe('renderer origin migration', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     fs.rmSync(directory, { recursive: true, force: true });
+  });
+
+  describe('explicit local data reset', () => {
+    function resetOptions() {
+      return {
+        userDataPath: directory,
+        appVersion: options.appVersion,
+        clearSessionStorage: vi.fn(() => {
+          legacy.clear();
+          target.clear();
+          return Promise.resolve();
+        }),
+        resetDurableStorage: vi.fn(),
+      };
+    }
+
+    it('replaces the historical baseline only after explicit clear and never restores it on restart', async () => {
+      await runWebStorageOriginMigration(options);
+      const reset = resetOptions();
+      beginRendererStorageReset(options);
+      expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME).phase).toBe('pending');
+      expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME).keyCount).toBe(3);
+      await resumePendingRendererStorageReset(reset);
+      expect(reset.clearSessionStorage).toHaveBeenCalledOnce();
+      expect(reset.resetDurableStorage).toHaveBeenCalledOnce();
+      expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME).entries).toEqual({});
+      expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME).phase).toBe('completed');
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(targetEntriesWithoutSentinel()).toEqual({});
+      target.clear();
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(targetEntriesWithoutSentinel()).toEqual({});
+      expect(legacy.size).toBe(0);
+
+      target.set('new-setting', 'created after reset');
+      await resumePendingRendererStorageReset(reset);
+      expect(reset.clearSessionStorage).toHaveBeenCalledOnce();
+      expect(target.get('new-setting')).toBe('created after reset');
+    });
+
+    it('blocks migration and live repair until an interrupted reset has finished', async () => {
+      await runWebStorageOriginMigration(options);
+      const reset = resetOptions();
+      beginRendererStorageReset(options);
+      reset.clearSessionStorage.mockRejectedValueOnce(new Error('clear failed'));
+      await expect(resumePendingRendererStorageReset(reset)).rejects.toThrow('clear failed');
+      expect(reset.resetDurableStorage).not.toHaveBeenCalled();
+      expect(await runWebStorageOriginMigration(options)).toBe('failed');
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
+      expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME).phase).toBe('pending');
+      await resumePendingRendererStorageReset(reset);
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(targetEntriesWithoutSentinel()).toEqual({});
+    });
+
+    it.each([ENV_FORCE_FILE_ORIGIN, ENV_SKIP_ORIGIN_MIGRATION])(
+      'retries reset before opening legacy storage when %s is enabled',
+      async (flag) => {
+        await runWebStorageOriginMigration(options);
+        const reset = resetOptions();
+        beginRendererStorageReset(options);
+        reset.resetDurableStorage.mockImplementationOnce(() => {
+          throw new Error('database busy');
+        });
+        await expect(resumePendingRendererStorageReset(reset)).rejects.toThrow('database busy');
+        // A partially cleared origin or a late old-process write is cleared again on restart.
+        legacy.set('late-old-value', 'must not survive');
+        options.env = { [flag]: '1' };
+        await resumePendingRendererStorageReset(reset);
+        expect(await runWebStorageOriginMigration(options)).toBe('skipped');
+        expect(legacy.size).toBe(0);
+        expect(target.size).toBe(0);
+        options.env = {};
+        expect(await runWebStorageOriginMigration(options)).toBe('completed');
+        expect(targetEntriesWithoutSentinel()).toEqual({});
+      },
+    );
+
+    it.each([
+      LEGACY_STORAGE_EXPORT_FILENAME,
+      RENDERER_ORIGIN_STATE_FILENAME,
+      RENDERER_STORAGE_RESET_FILENAME,
+    ])('retries destructive clear if committing %s is interrupted', async (filename) => {
+      await runWebStorageOriginMigration(options);
+      const reset = resetOptions();
+      beginRendererStorageReset(options);
+      const rename = fs.renameSync;
+      vi.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+        if (String(to).endsWith(filename)) throw new Error('interrupted reset commit');
+        rename(from, to);
+      });
+      await expect(resumePendingRendererStorageReset(reset)).rejects.toThrow('interrupted');
+      expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME).phase).toBe('pending');
+      vi.restoreAllMocks();
+      legacy.set('late-write', 'old');
+      target.set('late-write', 'old');
+      await resumePendingRendererStorageReset(reset);
+      expect(reset.clearSessionStorage).toHaveBeenCalledTimes(2);
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(targetEntriesWithoutSentinel()).toEqual({});
+    });
+
+    it('does not clear any storage when persisting the reset intent fails', async () => {
+      await runWebStorageOriginMigration(options);
+      const original = readArtifact(LEGACY_STORAGE_EXPORT_FILENAME);
+      vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+        throw new Error('disk full');
+      });
+      expect(() => {
+        beginRendererStorageReset(options);
+      }).toThrow('disk full');
+      expect(legacy.size).toBe(3);
+      expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME)).toEqual(original);
+    });
+
+    it.skipIf(process.platform === 'win32')(
+      'retries a reset intent that was renamed before its directory flush failed',
+      async () => {
+        await runWebStorageOriginMigration(options);
+        const sync = fs.fsyncSync;
+        vi.spyOn(fs, 'fsyncSync').mockImplementation((descriptor) => {
+          if (fs.fstatSync(descriptor).isDirectory()) throw new Error('directory flush failed');
+          sync(descriptor);
+        });
+        expect(() => {
+          beginRendererStorageReset(options);
+        }).toThrow('directory flush failed');
+        expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME).phase).toBe('pending');
+        expect(await runWebStorageOriginMigration(options)).toBe('failed');
+        vi.restoreAllMocks();
+        await resumePendingRendererStorageReset(resetOptions());
+        expect(await runWebStorageOriginMigration(options)).toBe('completed');
+        expect(targetEntriesWithoutSentinel()).toEqual({});
+      },
+    );
+
+    it('preserves unsupported reset journals and refuses to open their data', async () => {
+      await runWebStorageOriginMigration(options);
+      const unknown = { formatVersion: 2, phase: 'pending' };
+      overwriteArtifact(RENDERER_STORAGE_RESET_FILENAME, unknown);
+      const reset = resetOptions();
+      await expect(resumePendingRendererStorageReset(reset)).rejects.toThrow('unsupported');
+      expect(() => {
+        beginRendererStorageReset(options);
+      }).toThrow('unsupported');
+      expect(reset.clearSessionStorage).not.toHaveBeenCalled();
+      expect(await runWebStorageOriginMigration(options)).toBe('failed');
+      expect(readArtifact(RENDERER_STORAGE_RESET_FILENAME)).toEqual(unknown);
+    });
   });
 
   it('seeds before import, independently verifies every string, and preserves the legacy copy', async () => {
@@ -355,6 +507,129 @@ describe('renderer origin migration', () => {
     expect(await runWebStorageOriginMigration(options)).toBe('failed');
     expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).phase).toBe('verified');
     expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).completedVersion).toBeUndefined();
+  });
+
+  it('reads the checked descriptor when the migration pathname is replaced after fstat', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const statePath = path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME);
+    const fstat = fs.fstatSync;
+    const close = vi.spyOn(fs, 'closeSync');
+    const inspected = vi.spyOn(fs, 'fstatSync').mockImplementationOnce((descriptor) => {
+      const stats = fstat(descriptor);
+      fs.renameSync(statePath, path.join(directory, 'original-state.json'));
+      fs.writeFileSync(statePath, 'replacement must not be read');
+      return stats;
+    });
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(fs.readFileSync(statePath, 'utf8')).toBe('replacement must not be read');
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
+  });
+
+  it('continues through short reads and growth within the migration file limit', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const statePath = path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME);
+    const state = fs.readFileSync(statePath);
+    fs.writeFileSync(statePath, '{');
+    const fstat = fs.fstatSync;
+    vi.spyOn(fs, 'fstatSync').mockImplementationOnce((descriptor) => {
+      const stats = fstat(descriptor);
+      fs.writeFileSync(statePath, state);
+      return stats;
+    });
+    const read = fs.readSync;
+    const reads = vi.spyOn(fs, 'readSync').mockImplementation((descriptor, buffer, readOptions) =>
+      read(descriptor, buffer, {
+        ...readOptions,
+        length: Math.min(readOptions?.length ?? buffer.byteLength, 7),
+      }),
+    );
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(reads.mock.calls.length).toBeGreaterThan(2);
+  });
+
+  it('rejects an oversized open migration file without reading it and closes the descriptor', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const statePath = path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME);
+    fs.truncateSync(statePath, 64 * 1024 * 1024 + 1);
+    const fstat = fs.fstatSync;
+    const inspected = vi.spyOn(fs, 'fstatSync');
+    const read = vi.spyOn(fs, 'readSync');
+    const close = vi.spyOn(fs, 'closeSync');
+    windows = [];
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(windows).toHaveLength(0);
+    expect(read).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
+  });
+
+  it('reads at most 64 MiB plus one detection byte when an open migration file grows', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const limit = 64 * 1024 * 1024;
+    const statePath = path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME);
+    const fstat = fs.fstatSync;
+    const inspected = vi.spyOn(fs, 'fstatSync').mockImplementationOnce((descriptor) => {
+      const stats = fstat(descriptor);
+      fs.truncateSync(statePath, limit + 1024);
+      return stats;
+    });
+    const read = fs.readSync;
+    let bytesRead = 0;
+    vi.spyOn(fs, 'readSync').mockImplementation((descriptor, buffer, readOptions) => {
+      const count = read(descriptor, buffer, readOptions);
+      bytesRead += count;
+      return count;
+    });
+    const close = vi.spyOn(fs, 'closeSync');
+    windows = [];
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(bytesRead).toBe(limit + 1);
+    expect(windows).toHaveLength(0);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.any(String),
+      'Renderer origin migration file exceeds size limit',
+    );
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
+  });
+
+  it('only treats ENOENT from opening as missing, and closes after a later metadata error', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const fstat = fs.fstatSync;
+    const inspected = vi
+      .spyOn(fs, 'fstatSync')
+      .mockImplementationOnce(() => fs.statSync(path.join(directory, 'nonexistent')));
+    const close = vi.spyOn(fs, 'closeSync');
+    windows = [];
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(windows).toHaveLength(0);
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
+  });
+
+  it('closes an opened migration file when reading fails', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const fstat = fs.fstatSync;
+    const inspected = vi.spyOn(fs, 'fstatSync');
+    vi.spyOn(fs, 'readSync').mockImplementationOnce(() => {
+      throw new Error('EIO');
+    });
+    const close = vi.spyOn(fs, 'closeSync');
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
+  });
+
+  it('closes an opened migration file when JSON parsing fails', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    fs.writeFileSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME), '{');
+    const fstat = fs.fstatSync;
+    const inspected = vi.spyOn(fs, 'fstatSync');
+    const close = vi.spyOn(fs, 'closeSync');
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(close).toHaveBeenCalledWith(inspected.mock.calls[0][0]);
+    expect(() => fstat(inspected.mock.calls[0][0])).toThrow(/EBADF/);
   });
 
   it.each(['export checksum', 'export shape', 'state JSON', 'future version'])(

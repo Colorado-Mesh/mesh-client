@@ -3,10 +3,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   DURABLE_RENDERER_SETTING_MAX_LENGTH,
+  DURABLE_RENDERER_STORAGE_KEYS,
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
 } from '../shared/rendererOrigin';
 import { NodeSqliteDB } from './db-compat';
-import { seedDurableRendererSettings } from './durableRendererSettings';
+import { runSchemaUpgrade } from './db-schema-sync';
+import { resetDurableRendererData, seedDurableRendererSettings } from './durableRendererSettings';
+import { getIncidentsOn, seedIncidentsOn } from './incident-database';
 
 describe('legacy renderer settings migration', () => {
   let db: NodeSqliteDB;
@@ -93,4 +96,171 @@ describe('legacy renderer settings migration', () => {
       count: 0,
     });
   });
+});
+
+describe('explicit durable renderer data reset', () => {
+  let db: NodeSqliteDB;
+  let existingSettings: Record<string, string>;
+  const legacySettings = Object.fromEntries(
+    DURABLE_RENDERER_STORAGE_MIGRATIONS.map(([legacy]) => [legacy, '{"saved":123}']),
+  );
+  const legacyIncidents = JSON.stringify({
+    state: {
+      incidents: {
+        emergency: {
+          id: 'emergency',
+          protocol: 'meshtastic',
+          protocolsSeen: ['meshtastic'],
+          severity: 0,
+          codes: ['M01'],
+          freetext: 'Help',
+          senderId: '7',
+          senderName: 'Seven',
+          channel: 'LongFast',
+          receivedAt: 1000,
+          lastSeenAt: 2000,
+          coordsSource: null,
+          messageIds: ['msg'],
+          ackCount: 0,
+          ackPeerIds: [],
+          beaconActive: false,
+          beaconAcked: false,
+          isDrill: false,
+          status: 'open',
+          events: [{ at: 1000, kind: 'received', protocol: 'meshtastic' }],
+        },
+      },
+      resolvedTombstones: { resolved: 1500 },
+    },
+    version: 3,
+  });
+  const emptyIncidents = { incidents: {}, resolvedTombstones: {} };
+
+  const readSettings = (): Record<string, string> =>
+    Object.fromEntries(
+      (
+        db.prepareOnce('SELECT key, value FROM app_settings').all() as {
+          key: string;
+          value: string;
+        }[]
+      ).map(({ key, value }) => [key, value]),
+    );
+
+  const expectedEmptySettings = (): Record<string, string> => {
+    const keys = DURABLE_RENDERER_STORAGE_KEYS;
+    return {
+      ...existingSettings,
+      [keys.chatLastRead.meshtastic]: '{}',
+      [keys.chatLastRead.meshcore]: '{}',
+      [keys.chatLastRead.reticulum]: '{}',
+      [keys.roomsLastRead]: '{}',
+      [keys.rrcLastRead]: '{}',
+      [keys.mecpBlockedSenders]: JSON.stringify({ state: { blocked: {} }, version: 1 }),
+      [keys.takRelayPrefs]: JSON.stringify({
+        state: { byIdentity: {}, retiredRooms: null },
+        version: 3,
+      }),
+    };
+  };
+
+  beforeEach(() => {
+    db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    existingSettings = readSettings();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('empties all migrated domains and tombstones while preserving unrelated SQLite settings', () => {
+    seedDurableRendererSettings(db, legacySettings);
+    seedIncidentsOn(db, legacyIncidents);
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run('locale', 'de');
+
+    resetDurableRendererData(db);
+
+    expect(readSettings()).toEqual({ ...expectedEmptySettings(), locale: 'de' });
+    expect(getIncidentsOn(db)).toEqual(emptyIncidents);
+    expect(db.prepareOnce('SELECT id, initialized FROM emergency_incident_storage').all()).toEqual([
+      { id: 1, initialized: 1 },
+    ]);
+  });
+
+  it('prevents preserved exports from resurrecting data after reset and repeated startup retries', () => {
+    seedDurableRendererSettings(db, legacySettings);
+    seedIncidentsOn(db, legacyIncidents);
+    resetDurableRendererData(db);
+    resetDurableRendererData(db);
+    seedDurableRendererSettings(db, { ...legacySettings, 'mesh-client:lastRead': '{"ch:0":9000}' });
+
+    expect(seedIncidentsOn(db, legacyIncidents)).toEqual(emptyIncidents);
+    expect(readSettings()).toEqual(expectedEmptySettings());
+  });
+
+  it('records an explicit reset before any legacy import so later caches stay empty', () => {
+    resetDurableRendererData(db);
+    seedDurableRendererSettings(db, legacySettings);
+    expect(seedIncidentsOn(db, legacyIncidents)).toEqual(emptyIncidents);
+    expect(readSettings()).toEqual(expectedEmptySettings());
+  });
+
+  it('rolls every setting and incident deletion back when the final marker write fails', () => {
+    seedDurableRendererSettings(db, legacySettings);
+    const incidents = seedIncidentsOn(db, legacyIncidents);
+    const settings = readSettings();
+    db.execScript(`CREATE TRIGGER fail_reset_marker BEFORE INSERT ON emergency_incident_storage
+      BEGIN SELECT RAISE(ABORT, 'simulated reset failure'); END;`);
+
+    expect(() => {
+      resetDurableRendererData(db);
+    }).toThrow('simulated reset failure');
+
+    expect(readSettings()).toEqual(settings);
+    expect(getIncidentsOn(db)).toEqual(incidents);
+    expect(db.prepareOnce('SELECT id, initialized FROM emergency_incident_storage').all()).toEqual([
+      { id: 1, initialized: 1 },
+    ]);
+  });
+
+  it.each(['OFF', 'NORMAL', 'FULL', 'EXTRA'])(
+    'commits with FULL durability and restores the previous %s synchronous mode',
+    (mode) => {
+      db.pragma(`synchronous = ${mode}`);
+      const previous = db.pragma('synchronous', { simple: true });
+      db.execScript(`CREATE TRIGGER require_full_durability BEFORE INSERT ON emergency_incident_storage
+        WHEN (SELECT synchronous FROM pragma_synchronous) <> 2
+        BEGIN SELECT RAISE(ABORT, 'reset must run with synchronous FULL'); END;`);
+
+      resetDurableRendererData(db);
+
+      expect(readSettings()).toEqual(expectedEmptySettings());
+      expect(db.pragma('synchronous', { simple: true })).toBe(previous);
+    },
+  );
+
+  it.each(['OFF', 'NORMAL', 'FULL', 'EXTRA'])(
+    'restores the previous %s synchronous mode after reset rollback',
+    (mode) => {
+      seedDurableRendererSettings(db, legacySettings);
+      const incidents = seedIncidentsOn(db, legacyIncidents);
+      const settings = readSettings();
+      db.pragma(`synchronous = ${mode}`);
+      const previous = db.pragma('synchronous', { simple: true });
+      db.execScript(`CREATE TRIGGER fail_durable_reset BEFORE INSERT ON emergency_incident_storage
+        BEGIN
+          SELECT CASE WHEN (SELECT synchronous FROM pragma_synchronous) <> 2
+            THEN RAISE(ABORT, 'reset must run with synchronous FULL') END;
+          SELECT RAISE(ABORT, 'simulated durable reset failure');
+        END;`);
+
+      expect(() => {
+        resetDurableRendererData(db);
+      }).toThrow('simulated durable reset failure');
+
+      expect(readSettings()).toEqual(settings);
+      expect(getIncidentsOn(db)).toEqual(incidents);
+      expect(db.pragma('synchronous', { simple: true })).toBe(previous);
+    },
+  );
 });

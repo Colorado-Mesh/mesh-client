@@ -55,8 +55,21 @@ interface MigrationState {
 export const RENDERER_ORIGIN_STATE_FILENAME = 'renderer-origin-migration.json';
 export const LEGACY_STORAGE_EXPORT_FILENAME = 'legacy-file-origin-web-storage-v1.json';
 export const RENDERER_ORIGIN_STORAGE_SENTINEL_KEY = 'mesh-client:renderer-origin-migration';
+export const RENDERER_STORAGE_RESET_FILENAME = 'renderer-storage-reset.json';
 const MIGRATION_TIMEOUT_MS = 15 * MS_PER_SECOND;
 const MAX_EXPORT_BYTES = 64 * 1024 * 1024;
+
+export interface RendererStorageResetOptions {
+  userDataPath: string;
+  appVersion: string;
+  clearSessionStorage: () => Promise<void>;
+  resetDurableStorage: () => void | Promise<void>;
+}
+
+interface StorageReset {
+  formatVersion: 1;
+  phase: 'pending' | 'completed';
+}
 
 // No application scripts or preload run on migration.html. Transfer data, never executable source.
 const READ_STORAGE_SCRIPT = `(() => {
@@ -89,7 +102,7 @@ function storageDigest(entries: WebStorageEntries): string {
   return createHash('sha256').update(JSON.stringify(sorted)).digest('hex');
 }
 
-function migrationPath(options: WebStorageOriginMigrationOptions, filename: string): string {
+function migrationPath(options: { userDataPath: string }, filename: string): string {
   return path.join(options.userDataPath, 'migration', filename);
 }
 
@@ -122,14 +135,92 @@ function writeJsonAtomic(filePath: string, value: unknown): void {
 }
 
 function readJsonIfPresent(filePath: string): unknown {
+  let descriptor: number;
   try {
-    if (fs.statSync(filePath).size > MAX_EXPORT_BYTES) {
-      throw new Error('Renderer origin migration file exceeds size limit');
-    }
-    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    descriptor = fs.openSync(filePath, 'r');
   } catch (error) {
     if (isRecord(error) && error.code === 'ENOENT') return undefined;
     throw error;
+  }
+  try {
+    // Check and read the same open file even if its pathname is replaced during migration.
+    if (fs.fstatSync(descriptor).size > MAX_EXPORT_BYTES) {
+      throw new Error('Renderer origin migration file exceeds size limit');
+    }
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    const chunks: Buffer[] = [];
+    let total = 0;
+    // Read one extra byte to detect growth past the cap after fstat, including short reads.
+    while (total <= MAX_EXPORT_BYTES) {
+      const bytesRead = fs.readSync(descriptor, buffer, {
+        offset: 0,
+        length: Math.min(buffer.length, MAX_EXPORT_BYTES - total + 1),
+        position: total,
+      });
+      if (bytesRead === 0) break;
+      total += bytesRead;
+      if (total > MAX_EXPORT_BYTES) {
+        throw new Error('Renderer origin migration file exceeds size limit');
+      }
+      chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+    }
+    return JSON.parse(Buffer.concat(chunks, total).toString('utf8')) as unknown;
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+function readStorageReset(options: { userDataPath: string }): StorageReset | undefined {
+  const value = readJsonIfPresent(migrationPath(options, RENDERER_STORAGE_RESET_FILENAME));
+  if (value === undefined) return undefined;
+  if (
+    !isRecord(value) ||
+    value.formatVersion !== 1 ||
+    (value.phase !== 'pending' && value.phase !== 'completed')
+  ) {
+    throw new Error('Invalid or unsupported renderer storage reset');
+  }
+  return value as unknown as StorageReset;
+}
+
+/** Record explicit deletion before clearing either origin or its durable recovery copies. */
+export function beginRendererStorageReset(options: { userDataPath: string }): void {
+  readStorageReset(options);
+  writeJsonAtomic(migrationPath(options, RENDERER_STORAGE_RESET_FILENAME), {
+    formatVersion: 1,
+    phase: 'pending',
+  } satisfies StorageReset);
+}
+
+/** Run before loading any renderer, including development and forced file-origin recovery. */
+export async function resumePendingRendererStorageReset(
+  options: RendererStorageResetOptions,
+): Promise<void> {
+  if (readStorageReset(options)?.phase !== 'pending') return;
+  await options.clearSessionStorage();
+  await options.resetDurableStorage();
+  const entries = {};
+  const snapshot: StorageExport = {
+    formatVersion: RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
+    capturedAt: new Date().toISOString(),
+    appVersion: options.appVersion,
+    keyCount: 0,
+    sha256: storageDigest(entries),
+    entries,
+  };
+  // Explicit Clear All Local Data is the only operation that replaces the recovery baseline.
+  // Keep the intent pending until both artifacts are durable so every interruption retries clear.
+  writeJsonAtomic(migrationPath(options, LEGACY_STORAGE_EXPORT_FILENAME), snapshot);
+  saveState(options, 'pending', snapshot, false);
+  writeJsonAtomic(migrationPath(options, RENDERER_STORAGE_RESET_FILENAME), {
+    formatVersion: 1,
+    phase: 'completed',
+  } satisfies StorageReset);
+}
+
+function assertStorageResetCompleted(options: { userDataPath: string }): void {
+  if (readStorageReset(options)?.phase === 'pending') {
+    throw new Error('Renderer storage reset must finish before migration or repair');
   }
 }
 
@@ -180,7 +271,7 @@ function readState(options: WebStorageOriginMigrationOptions): MigrationState | 
 }
 
 function saveState(
-  options: WebStorageOriginMigrationOptions,
+  options: { userDataPath: string },
   phase: MigrationPhase,
   snapshot: StorageExport | undefined,
   hasCompleted: boolean,
@@ -359,6 +450,7 @@ export async function runWebStorageOriginMigration(
   let state: MigrationState | undefined;
   let snapshot: StorageExport | undefined;
   try {
+    assertStorageResetCompleted(options);
     state = readState(options);
     snapshot = readStorageExport(options);
     if (state?.hasCompleted) {
@@ -455,6 +547,7 @@ export async function checkRendererOriginStorageHealth(
   let snapshot: StorageExport | undefined;
   let state: MigrationState | undefined;
   try {
+    assertStorageResetCompleted(options);
     state = readState(options);
     snapshot = readStorageExport(options);
     if (state?.phase !== 'completed') throw new Error('Renderer origin migration is not completed');

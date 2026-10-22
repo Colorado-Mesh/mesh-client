@@ -68,6 +68,21 @@ Last-read watermarks, incidents, MECP blocked senders, and TAK relay preferences
 SQLite as their durable source. See [Renderer storage](renderer-storage.md) for store ownership,
 hydration, and write-through behavior.
 
+## Explicit data reset
+
+**Clear All Local Data & Cache** intentionally replaces the retained recovery baseline. Before
+clearing anything, main atomically records a pending `migration/renderer-storage-reset.json`.
+It fences renderer IPC and unloads the old document so in-memory persistence retries cannot
+recreate cleared values. It clears Chromium storage for both origins, resets the newly durable
+watermarks/preferences/incidents (including tombstones), and writes an empty export and migration
+state before recording reset completion. Existing unrelated SQLite preferences are retained.
+The app then loads a fresh renderer and verifies migration normally.
+
+An interrupted reset retries before any UI loads, including when force-file or skip is enabled.
+A failed reset stays pending and cannot invoke snapshot repair or open an old profile. Unsupported
+reset journals also fail closed. Completed resets are not repeated on future launches, and the
+new empty baseline prevents later storage-loss repair from resurrecting intentionally deleted data.
+
 ## Support recovery
 
 Fully quit Mesh Client before relaunching it with a recovery flag. Environment variables apply to
@@ -84,6 +99,7 @@ Recovery artifacts are relative to Electron's actual `app.getPath('userData')`:
 
 - `migration/renderer-origin-migration.json`
 - `migration/legacy-file-origin-web-storage-v1.json`
+- `migration/renderer-storage-reset.json` (present after an explicit local data reset)
 
 The usual macOS location is `~/Library/Application Support/mesh-client/migration/`; custom userData
 paths and development launches can differ. Do not delete the migration directory during support.
@@ -125,6 +141,7 @@ handler to the system browser; they do not depend on an opener relationship with
 - Simulate quota/import/read-back failures in an isolated test profile; completion must not be
   recorded and the main app must use `file://`.
 - Clear only the custom-origin localStorage in a test profile; verify bounded repair or fallback.
+- Use Clear All Local Data, relaunch, and use force-file recovery; old data must remain cleared.
 - Verify fresh-profile startup, both file-origin recovery flags, and forced repair.
 - Check serial re-selection, native BLE, maps, Giphy images, and About/chat links.
 - Check the Support memory card and snapshot both when isolated and under force-file recovery.

@@ -61,3 +61,49 @@ export function seedDurableRendererSettings(
     }
   })();
 }
+
+/**
+ * Explicit user reset of the domains moved out of Chromium storage. Keep canonical empty
+ * records so replaying a preserved origin export cannot seed the deleted data again. The
+ * caller fences renderer writes and clears its cache/journals before allowing another load.
+ */
+export function resetDurableRendererData(db: NodeSqliteDB): void {
+  const keys = DURABLE_RENDERER_STORAGE_KEYS;
+  const emptySettings = [
+    [keys.chatLastRead.meshtastic, '{}'],
+    [keys.chatLastRead.meshcore, '{}'],
+    [keys.chatLastRead.reticulum, '{}'],
+    [keys.roomsLastRead, '{}'],
+    [keys.rrcLastRead, '{}'],
+    [keys.mecpBlockedSenders, JSON.stringify({ state: { blocked: {} }, version: 1 })],
+    [
+      keys.takRelayPrefs,
+      JSON.stringify({ state: { byIdentity: {}, retiredRooms: null }, version: 3 }),
+    ],
+  ];
+  const previousSync = db.pragma('synchronous', { simple: true });
+  const modes = new Map<unknown, string>([
+    [0, 'OFF'],
+    [1, 'NORMAL'],
+    [2, 'FULL'],
+    [3, 'EXTRA'],
+  ]);
+  const restoreSync = modes.get(previousSync);
+  if (restoreSync === undefined) throw new Error('Cannot determine SQLite synchronous mode');
+  // The reset completion file is fsynced. WAL NORMAL does not sync each commit, so the reset
+  // must commit under FULL before that file can durably declare the operation complete.
+  db.pragma('synchronous = FULL');
+  try {
+    db.transaction(() => {
+      const write = db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)');
+      for (const [key, value] of emptySettings) write.run(key, value);
+      db.prepareOnce('DELETE FROM emergency_incidents').run();
+      db.prepareOnce('DELETE FROM emergency_incident_tombstones').run();
+      db.prepareOnce(
+        'INSERT OR REPLACE INTO emergency_incident_storage (id, initialized) VALUES (1, 1)',
+      ).run();
+    })();
+  } finally {
+    db.pragma(`synchronous = ${restoreSync}`);
+  }
+}
