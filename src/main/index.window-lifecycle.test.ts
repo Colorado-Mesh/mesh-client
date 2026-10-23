@@ -1,7 +1,13 @@
 // @vitest-environment node
+import { EventEmitter } from 'node:events';
+import { runInNewContext } from 'node:vm';
+
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { describe, expect, it } from 'vitest';
+import { transpileModule } from 'typescript';
+import { describe, expect, it, vi } from 'vitest';
+
+import { isAllowedRendererNavigation } from './rendererNavigationPolicy';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 
@@ -84,6 +90,105 @@ describe('window close-to-tray behaviour', () => {
 
   it("allow-lists the 'closeToTray' app_settings key", () => {
     expect(INDEX_SOURCE).toContain("'closeToTray',");
+  });
+});
+
+describe('Web Serial window ownership', () => {
+  function serialSelectionHarness(platform: string) {
+    const session = new EventEmitter();
+    const state = {
+      process: { platform },
+      trustedRendererUrl: 'mesh-client://renderer/index.html',
+      isAllowedRendererNavigation,
+      pendingSerialCallback: null as ((portId: string) => void) | null,
+      pendingSerialSelectionTimer: null,
+      lastSerialPortIds: new Set<string>(),
+      clearPendingSerialSelectionTimer: vi.fn(),
+      SERIAL_PORT_SELECTION_TIMEOUT_MS: 120_000,
+      setTimeout: vi.fn(() => 1),
+      console: { debug: vi.fn(), warn: vi.fn() },
+    };
+    const createWindow = () =>
+      Object.assign(new EventEmitter(), {
+        webContents: {
+          session,
+          mainFrame: { url: state.trustedRendererUrl },
+          send: vi.fn(),
+        },
+      });
+    const start = INDEX_SOURCE.indexOf('// ─── Web Serial: Port Selection');
+    const end = INDEX_SOURCE.indexOf('// ─── Web Bluetooth: Device Selection', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    // Execute the actual registration block without booting Electron's main process.
+    const source = `(function (win) {
+      const mainWindow = win;
+      ${INDEX_SOURCE.slice(start, end)}
+    })`;
+    const register = runInNewContext(transpileModule(source, {}).outputText, state) as (
+      window: ReturnType<typeof createWindow>,
+    ) => void;
+    return { session, state, createWindow, register };
+  }
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'only lets the reopened window own its chooser callback on %s',
+    (platform) => {
+      const { session, state, createWindow, register } = serialSelectionHarness(platform);
+      const unrelatedListener = vi.fn();
+      session.on('select-serial-port', unrelatedListener);
+      const original = createWindow();
+      const originalContents = original.webContents;
+      register(original);
+      expect(session.listenerCount('select-serial-port')).toBe(2);
+      Object.defineProperty(original, 'webContents', {
+        get: () => {
+          throw new Error('Window has been destroyed');
+        },
+      });
+      original.emit('closed');
+      expect(session.listeners('select-serial-port')).toEqual([unrelatedListener]);
+
+      const reopened = createWindow();
+      register(reopened);
+      const callback = vi.fn();
+      const event = { preventDefault: vi.fn() };
+      session.emit(
+        'select-serial-port',
+        event,
+        [{ portId: 'new-window-port', portName: 'USB radio' }],
+        reopened.webContents,
+        callback,
+      );
+      expect(event.preventDefault).toHaveBeenCalledOnce();
+      expect(callback).not.toHaveBeenCalled();
+      expect(state.pendingSerialCallback).toBe(callback);
+      state.pendingSerialCallback?.('new-window-port');
+      expect(callback).toHaveBeenCalledExactlyOnceWith('new-window-port');
+      expect(originalContents.send).not.toHaveBeenCalled();
+      expect(reopened.webContents.send).toHaveBeenCalledOnce();
+      expect(unrelatedListener).toHaveBeenCalledOnce();
+      reopened.emit('closed');
+      expect(session.listeners('select-serial-port')).toEqual([unrelatedListener]);
+    },
+  );
+
+  it('keeps selection working when a close request only hides the window to the tray', () => {
+    const { session, state, createWindow, register } = serialSelectionHarness('darwin');
+    const window = createWindow();
+    register(window);
+    window.emit('close', { preventDefault: vi.fn() });
+    expect(session.listenerCount('select-serial-port')).toBe(1);
+    const callback = vi.fn();
+    session.emit(
+      'select-serial-port',
+      { preventDefault: vi.fn() },
+      [],
+      window.webContents,
+      callback,
+    );
+    expect(state.pendingSerialCallback).toBe(callback);
+    expect(callback).not.toHaveBeenCalled();
   });
 });
 

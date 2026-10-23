@@ -5,6 +5,7 @@ import {
   clipboard,
   crashReporter,
   dialog,
+  type Event as ElectronEvent,
   ipcMain,
   Menu,
   MenuItem,
@@ -15,10 +16,12 @@ import {
   powerSaveBlocker,
   protocol,
   screen,
+  type SerialPort,
   type Session,
   shell,
   systemPreferences,
   Tray,
+  type WebContents,
 } from 'electron';
 import fs from 'fs';
 import path from 'path';
@@ -1961,56 +1964,61 @@ function createWindow() {
   // ─── Web Serial: Port Selection ────────────────────────────────────
   // Electron requires this handler for navigator.serial.requestPort()
   // to work. Without it, the Web Serial API throws.
-  mainWindow.webContents.session.on(
-    'select-serial-port',
-    (event, portList, requestingContents, callback) => {
-      event.preventDefault();
-      if (
-        requestingContents !== win.webContents ||
-        !isAllowedRendererNavigation(trustedRendererUrl, requestingContents.mainFrame.url)
-      ) {
-        callback('');
-        return;
+  const serialSession = win.webContents.session;
+  const handleSelectSerialPort = (
+    event: ElectronEvent,
+    portList: SerialPort[],
+    requestingContents: WebContents,
+    callback: (portId: string) => void,
+  ): void => {
+    event.preventDefault();
+    if (
+      requestingContents !== win.webContents ||
+      !isAllowedRendererNavigation(trustedRendererUrl, requestingContents.mainFrame.url)
+    ) {
+      callback('');
+      return;
+    }
+
+    // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
+    if (pendingSerialCallback) {
+      console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
+    }
+
+    // Store callback so we can resolve it when the user picks a port
+    pendingSerialCallback = callback;
+    clearPendingSerialSelectionTimer();
+
+    console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
+
+    // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
+    pendingSerialSelectionTimer = setTimeout(() => {
+      if (pendingSerialCallback === callback) {
+        console.warn('[IPC] Serial port selection callback stale after timeout — auto-cancelling');
+        pendingSerialCallback('');
+        pendingSerialCallback = null;
+        lastSerialPortIds.clear();
       }
+      pendingSerialSelectionTimer = null;
+    }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
 
-      // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
-      if (pendingSerialCallback) {
-        console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
-      }
-
-      // Store callback so we can resolve it when the user picks a port
-      pendingSerialCallback = callback;
-      clearPendingSerialSelectionTimer();
-
-      console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
-
-      // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
-      pendingSerialSelectionTimer = setTimeout(() => {
-        if (pendingSerialCallback === callback) {
-          console.warn(
-            '[IPC] Serial port selection callback stale after timeout — auto-cancelling',
-          );
-          pendingSerialCallback('');
-          pendingSerialCallback = null;
-          lastSerialPortIds.clear();
-        }
-        pendingSerialSelectionTimer = null;
-      }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
-
-      lastSerialPortIds = new Set(portList.map((p) => p.portId));
-      // Send port list to renderer for selection
-      mainWindow?.webContents.send(
-        'serial-ports-discovered',
-        portList.map((p) => ({
-          portId: p.portId,
-          displayName: p.displayName || p.portName || `Port ${p.portId}`,
-          portName: p.portName || '',
-          vendorId: p.vendorId,
-          productId: p.productId,
-        })),
-      );
-    },
-  );
+    lastSerialPortIds = new Set(portList.map((p) => p.portId));
+    // Send port list to renderer for selection
+    mainWindow?.webContents.send(
+      'serial-ports-discovered',
+      portList.map((p) => ({
+        portId: p.portId,
+        displayName: p.displayName || p.portName || `Port ${p.portId}`,
+        portName: p.portName || '',
+        vendorId: p.vendorId,
+        productId: p.productId,
+      })),
+    );
+  };
+  serialSession.on('select-serial-port', handleSelectSerialPort);
+  win.once('closed', () => {
+    serialSession.removeListener('select-serial-port', handleSelectSerialPort);
+  });
 
   // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
   // LoRa BLE uses sidecar GATT on all platforms. Cancel Chromium's chooser so a
