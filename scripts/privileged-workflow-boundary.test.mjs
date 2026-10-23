@@ -102,6 +102,12 @@ describe('privileged workflow boundaries', () => {
       contents: 'write',
       'pull-requests': 'write',
     });
+    const stepNames = licenses.jobs.update.steps.map((step) => step.name);
+    expect(stepNames).toContain(
+      'Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad, rsLXST, lrgp-rs)',
+    );
+    expect(stepNames).toContain('Refuse Rust-section stub');
+    expect(source).toContain('dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8');
     const createPr = licenses.jobs.update.steps.find((step) => step.name === 'Create pull request');
     expect(createPr.with.token).toBe('${{ secrets.LICENSE_PR_TOKEN || github.token }}');
     expect(createPr.with['add-paths'].trim()).toBe('docs/third-party-licenses.md');
