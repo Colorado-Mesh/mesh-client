@@ -14,6 +14,7 @@ import {
   RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
 } from '../shared/rendererOrigin';
 import { MS_PER_SECOND } from '../shared/timeConstants';
+import { normalizeDevServerUrl } from './resolveRendererLoadUrl';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export type WebStorageEntries = Record<string, string>;
@@ -21,7 +22,7 @@ export type RendererOriginMigrationResult = 'completed' | 'skipped' | 'failed';
 export type RendererOriginHealthResult = 'healthy' | 'repaired' | 'failed';
 
 export interface WebStorageOriginMigrationOptions {
-  packaged: boolean;
+  devServerUrl?: string;
   userDataPath: string;
   legacyMigrationUrl: string;
   appVersion: string;
@@ -441,7 +442,7 @@ export async function runWebStorageOriginMigration(
 ): Promise<RendererOriginMigrationResult> {
   const env = options.env ?? process.env;
   if (
-    !options.packaged ||
+    normalizeDevServerUrl(options.devServerUrl) ||
     env[ENV_FORCE_FILE_ORIGIN] === '1' ||
     env[ENV_SKIP_ORIGIN_MIGRATION] === '1'
   ) {
@@ -511,7 +512,7 @@ export async function runWebStorageOriginMigration(
       writeJsonAtomic(migrationPath(options, LEGACY_STORAGE_EXPORT_FILENAME), snapshot);
     }
     saveState(options, 'exported', snapshot, false);
-    // Interrupted attempts (or an unpackaged COI test) may already have written extra keys.
+    // Interrupted attempts may already have written extra keys.
     // Keep them, while the legacy snapshot remains authoritative until the first cutover.
     const current = untrackedCurrent ?? (await readTarget(options));
     await importAndVerify(options, snapshot, { ...current, ...snapshot.entries }, false);
@@ -538,7 +539,7 @@ export async function checkRendererOriginStorageHealth(
 ): Promise<RendererOriginHealthResult> {
   const env = options.env ?? process.env;
   if (
-    !options.packaged ||
+    normalizeDevServerUrl(options.devServerUrl) ||
     env[ENV_FORCE_FILE_ORIGIN] === '1' ||
     env[ENV_SKIP_ORIGIN_MIGRATION] === '1'
   ) {

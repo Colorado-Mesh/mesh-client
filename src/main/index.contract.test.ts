@@ -45,6 +45,20 @@ describe('renderer origin cutover (source contract)', () => {
     expect(hydration).toBeGreaterThan(renderer.indexOf('installDevElectronApiStubIfNeeded();'));
     expect(hydration).toBeLessThan(renderer.indexOf('createRoot(document'));
   });
+
+  it('uses the same explicit renderer override for migration and loading in every launch mode', () => {
+    const loadRenderer = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf('const loadRenderer = async'),
+      INDEX_SOURCE.indexOf('reloadMainRenderer = loadRenderer;'),
+    );
+    expect(loadRenderer).toContain('const devServerUrl = process.env.VITE_DEV_SERVER_URL;');
+    expect(loadRenderer).toMatch(/const migrationOptions = \{\s*devServerUrl,/);
+    expect(loadRenderer).toMatch(/resolveRendererLoadUrl\(\{\s*devServerUrl,/);
+    expect(loadRenderer).not.toContain('packaged:');
+    expect(loadRenderer).toMatch(
+      /if \(resolved\.source === 'custom-protocol'\) \{\s*const health = await checkRendererOriginStorageHealth/,
+    );
+  });
 });
 
 describe('notification audio metadata CSP', () => {

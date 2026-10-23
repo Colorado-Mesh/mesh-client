@@ -116,15 +116,15 @@ cursor still disclose truncation, even if visibility filtering leaves fewer mess
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
 The module is dynamically imported only for explicit generation, uses bundled WASM, disables
-CDN compatibility fallback and suppresses native logging. Vite and the packaged
+CDN compatibility fallback and suppresses native logging. Vite and the built
 `mesh-client://renderer` origin send `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: credentialless`. Packaged builds switch origins only after the
+`Cross-Origin-Embedder-Policy: credentialless`. Both `pnpm start` and installed apps switch origins only after the
 legacy storage copy verifies; failure or a recovery flag keeps `file://`. When
 `crossOriginIsolated` is true, `SharedArrayBuffer` enables about half of
-`navigator.hardwareConcurrency` (capped at 8); otherwise Wllama uses one thread. Unpackaged
-`pnpm start` still uses the built file origin unless a Vite server is available or
-`MESH_CLIENT_USE_CUSTOM_PROTOCOL=1` is set. See [renderer origin and recovery](renderer-origin-coi.md)
-for the migration, recovery flags, and packaged smoke checks, and [renderer storage](renderer-storage.md)
+`navigator.hardwareConcurrency` (capped at 8); otherwise Wllama uses one thread. `pnpm run dev`
+explicitly selects Vite; a running Vite server cannot redirect `pnpm start`. See
+[renderer origin and recovery](renderer-origin-coi.md) for the startup matrix, migration, recovery
+flags, and local/installed smoke checks, and [renderer storage](renderer-storage.md)
 for the SQLite-backed read watermarks. A renderer FIFO queue serializes summaries across engines
 and conversations until streaming or worker completion, rather than just main-process acknowledgement.
 While a Catch up waits behind another job, the card shows a queued status

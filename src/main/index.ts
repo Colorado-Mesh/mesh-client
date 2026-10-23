@@ -2204,8 +2204,9 @@ function createWindow() {
   // Load the app
   const loadRenderer = async (beforeLoad?: () => void) => {
     const distIndexPath = path.join(__dirname, '../../dist/renderer/index.html');
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
     const migrationOptions = {
-      packaged: app.isPackaged,
+      devServerUrl,
       userDataPath: app.getPath('userData'),
       legacyMigrationUrl: pathToFileURL(path.join(__dirname, '../../dist/renderer/migration.html'))
         .href,
@@ -2230,9 +2231,8 @@ function createWindow() {
       },
     });
     const migrationResult = await runWebStorageOriginMigration(migrationOptions);
-    const resolved = await resolveRendererLoadUrl({
-      packaged: app.isPackaged,
-      devServerUrl: process.env.VITE_DEV_SERVER_URL,
+    const resolved = resolveRendererLoadUrl({
+      devServerUrl,
       distIndexPath,
       customProtocolUrl: RENDERER_INDEX_URL,
       migrationCompleted: migrationResult === 'completed',
@@ -2251,7 +2251,7 @@ function createWindow() {
       await win.loadURL(resolved.url, {
         httpReferrer: OSM_HTTP_REFERRER,
       });
-      if (app.isPackaged && resolved.source === 'custom-protocol') {
+      if (resolved.source === 'custom-protocol') {
         const health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents);
         if (win.isDestroyed()) return;
         if (health === 'repaired') {

@@ -1,8 +1,21 @@
 # Renderer origin, isolation, and recovery
 
-Packaged Mesh Client loads `mesh-client://renderer/index.html` only after its legacy `file://`
-localStorage has been exported, copied, and independently verified. Failure keeps the app on
-`file://`. Development normally uses Vite, and explicit E2E file URLs keep their existing behavior.
+Both `pnpm start` and installed Mesh Client load `mesh-client://renderer/index.html` only after
+legacy `file://` localStorage has been exported, copied, and independently verified. Failure
+keeps the app on `file://`. `pnpm run dev` explicitly selects Vite for live development.
+
+| Launch                                                           | Renderer                                                         | Storage migration and isolation                             |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| `pnpm start`                                                     | Rebuilds and loads `mesh-client://renderer/index.html`           | Verifies migration before cutover; COI enabled              |
+| Installed app                                                    | `mesh-client://renderer/index.html`                              | Same migration and verification; COI enabled                |
+| `pnpm run dev`                                                   | Explicit `VITE_DEV_SERVER_URL`, normally `http://localhost:5173` | Vite sends COI headers; built-origin migration does not run |
+| Explicit E2E file URL in `VITE_DEV_SERVER_URL`                   | Requested `file://` document                                     | Keeps file-origin test behavior; no COI                     |
+| Built renderer with force-file or skip flag, or failed migration | Legacy `file://` document                                        | Retains recovery storage; no COI                            |
+
+A server listening on port 5173 cannot change the default built renderer: there is no automatic
+Vite probe. Only an explicit `VITE_DEV_SERVER_URL` selects a development or E2E URL. Custom-origin
+startup always requires verified migration; there is no flag that bypasses the migrator. An explicit
+`mesh-client:` override also uses the canonical built renderer and its migration/health checks.
 
 The document origin uses COOP `same-origin`, COEP **`credentialless`**, and CORP `same-origin`.
 These headers also accompany custom-protocol error responses. Keep the Vite base relative (`./`)
@@ -16,7 +29,8 @@ permit cross-origin embedding. The custom renderer scheme does not bypass CSP.
 
 ## Copy and commit
 
-`src/main/webStorageOriginMigration.ts` runs only for packaged builds. It uses hidden sandboxed
+`src/main/webStorageOriginMigration.ts` runs for built-renderer startup, including `pnpm start`
+and installed builds. It uses hidden sandboxed
 windows with context isolation, no Node integration, no preload, and the main window's default
 session. `migration.html` is inert: it starts no React application or storage-writing hooks.
 Each window operation has a 15-second deadline and destroys its window on success or failure.
@@ -88,12 +102,11 @@ new empty baseline prevents later storage-loss repair from resurrecting intentio
 Fully quit Mesh Client before relaunching it with a recovery flag. Environment variables apply to
 the process that launches Electron; set them in that shell or platform launcher.
 
-| Environment variable set to `1`     | Behavior                                                                                                                         |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `MESH_CLIENT_FORCE_FILE_ORIGIN`     | Uses legacy `file://` storage without migration.                                                                                 |
-| `MESH_CLIENT_SKIP_ORIGIN_MIGRATION` | Skips migration **and stays on `file://`** in packaged builds.                                                                   |
-| `MESH_CLIENT_FORCE_ORIGIN_REPAIR`   | Reapplies missing snapshot keys and verifies, preserving existing target values. Force-file and skip take priority.              |
-| `MESH_CLIENT_USE_CUSTOM_PROTOCOL`   | Unpackaged builds only: loads the built custom-origin renderer without the migrator. Explicit Vite/E2E URLs still take priority. |
+| Environment variable set to `1`     | Behavior                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `MESH_CLIENT_FORCE_FILE_ORIGIN`     | Uses legacy `file://` storage without migration.                                                                    |
+| `MESH_CLIENT_SKIP_ORIGIN_MIGRATION` | Skips migration **and stays on `file://`** for built-renderer startup, including `pnpm start`.                      |
+| `MESH_CLIENT_FORCE_ORIGIN_REPAIR`   | Reapplies missing snapshot keys and verifies, preserving existing target values. Force-file and skip take priority. |
 
 Recovery artifacts are relative to Electron's actual `app.getPath('userData')`:
 
@@ -133,6 +146,7 @@ handler to the system browser; they do not depend on an opener relationship with
 
 ## Release smoke checklist
 
+- Verify `pnpm start` directly using the steps below, and verify the installed app separately.
 - Upgrade a profile with unread watermarks, an incident, a blocked sender, TAK preferences, theme,
   macros, connection settings, MQTT settings, and launcher pins. Verify the data after migration.
 - Check the packaged document origin, `crossOriginIsolated`, worker messages, Catch up thread
@@ -148,3 +162,42 @@ handler to the system browser; they do not depend on an opener relationship with
 
 Unit tests exercise these migration failure points with temporary profiles and actual execution
 of the serialized storage scripts. Packaged Electron smoke remains a separate validation step.
+
+### Verify the normal local start
+
+Fully quit other Mesh Client instances. Use an isolated test profile for migration/reset exercises.
+Remove `VITE_DEV_SERVER_URL` and origin recovery flags from the launch environment, then run the
+actual start script with a free local debugging port. This Bash example creates a fresh profile:
+
+```bash
+mesh_start_profile=$(mktemp -d "${TMPDIR:-/tmp}/mesh-start.XXXXXX")
+pnpm start --remote-debugging-port=9222 --user-data-dir="$mesh_start_profile"
+```
+
+The script rebuilds before launching Electron. Inspect the renderer through a Chromium browser's
+`chrome://inspect` page, configured for `localhost:9222`, and evaluate this in its Console:
+
+```javascript
+({
+  url: location.href,
+  origin: location.origin,
+  isolated: crossOriginIsolated,
+  sharedArrayBuffer: typeof SharedArrayBuffer,
+});
+```
+
+Expect `mesh-client://renderer/index.html`, `mesh-client://renderer`, `true`, and `"function"`.
+Confirm the startup log reports `app.isPackaged: false`, the intended test `userData` directory,
+and the final `renderer loaded` URL. Do not redefine `app.isPackaged` or set a custom renderer URL
+for this check: either would miss the normal `pnpm start` path.
+
+In that profile, verify `migration/renderer-origin-migration.json` records `phase: "completed"`,
+`hasCompleted: true`, and the current migration version. Confirm the recovery export exists without
+printing its private values. For an upgrade test, seed known preferences at the legacy file origin
+before normal startup, verify their imported values, edit/delete a preference, and relaunch to check
+persistence. Test force-file and skip separately; both must load `file://` without losing the export.
+
+Run `pnpm run dev` separately and check its explicit localhost origin, `crossOriginIsolated`, and
+SharedArrayBuffer. Vite isolation, a packaged-mode test fixture, and a signed or unsigned installed
+app are distinct checks; none substitutes for the direct `pnpm start` verification above. Quit the
+test instance after inspection so its debugging port closes.

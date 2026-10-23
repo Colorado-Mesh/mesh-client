@@ -132,10 +132,14 @@ Installers, Flatpak, Gatekeeper, and first-launch failures.
 
 ### Renderer migration: blank window or older preferences
 
-Packaged builds migrate localStorage from `file://` to `mesh-client://renderer` before using the
+Installed apps and `pnpm start` migrate localStorage from `file://` to `mesh-client://renderer` before using the
 new origin. If export, import, or verification fails, the app retains the file origin. Look for
 `Renderer origin migration/health check failed; retaining file origin` and the renderer load
 source in the startup log.
+
+`pnpm run dev` explicitly uses Vite with isolation headers. A Vite server running in another
+terminal does not change `pnpm start`. Use the [startup verification steps](development/renderer-origin-coi.md#verify-the-normal-local-start)
+to confirm the actual document origin, isolation, and migration completion.
 
 For recovery, fully quit the app and launch it with `MESH_CLIENT_FORCE_FILE_ORIGIN=1` in the
 launcher's environment. This uses the retained legacy preferences; changes saved only at the new

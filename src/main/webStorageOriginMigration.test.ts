@@ -12,6 +12,7 @@ import {
   ENV_SKIP_ORIGIN_MIGRATION,
   ENV_USE_CUSTOM_PROTOCOL,
   LATEST_RENDERER_ORIGIN_MIGRATION,
+  RENDERER_INDEX_URL,
   RENDERER_MIGRATION_URL,
 } from '../shared/rendererOrigin';
 import type {
@@ -156,7 +157,6 @@ describe('renderer origin migration', () => {
     corruptVerify = false;
     seed = vi.fn<WebStorageOriginMigrationOptions['seedDurableStorage']>();
     options = {
-      packaged: true,
       userDataPath: directory,
       legacyMigrationUrl: 'file:///dist/renderer/migration.html',
       appVersion: '6.3.0',
@@ -399,14 +399,45 @@ describe('renderer origin migration', () => {
     },
   );
 
-  it('never migrates unpackaged COI tests', async () => {
-    options.packaged = false;
-    options.env = { [ENV_USE_CUSTOM_PROTOCOL]: '1' };
-    expect(await runWebStorageOriginMigration(options)).toBe('skipped');
-    expect(windows).toHaveLength(0);
+  it.each(['http://localhost:5173', 'https://localhost:5173', 'file:///e2e/index.html'])(
+    'does not migrate or inspect storage for an explicit renderer URL %s',
+    async (devServerUrl) => {
+      options.devServerUrl = devServerUrl;
+      options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1', [ENV_USE_CUSTOM_PROTOCOL]: '1' };
+      const contents = contentsForTarget();
+      expect(await runWebStorageOriginMigration(options)).toBe('skipped');
+      expect(await checkRendererOriginStorageHealth(options, contents)).toBe('failed');
+      expect(contents.executeJavaScript).not.toHaveBeenCalled();
+      expect(windows).toHaveLength(0);
+      expect(seed).not.toHaveBeenCalled();
+      expect(fs.readdirSync(directory)).toEqual([]);
+    },
+  );
+
+  it.each([
+    undefined,
+    '',
+    RENDERER_INDEX_URL,
+    'mesh-client://renderer/index.html?test=1#settings',
+    'MESH-CLIENT://renderer/',
+  ])('migrates and checks the built renderer with devServerUrl=%s', async (devServerUrl) => {
+    options.devServerUrl = devServerUrl;
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(targetEntriesWithoutSentinel()).toEqual(Object.fromEntries(legacy));
+    expect(seed).toHaveBeenCalledOnce();
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
   });
 
-  it('does not accept the development custom-protocol flag as a packaged migration bypass', async () => {
+  it('fails an explicit custom-origin launch if storage verification fails', async () => {
+    options.devServerUrl = RENDERER_INDEX_URL;
+    corruptVerify = true;
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(seed).toHaveBeenCalledOnce();
+    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).completedVersion).toBeUndefined();
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
+  });
+
+  it('does not accept the old development custom-protocol flag as a migration bypass', async () => {
     options.env = { [ENV_USE_CUSTOM_PROTOCOL]: '1' };
     corruptVerify = true;
     expect(await runWebStorageOriginMigration(options)).toBe('failed');

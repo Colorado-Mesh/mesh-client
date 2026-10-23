@@ -21,7 +21,7 @@ On a database read failure, keep the current state and log the failure; do not p
 
 ## Origin migration
 
-The `file://` → `mesh-client://renderer` migration seeds SQLite durables before switching the packaged renderer origin. It also copies the remaining localStorage preferences and verifies the imported values. Keep the old origin storage and migration export available for recovery.
+The `file://` → `mesh-client://renderer` migration seeds SQLite durables before switching the built renderer origin, both for `pnpm start` and installed apps. It also copies the remaining localStorage preferences and verifies the imported values. Explicit Vite/E2E URLs do not trigger this cutover. Keep the old origin storage and migration export available for recovery. See the [startup matrix and verification steps](renderer-origin-coi.md) for each launch mode.
 
 This migration moves chat/Rooms/RRC last-read watermarks, MECP blocks and TAK relay preferences to `app_settings`. Incidents use `emergency_incidents`, `emergency_incident_tombstones`, and the singleton `emergency_incident_storage` import marker. The marker is written in the same transaction as the seed, including for an empty store, so a later retry or old export cannot resurrect cleared incidents.
 

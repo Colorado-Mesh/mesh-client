@@ -22,7 +22,7 @@ const BLOCKED = JSON.stringify({
   version: 1,
 });
 
-test.describe('packaged renderer origin migration', () => {
+function defineRendererOriginMigrationTests(packaged: boolean): void {
   let app: ElectronApplication | undefined;
   let userDataDir: string;
 
@@ -37,7 +37,7 @@ test.describe('packaged renderer origin migration', () => {
     Object.assign(env, extraEnv, {
       MESH_E2E_USER_DATA: userDataDir,
       MESH_E2E_PROFILE_TOKEN: authorizeE2eProfile(userDataDir),
-      MESH_E2E_PACKAGED: '1',
+      MESH_E2E_PACKAGED: packaged ? '1' : '0',
     });
     delete env.VITE_DEV_SERVER_URL;
     const args = [
@@ -93,7 +93,7 @@ test.describe('packaged renderer origin migration', () => {
         logs: electronApp.getPath('logs'),
       })),
     ).toEqual({
-      packaged: true,
+      packaged,
       profile: userDataDir,
       session: userDataDir,
       crashDumps: path.join(userDataDir, 'crashDumps'),
@@ -340,4 +340,10 @@ test.describe('packaged renderer origin migration', () => {
     await expectCleared();
     expect(page.url()).toMatch(/^file:/);
   });
-});
+}
+
+for (const packaged of [false, true]) {
+  test.describe(`${packaged ? 'packaged' : 'unpackaged built'} renderer origin migration`, () => {
+    defineRendererOriginMigrationTests(packaged);
+  });
+}
