@@ -57,6 +57,9 @@ export function processMeshcoreWaitingMessageItem(
     if (d.txtType === MESHCORE_TXT_TYPE_CLI_COMMAND) {
       deps.logTransportLineAsDevice(meshcoreRemoteCliAttemptLogLine(prefix));
     } else if (d.txtType === MESHCORE_TXT_TYPE_CLI_DATA) {
+      // Protocol already emits meshcore_cli_response from the same ContactMsgRecv
+      // (syncNextMessage / getWaitingMessages both surface via that emit). Do not
+      // re-dispatch here — that double-appends CLI history for every reply.
       if (senderId !== 0) {
         const sender = deps.workingNodes.get(senderId);
         if (sender) {
@@ -67,34 +70,6 @@ export function processMeshcoreWaitingMessageItem(
           nodesDirty = true;
           updatedNodeIds.push(senderId);
         }
-      }
-      const identityId = deps.meshcoreIdentityId;
-      if (identityId) {
-        const roomNodeIds = new Set<number>();
-        for (const [nodeId, node] of deps.workingNodes) {
-          if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
-        }
-        dispatchMeshcoreWaitingContactMessage(
-          identityId,
-          {
-            pubKeyPrefix: d.pubKeyPrefix,
-            text: d.text,
-            senderTimestamp: d.senderTimestamp,
-            txtType: MESHCORE_TXT_TYPE_CLI_DATA,
-            ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
-          },
-          deps.pubKeyPrefixMap,
-          roomNodeIds,
-          (event, id) => {
-            packetRouter.dispatch(event, id);
-          },
-          deps.logTransportLineAsDevice,
-        );
-      } else {
-        console.warn(
-          '[meshcoreProcessWaitingMessageItem] CLI waiting message skipped (no identityId)',
-          senderId,
-        );
       }
     } else if (senderId === 0) {
       console.warn(
