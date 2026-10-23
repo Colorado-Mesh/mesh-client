@@ -7,6 +7,7 @@ import { join } from 'path';
 import { transpileModule } from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
+import { resolveWindowCloseAction } from '../shared/closeToTray';
 import { isAllowedRendererNavigation } from './rendererNavigationPolicy';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
@@ -98,6 +99,12 @@ describe('Web Serial window ownership', () => {
     const session = new EventEmitter();
     const state = {
       process: { platform },
+      resolveWindowCloseAction,
+      isQuitting: false,
+      isConnected: true,
+      isAnyMqttConnected: () => false,
+      readCloseToTrayEnabled: () => true,
+      tray: {},
       trustedRendererUrl: 'mesh-client://renderer/index.html',
       isAllowedRendererNavigation,
       pendingSerialCallback: null as ((portId: string) => void) | null,
@@ -110,6 +117,8 @@ describe('Web Serial window ownership', () => {
     };
     const createWindow = () =>
       Object.assign(new EventEmitter(), {
+        hide: vi.fn(),
+        minimize: vi.fn(),
         webContents: {
           session,
           mainFrame: { url: state.trustedRendererUrl },
@@ -120,10 +129,15 @@ describe('Web Serial window ownership', () => {
     const end = INDEX_SOURCE.indexOf('// ─── Web Bluetooth: Device Selection', start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
-    // Execute the actual registration block without booting Electron's main process.
+    const closeStart = INDEX_SOURCE.indexOf("win.on('close', (event)");
+    const closeEnd = INDEX_SOURCE.indexOf("win.on('focus'", closeStart);
+    expect(closeStart).toBeGreaterThan(-1);
+    expect(closeEnd).toBeGreaterThan(closeStart);
+    // Execute the actual registration and close handlers without booting Electron.
     const source = `(function (win) {
       const mainWindow = win;
       ${INDEX_SOURCE.slice(start, end)}
+      ${INDEX_SOURCE.slice(closeStart, closeEnd)}
     })`;
     const register = runInNewContext(transpileModule(source, {}).outputText, state) as (
       window: ReturnType<typeof createWindow>,
@@ -173,23 +187,30 @@ describe('Web Serial window ownership', () => {
     },
   );
 
-  it('keeps selection working when a close request only hides the window to the tray', () => {
-    const { session, state, createWindow, register } = serialSelectionHarness('darwin');
-    const window = createWindow();
-    register(window);
-    window.emit('close', { preventDefault: vi.fn() });
-    expect(session.listenerCount('select-serial-port')).toBe(1);
-    const callback = vi.fn();
-    session.emit(
-      'select-serial-port',
-      { preventDefault: vi.fn() },
-      [],
-      window.webContents,
-      callback,
-    );
-    expect(state.pendingSerialCallback).toBe(callback);
-    expect(callback).not.toHaveBeenCalled();
-  });
+  it.each(['linux', 'darwin', 'win32'])(
+    'keeps selection working when closing hides the window to the tray on %s',
+    (platform) => {
+      const { session, state, createWindow, register } = serialSelectionHarness(platform);
+      const window = createWindow();
+      register(window);
+      const closeEvent = { preventDefault: vi.fn() };
+      window.emit('close', closeEvent);
+      expect(closeEvent.preventDefault).toHaveBeenCalledOnce();
+      expect(window.hide).toHaveBeenCalledOnce();
+      expect(window.minimize).not.toHaveBeenCalled();
+      expect(session.listenerCount('select-serial-port')).toBe(1);
+      const callback = vi.fn();
+      session.emit(
+        'select-serial-port',
+        { preventDefault: vi.fn() },
+        [],
+        window.webContents,
+        callback,
+      );
+      expect(state.pendingSerialCallback).toBe(callback);
+      expect(callback).not.toHaveBeenCalled();
+    },
+  );
 });
 
 // ─── Navigation security ──────────────────────────────────────────────────────
