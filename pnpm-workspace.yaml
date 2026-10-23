@@ -76,8 +76,9 @@ overrides:
   # unsupported major on those consumers.
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
-  # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) plus the link-preview
-  # global-address classification API — floor >=10.7.1.
+  # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) plus GHSA-rxp7-6hxx-x8q5
+  # (Address6 zone-id quadratic match) and the link-preview global-address
+  # classification API — floor >=10.7.4.
   # @xmldom/xmldom: GHSA-6gmq-8vp8-gcm6 (+ GHSA-4w3w-2rp5-g8jm /
   # GHSA-w2rr-34g9-rvrj / GHSA-93r5-fhx6-vmg9 / GHSA-8344-3jmq-59r6 /
   # GHSA-6h8r-xr42-gp59 / GHSA-27p8-2357-5qqv / GHSA-c7q8-3ch8-vqpv) —
@@ -99,9 +100,9 @@ overrides:
   baseline-browser-mapping: ^2.11.0
   brace-expansion: ^5.0.9
   builder-util-runtime: ^9.7.0
-  electron: ^44.1.0
+  electron: ^44.9.3
   fast-uri: ^3.1.6
-  ip-address: ^10.7.1
+  ip-address: ^10.7.4
   js-yaml: ^4.3.2
   katex@<0.18.2: '>=0.18.2 <0.19'
   markdown-it@<=14.1.1: '>=14.2.0 <15'
@@ -133,12 +134,3 @@ auditConfig:
     # verifies RSA signatures with node-forge. Remove once a patched release lands
     # (`pnpm run update` / `check:audit-ignores` warns when it does).
     - GHSA-86w9-cpqp-85rv
-    # braces GHSA-vfj7-8cjw-p6xm (<=3.0.3, no patched release): stack exhaustion on deeply
-    # nested patterns. Only reached via markdownlint-cli2 (dev lint) expanding repo-owned
-    # globs; never shipped in the app. Remove once a patched release lands.
-    - GHSA-vfj7-8cjw-p6xm
-    # sprintf-js GHSA-hp3w-g68c-fv3c (<=1.1.3, no patched release): unbounded precision
-    # specifiers can stall formatting. Only reached via electron-builder → @electron/get →
-    # global-agent → roarr while downloading Electron binaries at build time, with
-    # library-owned format strings; never shipped in the app. Remove once a patched release lands.
-    - GHSA-hp3w-g68c-fv3c

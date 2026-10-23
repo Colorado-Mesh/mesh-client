@@ -64,3 +64,7 @@ resources/ai-helper/*
 !resources/ai-helper/README.md
 native/ai/windows/bin/
 native/ai/windows/obj/
+# SwiftPM artifacts from root Package.swift (CodeQL Swift autobuild discovery)
+.build/
+.swiftpm/
+Package.resolved
