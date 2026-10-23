@@ -12,6 +12,10 @@ So the previous workflow that ran `github/codeql-action` with a custom `config-f
 
 Default setup already runs JavaScript/TypeScript analysis on push/PR; no separate workflow is required for scanning to occur.
 
+## Swift (`native/ai/apple`)
+
+The Apple OS-AI helper is a single-file `swiftc` build (`scripts/build-ai-helper.mjs`). CodeQL Swift **default-setup autobuild** only discovers an Xcode project or `Package.swift` at the **repository root** (a nested package under `native/ai/apple/` is invisible and fails with `[no-project-found]`). The root `Package.swift` points its executable target at `native/ai/apple/main.swift` so autobuild can run; packaging still uses the `swiftc` + `lipo` path, not `swift build`.
+
 ## `js/insecure-temporary-file` (tests and scripts)
 
 CodeQL flags `writeFile` / `writeFileSync` / similar to a **predictable** path under the OS temp directory (e.g. `path.join(os.tmpdir(), 'fake-sidecar')`). This commonly appears in Vitest fixtures and repeatedly fails PR Code Scanning.

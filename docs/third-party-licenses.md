@@ -25,8 +25,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
-| i18next                    | MIT                           | ^26.5.3         | 26.5.3            | git+https://github.com/i18next/i18next.git                                     |
-| ip-address                 | MIT                           | ^10.7.1         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
+| i18next                    | MIT                           | ^26.5.5         | 26.5.5            | git+https://github.com/i18next/i18next.git                                     |
+| ip-address                 | MIT                           | ^10.7.4         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.2         | 3.10.2            | git+https://github.com/Stuk/jszip.git                                          |
@@ -37,7 +37,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | mqtt                       | MIT                           | ^5.16.1         | 5.16.1            | git://github.com/mqttjs/MQTT.js.git                                            |
 | node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.0          | 1.4.0             | git+https://github.com/digitalbazaar/forge.git                                 |
 | qrcode                     | MIT                           | ^1.5.4          | 1.5.4             | git://github.com/soldair/node-qrcode.git                                       |
-| react-i18next              | MIT                           | ^17.1.0         | 17.1.0            | git+https://github.com/i18next/react-i18next.git                               |
+| react-i18next              | MIT                           | ^17.1.2         | 17.1.2            | git+https://github.com/i18next/react-i18next.git                               |
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
@@ -58,7 +58,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.64.1         | 1.64.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.21        | 3.14.21           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.22        | 3.14.22           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.8         | 14.6.8            | git+https://github.com/testing-library/user-event.git                                |
@@ -75,8 +75,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | @wllama/wllama                        | MIT             | 3.8.1           | 3.8.1             | git+https://github.com/ngxson/wllama.git                                             |
 | concurrently                          | MIT             | ^9.2.5          | 9.2.5             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^44.1.1         | 44.9.1            | git+https://github.com/electron/electron.git                                         |
-| electron-builder                      | MIT             | ^26.17.0        | 26.17.0           | git+https://github.com/electron-userland/electron-builder.git                        |
+| electron                              | MIT             | ^44.9.3         | 44.9.3            | git+https://github.com/electron/electron.git                                         |
+| electron-builder                      | MIT             | ^26.18.0        | 26.18.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
 | eslint                                | MIT             | ^10.13.0        | 10.13.0           | git+https://github.com/eslint/eslint.git                                             |
@@ -105,11 +105,70 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | tailwindcss                           | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |
 | typescript-eslint                     | MIT             | ^8.72.0         | 8.72.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
-| vite                                  | MIT             | ^8.3.4          | 8.3.4             | git+https://github.com/vitejs/vite.git                                               |
+| vite                                  | MIT             | ^8.3.5          | 8.3.5             | git+https://github.com/vitejs/vite.git                                               |
 | vitest                                | MIT             | ^4.1.12         | 4.1.12            | git+https://github.com/vitest-dev/vitest.git                                         |
 | vitest-axe                            | MIT             | ^1.0.0-pre.5    | 1.0.0-pre.5       | git+https://github.com/chaance/vitest-axe.git                                        |
-| zustand                               | MIT             | ^5.0.15         | 5.0.15            | git+https://github.com/pmndrs/zustand.git                                            |
+| zustand                               | MIT             | ^5.0.16         | 5.0.16            | git+https://github.com/pmndrs/zustand.git                                            |
 
 ## Rust sidecar dependencies
 
-Rust crate licenses are gated by `pnpm run check:rust-licenses` (requires Cargo); run it locally to view this table.
+Licenses for all 396 crates resolved by `reticulum-sidecar/Cargo.lock` (`cargo metadata --locked --all-features`), gated by `pnpm run check:rust-licenses`.
+
+| License                                             | Crates |
+| --------------------------------------------------- | ------ |
+| MIT OR Apache-2.0                                   | 197    |
+| MIT                                                 | 75     |
+| Apache-2.0 OR MIT                                   | 29     |
+| AGPL-3.0-or-later                                   | 15     |
+| MIT/Apache-2.0                                      | 12     |
+| BSD-3-Clause                                        | 7      |
+| Apache-2.0                                          | 5      |
+| Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | 5      |
+| Apache-2.0/MIT                                      | 5      |
+| MIT OR Apache-2.0 OR Zlib                           | 5      |
+| Unlicense OR MIT                                    | 5      |
+| CC0-1.0                                             | 4      |
+| Zlib OR Apache-2.0 OR MIT                           | 3      |
+| BSD-2-Clause OR Apache-2.0 OR MIT                   | 2      |
+| BSD-3-Clause OR Apache-2.0                          | 2      |
+| ISC                                                 | 2      |
+| MIT OR Apache-2.0 OR LGPL-2.1-or-later              | 2      |
+| MIT OR Zlib OR Apache-2.0                           | 2      |
+| MIT/Apache-2.0/BSD-3-Clause                         | 2      |
+| Unlicense/MIT                                       | 2      |
+| (MIT OR Apache-2.0) AND Unicode-3.0                 | 1      |
+| 0BSD OR MIT OR Apache-2.0                           | 1      |
+| Apache-2.0 / MIT                                    | 1      |
+| Apache-2.0 OR BSL-1.0                               | 1      |
+| BSD-2-Clause                                        | 1      |
+| BSD-2-Clause OR MIT OR Apache-2.0                   | 1      |
+| bzip2-1.0.6                                         | 1      |
+| GPL-3.0/MIT                                         | 1      |
+| LGPL-2.1-only AND MIT AND BSD-3-Clause              | 1      |
+| MIT / Apache-2.0                                    | 1      |
+| MIT AND BSD-3-Clause                                | 1      |
+| MIT OR Apache-2.0 OR BSD-1-Clause                   | 1      |
+| MIT OR BSD-3-Clause                                 | 1      |
+| MPL-2.0                                             | 1      |
+| Zlib                                                | 1      |
+
+### Ratspeak stack crates
+
+| Crate          | Version | License                                | Source                                                 |
+| -------------- | ------- | -------------------------------------- | ------------------------------------------------------ |
+| lrgp           | 0.4.1   | MIT                                    | [lrgp-rs](https://github.com/ratspeak/lrgp-rs)         |
+| lxmf-core      | 1.3.0   | AGPL-3.0-or-later                      | [rsLXMF](https://github.com/ratspeak/rsLXMF)           |
+| lxst-codec2    | 0.3.0   | LGPL-2.1-only AND MIT AND BSD-3-Clause | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-core      | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-rns       | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| lxst-telephony | 0.3.0   | AGPL-3.0-or-later                      | [rsLXST](https://github.com/ratspeak/rsLXST)           |
+| nomad-core     | 0.1.0   | AGPL-3.0-or-later                      | [rsNomad](https://github.com/ratspeak/rsNomad)         |
+| rns-crypto     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-identity   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-interface  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-link       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-protocol   | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-ratkey     | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-runtime    | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-transport  | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
+| rns-wire       | 1.3.0   | AGPL-3.0-or-later                      | [rsReticulum](https://github.com/ratspeak/rsReticulum) |
