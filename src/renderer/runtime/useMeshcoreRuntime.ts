@@ -3156,7 +3156,7 @@ export function useMeshcoreRuntime() {
           }
 
           // MQTT private key export runs after other init RPCs to avoid meshcore.js listener races
-          // (Linux Web Bluetooth is especially sensitive).
+          // (BLE init RPCs must complete before key export).
           try {
             await awaitUnlessMeshcoreSetupCancelled(
               setupGen,

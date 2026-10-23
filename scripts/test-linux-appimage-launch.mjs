@@ -105,7 +105,7 @@ export function logShowsStartup(logText) {
  */
 export function logShowsRendererFailure(text) {
   if (typeof text !== 'string' || text.length === 0) return false;
-  return /\[main\] Renderer process gone:|\[main\] Failed to load:|\[main\] Failed to load renderer:|\[main\] child-process-gone:/.test(
+  return /\[main\] Renderer process gone:|\[main\] Failed to load:|\[main\] Failed to load renderer:|\[main\] renderer boot failed:|\[main\] child-process-gone:/.test(
     text,
   );
 }

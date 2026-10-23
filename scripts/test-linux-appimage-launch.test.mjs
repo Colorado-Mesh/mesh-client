@@ -71,6 +71,7 @@ describe('logShowsRendererFailure', () => {
     '[main] Renderer process gone: crashed 1',
     '[main] Failed to load: -6 ERR_FILE_NOT_FOUND file:///app/index.html',
     '[main] Failed to load renderer: boom',
+    '[main] renderer boot failed: Error: SQLite unavailable',
     '[main] child-process-gone: GPU killed exit=15',
   ])('detects %s', (message) => {
     const line = `2026-01-01T00:00:00.000Z [error] [main] ${message}`;

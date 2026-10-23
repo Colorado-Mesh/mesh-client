@@ -7,6 +7,7 @@ describe('message encoder origin validation', () => {
   const worker = {
     onmessage: null as ((event: MessageEvent<WorkerCommand>) => void) | null,
     postMessage,
+    location: { origin: 'mesh-client://renderer' },
   };
   const command: WorkerCommand = {
     type: 'ENCODE_MESSAGE',
@@ -21,6 +22,7 @@ describe('message encoder origin validation', () => {
     vi.resetModules();
     postMessage.mockClear();
     worker.onmessage = null;
+    worker.location.origin = 'mesh-client://renderer';
     vi.stubGlobal('self', worker);
     await import('./messageEncoder.worker');
   });
@@ -39,6 +41,15 @@ describe('message encoder origin validation', () => {
       );
     },
   );
+
+  it('accepts real dedicated-worker messages with an empty event origin only on a trusted worker origin', () => {
+    worker.onmessage?.(new MessageEvent('message', { origin: '', data: command }));
+    expect(postMessage).toHaveBeenCalledOnce();
+    postMessage.mockClear();
+    worker.location.origin = 'https://evil.example';
+    worker.onmessage?.(new MessageEvent('message', { origin: '', data: command }));
+    expect(postMessage).not.toHaveBeenCalled();
+  });
 
   it.each([
     'mesh-client://evil',

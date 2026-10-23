@@ -704,7 +704,7 @@ describe('buildDebugSnapshotAsync', () => {
       supported: true,
       sampling: false,
       failed: false,
-      samples: [{ at: 1234, bytes: 5678 }],
+      samples: [{ at: 1234, bytes: 5678, source: 'renderer-process' }],
     };
     const snapshot = vi
       .spyOn(memorySampler, 'getCoiMemorySnapshot')

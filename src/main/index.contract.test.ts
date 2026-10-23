@@ -56,7 +56,7 @@ describe('renderer origin cutover (source contract)', () => {
     expect(loadRenderer).toMatch(/resolveRendererLoadUrl\(\{\s*devServerUrl,/);
     expect(loadRenderer).not.toContain('packaged:');
     expect(loadRenderer).toMatch(
-      /if \(resolved\.source === 'custom-protocol'\) \{\s*const health = await checkRendererOriginStorageHealth/,
+      /if \(resolved\.source === 'custom-protocol'\) \{\s*let health = await checkRendererOriginStorageHealth/,
     );
   });
 });

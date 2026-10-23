@@ -2,6 +2,7 @@ import {
   DURABLE_RENDERER_SETTING_MAX_LENGTH,
   DURABLE_RENDERER_STORAGE_KEYS,
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
+  RENDERER_STORAGE_DELETION_SETTING_PREFIX,
 } from '../shared/rendererOrigin';
 import type { NodeSqliteDB } from './db-compat';
 
@@ -97,6 +98,9 @@ export function resetDurableRendererData(db: NodeSqliteDB): void {
     db.transaction(() => {
       const write = db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)');
       for (const [key, value] of emptySettings) write.run(key, value);
+      db.prepareOnce('DELETE FROM app_settings WHERE key LIKE ?').run(
+        `${RENDERER_STORAGE_DELETION_SETTING_PREFIX}%`,
+      );
       db.prepareOnce('DELETE FROM emergency_incidents').run();
       db.prepareOnce('DELETE FROM emergency_incident_tombstones').run();
       db.prepareOnce(

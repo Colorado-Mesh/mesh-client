@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ENV_FORCE_FILE_ORIGIN,
   ENV_SKIP_ORIGIN_MIGRATION,
-  ENV_USE_CUSTOM_PROTOCOL,
   RENDERER_INDEX_URL,
 } from '../shared/rendererOrigin';
 import { normalizeDevServerUrl, resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -73,24 +72,11 @@ describe('resolveRendererLoadUrl', () => {
         customProtocolUrl: RENDERER_INDEX_URL,
         migrationCompleted: true,
         devServerUrl: 'http://localhost:5173',
-        env: { [flag]: '1', [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+        env: { [flag]: '1' },
       });
       expect(result.source).toBe('dist');
       expect(result.url).toMatch(/^file:/);
       expect(result.openDevTools).toBe(false);
-    },
-  );
-
-  it.each([false, undefined])(
-    'does not let the old development COI flag bypass migrationCompleted=%s',
-    (migrationCompleted) => {
-      const result = resolveRendererLoadUrl({
-        distIndexPath: '/dist/renderer/index.html',
-        customProtocolUrl: RENDERER_INDEX_URL,
-        migrationCompleted,
-        env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
-      });
-      expect(result.source).toBe('dist');
     },
   );
 
@@ -100,7 +86,7 @@ describe('resolveRendererLoadUrl', () => {
       distIndexPath: '/dist/renderer/index.html',
       customProtocolUrl: RENDERER_INDEX_URL,
       migrationCompleted: true,
-      env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+      env: {},
     });
     expect(result).toEqual({
       url: 'http://localhost:9999',
@@ -123,7 +109,7 @@ describe('resolveRendererLoadUrl', () => {
       distIndexPath: '/unused/index.html',
       customProtocolUrl: RENDERER_INDEX_URL,
       migrationCompleted: true,
-      env: { [ENV_USE_CUSTOM_PROTOCOL]: '1' },
+      env: {},
     });
     expect(result).toEqual({ url, openDevTools: false, source: 'env' });
   });

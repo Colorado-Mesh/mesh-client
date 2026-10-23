@@ -13,6 +13,7 @@ import {
   isMeshcoreSetupAbortError,
   isReticulumSidecarResolveErrorMessage,
 } from './bleConnectErrors';
+import { isDeviceChooserCancel } from './deviceChooserCancel';
 import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
 import {
   bleOwnerI18nKey,
@@ -57,6 +58,7 @@ function runtimePlatform(): RuntimePlatform {
 }
 
 export function humanizeSerialError(err: unknown, t: TFunction): string {
+  if (isDeviceChooserCancel(err)) return '';
   const msg = err instanceof Error ? err.message : String(err);
   const platform = runtimePlatform();
   if (/access denied|permission|not allowed/i.test(msg)) {
@@ -189,12 +191,6 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
       ? t('connectionPanel.humanize.ble.adapterWindowsHint')
       : t('connectionPanel.humanize.ble.adapterGenericHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
-  }
-  if (/User cancelled the requestDevice\(\) chooser/i.test(msg)) {
-    return t('connectionPanel.humanize.prefixedHint', {
-      message: msg,
-      hint: t('connectionPanel.humanize.ble.chooserCancelledHint'),
-    });
   }
   if (/bluetoothctl not found/i.test(msg)) {
     return t('connectionPanel.humanize.prefixedHint', {

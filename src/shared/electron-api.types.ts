@@ -226,7 +226,7 @@ export interface UpdateCheckingPayload {
 export interface GattBleDevice {
   deviceId: string;
   deviceName: string;
-  /** Advertised / last-seen BLE RSSI in dBm; null when unknown (e.g. Linux Web Bluetooth). */
+  /** Advertised / last-seen BLE RSSI in dBm; null when unavailable from the native adapter. */
   rssi?: number | null;
   /**
    * Hardware BLE MAC when the OS exposes one.
@@ -348,6 +348,8 @@ export interface RendererLivenessSnapshot {
   rendererUnresponsiveSeen: boolean;
   rss: number;
   heapUsed: number;
+  /** Physical RAM for the requesting renderer process; distinct from main rss/heapUsed. */
+  rendererProcessMemoryBytes?: number;
 }
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────

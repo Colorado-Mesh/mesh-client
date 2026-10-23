@@ -80,6 +80,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/chatPanelProtocolStorage.test.ts',
   'src/renderer/lib/durableRendererSetting.test.ts',
   'src/renderer/lib/hydrateDurableRendererSettings.test.ts',
+  'src/renderer/lib/rendererStorage.test.ts',
   'src/renderer/lib/chatScrollUtils.test.ts',
   'src/renderer/lib/confettiBurst.test.ts',
   'src/renderer/lib/connectedMeshcoreBleMac.test.ts',

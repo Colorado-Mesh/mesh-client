@@ -1,3 +1,4 @@
+import { setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import { LAST_SERIAL_PORT_KEY } from '@/renderer/lib/serialPortSignature';
 
 const FLASHER_LAST_PORT_KEY = 'mesh-client:flasherLastSerialPortId';
@@ -12,8 +13,8 @@ let provisionCompleted = false;
 export function setFlasherSessionPortId(portId: string): void {
   sessionPortId = portId;
   try {
-    localStorage.setItem(FLASHER_LAST_PORT_KEY, portId);
-    localStorage.setItem(LAST_SERIAL_PORT_KEY, portId);
+    setRendererStorageItem(FLASHER_LAST_PORT_KEY, portId);
+    setRendererStorageItem(LAST_SERIAL_PORT_KEY, portId);
   } catch {
     // catch-no-log-ok localStorage quota or private mode — session still holds portId
   }

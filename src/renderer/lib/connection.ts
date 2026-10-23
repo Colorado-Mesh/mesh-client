@@ -124,7 +124,7 @@ export async function createBleConnection(
   peripheralId?: string,
   sessionId: GattBleSessionId = 'meshtastic',
 ): Promise<MeshDevice> {
-  const connectStartedAt = Date.now();
+  const connectStartedAt = performance.now();
   console.debug(
     `[connection] createBleConnection start peripheralId=${peripheralId ?? 'none'} sessionId=${sessionId}`,
   );
@@ -138,7 +138,7 @@ export async function createBleConnection(
   let lastError: unknown = null;
   return withGattConnectLock(sessionId, async () => {
     for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
-      const attemptStartedAt = Date.now();
+      const attemptStartedAt = performance.now();
       try {
         // Waits out short Reticulum BLE RNode yields instead of hard-failing;
         // peripheral conflict and other errors still fail immediately.
@@ -153,12 +153,15 @@ export async function createBleConnection(
               peripheralId,
               attempt,
               maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
-              totalElapsedMs: Date.now() - connectStartedAt,
+              totalElapsedMs: performance.now() - connectStartedAt,
             })}`,
           );
         }
         console.debug('[connection] createBleConnection connected', peripheralId);
-        console.debug('[connection] createBleConnection elapsedMs', Date.now() - connectStartedAt);
+        console.debug(
+          '[connection] createBleConnection elapsedMs',
+          performance.now() - connectStartedAt,
+        );
         assertTransportReadyForMeshDevice(transport, 'Meshtastic BLE (sidecar GATT)');
         return new MeshDevice(transport);
       } catch (err) {
@@ -175,8 +178,8 @@ export async function createBleConnection(
             attempt,
             maxAttempts: BLE_CONNECT_MAX_ATTEMPTS,
             isTimeout,
-            attemptElapsedMs: Date.now() - attemptStartedAt,
-            totalElapsedMs: Date.now() - connectStartedAt,
+            attemptElapsedMs: performance.now() - attemptStartedAt,
+            totalElapsedMs: performance.now() - connectStartedAt,
             message,
           })}`,
         );

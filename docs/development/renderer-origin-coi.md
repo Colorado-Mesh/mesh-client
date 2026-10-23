@@ -14,7 +14,8 @@ keeps the app on `file://`. `pnpm run dev` explicitly selects Vite for live deve
 
 A server listening on port 5173 cannot change the default built renderer: there is no automatic
 Vite probe. Only an explicit `VITE_DEV_SERVER_URL` selects a development or E2E URL. Custom-origin
-startup always requires verified migration; there is no flag that bypasses the migrator. An explicit
+startup always requires verified migration; there is no flag that bypasses the migrator. The obsolete
+`MESH_CLIENT_USE_CUSTOM_PROTOCOL` opt-in has been removed; built renderer startup now migrates by default. An explicit
 `mesh-client:` override also uses the canonical built renderer and its migration/health checks.
 
 The document origin uses COOP `same-origin`, COEP **`credentialless`**, and CORP `same-origin`.
@@ -61,16 +62,25 @@ where supported and contain private settings; keep their contents out of ordinar
 ## Health and repair
 
 Before a completed installation uses the new origin, and again after its actual main document
-loads, the app checks its migration marker against the saved state and checksummed export.
+loads, the app checks its migration marker against the saved state and checksummed export, and
+checks every exported critical key for presence. A surviving marker alone is not healthy.
 Missing or foreign markers indicate an absent or unverified origin. One repair fills missing
 keys from the recovery snapshot, preserves existing new-origin values, reinstates the marker,
 and verifies the complete result in another window. A repaired live document reloads to hydrate
 its stores. A failed repair demotes completion to `needsRepair` and uses `file://` for that run.
 
-The marker deliberately replaces comparisons against historical key presence. Users can forget
-connections, remove last-used devices, or delete preferences after migrating; valid marker-bearing
-storage must not resurrect those deleted values on the next launch. The initial exact read-back
-still verifies every copied entry. Once migration has completed, the persisted `hasCompleted`
+Intentional Forget actions record per-key deletion intent in SQLite `app_settings` and a synchronous
+localStorage journal before removing the key. Every journal has an ID and originating renderer origin.
+The canonical flag and acknowledgment receipts commit together under SQLite `FULL` durability;
+ordinary writes restore the prior synchronous mode afterward. Recreating a value clears the flag.
+
+Before the first origin copy, main also durably pins the copied source intent. That receipt survives
+later edits, so an untouched file-origin journal or an imported copy left by a crash cannot replay an
+old Forget action. Renderer writes cannot remove these pinned receipts; explicit data reset clears them.
+Health checks honor only pending, unacknowledged current intents. Historical journals inside a recovery
+export or prior partial import never override newer SQLite state. Before first cutover, a readable live
+legacy origin stays authoritative. Failed IPC writes retain the local intent for another edit or startup.
+The initial exact read-back still verifies every copied entry. Once migration has completed, the persisted `hasCompleted`
 flag survives repair failure, so retries cannot revert to overwriting newer values with the old
 snapshot. Automatic repair is bounded; it does not loop indefinitely on quota or renderer errors.
 
@@ -126,12 +136,19 @@ a recovery fallback; no automatic reverse copy or destructive cleanup occurs.
 ## Capabilities and device permissions
 
 With `crossOriginIsolated === true`, SharedArrayBuffer enables the existing bundled Catch up
-WASM thread selection. Worker origin allowlists must include `mesh-client://renderer`. Keep the
+WASM thread selection. Worker origin allowlists must include `mesh-client://renderer`. Dedicated-worker messages have
+an empty `MessageEvent.origin` in Chromium; that path is accepted only when the worker itself
+has an allowlisted origin. The legacy encoder currently has no production importer; artifact
+tests compile its exact source for a synthetic message and decode the result. Keep the
 single-thread path for unavailable isolation and force-file recovery.
 
 The renderer memory sampler uses `performance.measureUserAgentSpecificMemory` only when the
 browser exposes it and isolation is active. Its bounded sample history feeds the Support memory
-card and debug snapshot. These browser-specific measurements are useful for trends; the main
+card and debug snapshot. Electron may expose the browser API but reject it with `SecurityError`; in
+that case the sampler uses the requesting renderer process working-set metric from
+[`app.getAppMetrics()`](https://www.electronjs.org/docs/latest/api/app#appgetappmetrics). The UI and
+sample `source` explicitly identify physical process RAM, and histories reset if measurement
+scope changes. The native fallback remains COI-gated. These measurements are useful for trends; the main
 process's Node heap figure measures a different allocation domain. No full heap profiler or
 automatic leak diagnosis is implied.
 
@@ -201,3 +218,21 @@ Run `pnpm run dev` separately and check its explicit localhost origin, `crossOri
 SharedArrayBuffer. Vite isolation, a packaged-mode test fixture, and a signed or unsigned installed
 app are distinct checks; none substitutes for the direct `pnpm start` verification above. Quit the
 test instance after inspection so its debugging port closes.
+
+### Test an actual packaged artifact
+
+The regular renderer-origin tests exercise production startup through a test bootstrap; their
+`app.isPackaged` override does not qualify a shipped bundle. The separate artifact smoke launches
+the executable directly, asserts a real packaged ASAR, and covers legacy upgrade, COI, synthetic
+Meshtastic encoding, partial critical-key loss, retained newer settings, unchanged recovery export,
+and force-file recovery. On Apple silicon after packaging:
+
+```bash
+MESH_PACKAGED_EXECUTABLE="$PWD/release/mac-arm64/Mesh-client.app/Contents/MacOS/Mesh-client" \
+  pnpm exec playwright test e2e/packaged-artifact.spec.ts
+```
+
+Use the corresponding executable on Windows/Linux. The test creates and removes only its own
+profile. Hands-on checks of external-browser opening, rendered third-party images, actual model
+inference, native BLE, and physical serial remain separate from this automated smoke. Record the
+artifact hash and the result of each check; list any unavailable platform or device explicitly.

@@ -1,3 +1,4 @@
+import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import { isTwelveHexBleMac, normalizeBleMac } from '@/shared/normalizeBleMac';
 
 import { parseStoredJson } from './parseStoredJson';
@@ -33,7 +34,7 @@ export function loadLastConnection(protocol: MeshProtocol): LastConnection | nul
 
 export function saveLastConnection(protocol: MeshProtocol, connection: LastConnection): void {
   try {
-    localStorage.setItem(lastConnectionKey(protocol), JSON.stringify(connection));
+    setRendererStorageItem(lastConnectionKey(protocol), JSON.stringify(connection));
   } catch (error) {
     console.warn('[lastConnectionStorage] saveLastConnection failed', error);
   }
@@ -41,7 +42,7 @@ export function saveLastConnection(protocol: MeshProtocol, connection: LastConne
 
 export function clearLastConnection(protocol: MeshProtocol): void {
   try {
-    localStorage.removeItem(lastConnectionKey(protocol));
+    removeRendererStorageItem(lastConnectionKey(protocol));
   } catch {
     // catch-no-log-ok localStorage unavailable in tests or private mode
   }
@@ -58,7 +59,7 @@ export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
 
 export function clearLastBleDeviceId(protocol: MeshProtocol): void {
   try {
-    localStorage.removeItem(lastBleDeviceKey(protocol));
+    removeRendererStorageItem(lastBleDeviceKey(protocol));
   } catch {
     // catch-no-log-ok localStorage unavailable in tests or private mode
   }

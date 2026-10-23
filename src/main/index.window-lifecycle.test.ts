@@ -3,11 +3,13 @@ import { EventEmitter } from 'node:events';
 import { runInNewContext } from 'node:vm';
 
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { transpileModule } from 'typescript';
+import { pathToFileURL } from 'url';
 import { describe, expect, it, vi } from 'vitest';
 
 import { resolveWindowCloseAction } from '../shared/closeToTray';
+import { RENDERER_INDEX_URL } from '../shared/rendererOrigin';
 import { isAllowedRendererNavigation } from './rendererNavigationPolicy';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
@@ -25,6 +27,98 @@ describe('BrowserWindow creation', () => {
     expect(INDEX_SOURCE).toContain('minWidth: 900');
     expect(INDEX_SOURCE).toContain('minHeight: 600');
   });
+});
+
+describe('renderer origin recovery loads', () => {
+  function rendererLoadHarness(platform: string, healthyAfterRepair: boolean) {
+    const loads: string[] = [];
+    let repairs = 0;
+    const webContents = {
+      session: {},
+      getURL: () => loads.at(-1) ?? '',
+      openDevTools: vi.fn(),
+    };
+    const loadURL = vi.fn((url: string) => {
+      loads.push(url);
+      return Promise.resolve();
+    });
+    const checkHealth = vi.fn((_options: unknown, _contents: unknown, allowRepair = true) => {
+      if (loads.length > 1 && healthyAfterRepair) return Promise.resolve('healthy');
+      if (!allowRepair) return Promise.resolve('failed');
+      repairs++;
+      return Promise.resolve('repaired');
+    });
+    const state = {
+      __dirname,
+      path: { join },
+      pathToFileURL,
+      process: { platform, env: {} },
+      app: {
+        isPackaged: true,
+        getPath: () => '/test/profile',
+        getVersion: () => 'test',
+      },
+      win: { isDestroyed: () => false, webContents, loadURL },
+      trustedRendererUrl: '',
+      RENDERER_INDEX_URL,
+      OSM_HTTP_REFERRER: 'https://mesh-client.org/',
+      resumePendingRendererStorageReset: vi.fn().mockResolvedValue(undefined),
+      runWebStorageOriginMigration: vi.fn().mockResolvedValue('completed'),
+      resolveRendererLoadUrl: vi.fn(() => ({
+        source: 'custom-protocol',
+        url: RENDERER_INDEX_URL,
+        openDevTools: false,
+      })),
+      checkRendererOriginStorageHealth: checkHealth,
+      sanitizeLogMessage: (message: string) => message,
+      console: { debug: vi.fn() },
+    };
+    const start = INDEX_SOURCE.indexOf('const loadRenderer = async (beforeLoad?');
+    const end = INDEX_SOURCE.indexOf('  reloadMainRenderer = loadRenderer;', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    // Run the real startup branch so removing its second probe or fallback breaks this test.
+    const source = `(function () {
+      ${INDEX_SOURCE.slice(start, end)}
+      return loadRenderer;
+    })()`;
+    const loadRenderer = runInNewContext(transpileModule(source, {}).outputText, state) as (
+      beforeLoad?: () => void,
+    ) => Promise<void>;
+    return { loadRenderer, loads, checkHealth, webContents, state, repairs: () => repairs };
+  }
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'falls back to file after one repair when the reloaded main document is unhealthy on %s',
+    async (platform) => {
+      const harness = rendererLoadHarness(platform, false);
+      await harness.loadRenderer();
+      const fileUrl = pathToFileURL(resolve(__dirname, '../../dist/renderer/index.html')).href;
+      expect(harness.loads).toEqual([RENDERER_INDEX_URL, RENDERER_INDEX_URL, fileUrl]);
+      expect(harness.state.trustedRendererUrl).toBe(fileUrl);
+      expect(harness.checkHealth).toHaveBeenCalledTimes(2);
+      expect(harness.checkHealth.mock.calls[0]).toHaveLength(2);
+      expect(harness.checkHealth.mock.calls[1]).toEqual([
+        expect.any(Object),
+        harness.webContents,
+        false,
+      ]);
+      expect(harness.repairs()).toBe(1);
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'keeps the custom origin after the repaired main document verifies on %s',
+    async (platform) => {
+      const harness = rendererLoadHarness(platform, true);
+      await harness.loadRenderer();
+      expect(harness.loads).toEqual([RENDERER_INDEX_URL, RENDERER_INDEX_URL]);
+      expect(harness.state.trustedRendererUrl).toBe(RENDERER_INDEX_URL);
+      expect(harness.checkHealth).toHaveBeenCalledTimes(2);
+      expect(harness.checkHealth.mock.calls[1]?.[2]).toBe(false);
+      expect(harness.repairs()).toBe(1);
+    },
+  );
 });
 
 // ─── app lifecycle handlers ───────────────────────────────────────────────────
@@ -126,7 +220,7 @@ describe('Web Serial window ownership', () => {
         },
       });
     const start = INDEX_SOURCE.indexOf('// ─── Web Serial: Port Selection');
-    const end = INDEX_SOURCE.indexOf('// ─── Web Bluetooth: Device Selection', start);
+    const end = INDEX_SOURCE.indexOf("mainWindow.webContents.on('select-bluetooth-device'", start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     const closeStart = INDEX_SOURCE.indexOf("win.on('close', (event)");

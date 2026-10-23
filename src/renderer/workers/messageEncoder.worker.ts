@@ -26,7 +26,12 @@ const ALLOWED_ORIGINS = [
 ];
 
 self.onmessage = (event: MessageEvent<WorkerCommand>) => {
-  if (!ALLOWED_ORIGINS.includes(event.origin)) {
+  // Dedicated Worker.postMessage leaves MessageEvent.origin empty in Chromium. Only the
+  // creating renderer can hold this worker; constrain that path to the worker's own origin.
+  if (
+    !ALLOWED_ORIGINS.includes(event.origin) &&
+    !(event.origin === '' && ALLOWED_ORIGINS.includes(self.location.origin))
+  ) {
     return;
   }
   const data: unknown = event.data;

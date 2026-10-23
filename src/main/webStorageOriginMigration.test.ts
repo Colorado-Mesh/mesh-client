@@ -7,13 +7,14 @@ import type { BrowserWindowConstructorOptions, WebContents } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  CRITICAL_LOCALSTORAGE_KEY_PREFIXES,
   ENV_FORCE_FILE_ORIGIN,
   ENV_FORCE_ORIGIN_REPAIR,
   ENV_SKIP_ORIGIN_MIGRATION,
-  ENV_USE_CUSTOM_PROTOCOL,
   LATEST_RENDERER_ORIGIN_MIGRATION,
   RENDERER_INDEX_URL,
   RENDERER_MIGRATION_URL,
+  RENDERER_STORAGE_DELETION_PREFIX,
 } from '../shared/rendererOrigin';
 import type {
   WebStorageEntries,
@@ -71,6 +72,7 @@ describe('renderer origin migration', () => {
     },
     key: (index: number) => [...map.keys()][index] ?? null,
     getItem: (key: string) => map.get(key) ?? null,
+    removeItem: (key: string) => map.delete(key),
     setItem: (key: string, value: string) => {
       if (failImportAfter !== undefined && importCount++ >= failImportAfter) {
         throw new Error('QuotaExceededError');
@@ -162,6 +164,7 @@ describe('renderer origin migration', () => {
       appVersion: '6.3.0',
       env: {},
       seedDurableStorage: seed,
+      commitImportedStorageIntents: vi.fn(),
     };
     electron.createWindow.mockReset().mockImplementation(createWindow);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -378,6 +381,9 @@ describe('renderer origin migration', () => {
   });
 
   it('preserves target-only keys from an interrupted import and verifies the combined copy', async () => {
+    failImportAfter = 0;
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    failImportAfter = undefined;
     target.set('earlier-attempt-extra', 'keep me');
     target.set('mesh-client:protocol', 'stale incomplete import');
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
@@ -391,7 +397,7 @@ describe('renderer origin migration', () => {
   it.each([ENV_FORCE_FILE_ORIGIN, ENV_SKIP_ORIGIN_MIGRATION])(
     'skips without touching storage for %s',
     async (flag) => {
-      options.env = { [flag]: '1', [ENV_FORCE_ORIGIN_REPAIR]: '1', [ENV_USE_CUSTOM_PROTOCOL]: '1' };
+      options.env = { [flag]: '1', [ENV_FORCE_ORIGIN_REPAIR]: '1' };
       expect(await runWebStorageOriginMigration(options)).toBe('skipped');
       expect(windows).toHaveLength(0);
       expect(seed).not.toHaveBeenCalled();
@@ -403,7 +409,7 @@ describe('renderer origin migration', () => {
     'does not migrate or inspect storage for an explicit renderer URL %s',
     async (devServerUrl) => {
       options.devServerUrl = devServerUrl;
-      options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1', [ENV_USE_CUSTOM_PROTOCOL]: '1' };
+      options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1' };
       const contents = contentsForTarget();
       expect(await runWebStorageOriginMigration(options)).toBe('skipped');
       expect(await checkRendererOriginStorageHealth(options, contents)).toBe('failed');
@@ -437,13 +443,6 @@ describe('renderer origin migration', () => {
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
   });
 
-  it('does not accept the old development custom-protocol flag as a migration bypass', async () => {
-    options.env = { [ENV_USE_CUSTOM_PROTOCOL]: '1' };
-    corruptVerify = true;
-    expect(await runWebStorageOriginMigration(options)).toBe('failed');
-    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).completedVersion).toBeUndefined();
-  });
-
   it('retries a partial quota failure and never completes before verification', async () => {
     failImportAfter = 1;
     expect(await runWebStorageOriginMigration(options)).toBe('failed');
@@ -467,7 +466,7 @@ describe('renderer origin migration', () => {
   });
 
   it.each(['empty', 'fewer', 'different'])(
-    'keeps the recovery export if a retry produces %s keys',
+    'keeps the recovery export and merges live values if a retry produces %s keys',
     async (variant) => {
       failImportAfter = 0;
       expect(await runWebStorageOriginMigration(options)).toBe('failed');
@@ -481,7 +480,10 @@ describe('renderer origin migration', () => {
       failImportAfter = undefined;
       expect(await runWebStorageOriginMigration(options)).toBe('completed');
       expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME)).toEqual(original);
-      expect(targetEntriesWithoutSentinel()).toEqual(original.entries);
+      expect(targetEntriesWithoutSentinel()).toEqual({
+        ...(original.entries as WebStorageEntries),
+        ...Object.fromEntries(legacy),
+      });
     },
   );
 
@@ -702,6 +704,9 @@ describe('renderer origin migration', () => {
     target.set('mesh-client:protocol', 'reticulum');
     target.set('mesh-client:lastRead:meshcore', '{"channel":9999}');
     target.delete('mesh-client:lastConnection:meshcore');
+    options.readStorageDeletionStates = () => ({
+      'mesh-client:lastConnection:meshcore': { deleted: true, applied: {}, imported: {} },
+    });
     fs.unlinkSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME));
     windows = [];
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
@@ -755,8 +760,10 @@ describe('renderer origin migration', () => {
       'mesh-client:lastBleDevice:meshcore',
       'mesh-client:lastSerialPort:meshtastic',
       'mesh-client:chatMacros',
-    ])
+    ]) {
       target.delete(key);
+      target.set(`${RENDERER_STORAGE_DELETION_PREFIX}${key}`, '1');
+    }
     windows = [];
     seed.mockClear();
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
@@ -767,6 +774,335 @@ describe('renderer origin migration', () => {
     expect(target.has('mesh-client:lastBleDevice:meshcore')).toBe(false);
     expect(target.has('mesh-client:lastSerialPort:meshtastic')).toBe(false);
     expect(target.has('mesh-client:chatMacros')).toBe(false);
+  });
+
+  it.each(CRITICAL_LOCALSTORAGE_KEY_PREFIXES)(
+    'repairs missing exported critical key %s while retaining a valid marker',
+    async (key) => {
+      legacy.set(key, 'exported critical value');
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      const originalExport = fs.readFileSync(
+        path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME),
+        'utf8',
+      );
+      target.delete(key);
+      target.set('mesh-client:protocol', 'reticulum');
+      if (key === 'mesh-client:protocol') target.delete(key);
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('repaired');
+      expect(target.get(key)).toBe('exported critical value');
+      if (key !== 'mesh-client:protocol')
+        expect(target.get('mesh-client:protocol')).toBe('reticulum');
+      expect(
+        fs.readFileSync(path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME), 'utf8'),
+      ).toBe(originalExport);
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it('honors SQLite deletion intent after total Chromium loss', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    legacy.set(key, '{"type":"ble","bleDeviceId":"forgotten"}');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    options.readStorageDeletionStates = () => ({
+      [key]: { deleted: true, applied: {}, imported: {} },
+    });
+    target.clear();
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.has(key)).toBe(false);
+    expect(target.get(`${RENDERER_STORAGE_DELETION_PREFIX}${key}`)).toBeUndefined();
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+  });
+
+  it('does not replay an exported pending deletion after SQLite acknowledges a recreation', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    legacy.set(journal, '1');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const exportPath = path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME);
+    const originalExport = fs.readFileSync(exportPath, 'utf8');
+    expect(JSON.parse(originalExport).entries[journal]).toBe('1');
+
+    // Startup committed the old intent; a later reconnect committed SQLite value '0'.
+    target.delete(journal);
+    target.set(key, '{"type":"tcp","httpAddress":"new-radio"}');
+    options.readStorageDeletionStates = () => ({});
+    target.delete('mesh-client:protocol');
+
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('{"type":"tcp","httpAddress":"new-radio"}');
+    expect(target.has(journal)).toBe(false);
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    expect(fs.readFileSync(exportPath, 'utf8')).toBe(originalExport);
+  });
+
+  it('does not replay an exported recreation after SQLite acknowledges a deletion', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    legacy.set(key, '{"type":"ble","bleDeviceId":"forgotten"}');
+    legacy.set(journal, '0');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const exportPath = path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME);
+    const originalExport = fs.readFileSync(exportPath, 'utf8');
+    expect(JSON.parse(originalExport).entries[journal]).toBe('0');
+
+    target.delete(journal);
+    target.delete(key);
+    options.readStorageDeletionStates = () => ({
+      [key]: { deleted: true, applied: {}, imported: {} },
+    });
+    target.delete('mesh-client:protocol');
+
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.has(key)).toBe(false);
+    expect(target.has(journal)).toBe(false);
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    expect(target.has(key)).toBe(false);
+    expect(fs.readFileSync(exportPath, 'utf8')).toBe(originalExport);
+  });
+
+  it.each(['0', '1'])(
+    'retains the current pending intent %s over export and SQLite history during repair',
+    async (intent) => {
+      const key = 'mesh-client:lastConnection:meshcore';
+      const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+      legacy.set(key, '{"type":"ble"}');
+      legacy.set(journal, intent === '0' ? '1' : '0');
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+
+      target.set(key, '{"type":"tcp"}');
+      target.set(journal, intent);
+      options.readStorageDeletionStates = () => ({
+        [key]: { deleted: intent === '0', applied: {}, imported: {} },
+      });
+      target.delete('mesh-client:protocol');
+
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get(key)).toBe(intent === '0' ? '{"type":"tcp"}' : undefined);
+      expect(target.get(journal)).toBe(intent);
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it('resumes an interrupted first migration after the legacy renderer commits a recreation', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    legacy.set(journal, '1');
+    seed.mockRejectedValueOnce(new Error('SQLite unavailable'));
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    const exportPath = path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME);
+    const originalExport = fs.readFileSync(exportPath, 'utf8');
+
+    legacy.delete(journal);
+    legacy.set(key, '{"type":"tcp","httpAddress":"recreated-radio"}');
+    options.readStorageDeletionStates = () => ({});
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('{"type":"tcp","httpAddress":"recreated-radio"}');
+    expect(target.has(journal)).toBe(false);
+    expect(fs.readFileSync(exportPath, 'utf8')).toBe(originalExport);
+  });
+
+  it.each(['0', '1'])(
+    'resumes with the live legacy pending intent %s over saved and partially imported journals',
+    async (intent) => {
+      const key = 'mesh-client:lastConnection:meshcore';
+      const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+      const oldIntent = intent === '0' ? '1' : '0';
+      legacy.set(key, '{"type":"ble"}');
+      legacy.set(journal, oldIntent);
+      legacy.set('old-ui-only', 'preserved recovery key');
+      seed.mockRejectedValueOnce(new Error('SQLite unavailable'));
+      expect(await runWebStorageOriginMigration(options)).toBe('failed');
+      const exportPath = path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME);
+      const originalExport = fs.readFileSync(exportPath, 'utf8');
+
+      legacy.delete('old-ui-only');
+      legacy.set(key, '{"type":"tcp"}');
+      legacy.set(journal, intent);
+      target.set(key, '{"type":"ble"}');
+      target.set(journal, oldIntent);
+      options.readStorageDeletionStates = () => ({
+        [key]: { deleted: intent === '0', applied: {}, imported: {} },
+      });
+
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get(key)).toBe(intent === '0' ? '{"type":"tcp"}' : undefined);
+      expect(target.get(journal)).toBe(intent);
+      expect(target.get('old-ui-only')).toBe('preserved recovery key');
+      expect(fs.readFileSync(exportPath, 'utf8')).toBe(originalExport);
+    },
+  );
+
+  it('does not resume historical export intents when live legacy storage is unavailable', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    legacy.set(key, '{"type":"ble"}');
+    legacy.set(journal, '1');
+    seed.mockRejectedValueOnce(new Error('SQLite unavailable'));
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+
+    failLoad = options.legacyMigrationUrl;
+    options.readStorageDeletionStates = () => ({});
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('{"type":"ble"}');
+    expect(target.has(journal)).toBe(false);
+  });
+
+  it.each(['0', '1'])(
+    'does not replay a consumed legacy file-origin intent %s over newer SQLite state',
+    async (intent) => {
+      const key = 'mesh-client:lastConnection:meshcore';
+      const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+      legacy.set(key, '{"type":"ble"}');
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+
+      // File-origin storage is retained after the flip; its consumed marker may survive
+      // there or in a copied renderer cache after the custom origin changes this key.
+      legacy.set(journal, intent);
+      target.set(journal, intent);
+      target.set(key, '{"type":"tcp","httpAddress":"new-radio"}');
+      Object.assign(options, {
+        readStorageDeletionStates: () => ({
+          [key]: {
+            deleted: intent === '0',
+            applied: { 'file:': `legacy:${intent}` },
+            imported: {},
+          },
+        }),
+      });
+      target.delete('mesh-client:protocol');
+
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get(key)).toBe(
+        intent === '0' ? undefined : '{"type":"tcp","httpAddress":"new-radio"}',
+      );
+      expect(legacy.get(journal)).toBe(intent);
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it.each([false, true])(
+    'honors a new pending JSON intent with deleted=%s after an older receipt from that origin',
+    async (deleted) => {
+      const key = 'mesh-client:lastConnection:meshcore';
+      const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+      legacy.set(key, '{"type":"ble"}');
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      target.set(key, '{"type":"tcp"}');
+      target.set(journal, JSON.stringify({ id: 'new-intent', origin: 'file:', deleted }));
+      Object.assign(options, {
+        readStorageDeletionStates: () => ({
+          [key]: { deleted: !deleted, applied: { 'file:': 'previous-intent' }, imported: {} },
+        }),
+      });
+      target.delete('mesh-client:protocol');
+
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get(key)).toBe(deleted ? undefined : '{"type":"tcp"}');
+      expect(JSON.parse(target.get(journal)!)).toEqual({
+        id: 'new-intent',
+        origin: 'file:',
+        deleted,
+      });
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it('pins an imported receipt before the first renderer flush and keeps it after a newer file edit', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    const intent = { id: 'import-A', origin: 'file:', deleted: true };
+    const raw = JSON.stringify(intent);
+    legacy.set(key, '{"type":"ble"}');
+    legacy.set(journal, raw);
+    let state = {
+      deleted: false,
+      applied: {} as Record<string, string>,
+      imported: {} as Record<string, string>,
+    };
+    options.readStorageDeletionStates = () => ({ [key]: state });
+    const commit = vi.fn(() => {
+      state = {
+        deleted: true,
+        applied: { 'file:': 'import-A' },
+        imported: { 'file:': 'import-A' },
+      };
+    });
+    options.commitImportedStorageIntents = commit;
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(commit).toHaveBeenCalledExactlyOnceWith({ [key]: intent });
+    expect(commit.mock.invocationCallOrder[0]).toBeLessThan(seed.mock.invocationCallOrder[0]);
+    expect(target.get(journal)).toBe(raw);
+    expect(state.imported['file:']).toBe('import-A');
+
+    // No target renderer flush has consumed the copied A journal. The file renderer's
+    // newer B updates its last-applied receipt while the imported A receipt stays pinned.
+    state = { deleted: false, applied: { 'file:': 'later-B' }, imported: { 'file:': 'import-A' } };
+    target.set(key, '{"type":"tcp","httpAddress":"recreated"}');
+    target.delete('mesh-client:protocol');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('{"type":"tcp","httpAddress":"recreated"}');
+    expect(commit).toHaveBeenCalledOnce();
+    expect(legacy.get(journal)).toBe(raw);
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+  });
+
+  it('does not copy a live source journal when its durable imported receipt cannot commit', async () => {
+    legacy.set(`${RENDERER_STORAGE_DELETION_PREFIX}mesh-client:lastConnection:meshcore`, '1');
+    options.commitImportedStorageIntents = vi.fn(() => {
+      throw new Error('receipt commit failed');
+    });
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(target.size).toBe(0);
+    expect(seed).not.toHaveBeenCalled();
+    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).phase).toBe('exported');
+    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).completedVersion).toBeUndefined();
+  });
+
+  it('finishes an acknowledged Forget before opening a stale origin with the old connection still present', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    legacy.set(key, '{"type":"ble"}');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    options.readStorageDeletionStates = () => ({
+      [key]: { deleted: true, applied: {}, imported: {} },
+    });
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.has(key)).toBe(false);
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+  });
+
+  it('does not overwrite an untracked nonempty origin without any migration artifacts', async () => {
+    target.set('mesh-client:protocol', 'reticulum');
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(target.get('mesh-client:protocol')).toBe('reticulum');
+    expect(fs.existsSync(path.join(directory, 'migration'))).toBe(false);
+  });
+
+  it('does not repair twice when the reloaded actual document still loses critical storage', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.delete('mesh-client:protocol');
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('repaired');
+    target.delete('mesh-client:protocol');
+    windows = [];
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget(), false)).toBe(
+      'failed',
+    );
+    expect(windows).toHaveLength(0);
+    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).phase).toBe('needsRepair');
+  });
+
+  it('preserves ambiguous newer values when both state and marker disappear', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.set('mesh-client:protocol', 'reticulum');
+    target.delete(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY);
+    fs.unlinkSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME));
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(target.get('mesh-client:protocol')).toBe('reticulum');
+    expect(fs.existsSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME))).toBe(
+      false,
+    );
+    options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1' };
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get('mesh-client:protocol')).toBe('reticulum');
   });
 
   it('repairs a fully cleared origin from its recovery export', async () => {
@@ -854,6 +1190,9 @@ describe('renderer origin migration', () => {
     legacy.set('mesh-client:lastConnection:meshcore', '{"type":"ble"}');
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     target.delete('mesh-client:lastConnection:meshcore');
+    options.readStorageDeletionStates = () => ({
+      'mesh-client:lastConnection:meshcore': { deleted: true, applied: {}, imported: {} },
+    });
     failLoad = RENDERER_MIGRATION_URL;
     expect(await runWebStorageOriginMigration(options)).toBe('failed');
     failLoad = undefined;

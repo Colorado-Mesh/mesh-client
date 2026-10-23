@@ -22,17 +22,19 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
   const memory = useSyncExternalStore(subscribeCoiMemorySnapshot, getCoiMemorySnapshot);
   const use24Hour = useTimeFormatStore((state) => state.use24HourTime);
   const latest = memory.samples.at(-1);
+  const source = latest?.source ?? 'user-agent';
+  const samples = memory.samples.filter((sample) => (sample.source ?? 'user-agent') === source);
   const formatMemory = (bytes: number) =>
     new Intl.NumberFormat(i18n.resolvedLanguage, {
       style: 'unit',
       unit: 'megabyte',
       maximumFractionDigits: 1,
     }).format(bytes / 1_000_000);
-  const historyMax = Math.max(1, ...memory.samples.map((sample) => sample.bytes));
-  const historyPoints = memory.samples
+  const historyMax = Math.max(1, ...samples.map((sample) => sample.bytes));
+  const historyPoints = samples
     .map(
       (sample, index) =>
-        `${(index / Math.max(1, memory.samples.length - 1)) * 300},${46 - (sample.bytes / historyMax) * 42}`,
+        `${(index / Math.max(1, samples.length - 1)) * 300},${46 - (sample.bytes / historyMax) * 42}`,
     )
     .join(' ');
 
@@ -84,7 +86,11 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
             {memory.sampling ? t('appPanel.memorySampling') : t('appPanel.memorySampleNow')}
           </button>
         </div>
-        <p className="text-muted text-xs">{t('appPanel.memoryDescription')}</p>
+        <p className="text-muted text-xs">
+          {source === 'renderer-process'
+            ? t('appPanel.memoryRendererProcess')
+            : t('appPanel.memoryDescription')}
+        </p>
         <p className="text-muted text-xs">
           {memory.crossOriginIsolated
             ? t('appPanel.memoryIsolated')
@@ -104,7 +110,7 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
             <p className="text-muted text-xs">{t('appPanel.memoryEmpty')}</p>
           ) : null}
         </div>
-        {memory.samples.length > 1 && (
+        {samples.length > 1 && (
           <svg
             viewBox="0 0 300 50"
             preserveAspectRatio="none"
@@ -118,7 +124,7 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
           <details className="text-muted text-xs">
             <summary className="cursor-pointer">{t('appPanel.memoryHistory')}</summary>
             <ul className="mt-2 space-y-1 font-mono tabular-nums">
-              {memory.samples.map((sample, index) => (
+              {samples.map((sample, index) => (
                 <li key={`${sample.at}:${index}`} className="flex flex-wrap justify-between gap-2">
                   <time dateTime={new Date(sample.at).toISOString()}>
                     {formatDisplayTime(sample.at, { use24Hour, withSeconds: true })}

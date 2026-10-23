@@ -65,9 +65,15 @@ import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import {
   DURABLE_RENDERER_SETTING_MAX_LENGTH,
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
+  isRendererStorageDeletionSetting,
   RENDERER_INDEX_URL,
   RENDERER_SCHEME,
+  RENDERER_STORAGE_DELETION_SETTING_PREFIX,
 } from '../shared/rendererOrigin';
+import {
+  parseRendererStorageDeletionState,
+  RENDERER_STORAGE_DELETION_STATE_MAX_LENGTH,
+} from '../shared/rendererStorageIntent';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
@@ -215,6 +221,11 @@ import {
   isAllowedRendererPermission,
 } from './rendererNavigationPolicy';
 import { createRendererOriginProtocolHandler } from './rendererOriginProtocol';
+import { rendererProcessMemoryBytes } from './rendererProcessMemory';
+import {
+  commitImportedRendererStorageIntents,
+  writeRendererStorageDeletionState,
+} from './rendererStorageIntentMigration';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
 import {
   readReticulumAttachmentBytes,
@@ -706,10 +717,6 @@ process.on('unhandledRejection', (reason) => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   showCrashReportDialog({ source: 'unhandledRejection', error });
 });
-
-// ─── Bluetooth pairing handler (Linux only) ──────────────────────────
-// Note: Bluetooth pairing for Web Bluetooth is handled via session.setBluetoothPairingHandler()
-// which is set up after mainWindow creation. See the setup below near select-bluetooth-device.
 
 // ─── IPC validation helpers (main process boundary) ───────────────────
 const MAX_PAYLOAD_LENGTH = 1024 * 1024; // 1MB cap for message payload
@@ -2020,7 +2027,7 @@ function createWindow() {
     serialSession.removeListener('select-serial-port', handleSelectSerialPort);
   });
 
-  // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
+  // ─── Legacy Chromium Bluetooth chooser cancellation ───────────────────
   // LoRa BLE uses sidecar GATT on all platforms. Cancel Chromium's chooser so a
   // stray requestDevice() cannot hang the session.
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
@@ -2031,9 +2038,8 @@ function createWindow() {
     callback('');
   });
 
-  // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
-  // Required for devices that require PIN/confirmation during pairing.
-  // This is called by Chromium when a device requires pairing during GATT connect.
+  // ─── Legacy Chromium pairing callback ─────────────────────────────────
+  // Retained for compatibility; active LoRa GATT pairing uses the native sidecar.
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
     console.debug('[main] bluetooth-pairing-request:', details.pairingKind, details.deviceId);
 
@@ -2219,6 +2225,24 @@ function createWindow() {
       legacyMigrationUrl: pathToFileURL(path.join(__dirname, '../../dist/renderer/migration.html'))
         .href,
       appVersion: app.getVersion(),
+      readStorageDeletionStates: () => {
+        const rows = getDatabase()
+          .prepareOnce('SELECT key, value FROM app_settings WHERE key LIKE ?')
+          .all(`${RENDERER_STORAGE_DELETION_SETTING_PREFIX}%`) as { key: string; value: string }[];
+        return Object.fromEntries(
+          rows
+            .filter((row) => isRendererStorageDeletionSetting(row.key))
+            .map((row) => [
+              row.key.slice(RENDERER_STORAGE_DELETION_SETTING_PREFIX.length),
+              parseRendererStorageDeletionState(row.value),
+            ]),
+        );
+      },
+      commitImportedStorageIntents: (
+        intents: Parameters<typeof commitImportedRendererStorageIntents>[1],
+      ) => {
+        commitImportedRendererStorageIntents(getDatabase(), intents);
+      },
       seedDurableStorage: (entries: Record<string, string>) => {
         seedDurableRendererSettings(getDatabase(), entries);
         seedIncidentsOn(getDatabase(), entries['mesh-client:incidents'] ?? null);
@@ -2260,11 +2284,15 @@ function createWindow() {
         httpReferrer: OSM_HTTP_REFERRER,
       });
       if (resolved.source === 'custom-protocol') {
-        const health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents);
+        let health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents);
         if (win.isDestroyed()) return;
         if (health === 'repaired') {
           await win.loadURL(resolved.url, { httpReferrer: OSM_HTTP_REFERRER });
-        } else if (health === 'failed') {
+          if (win.isDestroyed()) return;
+          health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents, false);
+          if (win.isDestroyed()) return;
+        }
+        if (health === 'failed') {
           trustedRendererUrl = pathToFileURL(distIndexPath).href;
           await win.loadURL(trustedRendererUrl, { httpReferrer: OSM_HTTP_REFERRER });
         }
@@ -3949,7 +3977,17 @@ ipcMain.handle('app:getRendererLiveness', (event) => {
   }
   const mem = process.memoryUsage();
   const hb = rendererHeartbeatWatchdog.getLivenessSnapshot();
+  let rendererMemory: number | undefined;
+  try {
+    rendererMemory = rendererProcessMemoryBytes(app.getAppMetrics(), event.sender.getOSProcessId());
+  } catch (error) {
+    console.warn(
+      '[IPC] Renderer process memory unavailable:',
+      sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+    );
+  }
   return {
+    ...(rendererMemory === undefined ? {} : { rendererProcessMemoryBytes: rendererMemory }),
     mainUptimeSec: Math.floor(process.uptime()),
     lastRendererHeartbeatAgeMs: hb.lastRendererHeartbeatAgeMs,
     rendererUnresponsiveSeen: hb.rendererUnresponsiveSeen,
@@ -4033,6 +4071,7 @@ const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
     APP_SETTINGS_ALLOWED_KEYS.has(key) ||
+    isRendererStorageDeletionSetting(key) ||
     key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_SYNC_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_LAST_POST_SETTING_PREFIX) ||
@@ -4049,6 +4088,7 @@ function isLegacyPlaintextCredentialKey(key: string): boolean {
 }
 
 function appSettingsMaxValueLengthForKey(key: string): number {
+  if (isRendererStorageDeletionSetting(key)) return RENDERER_STORAGE_DELETION_STATE_MAX_LENGTH;
   if (DURABLE_RENDERER_STORAGE_MIGRATIONS.some(([, databaseKey]) => databaseKey === key)) {
     return DURABLE_RENDERER_SETTING_MAX_LENGTH;
   }
@@ -4113,9 +4153,12 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
     throw new Error(`appSettings:set: value must be a string under ${maxValueLength} chars`);
   }
   try {
-    const result = getDatabase()
-      .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
-      .run(key, value);
+    const db = getDatabase();
+    const result = isRendererStorageDeletionSetting(key)
+      ? writeRendererStorageDeletionState(db, key, value)
+      : db
+          .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
+          .run(key, value);
     console.debug(`[IPC] appSettings:set: ${sanitizeLogMessage(key)} (${result.changes} rows)`);
     return { changes: Number(result.changes) };
   } catch (err) {
@@ -4131,7 +4174,11 @@ ipcMain.handle('appSettings:remove', (event, key: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
+  if (
+    typeof key !== 'string' ||
+    !isAppSettingsKeyAllowed(key) ||
+    isRendererStorageDeletionSetting(key)
+  ) {
     throw new Error('appSettings:remove: key not allowed');
   }
   const result = getDatabase().prepareOnce('DELETE FROM app_settings WHERE key = ?').run(key);

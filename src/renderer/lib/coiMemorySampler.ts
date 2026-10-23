@@ -1,3 +1,5 @@
+import type { ElectronAPI } from '@/shared/electron-api.types';
+
 import { errLikeToLogString } from './errLikeToLogString';
 import { COI_MEMORY_SAMPLE_INTERVAL_MS } from './timeConstants';
 
@@ -6,6 +8,7 @@ export const COI_MEMORY_MAX_SAMPLES = 24;
 export interface CoiMemorySample {
   at: number;
   bytes: number;
+  source?: 'user-agent' | 'renderer-process';
 }
 
 export interface CoiMemorySnapshot {
@@ -23,6 +26,7 @@ interface MemoryPerformance extends Performance {
 interface MemorySamplerEnvironment {
   isIsolated: () => boolean;
   getMeasure: () => (() => Promise<{ bytes: number }>) | undefined;
+  getProcessMeasure?: () => (() => Promise<{ bytes: number }>) | undefined;
   isVisible: () => boolean;
   onVisibilityChange: (listener: () => void) => () => void;
   now: () => number;
@@ -31,9 +35,12 @@ interface MemorySamplerEnvironment {
 
 /** Retain only totals: browser attribution may contain document or worker URLs. */
 export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
+  let browserUnavailable = false;
+  const supported = () =>
+    Boolean((!browserUnavailable && environment.getMeasure()) || environment.getProcessMeasure?.());
   let snapshot: CoiMemorySnapshot = {
     crossOriginIsolated: environment.isIsolated(),
-    supported: Boolean(environment.getMeasure()),
+    supported: supported(),
     sampling: false,
     failed: false,
     samples: [],
@@ -61,7 +68,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
       owners.size === 0 ||
       !environment.isVisible() ||
       !environment.isIsolated() ||
-      !environment.getMeasure() ||
+      !supported() ||
       inFlight
     ) {
       return;
@@ -76,25 +83,59 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
 
   function sampleNow(): Promise<CoiMemorySample | null> {
     if (inFlight) return inFlight;
-    const measure = environment.getMeasure();
     const crossOriginIsolated = environment.isIsolated();
-    update({ crossOriginIsolated, supported: Boolean(measure) });
-    if (!crossOriginIsolated || !measure || !environment.isVisible()) {
+    update({ crossOriginIsolated, supported: supported() });
+    if (!crossOriginIsolated || !supported() || !environment.isVisible()) {
       return Promise.resolve(null);
     }
     clearTimer();
     const requestGeneration = generation;
     update({ sampling: true, failed: false });
+    const canSample = () =>
+      requestGeneration === generation && environment.isIsolated() && environment.isVisible();
     // Defer the call so a synchronous throw also follows the failure/cleanup path.
     inFlight = Promise.resolve()
-      .then(measure)
+      .then(async (): Promise<Omit<CoiMemorySample, 'at'> | null> => {
+        if (!canSample()) return null;
+        const measure = browserUnavailable ? undefined : environment.getMeasure();
+        if (measure) {
+          try {
+            return { bytes: (await measure()).bytes };
+          } catch (error) {
+            if (
+              !error ||
+              typeof error !== 'object' ||
+              !('name' in error) ||
+              error.name !== 'SecurityError' ||
+              !environment.getProcessMeasure?.()
+            ) {
+              throw error;
+            }
+            // Electron may expose the browser API while disabling its measurement service.
+            browserUnavailable = true;
+            console.debug('[coiMemorySampler] Browser memory unavailable; using renderer process');
+          }
+        }
+        if (!canSample()) return null;
+        const measureProcess = environment.getProcessMeasure?.();
+        if (!measureProcess) throw new Error('Renderer memory measurement unavailable');
+        const result = await measureProcess();
+        return { bytes: result.bytes, source: 'renderer-process' };
+      })
       .then((result) => {
-        if (requestGeneration !== generation) return null;
-        if (!Number.isFinite(result.bytes) || result.bytes < 0) {
+        if (!result || !canSample()) return null;
+        if (
+          !Number.isFinite(result.bytes) ||
+          result.bytes < 0 ||
+          (result.source === 'renderer-process' && result.bytes === 0)
+        ) {
           throw new Error('Invalid renderer memory total');
         }
-        const sample = { at: environment.now(), bytes: result.bytes };
-        update({ samples: [...snapshot.samples, sample].slice(-COI_MEMORY_MAX_SAMPLES) });
+        const sample = { at: environment.now(), ...result };
+        // Browser estimates and OS working sets have different scopes; start a new trend.
+        const previous = snapshot.samples.at(-1);
+        const history = previous?.source === sample.source ? snapshot.samples : [];
+        update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES) });
         return sample;
       })
       .catch((error: unknown) => {
@@ -119,7 +160,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     if (owners.size === 1) {
       update({
         crossOriginIsolated: environment.isIsolated(),
-        supported: Boolean(environment.getMeasure()),
+        supported: supported(),
       });
       unsubscribeVisibility = environment.onVisibilityChange(schedule);
       schedule();
@@ -153,6 +194,20 @@ const sampler = createCoiMemorySampler({
   getMeasure: () => {
     const memoryPerformance = performance as MemoryPerformance;
     return memoryPerformance.measureUserAgentSpecificMemory?.bind(memoryPerformance);
+  },
+  getProcessMeasure: () => {
+    if (typeof window === 'undefined') return undefined;
+    // Browser development installs its bridge after module initialization.
+    const getLiveness = (window as { electronAPI?: ElectronAPI }).electronAPI?.app
+      .getRendererLiveness;
+    if (!getLiveness) return undefined;
+    return async () => {
+      const { rendererProcessMemoryBytes } = await getLiveness();
+      if (rendererProcessMemoryBytes === undefined) {
+        throw new Error('Renderer process memory metric unavailable');
+      }
+      return { bytes: rendererProcessMemoryBytes };
+    };
   },
   isVisible: () => !document.hidden,
   onVisibilityChange: (listener) => {

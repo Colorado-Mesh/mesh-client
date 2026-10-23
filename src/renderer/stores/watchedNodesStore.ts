@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
+
 interface WatchedNodesState {
   watchedNodeIds: Set<number>;
   toggleWatch: (nodeId: number) => void;
@@ -46,10 +48,10 @@ export const useWatchedNodesStore = create<WatchedNodesState>()(
               watchedNodeIds: [...value.state.watchedNodeIds],
             },
           };
-          localStorage.setItem(key, JSON.stringify(serialized));
+          setRendererStorageItem(key, JSON.stringify(serialized));
         },
         removeItem: (key) => {
-          localStorage.removeItem(key);
+          removeRendererStorageItem(key);
         },
       },
     },

@@ -24,7 +24,10 @@ describe('durable renderer startup hydration', () => {
     });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'seeds and restores %s chat reads, then persists advancing and clearing them',
@@ -183,6 +186,9 @@ describe('durable renderer startup hydration', () => {
     const { hydrateDurableRendererSettings } = await import('./hydrateDurableRendererSettings');
     const mecp = await import('../stores/mecpBlockStore');
     const startup = hydrateDurableRendererSettings();
+    await vi.waitFor(() => {
+      expect(resolve).toBeTypeOf('function');
+    });
     mecp.useMecpBlockStore.getState().block('meshcore', '9');
     resolve({
       [KEYS.mecpBlockedSenders]: JSON.stringify({
@@ -207,10 +213,106 @@ describe('durable renderer startup hydration', () => {
     localStorage.setItem('mesh-client:lastRead:meshcore', '{"ch:0":123}');
     const { hydrateDurableRendererSettings } = await import('./hydrateDurableRendererSettings');
     const chat = await import('./chatPanelProtocolStorage');
-    await hydrateDurableRendererSettings();
+    vi.useFakeTimers();
+    const startup = hydrateDurableRendererSettings();
+    await vi.advanceTimersByTimeAsync(1250);
+    await startup;
     chat.savePersistedLastRead('meshcore', { 'ch:0': 456 });
+    await vi.runAllTimersAsync();
+    expect(window.electronAPI.appSettings.getAll).toHaveBeenCalledTimes(3);
     expect(chat.loadPersistedLastReadInitial('meshcore')).toEqual({ 'ch:0': 456 });
     expect(window.electronAPI.appSettings.set).not.toHaveBeenCalled();
+    warn.restore();
+  });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'retries a transient startup read and merges pending %s changes with SQLite',
+    async (protocol) => {
+      const warn = mockConsoleWarn();
+      database[KEYS.chatLastRead[protocol]] = '{"ch:0":123,"ch:7":789}';
+      database[KEYS.mecpBlockedSenders] = JSON.stringify({
+        state: {
+          blocked: {
+            'reticulum:7': { protocol: 'reticulum', senderId: '7', label: 'Seven', createdAt: 1 },
+          },
+        },
+        version: 1,
+      });
+      database[KEYS.takRelayPrefs] = JSON.stringify({
+        state: {
+          byIdentity: {
+            radio: {
+              trackerChannels: [7],
+              channelMode: 'selected',
+              chatChannels: ['0123456789abcdef'],
+              directMessages: false,
+            },
+          },
+          retiredRooms: null,
+        },
+        version: 3,
+      });
+      vi.mocked(window.electronAPI.appSettings.getAll).mockRejectedValueOnce(
+        new Error('database busy'),
+      );
+      const { hydrateDurableRendererSettings } = await import('./hydrateDurableRendererSettings');
+      const chat = await import('./chatPanelProtocolStorage');
+      const mecp = await import('../stores/mecpBlockStore');
+      const tak = await import('../stores/takRelayPrefsStore');
+      vi.useFakeTimers();
+      const startup = hydrateDurableRendererSettings();
+      expect(hydrateDurableRendererSettings()).toBe(startup);
+      await vi.advanceTimersByTimeAsync(249);
+      chat.savePersistedLastRead(protocol, { 'ch:0': 456 });
+      mecp.useMecpBlockStore.getState().block(protocol, '9');
+      tak.useTakRelayPrefsStore.getState().setDirectMessages('radio', true);
+      expect(window.electronAPI.appSettings.getAll).toHaveBeenCalledTimes(1);
+      expect(window.electronAPI.appSettings.set).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await startup;
+      expect(window.electronAPI.appSettings.getAll).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(database[KEYS.chatLastRead[protocol]])).toEqual({
+        'ch:0': 456,
+        'ch:7': 789,
+      });
+      expect(mecp.isMecpSenderBlocked(protocol, '9')).toBe(true);
+      expect(mecp.isMecpSenderBlocked('reticulum', '7')).toBe(true);
+      expect(JSON.parse(database[KEYS.mecpBlockedSenders]).state.blocked).toHaveProperty(
+        `${protocol}:9`,
+      );
+      expect(JSON.parse(database[KEYS.mecpBlockedSenders]).state.blocked).toHaveProperty(
+        'reticulum:7',
+      );
+      expect(JSON.parse(database[KEYS.takRelayPrefs]).state.byIdentity.radio).toMatchObject({
+        trackerChannels: [7],
+        channelMode: 'selected',
+        chatChannels: ['0123456789abcdef'],
+        directMessages: true,
+      });
+      warn.restore();
+    },
+  );
+
+  it('allows another hydration attempt after exhausting the bounded read retries', async () => {
+    const warn = mockConsoleWarn();
+    database[KEYS.chatLastRead.meshcore] = '{"ch:7":789}';
+    vi.mocked(window.electronAPI.appSettings.getAll).mockRejectedValue(
+      new Error('database unavailable'),
+    );
+    const { hydrateDurableRendererSettings } = await import('./hydrateDurableRendererSettings');
+    const chat = await import('./chatPanelProtocolStorage');
+    vi.useFakeTimers();
+    const startup = hydrateDurableRendererSettings();
+    await vi.advanceTimersByTimeAsync(1250);
+    await startup;
+    chat.savePersistedLastRead('meshcore', { 'ch:0': 456 });
+    expect(window.electronAPI.appSettings.set).not.toHaveBeenCalled();
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({ ...database });
+    await hydrateDurableRendererSettings();
+    expect(JSON.parse(database[KEYS.chatLastRead.meshcore])).toEqual({
+      'ch:0': 456,
+      'ch:7': 789,
+    });
     warn.restore();
   });
 
@@ -225,6 +327,9 @@ describe('durable renderer startup hydration', () => {
     const { hydrateDurableRendererSettings } = await import('./hydrateDurableRendererSettings');
     const tak = await import('../stores/takRelayPrefsStore');
     const startup = hydrateDurableRendererSettings();
+    await vi.waitFor(() => {
+      expect(resolve).toBeTypeOf('function');
+    });
     tak.useTakRelayPrefsStore.getState().setDirectMessages('radio', true);
     resolve({
       [KEYS.takRelayPrefs]: JSON.stringify({

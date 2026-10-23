@@ -11,9 +11,9 @@ const isLinuxPlatform = (): boolean =>
   typeof window !== 'undefined' && window.electronAPI.getPlatform() === 'linux';
 
 export interface RfReconnectHandlers {
-  /** Noble scan + connectAutomatic, or Web Bluetooth connectAutomatic (Linux). */
+  /** Native sidecar GATT scan and automatic reconnect. */
   connectBleAutomatic: (bleDeviceId: string) => Promise<void>;
-  /** User-gesture BLE connect (Linux Web Bluetooth requestDevice path). */
+  /** Direct native sidecar GATT reconnect on Linux. */
   connectBleDirect: (bleDeviceId: string) => Promise<void>;
   connectSerialAutomatic: (serialPortId: string | null | undefined) => Promise<void>;
   connectHttp: (httpAddress: string) => Promise<void>;

@@ -891,6 +891,7 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.supportSectionDesc': 'section prose, no control',
     'appPanel.memorySampleNow': 'child action of the indexed renderer memory section',
     'appPanel.memorySampling': 'busy label of the indexed memory sample action',
+    'appPanel.memoryRendererProcess': 'scope label for the indexed renderer memory measurement',
     'appPanel.memoryDescription': 'help text for the indexed memory section',
     'appPanel.memoryIsolated': 'availability status of the indexed memory section',
     'appPanel.memoryNotIsolated': 'availability status of the indexed memory section',

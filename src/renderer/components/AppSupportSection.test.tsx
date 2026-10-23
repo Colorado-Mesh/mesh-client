@@ -98,6 +98,41 @@ describe('App Support memory diagnostics', () => {
     expect(screen.getByRole('button', { name: 'Sample now' })).toBeEnabled();
   });
 
+  it('labels process memory and excludes browser estimates from its trend and history', () => {
+    memory.snapshot = {
+      ...memory.snapshot,
+      samples: [
+        { at: 1000, bytes: 10_000_000 },
+        { at: 2000, bytes: 120_000_000, source: 'renderer-process' },
+      ],
+    };
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    expect(screen.getByText(/Renderer process memory \(physical RAM\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Browser estimates/)).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Latest estimate: 120 MB');
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByText('10 MB')).not.toBeInTheDocument();
+    expect(container.querySelector('polyline')).not.toBeInTheDocument();
+    updateMemory({
+      samples: [
+        ...memory.snapshot.samples,
+        { at: 3000, bytes: 140_000_000, source: 'renderer-process' },
+      ],
+    });
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(container.querySelector('polyline')).toHaveAttribute('points', '0,10 300,4');
+  });
+
+  it('keeps process sampling and its scope accessible', async () => {
+    memory.snapshot = {
+      ...memory.snapshot,
+      samples: [{ at: 1000, bytes: 120_000_000, source: 'renderer-process' }],
+    };
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('keeps both support export actions and disables them during export', () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     const { rerender } = render(<AppSupportSection exporting={null} onExport={onExport} />);

@@ -4,13 +4,23 @@ import { COI_MEMORY_MAX_SAMPLES, createCoiMemorySampler } from './coiMemorySampl
 import { COI_MEMORY_SAMPLE_INTERVAL_MS } from './timeConstants';
 import { withMockedConsoleWarn } from './vitestConsoleMock';
 
-function setup({ isolated = true, supported = true, visible = true, random = 0.5 } = {}) {
+function setup({
+  isolated = true,
+  supported = true,
+  processSupported = false,
+  visible = true,
+  random = 0.5,
+} = {}) {
   const measure = vi.fn<() => Promise<{ bytes: number }>>().mockResolvedValue({ bytes: 100 });
+  const measureProcess = vi
+    .fn<() => Promise<{ bytes: number }>>()
+    .mockResolvedValue({ bytes: 1024 });
   let onVisibility: (() => void) | undefined;
   const unsubscribe = vi.fn();
   const sampler = createCoiMemorySampler({
     isIsolated: () => isolated,
     getMeasure: () => (supported ? measure : undefined),
+    getProcessMeasure: () => (processSupported ? measureProcess : undefined),
     isVisible: () => visible,
     onVisibilityChange: (listener) => {
       onVisibility = listener;
@@ -22,6 +32,7 @@ function setup({ isolated = true, supported = true, visible = true, random = 0.5
   return {
     sampler,
     measure,
+    measureProcess,
     unsubscribe,
     setVisible: (value: boolean) => {
       visible = value;
@@ -152,6 +163,102 @@ describe('COI renderer memory sampler', () => {
       await sampler.sampleNow();
       expect(sampler.getSnapshot().failed).toBe(false);
       expect(sampler.getSnapshot().samples).toHaveLength(2);
+    });
+  });
+
+  it('uses process physical memory when the browser API is absent', async () => {
+    const { sampler, measure, measureProcess } = setup({
+      supported: false,
+      processSupported: true,
+    });
+    const stop = sampler.start();
+    expect(sampler.getSnapshot().supported).toBe(true);
+    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS);
+    expect(measure).not.toHaveBeenCalled();
+    expect(measureProcess).toHaveBeenCalledTimes(1);
+    expect(sampler.getSnapshot().samples).toEqual([
+      { at: Date.now(), bytes: 1024, source: 'renderer-process' },
+    ]);
+    stop();
+  });
+
+  it('switches to process memory after SecurityError and starts a separate history', async () => {
+    const { sampler, measure, measureProcess } = setup({ processSupported: true });
+    await sampler.sampleNow();
+    measure.mockRejectedValueOnce(new DOMException('not available', 'SecurityError'));
+    expect(await sampler.sampleNow()).toEqual({
+      at: Date.now(),
+      bytes: 1024,
+      source: 'renderer-process',
+    });
+    expect(sampler.getSnapshot()).toMatchObject({ failed: false, samples: [{ bytes: 1024 }] });
+    expect(sampler.getSnapshot().samples).toHaveLength(1);
+    await sampler.sampleNow();
+    expect(measure).toHaveBeenCalledTimes(2);
+    expect(measureProcess).toHaveBeenCalledTimes(2);
+    expect(sampler.getSnapshot().samples).toHaveLength(2);
+  });
+
+  it('reports other browser errors rather than disguising them as a process sample', async () => {
+    await withMockedConsoleWarn(async () => {
+      const { sampler, measure, measureProcess } = setup({ processSupported: true });
+      measure.mockRejectedValueOnce(new Error('measurement crashed'));
+      expect(await sampler.sampleNow()).toBeNull();
+      expect(measureProcess).not.toHaveBeenCalled();
+      expect(sampler.getSnapshot()).toMatchObject({ failed: true, samples: [] });
+    });
+  });
+
+  it.each([{ isolated: false }, { visible: false }])(
+    'gates process sampling on isolation and visibility: %j',
+    async (availability) => {
+      const { sampler, measureProcess } = setup({
+        ...availability,
+        supported: false,
+        processSupported: true,
+      });
+      const stop = sampler.start();
+      expect(await sampler.sampleNow()).toBeNull();
+      await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
+      expect(measureProcess).not.toHaveBeenCalled();
+      stop();
+    },
+  );
+
+  it('does not start a fallback measurement after the owner stops', async () => {
+    const { sampler, measure, measureProcess } = setup({ processSupported: true });
+    let reject!: (reason: unknown) => void;
+    measure.mockImplementationOnce(() => new Promise((_resolve, fail) => (reject = fail)));
+    const stop = sampler.start();
+    const pending = sampler.sampleNow();
+    await Promise.resolve();
+    stop();
+    reject(new DOMException('not available', 'SecurityError'));
+    expect(await pending).toBeNull();
+    expect(measureProcess).not.toHaveBeenCalled();
+    expect(sampler.getSnapshot().samples).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('reports unavailable native metrics and retries process sampling later', async () => {
+    await withMockedConsoleWarn(async () => {
+      const { sampler, measure, measureProcess } = setup({ processSupported: true });
+      measure.mockRejectedValueOnce(new DOMException('not available', 'SecurityError'));
+      measureProcess.mockRejectedValueOnce(new Error('Renderer PID unavailable'));
+      expect(await sampler.sampleNow()).toBeNull();
+      expect(sampler.getSnapshot()).toMatchObject({ failed: true, samples: [] });
+      await sampler.sampleNow();
+      expect(sampler.getSnapshot()).toMatchObject({ failed: false, samples: [{ bytes: 1024 }] });
+      expect(measure).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it.each([0, NaN, Infinity, -1])('rejects invalid process memory: %s', async (bytes) => {
+    await withMockedConsoleWarn(async () => {
+      const { sampler, measureProcess } = setup({ supported: false, processSupported: true });
+      measureProcess.mockResolvedValueOnce({ bytes });
+      expect(await sampler.sampleNow()).toBeNull();
+      expect(sampler.getSnapshot()).toMatchObject({ failed: true, samples: [] });
     });
   });
 

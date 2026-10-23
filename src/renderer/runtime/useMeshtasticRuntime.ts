@@ -2864,9 +2864,9 @@ export function useMeshtasticRuntime() {
           activeDevice.transport,
         );
       }
-      // Gesture-based Linux connects (e.g. ConnectionPanel's Reconnect button) may call
+      // Manual BLE connects (e.g. ConnectionPanel's Reconnect button) may call
       // prepareRfConnect without a peripheralId; backfill it here so a later automatic
-      // reconnect does not fall back to a gesture-requiring requestDevice() call.
+      // reconnect can target the same native peripheral without another scan.
       // Generation-gated: a superseded attempt (newer prepareRfConnect already bumped
       // reconnectGenerationRef and replaced connectionParamsRef.current) must not stamp
       // its resolved device id onto a different, newer session's params.

@@ -177,6 +177,10 @@ describe('explicit durable renderer data reset', () => {
     seedDurableRendererSettings(db, legacySettings);
     seedIncidentsOn(db, legacyIncidents);
     db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run('locale', 'de');
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(
+      'rendererDeletedStorage:mesh-client:lastConnection:meshcore',
+      '1',
+    );
 
     resetDurableRendererData(db);
 

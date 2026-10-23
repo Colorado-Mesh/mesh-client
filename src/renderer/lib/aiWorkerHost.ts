@@ -84,6 +84,7 @@ export class AiWorkerHost {
     try {
       if (!this.runtime || this.loadedModelUrl !== job.modelUrl) {
         await this.dispose();
+        const loadStartedAt = performance.now();
         const [{ Wllama }, { default: wasmUrl }] = await raced(
           Promise.all([
             import('@wllama/wllama/esm/index'),
@@ -123,11 +124,19 @@ export class AiWorkerHost {
             n_ubatch: 128,
           }),
         );
+        console.debug(
+          '[Catch up] model loaded',
+          JSON.stringify({
+            elapsedMs: performance.now() - loadStartedAt,
+            threads: bundledWllamaThreadCount(),
+          }),
+        );
         this.loadedModelUrl = job.modelUrl;
         signal.throwIfAborted();
       }
       onPhase?.('readingMessages');
       let text = '';
+      const inferenceStartedAt = performance.now();
       await raced(
         this.runtime.createChatCompletion({
           ...sampling,
@@ -152,6 +161,12 @@ export class AiWorkerHost {
       );
       signal.throwIfAborted();
       if (hasRepetitiveAiOutput(text)) throw new RepetitiveAiOutputError();
+      console.debug(
+        '[Catch up] inference completed',
+        JSON.stringify({
+          elapsedMs: performance.now() - inferenceStartedAt,
+        }),
+      );
       completed = true;
     } finally {
       signal.removeEventListener('abort', abort);
