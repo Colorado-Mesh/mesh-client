@@ -154,7 +154,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_100);
   });
 
-  it('dispatches repeater CLI_DATA through PacketRouter instead of chat history', () => {
+  it('updates last_heard for CLI_DATA without PacketRouter or chat history', () => {
     const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
     const pubKey = makePubKey(12);
     const prefixBytes = pubKey.slice(0, 6);
@@ -189,16 +189,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
 
     expect(result.pendingMessages).toHaveLength(0);
     expect(result.roomDispatched).toBe(false);
-    expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'meshcore_cli_response',
-        payload: expect.objectContaining({
-          text: 'A1|uptime 42',
-          senderNodeId: senderId,
-        }),
-      }),
-      'meshcore-test-id',
-    );
+    expect(dispatchSpy).not.toHaveBeenCalled();
     expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_200);
     dispatchSpy.mockRestore();
   });
