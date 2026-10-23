@@ -38,6 +38,16 @@ jobs:
           ref: main
           persist-credentials: false
 
+      # Rust sidecar tables need cargo metadata --all-features (Ratspeak path deps).
+      # Without this, docs:licenses writes the "run locally" stub and PRs regress main.
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad, rsLXST, lrgp-rs)
+        shell: bash
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
+        run: bash scripts/clone-ratspeak-stack.sh
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
 
@@ -59,6 +69,14 @@ jobs:
 
       - name: Generate third-party licenses
         run: pnpm run docs:licenses
+
+      - name: Refuse Rust-section stub
+        run: |
+          if grep -Fq 'run it locally to view this table' docs/third-party-licenses.md; then
+            echo '::error::docs:licenses omitted Rust sidecar tables'
+            echo '::error::(cargo/.rsstack missing). Refusing regressing PR.'
+            exit 1
+          fi
 
       - name: Detect license doc changes
         id: licenses_diff
