@@ -287,8 +287,8 @@ export class TakServerManager extends EventEmitter {
    * the local server: either can run without the other.
    * Throws, leaving any running relay untouched, when the stored credentials cannot be read.
    */
-  startRemote(settings: TAKRemoteSettings): void {
-    const credentials = loadTakRemoteCredentials();
+  async startRemote(settings: TAKRemoteSettings): Promise<void> {
+    const credentials = await loadTakRemoteCredentials();
     saveTakRemoteSettings(settings);
     this.stopRemote();
     this.remoteSettings = settings;
@@ -321,8 +321,8 @@ export class TakServerManager extends EventEmitter {
   }
 
   /** Reconnect a running relay so newly imported credentials replace the ones it holds. */
-  restartRemote(): void {
-    if (this.remote && this.remoteSettings) this.startRemote(this.remoteSettings);
+  async restartRemote(): Promise<void> {
+    if (this.remote && this.remoteSettings) await this.startRemote(this.remoteSettings);
   }
 
   stopRemote(): void {

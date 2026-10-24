@@ -34,14 +34,15 @@ function assertSecretValue(value: unknown): asserts value is string {
   }
 }
 
-function decryptLegacyCiphertext(ciphertext: unknown): string {
+async function decryptLegacyCiphertext(ciphertext: unknown): Promise<string> {
   if (typeof ciphertext !== 'string' || ciphertext.length > MAX_SECRET_BYTES * 2) {
     throw new Error('secureSecrets: invalid legacy ciphertext');
   }
-  if (!safeStorage.isEncryptionAvailable()) {
+  if (!(await safeStorage.isAsyncEncryptionAvailable())) {
     throw new Error('secureSecrets: legacy ciphertext cannot be decrypted');
   }
-  return safeStorage.decryptString(Buffer.from(ciphertext, 'base64'));
+  const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
+  return result;
 }
 
 function parseLegacyObject(plaintext: string, kind: string): Record<string, unknown> {
@@ -116,9 +117,9 @@ function assertLegacyBackupPayload(
   return { publicKey: parsed.publicKey, privateKey: parsed.privateKey };
 }
 
-function strongStorageAvailable(): boolean {
+async function strongStorageAvailable(): Promise<boolean> {
   try {
-    if (!safeStorage.isEncryptionAvailable()) return false;
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) return false;
     return safeStorage.getSelectedStorageBackend?.() !== 'basic_text';
   } catch {
     // catch-no-log-ok storage backend probing is intentionally fail-closed
@@ -138,54 +139,97 @@ export class SecureSecretStore {
 
   constructor(private readonly db: () => NodeSqliteDB) {}
 
-  status(): SecureSecretStoreStatus {
-    const persistent = strongStorageAvailable();
+  async status(): Promise<SecureSecretStoreStatus> {
+    const persistent = await strongStorageAvailable();
     return { available: true, persistent };
   }
 
-  set(key: unknown, value: unknown, requirePersistent: unknown = false): SecureSecretWriteResult {
+  async set(
+    key: unknown,
+    value: unknown,
+    requirePersistent: unknown = false,
+  ): Promise<SecureSecretWriteResult> {
     assertSecretKey(key);
     assertSecretValue(value);
     if (typeof requirePersistent !== 'boolean') {
       throw new Error('secureSecrets: invalid persistence requirement');
     }
 
-    if (!strongStorageAvailable()) {
+    if (!(await strongStorageAvailable())) {
       if (requirePersistent) throw new Error('secureSecrets: OS key storage unavailable');
       this.session.set(key, value);
       return { available: true, persistent: false, verified: this.session.get(key) === value };
     }
 
-    const ciphertext = safeStorage.encryptString(value).toString('base64');
+    const ciphertext = (await safeStorage.encryptStringAsync(value)).toString('base64');
     const db = this.db();
-    db.transaction(() => {
-      db.prepareOnce(
-        'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
-      ).run(key, ciphertext, Date.now());
-      const row = db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get(key) as
-        { ciphertext?: unknown } | undefined;
-      const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
-      if (
-        stored.length === 0 ||
-        safeStorage.decryptString(Buffer.from(stored, 'base64')) !== value
-      ) {
+    const previousRow = db
+      .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+      .get(key) as { ciphertext?: unknown } | undefined;
+    const previous =
+      typeof previousRow?.ciphertext === 'string' ? previousRow.ciphertext : undefined;
+
+    const restorePrevious = (): void => {
+      if (previous != null) {
+        db.prepareOnce(
+          'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
+        ).run(key, previous, Date.now());
+      } else {
+        db.prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
+      }
+    };
+
+    try {
+      db.transaction(() => {
+        db.prepareOnce(
+          'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
+        ).run(key, ciphertext, Date.now());
+        const row = db
+          .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+          .get(key) as { ciphertext?: unknown } | undefined;
+        const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
+        if (stored.length === 0 || stored !== ciphertext) {
+          throw new Error('secureSecrets: persistence verification failed');
+        }
+      })();
+
+      const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
+      if (result !== value) {
+        restorePrevious();
         throw new Error('secureSecrets: persistence verification failed');
       }
-    })();
+    } catch (err) {
+      if (!(
+        err instanceof Error && err.message === 'secureSecrets: persistence verification failed'
+      )) {
+        restorePrevious();
+      }
+      throw err;
+    }
     this.session.delete(key);
     return { available: true, persistent: true, verified: true };
   }
 
-  get(key: unknown): string | null {
+  async get(key: unknown): Promise<string | null> {
     assertSecretKey(key);
     if (this.session.has(key)) return this.session.get(key) ?? null;
-    if (!strongStorageAvailable()) return null;
+    if (!(await strongStorageAvailable())) return null;
     const row = this.db()
       .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
       .get(key) as { ciphertext?: unknown } | undefined;
     if (typeof row?.ciphertext !== 'string' || row.ciphertext.length === 0) return null;
     try {
-      return safeStorage.decryptString(Buffer.from(row.ciphertext, 'base64'));
+      const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(
+        Buffer.from(row.ciphertext, 'base64'),
+      );
+      if (shouldReEncrypt) {
+        try {
+          await this.set(key, result);
+        } catch {
+          // catch-no-log-ok re-encrypt is best-effort after key rotation
+        }
+      }
+      return result;
     } catch {
       // catch-no-log-ok corrupt ciphertext is treated as an unavailable secret
       return null;
@@ -209,18 +253,18 @@ export class SecureSecretStore {
     return [...keys].sort();
   }
 
-  getAll(): Record<string, string> {
+  async getAll(): Promise<Record<string, string>> {
     const values: Record<string, string> = {};
     for (const key of this.list()) {
-      const value = this.get(key);
+      const value = await this.get(key);
       if (value != null) values[key] = value;
     }
     return values;
   }
 
   /** Import the one historical encrypted MeshCore identity shape into its fixed destination. */
-  migrateLegacyIdentityCiphertext(ciphertext: unknown): SecureSecretWriteResult {
-    const plaintext = decryptLegacyCiphertext(ciphertext);
+  async migrateLegacyIdentityCiphertext(ciphertext: unknown): Promise<SecureSecretWriteResult> {
+    const plaintext = await decryptLegacyCiphertext(ciphertext);
     let privateKey: unknown;
     try {
       privateKey = JSON.parse(plaintext) as unknown;
@@ -232,12 +276,12 @@ export class SecureSecretStore {
   }
 
   /** Import historical encrypted backup shapes after binding protocol, id, and destination. */
-  migrateLegacyBackupCiphertext(
+  async migrateLegacyBackupCiphertext(
     protocol: unknown,
     id: unknown,
     format: unknown,
     ciphertext: unknown,
-  ): SecureSecretWriteResult {
+  ): Promise<SecureSecretWriteResult> {
     if (protocol !== 'meshcore' && protocol !== 'meshtastic') {
       throw new Error('secureSecrets: invalid legacy backup protocol');
     }
@@ -248,10 +292,10 @@ export class SecureSecretStore {
       throw new Error('secureSecrets: invalid legacy backup format');
     }
     const normalizedId = Number(id);
-    const plaintext = decryptLegacyCiphertext(ciphertext);
+    const plaintext = await decryptLegacyCiphertext(ciphertext);
     const legacyKeys = assertLegacyBackupPayload(plaintext, protocol, normalizedId, format);
     const key = `backup:${protocol}:${String(normalizedId)}`;
-    const existing = this.get(key);
+    const existing = await this.get(key);
     if (existing != null) {
       let existingKeys: { publicKey: string; privateKey: string };
       try {
@@ -271,7 +315,7 @@ export class SecureSecretStore {
       ) {
         throw new Error('secureSecrets: conflicting legacy backup');
       }
-      return { ...this.status(), verified: true };
+      return { ...(await this.status()), verified: true };
     }
     return this.set(key, plaintext);
   }

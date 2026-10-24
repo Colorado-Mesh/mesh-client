@@ -18,15 +18,20 @@ import {
   probePnpmWorkspaceAfterStoreDirAppend,
   resolveFlatpakNodeGeneratorBin,
   resolveGeneratorSpecialPyPath,
+  resolveGeneratorRequestsPyPath,
   rewriteGeneratorSkipPlaywrightSpecialSources,
   rewriteGeneratorSkipElectronArmv7l,
+  rewriteGeneratorAiohttpLongHeaders,
   PLAYWRIGHT_SPECIAL_SKIP_MARKER,
   PLAYWRIGHT_SPECIAL_SOURCE_CALL,
   ELECTRON_ARMV7L_SKIP_MARKER,
   ELECTRON_IA32_SKIP_BLOCK,
+  AIOHTTP_LONG_HEADERS_MARKER,
+  AIOHTTP_CLIENT_SESSION_ANCHOR,
   applyGeneratorFlatpakNodeGeneratorPatches,
   applyGeneratorSkipPlaywrightSpecialSources,
   applyGeneratorSkipElectronArmv7l,
+  applyGeneratorAiohttpLongHeaders,
   resolveGeneratorElectronPyPath,
   storeVersionFromPackageManager,
   stripNpmrcStoreDirLines,
@@ -618,5 +623,62 @@ ${ELECTRON_IA32_SKIP_BLOCK}
     expect(result.ok).toBe(false);
     expect(files.get(specialPy)).toBe(originalSpecial);
     expect(files.get(electronPy)).toBe(ELECTRON_IA32_SKIP_BLOCK);
+  });
+
+  it('rewrites requests.py to raise aiohttp header size limits', () => {
+    const upstream = `async with (
+${AIOHTTP_CLIENT_SESSION_ANCHOR}
+            session.get(url) as response,
+        ):
+`;
+    const first = rewriteGeneratorAiohttpLongHeaders(upstream);
+    expect(first.changed).toBe(true);
+    expect(first.missing).toBe(false);
+    expect(first.source).toContain(AIOHTTP_LONG_HEADERS_MARKER);
+    expect(first.source).toContain('max_line_size=65536');
+
+    const second = rewriteGeneratorAiohttpLongHeaders(first.source);
+    expect(second.changed).toBe(false);
+    expect(second.already).toBe(true);
+
+    const missing = rewriteGeneratorAiohttpLongHeaders('no ClientSession here\n');
+    expect(missing.missing).toBe(true);
+    expect(missing.changed).toBe(false);
+  });
+
+  it('resolves requests.py from a venv-style generator bin', () => {
+    const requestsRel = 'lib/python3.12/site-packages/flatpak_node_generator/requests.py';
+    const requestsAbs = path.join('/venv', requestsRel);
+    expect(
+      resolveGeneratorRequestsPyPath('/venv/bin/flatpak-node-generator', {
+        existsSync: (p) => p === requestsAbs,
+        globSync: (pattern, opts) => {
+          expect(opts.cwd).toBe('/venv');
+          expect(pattern).toContain('requests.py');
+          return [requestsRel];
+        },
+      }),
+    ).toBe(requestsAbs);
+  });
+
+  it('applies aiohttp long-header rewrite to a requests.py fixture', () => {
+    const requestsPy = '/venv/lib/python3.12/site-packages/flatpak_node_generator/requests.py';
+    const files = new Map([[requestsPy, AIOHTTP_CLIENT_SESSION_ANCHOR]]);
+    const first = applyGeneratorAiohttpLongHeaders(requestsPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: (p, data) => {
+        files.set(p, data);
+      },
+    });
+    expect(first).toEqual({ ok: true, already: false });
+    expect(files.get(requestsPy)).toContain(AIOHTTP_LONG_HEADERS_MARKER);
+
+    const second = applyGeneratorAiohttpLongHeaders(requestsPy, {
+      readFileSync: (p) => files.get(p) ?? '',
+      writeFileSync: () => {
+        throw new Error('should not rewrite when already applied');
+      },
+    });
+    expect(second).toEqual({ ok: true, already: true });
   });
 });
