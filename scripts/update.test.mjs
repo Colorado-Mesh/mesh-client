@@ -113,7 +113,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.33',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.34',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
     expect(result.stdout).toContain('file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b');
@@ -553,9 +553,9 @@ exit 0
           body: 'lrgp-rs v0.4.1',
         },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.0.33',
-          published_at: '2026-09-25T14:18:03Z',
-          body: 'Fixed attachment chunk size and Bluetooth Peer transfers.',
+          tag_name: 'v1.0.34',
+          published_at: '2026-10-10T23:12:40Z',
+          body: 'Voice messages, Codec2 calls, and Bluetooth discovery cleanup.',
         },
       },
       commits: {
@@ -616,7 +616,7 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.0.33');
+    expect(result.stdout).toContain('v1.0.34');
     expect(result.stdout).toContain('reviewed; current');
     expect(result.stdout).toContain('js/lxmface.js @ 308a729d5bf9 (reviewed; current)');
     expect(result.stdout).toContain('v0.4.1');
@@ -646,7 +646,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.0.33');
+    expect(result.stdout).toContain('v1.0.34');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');

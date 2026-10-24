@@ -1,7 +1,6 @@
 // Vendored from ratspeak/Ratspeak crates/ratspeak-runtime/src/vault.rs
-// Upstream commit: 19e2a0d19202d4c7562adba79ac706ec352fdb86
-// Do not edit by hand — refresh from upstream and bump the SHA + scripts/update.sh pin.
-
+// Upstream commit: f7edb73e25793acf0def2a0c53f709a77fa62fe5
+// Do not edit by hand — refresh via scripts/sync-ratspeak-releases.mjs.
 //! At-rest passcode encryption for software identities.
 //!
 //! Seals the 64-byte Reticulum private key with the user's passcode:
@@ -265,16 +264,8 @@ pub fn protect_identity(
         let v = read_vault(&enc_file)?;
         (decrypt_key(cur, &v)?, decrypt_mnemonic(cur, &v)?)
     } else if id_file.exists() {
-        let data = std::fs::read(&id_file)
+        let id = Identity::from_file(&id_file)
             .map_err(|e| VaultError::Invalid(format!("read identity: {e}")))?;
-        // Prefer raw 64-byte keys: Identity::from_file tries msgpack first and can
-        // mis-parse rare random keys as an empty private_key.
-        let id = if data.len() == 64 {
-            Identity::from_private_key(&data)
-        } else {
-            Identity::from_file(&id_file)
-        }
-        .map_err(|e| VaultError::Invalid(format!("read identity: {e}")))?;
         let key = id
             .get_private_key()
             .ok_or_else(|| VaultError::Invalid("identity has no private key".into()))?;
@@ -325,13 +316,8 @@ pub fn unprotect_identity(id_dir: &Path, passcode: &str) -> Result<(), VaultErro
     id.to_file(&id_file)
         .map_err(|e| VaultError::Io(format!("write identity: {e}")))?;
     // Confirm the plaintext loads before removing the vault.
-    let written = std::fs::read(&id_file).map_err(|e| VaultError::Io(e.to_string()))?;
-    if written.len() == 64 {
-        Identity::from_private_key(&written)
-    } else {
-        Identity::from_file(&id_file)
-    }
-    .map_err(|e| VaultError::Invalid(format!("verify identity: {e}")))?;
+    Identity::from_file(&id_file)
+        .map_err(|e| VaultError::Invalid(format!("verify identity: {e}")))?;
     // Restore the plaintext phrase sidecar so re-display keeps working unprotected.
     if let Some(m) = &mnemonic {
         write_seed_file(&seed_file, m)?;
@@ -378,10 +364,10 @@ fn atomic_secret_write(path: &Path, tmp: &Path, bytes: &[u8]) -> Result<(), Vaul
 }
 
 fn sync_parent_dir(path: &Path) {
-    if let Some(parent) = path.parent() {
-        if let Ok(dir) = std::fs::File::open(parent) {
-            let _ = dir.sync_all();
-        }
+    if let Some(parent) = path.parent()
+        && let Ok(dir) = std::fs::File::open(parent)
+    {
+        let _ = dir.sync_all();
     }
 }
 
