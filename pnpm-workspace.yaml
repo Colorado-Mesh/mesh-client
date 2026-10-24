@@ -70,12 +70,12 @@ overrides:
   # fast-uri: GHSA-7p8r-x3mc-p8w7 plus GHSA-5jgf-p345-68v8 / GHSA-f65p-4m7j-42xc /
   # GHSA-fph4-wmhf-6fwf / GHSA-jqff-g426-hqxp — floor >=3.1.6 (electron-builder →
   # app-builder-lib → ajv still pulls older 3.1.x without an override).
-  # undici: GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) — floor >=7.29.0, kept as
-  # a scoped `undici@<7.29.0` override so transitive consumers (jsdom ^7.25.0,
-  # node-gyp ^6.25.0) land on 7.29.0. package.json depends on undici ^8.10.0
-  # directly: main-process link previews need nodejs/undici#5547 (setTypeOfService
-  # EINVAL crash fix), which is 8.x-only, and a global ^8 override would force an
-  # unsupported major on those consumers.
+  # undici: GHSA-xjj6-f33q-929c / GHSA-4cwx-7wf7-3272 (+ sibling undici GHSAs) —
+  # floor >=7.30.1, kept as a scoped `undici@<7.30.1` override so transitive
+  # consumers (jsdom ^7.25.0, node-gyp ^6.25.0) land on 7.30.1+. package.json
+  # depends on undici ^8.12.3 directly: main-process link previews need
+  # nodejs/undici#5547 (setTypeOfService EINVAL crash fix), which is 8.x-only,
+  # and a global ^8 override would force an unsupported major on those consumers.
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) plus GHSA-rxp7-6hxx-x8q5
@@ -117,8 +117,8 @@ overrides:
   smol-toml: ^1.9.0
   tar: ^7.5.18
   tmp: ^0.2.6
-  undici@<7.29.0: ^7.29.0
-  undici-types: ^7.29.0
+  undici@<7.30.1: ^7.30.1
+  undici-types: ^7.30.0
   ws: ^8.21.0
 patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': patches/@jsr__meshtastic__core@2.6.6.patch
