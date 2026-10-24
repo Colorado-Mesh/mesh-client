@@ -1070,11 +1070,101 @@ describe('renderer origin migration', () => {
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
   });
 
-  it('does not overwrite an untracked nonempty origin without any migration artifacts', async () => {
+  it.each([{}, { [ENV_FORCE_ORIGIN_REPAIR]: '1' }])(
+    'exports legacy data and repairs an untracked nonempty origin with env=%j',
+    async (env) => {
+      options.env = env;
+      target.set('mesh-client:protocol', 'reticulum');
+      target.set('target-only', 'keep existing custom value');
+      const originalLegacy = Object.fromEntries(legacy);
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get('mesh-client:protocol')).toBe('reticulum');
+      expect(target.get('target-only')).toBe('keep existing custom value');
+      expect(target.get('mesh-client:chatMacros')).toBe(legacy.get('mesh-client:chatMacros'));
+      expect(Object.fromEntries(legacy)).toEqual(originalLegacy);
+      expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME).entries).toEqual(originalLegacy);
+      expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME)).toMatchObject({
+        phase: 'completed',
+        hasCompleted: true,
+        completedVersion: LATEST_RENDERER_ORIGIN_MIGRATION,
+      });
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it('repairs untracked storage from an existing export without replacing its baseline', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const file = path.join(directory, 'migration', LEGACY_STORAGE_EXPORT_FILENAME);
+    const originalExport = fs.readFileSync(file, 'utf8');
+    fs.unlinkSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME));
+    target.delete(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY);
     target.set('mesh-client:protocol', 'reticulum');
-    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    legacy.set('mesh-client:protocol', 'meshtastic');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(target.get('mesh-client:protocol')).toBe('reticulum');
+    expect(fs.readFileSync(file, 'utf8')).toBe(originalExport);
+  });
+
+  it('preserves untracked data and creates no state if the missing legacy export cannot be read', async () => {
+    target.set('mesh-client:protocol', 'reticulum');
+    const originalTarget = Object.fromEntries(target);
+    failLoad = options.legacyMigrationUrl;
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(Object.fromEntries(target)).toEqual(originalTarget);
+    expect(seed).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(directory, 'migration'))).toBe(false);
+  });
+
+  it('keeps untracked data untouched if its recovery export cannot be committed', async () => {
+    target.set('mesh-client:protocol', 'reticulum');
+    const originalTarget = Object.fromEntries(target);
+    vi.spyOn(fs, 'renameSync').mockImplementationOnce(() => {
+      throw new Error('disk write failed');
+    });
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(Object.fromEntries(target)).toEqual(originalTarget);
+    expect(seed).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME))).toBe(
+      false,
+    );
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get('mesh-client:protocol')).toBe('reticulum');
+  });
+
+  it.each(['seed', 'import', 'verification'])(
+    'retains untracked-origin precedence after interrupted %s and retry',
+    async (failure) => {
+      target.set('mesh-client:protocol', 'reticulum');
+      target.set('target-only', 'retain this');
+      if (failure === 'seed')
+        seed.mockImplementationOnce(() => {
+          throw new Error('database seed failed');
+        });
+      else if (failure === 'import') failImportAfter = 1;
+      else
+        seed.mockImplementationOnce(() => {
+          corruptVerify = true;
+        });
+      expect(await runWebStorageOriginMigration(options)).toBe('failed');
+      expect(target.get('mesh-client:protocol')).toBe('reticulum');
+      expect(target.get('target-only')).toBe('retain this');
+      expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).hasCompleted).toBe(true);
+      failImportAfter = undefined;
+      corruptVerify = false;
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      expect(target.get('mesh-client:protocol')).toBe('reticulum');
+      expect(target.get('target-only')).toBe('retain this');
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    },
+  );
+
+  it('does not replay a legacy deletion journal over an untracked custom-origin value', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    legacy.set(`${RENDERER_STORAGE_DELETION_PREFIX}${key}`, '1');
+    target.set(key, 'current custom connection');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('current custom connection');
+    expect(options.commitImportedStorageIntents).not.toHaveBeenCalled();
   });
 
   it('does not repair twice when the reloaded actual document still loses critical storage', async () => {
@@ -1095,11 +1185,9 @@ describe('renderer origin migration', () => {
     target.set('mesh-client:protocol', 'reticulum');
     target.delete(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY);
     fs.unlinkSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME));
-    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(target.get('mesh-client:protocol')).toBe('reticulum');
-    expect(fs.existsSync(path.join(directory, 'migration', RENDERER_ORIGIN_STATE_FILENAME))).toBe(
-      false,
-    );
+    expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).hasCompleted).toBe(true);
     options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1' };
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(target.get('mesh-client:protocol')).toBe('reticulum');

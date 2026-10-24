@@ -88,6 +88,14 @@ If only the state file disappears, a surviving matching marker and export are re
 overwriting current values. The marker alone cannot authorize a new cutover. Missing or mismatched
 recovery evidence fails closed, and malformed or unsupported-version state remains untouched.
 
+A nonempty custom origin without a marker or state is repaired automatically. If no recovery export
+exists, the app first exports and flushes the legacy file-origin storage. It then records repair
+state before writing the target, retains existing custom-origin values on conflicts, fills missing
+keys from the export, and independently verifies the result. Interrupted repairs keep this same
+precedence on retry. A failed export or repair retains `file://` and the existing data. Historical
+legacy deletion journals do not override current custom-origin values during this repair.
+`MESH_CLIENT_FORCE_ORIGIN_REPAIR=1` remains available to request repair explicitly.
+
 Last-read watermarks, incidents, MECP blocked senders, and TAK relay preferences additionally use
 SQLite as their durable source. See [Renderer storage](renderer-storage.md) for store ownership,
 hydration, and write-through behavior.
@@ -205,7 +213,9 @@ The script rebuilds before launching Electron. Inspect the renderer through a Ch
 
 Expect `mesh-client://renderer/index.html`, `mesh-client://renderer`, `true`, and `"function"`.
 Confirm the startup log reports `app.isPackaged: false`, the intended test `userData` directory,
-and the final `renderer loaded` URL. Do not redefine `app.isPackaged` or set a custom renderer URL
+and the final `renderer loaded` URL. The final `renderer load source` line includes `phase` and
+the actual `crossOriginIsolated` result: `failed` identifies migration failure, `skipped` an
+override, and `health-failed` a failed post-load check. Do not redefine `app.isPackaged` or set a custom renderer URL
 for this check: either would miss the normal `pnpm start` path.
 
 In that profile, verify `migration/renderer-origin-migration.json` records `phase: "completed"`,

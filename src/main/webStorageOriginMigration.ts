@@ -548,17 +548,15 @@ export async function runWebStorageOriginMigration(
       return 'completed';
     }
 
-    if (state === undefined && untrackedCurrent && Object.keys(untrackedCurrent).length > 0) {
-      if (!snapshot || env[ENV_FORCE_ORIGIN_REPAIR] !== '1') {
-        throw new Error(
-          'Untracked nonempty renderer origin requires a recovery export and explicit repair',
-        );
-      }
+    const untracked = untrackedCurrent && Object.keys(untrackedCurrent).length > 0;
+    if (untracked && snapshot) {
       await repairStorage(options, snapshot, untrackedCurrent);
       return 'completed';
     }
 
-    saveState(options, 'pending', snapshot, false);
+    // Preserve the untracked origin across interruptions: write its legacy recovery export
+    // first, then repairStorage records hasCompleted before any target writes can occur.
+    if (!untracked) saveState(options, 'pending', snapshot, false);
     let entries: WebStorageEntries;
     let liveLegacyEntries: WebStorageEntries | undefined;
     try {
@@ -589,6 +587,10 @@ export async function runWebStorageOriginMigration(
         entries,
       };
       writeJsonAtomic(migrationPath(options, LEGACY_STORAGE_EXPORT_FILENAME), snapshot);
+    }
+    if (untracked) {
+      await repairStorage(options, snapshot, untrackedCurrent);
+      return 'completed';
     }
     saveState(options, 'exported', snapshot, false);
     const importedIntents = Object.fromEntries(

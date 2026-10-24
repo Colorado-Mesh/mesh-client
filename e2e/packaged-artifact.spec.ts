@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -50,7 +50,10 @@ test.describe('actual packaged renderer artifact', () => {
       cwd: repoRoot,
       env: env as Record<string, string>,
     });
-    const page = await app.firstWindow();
+    // Migration opens short-lived hidden windows before the main renderer is ready.
+    const mainPage = () => app!.windows().find((page) => page.url().endsWith('/index.html'));
+    await expect.poll(mainPage, { timeout: 45000 }).toBeDefined();
+    const page = mainPage()!;
     await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible({
       timeout: 45000,
     });
@@ -435,6 +438,79 @@ test.describe('actual packaged renderer artifact', () => {
       fullPage: true,
     });
   });
+
+  for (const missingExport of [true, false]) {
+    test(`repairs an untracked custom origin with ${missingExport ? 'missing' : 'existing'} export`, async () => {
+      test.setTimeout(180000);
+      let page = await launch({ MESH_CLIENT_FORCE_FILE_ORIGIN: '1' });
+      await seedLegacyStorage(page, {
+        'mesh-client:protocol': 'meshtastic',
+        'legacy-only-setting': 'retain legacy data',
+        'mesh-client:chatMacros': JSON.stringify({
+          state: {
+            slots: [{ label: 'Untracked macro', text: 'Legacy macro body' }],
+            size: 'medium',
+            sendMode: 'insert',
+            collapsed: false,
+          },
+          version: 1,
+        }),
+      });
+      await app!.close();
+      page = await launch();
+      await openPanel(page, 'Chat');
+      await page.getByRole('button', { name: 'Edit macros', exact: true }).click();
+      await page
+        .getByRole('dialog', { name: 'Edit macros' })
+        .getByLabel('F1 message text')
+        .fill('Existing custom body');
+      await page
+        .getByRole('dialog', { name: 'Edit macros' })
+        .getByRole('button', { name: 'Close', exact: true })
+        .click();
+      await page.evaluate(() => {
+        localStorage.setItem('target-only-setting', 'retain custom data');
+        localStorage.removeItem('legacy-only-setting');
+        localStorage.removeItem('mesh-client:renderer-origin-migration');
+      });
+      await app!.close();
+      app = undefined;
+      const exportPath = path.join(profile, 'migration/legacy-file-origin-web-storage-v1.json');
+      const originalExport = readFileSync(exportPath, 'utf8');
+      unlinkSync(path.join(profile, 'migration/renderer-origin-migration.json'));
+      if (missingExport) unlinkSync(exportPath);
+
+      page = await launch();
+      expect(page.url()).toBe('mesh-client://renderer/index.html');
+      expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
+      expect(await page.evaluate(() => localStorage.getItem('target-only-setting'))).toBe(
+        'retain custom data',
+      );
+      expect(await page.evaluate(() => localStorage.getItem('legacy-only-setting'))).toBe(
+        'retain legacy data',
+      );
+      if (!missingExport) expect(readFileSync(exportPath, 'utf8')).toBe(originalExport);
+      expect(
+        JSON.parse(
+          readFileSync(path.join(profile, 'migration/renderer-origin-migration.json'), 'utf8'),
+        ),
+      ).toMatchObject({ phase: 'completed', hasCompleted: true });
+      await openPanel(page, 'Chat');
+      await page.getByRole('button', { name: 'Edit macros', exact: true }).click();
+      const macros = page.getByRole('dialog', { name: 'Edit macros' });
+      await expect(macros.getByLabel('F1 message text')).toHaveValue('Existing custom body');
+      await macros.getByLabel('F1 message text').fill('Edited after repair');
+      await macros.getByRole('button', { name: 'Close', exact: true }).click();
+      await app!.close();
+      page = await launch();
+      expect(page.url()).toBe('mesh-client://renderer/index.html');
+      await openPanel(page, 'Chat');
+      await page.getByRole('button', { name: 'Edit macros', exact: true }).click();
+      await expect(
+        page.getByRole('dialog', { name: 'Edit macros' }).getByLabel('F1 message text'),
+      ).toHaveValue('Edited after repair');
+    });
+  }
 
   test('boots the shipped ASAR, runs the encoder source under COI and repairs partial critical loss', async () => {
     test.setTimeout(180000);

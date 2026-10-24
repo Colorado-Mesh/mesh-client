@@ -2272,13 +2272,14 @@ function createWindow() {
     if (win.isDestroyed()) return;
     beforeLoad?.();
     trustedRendererUrl = resolved.url;
-    console.debug('[Startup] renderer load source:', resolved.source);
     console.debug('[Startup] renderer URL:', sanitizeLogMessage(resolved.url));
     console.debug('[Startup] app.isPackaged:', app.isPackaged);
     console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     if (resolved.openDevTools) {
       win.webContents.openDevTools();
     }
+    let source = resolved.source;
+    let phase: string = migrationResult;
     if (resolved.source === 'dist' || resolved.source === 'custom-protocol') {
       await win.loadURL(resolved.url, {
         httpReferrer: OSM_HTTP_REFERRER,
@@ -2287,20 +2288,42 @@ function createWindow() {
         let health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents);
         if (win.isDestroyed()) return;
         if (health === 'repaired') {
+          phase = 'repaired';
           await win.loadURL(resolved.url, { httpReferrer: OSM_HTTP_REFERRER });
           if (win.isDestroyed()) return;
           health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents, false);
           if (win.isDestroyed()) return;
         }
         if (health === 'failed') {
+          phase = 'health-failed';
+          source = 'dist';
           trustedRendererUrl = pathToFileURL(distIndexPath).href;
           await win.loadURL(trustedRendererUrl, { httpReferrer: OSM_HTTP_REFERRER });
         }
       }
-      console.debug('[Startup] renderer loaded:', sanitizeLogMessage(win.webContents.getURL()));
-      return;
+    } else {
+      await win.loadURL(resolved.url);
     }
-    await win.loadURL(resolved.url);
+    if (win.isDestroyed()) return;
+    // Diagnostics must not delay startup or poison the promise awaited by data reset.
+    void (async () => {
+      let isolated: boolean | 'unknown' = 'unknown';
+      try {
+        isolated =
+          (await win.webContents.executeJavaScript('globalThis.crossOriginIsolated === true')) ===
+          true;
+      } catch {
+        // catch-no-log-ok the startup line below reports unavailable isolation explicitly.
+      }
+      console.debug(
+        '[Startup] renderer load source:',
+        source,
+        'phase:',
+        phase,
+        'crossOriginIsolated:',
+        isolated,
+      );
+    })();
     console.debug('[Startup] renderer loaded:', sanitizeLogMessage(win.webContents.getURL()));
   };
   reloadMainRenderer = loadRenderer;

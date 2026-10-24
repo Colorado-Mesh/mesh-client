@@ -37,6 +37,7 @@ describe('renderer origin recovery loads', () => {
       session: {},
       getURL: () => loads.at(-1) ?? '',
       openDevTools: vi.fn(),
+      executeJavaScript: vi.fn(() => Promise.resolve(loads.at(-1)?.startsWith('mesh-client:'))),
     };
     const loadURL = vi.fn((url: string) => {
       loads.push(url);
@@ -82,9 +83,13 @@ describe('renderer origin recovery loads', () => {
       ${INDEX_SOURCE.slice(start, end)}
       return loadRenderer;
     })()`;
-    const loadRenderer = runInNewContext(transpileModule(source, {}).outputText, state) as (
+    const runLoadRenderer = runInNewContext(transpileModule(source, {}).outputText, state) as (
       beforeLoad?: () => void,
     ) => Promise<void>;
+    const loadRenderer = async (beforeLoad?: () => void) => {
+      await runLoadRenderer(beforeLoad);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    };
     return { loadRenderer, loads, checkHealth, webContents, state, repairs: () => repairs };
   }
 
@@ -104,6 +109,14 @@ describe('renderer origin recovery loads', () => {
         false,
       ]);
       expect(harness.repairs()).toBe(1);
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'dist',
+        'phase:',
+        'health-failed',
+        'crossOriginIsolated:',
+        false,
+      );
     },
   );
 
@@ -117,6 +130,66 @@ describe('renderer origin recovery loads', () => {
       expect(harness.checkHealth).toHaveBeenCalledTimes(2);
       expect(harness.checkHealth.mock.calls[1]?.[2]).toBe(false);
       expect(harness.repairs()).toBe(1);
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'custom-protocol',
+        'phase:',
+        'repaired',
+        'crossOriginIsolated:',
+        true,
+      );
+    },
+  );
+
+  it.each(['failed', 'skipped'])(
+    'reports the actual file-origin isolation state after migration %s',
+    async (phase) => {
+      const harness = rendererLoadHarness('darwin', true);
+      const fileUrl = pathToFileURL(resolve(__dirname, '../../dist/renderer/index.html')).href;
+      harness.state.runWebStorageOriginMigration.mockResolvedValue(phase);
+      harness.state.resolveRendererLoadUrl.mockReturnValue({
+        source: 'dist',
+        url: fileUrl,
+        openDevTools: false,
+      });
+      await harness.loadRenderer();
+      expect(harness.loads).toEqual([fileUrl]);
+      expect(harness.checkHealth).not.toHaveBeenCalled();
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'dist',
+        'phase:',
+        phase,
+        'crossOriginIsolated:',
+        false,
+      );
+    },
+  );
+
+  it.each(['rejected', 'hung'])(
+    'does not block startup or a following data reset on a %s isolation diagnostic',
+    async (failure) => {
+      const harness = rendererLoadHarness('darwin', true);
+      if (failure === 'rejected')
+        harness.webContents.executeJavaScript.mockRejectedValueOnce(
+          new Error('Execution context was destroyed'),
+        );
+      else harness.webContents.executeJavaScript.mockReturnValueOnce(new Promise(() => {}));
+      const rendererLoadPromise = harness.loadRenderer();
+      const resetStarted = vi.fn();
+      await rendererLoadPromise;
+      resetStarted();
+      expect(resetStarted).toHaveBeenCalledOnce();
+      expect(harness.state.trustedRendererUrl).toBe(RENDERER_INDEX_URL);
+      if (failure === 'rejected')
+        expect(harness.state.console.debug).toHaveBeenCalledWith(
+          '[Startup] renderer load source:',
+          'custom-protocol',
+          'phase:',
+          'repaired',
+          'crossOriginIsolated:',
+          'unknown',
+        );
     },
   );
 });
