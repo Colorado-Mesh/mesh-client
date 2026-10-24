@@ -62,6 +62,12 @@ uses the normal ordered credential retirement path, including retained recovery 
 credentials and settings remain intact. Cancel does not remove anything, and failed removal remains
 retryable. The user must reconfigure any credential they choose to remove.
 
+Secure-store queries explicitly alias result columns: SQLite identifier matching ignores case,
+while returned JavaScript property names can retain an existing table's casing. Real ciphertext
+read-back mismatches still reject and roll back the write and retirement receipt. Errors identify
+the verification stage, credential category/key, SQLite change count and returned type, without
+logging credential values or ciphertext.
+
 Before the map is established, recovery fills missing fields in a partial app-settings blob from
 the verified origin export while preserving present values. Once established, canonical removals
 win over historical exports. A previously overwritten value cannot safely be distinguished from

@@ -195,20 +195,27 @@ export class SecureSecretStore {
 
     const ciphertext = (await safeStorage.encryptStringAsync(value)).toString('base64');
     const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
-    if (result !== value) throw new Error('secureSecrets: persistence verification failed');
+    if (result !== value)
+      throw new Error(
+        `secureSecrets: persistence verification failed (keyring round-trip; ${key})`,
+      );
     assertCurrent();
     const db = this.db();
     withFullSqliteSync(db, () => {
       db.transaction(() => {
-        db.prepareOnce(
-          'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
-        ).run(key, ciphertext, Date.now());
+        const { changes } = db
+          .prepareOnce(
+            'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
+          )
+          .run(key, ciphertext, Date.now());
         const row = db
-          .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+          .prepareOnce('SELECT ciphertext AS ciphertext FROM secure_secrets WHERE key = ?')
           .get(key) as { ciphertext?: unknown } | undefined;
         const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
         if (stored.length === 0 || stored !== ciphertext) {
-          throw new Error('secureSecrets: persistence verification failed');
+          throw new Error(
+            `secureSecrets: persistence verification failed (SQLite read-back; ${key}; changes=${changes}; type=${typeof row?.ciphertext})`,
+          );
         }
         if (retireLegacy) this.markLegacyHandled(db, key);
       })();
@@ -223,7 +230,7 @@ export class SecureSecretStore {
     if (this.session.has(key)) return this.session.get(key) ?? null;
     if (!(await strongStorageAvailable())) return null;
     const row = this.db()
-      .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+      .prepareOnce('SELECT ciphertext AS ciphertext FROM secure_secrets WHERE key = ?')
       .get(key) as { ciphertext?: unknown } | undefined;
     if (typeof row?.ciphertext !== 'string' || row.ciphertext.length === 0) return null;
     try {
@@ -259,7 +266,8 @@ export class SecureSecretStore {
 
   list(): string[] {
     const keys = new Set(this.session.keys());
-    const rows = this.db().prepareOnce('SELECT key FROM secure_secrets').all() as {
+    // SQLite resolves identifiers without case; returned JS property names retain schema case.
+    const rows = this.db().prepareOnce('SELECT key AS key FROM secure_secrets').all() as {
       key?: unknown;
     }[];
     for (const row of rows) {
