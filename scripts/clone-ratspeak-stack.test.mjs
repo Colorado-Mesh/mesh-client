@@ -199,7 +199,7 @@ describe('clone-ratspeak-stack.sh immutable source policy', () => {
     const dest = join(makeTempDir('workspace-'), 'rsLXST');
     const out = runEnsureRepo({ remoteUrl: remote, destDir: dest, pinRef: tipSha });
     expect(out).toContain(`SELECTED=${tipSha}`);
-    expect(out).toContain(`MODE=reviewed pin ${tipSha.slice(0, 12)}`);
+    expect(out).toContain(`MODE=latest-release SHA ${tipSha.slice(0, 12)}`);
     expect(out).toContain(`SHA=${tipSha}`);
     expect(git(dest, 'rev-parse', 'HEAD')).toBe(tipSha);
   });

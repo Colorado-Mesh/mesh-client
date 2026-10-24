@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Clone rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs at reviewed pins,
-# verify each checkout, then apply mesh-client overlays for sidecar builds.
+# Clone rsReticulum + rsLXMF + rsNomad + rsLXST + lrgp-rs at SHAs resolved from
+# the latest published releases (reticulum-sidecar/ratspeak-stack-pins.env,
+# refreshed by scripts/sync-ratspeak-releases.mjs), verify each checkout, then
+# apply mesh-client overlays for sidecar builds.
 set -euo pipefail
 
 # Hooks export their repository/index paths. Nested Git commands must discover
@@ -108,7 +110,7 @@ verify_origin_serves_pin() {
 format_repo_mode() {
   local selected_ref="$1" requested_ref="$2" reviewed_pin="${3:-}"
   if [[ -n "${reviewed_pin}" && "${requested_ref}" == "${reviewed_pin}" ]]; then
-    echo "reviewed pin ${reviewed_pin:0:12}"
+    echo "latest-release SHA ${reviewed_pin:0:12}"
   else
     echo "local override ${selected_ref:0:12}"
   fi
@@ -209,7 +211,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
   return 0
 fi
 
-echo "Preparing Ratspeak stack from reviewed immutable pins..."
+echo "Preparing Ratspeak stack from latest-release resolved SHAs..."
 ensure_repo "${RNS_DIR}" 'https://github.com/ratspeak/rsReticulum.git' \
   "${RS_RETICULUM_REF}" 'rsReticulum' "${RS_RETICULUM_PIN}"
 rns_mode="$(format_repo_mode "${ENSURE_REPO_SELECTED_REF}" "${RS_RETICULUM_REF}" "${RS_RETICULUM_PIN}")"

@@ -76,7 +76,7 @@ vi.mock('./tak/remote-settings', () => ({
 }));
 
 vi.mock('./tak/remote-credentials', () => ({
-  loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem' })),
+  loadTakRemoteCredentials: vi.fn(() => Promise.resolve({ ca: 'ca-pem' })),
 }));
 
 vi.mock('./tak/style-settings', () => ({
@@ -538,11 +538,11 @@ describe('TakServerManager remote relay', () => {
     vi.useRealTimers();
   });
 
-  it('counts as an active sink without the local server and saves its settings', () => {
+  it('counts as an active sink without the local server and saves its settings', async () => {
     const manager = new TakServerManager();
     expect(manager.hasActiveSink()).toBe(false);
 
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
 
     expect(manager.hasActiveSink()).toBe(true);
     expect(manager.getStatus().running).toBe(false);
@@ -550,9 +550,9 @@ describe('TakServerManager remote relay', () => {
     expect(remoteClients[0]?.start).toHaveBeenCalled();
   });
 
-  it('streams node updates to the relay once it is connected', () => {
+  it('streams node updates to the relay once it is connected', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     const remote = remoteClients[0];
 
     manager.onNodeUpdate({ node_id: 1, protocol: 'meshcore', ...POSITION });
@@ -563,14 +563,14 @@ describe('TakServerManager remote relay', () => {
     expect(uids(remote.written)).toEqual(['RN-2']);
   });
 
-  it('flushes nodes cached within the CoT stale window when the relay connects', () => {
+  it('flushes nodes cached within the CoT stale window when the relay connects', async () => {
     const manager = new TakServerManager();
     manager.onNodeUpdate({ node_id: 1, ...POSITION });
     vi.advanceTimersByTime(11 * 60 * 1000);
     manager.onNodeUpdate({ node_id: 2, protocol: 'meshcore', ...POSITION });
     manager.onNodeUpdate({ node_id: 3, protocol: 'meshcore', last_heard: 100 });
 
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     const remote = remoteClients[0];
     remote.connected = true;
     remote.emit('connected');
@@ -579,11 +579,11 @@ describe('TakServerManager remote relay', () => {
     expect(uids(remote.written)).toEqual(['MC-2']);
   });
 
-  it('forwards relay status and returns to idle after stopRemote', () => {
+  it('forwards relay status and returns to idle after stopRemote', async () => {
     const manager = new TakServerManager();
     const statuses: unknown[] = [];
     manager.on('remote-status', (s) => statuses.push(s));
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     remoteClients[0]?.emit('status', { state: 'connecting', host: 'tak.example.org', port: 8089 });
     expect(manager.getRemoteStatus().state).toBe('connecting');
 
@@ -595,9 +595,9 @@ describe('TakServerManager remote relay', () => {
     expect(statuses.at(-1)).toMatchObject({ state: 'disconnected' });
   });
 
-  it('stops counting as a sink when the relay gives up on its own', () => {
+  it('stops counting as a sink when the relay gives up on its own', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     remoteClients[0]?.emit('status', {
       state: 'disconnected',
       host: 'tak.example.org',
@@ -608,23 +608,23 @@ describe('TakServerManager remote relay', () => {
     expect(manager.getRemoteStatus().error).toBe('bad certificate');
   });
 
-  it('replaces the running relay when started again', () => {
+  it('replaces the running relay when started again', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
-    manager.startRemote({ ...SETTINGS, host: 'other.example.org' });
+    await manager.startRemote(SETTINGS);
+    await manager.startRemote({ ...SETTINGS, host: 'other.example.org' });
 
     expect(remoteClients).toHaveLength(2);
     expect(remoteClients[0]?.stop).toHaveBeenCalled();
     expect(remoteClients[1]?.options.host).toBe('other.example.org');
   });
 
-  it('restarts a running relay with the same settings to pick up new credentials', () => {
+  it('restarts a running relay with the same settings to pick up new credentials', async () => {
     const manager = new TakServerManager();
-    manager.restartRemote();
+    await manager.restartRemote();
     expect(remoteClients).toHaveLength(0);
 
-    manager.startRemote(SETTINGS);
-    manager.restartRemote();
+    await manager.startRemote(SETTINGS);
+    await manager.restartRemote();
 
     expect(remoteClients).toHaveLength(2);
     expect(remoteClients[0]?.stop).toHaveBeenCalled();
@@ -632,34 +632,32 @@ describe('TakServerManager remote relay', () => {
     expect(manager.hasActiveSink()).toBe(true);
   });
 
-  it('leaves the running relay alone when replacement credentials cannot be read', () => {
+  it('leaves the running relay alone when replacement credentials cannot be read', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
-    vi.mocked(loadTakRemoteCredentials).mockImplementationOnce(() => {
-      throw new Error('keychain locked');
-    });
+    await manager.startRemote(SETTINGS);
+    vi.mocked(loadTakRemoteCredentials).mockImplementationOnce(() =>
+      Promise.reject(new Error('keychain locked')),
+    );
 
-    expect(() => {
-      manager.restartRemote();
-    }).toThrow(/keychain locked/);
+    await expect(manager.restartRemote()).rejects.toThrow(/keychain locked/);
     expect(remoteClients).toHaveLength(1);
     expect(remoteClients[0]?.stop).not.toHaveBeenCalled();
     expect(manager.hasActiveSink()).toBe(true);
   });
 
-  it('keeps the relay running when the local server stops', () => {
+  it('keeps the relay running when the local server stops', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     manager.stop();
     expect(remoteClients[0]?.stop).not.toHaveBeenCalled();
     expect(manager.hasActiveSink()).toBe(true);
   });
 
-  it('caches remote contacts and drops them when the relay stops', () => {
+  it('caches remote contacts and drops them when the relay stops', async () => {
     const manager = new TakServerManager();
     const updates: TAKContactsUpdate[] = [];
     manager.on('contacts', (u: TAKContactsUpdate) => updates.push(u));
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     remoteClients[0]?.emit('cot', inboundContact('SRV-1', 'remote'));
     expect(manager.getContacts().map((c) => c.uid)).toEqual(['SRV-1']);
     vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
@@ -671,11 +669,11 @@ describe('TakServerManager remote relay', () => {
     expect(updates.at(-1)?.removedUids).toEqual(['SRV-1']);
   });
 
-  it('ignores contacts from a relay that was replaced', () => {
+  it('ignores contacts from a relay that was replaced', async () => {
     const manager = new TakServerManager();
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     const old = remoteClients[0];
-    manager.startRemote(SETTINGS);
+    await manager.startRemote(SETTINGS);
     old?.emit('cot', inboundContact('LATE', 'remote'));
     expect(manager.getContacts()).toEqual([]);
   });

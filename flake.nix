@@ -216,7 +216,7 @@
 
     mkMeshClient = pkgs: reticulumSidecar: let
       lib = pkgs.lib;
-      electron = pkgs.electron_44;
+      electron = pkgs.electron_45;
       # package.json devDependencies.electron, e.g. "^44.9.3"
       electronPin = lib.removePrefix "^" packageJson.devDependencies.electron;
       electronPinMajor = lib.head (lib.splitString "." electronPin);

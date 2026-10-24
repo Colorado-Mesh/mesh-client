@@ -283,7 +283,7 @@ describe('remote relay handlers', () => {
   it('stops a running relay before clearing its credentials', async () => {
     const stopRemote = vi.fn();
     const { get } = await register({ stopRemote });
-    get('tak:remoteClearCredentials')(event);
+    await get('tak:remoteClearCredentials')(event);
     expect(stopRemote).toHaveBeenCalled();
   });
 
@@ -297,13 +297,13 @@ describe('remote relay handlers', () => {
     const { get } = await register();
     const importing = get('tak:remoteImportCredentials')(event);
 
-    expect(() => get('tak:remoteClearCredentials')(event)).toThrow(
+    await expect(get('tak:remoteClearCredentials')(event)).rejects.toThrow(
       /Wait for the certificate import/,
     );
 
     finishChooser?.({ canceled: true, filePaths: [] });
     await expect(importing).resolves.toBeNull();
-    expect(() => get('tak:remoteClearCredentials')(event)).not.toThrow();
+    await expect(get('tak:remoteClearCredentials')(event)).resolves.toBeDefined();
   });
 
   it('reports an idle relay before the TAK module loads', async () => {

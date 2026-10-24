@@ -12,9 +12,11 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
+  applyGeneratorAiohttpLongHeaders,
   applyGeneratorFlatpakNodeGeneratorPatches,
   resolveFlatpakNodeGeneratorBin,
   resolveGeneratorElectronPyPath,
+  resolveGeneratorRequestsPyPath,
   resolveGeneratorSpecialPyPath,
 } from './flatpakPnpmStoreVersion.mjs';
 
@@ -43,6 +45,7 @@ function main() {
   }
   const specialPy = resolveGeneratorSpecialPyPath(bin);
   const electronPy = resolveGeneratorElectronPyPath(bin);
+  const requestsPy = resolveGeneratorRequestsPyPath(bin);
   if (!specialPy) {
     console.error(`patch-flatpak-node-generator-playwright: special.py not found next to ${bin}`);
     process.exit(1);
@@ -51,10 +54,19 @@ function main() {
     console.error(`patch-flatpak-node-generator-playwright: electron.py not found next to ${bin}`);
     process.exit(1);
   }
+  if (!requestsPy) {
+    console.error(`patch-flatpak-node-generator-playwright: requests.py not found next to ${bin}`);
+    process.exit(1);
+  }
 
   const patched = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy);
   if (!patched.ok) {
     console.error(`patch-flatpak-node-generator-playwright: ${patched.message}`);
+    process.exit(1);
+  }
+  const headers = applyGeneratorAiohttpLongHeaders(requestsPy);
+  if (!headers.ok) {
+    console.error(`patch-flatpak-node-generator-playwright: ${headers.message}`);
     process.exit(1);
   }
   console.info(
@@ -66,6 +78,11 @@ function main() {
     patched.armv7l.already
       ? `patch-flatpak-node-generator-playwright: Electron armv7l skip already applied (${electronPy})`
       : `patch-flatpak-node-generator-playwright: skipped Electron >=44 linux-armv7l (${electronPy})`,
+  );
+  console.info(
+    headers.already
+      ? `patch-flatpak-node-generator-playwright: aiohttp long-header raise already applied (${requestsPy})`
+      : `patch-flatpak-node-generator-playwright: raised aiohttp header limits for GitHub CSP (${requestsPy})`,
   );
 }
 

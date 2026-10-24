@@ -371,7 +371,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
       console.debug('[IPC] tak:remoteStart');
       validateTakRemoteSettings(settings);
       const m = await ensureTakServerManager();
-      m.startRemote(settings);
+      await m.startRemote(settings);
     } catch (err) {
       console.error('[IPC] tak:remoteStart failed:', errorMessage(err));
       throw err;
@@ -399,10 +399,10 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     }
   });
 
-  ipcMain.handle('tak:remoteGetCredentials', (event) => {
+  ipcMain.handle('tak:remoteGetCredentials', async (event) => {
     assertIpcSender(event, 'tak:remoteGetCredentials');
     try {
-      return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+      return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
       console.error('[IPC] tak:remoteGetCredentials failed:', errorMessage(err));
       throw err;
@@ -441,13 +441,13 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
         await readCredentialFiles(result.filePaths),
         password ?? '',
       );
-      saveTakRemoteCredentials(creds);
+      await saveTakRemoteCredentials(creds);
       // A running relay holds its credentials in memory; reconnect it with the new ones.
-      getTakServerManager()?.restartRemote();
+      await getTakServerManager()?.restartRemote();
       console.debug(
         `[IPC] tak:remoteImportCredentials: imported${creds.ca ? ' CA' : ''}${creds.cert ? ' client certificate' : ''}`,
       );
-      return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+      return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
       console.error('[IPC] tak:remoteImportCredentials failed:', errorMessage(err));
       throw err;
@@ -484,11 +484,11 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
         password: request.password,
         verifyServer: request.verifyServer,
         allowNameMismatch: request.allowNameMismatch,
-        trustedCa: loadTakRemoteCredentials().ca,
+        trustedCa: (await loadTakRemoteCredentials()).ca,
       });
-      saveTakRemoteCredentials(creds);
-      getTakServerManager()?.restartRemote();
-      return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+      await saveTakRemoteCredentials(creds);
+      await getTakServerManager()?.restartRemote();
+      return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     } catch (err) {
       console.error('[IPC] tak:remoteEnroll failed:', errorMessage(err));
       throw err;
@@ -497,7 +497,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     }
   });
 
-  ipcMain.handle('tak:remoteClearCredentials', (event) => {
+  ipcMain.handle('tak:remoteClearCredentials', async (event) => {
     assertIpcSender(event, 'tak:remoteClearCredentials');
     console.debug('[IPC] tak:remoteClearCredentials');
     // An import still in its chooser would write its files after this clear finished.
@@ -507,6 +507,6 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     // A running relay holds the credentials in memory; stop it so it cannot reconnect with them.
     getTakServerManager()?.stopRemote();
     clearTakRemoteCredentials();
-    return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+    return summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
   });
 }

@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-09-25 (Ratspeak v1.0.33 — large-file/photo attachment fixes, Bluetooth Peer transfer timeouts, discovery on busy links, first-message delivery; **no Games API or `games_tab.js` delta** vs v1.0.32. Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test). Prior: 2026-09-22 (Ratspeak v1.0.32 — Android sharing / Network Ownership / voice + LoRa routing; no Games API delta; `games_tab.js` only adds `openGameSession(sessionId, isCurrent)` stale-open cancellation).
+**Last review:** 2026-10-23 (Ratspeak v1.0.34 — voice messages / Codec2, Windows/Android Bluetooth discovery cleanup, recording retry + reaction fallbacks; **no Games API delta**; `games_tab.js` unchanged vs v1.0.33. Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test). Prior: 2026-09-25 (Ratspeak v1.0.33 — large-file/photo attachment fixes, Bluetooth Peer transfer timeouts, discovery on busy links, first-message delivery; no Games API or `games_tab.js` delta vs v1.0.32).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 

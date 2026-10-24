@@ -1,5 +1,7 @@
-# Delay updates by 1 day (malware is usually caught within hours; matches pnpm default)
-minimumReleaseAge: 1440
+# Hold new publishes for 12 hours (malware usually caught quickly).
+# scripts/update.sh sets --config.minimumReleaseAge=0 when open Dependabot
+# alerts exist so security bumps are not delayed by the gate.
+minimumReleaseAge: 720
 minimumReleaseAgeExclude:
   - lodash
   - lodash-es
@@ -94,13 +96,13 @@ overrides:
   # asks for ^0.16) — scoped floor >=0.18.2; markdownlint only parses math syntax.
   # extract-zip (GHSA-7pqw-9j4j-h8q3): no patched release; Electron replaced it
   # with hardened @electron-internal/extract-zip (not the vulnerable package).
-  # electron: deliberate major pin — bump with Flatpak sync + native rebuild smoke.
+  # electron: track latest stable major; Flatpak sync + native rebuild after bumps.
   '@xmldom/xmldom': ^0.8.15
-  app-builder-lib: ^26.15.0
+  app-builder-lib: ^26.18.0
   baseline-browser-mapping: ^2.11.0
   brace-expansion: ^5.0.9
   builder-util-runtime: ^9.7.0
-  electron: ^44.9.3
+  electron: ^45.0.0
   fast-uri: ^3.1.6
   ip-address: ^10.7.4
   js-yaml: ^4.3.2
@@ -122,7 +124,6 @@ patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': patches/@jsr__meshtastic__core@2.6.6.patch
   '@jsr/meshtastic__transport-web-serial@0.2.5': patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch
   '@liamcottle/meshcore.js@1.15.0': patches/@liamcottle__meshcore.js@1.15.0.patch
-  app-builder-lib@26.15.3: patches/app-builder-lib@26.15.3.patch
   debug@4.4.3: patches/debug@4.4.3.patch
   mqtt-packet@9.0.2: patches/mqtt-packet@9.0.2.patch
   readable-stream@4.8.0: patches/readable-stream@4.8.0.patch
