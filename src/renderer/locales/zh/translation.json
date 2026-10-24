@@ -6691,7 +6691,14 @@
       "requestTitle": "MECP请求或报告",
       "responseTitle": "MECP响应",
       "showAllCodes": "显示所有MECP代码",
-      "openRequest": "向MECP申请或报告"
+      "openRequest": "向MECP申请或报告",
+      "wirePreview": "其他应用将显示的内容",
+      "includeExplanation": "添加说明",
+      "explanationLanguage": "说明语言",
+      "explanationHint": "请选择接收者能够理解的语言。这些文字会占用消息空间。",
+      "includeHelpLink": "添加 MECP 帮助链接",
+      "helpLinkHint": "为能够上网的人添加 https://mecp.radio。",
+      "optionalTextOverLimit": "消息过长。请关闭一项附加内容或缩短备注。"
     },
     "rebroadcast": {
       "title": "MECP射频重播",

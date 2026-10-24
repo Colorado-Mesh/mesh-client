@@ -63,6 +63,7 @@ import {
 } from '@/renderer/lib/autoResend/autoResendController';
 import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
+import { getComposerPayloadLimit } from '@/renderer/lib/chatComposerLimits';
 import {
   getComposerPayloadLimit,
   getComposerWireOverhead,
@@ -4762,6 +4763,11 @@ function ChatPanel({
           key={mecpComposeSession}
           open={mecpComposeOpen}
           mode={mecpComposeMode}
+          maxMessageBytes={getComposerPayloadLimit({
+            protocol,
+            composerContext: viewMode === 'dm' ? 'dm' : 'channel',
+            senderDisplayName: composerSelfDisplayName,
+          })}
           onClose={() => {
             setMecpComposeOpen(false);
           }}

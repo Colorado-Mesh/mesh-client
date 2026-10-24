@@ -17,9 +17,11 @@ import {
  * Vendored MECP packs (CC BY 4.0, https://github.com/xiang-dev-1/MECP `languages/`).
  * Upstream JSON includes a website `ui` block and other unread metadata; this app
  * strips those keys. A resync must strip them again and keep `codes` / `categories`.
- * English stays on the main chunk; other packs load on demand.
+ * UI packs use the loader/cache below. Code labels are also bundled synchronously
+ * by mecpReadableText so generated tails can be matched in any incoming language.
  */
 import enLanguage from './languages/en.json';
+import { stripMecpReadableSummary } from './mecpReadableText';
 
 /** Meta.ai / plan wire check: MECP/<0-3>/… */
 export const MECP_REGEX = /^MECP\/[0-3]\//;
@@ -36,7 +38,7 @@ const LANGUAGE_MODULES: Partial<Record<string, LanguageFile>> = {
 };
 
 /**
- * Lazy-load non-English packs so the default path stays light.
+ * Load non-English UI packs into the cache on demand.
  * Keys must stay inside the range of `mecpLanguageForAppLocale` (fa/no/sk/sr/sv
  * are omitted: that function never returns them). `zh-tw` stays: the mapper
  * returns it for `zh-tw`, `zh-hant`, and `zh-tw*`.
@@ -156,13 +158,24 @@ export function stripMecpCoordsFromFreetext(freetext: string): string {
   return freetext.replace(MECP_COORDS_REGEX, ' ').replace(/\s+/g, ' ').trim();
 }
 
-export function normalizeMecpFreetext(freetext: string): string {
-  return freetext.trim().replace(/\s+/g, ' ').toLowerCase();
+interface MecpFreetextContext {
+  severity: number;
+  codes: readonly string[];
 }
 
-/** Normalized freetext with coordinates stripped (identity for incident merge / fingerprint). */
-export function normalizeMecpFreetextForMatch(freetext: string): string {
-  return normalizeMecpFreetext(stripMecpCoordsFromFreetext(freetext));
+export function normalizeMecpFreetext(freetext: string, context?: MecpFreetextContext): string {
+  const notes = context
+    ? stripMecpReadableSummary(freetext, context.severity, context.codes)
+    : freetext;
+  return notes.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** Normalize user notes without coordinates, optional code explanations, or the MECP help tail. */
+export function normalizeMecpFreetextForMatch(
+  freetext: string,
+  context?: MecpFreetextContext,
+): string {
+  return stripMecpCoordsFromFreetext(normalizeMecpFreetext(freetext, context));
 }
 
 /** cyrb53: fast non-cryptographic 53-bit string hash (stable across sessions). */
@@ -194,7 +207,7 @@ export function incidentFingerprint(parts: {
   const key = [
     String(parts.severity),
     codes,
-    normalizeMecpFreetextForMatch(parts.freetext),
+    normalizeMecpFreetextForMatch(parts.freetext, parts),
     parts.senderId.trim().toLowerCase(),
   ].join('|');
   return `mecp-${cyrb53(key)}`;
@@ -207,7 +220,9 @@ export function incidentPayloadMatchKey(parts: {
   freetext: string;
 }): string {
   const codes = [...new Set(parts.codes.map((c) => c.trim().toUpperCase()))].sort().join(',');
-  return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext)].join('|');
+  return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext, parts)].join(
+    '|',
+  );
 }
 
 /**

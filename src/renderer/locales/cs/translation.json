@@ -6752,7 +6752,14 @@
       "requestTitle": "Požadavek nebo zpráva MECP",
       "responseTitle": "Odpověď MECP",
       "showAllCodes": "Zobrazit všechny kódy MECP",
-      "openRequest": "Žádost nebo hlášení s MECP"
+      "openRequest": "Žádost nebo hlášení s MECP",
+      "wirePreview": "Co uvidí ostatní aplikace",
+      "includeExplanation": "Přidat vysvětlení",
+      "explanationLanguage": "Jazyk vysvětlení",
+      "explanationHint": "Vyberte jazyk, kterému příjemci rozumějí. Tato slova zabírají místo ve zprávě.",
+      "includeHelpLink": "Přidat odkaz na nápovědu MECP",
+      "helpLinkHint": "Přidá https://mecp.radio pro lidi s přístupem k internetu.",
+      "optionalTextOverLimit": "Zpráva je příliš dlouhá. Vypněte doplněk nebo zkraťte poznámky."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

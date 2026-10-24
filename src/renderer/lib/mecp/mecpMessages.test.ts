@@ -5,6 +5,7 @@ import {
   extractMecpCoords,
   getByteLength,
   incidentFingerprint,
+  incidentPayloadMatchKey,
   isMecpDrill,
   isMecpMessage,
   localizeMecpCodes,
@@ -116,6 +117,50 @@ describe('incidentFingerprint', () => {
     });
     expect(a).toBe(b);
     expect(a).toBe(incidentFingerprint({ ...base, freetext: '2pax ridge' }));
+  });
+
+  it('keeps the same identity when a generated summary is added to user notes', () => {
+    const parts = { ...base, codes: ['M01'] };
+    const readable = { ...parts, freetext: '2pax ridge 39.7,-105.0 [MAYDAY: Injury]' };
+    expect(incidentFingerprint(readable)).toBe(incidentFingerprint(parts));
+    expect(incidentPayloadMatchKey(readable)).toBe(incidentPayloadMatchKey(parts));
+  });
+
+  it.each([
+    'https://mecp.radio',
+    '[de: Verletzung]',
+    '[ru: Травма]',
+    '[de: Verletzung] https://mecp.radio',
+    '[ru: Травма] https://mecp.radio',
+  ])('keeps compact and expanded identities equivalent for %s', (tail) => {
+    const parts = { ...base, codes: ['M01'] };
+    const expanded = { ...parts, freetext: `2pax ridge 39.7,-105.0 ${tail}` };
+
+    expect(incidentFingerprint(expanded)).toBe(incidentFingerprint(parts));
+    expect(incidentPayloadMatchKey(expanded)).toBe(incidentPayloadMatchKey(parts));
+    expect(incidentFingerprint({ ...expanded, senderId: '!other' })).not.toBe(
+      incidentFingerprint(parts),
+    );
+  });
+
+  it('preserves independent localized bracketed notes and unrelated operator links', () => {
+    const parts = { ...base, codes: ['M01'], freetext: 'ridge' };
+    expect(
+      incidentPayloadMatchKey({ ...parts, freetext: 'ridge [de: nicht ansprechbar]' }),
+    ).not.toBe(incidentPayloadMatchKey(parts));
+    expect(
+      incidentPayloadMatchKey({ ...parts, freetext: 'ridge https://example.org/rescue' }),
+    ).not.toBe(incidentPayloadMatchKey(parts));
+  });
+
+  it('ignores a generated summary without dropping unrelated bracketed user notes', () => {
+    const parts = { ...base, codes: ['M01'], freetext: 'ridge [Injury]' };
+    expect(incidentFingerprint({ ...parts, freetext: 'ridge [Injury] [MAYDAY: Injury]' })).toBe(
+      incidentFingerprint(parts),
+    );
+    expect(incidentFingerprint({ ...parts, freetext: 'ridge [MAYDAY: Flooding]' })).not.toBe(
+      incidentFingerprint({ ...parts, freetext: 'ridge' }),
+    );
   });
 });
 

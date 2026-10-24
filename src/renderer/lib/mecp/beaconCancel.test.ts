@@ -145,6 +145,58 @@ describe('resolveIncidentWithBeaconCancel', () => {
     warn.restore();
   });
 
+  it('keeps a test beacon cancellation explicitly test-only on the same channel', async () => {
+    const incident = ingest('MECP/3/B01 D02 app test', '42', { localOrigin: true });
+    const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
+    await expect(
+      resolveIncidentWithBeaconCancel(incident, new Set(), deps(queueOutbox), () => false),
+    ).resolves.toBe('cancel-queued');
+    const entry = queueOutbox.mock.calls[0][0];
+    expect(entry).toMatchObject({ protocol: 'meshtastic', channel: 2, toNode: null });
+    expect(entry.payload).toBe('MECP/3/B03 D02');
+    expect(tryParseMecp(entry.payload)!.codes).toEqual(['B03', 'D02']);
+    expect(tryParseMecp(entry.payload)!.isDrill).toBe(true);
+  });
+
+  it('retains drill suppression when a stored beacon lost its original drill code', async () => {
+    const incident = ingest('MECP/0/B01', '42', { localOrigin: true });
+    useIncidentStore.setState((state) => ({
+      incidents: { ...state.incidents, [incident.id]: { ...incident, isDrill: true } },
+    }));
+    const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
+    await resolveIncidentWithBeaconCancel(incident, new Set(), deps(queueOutbox), () => false);
+    const payload = queueOutbox.mock.calls[0][0].payload;
+    expect(tryParseMecp(payload)!.codes).toEqual(['B03', 'D02']);
+    expect(tryParseMecp(payload)!.isDrill).toBe(true);
+  });
+
+  it('keeps the beacon open when the destination budget cannot fit the compact cancel', async () => {
+    const incident = ingest('MECP/0/B01', '42', { localOrigin: true });
+    const warn = mockConsoleWarn();
+    const queueOutbox = vi.fn((entry: OutboxEntryInput) => Promise.resolve(queuedRow(entry)));
+    const messageByteLimit = vi.fn(() => 9);
+    await expect(
+      resolveIncidentWithBeaconCancel(
+        incident,
+        new Set(),
+        { ...deps(queueOutbox), messageByteLimit },
+        () => false,
+      ),
+    ).resolves.toBe('cancel-failed');
+    expect(messageByteLimit).toHaveBeenCalledWith({
+      protocol: 'meshtastic',
+      channel: 2,
+      toNode: null,
+      viewKey: 'ch:2',
+    });
+    expect(queueOutbox).not.toHaveBeenCalled();
+    expect(useIncidentStore.getState().incidents[incident.id]).toMatchObject({
+      status: 'open',
+      beaconActive: true,
+    });
+    warn.restore();
+  });
+
   it('does not queue a DM-only cancel that has no destination', async () => {
     const incident = ingest('MECP/0/B01', '42', {
       localOrigin: true,

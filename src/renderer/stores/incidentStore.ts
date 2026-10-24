@@ -12,6 +12,7 @@ import {
   normalizeMecpFreetext,
   normalizeMecpFreetextForMatch,
 } from '@/renderer/lib/mecp/mecpMessages';
+import { stripMecpReadableSummary } from '@/renderer/lib/mecp/mecpReadableText';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '@/shared/timeConstants';
 
@@ -208,8 +209,8 @@ function findExistingIncident(
   const byId = all[opts.id];
   if (byId) return byId;
 
-  const matchText = normalizeMecpFreetextForMatch(opts.freetext);
-  const matchFull = normalizeMecpFreetext(opts.freetext);
+  const matchText = normalizeMecpFreetextForMatch(opts.freetext, opts);
+  const matchFull = normalizeMecpFreetext(opts.freetext, opts);
 
   let sameSender: EmergencyIncident | undefined;
   let crossProtocol: EmergencyIncident | undefined;
@@ -218,16 +219,16 @@ function findExistingIncident(
     if (!sameCodeSet(inc.codes, opts.codes)) continue;
     // Same sender: GPS-stripped text match so a position update does not fork a row.
     if (inc.senderId === opts.senderId) {
-      if (normalizeMecpFreetextForMatch(inc.freetext) !== matchText) continue;
+      if (normalizeMecpFreetextForMatch(inc.freetext, inc) !== matchText) continue;
       sameSender = inc;
       break;
     }
     // Bridged relay: only a *new* protocol, non-empty stripped text, and identical payload
-    // including coords. Empty stripped text (GPS-only one-tap MAYDAY) must not merge two
+    // including coords. Empty user notes (code-only or GPS-only MAYDAY) must not merge two
     // victims on the same or different protocols.
     if (inc.protocolsSeen.includes(opts.protocol)) continue;
     if (matchText.length === 0) continue;
-    if (normalizeMecpFreetext(inc.freetext) !== matchFull) continue;
+    if (normalizeMecpFreetext(inc.freetext, inc) !== matchFull) continue;
     if (opts.now - inc.receivedAt <= CROSS_PROTOCOL_MERGE_WINDOW_MS && !crossProtocol) {
       crossProtocol = inc;
     }
@@ -253,7 +254,7 @@ function payloadTombstoneKeyIfDistinct(
   codes: readonly string[],
   freetext: string,
 ): string | null {
-  if (normalizeMecpFreetextForMatch(freetext).length === 0) return null;
+  if (normalizeMecpFreetextForMatch(freetext, { severity, codes }).length === 0) return null;
   return payloadTombstoneKey(severity, codes, freetext);
 }
 
@@ -282,6 +283,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
               isUnresolved(inc) &&
               inc.beaconActive &&
               inc.senderId === senderId &&
+              inc.isDrill === parsed.isDrill &&
               (!input.fromSeed || inc.lastSeenAt <= now),
           );
           if (beacons.length === 0) return null;
@@ -310,13 +312,14 @@ export const useIncidentStore = create<IncidentStoreState>()(
             severity,
             codes: parsed.codes,
             senderId,
+            isDrill: parsed.isDrill,
           });
           if (!target) return null;
           get().recordAck(target.id, senderId, now);
           return target.id;
         }
 
-        const freetext = parsed.freetext ?? '';
+        const freetext = stripMecpReadableSummary(parsed.freetext ?? '', severity, parsed.codes);
         const id = incidentFingerprint({ severity, codes: parsed.codes, freetext, senderId });
         const payloadTomb = payloadTombstoneKeyIfDistinct(severity, parsed.codes, freetext);
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
+import { encodeReadableMecp } from '@/renderer/lib/mecp/mecpReadableText';
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 const STORAGE_KEY = 'mesh-client:incidents';
@@ -79,6 +80,77 @@ describe('incidentStore', () => {
     inc = useIncidentStore.getState().incidents[id];
     expect(inc.beaconActive).toBe(false);
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+  });
+
+  it.each(['D01', 'D02'])(
+    'keeps %s ACKs on drill incidents while real ACKs still work',
+    async (code) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const drillId = s.upsertFromMecp(report(`MECP/0/B01 ${code} M01`))!;
+      const realId = s.upsertFromMecp(report('MECP/0/B01 M01', { receivedAt: 3_000 }))!;
+
+      expect(s.upsertFromMecp(report(`MECP/0/B02 ${code}`, { senderId: '!test-acker' }))).toBe(
+        drillId,
+      );
+      expect(useIncidentStore.getState().incidents[drillId].ackPeerIds).toEqual(['!test-acker']);
+      expect(useIncidentStore.getState().incidents[realId].ackCount).toBe(0);
+
+      expect(s.upsertFromMecp(report('MECP/0/B02', { senderId: '!real-acker' }))).toBe(realId);
+      expect(useIncidentStore.getState().incidents[realId].ackPeerIds).toEqual(['!real-acker']);
+      expect(useIncidentStore.getState().incidents[drillId].ackCount).toBe(1);
+
+      expect(
+        s.upsertFromMecp(report(`MECP/0/R01 B01 ${code} M01`, { senderId: '!test-eoc' })),
+      ).toBe(drillId);
+      expect(useIncidentStore.getState().incidents[realId].ackCount).toBe(1);
+      expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(2);
+    },
+  );
+
+  it('does not acknowledge a real incident when only a drill ACK was received', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/0/B01 M01'))!;
+
+    expect(s.upsertFromMecp(report('MECP/0/B02 D02', { senderId: '!test-acker' }))).toBeNull();
+    expect(s.upsertFromMecp(report('MECP/0/R01 D02 M01', { senderId: '!test-eoc' }))).toBeNull();
+    expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: true,
+      status: 'open',
+    });
+  });
+
+  it.each(['D01', 'D02'])('a %s cancel leaves the same sender real beacon active', async (code) => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const realId = s.upsertFromMecp(report('MECP/0/B01 M01'))!;
+    const drillId = s.upsertFromMecp(report(`MECP/0/B01 ${code} M01`))!;
+
+    expect(s.upsertFromMecp(report(`MECP/3/B03 ${code}`))).toBe(drillId);
+    expect(useIncidentStore.getState().incidents[drillId]).toMatchObject({
+      beaconActive: false,
+      status: 'open',
+    });
+    expect(useIncidentStore.getState().incidents[realId]).toMatchObject({
+      beaconActive: true,
+      status: 'open',
+    });
+    expect(s.upsertFromMecp(report('MECP/3/B03'))).toBe(realId);
+    expect(useIncidentStore.getState().incidents[realId].beaconActive).toBe(false);
+  });
+
+  it('an unmarked legacy B03 leaves the same sender drill beacon active', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const realId = s.upsertFromMecp(report('MECP/0/B01 M01'))!;
+    const drillId = s.upsertFromMecp(report('MECP/0/B01 D02 M01'))!;
+
+    expect(s.upsertFromMecp(report('MECP/3/B03'))).toBe(realId);
+    expect(useIncidentStore.getState().incidents[realId].beaconActive).toBe(false);
+    expect(useIncidentStore.getState().incidents[drillId].beaconActive).toBe(true);
   });
 
   it('a seeded B03 older than the beacon does not clear it; a newer one does', async () => {
@@ -254,6 +326,222 @@ describe('incidentStore', () => {
     expect(inc.protocolsSeen).toEqual(['meshtastic', 'meshcore']);
   });
 
+  it.each(['', '39.7,-105.0'])(
+    'keeps independent victims separate when only a generated summary and %j are present',
+    async (notes) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const text = `MECP/0/M01 ${notes} [MAYDAY: Injury]`;
+      const a = s.upsertFromMecp(report(text, { senderId: '!alice' }))!;
+      const b = s.upsertFromMecp(
+        report(text, { senderId: '!bob', protocol: 'meshcore', receivedAt: 2_000 }),
+      )!;
+
+      expect(b).not.toBe(a);
+      const incidents = useIncidentStore.getState().incidents;
+      expect(Object.keys(incidents)).toHaveLength(2);
+      expect(incidents[a]).toMatchObject({ senderId: '!alice', freetext: notes });
+      expect(incidents[b]).toMatchObject({ senderId: '!bob', freetext: notes });
+    },
+  );
+
+  it.each([
+    'https://mecp.radio',
+    '[de: Verletzung]',
+    '[ru: Травма]',
+    '[de: Verletzung] https://mecp.radio',
+    '[ru: Травма] https://mecp.radio',
+  ])(
+    'optional %s never supplies distinct victim notes or a suppression tombstone',
+    async (tail) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      for (const [index, notes] of ['', '39.7,-105.0'].entries()) {
+        const text = `MECP/0/M01 ${notes} ${tail}`;
+        const a = s.upsertFromMecp(
+          report(text, { senderId: `!alice-${index}`, receivedAt: Date.now() }),
+        )!;
+        const b = s.upsertFromMecp(
+          report(text, {
+            senderId: `!bob-${index}`,
+            protocol: 'meshcore',
+            receivedAt: Date.now(),
+          }),
+        )!;
+
+        expect(b).not.toBe(a);
+        expect(useIncidentStore.getState().incidents[a]).toMatchObject({ freetext: notes });
+        expect(useIncidentStore.getState().incidents[b]).toMatchObject({ freetext: notes });
+        s.resolveIncident(a);
+        expect(
+          Object.keys(useIncidentStore.getState().resolvedTombstones).some((key) =>
+            key.startsWith('payload:'),
+          ),
+        ).toBe(false);
+        const seedId = s.upsertFromMecp({
+          ...report(text, {
+            senderId: `!third-${index}`,
+            protocol: 'reticulum',
+            receivedAt: Date.now(),
+          }),
+          fromSeed: true,
+        });
+        expect(seedId).not.toBeNull();
+        expect(seedId).not.toBe(a);
+      }
+      expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(6);
+    },
+  );
+
+  it.each([
+    ['compact to German', '', '[de: Verletzung] https://mecp.radio'],
+    ['Russian to compact', '[ru: Травма] https://mecp.radio', ''],
+    ['German to Russian', '[de: Verletzung]', '[ru: Травма]'],
+  ])(
+    'merges the detailed bridge %s without rewriting either payload',
+    async (_label, fromTail, toTail) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const notes = '2pax trapped 39.7,-105.0';
+      const original = report(`MECP/0/M01 ${notes} ${fromTail}`, { messageId: 'original' });
+      const relayed = report(`MECP/0/M01 ${notes} ${toTail}`, {
+        senderId: '!bridge',
+        protocol: 'meshcore',
+        messageId: 'bridge-copy',
+        receivedAt: 2_000,
+      });
+      const originalRaw = original.parsed.raw;
+      const relayRaw = relayed.parsed.raw;
+      const id = s.upsertFromMecp(original)!;
+
+      expect(s.upsertFromMecp(relayed)).toBe(id);
+      expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+      expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+        freetext: notes,
+        lat: 39.7,
+        lon: -105.0,
+        coordsSource: 'message',
+        senderId: '!victim',
+        relaySenderIds: ['!bridge'],
+        messageIds: ['original', 'bridge-copy'],
+      });
+      expect(original.parsed.raw).toBe(originalRaw);
+      expect(relayed.parsed.raw).toBe(relayRaw);
+    },
+  );
+
+  it('keeps a same-sender incident while language and help toggles change through escalation', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/2/M01 ridge 39.7,-105.0'))!;
+    const updates = [
+      'MECP/2/M01 ridge 39.7,-105.0 [de: Verletzung]',
+      'MECP/2/M01 ridge 39.7,-105.0 https://mecp.radio',
+      'MECP/0/M01 ridge 39.7,-105.0 [ru: Травма] https://mecp.radio',
+      'MECP/0/M01 ridge 40.1,-104.5',
+    ];
+    for (const [index, text] of updates.entries()) {
+      expect(s.upsertFromMecp(report(text, { receivedAt: 2_000 + index * 1_000 }))).toBe(id);
+    }
+
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+    expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+      severity: 0,
+      freetext: 'ridge 40.1,-104.5',
+      lat: 40.1,
+      lon: -104.5,
+    });
+  });
+
+  it('merges a detailed readable report with its relayed copy and preserves user notes', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const original = report('MECP/0/M01 2pax trapped 39.7,-105.0 [MAYDAY: Injury]', {
+      senderId: '!victim',
+      messageId: 'mt',
+    });
+    const a = s.upsertFromMecp(original)!;
+    const b = s.upsertFromMecp(
+      report('MECP/0/M01 2pax trapped 39.7,-105.0 [MAYDAY: Injury]', {
+        senderId: '!bridge',
+        protocol: 'meshcore',
+        messageId: 'mc',
+        receivedAt: 2_000,
+      }),
+    );
+
+    expect(b).toBe(a);
+    expect(useIncidentStore.getState().incidents[a]).toMatchObject({
+      senderId: '!victim',
+      freetext: '2pax trapped 39.7,-105.0',
+      relaySenderIds: ['!bridge'],
+      protocolsSeen: ['meshtastic', 'meshcore'],
+      lat: 39.7,
+      lon: -105.0,
+    });
+    expect(original.parsed.freetext).toBe('2pax trapped 39.7,-105.0 [MAYDAY: Injury]');
+  });
+
+  it('keeps the same sender incident through readable severity and GPS updates', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/2/M01 ridge [SAFETY: Injury]'))!;
+
+    expect(
+      s.upsertFromMecp(report('MECP/0/M01 ridge [MAYDAY: Injury]', { receivedAt: 2_000 })),
+    ).toBe(id);
+    expect(
+      s.upsertFromMecp(
+        report('MECP/0/M01 ridge 39.7,-105.0 [MAYDAY: Injury]', { receivedAt: 3_000 }),
+      ),
+    ).toBe(id);
+    expect(s.upsertFromMecp(report('MECP/0/M01 ridge 40.1,-104.5', { receivedAt: 4_000 }))).toBe(
+      id,
+    );
+
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+    expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+      severity: 0,
+      freetext: 'ridge 40.1,-104.5',
+      lat: 40.1,
+      lon: -104.5,
+      lastSeenAt: 4_000,
+    });
+  });
+
+  it('preserves beacon acknowledgement through readable severity and position updates', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(
+      report(
+        encodeReadableMecp(2, ['B01'], 'ridge', undefined, { explanationLanguage: 'de' }).message,
+      ),
+    )!;
+    s.confirmBeacon(id);
+
+    expect(
+      s.upsertFromMecp(
+        report(
+          encodeReadableMecp(0, ['B01'], 'ridge 39.7,-105.0', undefined, {
+            explanationLanguage: 'ru',
+            includeHelpLink: true,
+          }).message,
+          { receivedAt: 2_000 },
+        ),
+      ),
+    ).toBe(id);
+    expect(useIncidentStore.getState().incidents[id]).toMatchObject({
+      severity: 0,
+      freetext: 'ridge 39.7,-105.0',
+      beaconActive: true,
+      beaconAcked: true,
+      status: 'acked',
+      lat: 39.7,
+      lon: -105.0,
+    });
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
+  });
+
   it('does not merge two senders with the same GPS-only canned MAYDAY', async () => {
     const { useIncidentStore } = await loadStore();
     const s = useIncidentStore.getState();
@@ -350,6 +638,33 @@ describe('incidentStore', () => {
       }),
     ).not.toBeNull();
   });
+
+  it.each(['', '39.7,-105.0'])(
+    'does not suppress another victim after resolving a readable report with only %j',
+    async (notes) => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const text = `MECP/0/M01 ${notes} [MAYDAY: Injury]`;
+      const id = s.upsertFromMecp(report(text, { senderId: '!alice', receivedAt: Date.now() }))!;
+      s.resolveIncident(id);
+      expect(
+        Object.keys(useIncidentStore.getState().resolvedTombstones).some((key) =>
+          key.startsWith('payload:'),
+        ),
+      ).toBe(false);
+
+      expect(
+        s.upsertFromMecp({
+          ...report(text, {
+            senderId: '!bob',
+            protocol: 'meshcore',
+            receivedAt: Date.now(),
+          }),
+          fromSeed: true,
+        }),
+      ).not.toBeNull();
+    },
+  );
 
   it('never evicts open MAYDAY when the cap is exceeded', async () => {
     const { useIncidentStore, MAX_INCIDENTS } = await loadStore();

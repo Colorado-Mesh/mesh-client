@@ -1,7 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import type { EmergencyIncident } from './incidentTypes';
-import { composeBeaconAck, composeGeneralAck } from './mecpAck';
+import { composeBeaconAck, composeGeneralAck, type MecpAckOptions } from './mecpAck';
 
 /** Same predicate as `AckIncidentButton` so the button label and wire payload always agree. */
 export function incidentNeedsBeaconAck(
@@ -12,12 +12,23 @@ export function incidentNeedsBeaconAck(
 
 /** B02 for an unacknowledged active beacon, otherwise a general R01 ACK echoing the codes. */
 export function composeIncidentAck(
-  incident: Pick<EmergencyIncident, 'severity' | 'codes' | 'beaconActive' | 'beaconAcked'>,
-  opts?: { callsign?: string },
+  incident: Pick<
+    EmergencyIncident,
+    'severity' | 'codes' | 'beaconActive' | 'beaconAcked' | 'isDrill'
+  >,
+  opts?: MecpAckOptions & { callsign?: string },
 ): string {
+  // Older stored test incidents may have isDrill without retaining their original drill code.
+  const codes =
+    incident.isDrill && !incident.codes.some((code) => code === 'D01' || code === 'D02')
+      ? [...incident.codes, 'D02']
+      : incident.codes;
   return incidentNeedsBeaconAck(incident)
-    ? composeBeaconAck(incident.severity)
-    : composeGeneralAck(incident.severity, incident.codes, { callsign: opts?.callsign });
+    ? composeBeaconAck(incident.severity, {
+        ...opts,
+        drillCodes: codes,
+      })
+    : composeGeneralAck(incident.severity, codes, opts);
 }
 
 export interface IncidentAckRoute {

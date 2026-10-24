@@ -6797,7 +6797,14 @@
       "requestTitle": "Żądanie lub raport MECP",
       "responseTitle": "Odpowiedź MECP",
       "showAllCodes": "Pokaż wszystkie kody MECP",
-      "openRequest": "Wniosek lub raport z MECP"
+      "openRequest": "Wniosek lub raport z MECP",
+      "wirePreview": "Co zobaczą inne aplikacje",
+      "includeExplanation": "Dodaj wyjaśnienie",
+      "explanationLanguage": "Język wyjaśnienia",
+      "explanationHint": "Wybierz język zrozumiały dla odbiorców. Te słowa zajmują miejsce w wiadomości.",
+      "includeHelpLink": "Dodaj link do pomocy MECP",
+      "helpLinkHint": "Dodaje https://mecp.radio dla osób z dostępem do internetu.",
+      "optionalTextOverLimit": "Wiadomość jest zbyt długa. Wyłącz dodatek lub skróć notatki."
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",

@@ -7,6 +7,7 @@ import {
   resolveIncidentAckRoute,
 } from './incidentAck';
 import type { EmergencyIncident } from './incidentTypes';
+import { getByteLength, tryParseMecp } from './mecpMessages';
 
 function incident(partial: Partial<EmergencyIncident> = {}): EmergencyIncident {
   return {
@@ -36,21 +37,69 @@ function incident(partial: Partial<EmergencyIncident> = {}): EmergencyIncident {
 describe('composeIncidentAck', () => {
   it('composes a general R01 ACK echoing codes for non-beacon incidents', () => {
     const text = composeIncidentAck(incident({ codes: ['M01', 'T04'] }));
-    expect(text).toMatch(/^MECP\/0\/R01 M01 T04/);
-    expect(text).not.toContain('B02');
+    expect(text).toBe('MECP/0/R01 M01 T04');
   });
 
   it('composes a B02 beacon ACK for an unacknowledged active beacon', () => {
     const text = composeIncidentAck(incident({ codes: ['B01'], beaconActive: true }));
-    expect(text).toMatch(/^MECP\/0\/B02/);
-    expect(text).not.toContain('R01');
+    expect(text).toBe('MECP/0/B02');
   });
 
   it('falls back to the general ACK once the beacon was already acknowledged', () => {
     const text = composeIncidentAck(
       incident({ codes: ['B01', 'M01'], beaconActive: true, beaconAcked: true }),
     );
-    expect(text).toMatch(/^MECP\/0\/R01/);
+    expect(text).toBe('MECP/0/R01 B01 M01');
+  });
+
+  it.each(['Ada', '', '名'.repeat(100)])(
+    'does not generate sender-name prose (%s)',
+    (senderName) => {
+      expect(composeIncidentAck(incident({ senderName }))).toBe('MECP/0/R01 M01');
+    },
+  );
+
+  it.each([false, true])(
+    'permits explicit notes and translated explanations (beacon: %s)',
+    (beaconActive) => {
+      const text = composeIncidentAck(incident({ beaconActive }), {
+        freetext: 'norte',
+        explanationLanguage: 'es',
+        includeHelpLink: true,
+      });
+      expect(text.startsWith(`MECP/0/${beaconActive ? 'B02' : 'R01 M01'} norte `)).toBe(true);
+      expect(text).toContain(beaconActive ? 'Baliza confirmada' : 'Recibido');
+      expect(text).toContain('https://mecp.radio');
+      expect(text).not.toContain('Received');
+    },
+  );
+
+  it.each([false, true])('retains test-only suppression on ACKs (beacon: %s)', (beaconActive) => {
+    const text = composeIncidentAck(
+      incident({ codes: ['D02', 'M01'], beaconActive, isDrill: true }),
+    );
+    expect(tryParseMecp(text)!.codes).toContain('D02');
+    expect(tryParseMecp(text)!.isDrill).toBe(true);
+    expect(text).toBe(beaconActive ? 'MECP/0/B02 D02' : 'MECP/0/R01 D02 M01');
+  });
+
+  it('retains test-only suppression on legacy drill incidents without a drill code', () => {
+    const text = composeIncidentAck(
+      incident({ codes: ['B01'], beaconActive: true, isDrill: true }),
+    );
+    expect(tryParseMecp(text)!.codes).toEqual(['B02', 'D02']);
+    expect(tryParseMecp(text)!.isDrill).toBe(true);
+  });
+
+  it('refuses an ACK that cannot preserve its code references within the budget', () => {
+    const original = incident({ codes: ['M01', 'T04'] });
+    const text = composeIncidentAck(original);
+    expect(() => composeIncidentAck(original, { maxBytes: getByteLength(text) - 1 })).toThrow(
+      RangeError,
+    );
+    expect(original.codes).toEqual(['M01', 'T04']);
+    expect(original.status).toBe('open');
+    expect(original.ackCount).toBe(0);
   });
 });
 

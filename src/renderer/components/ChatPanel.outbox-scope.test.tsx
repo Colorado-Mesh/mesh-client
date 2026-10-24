@@ -1,25 +1,38 @@
 import { render } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UseChatOutboxOptions } from '@/renderer/hooks/useChatOutbox';
+import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 import {
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { encodeReadableMecp } from '@/renderer/lib/mecp/mecpReadableText';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 
 import ChatPanel from './ChatPanel';
+import type { MecpComposeModal } from './mecp/MecpComposeModal';
 import { ToastProvider } from './Toast';
 
 const signature = 'meshcore:pk:' + 'a'.repeat(64);
 const publicChannel = { index: 0, name: 'Public', secret: new Uint8Array(16).fill(1) };
 const localChannel = { index: 1, name: 'tricities', secret: new Uint8Array(16).fill(2) };
 let outboxArgs: UseChatOutboxOptions;
+let composeArgs: ComponentProps<typeof MecpComposeModal>;
+const queueOutbox = vi.fn().mockResolvedValue({});
+
+vi.mock('./mecp/MecpComposeModal', () => ({
+  MecpComposeModal: (args: ComponentProps<typeof MecpComposeModal>) => {
+    composeArgs = args;
+    return null;
+  },
+}));
 
 vi.mock('@/renderer/hooks/useChatOutbox', () => ({
   useChatOutbox: (args: UseChatOutboxOptions) => {
     outboxArgs = args;
-    return { rows: [], queue: vi.fn(), retry: vi.fn(), cancel: vi.fn() };
+    return { rows: [], queue: queueOutbox, retry: vi.fn(), cancel: vi.fn() };
   },
 }));
 vi.mock('@/renderer/stores/identityStore', () => ({
@@ -28,15 +41,15 @@ vi.mock('@/renderer/stores/identityStore', () => ({
   ) => selector({ identities: { radio: { signature } } }),
 }));
 
-function panel() {
+function panel(channels = [publicChannel, localChannel]) {
   const onSend = vi.fn().mockResolvedValue('message-id');
   const applyScope = vi.fn().mockResolvedValue(undefined);
   render(
     <ToastProvider>
       <ChatPanel
         messages={[]}
-        channels={[publicChannel, localChannel]}
-        meshcoreChannelSources={[publicChannel, localChannel]}
+        channels={channels}
+        meshcoreChannelSources={channels}
         myNodeNum={1}
         identityId="radio"
         protocol="meshcore"
@@ -58,7 +71,29 @@ function panel() {
 describe('ChatPanel outbox channel scopes', () => {
   beforeEach(() => {
     localStorage.clear();
+    queueOutbox.mockClear();
   });
+
+  it.each([{}, { explanationLanguage: 'de', includeHelpLink: true }])(
+    'queues the exact chosen drill text on the emergency channel with its radio budget: %j',
+    async (options) => {
+      localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ mecpComposeEnabled: true }));
+      const emergencyChannel = { ...localChannel, index: 5, name: 'emergency' };
+      panel([emergencyChannel]);
+      expect(composeArgs.maxMessageBytes).toBe(126);
+      const payload = encodeReadableMecp(3, ['D02'], '1pax app test', 126, options).message;
+      await composeArgs.onSend(payload);
+      expect(queueOutbox).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'meshcore',
+          channel: 5,
+          toNode: null,
+          payload,
+          priority: 'emergency',
+        }),
+      );
+    },
+  );
 
   it.each([
     [localChannel, '#us-tn-tri', '#us-tn-tri'],

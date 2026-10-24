@@ -34,6 +34,7 @@ import {
   buildMeshcoreChannelKeyByIndex,
   buildMeshtasticChannelKeyByIndex,
 } from '@/renderer/lib/channelIdentity';
+import { getComposerPayloadLimit } from '@/renderer/lib/chatComposerLimits';
 import {
   type ChatNotificationTarget,
   focusRrcNotificationTarget,
@@ -88,6 +89,7 @@ import {
   incidentNeedsBeaconAck,
   resolveIncidentAckRoute,
 } from '@/renderer/lib/mecp/incidentAck';
+import { MAX_MESSAGE_BYTES } from '@/renderer/lib/mecp/mecpMessages';
 import {
   readMeshcoreAutoOffloadWhenFull,
   writeMeshcoreAutoOffloadWhenFull,
@@ -1793,6 +1795,7 @@ function AppContent() {
     ],
   );
 
+  const meshcoreSenderDisplayName = meshcoreRuntime.selfInfo?.name;
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
       useIncidentStore.getState().markSeen(incident.id);
@@ -1801,7 +1804,23 @@ function AppContent() {
         protocol,
         (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
       );
-      const text = composeIncidentAck(incident);
+      let text: string;
+      try {
+        text = composeIncidentAck(incident, {
+          maxBytes: Math.min(
+            MAX_MESSAGE_BYTES,
+            getComposerPayloadLimit({
+              protocol: route.protocol,
+              composerContext: route.toNode == null ? 'channel' : 'dm',
+              senderDisplayName: meshcoreSenderDisplayName,
+            }),
+          ),
+        });
+      } catch (e: unknown) {
+        console.warn('[App] incident ACK composition failed: ' + errLikeToLogString(e));
+        addToast(t('incidentPanel.ackFailed'), 'error');
+        return;
+      }
       const beaconAck = incidentNeedsBeaconAck(incident);
       // ACKs are routine traffic: queue as normal priority so they never compete with reports.
       // Tag viewKey so the App-level drain can send them without Chat open and recordAck on TX.
@@ -1848,6 +1867,7 @@ function AppContent() {
       capabilitiesByProtocol,
       chatSendAvailableByProtocol,
       outboxSendFnByProtocol,
+      meshcoreSenderDisplayName,
       addToast,
       t,
     ],
@@ -1862,6 +1882,15 @@ function AppContent() {
           isSendAvailable: (p) => selectByProtocol(chatSendAvailableByProtocol, p),
           sendFn: (p) => selectByProtocol(outboxSendFnByProtocol, p),
           queueOutbox: (entry) => window.electronAPI.chat.outbox.add(entry),
+          messageByteLimit: (route) =>
+            Math.min(
+              MAX_MESSAGE_BYTES,
+              getComposerPayloadLimit({
+                protocol: route.protocol,
+                composerContext: route.toNode == null ? 'channel' : 'dm',
+                senderDisplayName: meshcoreSenderDisplayName,
+              }),
+            ),
         },
         (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
       )
@@ -1889,6 +1918,7 @@ function AppContent() {
       chatSendAvailableByProtocol,
       outboxSendFnByProtocol,
       capabilitiesByProtocol,
+      meshcoreSenderDisplayName,
       addToast,
       t,
     ],
