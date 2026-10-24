@@ -819,6 +819,11 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
   },
 }));
 
+/** Refresh the eager store cache after recovering browser preferences from SQLite. */
+export function hydrateReticulumDismissedContacts(): void {
+  useReticulumPeerStore.setState({ dismissedContactHashes: loadDismissedContactHashes() });
+}
+
 /** Route fields from an active (or first usable) `/paths` slot onto the peer store. */
 export function applyReticulumPeerActivePathSlot(
   hash: string,

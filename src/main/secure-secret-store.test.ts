@@ -39,6 +39,90 @@ describe('SecureSecretStore', () => {
     safeStorageHarness.backend = 'keychain';
   });
 
+  it.each(['forget', 'newer save'])(
+    'an earlier slow save cannot commit after a later %s',
+    async (action) => {
+      const { db, store } = createStore();
+      try {
+        let release: (() => void) | undefined;
+        vi.mocked(safeStorage.encryptStringAsync).mockImplementationOnce(
+          (value) =>
+            new Promise((resolve) => {
+              release = () => {
+                resolve(Buffer.from(`protected:${value}`, 'utf8'));
+              };
+            }),
+        );
+        const earlier = store.set('mqtt:meshcore', 'earlier');
+        const rejected = expect(earlier).rejects.toThrow('superseded write');
+        await vi.waitFor(() => {
+          expect(release).toBeTypeOf('function');
+        });
+        if (action === 'forget') store.remove('mqtt:meshcore');
+        else await store.set('mqtt:meshcore', 'latest');
+        release!();
+        await rejected;
+        expect(await store.get('mqtt:meshcore')).toBe(action === 'forget' ? null : 'latest');
+      } finally {
+        db.close();
+      }
+    },
+  );
+
+  it('commits secret and retirement atomically, rolling both back when the receipt write fails', async () => {
+    const { db, store } = createStore();
+    try {
+      await store.set('mqtt:meshcore', 'original');
+      const read = () =>
+        (
+          db
+            .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+            .get('rendererDeletedStorage:mesh-client:credentialCompatibility:mqtt:meshcore') as {
+            value: string;
+          }
+        ).value;
+      const originalReceipt = read();
+      db.execScript(
+        "CREATE TRIGGER reject_retirement BEFORE INSERT ON app_settings WHEN NEW.key LIKE 'rendererDeletedStorage:%' BEGIN SELECT RAISE(ABORT, 'retirement failed'); END;",
+      );
+      await expect(store.set('mqtt:meshcore', 'replacement')).rejects.toThrow('retirement failed');
+      expect(await store.get('mqtt:meshcore')).toBe('original');
+      expect(read()).toBe(originalReceipt);
+      expect(() => {
+        store.remove('mqtt:meshcore');
+      }).toThrow('retirement failed');
+      expect(await store.get('mqtt:meshcore')).toBe('original');
+      expect(read()).toBe(originalReceipt);
+    } finally {
+      db.close();
+    }
+  });
+
+  it.each(['per-node', 'meshtastic-single'] as const)(
+    'does not replay a forgotten %s key backup from an old export',
+    async (format) => {
+      const { db, store } = createStore();
+      try {
+        const payload = JSON.stringify({
+          protocol: 'meshtastic',
+          nodeNum: 42,
+          backedUpAt: 123,
+          publicKey: Buffer.alloc(32, 1).toString('base64'),
+          privateKey: Buffer.alloc(32, 2).toString('base64'),
+        });
+        const ciphertext = Buffer.from(`protected:${payload}`, 'utf8').toString('base64');
+        await store.set('backup:meshtastic:42', payload);
+        store.remove('backup:meshtastic:42');
+        expect(
+          await store.migrateLegacyBackupCiphertext('meshtastic', 42, format, ciphertext),
+        ).toMatchObject({ verified: false });
+        expect(await store.get('backup:meshtastic:42')).toBeNull();
+      } finally {
+        db.close();
+      }
+    },
+  );
+
   it('persists every supported credential class only as OS-protected ciphertext', async () => {
     const { db, store } = createStore();
     try {

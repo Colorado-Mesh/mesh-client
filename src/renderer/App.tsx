@@ -427,7 +427,6 @@ import { useReticulumSetupGuideStore } from './stores/reticulumSetupGuideStore';
 import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
-import { useTimeFormatStore } from './stores/timeFormatStore';
 import { useWeatherFilterStore } from './stores/weatherFilterStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
@@ -500,6 +499,7 @@ function PanelSkeleton() {
       className="border-ink-800 bg-ink-900/50 flex h-full min-h-[12rem] items-center justify-center rounded-xl border"
       role="status"
       aria-busy="true"
+      data-panel-loading="true"
     >
       <span className="sr-only">{t('app.loadingPanel')}</span>
       <div className="bg-ink-700 h-8 w-8 animate-pulse rounded-full" aria-hidden />
@@ -585,26 +585,6 @@ function AppContent() {
     void loadNotificationSoundSettings().catch((error: unknown) => {
       console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
     });
-  }, []);
-
-  // Reconcile 24h clock from SQLite early — AppPanel is lazy and Chat reads the store first.
-  useEffect(() => {
-    let cancelled = false;
-    void window.electronAPI.appSettings
-      .getAll()
-      .then((raw) => {
-        if (cancelled) return;
-        const use24 = raw?.use24HourTime;
-        if (use24 === 'true' || use24 === 'false') {
-          useTimeFormatStore.getState().hydrateFromSqlite(use24 === 'true');
-        }
-      })
-      .catch((err: unknown) => {
-        console.warn('[App] use24HourTime hydrate failed ' + errLikeToLogString(err));
-      });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const runtimes = useAllRuntimes();

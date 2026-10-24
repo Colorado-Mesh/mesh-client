@@ -16,6 +16,11 @@ import {
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
 import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { parseStoredJson } from './parseStoredJson';
+import {
+  getCachedSecureSecret,
+  MESHCORE_MQTT_SECRET_KEY,
+  MESHTASTIC_MQTT_SECRET_KEY,
+} from './secureSecretStorage';
 import type { MQTTSettings } from './types';
 
 const LEGACY_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings';
@@ -210,6 +215,42 @@ function reconcileMeshcoreMqttPresetSettings(): void {
 
 /** Idempotent localStorage migrations for ConnectionPanel MQTT settings. */
 export function runConnectionPanelStorageMigrations(): void {
+  // Older versions encrypted the whole broker configuration. Materialize its nonsecret
+  // preferences before preset seeding can mistake a missing browser cache for a new install.
+  for (const [storageKey, secretKey] of [
+    [LEGACY_MQTT_SETTINGS_KEY, MESHTASTIC_MQTT_SECRET_KEY],
+    [MESHCORE_MQTT_SETTINGS_KEY, MESHCORE_MQTT_SECRET_KEY],
+  ]) {
+    const secure = parseStoredJson<Partial<MQTTSettings>>(
+      getCachedSecureSecret(secretKey),
+      'MQTT secure preferences',
+    );
+    if (!secure || typeof secure.server !== 'string') continue;
+    const metadata = Object.fromEntries(
+      [
+        'server',
+        'port',
+        'username',
+        'topicPrefix',
+        'autoLaunch',
+        'maxRetries',
+        'tokenExpiresAt',
+        'useWebSocket',
+        'tlsEnabled',
+        'wsPath',
+        'tlsInsecure',
+        'keepalive',
+        'meshcorePacketLoggerEnabled',
+      ]
+        .filter((key) => Object.hasOwn(secure, key))
+        .map((key) => [key, secure[key as keyof MQTTSettings]]),
+    );
+    const local = parseStoredJson<Partial<MQTTSettings>>(
+      localStorage.getItem(storageKey),
+      'MQTT local preferences',
+    );
+    localStorage.setItem(storageKey, JSON.stringify({ ...metadata, ...local }));
+  }
   migrateMqttSettingsOnce();
   migrateMeshcoreTopicIataOnce();
   migrateColoradoMeshPortOnce();

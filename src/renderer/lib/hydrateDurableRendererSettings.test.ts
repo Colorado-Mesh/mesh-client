@@ -29,6 +29,32 @@ describe('durable renderer startup hydration', () => {
     vi.restoreAllMocks();
   });
 
+  it('refreshes eager weather and dismissed-contact stores after restoring their browser caches', async () => {
+    const startup = await import('./hydrateDurableRendererSettings');
+    const { useWeatherFilterStore } = await import('../stores/weatherFilterStore');
+    const { useReticulumPeerStore } = await import('../stores/reticulumPeerStore');
+    expect(useWeatherFilterStore.getState().hideInChannels).toBe(false);
+    const hash = 'ab'.repeat(16);
+    database[KEYS.preferences] = JSON.stringify({
+      legacyAliasesImported: true,
+      values: {
+        'mesh-client:appSettings': {
+          weatherFilterHideInChannels: true,
+          weatherFilterPattern: 'migration weather',
+          weatherOnlinePlaceLookup: true,
+        },
+        'mesh-client:reticulumDismissedContacts': [hash],
+      },
+    });
+    await startup.hydrateDurableRendererSettings();
+    expect(useWeatherFilterStore.getState()).toMatchObject({
+      hideInChannels: true,
+      pattern: 'migration weather',
+      onlinePlaceLookup: true,
+    });
+    expect(useReticulumPeerStore.getState().dismissedContactHashes.has(hash)).toBe(true);
+  });
+
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'seeds and restores %s chat reads, then persists advancing and clearing them',
     async (protocol) => {
@@ -215,8 +241,9 @@ describe('durable renderer startup hydration', () => {
     const chat = await import('./chatPanelProtocolStorage');
     vi.useFakeTimers();
     const startup = hydrateDurableRendererSettings();
+    const failedStartup = expect(startup).rejects.toThrow('Saved settings database unavailable');
     await vi.advanceTimersByTimeAsync(1250);
-    await startup;
+    await failedStartup;
     chat.savePersistedLastRead('meshcore', { 'ch:0': 456 });
     await vi.runAllTimersAsync();
     expect(window.electronAPI.appSettings.getAll).toHaveBeenCalledTimes(3);
@@ -303,8 +330,9 @@ describe('durable renderer startup hydration', () => {
     const chat = await import('./chatPanelProtocolStorage');
     vi.useFakeTimers();
     const startup = hydrateDurableRendererSettings();
+    const failedStartup = expect(startup).rejects.toThrow('Saved settings database unavailable');
     await vi.advanceTimersByTimeAsync(1250);
-    await startup;
+    await failedStartup;
     chat.savePersistedLastRead('meshcore', { 'ch:0': 456 });
     expect(window.electronAPI.appSettings.set).not.toHaveBeenCalled();
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({ ...database });

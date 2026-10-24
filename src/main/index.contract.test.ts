@@ -42,8 +42,15 @@ describe('renderer origin cutover (source contract)', () => {
     const hydration = renderer.indexOf(
       'await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()])',
     );
-    expect(hydration).toBeGreaterThan(renderer.indexOf('installDevElectronApiStubIfNeeded();'));
-    expect(hydration).toBeLessThan(renderer.indexOf('createRoot(document'));
+    expect(hydration).toBeGreaterThan(renderer.indexOf('async function prepareRendererStorage()'));
+    expect(hydration).toBeLessThan(renderer.indexOf('installRendererPreferencePersistence();'));
+    expect(renderer.indexOf('installDevElectronApiStubIfNeeded();')).toBeLessThan(
+      renderer.indexOf('createRoot(document'),
+    );
+    expect(renderer).toContain('<SecureSecretsStartup prepare={prepareRendererStorage}>');
+    expect(renderer.indexOf('<SecureSecretsStartup prepare=')).toBeLessThan(
+      renderer.indexOf('<App />'),
+    );
   });
 
   it('uses the same explicit renderer override for migration and loading in every launch mode', () => {

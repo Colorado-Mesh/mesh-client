@@ -6,12 +6,14 @@ export interface PendingRendererStorageIntent {
   id: string;
   origin: string;
   deleted: boolean;
+  secretRevision?: string;
 }
 
 export interface RendererStorageDeletionState {
   deleted: boolean;
   applied: Record<string, string>;
   imported: Record<string, string>;
+  secretRevision?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -62,11 +64,17 @@ export function parseRendererStorageIntent(raw: string): PendingRendererStorageI
     !isRecord(value) ||
     !isIntentId(value.id) ||
     !isOrigin(value.origin) ||
-    typeof value.deleted !== 'boolean'
+    typeof value.deleted !== 'boolean' ||
+    (value.secretRevision !== undefined && !isIntentId(value.secretRevision))
   ) {
     throw new TypeError('Invalid renderer storage deletion intent');
   }
-  return { id: value.id, origin: value.origin, deleted: value.deleted };
+  return {
+    id: value.id,
+    origin: value.origin,
+    deleted: value.deleted,
+    ...(value.secretRevision === undefined ? {} : { secretRevision: value.secretRevision }),
+  };
 }
 
 /** The canonical flag and its per-origin receipts are committed in one SQLite value. */
@@ -82,6 +90,7 @@ export function parseRendererStorageDeletionState(
   if (
     !isRecord(value) ||
     typeof value.deleted !== 'boolean' ||
+    (value.secretRevision !== undefined && !isIntentId(value.secretRevision)) ||
     !isRecord(value.applied) ||
     !Object.entries(value.applied).every(([origin, id]) => isOrigin(origin) && isIntentId(id)) ||
     (value.imported !== undefined &&
@@ -96,6 +105,7 @@ export function parseRendererStorageDeletionState(
     deleted: value.deleted,
     applied: value.applied as Record<string, string>,
     imported: (value.imported ?? {}) as Record<string, string>,
+    ...(value.secretRevision === undefined ? {} : { secretRevision: value.secretRevision }),
   };
 }
 
@@ -104,5 +114,9 @@ export function hasAppliedRendererStorageIntent(
   state: RendererStorageDeletionState,
   intent: PendingRendererStorageIntent,
 ): boolean {
-  return state.applied[intent.origin] === intent.id || state.imported[intent.origin] === intent.id;
+  return (
+    (state.secretRevision !== undefined && intent.secretRevision !== state.secretRevision) ||
+    state.applied[intent.origin] === intent.id ||
+    state.imported[intent.origin] === intent.id
+  );
 }

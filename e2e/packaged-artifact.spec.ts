@@ -18,6 +18,7 @@ import type { ElectronAPI } from '../src/shared/electron-api.types';
 import type { EmergencyIncident } from '../src/shared/incidentTypes';
 import type { RendererStorageDeletionState } from '../src/shared/rendererStorageIntent';
 import { openAppTab, openPanel, repoRoot } from './electronApp';
+import reportedPreferences from './fixtures/renderer-preferences.json';
 
 const executablePath = process.env.MESH_PACKAGED_EXECUTABLE;
 
@@ -25,8 +26,12 @@ test.describe('actual packaged renderer artifact', () => {
   test.skip(!executablePath, 'Set MESH_PACKAGED_EXECUTABLE to the built app executable.');
   let app: ElectronApplication | undefined;
   let profile: string;
+  let launchCount = 0;
+  let discardBootstrapPreferences = false;
   test.beforeEach(() => {
     profile = realpathSync(mkdtempSync(path.join(tmpdir(), 'mesh-artifact-e2e-')));
+    launchCount = 0;
+    discardBootstrapPreferences = false;
   });
   test.afterEach(async () => {
     await app?.close();
@@ -35,6 +40,18 @@ test.describe('actual packaged renderer artifact', () => {
   });
 
   async function launch(extraEnv: Record<string, string> = {}) {
+    if (discardBootstrapPreferences) {
+      // The fixture's first forced-file launch uses the new binary to create a legacy
+      // document. An older installed binary never created this new canonical domain.
+      const db = new DatabaseSync(path.join(profile, 'mesh-client.db'));
+      try {
+        db.prepare('DELETE FROM app_settings WHERE key = ?').run('rendererPreferences');
+      } finally {
+        db.close();
+      }
+      discardBootstrapPreferences = false;
+    }
+    launchCount += 1;
     const env = { ...process.env };
     for (const key of [
       'VITE_DEV_SERVER_URL',
@@ -81,8 +98,11 @@ test.describe('actual packaged renderer artifact', () => {
     }, migrationUrl);
     await page.waitForURL(migrationUrl, { waitUntil: 'load' });
     await page.evaluate((seeded) => {
+      localStorage.removeItem('mesh-client:rendererPreferences');
+      localStorage.removeItem('mesh-client:durablePending:rendererPreferences');
       for (const [key, value] of Object.entries(seeded)) localStorage.setItem(key, value);
     }, entries);
+    if (launchCount === 1) discardBootstrapPreferences = true;
     await app!.evaluate(({ session }) => {
       session.defaultSession.flushStorageData();
     });
@@ -168,12 +188,50 @@ test.describe('actual packaged renderer artifact', () => {
       'mesh-client:lastRead:rrc': JSON.stringify({ 'artifact.example|upgrade': at }),
       'mesh-client:launcherPins': JSON.stringify(['Incident', 'Connection']),
       'mesh-client:appSettings': JSON.stringify({
+        ...reportedPreferences,
         distanceFilterEnabled: true,
         distanceFilterMax: 321,
         distanceUnit: 'km',
         shareMyLocation: false,
         reticulumAutostart: false,
         mecpStandingAlertEnabled: false,
+      }),
+      'mesh-client:lastConnection:meshtastic': JSON.stringify({
+        type: 'http',
+        httpAddress: '127.0.0.1:9',
+        bleDeviceId: 'migration-ble-id',
+        bleDeviceName: 'Saved migration radio',
+        bleMac: 'aa:bb:cc:dd:ee:ff',
+        serialPortId: '/dev/migration-test-radio',
+      }),
+      'mesh-client:lastConnection:meshcore': JSON.stringify({
+        type: 'tcp',
+        tcpAddress: '127.0.0.1:9',
+        bleDeviceId: 'migration-meshcore-id',
+        bleDeviceName: 'Saved MeshCore radio',
+        bleMac: 'aa:bb:cc:dd:ee:01',
+        serialPortId: '/dev/migration-test-meshcore',
+      }),
+      'mesh-client:lastBleDevice:meshcore': 'migration-meshcore-id',
+      'mesh-client:lastBleDevice:meshtastic': 'migration-ble-id',
+      'mesh-client:lastSerialPort': '/dev/migration-test-radio',
+      'mesh-client:lastSerialPortSignature': JSON.stringify({
+        usbVendorId: 123,
+        usbProductId: 456,
+        bluetoothServiceClassId: null,
+      }),
+      'mesh-client:bleDeviceMacs': JSON.stringify({ 'migration-ble-id': 'aa:bb:cc:dd:ee:ff' }),
+      'mesh-client:bleDeviceNames': JSON.stringify({ 'migration-ble-id': 'Saved migration radio' }),
+      'mesh-client:meshcoreBleMacForSuppression': 'aa:bb:cc:dd:ee:01',
+      'mesh-client:rrcNickname': 'UpgradeNick',
+      'mesh-client:rrc:hubAutoJoin': JSON.stringify(['ab'.repeat(16)]),
+      'mesh-client:rrc:roomFavourites:upgrade': JSON.stringify(['#migration']),
+      'mesh-client:reticulumRemoteSettings': JSON.stringify({
+        autoReconnectShell: true,
+        maxReconnectAttempts: 7,
+        autoRetryTransfer: false,
+        maxRetryAttempts: 3,
+        inboundMode: 'ask',
       }),
       'mesh-client:mqttSettings': JSON.stringify({
         server: 'upgrade-broker.invalid',
@@ -189,6 +247,23 @@ test.describe('actual packaged renderer artifact', () => {
     let page = await launch({ MESH_CLIENT_FORCE_FILE_ORIGIN: '1' });
     await page.evaluate(async (timestamp) => {
       const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+      for (const protocol of ['meshcore', 'meshtastic'] as const) {
+        const id = protocol === 'meshcore' ? 41 : 42;
+        await api.secureSecrets.set(
+          `backup:${protocol}:${id}`,
+          JSON.stringify({
+            protocol,
+            [protocol === 'meshcore' ? 'nodeId' : 'nodeNum']: id,
+            publicKey: btoa(String.fromCharCode(...new Uint8Array(32).fill(1))),
+            privateKey: btoa(
+              String.fromCharCode(...new Uint8Array(protocol === 'meshcore' ? 64 : 32).fill(2)),
+            ),
+            backedUpAt: timestamp,
+            nodeLabel: `Upgrade ${protocol} backup`,
+          }),
+          true,
+        );
+      }
       await api.db.saveMessage({
         sender_id: 1001,
         sender_name: 'Upgrade read sender',
@@ -216,8 +291,10 @@ test.describe('actual packaged renderer artifact', () => {
       legacyDb.exec(`
         DELETE FROM app_settings WHERE key IN (
           'chatLastRead:meshtastic', 'chatLastRead:meshcore', 'chatLastRead:reticulum',
-          'roomsLastRead:meshcore', 'rrcLastRead', 'mecpBlockedSenders', 'takRelayPrefs'
+          'roomsLastRead:meshcore', 'rrcLastRead', 'mecpBlockedSenders', 'takRelayPrefs',
+          'rendererPreferences'
         );
+        INSERT OR REPLACE INTO app_settings(key,value) VALUES ('aiEnabled','1'), ('translationEnabled','1');
         DELETE FROM emergency_incidents;
         DELETE FROM emergency_incident_tombstones;
         DELETE FROM emergency_incident_storage;
@@ -237,6 +314,9 @@ test.describe('actual packaged renderer artifact', () => {
       await expect(incidents).toContainText('Drill');
 
       await openAppTab(current);
+      await expect(current.locator('#autoPrune')).not.toBeChecked();
+      await expect(current.locator('#use24HourTime')).toBeChecked();
+      await expect(current.locator('#mecpComposeEnabled')).toBeChecked();
       const mecp = current.locator('details').filter({
         has: current.getByRole('heading', { name: 'MECP', exact: true }),
       });
@@ -280,6 +360,49 @@ test.describe('actual packaged renderer artifact', () => {
 
     page = await launch();
     expect(page.url()).toBe('mesh-client://renderer/index.html');
+    async function expectRecoveredPreferences(current: Page): Promise<void> {
+      const actual = await current.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('mesh-client:appSettings') ?? '{}') as Record<
+            string,
+            unknown
+          >,
+      );
+      for (const [field, value] of Object.entries(reportedPreferences))
+        expect(actual[field], `Saved preference ${field}`).toEqual(value);
+      for (const key of [
+        'mesh-client:lastConnection:meshtastic',
+        'mesh-client:lastConnection:meshcore',
+        'mesh-client:lastBleDevice:meshcore',
+        'mesh-client:lastBleDevice:meshtastic',
+        'mesh-client:lastSerialPort',
+        'mesh-client:lastSerialPortSignature',
+        'mesh-client:bleDeviceMacs',
+        'mesh-client:bleDeviceNames',
+        'mesh-client:meshcoreBleMacForSuppression',
+        'mesh-client:rrcNickname',
+        'mesh-client:rrc:hubAutoJoin',
+        'mesh-client:rrc:roomFavourites:upgrade',
+        'mesh-client:reticulumRemoteSettings',
+      ])
+        expect(await current.evaluate((name) => localStorage.getItem(name), key), key).toBe(
+          entries[key],
+        );
+      expect(
+        await current.evaluate(async () => {
+          const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+          return Object.fromEntries(
+            await Promise.all(
+              ['meshcore', 'meshtastic'].map(async (protocol) => [
+                protocol,
+                JSON.parse((await api.secureSecrets.get(`backup-index:${protocol}`)) ?? '[]'),
+              ]),
+            ),
+          );
+        }),
+      ).toMatchObject({ meshcore: [{ nodeId: 41 }], meshtastic: [{ nodeNum: 42 }] });
+    }
+    await expectRecoveredPreferences(page);
     // Verify the original read boundary before opening Chat can legitimately advance it.
     await expect(
       page.getByRole('navigation', { name: 'Application panels' }).getByRole('button', {
@@ -291,6 +414,7 @@ test.describe('actual packaged renderer artifact', () => {
     const originalExport = readFileSync(exportPath, 'utf8');
     expect(JSON.parse(originalExport).entries).toMatchObject(entries);
     await expectProfileInUi(page, false);
+    await expectRecoveredPreferences(page);
     await page.screenshot({
       path: 'test-results/packaged-populated-upgrade-chat.png',
       fullPage: true,
@@ -323,6 +447,7 @@ test.describe('actual packaged renderer artifact', () => {
 
     page = await launch();
     await expectProfileInUi(page, true);
+    await expectRecoveredPreferences(page);
     expect(readFileSync(exportPath, 'utf8')).toBe(originalExport);
     await page.screenshot({
       path: 'test-results/packaged-populated-upgrade-relaunch.png',
@@ -626,8 +751,21 @@ test.describe('actual packaged renderer artifact', () => {
     const exportPath = path.join(profile, 'migration/legacy-file-origin-web-storage-v1.json');
     const originalExport = readFileSync(exportPath, 'utf8');
     await page.evaluate(() => {
-      localStorage.removeItem('mesh-client:chatMacros');
       localStorage.setItem('mesh-client:protocol', 'reticulum');
+    });
+    // Simulate Chromium cache loss on an inert document. A removeItem in the live App is
+    // now an intentional, durable preference removal and must not be resurrected.
+    const inertUrl = new URL('./migration.html', page.url()).href;
+    await app!.evaluate(async ({ BrowserWindow }, url) => {
+      const main = BrowserWindow.getAllWindows().find((win) =>
+        win.webContents.getURL().endsWith('/index.html'),
+      );
+      if (!main) throw new Error('Packaged main renderer is missing');
+      await main.loadURL(url);
+    }, inertUrl);
+    await page.waitForURL(inertUrl);
+    await page.evaluate(() => {
+      localStorage.removeItem('mesh-client:chatMacros');
     });
     await app!.close();
     app = undefined;

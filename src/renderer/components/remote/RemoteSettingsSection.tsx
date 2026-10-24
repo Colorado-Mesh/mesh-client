@@ -194,6 +194,8 @@ export function RemoteSettingsSection({
 
         onSettingsChange({
           inboundMode: mode,
+          allowFetch,
+          overwriteOnReceive: overwrite,
           lastSaveDir: dir,
           ...(jail != null ? { lastFetchJail: jail } : {}),
         });
@@ -277,6 +279,8 @@ export function RemoteSettingsSection({
         return;
       }
       onSettingsChange({
+        allowFetch,
+        overwriteOnReceive: overwrite,
         lastSaveDir: dir,
         ...(jail != null ? { lastFetchJail: jail } : {}),
       });

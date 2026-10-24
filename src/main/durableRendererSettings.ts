@@ -50,6 +50,19 @@ export function seedDurableRendererSettings(
 ): void {
   db.transaction(() => {
     const insert = db.prepareOnce('INSERT OR IGNORE INTO app_settings(key, value) VALUES (?, ?)');
+    // Main consumes these flags before the lazy App panel ever mounts.
+    const appPreferences = parseLastRead(
+      entries['mesh-client:appSettings'] ?? entries['mesh-client:adminSettings'],
+    );
+    for (const key of [
+      'autoUpdateDownloadEnabled',
+      'closeToTray',
+      'aiEnabled',
+      'translationEnabled',
+    ]) {
+      if (typeof appPreferences?.[key] === 'boolean')
+        insert.run(key, appPreferences[key] ? '1' : '0');
+    }
     for (const [legacyKey, databaseKey] of DURABLE_RENDERER_STORAGE_MIGRATIONS) {
       const value =
         databaseKey === DURABLE_RENDERER_STORAGE_KEYS.chatLastRead.meshtastic
@@ -72,6 +85,7 @@ export function seedDurableRendererSettings(
 export function resetDurableRendererData(db: NodeSqliteDB): void {
   const keys = DURABLE_RENDERER_STORAGE_KEYS;
   const emptySettings = [
+    [keys.preferences, JSON.stringify({ legacyAliasesImported: true, values: {} })],
     [keys.chatLastRead.meshtastic, '{}'],
     [keys.chatLastRead.meshcore, '{}'],
     [keys.chatLastRead.reticulum, '{}'],

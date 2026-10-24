@@ -15,11 +15,18 @@ import {
   runConnectionPanelStorageMigrations,
 } from './connectionPanelStorageMigrations';
 import { COLORADO_MESH_HOST, LETSMESH_HOST_US, MESHMAPPER_HOST, WAEV_HOST } from './letsMeshJwt';
+import type * as SecureSecretStorage from './secureSecretStorage';
 
 const store = new Map<string, string>();
+const secure = vi.hoisted(() => new Map<string, string>());
+vi.mock('./secureSecretStorage', async (original) => ({
+  ...(await original<typeof SecureSecretStorage>()),
+  getCachedSecureSecret: (key: string) => secure.get(key) ?? null,
+}));
 
 beforeEach(() => {
   store.clear();
+  secure.clear();
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => {
@@ -35,6 +42,53 @@ beforeEach(() => {
 });
 
 describe('runConnectionPanelStorageMigrations', () => {
+  it.each([
+    ['mqtt:meshtastic', LEGACY_MQTT_SETTINGS_KEY, 'msh/test'],
+    ['mqtt:meshcore', MESHCORE_MQTT_SETTINGS_KEY, 'meshcore/test'],
+  ])(
+    'materializes all nonsecret preferences from older full %s secure rows before preset defaults',
+    (secretKey, storageKey, topicPrefix) => {
+      const metadata = {
+        server: 'private-broker.invalid',
+        port: 8883,
+        username: 'operator',
+        topicPrefix,
+        autoLaunch: false,
+        maxRetries: 0,
+        tokenExpiresAt: null,
+        useWebSocket: false,
+        tlsEnabled: true,
+        wsPath: '/private',
+        tlsInsecure: true,
+        keepalive: 37,
+        meshcorePacketLoggerEnabled: true,
+      };
+      secure.set(
+        secretKey,
+        JSON.stringify({ ...metadata, password: 'PRIVATE-PASSWORD', channelPsks: ['PRIVATE-PSK'] }),
+      );
+      runConnectionPanelStorageMigrations();
+      expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual(metadata);
+      expect(localStorage.getItem(storageKey)).not.toContain('PRIVATE-');
+      if (secretKey === 'mqtt:meshcore')
+        expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('custom');
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          ...metadata,
+          server: 'newer-broker.invalid',
+          autoLaunch: true,
+          maxRetries: 7,
+        }),
+      );
+      runConnectionPanelStorageMigrations();
+      expect(JSON.parse(localStorage.getItem(storageKey)!)).toMatchObject({
+        server: 'newer-broker.invalid',
+        autoLaunch: true,
+        maxRetries: 7,
+      });
+    },
+  );
   it('moves legacy meshcore mqtt blob from mesh-client:mqttSettings to meshcore key', () => {
     const legacy = JSON.stringify({
       server: 'mqtt.example.com',

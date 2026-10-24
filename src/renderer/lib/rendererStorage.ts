@@ -120,13 +120,19 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
     return flushing;
   }
 
-  function recordIntent(key: string, deleted: boolean): boolean {
+  function recordIntent(
+    key: string,
+    deleted: boolean,
+    id?: string,
+    secretRevision?: string,
+  ): boolean {
     if (!isCriticalRendererStorageKey(key)) return true;
     restorePendingIntents();
     const intent: PendingRendererStorageIntent = {
-      id: environment.createId(),
+      id: id ?? environment.createId(),
       origin: environment.origin(),
       deleted,
+      ...(secretRevision === undefined ? {} : { secretRevision }),
     };
     pending.set(`${RENDERER_STORAGE_DELETION_SETTING_PREFIX}${key}`, intent);
     let cached = true;
@@ -145,13 +151,23 @@ export function createRendererStorage(environment: RendererStorageEnvironment) {
     if (recordIntent(key, true)) storage.removeItem(key);
   }
 
-  function setRendererStorageItem(key: string, value: string): void {
+  function setRendererStorageItem(
+    key: string,
+    value: string,
+    id?: string,
+    secretRevision?: string,
+  ): void {
     storage.setItem(key, value);
     // The local marker may have been lost independently of its canonical SQLite flag.
-    recordIntent(key, false);
+    recordIntent(key, false, id, secretRevision);
   }
 
-  return { flushRendererStorageDeletions, removeRendererStorageItem, setRendererStorageItem };
+  return {
+    flushRendererStorageDeletions,
+    removeRendererStorageItem,
+    setRendererStorageItem,
+    hasPending: (key: string) => pending.has(`${RENDERER_STORAGE_DELETION_SETTING_PREFIX}${key}`),
+  };
 }
 
 let rendererStorage: ReturnType<typeof createRendererStorage> | undefined;
@@ -189,6 +205,22 @@ export function removeRendererStorageItem(key: string): void {
   currentRendererStorage().removeRendererStorageItem(key);
 }
 
-export function setRendererStorageItem(key: string, value: string): void {
-  currentRendererStorage().setRendererStorageItem(key, value);
+export function setRendererStorageItem(
+  key: string,
+  value: string,
+  id?: string,
+  secretRevision?: string,
+): void {
+  currentRendererStorage().setRendererStorageItem(key, value, id, secretRevision);
+}
+
+export async function commitRendererStorageItem(key: string): Promise<void> {
+  await currentRendererStorage().flushRendererStorageDeletions();
+  if (currentRendererStorage().hasPending(key))
+    throw new Error('Renderer storage receipt was not persisted');
+}
+
+/** Test-only reset of document-owned journals between isolated profiles. */
+export function resetRendererStorageForTests(): void {
+  rendererStorage = undefined;
 }

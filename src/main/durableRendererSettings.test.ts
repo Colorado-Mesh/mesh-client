@@ -47,6 +47,21 @@ describe('legacy renderer settings migration', () => {
     });
   });
 
+  it('seeds browser-only false main-process flags before their default-true consumers read them', () => {
+    seedDurableRendererSettings(db, {
+      'mesh-client:appSettings': '{"closeToTray":false,"autoUpdateDownloadEnabled":false}',
+    });
+    const rows = db.prepareOnce('SELECT key, value FROM app_settings ORDER BY key').all();
+    expect(rows).toEqual([
+      { key: 'autoUpdateDownloadEnabled', value: '0' },
+      { key: 'closeToTray', value: '0' },
+    ]);
+    seedDurableRendererSettings(db, {
+      'mesh-client:appSettings': '{"closeToTray":true,"autoUpdateDownloadEnabled":true}',
+    });
+    expect(db.prepareOnce('SELECT key, value FROM app_settings ORDER BY key').all()).toEqual(rows);
+  });
+
   it('seeds Meshtastic from the unsuffixed map on legacy-only installations', () => {
     seedDurableRendererSettings(db, { 'mesh-client:lastRead': '{"ch:0":100}' });
     expect(
@@ -150,6 +165,7 @@ describe('explicit durable renderer data reset', () => {
     const keys = DURABLE_RENDERER_STORAGE_KEYS;
     return {
       ...existingSettings,
+      [keys.preferences]: JSON.stringify({ legacyAliasesImported: true, values: {} }),
       [keys.chatLastRead.meshtastic]: '{}',
       [keys.chatLastRead.meshcore]: '{}',
       [keys.chatLastRead.reticulum]: '{}',

@@ -95,6 +95,22 @@ describe('usePendingSettingAnchor', () => {
     expect(frames).toHaveLength(0);
   });
 
+  it('waits through a cold lazy panel load before starting the unavailable deadline', () => {
+    const host = document.getElementById('panel-3')!;
+    host.innerHTML = '<div data-panel-loading="true"></div>';
+    const { onRevealed, onTimedOut } = renderAnchorHook({
+      id: 'app.support.rendererMemory',
+      panelIndex: 3,
+    });
+    runFrame(1600);
+    expect(onTimedOut).not.toHaveBeenCalled();
+    host.innerHTML =
+      '<div data-setting-anchor="app.support.rendererMemory"><button>Sample now</button></div>';
+    runFrame();
+    expect(onRevealed).toHaveBeenCalledExactlyOnceWith('app.support.rendererMemory');
+    expect(document.activeElement?.textContent).toBe('Sample now');
+  });
+
   it('cancels the pending frame on unmount', () => {
     const { unmount, onCleared } = renderAnchorHook({ id: 'app.x.y', panelIndex: 3 });
     expect(frames).toHaveLength(1);

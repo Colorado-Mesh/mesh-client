@@ -1,9 +1,12 @@
 import { hydrateMecpBlockedSenders } from '@/renderer/stores/mecpBlockStore';
+import { hydrateReticulumDismissedContacts } from '@/renderer/stores/reticulumPeerStore';
 import { hydrateTakRelayPrefs } from '@/renderer/stores/takRelayPrefsStore';
+import { hydrateWeatherFilterPreferences } from '@/renderer/stores/weatherFilterStore';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { hydrateChatLastRead } from './chatPanelProtocolStorage';
 import { errLikeToLogString } from './errLikeToLogString';
+import { hydrateRendererPreferences } from './rendererPreferences';
 import { flushRendererStorageDeletions } from './rendererStorage';
 import { hydrateRrcLastRead } from './rrcReadWatermark';
 
@@ -28,7 +31,10 @@ async function hydrateFromDatabase(): Promise<void> {
   }
   // Exhausted reads keep the adapters unhydrated and their local journals intact. Never seed
   // defaults over an unread database; another explicit hydration or next launch can retry.
-  if (settings === undefined) return;
+  if (settings === undefined) throw new Error('Saved settings database unavailable');
+  await hydrateRendererPreferences(settings);
+  hydrateWeatherFilterPreferences();
+  hydrateReticulumDismissedContacts();
   const results = await Promise.allSettled([
     hydrateChatLastRead(settings),
     hydrateRrcLastRead(settings),

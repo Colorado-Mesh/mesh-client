@@ -79,6 +79,39 @@ describe('intentional renderer storage deletions', () => {
     expect(state.write).not.toHaveBeenCalled();
   });
 
+  it('consumes a pre-save credential journal without undoing a newer native retirement', async () => {
+    const state = profile();
+    const key = 'mesh-client:credentialCompatibility:mqtt:meshcore';
+    const native = { deleted: true, applied: {}, imported: {}, secretRevision: 'native-new' };
+    state.settings[DB + key] = JSON.stringify(native);
+    const storage = memoryStorage([
+      [key, 'old-password'],
+      [
+        LOCAL + key,
+        JSON.stringify({
+          id: 'old-outage-write',
+          origin: CUSTOM_ORIGIN,
+          deleted: false,
+          secretRevision: 'native-old',
+        }),
+      ],
+    ]);
+    const renderer = state.renderer(CUSTOM_ORIGIN, storage);
+    await renderer.flushRendererStorageDeletions();
+    expect(JSON.parse(state.settings[DB + key])).toEqual(native);
+    expect(storage.getItem(key)).toBeNull();
+    expect(storage.getItem(LOCAL + key)).toBeNull();
+    expect(state.write).not.toHaveBeenCalled();
+    renderer.setRendererStorageItem(key, 'new-outage-edit', 'new-intent', 'native-new');
+    await renderer.flushRendererStorageDeletions();
+    expect(JSON.parse(state.settings[DB + key])).toMatchObject({
+      deleted: false,
+      secretRevision: 'native-new',
+      applied: { [CUSTOM_ORIGIN]: 'new-intent' },
+    });
+    expect(storage.getItem(key)).toBe('new-outage-edit');
+  });
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'commits the canonical flag and receipt atomically for Forget and recreation on %s',
     async () => {

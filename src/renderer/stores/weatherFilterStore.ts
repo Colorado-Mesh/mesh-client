@@ -109,6 +109,11 @@ export const useWeatherFilterStore = create<WeatherFilterState>()((set, get) => 
   },
 }));
 
+/** Refresh caches created by eager unread-count imports after preference restoration. */
+export function hydrateWeatherFilterPreferences(): void {
+  useWeatherFilterStore.setState(initialState());
+}
+
 /**
  * True when `msg` is a channel weather post that the user chose to hide from channel views.
  * Unread counts and notifications use this so badges match what Chat shows.

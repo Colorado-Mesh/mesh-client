@@ -6,6 +6,7 @@ import { runInNewContext } from 'node:vm';
 import type { BrowserWindowConstructorOptions, WebContents } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import joeyPreferences from '../../e2e/fixtures/renderer-preferences.json';
 import {
   CRITICAL_LOCALSTORAGE_KEY_PREFIXES,
   ENV_FORCE_FILE_ORIGIN,
@@ -173,6 +174,83 @@ describe('renderer origin migration', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     fs.rmSync(directory, { recursive: true, force: true });
+  });
+
+  it('recovers missing fields from a richer app-settings export while retaining newer present choices', async () => {
+    legacy.set('mesh-client:appSettings', JSON.stringify(joeyPreferences));
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const originalExport = readArtifact(LEGACY_STORAGE_EXPORT_FILENAME);
+    target.set('mesh-client:appSettings', '{"autoPruneEnabled":false,"newPreference":"current"}');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const actual = JSON.parse(target.get('mesh-client:appSettings')!);
+    for (const [key, value] of Object.entries(joeyPreferences))
+      expect(actual[key], key).toEqual(value);
+    expect(actual.newPreference).toBe('current');
+    expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME)).toEqual(originalExport);
+  });
+
+  it('keeps missing nested app fields in an incomplete retry export even when top-level keys survived', async () => {
+    legacy.set('mesh-client:appSettings', JSON.stringify(joeyPreferences));
+    failImportAfter = 1;
+    expect(await runWebStorageOriginMigration(options)).toBe('failed');
+    legacy.set('mesh-client:appSettings', '{"autoPruneEnabled":false,"newPreference":"current"}');
+    failImportAfter = undefined;
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    const actual = JSON.parse(target.get('mesh-client:appSettings')!);
+    for (const [key, value] of Object.entries(joeyPreferences))
+      expect(actual[key], key).toEqual(value);
+    expect(actual.newPreference).toBe('current');
+  });
+
+  it('does not reintroduce deliberately removed app fields after canonical preferences are established', async () => {
+    legacy.set('mesh-client:appSettings', JSON.stringify(joeyPreferences));
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.set('mesh-client:appSettings', '{"autoPruneEnabled":false}');
+    target.set(
+      'mesh-client:rendererPreferences',
+      '{"legacyAliasesImported":true,"values":{"mesh-client:appSettings":{"autoPruneEnabled":false}}}',
+    );
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(JSON.parse(target.get('mesh-client:appSettings')!)).toEqual({ autoPruneEnabled: false });
+  });
+
+  it.each([
+    'mesh-client:mqttSettings',
+    'mesh-client:mqttSettings:meshcore',
+    'mesh-client:reticulumInterfaceProfiles',
+    'mesh-client:reticulumRemoteSettings',
+    'mesh-client:rrcNickname',
+    'mesh-client:rrc:hubAutoJoin',
+    'mesh-client:rrc:autoJoin:hub',
+    'mesh-client:gpsSettings',
+    'mesh-client:themeColors',
+  ])('repairs missing exported preference %s before its consumers mount', async (key) => {
+    legacy.set(key, 'saved-non-default');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.delete(key);
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(key)).toBe('saved-non-default');
+  });
+
+  it('never revives historical acknowledged write journals during repair while retaining current pending edits', async () => {
+    const journalKey = 'mesh-client:durablePending:takRelayPrefs';
+    legacy.set(journalKey, 'historical-journal');
+    legacy.set('mesh-client:incidentPending', 'historical-incidents');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(journalKey)).toBe('historical-journal');
+    target.delete(journalKey);
+    target.delete('mesh-client:incidentPending');
+    const originalExport = readArtifact(LEGACY_STORAGE_EXPORT_FILENAME);
+    options.env = { [ENV_FORCE_ORIGIN_REPAIR]: '1' };
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.has(journalKey)).toBe(false);
+    expect(target.has('mesh-client:incidentPending')).toBe(false);
+    target.set(journalKey, 'current-pending');
+    target.set('mesh-client:incidentPending', 'current-incidents');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get(journalKey)).toBe('current-pending');
+    expect(target.get('mesh-client:incidentPending')).toBe('current-incidents');
+    expect(readArtifact(LEGACY_STORAGE_EXPORT_FILENAME)).toEqual(originalExport);
   });
 
   describe('explicit local data reset', () => {
@@ -745,7 +823,7 @@ describe('renderer origin migration', () => {
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(windows).toHaveLength(1);
     expect(windows[0].url).toBe(RENDERER_MIGRATION_URL);
-    expect(seed).not.toHaveBeenCalled();
+    expect(seed).toHaveBeenCalledExactlyOnceWith(Object.fromEntries(target));
     expect(target.get('mesh-client:lastRead:meshcore')).toContain('9999');
     expect(target.get('mesh-client:chatMacros')).toContain('[]');
   });
@@ -769,7 +847,7 @@ describe('renderer origin migration', () => {
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
     expect(windows).toHaveLength(1);
-    expect(seed).not.toHaveBeenCalled();
+    expect(seed).toHaveBeenCalledExactlyOnceWith(Object.fromEntries(target));
     expect(target.has('mesh-client:lastConnection:meshcore')).toBe(false);
     expect(target.has('mesh-client:lastBleDevice:meshcore')).toBe(false);
     expect(target.has('mesh-client:lastSerialPort:meshtastic')).toBe(false);

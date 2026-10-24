@@ -27,7 +27,34 @@ This migration moves chat/Rooms/RRC last-read watermarks, MECP blocks and TAK re
 
 `incidentStore` retains `mesh-client:incidents` in the legacy version-3 Zustand envelope as a recovery cache. Pre-v3 incident imports mark existing rows seen, preserving the standing-alert upgrade behavior. `seedIncidentsOn` imports only before durable initialization; subsequent hydration reads SQLite even when localStorage is empty or stale. Incident rows keep queryable status/time columns and their complete event history as a JSON payload. IPC snapshots and legacy imports are limited to 16 MiB of UTF-8 JSON; oversized input fails without truncating records, replacing the database or marking an import complete. Existing row and event caps still apply; open real MAYDAY/URGENT rows are never evicted to satisfy the soft row cap.
 
-Chat macros, watched nodes, bot badges and dismissed setup guides remain in localStorage and are copied by the origin migrator. Clearing browser storage can still clear those low-stakes preferences.
+Renderer preferences now also have a canonical `rendererPreferences` map in `app_settings`.
+It covers the complete app-settings object (including fields owned by other panels), remembered
+devices, MQTT metadata/profiles/presets, Reticulum client preferences, RRC nickname/hub/room
+choices, maps, appearance, chat macros, watched nodes and other browser preferences. Existing
+SQLite domain stores and native Reticulum configuration keep their own owners. Private identity
+material, passwords, channel PSKs, encrypted backup slots, transient diagnostics and control
+journals are excluded. The two backup indexes rebuild from surviving readable secure slots at
+startup, independently of a connected device or open panel.
+
+Hydrate the map before mounting protocol runtimes or lazy panels. `Storage` method write-through
+keeps existing callers covered; structured values allow failed-write journals to replay individual
+app-field changes over newer database values. Existing explicit renderer preferences win over old
+scalar mirrors on first import; missing fields can hydrate from their established SQLite codecs.
+Native-owned updater/window/AI/translation flags and all four protocols' message-retention
+flags/counts keep SQLite authority, including later direct saves. Scalar renderer mirrors are
+reconciled before consumers mount: fields deliberately absent from the canonical map remove
+their old mirrors so late readers cannot resurrect them. Malformed legacy app records remain
+untouched for startup recovery. Panels must write only fields the user changes,
+not a full saved snapshot of preferences owned by other panels. Failed preparation shows the
+startup recovery screen and Retry repeats validation/cache restoration.
+
+Before the map is established, recovery fills missing fields in a partial app-settings blob from
+the verified origin export while preserving present values. Once established, canonical removals
+win over historical exports. A previously overwritten value cannot safely be distinguished from
+an intentional newer choice without an untouched backup; recovery does not guess from defaults.
+Historical acknowledged `durablePending:*` and incident journals are not fresh user intent.
+Credential retirement commits atomically with native secret mutations, and native revisions
+prevent older pending compatibility journals from restoring forgotten or superseded secrets.
 
 ## Verification
 

@@ -15,6 +15,7 @@ import {
   RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
   RENDERER_STORAGE_DELETION_PREFIX,
 } from '../shared/rendererOrigin';
+import { isRendererPreferenceKey } from '../shared/rendererPreferences';
 import {
   hasAppliedRendererStorageIntent,
   parseRendererStorageIntent,
@@ -364,10 +365,47 @@ function readTarget(options: WebStorageOriginMigrationOptions): Promise<WebStora
 }
 
 /** Keep recovery exports intact while excluding their historical control journal. */
-function withoutDeletionJournal(entries: WebStorageEntries): WebStorageEntries {
+function withoutDeletionJournal(entries: WebStorageEntries, historical = false): WebStorageEntries {
   return Object.fromEntries(
-    Object.entries(entries).filter(([key]) => !key.startsWith(RENDERER_STORAGE_DELETION_PREFIX)),
+    Object.entries(entries).filter(
+      ([key]) =>
+        !key.startsWith(RENDERER_STORAGE_DELETION_PREFIX) &&
+        !(
+          historical &&
+          (key.startsWith('mesh-client:durablePending:') || key === 'mesh-client:incidentPending')
+        ),
+    ),
   );
+}
+
+/** Before the canonical map exists, a partial app blob must not hide recoverable fields. */
+function recoverMissingAppFields(
+  retained: WebStorageEntries,
+  current: WebStorageEntries,
+): WebStorageEntries {
+  if (Object.hasOwn(current, 'mesh-client:rendererPreferences')) return current;
+  const result = { ...current };
+  for (const key of ['mesh-client:appSettings', 'mesh-client:adminSettings']) {
+    if (retained[key] === undefined || current[key] === undefined) continue;
+    try {
+      const original: unknown = JSON.parse(retained[key]);
+      const latest: unknown = JSON.parse(current[key]);
+      if (
+        original !== null &&
+        typeof original === 'object' &&
+        !Array.isArray(original) &&
+        latest !== null &&
+        typeof latest === 'object' &&
+        !Array.isArray(latest) &&
+        Object.keys(original).some((field) => !Object.hasOwn(latest, field))
+      ) {
+        result[key] = JSON.stringify({ ...original, ...latest });
+      }
+    } catch {
+      // catch-no-log-ok keep malformed originals intact for the startup recovery surface
+    }
+  }
+  return result;
 }
 
 async function importAndVerify(
@@ -399,6 +437,13 @@ async function importAndVerify(
       const deletions = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('${encodedDeletions}'), character => character.charCodeAt(0))));
       for (const key of deletions) localStorage.removeItem(key);
       for (const [key, value] of Object.entries(entries)) {
+        if (${hasCompleted} && (key === 'mesh-client:appSettings' || key === 'mesh-client:adminSettings') && localStorage.getItem(key) !== null && localStorage.getItem(key) !== value) {
+          const restored = JSON.parse(value), current = JSON.parse(localStorage.getItem(key));
+          if (restored && current && typeof restored === 'object' && typeof current === 'object' && !Array.isArray(restored) && !Array.isArray(current)) {
+            localStorage.setItem(key, JSON.stringify({ ...restored, ...current }));
+            continue;
+          }
+        }
         if (${hasCompleted ? `key === '${RENDERER_ORIGIN_STORAGE_SENTINEL_KEY}' || localStorage.getItem(key) === null` : 'true'}) localStorage.setItem(key, value);
       }
     })()`);
@@ -453,8 +498,21 @@ function storageHealthy(
   if (entries[RENDERER_ORIGIN_STORAGE_SENTINEL_KEY] !== storageSentinel(snapshot)) return false;
   const deleted = deletedStorageKeys(options, entries);
   if ([...deleted].some((key) => Object.hasOwn(entries, key))) return false;
+  // Once the renderer has established its canonical preference map, missing individual
+  // caches (including intentional removals) are reconciled from SQLite before App mounts.
+  const preferencesBackedUp = Object.hasOwn(entries, 'mesh-client:rendererPreferences');
+  const recovered = recoverMissingAppFields(snapshot.entries, entries);
+  if (
+    recovered['mesh-client:appSettings'] !== entries['mesh-client:appSettings'] ||
+    recovered['mesh-client:adminSettings'] !== entries['mesh-client:adminSettings']
+  )
+    return false;
   return Object.keys(snapshot.entries).every(
-    (key) => !isCriticalRendererStorageKey(key) || Object.hasOwn(entries, key) || deleted.has(key),
+    (key) =>
+      !isCriticalRendererStorageKey(key) ||
+      Object.hasOwn(entries, key) ||
+      deleted.has(key) ||
+      (preferencesBackedUp && isRendererPreferenceKey(key)),
   );
 }
 
@@ -477,12 +535,14 @@ async function repairStorage(
   const deleted = deletedStorageKeys(options, current);
   // Only current-origin pending intents may override SQLite after the first cutover.
   const retained = Object.fromEntries(
-    Object.entries(withoutDeletionJournal(snapshot.entries)).filter(([key]) => !deleted.has(key)),
+    Object.entries(withoutDeletionJournal(snapshot.entries, true)).filter(
+      ([key]) => !deleted.has(key),
+    ),
   );
   const retainedCurrent = Object.fromEntries(
     Object.entries(current).filter(([key]) => !deleted.has(key)),
   );
-  const merged = { ...retained, ...retainedCurrent };
+  const merged = recoverMissingAppFields(retained, { ...retained, ...retainedCurrent });
   await importAndVerify(options, snapshot, merged, true);
 }
 
@@ -526,6 +586,11 @@ export async function runWebStorageOriginMigration(
       const current = await readTarget(options);
       if (env[ENV_FORCE_ORIGIN_REPAIR] !== '1' && storageHealthy(options, snapshot, current)) {
         if (state.phase !== 'completed') await reverifyExistingStorage(options, snapshot, current);
+        else
+          await withTimeout(
+            Promise.resolve(options.seedDurableStorage(current)),
+            options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
+          );
         return 'completed';
       }
       await repairStorage(options, snapshot, current);
@@ -568,6 +633,11 @@ export async function runWebStorageOriginMigration(
         '[Startup] Renderer origin legacy storage unavailable; resuming from the saved recovery export',
       );
       entries = snapshot.entries;
+    }
+    if (snapshot) {
+      entries = recoverMissingAppFields(snapshot.entries, entries);
+      if (liveLegacyEntries)
+        liveLegacyEntries = recoverMissingAppFields(snapshot.entries, liveLegacyEntries);
     }
     if (
       snapshot &&

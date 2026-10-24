@@ -1,3 +1,5 @@
+import { isRendererPreferenceKey } from './rendererPreferences';
+
 /** Chromium renderer origin; unrelated to the OS-level lxm: deep-link handler. */
 export const RENDERER_SCHEME = 'mesh-client';
 export const RENDERER_HOST = 'renderer';
@@ -26,6 +28,7 @@ export const DURABLE_RENDERER_STORAGE_KEYS = {
   rrcLastRead: 'rrcLastRead',
   mecpBlockedSenders: 'mecpBlockedSenders',
   takRelayPrefs: 'takRelayPrefs',
+  preferences: 'rendererPreferences',
 } as const;
 
 export const DURABLE_RENDERER_STORAGE_MIGRATIONS = [
@@ -36,6 +39,7 @@ export const DURABLE_RENDERER_STORAGE_MIGRATIONS = [
   ['mesh-client:lastRead:rrc', DURABLE_RENDERER_STORAGE_KEYS.rrcLastRead],
   ['mesh-client:mecpBlockedSenders', DURABLE_RENDERER_STORAGE_KEYS.mecpBlockedSenders],
   ['mesh-client:takRelayPrefs', DURABLE_RENDERER_STORAGE_KEYS.takRelayPrefs],
+  ['mesh-client:rendererPreferences', DURABLE_RENDERER_STORAGE_KEYS.preferences],
 ] as const;
 
 export const DURABLE_RENDERER_SETTING_MAX_LENGTH = 1024 * 1024;
@@ -64,7 +68,13 @@ export const RENDERER_STORAGE_DELETION_PREFIX = 'mesh-client:deletedStorage:';
 export const RENDERER_STORAGE_DELETION_SETTING_PREFIX = 'rendererDeletedStorage:';
 
 export function isCriticalRendererStorageKey(key: string): boolean {
-  return CRITICAL_LOCALSTORAGE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix));
+  // Preferences added by any panel must not silently fall outside migration health checks.
+  // Journals are control state, not preferences; historical copies must never be replayed.
+  return (
+    isRendererPreferenceKey(key) ||
+    key.startsWith('mesh-client:credentialCompatibility:') ||
+    CRITICAL_LOCALSTORAGE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))
+  );
 }
 
 export function isRendererStorageDeletionSetting(key: string): boolean {

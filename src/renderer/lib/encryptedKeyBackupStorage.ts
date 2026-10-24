@@ -53,6 +53,21 @@ function normalizeId(id: number): number {
  */
 export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorageConfig) {
   const { prefix, indexKey, protocol, idField, validateKeyPair } = config;
+  let mutation: Promise<unknown> | undefined;
+  // Serialize slot conversion with explicit Save/Forget and their shared index updates.
+  function mutate<T>(operation: () => Promise<T>): Promise<T> {
+    const next = mutation
+      ? mutation
+          .catch(() => {
+            /* catch-no-log-ok the original caller receives the error */
+          })
+          .then(operation)
+      : operation();
+    mutation = next;
+    return next.finally(() => {
+      if (mutation === next) mutation = undefined;
+    });
+  }
 
   function storageKey(id: number): string {
     return `${prefix}${String(normalizeId(id))}`;
@@ -216,6 +231,7 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
       if (!stored) continue;
       try {
         const payload = parsePayload(stored);
+        if (payload.id !== Number(key.slice(`backup:${protocol}:`.length))) continue;
         entries.push({
           id: normalizeId(payload.id),
           nodeLabel: payload.nodeLabel,
@@ -319,11 +335,12 @@ export function createEncryptedKeyBackupStorage(config: EncryptedKeyBackupStorag
     parsePayload,
     list,
     has,
-    save,
+    save: (options: Parameters<typeof save>[0]) => mutate(() => save(options)),
     load,
-    remove,
-    rebuildIndexFromSlots,
-    ensureIndex,
-    migrateLegacySingleSlot,
+    remove: (id: number) => mutate(() => remove(id)),
+    rebuildIndexFromSlots: () => mutate(rebuildIndexFromSlots),
+    ensureIndex: () => mutate(ensureIndex),
+    migrateLegacySingleSlot: (legacyKey: string, id: number) =>
+      mutate(() => migrateLegacySingleSlot(legacyKey, id)),
   };
 }

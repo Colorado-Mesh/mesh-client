@@ -83,6 +83,10 @@ function installSecureSecretApi(): void {
   window.electronAPI.appSettings.getAll = vi.fn(() =>
     Promise.resolve(Object.fromEntries(appSettingsValues)),
   );
+  window.electronAPI.appSettings.set = vi.fn((key: string, value: string) => {
+    appSettingsValues.set(key, value);
+    return Promise.resolve({ changes: 1 });
+  });
   window.electronAPI.appSettings.remove = vi.fn((key: string) => {
     const changes = appSettingsValues.delete(key) ? 1 : 0;
     return Promise.resolve({ changes });
@@ -96,6 +100,36 @@ describe('secureSecretStorage migrations', () => {
     appSettingsValues.clear();
     resetSecureSecretCacheForTests();
     installSecureSecretApi();
+  });
+
+  it('rebuilds both missing backup indexes from surviving keys before any device panel opens', async () => {
+    for (const protocol of ['meshcore', 'meshtastic'] as const) {
+      const id = protocol === 'meshcore' ? 41 : 42;
+      secureValues.set(
+        keyBackupSecretKey(protocol, id),
+        JSON.stringify({
+          protocol,
+          [protocol === 'meshcore' ? 'nodeId' : 'nodeNum']: id,
+          publicKey: Buffer.alloc(32, 1).toString('base64'),
+          privateKey: Buffer.alloc(protocol === 'meshcore' ? 64 : 32, 2).toString('base64'),
+          backedUpAt: 12345,
+          nodeLabel: `Saved ${protocol}`,
+        }),
+      );
+      localStorage.setItem(
+        `mesh-client:${protocol === 'meshcore' ? 'meshcore-key' : 'meshtastic-dm-key'}-backup-index`,
+        '',
+      );
+    }
+    await initializeSecureSecrets();
+    const { listMeshcoreKeyBackups } = await import('./meshcoreKeyBackupStorage');
+    const { listMeshtasticDmKeyBackups } = await import('./meshtasticDmKeyBackupStorage');
+    expect(listMeshcoreKeyBackups()).toMatchObject([{ nodeId: 41, nodeLabel: 'Saved meshcore' }]);
+    expect(listMeshtasticDmKeyBackups()).toMatchObject([
+      { nodeNum: 42, nodeLabel: 'Saved meshtastic' },
+    ]);
+    expect(secureValues.has('backup:meshcore:41')).toBe(true);
+    expect(secureValues.has('backup:meshtastic:42')).toBe(true);
   });
 
   it('remembers credentials through keyring outages and removes compatibility copies after encryption', async () => {
@@ -121,6 +155,47 @@ describe('secureSecretStorage migrations', () => {
     await initializeSecureSecrets();
     expect(secureValues.get(MESHCORE_MQTT_SECRET_KEY)).toBe('{"password":"remember-me"}');
     expect(localStorage.getItem('mesh-client:credentialCompatibility:mqtt:meshcore')).toBeNull();
+  });
+
+  it('encrypts an equal main-process session value before retiring its compatibility copy after keyring recovery', async () => {
+    const value = '{"password":"session-backed"}';
+    vi.mocked(window.electronAPI.secureSecrets.set).mockResolvedValueOnce({
+      available: false,
+      persistent: false,
+      verified: true,
+    });
+    await setSecureSecret(MESHCORE_MQTT_SECRET_KEY, value);
+    // The running main process returns session secrets through getAll, even after recovery.
+    secureValues.set(MESHCORE_MQTT_SECRET_KEY, value);
+    resetSecureSecretCacheForTests();
+    vi.mocked(window.electronAPI.secureSecrets.set).mockClear();
+    await initializeSecureSecrets();
+    expect(window.electronAPI.secureSecrets.set).toHaveBeenCalledWith(
+      MESHCORE_MQTT_SECRET_KEY,
+      value,
+      true,
+    );
+    expect(localStorage.getItem('mesh-client:credentialCompatibility:mqtt:meshcore')).toBeNull();
+  });
+
+  it('retries legacy cross-protocol PSKs after an unreadable keyring launch', async () => {
+    secureValues.set(
+      MESHCORE_MQTT_SECRET_KEY,
+      JSON.stringify({ channelPsks: ['Saved=AAAAAAAAAAAAAAAAAAAAAA=='] }),
+    );
+    vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
+      available: false,
+      persistent: false,
+    });
+    vi.mocked(window.electronAPI.secureSecrets.getAll).mockResolvedValue({});
+    await initializeSecureSecrets();
+    expect(localStorage.getItem('mesh-client:migrated:meshtastic-psk-recovery-v1')).toBeNull();
+    installSecureSecretApi();
+    resetSecureSecretCacheForTests();
+    await initializeSecureSecrets();
+    expect(
+      JSON.parse(getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY) ?? '{}').channelPsks,
+    ).toEqual(['Saved=AAAAAAAAAAAAAAAAAAAAAA==']);
   });
 
   it('hydrates large compatibility collections without replaying writes while the keyring is unavailable', async () => {
@@ -182,7 +257,12 @@ describe('secureSecretStorage migrations', () => {
     resetSecureSecretCacheForTests();
     await initializeSecureSecrets();
     expect(getCachedSecureSecret(key)).toBeNull();
-    expect(localStorage.getItem(`mesh-client:credentialCompatibility:${key}`)).toBe('null');
+    expect(localStorage.getItem(`mesh-client:credentialCompatibility:${key}`)).toBeNull();
+    expect(
+      JSON.parse(
+        appSettingsValues.get(`rendererDeletedStorage:mesh-client:credentialCompatibility:${key}`)!,
+      ),
+    ).toMatchObject({ deleted: true });
     expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).not.toHaveProperty(
       `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`,
     );
@@ -323,7 +403,9 @@ describe('secureSecretStorage migrations', () => {
     expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).toEqual({
       theme: 'dark',
     });
-    expect(appSettingsValues.size).toBe(0);
+    expect(
+      [...appSettingsValues.keys()].every((key) => key.startsWith('rendererDeletedStorage:')),
+    ).toBe(true);
     expect(localStorage.getItem('mesh-client:meshcore-key-backup:14')).toBeNull();
     expect(localStorage.getItem('mesh-client:meshtastic-dm-key-backup:15')).toBeNull();
 
@@ -496,7 +578,9 @@ describe('secureSecretStorage migrations', () => {
     await initializeSecureSecrets();
     expect(getCachedSecureSecret(meshcoreRoomSecretKey(42))).toBe('current-local');
     expect(getCachedSecureSecret(meshcoreRepeaterSecretKey(43))).toBe('current-secure');
-    expect(appSettingsValues.size).toBe(0);
+    expect(
+      [...appSettingsValues.keys()].every((key) => key.startsWith('rendererDeletedStorage:')),
+    ).toBe(true);
   });
 
   it('preserves a legacy backup when the secure slot contains a different key pair', async () => {

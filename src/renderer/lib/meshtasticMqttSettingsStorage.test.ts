@@ -83,6 +83,29 @@ describe('loadMeshtasticMqttManualChannelPsksFromStorage', () => {
     });
   });
 
+  it('returns recoverable PSKs while a competing secure save is still pending', async () => {
+    await setSecureSecret(
+      MESHCORE_MQTT_SECRET_KEY,
+      JSON.stringify({ channelPsks: [`Recovered=${KEY_B}`] }),
+    );
+    let release!: () => void;
+    vi.mocked(window.electronAPI.secureSecrets.set).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve({ available: true, persistent: true, verified: true });
+          };
+        }),
+    );
+    const saving = setSecureSecret(MESHTASTIC_MQTT_SECRET_KEY, '{"password":"current"}');
+    expect(loadMeshtasticMqttManualChannelPsksFromStorage()).toEqual([`Recovered=${KEY_B}`]);
+    release();
+    await saving;
+    await vi.waitFor(() => {
+      expect(localStorage.getItem(RECOVERY_FLAG)).toBe('1');
+    });
+  });
+
   it('leaves recovery retryable when the secure write fails', async () => {
     await setSecureSecret(
       MESHCORE_MQTT_SECRET_KEY,

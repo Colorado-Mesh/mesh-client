@@ -51,6 +51,20 @@ describe('useReticulumSidecarApi', () => {
     window.electronAPI.reticulum.proxyGet = vi.fn();
   });
 
+  it('updates every mounted owner when the autostart preference changes in another panel', async () => {
+    const first = renderHook(() => useReticulumSidecarApi({ connecting: false, onStartStack }));
+    const second = renderHook(() => useReticulumSidecarApi({ connecting: false, onStartStack }));
+    expect(first.result.current.autoStart).toBe(false);
+    expect(second.result.current.autoStart).toBe(false);
+    vi.mocked(isReticulumAutostartEnabled).mockReturnValue(true);
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+      await Promise.resolve();
+    });
+    expect(first.result.current.autoStart).toBe(true);
+    expect(second.result.current.autoStart).toBe(true);
+  });
+
   it('sidecarUiRunning follows IPC status only, not stale connection store', async () => {
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
 

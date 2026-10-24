@@ -7,14 +7,23 @@ import { initializeSecureSecretsFailClosed } from '@/renderer/lib/secureSecretSt
 import { Button } from './ui/Button';
 
 /** Paint startup/recovery before migrating, and mount runtimes only after hydration. */
-export function SecureSecretsStartup({ children }: { children: ReactNode }) {
+export function SecureSecretsStartup({
+  children,
+  prepare,
+}: {
+  children: ReactNode;
+  prepare?: () => Promise<void>;
+}) {
   const { t } = useTranslation();
   const [state, setState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
-    void initializeSecureSecretsFailClosed()
+    const startup = prepare
+      ? prepare().then(initializeSecureSecretsFailClosed)
+      : initializeSecureSecretsFailClosed();
+    void startup
       .then(() => {
         if (!active) return;
         runConnectionPanelStorageMigrations();
@@ -27,7 +36,7 @@ export function SecureSecretsStartup({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [attempt]);
+  }, [attempt, prepare]);
 
   if (state === 'ready') return children;
   return (

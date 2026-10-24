@@ -96,8 +96,11 @@ precedence on retry. A failed export or repair retains `file://` and the existin
 legacy deletion journals do not override current custom-origin values during this repair.
 `MESH_CLIENT_FORCE_ORIGIN_REPAIR=1` remains available to request repair explicitly.
 
-Last-read watermarks, incidents, MECP blocked senders, and TAK relay preferences additionally use
-SQLite as their durable source. See [Renderer storage](renderer-storage.md) for store ownership,
+Last-read watermarks, incidents, MECP blocked senders, TAK relay preferences and the complete
+nonsecret renderer-preference map additionally use SQLite as their durable source. Partial legacy
+app-settings blobs recover missing fields from the verified export before the preference map is
+established; existing values and later canonical removals keep precedence. Backup lookup indexes
+rebuild from surviving readable secure keys for both radio protocols. See [Renderer storage](renderer-storage.md) for store ownership,
 hydration, and write-through behavior.
 
 ## Explicit data reset

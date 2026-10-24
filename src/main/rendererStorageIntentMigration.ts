@@ -24,6 +24,9 @@ export function writeRendererStorageDeletionState(
       const row = db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as
         { value: string } | undefined;
       const previous = parseRendererStorageDeletionState(row?.value);
+      if (proposed.secretRevision !== previous.secretRevision) {
+        throw new Error('Stale secure credential recovery receipt');
+      }
       // Only the initial main-process importer may pin/replace copied source receipts.
       const next = JSON.stringify({ ...proposed, imported: previous.imported });
       parseRendererStorageDeletionState(next);
@@ -53,6 +56,7 @@ export function commitImportedRendererStorageIntents(
         const previous = parseRendererStorageDeletionState(row?.value);
         const consumed = hasAppliedRendererStorageIntent(previous, intent);
         const next = {
+          ...previous,
           deleted: consumed ? previous.deleted : intent.deleted,
           applied: consumed
             ? previous.applied

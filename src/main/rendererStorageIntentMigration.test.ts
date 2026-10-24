@@ -106,6 +106,45 @@ describe('durable renderer storage receipts', () => {
     expect(db.prepareOnce('SELECT key FROM app_settings').all()).toEqual([]);
   });
 
+  it('cannot clear or forge a native credential revision with a stale renderer receipt', () => {
+    const key = 'rendererDeletedStorage:mesh-client:credentialCompatibility:mqtt:meshcore';
+    const native = { deleted: true, applied: {}, imported: {}, secretRevision: 'native-new' };
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(
+      key,
+      JSON.stringify(native),
+    );
+    for (const revision of [undefined, 'old', 'forged']) {
+      expect(() =>
+        writeRendererStorageDeletionState(
+          db,
+          key,
+          JSON.stringify({ ...native, deleted: false, secretRevision: revision }),
+        ),
+      ).toThrow('Stale secure credential');
+    }
+    commitImportedRendererStorageIntents(db, {
+      'mesh-client:credentialCompatibility:mqtt:meshcore': {
+        id: 'old-outage-journal',
+        origin: 'file:',
+        deleted: false,
+      },
+    });
+    const row = db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as {
+      value: string;
+    };
+    expect(JSON.parse(row.value)).toMatchObject(native);
+    writeRendererStorageDeletionState(db, key, JSON.stringify({ ...native, deleted: false }));
+    expect(
+      JSON.parse(
+        (
+          db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as {
+            value: string;
+          }
+        ).value,
+      ).deleted,
+    ).toBe(false);
+  });
+
   it('rolls back all imported receipts when a later canonical record is corrupt', () => {
     const secondKey = 'mesh-client:lastBleDevice:meshcore';
     db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
@@ -29,8 +29,11 @@ export function MecpRebroadcastSettings() {
     }
   });
 
+  const lastSavedRules = useRef(rules);
   useEffect(() => {
+    if (rules === lastSavedRules.current) return;
     mergeAppSetting(MECP_REBROADCAST_SETTINGS_KEY, rules, 'MecpRebroadcastSettings');
+    lastSavedRules.current = rules;
   }, [rules]);
 
   const addRule = useCallback(() => {

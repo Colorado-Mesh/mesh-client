@@ -234,6 +234,41 @@ describe('createEncryptedKeyBackupStorage', () => {
     ]);
   });
 
+  it('keeps Forget after a delayed single-slot conversion from resurrecting its payload or index', async () => {
+    const storage = makeStorage('nodeNum', 'meshtastic');
+    const legacyKey = 'test:legacy-key-backup';
+    localStorage.setItem(
+      legacyKey,
+      `enc:${JSON.stringify({
+        publicKey: Buffer.from([1, 2, 3, 4]).toString('base64'),
+        privateKey: Buffer.from([5, 6, 7, 8]).toString('base64'),
+      })}`,
+    );
+    const originalGet = window.electronAPI.secureSecrets.get;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const reading = vi.fn();
+    vi.mocked(window.electronAPI.secureSecrets.get).mockImplementationOnce(async (key) => {
+      const value = await originalGet(key);
+      reading();
+      await barrier;
+      return value;
+    });
+    const importing = storage.migrateLegacySingleSlot(legacyKey, 99);
+    await vi.waitFor(() => {
+      expect(reading).toHaveBeenCalled();
+    });
+    const forgetting = storage.remove(99);
+    release();
+    await importing;
+    await forgetting;
+    expect(storage.has(99)).toBe(false);
+    expect(storage.list()).toEqual([]);
+    expect(await window.electronAPI.secureSecrets.get('backup:meshtastic:99')).toBeNull();
+  });
+
   it('preserves both backups when an existing slot has a different key pair', async () => {
     const legacyKey = 'test:legacy-key-backup';
     const storage = makeStorage('nodeNum', 'meshtastic');

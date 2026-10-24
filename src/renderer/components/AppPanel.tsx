@@ -11,6 +11,7 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
+import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
@@ -22,7 +23,6 @@ import {
   getOperationalAlertSettings,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
-  mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
@@ -40,7 +40,6 @@ import {
 } from '../lib/fontScale';
 import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { appPanelSettingsPersistPayload } from '../lib/meshcorePathHashMode';
 import {
   DEFAULT_MESSAGE_RETENTION,
   MESSAGE_RETENTION_KEYS,
@@ -508,20 +507,6 @@ export default function AppPanel({
     [supportBundleExporting, addToast, t],
   );
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      mergeAppSettingsPartial(
-        appPanelSettingsPersistPayload(settings as unknown as Record<string, unknown>),
-        'AppPanel saveSettings',
-      );
-    }, 300);
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [settings]);
-
   useEffect(() => {
     onLocationFilterChange({
       enabled: settings.distanceFilterEnabled,
@@ -632,14 +617,6 @@ export default function AppPanel({
       .getAll()
       .then((raw) => {
         if (cancelled) return;
-        const use24 = raw?.use24HourTime;
-        if (use24 === 'true' || use24 === 'false') {
-          const enabled = use24 === 'true';
-          useTimeFormatStore.getState().hydrateFromSqlite(enabled);
-          setSettings((prev) =>
-            prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
-          );
-        }
         if (!autoUpdateDownloadTouchedRef.current) {
           const enabled = autoUpdateDownloadEnabledFromStored(raw?.autoUpdateDownloadEnabled);
           autoUpdateDownloadConfirmedRef.current = enabled;
@@ -742,8 +719,8 @@ export default function AppPanel({
       localStorage.getItem('mesh-client:gpsSettings'),
       'AppPanel gps refresh interval state',
     );
-    const val = gpsParsed?.refreshInterval ?? 0;
-    return val > 0 ? val : 3600; // default 1 hour
+    const val = gpsParsed?.refreshInterval;
+    return typeof val === 'number' && Number.isFinite(val) && val >= 0 ? val : 3600;
   });
 
   const handleGpsIntervalChange = useCallback(
@@ -884,6 +861,16 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
+      <button
+        type="button"
+        className={buttonClassName('secondary', 'md')}
+        aria-label={t('appPanel.memoryTitle')}
+        onClick={() => {
+          requestOpenSetting({ slot: 'App', id: 'app.support.rendererMemory' });
+        }}
+      >
+        {t('appPanel.memoryTitle')}
+      </button>
 
       <div className="space-y-2">
         <div className="flex items-center gap-1">
@@ -975,7 +962,7 @@ export default function AppPanel({
               value={settings.autoFloodAdvertIntervalHours}
               onChange={(e) => {
                 const hours = Number(e.target.value);
-                setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
+                updateSetting('autoFloodAdvertIntervalHours', hours);
                 onAutoFloodAdvertIntervalChange?.(hours);
               }}
               className={`${SELECT_BOX_CLASS} w-full`}
@@ -994,7 +981,7 @@ export default function AppPanel({
               value={settings.autoFloodAdvertType}
               onChange={(e) => {
                 const type = e.target.value === 'zeroHop' ? 'zeroHop' : 'flood';
-                setSettings((prev) => ({ ...prev, autoFloodAdvertType: type }));
+                updateSetting('autoFloodAdvertType', type);
                 onAutoFloodAdvertTypeChange?.(type);
               }}
               className={`${SELECT_BOX_CLASS} w-full`}

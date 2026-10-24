@@ -38,6 +38,41 @@ describe('RemoteSettingsSection inbound apply', () => {
     });
   });
 
+  it('persists fetch and overwrite choices only after the native listener accepts them', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.reticulum.rncp.setListener).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rncp.showSaveDirectoryDialog).mockResolvedValue({
+      canceled: false,
+      path: '/tmp/rncp-test-folder',
+    });
+    render(
+      <RemoteSettingsSection
+        sidecarRunning
+        settings={DEFAULT_REMOTE_SETTINGS}
+        onSettingsChange={onSettingsChange}
+      />,
+    );
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Allow remote peers to fetch files from me' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Choose the folder remote peers may fetch from' }),
+    );
+    await user.click(screen.getByRole('checkbox', { name: 'Overwrite existing files on receipt' }));
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await waitFor(() => {
+      expect(onSettingsChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inboundMode: 'ask',
+          lastSaveDir: '/tmp/rncp-test-folder',
+          lastFetchJail: '/tmp/rncp-test-folder',
+          allowFetch: true,
+          overwriteOnReceive: true,
+        }),
+      );
+    });
+  });
+
   it('treats Off success when setListener returns status without ok (legacy shape)', async () => {
     const user = userEvent.setup();
     // Pre-#fix sidecar disable returned listener_status with no `ok` field.

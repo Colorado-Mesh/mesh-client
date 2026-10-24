@@ -50,4 +50,24 @@ describe('SecureSecretsStartup', () => {
     expect(await screen.findByText('Runtime mounted')).toBeInTheDocument();
     expect(initialize).toHaveBeenCalledTimes(2);
   });
+
+  it('shows recovery for failed preference preparation and retries it before secrets or runtimes', async () => {
+    const prepare = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('corrupt preference row'))
+      .mockResolvedValueOnce(undefined);
+    initialize.mockResolvedValue(undefined);
+    render(
+      <SecureSecretsStartup prepare={prepare}>
+        <p>Runtime mounted</p>
+      </SecureSecretsStartup>,
+    );
+    expect(await screen.findByRole('alert')).not.toHaveTextContent('corrupt preference row');
+    expect(initialize).not.toHaveBeenCalled();
+    expect(screen.queryByText('Runtime mounted')).toBeNull();
+    fireEvent.click(screen.getByRole('button'));
+    expect(await screen.findByText('Runtime mounted')).toBeInTheDocument();
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(initialize).toHaveBeenCalledOnce();
+  });
 });

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import joeyPreferences from '../../../e2e/fixtures/renderer-preferences.json';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
@@ -12,6 +13,71 @@ import {
 } from '../stores/liveChannelKeyStore';
 import AppPanel from './AppPanel';
 import { ToastProvider } from './Toast';
+
+describe('AppPanel migrated settings preservation', () => {
+  it('shows a saved manual GPS interval instead of replacing zero with the hourly default', async () => {
+    localStorage.setItem('mesh-client:gpsSettings', JSON.stringify({ refreshInterval: 0 }));
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="meshtastic"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('App Settings');
+    expect(document.getElementById('apppanel-gps-interval')).toHaveValue('0');
+    expect(JSON.parse(localStorage.getItem('mesh-client:gpsSettings')!).refreshInterval).toBe(0);
+  });
+
+  it('persists only its changed field and never replays other panels captured at mount', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(joeyPreferences));
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="meshtastic"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('App Settings');
+    await act(async () => {});
+    const current = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!);
+    const updates = {
+      mapViewport: { center: [40, -105], zoom: 13 },
+      reticulumAutostart: true,
+      envMode: 'canyon',
+      reticulumRmapAnnounceIntervalMin: 29,
+      'meshcoreRoomLastPost:7': '1800000000000',
+      unknownFutureField: { enabled: true },
+    };
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ ...current, ...updates }));
+    fireEvent.click(document.getElementById('distanceFilter')!);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+    const actual = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!);
+    for (const [key, value] of Object.entries(updates)) expect(actual[key], key).toEqual(value);
+    for (const key of [
+      'autoPruneEnabled',
+      'mecpComposeEnabled',
+      'mecpRebroadcastRules',
+      'meshcoreContactCapCount',
+      'use24HourTime',
+      'translationTargetLanguage',
+      'translationReadLanguages',
+    ])
+      expect(actual[key], key).toEqual(joeyPreferences[key as keyof typeof joeyPreferences]);
+  });
+});
 
 describe('AppPanel accessibility', () => {
   const defaultProps = {
@@ -706,14 +772,8 @@ describe('AppPanel: MeshCore Radio-owned settings are not on App', () => {
       </ToastProvider>,
     );
     await screen.findByText('App Settings');
-    await waitFor(
-      () => {
-        const raw = localStorage.getItem('mesh-client:appSettings');
-        expect(raw).toBeTruthy();
-      },
-      { timeout: 1500 },
-    );
-    const raw = localStorage.getItem('mesh-client:appSettings');
+    await act(async () => {});
+    const raw = localStorage.getItem('mesh-client:appSettings') ?? '';
     expect(raw).not.toContain('meshcorePathHashMode');
     expect(raw).not.toContain('meshcoreOpenWireCompatEnabled');
   });

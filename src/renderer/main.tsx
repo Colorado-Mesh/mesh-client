@@ -7,16 +7,19 @@ import { I18nextProvider } from 'react-i18next';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { SecureSecretsStartup } from './components/SecureSecretsStartup';
+import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import { installBundledEmojiData } from './lib/bundledEmojiData';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import { hydrateDurableRendererSettings } from './lib/hydrateDurableRendererSettings';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { ensureLocaleLoaded } from './lib/localeResources';
+import { parseStoredJson } from './lib/parseStoredJson';
 import {
   initReduceMotionDefaultIfAbsent,
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
+import { installRendererPreferencePersistence } from './lib/rendererPreferences';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 import { hydrateIncidentStore } from './stores/incidentStore';
 
@@ -32,6 +35,24 @@ function AppBootSplash() {
       </output>
     </main>
   );
+}
+
+let stopPreferencePersistence: (() => void) | undefined;
+import.meta.hot?.dispose(() => stopPreferencePersistence?.());
+
+async function prepareRendererStorage(): Promise<void> {
+  await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()]);
+  const locale = parseStoredJson<{ locale?: unknown }>(
+    getAppSettingsRaw(),
+    'restored locale',
+  )?.locale;
+  if (typeof locale === 'string' && locale !== i18n.language) {
+    await ensureLocaleLoaded(i18n, locale);
+    await i18n.changeLanguage(locale);
+  }
+  stopPreferencePersistence ??= installRendererPreferencePersistence();
+  initReduceMotionDefaultIfAbsent();
+  syncReduceMotionDatasetFromStorage();
 }
 
 if (import.meta.env.DEV) {
@@ -54,21 +75,16 @@ void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
 
   installDevElectronApiStubIfNeeded();
-  await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()]);
-
-  initReduceMotionDefaultIfAbsent();
-  syncReduceMotionDatasetFromStorage();
-
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>
       <ErrorBoundary>
-        <IconMotionProvider>
-          <SecureSecretsStartup>
+        <SecureSecretsStartup prepare={prepareRendererStorage}>
+          <IconMotionProvider>
             <Suspense fallback={<AppBootSplash />}>
               <App />
             </Suspense>
-          </SecureSecretsStartup>
-        </IconMotionProvider>
+          </IconMotionProvider>
+        </SecureSecretsStartup>
       </ErrorBoundary>
     </I18nextProvider>,
   );
