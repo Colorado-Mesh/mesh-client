@@ -63,6 +63,22 @@ describe('hostFromAddressInput / isMeshtasticLocalAddress', () => {
 describe('humanizeSerialError', () => {
   const t = mockT();
 
+  it.each(['win32', 'darwin', 'linux'] as const)(
+    'does not report chooser cancellation as a cable failure on %s',
+    (platform) => {
+      mockPlatform(platform);
+      expect(
+        humanizeSerialError(
+          new DOMException(
+            "Failed to execute 'requestPort' on 'Serial': No port selected by the user.",
+            'NotFoundError',
+          ),
+          t,
+        ),
+      ).toBe('');
+    },
+  );
+
   it.each([
     ['win32', 'win32', 'access denied', 'accessDeniedWindowsHint'],
     ['linux', 'linux', 'permission denied', 'accessDeniedLinuxHint'],
@@ -369,13 +385,6 @@ describe('humanizeBleError', () => {
     const result = humanizeBleError(new Error(message), t);
     expect(result).toContain('macWakeRecoveryHint');
     expect(result.split('macWakeRecoveryHint').length - 1).toBe(1);
-  });
-
-  it('humanizes requestDevice chooser cancel with a non-empty hint', () => {
-    mockPlatform('linux');
-    const result = humanizeBleError(new Error('User cancelled the requestDevice() chooser.'), t);
-    expect(result).not.toBe('');
-    expect(result).toContain('chooserCancelledHint');
   });
 
   it('humanizes missing bluetoothctl with a non-empty hint', () => {

@@ -109,17 +109,23 @@ are repaired in storage once, without emitting change events from the read helpe
 offered messages as included before main confirms coverage.
 Channel summaries apply the same default/custom weather patterns and marked-sender rules to fetched
 history as to visible chat when hiding weather is enabled. Numeric sender metadata stays local and
-is stripped by request validation. DMs and rooms retain weather text. Per-page overflow and the user
-collection ceiling still disclose truncation even if visibility filtering leaves fewer messages.
+is stripped by request validation. DMs and rooms retain weather text. A fully collected multipage
+range is complete. Older rows left behind by the collection ceiling or an unavailable pagination
+cursor still disclose truncation, even if visibility filtering leaves fewer messages.
 
 Bundled inference returns a validated `localJob` from main and runs through a thin renderer
 `AiWorkerHost`. Wllama owns the actual WASM worker, so a second wrapper worker is unnecessary.
 The module is dynamically imported only for explicit generation, uses bundled WASM, disables
-CDN compatibility fallback and suppresses native logging. The Vite dev server sets `Cross-Origin-Opener-Policy: same-origin` and
-`Cross-Origin-Embedder-Policy: credentialless` so `SharedArrayBuffer` is available in `pnpm run
-dev`. Packaged/`pnpm start` still uses `file://` (keeps localStorage last-read watermarks); there
-the worker stays single-threaded. When `crossOriginIsolated` is true the worker uses about half of
-`navigator.hardwareConcurrency` (capped at 8). A renderer FIFO queue serializes summaries across engines
+CDN compatibility fallback and suppresses native logging. Vite and the built
+`mesh-client://renderer` origin send `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: credentialless`. Both `pnpm start` and installed apps switch origins only after the
+legacy storage copy verifies; failure or a recovery flag keeps `file://`. When
+`crossOriginIsolated` is true, `SharedArrayBuffer` enables about half of
+`navigator.hardwareConcurrency` (capped at 8); otherwise Wllama uses one thread. `pnpm run dev`
+explicitly selects Vite; a running Vite server cannot redirect `pnpm start`. See
+[renderer origin and recovery](renderer-origin-coi.md) for the startup matrix, migration, recovery
+flags, and local/installed smoke checks, and [renderer storage](renderer-storage.md)
+for the SQLite-backed read watermarks. A renderer FIFO queue serializes summaries across engines
 and conversations until streaming or worker completion, rather than just main-process acknowledgement.
 While a Catch up waits behind another job, the card shows a queued status
 (“Please wait — another summary is generating…”) instead of the generic preparing copy.

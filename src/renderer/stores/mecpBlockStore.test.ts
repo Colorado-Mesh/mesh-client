@@ -64,4 +64,23 @@ describe('mecpBlockStore', () => {
     await useMecpBlockStore.persist.rehydrate();
     expect(Object.keys(useMecpBlockStore.getState().blocked)).toEqual(['meshtastic:5']);
   });
+
+  it('enforces the sender cap when importing a stored list', async () => {
+    const blocked = Object.fromEntries(
+      Array.from({ length: MAX_MECP_BLOCKED_SENDERS + 2 }, (_, index) => [
+        String(index),
+        { protocol: 'meshcore', senderId: String(index), label: String(index), createdAt: index },
+      ]),
+    );
+    localStorage.setItem(
+      'mesh-client:mecpBlockedSenders',
+      JSON.stringify({ state: { blocked }, version: 1 }),
+    );
+    await useMecpBlockStore.persist.rehydrate();
+    expect(Object.keys(useMecpBlockStore.getState().blocked)).toHaveLength(
+      MAX_MECP_BLOCKED_SENDERS,
+    );
+    expect(isMecpSenderBlocked('meshcore', '0')).toBe(false);
+    expect(isMecpSenderBlocked('meshcore', String(MAX_MECP_BLOCKED_SENDERS + 1))).toBe(true);
+  });
 });

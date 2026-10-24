@@ -33,9 +33,9 @@ function persistMeshcoreBleMacForSuppression(mac: string | null): void {
 
 /**
  * Called from MeshCore runtime when a BLE session connects or the suppress identity changes.
- * Only stores ids that parse as a 12-hex BLE MAC (Noble peripheral id). Linux
- * Web Bluetooth device ids are opaque UUIDs — storing them would never match a
- * Meshtastic nodeNum, so we clear the in-memory value instead of pretending they are MACs
+ * Only stores ids that parse as a 12-hex BLE MAC. CoreBluetooth peripheral
+ * UUIDs do not map to a Meshtastic nodeNum, so we clear the in-memory value
+ * instead of treating them as MACs
  * (persisted sticky MAC is kept unless {@link clearMeshcoreBleMacSuppression} is used).
  */
 export function setConnectedMeshcoreBleMac(mac: string | null): void {
@@ -80,7 +80,6 @@ export function preserveOrClearMeshcoreBleSuppression(
 /** Resolve + store suppress MAC after a successful MeshCore BLE attach. */
 export function commitConnectedMeshcoreBleSuppression(opts: {
   blePeripheralId?: string | null;
-  webBluetoothDeviceId?: string | null;
   fallbackLastBlePeripheralId?: string | null;
 }): void {
   setConnectedMeshcoreBleMac(resolveConnectedMeshcoreBleMacForSuppression(opts));
@@ -105,20 +104,14 @@ export function prearmMeshcoreBleMacSuppressionFromStorage(
 }
 
 /**
- * Prefer an explicit Noble peripheral id, then a live Web Bluetooth device id,
- * then a remembered last-BLE id (Linux chooser may omit blePeripheralId on connect).
- * Used for reconnect identity — may return opaque Web BT UUIDs on Linux.
+ * Prefer the explicit sidecar peripheral id, then the remembered last-BLE id.
+ * Reconnect identities may be CoreBluetooth UUIDs; MAC suppression validates separately.
  */
 export function resolveConnectedMeshcoreBleIdentity(opts: {
   blePeripheralId?: string | null;
-  webBluetoothDeviceId?: string | null;
   fallbackLastBlePeripheralId?: string | null;
 }): string | null {
-  for (const candidate of [
-    opts.blePeripheralId,
-    opts.webBluetoothDeviceId,
-    opts.fallbackLastBlePeripheralId,
-  ]) {
+  for (const candidate of [opts.blePeripheralId, opts.fallbackLastBlePeripheralId]) {
     const trimmed = candidate?.trim() ?? '';
     if (trimmed.length > 0) return trimmed;
   }
@@ -127,37 +120,18 @@ export function resolveConnectedMeshcoreBleIdentity(opts: {
 
 /**
  * First candidate that parses as a BLE MAC for Meshtastic ghost suppression.
- * Skips opaque Linux Web Bluetooth device ids.
+ * Skips opaque CoreBluetooth peripheral UUIDs.
  */
 export function resolveConnectedMeshcoreBleMacForSuppression(opts: {
   blePeripheralId?: string | null;
-  webBluetoothDeviceId?: string | null;
   fallbackLastBlePeripheralId?: string | null;
 }): string | null {
-  for (const candidate of [
-    opts.blePeripheralId,
-    opts.webBluetoothDeviceId,
-    opts.fallbackLastBlePeripheralId,
-  ]) {
+  for (const candidate of [opts.blePeripheralId, opts.fallbackLastBlePeripheralId]) {
     const trimmed = candidate?.trim() ?? '';
     if (trimmed.length === 0) continue;
     if (meshcoreBleMacToMeshtasticNodeId(trimmed) != null) return trimmed;
   }
   return null;
-}
-
-/** Duck-typed read of MeshcoreWebBluetoothConnection.getWebBluetoothDeviceId(). */
-export function readMeshcoreWebBluetoothDeviceId(conn: unknown): string | null {
-  if (!conn || typeof conn !== 'object') return null;
-  const getter = (conn as { getWebBluetoothDeviceId?: unknown }).getWebBluetoothDeviceId;
-  if (typeof getter !== 'function') return null;
-  try {
-    const id = (getter as (this: unknown) => unknown).call(conn);
-    return typeof id === 'string' && id.trim().length > 0 ? id.trim() : null;
-  } catch {
-    // catch-no-log-ok optional Web Bluetooth accessor on non-Web-BT connections
-    return null;
-  }
 }
 
 /** Test helper — reset module state between cases. */

@@ -479,7 +479,19 @@
     "windowSection": "Pencere",
     "closeToTray": "Sistem tepsisine yakın",
     "closeToTraySaveFailed": "Tepsiye yakın ayarı kaydedilemedi.",
-    "closeToTrayDesc": "Bir cihaz veya MQTT bağlantısı etkin olduğunda, pencereyi kapatmak, Mesh-Client'ı en aza indirmek yerine sistem tepsisine gizler (macOS üzerindeki menü çubuğu), böylece arka planda çalışmaya devam eder. Tepsi simgesinden yeniden açın. Tepsi menüsünden veya uygulama menüsünden çıkın. Kapalıyken, kapatma pencereyi eskisi gibi simge durumuna küçültür."
+    "closeToTrayDesc": "Bir cihaz veya MQTT bağlantısı etkin olduğunda, pencereyi kapatmak, Mesh-Client'ı en aza indirmek yerine sistem tepsisine gizler (macOS üzerindeki menü çubuğu), böylece arka planda çalışmaya devam eder. Tepsi simgesinden yeniden açın. Tepsi menüsünden veya uygulama menüsünden çıkın. Kapalıyken, kapatma pencereyi eskisi gibi simge durumuna küçültür.",
+    "memoryTitle": "İşleyici belleği",
+    "memorySampleNow": "Şimdi ölç",
+    "memorySampling": "Ölçülüyor…",
+    "memoryDescription": "Eğilimleri izlemek için tarayıcı tahminleri; pencere görünürken yaklaşık beş dakikada bir ölçülür. Değerler uygulama sürümleri arasında değişebilir.",
+    "memoryRendererProcess": "İşletim sisteminin bildirdiği işleyici süreci belleği (fiziksel RAM). JavaScript belleğinden fazlasını içerir; aynı uygulama sürümünün ölçümlerini karşılaştırın.",
+    "memoryIsolated": "Kökenler arası yalıtım etkin.",
+    "memoryNotIsolated": "Bellek ölçümü, bu oturumda kullanılamayan kökenler arası yalıtım gerektirir.",
+    "memoryUnsupported": "Bu tarayıcı bellek ölçümünü desteklemiyor.",
+    "memoryFailed": "Bellek ölçümü başarısız oldu. Yeniden deneyebilirsiniz.",
+    "memoryLatest": "Son tahmin: {{value}}",
+    "memoryEmpty": "Henüz ölçüm yok. Bir ölçüm başlatın veya pencereyi görünür bırakın.",
+    "memoryHistory": "Son ölçümler"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1180,7 +1192,6 @@
         "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı.",
-        "chooserCancelledHint": "İptal etmediyseniz Bluetooth'un açık olduğundan emin olun (systemctl durumu bluetooth) ve ardından tekrar Bağlan'a dokunun. Flatpak'te, Bluetooth'a izin verilen bir yapıyı yeniden yükleyin veya AppImage/.deb/.rpm dosyasını kullanın.",
         "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin.",
         "stackUnresponsiveGeneric": "Bluetooth daha önceki bir bağlantı denemesinde takıldı. Bluetooth'u kapatıp açın, gerekirse radyoyu yeniden eşleştirin, ardından mesh-client'ı yeniden başlatın.",
         "stackUnresponsiveWindowsRePair": "Windows Bluetooth, genellikle radyo düzgün bir şekilde eşleştirilmediğinden önceki bir bağlantı girişiminde takıldı. Cihazı Kaldır ve Yeniden Eşleştir düğmesine basın ve radyoda gösterilen PIN KODUNU girin. Bağlantı hala reddediliyorsa, mesh-client uygulamasını yeniden başlatın ve tekrar deneyin.",

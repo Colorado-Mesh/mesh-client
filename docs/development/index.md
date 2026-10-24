@@ -7,6 +7,8 @@ File-level developer notes for each subsystem, for human contributors and coding
 | Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games                                     | [reticulum-development.md — Code map](../reticulum-development.md#code-map)             |
 | LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence                                    | [ble-serial.md](ble-serial.md)                                                          |
 | Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                                                | [renderer-hooks.md](renderer-hooks.md)                                                  |
+| Renderer persistence, durable Zustand stores, SQLite hydration, origin migration                                     | [renderer-storage.md](renderer-storage.md)                                              |
+| Packaged renderer origin, cross-origin isolation, migration verification and recovery                                | [renderer-origin-coi.md](renderer-origin-coi.md)                                        |
 | Meshtastic config apply, admin, channel URLs, Store & Forward, remote admin, GPS                                     | [meshtastic.md](meshtastic.md)                                                          |
 | MQTT ingest, channel key mapping, sticky BLE suppress                                                                | [mqtt.md](mqtt.md)                                                                      |
 | AI summaries, endpoint privacy, offline models and OS helpers                                                        | [ai-summarization.md](ai-summarization.md)                                              |

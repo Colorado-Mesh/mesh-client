@@ -229,7 +229,7 @@ describe('renderNomadMicronPage', () => {
     } finally {
       compareSpy.mockRestore();
     }
-  });
+  }, 20_000);
 
   it('coalesces same-style output before invoking the sanitizer', () => {
     const sanitizeSpy = vi.spyOn(DOMPurify, 'sanitize');

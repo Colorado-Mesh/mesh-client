@@ -287,6 +287,7 @@ import {
 import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { playMessageNotification } from './lib/chatNotifications';
 import { meshcoreMessageReceptionStats } from './lib/chatSignalReport';
+import { startCoiMemorySampler } from './lib/coiMemorySampler';
 import {
   deviceHeaderVariant,
   headerDotClass,
@@ -909,6 +910,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  useEffect(() => startCoiMemorySampler(), []);
   useWeatherForecastIngest();
   const serviceAnnouncements = useServiceAnnouncements();
   useSerialServiceListeners();

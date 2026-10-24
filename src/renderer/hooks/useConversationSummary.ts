@@ -62,12 +62,12 @@ async function fetchHistoryPages(
     if (!usable.length) break;
     for (const row of [...usable].reverse()) {
       if (newestFirst.length >= maxCollected) {
-        truncated = true;
         break;
       }
       newestFirst.push(row);
     }
-    truncated = truncated || hasMore;
+    // Only the latest page tells us whether older rows remain uncollected.
+    truncated = hasMore;
     if (!hasMore || newestFirst.length >= maxCollected) break;
     const oldest = usable[0];
     if (oldest?.id == null) break;

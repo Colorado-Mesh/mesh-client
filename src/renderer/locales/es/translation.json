@@ -479,7 +479,19 @@
     "windowSection": "Ventana",
     "closeToTray": "Cerca de la bandeja del sistema",
     "closeToTraySaveFailed": "No se ha podido guardar la configuración de cerca de la bandeja.",
-    "closeToTrayDesc": "Cuando un dispositivo o una conexión MQTT está activa, al cerrar la ventana se oculta Mesh-Client a la bandeja del sistema (barra de menú en macOS) en lugar de minimizarla, por lo que sigue funcionando en segundo plano. Vuelve a abrirlo desde el icono de la bandeja. Salir del menú de la bandeja o del menú de la app. Cuando está apagado, el cierre minimiza la ventana como antes."
+    "closeToTrayDesc": "Cuando un dispositivo o una conexión MQTT está activa, al cerrar la ventana se oculta Mesh-Client a la bandeja del sistema (barra de menú en macOS) en lugar de minimizarla, por lo que sigue funcionando en segundo plano. Vuelve a abrirlo desde el icono de la bandeja. Salir del menú de la bandeja o del menú de la app. Cuando está apagado, el cierre minimiza la ventana como antes.",
+    "memoryTitle": "Memoria del renderizador",
+    "memorySampleNow": "Medir ahora",
+    "memorySampling": "Midiendo…",
+    "memoryDescription": "Estimaciones del navegador para observar tendencias, tomadas aproximadamente cada cinco minutos con la ventana visible. Los valores pueden variar entre versiones de la aplicación.",
+    "memoryRendererProcess": "Memoria del proceso de renderizado (RAM física), indicada por el sistema operativo. Incluye más que la memoria de JavaScript; compare muestras de la misma versión de la aplicación.",
+    "memoryIsolated": "El aislamiento entre orígenes está activado.",
+    "memoryNotIsolated": "La medición de memoria requiere aislamiento entre orígenes, que no está disponible en esta sesión.",
+    "memoryUnsupported": "Este navegador no admite la medición de memoria.",
+    "memoryFailed": "La medición de memoria falló. Puedes volver a intentarlo.",
+    "memoryLatest": "Última estimación: {{value}}",
+    "memoryEmpty": "Aún no hay mediciones. Inicia una o deja la ventana visible.",
+    "memoryHistory": "Mediciones recientes"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -1180,7 +1192,6 @@
         "dualProtocolContentionHint": "Es posible que el otro protocolo aún se esté conectando a través de Bluetooth. Espere unos segundos e inténtelo de nuevo, o cambie a la otra pestaña de protocolo para comprobar su estado de conexión.",
         "scanBusy": "Se está realizando otra exploración de Bluetooth. Inténtalo de nuevo en un momento.",
         "sameDeviceConflict": "Este dispositivo Bluetooth ya está conectado a {{owner}}.",
-        "chooserCancelledHint": "Si no canceló, asegúrese de que Bluetooth esté activado (estado de systemctl bluetooth), luego toque Conectar nuevamente. En Flatpak, reinstale una compilación con Bluetooth permitido o use AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Las herramientas de emparejamiento Bluetooth del sistema operativo no están disponibles en este entorno (común en Flatpak). Utilice la AppImage, .deb o .rpm oficial, o empareje la radio con el host bluetoothctl y luego vuelva a intentar conectarse.",
         "stackUnresponsiveGeneric": "Bluetooth está bloqueado en un intento de conexión anterior. Apague y encienda el Bluetooth, vuelva a emparejar la radio si es necesario y reinicie mesh-client.",
         "stackUnresponsiveWindowsRePair": "El Bluetooth de Windows está bloqueado en un intento de conexión anterior, generalmente porque la radio no está emparejada correctamente. Pulse Remove & Re-pair Device e introduzca el PIN que se muestra en la radio. Si la conexión sigue siendo rechazada, reinicie mesh-client e inténtelo de nuevo.",

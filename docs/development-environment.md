@@ -185,6 +185,11 @@ Windows ARM64 release builds use a dedicated `aarch64-pc-windows-msvc` CI job (s
 
 Use these from the repository root:
 
+`pnpm start` rebuilds and uses the same verified `mesh-client://renderer` origin migration as
+installed builds. `pnpm run dev` explicitly uses Vite with COI headers and hot reload. Starting a
+Vite server alone does not redirect `pnpm start`. See the [renderer startup matrix and smoke steps](development/renderer-origin-coi.md)
+to verify each mode.
+
 ```bash
 # App run/build
 pnpm run dev

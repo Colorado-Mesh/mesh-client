@@ -1,4 +1,4 @@
-/** BLE errors tagged by Web Bluetooth / connection layer when pairing is the likely cause. */
+/** BLE errors tagged by the native connection layer when pairing is the likely cause. */
 export interface PairingRelatedError extends Error {
   isPairingRelated: true;
 }

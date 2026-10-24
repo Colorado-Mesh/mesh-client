@@ -5,11 +5,23 @@ import { rrcRoomMatchKey } from './rrcRoomName';
 const openings = new Map<string, number>();
 let failedRepair: { raw: string | null; value: Partial<Record<string, number>> } | undefined;
 export const rrcLastReadStorageKey = () => 'mesh-client:lastRead:rrc';
+const rrcLastReadPersistence = createDurableRendererSetting(
+  rrcLastReadStorageKey(),
+  DURABLE_RENDERER_STORAGE_KEYS.rrcLastRead,
+);
+
+export async function hydrateRrcLastRead(settings: Record<string, string>): Promise<void> {
+  await rrcLastReadPersistence.hydrate(settings);
+  // Repair older future timestamps before any room snapshots its opening boundary.
+  const value = loadPersistedRrcLastRead();
+  rrcLastReadPersistence.write(JSON.stringify(value));
+  await rrcLastReadPersistence.flush();
+}
 export const rrcReadKey = (hub: string, room: string) =>
   `${hub.trim().toLowerCase()}::${rrcRoomMatchKey(room) || room.trim().toLowerCase()}`;
 export function loadPersistedRrcLastRead(): Partial<Record<string, number>> {
   try {
-    const raw = localStorage.getItem(rrcLastReadStorageKey());
+    const raw = rrcLastReadPersistence.read();
     const now = Date.now();
     if (failedRepair?.raw === raw)
       return Object.fromEntries(
@@ -29,7 +41,7 @@ export function loadPersistedRrcLastRead(): Partial<Record<string, number>> {
     // This getter can run during render; do not emit a store change event here.
     if (entries.some(([key, at]) => clamped[key] !== at)) {
       try {
-        localStorage.setItem(rrcLastReadStorageKey(), JSON.stringify(clamped));
+        rrcLastReadPersistence.write(JSON.stringify(clamped));
       } catch {
         // catch-no-log-ok keep the repaired boundary stable in memory if storage is read-only
         failedRepair = { raw, value: clamped };
@@ -43,7 +55,7 @@ export function loadPersistedRrcLastRead(): Partial<Record<string, number>> {
 }
 export function savePersistedRrcLastRead(value: Partial<Record<string, number>>): void {
   try {
-    localStorage.setItem(rrcLastReadStorageKey(), JSON.stringify(value));
+    rrcLastReadPersistence.write(JSON.stringify(value));
     window.dispatchEvent(new Event('mesh-client:rrcLastReadChanged'));
   } catch {
     // catch-no-log-ok read state is optional when storage is unavailable
@@ -91,3 +103,6 @@ export function openingRrcReadWatermark(hub: string, room: string): number {
     openings.get(rrcReadKey(hub, room)) ?? loadPersistedRrcLastRead()[rrcReadKey(hub, room)] ?? 0
   );
 }
+import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
+
+import { createDurableRendererSetting } from './durableRendererSetting';

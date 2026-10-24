@@ -1,4 +1,8 @@
 // @vitest-environment node
+import type * as fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rmSyncMock = vi.hoisted(() => vi.fn());
@@ -63,15 +67,26 @@ describe('disposeUserData', () => {
 });
 
 describe('launchApp failure cleanup', () => {
-  beforeEach(() => {
+  let actualFs: typeof fs;
+  let userDataDir: string;
+
+  beforeEach(async () => {
     vi.useRealTimers();
     rmSyncMock.mockReset();
     existsSyncMock.mockReset();
     mkdtempSyncMock.mockReset();
     electronLaunchMock.mockReset();
+    actualFs = await vi.importActual<typeof fs>('node:fs');
+    userDataDir = actualFs.mkdtempSync(path.join(tmpdir(), 'mesh-e2e-'));
     existsSyncMock.mockReturnValue(true);
-    mkdtempSyncMock.mockReturnValue('/tmp/mesh-e2e-owned');
-    rmSyncMock.mockImplementation(() => undefined);
+    mkdtempSyncMock.mockReturnValue(userDataDir);
+    rmSyncMock.mockImplementation((...args: Parameters<typeof actualFs.rmSync>) => {
+      actualFs.rmSync(...args);
+    });
+  });
+
+  afterEach(() => {
+    actualFs.rmSync(userDataDir, { recursive: true, force: true });
   });
 
   it('closes Electron and disposes owned userData when firstWindow fails', async () => {
@@ -83,10 +98,11 @@ describe('launchApp failure cleanup', () => {
 
     await expect(launchApp()).rejects.toThrow('no window');
     expect(close).toHaveBeenCalledTimes(1);
-    expect(rmSyncMock).toHaveBeenCalledWith('/tmp/mesh-e2e-owned', {
+    expect(rmSyncMock).toHaveBeenCalledWith(userDataDir, {
       recursive: true,
       force: true,
     });
+    expect(actualFs.existsSync(userDataDir)).toBe(false);
   });
 
   it('closes Electron but does not dispose caller-owned userData on failure', async () => {
@@ -96,8 +112,14 @@ describe('launchApp failure cleanup', () => {
       close,
     });
 
-    await expect(launchApp({ userDataDir: '/tmp/mesh-e2e-retained' })).rejects.toThrow('no window');
+    await expect(launchApp({ userDataDir })).rejects.toThrow('no window');
     expect(close).toHaveBeenCalledTimes(1);
     expect(rmSyncMock).not.toHaveBeenCalled();
+    const launchOptions = electronLaunchMock.mock.calls[0]?.[0] as {
+      env: { MESH_E2E_PROFILE_TOKEN: string };
+    };
+    expect(actualFs.readFileSync(path.join(userDataDir, '.mesh-e2e-profile'), 'utf8')).toBe(
+      launchOptions.env.MESH_E2E_PROFILE_TOKEN,
+    );
   });
 });

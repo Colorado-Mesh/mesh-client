@@ -479,7 +479,19 @@
     "windowSection": "Sichtscheibe",
     "closeToTray": "In der Nähe der Taskleiste",
     "closeToTraySaveFailed": "Die Einstellung in der Nähe des Fachs konnte nicht gespeichert werden.",
-    "closeToTrayDesc": "Wenn ein Gerät oder eine MQTT -Verbindung aktiv ist, blendet das Schließen des Fensters den Mesh-Client in der Taskleiste (Menüleiste auf macOS) aus, anstatt ihn zu minimieren, sodass er weiterhin im Hintergrund ausgeführt wird. Öffnen Sie es erneut über das Taskleistensymbol. Beenden Sie das Tray-Menü oder das App-Menü. Wenn es ausgeschaltet ist, minimiert das Schließen das Fenster wie zuvor."
+    "closeToTrayDesc": "Wenn ein Gerät oder eine MQTT -Verbindung aktiv ist, blendet das Schließen des Fensters den Mesh-Client in der Taskleiste (Menüleiste auf macOS) aus, anstatt ihn zu minimieren, sodass er weiterhin im Hintergrund ausgeführt wird. Öffnen Sie es erneut über das Taskleistensymbol. Beenden Sie das Tray-Menü oder das App-Menü. Wenn es ausgeschaltet ist, minimiert das Schließen das Fenster wie zuvor.",
+    "memoryTitle": "Speicher des Renderers",
+    "memorySampleNow": "Jetzt messen",
+    "memorySampling": "Messung läuft…",
+    "memoryDescription": "Browserschätzungen zur Trendbeobachtung, etwa alle fünf Minuten bei sichtbarem Fenster. Werte können sich zwischen App-Versionen unterscheiden.",
+    "memoryRendererProcess": "Speicher des Renderer-Prozesses (physischer RAM), vom Betriebssystem gemeldet. Umfasst mehr als JavaScript-Speicher; vergleichen Sie Messwerte derselben App-Version.",
+    "memoryIsolated": "Ursprungsübergreifende Isolation ist aktiviert.",
+    "memoryNotIsolated": "Die Speichermessung erfordert ursprungsübergreifende Isolation, die in dieser Sitzung nicht verfügbar ist.",
+    "memoryUnsupported": "Dieser Browser unterstützt keine Speichermessung.",
+    "memoryFailed": "Die Speichermessung ist fehlgeschlagen. Sie können es erneut versuchen.",
+    "memoryLatest": "Letzte Schätzung: {{value}}",
+    "memoryEmpty": "Noch keine Messungen. Starten Sie eine Messung oder lassen Sie das Fenster sichtbar.",
+    "memoryHistory": "Letzte Messungen"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -1178,7 +1190,6 @@
         "dualProtocolContentionHint": "Das andere Protokoll verbindet sich möglicherweise immer noch über Bluetooth. Warten Sie ein paar Sekunden und versuchen Sie es erneut, oder wechseln Sie zur anderen Protokollregisterkarte, um den Verbindungsstatus zu überprüfen.",
         "scanBusy": "Ein weiterer Bluetooth-Scan wird durchgeführt. Versuchen Sie es gleich noch einmal.",
         "sameDeviceConflict": "Dieses Bluetooth-Gerät ist bereits mit {{owner}} verbunden.",
-        "chooserCancelledHint": "Wenn Sie nicht abgebrochen haben, stellen Sie sicher, dass Bluetooth aktiviert ist (systemctl status bluetooth), und tippen Sie dann erneut auf „Verbinden“. Installieren Sie auf Flatpak einen Build mit erlaubtem Bluetooth neu oder verwenden Sie AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "OS-Bluetooth-Pairing-Tools sind in dieser Umgebung nicht verfügbar (üblich in Flatpak). Verwenden Sie das offizielle AppImage, .deb oder .rpm, oder koppeln Sie das Radio mit dem Host-Bluetoothctl und versuchen Sie dann erneut, Connect durchzuführen.",
         "stackUnresponsiveGeneric": "Bluetooth bleibt bei einem früheren Verbindungsversuch hängen. Schalten Sie Bluetooth aus und ein, koppeln Sie das Radio bei Bedarf neu und starten Sie dann den mesh-client neu.",
         "stackUnresponsiveWindowsRePair": "Windows Bluetooth bleibt bei einem früheren Verbindungsversuch hängen, in der Regel, weil das Funkgerät nicht richtig gekoppelt ist. Drücken Sie auf Gerät entfernen und neu koppeln und geben Sie die im Radio angezeigte PIN ein. Wenn die Verbindung immer noch verweigert wird, starten Sie den mesh-client neu und versuchen Sie es erneut.",

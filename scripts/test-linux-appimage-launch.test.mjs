@@ -30,20 +30,25 @@ function writeElfAppImage(dir, name, machine) {
 }
 
 /** On-disk shape from log-service formatLine: `[level] [source] message`. */
-const RENDERER_URL_LINE =
-  '2026-01-01T00:00:00.000Z [debug] [main] [Startup] renderer URL: file:///app/index.html';
+const RENDERER_LOADED_LINE =
+  '2026-01-01T00:00:00.000Z [debug] [main] [Startup] renderer loaded: file:///app/index.html';
 const RENDERER_SOURCE_LINE = '2026-01-01T00:00:00.000Z [log] [renderer:index.js:12] ready';
 const MAIN_ONLY_LINE = '2026-01-01T00:00:00.000Z [error] [main] [main] crashReporter started';
 
 describe('logShowsStartup', () => {
-  it('accepts the renderer URL line logged just before loadURL', () => {
-    expect(logShowsStartup(RENDERER_URL_LINE)).toBe(true);
-    expect(logShowsStartup(`noise\n${RENDERER_URL_LINE}\n`)).toBe(true);
+  it('accepts the completion line logged after the final loadURL resolves', () => {
+    expect(logShowsStartup(RENDERER_LOADED_LINE)).toBe(true);
+    expect(logShowsStartup(`noise\n${RENDERER_LOADED_LINE}\n`)).toBe(true);
   });
 
-  it('accepts a renderer-source line once the page is running', () => {
-    expect(logShowsStartup(RENDERER_SOURCE_LINE)).toBe(true);
-    expect(logShowsStartup('2026-01-01T00:00:00.000Z [log] [renderer] ready')).toBe(true);
+  it('rejects intent and early renderer output before navigation completes', () => {
+    expect(
+      logShowsStartup(
+        '2026-01-01T00:00:00.000Z [debug] [main] [Startup] renderer URL: mesh-client://app/index.html',
+      ),
+    ).toBe(false);
+    expect(logShowsStartup(RENDERER_SOURCE_LINE)).toBe(false);
+    expect(logShowsStartup('2026-01-01T00:00:00.000Z [error] [renderer] failed')).toBe(false);
   });
 
   it('rejects bare main-process lines, including errors', () => {
@@ -66,6 +71,7 @@ describe('logShowsRendererFailure', () => {
     '[main] Renderer process gone: crashed 1',
     '[main] Failed to load: -6 ERR_FILE_NOT_FOUND file:///app/index.html',
     '[main] Failed to load renderer: boom',
+    '[main] renderer boot failed: Error: SQLite unavailable',
     '[main] child-process-gone: GPU killed exit=15',
   ])('detects %s', (message) => {
     const line = `2026-01-01T00:00:00.000Z [error] [main] ${message}`;
@@ -73,13 +79,13 @@ describe('logShowsRendererFailure', () => {
   });
 
   it('ignores a healthy renderer-loaded log', () => {
-    expect(logShowsRendererFailure(RENDERER_URL_LINE)).toBe(false);
+    expect(logShowsRendererFailure(RENDERER_LOADED_LINE)).toBe(false);
     expect(logShowsRendererFailure(RENDERER_SOURCE_LINE)).toBe(false);
     expect(logShowsRendererFailure('')).toBe(false);
   });
 
   it('still flags a failure that shares the file with the startup line', () => {
-    const text = `${RENDERER_URL_LINE}\n2026-01-01T00:00:00.100Z [error] [main] [main] Renderer process gone: crashed 1\n`;
+    const text = `${RENDERER_LOADED_LINE}\n2026-01-01T00:00:00.100Z [error] [main] [main] Renderer process gone: crashed 1\n`;
     expect(logShowsStartup(text)).toBe(true);
     expect(logShowsRendererFailure(text)).toBe(true);
   });
@@ -208,7 +214,7 @@ async function runFake(source, timings) {
 
 describe('launchAndAssert', () => {
   it('passes when the process stays alive and logs a renderer-loaded line', async () => {
-    await runFake(fakeAppSource({ logLine: RENDERER_URL_LINE }), {
+    await runFake(fakeAppSource({ logLine: RENDERER_LOADED_LINE }), {
       startupAliveMs: 400,
       logWaitMs: 2000,
     });
@@ -217,7 +223,7 @@ describe('launchAndAssert', () => {
   it('fails when the process logs startup then exits before the alive threshold', async () => {
     const err = await runFake(
       fakeAppSource({
-        logLine: RENDERER_URL_LINE,
+        logLine: RENDERER_LOADED_LINE,
         exitAfterMs: 1000,
       }),
       { startupAliveMs: 2500, logWaitMs: 4000 },
@@ -235,7 +241,7 @@ describe('launchAndAssert', () => {
     await expect(
       runFake(
         fakeAppSource({
-          logLine: RENDERER_URL_LINE,
+          logLine: RENDERER_LOADED_LINE,
           stderrLine: '[main] Renderer process gone: crashed 1',
         }),
         { startupAliveMs: 2000, logWaitMs: 3000 },

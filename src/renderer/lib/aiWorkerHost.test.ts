@@ -24,6 +24,7 @@ vi.mock('@wllama/wllama/esm/index', () => ({
 }));
 vi.mock('@wllama/wllama/esm/wasm/wllama.wasm?url', () => ({ default: 'file:///bundled.wasm' }));
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
@@ -56,6 +57,37 @@ describe('bundledWllamaThreadCount', () => {
 });
 
 describe('bundled AI worker lifecycle', () => {
+  it('measures model load and every inference with a monotonic clock without logging prompts', async () => {
+    fixture.load.mockResolvedValue(undefined);
+    fixture.exit.mockResolvedValue(undefined);
+    fixture.completion.mockImplementation(complete('digest'));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('model')),
+    );
+    const now = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(12.5)
+      .mockReturnValueOnce(13)
+      .mockReturnValueOnce(18)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(24);
+    const log = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const host = new AiWorkerHost();
+    await host.generate(job, new AbortController().signal, vi.fn(), undefined, { keepAlive: true });
+    await host.generate(job, new AbortController().signal, vi.fn());
+    expect(now).toHaveBeenCalledTimes(6);
+    expect(log.mock.calls).toEqual([
+      [
+        '[Catch up] model loaded',
+        JSON.stringify({ elapsedMs: 2.5, threads: bundledWllamaThreadCount() }),
+      ],
+      ['[Catch up] inference completed', JSON.stringify({ elapsedMs: 5 })],
+      ['[Catch up] inference completed', JSON.stringify({ elapsedMs: 4 })],
+    ]);
+  });
+
   it('routes a retained runtime failure to the current pass and releases the model', async () => {
     fixture.load.mockResolvedValue(undefined);
     fixture.exit.mockResolvedValue(undefined);

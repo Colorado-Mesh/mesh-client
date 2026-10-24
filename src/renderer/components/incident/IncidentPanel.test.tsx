@@ -1,14 +1,23 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
-import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import { hydrateIncidentStore, useIncidentStore } from '@/renderer/stores/incidentStore';
 
-import IncidentPanel from './IncidentPanel';
+import IncidentPanel, { type IncidentPanelProps } from './IncidentPanel';
+
+async function renderIncidentPanel(props: IncidentPanelProps = {}) {
+  let result!: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<IncidentPanel {...props} />);
+    await Promise.resolve();
+  });
+  return result;
+}
 
 const { downloadBlobMock } = vi.hoisted(() => ({ downloadBlobMock: vi.fn() }));
 vi.mock('@/renderer/lib/downloadBlob', () => ({ downloadBlob: downloadBlobMock }));
@@ -31,13 +40,14 @@ function ingest(text: string, senderId: string, senderName: string) {
 }
 
 describe('IncidentPanel', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await hydrateIncidentStore();
     useIncidentStore.getState().clearAll();
     downloadBlobMock.mockClear();
   });
 
-  it('disables the incident log export when there are no incidents', () => {
-    render(<IncidentPanel />);
+  it('disables the incident log export when there are no incidents', async () => {
+    await renderIncidentPanel();
     expect(screen.getByRole('button', { name: /incidentPanel\.exportLog/ })).toBeDisabled();
   });
 
@@ -46,7 +56,7 @@ describe('IncidentPanel', () => {
     const openId = ingest('MECP/0/M01 help', '7', 'Open');
     const closedId = ingest('MECP/2/L01 road', '8', 'Closed');
     useIncidentStore.getState().resolveIncident(closedId);
-    render(<IncidentPanel />);
+    await renderIncidentPanel();
 
     await user.click(screen.getByRole('button', { name: /incidentPanel\.exportLog/ }));
     await user.click(screen.getByRole('menuitem', { name: 'incidentPanel.exportJson' }));
@@ -72,7 +82,7 @@ describe('IncidentPanel', () => {
   });
 
   it('shows the empty state with no axe violations', async () => {
-    const { container } = render(<IncidentPanel />);
+    const { container } = await renderIncidentPanel();
     expect(screen.getByText('incidentPanel.intro')).toBeInTheDocument();
     expect(screen.getByText('incidentPanel.empty')).toBeInTheDocument();
     expect(screen.getByText('incidentPanel.emptyHint')).toBeInTheDocument();
@@ -85,7 +95,7 @@ describe('IncidentPanel', () => {
     ingest('MECP/3/L01 lunch', '!r', 'Routine');
     ingest('MECP/0/B01 M01', '!m', 'Mayday');
     const onAck = vi.fn();
-    const { container } = render(<IncidentPanel onAck={onAck} />);
+    const { container } = await renderIncidentPanel({ onAck });
 
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(2);
@@ -110,7 +120,7 @@ describe('IncidentPanel', () => {
     ingest('MECP/0/B01 M01', '42', 'Ada');
     ingest('MECP/0/B01', '99', 'Other');
     const onResolve = vi.fn();
-    render(<IncidentPanel onResolve={onResolve} ownSenderIds={new Set(['42'])} />);
+    await renderIncidentPanel({ onResolve, ownSenderIds: new Set(['42']) });
 
     await user.click(
       screen.getByRole('button', { name: 'incidentPanel.resolveBeaconAria:{"sender":"Ada"}' }),

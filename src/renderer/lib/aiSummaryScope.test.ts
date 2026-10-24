@@ -10,6 +10,7 @@ import {
   rrcReadKey,
   snapshotRrcReadWatermark,
 } from './rrcReadWatermark';
+import { mockConsoleWarn } from './vitestConsoleMock';
 
 describe('AI summary scope and RRC read boundaries', () => {
   it('keeps repaired and valid read boundaries stable when storage repair cannot be written', () => {
@@ -24,17 +25,21 @@ describe('AI summary scope and RRC read boundaries', () => {
       throw new Error('read-only');
     });
     const dispatch = vi.spyOn(window, 'dispatchEvent');
+    const warn = mockConsoleWarn();
     try {
       const expected = { past: now - 1000, future: now };
       expect(loadPersistedRrcLastRead()).toEqual(expected);
       now += 1000;
       expect(loadPersistedRrcLastRead()).toEqual(expected);
-      expect(write).toHaveBeenCalledOnce();
+      // One cache repair plus its recovery journal, neither repeated by subsequent reads.
+      expect(write.mock.calls.filter(([key]) => key === rrcLastReadStorageKey())).toHaveLength(1);
+      expect(write).toHaveBeenCalledTimes(2);
       expect(dispatch).not.toHaveBeenCalled();
     } finally {
       clock.mockRestore();
       write.mockRestore();
       dispatch.mockRestore();
+      warn.restore();
       localStorage.clear();
     }
   });

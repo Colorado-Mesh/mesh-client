@@ -27,12 +27,16 @@ function pngResponse(body: Buffer | Uint8Array, status = 200): Response {
     headers: {
       'content-type': 'image/png',
       'cache-control': 'public, max-age=31536000, immutable',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
     },
   });
 }
 
 function emptyResponse(status: number): Response {
-  return new Response(null, { status });
+  return new Response(null, {
+    status,
+    headers: { 'Cross-Origin-Resource-Policy': 'cross-origin' },
+  });
 }
 
 /**

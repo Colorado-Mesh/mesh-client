@@ -5,6 +5,7 @@ import {
   clipboard,
   crashReporter,
   dialog,
+  type Event as ElectronEvent,
   ipcMain,
   Menu,
   MenuItem,
@@ -15,13 +16,16 @@ import {
   powerSaveBlocker,
   protocol,
   screen,
+  type SerialPort,
   type Session,
   shell,
   systemPreferences,
   Tray,
+  type WebContents,
 } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
@@ -58,6 +62,18 @@ import {
 } from '../shared/meshtasticBluetoothPin';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
+import {
+  DURABLE_RENDERER_SETTING_MAX_LENGTH,
+  DURABLE_RENDERER_STORAGE_MIGRATIONS,
+  isRendererStorageDeletionSetting,
+  RENDERER_INDEX_URL,
+  RENDERER_SCHEME,
+  RENDERER_STORAGE_DELETION_SETTING_PREFIX,
+} from '../shared/rendererOrigin';
+import {
+  parseRendererStorageDeletionState,
+  RENDERER_STORAGE_DELETION_STATE_MAX_LENGTH,
+} from '../shared/rendererStorageIntent';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import { MS_PER_MINUTE } from '../shared/timeConstants';
@@ -125,6 +141,7 @@ import {
   upsertNodePath,
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
+import { resetDurableRendererData, seedDurableRendererSettings } from './durableRendererSettings';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
 import {
@@ -137,6 +154,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { seedIncidentsOn } from './incident-database';
 import { registerAiHandlers } from './ipc/ai-handlers';
 import { registerBeaconIpcHandlers } from './ipc/beacon-handlers';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
@@ -144,6 +162,7 @@ import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGeoIpcHandlers } from './ipc/geo-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerIncidentIpcHandlers } from './ipc/incident-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
@@ -196,6 +215,17 @@ import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { PermissionDecisionLogger } from './permissionDecisionLog';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
+import {
+  isAllowedRendererDeviceOrigin,
+  isAllowedRendererNavigation,
+  isAllowedRendererPermission,
+} from './rendererNavigationPolicy';
+import { createRendererOriginProtocolHandler } from './rendererOriginProtocol';
+import { rendererProcessMemoryBytes } from './rendererProcessMemory';
+import {
+  commitImportedRendererStorageIntents,
+  writeRendererStorageDeletionState,
+} from './rendererStorageIntentMigration';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
 import {
   readReticulumAttachmentBytes,
@@ -217,7 +247,13 @@ import { canAutoConnectTakRemote, loadTakRemoteSettings } from './tak/remote-set
 import type { TakServerManager } from './tak-server-manager';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
-import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
+import { assertIpcSender, suspendIpcSender, validateIpcSender } from './validate-ipc-sender';
+import {
+  beginRendererStorageReset,
+  checkRendererOriginStorageHealth,
+  resumePendingRendererStorageReset,
+  runWebStorageOriginMigration,
+} from './webStorageOriginMigration';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
@@ -236,6 +272,17 @@ try {
 
 // Custom scheme for offline map tiles (must register before app.whenReady).
 protocol.registerSchemesAsPrivileged([
+  {
+    scheme: RENDERER_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+      allowServiceWorkers: false,
+    },
+  },
   {
     scheme: 'mesh-ai',
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
@@ -435,6 +482,8 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let reloadMainRenderer: ((beforeLoad?: () => void) => Promise<void>) | null = null;
+let rendererLoadPromise: Promise<void> | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 let offlineTileCache: TileCache | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
@@ -668,10 +717,6 @@ process.on('unhandledRejection', (reason) => {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   showCrashReportDialog({ source: 'unhandledRejection', error });
 });
-
-// ─── Bluetooth pairing handler (Linux only) ──────────────────────────
-// Note: Bluetooth pairing for Web Bluetooth is handled via session.setBluetoothPairingHandler()
-// which is set up after mainWindow creation. See the setup below near select-bluetooth-device.
 
 // ─── IPC validation helpers (main process boundary) ───────────────────
 const MAX_PAYLOAD_LENGTH = 1024 * 1024; // 1MB cap for message payload
@@ -1813,13 +1858,14 @@ function createWindow() {
       // Inline misspelling marks and context-menu suggestions (all platforms). macOS app menu
       // stays minimal (no role-based Edit menu) to reduce WeakPtr menu-bridge noise.
       spellcheck: true,
-      // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
-      // required for direct device communication. These APIs are permission-gated via
-      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media, notifications).
+      // Security note: experimentalFeatures enables Web Serial for direct serial communication.
+      // Its origin-scoped grants use setPermissionCheckHandler and the guarded serial picker.
+      // LoRa BLE uses the native sidecar, not Chromium Web Bluetooth permissions.
       experimentalFeatures: true,
     },
   });
   mainWindow = win;
+  let trustedRendererUrl = '';
 
   let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null;
   const scheduleSaveWindowState = () => {
@@ -1837,16 +1883,23 @@ function createWindow() {
   // Failure point: malicious URL schemes attempting protocol-handler abuse.
   // Guardrail: only pass validated http:/https: URLs to `shell.openExternal()`.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (typeof url !== 'string') return { action: 'deny' };
-    const currentUrl = win.webContents.getURL();
-    const openedExternal = openExternalHttpOrHttpsIfExternal(currentUrl, url);
-    return openedExternal ? { action: 'deny' } : { action: 'allow' };
+    if (typeof url === 'string') openExternalHttpOrHttpsIfExternal(trustedRendererUrl, url);
+    return { action: 'deny' };
   });
 
   win.webContents.on('will-navigate', (event, url) => {
-    const currentUrl = win.webContents.getURL();
-    const openedExternal = openExternalHttpOrHttpsIfExternal(currentUrl, url);
-    if (openedExternal) event.preventDefault();
+    if (!isAllowedRendererNavigation(trustedRendererUrl, url)) {
+      event.preventDefault();
+      openExternalHttpOrHttpsIfExternal(trustedRendererUrl, url);
+    }
+  });
+  win.webContents.on('will-frame-navigate', (event) => {
+    if (!event.isMainFrame && !isAllowedRendererNavigation(trustedRendererUrl, event.url)) {
+      event.preventDefault();
+    }
+  });
+  win.webContents.on('will-redirect', (event, url) => {
+    if (!isAllowedRendererNavigation(trustedRendererUrl, url)) event.preventDefault();
   });
 
   configureRendererSpellcheck(win.webContents.session);
@@ -1918,51 +1971,63 @@ function createWindow() {
   // ─── Web Serial: Port Selection ────────────────────────────────────
   // Electron requires this handler for navigator.serial.requestPort()
   // to work. Without it, the Web Serial API throws.
-  mainWindow.webContents.session.on(
-    'select-serial-port',
-    (event, portList, _webContents, callback) => {
-      event.preventDefault();
+  const serialSession = win.webContents.session;
+  const handleSelectSerialPort = (
+    event: ElectronEvent,
+    portList: SerialPort[],
+    requestingContents: WebContents,
+    callback: (portId: string) => void,
+  ): void => {
+    event.preventDefault();
+    if (
+      requestingContents !== win.webContents ||
+      !isAllowedRendererNavigation(trustedRendererUrl, requestingContents.mainFrame.url)
+    ) {
+      callback('');
+      return;
+    }
 
-      // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
-      if (pendingSerialCallback) {
-        console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
+    // Warn if a previous callback is being replaced (renderer re-triggered before resolving)
+    if (pendingSerialCallback) {
+      console.warn('[IPC] select-serial-port: replacing stale pendingSerialCallback');
+    }
+
+    // Store callback so we can resolve it when the user picks a port
+    pendingSerialCallback = callback;
+    clearPendingSerialSelectionTimer();
+
+    console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
+
+    // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
+    pendingSerialSelectionTimer = setTimeout(() => {
+      if (pendingSerialCallback === callback) {
+        console.warn('[IPC] Serial port selection callback stale after timeout — auto-cancelling');
+        pendingSerialCallback('');
+        pendingSerialCallback = null;
+        lastSerialPortIds.clear();
       }
+      pendingSerialSelectionTimer = null;
+    }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
 
-      // Store callback so we can resolve it when the user picks a port
-      pendingSerialCallback = callback;
-      clearPendingSerialSelectionTimer();
+    lastSerialPortIds = new Set(portList.map((p) => p.portId));
+    // Send port list to renderer for selection
+    mainWindow?.webContents.send(
+      'serial-ports-discovered',
+      portList.map((p) => ({
+        portId: p.portId,
+        displayName: p.displayName || p.portName || `Port ${p.portId}`,
+        portName: p.portName || '',
+        vendorId: p.vendorId,
+        productId: p.productId,
+      })),
+    );
+  };
+  serialSession.on('select-serial-port', handleSelectSerialPort);
+  win.once('closed', () => {
+    serialSession.removeListener('select-serial-port', handleSelectSerialPort);
+  });
 
-      console.debug(`[IPC] select-serial-port: discovered ${portList.length} port(s)`);
-
-      // Auto-cancel if the picker is left open too long (flashing can take longer than 60s)
-      pendingSerialSelectionTimer = setTimeout(() => {
-        if (pendingSerialCallback === callback) {
-          console.warn(
-            '[IPC] Serial port selection callback stale after timeout — auto-cancelling',
-          );
-          pendingSerialCallback('');
-          pendingSerialCallback = null;
-          lastSerialPortIds.clear();
-        }
-        pendingSerialSelectionTimer = null;
-      }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
-
-      lastSerialPortIds = new Set(portList.map((p) => p.portId));
-      // Send port list to renderer for selection
-      mainWindow?.webContents.send(
-        'serial-ports-discovered',
-        portList.map((p) => ({
-          portId: p.portId,
-          displayName: p.displayName || p.portName || `Port ${p.portId}`,
-          portName: p.portName || '',
-          vendorId: p.vendorId,
-          productId: p.productId,
-        })),
-      );
-    },
-  );
-
-  // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
+  // ─── Legacy Chromium Bluetooth chooser cancellation ───────────────────
   // LoRa BLE uses sidecar GATT on all platforms. Cancel Chromium's chooser so a
   // stray requestDevice() cannot hang the session.
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
@@ -1973,9 +2038,8 @@ function createWindow() {
     callback('');
   });
 
-  // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
-  // Required for devices that require PIN/confirmation during pairing.
-  // This is called by Chromium when a device requires pairing during GATT connect.
+  // ─── Legacy Chromium pairing callback ─────────────────────────────────
+  // Retained for compatibility; active LoRa GATT pairing uses the native sidecar.
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
     console.debug('[main] bluetooth-pairing-request:', details.pairingKind, details.deviceId);
 
@@ -2038,22 +2102,39 @@ function createWindow() {
 
   const permissionLog = new PermissionDecisionLogger();
   // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
-  mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    const granted =
-      permission === 'serial' ||
-      permission === 'geolocation' ||
-      permission === 'media' ||
-      permission === 'notifications';
-    permissionLog.log('checkHandler', permission, granted);
-    return granted;
-  });
+  mainWindow.webContents.session.setPermissionCheckHandler(
+    (requestingContents, permission, requestingOrigin, details) => {
+      const trusted = isAllowedRendererPermission({
+        rendererUrl: trustedRendererUrl,
+        sameWebContents: requestingContents === win.webContents,
+        isMainFrame: details.isMainFrame,
+        requestingUrl: details.requestingUrl ?? requestingContents?.mainFrame.url,
+        requestingOrigin,
+      });
+      const granted =
+        trusted &&
+        (permission === 'serial' ||
+          permission === 'geolocation' ||
+          permission === 'media' ||
+          permission === 'notifications');
+      permissionLog.log('checkHandler', permission, granted);
+      return granted;
+    },
+  );
 
   // Grant geolocation (browser GPS fallback), media (camera QR; microphone reserved for future LXST)
   // and notifications (renderer `new Notification` for chat / node / ops / MECP alerts).
   mainWindow.webContents.session.setPermissionRequestHandler(
-    (_webContents, permission, callback) => {
+    (requestingContents, permission, callback, details) => {
+      const trusted = isAllowedRendererPermission({
+        rendererUrl: trustedRendererUrl,
+        sameWebContents: requestingContents === win.webContents,
+        isMainFrame: details.isMainFrame,
+        requestingUrl: details.requestingUrl,
+      });
       const grant =
-        permission === 'geolocation' || permission === 'media' || permission === 'notifications';
+        trusted &&
+        (permission === 'geolocation' || permission === 'media' || permission === 'notifications');
       permissionLog.log('requestHandler', permission, grant);
       callback(grant);
     },
@@ -2064,7 +2145,10 @@ function createWindow() {
   // Bluetooth uses select-bluetooth-device above. Without a handler, Chromium can
   // show a blank overlay for device permission prompts.
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
-    return details.deviceType === 'serial';
+    return (
+      details.deviceType === 'serial' &&
+      isAllowedRendererDeviceOrigin(trustedRendererUrl, details.origin)
+    );
   });
 
   if (!hasInstalledOsmReferrerHook) {
@@ -2132,28 +2216,119 @@ function createWindow() {
   });
 
   // Load the app
-  void (async () => {
+  const loadRenderer = async (beforeLoad?: () => void) => {
     const distIndexPath = path.join(__dirname, '../../dist/renderer/index.html');
-    const resolved = await resolveRendererLoadUrl({
-      packaged: app.isPackaged,
-      devServerUrl: process.env.VITE_DEV_SERVER_URL,
-      distIndexPath,
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+    const migrationOptions = {
+      devServerUrl,
+      userDataPath: app.getPath('userData'),
+      legacyMigrationUrl: pathToFileURL(path.join(__dirname, '../../dist/renderer/migration.html'))
+        .href,
+      appVersion: app.getVersion(),
+      readStorageDeletionStates: () => {
+        const rows = getDatabase()
+          .prepareOnce('SELECT key, value FROM app_settings WHERE key LIKE ?')
+          .all(`${RENDERER_STORAGE_DELETION_SETTING_PREFIX}%`) as { key: string; value: string }[];
+        return Object.fromEntries(
+          rows
+            .filter((row) => isRendererStorageDeletionSetting(row.key))
+            .map((row) => [
+              row.key.slice(RENDERER_STORAGE_DELETION_SETTING_PREFIX.length),
+              parseRendererStorageDeletionState(row.value),
+            ]),
+        );
+      },
+      commitImportedStorageIntents: (
+        intents: Parameters<typeof commitImportedRendererStorageIntents>[1],
+      ) => {
+        commitImportedRendererStorageIntents(getDatabase(), intents);
+      },
+      seedDurableStorage: (entries: Record<string, string>) => {
+        seedDurableRendererSettings(getDatabase(), entries);
+        seedIncidentsOn(getDatabase(), entries['mesh-client:incidents'] ?? null);
+      },
+    };
+    // Explicit resets take priority over origin recovery flags and must finish before any UI loads.
+    await resumePendingRendererStorageReset({
+      ...migrationOptions,
+      clearSessionStorage: async () => {
+        await win.webContents.session.clearStorageData({
+          storages: ['cookies', 'localstorage', 'cachestorage', 'shadercache', 'serviceworkers'],
+        });
+        win.webContents.session.flushStorageData();
+        await win.webContents.session.clearCache();
+      },
+      resetDurableStorage: () => {
+        resetDurableRendererData(getDatabase());
+      },
     });
-    console.debug('[Startup] renderer load source:', resolved.source);
+    const migrationResult = await runWebStorageOriginMigration(migrationOptions);
+    const resolved = resolveRendererLoadUrl({
+      devServerUrl,
+      distIndexPath,
+      customProtocolUrl: RENDERER_INDEX_URL,
+      migrationCompleted: migrationResult === 'completed',
+    });
+    if (win.isDestroyed()) return;
+    beforeLoad?.();
+    trustedRendererUrl = resolved.url;
     console.debug('[Startup] renderer URL:', sanitizeLogMessage(resolved.url));
     console.debug('[Startup] app.isPackaged:', app.isPackaged);
     console.debug('[Startup] userData:', sanitizeLogMessage(app.getPath('userData')));
     if (resolved.openDevTools) {
-      mainWindow.webContents.openDevTools();
+      win.webContents.openDevTools();
     }
-    if (resolved.source === 'dist') {
-      await mainWindow.loadURL(resolved.url, {
+    let source = resolved.source;
+    let phase: string = migrationResult;
+    if (resolved.source === 'dist' || resolved.source === 'custom-protocol') {
+      await win.loadURL(resolved.url, {
         httpReferrer: OSM_HTTP_REFERRER,
       });
-      return;
+      if (resolved.source === 'custom-protocol') {
+        let health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents);
+        if (win.isDestroyed()) return;
+        if (health === 'repaired') {
+          phase = 'repaired';
+          await win.loadURL(resolved.url, { httpReferrer: OSM_HTTP_REFERRER });
+          if (win.isDestroyed()) return;
+          health = await checkRendererOriginStorageHealth(migrationOptions, win.webContents, false);
+          if (win.isDestroyed()) return;
+        }
+        if (health === 'failed') {
+          phase = 'health-failed';
+          source = 'dist';
+          trustedRendererUrl = pathToFileURL(distIndexPath).href;
+          await win.loadURL(trustedRendererUrl, { httpReferrer: OSM_HTTP_REFERRER });
+        }
+      }
+    } else {
+      await win.loadURL(resolved.url);
     }
-    await mainWindow.loadURL(resolved.url);
-  })().catch((e: unknown) => {
+    if (win.isDestroyed()) return;
+    // Diagnostics must not delay startup or poison the promise awaited by data reset.
+    void (async () => {
+      let isolated: boolean | 'unknown' = 'unknown';
+      try {
+        isolated =
+          (await win.webContents.executeJavaScript('globalThis.crossOriginIsolated === true')) ===
+          true;
+      } catch {
+        // catch-no-log-ok the startup line below reports unavailable isolation explicitly.
+      }
+      console.debug(
+        '[Startup] renderer load source:',
+        source,
+        'phase:',
+        phase,
+        'crossOriginIsolated:',
+        isolated,
+      );
+    })();
+    console.debug('[Startup] renderer loaded:', sanitizeLogMessage(win.webContents.getURL()));
+  };
+  reloadMainRenderer = loadRenderer;
+  rendererLoadPromise = loadRenderer();
+  void rendererLoadPromise.catch((e: unknown) => {
     console.error(
       '[main] Failed to load renderer:',
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
@@ -2163,6 +2338,8 @@ function createWindow() {
   mainWindow.on('closed', () => {
     setMainWindow(null);
     mainWindow = null;
+    reloadMainRenderer = null;
+    rendererLoadPromise = null;
   });
   win.on('close', () => {
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
@@ -3823,7 +4000,17 @@ ipcMain.handle('app:getRendererLiveness', (event) => {
   }
   const mem = process.memoryUsage();
   const hb = rendererHeartbeatWatchdog.getLivenessSnapshot();
+  let rendererMemory: number | undefined;
+  try {
+    rendererMemory = rendererProcessMemoryBytes(app.getAppMetrics(), event.sender.getOSProcessId());
+  } catch (error) {
+    console.warn(
+      '[IPC] Renderer process memory unavailable:',
+      sanitizeLogMessage(error instanceof Error ? error.message : String(error)),
+    );
+  }
   return {
+    ...(rendererMemory === undefined ? {} : { rendererProcessMemoryBytes: rendererMemory }),
     mainUptimeSec: Math.floor(process.uptime()),
     lastRendererHeartbeatAgeMs: hb.lastRendererHeartbeatAgeMs,
     rendererUnresponsiveSeen: hb.rendererUnresponsiveSeen,
@@ -3864,6 +4051,7 @@ ipcMain.handle('app:setLoginItem', (event, openAtLogin: unknown) => {
 // ─── IPC: Persistent app settings (SQLite-backed key/value) ────────
 // Allow-list keys to prevent arbitrary writes from a compromised renderer.
 const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
+  ...DURABLE_RENDERER_STORAGE_MIGRATIONS.map(([, databaseKey]) => databaseKey),
   'meshtasticMessageRetentionEnabled',
   'meshtasticMessageRetentionCount',
   'meshcoreMessageRetentionEnabled',
@@ -3906,6 +4094,7 @@ const APP_SETTINGS_MAX_VALUE_LENGTH = 256;
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
     APP_SETTINGS_ALLOWED_KEYS.has(key) ||
+    isRendererStorageDeletionSetting(key) ||
     key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_SYNC_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_LAST_POST_SETTING_PREFIX) ||
@@ -3922,6 +4111,10 @@ function isLegacyPlaintextCredentialKey(key: string): boolean {
 }
 
 function appSettingsMaxValueLengthForKey(key: string): number {
+  if (isRendererStorageDeletionSetting(key)) return RENDERER_STORAGE_DELETION_STATE_MAX_LENGTH;
+  if (DURABLE_RENDERER_STORAGE_MIGRATIONS.some(([, databaseKey]) => databaseKey === key)) {
+    return DURABLE_RENDERER_SETTING_MAX_LENGTH;
+  }
   if (key === 'notificationSounds') return 4096;
   if (key === 'meshtasticOwnNodeNumsByPublicKey') return 4096;
   if (
@@ -3983,9 +4176,12 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
     throw new Error(`appSettings:set: value must be a string under ${maxValueLength} chars`);
   }
   try {
-    const result = getDatabase()
-      .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
-      .run(key, value);
+    const db = getDatabase();
+    const result = isRendererStorageDeletionSetting(key)
+      ? writeRendererStorageDeletionState(db, key, value)
+      : db
+          .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
+          .run(key, value);
     console.debug(`[IPC] appSettings:set: ${sanitizeLogMessage(key)} (${result.changes} rows)`);
     return { changes: Number(result.changes) };
   } catch (err) {
@@ -4001,7 +4197,11 @@ ipcMain.handle('appSettings:remove', (event, key: unknown) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
-  if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
+  if (
+    typeof key !== 'string' ||
+    !isAppSettingsKeyAllowed(key) ||
+    isRendererStorageDeletionSetting(key)
+  ) {
     throw new Error('appSettings:remove: key not allowed');
   }
   const result = getDatabase().prepareOnce('DELETE FROM app_settings WHERE key = ?').run(key);
@@ -4998,17 +5198,35 @@ ipcMain.handle('session:clearData', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
+  let resumeIpc: (() => void) | undefined;
+  let resetStarted = false;
   try {
-    const win = BrowserWindow.getAllWindows()[0];
-    if (!win) return;
-    await win.webContents.session.clearStorageData({
-      storages: ['cookies', 'localstorage', 'cachestorage', 'shadercache', 'serviceworkers'],
-    });
-    await win.webContents.session.clearCache();
+    const win = mainWindow;
+    const reload = reloadMainRenderer;
+    if (!reload || event.sender !== win?.webContents) {
+      throw new Error('Data reset requires the main renderer');
+    }
+    // Suspend synchronously: a second clear or queued store write cannot pass its IPC guard.
+    resumeIpc = suspendIpcSender(win.webContents);
+    // Finish any startup health probe before it can race the explicit reset baseline.
+    await rendererLoadPromise;
+    // A rename may persist the intent even if its final directory fsync throws: stay fenced.
+    resetStarted = true;
+    beginRendererStorageReset({ userDataPath: app.getPath('userData') });
+    // Destroy React stores and their retry journals before clearing persistent data. Queued IPC
+    // is fenced until reset and migration finish; branch-owned durable writes are synchronous.
+    await win.loadURL('about:blank');
+    rendererLoadPromise = reload(resumeIpc);
+    await rendererLoadPromise;
   } catch (err) {
+    if (!resetStarted) resumeIpc?.();
     console.error(
       '[IPC] session:clearData failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    dialog.showErrorBox(
+      'Mesh-Client — Data Reset Failed',
+      'The data reset could not finish. Restart Mesh Client to retry before opening your data.',
     );
     throw err;
   }
@@ -6935,6 +7153,13 @@ void app
       if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
       initDatabase();
+      registerIncidentIpcHandlers();
+      protocol.handle(
+        RENDERER_SCHEME,
+        createRendererOriginProtocolHandler({
+          distRoot: path.join(__dirname, '../../dist/renderer'),
+        }),
+      );
 
       // Auto-restore TAK server if auto-start is enabled
       const takSettingsPath = path.join(app.getPath('userData'), 'tak-settings.json');

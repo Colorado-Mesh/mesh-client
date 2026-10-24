@@ -479,7 +479,19 @@
     "windowSection": "윈도우",
     "closeToTray": "시스템 트레이에 가까움",
     "closeToTraySaveFailed": "트레이에 가까운 설정을 저장할 수 없습니다.",
-    "closeToTrayDesc": "장치 또는 MQTT 연결이 활성화되면 창을 닫으면 최소화하는 대신 시스템 트레이 (macOS 의 메뉴 표시줄) 에 Mesh-Client가 숨겨져 백그라운드에서 계속 실행됩니다. 트레이 아이콘에서 다시 엽니다. 트레이 메뉴 또는 앱 메뉴에서 종료합니다. 꺼지면 닫으면 이전과 같이 창이 최소화됩니다."
+    "closeToTrayDesc": "장치 또는 MQTT 연결이 활성화되면 창을 닫으면 최소화하는 대신 시스템 트레이 (macOS 의 메뉴 표시줄) 에 Mesh-Client가 숨겨져 백그라운드에서 계속 실행됩니다. 트레이 아이콘에서 다시 엽니다. 트레이 메뉴 또는 앱 메뉴에서 종료합니다. 꺼지면 닫으면 이전과 같이 창이 최소화됩니다.",
+    "memoryTitle": "렌더러 메모리",
+    "memorySampleNow": "지금 측정",
+    "memorySampling": "측정 중…",
+    "memoryDescription": "추세를 확인하기 위한 브라우저 추정치로, 창이 표시되는 동안 약 5분마다 측정합니다. 앱 버전에 따라 값이 달라질 수 있습니다.",
+    "memoryRendererProcess": "운영 체제가 보고하는 렌더러 프로세스 메모리(물리적 RAM)입니다. JavaScript 외의 메모리도 포함합니다. 같은 앱 버전의 측정값을 비교하세요.",
+    "memoryIsolated": "교차 출처 격리가 활성화되어 있습니다.",
+    "memoryNotIsolated": "메모리 측정에는 교차 출처 격리가 필요하지만 이 세션에서는 사용할 수 없습니다.",
+    "memoryUnsupported": "이 브라우저는 메모리 측정을 지원하지 않습니다.",
+    "memoryFailed": "메모리 측정에 실패했습니다. 다시 시도할 수 있습니다.",
+    "memoryLatest": "최근 추정치: {{value}}",
+    "memoryEmpty": "아직 측정값이 없습니다. 측정을 시작하거나 창을 표시한 상태로 두세요.",
+    "memoryHistory": "최근 측정값"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1180,7 +1192,6 @@
         "dualProtocolContentionHint": "다른 프로토콜은 여전히 블루투스를 통해 연결될 수 있습니다. 몇 초 후 다시 시도하거나 다른 프로토콜 탭으로 전환하여 연결 상태를 확인하세요.",
         "scanBusy": "다른 Bluetooth 검색이 진행 중입니다. 잠시 후에 다시 시도해 보세요.",
         "sameDeviceConflict": "이 블루투스 장치는 이미 {{owner}}에 연결되어 있습니다.",
-        "chooserCancelledHint": "취소하지 않은 경우 Bluetooth가 켜져 있는지(systemctl status bluetooth) 확인한 다음 연결을 다시 탭하세요. Flatpak에서는 Bluetooth가 허용된 빌드를 다시 설치하거나 AppImage/.deb/.rpm을 사용하세요.",
         "bluetoothctlMissingHint": "이 환경에서는 OS Bluetooth 페어링 도구를 사용할 수 없습니다(Flatpak에서 일반적임). 공식 AppImage, .deb 또는 .rpm을 사용하거나 라디오를 호스트 bluetoothctl과 페어링한 다음 연결을 다시 시도하세요.",
         "stackUnresponsiveGeneric": "블루투스가 이전 연결 시도에서 멈췄습니다. 블루투스를 껐다가 켜고 필요한 경우 라디오를 다시 페어링한 다음 mesh-client를 다시 시작하십시오.",
         "stackUnresponsiveWindowsRePair": "일반적으로 라디오가 제대로 페어링되지 않았기 때문에 이전 연결 시도에서 Windows Bluetooth가 중단됩니다. Remove & Re-pair Device (장치 제거 및 다시 페어링) 를 누르고 라디오에 표시된 PIN을 입력합니다. 그래도 연결이 거부되면 mesh-client를 다시 시작하고 다시 시도하십시오.",

@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Allow the AI orchestration code while staying well below esbuild's 1mb advisory. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 704 * 1024;
+/** COI migration and durable incident modules add 15.4 KiB; measured main is 711.5 KiB. */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 720 * 1024;
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */

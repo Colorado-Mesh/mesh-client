@@ -1,3 +1,5 @@
+import { removeRendererStorageItem } from '@/renderer/lib/rendererStorage';
+
 import { withTimeout } from '../../shared/withTimeout';
 import {
   getPortSignature,
@@ -65,8 +67,8 @@ export async function escalateSerialReconnectExhaustion(
 
 export function clearPersistedSerialPortIdentity(): void {
   try {
-    localStorage.removeItem(LAST_SERIAL_PORT_KEY);
-    localStorage.removeItem(LAST_SERIAL_PORT_SIGNATURE_KEY);
+    removeRendererStorageItem(LAST_SERIAL_PORT_KEY);
+    removeRendererStorageItem(LAST_SERIAL_PORT_SIGNATURE_KEY);
   } catch {
     // catch-no-log-ok localStorage unavailable
   }

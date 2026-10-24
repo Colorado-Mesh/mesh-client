@@ -479,7 +479,19 @@
     "windowSection": "Jendela",
     "closeToTray": "Dekat dengan baki sistem",
     "closeToTraySaveFailed": "Tidak dapat menyimpan pengaturan close - to - tray.",
-    "closeToTrayDesc": "Saat perangkat atau koneksi MQTT aktif, tutup jendela sembunyikan Mesh-Client ke baki sistem (bilah menu pada macOS) alih - alih meminimalkannya, sehingga tetap berjalan di latar belakang. Buka kembali dari ikon baki. Keluar dari menu baki atau menu aplikasi. Saat mati, penutupan meminimalkan jendela seperti sebelumnya."
+    "closeToTrayDesc": "Saat perangkat atau koneksi MQTT aktif, tutup jendela sembunyikan Mesh-Client ke baki sistem (bilah menu pada macOS) alih - alih meminimalkannya, sehingga tetap berjalan di latar belakang. Buka kembali dari ikon baki. Keluar dari menu baki atau menu aplikasi. Saat mati, penutupan meminimalkan jendela seperti sebelumnya.",
+    "memoryTitle": "Memori perender",
+    "memorySampleNow": "Ukur sekarang",
+    "memorySampling": "Mengukur…",
+    "memoryDescription": "Perkiraan browser untuk melihat tren, diukur sekitar setiap lima menit saat jendela terlihat. Nilai dapat berbeda antarversi aplikasi.",
+    "memoryRendererProcess": "Memori proses perender (RAM fisik), dilaporkan oleh sistem operasi. Mencakup lebih dari memori JavaScript; bandingkan sampel dari versi aplikasi yang sama.",
+    "memoryIsolated": "Isolasi lintas asal diaktifkan.",
+    "memoryNotIsolated": "Pengukuran memori memerlukan isolasi lintas asal, yang tidak tersedia dalam sesi ini.",
+    "memoryUnsupported": "Browser ini tidak mendukung pengukuran memori.",
+    "memoryFailed": "Pengukuran memori gagal. Anda dapat mencoba lagi.",
+    "memoryLatest": "Perkiraan terbaru: {{value}}",
+    "memoryEmpty": "Belum ada pengukuran. Mulai pengukuran atau biarkan jendela terlihat.",
+    "memoryHistory": "Pengukuran terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1180,7 +1192,6 @@
         "dualProtocolContentionHint": "Protokol lain mungkin masih terhubung melalui Bluetooth. Tunggu beberapa detik dan coba lagi, atau beralih ke tab protokol lain untuk memeriksa status koneksinya.",
         "scanBusy": "Pemindaian Bluetooth lainnya sedang berlangsung. Coba lagi sebentar lagi.",
         "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}.",
-        "chooserCancelledHint": "Jika Anda tidak membatalkan, pastikan Bluetooth aktif (status sistemctl bluetooth), lalu ketuk Hubungkan lagi. Di Flatpak, instal ulang build dengan Bluetooth yang diizinkan, atau gunakan AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan.",
         "stackUnresponsiveGeneric": "Bluetooth macet pada upaya koneksi sebelumnya. Matikan dan nyalakan Bluetooth, pasangkan kembali radio jika perlu, lalu mulai ulang mesh-client.",
         "stackUnresponsiveWindowsRePair": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya karena radio tidak dipasangkan dengan benar. Tekan Lepas & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan di radio. Jika koneksi masih ditolak, restart mesh-client dan coba lagi.",

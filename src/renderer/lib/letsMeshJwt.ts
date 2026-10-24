@@ -115,7 +115,7 @@ export async function syncMeshcoreActiveIdentityFromBackup(
 
 /**
  * After getSelfInfo, persist public key only so MQTT username (`v1_<pubkey>`) can populate before
- * exportPrivateKey completes (Linux Web Bluetooth can be slow).
+ * exportPrivateKey completes (native BLE key export can be slow).
  *
  * If the pubkey changed vs stored identity, clears any stale private key material.
  *

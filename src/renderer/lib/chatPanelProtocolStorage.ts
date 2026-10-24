@@ -1,6 +1,7 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
 import { isValidMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
+import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
 
 import {
   type ChatLastReadSanitizeMessage,
@@ -9,6 +10,7 @@ import {
   sanitizeNumericKeyLastRead,
   sanitizeViewKeyLastRead,
 } from './chatLastReadSanitize';
+import { createDurableRendererSetting } from './durableRendererSetting';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { parseStoredJson } from './parseStoredJson';
 import type { MeshProtocol } from './types';
@@ -24,6 +26,54 @@ export {
 
 const LEGACY_OPEN_DM_TABS_KEY = 'mesh-client:openDmTabs';
 const LEGACY_LAST_READ_KEY = 'mesh-client:lastRead';
+
+const chatLastReadPersistence = Object.fromEntries(
+  (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => [
+    protocol,
+    createDurableRendererSetting(
+      lastReadStorageKey(protocol),
+      DURABLE_RENDERER_STORAGE_KEYS.chatLastRead[protocol],
+    ),
+  ]),
+) as Record<MeshProtocol, ReturnType<typeof createDurableRendererSetting>>;
+const roomsLastReadPersistence = createDurableRendererSetting(
+  roomsLastReadStorageKey(),
+  DURABLE_RENDERER_STORAGE_KEYS.roomsLastRead,
+);
+
+/** Hydrate before ChatPanel mounts so its first persistence effect cannot erase saved reads. */
+export async function hydrateChatLastRead(
+  settings: Partial<Record<string, string>>,
+): Promise<void> {
+  const chat = (['meshtastic', 'meshcore', 'reticulum'] as const).map(async (protocol) => {
+    const persistence = chatLastReadPersistence[protocol];
+    if (settings[DURABLE_RENDERER_STORAGE_KEYS.chatLastRead[protocol]] === undefined) {
+      persistence.write(JSON.stringify(loadPersistedLastReadInitial(protocol)));
+    }
+    await persistence.hydrate(settings);
+    notifyPersistedLastReadChanged(protocol);
+  });
+  const rooms = async (): Promise<void> => {
+    if (settings[DURABLE_RENDERER_STORAGE_KEYS.roomsLastRead] === undefined) {
+      roomsLastReadPersistence.write(JSON.stringify(loadPersistedRoomsLastRead()));
+    }
+    await roomsLastReadPersistence.hydrate(settings);
+    notifyPersistedRoomsLastReadChanged();
+  };
+  const results = await Promise.allSettled([...chat, rooms()]);
+  const failures = results.filter((result) => result.status === 'rejected');
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map((result): unknown => result.reason),
+      'Last-read hydration failed',
+    );
+  }
+}
+
+/** Keep the origin-local recovery copy and serialize SQLite writes. */
+export function savePersistedLastRead(protocol: MeshProtocol, value: Record<string, number>): void {
+  chatLastReadPersistence[protocol].write(JSON.stringify(value));
+}
 
 export function openDmTabsStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:openDmTabs:${protocol}`;
@@ -481,7 +531,7 @@ export function saveStarred(protocol: MeshProtocol, items: StarredMessage[]): vo
  */
 export function loadPersistedLastReadInitial(protocol: MeshProtocol): Record<string, number> {
   const key = lastReadStorageKey(protocol);
-  const specificRaw = localStorage.getItem(key);
+  const specificRaw = chatLastReadPersistence[protocol].read();
   let specific: Record<string, number> | null = null;
   if (specificRaw != null) {
     const parsed = parseStoredJson<Record<string, number>>(specificRaw, 'ChatPanel lastRead');
@@ -490,7 +540,7 @@ export function loadPersistedLastReadInitial(protocol: MeshProtocol): Record<str
     }
   }
 
-  if (protocol === 'meshtastic') {
+  if (protocol === 'meshtastic' && !chatLastReadPersistence[protocol].isHydrated()) {
     const legacyRaw = localStorage.getItem(LEGACY_LAST_READ_KEY);
     let legacy: Record<string, number> | null = null;
     if (legacyRaw != null) {
@@ -585,14 +635,14 @@ export function roomsLastReadStorageKey(): string {
 /** Load persisted last-seen post timestamp per room server node id. */
 export function loadPersistedRoomsLastRead(): Record<number, number> {
   try {
-    const raw = localStorage.getItem(roomsLastReadStorageKey());
+    const raw = roomsLastReadPersistence.read();
     if (!raw) return {};
     const parsed = parseStoredJson<Record<string, number>>(raw, 'RoomsPanel lastRead');
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     const result: Record<number, number> = {};
     for (const [k, v] of Object.entries(parsed)) {
       const nodeId = Number(k);
-      if (Number.isFinite(nodeId) && typeof v === 'number' && v > 0) {
+      if (Number.isFinite(nodeId) && typeof v === 'number' && Number.isFinite(v) && v > 0) {
         result[nodeId >>> 0] = v;
       }
     }
@@ -609,9 +659,9 @@ export function savePersistedRoomsLastRead(lastRead: Record<number, number>): vo
   try {
     const serialized: Record<string, number> = {};
     for (const [nodeId, ts] of Object.entries(lastRead)) {
-      if (ts > 0) serialized[nodeId] = ts;
+      if (Number.isFinite(ts) && ts > 0) serialized[nodeId] = ts;
     }
-    localStorage.setItem(roomsLastReadStorageKey(), JSON.stringify(serialized));
+    roomsLastReadPersistence.write(JSON.stringify(serialized));
   } catch (e) {
     console.debug(
       '[chatPanelProtocolStorage] savePersistedRoomsLastRead failed ' + errLikeToLogString(e),
@@ -718,7 +768,7 @@ export function ensureMeshcoreChatLastReadSanitized(
   const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);
   if (sanitized !== loaded) {
     try {
-      localStorage.setItem(lastReadStorageKey('meshcore'), JSON.stringify(sanitized));
+      savePersistedLastRead('meshcore', sanitized);
     } catch (e) {
       console.debug(
         '[chatPanelProtocolStorage] persist sanitized meshcore lastRead failed ' +
@@ -746,7 +796,7 @@ export function ensureReticulumChatLastReadSanitized(
   const sanitized = sanitizeReticulumChatLastRead(loaded, messages, ownNodeIds);
   if (sanitized !== loaded) {
     try {
-      localStorage.setItem(lastReadStorageKey('reticulum'), JSON.stringify(sanitized));
+      savePersistedLastRead('reticulum', sanitized);
     } catch (e) {
       console.debug(
         '[chatPanelProtocolStorage] persist sanitized reticulum lastRead failed ' +
@@ -782,7 +832,7 @@ export function getSanitizedMeshcoreRoomsLastRead(
 
 export function clearPersistedLastReadForProtocol(protocol: MeshProtocol): void {
   try {
-    localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify({}));
+    savePersistedLastRead(protocol, {});
     notifyPersistedLastReadChanged(protocol);
   } catch (e) {
     console.debug(
@@ -800,7 +850,7 @@ export function removePersistedLastReadForChannel(protocol: MeshProtocol, channe
       ? Object.fromEntries(Object.entries(loaded).filter(([key]) => !key.startsWith('dm:')))
       : Object.fromEntries(Object.entries(loaded).filter(([key]) => key !== `ch:${channel}`));
   try {
-    localStorage.setItem(lastReadStorageKey(protocol), JSON.stringify(next));
+    savePersistedLastRead(protocol, next);
     notifyPersistedLastReadChanged(protocol);
   } catch (e) {
     console.debug(

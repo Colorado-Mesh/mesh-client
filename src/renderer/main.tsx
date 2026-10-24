@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { SecureSecretsStartup } from './components/SecureSecretsStartup';
 import { installBundledEmojiData } from './lib/bundledEmojiData';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
+import { hydrateDurableRendererSettings } from './lib/hydrateDurableRendererSettings';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
 import { ensureLocaleLoaded } from './lib/localeResources';
@@ -17,6 +18,7 @@ import {
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
+import { hydrateIncidentStore } from './stores/incidentStore';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -52,6 +54,7 @@ void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
 
   installDevElectronApiStubIfNeeded();
+  await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()]);
 
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();

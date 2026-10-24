@@ -284,6 +284,23 @@ export const CANONICAL_TABLES_DDL = `
         value TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS emergency_incidents (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL CHECK (status IN ('open', 'acked', 'resolved')),
+        last_seen_at INTEGER NOT NULL,
+        payload TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS emergency_incident_tombstones (
+        id TEXT PRIMARY KEY,
+        resolved_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS emergency_incident_storage (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        initialized INTEGER NOT NULL CHECK (initialized = 1)
+      );
+
       CREATE TABLE IF NOT EXISTS secure_secrets (
         key TEXT PRIMARY KEY,
         ciphertext TEXT NOT NULL,
@@ -345,6 +362,7 @@ export const CANONICAL_TABLES_DDL = `
  * @see src/main/db-schema-sync.unique-indexes.test.ts (contract + duplicate-key regressions)
  */
 export const INDEX_DDLS: readonly string[] = [
+  'CREATE INDEX IF NOT EXISTS idx_emergency_incidents_status_time ON emergency_incidents(status, last_seen_at)',
   'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_messages_packet_id ON messages(packet_id)',

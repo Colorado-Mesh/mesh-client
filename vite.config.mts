@@ -90,6 +90,10 @@ export default defineConfig({
     // (appChunkBudgetPlugin). Electron renderer; not a public web cold-load budget.
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      input: {
+        index: path.resolve(import.meta.dirname, 'src/renderer/index.html'),
+        migration: path.resolve(import.meta.dirname, 'src/renderer/migration.html'),
+      },
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
       // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.
       // in the browser bundle which the renderer rejects at runtime.
@@ -140,7 +144,7 @@ export default defineConfig({
   server: {
     port: 5173,
     // Enable SharedArrayBuffer for multi-thread bundled Catch up under `pnpm run dev`
-    // (http://localhost). Packaged/`pnpm start` still loads file:// and stays single-thread.
+    // (http://localhost). Packaged builds use the same headers after verified origin migration.
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'credentialless',

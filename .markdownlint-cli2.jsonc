@@ -5,6 +5,8 @@
     ".cursor/**",
     ".hermes/**",
     "site/**",
+    "playwright-report/**",
+    "test-results/**",
     "release/**",
     "dist/**",
     "out/**",
