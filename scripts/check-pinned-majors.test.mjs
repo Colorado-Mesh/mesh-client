@@ -15,7 +15,7 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const FIXTURE_YAML = `minimumReleaseAge: 540
+const FIXTURE_YAML = `trustPolicy: no-downgrade
 
 overrides:
   # A comment inside the block
