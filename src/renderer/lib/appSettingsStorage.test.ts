@@ -20,12 +20,16 @@ describe('appSettingsStorage', () => {
     localStorage.clear();
   });
 
-  it('migrates legacy adminSettings into appSettings on first read', () => {
-    const payload = JSON.stringify({ foo: 1, congestionHalosEnabled: true });
+  it('reads legacy adminSettings without moving inline sources before secure startup', () => {
+    const payload = JSON.stringify({
+      foo: 1,
+      congestionHalosEnabled: true,
+      'meshcoreRoomCredential:42': 'legacy-source',
+    });
     localStorage.setItem(LEGACY_KEY, payload);
     expect(getAppSettingsRaw()).toBe(payload);
-    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(payload);
-    expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
+    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(LEGACY_KEY)).toBe(payload);
   });
 
   it('does not overwrite existing appSettings when legacy exists', () => {

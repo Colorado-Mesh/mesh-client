@@ -418,16 +418,116 @@ describe('renderer preference recovery', () => {
       '{"reticulumAutostart":true,"meshcoreRoomCredential:42":"SECRET-E"}',
     );
     localStorage.setItem('mesh-client:credentialCompatibility:mqtt:meshcore', '"SECRET-F"');
-    await boot();
+    const prefs = await import('./rendererPreferences');
+    await prefs.hydrateRendererPreferences(database);
     for (const secret of ['SECRET-A', 'SECRET-B', 'SECRET-C', 'SECRET-D', 'SECRET-E', 'SECRET-F'])
       expect(database[DATABASE_KEY]).not.toContain(secret);
     expect(localStorage.getItem('mesh-client:mqttSettings')).toContain('SECRET-A');
     expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toContain('SECRET-C');
     expect(localStorage.getItem('mesh-client:meshcoreIdentity')).toContain('SECRET-D');
     expect(localStorage.getItem('mesh-client:appSettings')).toContain('SECRET-E');
+    await expect(prefs.finalizeRendererPreferences()).rejects.toThrow('awaiting verified');
+    expect(() => prefs.installRendererPreferencePersistence()).toThrow('awaiting secure startup');
     await restart();
     expect(localStorage.getItem('mesh-client:meshcoreIdentity')).toBe('{"public_key":"public"}');
     expect(localStorage.getItem('mesh-client:mqttSettings')).not.toContain('SECRET-A');
+  });
+
+  it.each([
+    'appSettings',
+    'adminSettings',
+    'mqttSettings',
+    'mqttSettings:meshcore',
+    'meshcoreIdentity',
+    'mqttProfiles:meshtastic',
+  ])(
+    'defers %s byte-for-byte until retirement, then restores canonical metadata without copying secrets',
+    async (suffix) => {
+      const key = `mesh-client:${suffix}`;
+      const original = suffix.startsWith('mqttProfiles')
+        ? [{ id: 'one', server: 'stale.invalid', password: 'PRIVATE-SOURCE' }]
+        : { server: 'stale.invalid', password: 'PRIVATE-SOURCE' };
+      const desired = suffix.startsWith('mqttProfiles')
+        ? [{ id: 'one', server: 'saved.invalid', autoLaunch: false, maxRetries: 0 }]
+        : { server: 'saved.invalid', autoLaunch: false, maxRetries: 0 };
+      const raw = JSON.stringify(original);
+      localStorage.setItem(key, raw);
+      database[DATABASE_KEY] = JSON.stringify({
+        legacyAliasesImported: true,
+        values: { [key]: desired },
+      });
+      const writes = vi.spyOn(localStorage, 'setItem');
+      const prefs = await import('./rendererPreferences');
+      await prefs.hydrateRendererPreferences(database);
+      expect(localStorage.getItem(key)).toBe(raw);
+      expect(database[DATABASE_KEY]).not.toContain('PRIVATE-SOURCE');
+      await expect(prefs.finalizeRendererPreferences()).rejects.toThrow('awaiting verified');
+      // Simulate the secure migrator's acknowledged retirement of the original source.
+      localStorage.setItem(
+        key,
+        JSON.stringify(
+          suffix.startsWith('mqttProfiles')
+            ? [{ id: 'one', server: 'stale.invalid' }]
+            : { server: 'stale.invalid' },
+        ),
+      );
+      await prefs.finalizeRendererPreferences();
+      expect(JSON.parse(localStorage.getItem(key)!)).toEqual(desired);
+      expect(writes.mock.calls.every(([, value]) => !value.includes('PRIVATE-SOURCE'))).toBe(true);
+    },
+  );
+
+  it('preserves a secret source for a canonical deletion and removes it only after retirement', async () => {
+    const key = 'mesh-client:mqttSettings';
+    const raw = '{"server":"old.invalid","password":"PRIVATE-SOURCE"}';
+    localStorage.setItem(key, raw);
+    database[DATABASE_KEY] = JSON.stringify({ legacyAliasesImported: true, values: {} });
+    const prefs = await import('./rendererPreferences');
+    await prefs.hydrateRendererPreferences(database);
+    await expect(prefs.finalizeRendererPreferences()).rejects.toThrow('awaiting verified');
+    expect(localStorage.getItem(key)).toBe(raw);
+    localStorage.setItem(key, '{"server":"old.invalid"}');
+    await prefs.finalizeRendererPreferences();
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
+  it('routes prepared legacy MQTT metadata only after secure retirement and across Retry', async () => {
+    const key = 'mesh-client:mqttSettings';
+    localStorage.setItem(key, '{"topicPrefix":"msh/old","password":"PRIVATE-SOURCE"}');
+    database[DATABASE_KEY] = JSON.stringify({
+      legacyAliasesImported: true,
+      values: {
+        [key]: { server: 'saved.invalid', topicPrefix: 'meshcore/NEW' },
+      },
+    });
+    const prefs = await import('./rendererPreferences');
+    await prefs.hydrateRendererPreferences(database);
+    expect(prefs.getPreparedRendererPreferences()?.[key]).toContain('meshcore/NEW');
+    await expect(prefs.finalizeRendererPreferences()).rejects.toThrow('awaiting verified');
+    await prefs.hydrateRendererPreferences(database);
+    expect(prefs.getPreparedRendererPreferences()?.[key]).toContain('meshcore/NEW');
+    localStorage.setItem(key, '{"topicPrefix":"msh/old"}');
+    await prefs.finalizeRendererPreferences();
+    expect(localStorage.getItem(key)).toBeNull();
+    expect(JSON.parse(localStorage.getItem('mesh-client:mqttSettings:meshcore')!).topicPrefix).toBe(
+      'meshcore/NEW',
+    );
+  });
+
+  it('rejects credential-bearing canonical maps rather than sanitizing and restoring them', async () => {
+    const raw = JSON.stringify({
+      legacyAliasesImported: true,
+      values: {
+        'mesh-client:mqttSettings': { server: 'saved.invalid', password: 'PRIVATE-CANONICAL' },
+      },
+    });
+    database[DATABASE_KEY] = raw;
+    const prefs = await import('./rendererPreferences');
+    await expect(prefs.hydrateRendererPreferences(database)).rejects.toThrow(
+      'Credential in renderer',
+    );
+    expect(database[DATABASE_KEY]).toBe(raw);
+    expect(localStorage.getItem('mesh-client:mqttSettings')).toBeNull();
   });
 
   it('retains a failed write journal and replays only changed preferences over a newer canonical map', async () => {

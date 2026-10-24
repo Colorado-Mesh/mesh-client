@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SecureSecretsStartup } from './SecureSecretsStartup';
@@ -30,6 +30,9 @@ describe('SecureSecretsStartup', () => {
       </SecureSecretsStartup>,
     );
     expect(screen.queryByText('Runtime mounted')).toBeNull();
+    await waitFor(() => {
+      expect(initialize).toHaveBeenCalledOnce();
+    });
     complete();
     expect(await screen.findByText('Runtime mounted')).toBeInTheDocument();
   });
@@ -69,5 +72,37 @@ describe('SecureSecretsStartup', () => {
     expect(await screen.findByText('Runtime mounted')).toBeInTheDocument();
     expect(prepare).toHaveBeenCalledTimes(2);
     expect(initialize).toHaveBeenCalledOnce();
+  });
+
+  it('waits for post-secret cache finalization and retries its failure before mounting runtimes', async () => {
+    const order: string[] = [];
+    const prepare = vi.fn(() => {
+      order.push('prepare');
+      return Promise.resolve();
+    });
+    initialize.mockImplementation(() => {
+      order.push('secrets');
+      return Promise.resolve();
+    });
+    const finish = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        order.push('finish');
+        return Promise.reject(new Error('unreadable source'));
+      })
+      .mockImplementationOnce(() => {
+        order.push('finish');
+        return Promise.resolve();
+      });
+    render(
+      <SecureSecretsStartup prepare={prepare} finish={finish}>
+        <p>Runtime mounted</p>
+      </SecureSecretsStartup>,
+    );
+    expect(await screen.findByRole('alert')).not.toHaveTextContent('unreadable source');
+    expect(screen.queryByText('Runtime mounted')).toBeNull();
+    fireEvent.click(screen.getByRole('button'));
+    expect(await screen.findByText('Runtime mounted')).toBeInTheDocument();
+    expect(order).toEqual(['prepare', 'secrets', 'finish', 'prepare', 'secrets', 'finish']);
   });
 });

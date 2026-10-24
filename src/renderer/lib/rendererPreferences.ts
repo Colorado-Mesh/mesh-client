@@ -6,6 +6,8 @@ export { isRendererPreferenceKey } from '@/shared/rendererPreferences';
 import { createDurableRendererSetting } from './durableRendererSetting';
 
 const STORAGE_KEY = 'mesh-client:rendererPreferences';
+const credentialField =
+  /^(?:password|channelPsks|private_key|meshcore(?:Room|Repeater)Credential:.*)$/;
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -16,12 +18,7 @@ function withoutSecrets(value: unknown): unknown {
   if (!record(value)) return value;
   return Object.fromEntries(
     Object.entries(value)
-      .filter(
-        ([key]) =>
-          !/^(?:password|channelPsks|private_key|meshcore(?:Room|Repeater)Credential:.*)$/.test(
-            key,
-          ),
-      )
+      .filter(([key]) => !credentialField.test(key))
       .map(([key, child]) => [key, withoutSecrets(child)]),
   );
 }
@@ -46,25 +43,23 @@ function preferenceValue(key: string, raw: string): string | null {
   }
 }
 
-function retainLegacySecrets(value: unknown, previous: unknown): unknown {
-  if (Array.isArray(value) && Array.isArray(previous)) {
-    return value.map((entry, index) =>
-      retainLegacySecrets(
-        entry,
-        record(entry) && typeof entry.id === 'string'
-          ? previous.find((old) => record(old) && old.id === entry.id)
-          : previous[index],
-      ),
-    );
+function containsCredentialFields(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(containsCredentialFields);
+  return (
+    record(value) &&
+    Object.entries(value).some(
+      ([key, child]) => credentialField.test(key) || containsCredentialFields(child),
+    )
+  );
+}
+
+function hasInlineCredentials(raw: string): boolean {
+  try {
+    return containsCredentialFields(JSON.parse(raw));
+  } catch {
+    // catch-no-log-ok malformed legacy records remain untouched for secure startup recovery
+    return false;
   }
-  if (!record(value) || !record(previous)) return value;
-  const clean = withoutSecrets(previous) as Record<string, unknown>;
-  const result = { ...value };
-  for (const [key, child] of Object.entries(previous)) {
-    if (!Object.hasOwn(clean, key)) result[key] = child;
-    else if (Object.hasOwn(value, key)) result[key] = retainLegacySecrets(value[key], child);
-  }
-  return result;
 }
 
 function snapshot(): Record<string, string> {
@@ -106,8 +101,26 @@ function decodeValues(values: Record<string, unknown>): Record<string, string> {
       ) {
         throw new Error('Invalid renderer preference map');
       }
-      const raw = preferenceValue(key, typeof value === 'string' ? value : JSON.stringify(value));
-      if (raw === null) throw new Error('Invalid structured renderer preference');
+      const raw = typeof value === 'string' ? value : JSON.stringify(value);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        // catch-no-log-ok plain string preferences are valid outside structured credential caches
+        if (credentialBearingKey.test(key))
+          throw new Error('Invalid structured renderer preference');
+        return [key, raw];
+      }
+      if (
+        credentialBearingKey.test(key) &&
+        !(key === 'mesh-client:mqttProfiles:meshtastic'
+          ? Array.isArray(parsed) && parsed.every(record)
+          : record(parsed))
+      )
+        throw new Error('Invalid structured renderer preference');
+      // Canonical restore accepts public data only; it never reconstructs legacy secret blobs.
+      if (containsCredentialFields(parsed))
+        throw new Error('Credential in renderer preference map');
       return [key, raw];
     }),
   );
@@ -294,7 +307,18 @@ let adapter: ReturnType<typeof createDurableRendererSetting> | undefined;
 let installed = false;
 let applying = false;
 let restored = false;
+let prepared:
+  | {
+      values: Record<string, string>;
+      settings: Partial<Record<string, string>>;
+    }
+  | undefined;
 let uninstallPersistence: (() => void) | undefined;
+
+/** Public routing context only; the secure migrator still consumes untouched legacy sources. */
+export function getPreparedRendererPreferences(): Readonly<Record<string, string>> | undefined {
+  return prepared?.values;
+}
 
 function preferences() {
   adapter ??= createDurableRendererSetting(
@@ -315,6 +339,7 @@ function saveSnapshot(): void {
 /** Existing helpers and Zustand persist all use Storage methods, including removals/clear. */
 export function installRendererPreferencePersistence(): () => void {
   if (installed) return uninstallPersistence!;
+  if (prepared) throw new Error('Renderer preferences awaiting secure startup');
   installed = true;
   const prototype = Object.getPrototypeOf(localStorage) as Storage;
   const originalSet = prototype.setItem;
@@ -379,40 +404,69 @@ export async function hydrateRendererPreferences(
   if (saved.legacyAliasesImported !== true) {
     importLegacyPreferenceAliases(values, settings);
   }
+  // Persist the public recovery map before a secure migration can retire its source records.
+  durable.write(JSON.stringify({ legacyAliasesImported: true, values: encodeValues(values) }));
+  await durable.flush();
+  prepared = { values, settings };
+  if (
+    Object.keys(current).some((key) => {
+      const raw = localStorage.getItem(key);
+      return raw !== null && hasInlineCredentials(raw);
+    })
+  )
+    return;
+  await finalizeRendererPreferences();
+}
+
+/** Run after secure initialization and before observers or application effects can read/write. */
+export async function finalizeRendererPreferences(): Promise<void> {
+  if (restored || !prepared) return;
+  const { values, settings } = prepared;
+  // A successful initializer may still retain an unreadable protected source. Never erase it.
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (!key || !isRendererPreferenceKey(key)) continue;
+    const raw = localStorage.getItem(key);
+    if (raw !== null && hasInlineCredentials(raw)) {
+      throw new Error('Legacy credentials awaiting verified storage');
+    }
+  }
+  // Once adopted, the legacy alias must not reappear if the current app record is removed.
+  if (Object.hasOwn(values, 'mesh-client:appSettings')) {
+    delete values['mesh-client:adminSettings'];
+  }
+  const legacyMqtt = values['mesh-client:mqttSettings'];
+  if (legacyMqtt && !Object.hasOwn(values, 'mesh-client:mqttSettings:meshcore')) {
+    const metadata: unknown = JSON.parse(legacyMqtt);
+    if (
+      record(metadata) &&
+      typeof metadata.topicPrefix === 'string' &&
+      metadata.topicPrefix.startsWith('meshcore')
+    ) {
+      values['mesh-client:mqttSettings:meshcore'] = legacyMqtt;
+      delete values['mesh-client:mqttSettings'];
+    }
+  }
   applying = true;
   try {
     // Absence in an established canonical map is an intentional removal, not a missing cache.
-    for (const key of Object.keys(current)) {
+    for (const key of Object.keys(snapshot())) {
       if (!Object.hasOwn(values, key)) localStorage.removeItem(key);
     }
     for (const [key, value] of Object.entries(values)) {
       if (!isRendererPreferenceKey(key) || typeof value !== 'string') continue;
-      // Retain legacy inline secrets until the verified secure migration has consumed them.
-      let next = preferenceValue(key, value);
-      if (next === null) throw new Error('Invalid structured renderer preference');
       const raw = localStorage.getItem(key);
       if (raw !== null && preferenceValue(key, raw) === null) continue;
-      if (raw !== null) {
-        try {
-          const old: unknown = JSON.parse(raw);
-          const parsed: unknown = JSON.parse(next);
-          if (record(old) && record(parsed)) {
-            next = JSON.stringify(retainLegacySecrets(parsed, old));
-          } else if (Array.isArray(old) && Array.isArray(parsed))
-            next = JSON.stringify(retainLegacySecrets(parsed, old));
-        } catch {
-          // catch-no-log-ok non-JSON preferences have no inline credential fields
-        }
-      }
-      localStorage.setItem(key, next);
+      localStorage.setItem(key, value);
     }
   } finally {
     applying = false;
   }
   saveSnapshot();
-  await durable.flush();
+  await preferences().flush();
   await synchronizeScalarCaches(snapshot(), settings);
   restored = true;
+  prepared = undefined;
 }
 
 export function flushRendererPreferences(): Promise<void> {

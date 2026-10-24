@@ -42,6 +42,8 @@ export interface WebStorageOriginMigrationOptions {
   ) => void | Promise<void>;
   timeoutMs?: number;
   readStorageDeletionStates?: () => Readonly<Record<string, RendererStorageDeletionState>>;
+  /** Stop application writers before post-load repair takes a fresh inert-origin snapshot. */
+  unloadRendererBeforeRepair?: () => Promise<void>;
 }
 
 interface StorageExport {
@@ -735,7 +737,17 @@ export async function checkRendererOriginStorageHealth(
     );
     if (storageHealthy(options, snapshot, current)) return 'healthy';
     if (!allowRepair) throw new Error('Renderer origin storage remains unhealthy after repair');
-    await repairStorage(options, snapshot, current);
+    if (!options.unloadRendererBeforeRepair) {
+      throw new Error('Renderer origin repair requires unloading the live renderer');
+    }
+    await withTimeout(
+      options.unloadRendererBeforeRepair(),
+      options.timeoutMs ?? MIGRATION_TIMEOUT_MS,
+    );
+    // Navigation can finish pending writes/Forget actions after the live health snapshot.
+    // Re-read only after its application scripts are gone; repair must retain those journals.
+    const unloaded = await readTarget(options);
+    await repairStorage(options, snapshot, unloaded);
     return 'repaired';
   } catch (error) {
     // catch-no-log-ok reportFailure logs a sanitized migration failure without exported values.

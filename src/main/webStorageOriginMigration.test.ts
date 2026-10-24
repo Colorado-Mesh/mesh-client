@@ -66,6 +66,7 @@ describe('renderer origin migration', () => {
   let failImportAfter: number | undefined;
   let corruptVerify: boolean;
   let seed: ReturnType<typeof vi.fn<WebStorageOriginMigrationOptions['seedDurableStorage']>>;
+  let unloadRenderer: ReturnType<typeof vi.fn<() => Promise<void>>>;
 
   const storageObject = (map: Map<string, string>) => ({
     get length() {
@@ -159,6 +160,7 @@ describe('renderer origin migration', () => {
     failImportAfter = undefined;
     corruptVerify = false;
     seed = vi.fn<WebStorageOriginMigrationOptions['seedDurableStorage']>();
+    unloadRenderer = vi.fn(async () => {});
     options = {
       userDataPath: directory,
       legacyMigrationUrl: 'file:///dist/renderer/migration.html',
@@ -166,6 +168,7 @@ describe('renderer origin migration', () => {
       env: {},
       seedDurableStorage: seed,
       commitImportedStorageIntents: vi.fn(),
+      unloadRendererBeforeRepair: unloadRenderer,
     };
     electron.createWindow.mockReset().mockImplementation(createWindow);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -174,6 +177,144 @@ describe('renderer origin migration', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     fs.rmSync(directory, { recursive: true, force: true });
+  });
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'unloads the live %s renderer and re-snapshots deletion journals and edits before repair',
+    async (platform) => {
+      const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')!;
+      Object.defineProperty(process, 'platform', { value: platform });
+      try {
+        const key = 'mesh-client:lastConnection:meshcore';
+        const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+        legacy.set(key, '{"type":"ble","bleDeviceId":"forgotten"}');
+        expect(await runWebStorageOriginMigration(options)).toBe('completed');
+        target.delete('mesh-client:protocol');
+        let writerActive = true;
+        const liveContents = {
+          executeJavaScript: vi.fn((script: string) => {
+            const captured = execute(script, target);
+            // A renderer effect runs after the snapshot was captured, before main can repair.
+            queueMicrotask(() => {
+              target.delete(key);
+              target.set(journal, '1');
+              target.set('mesh-client:chatMacros', '{"state":{"macros":["late edit"]}}');
+            });
+            return Promise.resolve(captured);
+          }),
+        };
+        unloadRenderer.mockImplementation(async () => {
+          await Promise.resolve();
+          target.set('mesh-client:durablePending:takRelayPrefs', 'final unload journal');
+          writerActive = false;
+        });
+        const repairWhileLive: boolean[] = [];
+        seed.mockClear().mockImplementation(() => {
+          repairWhileLive.push(writerActive);
+        });
+        windows = [];
+
+        const health = await checkRendererOriginStorageHealth(options, liveContents);
+        expect(target.has(key)).toBe(false);
+        expect(target.get(journal)).toBe('1');
+        expect(health).toBe('repaired');
+        expect(unloadRenderer).toHaveBeenCalledOnce();
+        expect(liveContents.executeJavaScript).toHaveBeenCalledOnce();
+        expect(repairWhileLive).toEqual([false]);
+        expect(target.get('mesh-client:chatMacros')).toBe('{"state":{"macros":["late edit"]}}');
+        expect(target.get('mesh-client:durablePending:takRelayPrefs')).toBe('final unload journal');
+        expect(seed.mock.calls[0]?.[0][journal]).toBe('1');
+        expect(windows.every((window) => window.url === RENDERER_MIGRATION_URL)).toBe(true);
+      } finally {
+        Object.defineProperty(process, 'platform', platformDescriptor);
+      }
+    },
+  );
+
+  it('retains a late recreation and its journal over an older SQLite deletion during live repair', async () => {
+    const key = 'mesh-client:lastConnection:meshcore';
+    const journal = `${RENDERER_STORAGE_DELETION_PREFIX}${key}`;
+    legacy.set(key, '{"type":"ble"}');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    options.readStorageDeletionStates = () => ({
+      [key]: { deleted: true, applied: {}, imported: {} },
+    });
+    target.delete(key);
+    target.delete('mesh-client:protocol');
+    const liveContents = {
+      executeJavaScript: vi.fn((script: string) => {
+        const captured = execute(script, target);
+        queueMicrotask(() => {
+          target.set(key, '{"type":"tcp","httpAddress":"recreated"}');
+          target.set(journal, '0');
+        });
+        return Promise.resolve(captured);
+      }),
+    };
+    expect(await checkRendererOriginStorageHealth(options, liveContents)).toBe('repaired');
+    expect(unloadRenderer).toHaveBeenCalledOnce();
+    expect(target.get(key)).toBe('{"type":"tcp","httpAddress":"recreated"}');
+    expect(target.get(journal)).toBe('0');
+  });
+
+  it('keeps a healthy live renderer loaded without creating repair windows or seeding', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    windows = [];
+    seed.mockClear();
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+    expect(unloadRenderer).not.toHaveBeenCalled();
+    expect(seed).not.toHaveBeenCalled();
+    expect(windows).toHaveLength(0);
+  });
+
+  it.each(['missing', 'rejected', 'timeout'])(
+    'does not repair live storage when unloading is %s',
+    async (failure) => {
+      expect(await runWebStorageOriginMigration(options)).toBe('completed');
+      target.delete('mesh-client:protocol');
+      const before = Object.fromEntries(target);
+      windows = [];
+      seed.mockClear();
+      if (failure === 'missing') options.unloadRendererBeforeRepair = undefined;
+      else if (failure === 'rejected') unloadRenderer.mockRejectedValue(new Error('ERR_FAILED'));
+      else {
+        options.timeoutMs = 5;
+        unloadRenderer.mockImplementation(() => new Promise<void>(() => {}));
+      }
+      expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
+      expect(Object.fromEntries(target)).toEqual(before);
+      expect(seed).not.toHaveBeenCalled();
+      expect(windows).toHaveLength(0);
+      expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME).phase).toBe('needsRepair');
+    },
+  );
+
+  it('does not unload or repeat repair when a reloaded renderer is still unhealthy', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.delete('mesh-client:protocol');
+    windows = [];
+    seed.mockClear();
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget(), false)).toBe(
+      'failed',
+    );
+    expect(unloadRenderer).not.toHaveBeenCalled();
+    expect(seed).not.toHaveBeenCalled();
+    expect(windows).toHaveLength(0);
+  });
+
+  it('does not seed or repair when the fresh unloaded-origin snapshot cannot load', async () => {
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.delete('mesh-client:protocol');
+    const before = Object.fromEntries(target);
+    seed.mockClear();
+    failLoad = RENDERER_MIGRATION_URL;
+    windows = [];
+    expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
+    expect(unloadRenderer).toHaveBeenCalledOnce();
+    expect(seed).not.toHaveBeenCalled();
+    expect(Object.fromEntries(target)).toEqual(before);
+    expect(windows).toHaveLength(1);
+    expect(windows[0].destroyed).toBe(true);
   });
 
   it('recovers missing fields from a richer app-settings export while retaining newer present choices', async () => {
@@ -1381,7 +1522,8 @@ describe('renderer origin migration', () => {
     failImportAfter = 0;
     windows = [];
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('failed');
-    expect(windows).toHaveLength(1);
+    expect(windows).toHaveLength(2);
+    expect(unloadRenderer).toHaveBeenCalledOnce();
     expect(readArtifact(RENDERER_ORIGIN_STATE_FILENAME)).toMatchObject({
       phase: 'needsRepair',
       hasCompleted: true,

@@ -37,6 +37,22 @@ describe('renderer origin cutover (source contract)', () => {
     expect(INDEX_SOURCE).toContain('trustedRendererUrl = pathToFileURL(distIndexPath).href');
   });
 
+  it('unloads the application before post-load storage repair and reloads afterward', () => {
+    const loadRenderer = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf('const loadRenderer = async'),
+      INDEX_SOURCE.indexOf('reloadMainRenderer = loadRenderer;'),
+    );
+    expect(loadRenderer).toMatch(
+      /unloadRendererBeforeRepair: async \(\) => \{\s*await win\.loadURL\('about:blank'\);\s*if \(win\.isDestroyed\(\)\) throw/,
+    );
+    expect(loadRenderer).toMatch(
+      /if \(health === 'repaired'\) \{\s*phase = 'repaired';\s*await win\.loadURL\(resolved\.url,/,
+    );
+    expect(loadRenderer).toContain(
+      'checkRendererOriginStorageHealth(migrationOptions, win.webContents, false)',
+    );
+  });
+
   it('hydrates operational state before mounting any protocol effects', () => {
     const renderer = readFileSync(join(__dirname, '../renderer/main.tsx'), 'utf8');
     const hydration = renderer.indexOf(
@@ -47,7 +63,14 @@ describe('renderer origin cutover (source contract)', () => {
     expect(renderer.indexOf('installDevElectronApiStubIfNeeded();')).toBeLessThan(
       renderer.indexOf('createRoot(document'),
     );
-    expect(renderer).toContain('<SecureSecretsStartup prepare={prepareRendererStorage}>');
+    expect(renderer).toContain(
+      '<SecureSecretsStartup prepare={prepareRendererStorage} finish={finishRendererStorage}>',
+    );
+    const finalization = renderer.indexOf('await finalizeRendererPreferences();');
+    expect(finalization).toBeGreaterThan(
+      renderer.indexOf('async function finishRendererStorage()'),
+    );
+    expect(finalization).toBeLessThan(renderer.indexOf('installRendererPreferencePersistence();'));
     expect(renderer.indexOf('<SecureSecretsStartup prepare=')).toBeLessThan(
       renderer.indexOf('<App />'),
     );

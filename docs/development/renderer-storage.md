@@ -48,6 +48,15 @@ untouched for startup recovery. Panels must write only fields the user changes,
 not a full saved snapshot of preferences owned by other panels. Failed preparation shows the
 startup recovery screen and Retry repeats validation/cache restoration.
 
+When legacy records contain inline credentials, preparation saves only their public fields in
+the recovery map and leaves the original records untouched. Secure initialization consumes those
+sources before final cache restoration, preference observers, or application effects start.
+An acknowledged compatibility envelope and native receipt can retire redundant inline fields
+during a keyring outage; this retains the existing fallback's local-disclosure limits. An
+unreadable existing encrypted row is never inferred to be a deleted credential. Its inline
+source stays intact, and restoration waits at the recovery screen until the protected storage
+is readable. Retry repeats this process without writing credentials into the preference map.
+
 Before the map is established, recovery fills missing fields in a partial app-settings blob from
 the verified origin export while preserving present values. Once established, canonical removals
 win over historical exports. A previously overwritten value cannot safely be distinguished from

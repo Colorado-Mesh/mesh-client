@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { runConnectionPanelStorageMigrations } from '@/renderer/lib/connectionPanelStorageMigrations';
+import { getPreparedRendererPreferences } from '@/renderer/lib/rendererPreferences';
 import { initializeSecureSecretsFailClosed } from '@/renderer/lib/secureSecretStorage';
 
 import { Button } from './ui/Button';
@@ -10,9 +11,11 @@ import { Button } from './ui/Button';
 export function SecureSecretsStartup({
   children,
   prepare,
+  finish,
 }: {
   children: ReactNode;
   prepare?: () => Promise<void>;
+  finish?: () => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [state, setState] = useState<'loading' | 'error' | 'ready'>('loading');
@@ -20,9 +23,9 @@ export function SecureSecretsStartup({
 
   useEffect(() => {
     let active = true;
-    const startup = prepare
-      ? prepare().then(initializeSecureSecretsFailClosed)
-      : initializeSecureSecretsFailClosed();
+    const startup = (prepare ? prepare() : Promise.resolve())
+      .then(() => initializeSecureSecretsFailClosed(getPreparedRendererPreferences()))
+      .then(finish);
     void startup
       .then(() => {
         if (!active) return;
@@ -36,7 +39,7 @@ export function SecureSecretsStartup({
     return () => {
       active = false;
     };
-  }, [attempt, prepare]);
+  }, [attempt, prepare, finish]);
 
   if (state === 'ready') return children;
   return (

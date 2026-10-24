@@ -2225,6 +2225,10 @@ function createWindow() {
       legacyMigrationUrl: pathToFileURL(path.join(__dirname, '../../dist/renderer/migration.html'))
         .href,
       appVersion: app.getVersion(),
+      unloadRendererBeforeRepair: async () => {
+        await win.loadURL('about:blank');
+        if (win.isDestroyed()) throw new Error('Renderer window closed before storage repair');
+      },
       readStorageDeletionStates: () => {
         const rows = getDatabase()
           .prepareOnce('SELECT key, value FROM app_settings WHERE key LIKE ?')

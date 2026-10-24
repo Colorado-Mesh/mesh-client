@@ -19,9 +19,14 @@ import {
   initReduceMotionDefaultIfAbsent,
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
-import { installRendererPreferencePersistence } from './lib/rendererPreferences';
+import {
+  finalizeRendererPreferences,
+  installRendererPreferencePersistence,
+} from './lib/rendererPreferences';
 import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 import { hydrateIncidentStore } from './stores/incidentStore';
+import { hydrateReticulumDismissedContacts } from './stores/reticulumPeerStore';
+import { hydrateWeatherFilterPreferences } from './stores/weatherFilterStore';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -42,6 +47,12 @@ import.meta.hot?.dispose(() => stopPreferencePersistence?.());
 
 async function prepareRendererStorage(): Promise<void> {
   await Promise.all([hydrateDurableRendererSettings(), hydrateIncidentStore()]);
+}
+
+async function finishRendererStorage(): Promise<void> {
+  await finalizeRendererPreferences();
+  hydrateWeatherFilterPreferences();
+  hydrateReticulumDismissedContacts();
   const locale = parseStoredJson<{ locale?: unknown }>(
     getAppSettingsRaw(),
     'restored locale',
@@ -78,7 +89,7 @@ void (async () => {
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>
       <ErrorBoundary>
-        <SecureSecretsStartup prepare={prepareRendererStorage}>
+        <SecureSecretsStartup prepare={prepareRendererStorage} finish={finishRendererStorage}>
           <IconMotionProvider>
             <Suspense fallback={<AppBootSplash />}>
               <App />

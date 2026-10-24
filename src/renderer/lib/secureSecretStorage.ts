@@ -226,7 +226,7 @@ export function secureSecretsInitialized(): boolean {
 }
 
 export function isProtectedSecureSecretUnavailable(key: string): boolean {
-  return !persistentStorageAvailable && protectedKeys.has(key) && !cache.has(key);
+  return protectedKeys.has(key) && !cache.has(key);
 }
 
 export function setSecureSecret(
@@ -324,9 +324,8 @@ async function hydrateExistingSecrets(): Promise<void> {
   cache.clear();
   protectedKeys.clear();
   deletedCredentials.clear();
-  if (!persistentStorageAvailable) {
-    for (const key of await window.electronAPI.secureSecrets.list()) protectedKeys.add(key);
-  }
+  // An available keyring can still contain an individually unreadable encrypted row.
+  for (const key of await window.electronAPI.secureSecrets.list()) protectedKeys.add(key);
   const values = await window.electronAPI.secureSecrets.getAll();
   for (const [key, value] of Object.entries(values)) {
     cache.set(key, value);
@@ -340,7 +339,7 @@ async function hydrateExistingSecrets(): Promise<void> {
       const key = setting.slice(receiptPrefix.length);
       // A handled legacy copy cannot restore an absent/forgotten secret. Existing secure
       // rows still belong to the secure service, including protected rows during outages.
-      if (!cache.has(key)) deletedCredentials.add(key);
+      if (!cache.has(key) && !protectedKeys.has(key)) deletedCredentials.add(key);
     }
   }
   for (const [key, credential] of Object.entries(readCompatibilityCredentials())) {
@@ -354,6 +353,11 @@ async function hydrateExistingSecrets(): Promise<void> {
         receipt.applied[credential.origin] !== credential.id)
     )
       continue;
+    // Only a receipt-matched explicit edit may supersede an unreadable native row.
+    // Unversioned compatibility data cannot establish that it is newer than that row.
+    if (isProtectedSecureSecretUnavailable(key) && rawReceipt === undefined) {
+      requireAcknowledgedMigration('protected');
+    }
     const { value } = credential;
     if (value === null) {
       // Finish a crash-interrupted Forget before accepting any legacy copies.
@@ -373,20 +377,29 @@ async function hydrateExistingSecrets(): Promise<void> {
   for (const key of deletedCredentials) await clearLegacyCredentialCopies(key);
 }
 
-/** Legacy sources must survive until their replacement is confidential and durable. */
-async function persistMigratedSecret(key: string, value: string): Promise<boolean> {
-  // Compatibility by design: an unavailable keyring must not block the app.
-  // Use session secrets and retain legacy copies until confidential, durable
-  // migration is possible. Their existing local-disclosure risk is accepted
-  // to avoid requiring new setup just to open an upgraded installation.
+type MigratedSecretOutcome = 'stored' | 'protected' | 'deleted';
+
+/** Retire a source only after encrypted persistence or an acknowledged compatibility copy. */
+async function persistMigratedSecret(key: string, value: string): Promise<MigratedSecretOutcome> {
+  if (deletedCredentials.has(key)) return 'deleted';
+  if (isProtectedSecureSecretUnavailable(key)) return 'protected';
+  // Compatibility has the same accepted profile-disclosure risk as explicit saves.
+  // Its SQLite receipt must acknowledge the replacement before the inline source retires.
   if (!persistentStorageAvailable && compatibilityCredentialKey(key)) {
-    if (protectedKeys.has(key) || deletedCredentials.has(key)) return false;
     await writeCompatibilityCredential(key, value);
     cache.set(key, value);
-    return false;
+    return 'stored';
   }
-  const result = await setSecureSecret(key, value);
-  return result.persistent;
+  await setSecureSecret(key, value);
+  return 'stored';
+}
+
+function requireAcknowledgedMigration(outcome: MigratedSecretOutcome): void {
+  if (outcome === 'protected') {
+    throw new Error(
+      'secure secret migration: protected credential unavailable; retry or forget it',
+    );
+  }
 }
 
 async function migrateLegacyIdentityCiphertext(localStorageKey: string): Promise<boolean> {
@@ -396,7 +409,13 @@ async function migrateLegacyIdentityCiphertext(localStorageKey: string): Promise
   // Keep encrypted legacy data for a later keyring-backed start. There is no
   // plaintext to import during an outage, and unrelated app use can continue.
   if (!persistentStorageAvailable) return false;
+  if (isProtectedSecureSecretUnavailable(MESHCORE_IDENTITY_SECRET_KEY)) return false;
   if (cache.has(MESHCORE_IDENTITY_SECRET_KEY)) {
+    await setSecureSecret(
+      MESHCORE_IDENTITY_SECRET_KEY,
+      cache.get(MESHCORE_IDENTITY_SECRET_KEY)!,
+      true,
+    );
     localStorage.removeItem(localStorageKey);
     return true;
   }
@@ -452,9 +471,7 @@ async function importLegacyBackupCiphertext(
 
 async function migrateMeshcoreIdentity(): Promise<void> {
   if (deletedCredentials.has(MESHCORE_IDENTITY_SECRET_KEY)) return;
-  const encryptedMigrated = await migrateLegacyIdentityCiphertext(
-    LEGACY_MESHCORE_IDENTITY_CIPHERTEXT_KEY,
-  );
+  await migrateLegacyIdentityCiphertext(LEGACY_MESHCORE_IDENTITY_CIPHERTEXT_KEY);
 
   const raw = localStorage.getItem(LEGACY_MESHCORE_IDENTITY_KEY);
   if (!raw) return;
@@ -468,11 +485,7 @@ async function migrateMeshcoreIdentity(): Promise<void> {
   } catch {
     throw new Error('secure secret migration: malformed legacy MeshCore identity');
   }
-  if (
-    !encryptedMigrated &&
-    !cache.has(MESHCORE_IDENTITY_SECRET_KEY) &&
-    parsed.private_key != null
-  ) {
+  if (parsed.private_key != null) {
     const privateKey = parsed.private_key;
     const validArray =
       Array.isArray(privateKey) &&
@@ -486,9 +499,12 @@ async function migrateMeshcoreIdentity(): Promise<void> {
     if (!validArray && !validHex) {
       throw new Error('secure secret migration: invalid legacy MeshCore private key');
     }
-    await persistMigratedSecret(MESHCORE_IDENTITY_SECRET_KEY, JSON.stringify(parsed.private_key));
-  }
-  if (persistentStorageAvailable && parsed.private_key != null) {
+    requireAcknowledgedMigration(
+      await persistMigratedSecret(
+        MESHCORE_IDENTITY_SECRET_KEY,
+        cache.get(MESHCORE_IDENTITY_SECRET_KEY) ?? JSON.stringify(parsed.private_key),
+      ),
+    );
     const next =
       parsed.public_key == null ? null : JSON.stringify({ public_key: parsed.public_key });
     if (next == null) localStorage.removeItem(LEGACY_MESHCORE_IDENTITY_KEY);
@@ -514,22 +530,40 @@ function parseLegacyRecord(raw: string, label: string): Record<string, unknown> 
   return parsed as Record<string, unknown>;
 }
 
-function routeLegacyMqttSettingsByProtocol(): void {
-  const raw = localStorage.getItem(LEGACY_MESHTASTIC_MQTT_KEY);
-  if (!raw) return;
+async function routeLegacyMqttSettingsByProtocol(
+  preferences?: Readonly<Record<string, string>>,
+): Promise<boolean> {
+  const raw = preferences
+    ? preferences[LEGACY_MESHTASTIC_MQTT_KEY]
+    : localStorage.getItem(LEGACY_MESHTASTIC_MQTT_KEY);
+  if (!raw) return false;
   const parsed = parseLegacyRecord(raw, 'legacy MQTT settings');
   if (
     typeof parsed.topicPrefix === 'string' &&
     parsed.topicPrefix.startsWith('meshcore') &&
-    localStorage.getItem(LEGACY_MESHCORE_MQTT_KEY) == null
+    (preferences
+      ? !Object.hasOwn(preferences, LEGACY_MESHCORE_MQTT_KEY)
+      : localStorage.getItem(LEGACY_MESHCORE_MQTT_KEY) == null)
   ) {
-    localStorage.setItem(LEGACY_MESHCORE_MQTT_KEY, raw);
-    localStorage.removeItem(LEGACY_MESHTASTIC_MQTT_KEY);
+    // Read the original secret in place. Preference finalization moves prepared metadata
+    // only after this acknowledgement, so an interrupted start keeps the route stable.
+    await migrateMqttSettings(LEGACY_MESHTASTIC_MQTT_KEY, MESHCORE_MQTT_SECRET_KEY);
+    if (!preferences) {
+      const cleaned = localStorage.getItem(LEGACY_MESHTASTIC_MQTT_KEY);
+      if (cleaned) {
+        const metadata = parseLegacyRecord(cleaned, 'legacy MQTT settings');
+        delete metadata.password;
+        delete metadata.channelPsks;
+        localStorage.setItem(LEGACY_MESHCORE_MQTT_KEY, JSON.stringify(metadata));
+        localStorage.removeItem(LEGACY_MESHTASTIC_MQTT_KEY);
+      }
+    }
+    return true;
   }
+  return false;
 }
 
 async function migrateMqttSettings(storageKey: string, secretKey: string): Promise<void> {
-  if (deletedCredentials.has(secretKey)) return;
   const raw = localStorage.getItem(storageKey);
   if (!raw) return;
   const parsed = parseLegacyRecord(raw, 'legacy MQTT settings');
@@ -563,8 +597,9 @@ async function migrateMqttSettings(storageKey: string, secretKey: string): Promi
         throw new Error('secure secret migration: malformed encrypted MQTT settings');
       }
     }
-    if (!(await persistMigratedSecret(secretKey, JSON.stringify({ ...secrets, ...existing }))))
-      return;
+    requireAcknowledgedMigration(
+      await persistMigratedSecret(secretKey, JSON.stringify({ ...secrets, ...existing })),
+    );
   }
   delete parsed.password;
   delete parsed.channelPsks;
@@ -614,11 +649,12 @@ async function migrateMqttProfiles(): Promise<void> {
       throw new Error('secure secret migration: malformed encrypted MQTT profiles');
     }
   }
-  const persistent = await persistMigratedSecret(
-    MQTT_PROFILES_SECRET_KEY,
-    JSON.stringify({ ...passwords, ...existing }),
+  requireAcknowledgedMigration(
+    await persistMigratedSecret(
+      MQTT_PROFILES_SECRET_KEY,
+      JSON.stringify({ ...passwords, ...existing }),
+    ),
   );
-  if (!persistent) return;
   localStorage.setItem(LEGACY_MQTT_PROFILES_KEY, JSON.stringify(scrubbed));
 }
 
@@ -641,14 +677,13 @@ async function migrateCredentialRecord(
 ): Promise<boolean> {
   const secretKey = credentialSecretKey(settingKey);
   if (!secretKey) return false;
-  if (deletedCredentials.has(secretKey)) return false;
+  if (deletedCredentials.has(secretKey)) return true;
   if (typeof raw !== 'string') {
     throw new Error('secure secret migration: malformed legacy MeshCore credential');
   }
-  if (raw.length === 0) return false;
-  if (preserveCurrent && cache.has(secretKey)) return persistentStorageAvailable;
-  const persistent = await persistMigratedSecret(secretKey, raw);
-  return persistent && getCachedSecureSecret(secretKey) === raw;
+  const value = preserveCurrent ? (cache.get(secretKey) ?? raw) : raw;
+  requireAcknowledgedMigration(await persistMigratedSecret(secretKey, value));
+  return getCachedSecureSecret(secretKey) === value;
 }
 
 async function migrateCredentialSettings(): Promise<void> {
@@ -698,16 +733,20 @@ async function migrateBackupSlots(
   }
 }
 
-/** Hydrate credentials before React mounts; erase legacy copies after durable encryption. */
-export async function initializeSecureSecrets(): Promise<void> {
+/** Hydrate credentials before React mounts; retire inline copies only after acknowledgement. */
+export async function initializeSecureSecrets(
+  preferences?: Readonly<Record<string, string>>,
+): Promise<void> {
+  initialized = false;
   const status = await window.electronAPI.secureSecrets.status();
   persistentStorageAvailable = status.persistent;
   storageStatusKnown = true;
   await hydrateExistingSecrets();
   await migrateMeshcoreIdentity();
-  routeLegacyMqttSettingsByProtocol();
+  const routedLegacyMqtt = await routeLegacyMqttSettingsByProtocol(preferences);
   await migrateMqttSettings(LEGACY_MESHCORE_MQTT_KEY, MESHCORE_MQTT_SECRET_KEY);
-  await migrateMqttSettings(LEGACY_MESHTASTIC_MQTT_KEY, MESHTASTIC_MQTT_SECRET_KEY);
+  if (!routedLegacyMqtt)
+    await migrateMqttSettings(LEGACY_MESHTASTIC_MQTT_KEY, MESHTASTIC_MQTT_SECRET_KEY);
   const { migrateLegacyMeshtasticMqttChannelPsks } =
     await import('./meshtasticMqttSettingsStorage');
   await migrateLegacyMeshtasticMqttChannelPsks();
@@ -724,9 +763,11 @@ export async function initializeSecureSecrets(): Promise<void> {
   initialized = true;
 }
 
-export async function initializeSecureSecretsFailClosed(): Promise<void> {
+export async function initializeSecureSecretsFailClosed(
+  preferences?: Readonly<Record<string, string>>,
+): Promise<void> {
   try {
-    await initializeSecureSecrets();
+    await initializeSecureSecrets(preferences);
   } catch (error) {
     console.warn('[secureSecretStorage] initialization failed ' + errLikeToLogString(error));
     throw error;
