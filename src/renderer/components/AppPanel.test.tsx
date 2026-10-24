@@ -145,7 +145,7 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
   });
 
   it('hydrates the meshtastic count from the SQLite-backed app_settings IPC', async () => {
-    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({
       [MESSAGE_RETENTION_KEYS.meshtasticEnabled]: '1',
       [MESSAGE_RETENTION_KEYS.meshtasticCount]: '7500',
       [MESSAGE_RETENTION_KEYS.meshcoreEnabled]: '1',
@@ -158,16 +158,19 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    // Wait on the id: findByLabelText re-scans the whole App panel every poll, which ran past the
-    // 5s test timeout on CI coverage runners. Then check the label once.
+    // Other mounted settings sections can read the same snapshot. Avoid scanning the whole
+    // panel while they settle; check this input and its accessible name directly.
     await waitFor(() => {
       expect(document.getElementById('apppanel-message-retention-meshtastic-count')).toHaveValue(
         7500,
       );
     });
-    expect(screen.getByLabelText(/Cap stored messages, keep newest 7500 messages/i)).toBe(
-      document.getElementById('apppanel-message-retention-meshtastic-count'),
+    const input = document.getElementById('apppanel-message-retention-meshtastic-count');
+    expect(input).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/Cap stored messages, keep newest 7500 messages/i),
     );
+    expect(input).toHaveAccessibleName(/Cap stored messages/i);
   });
 
   it('debounces count edits and persists via appSettings.set with the meshtastic key', async () => {
