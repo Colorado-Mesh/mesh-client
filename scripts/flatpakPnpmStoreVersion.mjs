@@ -186,6 +186,123 @@ export function applyGeneratorSkipElectronArmv7l(electronPyPath, opts = {}) {
 }
 
 /**
+ * Marker written into the pinned generator's requests.py so aiohttp accepts GitHub's
+ * long Content-Security-Policy response headers (default max_line_size is 8190).
+ */
+export const AIOHTTP_LONG_HEADERS_MARKER = 'mesh-client-aiohttp-long-headers';
+
+/** Exact upstream ClientSession construction in requests.py (ac5a296a). */
+export const AIOHTTP_CLIENT_SESSION_ANCHOR = `            aiohttp.ClientSession(raise_for_status=True) as session,`;
+
+export const AIOHTTP_CLIENT_SESSION_PATCHED = `            # mesh-client-aiohttp-long-headers: GitHub release CSP exceeds aiohttp's 8190 default
+            aiohttp.ClientSession(
+                raise_for_status=True,
+                max_line_size=65536,
+                max_field_size=65536,
+            ) as session,`;
+
+/**
+ * Rewrite generator requests.py so GitHub's long CSP headers do not trip LineTooLong.
+ *
+ * @param {string} source
+ * @returns {{ source: string, changed: boolean, already: boolean, missing: boolean }}
+ */
+export function rewriteGeneratorAiohttpLongHeaders(source) {
+  if (source.includes(AIOHTTP_LONG_HEADERS_MARKER)) {
+    return { source, changed: false, already: true, missing: false };
+  }
+  if (!source.includes(AIOHTTP_CLIENT_SESSION_ANCHOR)) {
+    return { source, changed: false, already: false, missing: true };
+  }
+  return {
+    source: source.replace(AIOHTTP_CLIENT_SESSION_ANCHOR, AIOHTTP_CLIENT_SESSION_PATCHED),
+    changed: true,
+    already: false,
+    missing: false,
+  };
+}
+
+/**
+ * Locate requests.py next to a generator console-script (venv or pip --user).
+ *
+ * @param {string} generatorBin
+ * @param {{
+ *   existsSync?: (p: string) => boolean;
+ *   globSync?: (pattern: string, opts: { cwd: string }) => string[];
+ * }} [opts]
+ * @returns {string | null}
+ */
+export function resolveGeneratorRequestsPyPath(generatorBin, opts = {}) {
+  if (!generatorBin) return null;
+  const exists = opts.existsSync ?? ((p) => fs.existsSync(p));
+  const glob = opts.globSync ?? ((pattern, o) => fs.globSync(pattern, { cwd: o.cwd }));
+  const binDir = path.dirname(generatorBin);
+  const roots = [path.dirname(binDir)];
+  const patterns = [
+    'lib/python*/site-packages/flatpak_node_generator/requests.py',
+    'lib/python*/dist-packages/flatpak_node_generator/requests.py',
+  ];
+  for (const root of roots) {
+    for (const pattern of patterns) {
+      let hits;
+      try {
+        hits = glob(pattern, { cwd: root });
+      } catch {
+        // catch-no-log-ok glob miss is a normal miss
+        hits = [];
+      }
+      for (const rel of hits) {
+        const abs = path.join(root, rel);
+        if (exists(abs)) return abs;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Patch an installed generator so aiohttp accepts long GitHub CSP headers.
+ *
+ * @param {string} requestsPyPath
+ * @param {{
+ *   readFileSync?: (p: string, enc: BufferEncoding) => string;
+ *   writeFileSync?: (p: string, data: string, enc: BufferEncoding) => void;
+ * }} [opts]
+ * @returns {{ ok: true, already: boolean } | { ok: false, message: string }}
+ */
+export function applyGeneratorAiohttpLongHeaders(requestsPyPath, opts = {}) {
+  const read = opts.readFileSync ?? ((p, enc) => fs.readFileSync(p, enc));
+  const write = opts.writeFileSync ?? ((p, data, enc) => fs.writeFileSync(p, data, enc));
+  let source;
+  try {
+    source = read(requestsPyPath, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not read ${requestsPyPath}: ${detail}` };
+  }
+  const rewritten = rewriteGeneratorAiohttpLongHeaders(source);
+  if (rewritten.already) {
+    return { ok: true, already: true };
+  }
+  if (rewritten.missing) {
+    return {
+      ok: false,
+      message:
+        `${requestsPyPath} has no ClientSession(raise_for_status=True) anchor ` +
+        `(expected for aiohttp long-header patch). Bump the generator pin or update ` +
+        `AIOHTTP_CLIENT_SESSION_ANCHOR.`,
+    };
+  }
+  try {
+    write(requestsPyPath, rewritten.source, 'utf8');
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, message: `could not write ${requestsPyPath}: ${detail}` };
+  }
+  return { ok: true, already: false };
+}
+
+/**
  * Rewrite generator special.py so Playwright does not fetch browsers.json.
  *
  * @param {string} source

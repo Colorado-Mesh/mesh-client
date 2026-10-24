@@ -184,11 +184,11 @@ function writeAtomic(file: string, contents: string | Buffer, mode: number): voi
  * written owner-only as PEM (POSIX modes; Windows relies on the per-user profile ACL), the same
  * protection the local server's keys in tak-certs get.
  */
-function writeClientKey(dir: string, keyPem: string): void {
+async function writeClientKey(dir: string, keyPem: string): Promise<void> {
   const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
   const plain = path.join(dir, CREDENTIAL_FILES.key);
-  if (safeStorage.isEncryptionAvailable()) {
-    writeAtomic(encrypted, safeStorage.encryptString(keyPem), 0o600);
+  if (await safeStorage.isAsyncEncryptionAvailable()) {
+    writeAtomic(encrypted, await safeStorage.encryptStringAsync(keyPem), 0o600);
     fs.rmSync(plain, { force: true });
   } else {
     writeAtomic(plain, keyPem, 0o600);
@@ -196,11 +196,12 @@ function writeClientKey(dir: string, keyPem: string): void {
   }
 }
 
-function readClientKey(dir: string): string | undefined {
+async function readClientKey(dir: string): Promise<string | undefined> {
   const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
   if (fs.existsSync(encrypted)) {
     try {
-      return safeStorage.decryptString(fs.readFileSync(encrypted));
+      const { result } = await safeStorage.decryptStringAsync(fs.readFileSync(encrypted));
+      return result;
     } catch (err) {
       throw new Error(
         'The saved client key could not be decrypted; import the client certificate again',
@@ -216,12 +217,12 @@ function readClientKey(dir: string): string | undefined {
  * Store an import next to what is already saved: a new CA set replaces the old one, and a new
  * client identity replaces the old certificate and key together.
  */
-export function saveTakRemoteCredentials(creds: TakRemoteCredentials): void {
+export async function saveTakRemoteCredentials(creds: TakRemoteCredentials): Promise<void> {
   const dir = getRemoteCertsDir();
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   if (creds.ca) writeAtomic(path.join(dir, CREDENTIAL_FILES.ca), creds.ca, 0o644);
   if (creds.cert && creds.key) {
-    writeClientKey(dir, creds.key);
+    await writeClientKey(dir, creds.key);
     writeAtomic(path.join(dir, CREDENTIAL_FILES.cert), creds.cert, 0o644);
   }
 }
@@ -237,14 +238,14 @@ function keyMatchesCert(certPem: string, keyPem: string): boolean {
   }
 }
 
-export function loadTakRemoteCredentials(): TakRemoteCredentials {
+export async function loadTakRemoteCredentials(): Promise<TakRemoteCredentials> {
   const dir = getRemoteCertsDir();
   const read = (name: string): string | undefined => {
     const file = path.join(dir, name);
     return fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined;
   };
   const cert = read(CREDENTIAL_FILES.cert);
-  const key = cert ? readClientKey(dir) : undefined;
+  const key = cert ? await readClientKey(dir) : undefined;
   const ca = read(CREDENTIAL_FILES.ca);
   // The key and certificate are written as two files, so an interrupted import can leave a
   // new key beside the old certificate. Report no identity rather than fail the handshake.

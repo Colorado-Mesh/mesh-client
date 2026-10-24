@@ -27,9 +27,11 @@ import {
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
+  applyGeneratorAiohttpLongHeaders,
   applyGeneratorFlatpakNodeGeneratorPatches,
   resolveFlatpakNodeGeneratorBin,
   resolveGeneratorElectronPyPath,
+  resolveGeneratorRequestsPyPath,
   resolveGeneratorSpecialPyPath,
   storeVersionFromPackageManager,
   extractProjectPnpmLockfile,
@@ -84,6 +86,7 @@ function generateOfflineSources(expectedStoreVersion) {
   const outPath = path.join(tmpDir, 'generated-sources.json');
   const specialPy = resolveGeneratorSpecialPyPath(bin);
   const electronPy = resolveGeneratorElectronPyPath(bin);
+  const requestsPy = resolveGeneratorRequestsPyPath(bin);
   if (!specialPy) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return {
@@ -98,10 +101,22 @@ function generateOfflineSources(expectedStoreVersion) {
       message: `could not find electron.py next to ${bin} (needed to skip Electron >=44 linux-armv7l)`,
     };
   }
+  if (!requestsPy) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return {
+      ok: false,
+      message: `could not find requests.py next to ${bin} (needed to raise aiohttp header limits)`,
+    };
+  }
   const patched = applyGeneratorFlatpakNodeGeneratorPatches(specialPy, electronPy);
   if (!patched.ok) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return { ok: false, message: patched.message };
+  }
+  const headers = applyGeneratorAiohttpLongHeaders(requestsPy);
+  if (!headers.ok) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return { ok: false, message: headers.message };
   }
   // pnpm 12 multi-doc lockfile: generator yaml.safe_load needs the project document only.
   const projectLockPath = path.join(tmpDir, 'pnpm-lock.project.yaml');

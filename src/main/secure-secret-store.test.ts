@@ -9,10 +9,17 @@ const safeStorageHarness = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
   safeStorage: {
-    isEncryptionAvailable: vi.fn(() => safeStorageHarness.available),
+    isAsyncEncryptionAvailable: vi.fn(() => Promise.resolve(safeStorageHarness.available)),
     getSelectedStorageBackend: vi.fn(() => safeStorageHarness.backend),
-    encryptString: vi.fn((value: string) => Buffer.from(`protected:${value}`, 'utf8')),
-    decryptString: vi.fn((value: Buffer) => value.toString('utf8').replace(/^protected:/, '')),
+    encryptStringAsync: vi.fn((value: string) =>
+      Promise.resolve(Buffer.from(`protected:${value}`, 'utf8')),
+    ),
+    decryptStringAsync: vi.fn((value: Buffer) =>
+      Promise.resolve({
+        result: value.toString('utf8').replace(/^protected:/, ''),
+        shouldReEncrypt: false,
+      }),
+    ),
   },
 }));
 
@@ -32,7 +39,7 @@ describe('SecureSecretStore', () => {
     safeStorageHarness.backend = 'keychain';
   });
 
-  it('persists every supported credential class only as OS-protected ciphertext', () => {
+  it('persists every supported credential class only as OS-protected ciphertext', async () => {
     const { db, store } = createStore();
     try {
       const values = new Map([
@@ -49,12 +56,12 @@ describe('SecureSecretStore', () => {
       ]);
 
       for (const [key, value] of values) {
-        expect(store.set(key, value)).toEqual({
+        expect(await store.set(key, value)).toEqual({
           available: true,
           persistent: true,
           verified: true,
         });
-        expect(store.get(key)).toBe(value);
+        expect(await store.get(key)).toBe(value);
       }
 
       const rows = db.prepareOnce('SELECT key, ciphertext FROM secure_secrets').all() as {
@@ -69,17 +76,17 @@ describe('SecureSecretStore', () => {
     }
   });
 
-  it('rejects basic_text and keeps secrets session-only', () => {
+  it('rejects basic_text and keeps secrets session-only', async () => {
     const { db, store } = createStore();
     try {
       safeStorageHarness.backend = 'basic_text';
-      expect(store.set('meshcore:room:7', 'session-only-password')).toEqual({
+      expect(await store.set('meshcore:room:7', 'session-only-password')).toEqual({
         available: true,
         persistent: false,
         verified: true,
       });
-      expect(store.status()).toEqual({ available: true, persistent: false });
-      expect(store.get('meshcore:room:7')).toBe('session-only-password');
+      expect(await store.status()).toEqual({ available: true, persistent: false });
+      expect(await store.get('meshcore:room:7')).toBe('session-only-password');
       expect(db.prepareOnce('SELECT COUNT(*) AS count FROM secure_secrets').get()).toEqual({
         count: 0,
       });
@@ -88,68 +95,71 @@ describe('SecureSecretStore', () => {
     }
   });
 
-  it('preserves durable ciphertext through temporary strong-storage outages', () => {
+  it('preserves durable ciphertext through temporary strong-storage outages', async () => {
     const { db, store } = createStore();
     try {
-      store.set('mqtt:meshcore', 'old-value');
+      await store.set('mqtt:meshcore', 'old-value');
       safeStorageHarness.available = false;
-      store.set('mqtt:meshcore', 'new-session-value');
-      expect(store.get('mqtt:meshcore')).toBe('new-session-value');
+      await store.set('mqtt:meshcore', 'new-session-value');
+      expect(await store.get('mqtt:meshcore')).toBe('new-session-value');
       expect(
         db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
       ).toBeDefined();
       safeStorageHarness.available = true;
       const reloaded = new SecureSecretStore(() => db);
-      expect(reloaded.get('mqtt:meshcore')).toBe('old-value');
+      expect(await reloaded.get('mqtt:meshcore')).toBe('old-value');
     } finally {
       db.close();
     }
   });
 
-  it('rolls back a replacement when read-back verification fails', () => {
+  it('rolls back a replacement when read-back verification fails', async () => {
     const { db, store } = createStore();
     try {
-      store.set('mqtt:meshcore', 'old-value');
+      await store.set('mqtt:meshcore', 'old-value');
       const original = db
         .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
         .get('mqtt:meshcore');
 
-      vi.mocked(safeStorage.decryptString).mockReturnValueOnce('wrong-value');
-      expect(() => store.set('mqtt:meshcore', 'replacement')).toThrow(
+      vi.mocked(safeStorage.decryptStringAsync).mockResolvedValueOnce({
+        result: 'wrong-value',
+        shouldReEncrypt: false,
+      });
+      await expect(store.set('mqtt:meshcore', 'replacement')).rejects.toThrow(
         /persistence verification failed/,
       );
       expect(
         db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
       ).toEqual(original);
-      expect(store.get('mqtt:meshcore')).toBe('old-value');
+      expect(await store.get('mqtt:meshcore')).toBe('old-value');
 
-      vi.mocked(safeStorage.decryptString).mockImplementationOnce(() => {
-        throw new Error('keychain read failed');
-      });
-      expect(() => store.set('mqtt:meshcore', 'second-replacement')).toThrow(
+      vi.mocked(safeStorage.decryptStringAsync).mockRejectedValueOnce(
+        new Error('keychain read failed'),
+      );
+      await expect(store.set('mqtt:meshcore', 'second-replacement')).rejects.toThrow(
         'keychain read failed',
       );
       expect(
         db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
       ).toEqual(original);
-      expect(store.get('mqtt:meshcore')).toBe('old-value');
+      expect(await store.get('mqtt:meshcore')).toBe('old-value');
     } finally {
       db.close();
     }
   });
 
-  it('preserves protected ciphertext when the backend falls back to basic_text', () => {
+  it('preserves protected ciphertext when the backend falls back to basic_text', async () => {
     const { db, store } = createStore();
     try {
-      store.set('mqtt:meshcore', 'old-value');
+      await store.set('mqtt:meshcore', 'old-value');
       safeStorageHarness.backend = 'basic_text';
-      store.set('mqtt:meshcore', 'new-session-value');
-      expect(store.get('mqtt:meshcore')).toBe('new-session-value');
+      await store.set('mqtt:meshcore', 'new-session-value');
+      expect(await store.get('mqtt:meshcore')).toBe('new-session-value');
       expect(
         db.prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?').get('mqtt:meshcore'),
       ).toBeDefined();
       safeStorageHarness.backend = 'keychain';
-      expect(new SecureSecretStore(() => db).get('mqtt:meshcore')).toBe('old-value');
+      expect(await new SecureSecretStore(() => db).get('mqtt:meshcore')).toBe('old-value');
     } finally {
       db.close();
     }
@@ -157,57 +167,57 @@ describe('SecureSecretStore', () => {
 
   it.each(['basic_text', 'unavailable'])(
     'rejects a required durable write before changing data on %s',
-    (backend) => {
+    async (backend) => {
       const { db, store } = createStore();
       try {
-        store.set('backup:meshcore:1', 'existing');
+        await store.set('backup:meshcore:1', 'existing');
         safeStorageHarness.backend = backend;
         safeStorageHarness.available = backend !== 'unavailable';
-        expect(() => store.set('backup:meshcore:1', 'replacement', true)).toThrow(
+        await expect(store.set('backup:meshcore:1', 'replacement', true)).rejects.toThrow(
           'OS key storage unavailable',
         );
         safeStorageHarness.backend = 'keychain';
         safeStorageHarness.available = true;
-        expect(store.get('backup:meshcore:1')).toBe('existing');
+        expect(await store.get('backup:meshcore:1')).toBe('existing');
       } finally {
         db.close();
       }
     },
   );
 
-  it('gets all readable values in one snapshot and omits unavailable durable rows', () => {
+  it('gets all readable values in one snapshot and omits unavailable durable rows', async () => {
     const { db, store } = createStore();
     try {
-      store.set('mqtt:meshcore', 'durable');
+      await store.set('mqtt:meshcore', 'durable');
       safeStorageHarness.available = false;
-      store.set('meshcore:room:7', 'session');
-      expect(store.getAll()).toEqual({ 'meshcore:room:7': 'session' });
+      await store.set('meshcore:room:7', 'session');
+      expect(await store.getAll()).toEqual({ 'meshcore:room:7': 'session' });
     } finally {
       db.close();
     }
   });
 
-  it('imports only a valid legacy identity into its fixed destination', () => {
+  it('imports only a valid legacy identity into its fixed destination', async () => {
     const { db, store } = createStore();
     try {
       const privateKey = JSON.stringify(Array.from({ length: 32 }, (_, index) => index));
       const legacy = Buffer.from(`protected:${privateKey}`, 'utf8').toString('base64');
-      expect(store.migrateLegacyIdentityCiphertext(legacy)).toMatchObject({
+      expect(await store.migrateLegacyIdentityCiphertext(legacy)).toMatchObject({
         persistent: true,
         verified: true,
       });
-      expect(store.get('meshcore:identity')).toBe(privateKey);
-      expect(() =>
+      expect(await store.get('meshcore:identity')).toBe(privateKey);
+      await expect(
         store.migrateLegacyIdentityCiphertext(
           Buffer.from('protected:arbitrary-secret', 'utf8').toString('base64'),
         ),
-      ).toThrow(/invalid legacy identity/);
+      ).rejects.toThrow(/invalid legacy identity/);
     } finally {
       db.close();
     }
   });
 
-  it('binds valid legacy backups to their protocol and node id', () => {
+  it('binds valid legacy backups to their protocol and node id', async () => {
     const { db, store } = createStore();
     try {
       const payload = JSON.stringify({
@@ -218,23 +228,25 @@ describe('SecureSecretStore', () => {
         backedUpAt: 123,
       });
       const legacy = Buffer.from(`protected:${payload}`, 'utf8').toString('base64');
-      expect(store.migrateLegacyBackupCiphertext('meshcore', 9, 'per-node', legacy)).toMatchObject({
+      expect(
+        await store.migrateLegacyBackupCiphertext('meshcore', 9, 'per-node', legacy),
+      ).toMatchObject({
         persistent: true,
         verified: true,
       });
-      expect(store.get('backup:meshcore:9')).toBe(payload);
-      expect(() => store.migrateLegacyBackupCiphertext('meshcore', 10, 'per-node', legacy)).toThrow(
-        /invalid legacy backup metadata/,
-      );
-      expect(() =>
+      expect(await store.get('backup:meshcore:9')).toBe(payload);
+      await expect(
+        store.migrateLegacyBackupCiphertext('meshcore', 10, 'per-node', legacy),
+      ).rejects.toThrow(/invalid legacy backup metadata/);
+      await expect(
         store.migrateLegacyBackupCiphertext('meshcore', 9, 'meshtastic-single', legacy),
-      ).toThrow(/invalid legacy backup format/);
+      ).rejects.toThrow(/invalid legacy backup format/);
     } finally {
       db.close();
     }
   });
 
-  it('preserves an existing backup unless a legacy import has the same key pair', () => {
+  it('preserves an existing backup unless a legacy import has the same key pair', async () => {
     const { db, store } = createStore();
     try {
       const existingPayload = JSON.stringify({
@@ -245,83 +257,83 @@ describe('SecureSecretStore', () => {
         nodeLabel: 'Current',
         backedUpAt: 456,
       });
-      store.set('backup:meshtastic:9', existingPayload);
+      await store.set('backup:meshtastic:9', existingPayload);
 
       const sameLegacy = JSON.stringify({
         publicKey: Buffer.alloc(32, 1).toString('base64'),
         privateKey: Buffer.alloc(32, 2).toString('base64'),
       });
       expect(
-        store.migrateLegacyBackupCiphertext(
+        await store.migrateLegacyBackupCiphertext(
           'meshtastic',
           9,
           'meshtastic-single',
           Buffer.from(`protected:${sameLegacy}`, 'utf8').toString('base64'),
         ),
       ).toMatchObject({ verified: true });
-      expect(store.get('backup:meshtastic:9')).toBe(existingPayload);
+      expect(await store.get('backup:meshtastic:9')).toBe(existingPayload);
 
       const conflictingLegacy = JSON.stringify({
         publicKey: Buffer.alloc(32, 3).toString('base64'),
         privateKey: Buffer.alloc(32, 4).toString('base64'),
       });
-      expect(() =>
+      await expect(
         store.migrateLegacyBackupCiphertext(
           'meshtastic',
           9,
           'meshtastic-single',
           Buffer.from(`protected:${conflictingLegacy}`, 'utf8').toString('base64'),
         ),
-      ).toThrow(/conflicting legacy backup/);
-      expect(store.get('backup:meshtastic:9')).toBe(existingPayload);
+      ).rejects.toThrow(/conflicting legacy backup/);
+      expect(await store.get('backup:meshtastic:9')).toBe(existingPayload);
     } finally {
       db.close();
     }
   });
 
-  it('retries an interrupted single-slot migration with the same bare key pair', () => {
+  it('retries an interrupted single-slot migration with the same bare key pair', async () => {
     const { db, store } = createStore();
     try {
       const barePair = JSON.stringify({
         publicKey: Buffer.alloc(32, 1).toString('base64'),
         privateKey: Buffer.alloc(32, 2).toString('base64'),
       });
-      store.set('backup:meshtastic:9', barePair);
+      await store.set('backup:meshtastic:9', barePair);
 
       expect(
-        store.migrateLegacyBackupCiphertext(
+        await store.migrateLegacyBackupCiphertext(
           'meshtastic',
           9,
           'meshtastic-single',
           Buffer.from(`protected:${barePair}`, 'utf8').toString('base64'),
         ),
       ).toMatchObject({ persistent: true, verified: true });
-      expect(store.get('backup:meshtastic:9')).toBe(barePair);
+      expect(await store.get('backup:meshtastic:9')).toBe(barePair);
     } finally {
       db.close();
     }
   });
 
-  it('strictly allowlists keys and caps secret values', () => {
+  it('strictly allowlists keys and caps secret values', async () => {
     const { db, store } = createStore();
     try {
-      expect(() => store.set('arbitrary:key', 'secret')).toThrow(/invalid key/);
-      expect(() => store.set('meshcore:room:1', 'x'.repeat(64 * 1024 + 1))).toThrow(
+      await expect(store.set('arbitrary:key', 'secret')).rejects.toThrow(/invalid key/);
+      await expect(store.set('meshcore:room:1', 'x'.repeat(64 * 1024 + 1))).rejects.toThrow(
         /invalid value/,
       );
-      expect(() => store.get('meshcore:room:-1')).toThrow(/invalid key/);
-      expect(() => store.get('meshcore:room:4294967296')).toThrow(/invalid key/);
+      await expect(store.get('meshcore:room:-1')).rejects.toThrow(/invalid key/);
+      await expect(store.get('meshcore:room:4294967296')).rejects.toThrow(/invalid key/);
     } finally {
       db.close();
     }
   });
 
-  it('removes session and durable copies together', () => {
+  it('removes session and durable copies together', async () => {
     const { db, store } = createStore();
     try {
-      store.set('meshcore:repeater:3', 'durable');
+      await store.set('meshcore:repeater:3', 'durable');
       safeStorageHarness.backend = 'basic_text';
-      store.set('meshcore:room:4', 'session');
+      await store.set('meshcore:room:4', 'session');
       expect(store.list()).toEqual(['meshcore:repeater:3', 'meshcore:room:4']);
       store.remove('meshcore:repeater:3');
       store.remove('meshcore:room:4');

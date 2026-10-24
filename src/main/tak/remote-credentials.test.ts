@@ -14,11 +14,14 @@ const keychain = vi.hoisted(() => ({ available: true, broken: false }));
 vi.mock('electron', () => ({
   app: { getPath: () => userData },
   safeStorage: {
-    isEncryptionAvailable: () => keychain.available,
-    encryptString: (text: string) => Buffer.from(text, 'utf-8').reverse(),
-    decryptString: (data: Buffer) => {
-      if (keychain.broken) throw new Error('keychain locked');
-      return Buffer.from(data).reverse().toString('utf-8');
+    isAsyncEncryptionAvailable: () => Promise.resolve(keychain.available),
+    encryptStringAsync: (text: string) => Promise.resolve(Buffer.from(text, 'utf-8').reverse()),
+    decryptStringAsync: (data: Buffer) => {
+      if (keychain.broken) return Promise.reject(new Error('keychain locked'));
+      return Promise.resolve({
+        result: Buffer.from(data).reverse().toString('utf-8'),
+        shouldReEncrypt: false,
+      });
     },
   },
 }));
@@ -168,8 +171,8 @@ describe('parseTakCredentialFiles', () => {
 
 describe('stored remote credentials', () => {
   const certsDir = () => getRemoteCertsDir();
-  const saveClient = () => {
-    saveTakRemoteCredentials(
+  const saveClient = async () => {
+    await saveTakRemoteCredentials(
       parseTakCredentialFiles([file('u.pem', pki.client.certPem + pki.client.keyPem)], ''),
     );
   };
@@ -180,40 +183,40 @@ describe('stored remote credentials', () => {
     clearTakRemoteCredentials();
   });
 
-  it('encrypts the private key with the OS keychain when it is available', () => {
-    saveClient();
+  it('encrypts the private key with the OS keychain when it is available', async () => {
+    await saveClient();
     expect(fs.existsSync(path.join(certsDir(), 'client-key.pem'))).toBe(false);
     const onDisk = fs.readFileSync(path.join(certsDir(), 'client-key.pem.enc'), 'utf-8');
     expect(onDisk).not.toContain('PRIVATE KEY');
-    expect(loadTakRemoteCredentials().key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
+    expect((await loadTakRemoteCredentials()).key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
   });
 
-  it('asks for a re-import when the saved key cannot be decrypted', () => {
-    saveClient();
+  it('asks for a re-import when the saved key cannot be decrypted', async () => {
+    await saveClient();
     keychain.broken = true;
-    expect(() => loadTakRemoteCredentials()).toThrow(/import the client certificate again/);
+    await expect(loadTakRemoteCredentials()).rejects.toThrow(/import the client certificate again/);
   });
 
-  it('keeps a client identity when a later import only brings a CA, and the reverse', () => {
-    saveTakRemoteCredentials(
+  it('keeps a client identity when a later import only brings a CA, and the reverse', async () => {
+    await saveTakRemoteCredentials(
       parseTakCredentialFiles([file('u.pem', pki.client.certPem + pki.client.keyPem)], ''),
     );
-    saveTakRemoteCredentials(parseTakCredentialFiles([file('ca.pem', pki.ca.certPem)], ''));
+    await saveTakRemoteCredentials(parseTakCredentialFiles([file('ca.pem', pki.ca.certPem)], ''));
 
-    const stored = loadTakRemoteCredentials();
+    const stored = await loadTakRemoteCredentials();
     expect(subjectOf(stored.cert)).toBe('CN=atak-user');
     expect(subjectOf(stored.ca)).toBe('CN=Test TAK CA');
     expect(stored.key).toBeDefined();
   });
 
-  it('summarizes subjects and expiry without key material', () => {
-    saveTakRemoteCredentials(
+  it('summarizes subjects and expiry without key material', async () => {
+    await saveTakRemoteCredentials(
       parseTakCredentialFiles(
         [file('bundle.pem', pki.client.certPem + pki.client.keyPem + pki.ca.certPem)],
         '',
       ),
     );
-    const summary = summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+    const summary = summarizeTakRemoteCredentials(await loadTakRemoteCredentials());
     expect(summary).toEqual({
       caSubjects: ['Test TAK CA'],
       clientSubject: 'atak-user',
@@ -223,47 +226,47 @@ describe('stored remote credentials', () => {
     expect(JSON.stringify(summary)).not.toContain('PRIVATE KEY');
   });
 
-  it('reports no client identity when the stored key and certificate do not match', () => {
+  it('reports no client identity when the stored key and certificate do not match', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    saveClient();
+    await saveClient();
     // An import interrupted between its two writes: new certificate, old key.
     fs.writeFileSync(path.join(certsDir(), 'client-cert.pem'), pki.server.certPem);
 
-    expect(loadTakRemoteCredentials()).toEqual({});
+    expect(await loadTakRemoteCredentials()).toEqual({});
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('do not match'));
     warn.mockRestore();
   });
 
-  it('ignores a certificate whose key file is missing', () => {
-    saveClient();
+  it('ignores a certificate whose key file is missing', async () => {
+    await saveClient();
     fs.rmSync(path.join(certsDir(), 'client-key.pem.enc'));
-    expect(loadTakRemoteCredentials()).toEqual({});
+    expect(await loadTakRemoteCredentials()).toEqual({});
   });
 
-  it('clears every stored credential', () => {
-    saveTakRemoteCredentials(
+  it('clears every stored credential', async () => {
+    await saveTakRemoteCredentials(
       parseTakCredentialFiles(
         [file('bundle.pem', pki.client.certPem + pki.client.keyPem + pki.ca.certPem)],
         '',
       ),
     );
     clearTakRemoteCredentials();
-    expect(loadTakRemoteCredentials()).toEqual({});
+    expect(await loadTakRemoteCredentials()).toEqual({});
     expect(summarizeTakRemoteCredentials({})).toEqual({ caSubjects: [] });
   });
 
-  it('falls back to a PEM key file without a keychain, replacing an encrypted one', () => {
-    saveClient();
+  it('falls back to a PEM key file without a keychain, replacing an encrypted one', async () => {
+    await saveClient();
     keychain.available = false;
-    saveClient();
+    await saveClient();
     expect(fs.existsSync(path.join(certsDir(), 'client-key.pem.enc'))).toBe(false);
-    expect(loadTakRemoteCredentials().key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
+    expect((await loadTakRemoteCredentials()).key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
   });
 
   // OS-specific: POSIX file modes; Windows protects the per-user profile with ACLs instead.
-  it.skipIf(process.platform === 'win32')('writes a plaintext private key owner-only', () => {
+  it.skipIf(process.platform === 'win32')('writes a plaintext private key owner-only', async () => {
     keychain.available = false;
-    saveClient();
+    await saveClient();
     const mode = fs.statSync(path.join(certsDir(), 'client-key.pem')).mode & 0o777;
     expect(mode).toBe(0o600);
   });
