@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Nie można załadować zapisanych ustawień",
-    "savedSettingsRecovery": "Twoje zapisane dane zostały zachowane. Sprawdź, czy Twój brelok systemowy jest dostępny, lub poczekaj chwilę i spróbuj ponownie."
+    "savedSettingsRecovery": "Twoje zapisane dane zostały zachowane. Sprawdź, czy Twój brelok systemowy jest dostępny, lub poczekaj chwilę i spróbuj ponownie.",
+    "forgetUnavailableCredentials": "Usuń nieczytelne dane logowania…",
+    "forgetCredentialsTitle": "Usunąć nieczytelne dane logowania?",
+    "forgetCredentialsDescription": "Usunięte zostaną tylko wymienione poniżej dane logowania i ich kopie odzyskiwania. Inne ustawienia i dane logowania zostaną zachowane.",
+    "forgetCredentialsAcknowledge": "Rozumiem, że trzeba będzie ponownie skonfigurować te dane logowania. Tej czynności nie można cofnąć.",
+    "forgetCredentialsConfirm": "Usuń i spróbuj ponownie",
+    "forgetCredentialsFailed": "Nie udało się całkowicie usunąć danych logowania. Spróbuj ponownie lub anuluj, aby zachować pozostałe dane.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Tożsamość MeshCore",
+    "credentialProfiles": "Hasła zapisanych profili MQTT",
+    "credentialRoom": "Pokój MeshCore {{node}}",
+    "credentialRepeater": "Przekaźnik MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",

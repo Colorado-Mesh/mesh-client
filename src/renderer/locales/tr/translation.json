@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Kaydedilen ayarlar yüklenemedi",
-    "savedSettingsRecovery": "Kaydedilen verileriniz saklandı. Sistem anahtarlığınızın kullanılabilir olup olmadığını kontrol edin veya bir dakika bekleyin ve tekrar deneyin."
+    "savedSettingsRecovery": "Kaydedilen verileriniz saklandı. Sistem anahtarlığınızın kullanılabilir olup olmadığını kontrol edin veya bir dakika bekleyin ve tekrar deneyin.",
+    "forgetUnavailableCredentials": "Okunamayan kimlik bilgilerini kaldır…",
+    "forgetCredentialsTitle": "Okunamayan kimlik bilgileri kaldırılsın mı?",
+    "forgetCredentialsDescription": "Yalnızca aşağıdaki kimlik bilgileri ve kayıtlı kurtarma kopyaları kaldırılacak. Diğer ayarlar ve kimlik bilgileri korunacak.",
+    "forgetCredentialsAcknowledge": "Bu kimlik bilgilerini yeniden yapılandırmam gerekeceğini anlıyorum. Bu işlem geri alınamaz.",
+    "forgetCredentialsConfirm": "Kaldır ve yeniden dene",
+    "forgetCredentialsFailed": "Kimlik bilgileri tamamen kaldırılamadı. Yeniden deneyin veya kalan verileri korumak için iptal edin.",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore kimliği",
+    "credentialProfiles": "Kayıtlı MQTT profil parolaları",
+    "credentialRoom": "MeshCore odası {{node}}",
+    "credentialRepeater": "MeshCore tekrarlayıcı {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",

@@ -56,6 +56,11 @@ during a keyring outage; this retains the existing fallback's local-disclosure l
 unreadable existing encrypted row is never inferred to be a deleted credential. Its inline
 source stays intact, and restoration waits at the recovery screen until the protected storage
 is readable. Retry repeats this process without writing credentials into the preference map.
+If a credential remains unreadable, the recovery screen also offers its removal after an explicit
+acknowledgment. Only credentials that blocked the current startup attempt are eligible. Removal
+uses the normal ordered credential retirement path, including retained recovery copies; unrelated
+credentials and settings remain intact. Cancel does not remove anything, and failed removal remains
+retryable. The user must reconfigure any credential they choose to remove.
 
 Before the map is established, recovery fills missing fields in a partial app-settings blob from
 the verified origin export while preserving present values. Once established, canonical removals

@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}、{{remote}}",
     "savedSettingsUnavailable": "保存された設定を読み込めませんでした",
-    "savedSettingsRecovery": "保存されたデータは保持されました。システムのキーリングが使用可能であることを確認するか、しばらく待ってからもう一度お試しください。"
+    "savedSettingsRecovery": "保存されたデータは保持されました。システムのキーリングが使用可能であることを確認するか、しばらく待ってからもう一度お試しください。",
+    "forgetUnavailableCredentials": "読み取れない認証情報を削除…",
+    "forgetCredentialsTitle": "読み取れない認証情報を削除しますか？",
+    "forgetCredentialsDescription": "以下の認証情報と保存済みの復旧用コピーのみが削除されます。他の設定と認証情報は保持されます。",
+    "forgetCredentialsAcknowledge": "これらの認証情報を再設定する必要があることを理解しました。この操作は取り消せません。",
+    "forgetCredentialsConfirm": "削除して再試行",
+    "forgetCredentialsFailed": "認証情報を完全に削除できませんでした。再試行するか、キャンセルして残りのデータを保持してください。",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore ID",
+    "credentialProfiles": "保存済みMQTTプロファイルのパスワード",
+    "credentialRoom": "MeshCoreルーム {{node}}",
+    "credentialRepeater": "MeshCoreリピーター {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",

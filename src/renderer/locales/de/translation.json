@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Einstellungen konnten nicht geladen werden",
-    "savedSettingsRecovery": "Ihre gespeicherten Daten wurden aufbewahrt. Überprüfen Sie, ob Ihr Systemschlüsselring verfügbar ist, oder warten Sie eine Minute und versuchen Sie es erneut."
+    "savedSettingsRecovery": "Ihre gespeicherten Daten wurden aufbewahrt. Überprüfen Sie, ob Ihr Systemschlüsselring verfügbar ist, oder warten Sie eine Minute und versuchen Sie es erneut.",
+    "forgetUnavailableCredentials": "Unlesbare Zugangsdaten entfernen…",
+    "forgetCredentialsTitle": "Unlesbare Zugangsdaten entfernen?",
+    "forgetCredentialsDescription": "Nur die unten aufgeführten Zugangsdaten und ihre gespeicherten Wiederherstellungskopien werden entfernt. Andere Einstellungen und Zugangsdaten bleiben erhalten.",
+    "forgetCredentialsAcknowledge": "Ich verstehe, dass ich diese Zugangsdaten neu konfigurieren muss. Dies kann nicht rückgängig gemacht werden.",
+    "forgetCredentialsConfirm": "Entfernen und erneut versuchen",
+    "forgetCredentialsFailed": "Die Zugangsdaten konnten nicht vollständig entfernt werden. Versuchen Sie es erneut oder brechen Sie ab, um die verbleibenden Daten zu behalten.",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore-Identität",
+    "credentialProfiles": "Gespeicherte MQTT-Profilpasswörter",
+    "credentialRoom": "MeshCore-Raum {{node}}",
+    "credentialRepeater": "MeshCore-Repeater {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Die Einstellung für die Nachrichtenaufbewahrung konnte nicht gespeichert werden.",

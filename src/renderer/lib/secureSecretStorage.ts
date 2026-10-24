@@ -171,6 +171,7 @@ async function clearLegacyCredentialCopies(key: string): Promise<void> {
 const cache = new Map<string, string>();
 const protectedKeys = new Set<string>();
 const deletedCredentials = new Set<string>();
+const unavailableStartupCredentials = new Set<string>();
 let persistentStorageAvailable = false;
 let storageStatusKnown = false;
 let initialized = false;
@@ -229,6 +230,36 @@ export function isProtectedSecureSecretUnavailable(key: string): boolean {
   return protectedKeys.has(key) && !cache.has(key);
 }
 
+/** Only failed startup migrations are eligible; never offer unrelated credentials or backups. */
+export function getUnavailableStartupCredentialKeys(): string[] {
+  return [...unavailableStartupCredentials]
+    .filter((key) => !cache.has(key) && (protectedKeys.has(key) || deletedCredentials.has(key)))
+    .sort();
+}
+
+/** The recovery UI obtains explicit acknowledgement before invoking this narrow Forget flow. */
+export async function forgetUnavailableStartupCredentials(keys: readonly string[]): Promise<void> {
+  const selected: readonly unknown[] = Array.isArray(keys) ? [...(keys as readonly unknown[])] : [];
+  const eligible = new Set(getUnavailableStartupCredentialKeys());
+  if (
+    !Array.isArray(keys) ||
+    selected.length === 0 ||
+    new Set(selected).size !== selected.length ||
+    !selected.every((key): key is string => typeof key === 'string' && eligible.has(key))
+  ) {
+    throw new Error('Startup credential selection is no longer eligible');
+  }
+  for (const key of selected) {
+    await mutateSecret(key, async () => {
+      // A preceding save or Retry may have made the previously displayed selection readable.
+      if (!getUnavailableStartupCredentialKeys().includes(key)) {
+        throw new Error('Startup credential selection is no longer eligible');
+      }
+      await forgetSecureSecret(key);
+    });
+  }
+}
+
 export function setSecureSecret(
   key: string,
   value: string,
@@ -275,6 +306,7 @@ async function writeSecureSecret(
     }
     deletedCredentials.delete(key);
     protectedKeys.delete(key);
+    unavailableStartupCredentials.delete(key);
     return { persistent: result.persistent };
   } catch (error) {
     if (!accepted) {
@@ -318,6 +350,7 @@ async function forgetSecureSecret(key: string): Promise<void> {
   if (compatibility) deletedCredentials.add(key);
   await clearLegacyCredentialCopies(key);
   if (compatibility) await clearCompatibilityCredential(key);
+  unavailableStartupCredentials.delete(key);
 }
 
 async function hydrateExistingSecrets(): Promise<void> {
@@ -356,7 +389,7 @@ async function hydrateExistingSecrets(): Promise<void> {
     // Only a receipt-matched explicit edit may supersede an unreadable native row.
     // Unversioned compatibility data cannot establish that it is newer than that row.
     if (isProtectedSecureSecretUnavailable(key) && rawReceipt === undefined) {
-      requireAcknowledgedMigration('protected');
+      requireAcknowledgedMigration(key, 'protected');
     }
     const { value } = credential;
     if (value === null) {
@@ -394,8 +427,9 @@ async function persistMigratedSecret(key: string, value: string): Promise<Migrat
   return 'stored';
 }
 
-function requireAcknowledgedMigration(outcome: MigratedSecretOutcome): void {
+function requireAcknowledgedMigration(key: string, outcome: MigratedSecretOutcome): void {
   if (outcome === 'protected') {
+    if (compatibilityCredentialKey(key)) unavailableStartupCredentials.add(key);
     throw new Error(
       'secure secret migration: protected credential unavailable; retry or forget it',
     );
@@ -500,6 +534,7 @@ async function migrateMeshcoreIdentity(): Promise<void> {
       throw new Error('secure secret migration: invalid legacy MeshCore private key');
     }
     requireAcknowledgedMigration(
+      MESHCORE_IDENTITY_SECRET_KEY,
       await persistMigratedSecret(
         MESHCORE_IDENTITY_SECRET_KEY,
         cache.get(MESHCORE_IDENTITY_SECRET_KEY) ?? JSON.stringify(parsed.private_key),
@@ -598,6 +633,7 @@ async function migrateMqttSettings(storageKey: string, secretKey: string): Promi
       }
     }
     requireAcknowledgedMigration(
+      secretKey,
       await persistMigratedSecret(secretKey, JSON.stringify({ ...secrets, ...existing })),
     );
   }
@@ -650,6 +686,7 @@ async function migrateMqttProfiles(): Promise<void> {
     }
   }
   requireAcknowledgedMigration(
+    MQTT_PROFILES_SECRET_KEY,
     await persistMigratedSecret(
       MQTT_PROFILES_SECRET_KEY,
       JSON.stringify({ ...passwords, ...existing }),
@@ -682,7 +719,7 @@ async function migrateCredentialRecord(
     throw new Error('secure secret migration: malformed legacy MeshCore credential');
   }
   const value = preserveCurrent ? (cache.get(secretKey) ?? raw) : raw;
-  requireAcknowledgedMigration(await persistMigratedSecret(secretKey, value));
+  requireAcknowledgedMigration(secretKey, await persistMigratedSecret(secretKey, value));
   return getCachedSecureSecret(secretKey) === value;
 }
 
@@ -738,6 +775,7 @@ export async function initializeSecureSecrets(
   preferences?: Readonly<Record<string, string>>,
 ): Promise<void> {
   initialized = false;
+  unavailableStartupCredentials.clear();
   const status = await window.electronAPI.secureSecrets.status();
   persistentStorageAvailable = status.persistent;
   storageStatusKnown = true;
@@ -781,6 +819,7 @@ export function resetSecureSecretCacheForTests(): void {
   cache.clear();
   protectedKeys.clear();
   deletedCredentials.clear();
+  unavailableStartupCredentials.clear();
   persistentStorageAvailable = false;
   storageStatusKnown = false;
   initialized = false;

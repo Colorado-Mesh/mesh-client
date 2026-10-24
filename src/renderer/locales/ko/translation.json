@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "저장된 설정을 로드할 수 없습니다",
-    "savedSettingsRecovery": "저장된 데이터가 보관되었습니다. 시스템 키링을 사용할 수 있는지 확인하거나 잠시 후 다시 시도하십시오."
+    "savedSettingsRecovery": "저장된 데이터가 보관되었습니다. 시스템 키링을 사용할 수 있는지 확인하거나 잠시 후 다시 시도하십시오.",
+    "forgetUnavailableCredentials": "읽을 수 없는 인증 정보 삭제…",
+    "forgetCredentialsTitle": "읽을 수 없는 인증 정보를 삭제할까요?",
+    "forgetCredentialsDescription": "아래 인증 정보와 저장된 복구 사본만 삭제됩니다. 다른 설정과 인증 정보는 유지됩니다.",
+    "forgetCredentialsAcknowledge": "이 인증 정보를 다시 설정해야 하며 이 작업을 되돌릴 수 없음을 이해합니다.",
+    "forgetCredentialsConfirm": "삭제 후 다시 시도",
+    "forgetCredentialsFailed": "인증 정보를 완전히 삭제하지 못했습니다. 다시 시도하거나 취소하여 남은 데이터를 보존하세요.",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore ID",
+    "credentialProfiles": "저장된 MQTT 프로필 비밀번호",
+    "credentialRoom": "MeshCore 방 {{node}}",
+    "credentialRepeater": "MeshCore 중계기 {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",

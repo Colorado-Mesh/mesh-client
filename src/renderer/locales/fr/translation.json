@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Les paramètres enregistrés n'ont pas pu être chargés",
-    "savedSettingsRecovery": "Vos données enregistrées ont été conservées. Vérifiez que votre porte-clés système est disponible, ou attendez une minute et réessayez."
+    "savedSettingsRecovery": "Vos données enregistrées ont été conservées. Vérifiez que votre porte-clés système est disponible, ou attendez une minute et réessayez.",
+    "forgetUnavailableCredentials": "Supprimer les identifiants illisibles…",
+    "forgetCredentialsTitle": "Supprimer les identifiants illisibles ?",
+    "forgetCredentialsDescription": "Seuls les identifiants ci-dessous et leurs copies de récupération seront supprimés. Les autres paramètres et identifiants seront conservés.",
+    "forgetCredentialsAcknowledge": "Je comprends que je devrai reconfigurer ces identifiants. Cette action est irréversible.",
+    "forgetCredentialsConfirm": "Supprimer et réessayer",
+    "forgetCredentialsFailed": "Les identifiants n’ont pas pu être entièrement supprimés. Réessayez ou annulez pour conserver les données restantes.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identité MeshCore",
+    "credentialProfiles": "Mots de passe des profils MQTT enregistrés",
+    "credentialRoom": "Salon MeshCore {{node}}",
+    "credentialRepeater": "Répéteur MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",

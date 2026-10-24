@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Не удалось загрузить параметры",
-    "savedSettingsRecovery": "Ваши сохраненные данные сохранены. Убедитесь, что системный брелок доступен, или подождите минуту и повторите попытку."
+    "savedSettingsRecovery": "Ваши сохраненные данные сохранены. Убедитесь, что системный брелок доступен, или подождите минуту и повторите попытку.",
+    "forgetUnavailableCredentials": "Удалить нечитаемые учётные данные…",
+    "forgetCredentialsTitle": "Удалить нечитаемые учётные данные?",
+    "forgetCredentialsDescription": "Будут удалены только перечисленные учётные данные и их копии для восстановления. Другие настройки и учётные данные сохранятся.",
+    "forgetCredentialsAcknowledge": "Я понимаю, что эти учётные данные придётся настроить заново. Это действие нельзя отменить.",
+    "forgetCredentialsConfirm": "Удалить и повторить",
+    "forgetCredentialsFailed": "Не удалось полностью удалить учётные данные. Повторите попытку или отмените действие, чтобы сохранить оставшиеся данные.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Идентификатор MeshCore",
+    "credentialProfiles": "Пароли сохранённых профилей MQTT",
+    "credentialRoom": "Комната MeshCore {{node}}",
+    "credentialRepeater": "Ретранслятор MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Не удалось сохранить настройки хранения сообщений.",

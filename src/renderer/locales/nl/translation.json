@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Opgeslagen instellingen konden niet worden geladen",
-    "savedSettingsRecovery": "Uw opgeslagen gegevens zijn bewaard gebleven. Controleer of uw systeemsleutelbos beschikbaar is, of wacht even en probeer het opnieuw."
+    "savedSettingsRecovery": "Uw opgeslagen gegevens zijn bewaard gebleven. Controleer of uw systeemsleutelbos beschikbaar is, of wacht even en probeer het opnieuw.",
+    "forgetUnavailableCredentials": "Onleesbare inloggegevens verwijderen…",
+    "forgetCredentialsTitle": "Onleesbare inloggegevens verwijderen?",
+    "forgetCredentialsDescription": "Alleen de onderstaande inloggegevens en hun opgeslagen herstelkopieën worden verwijderd. Andere instellingen en inloggegevens blijven bewaard.",
+    "forgetCredentialsAcknowledge": "Ik begrijp dat ik deze inloggegevens opnieuw moet instellen. Dit kan niet ongedaan worden gemaakt.",
+    "forgetCredentialsConfirm": "Verwijderen en opnieuw proberen",
+    "forgetCredentialsFailed": "De inloggegevens konden niet volledig worden verwijderd. Probeer opnieuw of annuleer om de resterende gegevens te bewaren.",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore-identiteit",
+    "credentialProfiles": "Opgeslagen MQTT-profielwachtwoorden",
+    "credentialRoom": "MeshCore-ruimte {{node}}",
+    "credentialRepeater": "MeshCore-repeater {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",

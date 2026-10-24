@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "无法加载保存的设置",
-    "savedSettingsRecovery": "您保存的数据已保存。请检查系统钥匙圈是否可用，或等待一分钟，然后重试。"
+    "savedSettingsRecovery": "您保存的数据已保存。请检查系统钥匙圈是否可用，或等待一分钟，然后重试。",
+    "forgetUnavailableCredentials": "移除无法读取的凭据…",
+    "forgetCredentialsTitle": "移除无法读取的凭据？",
+    "forgetCredentialsDescription": "只会移除下面列出的凭据及其已保存的恢复副本。其他设置和凭据将被保留。",
+    "forgetCredentialsAcknowledge": "我了解需要重新配置这些凭据。此操作无法撤销。",
+    "forgetCredentialsConfirm": "移除并重试",
+    "forgetCredentialsFailed": "无法完全移除凭据。请重试，或取消以保留其余数据。",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore 身份",
+    "credentialProfiles": "已保存的 MQTT 配置密码",
+    "credentialRoom": "MeshCore 房间 {{node}}",
+    "credentialRepeater": "MeshCore 中继器 {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",

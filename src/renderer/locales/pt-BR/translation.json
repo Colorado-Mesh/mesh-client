@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Não foi possível carregar as configurações.",
-    "savedSettingsRecovery": "Seus dados salvos foram mantidos. Verifique se o chaveiro do sistema está disponível ou aguarde um minuto e tente novamente."
+    "savedSettingsRecovery": "Seus dados salvos foram mantidos. Verifique se o chaveiro do sistema está disponível ou aguarde um minuto e tente novamente.",
+    "forgetUnavailableCredentials": "Remover credenciais ilegíveis…",
+    "forgetCredentialsTitle": "Remover credenciais ilegíveis?",
+    "forgetCredentialsDescription": "Somente as credenciais listadas abaixo e suas cópias de recuperação serão removidas. As demais configurações e credenciais serão mantidas.",
+    "forgetCredentialsAcknowledge": "Entendo que precisarei reconfigurar essas credenciais. Esta ação não pode ser desfeita.",
+    "forgetCredentialsConfirm": "Remover e tentar novamente",
+    "forgetCredentialsFailed": "Não foi possível remover completamente as credenciais. Tente novamente ou cancele para manter os dados restantes.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identidade MeshCore",
+    "credentialProfiles": "Senhas dos perfis MQTT salvos",
+    "credentialRoom": "Sala MeshCore {{node}}",
+    "credentialRepeater": "Repetidor MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Falha ao salvar a configuração de retenção de mensagens.",

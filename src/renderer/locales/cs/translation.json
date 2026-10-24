@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Uložená nastavení se nepodařilo načíst",
-    "savedSettingsRecovery": "Vaše uložená data byla zachována. Zkontrolujte, zda je systémová klíčenka k dispozici, nebo chvíli počkejte a zkuste to znovu."
+    "savedSettingsRecovery": "Vaše uložená data byla zachována. Zkontrolujte, zda je systémová klíčenka k dispozici, nebo chvíli počkejte a zkuste to znovu.",
+    "forgetUnavailableCredentials": "Odstranit nečitelné přihlašovací údaje…",
+    "forgetCredentialsTitle": "Odstranit nečitelné přihlašovací údaje?",
+    "forgetCredentialsDescription": "Odstraní se pouze níže uvedené přihlašovací údaje a jejich záložní kopie pro obnovení. Ostatní nastavení a přihlašovací údaje zůstanou zachovány.",
+    "forgetCredentialsAcknowledge": "Rozumím, že tyto přihlašovací údaje budu muset znovu nastavit. Tuto akci nelze vrátit zpět.",
+    "forgetCredentialsConfirm": "Odstranit a zkusit znovu",
+    "forgetCredentialsFailed": "Přihlašovací údaje se nepodařilo zcela odstranit. Zkuste to znovu nebo akci zrušte a zachovejte zbývající data.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identita MeshCore",
+    "credentialProfiles": "Hesla uložených profilů MQTT",
+    "credentialRoom": "Místnost MeshCore {{node}}",
+    "credentialRepeater": "Opakovač MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",

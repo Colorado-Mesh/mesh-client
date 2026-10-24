@@ -7,7 +7,9 @@ import {
 
 import { APP_SETTINGS_STORAGE_KEY, LEGACY_APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import {
+  forgetUnavailableStartupCredentials,
   getCachedSecureSecret,
+  getUnavailableStartupCredentialKeys,
   initializeSecureSecrets,
   initializeSecureSecretsFailClosed,
   isProtectedSecureSecretUnavailable,
@@ -268,6 +270,7 @@ describe('secureSecretStorage migrations', () => {
       expect(window.electronAPI.secureSecrets.set).not.toHaveBeenCalled();
       expect(window.electronAPI.secureSecrets.remove).not.toHaveBeenCalled();
       expect(getCachedSecureSecret(MESHCORE_MQTT_SECRET_KEY)).toBeNull();
+      expect(getUnavailableStartupCredentialKeys()).toEqual([MESHCORE_MQTT_SECRET_KEY]);
     },
   );
 
@@ -855,6 +858,7 @@ describe('secureSecretStorage migrations', () => {
           /protected credential unavailable/,
         );
         expect(localStorage.getItem(source.storageKey)).toBe(source.raw);
+        expect(getUnavailableStartupCredentialKeys()).toEqual([source.secretKey]);
         expect(secureValues.get(source.secretKey)).toBe(source.secret);
         expect(isProtectedSecureSecretUnavailable(source.secretKey)).toBe(true);
         expect(window.electronAPI.secureSecrets.set).not.toHaveBeenCalled();
@@ -867,20 +871,31 @@ describe('secureSecretStorage migrations', () => {
         await initializeSecureSecretsFailClosed();
         expect(JSON.parse(localStorage.getItem(source.storageKey)!)).toEqual(source.metadata);
         expect(getCachedSecureSecret(source.secretKey)).toBe(source.secret);
+        expect(getUnavailableStartupCredentialKeys()).toEqual([]);
       },
     );
 
     it('allows explicit Forget of an unreadable row without reviving its inline source', async () => {
+      const unrelated = meshcoreRoomSecretKey(900);
+      const unreadableUnrelated = meshcoreRepeaterSecretKey(901);
+      const backup = keyBackupSecretKey('meshcore', 902);
       localStorage.setItem(source.storageKey, source.raw);
       secureValues.set(source.secretKey, source.secret);
+      secureValues.set(unrelated, 'readable-unrelated');
+      secureValues.set(unreadableUnrelated, 'protected-unrelated');
+      secureValues.set(backup, 'protected-backup');
       vi.mocked(window.electronAPI.secureSecrets.status).mockResolvedValue({
         available: false,
         persistent: false,
       });
-      vi.mocked(window.electronAPI.secureSecrets.getAll).mockResolvedValue({});
+      vi.mocked(window.electronAPI.secureSecrets.getAll).mockResolvedValue({
+        [unrelated]: 'readable-unrelated',
+      });
       await expect(initializeSecureSecrets()).rejects.toThrow(/protected credential unavailable/);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([source.secretKey]);
 
-      await removeSecureSecret(source.secretKey);
+      await forgetUnavailableStartupCredentials([source.secretKey]);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
       resetSecureSecretCacheForTests();
       await initializeSecureSecretsFailClosed();
 
@@ -890,6 +905,9 @@ describe('secureSecretStorage migrations', () => {
       expect(
         localStorage.getItem(`mesh-client:credentialCompatibility:${source.secretKey}`),
       ).toBeNull();
+      expect(secureValues.get(unrelated)).toBe('readable-unrelated');
+      expect(secureValues.get(unreadableUnrelated)).toBe('protected-unrelated');
+      expect(secureValues.get(backup)).toBe('protected-backup');
     });
   });
 
@@ -903,6 +921,184 @@ describe('secureSecretStorage migrations', () => {
     );
     expect(window.electronAPI.secureSecrets.migrateLegacyIdentityCiphertext).not.toHaveBeenCalled();
     expect(isProtectedSecureSecretUnavailable(MESHCORE_IDENTITY_SECRET_KEY)).toBe(true);
+    expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+  });
+
+  describe('scoped startup credential recovery', () => {
+    const blocked = meshcoreRoomSecretKey(42);
+    const settingKey = `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}42`;
+    const raw = JSON.stringify({ theme: 'dark', [settingKey]: 'legacy-source' });
+
+    async function blockStartup(): Promise<void> {
+      localStorage.setItem(APP_SETTINGS_STORAGE_KEY, raw);
+      secureValues.set(blocked, 'permanently-unreadable');
+      vi.mocked(window.electronAPI.secureSecrets.getAll).mockResolvedValue({});
+      await expect(initializeSecureSecrets()).rejects.toThrow(/protected credential unavailable/);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([blocked]);
+    }
+
+    it('rejects an empty or unrelated selection before deleting any credential', async () => {
+      const readable = meshcoreRoomSecretKey(99);
+      const backup = keyBackupSecretKey('meshcore', 100);
+      await blockStartup();
+      await setSecureSecret(readable, 'unrelated-readable');
+      secureValues.set(backup, 'unrelated-backup');
+      for (const selection of [
+        [],
+        [blocked, blocked],
+        [blocked, readable],
+        [readable],
+        [backup],
+        ['__proto__'],
+        ['mqtt:unknown'],
+      ]) {
+        await expect(forgetUnavailableStartupCredentials(selection)).rejects.toThrow(
+          /no longer eligible/,
+        );
+      }
+      for (const selection of [
+        null,
+        'not-an-array',
+        [blocked, undefined],
+        [blocked, ...Array(1)],
+      ]) {
+        await expect(
+          forgetUnavailableStartupCredentials(selection as unknown as readonly string[]),
+        ).rejects.toThrow(/no longer eligible/);
+      }
+      expect(window.electronAPI.secureSecrets.remove).not.toHaveBeenCalled();
+      expect(secureValues.get(blocked)).toBe('permanently-unreadable');
+      expect(secureValues.get(readable)).toBe('unrelated-readable');
+      expect(secureValues.get(backup)).toBe('unrelated-backup');
+      expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(raw);
+    });
+
+    it('rejects a stale selection after Retry makes the credential readable', async () => {
+      await blockStartup();
+      installSecureSecretApi();
+      await initializeSecureSecrets();
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        /no longer eligible/,
+      );
+      expect(secureValues.get(blocked)).toBe('permanently-unreadable');
+      expect(window.electronAPI.secureSecrets.remove).not.toHaveBeenCalled();
+    });
+
+    it('rejects a stale selection after an explicit replacement save', async () => {
+      await blockStartup();
+      await setSecureSecret(blocked, 'new-readable-credential');
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        /no longer eligible/,
+      );
+      expect(secureValues.get(blocked)).toBe('new-readable-credential');
+      expect(window.electronAPI.secureSecrets.remove).not.toHaveBeenCalled();
+    });
+
+    it('rechecks queued selection eligibility after a preceding Forget completes', async () => {
+      await blockStartup();
+      const first = removeSecureSecret(blocked);
+      const second = expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        /no longer eligible/,
+      );
+      await first;
+      await second;
+      expect(window.electronAPI.secureSecrets.remove).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves the source and remains retryable when its acknowledgement fails', async () => {
+      await blockStartup();
+      let rejectReceipt = true;
+      vi.mocked(window.electronAPI.appSettings.set).mockImplementation((key, value) => {
+        if (rejectReceipt) return Promise.reject(new Error('receipt rejected'));
+        appSettingsValues.set(key, value);
+        return Promise.resolve({ changes: 1 });
+      });
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        /receipt was not persisted/,
+      );
+      expect(window.electronAPI.secureSecrets.remove).not.toHaveBeenCalled();
+      expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(raw);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([blocked]);
+
+      rejectReceipt = false;
+      await forgetUnavailableStartupCredentials([blocked]);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!)).toEqual({
+        theme: 'dark',
+      });
+    });
+
+    it('preserves the source and remains retryable when native removal fails', async () => {
+      await blockStartup();
+      vi.mocked(window.electronAPI.secureSecrets.remove).mockRejectedValueOnce(
+        new Error('remove failed'),
+      );
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow('remove failed');
+      expect(secureValues.has(blocked)).toBe(true);
+      expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(raw);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([blocked]);
+
+      await forgetUnavailableStartupCredentials([blocked]);
+      expect(secureValues.has(blocked)).toBe(false);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!)).toEqual({
+        theme: 'dark',
+      });
+    });
+
+    it('can retry partial cleanup after native deletion without losing unrelated preferences', async () => {
+      await blockStartup();
+      const originalSet = localStorage.setItem.bind(localStorage);
+      let failCleanup = true;
+      const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        if (key === APP_SETTINGS_STORAGE_KEY && failCleanup) throw new Error('cache unavailable');
+        originalSet(key, value);
+      });
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        'cache unavailable',
+      );
+      expect(secureValues.has(blocked)).toBe(false);
+      expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(raw);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([blocked]);
+
+      failCleanup = false;
+      await forgetUnavailableStartupCredentials([blocked]);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!)).toEqual({
+        theme: 'dark',
+      });
+      expect(localStorage.getItem(`mesh-client:credentialCompatibility:${blocked}`)).toBeNull();
+      setItem.mockRestore();
+    });
+
+    it('recomputes one failed credential at a time across startup retries', async () => {
+      const next = meshcoreRepeaterSecretKey(43);
+      const nextSetting = `${MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX}43`;
+      await blockStartup();
+      secureValues.set(next, 'second-unreadable');
+      localStorage.setItem(
+        APP_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          theme: 'dark',
+          [settingKey]: 'legacy-source',
+          [nextSetting]: 'second-legacy',
+        }),
+      );
+      await forgetUnavailableStartupCredentials([blocked]);
+      await expect(initializeSecureSecrets()).rejects.toThrow(/protected credential unavailable/);
+      expect(getUnavailableStartupCredentialKeys()).toEqual([next]);
+      await expect(forgetUnavailableStartupCredentials([blocked])).rejects.toThrow(
+        /no longer eligible/,
+      );
+      await forgetUnavailableStartupCredentials([next]);
+      await initializeSecureSecrets();
+      expect(getUnavailableStartupCredentialKeys()).toEqual([]);
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!)).toEqual({
+        theme: 'dark',
+      });
+    });
   });
 
   it.each([

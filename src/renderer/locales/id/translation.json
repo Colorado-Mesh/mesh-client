@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Pengaturan yang disimpan tidak dapat dimuat",
-    "savedSettingsRecovery": "Data Anda yang disimpan telah disimpan. Periksa apakah ring kunci sistem Anda tersedia, atau tunggu sebentar dan coba lagi."
+    "savedSettingsRecovery": "Data Anda yang disimpan telah disimpan. Periksa apakah ring kunci sistem Anda tersedia, atau tunggu sebentar dan coba lagi.",
+    "forgetUnavailableCredentials": "Hapus kredensial yang tidak terbaca…",
+    "forgetCredentialsTitle": "Hapus kredensial yang tidak terbaca?",
+    "forgetCredentialsDescription": "Hanya kredensial di bawah ini dan salinan pemulihannya yang akan dihapus. Pengaturan dan kredensial lainnya akan dipertahankan.",
+    "forgetCredentialsAcknowledge": "Saya memahami bahwa kredensial ini harus dikonfigurasi ulang. Tindakan ini tidak dapat dibatalkan.",
+    "forgetCredentialsConfirm": "Hapus dan coba lagi",
+    "forgetCredentialsFailed": "Kredensial tidak dapat dihapus sepenuhnya. Coba lagi, atau batalkan untuk mempertahankan data yang tersisa.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identitas MeshCore",
+    "credentialProfiles": "Kata sandi profil MQTT tersimpan",
+    "credentialRoom": "Ruang MeshCore {{node}}",
+    "credentialRepeater": "Repeater MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",
