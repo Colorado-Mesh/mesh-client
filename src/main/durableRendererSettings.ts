@@ -5,6 +5,7 @@ import {
   RENDERER_STORAGE_DELETION_SETTING_PREFIX,
 } from '../shared/rendererOrigin';
 import type { NodeSqliteDB } from './db-compat';
+import { withFullSqliteSync } from './sqliteDurability';
 
 function parseLastRead(raw: string | undefined): Record<string, unknown> | null {
   if (raw === undefined) return null;
@@ -82,19 +83,9 @@ export function resetDurableRendererData(db: NodeSqliteDB): void {
       JSON.stringify({ state: { byIdentity: {}, retiredRooms: null }, version: 3 }),
     ],
   ];
-  const previousSync = db.pragma('synchronous', { simple: true });
-  const modes = new Map<unknown, string>([
-    [0, 'OFF'],
-    [1, 'NORMAL'],
-    [2, 'FULL'],
-    [3, 'EXTRA'],
-  ]);
-  const restoreSync = modes.get(previousSync);
-  if (restoreSync === undefined) throw new Error('Cannot determine SQLite synchronous mode');
   // The reset completion file is fsynced. WAL NORMAL does not sync each commit, so the reset
   // must commit under FULL before that file can durably declare the operation complete.
-  db.pragma('synchronous = FULL');
-  try {
+  withFullSqliteSync(db, () => {
     db.transaction(() => {
       const write = db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)');
       for (const [key, value] of emptySettings) write.run(key, value);
@@ -107,7 +98,5 @@ export function resetDurableRendererData(db: NodeSqliteDB): void {
         'INSERT OR REPLACE INTO emergency_incident_storage (id, initialized) VALUES (1, 1)',
       ).run();
     })();
-  } finally {
-    db.pragma(`synchronous = ${restoreSync}`);
-  }
+  });
 }

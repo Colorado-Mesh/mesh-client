@@ -9,25 +9,7 @@ import {
   type PendingRendererStorageIntent,
 } from '../shared/rendererStorageIntent';
 import type { NodeSqliteDB } from './db-compat';
-
-/** Receipt ACKs and migration completion files must never outrun their SQLite commits. */
-function withFullSync<T>(db: NodeSqliteDB, operation: () => T): T {
-  const previous = db.pragma('synchronous', { simple: true });
-  const modes = new Map<unknown, string>([
-    [0, 'OFF'],
-    [1, 'NORMAL'],
-    [2, 'FULL'],
-    [3, 'EXTRA'],
-  ]);
-  const restore = modes.get(previous);
-  if (restore === undefined) throw new Error('Cannot determine SQLite synchronous mode');
-  db.pragma('synchronous = FULL');
-  try {
-    return operation();
-  } finally {
-    db.pragma(`synchronous = ${restore}`);
-  }
-}
+import { withFullSqliteSync } from './sqliteDurability';
 
 export function writeRendererStorageDeletionState(
   db: NodeSqliteDB,
@@ -37,7 +19,7 @@ export function writeRendererStorageDeletionState(
   if (!isRendererStorageDeletionSetting(key))
     throw new TypeError('Invalid renderer storage deletion key');
   const proposed = parseRendererStorageDeletionState(value);
-  return withFullSync(db, () =>
+  return withFullSqliteSync(db, () =>
     db.transaction(() => {
       const row = db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as
         { value: string } | undefined;
@@ -58,7 +40,7 @@ export function commitImportedRendererStorageIntents(
   intents: Readonly<Record<string, PendingRendererStorageIntent>>,
 ): void {
   if (Object.keys(intents).length === 0) return;
-  withFullSync(db, () => {
+  withFullSqliteSync(db, () => {
     db.transaction(() => {
       const read = db.prepareOnce('SELECT value FROM app_settings WHERE key = ?');
       const write = db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)');
