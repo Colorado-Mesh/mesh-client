@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { ANALYSIS_WORKER_REQUEST_TIMEOUT_MS } from '../timeConstants';
 import { runAnalysisJob, runTopologyBuildJob } from './analysisJobHandlers';
 import { createAnalysisWorkerPool, workerBudget } from './analysisWorkerPool';
 import { runDiagnosticsAnalyzeBatchInline } from './runDiagnosticsAnalyzeBatch';
@@ -117,6 +118,7 @@ describe('analysisWorkerPool', () => {
       },
     });
     expect(pool.wouldUseWorker()).toBe(false);
+    expect(pool.ensureAttachedWorker()).toBe(false);
     const result = await pool.run({
       kind: 'topologyBuild',
       sequence: 9,
@@ -126,6 +128,37 @@ describe('analysisWorkerPool', () => {
     });
     expect(result.kind).toBe('topologyBuild');
     pool.dispose();
+  });
+
+  it('rejects pending requests that never reply', async () => {
+    vi.useFakeTimers();
+    try {
+      const worker = {
+        postMessage: vi.fn(),
+        terminate: vi.fn(),
+        onmessage: null as ((event: MessageEvent) => void) | null,
+        onerror: null as ((event: ErrorEvent) => void) | null,
+      };
+      const pool = createAnalysisWorkerPool({
+        canUseWorkers: () => true,
+        hardwareConcurrency: 8,
+        createWorker: () => worker as unknown as Worker,
+      });
+      expect(pool.ensureAttachedWorker()).toBe(true);
+      const pending = pool.run({
+        kind: 'topologyBuild',
+        sequence: 11,
+        interfaces: [],
+        peers: [],
+        opts: { selfLabel: 'Me', unassignedInterfaceLabel: 'Other' },
+      });
+      const expectation = expect(pending).rejects.toThrow(/timed out/);
+      await vi.advanceTimersByTimeAsync(ANALYSIS_WORKER_REQUEST_TIMEOUT_MS);
+      await expectation;
+      pool.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

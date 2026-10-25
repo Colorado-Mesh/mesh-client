@@ -26,6 +26,14 @@ export interface VoicePcmCaptureHandle {
   kind: 'audioworklet' | 'scriptprocessor';
 }
 
+export interface AttachVoicePcmCaptureOptions {
+  /**
+   * ScriptProcessor buffer size (power of two). Default 4096.
+   * AudioWorklet ignores this (uses its own quantum).
+   */
+  scriptProcessorBufferSize?: number;
+}
+
 /**
  * Attach mono PCM capture from `source` into `onPcm`.
  * Prefers AudioWorklet; falls back to deprecated ScriptProcessor when unavailable.
@@ -34,6 +42,7 @@ export async function attachVoicePcmCapture(
   ctx: AudioContext,
   source: MediaStreamAudioSourceNode,
   onPcm: (samples: Float32Array) => void,
+  options?: AttachVoicePcmCaptureOptions,
 ): Promise<VoicePcmCaptureHandle> {
   const silentGain = ctx.createGain();
   silentGain.gain.value = 0;
@@ -48,7 +57,13 @@ export async function attachVoicePcmCapture(
       } finally {
         URL.revokeObjectURL(url);
       }
-      const node = new AudioWorkletNode(ctx, 'voice-pcm-processor');
+      const node = new AudioWorkletNode(ctx, 'voice-pcm-processor', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        channelCount: 1,
+        channelCountMode: 'explicit',
+        channelInterpretation: 'speakers',
+      });
       node.port.onmessage = (event: MessageEvent<Float32Array>) => {
         if (event.data instanceof Float32Array) onPcm(event.data);
       };
@@ -84,8 +99,9 @@ export async function attachVoicePcmCapture(
     }
   }
 
+  const bufferSize = options?.scriptProcessorBufferSize ?? 4096;
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- fallback when AudioWorklet missing
-  const processor = ctx.createScriptProcessor(4096, 1, 1);
+  const processor = ctx.createScriptProcessor(bufferSize, 1, 1);
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
   processor.onaudioprocess = (ev) => {
     // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor

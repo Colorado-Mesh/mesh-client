@@ -222,23 +222,28 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
   try {
     audioCtx = new AudioContext({ sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ });
     source = audioCtx.createMediaStreamSource(stream);
-    pcm = await attachVoicePcmCapture(audioCtx, source, (channelData) => {
-      const session = activeSession;
-      if (session?.sessionId !== sessionId) return;
-      if (session.sendFailed) return;
-      const need = channelData.length;
-      if (session.pendingCount + need > session.pendingSamples.length) {
-        // Expand ring instead of dropping audio under brief backpressure.
-        const next = new Float32Array(
-          Math.max(session.pendingSamples.length * 2, session.pendingCount + need),
-        );
-        next.set(session.pendingSamples.subarray(0, session.pendingCount));
-        session.pendingSamples = next;
-      }
-      session.pendingSamples.set(channelData, session.pendingCount);
-      session.pendingCount += need;
-      flushPendingFrames(session, false);
-    });
+    pcm = await attachVoicePcmCapture(
+      audioCtx,
+      source,
+      (channelData) => {
+        const session = activeSession;
+        if (session?.sessionId !== sessionId) return;
+        if (session.sendFailed) return;
+        const need = channelData.length;
+        if (session.pendingCount + need > session.pendingSamples.length) {
+          // Expand ring instead of dropping audio under brief backpressure.
+          const next = new Float32Array(
+            Math.max(session.pendingSamples.length * 2, session.pendingCount + need),
+          );
+          next.set(session.pendingSamples.subarray(0, session.pendingCount));
+          session.pendingSamples = next;
+        }
+        session.pendingSamples.set(channelData, session.pendingCount);
+        session.pendingCount += need;
+        flushPendingFrames(session, false);
+      },
+      { scriptProcessorBufferSize: PROCESSOR_BUFFER_SIZE },
+    );
   } catch (e) {
     console.warn('[reticulumVoiceMemo] audio graph setup failed:', errLikeToLogString(e));
     for (const track of stream.getTracks()) {

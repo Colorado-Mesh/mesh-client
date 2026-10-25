@@ -241,6 +241,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
   const snapshotRafRef = useRef<number | null>(null);
   const refreshGenerationRef = useRef(0);
+  /** Invalidates cached rebuilds so they cannot overwrite a fresher refresh apply. */
+  const rebuildGenerationRef = useRef(0);
   const refreshInFlightRef = useRef(false);
   const refreshPendingRef = useRef(false);
   const lastFetchRef = useRef<{
@@ -329,7 +331,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     });
     const width = svgRef.current?.clientWidth ?? 800;
     const height = svgRef.current?.clientHeight ?? 600;
-    const generation = ++refreshGenerationRef.current;
+    const generation = ++rebuildGenerationRef.current;
     void runTopologyBuild({
       interfaces: cached.interfaces.map((iface) => ({
         id: iface.id,
@@ -352,7 +354,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
       },
     })
       .then((graph) => {
-        if (generation !== refreshGenerationRef.current) return;
+        if (generation !== rebuildGenerationRef.current) return;
         applyGraph(graph);
       })
       .catch((e: unknown) => {
@@ -396,6 +398,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           });
           const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
           lastFetchRef.current = { interfaces, peers: uniqueByHash, selfLabel };
+          // Drop any rebuild that started against the previous cache before this write.
+          rebuildGenerationRef.current += 1;
           const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
             rfOnly: rfOnlyRef.current,
             includeDistantPeers: includeDistantPeersRef.current,

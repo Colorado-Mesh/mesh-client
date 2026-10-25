@@ -401,11 +401,14 @@ describe('diagnosticsStore distanceOffsetKm', () => {
 
 describe('recordPacketPath redundancy', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-15T12:00:00.000Z'));
     useDiagnosticsStore.getState().clearDiagnostics();
   });
 
   afterEach(() => {
     useDiagnosticsStore.getState().clearDiagnostics();
+    vi.useRealTimers();
   });
 
   it('tracks last-20 packets incrementally without requiring a full cache scan', () => {
@@ -420,6 +423,8 @@ describe('recordPacketPath redundancy', () => {
     expect(redundancy).toBeDefined();
     expect(redundancy!.recentPackets).toHaveLength(20);
     expect(redundancy!.recentPackets.some((p) => p.packetId === 1001)).toBe(true);
+    // Tied lastSeen: new record precedes retained ones so 1025 stays in the window.
+    expect(redundancy!.recentPackets.some((p) => p.packetId === 1025)).toBe(true);
     expect(redundancy!.maxPaths).toBeGreaterThanOrEqual(2);
     expect(redundancy!.score).toBeGreaterThan(0);
   });

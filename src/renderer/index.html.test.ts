@@ -32,6 +32,11 @@ describe('index.html CSP', () => {
     expect(csp).toMatch(/worker-src[^;]*\bblob:/);
   });
 
+  it('script-src-elem allows blob: for AudioWorklet.addModule', () => {
+    const csp = readCspContent();
+    expect(csp).toMatch(/script-src-elem[^;]*\bblob:/);
+  });
+
   it('denies plugin embeds, base hijacking, and form posts', () => {
     const csp = readCspContent();
     expect(csp).toMatch(/object-src\s+'none'/);

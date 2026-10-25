@@ -45,7 +45,7 @@ import type {
   RfDiagnosticRow,
 } from '../lib/types';
 import { rfRowId } from '../lib/types';
-import { defaultCanUseWorkers } from '../lib/workers/analysisWorkerPool';
+import { analysisWorkersAvailable, defaultCanUseWorkers } from '../lib/workers/analysisWorkerPool';
 import { runDiagnosticsAnalyzeBatch } from '../lib/workers/runDiagnosticsAnalyzeBatch';
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -1300,8 +1300,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       }
 
       // Incremental last-20 by lastSeen (avoid full packetCache scan+sort on every ingest).
+      // New record first so stable sort keeps it ahead of same-timestamp retained rows.
       const prevRecent = state.nodeRedundancy.get(fromNodeId)?.recentPackets ?? [];
-      const recentPackets = [...prevRecent.filter((r) => r.packetId !== packetId), record]
+      const recentPackets = [record, ...prevRecent.filter((r) => r.packetId !== packetId)]
         .sort((a, b) => b.lastSeen - a.lastSeen)
         .slice(0, 20);
       const maxPaths = recentPackets.reduce((m, r) => Math.max(m, r.paths.length), 0);
@@ -1477,8 +1478,44 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           pathUpdatedTimestamps: state.pathUpdatedTimestamps.get(nodeId),
         }));
 
-      // COI+SAB: offload routing analyzeNode batch. Tests / force-file keep chunked main-thread path.
-      if (defaultCanUseWorkers()) {
+      const runChunkedRouting = () => {
+        runDiagnosticsInChunks(
+          remoteEntries,
+          DIAGNOSTICS_REANALYSIS_CHUNK_SIZE,
+          ([nodeId, node]) => {
+            const anomaly = analyzeNode(
+              node,
+              state.packetStats.get(nodeId),
+              homeNode,
+              state.hopHistory.get(nodeId) ?? [],
+              state.ignoreMqttEnabled || state.mqttIgnoredNodes.has(nodeId),
+              distanceMultiplier,
+              state.distanceOffsetKm,
+              hopsThreshold,
+              capabilities,
+              getNoiseStatsForNode(state.noiseRateStats, nodeId),
+              state.meshcoreTraceHistory.get(nodeId)?.at(-1)?.pathSnrs,
+              state.pathUpdatedTimestamps.get(nodeId),
+            );
+            if (anomaly) newAnomalies.set(nodeId, anomaly);
+            else newAnomalies.delete(nodeId);
+          },
+          finishAfterRouting,
+        );
+      };
+
+      // Non-COI: keep the chunked main-thread path synchronous. COI+SAB: offload only when a
+      // worker is budgeted and attached after Vite pool settle (else chunked after settle).
+      if (!defaultCanUseWorkers()) {
+        runChunkedRouting();
+        return;
+      }
+      void analysisWorkersAvailable().then((workersReady) => {
+        if (generation !== diagnosticsReanalysisGeneration) return;
+        if (!workersReady) {
+          runChunkedRouting();
+          return;
+        }
         void runDiagnosticsAnalyzeBatch({
           homeNode,
           distanceMultiplier,
@@ -1517,32 +1554,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             }
             finishAfterRouting();
           });
-        return;
-      }
-
-      runDiagnosticsInChunks(
-        remoteEntries,
-        DIAGNOSTICS_REANALYSIS_CHUNK_SIZE,
-        ([nodeId, node]) => {
-          const anomaly = analyzeNode(
-            node,
-            state.packetStats.get(nodeId),
-            homeNode,
-            state.hopHistory.get(nodeId) ?? [],
-            state.ignoreMqttEnabled || state.mqttIgnoredNodes.has(nodeId),
-            distanceMultiplier,
-            state.distanceOffsetKm,
-            hopsThreshold,
-            capabilities,
-            getNoiseStatsForNode(state.noiseRateStats, nodeId),
-            state.meshcoreTraceHistory.get(nodeId)?.at(-1)?.pathSnrs,
-            state.pathUpdatedTimestamps.get(nodeId),
-          );
-          if (anomaly) newAnomalies.set(nodeId, anomaly);
-          else newAnomalies.delete(nodeId);
-        },
-        finishAfterRouting,
-      );
+      });
     }, reanalysisDelayMs);
   },
 

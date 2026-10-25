@@ -1,7 +1,10 @@
 import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
 import { isRendererPreferenceKey } from '@/shared/rendererPreferences';
 
-export { isRendererPreferenceKey } from '@/shared/rendererPreferences';
+export {
+  hasEstablishedRendererPreferenceValues,
+  isRendererPreferenceKey,
+} from '@/shared/rendererPreferences';
 
 import { createDurableRendererSetting } from './durableRendererSetting';
 
@@ -179,6 +182,8 @@ const sqlitePreferences = new Set([
     `${protocol}MessageRetentionCount`,
   ]),
 ]);
+/** Kept across Clear All Local Data; not mere mirrors of the app-settings blob. */
+const resetPreservedScalars = new Set(['locale']);
 
 /** The older scalar SQLite records use several encodings, not one JSON codec. */
 export function importLegacyPreferenceAliases(
@@ -252,6 +257,7 @@ async function synchronizeScalarCaches(
   for (const key of Object.keys(settings)) {
     if (
       !sqlitePreferences.has(key) &&
+      !resetPreservedScalars.has(key) &&
       !Object.hasOwn(app, key) &&
       (oneZeroBooleans.has(key) ||
         jsonBooleans.has(key) ||

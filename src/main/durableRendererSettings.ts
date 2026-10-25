@@ -4,6 +4,7 @@ import {
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
   RENDERER_STORAGE_DELETION_SETTING_PREFIX,
 } from '../shared/rendererOrigin';
+import { hasEstablishedRendererPreferenceValues } from '../shared/rendererPreferences';
 import type { NodeSqliteDB } from './db-compat';
 import { withFullSqliteSync } from './sqliteDurability';
 
@@ -71,6 +72,22 @@ export function seedDurableRendererSettings(
       if (value === undefined) continue;
       if (value.length > DURABLE_RENDERER_SETTING_MAX_LENGTH) {
         throw new Error(`Renderer migration setting exceeds storage limit: ${databaseKey}`);
+      }
+      // An empty preference map (clear write-through) must not block repair from replacing it.
+      if (databaseKey === DURABLE_RENDERER_STORAGE_KEYS.preferences) {
+        const existing = db
+          .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+          .get(databaseKey) as { value: string } | undefined;
+        if (
+          hasEstablishedRendererPreferenceValues(value) &&
+          !hasEstablishedRendererPreferenceValues(existing?.value)
+        ) {
+          db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)').run(
+            databaseKey,
+            value,
+          );
+          continue;
+        }
       }
       insert.run(databaseKey, value);
     }

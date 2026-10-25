@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '../errLikeToLogString';
 import { measureRendererTiming, measureRendererTimingAsync } from '../rendererTimings';
+import { ANALYSIS_WORKER_REQUEST_TIMEOUT_MS } from '../timeConstants';
 import { runAnalysisJob } from './analysisJobHandlers';
 import type {
   AnalysisJobRequest,
@@ -34,6 +35,12 @@ export function nextAnalysisSequence(): number {
   return sequenceCounter;
 }
 
+interface PendingWaiter {
+  resolve: (value: AnalysisJobResult) => void;
+  reject: (reason: unknown) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
 export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}) {
   const canUse = options.canUseWorkers ?? defaultCanUseWorkers;
   const maxWorkers = options.maxWorkers ?? DEFAULT_MAX_WORKERS;
@@ -41,21 +48,33 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
     options.hardwareConcurrency ??
     (typeof navigator !== 'undefined' ? Math.max(1, navigator.hardwareConcurrency) : 1);
   let worker: Worker | null = null;
-  const pending = new Map<
-    number,
-    { resolve: (value: AnalysisJobResult) => void; reject: (reason: unknown) => void }
-  >();
+  const pending = new Map<number, PendingWaiter>();
 
   function budget(): number {
     return canUse() ? workerBudget(cores, maxWorkers) : 0;
   }
 
+  function clearPending(sequence: number): PendingWaiter | undefined {
+    const waiter = pending.get(sequence);
+    if (!waiter) return undefined;
+    pending.delete(sequence);
+    clearTimeout(waiter.timeoutId);
+    return waiter;
+  }
+
+  function rejectAllPending(reason: Error): void {
+    for (const [seq, waiter] of pending) {
+      pending.delete(seq);
+      clearTimeout(waiter.timeoutId);
+      waiter.reject(reason);
+    }
+  }
+
   function attachWorker(next: Worker): Worker {
     next.onmessage = (event: MessageEvent<AnalysisWorkerOutbound>) => {
       const data = event.data;
-      const waiter = pending.get(data.sequence);
+      const waiter = clearPending(data.sequence);
       if (!waiter) return;
-      pending.delete(data.sequence);
       if (data.kind === 'error') {
         waiter.reject(new Error(data.error));
         return;
@@ -64,10 +83,7 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
     };
     next.onerror = (event) => {
       console.warn('[analysisWorkerPool] worker error ' + errLikeToLogString(event.message));
-      for (const [seq, waiter] of pending) {
-        pending.delete(seq);
-        waiter.reject(new Error(event.message || 'analysis worker error'));
-      }
+      rejectAllPending(new Error(event.message || 'analysis worker error'));
       disposeWorker();
     };
     return next;
@@ -105,11 +121,16 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
       const w = ensureWorker();
       if (!w) return runAnalysisJob(request);
       return new Promise<AnalysisJobResult>((resolve, reject) => {
-        pending.set(request.sequence, { resolve, reject });
+        const timeoutId = setTimeout(() => {
+          const waiter = clearPending(request.sequence);
+          if (!waiter) return;
+          waiter.reject(new Error('analysis worker request timed out'));
+        }, ANALYSIS_WORKER_REQUEST_TIMEOUT_MS);
+        pending.set(request.sequence, { resolve, reject, timeoutId });
         try {
           w.postMessage(request);
         } catch (err) {
-          pending.delete(request.sequence);
+          clearPending(request.sequence);
           console.debug(
             '[analysisWorkerPool] postMessage failed; inline ' + errLikeToLogString(err),
           );
@@ -125,10 +146,7 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
   }
 
   function dispose() {
-    for (const [seq, waiter] of pending) {
-      pending.delete(seq);
-      waiter.reject(new Error('analysis worker disposed'));
-    }
+    rejectAllPending(new Error('analysis worker disposed'));
     disposeWorker();
   }
 
@@ -137,6 +155,10 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
     runInline,
     dispose,
     wouldUseWorker: () => budget() > 0 && Boolean(options.createWorker),
+    /** True when a worker is attached (budget + successful create). */
+    hasAttachedWorker: () => budget() > 0 && worker != null,
+    /** Create/attach a worker when possible; returns whether one is ready. */
+    ensureAttachedWorker: () => ensureWorker() != null,
     workerBudget: budget,
   };
 }
@@ -146,7 +168,7 @@ export type AnalysisWorkerPool = ReturnType<typeof createAnalysisWorkerPool>;
 let defaultPool: AnalysisWorkerPool | null = null;
 let viteWorkerReady: Promise<void> | null = null;
 
-function ensureViteWorkerPool(): Promise<void> {
+export function ensureViteWorkerPool(): Promise<void> {
   if (viteWorkerReady) return viteWorkerReady;
   viteWorkerReady = (async () => {
     if (!defaultCanUseWorkers()) {
@@ -166,6 +188,16 @@ function ensureViteWorkerPool(): Promise<void> {
     }
   })();
   return viteWorkerReady;
+}
+
+/**
+ * After Vite worker bootstrap, true only when a positive budget and an attached worker exist.
+ */
+export async function analysisWorkersAvailable(): Promise<boolean> {
+  await ensureViteWorkerPool();
+  const pool = defaultPool ?? createAnalysisWorkerPool();
+  defaultPool = pool;
+  return pool.ensureAttachedWorker();
 }
 
 /** Prefer this entry point — awaits Vite worker bootstrap when COI+SAB are available. */

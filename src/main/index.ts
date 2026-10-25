@@ -736,6 +736,15 @@ function safeNonNegativeInt(value: unknown): number {
   return n >>> 0;
 }
 
+/** Full-range non-negative safe integer (no 32-bit `>>> 0` coercion). */
+function safeNonNegativeSafeInteger(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new Error('Invalid non-negative safe integer');
+  }
+  return n;
+}
+
 /** MeshCore chat channel index (-2 Rooms, -1 DMs, 0+ group channels). */
 function safeMeshcoreChannelIndex(value: unknown): number {
   const n = typeof value === 'number' ? value : Number(value);
@@ -4629,8 +4638,8 @@ ipcMain.handle(
       throw new Error('db:recordRendererMemorySample: unauthorized sender');
     }
     try {
-      const capturedAt = safeNonNegativeInt(sample?.capturedAt);
-      const bytes = safeNonNegativeInt(sample?.bytes);
+      const capturedAt = safeNonNegativeSafeInteger(sample?.capturedAt);
+      const bytes = safeNonNegativeSafeInteger(sample?.bytes);
       const source = sample?.source;
       if (source !== 'user-agent' && source !== 'renderer-process') {
         throw new Error('db:recordRendererMemorySample: invalid source');

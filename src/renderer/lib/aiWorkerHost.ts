@@ -138,7 +138,7 @@ export class AiWorkerHost {
       onPhase?.('readingMessages');
       let text = '';
       const inferenceStartedAt = performance.now();
-      const memoryBefore = getCoiMemorySnapshot().samples.at(-1)?.bytes;
+      const memoryBeforeSample = getCoiMemorySnapshot().samples.at(-1);
       const threads = bundledWllamaThreadCount();
       await raced(
         this.runtime.createChatCompletion({
@@ -164,16 +164,21 @@ export class AiWorkerHost {
       );
       signal.throwIfAborted();
       if (hasRepetitiveAiOutput(text)) throw new RepetitiveAiOutputError();
-      const memoryAfter = getCoiMemorySnapshot().samples.at(-1)?.bytes;
+      const memoryAfterSample = getCoiMemorySnapshot().samples.at(-1);
+      const distinctSamples =
+        memoryBeforeSample != null &&
+        memoryAfterSample != null &&
+        memoryBeforeSample.at !== memoryAfterSample.at;
       console.debug(
         '[Catch up] inference completed',
         JSON.stringify({
           elapsedMs: performance.now() - inferenceStartedAt,
           threads,
-          memoryBeforeBytes: memoryBefore ?? null,
-          memoryAfterBytes: memoryAfter ?? null,
-          memoryDeltaBytes:
-            memoryBefore != null && memoryAfter != null ? memoryAfter - memoryBefore : null,
+          memoryBeforeBytes: memoryBeforeSample?.bytes ?? null,
+          memoryAfterBytes: memoryAfterSample?.bytes ?? null,
+          memoryDeltaBytes: distinctSamples
+            ? memoryAfterSample.bytes - memoryBeforeSample.bytes
+            : null,
         }),
       );
       completed = true;

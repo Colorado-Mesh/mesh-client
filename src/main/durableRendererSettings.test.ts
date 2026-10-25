@@ -47,6 +47,20 @@ describe('legacy renderer settings migration', () => {
     });
   });
 
+  it('replaces an empty preference map when repair seeds restored values', () => {
+    const prefsKey = DURABLE_RENDERER_STORAGE_KEYS.preferences;
+    const empty = JSON.stringify({ legacyAliasesImported: true, values: {} });
+    const restored = JSON.stringify({
+      legacyAliasesImported: true,
+      values: { 'mesh-client:origin-e2e-marker': 'original profile' },
+    });
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(prefsKey, empty);
+    seedDurableRendererSettings(db, { 'mesh-client:rendererPreferences': restored });
+    expect(db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(prefsKey)).toEqual({
+      value: restored,
+    });
+  });
+
   it('seeds browser-only false main-process flags before their default-true consumers read them', () => {
     seedDurableRendererSettings(db, {
       'mesh-client:appSettings': '{"closeToTray":false,"autoUpdateDownloadEnabled":false}',
