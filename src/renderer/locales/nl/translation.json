@@ -276,7 +276,7 @@
         "description": "Vulling voor het geselecteerde railitem, de geselecteerde rij en hover."
       },
       "brandGreen": {
-        "label": "Accent",
+        "label": "Accentueren",
         "description": "Primaire knoppen en Verzenden (met donkere tekst), accenttekst, actieve items en voortgangsvullingen. Blijft leesbaar op de app-achtergrond."
       },
       "brightGreen": {
@@ -460,7 +460,7 @@
       "highContrast": "Hoog contrast"
     },
     "themeAccents": {
-      "heading": "Accent",
+      "heading": "Accentueren",
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum",
@@ -1452,11 +1452,11 @@
       "modeAria": "Reticulum-interfacemodus",
       "modeHint": "Bepaalt hoe deze interface zich aansluit bij het bredere netwerk (pad zoeken, aankondigingspropagatie). Bij toevoegen is het typestandaard Boundary voor TCP/UDP/I2P-hubs en Access point voor RNodes. Bij bewerken wist Default (clear) de modus (RNS Full).",
       "modeOption": {
-        "full": "Full",
+        "full": "Volledig",
         "point_to_point": "Punt tot punt",
-        "access_point": "Access point",
+        "access_point": "Accesspoint the frequency of the radio channel that the access point is operating on",
         "roaming": "Roaming",
-        "boundary": "Boundary",
+        "boundary": "Grens",
         "gateway": "Gateway"
       },
       "modeDefaultAdd": "Typestandaard",
@@ -1563,18 +1563,18 @@
       "fieldOutOfRange": "Waarde valt buiten het toegestane bereik.",
       "fieldTooLong": "Waarde is te lang",
       "fieldInvalidOption": "Niet-ondersteund waardetype",
-      "profilesTitle": "Interface profiles",
+      "profilesTitle": "Interfaceprofielen",
       "profilesHint": "Benoemde enable-sets waarvoor interfaces zijn ingeschakeld. Als u van profiel wisselt, worden de leden ervan ingeschakeld en de rest uitgeschakeld.",
       "profilesEmpty": "Nog geen profielen. Sla de huidige enable-set op om er een te maken.",
-      "profilesDefault": "Default",
-      "profilesUnnamed": "(unnamed)",
-      "profilesNamePlaceholder": "Profile name",
-      "profilesSaveCurrent": "Save current",
-      "profilesCreateEmpty": "New empty",
-      "profilesRename": "Rename",
-      "profilesSaveRename": "Save",
-      "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}",
+      "profilesDefault": "Standaard",
+      "profilesUnnamed": "(naamloos)",
+      "profilesNamePlaceholder": "Profielnaam",
+      "profilesSaveCurrent": "Huidige opslaan",
+      "profilesCreateEmpty": "Nieuw leeg bestand",
+      "profilesRename": "Hernoemen",
+      "profilesSaveRename": "Opslaan",
+      "profilesDelete": "Verwijderen",
+      "profilesRenameAria": "Naam profiel {{name}} wijzigen",
       "bootstrapOnly": "Alleen bootstrap",
       "bootstrapOnlyHint": "Koppel deze interface los zodra er voldoende ontdekt is dat Backbone/TCP-servers automatisch verbinding maken (vereist Netwerk → Autoconnect limiet > 0)."
     },
@@ -1776,7 +1776,7 @@
     "errors": {
       "ble": {
         "adapter_missing": "Er is geen Bluetooth-adapter gevonden. Schakel Bluetooth in de systeeminstellingen in en probeer het opnieuw.",
-        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "permission_denied": "Bluetooth-machtiging is geweigerd. Laat mesh-client Bluetooth gebruiken en probeer het opnieuw.",
         "scan_busy": "Er wordt een nieuwe Bluetooth-scan uitgevoerd. Wacht even en probeer het opnieuw.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Er is een time-out opgetreden in de Bluetooth-verbinding. Houd de radio wakker en dichtbij en probeer het opnieuw.",
@@ -2094,7 +2094,7 @@
         "edit": "Bewerkingsinterface",
         "restart_stack": "Start de stapel opnieuw",
         "add_auto": "Automatische interface toevoegen",
-        "disable_share_instance": "Turn off Share instance",
+        "disable_share_instance": "Deelinstantie uitschakelen",
         "open_interfaces": "Open interfaces"
       },
       "audit": {
@@ -3192,7 +3192,7 @@
         "label": "Sluipschutter"
       },
       "5": {
-        "label": "Medic"
+        "label": "Verpleger"
       },
       "6": {
         "label": "Voorwaartse waarnemer"
@@ -3290,15 +3290,15 @@
     "reticulumConfigImportFailed": "Configuratie-import mislukt.",
     "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden.",
     "reticulumConfigValidate": {
-      "button": "Check config",
-      "aria": "Validate on-disk network config",
-      "running": "Checking…",
-      "ok": "Config looks good — no audit issues.",
-      "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
+      "button": "Configuratie controleren",
+      "aria": "Netwerkconfiguratie op schijf valideren",
+      "running": "Controle…",
+      "ok": "Configuratie ziet er goed uit — geen auditproblemen.",
+      "failed": "Configuratiecontrole mislukt: {{message}}",
+      "issuesHeading_one": "{{count}} configuratieprobleem",
+      "issuesHeading_other": "{{count}} configuratieproblemen",
       "severityError": "error",
-      "severityWarning": "warning",
+      "severityWarning": "waarschuwing",
       "severityInfo": "info"
     },
     "reticulumPnHosting": {
@@ -3691,7 +3691,7 @@
     "columnChUtil": "Ch.Util",
     "columnAirTx": "Lucht TX",
     "columnAlt": "Alt",
-    "columnRedund": "Redund.",
+    "columnRedund": "Ontslag.",
     "emptyNoSearchMatches": "Er zijn geen knooppunten die overeenkomen met uw zoekopdracht.",
     "emptyNoNodesYet": "Nog geen knooppunten ontdekt. Maak verbinding met een apparaat om het mesh-netwerk te bekijken.",
     "buttonRefresh": "Vernieuwen",
@@ -3737,8 +3737,8 @@
     "announces": "Kondigt aan",
     "searchFavourites": "Zoek {{count}} Favorieten...",
     "searchAnnounces": "Search {{count}} kondigt aan...",
-    "emptyFavourites": "No favourite Nomad Network nodes yet.",
-    "emptyAnnounces": "No announced Nomad Network nodes yet.",
+    "emptyFavourites": "Nog geen favoriete Nomad Network knooppunten.",
+    "emptyAnnounces": "Nog geen aangekondigde Nomad Network knooppunten.",
     "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw.",
     "lastSeen": "Laatst gehoord {{time}}",
     "hopsAway_one": "{{count}} hop verderop",
@@ -3992,18 +3992,18 @@
     "renameFailed": "Kan de weergavenaam niet opslaan.",
     "removeContactConfirmBody": "Hiermee wordt de contactpersoon uit uw opgeslagen lijst verwijderd. Chatberichten blijven; ze blijven in de geschiedenis staan als je ze een bericht hebt gestuurd.",
     "backupPaths": "Back-uppaden",
-    "announcedDestinations": "Announced destinations",
-    "openedDestinationBadge": "Opened",
-    "copyAnnouncedHashAria": "Copy {{aspect}} destination hash {{hash}}",
-    "hashCopied": "Destination hash copied.",
+    "announcedDestinations": "Aangekondigde bestemmingen",
+    "openedDestinationBadge": "Geopend",
+    "copyAnnouncedHashAria": "Kopieer {{aspect}} destination hash {{hash}}",
+    "hashCopied": "Bestemmingshash gekopieerd.",
     "hashCopyFailed": "Kan bestemmingshash niet kopiëren.",
     "aspect": {
       "chat": "Chat",
-      "voice": "Voice",
+      "voice": "Stem",
       "nomad": "Nomad",
       "rrc": "RRC",
-      "propagation": "Propagation",
-      "unknown": "Unknown"
+      "propagation": "Delen op je website",
+      "unknown": "Onbekend"
     },
     "identityUnknown": "Identiteit onbekend: er is nog geen aankondiging gehoord van deze peer, dus er is geen vingerafdruk om te verifiëren.",
     "identityUnknownDestination": "Bestemmingshash (geen identiteitsvingerafdruk)"
@@ -4442,34 +4442,34 @@
     "offloadReconcileStillFull": "Offload voltooid, maar radio meldt nog steeds volledige contacten ({{count}}/350). Maak opnieuw verbinding en probeer het opnieuw.",
     "offloadReconcileStillNearFull": "Offload voltooid, maar radio meldt nog steeds een hoog contactgebruik ({{count}}/350).",
     "offloadReconcileRefreshFailed": "Offload voltooid, maar het vernieuwen van het contact is mislukt. Contacten opnieuw verbinden en vernieuwen.",
-    "txEnabledLabel": "TX Enabled",
+    "txEnabledLabel": "TX ingeschakeld",
     "txEnabledDesc": "Laat dit knooppunt verzenden. Uitschakelen voor alleen-ontvangen-bediening.",
-    "channelNumLabel": "Channel Number",
+    "channelNumLabel": "& Kanalen",
     "channelNumDesc": "Selecteer het kanaal handmatig (0 = automatisch). Moet overeenkomen met alle knooppunten in het netwerk.",
-    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyLabel": "Frequentie overschrijven",
     "overrideFrequencyDesc": "Overschrijf de frequentie in MHz (0 = gebruik de standaardregio). Zorg ervoor dat de lokale regelgeving wordt nageleefd.",
-    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttLabel": "Negeren MQTT",
     "ignoreMqttDesc": "Zend geen pakketten opnieuw uit die via MQTT zijn binnengekomen. Vermindert mesh-congestie door gatewayverkeer.",
-    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttLabel": "OK naar MQTT",
     "configOkToMqttDesc": "Signaal aan gateways dat de pakketten van dit knooppunt mogen worden doorgestuurd naar MQTT.",
-    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleLabel": "Werkcyclus overschrijven",
     "overrideDutyCycleDesc": "Omzeil de regionale duty-cycle-limieten. Alleen voor testen: gebruik in de lucht kan illegaal zijn.",
-    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledLabel": "PA-ventilator uitschakelen",
     "paFanDisabledDesc": "Schakel de koelventilator van de eindversterker uit (hardwareafhankelijk).",
-    "rebroadcastModeLabel": "Rebroadcast Mode",
-    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
-    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
-    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
-    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
-    "disableTripleClickLabel": "Disable Triple-click",
+    "rebroadcastModeLabel": "Opnieuw uitzenden-modus",
+    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast-interval",
+    "nodeInfoBroadcastSecsDesc": "Hoe vaak node info uitzenden in seconden (0 = firmware default ~15 min).",
+    "doubleTapAsButtonPressLabel": "Dubbeltik terwijl u op de knop drukt",
+    "doubleTapAsButtonPressDesc": "Behandel een versnellingsmeter dubbelklik als een druk op de gebruikersknop (afhankelijk van de hardware).",
+    "disableTripleClickLabel": "Triple-click uitschakelen",
     "disableTripleClickDesc": "Schakel de drievoudige klikactie op de gebruikersknop uit.",
-    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledLabel": "Schakel LED Heartbeat uit",
     "ledHeartbeatDisabledDesc": "Zorg ervoor dat de LED niet meer knippert om aan te geven dat het knooppunt leeft.",
-    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioLabel": "Knop GPIO",
     "buttonGpioDesc": "GPIO-pin voor de gebruikersknop (0 = hardwarestandaard).",
-    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioLabel": "Zoemer GPIO",
     "buzzerGpioDesc": "GPIO-pin voor de zoemer (0 = hardwarestandaard).",
-    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefLabel": "Tijdzone (POSIX)",
     "tzdefDesc": "POSIX tijdzonereeks, b.v. EST5EDT,M3.2.0,M11.1.0. Zie https://github.com/nayarsystems/posix_tz_db voor een referentielijst.",
     "rebroadcastModes": {
       "ALL": {
@@ -4497,19 +4497,19 @@
         "description": "Alleen essentiële portnums opnieuw uitzenden (tekst, nodeinfo, positie, telemetrie)."
       }
     },
-    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
-    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
-    "oledTypeLabel": "OLED Type",
-    "flipScreenLabel": "Flip Screen",
+    "autoScreenCarouselSecsLabel": "Schermcarrouselinterval",
+    "autoScreenCarouselSecsDesc": "Seconden tussen automatische schermpaginawijzigingen. 0 om uit te schakelen.",
+    "oledTypeLabel": "OLED-type",
+    "flipScreenLabel": "Scherm draaien",
     "flipScreenDesc": "Draai het scherm 180 graden.",
-    "displayModeLabel": "Display Mode",
-    "headingBoldLabel": "Bold Heading",
+    "displayModeLabel": "Weergavemodus",
+    "headingBoldLabel": "Vetgedrukte kop",
     "wakeOnTapOrMotionLabel": "Wakker worden door tikken of bewegen",
     "wakeOnTapOrMotionDesc": "Activeer het scherm wanneer het apparaat wordt aangetikt of verplaatst.",
-    "use12hClockLabel": "12-Hour Clock",
-    "useLongNodeNameLabel": "Use Long Node Name",
-    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
-    "enableMessageBubblesLabel": "Message Bubbles",
+    "use12hClockLabel": "12 uur klok",
+    "useLongNodeNameLabel": "Lange knooppuntnaam gebruiken",
+    "useLongNodeNameDesc": "Toon volledige knooppuntnaam in plaats van korte naam op het scherm.",
+    "enableMessageBubblesLabel": "Berichtbellen",
     "enableMessageBubblesDesc": "Toon inkomende berichten in een ballon op het display.",
     "oledTypes": {
       "OLED_AUTO": {
@@ -4533,28 +4533,28 @@
     },
     "displayModes": {
       "0": {
-        "label": "Default"
+        "label": "Standaard"
       },
       "1": {
-        "label": "Two Color"
+        "label": "Tweekleuren 'raw'"
       },
       "2": {
-        "label": "Inverted"
+        "label": "Omgekeerd"
       },
       "3": {
-        "label": "Color"
+        "label": "Kleur"
       }
     },
-    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModeLabel": "Koppelingsmodus",
     "btPairingModes": {
       "0": {
-        "label": "Random PIN"
+        "label": "Willekeurige PIN instellen"
       },
       "1": {
-        "label": "Fixed PIN"
+        "label": "Voorgeconfigureerde PIN"
       },
       "2": {
-        "label": "No PIN"
+        "label": "Geen PINCODE"
       }
     },
     "tzdefPlaceholder": "bijv. EST5EDT,M3.2.0,M11.1.0",
@@ -4858,7 +4858,7 @@
     "transportRegionMismatch": "Komt niet overeen met geconfigureerde overstromingsbereik",
     "transportLegendHint": "Vouw een rij uit: route en transport staan bovenaan. Regionale scope/return-codes verschijnen alleen op TRANSPORT_FLOOD- en TRANSPORT_DIRECT-pakketten (niet op gewone FLOOD/DIRECT).",
     "routeLabel": "Route",
-    "payloadLabel": "Payload",
+    "payloadLabel": "Laadvermogen",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Geen regionale transportcodes (route {{route}} — alleen TRANSPORT_FLOOD / TRANSPORT_DIRECT dragen scope/return).",
     "transportCodesAbsentTooltip": "Gewone FLOOD- en DIRECT-pakketten bevatten geen regionale transport scope/return-velden in de MeshCore RF-header.",
@@ -5433,7 +5433,7 @@
     "loginHelp": "Voer het gastwachtwoord in om mee te doen en te plaatsen. Standaard is vaak \"hello\". Voor servers zonder gastwachtwoord: \"Doorgaan met alleen-lezen\" (inloggen stuurt \"hello\" als het veld leeg is).",
     "guestPasswordLabel": "Gastwachtwoord",
     "guestPasswordPlaceholder": "hello",
-    "loginButton": "Login",
+    "loginButton": "Inloggen",
     "loggingIn": "Bezig met inloggen...",
     "loginFailed": "Aanmelden mislukt",
     "continueReadOnly": "Doorgaan met alleen-lezen",
@@ -5506,7 +5506,7 @@
     "statusPasswordSaved": "Wachtwoord opgeslagen voor deze ruimte.",
     "statusAutoLoginEnabled": "Automatisch inloggen bij verbinden is ingeschakeld.",
     "badgeAutoLogin": "Automatisch inloggen",
-    "badgeAutoSync": "Auto-sync",
+    "badgeAutoSync": "Auto sync.",
     "forgetSavedPassword": "Opgeslagen wachtwoord vergeten",
     "forgetSavedPasswordAria": "Opgeslagen wachtwoord voor deze ruimte vergeten",
     "forgetSavedPasswordConfirmTitle": "Opgeslagen wachtwoord vergeten?",
@@ -5910,7 +5910,7 @@
     "checking": "Controleren…",
     "upToDate": "Up-to-date",
     "checkForUpdates": "Controleer op updates",
-    "update": "Update",
+    "update": "Bijwerken",
     "viewRelease": "Bekijk vrijgave",
     "download": "Downloaden",
     "viewReleaseTitle": "Bekijk vrijgave",
@@ -5969,51 +5969,51 @@
     "addAsInterfaceAddedAria": "{{name}} is al toegevoegd als verbindingsinterface"
   },
   "rrc": {
-    "hubsTitle": "RRC Hubs",
+    "hubsTitle": "RRC-hubs",
     "hubs": {
-      "favourites": "Favourites",
-      "discovered": "Discovered",
+      "favourites": "Favorieten",
+      "discovered": "Gevonden",
       "connected": "Verbonden"
     },
-    "searchHubs": "Search hubs…",
-    "searchRooms": "Search rooms…",
-    "nickname": "Nickname",
-    "refreshHubs": "Refresh hubs",
+    "searchHubs": "Hubs zoeken...",
+    "searchRooms": "Zoek kamers",
+    "nickname": "Bijnaam",
+    "refreshHubs": "Hubs vernieuwen",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Verbinden met hash",
-    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "invalidHubHash": "Voer een geldige hex-bestemmingshash van 32 tekens in.",
     "connectFailed": "Kon niet verbinden met de RRC-hub.",
     "joinFailed": "Kon niet deelnemen aan de ruimte.",
     "sendFailed": "Kon het bericht niet verzenden.",
-    "selectHub": "Select hub {{name}}",
+    "selectHub": "Selecteer hub {{name}}",
     "selectHubPrompt": "Selecteer een RRC-hub om te verbinden.",
-    "favoriteHub": "Favourite hub",
-    "unfavoriteHub": "Remove hub favourite",
+    "favoriteHub": "Favoriete hub",
+    "unfavoriteHub": "Hub-favoriet verwijderen",
     "hopsAway_one": "{{count}} hop verderop",
     "hopsAway_other": "{{count}} hops verderop",
     "noDiscoveredHubs": "Nog geen live RRC-hubs ontdekt. Houd de stack actief om announces te beluisteren.",
-    "rooms": "Rooms",
-    "joinRoom": "Room name",
-    "join": "Join room",
+    "rooms": "Kamers",
+    "joinRoom": "Ruimtenaam",
+    "join": "Chatruimte binnengaan",
     "joinRoomPrompt": "Word lid van een ruimte om te chatten.",
     "noRoomsJoined": "Nog geen ruimtes toegetreden.",
-    "selectRoom": "Open room {{name}}",
-    "leaveRoom": "Leave room",
-    "disconnect": "Disconnect",
-    "toggleTimestamps": "Toggle timestamps",
-    "muteRoom": "Mute room",
-    "unmuteRoom": "Unmute room",
-    "members": "Members",
+    "selectRoom": "Open kamer {{name}}",
+    "leaveRoom": "Kamer verlaten",
+    "disconnect": "Verbinding verbreken",
+    "toggleTimestamps": "Tijdstempels in-/uitschakelen",
+    "muteRoom": "Kamer dempen",
+    "unmuteRoom": "Dempen kamer opheffen",
+    "members": "leden",
     "noMembers": "No member list from hub.",
-    "copyMessage": "Copy message",
+    "copyMessage": "Bericht opstellen",
     "messagePlaceholder": "Type a message…",
-    "send": "Send",
+    "send": "Verzenden",
     "status": {
-      "disconnected": "Disconnected",
-      "connecting": "Connecting…",
+      "disconnected": "Niet verbonden",
+      "connecting": "Verbinden…",
       "awaiting_welcome": "Wachten op hub…",
-      "active": "Connected",
-      "reconnecting": "Reconnecting…"
+      "active": "Verbonden",
+      "reconnecting": "Heraansluiten"
     },
     "joinedRooms": "Toegetreden",
     "recentRooms": "Recent",
@@ -6089,7 +6089,7 @@
     "roomLegend": "★ favoriet · A schakelt automatisch inloggen in",
     "disconnectFailed": "Kon niet loskoppelen van de RRC-hub.",
     "partFailed": "Kon de ruimte niet verlaten.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "selectHubUnread": "Selecteer hub {{name}}, {{marker}}, {{count}} ongelezen",
     "clearHistory": "Geschiedenis wissen",
     "clearHistoryTitle": "Kamergeschiedenis wissen",
     "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
@@ -6119,7 +6119,7 @@
     "noConnectedHubs": "Geen RRC-hubs aangesloten. Maak verbinding via Favorieten, Ontdekt of via hash.",
     "autoJoinChip": "Auto",
     "listViewAria": "Kamers of hubs tonen",
-    "hubsShort": "Hubs",
+    "hubsShort": "Hub",
     "hideList": "Kamers en hubs verbergen",
     "showList": "Kamers en hubs tonen",
     "backToList": "Terug naar kamers en hubs",
@@ -6181,7 +6181,7 @@
     "confirmContactImportAction": "Contactpersoon importeren",
     "confirmMeshcoreContactImportTitle": "MeshCore-contact importeren?",
     "confirmMeshcoreContactImportBody": "{{name}} van een MeshCore-contact QR toevoegen aan je contacten?",
-    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreContactImportAction": "Importeer MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "MeshCore-kanaal importeren?",
     "confirmMeshcoreChannelImportBody": "Kanaal {{name}} toepassen vanaf een MeshCore-kanaal QR op het tabblad Radio?",
     "confirmMeshcoreChannelImportAction": "Importeer kanaal",
@@ -6699,25 +6699,25 @@
   },
   "mecp": {
     "severity": {
-      "mayday": "MAYDAY",
-      "urgent": "URGENT",
-      "safety": "SAFETY",
-      "routine": "ROUTINE"
+      "mayday": "may-day",
+      "urgent": "DRINGEND",
+      "safety": "VEILIGHEID",
+      "routine": "Routine"
     },
     "incomingToast": "{{severity}} MECP van {{sender}}",
-    "notificationTitle": "MECP alert",
-    "exportLog": "Export MECP log",
+    "notificationTitle": "MECP-waarschuwing",
+    "exportLog": "MECP-logboek exporteren",
     "compose": {
-      "title": "Compose MECP report",
-      "severity": "Severity",
-      "category": "Category",
+      "title": "MECP-rapport opstellen",
+      "severity": "Ernst",
+      "category": "Categorie",
       "codes": "Codes",
-      "removeCode": "Remove code {{code}}",
-      "freetext": "Free text (pax, GPS, notes)",
-      "addPax": "Add 1pax",
-      "attachGps": "Attach GPS",
+      "removeCode": "Code {{code}} verwijderen",
+      "freetext": "Vrije tekst (pax, GPS, notities)",
+      "addPax": "Voeg 1 pax toe",
+      "attachGps": "GPS aansluiten",
       "byteBudget": "{{used}} / {{max}} bytes",
-      "send": "Send MECP",
+      "send": "MECP verzenden",
       "gpsFailed": "Kon geen GPS-fix krijgen",
       "sendFailed": "Kan MECP-rapport niet verzenden",
       "openResponse": "Reageren met MECP",
@@ -6729,14 +6729,14 @@
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
       "hint": "Optioneel kunt u MECP die op het ene protocolkanaal wordt gehoord, overbruggen naar het andere. Standaard uitgeschakeld. Schakel Bidirectioneel in om het pad ook om te keren.",
-      "add": "Add bridge rule",
-      "remove": "Remove bridge rule",
-      "enableRule": "Enabled",
-      "bidirectional": "Bidirectional",
-      "endpointA": "Listen / source (A)",
-      "endpointB": "Forward / destination (B)",
+      "add": "Brugregel toevoegen",
+      "remove": "Brugregel verwijderen",
+      "enableRule": "Ingeschakeld",
+      "bidirectional": "Bidirectioneel",
+      "endpointA": "Luisteren / bron (A)",
+      "endpointB": "Doorsturen / bestemming (B)",
       "protocol": "Protocol",
-      "channelIndex": "Channel index"
+      "channelIndex": "Kanaalindex"
     },
     "exportLogSuccess": "MECP-logboek geëxporteerd",
     "exportLogSuccessPath": "MECP-logboek geëxporteerd naar {{path}}",
@@ -6777,8 +6777,8 @@
     "channel": "Kanaalberichten",
     "dm": "Directe berichten",
     "reply": "Antwoorden en vermeldingen",
-    "mecp": "MECP ROUTINE",
-    "mecpSafety": "MECP SAFETY",
+    "mecp": "MECP-ROUTINE",
+    "mecpSafety": "MECP-VEILIGHEID",
     "mecpEas": "MECP URGENT",
     "mecpSiren": "MECP MAYDAY",
     "default": "Originele toon",
@@ -6857,7 +6857,7 @@
   },
   "shell": {
     "section": {
-      "monitor": "Monitor",
+      "monitor": "Monitoren",
       "device": "Apparaat"
     },
     "sectionPanelsAria": "Panelen van {{section}}",
@@ -7581,7 +7581,7 @@
     "ipv6Enabled": "Schakel IPv6 in",
     "ignoreIncoming": "Genegeerde knooppunten",
     "ignoreIncomingDesc": "Knooppunt-ID's waarvan de pakketten door de radio worden verzonden, gescheiden door komma's (bijvoorbeeld !a1b2c3d4).",
-    "femLnaMode": "Front-end LNA",
+    "femLnaMode": "Front-end",
     "femLnaModeDesc": "Ruisarme versterker op printplaten met front-end module.",
     "femLnaModes": {
       "disabled": "Gehandicapt",

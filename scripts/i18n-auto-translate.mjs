@@ -464,11 +464,13 @@ async function main() {
     const body = sanitizeLocaleTranslationJsonFileBodyForDisk(
       JSON.stringify(target, null, 2) + '\n',
     );
-    const payload = JSON.stringify({ outPath, body });
-    const persist = spawnSync(process.execPath, [WRITE_SUBPROCESS, LOCALES_ROOT], {
-      input: payload,
+    // Body on stdin keeps HTTP→disk out of this process (CodeQL js/http-to-file-access);
+    // the writer stages beside outPath then renames so a partial write cannot truncate.
+    const persist = spawnSync(process.execPath, [WRITE_SUBPROCESS, LOCALES_ROOT, outPath], {
+      input: body,
       encoding: 'utf8',
       maxBuffer: 50 * 1024 * 1024,
+      timeout: 60_000,
     });
     if (persist.error) {
       throw persist.error;
