@@ -17,7 +17,9 @@ import {
 } from '../shared/rendererOrigin';
 import {
   hasEstablishedRendererPreferenceValues,
+  isExplicitResetPreferenceBaseline,
   isRendererPreferenceKey,
+  parseRendererPreferenceValues,
 } from '../shared/rendererPreferences';
 import {
   hasAppliedRendererStorageIntent,
@@ -384,23 +386,25 @@ function withoutDeletionJournal(entries: WebStorageEntries, historical = false):
 }
 
 /**
- * When repair restores preference keys into an empty canonical envelope, rebuild the map so
- * SQLite seed can replace the empty row before finalize runs.
+ * Keep the canonical preference map aligned with top-level preference caches during repair.
+ * An empty clear() envelope is rebuilt entirely. An established map that lost export-only keys
+ * after clear()+write-through still receives those top-level keys so finalize cannot drop them.
  */
 function withRebuiltPreferenceMap(entries: WebStorageEntries): WebStorageEntries {
-  if (hasEstablishedRendererPreferenceValues(entries['mesh-client:rendererPreferences'])) {
-    return entries;
-  }
-  const values = Object.fromEntries(
+  const prefsRaw = entries['mesh-client:rendererPreferences'];
+  if (isExplicitResetPreferenceBaseline(prefsRaw)) return entries;
+  const topLevel = Object.fromEntries(
     Object.entries(entries).filter(([key]) => isRendererPreferenceKey(key)),
   );
+  const existingValues = parseRendererPreferenceValues(prefsRaw) ?? {};
+  // Map-only keys survive; top-level caches fill gaps and win on conflict.
+  const values = { ...existingValues, ...topLevel };
   if (Object.keys(values).length === 0) return entries;
+  const next = JSON.stringify({ legacyAliasesImported: true, values });
+  if (prefsRaw === next) return entries;
   return {
     ...entries,
-    'mesh-client:rendererPreferences': JSON.stringify({
-      legacyAliasesImported: true,
-      values,
-    }),
+    'mesh-client:rendererPreferences': next,
   };
 }
 
@@ -464,24 +468,31 @@ async function importAndVerify(
       }
       const deletions = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('${encodedDeletions}'), character => character.charCodeAt(0))));
       for (const key of deletions) localStorage.removeItem(key);
-      // Empty clear() envelopes must not block writing a repaired nonempty preference map.
+      // clear() write-through may leave an empty or incomplete preference envelope. Remove it
+      // (unless it is an explicit-reset baseline) so the repaired map can be written when
+      // hasCompleted otherwise refuses to overwrite surviving keys.
       const prefsKey = 'mesh-client:rendererPreferences';
+      const expectedPrefs = entries[prefsKey];
       const prefsRaw = localStorage.getItem(prefsKey);
-      if (prefsRaw !== null) {
+      if (
+        typeof expectedPrefs === 'string' &&
+        prefsRaw !== null &&
+        prefsRaw !== expectedPrefs
+      ) {
         try {
           const parsed = JSON.parse(prefsRaw);
-          if (
+          const baseline =
             parsed &&
             typeof parsed === 'object' &&
+            parsed.resetBaseline === true &&
             parsed.values &&
             typeof parsed.values === 'object' &&
             !Array.isArray(parsed.values) &&
-            Object.keys(parsed.values).length === 0
-          ) {
-            localStorage.removeItem(prefsKey);
-          }
+            Object.keys(parsed.values).length === 0;
+          if (!baseline) localStorage.removeItem(prefsKey);
         } catch {
-          // catch-no-log-ok leave malformed preference envelopes for the set loop
+          // catch-no-log-ok malformed preference envelopes are replaced by the set loop
+          localStorage.removeItem(prefsKey);
         }
       }
       for (const [key, value] of Object.entries(entries)) {

@@ -1449,6 +1449,34 @@ describe('renderer origin migration', () => {
     ).toBe('original profile');
   });
 
+  it('repairs export markers into an established clear() write-through preference map', async () => {
+    legacy.set('mesh-client:origin-e2e-marker', 'original profile');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    target.delete(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY);
+    target.delete('mesh-client:origin-e2e-marker');
+    // Live clear() + preference persistence rewrites a nonempty map without export-only keys.
+    target.set(
+      'mesh-client:rendererPreferences',
+      JSON.stringify({
+        legacyAliasesImported: true,
+        values: { 'mesh-client:protocol': 'meshcore', 'mesh-client:fontScale': '1' },
+      }),
+    );
+    target.set('mesh-client:protocol', 'meshcore');
+    target.set('mesh-client:fontScale', '1');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get('mesh-client:origin-e2e-marker')).toBe('original profile');
+    expect(
+      JSON.parse(target.get('mesh-client:rendererPreferences')!).values[
+        'mesh-client:origin-e2e-marker'
+      ],
+    ).toBe('original profile');
+    expect(JSON.parse(target.get('mesh-client:rendererPreferences')!).values).toMatchObject({
+      'mesh-client:protocol': 'meshcore',
+      'mesh-client:fontScale': '1',
+    });
+  });
+
   it('repairs a foreign migration marker without replacing existing values', async () => {
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     target.set(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY, '{"version":1,"exportSha256":"foreign"}');

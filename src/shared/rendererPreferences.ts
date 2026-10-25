@@ -50,3 +50,61 @@ export function isExplicitResetPreferenceBaseline(raw: string | null | undefined
 export function explicitResetPreferenceBaselineJson(): string {
   return JSON.stringify({ legacyAliasesImported: true, values: {}, resetBaseline: true });
 }
+
+/** Parsed `values` object from a preference envelope, or null when absent/malformed. */
+export function parseRendererPreferenceValues(
+  raw: string | null | undefined,
+): Record<string, unknown> | null {
+  if (raw == null) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if (!('values' in parsed)) return null;
+    const values = parsed.values;
+    if (values === null || typeof values !== 'object' || Array.isArray(values)) return null;
+    return values as Record<string, unknown>;
+  } catch {
+    // catch-no-log-ok malformed preference envelopes are treated as absent
+    return null;
+  }
+}
+
+/**
+ * Gap-fill an existing preference envelope from a repaired/seeded one.
+ * Existing values win on conflict so newer SQLite choices beat a replayed export; keys only
+ * present in `incoming` (e.g. export markers lost after `localStorage.clear()` write-through)
+ * are added. Explicit-reset baselines are never modified.
+ */
+export function mergeRendererPreferenceEnvelopes(
+  existingRaw: string | null | undefined,
+  incomingRaw: string,
+): string {
+  if (isExplicitResetPreferenceBaseline(existingRaw)) {
+    return existingRaw ?? incomingRaw;
+  }
+  const incomingValues = parseRendererPreferenceValues(incomingRaw);
+  if (incomingValues == null || Object.keys(incomingValues).length === 0) {
+    return existingRaw ?? incomingRaw;
+  }
+  const existingValues = parseRendererPreferenceValues(existingRaw);
+  if (existingValues == null || Object.keys(existingValues).length === 0) {
+    return incomingRaw;
+  }
+  const values = { ...incomingValues, ...existingValues };
+  let legacyAliasesImported = true;
+  try {
+    const parsed: unknown = JSON.parse(incomingRaw);
+    if (
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      'legacyAliasesImported' in parsed &&
+      typeof parsed.legacyAliasesImported === 'boolean'
+    ) {
+      legacyAliasesImported = parsed.legacyAliasesImported;
+    }
+  } catch {
+    // catch-no-log-ok keep the default legacyAliasesImported flag when incoming JSON is odd
+  }
+  return JSON.stringify({ legacyAliasesImported, values });
+}
