@@ -69,13 +69,16 @@ jobs:
         include:
           - project: renderer-ui
             shard: 1
-            shards: 3
+            shards: 4
           - project: renderer-ui
             shard: 2
-            shards: 3
+            shards: 4
           - project: renderer-ui
             shard: 3
-            shards: 3
+            shards: 4
+          - project: renderer-ui
+            shard: 4
+            shards: 4
           - project: renderer-logic
             shard: 1
             shards: 1

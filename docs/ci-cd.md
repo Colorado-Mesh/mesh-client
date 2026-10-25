@@ -6,19 +6,20 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                                      | Purpose                                                                          |
-| --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation             |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change  |
-| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                 |
-| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate |
-| `build.yaml`                | Manual `workflow_dispatch`                   | Native 3-OS packaging smoke build (+ schema compare vs last official)            |
-| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`              | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                        |
-| `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                      |
-| `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags    |
-| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`         | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`        |
-| `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                    |
-| `third-party-licenses.yaml` | Path-filtered push to `main`                 | Regenerate licenses and open a documentation PR using license-only automation    |
+| Workflow                    | Trigger                                                        | Purpose                                                                                    |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
+| `codeql.yaml`               | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
+| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
+| `build.yaml`                | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
+| `release.yaml`              | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
+| `flatpak.yaml`              | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
+| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
+| `docs.yml`                  | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
+| `third-party-licenses.yaml` | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
 
 ---
 
@@ -68,7 +69,7 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
 4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
-5. **Sharding:** `renderer-ui` runs in three shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
+5. **Sharding:** `renderer-ui` runs in four shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
 6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds.
 7. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
 8. Upload the `vitest-report` artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged `junit.xml` for full runs.
@@ -314,16 +315,16 @@ Note: The test results artifact upload step is automatically skipped when runnin
 
 ## Pipeline status (issue #378)
 
-| Area                                             | Status                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------- |
-| PR lint / typecheck / build / tests              | Done (`ci.yaml`, `tests.yaml`)                                      |
-| CodeQL / CodeRabbit                              | Done (CodeQL **default setup** — PR/push/schedule; not merge-queue) |
-| Tag → draft multi-OS + Flatpak + packaging smoke | Done (`release.yaml`, `flatpak.yaml`, `build.yaml`)                 |
-| `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)            |
-| Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                             |
-| Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                 |
-| Merge queue + required status checks             | Done (ruleset **20821455** on `main`; see below)                    |
-| E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate             |
+| Area                                             | Status                                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| PR lint / typecheck / build / tests              | Done (`ci.yaml`, `tests.yaml`)                                                       |
+| CodeQL / CodeRabbit                              | Done (CodeQL default setup until [advanced activation](../.github/codeql/README.md)) |
+| Tag → draft multi-OS + Flatpak + packaging smoke | Done (`release.yaml`, `flatpak.yaml`, `build.yaml`)                                  |
+| `pnpm run release` preflight + bump/tag          | Done (`scripts/release.sh`; `--yes` for non-interactive)                             |
+| Manual draft **Publish** on GitHub               | Intentional (human review of artifacts)                                              |
+| Dep bumps                                        | Manual (`pnpm run update`; Dependabot PRs disabled)                                  |
+| Merge queue + required status checks             | Done (ruleset **20821455** on `main`; see below)                                     |
+| E2E                                              | Daily / `workflow_dispatch` only — **not** a merge gate                              |
 
 ---
 
@@ -355,7 +356,7 @@ Each required check is pinned with `integration_id` **15368** (GitHub Actions) i
 
 - `Reticulum sidecar coverage` (path-filtered)
 - `fmt + clippy` / sidecar build matrix (`reticulum-sidecar.yaml`, path-filtered)
-- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**; CodeQL still runs on PRs/pushes. Requiring it would hang the merge queue until advanced setup + `merge_group` exists.
+- CodeQL `Analyze (*)` — **default setup does not run on `merge_group`**. The advanced workflow supports merge groups after [activation](../.github/codeql/README.md), but no CodeQL ruleset requirement is added by that migration.
 - E2E, packaging smoke, Flatpak, release jobs
 
 `ci.yaml` and `tests.yaml` both listen for `merge_group` so the queue’s temporary ref re-runs the same gates.
