@@ -1030,7 +1030,7 @@
     "channel": "Canal",
     "nodes": "nœuds",
     "contacts": "Contacts",
-    "messages": "messages",
+    "messages": "notifications",
     "discord": "Discord",
     "github": "GitHub",
     "website": "Site web",
@@ -1452,11 +1452,11 @@
       "modeAria": "Mode d'interface Reticulum",
       "modeHint": "Contrôle comment cette interface rejoint le réseau plus large (recherche de chemin, annonce de propagation). À l'ajout, la valeur par type est Boundary pour les hubs TCP/UDP/I2P et Access point pour les RNodes. À l'édition, Default (clear) omet le mode (RNS Full).",
       "modeOption": {
-        "full": "Full",
+        "full": "Complet",
         "point_to_point": "Point à point",
         "access_point": "Point d'accès",
         "roaming": "Itinérance",
-        "boundary": "Boundary",
+        "boundary": "Limite",
         "gateway": "Passerelle"
       },
       "modeDefaultAdd": "Valeur par type",
@@ -1563,18 +1563,18 @@
       "fieldOutOfRange": "La valeur est hors de la plage autorisée.",
       "fieldTooLong": "La valeur est trop longue",
       "fieldInvalidOption": "Valeur enum non prise en charge",
-      "profilesTitle": "Interface profiles",
+      "profilesTitle": "Profils d'interface",
       "profilesHint": "Ensembles d'activation nommés pour lesquels les interfaces sont activées. Changer de profil active ses membres et désactive le reste.",
       "profilesEmpty": "Aucun profil pour le moment. Enregistrez le enable-set actuel pour en créer un.",
-      "profilesDefault": "Default",
-      "profilesUnnamed": "(unnamed)",
-      "profilesNamePlaceholder": "Profile name",
-      "profilesSaveCurrent": "Save current",
-      "profilesCreateEmpty": "New empty",
-      "profilesRename": "Rename",
-      "profilesSaveRename": "Save",
-      "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}",
+      "profilesDefault": "Par défaut",
+      "profilesUnnamed": "(anonyme)",
+      "profilesNamePlaceholder": "Nom de profil",
+      "profilesSaveCurrent": "Enregistrer l’actuel",
+      "profilesCreateEmpty": "NOUVEAUX SACS VIDES",
+      "profilesRename": "Renommer",
+      "profilesSaveRename": "Sauvegarder",
+      "profilesDelete": "Effacer",
+      "profilesRenameAria": "Renommer le profil {{name}}",
       "bootstrapOnly": "(bootstrap uniquement)",
       "bootstrapOnlyHint": "Détachez cette interface une fois que suffisamment de serveurs Backbone/TCP découverts se connectent automatiquement (nécessite une limite d'→autoconnexion réseau > 0)."
     },
@@ -1776,7 +1776,7 @@
     "errors": {
       "ble": {
         "adapter_missing": "Aucun adaptateur Bluetooth n'a été trouvé. Activez Bluetooth dans les paramètres système et réessayez.",
-        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "permission_denied": "L'autorisation Bluetooth a été refusée. Autorisez mesh-client à utiliser Bluetooth, puis réessayez.",
         "scan_busy": "Une autre analyse Bluetooth est en cours. Attendez un instant et réessayez.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "La connexion Bluetooth a expiré. Gardez la radio éveillée et à proximité, puis réessayez.",
@@ -2094,7 +2094,7 @@
         "edit": "Modifier l'interface",
         "restart_stack": "Redémarrer la pile",
         "add_auto": "Ajouter une interface automatique",
-        "disable_share_instance": "Turn off Share instance",
+        "disable_share_instance": "Désactiver l'instance de partage",
         "open_interfaces": "interfaces ouverts"
       },
       "audit": {
@@ -2471,7 +2471,7 @@
         "recommendation": "L'historique du chat Store & Forward n'a pas pu être demandé à un routeur (souvent une brève course avec d'autres trafics radio). Si le backlog de discussion reste vide, reconnectez-vous ou attendez le prochain battement de cœur du routeur."
       },
       "serial-reconnect": {
-        "label": "USB Serial Reconnect",
+        "label": "USB Reconnexion série",
         "recommendation": "Le port série USB n'a pas pu être rouvert ou son flux précédent est toujours verrouillé. Fermez les autres applications à l'aide de la radio, reconnectez le câble et reconnectez-vous dans l'application. S'il se répète, incluez les lignes de journal série dans un rapport de bogue."
       },
       "reticulum-nomad-hosting": {
@@ -2832,7 +2832,7 @@
       "activeHighDesc": "Niveau actif GPIO. On = actif haut (3,3 V déclenche la sortie) ; Éteint = actif faible.",
       "primaryOutputGpio": "GPIO de sortie primaire",
       "primaryOutputGpioDesc": "Broche GPIO pour la sortie de notification principale. 0 = désarmé.",
-      "buzzerGpio": "Buzzer GPIO",
+      "buzzerGpio": "Avertisseur sonore GPIO",
       "buzzerGpioDesc": "Broche GPIO pour buzzer. 0 = désarmé.",
       "vibrationGpio": "Moteur vibrant GPIO",
       "vibrationGpioDesc": "Broche GPIO pour moteur vibrant. 0 = désarmé.",
@@ -3290,15 +3290,15 @@
     "reticulumConfigImportFailed": "L'importation de la configuration a échoué.",
     "reticulumConfigNotFound": "Aucune configuration système Reticulum trouvée dans les chemins par défaut.",
     "reticulumConfigValidate": {
-      "button": "Check config",
-      "aria": "Validate on-disk network config",
-      "running": "Checking…",
-      "ok": "Config looks good — no audit issues.",
-      "failed": "Config check failed: {{message}}",
-      "issuesHeading_one": "{{count}} config issue",
-      "issuesHeading_other": "{{count}} config issues",
-      "severityError": "error",
-      "severityWarning": "warning",
+      "button": "Vérifier la configuration",
+      "aria": "Valider la configuration réseau sur disque",
+      "running": "Vérification…",
+      "ok": "La configuration semble bonne — aucun problème d'audit.",
+      "failed": "Échec de la vérification de la configuration : {{message}}",
+      "issuesHeading_one": "{{count}} problème DE configuration",
+      "issuesHeading_other": "{{count}} problèmes DE configuration",
+      "severityError": "erreur",
+      "severityWarning": "avertissement",
       "severityInfo": "info"
     },
     "reticulumPnHosting": {
@@ -3382,7 +3382,7 @@
     "statusOffline": "Hors ligne",
     "loadingBadge": "Chargement en cours...",
     "mqttIgnoredBadge": "MQTT ignoré",
-    "chatBadge": "Chat",
+    "chatBadge": "Discuter",
     "onlyInDbBadge": "Uniquement en DB",
     "syncedBadge": "Synchronisé",
     "onRadioBadge": "À la radio",
@@ -3573,7 +3573,7 @@
     "hops": "Sauts",
     "channelUtil": "Utilisation du canal",
     "source": "Source",
-    "position": "Position",
+    "position": "Poste",
     "lastTrackedPosition": "Dernière position suivie",
     "gpsWarningPrefix": "Avertissement GPS :",
     "routingHealth": "Santé du routage",
@@ -3696,7 +3696,7 @@
     "emptyNoNodesYet": "Aucun nœud n'a encore été découvert. Connectez-vous à un appareil pour voir le réseau maillé.",
     "buttonRefresh": "Renouvellement",
     "buttonImportContacts": "Contacts",
-    "meshcoreTypeChat": "Chat",
+    "meshcoreTypeChat": "Discuter",
     "meshcoreTypeRepeater": "Répéteur",
     "meshcoreTypeRoom": "Salle",
     "statusOnline": "En ligne",
@@ -3737,8 +3737,8 @@
     "announces": "Annonces",
     "searchFavourites": "Rechercher {{count}} favoris…",
     "searchAnnounces": "Rechercher {{count}} Annonce…",
-    "emptyFavourites": "No favourite Nomad Network nodes yet.",
-    "emptyAnnounces": "No announced Nomad Network nodes yet.",
+    "emptyFavourites": "Pas encore de nœuds Nomad Network favoris.",
+    "emptyAnnounces": "Aucun nœud Nomad Network annoncé pour le moment.",
     "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
     "lastSeen": "Dernière écoute {{time}}",
     "hopsAway_one": "à {{count}} saut",
@@ -3992,18 +3992,18 @@
     "renameFailed": "Impossible d'enregistrer le nom d'affichage.",
     "removeContactConfirmBody": "Cela supprime le contact de votre liste enregistrée. Les messages de chat restent ; ils restent dans l'historique si vous leur avez envoyé un message.",
     "backupPaths": "Chemins de sauvegarde",
-    "announcedDestinations": "Announced destinations",
-    "openedDestinationBadge": "Opened",
+    "announcedDestinations": "Destinations annoncées",
+    "openedDestinationBadge": "Ouvert",
     "copyAnnouncedHashAria": "Copy {{aspect}} destination hash {{hash}}",
-    "hashCopied": "Destination hash copied.",
+    "hashCopied": "Hachage de destination copié.",
     "hashCopyFailed": "Impossible de copier le hachage de destination.",
     "aspect": {
-      "chat": "Chat",
-      "voice": "Voice",
+      "chat": "Discuter",
+      "voice": "Vocal",
       "nomad": "Nomad",
       "rrc": "RRC",
       "propagation": "Propagation",
-      "unknown": "Unknown"
+      "unknown": "Inconnu"
     },
     "identityUnknown": "Identité inconnue : aucune annonce n'a encore été entendue de la part de cet homologue, il n'y a donc pas d'empreinte digitale à vérifier.",
     "identityUnknownDestination": "Hachage de destination (pas une empreinte digitale d'identité)"
@@ -4442,34 +4442,34 @@
     "offloadReconcileStillFull": "Le déchargement est terminé, mais la radio signale toujours des contacts complets ({{count}}/350). Reconnectez-vous et réessayez.",
     "offloadReconcileStillNearFull": "Le déchargement est terminé, mais la radio signale toujours une utilisation élevée des contacts ({{count}}/350).",
     "offloadReconcileRefreshFailed": "Le déchargement est terminé, mais l'actualisation du contact a échoué. Reconnectez et actualisez les contacts.",
-    "txEnabledLabel": "TX Enabled",
+    "txEnabledLabel": "TX activé",
     "txEnabledDesc": "Autoriser ce nœud à transmettre. Désactiver pour l'opération de réception seule.",
-    "channelNumLabel": "Channel Number",
+    "channelNumLabel": "Channel Number (Numéro de la chaîne)",
     "channelNumDesc": "Sélectionnez manuellement le canal (0 = automatique). Doit correspondre à tous les nœuds du réseau.",
-    "overrideFrequencyLabel": "Override Frequency",
+    "overrideFrequencyLabel": "Fréquence de remplacement",
     "overrideFrequencyDesc": "Remplacer la fréquence en MHz (0 = utiliser la région par défaut). Assurer le respect des réglementations locales.",
-    "ignoreMqttLabel": "Ignore MQTT",
+    "ignoreMqttLabel": "Ignorer MQTT",
     "ignoreMqttDesc": "Ne rediffusez pas les paquets arrivés via MQTT. Réduit la congestion du maillage due au trafic de la passerelle.",
-    "configOkToMqttLabel": "OK to MQTT",
+    "configOkToMqttLabel": "OK à MQTT",
     "configOkToMqttDesc": "Signaler aux passerelles que les paquets de ce nœud peuvent être transmis au MQTT.",
-    "overrideDutyCycleLabel": "Override Duty Cycle",
+    "overrideDutyCycleLabel": "Ignorer le cycle de service",
     "overrideDutyCycleDesc": "Contourner les limites régionales du cycle de service. Pour les tests uniquement — peut être illégal à utiliser à l'air libre.",
-    "paFanDisabledLabel": "Disable PA Fan",
+    "paFanDisabledLabel": "Désactiver le ventilateur PA",
     "paFanDisabledDesc": "Désactivez le ventilateur de refroidissement de l'amplificateur de puissance (dépendant du matériel).",
-    "rebroadcastModeLabel": "Rebroadcast Mode",
-    "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
-    "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
-    "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
-    "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
-    "disableTripleClickLabel": "Disable Triple-click",
+    "rebroadcastModeLabel": "Mode de rediffusion",
+    "nodeInfoBroadcastSecsLabel": "Intervalle de diffusion d'informations de nœud",
+    "nodeInfoBroadcastSecsDesc": "Fréquence de diffusion des informations sur les nœuds en quelques secondes (0 = firmware par défaut ~15 min).",
+    "doubleTapAsButtonPressLabel": "Appuyez deux fois en appuyant sur le bouton",
+    "doubleTapAsButtonPressDesc": "Traitez un accéléromètre en appuyant deux fois sur le bouton de l'utilisateur (en fonction du matériel).",
+    "disableTripleClickLabel": "Désactiver le triple-clic",
     "disableTripleClickDesc": "Désactivez l'action de triple-clic sur le bouton utilisateur.",
-    "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
+    "ledHeartbeatDisabledLabel": "Désactiver le battement de cœur LED",
     "ledHeartbeatDisabledDesc": "Arrêtez le clignotement de la LED pour indiquer que le nœud est actif.",
-    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioLabel": "Bouton GPIO",
     "buttonGpioDesc": "Code PIN GPIO pour le bouton utilisateur (0 = valeur par défaut du matériel).",
-    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioLabel": "Avertisseur sonore GPIO",
     "buzzerGpioDesc": "Broche GPIO pour le buzzer (0 = valeur par défaut du matériel).",
-    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefLabel": "Fuseau horaire (POSIX)",
     "tzdefDesc": "Chaîne de fuseau horaire POSIX, par exemple EST5EDT, M3.2.0,M11.1.0. Voir https://github.com/nayarsystems/posix_tz_db pour une liste de références.",
     "rebroadcastModes": {
       "ALL": {
@@ -4497,19 +4497,19 @@
         "description": "Ne rediffusez que les portnums essentiels (texte, nodeinfo, position, télémétrie)."
       }
     },
-    "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
-    "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
-    "oledTypeLabel": "OLED Type",
-    "flipScreenLabel": "Flip Screen",
+    "autoScreenCarouselSecsLabel": "Intervalle du carrousel d'écran",
+    "autoScreenCarouselSecsDesc": "Secondes entre les changements automatiques de page d'écran. 0 pour désactiver.",
+    "oledTypeLabel": "Type OLED",
+    "flipScreenLabel": "Retourner l'écran",
     "flipScreenDesc": "Faites pivoter l'écran de 180 degrés.",
-    "displayModeLabel": "Display Mode",
-    "headingBoldLabel": "Bold Heading",
+    "displayModeLabel": "Mode écran",
+    "headingBoldLabel": "Titre gras",
     "wakeOnTapOrMotionLabel": "Réveil sur robinet ou mouvement",
     "wakeOnTapOrMotionDesc": "Réveillez l'écran lorsque l'appareil est effleuré ou déplacé.",
     "use12hClockLabel": "12-Hour Clock",
-    "useLongNodeNameLabel": "Use Long Node Name",
-    "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
-    "enableMessageBubblesLabel": "Message Bubbles",
+    "useLongNodeNameLabel": "Utiliser un nom de nœud long",
+    "useLongNodeNameDesc": "Afficher le nom complet du nœud au lieu du nom court à l'écran.",
+    "enableMessageBubblesLabel": "Bulles de message",
     "enableMessageBubblesDesc": "Afficher les messages entrants dans une bulle à l'écran.",
     "oledTypes": {
       "OLED_AUTO": {
@@ -4533,28 +4533,28 @@
     },
     "displayModes": {
       "0": {
-        "label": "Default"
+        "label": "Par défaut"
       },
       "1": {
-        "label": "Two Color"
+        "label": "bicolore"
       },
       "2": {
-        "label": "Inverted"
+        "label": "Sucre"
       },
       "3": {
-        "label": "Color"
+        "label": "Couleur"
       }
     },
-    "btPairingModeLabel": "Pairing Mode",
+    "btPairingModeLabel": "Mode jumelage",
     "btPairingModes": {
       "0": {
-        "label": "Random PIN"
+        "label": "BROCHE ALÉATOIRE"
       },
       "1": {
-        "label": "Fixed PIN"
+        "label": "goupille fixe"
       },
       "2": {
-        "label": "No PIN"
+        "label": "PAS DE P/N"
       }
     },
     "tzdefPlaceholder": "par exemple EST5EDT,M3.2.0,M11.1.0",
@@ -4579,7 +4579,7 @@
     "xmodemUploadSuccess": "Téléchargé {{name}}",
     "xmodemDownloadSuccess": "Téléchargé {{name}}",
     "xmodemFailed": "XMODEM a échoué : {{message}}",
-    "zeroHopAdvertButton": "Zero-hop Advert",
+    "zeroHopAdvertButton": "Publicité Zero-hop",
     "zeroHopAdvertSent": "Zero-hop advert envoyé",
     "floodScopeTitle": "Champ d'application régional des Flood",
     "floodScopeHelp": "Limitez le trafic d'Flood à une région de hashtag (firmware v8+). Nécessite meshcore.js setFloodScope ; la reconnexion réapplique l'étendue enregistrée.",
@@ -4858,7 +4858,7 @@
     "transportRegionMismatch": "Ne correspond pas à la portée d'inondation configurée",
     "transportLegendHint": "Développer une ligne : la route et le transport sont en haut. Les codes de portée/retour régionaux n'apparaissent que sur les paquets TRANSPORT_FLOOD et TRANSPORT_DIRECT (pas sur FLOOD/DIRECT simple).",
     "routeLabel": "Route",
-    "payloadLabel": "Payload",
+    "payloadLabel": "Charge Utile",
     "transportHeading": "Transport",
     "transportCodesAbsent": "Aucun code de transport régional (route {{route}} — seuls TRANSPORT_FLOOD / TRANSPORT_DIRECT portent scope/return).",
     "transportCodesAbsentTooltip": "Les paquets FLOOD et DIRECT simples n'incluent pas les champs scope/return de transport régional dans l'en-tête RF MeshCore.",
@@ -5199,7 +5199,7 @@
     "notice": {
       "body": "Aucun nœud de propagation n'est configuré. Les pairs hors ligne ou inaccessibles ont besoin d'un nœud de propagation pour la livraison LXMF de stockage et de transfert.",
       "openSettings": "Configurer la propagation",
-      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "openSettingsAria": "Ouvrir Reticulum Paramètres de propagation du réseau",
       "bodyWithDiscoveries": "Aucun nœud de propagation n'est configuré. {{count}} découvert sur le réseau — ajoutez-en un ci-dessous ou ouvrez les paramètres réseau.",
       "addClosest": "Ajouter le plus proche découvert",
       "addClosestAria": "Ajoutez le nœud de propagation découvert le plus proche et définissez-le comme préféré",
@@ -5625,7 +5625,7 @@
   },
   "tabs": {
     "connection": "Connexion",
-    "chat": "Chat",
+    "chat": "Discuter",
     "contacts": "Contacts",
     "nodes": "Nœuds",
     "map": "Carte",
@@ -5971,49 +5971,49 @@
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
-      "favourites": "Favourites",
-      "discovered": "Discovered",
+      "favourites": "Favoris",
+      "discovered": "Découverte",
       "connected": "Connecté"
     },
-    "searchHubs": "Search hubs…",
+    "searchHubs": "Rechercher des hubs…",
     "searchRooms": "Search rooms…",
-    "nickname": "Nickname",
-    "refreshHubs": "Refresh hubs",
+    "nickname": "Pseudo",
+    "refreshHubs": "Rafraîchir les hubs",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Se connecter au hash",
-    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "invalidHubHash": "Entrez un hachage de destination hexadécimal valide de 32 caractères.",
     "connectFailed": "Impossible de se connecter au hub RRC.",
     "joinFailed": "Impossible de rejoindre la salle.",
     "sendFailed": "Impossible d'envoyer le message.",
-    "selectHub": "Select hub {{name}}",
+    "selectHub": "Sélectionnez Hub {{name}}",
     "selectHubPrompt": "Sélectionnez un hub RRC auquel vous connecter.",
-    "favoriteHub": "Favourite hub",
-    "unfavoriteHub": "Remove hub favourite",
+    "favoriteHub": "Centre préféré",
+    "unfavoriteHub": "Supprimer le favori du hub",
     "hopsAway_one": "à {{count}} saut",
     "hopsAway_other": "à {{count}} sauts",
     "noDiscoveredHubs": "Aucun hub RRC en ligne n'a encore été découvert. Laissez la pile tourner pour écouter les announces.",
     "rooms": "Rooms",
-    "joinRoom": "Room name",
-    "join": "Join room",
+    "joinRoom": "Nom de la salle",
+    "join": "Rejoindre le salon",
     "joinRoomPrompt": "Rejoignez une salle pour commencer à discuter.",
     "noRoomsJoined": "Aucune salle rejointe pour le moment.",
-    "selectRoom": "Open room {{name}}",
-    "leaveRoom": "Leave room",
-    "disconnect": "Disconnect",
-    "toggleTimestamps": "Toggle timestamps",
+    "selectRoom": "Open Room {{name}}",
+    "leaveRoom": "Quitter le salon",
+    "disconnect": "Déconnecter",
+    "toggleTimestamps": "Basculer les horodatages",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "members": "Members",
+    "members": "Bénéficiares",
     "noMembers": "No member list from hub.",
-    "copyMessage": "Copy message",
+    "copyMessage": "Copier le message",
     "messagePlaceholder": "Type a message…",
-    "send": "Send",
+    "send": "Envoyer",
     "status": {
-      "disconnected": "Disconnected",
-      "connecting": "Connecting…",
+      "disconnected": "Déconnecté",
+      "connecting": "Connexion…",
       "awaiting_welcome": "En attente du hub...",
-      "active": "Connected",
-      "reconnecting": "Reconnecting…"
+      "active": "Connecté",
+      "reconnecting": "Reconnexion…"
     },
     "joinedRooms": "Souscrit le",
     "recentRooms": "Récent",
@@ -6089,7 +6089,7 @@
     "roomLegend": "★ favori · A toggles auto-join",
     "disconnectFailed": "Impossible de se déconnecter du hub RRC.",
     "partFailed": "Impossible de quitter la salle.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "selectHubUnread": "Sélectionnez hub {{name}}, {{marker}}, {{count}} non lu",
     "clearHistory": "Effacer l'historique",
     "clearHistoryTitle": "Effacer l'historique de la salle",
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
@@ -6119,7 +6119,7 @@
     "noConnectedHubs": "Aucun hub RRC connecté. Connectez-vous à partir de Favoris, Découverte ou par hachage.",
     "autoJoinChip": "Auto",
     "listViewAria": "Afficher les salons ou les hubs",
-    "hubsShort": "Hubs",
+    "hubsShort": "Moyeux",
     "hideList": "Masquer les salons et les hubs",
     "showList": "Afficher les salons et les hubs",
     "backToList": "Retour aux salons et hubs",
@@ -6181,7 +6181,7 @@
     "confirmContactImportAction": "Importer un contact",
     "confirmMeshcoreContactImportTitle": "Importer un contact MeshCore ?",
     "confirmMeshcoreContactImportBody": "Ajouter {{name}} d'un QR de contact MeshCore à vos contacts ?",
-    "confirmMeshcoreContactImportAction": "Import MeshCore contact",
+    "confirmMeshcoreContactImportAction": "Importer MeshCore contact",
     "confirmMeshcoreChannelImportTitle": "Importer un canal MeshCore ?",
     "confirmMeshcoreChannelImportBody": "Appliquer le canal {{name}} à partir d'un canal QR MeshCore dans l'onglet Radio ?",
     "confirmMeshcoreChannelImportAction": "Importer le nom du canal",
@@ -6634,7 +6634,7 @@
     "continue": "Continuer",
     "routes": {
       "internet": {
-        "title": "Internet",
+        "title": "L'internet",
         "body": "Un hub public vous connecte à d’autres personnes. Aucune radio nécessaire ; un bon point de départ."
       },
       "radio": {
@@ -6777,8 +6777,8 @@
     "channel": "Messages de canal",
     "dm": "Messages directs",
     "reply": "Réponses et mentions",
-    "mecp": "MECP ROUTINE",
-    "mecpSafety": "MECP SAFETY",
+    "mecp": "ROUTINE MECP",
+    "mecpSafety": "SÉCURITÉ MECP",
     "mecpEas": "MECP URGENT",
     "mecpSiren": "MECP MAYDAY",
     "default": "Son original",
@@ -7222,7 +7222,7 @@
       "RF": "RF",
       "MQTT": "MQTT",
       "unknown": "Source inconnue",
-      "Beacon": "Beacon"
+      "Beacon": "Balise"
     },
     "corescope": {
       "feed": "CoreScope régional",

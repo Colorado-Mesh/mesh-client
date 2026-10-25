@@ -182,6 +182,77 @@ describe('filterMissingKeysToTranslate', () => {
     // Pure technical/brand terms — none should be re-translated
     expect(result).toEqual([]);
   });
+
+  it('auditIdentical: skips theme / meshcore preset / routingPort keep-English prefixes', () => {
+    const enFlat = {
+      'appPanel.themePreset.zinc950': 'Zinc 950',
+      'appPanel.themeSurfaces.zinc': 'Zinc',
+      'connectionPanel.meshcorePreset.eastmesh': 'EastMesh',
+      'diagnosticsPanel.routingPort.nodeInfo': 'NodeInfo',
+      prose: 'Allow Bluetooth then reconnect',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['prose']);
+  });
+
+  it('auditIdentical: skips technical samples via looksLikeTechnicalSample', () => {
+    const enFlat = {
+      mac: 'AA:BB:CC:DD:EE:FF',
+      path: '~/.reticulum/storage/identities/my_network',
+      hash: 'e17f833c4ddf8890dd3a79a6fea8161d',
+      url: 'hash:/page/index.mu',
+      snake: 'my_private_network',
+      prose: 'Save the current interface profile',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['prose']);
+  });
+
+  it('auditIdentical: does not treat WiFi/HTTP as a technical path sample', () => {
+    const enFlat = {
+      'connectionPanel.transports': 'WiFi/HTTP',
+      path: '~/.reticulum/storage/identities/my_network',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['connectionPanel.transports']);
+  });
+
+  it('auditIdentical: does not skip placeholder leaf names that hold prose', () => {
+    const enFlat = {
+      'rrc.manualHashPlaceholder': 'Hub destination hash (32 hex)',
+      'connectionPanel.reticulumInterfaces.seedAddressesPlaceholder': 'AA:BB:CC:DD:EE:FF',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['rrc.manualHashPlaceholder']);
+  });
 });
 
 describe('normalizeMachineTranslation', () => {
@@ -191,8 +262,20 @@ describe('normalizeMachineTranslation', () => {
     );
   });
 
-  it('leaves other locales untouched', () => {
+  it('strips CAT XML residue and trims whitespace for every locale', () => {
+    expect(normalizeMachineTranslation('Mayday!<ex id="_1"/> ', 'id')).toBe('Mayday!');
+    expect(normalizeMachineTranslation(' <g id="1">Ping</g> ', 'id')).toBe('Ping');
     expect(normalizeMachineTranslation("l 'appareil", 'fr')).toBe("l 'appareil");
+  });
+});
+
+describe('restorePlaceholders bare PH residue', () => {
+  it('restores bare PH0 when MT drops underscores around a shielded brand', () => {
+    const en = 'Nomad';
+    const { placeholders } = stripPlaceholders(en, ['Nomad']);
+    expect(placeholders).toEqual(['Nomad']);
+    expect(restorePlaceholders('PH0', placeholders)).toBe('Nomad');
+    expect(restorePlaceholders('Ph0', placeholders)).toBe('Nomad');
   });
 });
 
