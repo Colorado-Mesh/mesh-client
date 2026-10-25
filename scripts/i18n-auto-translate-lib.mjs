@@ -6,6 +6,66 @@
 export const MT_PLACEHOLDER_TOKEN_RE = /__\s*PH\s*(\d+)\s*__/gi;
 
 /**
+ * When MT drops the underscores entirely (whole-string brand shields → "PH0" / "Ph0").
+ * Only used when a matching placeholder index exists — avoids rewriting prose "PH".
+ */
+export const MT_BARE_PH_TOKEN_RE = /\bPH\s*(\d+)\b/gi;
+
+/**
+ * Strip CAT / XLIFF / Memsource tags that sometimes leak into free-API MT output.
+ * Linear scan — avoids nested-quantifier regex (eslint security/detect-unsafe-regex).
+ * @param {string} text
+ * @returns {string}
+ */
+export function stripCatXmlTags(text) {
+  const names = new Set([
+    'ph',
+    'g',
+    'x',
+    'bx',
+    'ex',
+    'bpt',
+    'ept',
+    'it',
+    'mrk',
+    'primary',
+    'secondary',
+  ]);
+  let out = '';
+  for (let i = 0; i < text.length;) {
+    if (text[i] !== '<') {
+      out += text[i];
+      i += 1;
+      continue;
+    }
+    const close = text.indexOf('>', i + 1);
+    if (close === -1) {
+      out += text.slice(i);
+      break;
+    }
+    const inner = text.slice(i + 1, close).trim();
+    let tagScan = inner.startsWith('/') ? inner.slice(1).trimStart() : inner;
+    let tagName = '';
+    if (/^[A-Za-z]/.test(tagScan)) {
+      tagName = tagScan[0];
+      tagScan = tagScan.slice(1);
+      while (tagScan.length > 0 && /^[A-Za-z0-9]/.test(tagScan[0])) {
+        tagName += tagScan[0];
+        tagScan = tagScan.slice(1);
+      }
+    }
+    const name = tagName.toLowerCase();
+    if (name && names.has(name)) {
+      i = close + 1;
+      continue;
+    }
+    out += text.slice(i, close + 1);
+    i = close + 1;
+  }
+  return out;
+}
+
+/**
  * @param {string[]} terms
  * @returns {RegExp | null}
  */
@@ -45,25 +105,36 @@ const UK_SPLIT_APOSTROPHE_RE = /([а-яіїєґА-ЯІЇЄҐ])\s*['\u2019\u02bc]
 
 /**
  * Locale-specific cleanup of MT output before it is saved.
+ * Also strips CAT/XLIFF tag residue and trims whitespace MT often appends.
  *
  * @param {string} text
  * @param {string} localeDir
  * @returns {string}
  */
 export function normalizeMachineTranslation(text, localeDir) {
-  if (localeDir === 'uk') return text.replace(UK_SPLIT_APOSTROPHE_RE, "$1'$2");
-  return text;
+  let out = stripCatXmlTags(String(text)).trim();
+  if (localeDir === 'uk') out = out.replace(UK_SPLIT_APOSTROPHE_RE, "$1'$2");
+  return out;
 }
 
 /**
- * Restore i18next placeholders after MT, tolerating spaced __ PH n __ variants.
+ * Restore i18next placeholders after MT, tolerating spaced __ PH n __ variants
+ * and bare PH n residue when the engine drops the underscores.
  *
  * @param {string} str
  * @param {string[]} placeholders
  * @returns {string}
  */
 export function restorePlaceholders(str, placeholders) {
-  return str.replace(MT_PLACEHOLDER_TOKEN_RE, (_, idx) => placeholders[Number(idx)] ?? '');
+  const withUnderscores = str.replace(
+    MT_PLACEHOLDER_TOKEN_RE,
+    (_, idx) => placeholders[Number(idx)] ?? '',
+  );
+  if (placeholders.length === 0) return withUnderscores;
+  return withUnderscores.replace(MT_BARE_PH_TOKEN_RE, (match, idx) => {
+    const replacement = placeholders[Number(idx)];
+    return replacement === undefined ? match : replacement;
+  });
 }
 
 /** Segments that must not be used as nested object keys (prototype pollution). */
@@ -131,12 +202,12 @@ export function setDeepLocaleValue(obj, dotKey, value) {
 
 // Multi-word brands / protocol phrases stripped before the single-token list.
 const SKIP_AUDIT_PHRASE_RE =
-  /\b(Colorado Mesh|Nomad Network|Ripple Networks|mesh-client|Mesh-Client|Liam's|CalTopo|LetsMesh|MeshMapper|Flood Advert|Reticulum)\b/gi;
+  /\b(Colorado Mesh|Nomad Network|Ripple Networks|mesh-client|Mesh-Client|Liam's|CalTopo|LetsMesh|MeshMapper|Flood Advert|Discovery Flood|Room Advert|Neighbor Info|Node Info|SharedArrayBuffer|TCP\/IP|Wi-Fi|GitHub|Reticulum)\b/gi;
 
 // Tokens that are legitimately identical across languages and should not be
 // treated as "untranslated" when a locale value matches English verbatim.
 const SKIP_AUDIT_RE =
-  /\b(TAK|Discord|Meshtastic|MeshCore|MQTT|LoRa|GPS|BLE|SNR|RSSI|dBm|Hz|MHz|kHz|bps|ACK|NAK|CSV|JSON|URL|URI|UUID|API|WiFi|USB|Bluetooth|SX126x|GPIO|Base64|base64|AES-128|AES-256|SHA-256|NTP|Hops?|MGRS|Firmware|Router|Flood|Advert|ADVERT|FLOOD|DIRECT|LOCAL|TXT_MSG|Sniffer|Repeater|Repeaters|Radio|Client|Imperial|hello)\b/gi;
+  /\b(TAK|Discord|Meshtastic|MeshCore|MQTT|LoRa|GPS|BLE|SNR|RSSI|dBm|Hz|MHz|kHz|bps|ACK|NAK|CSV|JSON|URL|URI|UUID|API|WiFi|USB|Bluetooth|SX126x|GPIO|Base64|base64|AES-128|AES-256|SHA-256|NTP|Hops?|MGRS|Firmware|Router|Flood|Advert|ADVERT|FLOOD|DIRECT|LOCAL|TXT_MSG|Sniffer|Repeater|Repeaters|Radio|Client|Imperial|hello|GitHub|LXMF|LXST|RNS|MECP|RMAP|SSID|DHCP|NMEA|NodeInfo|Telemetry|NeighborInfo|DiscoveryFlood|RoomAdvert|Zinc)\b/gi;
 
 /** Leaf keys that must stay English (protocol chips / wire samples) — never audit-retranslate. */
 const SKIP_AUDIT_LEAF_KEYS = new Set([
@@ -156,12 +227,21 @@ const SKIP_AUDIT_LEAF_KEYS = new Set([
   'filterChipPath',
   'filterChipTrace',
   'filterChipAnon',
+  'seedAddressesPlaceholder',
+  'networkNamePlaceholder',
+  'networkIdentityPlaceholder',
+  'staticPeersPlaceholder',
+  'enterUrlPlaceholder',
+  'xmodemFilenamePlaceholder',
+  'aclPubkeyPlaceholder',
+  'manualHashPlaceholder',
 ]);
 
 /**
- * Key prefixes whose values are protobuf-derived codes and hardware proper nouns
- * (region codes, modem presets, OLED part numbers). Machine translation turns
- * "ANZ" into sentences and "TAK" into "yes", so these stay English everywhere.
+ * Key prefixes whose values are protobuf-derived codes, hardware proper nouns,
+ * theme palette names, mesh network presets, or routing-port protocol identifiers.
+ * Machine translation turns "ANZ" into sentences, "TAK" into "yes", and "Zinc"
+ * into metal nouns, so these stay English everywhere.
  */
 export const KEEP_ENGLISH_KEY_PREFIXES = [
   'radioPanel.regions.',
@@ -169,6 +249,10 @@ export const KEEP_ENGLISH_KEY_PREFIXES = [
   'radioPanel.oledTypes.',
   'radioPanel.displayUnits.',
   'radioPanel.spreadFactors.',
+  'appPanel.themePreset.',
+  'appPanel.themeSurfaces.',
+  'connectionPanel.meshcorePreset.',
+  'diagnosticsPanel.routingPort.',
 ];
 
 /**
@@ -193,12 +277,42 @@ export function isKeepEnglishKey(key) {
 }
 
 /**
+ * True for wire samples / filesystem paths / hex blobs that look translated
+ * only because letter runs survive stripping (MAC addresses, identity paths).
+ * @param {string} enVal
+ */
+export function looksLikeTechnicalSample(enVal) {
+  const t = enVal.trim();
+  if (t.length === 0) return false;
+  // MAC / colon-hex (split avoids nested-quantifier regex)
+  const macParts = t.split(':');
+  if (
+    macParts.length === 6 &&
+    macParts.every((part) => part.length === 2 && /^[0-9A-Fa-f]{2}$/.test(part))
+  ) {
+    return true;
+  }
+  // Hex digests / ellipsis-truncated hashes (length checks avoid unbounded quantifiers)
+  const hexBody = t.replace(/(?:…|\.\.\.)$/u, '');
+  if (/^[0-9A-Fa-f]+$/u.test(hexBody) && hexBody.length >= 8 && t.length <= 128) return true;
+  // Path / URI samples with no prose spaces (hash:/…, ~/.reticulum/…, config.txt)
+  if (!/\s/.test(t) && (t.startsWith('~/') || t.startsWith('hash:/') || t.includes('/'))) {
+    return true;
+  }
+  if (!/\s/.test(t) && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
+  // snake_case network ids used as placeholders
+  if (!/\s/.test(t) && t.includes('_') && /^[a-z][a-z0-9_]*$/i.test(t)) return true;
+  return false;
+}
+
+/**
  * Returns true when an English value contains enough non-technical content to
  * be worth machine-translating. Values that reduce to nothing after stripping
  * placeholders and known loanwords/brands are skipped in --audit mode.
  * @param {string} enVal
  */
 export function hasTranslatableContent(enVal) {
+  if (looksLikeTechnicalSample(enVal)) return false;
   const stripped = enVal
     .replace(/\{\{[^}]+\}\}/g, '') // remove i18next {{placeholders}}
     .replace(SKIP_AUDIT_PHRASE_RE, '')

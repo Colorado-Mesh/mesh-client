@@ -25,7 +25,8 @@
  * Use --audit to additionally retranslate any key whose locale value is still identical to English.
  */
 
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { constants as http2Constants } from 'node:http2';
 import { join, dirname, resolve } from 'node:path';
@@ -464,19 +465,28 @@ async function main() {
     const body = sanitizeLocaleTranslationJsonFileBodyForDisk(
       JSON.stringify(target, null, 2) + '\n',
     );
-    const payload = JSON.stringify({ outPath, body });
-    const persist = spawnSync(process.execPath, [WRITE_SUBPROCESS, LOCALES_ROOT], {
-      input: payload,
-      encoding: 'utf8',
-      maxBuffer: 50 * 1024 * 1024,
-    });
-    if (persist.error) {
-      throw persist.error;
-    }
-    if (persist.status !== 0) {
-      throw new Error(
-        persist.stderr?.trim() || `locale persist subprocess exited with status ${persist.status}`,
-      );
+    // Large locale JSON via spawnSync stdin can hang (pipe/socketpair back-pressure).
+    // Stage the payload on disk under a unique temp dir, then hand the path to the writer.
+    const payloadDir = mkdtempSync(join(tmpdir(), 'mesh-i18n-persist-'));
+    const payloadPath = join(payloadDir, 'payload.json');
+    try {
+      writeFileSync(payloadPath, JSON.stringify({ outPath, body }), 'utf8');
+      const persist = spawnSync(process.execPath, [WRITE_SUBPROCESS, LOCALES_ROOT, payloadPath], {
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 60_000,
+      });
+      if (persist.error) {
+        throw persist.error;
+      }
+      if (persist.status !== 0) {
+        throw new Error(
+          persist.stderr?.trim() ||
+            `locale persist subprocess exited with status ${persist.status}`,
+        );
+      }
+    } finally {
+      rmSync(payloadDir, { recursive: true, force: true });
     }
     const tail =
       localeRunTotal > 1 || totalScheduledJobs > workTotal

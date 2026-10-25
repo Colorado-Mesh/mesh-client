@@ -90,6 +90,8 @@ Delete the key from `en/translation.json`, then run `pnpm run i18n:prune-unused 
 | Audit                  | add `--audit` or `I18N_AUDIT=1`                                | Also retranslates keys whose locale value is still identical to English                                         |
 | Limit to a key subtree | add `--prefix a.b,c.d` (or `--prefix=a.b`)                     | Only keys equal to, or nested under, a prefix (`modulePanel` matches `modulePanel.foo`, not `modulePanelExtra`) |
 
+`--audit` skips values that are legitimately identical (brands / protocol loanwords via `hasTranslatableContent`), technical samples (MACs, hex digests, path placeholders), and keep-English prefixes (radio region/modem/OLED codes, theme palette names, MeshCore network presets, routing-port identifiers). Locale JSON is persisted through a temp-file payload to the write subprocess (large stdin payloads can hang `spawnSync` on some hosts).
+
 MyMemory sends the contact `info@coloradomesh.org` by default for its 50k words/day quota; override with `MYMEMORY_EMAIL`.
 
 ### Key and quality check

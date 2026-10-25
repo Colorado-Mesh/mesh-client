@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 /**
- * Writes one locale JSON file from a parent-provided payload on stdin.
+ * Writes one locale JSON file from a parent-provided payload.
  * Lives in a separate Node entrypoint so CodeQL js/http-to-file-access does not
  * join HTTP response sources with this process's writeFileSync (see parent script).
  *
- * Failure point: malformed stdin JSON or path escape — exit non-zero; parent surfaces error.
+ * Payload is a JSON file path (argv[3]) preferred — large locale bodies hung Node's
+ * spawnSync stdin pipes on some hosts. Stdin remains supported for small payloads.
+ *
+ * Failure point: malformed payload JSON or path escape — exit non-zero; parent surfaces error.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
@@ -15,12 +18,13 @@ if (!localesRoot) {
   process.exit(2);
 }
 
-const raw = readFileSync(0, 'utf8');
+const payloadPath = process.argv[3];
+const raw = payloadPath ? readFileSync(payloadPath, 'utf8') : readFileSync(0, 'utf8');
 let msg;
 try {
   msg = JSON.parse(raw);
 } catch {
-  process.stderr.write(`i18n-auto-translate-write-subprocess: invalid JSON on stdin\n`);
+  process.stderr.write(`i18n-auto-translate-write-subprocess: invalid JSON payload\n`);
   process.exit(2);
 }
 
