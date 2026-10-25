@@ -1472,18 +1472,24 @@ describe('renderer origin migration', () => {
     );
     target.set('mesh-client:protocol', 'meshcore');
     target.set('mesh-client:fontScale', '1');
+    // Current-origin appSettings may still hold inline credentials; repair must not copy them.
+    target.set(
+      'mesh-client:appSettings',
+      JSON.stringify({ locale: 'en', password: 'legacy-secret', channelPsks: { '0': 'psk' } }),
+    );
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     expect(target.get('mesh-client:origin-e2e-marker')).toBe('original profile');
-    expect(
-      JSON.parse(target.get('mesh-client:rendererPreferences')!).values[
-        'mesh-client:origin-e2e-marker'
-      ],
-    ).toBe('original profile');
-    expect(JSON.parse(target.get('mesh-client:rendererPreferences')!).values).toMatchObject({
+    const repairedPrefs = JSON.parse(target.get('mesh-client:rendererPreferences')!);
+    expect(repairedPrefs.values['mesh-client:origin-e2e-marker']).toBe('original profile');
+    expect(repairedPrefs.values).toMatchObject({
       'mesh-client:protocol': 'meshcore',
       'mesh-client:fontScale': '1',
       'mesh-client:themeColor': 'current-map-only',
     });
+    expect(JSON.parse(String(repairedPrefs.values['mesh-client:appSettings']))).toEqual({
+      locale: 'en',
+    });
+    expect(JSON.stringify(repairedPrefs)).not.toMatch(/legacy-secret|channelPsks|"psk"/);
   });
 
   it('repairs a foreign migration marker without replacing existing values', async () => {

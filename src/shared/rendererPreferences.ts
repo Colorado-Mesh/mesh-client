@@ -1,9 +1,64 @@
 const separatelyOwned =
   /^mesh-client:(?:rendererPreferences$|renderer-origin-migration$|deletedStorage:|durablePending:|incidentPending$|incidents$|lastRead(?:$|:)|roomsLastRead:|mecpBlockedSenders$|takRelayPrefs$|meshcoreIdentityEncPK$|credentialCompatibility:|(?:meshcore-key|meshtastic-dm-key)-backup|key-backup|diagnosticRowsSnapshot$|foreignLoraDetectionsSnapshot$|lastReticulumVacuumMs$)/;
 
+/** Nested fields that must never be copied into the canonical preference recovery map. */
+const preferenceCredentialField =
+  /^(?:password|channelPsks|private_key|meshcore(?:Room|Repeater)Credential:.*)$/;
+
+/** Preference keys whose values are structured records that may embed those fields. */
+const preferenceCredentialBearingKey =
+  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::meshcore)?|mqttProfiles:meshtastic|meshcoreIdentity)$/;
+
+function isPreferenceRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 /** Browser preferences, excluding native/secure/domain stores and their control journals. */
 export function isRendererPreferenceKey(key: string): boolean {
   return key.startsWith('mesh-client:') && !separatelyOwned.test(key);
+}
+
+/** Strip inline credential fields while retaining public nested preference data. */
+export function withoutRendererPreferenceSecrets(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutRendererPreferenceSecrets);
+  if (!isPreferenceRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !preferenceCredentialField.test(key))
+      .map(([key, child]) => [key, withoutRendererPreferenceSecrets(child)]),
+  );
+}
+
+export function rendererPreferenceHasInlineCredentials(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(rendererPreferenceHasInlineCredentials);
+  return (
+    isPreferenceRecord(value) &&
+    Object.entries(value).some(
+      ([key, child]) =>
+        preferenceCredentialField.test(key) || rendererPreferenceHasInlineCredentials(child),
+    )
+  );
+}
+
+/**
+ * Public preference snapshot value for the recovery map, or null when a credential-bearing
+ * key is missing/unusable. Never returns inline credential fields.
+ */
+export function sanitizeRendererPreferenceValue(key: string, raw: string): string | null {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (preferenceCredentialBearingKey.test(key)) {
+      const valid =
+        key === 'mesh-client:mqttProfiles:meshtastic'
+          ? Array.isArray(value) && value.every(isPreferenceRecord)
+          : isPreferenceRecord(value);
+      if (!valid) return null;
+    }
+    return JSON.stringify(withoutRendererPreferenceSecrets(value));
+  } catch {
+    // catch-no-log-ok plain strings (names, addresses, theme colours) are valid preferences
+    return preferenceCredentialBearingKey.test(key) ? null : raw;
+  }
 }
 
 function parsePreferenceEnvelope(

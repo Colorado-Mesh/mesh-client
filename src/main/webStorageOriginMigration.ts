@@ -20,6 +20,7 @@ import {
   isExplicitResetPreferenceBaseline,
   isRendererPreferenceKey,
   parseRendererPreferenceValues,
+  sanitizeRendererPreferenceValue,
 } from '../shared/rendererPreferences';
 import {
   hasAppliedRendererStorageIntent,
@@ -385,10 +386,25 @@ function withoutDeletionJournal(entries: WebStorageEntries, historical = false):
   );
 }
 
+/** Copy public preference fields only; skip unusable credential-bearing blobs. */
+function assignPublicPreferenceValues(
+  target: Record<string, unknown>,
+  source: WebStorageEntries,
+  mode: 'gap-fill' | 'override',
+): void {
+  for (const [key, raw] of Object.entries(source)) {
+    if (!isRendererPreferenceKey(key)) continue;
+    if (mode === 'gap-fill' && Object.hasOwn(target, key)) continue;
+    const clean = sanitizeRendererPreferenceValue(key, raw);
+    if (clean !== null) target[key] = clean;
+  }
+}
+
 /**
  * Keep the canonical preference map aligned with top-level preference caches during repair.
  * Export-only top-level keys fill gaps only; only current-origin top-level caches may override
  * an existing map value (so a conflicting export scalar cannot replace newer preferences).
+ * Inline credentials are stripped before any value enters the recovery map.
  */
 function withRebuiltPreferenceMap(
   entries: WebStorageEntries,
@@ -396,18 +412,27 @@ function withRebuiltPreferenceMap(
 ): WebStorageEntries {
   const prefsRaw = entries['mesh-client:rendererPreferences'];
   if (isExplicitResetPreferenceBaseline(prefsRaw)) return entries;
-  const topLevel = Object.fromEntries(
-    Object.entries(entries).filter(([key]) => isRendererPreferenceKey(key)),
-  );
-  const currentTopLevel = Object.fromEntries(
-    Object.entries(currentEntries).filter(([key]) => isRendererPreferenceKey(key)),
-  );
   const existingValues = parseRendererPreferenceValues(prefsRaw) ?? {};
-  const values: Record<string, unknown> = { ...existingValues };
-  for (const [key, value] of Object.entries(topLevel)) {
-    if (!Object.hasOwn(values, key)) values[key] = value;
+  const values: Record<string, unknown> = {};
+  // Re-snapshot existing map entries through the sanitizer so a dirty map cannot persist secrets.
+  for (const [key, value] of Object.entries(existingValues)) {
+    if (!isRendererPreferenceKey(key)) continue;
+    const raw = typeof value === 'string' ? value : JSON.stringify(value);
+    const clean = sanitizeRendererPreferenceValue(key, raw);
+    if (clean === null) continue;
+    if (typeof value === 'string') {
+      values[key] = clean;
+      continue;
+    }
+    try {
+      values[key] = JSON.parse(clean) as unknown;
+    } catch {
+      // catch-no-log-ok keep the sanitized string when structured round-trip fails
+      values[key] = clean;
+    }
   }
-  Object.assign(values, currentTopLevel);
+  assignPublicPreferenceValues(values, entries, 'gap-fill');
+  assignPublicPreferenceValues(values, currentEntries, 'override');
   if (Object.keys(values).length === 0) return entries;
   const next = JSON.stringify({ legacyAliasesImported: true, values });
   if (prefsRaw === next) return entries;

@@ -1,5 +1,10 @@
 import { DURABLE_RENDERER_STORAGE_KEYS } from '@/shared/rendererOrigin';
-import { isRendererPreferenceKey } from '@/shared/rendererPreferences';
+import {
+  isRendererPreferenceKey,
+  rendererPreferenceHasInlineCredentials,
+  sanitizeRendererPreferenceValue,
+  withoutRendererPreferenceSecrets,
+} from '@/shared/rendererPreferences';
 
 export {
   hasEstablishedRendererPreferenceValues,
@@ -9,56 +14,19 @@ export {
 import { createDurableRendererSetting } from './durableRendererSetting';
 
 const STORAGE_KEY = 'mesh-client:rendererPreferences';
-const credentialField =
-  /^(?:password|channelPsks|private_key|meshcore(?:Room|Repeater)Credential:.*)$/;
+const credentialBearingKey =
+  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::meshcore)?|mqttProfiles:meshtastic|meshcoreIdentity)$/;
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-/** Never create another plaintext recovery copy of legacy inline credentials. */
-function withoutSecrets(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(withoutSecrets);
-  if (!record(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => !credentialField.test(key))
-      .map(([key, child]) => [key, withoutSecrets(child)]),
-  );
-}
-
-const credentialBearingKey =
-  /^mesh-client:(?:appSettings|adminSettings|mqttSettings(?::meshcore)?|mqttProfiles:meshtastic|meshcoreIdentity)$/;
-
 function preferenceValue(key: string, raw: string): string | null {
-  try {
-    const value: unknown = JSON.parse(raw);
-    if (credentialBearingKey.test(key)) {
-      const valid =
-        key === 'mesh-client:mqttProfiles:meshtastic'
-          ? Array.isArray(value) && value.every(record)
-          : record(value);
-      if (!valid) return null;
-    }
-    return JSON.stringify(withoutSecrets(value));
-  } catch {
-    // catch-no-log-ok plain strings (names, addresses, theme colours) are valid preferences
-    return credentialBearingKey.test(key) ? null : raw;
-  }
-}
-
-function containsCredentialFields(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(containsCredentialFields);
-  return (
-    record(value) &&
-    Object.entries(value).some(
-      ([key, child]) => credentialField.test(key) || containsCredentialFields(child),
-    )
-  );
+  return sanitizeRendererPreferenceValue(key, raw);
 }
 
 function hasInlineCredentials(raw: string): boolean {
   try {
-    return containsCredentialFields(JSON.parse(raw));
+    return rendererPreferenceHasInlineCredentials(JSON.parse(raw));
   } catch {
     // catch-no-log-ok malformed legacy records remain untouched for secure startup recovery
     return false;
@@ -122,7 +90,7 @@ function decodeValues(values: Record<string, unknown>): Record<string, string> {
       )
         throw new Error('Invalid structured renderer preference');
       // Canonical restore accepts public data only; it never reconstructs legacy secret blobs.
-      if (containsCredentialFields(parsed))
+      if (rendererPreferenceHasInlineCredentials(parsed))
         throw new Error('Credential in renderer preference map');
       return [key, raw];
     }),
@@ -226,7 +194,8 @@ export function importLegacyPreferenceAliases(
       app[key] = raw;
     }
   }
-  if (Object.keys(app).length) values[appKey] = JSON.stringify(withoutSecrets(app));
+  if (Object.keys(app).length)
+    values[appKey] = JSON.stringify(withoutRendererPreferenceSecrets(app));
   // These consumers prefer their direct cache over the shared app blob.
   if (typeof app.meshcoreLastSelfNodeId === 'number')
     values['mesh-client:meshcoreLastSelfNodeId'] = String(app.meshcoreLastSelfNodeId);

@@ -4,6 +4,7 @@ import {
   explicitResetPreferenceBaselineJson,
   mergeRendererPreferenceEnvelopes,
   parseRendererPreferenceValues,
+  sanitizeRendererPreferenceValue,
 } from './rendererPreferences';
 
 describe('rendererPreferences envelope helpers', () => {
@@ -58,5 +59,16 @@ describe('rendererPreferences envelope helpers', () => {
     ).toBe(restored);
     const baseline = explicitResetPreferenceBaselineJson();
     expect(mergeRendererPreferenceEnvelopes(baseline, restored)).toBe(baseline);
+  });
+
+  it('strips inline credentials while retaining public preference fields', () => {
+    expect(
+      sanitizeRendererPreferenceValue(
+        'mesh-client:appSettings',
+        JSON.stringify({ locale: 'en', password: 'secret', channelPsks: { '0': 'psk' } }),
+      ),
+    ).toBe(JSON.stringify({ locale: 'en' }));
+    expect(sanitizeRendererPreferenceValue('mesh-client:appSettings', 'not-json')).toBeNull();
+    expect(sanitizeRendererPreferenceValue('mesh-client:protocol', 'meshcore')).toBe('meshcore');
   });
 });
