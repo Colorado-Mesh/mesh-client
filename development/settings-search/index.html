@@ -2369,6 +2369,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#collapsible-chrome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collapsible chrome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#guards" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2647,6 +2658,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#collapsible-chrome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collapsible chrome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#guards" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2738,7 +2760,7 @@
 </tr>
 <tr>
 <td>Anchor props</td>
-<td><code>Panel</code> <code>anchorId</code>, RadioPanel's local <code>ConfigSection</code> <code>anchorId</code>, or <code>data-setting-anchor</code></td>
+<td><code>Panel</code> / <code>SettingsCollapsible</code> / <code>SettingsSection</code> <code>anchorId</code>, RadioPanel's local <code>ConfigSection</code> <code>anchorId</code>, or <code>data-setting-anchor</code></td>
 </tr>
 <tr>
 <td>Flash style</td>
@@ -2765,6 +2787,8 @@
 </ul>
 <h2 id="shared-sections">Shared sections<a class="headerlink" href="#shared-sections" title="Permanent link">&para;</a></h2>
 <p>Do <strong>not</strong> put literal anchors inside a component that more than one panel renders: the id would no longer map to one slot and Guard A would see it in the wrong file. Pass <code>anchorId</code> down from the owning panel instead.</p>
+<h2 id="collapsible-chrome">Collapsible chrome<a class="headerlink" href="#collapsible-chrome" title="Permanent link">&para;</a></h2>
+<p>Settings subsections that collapse must use a native <code>&lt;details&gt;</code> (prefer <code>SettingsCollapsible</code> in <code>ui/SettingsSection.tsx</code>). <code>revealSettingAnchor</code> walks ancestors and sets <code>HTMLDetailsElement.open = true</code>; custom non-<code>&lt;details&gt;</code> disclosure widgets break launcher jumps. Keep section children mounted while closed (do not gate render on <code>open</code>) so anchors exist before the 600 ms retry ends.</p>
 <h2 id="guards">Guards<a class="headerlink" href="#guards" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2820,7 +2844,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 6, 2026 00:58:52 UTC">October 6, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 21:55:30 UTC">October 25, 2026</span>
   </span>
 
     
