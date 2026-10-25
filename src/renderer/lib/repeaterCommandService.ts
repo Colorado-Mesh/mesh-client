@@ -5,6 +5,7 @@ import { redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
 export interface PendingCommand {
   command: string;
   token: string;
+  /** Monotonic timestamp used only for the remaining reply budget. */
   sentAt: number;
   timeoutMs: number;
   resolve: (response: string) => void;
@@ -156,7 +157,7 @@ export class RepeaterCommandService {
     const pending: PendingCommand = {
       command,
       token,
-      sentAt: Date.now(),
+      sentAt: performance.now(),
       timeoutMs,
       resolve,
       reject,
@@ -177,7 +178,7 @@ export class RepeaterCommandService {
     if (!pending || newTimeoutMs <= pending.timeoutMs) return;
     clearTimeout(pending.timerId);
     pending.timeoutMs = newTimeoutMs;
-    const remaining = Math.max(0, newTimeoutMs - (Date.now() - pending.sentAt));
+    const remaining = Math.max(0, newTimeoutMs - (performance.now() - pending.sentAt));
     pending.timerId = setTimeout(() => {
       if (this.pendingCommands.delete(token)) {
         pending.reject(new Error(`CLI command timed out after ${newTimeoutMs}ms`));
@@ -193,7 +194,7 @@ export class RepeaterCommandService {
     const pending = this.pendingCommands.get(token);
     if (!pending) return;
     clearTimeout(pending.timerId);
-    pending.sentAt = Date.now();
+    pending.sentAt = performance.now();
     pending.timeoutMs = timeoutMs;
     pending.timerId = setTimeout(() => {
       if (this.pendingCommands.delete(token)) {

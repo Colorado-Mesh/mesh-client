@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Nie można załadować zapisanych ustawień",
-    "savedSettingsRecovery": "Twoje zapisane dane zostały zachowane. Sprawdź, czy Twój brelok systemowy jest dostępny, lub poczekaj chwilę i spróbuj ponownie."
+    "savedSettingsRecovery": "Twoje zapisane dane zostały zachowane. Sprawdź, czy Twój brelok systemowy jest dostępny, lub poczekaj chwilę i spróbuj ponownie.",
+    "forgetUnavailableCredentials": "Usuń nieczytelne dane logowania…",
+    "forgetCredentialsTitle": "Usunąć nieczytelne dane logowania?",
+    "forgetCredentialsDescription": "Usunięte zostaną tylko wymienione poniżej dane logowania i ich kopie odzyskiwania. Inne ustawienia i dane logowania zostaną zachowane.",
+    "forgetCredentialsAcknowledge": "Rozumiem, że trzeba będzie ponownie skonfigurować te dane logowania. Tej czynności nie można cofnąć.",
+    "forgetCredentialsConfirm": "Usuń i spróbuj ponownie",
+    "forgetCredentialsFailed": "Nie udało się całkowicie usunąć danych logowania. Spróbuj ponownie lub anuluj, aby zachować pozostałe dane.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Tożsamość MeshCore",
+    "credentialProfiles": "Hasła zapisanych profili MQTT",
+    "credentialRoom": "Pokój MeshCore {{node}}",
+    "credentialRepeater": "Przekaźnik MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",
@@ -495,7 +506,19 @@
     "windowSection": "Oklenko",
     "closeToTray": "Blisko tacki systemowej",
     "closeToTraySaveFailed": "Nie można zapisać ustawienia zbliżonego do podajnika.",
-    "closeToTrayDesc": "Gdy urządzenie lub połączenie MQTT jest aktywne, zamknięcie okna ukrywa Mesh-Client do tacki systemowej (pasek menu na macOS) zamiast go minimalizować, dzięki czemu działa w tle. Otwórz go ponownie za pomocą ikony tacy. Wyjdź z menu tacki lub menu aplikacji. Gdy wyłączone, zamknięcie minimalizuje okno jak poprzednio."
+    "closeToTrayDesc": "Gdy urządzenie lub połączenie MQTT jest aktywne, zamknięcie okna ukrywa Mesh-Client do tacki systemowej (pasek menu na macOS) zamiast go minimalizować, dzięki czemu działa w tle. Otwórz go ponownie za pomocą ikony tacy. Wyjdź z menu tacki lub menu aplikacji. Gdy wyłączone, zamknięcie minimalizuje okno jak poprzednio.",
+    "memoryTitle": "Pamięć procesu renderowania",
+    "memorySampleNow": "Zmierz teraz",
+    "memorySampling": "Pomiar…",
+    "memoryDescription": "Szacunki przeglądarki do śledzenia trendów, mierzone co około pięć minut, gdy okno jest widoczne. Wartości mogą różnić się między wersjami aplikacji.",
+    "memoryRendererProcess": "Pamięć procesu renderowania (fizyczna pamięć RAM) zgłaszana przez system operacyjny. Obejmuje więcej niż pamięć JavaScript; porównuj próbki z tej samej wersji aplikacji.",
+    "memoryIsolated": "Izolacja między źródłami jest włączona.",
+    "memoryNotIsolated": "Pomiar pamięci wymaga izolacji między źródłami, która nie jest dostępna w tej sesji.",
+    "memoryUnsupported": "Ta przeglądarka nie obsługuje pomiaru pamięci.",
+    "memoryFailed": "Pomiar pamięci nie powiódł się. Możesz spróbować ponownie.",
+    "memoryLatest": "Ostatni szacunek: {{value}}",
+    "memoryEmpty": "Brak pomiarów. Rozpocznij pomiar lub pozostaw okno widoczne.",
+    "memoryHistory": "Ostatnie pomiary"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1216,7 +1239,6 @@
         "dualProtocolContentionHint": "Drugi protokół może nadal łączyć się przez Bluetooth. Odczekaj kilka sekund i spróbuj ponownie lub przejdź do karty innego protokołu, aby sprawdzić stan połączenia.",
         "scanBusy": "Trwa kolejne skanowanie Bluetooth. Spróbuj ponownie za chwilę.",
         "sameDeviceConflict": "To urządzenie Bluetooth jest już połączone z {{owner}}.",
-        "chooserCancelledHint": "Jeśli nie anulowałeś, upewnij się, że Bluetooth jest włączony (systemctl status bluetooth), a następnie ponownie dotknij Połącz. W Flatpak zainstaluj ponownie kompilację z zezwoleniem na Bluetooth lub użyj AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Narzędzia do parowania systemu operacyjnego Bluetooth są niedostępne w tym środowisku (powszechne w Flatpak). Użyj oficjalnego AppImage, .deb lub .rpm lub sparuj radio z hostem bluetoothctl, a następnie spróbuj połączyć się ponownie.",
         "stackUnresponsiveGeneric": "Bluetooth utknął podczas wcześniejszej próby połączenia. Włącz i wyłącz Bluetooth, w razie potrzeby ponownie sparuj radio, a następnie ponownie uruchom mesh-client.",
         "stackUnresponsiveWindowsRePair": "Windows Bluetooth utknął podczas wcześniejszej próby połączenia, zwykle z powodu nieprawidłowego sparowania radia. Naciśnij przycisk Usuń i napraw urządzenie i wprowadź KOD PIN pokazany w radiu. Jeśli połączenie jest nadal odrzucane, uruchom ponownie mesh-client i spróbuj ponownie.",

@@ -68,6 +68,7 @@ describe('mesh-tiles protocol', () => {
     });
     const res = await handler(new Request('mesh-tiles://osm/3/1/1.png'));
     expect(res.status).toBe(200);
+    expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(Buffer.from(await res.arrayBuffer())).toEqual(png);
   });
@@ -85,6 +86,7 @@ describe('mesh-tiles protocol', () => {
     });
     const res = await handler(new Request('mesh-tiles://osm/3/1/1.png'));
     expect(res.status).toBe(404);
+    expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -106,7 +108,25 @@ describe('mesh-tiles protocol', () => {
     });
     const res = await handler(new Request('mesh-tiles://osm/3/1/1.png'));
     expect(res.status).toBe(200);
+    expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(await cache.getCachedTile({ basemapId: 'osm', z: 3, x: 1, y: 1 })).toEqual(png);
+  });
+
+  it('sets CORP on invalid requests and failed remote fetches', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-tile-proto-'));
+    roots.push(root);
+    const handler = createMeshTilesProtocolHandler({
+      cache: createTileCache(root),
+      getAppVersion: () => '9.9.9',
+      isOnline: () => true,
+      fetchImpl: vi.fn().mockResolvedValue(new Response(null, { status: 503 })),
+    });
+    const invalid = await handler(new Request('mesh-tiles://unknown/3/1/1.png'));
+    expect(invalid.status).toBe(400);
+    expect(invalid.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
+    const unavailable = await handler(new Request('mesh-tiles://osm/3/1/1.png'));
+    expect(unavailable.status).toBe(404);
+    expect(unavailable.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
   });
 });

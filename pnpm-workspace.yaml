@@ -1,10 +1,5 @@
-# Hold new publishes for 12 hours (malware usually caught quickly).
-# scripts/update.sh sets --config.minimumReleaseAge=0 when open Dependabot
-# alerts exist so security bumps are not delayed by the gate.
-minimumReleaseAge: 720
-minimumReleaseAgeExclude:
-  - lodash
-  - lodash-es
+# Opt out of pnpm 11+ default minimumReleaseAge (1440). Zero disables the gate.
+minimumReleaseAge: 0
 
 # Reject transitive git/tarball/exotic sources (registry + scoped JSR only)
 blockExoticSubdeps: true
@@ -110,7 +105,7 @@ overrides:
   markdown-it@<=14.1.1: '>=14.2.0 <15'
   # markdown-it: GHSA-r7fv-28h4-cvq7 / GHSA-gfr2-rv44-r23c / GHSA-vfgh-jcmw-g37q —
   # markdownlint-cli2@0.23.3 pins exact markdown-it 15.0.1; floor to patched 15.0.3
-  # until markdownlint-cli2@0.24.0 (pins 15.0.3) clears minimumReleaseAge.
+  # until markdownlint-cli2@0.24.0 (pins 15.0.3) is adopted.
   markdown-it@15: '>=15.0.3 <16'
   postcss: ^8.5.25
   shell-quote: ^1.9.0

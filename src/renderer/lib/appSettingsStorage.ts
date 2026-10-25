@@ -24,8 +24,12 @@ export function migrateLegacyAppSettingsIfNeeded(): void {
 }
 
 export function getAppSettingsRaw(): string | null {
-  migrateLegacyAppSettingsIfNeeded();
-  return localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
+  // Eager module readers run before secure startup. Read the legacy source without copying
+  // any inline credentials; canonical preparation and secure migration own its retirement.
+  return (
+    localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_APP_SETTINGS_STORAGE_KEY)
+  );
 }
 
 export function setAppSettingsRaw(json: string): void {

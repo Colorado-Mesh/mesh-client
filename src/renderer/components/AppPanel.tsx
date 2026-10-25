@@ -22,7 +22,6 @@ import {
   getOperationalAlertSettings,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
-  mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
@@ -40,7 +39,6 @@ import {
 } from '../lib/fontScale';
 import type { OurPosition } from '../lib/gpsSource';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { appPanelSettingsPersistPayload } from '../lib/meshcorePathHashMode';
 import {
   DEFAULT_MESSAGE_RETENTION,
   MESSAGE_RETENTION_KEYS,
@@ -91,6 +89,7 @@ import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { AppAiSection } from './AppAiSection';
+import { AppSupportSection } from './AppSupportSection';
 import { AppTranslationSection } from './AppTranslationSection';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
@@ -507,20 +506,6 @@ export default function AppPanel({
     [supportBundleExporting, addToast, t],
   );
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      mergeAppSettingsPartial(
-        appPanelSettingsPersistPayload(settings as unknown as Record<string, unknown>),
-        'AppPanel saveSettings',
-      );
-    }, 300);
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [settings]);
-
   useEffect(() => {
     onLocationFilterChange({
       enabled: settings.distanceFilterEnabled,
@@ -631,14 +616,6 @@ export default function AppPanel({
       .getAll()
       .then((raw) => {
         if (cancelled) return;
-        const use24 = raw?.use24HourTime;
-        if (use24 === 'true' || use24 === 'false') {
-          const enabled = use24 === 'true';
-          useTimeFormatStore.getState().hydrateFromSqlite(enabled);
-          setSettings((prev) =>
-            prev.use24HourTime === enabled ? prev : { ...prev, use24HourTime: enabled },
-          );
-        }
         if (!autoUpdateDownloadTouchedRef.current) {
           const enabled = autoUpdateDownloadEnabledFromStored(raw?.autoUpdateDownloadEnabled);
           autoUpdateDownloadConfirmedRef.current = enabled;
@@ -741,8 +718,8 @@ export default function AppPanel({
       localStorage.getItem('mesh-client:gpsSettings'),
       'AppPanel gps refresh interval state',
     );
-    const val = gpsParsed?.refreshInterval ?? 0;
-    return val > 0 ? val : 3600; // default 1 hour
+    const val = gpsParsed?.refreshInterval;
+    return typeof val === 'number' && Number.isFinite(val) && val >= 0 ? val : 3600;
   });
 
   const handleGpsIntervalChange = useCallback(
@@ -974,7 +951,7 @@ export default function AppPanel({
               value={settings.autoFloodAdvertIntervalHours}
               onChange={(e) => {
                 const hours = Number(e.target.value);
-                setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
+                updateSetting('autoFloodAdvertIntervalHours', hours);
                 onAutoFloodAdvertIntervalChange?.(hours);
               }}
               className={`${SELECT_BOX_CLASS} w-full`}
@@ -993,7 +970,7 @@ export default function AppPanel({
               value={settings.autoFloodAdvertType}
               onChange={(e) => {
                 const type = e.target.value === 'zeroHop' ? 'zeroHop' : 'flood';
-                setSettings((prev) => ({ ...prev, autoFloodAdvertType: type }));
+                updateSetting('autoFloodAdvertType', type);
                 onAutoFloodAdvertTypeChange?.(type);
               }}
               className={`${SELECT_BOX_CLASS} w-full`}
@@ -1959,41 +1936,7 @@ export default function AppPanel({
         </div>
       </div>
 
-      {/* Support / Bug reports */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.supportSection')}</h3>
-        <p className="text-muted text-xs">{t('appPanel.supportSectionDesc')}</p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div data-setting-anchor="app.support.exportForGitHub" className="space-y-2">
-            <button
-              type="button"
-              aria-label={t('appPanel.exportForGitHub')}
-              disabled={supportBundleExporting !== null}
-              onClick={() => void handleExportSupportBundle('github')}
-              className={buttonClassName('primary', 'md')}
-            >
-              {supportBundleExporting === 'github'
-                ? t('common.loading')
-                : t('appPanel.exportForGitHubButton')}
-            </button>
-            <p className="text-muted text-xs">{t('appPanel.exportForGitHubDesc')}</p>
-          </div>
-          <div data-setting-anchor="app.support.exportForDeveloper" className="space-y-2">
-            <button
-              type="button"
-              aria-label={t('appPanel.exportForDeveloper')}
-              disabled={supportBundleExporting !== null}
-              onClick={() => void handleExportSupportBundle('developer')}
-              className="bg-secondary-dark text-ink-300 hover:bg-ink-600 w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {supportBundleExporting === 'developer'
-                ? t('common.loading')
-                : t('appPanel.exportForDeveloperButton')}
-            </button>
-            <p className="text-xs text-orange-300">{t('appPanel.exportForDeveloperWarning')}</p>
-          </div>
-        </div>
-      </div>
+      <AppSupportSection exporting={supportBundleExporting} onExport={handleExportSupportBundle} />
 
       {/* Data Management */}
       <div className="space-y-3">

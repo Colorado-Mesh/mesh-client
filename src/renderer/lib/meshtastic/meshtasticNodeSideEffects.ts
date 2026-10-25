@@ -70,7 +70,7 @@ export interface MeshtasticNodeSideEffectsDeps {
   getMyNodeNum: () => number;
   /** True during NodeDB replay, when rxTime bumps must not move `last_heard`. */
   getIsConfiguring: () => boolean;
-  /** Web Bluetooth device id of the active BLE link, for the short-name cache. */
+  /** Native BLE peripheral id of the active BLE link, for the short-name cache. */
   getBluetoothDeviceId: () => string | undefined;
   touchLastData: () => void;
   emptyNode: (nodeId: number) => MeshNode;

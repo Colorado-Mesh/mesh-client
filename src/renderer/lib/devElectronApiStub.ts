@@ -1,4 +1,6 @@
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
+import { parseLegacyIncidentStorage } from '@/shared/incidentStorage';
+import type { IncidentSnapshot } from '@/shared/incidentTypes';
 import type { TakStyleSettings } from '@/shared/tak-types';
 
 /* eslint-disable @typescript-eslint/require-await -- no-op async IPC stubs for browser dev */
@@ -22,6 +24,7 @@ function stubOutboxEntry(entry: OutboxEntryInput, id: number): OutboxEntry {
 export function createDevElectronApiStub(): typeof window.electronAPI {
   let nextOutboxId = 1;
   const secureSecrets = new Map<string, string>();
+  let incidents: IncidentSnapshot | null = null;
 
   return {
     beacon: {
@@ -30,6 +33,14 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onUpdate: noopUnsub,
     },
     db: {
+      getIncidents: async () => incidents ?? { incidents: {}, resolvedTombstones: {} },
+      saveIncidents: async (snapshot: IncidentSnapshot) => {
+        incidents = structuredClone(snapshot);
+      },
+      seedIncidents: async (legacyJson: string | null) => {
+        incidents ??= parseLegacyIncidentStorage(legacyJson);
+        return structuredClone(incidents);
+      },
       saveMessage: noopAsync,
       getMessages: async () => [],
       listMeshtasticDmPeers: async () => [],

@@ -1,3 +1,4 @@
+import { setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 /**
  * Persist Web Serial port identity for gesture-free reconnect when `portId` is
  * missing or unstable (Electron/Chromium). Shared by MeshCore and Meshtastic.
@@ -52,7 +53,7 @@ export function loadLastSerialPortSignature(): SerialPortSignature | null {
 
 export function saveLastSerialPortSignature(sig: SerialPortSignature): void {
   try {
-    localStorage.setItem(LAST_SERIAL_PORT_SIGNATURE_KEY, JSON.stringify(sig));
+    setRendererStorageItem(LAST_SERIAL_PORT_SIGNATURE_KEY, JSON.stringify(sig));
   } catch {
     // catch-no-log-ok localStorage quota or private mode — non-critical reconnect hint
   }
@@ -88,7 +89,7 @@ export function persistSerialPortIdentity(port: SerialPort): void {
   const portId = (port as SerialPort & { portId?: string }).portId;
   if (portId) {
     try {
-      localStorage.setItem(LAST_SERIAL_PORT_KEY, portId);
+      setRendererStorageItem(LAST_SERIAL_PORT_KEY, portId);
     } catch {
       // catch-no-log-ok localStorage quota or private mode — non-critical reconnect hint
     }

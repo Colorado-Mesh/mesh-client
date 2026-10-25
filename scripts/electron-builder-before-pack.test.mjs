@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { FileMatcher } from 'app-builder-lib/out/fileMatcher.js';
+import yaml from 'js-yaml';
 import path from 'path';
 import {
   archKeyFromElectronBuilder,
@@ -56,5 +59,38 @@ describe('reticulum-sidecar-staging', () => {
     expect(packSidecarResourcePath(projectRoot, 'linux')).toBe(
       path.join(projectRoot, 'resources/reticulum-sidecar/mesh-client-reticulum'),
     );
+  });
+});
+
+describe('packaged sidecar resources', () => {
+  it('ships the selected binary without staging copies for either architecture', () => {
+    const config = yaml.load(readFileSync('electron-builder.yml', 'utf8'));
+    const resource = config.extraResources.find(
+      (entry) => entry.from === 'resources/reticulum-sidecar',
+    );
+    const source = path.join(projectRoot, resource.from);
+    const matcher = new FileMatcher(
+      source,
+      '/bundle/reticulum-sidecar',
+      (value) => value,
+      resource.filter,
+    );
+    const filter = matcher.createFilter();
+    const file = { isDirectory: () => false };
+    const directory = { isDirectory: () => true };
+
+    expect(filter(path.join(source, 'mesh-client-reticulum'), file)).toBe(true);
+    expect(filter(path.join(source, 'mesh-client-reticulum.exe'), file)).toBe(true);
+    expect(filter(path.join(source, 'README.md'), file)).toBe(true);
+    expect(filter(path.join(source, 'staged'), directory)).toBe(false);
+    for (const platform of ['darwin', 'linux', 'win32']) {
+      for (const arch of ['x64', 'arm64']) {
+        const staged = path.join(source, 'staged', `${platform}-${arch}`);
+        expect(filter(staged, directory)).toBe(false);
+        expect(filter(path.join(staged, 'mesh-client-reticulum'), file)).toBe(false);
+        expect(filter(path.join(staged, 'mesh-client-reticulum.exe'), file)).toBe(false);
+        expect(filter(path.join(staged, 'RESOLVED_SHAS.txt'), file)).toBe(false);
+      }
+    }
   });
 });

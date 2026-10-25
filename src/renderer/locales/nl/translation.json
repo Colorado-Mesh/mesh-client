@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Opgeslagen instellingen konden niet worden geladen",
-    "savedSettingsRecovery": "Uw opgeslagen gegevens zijn bewaard gebleven. Controleer of uw systeemsleutelbos beschikbaar is, of wacht even en probeer het opnieuw."
+    "savedSettingsRecovery": "Uw opgeslagen gegevens zijn bewaard gebleven. Controleer of uw systeemsleutelbos beschikbaar is, of wacht even en probeer het opnieuw.",
+    "forgetUnavailableCredentials": "Onleesbare inloggegevens verwijderen…",
+    "forgetCredentialsTitle": "Onleesbare inloggegevens verwijderen?",
+    "forgetCredentialsDescription": "Alleen de onderstaande inloggegevens en hun opgeslagen herstelkopieën worden verwijderd. Andere instellingen en inloggegevens blijven bewaard.",
+    "forgetCredentialsAcknowledge": "Ik begrijp dat ik deze inloggegevens opnieuw moet instellen. Dit kan niet ongedaan worden gemaakt.",
+    "forgetCredentialsConfirm": "Verwijderen en opnieuw proberen",
+    "forgetCredentialsFailed": "De inloggegevens konden niet volledig worden verwijderd. Probeer opnieuw of annuleer om de resterende gegevens te bewaren.",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore-identiteit",
+    "credentialProfiles": "Opgeslagen MQTT-profielwachtwoorden",
+    "credentialRoom": "MeshCore-ruimte {{node}}",
+    "credentialRepeater": "MeshCore-repeater {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -479,7 +490,19 @@
     "windowSection": "Raam",
     "closeToTray": "Dicht bij het systeemvak",
     "closeToTraySaveFailed": "Kon de close-to-tray-instelling niet opslaan.",
-    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen."
+    "closeToTrayDesc": "Wanneer een apparaat of MQTT -verbinding actief is, verbergt het sluiten van het venster Mesh-Client in het systeemvak (menubalk op macOS) in plaats van het te minimaliseren, zodat het op de achtergrond blijft draaien. Open het opnieuw vanaf het ladepictogram. Sluit af vanuit het tray-menu of het app-menu. Wanneer uitgeschakeld, minimaliseert het sluiten het venster zoals voorheen.",
+    "memoryTitle": "Geheugen van de renderer",
+    "memorySampleNow": "Nu meten",
+    "memorySampling": "Bezig met meten…",
+    "memoryDescription": "Browserschattingen om trends te volgen, ongeveer elke vijf minuten bij een zichtbaar venster. Waarden kunnen per appversie verschillen.",
+    "memoryRendererProcess": "Geheugen van het rendererproces (fysiek RAM), gemeld door het besturingssysteem. Omvat meer dan JavaScript-geheugen; vergelijk metingen van dezelfde appversie.",
+    "memoryIsolated": "Isolatie tussen oorsprongen is ingeschakeld.",
+    "memoryNotIsolated": "Geheugenmeting vereist isolatie tussen oorsprongen, die in deze sessie niet beschikbaar is.",
+    "memoryUnsupported": "Deze browser ondersteunt geen geheugenmeting.",
+    "memoryFailed": "Geheugenmeting mislukt. U kunt het opnieuw proberen.",
+    "memoryLatest": "Laatste schatting: {{value}}",
+    "memoryEmpty": "Nog geen metingen. Start een meting of laat het venster zichtbaar.",
+    "memoryHistory": "Recente metingen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1179,7 +1202,6 @@
         "dualProtocolContentionHint": "Het andere protocol maakt mogelijk nog steeds verbinding via Bluetooth. Wacht een paar seconden en probeer het opnieuw, of schakel over naar het andere protocoltabblad om de verbindingsstatus te controleren.",
         "scanBusy": "Er wordt een nieuwe Bluetooth-scan uitgevoerd. Probeer het zo nog eens.",
         "sameDeviceConflict": "Dit Bluetooth-apparaat is al verbonden met {{owner}}.",
-        "chooserCancelledHint": "Als u niet hebt geannuleerd, zorg er dan voor dat Bluetooth is ingeschakeld (systemctl-status bluetooth) en tik vervolgens opnieuw op Verbinden. Installeer op Flatpak een build opnieuw waarbij Bluetooth is toegestaan, of gebruik AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "OS Bluetooth-koppelingstools zijn niet beschikbaar in deze omgeving (gebruikelijk in Flatpak). Gebruik de officiële AppImage, .deb of .rpm, of koppel de radio met host bluetoothctl en probeer Connect opnieuw.",
         "stackUnresponsiveGeneric": "Bluetooth zit vast bij een eerdere verbindingspoging. Schakel Bluetooth uit en in, koppel de radio indien nodig opnieuw en start de mesh-client opnieuw.",
         "stackUnresponsiveWindowsRePair": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal omdat de radio niet goed is gekoppeld. Druk op Apparaat verwijderen en opnieuw koppelen en voer de PINCODE in die op de radio wordt weergegeven. Als de verbinding nog steeds wordt geweigerd, start u de mesh-client opnieuw op en probeert u het opnieuw.",

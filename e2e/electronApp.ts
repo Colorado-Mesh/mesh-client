@@ -1,4 +1,5 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { existsSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -40,7 +41,7 @@ type ResolveLocalElectronBin = (
   fileExists?: (p: string) => boolean,
 ) => string;
 
-async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectronBin> {
+export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectronBin> {
   const modUrl = pathToFileURL(path.join(repoRoot, 'scripts', 'start-electron.mjs')).href;
   const mod = (await import(modUrl)) as {
     resolveLocalElectronBin: ResolveLocalElectronBin;
@@ -58,6 +59,21 @@ export function assertProductionBuildPresent(): void {
 
 function createUserDataDir(): string {
   return mkdtempSync(path.join(tmpdir(), 'mesh-e2e-'));
+}
+
+/** Only test-owned direct children of the OS temp directory may be launched. */
+export function authorizeE2eProfile(userDataDir: string): string {
+  if (
+    !path.isAbsolute(userDataDir) ||
+    !/^mesh-(?:origin-)?e2e-[a-zA-Z0-9]+$/.test(path.basename(userDataDir)) ||
+    lstatSync(userDataDir).isSymbolicLink() ||
+    path.dirname(realpathSync(userDataDir)) !== realpathSync(tmpdir())
+  ) {
+    throw new Error('E2E requires a test-owned temporary profile');
+  }
+  const token = randomUUID();
+  writeFileSync(path.join(userDataDir, '.mesh-e2e-profile'), token, { mode: 0o600 });
+  return token;
 }
 
 function sleepMs(ms: number): Promise<void> {
@@ -109,13 +125,21 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   const userDataDir = options.userDataDir ?? createUserDataDir();
   const retainUserData = options.retainUserData ?? false;
 
-  const args = ['.', `--user-data-dir=${userDataDir}`];
+  const profileToken = authorizeE2eProfile(userDataDir);
+  const args = [
+    path.join(repoRoot, 'e2e/fixtures/origin-migration.cjs'),
+    `--user-data-dir=${userDataDir}`,
+  ];
   // OS-specific: Chromium setuid sandbox is unreliable in headless/CI Linux; match start-electron.mjs.
   if (process.platform === 'linux') {
     args.push('--disable-setuid-sandbox');
   }
 
   const env: Record<string, string | undefined> = { ...process.env };
+  env.MESH_E2E_USER_DATA = userDataDir;
+  env.MESH_E2E_PROFILE_TOKEN = profileToken;
+  env.MESH_E2E_PACKAGED = '0';
+  delete env.MESH_E2E_SEED_LEGACY;
   // Test the production build even when another project is serving on port 5173.
   env.VITE_DEV_SERVER_URL = pathToFileURL(
     path.join(repoRoot, 'dist', 'renderer', 'index.html'),

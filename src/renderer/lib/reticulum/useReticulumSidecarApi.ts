@@ -65,6 +65,15 @@ export function useReticulumSidecarApi({
     pid: null,
   });
   const [autoStart, setAutoStart] = useState(isReticulumAutostartEnabled);
+  useEffect(() => {
+    const refresh = () => {
+      setAutoStart(isReticulumAutostartEnabled());
+    };
+    window.addEventListener('mesh-client:appSettings', refresh);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', refresh);
+    };
+  }, []);
   const autostartAttemptedRef = useRef(false);
   const startInFlightRef = useRef(false);
   const statusHydratedRef = useRef(false);

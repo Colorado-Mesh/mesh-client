@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "无法加载保存的设置",
-    "savedSettingsRecovery": "您保存的数据已保存。请检查系统钥匙圈是否可用，或等待一分钟，然后重试。"
+    "savedSettingsRecovery": "您保存的数据已保存。请检查系统钥匙圈是否可用，或等待一分钟，然后重试。",
+    "forgetUnavailableCredentials": "移除无法读取的凭据…",
+    "forgetCredentialsTitle": "移除无法读取的凭据？",
+    "forgetCredentialsDescription": "只会移除下面列出的凭据及其已保存的恢复副本。其他设置和凭据将被保留。",
+    "forgetCredentialsAcknowledge": "我了解需要重新配置这些凭据。此操作无法撤销。",
+    "forgetCredentialsConfirm": "移除并重试",
+    "forgetCredentialsFailed": "无法完全移除凭据。请重试，或取消以保留其余数据。",
+    "credentialMqtt": "{{protocol}} MQTT",
+    "credentialIdentity": "MeshCore 身份",
+    "credentialProfiles": "已保存的 MQTT 配置密码",
+    "credentialRoom": "MeshCore 房间 {{node}}",
+    "credentialRepeater": "MeshCore 中继器 {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",
@@ -479,7 +490,19 @@
     "windowSection": "窗口",
     "closeToTray": "关闭到系统托盘(&C)",
     "closeToTraySaveFailed": "无法保存接近托盘的设置。",
-    "closeToTrayDesc": "当设备或MQTT连接处于活动状态时，关闭窗口会将Mesh-Client隐藏到系统托盘（ macOS上的菜单栏） ，而不是将其最小化，因此它继续在后台运行。从托盘图标重新打开它。从托盘菜单或应用菜单退出。关闭时，关闭会像以前一样最小化窗口。"
+    "closeToTrayDesc": "当设备或MQTT连接处于活动状态时，关闭窗口会将Mesh-Client隐藏到系统托盘（ macOS上的菜单栏） ，而不是将其最小化，因此它继续在后台运行。从托盘图标重新打开它。从托盘菜单或应用菜单退出。关闭时，关闭会像以前一样最小化窗口。",
+    "memoryTitle": "渲染进程内存",
+    "memorySampleNow": "立即测量",
+    "memorySampling": "正在测量…",
+    "memoryDescription": "用于观察趋势的浏览器估计值，在窗口可见时大约每五分钟测量一次。数值可能因应用版本而异。",
+    "memoryRendererProcess": "操作系统报告的渲染器进程内存（物理 RAM）。包含 JavaScript 以外的内存；请比较同一应用版本的采样值。",
+    "memoryIsolated": "跨源隔离已启用。",
+    "memoryNotIsolated": "内存测量需要跨源隔离，但当前会话中不可用。",
+    "memoryUnsupported": "此浏览器不支持内存测量。",
+    "memoryFailed": "内存测量失败。您可以重试。",
+    "memoryLatest": "最新估计值：{{value}}",
+    "memoryEmpty": "暂无测量值。请开始测量或保持窗口可见。",
+    "memoryHistory": "近期测量值"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1180,7 +1203,6 @@
         "dualProtocolContentionHint": "另一个协议可能仍在通过蓝牙连接。请等待几秒钟，然后重试，或切换到其他协议选项卡以检查其连接状态。",
         "scanBusy": "另一次蓝牙扫描正在进行中。稍后再试一次。",
         "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。",
-        "chooserCancelledHint": "如果您没有取消，请确保蓝牙已打开（systemctl status bluetooth），然后再次点击“连接”。在 Flatpak 上，重新安装允许蓝牙的版本，或使用 AppImage/.deb/.rpm。",
         "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。",
         "stackUnresponsiveGeneric": "蓝牙在较早的连接尝试中被卡住。关闭和打开蓝牙，根据需要重新配对收音机，然后重新启动 mesh-client。",
         "stackUnresponsiveWindowsRePair": "Windows蓝牙在较早的连接尝试中被卡住，通常是因为无线电未正确配对。按下“删除并重新配对设备” ，然后输入收音机上显示的PIN码。如果仍然拒绝连接，请重新启动mesh-client并重试。",

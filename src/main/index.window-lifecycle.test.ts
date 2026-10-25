@@ -1,7 +1,16 @@
 // @vitest-environment node
+import { EventEmitter } from 'node:events';
+import { runInNewContext } from 'node:vm';
+
 import { readFileSync } from 'fs';
-import { join } from 'path';
-import { describe, expect, it } from 'vitest';
+import { join, resolve } from 'path';
+import { transpileModule } from 'typescript';
+import { pathToFileURL } from 'url';
+import { describe, expect, it, vi } from 'vitest';
+
+import { resolveWindowCloseAction } from '../shared/closeToTray';
+import { RENDERER_INDEX_URL } from '../shared/rendererOrigin';
+import { isAllowedRendererNavigation } from './rendererNavigationPolicy';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 
@@ -18,6 +27,171 @@ describe('BrowserWindow creation', () => {
     expect(INDEX_SOURCE).toContain('minWidth: 900');
     expect(INDEX_SOURCE).toContain('minHeight: 600');
   });
+});
+
+describe('renderer origin recovery loads', () => {
+  function rendererLoadHarness(platform: string, healthyAfterRepair: boolean) {
+    const loads: string[] = [];
+    let repairs = 0;
+    const webContents = {
+      session: {},
+      getURL: () => loads.at(-1) ?? '',
+      openDevTools: vi.fn(),
+      executeJavaScript: vi.fn(() => Promise.resolve(loads.at(-1)?.startsWith('mesh-client:'))),
+    };
+    const loadURL = vi.fn((url: string) => {
+      loads.push(url);
+      return Promise.resolve();
+    });
+    const checkHealth = vi.fn((_options: unknown, _contents: unknown, allowRepair = true) => {
+      if (loads.length > 1 && healthyAfterRepair) return Promise.resolve('healthy');
+      if (!allowRepair) return Promise.resolve('failed');
+      repairs++;
+      return Promise.resolve('repaired');
+    });
+    const state = {
+      __dirname,
+      path: { join },
+      pathToFileURL,
+      process: { platform, env: {} },
+      app: {
+        isPackaged: true,
+        getPath: () => '/test/profile',
+        getVersion: () => 'test',
+      },
+      win: { isDestroyed: () => false, webContents, loadURL },
+      trustedRendererUrl: '',
+      RENDERER_INDEX_URL,
+      OSM_HTTP_REFERRER: 'https://mesh-client.org/',
+      resumePendingRendererStorageReset: vi.fn().mockResolvedValue(undefined),
+      runWebStorageOriginMigration: vi.fn().mockResolvedValue('completed'),
+      resolveRendererLoadUrl: vi.fn(() => ({
+        source: 'custom-protocol',
+        url: RENDERER_INDEX_URL,
+        openDevTools: false,
+      })),
+      checkRendererOriginStorageHealth: checkHealth,
+      sanitizeLogMessage: (message: string) => message,
+      console: { debug: vi.fn() },
+    };
+    const start = INDEX_SOURCE.indexOf('const loadRenderer = async (beforeLoad?');
+    const end = INDEX_SOURCE.indexOf('  reloadMainRenderer = loadRenderer;', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    // Run the real startup branch so removing its second probe or fallback breaks this test.
+    const source = `(function () {
+      ${INDEX_SOURCE.slice(start, end)}
+      return loadRenderer;
+    })()`;
+    const runLoadRenderer = runInNewContext(transpileModule(source, {}).outputText, state) as (
+      beforeLoad?: () => void,
+    ) => Promise<void>;
+    const loadRenderer = async (beforeLoad?: () => void) => {
+      await runLoadRenderer(beforeLoad);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    };
+    return { loadRenderer, loads, checkHealth, webContents, state, repairs: () => repairs };
+  }
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'falls back to file after one repair when the reloaded main document is unhealthy on %s',
+    async (platform) => {
+      const harness = rendererLoadHarness(platform, false);
+      await harness.loadRenderer();
+      const fileUrl = pathToFileURL(resolve(__dirname, '../../dist/renderer/index.html')).href;
+      expect(harness.loads).toEqual([RENDERER_INDEX_URL, RENDERER_INDEX_URL, fileUrl]);
+      expect(harness.state.trustedRendererUrl).toBe(fileUrl);
+      expect(harness.checkHealth).toHaveBeenCalledTimes(2);
+      expect(harness.checkHealth.mock.calls[0]).toHaveLength(2);
+      expect(harness.checkHealth.mock.calls[1]).toEqual([
+        expect.any(Object),
+        harness.webContents,
+        false,
+      ]);
+      expect(harness.repairs()).toBe(1);
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'dist',
+        'phase:',
+        'health-failed',
+        'crossOriginIsolated:',
+        false,
+      );
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'keeps the custom origin after the repaired main document verifies on %s',
+    async (platform) => {
+      const harness = rendererLoadHarness(platform, true);
+      await harness.loadRenderer();
+      expect(harness.loads).toEqual([RENDERER_INDEX_URL, RENDERER_INDEX_URL]);
+      expect(harness.state.trustedRendererUrl).toBe(RENDERER_INDEX_URL);
+      expect(harness.checkHealth).toHaveBeenCalledTimes(2);
+      expect(harness.checkHealth.mock.calls[1]?.[2]).toBe(false);
+      expect(harness.repairs()).toBe(1);
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'custom-protocol',
+        'phase:',
+        'repaired',
+        'crossOriginIsolated:',
+        true,
+      );
+    },
+  );
+
+  it.each(['failed', 'skipped'])(
+    'reports the actual file-origin isolation state after migration %s',
+    async (phase) => {
+      const harness = rendererLoadHarness('darwin', true);
+      const fileUrl = pathToFileURL(resolve(__dirname, '../../dist/renderer/index.html')).href;
+      harness.state.runWebStorageOriginMigration.mockResolvedValue(phase);
+      harness.state.resolveRendererLoadUrl.mockReturnValue({
+        source: 'dist',
+        url: fileUrl,
+        openDevTools: false,
+      });
+      await harness.loadRenderer();
+      expect(harness.loads).toEqual([fileUrl]);
+      expect(harness.checkHealth).not.toHaveBeenCalled();
+      expect(harness.state.console.debug).toHaveBeenCalledWith(
+        '[Startup] renderer load source:',
+        'dist',
+        'phase:',
+        phase,
+        'crossOriginIsolated:',
+        false,
+      );
+    },
+  );
+
+  it.each(['rejected', 'hung'])(
+    'does not block startup or a following data reset on a %s isolation diagnostic',
+    async (failure) => {
+      const harness = rendererLoadHarness('darwin', true);
+      if (failure === 'rejected')
+        harness.webContents.executeJavaScript.mockRejectedValueOnce(
+          new Error('Execution context was destroyed'),
+        );
+      else harness.webContents.executeJavaScript.mockReturnValueOnce(new Promise(() => {}));
+      const rendererLoadPromise = harness.loadRenderer();
+      const resetStarted = vi.fn();
+      await rendererLoadPromise;
+      resetStarted();
+      expect(resetStarted).toHaveBeenCalledOnce();
+      expect(harness.state.trustedRendererUrl).toBe(RENDERER_INDEX_URL);
+      if (failure === 'rejected')
+        expect(harness.state.console.debug).toHaveBeenCalledWith(
+          '[Startup] renderer load source:',
+          'custom-protocol',
+          'phase:',
+          'repaired',
+          'crossOriginIsolated:',
+          'unknown',
+        );
+    },
+  );
 });
 
 // ─── app lifecycle handlers ───────────────────────────────────────────────────
@@ -85,6 +259,125 @@ describe('window close-to-tray behaviour', () => {
   it("allow-lists the 'closeToTray' app_settings key", () => {
     expect(INDEX_SOURCE).toContain("'closeToTray',");
   });
+});
+
+describe('Web Serial window ownership', () => {
+  function serialSelectionHarness(platform: string) {
+    const session = new EventEmitter();
+    const state = {
+      process: { platform },
+      resolveWindowCloseAction,
+      isQuitting: false,
+      isConnected: true,
+      isAnyMqttConnected: () => false,
+      readCloseToTrayEnabled: () => true,
+      tray: {},
+      trustedRendererUrl: 'mesh-client://renderer/index.html',
+      isAllowedRendererNavigation,
+      pendingSerialCallback: null as ((portId: string) => void) | null,
+      pendingSerialSelectionTimer: null,
+      lastSerialPortIds: new Set<string>(),
+      clearPendingSerialSelectionTimer: vi.fn(),
+      SERIAL_PORT_SELECTION_TIMEOUT_MS: 120_000,
+      setTimeout: vi.fn(() => 1),
+      console: { debug: vi.fn(), warn: vi.fn() },
+    };
+    const createWindow = () =>
+      Object.assign(new EventEmitter(), {
+        hide: vi.fn(),
+        minimize: vi.fn(),
+        webContents: {
+          session,
+          mainFrame: { url: state.trustedRendererUrl },
+          send: vi.fn(),
+        },
+      });
+    const start = INDEX_SOURCE.indexOf('// ─── Web Serial: Port Selection');
+    const end = INDEX_SOURCE.indexOf("mainWindow.webContents.on('select-bluetooth-device'", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const closeStart = INDEX_SOURCE.indexOf("win.on('close', (event)");
+    const closeEnd = INDEX_SOURCE.indexOf("win.on('focus'", closeStart);
+    expect(closeStart).toBeGreaterThan(-1);
+    expect(closeEnd).toBeGreaterThan(closeStart);
+    // Execute the actual registration and close handlers without booting Electron.
+    const source = `(function (win) {
+      const mainWindow = win;
+      ${INDEX_SOURCE.slice(start, end)}
+      ${INDEX_SOURCE.slice(closeStart, closeEnd)}
+    })`;
+    const register = runInNewContext(transpileModule(source, {}).outputText, state) as (
+      window: ReturnType<typeof createWindow>,
+    ) => void;
+    return { session, state, createWindow, register };
+  }
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'only lets the reopened window own its chooser callback on %s',
+    (platform) => {
+      const { session, state, createWindow, register } = serialSelectionHarness(platform);
+      const unrelatedListener = vi.fn();
+      session.on('select-serial-port', unrelatedListener);
+      const original = createWindow();
+      const originalContents = original.webContents;
+      register(original);
+      expect(session.listenerCount('select-serial-port')).toBe(2);
+      Object.defineProperty(original, 'webContents', {
+        get: () => {
+          throw new Error('Window has been destroyed');
+        },
+      });
+      original.emit('closed');
+      expect(session.listeners('select-serial-port')).toEqual([unrelatedListener]);
+
+      const reopened = createWindow();
+      register(reopened);
+      const callback = vi.fn();
+      const event = { preventDefault: vi.fn() };
+      session.emit(
+        'select-serial-port',
+        event,
+        [{ portId: 'new-window-port', portName: 'USB radio' }],
+        reopened.webContents,
+        callback,
+      );
+      expect(event.preventDefault).toHaveBeenCalledOnce();
+      expect(callback).not.toHaveBeenCalled();
+      expect(state.pendingSerialCallback).toBe(callback);
+      state.pendingSerialCallback?.('new-window-port');
+      expect(callback).toHaveBeenCalledExactlyOnceWith('new-window-port');
+      expect(originalContents.send).not.toHaveBeenCalled();
+      expect(reopened.webContents.send).toHaveBeenCalledOnce();
+      expect(unrelatedListener).toHaveBeenCalledOnce();
+      reopened.emit('closed');
+      expect(session.listeners('select-serial-port')).toEqual([unrelatedListener]);
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'keeps selection working when closing hides the window to the tray on %s',
+    (platform) => {
+      const { session, state, createWindow, register } = serialSelectionHarness(platform);
+      const window = createWindow();
+      register(window);
+      const closeEvent = { preventDefault: vi.fn() };
+      window.emit('close', closeEvent);
+      expect(closeEvent.preventDefault).toHaveBeenCalledOnce();
+      expect(window.hide).toHaveBeenCalledOnce();
+      expect(window.minimize).not.toHaveBeenCalled();
+      expect(session.listenerCount('select-serial-port')).toBe(1);
+      const callback = vi.fn();
+      session.emit(
+        'select-serial-port',
+        { preventDefault: vi.fn() },
+        [],
+        window.webContents,
+        callback,
+      );
+      expect(state.pendingSerialCallback).toBe(callback);
+      expect(callback).not.toHaveBeenCalled();
+    },
+  );
 });
 
 // ─── Navigation security ──────────────────────────────────────────────────────

@@ -6,6 +6,15 @@ import { describe, expect, it } from 'vitest';
 const VITE_CONFIG = readFileSync(join(__dirname, '../../vite.config.mts'), 'utf-8');
 
 describe('vite build config', () => {
+  it('ships a separate inert migration page with relative asset URLs', () => {
+    expect(VITE_CONFIG).toMatch(/base:\s*'\.\/'/);
+    expect(VITE_CONFIG).toContain("'src/renderer/migration.html'");
+    expect(VITE_CONFIG).toContain("'src/renderer/index.html'");
+    const page = readFileSync(join(__dirname, '../renderer/migration.html'), 'utf8');
+    expect(page).not.toMatch(/<script|<iframe|<link|http-equiv/i);
+    expect(page).toMatch(/<body>\s*<\/body>/);
+  });
+
   it('disables source maps for production bundles', () => {
     expect(VITE_CONFIG).toMatch(/build:\s*\{/);
     expect(VITE_CONFIG).toMatch(/sourcemap:\s*false/);

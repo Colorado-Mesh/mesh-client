@@ -1,6 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { safeStorage } from 'electron';
 
+import { parseRendererStorageDeletionState } from '../shared/rendererStorageIntent';
 import type { NodeSqliteDB } from './db-compat';
+import { withFullSqliteSync } from './sqliteDurability';
 
 const MAX_SECRET_BYTES = 64 * 1024;
 const SECRET_KEY_PATTERN =
@@ -29,7 +33,12 @@ function assertSecretKey(key: unknown): asserts key is string {
 }
 
 function assertSecretValue(value: unknown): asserts value is string {
-  if (typeof value !== 'string' || Buffer.byteLength(value, 'utf8') > MAX_SECRET_BYTES) {
+  // Reject '': macOS safeStorage encrypts it to empty ciphertext (not durable).
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    Buffer.byteLength(value, 'utf8') > MAX_SECRET_BYTES
+  ) {
     throw new Error('secureSecrets: invalid value');
   }
 }
@@ -136,95 +145,106 @@ async function strongStorageAvailable(): Promise<boolean> {
  */
 export class SecureSecretStore {
   private readonly session = new Map<string, string>();
+  private readonly mutations = new Map<string, symbol>();
 
   constructor(private readonly db: () => NodeSqliteDB) {}
+
+  /** Commit legacy-copy retirement with the secret so a failed renderer ACK cannot undo it. */
+  private markLegacyHandled(db: NodeSqliteDB, key: string): void {
+    const setting = `rendererDeletedStorage:mesh-client:credentialCompatibility:${key}`;
+    const row = db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(setting) as
+      { value: string } | undefined;
+    const state = parseRendererStorageDeletionState(row?.value);
+    db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)').run(
+      setting,
+      JSON.stringify({ ...state, deleted: true, secretRevision: randomUUID() }),
+    );
+  }
 
   async status(): Promise<SecureSecretStoreStatus> {
     const persistent = await strongStorageAvailable();
     return { available: true, persistent };
   }
 
+  private legacyRetired(key: string): boolean {
+    const row = this.db()
+      .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+      .get(`rendererDeletedStorage:mesh-client:credentialCompatibility:${key}`) as
+      { value: string } | undefined;
+    return row !== undefined && parseRendererStorageDeletionState(row.value).deleted;
+  }
+
   async set(
     key: unknown,
     value: unknown,
     requirePersistent: unknown = false,
+    retireLegacy = true,
   ): Promise<SecureSecretWriteResult> {
     assertSecretKey(key);
     assertSecretValue(value);
     if (typeof requirePersistent !== 'boolean') {
       throw new Error('secureSecrets: invalid persistence requirement');
     }
+    const mutation = retireLegacy ? Symbol() : this.mutations.get(key);
+    if (retireLegacy) this.mutations.set(key, mutation!);
+    const assertCurrent = () => {
+      if (this.mutations.get(key) !== mutation) throw new Error('secureSecrets: superseded write');
+    };
 
     if (!(await strongStorageAvailable())) {
+      assertCurrent();
       if (requirePersistent) throw new Error('secureSecrets: OS key storage unavailable');
       this.session.set(key, value);
       return { available: true, persistent: false, verified: this.session.get(key) === value };
     }
 
     const ciphertext = (await safeStorage.encryptStringAsync(value)).toString('base64');
+    const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
+    if (result !== value)
+      throw new Error(
+        `secureSecrets: persistence verification failed (keyring round-trip; ${key})`,
+      );
+    assertCurrent();
     const db = this.db();
-    const previousRow = db
-      .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
-      .get(key) as { ciphertext?: unknown } | undefined;
-    const previous =
-      typeof previousRow?.ciphertext === 'string' ? previousRow.ciphertext : undefined;
-
-    const restorePrevious = (): void => {
-      if (previous != null) {
-        db.prepareOnce(
-          'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
-        ).run(key, previous, Date.now());
-      } else {
-        db.prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
-      }
-    };
-
-    try {
+    withFullSqliteSync(db, () => {
       db.transaction(() => {
-        db.prepareOnce(
-          'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
-        ).run(key, ciphertext, Date.now());
+        const { changes } = db
+          .prepareOnce(
+            'INSERT OR REPLACE INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
+          )
+          .run(key, ciphertext, Date.now());
         const row = db
-          .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+          .prepareOnce('SELECT ciphertext AS ciphertext FROM secure_secrets WHERE key = ?')
           .get(key) as { ciphertext?: unknown } | undefined;
         const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
-        if (stored.length === 0 || stored !== ciphertext) {
-          throw new Error('secureSecrets: persistence verification failed');
+        if (stored !== ciphertext) {
+          throw new Error(
+            `secureSecrets: persistence verification failed (SQLite read-back; ${key}; changes=${changes}; type=${typeof row?.ciphertext})`,
+          );
         }
+        if (retireLegacy) this.markLegacyHandled(db, key);
       })();
-
-      const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
-      if (result !== value) {
-        restorePrevious();
-        throw new Error('secureSecrets: persistence verification failed');
-      }
-    } catch (err) {
-      if (!(
-        err instanceof Error && err.message === 'secureSecrets: persistence verification failed'
-      )) {
-        restorePrevious();
-      }
-      throw err;
-    }
+    });
     this.session.delete(key);
     return { available: true, persistent: true, verified: true };
   }
 
   async get(key: unknown): Promise<string | null> {
     assertSecretKey(key);
+    const mutation = this.mutations.get(key);
     if (this.session.has(key)) return this.session.get(key) ?? null;
     if (!(await strongStorageAvailable())) return null;
     const row = this.db()
-      .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+      .prepareOnce('SELECT ciphertext AS ciphertext FROM secure_secrets WHERE key = ?')
       .get(key) as { ciphertext?: unknown } | undefined;
     if (typeof row?.ciphertext !== 'string' || row.ciphertext.length === 0) return null;
     try {
       const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(
         Buffer.from(row.ciphertext, 'base64'),
       );
-      if (shouldReEncrypt) {
+      if (shouldReEncrypt && this.mutations.get(key) === mutation) {
         try {
-          await this.set(key, result);
+          await this.set(key, result, false, false);
         } catch {
           // catch-no-log-ok re-encrypt is best-effort after key rotation
         }
@@ -238,13 +258,21 @@ export class SecureSecretStore {
 
   remove(key: unknown): void {
     assertSecretKey(key);
+    this.mutations.set(key, Symbol());
+    const db = this.db();
+    withFullSqliteSync(db, () => {
+      db.transaction(() => {
+        db.prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
+        this.markLegacyHandled(db, key);
+      })();
+    });
     this.session.delete(key);
-    this.db().prepareOnce('DELETE FROM secure_secrets WHERE key = ?').run(key);
   }
 
   list(): string[] {
     const keys = new Set(this.session.keys());
-    const rows = this.db().prepareOnce('SELECT key FROM secure_secrets').all() as {
+    // SQLite resolves identifiers without case; returned JS property names retain schema case.
+    const rows = this.db().prepareOnce('SELECT key AS key FROM secure_secrets').all() as {
       key?: unknown;
     }[];
     for (const row of rows) {
@@ -264,6 +292,8 @@ export class SecureSecretStore {
 
   /** Import the one historical encrypted MeshCore identity shape into its fixed destination. */
   async migrateLegacyIdentityCiphertext(ciphertext: unknown): Promise<SecureSecretWriteResult> {
+    const key = 'meshcore:identity';
+    const mutation = this.mutations.get(key);
     const plaintext = await decryptLegacyCiphertext(ciphertext);
     let privateKey: unknown;
     try {
@@ -272,7 +302,11 @@ export class SecureSecretStore {
       throw new Error('secureSecrets: invalid legacy identity');
     }
     assertByteArray(privateKey, [32, 64], 'identity');
-    return this.set('meshcore:identity', plaintext);
+    const existing = await this.get(key);
+    if (this.mutations.get(key) !== mutation || (existing === null && this.legacyRetired(key)))
+      return { ...(await this.status()), verified: false };
+    if (existing !== null) return { ...(await this.status()), verified: true };
+    return this.set(key, plaintext);
   }
 
   /** Import historical encrypted backup shapes after binding protocol, id, and destination. */
@@ -292,10 +326,13 @@ export class SecureSecretStore {
       throw new Error('secureSecrets: invalid legacy backup format');
     }
     const normalizedId = Number(id);
+    const key = `backup:${protocol}:${String(normalizedId)}`;
+    const mutation = this.mutations.get(key);
     const plaintext = await decryptLegacyCiphertext(ciphertext);
     const legacyKeys = assertLegacyBackupPayload(plaintext, protocol, normalizedId, format);
-    const key = `backup:${protocol}:${String(normalizedId)}`;
     const existing = await this.get(key);
+    if (this.mutations.get(key) !== mutation || (existing === null && this.legacyRetired(key)))
+      return { ...(await this.status()), verified: false };
     if (existing != null) {
       let existingKeys: { publicKey: string; privateKey: string };
       try {

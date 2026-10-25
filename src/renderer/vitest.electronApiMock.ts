@@ -74,6 +74,9 @@ export function createElectronAPIMock(): ElectronAPI {
       onPackProgress: vi.fn().mockReturnValue(() => {}),
     },
     db: {
+      getIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),
+      saveIncidents: vi.fn().mockResolvedValue(undefined),
+      seedIncidents: vi.fn().mockResolvedValue({ incidents: {}, resolvedTombstones: {} }),
       saveMessage: vi.fn().mockResolvedValue(undefined),
       getMessages: vi.fn().mockResolvedValue([]),
       listMeshtasticDmPeers: vi.fn().mockResolvedValue([]),

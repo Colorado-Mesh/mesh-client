@@ -5,6 +5,7 @@ import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './meshtasticMqttTlsMigratio
 import { readMqttSettingsFromStorage } from './mqttSettingsStorage';
 import {
   getCachedSecureSecret,
+  isProtectedSecureSecretUnavailable,
   MESHCORE_MQTT_SECRET_KEY,
   MESHTASTIC_MQTT_SECRET_KEY,
   setSecureSecret,
@@ -21,8 +22,14 @@ let pskRecoveryInFlight: Promise<void> | null = null;
  * Legacy `connectionPanelStorageMigrations` moved the entire JSON blob to the MeshCore key when
  * topicPrefix started with "meshcore", leaving Meshtastic manual PSK lines unreachable.
  */
-function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
+function recoverMeshtasticChannelPsksFromLegacyMigration(): string[] | undefined {
   if (localStorage.getItem(PSK_RECOVERY_FLAG) !== null) return;
+  // An unreadable protected row is unknown, not an empty source/destination.
+  if (
+    isProtectedSecureSecretUnavailable(MESHTASTIC_MQTT_SECRET_KEY) ||
+    isProtectedSecureSecretUnavailable(MESHCORE_MQTT_SECRET_KEY)
+  )
+    return;
 
   const meshtasticRaw = getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY);
   const meshtastic = parseStoredJson<MqttSettingsWithPsks>(
@@ -31,7 +38,7 @@ function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
   );
   if (meshtastic?.channelPsks?.length) {
     localStorage.setItem(PSK_RECOVERY_FLAG, '1');
-    return;
+    return meshtastic.channelPsks;
   }
 
   const meshcoreRaw = getCachedSecureSecret(MESHCORE_MQTT_SECRET_KEY);
@@ -46,7 +53,7 @@ function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
   }
 
   const merged: MqttSettingsWithPsks = { ...meshtastic, channelPsks: psks };
-  if (pskRecoveryInFlight) return;
+  if (pskRecoveryInFlight) return psks;
   pskRecoveryInFlight = setSecureSecret(MESHTASTIC_MQTT_SECRET_KEY, JSON.stringify(merged))
     .then(() => {
       localStorage.setItem(PSK_RECOVERY_FLAG, '1');
@@ -59,6 +66,13 @@ function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
     .finally(() => {
       pskRecoveryInFlight = null;
     });
+  return psks;
+}
+
+/** Complete this legacy handoff before connection effects or credential editors can run. */
+export async function migrateLegacyMeshtasticMqttChannelPsks(): Promise<void> {
+  recoverMeshtasticChannelPsksFromLegacyMigration();
+  await pskRecoveryInFlight;
 }
 
 /** Read persisted Meshtastic MQTT settings (same merge as ConnectionPanel). */
@@ -72,10 +86,10 @@ export function readMeshtasticMqttSettingsFromStorage(): MQTTSettings {
 
 /** Manual Connection panel channel PSK lines for Meshtastic MQTT decrypt/publish fallback. */
 export function loadMeshtasticMqttManualChannelPsksFromStorage(): string[] {
-  recoverMeshtasticChannelPsksFromLegacyMigration();
+  const recovered = recoverMeshtasticChannelPsksFromLegacyMigration();
   const parsed = parseStoredJson<MqttSettingsWithPsks>(
     getCachedSecureSecret(MESHTASTIC_MQTT_SECRET_KEY),
     'loadMeshtasticMqttManualChannelPsksFromStorage',
   );
-  return parsed?.channelPsks ?? [];
+  return parsed?.channelPsks?.length ? parsed.channelPsks : (recovered ?? []);
 }

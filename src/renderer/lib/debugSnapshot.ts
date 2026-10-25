@@ -14,6 +14,7 @@ import {
   loadPersistedRoomsLastRead,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
+import { type CoiMemorySnapshot, getCoiMemorySnapshot } from './coiMemorySampler';
 import {
   type DebugSnapshotMeshcoreRadioContext,
   getDebugSnapshotMeshcoreRadioContext,
@@ -183,6 +184,8 @@ export interface DebugSnapshot {
   reticulum: DebugReticulumSnapshot;
   /** Main-process uptime / heartbeat age (export path only). */
   mainLiveness?: RendererLivenessSnapshot | null;
+  /** Bounded renderer totals, separate from Node/main-process memory. */
+  rendererMemory?: CoiMemorySnapshot;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
   meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];
   warnings: DebugSnapshotWarning[];
@@ -694,6 +697,7 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   return {
     ...base,
     mainLiveness,
+    rendererMemory: getCoiMemorySnapshot(),
     meshcoreContactPathDiagnostics,
     warnings: analyzeDebugSnapshot(base),
   };

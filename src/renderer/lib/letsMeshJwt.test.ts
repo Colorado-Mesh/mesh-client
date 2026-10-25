@@ -260,13 +260,22 @@ describe('letsMeshJwt', () => {
     const previousMetadata = localStorage.getItem(MESHCORE_IDENTITY_STORAGE_KEY);
     const pubB = Uint8Array.from(pubA);
     pubB[0] = (pubB[0] + 1) & 0xff;
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementationOnce(() => {
-      throw new Error('metadata write failed');
+    const privB = Uint8Array.from(privA);
+    privB[0] = (privB[0] + 1) & 0xff;
+    const originalSet = localStorage.setItem.bind(localStorage);
+    let failMetadata = true;
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === MESHCORE_IDENTITY_STORAGE_KEY && failMetadata) {
+        failMetadata = false;
+        throw new Error('metadata write failed');
+      }
+      originalSet(key, value);
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    expect(await tryPersistMeshcoreIdentityFromRadioExport(pubB, privA)).toBe(false);
+    expect(await tryPersistMeshcoreIdentityFromRadioExport(pubB, privB)).toBe(false);
 
+    expect(failMetadata).toBe(false);
     setItem.mockRestore();
     warn.mockRestore();
     expect(getCachedSecureSecret(MESHCORE_IDENTITY_SECRET_KEY)).toBe(previousSecret);

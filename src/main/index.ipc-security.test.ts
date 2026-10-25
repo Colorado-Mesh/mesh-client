@@ -323,7 +323,10 @@ describe('session permission whitelist (source contract)', () => {
     // Search for the actual session method call, not a comment mention of the name
     const checkIdx = INDEX_SOURCE.indexOf('.setPermissionCheckHandler(');
     expect(checkIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(checkIdx, checkIdx + 450);
+    const body = INDEX_SOURCE.slice(
+      checkIdx,
+      INDEX_SOURCE.indexOf('// Grant geolocation', checkIdx),
+    );
     // Ensure the allowlist is serial + geolocation + media, not a wildcard
     expect(body).toContain("permission === 'serial'");
     expect(body).toContain("permission === 'geolocation'");
@@ -331,16 +334,24 @@ describe('session permission whitelist (source contract)', () => {
     // Renderer Notification.permission reads this handler; without it chat/node/ops/MECP
     // desktop notifications report `denied` and never show.
     expect(body).toContain("permission === 'notifications'");
+    expect(body).toContain('isAllowedRendererPermission');
+    expect(body).toContain('sameWebContents: requestingContents === win.webContents');
+    expect(body).toContain('trusted &&');
     expect(body).not.toContain('return true'); // Must be conditional, not blanket true
   });
 
   it('grants media via setPermissionRequestHandler for camera/audio', () => {
     const reqIdx = INDEX_SOURCE.indexOf('.setPermissionRequestHandler(');
     expect(reqIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(reqIdx, reqIdx + 450);
+    const body = INDEX_SOURCE.slice(
+      reqIdx,
+      INDEX_SOURCE.indexOf('// ─── Device permission', reqIdx),
+    );
     expect(body).toContain("permission === 'geolocation'");
     expect(body).toContain("permission === 'media'");
     expect(body).toContain("permission === 'notifications'");
+    expect(body).toContain('isAllowedRendererPermission');
+    expect(body).toContain('trusted &&');
     expect(body).not.toMatch(/callback\s*\(\s*true\s*\)/);
   });
 
@@ -1096,7 +1107,7 @@ describe('navigation security (source contract)', () => {
 
   it('uses setWindowOpenHandler to gate all window.open calls', () => {
     expect(INDEX_SOURCE).toContain('setWindowOpenHandler');
-    const anchor = 'openExternalHttpOrHttpsIfExternal(currentUrl, url)';
+    const anchor = 'openExternalHttpOrHttpsIfExternal(trustedRendererUrl, url)';
     const anchorIdx = INDEX_SOURCE.indexOf(anchor);
     expect(anchorIdx).toBeGreaterThanOrEqual(0);
     const idx = INDEX_SOURCE.lastIndexOf('setWindowOpenHandler', anchorIdx);

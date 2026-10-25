@@ -42,7 +42,7 @@ export function usePendingSettingAnchor(options: UsePendingSettingAnchorOptions)
 
   useEffect(() => {
     if (id === undefined || panelIndex === undefined) return;
-    const startedAt = performance.now();
+    let startedAt = performance.now();
     let frame = 0;
     const tick = () => {
       const current = optionsRef.current;
@@ -52,6 +52,10 @@ export function usePendingSettingAnchor(options: UsePendingSettingAnchorOptions)
         current.onCleared();
         return;
       }
+      // Module/network loading is not evidence that a setting is unavailable. Start the
+      // short missing-anchor deadline only after Suspense has mounted the owning panel.
+      const host = document.getElementById(`panel-${panelIndex}`);
+      if (host?.querySelector('[data-panel-loading]')) startedAt = performance.now();
       if (performance.now() - startedAt >= SETTING_ANCHOR_QUERY_TIMEOUT_MS) {
         current.onTimedOut({ id, panelIndex });
         current.onCleared();

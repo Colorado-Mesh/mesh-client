@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Les paramètres enregistrés n'ont pas pu être chargés",
-    "savedSettingsRecovery": "Vos données enregistrées ont été conservées. Vérifiez que votre porte-clés système est disponible, ou attendez une minute et réessayez."
+    "savedSettingsRecovery": "Vos données enregistrées ont été conservées. Vérifiez que votre porte-clés système est disponible, ou attendez une minute et réessayez.",
+    "forgetUnavailableCredentials": "Supprimer les identifiants illisibles…",
+    "forgetCredentialsTitle": "Supprimer les identifiants illisibles ?",
+    "forgetCredentialsDescription": "Seuls les identifiants ci-dessous et leurs copies de récupération seront supprimés. Les autres paramètres et identifiants seront conservés.",
+    "forgetCredentialsAcknowledge": "Je comprends que je devrai reconfigurer ces identifiants. Cette action est irréversible.",
+    "forgetCredentialsConfirm": "Supprimer et réessayer",
+    "forgetCredentialsFailed": "Les identifiants n’ont pas pu être entièrement supprimés. Réessayez ou annulez pour conserver les données restantes.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identité MeshCore",
+    "credentialProfiles": "Mots de passe des profils MQTT enregistrés",
+    "credentialRoom": "Salon MeshCore {{node}}",
+    "credentialRepeater": "Répéteur MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",
@@ -479,7 +490,19 @@
     "windowSection": "Fenêtre",
     "closeToTray": "Réduire vers la barre des tâches",
     "closeToTraySaveFailed": "Impossible d'enregistrer le paramètre de proximité du plateau.",
-    "closeToTrayDesc": "Lorsqu'un appareil ou une connexion MQTT est active, la fermeture de la fenêtre masque Mesh-Client dans la barre d'état système (barre de menu sur macOS) au lieu de le minimiser, de sorte qu'il continue à s'exécuter en arrière-plan. Rouvrez-le à partir de l'icône du plateau. Quittez à partir du menu du plateau ou du menu de l'application. Lorsqu'elle est désactivée, la fermeture minimise la fenêtre comme avant."
+    "closeToTrayDesc": "Lorsqu'un appareil ou une connexion MQTT est active, la fermeture de la fenêtre masque Mesh-Client dans la barre d'état système (barre de menu sur macOS) au lieu de le minimiser, de sorte qu'il continue à s'exécuter en arrière-plan. Rouvrez-le à partir de l'icône du plateau. Quittez à partir du menu du plateau ou du menu de l'application. Lorsqu'elle est désactivée, la fermeture minimise la fenêtre comme avant.",
+    "memoryTitle": "Mémoire du moteur de rendu",
+    "memorySampleNow": "Mesurer maintenant",
+    "memorySampling": "Mesure en cours…",
+    "memoryDescription": "Estimations du navigateur pour suivre les tendances, environ toutes les cinq minutes lorsque la fenêtre est visible. Les valeurs peuvent varier selon la version de l’application.",
+    "memoryRendererProcess": "Mémoire du processus de rendu (RAM physique), indiquée par le système d’exploitation. Inclut plus que la mémoire JavaScript ; comparez les mesures de la même version de l’application.",
+    "memoryIsolated": "L’isolation entre origines est activée.",
+    "memoryNotIsolated": "La mesure de mémoire nécessite l’isolation entre origines, indisponible dans cette session.",
+    "memoryUnsupported": "Ce navigateur ne prend pas en charge la mesure de mémoire.",
+    "memoryFailed": "La mesure de mémoire a échoué. Vous pouvez réessayer.",
+    "memoryLatest": "Dernière estimation : {{value}}",
+    "memoryEmpty": "Aucune mesure pour le moment. Lancez une mesure ou laissez la fenêtre visible.",
+    "memoryHistory": "Mesures récentes"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1179,7 +1202,6 @@
         "dualProtocolContentionHint": "L'autre protocole peut toujours se connecter via Bluetooth. Attendez quelques secondes et réessayez, ou passez à l'autre onglet de protocole pour vérifier son état de connexion.",
         "scanBusy": "Une autre analyse Bluetooth est en cours. Réessayez dans un instant.",
         "sameDeviceConflict": "Cet appareil Bluetooth est déjà connecté à {{owner}}.",
-        "chooserCancelledHint": "Si vous n'avez pas annulé, assurez-vous que Bluetooth est activé (état du système Bluetooth), puis appuyez à nouveau sur Connecter. Sur Flatpak, réinstallez une version avec Bluetooth autorisé ou utilisez AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Les outils de couplage Bluetooth du système d'exploitation ne sont pas disponibles dans cet environnement (courant dans Flatpak). Utilisez l'AppImage officielle, .deb ou .rpm, ou associez la radio à l'hôte bluetoothctl, puis réessayez de vous connecter.",
         "stackUnresponsiveGeneric": "Bluetooth est bloqué sur une tentative de connexion antérieure. Désactivez et allumez le Bluetooth, réappareillez la radio si nécessaire, puis redémarrez mesh-client.",
         "stackUnresponsiveWindowsRePair": "Windows Bluetooth est bloqué sur une tentative de connexion antérieure, généralement parce que la radio n'est pas correctement couplée. Appuyez sur Remove & Re-pair Device et entrez le CODE PIN affiché sur la radio. Si la connexion est toujours refusée, redémarrez mesh-client et réessayez.",

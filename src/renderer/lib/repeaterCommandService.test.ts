@@ -345,6 +345,21 @@ describe('RepeaterCommandService', () => {
       await expect(promise).rejects.toThrow('CLI command timed out after 3000ms');
     });
 
+    it.each([-3_600_000, 3_600_000])(
+      'keeps the extended CLI reply deadline when the wall clock changes by %s ms',
+      async (clockChange) => {
+        const { token, promise } = service.registerPendingCommand('cmd', [], { timeoutMs: 1000 });
+        const rejected = expect(promise).rejects.toThrow('CLI command timed out after 3000ms');
+        vi.advanceTimersByTime(500);
+        vi.setSystemTime(Date.now() + clockChange);
+        service.extendPendingTimeout(token, 3000);
+        await vi.advanceTimersByTimeAsync(2499);
+        expect(service.hasPendingCommand(token)).toBe(true);
+        await vi.advanceTimersByTimeAsync(1);
+        await rejected;
+      },
+    );
+
     it('restartPendingTimeoutFromNow resets the reply window after a delayed send', async () => {
       const { token, promise } = service.registerPendingCommand('cmd', [], { timeoutMs: 1000 });
       promise.catch(() => {});

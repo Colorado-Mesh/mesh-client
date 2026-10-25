@@ -8,7 +8,7 @@ import { coerceMeshcoreExportPrivateKeyResult } from './meshcoreUtils';
 /** Default exportPrivateKey timeout for Noble / serial / TCP. */
 export const MESHCORE_MQTT_IDENTITY_EXPORT_TIMEOUT_MS = 15_000;
 
-/** Delay between Linux Web Bluetooth export retries. */
+/** Delay between Linux native BLE export retries. */
 export const MESHCORE_MQTT_IDENTITY_EXPORT_LINUX_BLE_RETRY_DELAY_MS = 2_000;
 
 const MESHCORE_MQTT_IDENTITY_EXPORT_LINUX_BLE_MAX_ATTEMPTS = 2;
@@ -40,7 +40,7 @@ export function meshcoreMqttIdentityExportMaxAttempts(
 
 /**
  * Export private key from the radio and merge into the active MQTT identity cache.
- * Linux Web Bluetooth uses a longer timeout and one retry to avoid racing init RPCs.
+ * Linux native BLE uses a longer timeout and one retry to avoid racing init RPCs.
  */
 export async function exportAndPersistMeshcoreMqttIdentity(
   conn: MeshCoreConnection,

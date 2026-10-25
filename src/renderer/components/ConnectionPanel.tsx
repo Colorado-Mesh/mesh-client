@@ -15,6 +15,7 @@ import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnectGate';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
+import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import { troubleshootingDocsUrl } from '@/shared/docsSite';
@@ -222,27 +223,14 @@ function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boo
   const pairingFlag = isPairingRelatedError(err);
   const domPairingSignal =
     err instanceof DOMException && (err.name === 'SecurityError' || err.name === 'NetworkError');
-  // MeshCore Linux Web Bluetooth: handshake timeout often means PIN not paired at OS level (Electron may never fire providePin).
-  const meshcoreWebBtHandshakeOrTimeout =
-    /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth|Bluetooth connected but MeshCore protocol handshake did not complete/i.test(
-      bleErrMsg,
-    );
   // High-confidence pairing indicators only; avoid broad "connection failed" matching.
   return (
     pairingFlag ||
     domPairingSignal ||
-    meshcoreWebBtHandshakeOrTimeout ||
     /GATT Error:\s*Not supported/i.test(rawMessage) ||
     /authentication failed/i.test(rawMessage) ||
     /not be properly paired/i.test(bleErrMsg) ||
     /pairing issue/i.test(rawMessage)
-  );
-}
-
-/** When Electron never shows a PIN sheet, offer manual PIN + bluetoothctl pairing after a MeshCore timeout. */
-function shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg: string): boolean {
-  return /MeshCore handshake timed out \(Web Bluetooth\)|opening MeshCore over Web Bluetooth/i.test(
-    bleErrMsg,
   );
 }
 
@@ -311,7 +299,7 @@ function loadLastConnection(p: MeshProtocol): LastConnection | null {
 
 function saveLastConnection(p: MeshProtocol, c: LastConnection) {
   try {
-    localStorage.setItem(lastConnectionKey(p), JSON.stringify(c));
+    setRendererStorageItem(lastConnectionKey(p), JSON.stringify(c));
   } catch (e) {
     console.debug('[ConnectionPanel] saveLastConnection ' + errLikeToLogString(e));
   }
@@ -319,7 +307,7 @@ function saveLastConnection(p: MeshProtocol, c: LastConnection) {
 
 function clearLastConnection(p: MeshProtocol) {
   try {
-    localStorage.removeItem(lastConnectionKey(p));
+    removeRendererStorageItem(lastConnectionKey(p));
   } catch (e) {
     console.debug('[ConnectionPanel] clearLastConnection ' + errLikeToLogString(e));
   }
@@ -336,7 +324,7 @@ function loadLastBleDevice(protocol: MeshProtocol): string | null {
 
 function saveLastBleDevice(protocol: MeshProtocol, id: string) {
   try {
-    localStorage.setItem(lastBleDeviceKey(protocol), id);
+    setRendererStorageItem(lastBleDeviceKey(protocol), id);
   } catch (e) {
     console.debug('[ConnectionPanel] saveLastBleDevice ' + errLikeToLogString(e));
   }
@@ -353,7 +341,7 @@ function loadLastSerialPort(): string | null {
 
 function saveLastSerialPort(id: string) {
   try {
-    localStorage.setItem(LAST_SERIAL_PORT_KEY, id);
+    setRendererStorageItem(LAST_SERIAL_PORT_KEY, id);
   } catch (e) {
     console.debug('[ConnectionPanel] saveLastSerialPort ' + errLikeToLogString(e));
   }
@@ -657,7 +645,7 @@ export default function ConnectionPanel({
 
   // Persist MeshCore preset selection
   useEffect(() => {
-    localStorage.setItem('mesh-client:mqttPreset:meshcore', meshcorePreset);
+    setRendererStorageItem('mesh-client:mqttPreset:meshcore', meshcorePreset);
   }, [meshcorePreset]);
 
   // One-time Colorado region gate for existing Colorado MQTT users (blocks auto-launch until ack)
@@ -1794,11 +1782,6 @@ export default function ConnectionPanel({
             setConnecting(false);
             setConnectionStage('');
           }
-          if (protocol === 'meshcore' && shouldOfferMeshcoreLinuxManualPinAfterError(bleErrMsg)) {
-            setShowPinPrompt(true);
-            setManualPairingFallback(true);
-            setPinInputValue('');
-          }
         }
       })();
     } else if (lastConnection.type === 'http') {
@@ -2403,7 +2386,7 @@ export default function ConnectionPanel({
                       setMeshcorePresetSelectNonce((n) => n + 1);
                       return;
                     }
-                    localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                    setRendererStorageItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
                   }
                   setMeshcorePreset(id);
                   const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
@@ -2942,7 +2925,7 @@ export default function ConnectionPanel({
             confirmLabel={t('connectionPanel.coloradoRegionGateStay')}
             cancelLabel={t('connectionPanel.coloradoRegionGateSwitch')}
             onConfirm={() => {
-              localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+              setRendererStorageItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
               setColoradoRegionGateOpen(false);
               if (meshcoreMqttSettingsRef.current.autoLaunch) {
                 void tryAutoLaunchMqtt('meshcore').catch((err: unknown) => {
@@ -2962,9 +2945,9 @@ export default function ConnectionPanel({
                 };
                 setMeshcorePreset('letsmesh');
                 setMeshcoreMqttSettings(next);
-                localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+                setRendererStorageItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
                 persistMqttSettingsIfChanged(getMqttSettingsStorageKey('meshcore'), next);
-                localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                setRendererStorageItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
                 setColoradoRegionGateOpen(false);
                 if (mqttStatus === 'connected' || mqttStatus === 'connecting') {
                   markMqttUserDisconnect();

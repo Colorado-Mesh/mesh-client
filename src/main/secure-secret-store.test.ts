@@ -39,6 +39,90 @@ describe('SecureSecretStore', () => {
     safeStorageHarness.backend = 'keychain';
   });
 
+  it.each(['forget', 'newer save'])(
+    'an earlier slow save cannot commit after a later %s',
+    async (action) => {
+      const { db, store } = createStore();
+      try {
+        let release: (() => void) | undefined;
+        vi.mocked(safeStorage.encryptStringAsync).mockImplementationOnce(
+          (value) =>
+            new Promise((resolve) => {
+              release = () => {
+                resolve(Buffer.from(`protected:${value}`, 'utf8'));
+              };
+            }),
+        );
+        const earlier = store.set('mqtt:meshcore', 'earlier');
+        const rejected = expect(earlier).rejects.toThrow('superseded write');
+        await vi.waitFor(() => {
+          expect(release).toBeTypeOf('function');
+        });
+        if (action === 'forget') store.remove('mqtt:meshcore');
+        else await store.set('mqtt:meshcore', 'latest');
+        release!();
+        await rejected;
+        expect(await store.get('mqtt:meshcore')).toBe(action === 'forget' ? null : 'latest');
+      } finally {
+        db.close();
+      }
+    },
+  );
+
+  it('commits secret and retirement atomically, rolling both back when the receipt write fails', async () => {
+    const { db, store } = createStore();
+    try {
+      await store.set('mqtt:meshcore', 'original');
+      const read = () =>
+        (
+          db
+            .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+            .get('rendererDeletedStorage:mesh-client:credentialCompatibility:mqtt:meshcore') as {
+            value: string;
+          }
+        ).value;
+      const originalReceipt = read();
+      db.execScript(
+        "CREATE TRIGGER reject_retirement BEFORE INSERT ON app_settings WHEN NEW.key LIKE 'rendererDeletedStorage:%' BEGIN SELECT RAISE(ABORT, 'retirement failed'); END;",
+      );
+      await expect(store.set('mqtt:meshcore', 'replacement')).rejects.toThrow('retirement failed');
+      expect(await store.get('mqtt:meshcore')).toBe('original');
+      expect(read()).toBe(originalReceipt);
+      expect(() => {
+        store.remove('mqtt:meshcore');
+      }).toThrow('retirement failed');
+      expect(await store.get('mqtt:meshcore')).toBe('original');
+      expect(read()).toBe(originalReceipt);
+    } finally {
+      db.close();
+    }
+  });
+
+  it.each(['per-node', 'meshtastic-single'] as const)(
+    'does not replay a forgotten %s key backup from an old export',
+    async (format) => {
+      const { db, store } = createStore();
+      try {
+        const payload = JSON.stringify({
+          protocol: 'meshtastic',
+          nodeNum: 42,
+          backedUpAt: 123,
+          publicKey: Buffer.alloc(32, 1).toString('base64'),
+          privateKey: Buffer.alloc(32, 2).toString('base64'),
+        });
+        const ciphertext = Buffer.from(`protected:${payload}`, 'utf8').toString('base64');
+        await store.set('backup:meshtastic:42', payload);
+        store.remove('backup:meshtastic:42');
+        expect(
+          await store.migrateLegacyBackupCiphertext('meshtastic', 42, format, ciphertext),
+        ).toMatchObject({ verified: false });
+        expect(await store.get('backup:meshtastic:42')).toBeNull();
+      } finally {
+        db.close();
+      }
+    },
+  );
+
   it('persists every supported credential class only as OS-protected ciphertext', async () => {
     const { db, store } = createStore();
     try {
@@ -75,6 +159,79 @@ describe('SecureSecretStore', () => {
       db.close();
     }
   });
+
+  it.each([
+    ['Key', 'Ciphertext', 'Updated_At'],
+    ['KEY', 'CIPHERTEXT', 'UPDATED_AT'],
+  ])('preserves an existing SQLite table with %s/%s/%s column names', async (key, value, time) => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      db.execScript(
+        `CREATE TABLE secure_secrets (${key} TEXT PRIMARY KEY, ${value} TEXT NOT NULL, ${time} INTEGER NOT NULL);`,
+      );
+      runSchemaUpgrade(db);
+      db.prepareOnce(
+        'INSERT INTO secure_secrets(key, ciphertext, updated_at) VALUES (?, ?, ?)',
+      ).run('backup:meshcore:44', Buffer.from('protected:retained-backup').toString('base64'), 123);
+      const store = new SecureSecretStore(() => db);
+      expect(await store.get('backup:meshcore:44')).toBe('retained-backup');
+      expect(store.list()).toEqual(['backup:meshcore:44']);
+      await expect(store.set('mqtt:meshtastic', 'retained-password')).resolves.toMatchObject({
+        persistent: true,
+        verified: true,
+      });
+      expect(await store.get('mqtt:meshtastic')).toBe('retained-password');
+      expect(store.list()).toEqual(['backup:meshcore:44', 'mqtt:meshtastic']);
+      expect(await new SecureSecretStore(() => db).getAll()).toEqual({
+        'backup:meshcore:44': 'retained-backup',
+        'mqtt:meshtastic': 'retained-password',
+      });
+      await store.set('mqtt:meshtastic', 'replacement-password');
+      expect(await store.get('mqtt:meshtastic')).toBe('replacement-password');
+      store.remove('mqtt:meshtastic');
+      expect(await new SecureSecretStore(() => db).getAll()).toEqual({
+        'backup:meshcore:44': 'retained-backup',
+      });
+      const columns = db.prepareOnce('PRAGMA table_info(secure_secrets)').all() as {
+        name: string;
+      }[];
+      expect(columns.map((column) => column.name)).toEqual([key, value, time]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it.each(['ignore', 'tamper'])(
+    'still rejects an actually %s SQLite write without retiring data',
+    async (action) => {
+      const { db, store } = createStore();
+      try {
+        await store.set('mqtt:meshcore', 'original-private-value');
+        const snapshot = () => ({
+          ciphertext: db
+            .prepareOnce('SELECT ciphertext FROM secure_secrets WHERE key = ?')
+            .get('mqtt:meshcore'),
+          receipt: db
+            .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+            .get('rendererDeletedStorage:mesh-client:credentialCompatibility:mqtt:meshcore'),
+        });
+        const before = snapshot();
+        db.execScript(
+          action === 'ignore'
+            ? 'CREATE TRIGGER reject_secret BEFORE INSERT ON secure_secrets BEGIN SELECT RAISE(IGNORE); END;'
+            : "CREATE TRIGGER tamper_secret AFTER INSERT ON secure_secrets BEGIN UPDATE secure_secrets SET ciphertext='modified-ciphertext' WHERE key=NEW.key; END;",
+        );
+        const writing = store.set('mqtt:meshcore', 'replacement-private-value');
+        await expect(writing).rejects.toThrow('SQLite read-back; mqtt:meshcore; changes=');
+        await expect(writing).rejects.not.toThrow('replacement-private-value');
+        await expect(writing).rejects.not.toThrow('original-private-value');
+        expect(snapshot()).toEqual(before);
+        expect(await store.get('mqtt:meshcore')).toBe('original-private-value');
+      } finally {
+        db.close();
+      }
+    },
+  );
 
   it('rejects basic_text and keeps secrets session-only', async () => {
     const { db, store } = createStore();
@@ -318,6 +475,7 @@ describe('SecureSecretStore', () => {
     const { db, store } = createStore();
     try {
       await expect(store.set('arbitrary:key', 'secret')).rejects.toThrow(/invalid key/);
+      await expect(store.set('meshcore:room:1', '')).rejects.toThrow(/invalid value/);
       await expect(store.set('meshcore:room:1', 'x'.repeat(64 * 1024 + 1))).rejects.toThrow(
         /invalid value/,
       );

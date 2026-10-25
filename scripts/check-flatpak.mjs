@@ -148,7 +148,7 @@ function checkManifestPnpmVersion(pkg) {
   const rel = path.relative(ROOT, MANIFEST);
   const pnpmVersion = pnpmVersionFromPackage(pkg);
 
-  // Offline Flatpak builds cannot re-verify minimumReleaseAge / trustPolicy against npm.
+  // Offline Flatpak builds cannot re-verify trustPolicy / supply-chain policies against npm.
   violations.push(...offlinePnpmEnvContractViolations(yaml, rel));
 
   if (!pnpmVersion) return violations;

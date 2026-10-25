@@ -98,6 +98,11 @@ export async function deleteMeshcoreKeyBackup(nodeId: number): Promise<void> {
   await backup.remove(nodeId);
 }
 
+/** Repair the public lookup index from surviving verified slots before any panel mounts. */
+export async function ensureMeshcoreKeyBackupIndex(): Promise<void> {
+  await backup.ensureIndex();
+}
+
 /** Node label / !hex detail for restore picker (protocol prefix applied in UI via i18n). */
 export function formatMeshcoreBackupDetail(entry: MeshcoreKeyBackupIndexEntry): string {
   const hex = nodeNumDisplayHex(entry.nodeId);

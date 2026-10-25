@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
+
 import type { MeshProtocol } from '../lib/types';
 
 export const BOT_SENDERS_STORAGE_KEY = 'mesh-client:botSenders';
@@ -88,10 +90,10 @@ export const useBotSendersStore = create<BotSendersState>()(
           for (const protocol of PROTOCOLS) {
             senders[protocol] = [...value.state.senders[protocol]];
           }
-          localStorage.setItem(key, JSON.stringify({ ...value, state: { senders } }));
+          setRendererStorageItem(key, JSON.stringify({ ...value, state: { senders } }));
         },
         removeItem: (key) => {
-          localStorage.removeItem(key);
+          removeRendererStorageItem(key);
         },
       },
     },

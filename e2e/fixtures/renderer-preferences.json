@@ -1,0 +1,56 @@
+{
+  "mapViewport": {
+    "center": [39.7, -104.9],
+    "zoom": 11
+  },
+  "mapBasemapId": "osm",
+  "mapShowNodes": false,
+  "mapShowSensors": true,
+  "mapShowWaypoints": false,
+  "mapShowMgrsGrid": true,
+  "mapBeaconUrl": "https://example.invalid/migration-beacon",
+  "translationEnabled": true,
+  "translationTargetLanguage": "fr",
+  "translationReadLanguages": ["en", "es"],
+  "translationAutoEnabled": true,
+  "aiEnabled": true,
+  "reticulumRmapAnnounceIntervalMin": 17,
+  "reticulumRmapReachableOn": "migration.invalid",
+  "reticulumRmapDiscoveryEncrypt": true,
+  "reticulumRmapPublishIfac": false,
+  "mecpMaydayButtonEnabled": true,
+  "meshtasticRemoteAdminKeyByNode": {
+    "7": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
+  },
+  "meshtasticConfigureTargetNodeNum": 7,
+  "cityModeEnabled": true,
+  "envMode": "city",
+  "showMovementPaths": true,
+  "quickStatusBarEnabled": true,
+  "rollCallWindowMinutes": 25,
+  "autoTracerouteEnabled": true,
+  "autoTracerouteEnabledMeshtastic": true,
+  "autoTracerouteEnabledMeshcore": false,
+  "meshcoreOpenWireCompatEnabled": true,
+  "meshcoreRoomLastPost:7": "1700000000000",
+  "meshcoreRoomLastPost:8": "1700000001000",
+  "autoPruneEnabled": false,
+  "mecpComposeEnabled": true,
+  "mecpRebroadcastRules": [
+    {
+      "id": "migration-saved-rule",
+      "enabled": false,
+      "bidirectional": false,
+      "endpointA": {
+        "protocol": "meshtastic",
+        "channelIndex": 0
+      },
+      "endpointB": {
+        "protocol": "meshcore",
+        "channelIndex": 1
+      }
+    }
+  ],
+  "meshcoreContactCapCount": 5000,
+  "use24HourTime": true
+}

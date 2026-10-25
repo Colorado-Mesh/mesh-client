@@ -66,7 +66,7 @@ describe('reconnectRfFromLastConnection', () => {
     );
   });
 
-  it('on Linux uses direct BLE connect (Web Bluetooth user gesture path)', async () => {
+  it('on Linux uses direct native sidecar GATT reconnect', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     localStorage.setItem(
       STORAGE_KEY('meshtastic'),

@@ -965,41 +965,21 @@ if [ -n "${OLD_RUSTC}" ]; then
 fi
 
 # --- Run updates ---
-# Default age gate is 12h (pnpm-workspace.yaml minimumReleaseAge: 720). Open
-# Dependabot alerts bypass it so patched releases are not delayed.
-PNPM_AGE_ARGS=()
-if command -v gh > /dev/null 2>&1; then
-  # per_page=1 → length is 0 or 1; enough to know whether any alert is open.
-  OPEN_DEPENDABOT_ALERTS="$(
-    gh api 'repos/{owner}/{repo}/dependabot/alerts?state=open&per_page=1' \
-      --jq 'length' 2> /dev/null || echo '0'
-  )"
-  if [ "${OPEN_DEPENDABOT_ALERTS}" != '0' ] && [ -n "${OPEN_DEPENDABOT_ALERTS}" ]; then
-    PNPM_AGE_ARGS=(--config.minimumReleaseAge=0)
-    echo ''
-    echo 'Open Dependabot alerts detected — bypassing minimumReleaseAge for this update.'
-  fi
-fi
-
 echo ''
 echo 'Running pnpm update...'
-echo 'Note: with minimumReleaseAge (pnpm-workspace.yaml, default 12h), pnpm may WARN that a newer'
-echo 'version was not selected. That is usually the age gate (not a broken override).'
-echo 'Packages published within that window stay held until they mature; re-run later.'
-echo 'Security exception: open Dependabot alerts → --config.minimumReleaseAge=0.'
-pnpm update "${PNPM_AGE_ARGS[@]}"
+pnpm update
 
 echo ''
 echo 'Running pnpm dedupe...'
-pnpm dedupe "${PNPM_AGE_ARGS[@]}"
+pnpm dedupe
 
 echo ''
 echo 'Running pnpm install...'
-pnpm install "${PNPM_AGE_ARGS[@]}"
+pnpm install
 
 echo ''
 echo 'Running pnpm prune...'
-pnpm prune "${PNPM_AGE_ARGS[@]}"
+pnpm prune
 
 echo ''
 sync_flatpak_electron

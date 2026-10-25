@@ -50,6 +50,22 @@ describe('createBleConnection retry behavior', () => {
     expect(device).toBeTruthy();
   });
 
+  it('measures BLE connection elapsed time independently of wall-clock changes', async () => {
+    const now = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(11)
+      .mockReturnValueOnce(15.25);
+    const log = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    try {
+      await createBleConnection('monotonic-device', 'meshtastic');
+      expect(log).toHaveBeenCalledWith('[connection] createBleConnection elapsedMs', 5.25);
+    } finally {
+      now.mockRestore();
+      log.mockRestore();
+    }
+  });
+
   it('logs createBleConnection start as a single readable line (no [object Object])', async () => {
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     await createBleConnection('ble-device-log', 'meshtastic');

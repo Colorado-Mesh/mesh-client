@@ -9,8 +9,8 @@
  * pnpm 11+ may report "Already up to date" from an existing node_modules even when
  * --store-dir is missing; refuse to proceed so Flatpak always uses the offline store.
  *
- * Failure point: pnpm 11 re-verifies minimumReleaseAge / trustPolicy against the
- * registry for every lockfile entry ("Verifying lockfile against supply-chain
+ * Failure point: pnpm 11 re-verifies trustPolicy / supply-chain policies against
+ * the registry for every lockfile entry ("Verifying lockfile against supply-chain
  * policies"). Flatpak build has no usable DNS, so those GETs hang on EAI_AGAIN.
  * Fallback: --config.trust-lockfile=true (CI already resolved the lockfile online).
  */

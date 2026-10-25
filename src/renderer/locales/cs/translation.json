@@ -52,7 +52,18 @@
     "takRemoteOnly": "TAK {{remote}}",
     "takWithRemote": "{{local}}, {{remote}}",
     "savedSettingsUnavailable": "Uložená nastavení se nepodařilo načíst",
-    "savedSettingsRecovery": "Vaše uložená data byla zachována. Zkontrolujte, zda je systémová klíčenka k dispozici, nebo chvíli počkejte a zkuste to znovu."
+    "savedSettingsRecovery": "Vaše uložená data byla zachována. Zkontrolujte, zda je systémová klíčenka k dispozici, nebo chvíli počkejte a zkuste to znovu.",
+    "forgetUnavailableCredentials": "Odstranit nečitelné přihlašovací údaje…",
+    "forgetCredentialsTitle": "Odstranit nečitelné přihlašovací údaje?",
+    "forgetCredentialsDescription": "Odstraní se pouze níže uvedené přihlašovací údaje a jejich záložní kopie pro obnovení. Ostatní nastavení a přihlašovací údaje zůstanou zachovány.",
+    "forgetCredentialsAcknowledge": "Rozumím, že tyto přihlašovací údaje budu muset znovu nastavit. Tuto akci nelze vrátit zpět.",
+    "forgetCredentialsConfirm": "Odstranit a zkusit znovu",
+    "forgetCredentialsFailed": "Přihlašovací údaje se nepodařilo zcela odstranit. Zkuste to znovu nebo akci zrušte a zachovejte zbývající data.",
+    "credentialMqtt": "MQTT {{protocol}}",
+    "credentialIdentity": "Identita MeshCore",
+    "credentialProfiles": "Hesla uložených profilů MQTT",
+    "credentialRoom": "Místnost MeshCore {{node}}",
+    "credentialRepeater": "Opakovač MeshCore {{node}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",
@@ -487,7 +498,19 @@
     "windowSection": "Okno",
     "closeToTray": "V blízkosti systémové lišty",
     "closeToTraySaveFailed": "Nelze uložit nastavení v blízkosti zásobníku.",
-    "closeToTrayDesc": "Když je zařízení nebo připojení MQTT aktivní, zavřením okna skryje Mesh-Client na systémové liště (lišta nabídek na macOS), místo aby jej minimalizoval, takže stále běží na pozadí. Znovu jej otevřete z ikony zásobníku. Ukončete nabídku zásobníku nebo nabídku aplikace. Když je vypnuto, zavření minimalizuje okno jako dříve."
+    "closeToTrayDesc": "Když je zařízení nebo připojení MQTT aktivní, zavřením okna skryje Mesh-Client na systémové liště (lišta nabídek na macOS), místo aby jej minimalizoval, takže stále běží na pozadí. Znovu jej otevřete z ikony zásobníku. Ukončete nabídku zásobníku nebo nabídku aplikace. Když je vypnuto, zavření minimalizuje okno jako dříve.",
+    "memoryTitle": "Paměť vykreslovacího procesu",
+    "memorySampleNow": "Změřit nyní",
+    "memorySampling": "Měření…",
+    "memoryDescription": "Odhady prohlížeče pro sledování vývoje, měřené přibližně každých pět minut při viditelném okně. Hodnoty se mohou mezi verzemi aplikace lišit.",
+    "memoryRendererProcess": "Paměť procesu vykreslování (fyzická RAM) hlášená operačním systémem. Zahrnuje více než paměť JavaScriptu; porovnávejte vzorky ze stejné verze aplikace.",
+    "memoryIsolated": "Izolace mezi původy je zapnutá.",
+    "memoryNotIsolated": "Měření paměti vyžaduje izolaci mezi původy, která v této relaci není dostupná.",
+    "memoryUnsupported": "Tento prohlížeč nepodporuje měření paměti.",
+    "memoryFailed": "Měření paměti selhalo. Můžete to zkusit znovu.",
+    "memoryLatest": "Poslední odhad: {{value}}",
+    "memoryEmpty": "Zatím žádná měření. Spusťte měření nebo ponechte okno viditelné.",
+    "memoryHistory": "Nedávná měření"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1201,7 +1224,6 @@
         "dualProtocolContentionHint": "Druhý protokol se může stále připojovat přes Bluetooth. Počkejte několik sekund a zkuste to znovu, nebo přepněte na kartu druhého protokolu a zkontrolujte jeho stav připojení.",
         "scanBusy": "Probíhá další skenování Bluetooth. Zkuste to znovu za chvíli.",
         "sameDeviceConflict": "Toto zařízení Bluetooth je již připojeno k {{owner}}.",
-        "chooserCancelledHint": "Pokud jste to nezrušili, ujistěte se, že je Bluetooth zapnuto (systemctl status bluetooth), potom znovu klepněte na Připojit. Na Flatpak přeinstalujte sestavení s povoleným Bluetooth nebo použijte AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Nástroje pro párování OS Bluetooth nejsou v tomto prostředí dostupné (běžné ve Flatpak). Použijte oficiální AppImage, .deb nebo .rpm, nebo spárujte rádio s hostitelským bluetoothctl a poté znovu zkuste Connect.",
         "stackUnresponsiveGeneric": "Bluetooth se zasekl při dřívějším pokusu o připojení. Vypněte a zapněte Bluetooth, v případě potřeby rádio znovu spárujte a poté restartujte mesh-client.",
         "stackUnresponsiveWindowsRePair": "Systém Windows Bluetooth se zasekl při dřívějším pokusu o připojení, obvykle proto, že rádio není správně spárováno. Stiskněte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený v rádiu. Pokud je připojení stále odmítnuto, restartujte mesh-client a zkuste to znovu.",
