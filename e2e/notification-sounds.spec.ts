@@ -2,9 +2,21 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
-import { closeApp, disposeUserData, launchApp, openAppTab, teardownApp } from './electronApp';
+import {
+  closeApp,
+  disposeUserData,
+  launchApp,
+  openAppTab,
+  revealSettingInPage,
+  teardownApp,
+} from './electronApp';
+
+async function openNotificationTones(page: Page): Promise<void> {
+  await openAppTab(page);
+  await revealSettingInPage(page, 'app.notifications.sounds');
+}
 
 function wave(): Buffer {
   const rate = 8000;
@@ -39,8 +51,7 @@ test('custom notification tone survives restart and can repair a missing saved c
       for (const window of BrowserWindow.getAllWindows()) window.webContents.setAudioMuted(true);
       dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
     }, file);
-    await openAppTab(launched.page);
-    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await openNotificationTones(launched.page);
     await launched.page
       .getByRole('button', { name: 'Choose audio file for Direct messages' })
       .click();
@@ -61,8 +72,7 @@ test('custom notification tone survives restart and can repair a missing saved c
     await launched.app.evaluate(({ BrowserWindow }) => {
       for (const window of BrowserWindow.getAllWindows()) window.webContents.setAudioMuted(true);
     });
-    await openAppTab(launched.page);
-    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await openNotificationTones(launched.page);
     const restored = launched.page.getByRole('combobox', { name: 'Tone for Direct messages' });
     await expect(restored).toHaveValue('custom');
     await expect(restored.locator('option:checked')).toHaveText('test-tone.wav');
@@ -78,8 +88,7 @@ test('custom notification tone survives restart and can repair a missing saved c
       for (const window of BrowserWindow.getAllWindows()) window.webContents.setAudioMuted(true);
       dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [filePath] });
     }, file);
-    await openAppTab(launched.page);
-    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await openNotificationTones(launched.page);
     await launched.page.getByRole('button', { name: 'Preview Direct messages' }).click();
     await expect(launched.page.getByRole('alert')).toHaveText(/Could not play/);
     writeFileSync(file, wave());
@@ -116,8 +125,7 @@ test('custom notification tone survives restart and can repair a missing saved c
 test('notification tone and volume controls retain keyboard focus after saving', async () => {
   const launched = await launchApp();
   try {
-    await openAppTab(launched.page);
-    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await openNotificationTones(launched.page);
     const tone = launched.page.getByRole('combobox', { name: 'Tone for Direct messages' });
     const reset = launched.page.getByRole('button', { name: 'Reset Direct messages' });
     await tone.focus();
@@ -166,8 +174,7 @@ test('rejects a long compressed recording before allocating decoded audio', asyn
         return decode.apply(this, args);
       };
     });
-    await openAppTab(launched.page);
-    await launched.page.getByText('Notification tones', { exact: true }).click();
+    await openNotificationTones(launched.page);
     await launched.page
       .getByRole('button', { name: 'Choose audio file for Direct messages' })
       .click();
