@@ -62,15 +62,16 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     timer = undefined;
   }
 
+  /** UA memory needs COI; process working-set works on force-file too. */
+  function canAttemptSample() {
+    if (!environment.isVisible() || !supported()) return false;
+    if (environment.isIsolated()) return true;
+    return Boolean(environment.getProcessMeasure?.());
+  }
+
   function schedule() {
     clearTimer();
-    if (
-      owners.size === 0 ||
-      !environment.isVisible() ||
-      !environment.isIsolated() ||
-      !supported() ||
-      inFlight
-    ) {
+    if (owners.size === 0 || !canAttemptSample() || inFlight) {
       return;
     }
     // Jitter prevents periodic app work from consistently biasing measurements.
@@ -85,19 +86,20 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     if (inFlight) return inFlight;
     const crossOriginIsolated = environment.isIsolated();
     update({ crossOriginIsolated, supported: supported() });
-    if (!crossOriginIsolated || !supported() || !environment.isVisible()) {
+    if (!canAttemptSample()) {
       return Promise.resolve(null);
     }
     clearTimer();
     const requestGeneration = generation;
     update({ sampling: true, failed: false });
-    const canSample = () =>
-      requestGeneration === generation && environment.isIsolated() && environment.isVisible();
+    const canSample = () => requestGeneration === generation && canAttemptSample();
     // Defer the call so a synchronous throw also follows the failure/cleanup path.
     inFlight = Promise.resolve()
       .then(async (): Promise<Omit<CoiMemorySample, 'at'> | null> => {
         if (!canSample()) return null;
-        const measure = browserUnavailable ? undefined : environment.getMeasure();
+        // Browser UA totals require isolation; skip them on force-file recovery.
+        const measure =
+          crossOriginIsolated && !browserUnavailable ? environment.getMeasure() : undefined;
         if (measure) {
           try {
             return { bytes: (await measure()).bytes };
@@ -136,6 +138,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         const previous = snapshot.samples.at(-1);
         const history = previous?.source === sample.source ? snapshot.samples : [];
         update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES) });
+        persistRendererMemorySample(sample);
         return sample;
       })
       .catch((error: unknown) => {
@@ -187,6 +190,26 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
       };
     },
   };
+}
+
+const RENDERER_MEMORY_SESSION_ID =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `session-${Date.now()}`;
+
+function persistRendererMemorySample(sample: CoiMemorySample): void {
+  if (typeof window === 'undefined') return;
+  const record = (window as { electronAPI?: ElectronAPI }).electronAPI?.db
+    .recordRendererMemorySample;
+  if (!record) return;
+  void record({
+    capturedAt: sample.at,
+    bytes: sample.bytes,
+    source: sample.source ?? 'user-agent',
+    sessionId: RENDERER_MEMORY_SESSION_ID,
+  }).catch((error: unknown) => {
+    console.warn('[coiMemorySampler] persist failed ' + errLikeToLogString(error));
+  });
 }
 
 const sampler = createCoiMemorySampler({

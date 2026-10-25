@@ -502,7 +502,17 @@
     "memoryFailed": "Misurazione della memoria non riuscita. Puoi riprovare.",
     "memoryLatest": "Ultima stima: {{value}}",
     "memoryEmpty": "Nessuna misurazione. Avvia una misurazione o lascia la finestra visibile.",
-    "memoryHistory": "Misurazioni recenti"
+    "memoryHistory": "Misurazioni recenti",
+    "memoryProcessOnly": "Utilizzo del working-set del processo di rendering (l'API della memoria del browser richiede l'isolamento).",
+    "coiCapabilityTitle": "Funzionalità di rendering",
+    "coiCapabilityIsolated": "Isolato: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Recupera i thread WASM: {{count}}",
+    "coiCapabilityTiming": "Risoluzione del timer: {{value}}",
+    "coiYes": "si",
+    "coiNo": "no",
+    "coiTimingFine": "fine (~5 µs)",
+    "coiTimingCoarse": "grossolana (~100 µs)"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

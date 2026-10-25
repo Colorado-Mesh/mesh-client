@@ -214,6 +214,10 @@ import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
 import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { PermissionDecisionLogger } from './permissionDecisionLog';
 import { readFileUpTo } from './readFileUpTo';
+import {
+  insertRendererMemorySample,
+  summarizeRendererMemorySamples,
+} from './renderer-memory-samples';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import {
   isAllowedRendererDeviceOrigin,
@@ -4607,6 +4611,68 @@ ipcMain.handle('db:setNodeNote', (event, nodeId: number, note: string) => {
     ).run(id, note, Date.now());
   } catch (err) {
     finishDbIpcHandler('db:setNodeNote', err);
+  }
+});
+
+ipcMain.handle(
+  'db:recordRendererMemorySample',
+  (
+    event,
+    sample: {
+      capturedAt?: unknown;
+      bytes?: unknown;
+      source?: unknown;
+      sessionId?: unknown;
+    },
+  ) => {
+    if (!validateIpcSender(event)) {
+      throw new Error('db:recordRendererMemorySample: unauthorized sender');
+    }
+    try {
+      const capturedAt = safeNonNegativeInt(sample?.capturedAt);
+      const bytes = safeNonNegativeInt(sample?.bytes);
+      const source = sample?.source;
+      if (source !== 'user-agent' && source !== 'renderer-process') {
+        throw new Error('db:recordRendererMemorySample: invalid source');
+      }
+      const sessionId =
+        typeof sample?.sessionId === 'string' && sample.sessionId.length <= 64
+          ? sample.sessionId
+          : null;
+      const db = getDbForIpc('db:recordRendererMemorySample');
+      if (!db) return;
+      insertRendererMemorySample(db, {
+        captured_at: capturedAt,
+        bytes,
+        source,
+        app_version: app.getVersion(),
+        session_id: sessionId,
+      });
+    } catch (err) {
+      finishDbIpcHandler('db:recordRendererMemorySample', err);
+    }
+  },
+);
+
+ipcMain.handle('db:getRendererMemorySampleSummary', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('db:getRendererMemorySampleSummary: unauthorized sender');
+  }
+  try {
+    const db = getDbForIpc('db:getRendererMemorySampleSummary');
+    if (!db) {
+      return {
+        count: 0,
+        firstAt: null,
+        lastAt: null,
+        minBytes: null,
+        maxBytes: null,
+        spanMs: null,
+      };
+    }
+    return summarizeRendererMemorySamples(db);
+  } catch (err) {
+    finishDbIpcHandler('db:getRendererMemorySampleSummary', err);
   }
 });
 

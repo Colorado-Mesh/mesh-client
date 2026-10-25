@@ -1,5 +1,9 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  attachVoicePcmCapture,
+  type VoicePcmCaptureHandle,
+} from '@/renderer/lib/reticulum/voicePcmCapture';
+import {
   encodeF32LeBase64,
   packVoiceMemoFrame,
   VOICE_MEMO_FRAME_SAMPLES,
@@ -9,7 +13,7 @@ import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemo
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 import { isReticulumVoiceSessionBusy } from '@/shared/voice-types';
 
-/** ScriptProcessor buffer size (power of two). */
+/** Fallback ScriptProcessor buffer size (power of two); AudioWorklet uses its own quantum. */
 const PROCESSOR_BUFFER_SIZE = 2048;
 /** Maximum recording duration (~4 minutes). */
 const MAX_RECORD_MS = 4 * 60 * 1000;
@@ -19,11 +23,7 @@ const PENDING_RING_FRAMES = 16;
 interface MemoRecordingSession {
   audioCtx: AudioContext;
   source: MediaStreamAudioSourceNode;
-  // ScriptProcessor is deprecated in favor of AudioWorklet; kept for short memo capture.
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see comment above
-  processor: ScriptProcessorNode;
-  /** Zero-gain sink so ScriptProcessor runs without audible monitor bleed. */
-  silentGain: GainNode;
+  pcm: VoicePcmCaptureHandle;
   stream: MediaStream;
   sessionId: string;
   startedAt: number;
@@ -124,19 +124,9 @@ function teardownSession(
     flushPendingFrames(session, true);
   }
   try {
-    session.processor.disconnect();
+    session.pcm.disconnect();
   } catch {
-    // catch-no-log-ok: AudioWorkletNode may already be disconnected
-  }
-  try {
-    session.silentGain.disconnect();
-  } catch {
-    // catch-no-log-ok: GainNode may already be disconnected
-  }
-  try {
-    session.source.disconnect();
-  } catch {
-    // catch-no-log-ok: MediaStreamSource may already be disconnected
+    // catch-no-log-ok: capture graph may already be disconnected
   }
   try {
     void session.audioCtx.close();
@@ -228,19 +218,27 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
 
   let audioCtx: AudioContext;
   let source: MediaStreamAudioSourceNode;
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
-  let processor: ScriptProcessorNode;
-  let silentGain: GainNode;
+  let pcm: VoicePcmCaptureHandle;
   try {
     audioCtx = new AudioContext({ sampleRate: VOICE_MEMO_SAMPLE_RATE_HZ });
     source = audioCtx.createMediaStreamSource(stream);
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see processor note
-    processor = audioCtx.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
-    silentGain = audioCtx.createGain();
-    silentGain.gain.value = 0;
-    source.connect(processor);
-    processor.connect(silentGain);
-    silentGain.connect(audioCtx.destination);
+    pcm = await attachVoicePcmCapture(audioCtx, source, (channelData) => {
+      const session = activeSession;
+      if (session?.sessionId !== sessionId) return;
+      if (session.sendFailed) return;
+      const need = channelData.length;
+      if (session.pendingCount + need > session.pendingSamples.length) {
+        // Expand ring instead of dropping audio under brief backpressure.
+        const next = new Float32Array(
+          Math.max(session.pendingSamples.length * 2, session.pendingCount + need),
+        );
+        next.set(session.pendingSamples.subarray(0, session.pendingCount));
+        session.pendingSamples = next;
+      }
+      session.pendingSamples.set(channelData, session.pendingCount);
+      session.pendingCount += need;
+      flushPendingFrames(session, false);
+    });
   } catch (e) {
     console.warn('[reticulumVoiceMemo] audio graph setup failed:', errLikeToLogString(e));
     for (const track of stream.getTracks()) {
@@ -261,8 +259,7 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
   const session: MemoRecordingSession = {
     audioCtx,
     source,
-    processor,
-    silentGain,
+    pcm,
     stream,
     sessionId,
     startedAt: Date.now(),
@@ -278,25 +275,6 @@ export async function startReticulumVoiceMemo(): Promise<boolean> {
     maxTimer: setTimeout(() => {
       void stopReticulumVoiceMemo();
     }, MAX_RECORD_MS),
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
-  processor.onaudioprocess = (event) => {
-    if (activeSession?.sessionId !== sessionId || session.sendFailed) return;
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
-    const channelData = event.inputBuffer.getChannelData(0);
-    const need = channelData.length;
-    if (session.pendingCount + need > session.pendingSamples.length) {
-      // Expand ring instead of dropping audio under brief backpressure.
-      const next = new Float32Array(
-        Math.max(session.pendingSamples.length * 2, session.pendingCount + need),
-      );
-      next.set(session.pendingSamples.subarray(0, session.pendingCount));
-      session.pendingSamples = next;
-    }
-    session.pendingSamples.set(channelData, session.pendingCount);
-    session.pendingCount += need;
-    flushPendingFrames(session, false);
   };
 
   activeSession = session;

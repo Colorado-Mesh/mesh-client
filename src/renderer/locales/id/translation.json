@@ -502,7 +502,17 @@
     "memoryFailed": "Pengukuran memori gagal. Anda dapat mencoba lagi.",
     "memoryLatest": "Perkiraan terbaru: {{value}}",
     "memoryEmpty": "Belum ada pengukuran. Mulai pengukuran atau biarkan jendela terlihat.",
-    "memoryHistory": "Pengukuran terbaru"
+    "memoryHistory": "Pengukuran terbaru",
+    "memoryProcessOnly": "Menggunakan working - set proses renderer (api memori browser perlu diisolasi).",
+    "coiCapabilityTitle": "Kemampuan perenderan",
+    "coiCapabilityIsolated": "Terisolasi: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Tangkap utas WASM: {{count}}",
+    "coiCapabilityTiming": "Resolusi timer: {{value}}",
+    "coiYes": "Ya",
+    "coiNo": "tidak",
+    "coiTimingFine": "baik (~5 µs)",
+    "coiTimingCoarse": "kasar (~100 µs)"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -518,7 +518,17 @@
     "memoryFailed": "Pomiar pamięci nie powiódł się. Możesz spróbować ponownie.",
     "memoryLatest": "Ostatni szacunek: {{value}}",
     "memoryEmpty": "Brak pomiarów. Rozpocznij pomiar lub pozostaw okno widoczne.",
-    "memoryHistory": "Ostatnie pomiary"
+    "memoryHistory": "Ostatnie pomiary",
+    "memoryProcessOnly": "Korzystanie z zestawu roboczego procesu renderowania (interfejs API pamięci przeglądarki wymaga izolacji).",
+    "coiCapabilityTitle": "Możliwość renderowania",
+    "coiCapabilityIsolated": "Izolowany: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Nadrobić zaległości w wątkach WASM: {{count}}",
+    "coiCapabilityTiming": "Rozdzielczość timera: {{value}}",
+    "coiYes": "tak",
+    "coiNo": "nie",
+    "coiTimingFine": "drobny (~5 µs)",
+    "coiTimingCoarse": "gruboziarnisty (~100 µs)"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

@@ -83,8 +83,26 @@ describe('bundled AI worker lifecycle', () => {
         '[Catch up] model loaded',
         JSON.stringify({ elapsedMs: 2.5, threads: bundledWllamaThreadCount() }),
       ],
-      ['[Catch up] inference completed', JSON.stringify({ elapsedMs: 5 })],
-      ['[Catch up] inference completed', JSON.stringify({ elapsedMs: 4 })],
+      [
+        '[Catch up] inference completed',
+        JSON.stringify({
+          elapsedMs: 5,
+          threads: bundledWllamaThreadCount(),
+          memoryBeforeBytes: null,
+          memoryAfterBytes: null,
+          memoryDeltaBytes: null,
+        }),
+      ],
+      [
+        '[Catch up] inference completed',
+        JSON.stringify({
+          elapsedMs: 4,
+          threads: bundledWllamaThreadCount(),
+          memoryBeforeBytes: null,
+          memoryAfterBytes: null,
+          memoryDeltaBytes: null,
+        }),
+      ],
     ]);
   });
 

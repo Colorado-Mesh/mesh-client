@@ -43,6 +43,7 @@ import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } f
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
 import { getProtocolRegistration } from './protocols/protocolRegistry';
+import { getRendererTimingsSnapshot, type RendererTimingsSnapshot } from './rendererTimings';
 import {
   buildReticulumDiagnosticSnapshotSync,
   fetchReticulumDiagnosticSnapshot,
@@ -186,6 +187,17 @@ export interface DebugSnapshot {
   mainLiveness?: RendererLivenessSnapshot | null;
   /** Bounded renderer totals, separate from Node/main-process memory. */
   rendererMemory?: CoiMemorySnapshot;
+  /** Bounded high-res duration samples (Support / developer export). */
+  rendererTimings?: RendererTimingsSnapshot;
+  /** Durable memory sample summary (no raw rows). */
+  rendererMemoryDurable?: {
+    count: number;
+    firstAt: number | null;
+    lastAt: number | null;
+    minBytes: number | null;
+    maxBytes: number | null;
+    spanMs: number | null;
+  } | null;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
   meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];
   warnings: DebugSnapshotWarning[];
@@ -692,12 +704,20 @@ export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   } catch (e: unknown) {
     console.warn('[debugSnapshot] getRendererLiveness failed ' + errLikeToLogString(e));
   }
+  let rendererMemoryDurable: DebugSnapshot['rendererMemoryDurable'] = null;
+  try {
+    rendererMemoryDurable = await window.electronAPI.db.getRendererMemorySampleSummary();
+  } catch (e: unknown) {
+    console.warn('[debugSnapshot] getRendererMemorySampleSummary failed ' + errLikeToLogString(e));
+  }
   const base = buildDebugSnapshotBase(reticulumSidecar);
   const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
   return {
     ...base,
     mainLiveness,
     rendererMemory: getCoiMemorySnapshot(),
+    rendererTimings: getRendererTimingsSnapshot(),
+    rendererMemoryDurable,
     meshcoreContactPathDiagnostics,
     warnings: analyzeDebugSnapshot(base),
   };

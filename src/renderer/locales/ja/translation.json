@@ -502,7 +502,17 @@
     "memoryFailed": "メモリ測定に失敗しました。再試行できます。",
     "memoryLatest": "最新の推定値: {{value}}",
     "memoryEmpty": "まだ測定値がありません。測定を開始するか、ウィンドウを表示したままにしてください。",
-    "memoryHistory": "最近の測定値"
+    "memoryHistory": "最近の測定値",
+    "memoryProcessOnly": "レンダラープロセスのワーキングセットを使用します（ブラウザメモリAPIは分離が必要です）。",
+    "coiCapabilityTitle": "レンダラー機能",
+    "coiCapabilityIsolated": "Isolated: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer ： {{value}}",
+    "coiCapabilityThreads": "WASMスレッドのキャッチアップ： {{count}}",
+    "coiCapabilityTiming": "タイマー分解能： {{value}}",
+    "coiYes": "あり",
+    "coiNo": "なし",
+    "coiTimingFine": "細かい（〜5 µ s ）",
+    "coiTimingCoarse": "粗い（〜100 µ s ）"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

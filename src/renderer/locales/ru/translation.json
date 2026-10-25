@@ -518,7 +518,17 @@
     "memoryFailed": "Не удалось измерить память. Можно попробовать ещё раз.",
     "memoryLatest": "Последняя оценка: {{value}}",
     "memoryEmpty": "Измерений пока нет. Запустите измерение или оставьте окно видимым.",
-    "memoryHistory": "Последние измерения"
+    "memoryHistory": "Последние измерения",
+    "memoryProcessOnly": "Использование рабочего набора процессов рендерера (API памяти браузера нуждается в изоляции).",
+    "coiCapabilityTitle": "Возможность рендеринга",
+    "coiCapabilityIsolated": "Изолировано: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Поймайте резьбу WASM: {{count}}",
+    "coiCapabilityTiming": "Разрешение таймера: {{value}}",
+    "coiYes": "да",
+    "coiNo": "нет",
+    "coiTimingFine": "тонкий (~5 мкс)",
+    "coiTimingCoarse": "грубая (~100 мкс)"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

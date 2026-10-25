@@ -86,14 +86,19 @@ describe('App Support memory diagnostics', () => {
     expect(screen.getByRole('button', { name: 'Sample now' })).toBeEnabled();
   });
 
-  it.each([
-    [{ crossOriginIsolated: false }, /requires cross-origin isolation/],
-    [{ supported: false }, /does not support memory sampling/],
-  ] as const)('explains unavailable sampling: %j', (state, explanation) => {
-    memory.snapshot = { ...memory.snapshot, ...state };
+  it('explains recovery mode when not isolated', () => {
+    memory.snapshot = { ...memory.snapshot, crossOriginIsolated: false, supported: true };
     const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
     openMemoryDetails(container);
-    expect(screen.getByText(explanation)).toBeInTheDocument();
+    expect(screen.getByText(/recovery mode/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sample now' })).toBeEnabled();
+  });
+
+  it('disables sampling when no API is available', () => {
+    memory.snapshot = { ...memory.snapshot, supported: false };
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
+    expect(screen.getByText(/does not support memory sampling/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sample now' })).toBeDisabled();
   });
 

@@ -502,7 +502,17 @@
     "memoryFailed": "Geheugenmeting mislukt. U kunt het opnieuw proberen.",
     "memoryLatest": "Laatste schatting: {{value}}",
     "memoryEmpty": "Nog geen metingen. Start een meting of laat het venster zichtbaar.",
-    "memoryHistory": "Recente metingen"
+    "memoryHistory": "Recente metingen",
+    "memoryProcessOnly": "Gebruik van renderer-proceswerkset (browsergeheugen-API heeft isolatie nodig).",
+    "coiCapabilityTitle": "Renderer-capaciteit",
+    "coiCapabilityIsolated": "Geïsoleerd: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "WASM-threads inhalen: {{count}}",
+    "coiCapabilityTiming": "Timerresolutie: {{value}}",
+    "coiYes": "Ja",
+    "coiNo": "nee",
+    "coiTimingFine": "fijn (~5 µs)",
+    "coiTimingCoarse": "grof (~100 µs)"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

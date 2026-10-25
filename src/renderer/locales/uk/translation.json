@@ -518,7 +518,17 @@
     "memoryFailed": "Не вдалося виміряти пам’ять. Можна спробувати ще раз.",
     "memoryLatest": "Остання оцінка: {{value}}",
     "memoryEmpty": "Вимірювань ще немає. Почніть вимірювання або залиште вікно видимим.",
-    "memoryHistory": "Останні вимірювання"
+    "memoryHistory": "Останні вимірювання",
+    "memoryProcessOnly": "Використання робочого набору процесів рендерера (API пам'яті браузера потребує ізоляції).",
+    "coiCapabilityTitle": "Можливість рендеринга",
+    "coiCapabilityIsolated": "Ізольовано: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Спіймати потоки WASM: {{count}}",
+    "coiCapabilityTiming": "Роздільна здатність таймера: {{value}}",
+    "coiYes": "yes",
+    "coiNo": "НІ",
+    "coiTimingFine": "тонкий (~5 мкс)",
+    "coiTimingCoarse": "груба (~100 мкс)"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

@@ -513,6 +513,22 @@ export interface ElectronAPI {
     setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<void>;
     getNodeNote: (nodeId: number) => Promise<string | null>;
     setNodeNote: (nodeId: number, note: string) => Promise<void>;
+    /** Persist a COI / process memory sample (retention-bounded in main). */
+    recordRendererMemorySample: (sample: {
+      capturedAt: number;
+      bytes: number;
+      source: 'user-agent' | 'renderer-process';
+      sessionId?: string;
+    }) => Promise<void>;
+    /** Compact summary for Support bundles (no raw rows). */
+    getRendererMemorySampleSummary: () => Promise<{
+      count: number;
+      firstAt: number | null;
+      lastAt: number | null;
+      minBytes: number | null;
+      maxBytes: number | null;
+      spanMs: number | null;
+    }>;
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;

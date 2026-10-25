@@ -399,6 +399,32 @@ describe('diagnosticsStore distanceOffsetKm', () => {
   });
 });
 
+describe('recordPacketPath redundancy', () => {
+  beforeEach(() => {
+    useDiagnosticsStore.getState().clearDiagnostics();
+  });
+
+  afterEach(() => {
+    useDiagnosticsStore.getState().clearDiagnostics();
+  });
+
+  it('tracks last-20 packets incrementally without requiring a full cache scan', () => {
+    const store = useDiagnosticsStore.getState();
+    const path = { transport: 'rf' as const, timestamp: Date.now(), snr: 5 };
+    for (let i = 1; i <= 25; i += 1) {
+      store.recordPacketPath(1000 + i, 42, path);
+    }
+    // Second sighting of an older packet updates paths and re-enters the recent window.
+    store.recordPacketPath(1001, 42, { ...path, snr: 6 });
+    const redundancy = useDiagnosticsStore.getState().nodeRedundancy.get(42);
+    expect(redundancy).toBeDefined();
+    expect(redundancy!.recentPackets).toHaveLength(20);
+    expect(redundancy!.recentPackets.some((p) => p.packetId === 1001)).toBe(true);
+    expect(redundancy!.maxPaths).toBeGreaterThanOrEqual(2);
+    expect(redundancy!.score).toBeGreaterThan(0);
+  });
+});
+
 describe('computeCuStats24h', () => {
   it('returns null for empty samples', () => {
     expect(computeCuStats24h([])).toBeNull();

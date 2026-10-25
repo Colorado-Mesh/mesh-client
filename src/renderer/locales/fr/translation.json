@@ -502,7 +502,17 @@
     "memoryFailed": "La mesure de mémoire a échoué. Vous pouvez réessayer.",
     "memoryLatest": "Dernière estimation : {{value}}",
     "memoryEmpty": "Aucune mesure pour le moment. Lancez une mesure ou laissez la fenêtre visible.",
-    "memoryHistory": "Mesures récentes"
+    "memoryHistory": "Mesures récentes",
+    "memoryProcessOnly": "Utilisation de l'ensemble de travail du processus de rendu (l'API de mémoire du navigateur doit être isolée).",
+    "coiCapabilityTitle": "Fonctionnalité de rendu",
+    "coiCapabilityIsolated": "Isolé : {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer : {{value}}",
+    "coiCapabilityThreads": "Retrouvez les fils WASM : {{count}}",
+    "coiCapabilityTiming": "Résolution de la minuterie : {{value}}",
+    "coiYes": "oui",
+    "coiNo": "non=",
+    "coiTimingFine": "fin (~5 µs)",
+    "coiTimingCoarse": "grossier (~100 µs)"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

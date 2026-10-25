@@ -155,16 +155,21 @@ single-thread path for unavailable isolation and force-file recovery.
 
 The renderer memory sampler uses `performance.measureUserAgentSpecificMemory` only when the
 browser exposes it and isolation is active. Its bounded sample history feeds the Support memory
-card and debug snapshot. Electron may expose the browser API but reject it with `SecurityError`; in
-that case the sampler uses the requesting renderer process working-set metric from
+card and debug snapshot. Samples are also written to SQLite `renderer_memory_samples` (retention
+capped) so Support bundles can include a durable summary without raw rows. Electron may expose the
+browser API but reject it with `SecurityError`; in that case — and on force-file recovery without
+isolation — the sampler uses the requesting renderer process working-set metric from
 [`app.getAppMetrics()`](https://www.electronjs.org/docs/latest/api/app#appgetappmetrics). The UI and
 sample `source` explicitly identify physical process RAM, and histories reset if measurement
-scope changes. The native fallback remains COI-gated. These measurements are useful for trends; the main
-process's Node heap figure measures a different allocation domain. No full heap profiler or
-automatic leak diagnosis is implied.
+scope changes. These measurements are useful for trends; the main process's Node heap figure
+measures a different allocation domain. No full heap profiler or automatic leak diagnosis is
+implied.
 
-Use `performance.now()` for elapsed renderer durations such as Catch up work. Keep `Date.now()`
-for persisted timestamps, message times, last-heard values, and other wall-clock records. No
+Use `performance.now()` for elapsed renderer durations such as Catch up work and the Support
+`rendererTimings` ring. Keep `Date.now()` for persisted timestamps, message times, last-heard
+values, and other wall-clock records. When isolated, a SAB-backed analysis worker pool can offload
+topology layout and diagnostics analyze batches; without isolation the same jobs run inline. Catch
+up WASM thread count and isolation state are shown on App → Support. No
 Document-Isolation-Policy or JavaScript Self-Profiling dependency is needed for this cutover.
 
 Web Serial permissions are origin-scoped: an existing serial user may need to choose the port

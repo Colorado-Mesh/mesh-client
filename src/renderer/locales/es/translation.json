@@ -502,7 +502,17 @@
     "memoryFailed": "La medición de memoria falló. Puedes volver a intentarlo.",
     "memoryLatest": "Última estimación: {{value}}",
     "memoryEmpty": "Aún no hay mediciones. Inicia una o deja la ventana visible.",
-    "memoryHistory": "Mediciones recientes"
+    "memoryHistory": "Mediciones recientes",
+    "memoryProcessOnly": "Usar el conjunto de trabajo del proceso de renderizado (la API de memoria del navegador necesita aislamiento).",
+    "coiCapabilityTitle": "Capacidad de renderizador",
+    "coiCapabilityIsolated": "Aislado: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Póngase al día con los hilos WASM: {{count}}",
+    "coiCapabilityTiming": "Resolución del temporizador: {{value}}",
+    "coiYes": "sí",
+    "coiNo": "no",
+    "coiTimingFine": "fino (~5 µs)",
+    "coiTimingCoarse": "grueso (~100 µs)"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

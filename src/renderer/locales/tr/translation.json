@@ -502,7 +502,17 @@
     "memoryFailed": "Bellek ölçümü başarısız oldu. Yeniden deneyebilirsiniz.",
     "memoryLatest": "Son tahmin: {{value}}",
     "memoryEmpty": "Henüz ölçüm yok. Bir ölçüm başlatın veya pencereyi görünür bırakın.",
-    "memoryHistory": "Son ölçümler"
+    "memoryHistory": "Son ölçümler",
+    "memoryProcessOnly": "Oluşturucu işlem çalışma setini kullanma (tarayıcı belleği API'sinin izolasyona ihtiyacı vardır).",
+    "coiCapabilityTitle": "Renderer kapasitesi",
+    "coiCapabilityIsolated": "İzole: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "WASM konularını takip edin: {{count}}",
+    "coiCapabilityTiming": "Zamanlayıcı çözünürlüğü: {{value}}",
+    "coiYes": "evet",
+    "coiNo": "hayır",
+    "coiTimingFine": "ince (~5 µs)",
+    "coiTimingCoarse": "kaba (~100 µs)"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

@@ -4,6 +4,7 @@ import type { AiLocalJob } from '@/shared/ai-types';
 import { AI_MAX_OUTPUT_TOKENS } from '@/shared/ai-types';
 
 import { hasRepetitiveAiOutput, RepetitiveAiOutputError } from './aiSummaryOutput';
+import { getCoiMemorySnapshot } from './coiMemorySampler';
 
 export type AiWorkerPhase = 'loadingModel' | 'readingMessages';
 
@@ -137,6 +138,8 @@ export class AiWorkerHost {
       onPhase?.('readingMessages');
       let text = '';
       const inferenceStartedAt = performance.now();
+      const memoryBefore = getCoiMemorySnapshot().samples.at(-1)?.bytes;
+      const threads = bundledWllamaThreadCount();
       await raced(
         this.runtime.createChatCompletion({
           ...sampling,
@@ -161,10 +164,16 @@ export class AiWorkerHost {
       );
       signal.throwIfAborted();
       if (hasRepetitiveAiOutput(text)) throw new RepetitiveAiOutputError();
+      const memoryAfter = getCoiMemorySnapshot().samples.at(-1)?.bytes;
       console.debug(
         '[Catch up] inference completed',
         JSON.stringify({
           elapsedMs: performance.now() - inferenceStartedAt,
+          threads,
+          memoryBeforeBytes: memoryBefore ?? null,
+          memoryAfterBytes: memoryAfter ?? null,
+          memoryDeltaBytes:
+            memoryBefore != null && memoryAfter != null ? memoryAfter - memoryBefore : null,
         }),
       );
       completed = true;

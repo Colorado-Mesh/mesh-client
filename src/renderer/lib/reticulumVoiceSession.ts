@@ -5,6 +5,10 @@
 import { pushAppToast } from '@/renderer/components/Toast';
 import i18n from '@/renderer/lib/i18n';
 import {
+  attachVoicePcmCapture,
+  type VoicePcmCaptureHandle,
+} from '@/renderer/lib/reticulum/voicePcmCapture';
+import {
   encodeF32LeBase64,
   LXST_QUALITY_HIGH_CHANNELS,
   LXST_QUALITY_HIGH_FRAME_SAMPLES,
@@ -35,12 +39,7 @@ import { isReticulumVoiceSessionBusy, isVoiceStatusResponse } from '@/shared/voi
 
 let captureCtx: AudioContext | null = null;
 let captureSource: MediaStreamAudioSourceNode | null = null;
-// ScriptProcessor is deprecated in favor of AudioWorklet; kept for first-slice PCM
-// capture without shipping a worklet module (Electron getUserMedia path).
-// eslint-disable-next-line @typescript-eslint/no-deprecated -- see comment above
-let captureProcessor: ScriptProcessorNode | null = null;
-/** Muted sink so ScriptProcessor stays in the graph without mic monitor playback. */
-let captureGain: GainNode | null = null;
+let capturePcm: VoicePcmCaptureHandle | null = null;
 let captureStream: MediaStream | null = null;
 let captureGeneration = 0;
 let playbackCtx: AudioContext | null = null;
@@ -73,22 +72,15 @@ function discardCaptureResources(
   stream: MediaStream | null,
   ctx: AudioContext | null,
   source: MediaStreamAudioSourceNode | null,
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
-  processor: ScriptProcessorNode | null,
-  gain: GainNode | null,
+  pcm: VoicePcmCaptureHandle | null,
 ): void {
   try {
-    processor?.disconnect();
+    pcm?.disconnect();
   } catch {
     // catch-no-log-ok
   }
   try {
     source?.disconnect();
-  } catch {
-    // catch-no-log-ok
-  }
-  try {
-    gain?.disconnect();
   } catch {
     // catch-no-log-ok
   }
@@ -181,10 +173,9 @@ function stopCapture(): void {
     txTimer = null;
   }
   pendingSamples = [];
-  discardCaptureResources(captureStream, captureCtx, captureSource, captureProcessor, captureGain);
-  captureProcessor = null;
+  discardCaptureResources(captureStream, captureCtx, captureSource, capturePcm);
+  capturePcm = null;
   captureSource = null;
-  captureGain = null;
   captureStream = null;
   captureCtx = null;
 }
@@ -278,9 +269,7 @@ async function startCaptureAndTx(): Promise<void> {
   let stream: MediaStream | null = null;
   let ctx: AudioContext | null = primed;
   let source: MediaStreamAudioSourceNode | null = null;
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see captureProcessor note
-  let processor: ScriptProcessorNode | null = null;
-  let gain: GainNode | null = null;
+  let pcm: VoicePcmCaptureHandle | null = null;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -290,7 +279,7 @@ async function startCaptureAndTx(): Promise<void> {
       },
     });
     if (generation !== captureGeneration) {
-      discardCaptureResources(stream, ctx, null, null, null);
+      discardCaptureResources(stream, ctx, null, null);
       return;
     }
     if (!ctx || ctx.state === 'closed') {
@@ -298,19 +287,12 @@ async function startCaptureAndTx(): Promise<void> {
     }
     await resumeAudioContext(ctx);
     if (generation !== captureGeneration) {
-      discardCaptureResources(stream, ctx, null, null, null);
+      discardCaptureResources(stream, ctx, null, null);
       return;
     }
     source = ctx.createMediaStreamSource(stream);
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- AudioWorklet deferred; see captureProcessor note
-    processor = ctx.createScriptProcessor(4096, 1, 1);
-    gain = ctx.createGain();
-    gain.gain.value = 0;
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
-    processor.onaudioprocess = (ev) => {
+    pcm = await attachVoicePcmCapture(ctx, source, (input) => {
       if (useReticulumVoiceStore.getState().microphoneMuted) return;
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- paired with createScriptProcessor
-      const input = ev.inputBuffer.getChannelData(0);
       for (const s of input) {
         pendingSamples.push(s);
       }
@@ -319,23 +301,19 @@ async function startCaptureAndTx(): Promise<void> {
         pendingSamples.splice(0, drop);
         noteLocalTxDrop('pending_samples_cap');
       }
-    };
-    source.connect(processor);
-    processor.connect(gain);
-    gain.connect(ctx.destination);
+    });
 
     if (generation !== captureGeneration) {
-      discardCaptureResources(stream, ctx, source, processor, gain);
+      discardCaptureResources(stream, ctx, source, pcm);
       return;
     }
 
     captureStream = stream;
     captureCtx = ctx;
     captureSource = source;
-    captureProcessor = processor;
-    captureGain = gain;
+    capturePcm = pcm;
   } catch (e) {
-    discardCaptureResources(stream, ctx, source, processor, gain);
+    discardCaptureResources(stream, ctx, source, pcm);
     throw e;
   }
 
