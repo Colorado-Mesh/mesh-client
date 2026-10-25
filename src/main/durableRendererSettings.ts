@@ -4,7 +4,11 @@ import {
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
   RENDERER_STORAGE_DELETION_SETTING_PREFIX,
 } from '../shared/rendererOrigin';
-import { hasEstablishedRendererPreferenceValues } from '../shared/rendererPreferences';
+import {
+  explicitResetPreferenceBaselineJson,
+  hasEstablishedRendererPreferenceValues,
+  isExplicitResetPreferenceBaseline,
+} from '../shared/rendererPreferences';
 import type { NodeSqliteDB } from './db-compat';
 import { withFullSqliteSync } from './sqliteDurability';
 
@@ -73,14 +77,15 @@ export function seedDurableRendererSettings(
       if (value.length > DURABLE_RENDERER_SETTING_MAX_LENGTH) {
         throw new Error(`Renderer migration setting exceeds storage limit: ${databaseKey}`);
       }
-      // An empty preference map (clear write-through) must not block repair from replacing it.
+      // Origin repair may replace a plain empty clear() envelope, but never an explicit-reset baseline.
       if (databaseKey === DURABLE_RENDERER_STORAGE_KEYS.preferences) {
         const existing = db
           .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
           .get(databaseKey) as { value: string } | undefined;
         if (
           hasEstablishedRendererPreferenceValues(value) &&
-          !hasEstablishedRendererPreferenceValues(existing?.value)
+          !hasEstablishedRendererPreferenceValues(existing?.value) &&
+          !isExplicitResetPreferenceBaseline(existing?.value)
         ) {
           db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)').run(
             databaseKey,
@@ -102,7 +107,7 @@ export function seedDurableRendererSettings(
 export function resetDurableRendererData(db: NodeSqliteDB): void {
   const keys = DURABLE_RENDERER_STORAGE_KEYS;
   const emptySettings = [
-    [keys.preferences, JSON.stringify({ legacyAliasesImported: true, values: {} })],
+    [keys.preferences, explicitResetPreferenceBaselineJson()],
     [keys.chatLastRead.meshtastic, '{}'],
     [keys.chatLastRead.meshcore, '{}'],
     [keys.chatLastRead.reticulum, '{}'],

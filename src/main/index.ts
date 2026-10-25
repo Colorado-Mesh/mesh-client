@@ -736,13 +736,12 @@ function safeNonNegativeInt(value: unknown): number {
   return n >>> 0;
 }
 
-/** Full-range non-negative safe integer (no 32-bit `>>> 0` coercion). */
+/** Full-range non-negative safe integer (no 32-bit `>>> 0` coercion; numbers only). */
 function safeNonNegativeSafeInteger(value: unknown): number {
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isSafeInteger(n) || n < 0) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
     throw new Error('Invalid non-negative safe integer');
   }
-  return n;
+  return value;
 }
 
 /** MeshCore chat channel index (-2 Rooms, -1 DMs, 0+ group channels). */

@@ -122,9 +122,10 @@ export function createAnalysisWorkerPool(options: AnalysisWorkerPoolOptions = {}
       if (!w) return runAnalysisJob(request);
       return new Promise<AnalysisJobResult>((resolve, reject) => {
         const timeoutId = setTimeout(() => {
-          const waiter = clearPending(request.sequence);
-          if (!waiter) return;
-          waiter.reject(new Error('analysis worker request timed out'));
+          if (!pending.has(request.sequence)) return;
+          // Wedged worker: drop it and fail every waiter so ensureWorker() can recreate.
+          disposeWorker();
+          rejectAllPending(new Error('analysis worker request timed out'));
         }, ANALYSIS_WORKER_REQUEST_TIMEOUT_MS);
         pending.set(request.sequence, { resolve, reject, timeoutId });
         try {

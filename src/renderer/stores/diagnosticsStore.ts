@@ -1534,25 +1534,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
               '[diagnosticsStore] worker analyze batch failed; inline ' + errLikeToLogString(err),
             );
             if (generation !== diagnosticsReanalysisGeneration) return;
-            for (const [nodeId, node] of remoteEntries) {
-              const anomaly = analyzeNode(
-                node,
-                state.packetStats.get(nodeId),
-                homeNode,
-                state.hopHistory.get(nodeId) ?? [],
-                state.ignoreMqttEnabled || state.mqttIgnoredNodes.has(nodeId),
-                distanceMultiplier,
-                state.distanceOffsetKm,
-                hopsThreshold,
-                capabilities,
-                getNoiseStatsForNode(state.noiseRateStats, nodeId),
-                state.meshcoreTraceHistory.get(nodeId)?.at(-1)?.pathSnrs,
-                state.pathUpdatedTimestamps.get(nodeId),
-              );
-              if (anomaly) newAnomalies.set(nodeId, anomaly);
-              else newAnomalies.delete(nodeId);
-            }
-            finishAfterRouting();
+            runChunkedRouting();
           });
       });
     }, reanalysisDelayMs);
@@ -1663,6 +1645,8 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
 
   clearDiagnostics(options) {
     const preserveForeignLora = options?.preserveForeignLora === true;
+    // Invalidate in-flight reanalysis so worker/chunked results cannot restore cleared rows.
+    diagnosticsReanalysisGeneration += 1;
     if (diagnosticsDebounce.incrementalAnalysisTimer)
       clearTimeout(diagnosticsDebounce.incrementalAnalysisTimer);
     diagnosticsDebounce.incrementalAnalysisTimer = null;

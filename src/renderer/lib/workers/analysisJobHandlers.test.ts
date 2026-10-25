@@ -155,6 +155,8 @@ describe('analysisWorkerPool', () => {
       const expectation = expect(pending).rejects.toThrow(/timed out/);
       await vi.advanceTimersByTimeAsync(ANALYSIS_WORKER_REQUEST_TIMEOUT_MS);
       await expectation;
+      expect(worker.terminate).toHaveBeenCalled();
+      expect(pool.hasAttachedWorker()).toBe(false);
       pool.dispose();
     } finally {
       vi.useRealTimers();
