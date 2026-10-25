@@ -297,6 +297,27 @@ export async function openAppTab(page: Page): Promise<void> {
   await expectPanelOpen(page, 'App');
 }
 
+/**
+ * Open collapsed `<details>` around a settings-search anchor (and nested details under it), then
+ * scroll the anchor into view. Mirrors renderer `revealSettingAnchor` for E2E after App sections
+ * became collapsed-by-default (`SettingsCollapsible`).
+ */
+export async function revealSettingInPage(page: Page, anchorId: string): Promise<void> {
+  const found = await page.evaluate((id) => {
+    const el = document.querySelector<HTMLElement>(`[data-setting-anchor="${id}"]`);
+    if (!el) return false;
+    for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+      if (node instanceof HTMLDetailsElement && !node.open) node.open = true;
+    }
+    for (const nested of el.querySelectorAll('details')) {
+      if (!nested.open) nested.open = true;
+    }
+    el.scrollIntoView({ block: 'center' });
+    return true;
+  }, anchorId);
+  expect(found, `settings anchor "${anchorId}"`).toBe(true);
+}
+
 /** Visible tabpanel, named by its sub-tab (or by the section title for single-panel sections). */
 export async function expectPanelOpen(page: Page, name: string): Promise<void> {
   await expect(page.getByRole('tabpanel', { name: navName(name) })).toBeVisible();

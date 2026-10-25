@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-import { closeApp, disposeUserData, launchApp, openAppTab, teardownApp } from './electronApp';
+import {
+  closeApp,
+  disposeUserData,
+  launchApp,
+  openAppTab,
+  revealSettingInPage,
+  teardownApp,
+} from './electronApp';
 
 function asError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
@@ -17,8 +24,8 @@ test.describe('settings relaunch', () => {
     let cleanupError: unknown;
     try {
       await openAppTab(launched.page);
+      await revealSettingInPage(launched.page, 'app.appearance.reduceMotion');
       const reduceMotion = launched.page.getByRole('checkbox', { name: 'Reduce motion' });
-      await reduceMotion.scrollIntoViewIfNeeded();
       await expect(reduceMotion).toBeVisible();
       if (!(await reduceMotion.isChecked())) {
         await reduceMotion.check();
@@ -29,8 +36,8 @@ test.describe('settings relaunch', () => {
 
       launched = await launchApp({ userDataDir, retainUserData: true });
       await openAppTab(launched.page);
+      await revealSettingInPage(launched.page, 'app.appearance.reduceMotion');
       const reduceMotionAgain = launched.page.getByRole('checkbox', { name: 'Reduce motion' });
-      await reduceMotionAgain.scrollIntoViewIfNeeded();
       await expect(reduceMotionAgain).toBeChecked();
     } catch (err) {
       testError = err;

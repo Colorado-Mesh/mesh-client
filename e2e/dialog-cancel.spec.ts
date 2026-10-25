@@ -5,6 +5,7 @@ import {
   launchApp,
   type LaunchedApp,
   openAppTab,
+  revealSettingInPage,
   stubSaveDialogCanceled,
   teardownApp,
 } from './electronApp';
@@ -23,11 +24,11 @@ test.describe('dialog cancel', () => {
 
     try {
       await openAppTab(launched.page);
+      await revealSettingInPage(launched.page, 'app.support.exportForGitHub');
       // Accessible name is aria-label (appPanel.exportForGitHub), not the visible button text.
       const exportBtn = launched.page.getByRole('button', {
         name: 'Export support bundle for GitHub',
       });
-      await exportBtn.scrollIntoViewIfNeeded();
       await expect(exportBtn).toBeVisible();
       await exportBtn.click();
 
