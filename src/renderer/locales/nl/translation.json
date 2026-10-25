@@ -5304,7 +5304,8 @@
     "establishRecoveryDualTcpTip": "Twee of meer TCP-interfaces zijn ingeschakeld. Kondig aan en de synchronisatielink kan op verschillende paden vertrekken — schakel één backbone uit onder Verbindingsinterfaces, kondig → vervolgens aan en probeer het opnieuw.",
     "establishRecoveryOpenInterfaces": "Open interfaces",
     "establishRecoveryOpenInterfacesAria": "Open verbindingsinterfaces om TCP-backbones aan te passen",
-    "syncRequestFailed": "Propagatiesynchronisatie bereikte het knooppunt, maar het verzoek werd niet voltooid. Het zal het opnieuw proberen bij de volgende synchronisatie."
+    "syncRequestFailed": "Propagatiesynchronisatie bereikte het knooppunt, maar het verzoek werd niet voltooid. Het zal het opnieuw proberen bij de volgende synchronisatie.",
+    "syncEstablishTimeout": "Er is een time-out voor de doorgifte-synchronisatie opgetreden tijdens het tot stand brengen van een link naar dit knooppunt — het kan traag of onbereikbaar zijn. Andere knooppunten kunnen nog steeds werken."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

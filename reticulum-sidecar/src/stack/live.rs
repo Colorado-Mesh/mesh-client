@@ -96,8 +96,8 @@ use super::rrc_session::RrcSessionManager;
 use super::types::NomadServingStatus;
 use super::types::{ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest, PeerRow};
 use super::via::{
-    classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
-    resolve_lxmf_sent_via,
+    classify_interface, classify_path_interface_name, merge_live_interfaces_with_config,
+    merge_observed_egress_vias, resolve_lxmf_sent_via,
 };
 use super::voice_session::VoiceSessionManager;
 use crate::api::path_capability::ConsumedPathCapability;
@@ -3605,6 +3605,7 @@ impl LiveBridge {
                         Some(on_terminal),
                         false,
                         retrieve_mode,
+                        None,
                     );
                     if started {
                         tracing::info!(
@@ -4797,6 +4798,7 @@ impl LiveBridge {
             self.event_tx.clone(),
             Some(on_terminal),
             true,
+            hops,
         ) {
             // Download did not start — drop our claim only if this run still owns it.
             // Never wipe another owner's latch (overlapping silent `/get` / Sync).
@@ -4831,6 +4833,7 @@ impl LiveBridge {
         event_tx: broadcast::Sender<String>,
         on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
         emit_ui: bool,
+        initial_path_hops: Option<u8>,
     ) -> bool {
         spawn_client_download_driver_task(
             live,
@@ -4846,6 +4849,7 @@ impl LiveBridge {
             on_terminal,
             emit_ui,
             if emit_ui { "get" } else { "get_post_peer" },
+            initial_path_hops,
         )
     }
 
@@ -7099,6 +7103,14 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.public_key == b.public_key
 }
 
+/// Resolve Link initiator hops for PN Sync client `/get` (Nomad TCP hop scaling).
+fn resolve_propagation_link_hops(iface: Option<&str>, path_hops: u8) -> (u8, &'static str, u64) {
+    let egress = iface.map(classify_interface).unwrap_or("network");
+    let link_hops = nomad_timeouts::propagation_link_initiator_hops(egress, path_hops.max(1));
+    let proof_budget_secs = nomad_timeouts::propagation_link_proof_budget_secs(link_hops);
+    (link_hops, egress, proof_budget_secs)
+}
+
 /// After establish failure, suppress dead iface/via and retry client `/get` on another hub.
 #[allow(clippy::too_many_arguments)] // mirrors Nomad path failover state threaded through driver loop
 async fn propagation_download_attempt_failover(
@@ -7113,6 +7125,7 @@ async fn propagation_download_attempt_failover(
     live_ifaces: &[String],
     current_iface: &mut Option<String>,
     current_via: &mut Option<String>,
+    path_hops: &mut u8,
 ) -> bool {
     if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
         return false;
@@ -7135,18 +7148,25 @@ async fn propagation_download_attempt_failover(
     {
         *current_iface = found.iface.clone();
         *current_via = found.via.clone();
+        *path_hops = found.hops.max(1);
     }
+    let (link_hops, egress, proof_budget_secs) =
+        resolve_propagation_link_hops(current_iface.as_deref(), *path_hops);
     tracing::info!(
         target: "propagation-sync",
         pn_hash = %pn_hex,
         failover_round = *failover_round,
         iface = ?current_iface,
         via_prefix = via_prefix(current_via.as_deref()),
+        path_hops = *path_hops,
+        link_hops,
+        egress,
+        proof_budget_secs,
         establish_error = ?bridge.last_establish_error(),
         tried_interfaces = ?tried_interfaces,
         "propagation client /get establish failover"
     );
-    bridge.start_client_download(pn_hash)
+    bridge.start_client_download(pn_hash, link_hops)
 }
 
 /// Shared client `/get` driver used by user Sync (`emit_ui: true`) and post-peer
@@ -7166,8 +7186,23 @@ fn spawn_client_download_driver_task(
     on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
     emit_ui: bool,
     retrieve_mode: &'static str,
+    initial_path_hops: Option<u8>,
 ) -> bool {
-    if !bridge.start_client_download(pn_hash) {
+    // Path-scaled hops before Link start (TCP floor 3) — avoids the overnight
+    // 6s hops=1 establish timeout when path_hops is already known from sync.
+    let mut path_hops = initial_path_hops.unwrap_or(1).max(1);
+    let (link_hops, egress, proof_budget_secs) = resolve_propagation_link_hops(None, path_hops);
+    tracing::info!(
+        target: "propagation-retrieve",
+        pn_hash = %pn_hex,
+        path_hops,
+        link_hops,
+        egress,
+        proof_budget_secs,
+        retrieve_mode,
+        "starting client /get download"
+    );
+    if !bridge.start_client_download(pn_hash, link_hops) {
         tracing::debug!(
             target: "propagation-retrieve",
             pn_hash = %pn_hex,
@@ -7197,15 +7232,19 @@ fn spawn_client_download_driver_task(
             }
             if let Ok((slots, _)) = live_ref.path_slots(&pn_hex).await {
                 current_via = active_via_hash_from_slots(&slots);
-                current_iface = slots
-                    .iter()
-                    .find(|s| {
-                        s.get("active")
-                            .and_then(serde_json::Value::as_bool)
-                            .unwrap_or(false)
-                    })
-                    .and_then(|s| s.get("interface").and_then(|v| v.as_str()))
-                    .map(str::to_string);
+                if let Some(active) = slots.iter().find(|s| {
+                    s.get("active")
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false)
+                }) {
+                    current_iface = active
+                        .get("interface")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string);
+                    if let Some(h) = active.get("hops").and_then(serde_json::Value::as_u64) {
+                        path_hops = (h as u8).max(1);
+                    }
+                }
             }
             record_path_failover_attempt(
                 &mut tried_interfaces,
@@ -7324,11 +7363,19 @@ fn spawn_client_download_driver_task(
                         &live_ifaces,
                         &mut current_iface,
                         &mut current_via,
+                        &mut path_hops,
                     )
                     .await
                     {
                         continue 'attempt;
                     }
+                    record_path_failover_attempt(
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        current_iface.as_deref(),
+                        current_via.as_deref(),
+                    );
                     let message =
                         terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
                     run_guarded(&|| {
@@ -7354,11 +7401,19 @@ fn spawn_client_download_driver_task(
                         &live_ifaces,
                         &mut current_iface,
                         &mut current_via,
+                        &mut path_hops,
                     )
                     .await
                     {
                         continue 'attempt;
                     }
+                    record_path_failover_attempt(
+                        &mut tried_interfaces,
+                        &mut blocked_ifaces,
+                        &mut blocked_vias,
+                        current_iface.as_deref(),
+                        current_via.as_deref(),
+                    );
                     let message = terminal_download_failure(
                         &bridge,
                         progress,
@@ -7405,11 +7460,19 @@ fn spawn_client_download_driver_task(
                                 &live_ifaces,
                                 &mut current_iface,
                                 &mut current_via,
+                                &mut path_hops,
                             )
                             .await
                         {
                             continue 'attempt;
                         }
+                        record_path_failover_attempt(
+                            &mut tried_interfaces,
+                            &mut blocked_ifaces,
+                            &mut blocked_vias,
+                            current_iface.as_deref(),
+                            current_via.as_deref(),
+                        );
                         let message = terminal_download_failure(
                             &bridge,
                             progress,

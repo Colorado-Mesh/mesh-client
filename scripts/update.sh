@@ -314,6 +314,7 @@ check_ratspeak_patches() {
     'rsLXMF-link-delivery-has-pending-to.patch|ratspeak/rsLXMF||rsLXMF LinkDeliveryManager has_pending_to|'
     'rsLXMF-propagation-client-abort-transfer.patch|ratspeak/rsLXMF||rsLXMF PropagationClient abort_transfer for cancelled Sync|'
     'rsLXMF-propagation-client-lrproof-diagnostics.patch|ratspeak/rsLXMF||rsLXMF PropagationClient LRPROOF establish diagnostics|'
+    'rsLXMF-propagation-client-link-hops.patch|ratspeak/rsLXMF||rsLXMF PropagationClient path-scaled link hops + LinkEstablishTimeout|'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0

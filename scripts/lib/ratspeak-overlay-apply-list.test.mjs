@@ -43,6 +43,7 @@ describe('ratspeak overlay apply list', () => {
     expect(list).toContain('apply-rsReticulum-response-resource-window-fast.sh');
     expect(list).toContain('apply-rsReticulum-rncp-picker-pinned-jail.sh');
     expect(list).toContain('apply-rsLXMF-link-delivery-has-pending-to.sh');
+    expect(list).toContain('apply-rsLXMF-propagation-client-link-hops.sh');
     expect(list).toContain('apply-rsNomad-picker-pinned-roots.sh');
   });
 

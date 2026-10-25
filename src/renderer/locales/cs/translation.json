@@ -5348,7 +5348,8 @@
     "establishRecoveryDualTcpTip": "Jsou povolena dvě nebo více rozhraní TCP. Oznamte a synchronizační odkaz může odejít na různých cestách — deaktivujte jednu páteř v části → Rozhraní připojení, poté oznamte a zkuste to znovu.",
     "establishRecoveryOpenInterfaces": "Otevřená rozhraní.",
     "establishRecoveryOpenInterfacesAria": "Otevřít rozhraní připojení pro úpravu páteře TCP",
-    "syncRequestFailed": "Synchronizace šíření dosáhla uzlu, ale požadavek nebyl dokončen. Zkusí to znovu při příští synchronizaci."
+    "syncRequestFailed": "Synchronizace šíření dosáhla uzlu, ale požadavek nebyl dokončen. Zkusí to znovu při příští synchronizaci.",
+    "syncEstablishTimeout": "Časový limit synchronizace propagace vypršel při vytváření odkazu na tento uzel — může být pomalý nebo nedosažitelný. Ostatní uzly mohou stále fungovat."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Objevení RMAP v4",

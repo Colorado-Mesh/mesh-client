@@ -61,6 +61,8 @@ const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFail
 export const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
 export const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
 export const SYNC_ESTABLISH_NO_PROOF_KEY = 'reticulumPropagation.syncEstablishNoLinkProof';
+/** Link establishment timed out — PN slow/unreachable; cascade may try other remotes. */
+export const SYNC_ESTABLISH_TIMEOUT_KEY = 'reticulumPropagation.syncEstablishTimeout';
 const SYNC_REQUEST_FAILED_KEY = 'reticulumPropagation.syncRequestFailed';
 const SYNC_OFFER_NO_IDENTITY_KEY = 'reticulumPropagation.syncOfferNoIdentity';
 const SYNC_OFFER_NO_ACCESS_KEY = 'reticulumPropagation.syncOfferNoAccess';
@@ -96,6 +98,7 @@ const ESTABLISH_ERROR_KEYS: Record<string, string> = {
   LrproofInvalid: SYNC_ESTABLISH_INVALID_KEY,
   LrproofInvalidKey: SYNC_ESTABLISH_INVALID_KEY,
   NoLinkProof: SYNC_ESTABLISH_NO_PROOF_KEY,
+  LinkEstablishTimeout: SYNC_ESTABLISH_TIMEOUT_KEY,
 };
 
 function mapPropagationSyncErrorByPrefix(error: string): string | null {
@@ -126,6 +129,7 @@ function mapPropagationSyncErrorByPrefix(error: string): string | null {
 function mapPropagationSyncErrorBySubstring(error: string): string | null {
   if (error.includes('LrproofIdentityMissing')) return SYNC_ESTABLISH_IDENTITY_KEY;
   if (error.includes('LrproofInvalid')) return SYNC_ESTABLISH_INVALID_KEY;
+  if (error.includes('LinkEstablishTimeout')) return SYNC_ESTABLISH_TIMEOUT_KEY;
   if (error.includes('NoLinkProof')) return SYNC_ESTABLISH_NO_PROOF_KEY;
   if (/propagation node unreachable/i.test(error)) return SYNC_FAILED_KEY;
   return null;

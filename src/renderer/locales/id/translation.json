@@ -5304,7 +5304,8 @@
     "establishRecoveryDualTcpTip": "Dua atau lebih antarmuka TCP diaktifkan. Umumkan dan tautan sinkronisasi dapat berada di jalur yang berbeda — nonaktifkan satu backbone di bawah → Antarmuka Koneksi, lalu umumkan dan coba lagi.",
     "establishRecoveryOpenInterfaces": "Buka Antarmuka",
     "establishRecoveryOpenInterfacesAria": "Buka Antarmuka Koneksi untuk menyesuaikan backbone TCP",
-    "syncRequestFailed": "Sinkronisasi propagasi mencapai simpul, tetapi permintaan tidak selesai. Ini akan mencoba lagi pada sinkronisasi berikutnya."
+    "syncRequestFailed": "Sinkronisasi propagasi mencapai simpul, tetapi permintaan tidak selesai. Ini akan mencoba lagi pada sinkronisasi berikutnya.",
+    "syncEstablishTimeout": "Waktu sinkronisasi propagasi habis saat membuat tautan ke simpul ini — mungkin lambat atau tidak dapat dijangkau. Node lain mungkin masih berfungsi."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Penemuan RMAP v4",

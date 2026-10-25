@@ -1,0 +1,58 @@
+diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
+index 0000000..1111111 100644
+--- a/crates/lxmf-core/src/propagation_client.rs
++++ b/crates/lxmf-core/src/propagation_client.rs
+@@ -341,14 +341,21 @@
+     }
+ 
+     pub fn start_download(&mut self) -> bool {
+-        self.start_download_with_limit(None)
++        // Default hops=1 keeps unit tests / callers without a path table cheap;
++        // mesh-client sidecar passes path-scaled hops via start_download_with_limit.
++        self.start_download_with_limit(None, 1)
+     }
+ 
+     /// Start a propagation download, limiting newly requested messages.
+     /// `None` and zero mirror Python's `PR_ALL_MESSAGES`.
++    /// `link_hops` scales Link establishment timeout (`ESTABLISHMENT_TIMEOUT_PER_HOP` × hops).
+     /// Drain previously received messages before restarting, including after a
+     /// failed purge or cancellation. A refused start never discards results.
+-    pub fn start_download_with_limit(&mut self, max_messages: Option<usize>) -> bool {
++    pub fn start_download_with_limit(
++        &mut self,
++        max_messages: Option<usize>,
++        link_hops: u8,
++    ) -> bool {
+         if !self.received_messages.is_empty() {
+             return false;
+         }
+@@ -376,7 +383,8 @@
+         }
+         self.last_establish_error = None;
+ 
+-        let (link, request_data) = Link::new_initiator(node_hash, 1);
++        let hops = link_hops.max(1);
++        let (link, request_data) = Link::new_initiator(node_hash, hops);
+         let link_id = link.link_id;
+ 
+         if !self.queue_transport(TransportMessage::RegisterDestination {
+@@ -1662,7 +1670,18 @@
+                 );
+                 self.status.state = PropagationClientState::Failed;
+             }
+-            Some(LinkAction::Closed(_)) => self.status.state = PropagationClientState::Failed,
++            Some(LinkAction::Closed(reason)) => {
++                if self.status.state == PropagationClientState::LinkEstablishing
++                    && self.last_establish_error.is_none()
++                    && matches!(reason, CloseReason::Timeout)
++                {
++                    // Distinguish link-establishment timeout from LRPROOF / reverse-path
++                    // failures so Sync UI can cascade other remotes instead of treating
++                    // this as a client-local NoLinkProof.
++                    self.last_establish_error = Some("LinkEstablishTimeout");
++                }
++                self.status.state = PropagationClientState::Failed;
++            }
+             Some(LinkAction::None) | None => {}
+         }
+ 
