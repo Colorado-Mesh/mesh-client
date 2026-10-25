@@ -10,7 +10,6 @@ import {
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
 import { applyMeshcoreContactAdd } from '@/renderer/lib/meshClientDeepLinkApply';
@@ -177,6 +176,7 @@ import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 interface ChannelConfig {
   index: number;
@@ -727,31 +727,22 @@ function ConfigSection({
 }) {
   const { t } = useTranslation();
   return (
-    <details
-      data-setting-anchor={anchorId}
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
-    >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        {children}
-        {onApply && !hideApply && (
-          <button
-            type="button"
-            onClick={onApply}
-            disabled={disabled || applying}
-            className={buttonClassName('primary', 'md')}
-          >
-            {applying
-              ? t('modulePanel.applyingButton')
-              : t('modulePanel.applySection', { section: title })}
-          </button>
-        )}
-        <StatusMessage status={status} />
-      </div>
-    </details>
+    <SettingsCollapsible title={title} anchorId={anchorId} titleAs="span">
+      {children}
+      {onApply && !hideApply && (
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={disabled || applying}
+          className={buttonClassName('primary', 'md')}
+        >
+          {applying
+            ? t('modulePanel.applyingButton')
+            : t('modulePanel.applySection', { section: title })}
+        </button>
+      )}
+      <StatusMessage status={status} />
+    </SettingsCollapsible>
   );
 }
 
@@ -4366,16 +4357,13 @@ function ChannelSection({
   };
 
   return (
-    <details
+    <SettingsCollapsible
       ref={detailsRef}
-      data-setting-anchor="radio.channels.list"
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+      title={t('radioPanel.channels')}
+      titleAs="span"
+      anchorId="radio.channels.list"
     >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('radioPanel.channels')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-3 px-4 pb-4">
+      <>
         {/* ── Channel List ── */}
         <div className="space-y-1">
           {slots.map((cfg, i) => {
@@ -4489,8 +4477,8 @@ function ChannelSection({
           disabled={disabled}
           setStatus={setStatus}
         />
-      </div>
-    </details>
+      </>
+    </SettingsCollapsible>
   );
 }
 
@@ -4926,16 +4914,13 @@ function MeshcoreChannelSection({
   );
 
   return (
-    <details
+    <SettingsCollapsible
       ref={detailsRef}
-      data-setting-anchor="radio.channels.meshcoreList"
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+      title={t('radioPanel.channelsMeshcore')}
+      titleAs="span"
+      anchorId="radio.channels.meshcoreList"
     >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('radioPanel.channelsMeshcore')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
+      <>
         {/* ── Channel List ── */}
         <div className="space-y-1">
           {channels.length === 0 && (
@@ -5146,7 +5131,7 @@ function MeshcoreChannelSection({
             indexMax: MESHCORE_CHANNEL_INDEX_MAX,
           })}
         </p>
-      </div>
-    </details>
+      </>
+    </SettingsCollapsible>
   );
 }

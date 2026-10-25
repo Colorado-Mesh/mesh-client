@@ -154,12 +154,19 @@ describe('App Support memory diagnostics', () => {
 
   it('keeps both support export actions and disables them during export', () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
-    const { rerender } = render(<AppSupportSection exporting={null} onExport={onExport} />);
+    const { container, rerender } = render(
+      <AppSupportSection exporting={null} onExport={onExport} />,
+    );
+    const supportDetails = container.querySelector('details');
+    expect(supportDetails).toBeInstanceOf(HTMLDetailsElement);
+    supportDetails!.open = true;
     fireEvent.click(screen.getByRole('button', { name: 'Export support bundle for GitHub' }));
     expect(onExport).toHaveBeenLastCalledWith('github');
     fireEvent.click(screen.getByRole('button', { name: 'Export support bundle for developer' }));
     expect(onExport).toHaveBeenLastCalledWith('developer');
     rerender(<AppSupportSection exporting="github" onExport={onExport} />);
+    const supportAfter = container.querySelector('details');
+    if (supportAfter instanceof HTMLDetailsElement) supportAfter.open = true;
     expect(screen.getByRole('button', { name: 'Export support bundle for GitHub' })).toBeDisabled();
     expect(
       screen.getByRole('button', { name: 'Export support bundle for developer' }),

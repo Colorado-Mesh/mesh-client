@@ -2,13 +2,13 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import type { MeshcoreCompanionRemoteActions } from '../hooks/meshcore/useMeshcoreCompanionRemote';
 import { translateRepeaterCliHistoryText } from '../lib/meshcore/meshcoreMessageI18n';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import type { CliHistoryEntry } from '../lib/repeaterCommandService';
 import { ConfirmModal } from './ConfirmModal';
+import { SettingsCollapsible } from './ui/SettingsSection';
 import { Switch } from './ui/Switch';
 
 export interface MeshcoreRemoteCliSectionProps {
@@ -100,19 +100,16 @@ export default function MeshcoreRemoteCliSection({
   };
 
   return (
-    <details
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
-      onToggle={(e) => {
-        if (e.currentTarget.open && allow.kind === 'idle' && !flagBusy && !disabled) {
-          void loadAllow();
-        }
-      }}
-    >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('meshcoreRemoteCli.summary')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
+    <>
+      <SettingsCollapsible
+        title={t('meshcoreRemoteCli.summary')}
+        titleAs="span"
+        onToggle={(open) => {
+          if (open && allow.kind === 'idle' && !flagBusy && !disabled) {
+            void loadAllow();
+          }
+        }}
+      >
         <div className="space-y-2">
           {allow.kind === 'notOnRadio' ? (
             <p className="text-muted text-sm">{t('meshcoreRemoteCli.notOnRadio')}</p>
@@ -194,7 +191,7 @@ export default function MeshcoreRemoteCliSection({
             </button>
           )}
         </div>
-      </div>
+      </SettingsCollapsible>
       {confirmAllow && (
         <ConfirmModal
           title={t('meshcoreRemoteCli.confirmAllow.title')}
@@ -226,6 +223,6 @@ export default function MeshcoreRemoteCliSection({
           }}
         />
       )}
-    </details>
+    </>
   );
 }

@@ -15,6 +15,7 @@ import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { isRemoteOkFailure, type RncpInboundMode } from '@/shared/remote-types';
 
 import { chipClass } from '../ui/formClasses';
+import { SettingsSection } from '../ui/SettingsSection';
 
 /** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
 export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
@@ -392,10 +393,7 @@ export function RemoteSettingsSection({
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto p-3">
-      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
-        <h3 className="text-ink-300 text-sm font-medium">
-          {t('reticulumRemote.settings.inboundTitle')}
-        </h3>
+      <SettingsSection title={t('reticulumRemote.settings.inboundTitle')} bodyClassName="space-y-2">
         <div data-setting-anchor="remote.inbound.mode" className="flex gap-2">
           {(['off', 'ask'] as RncpInboundMode[]).map((mode) => (
             <button
@@ -482,15 +480,13 @@ export function RemoteSettingsSection({
         <p className="text-muted text-xs">
           {t('reticulumRemote.settings.maxSizeInfo', { size: RNCP_MAX_FILE_SIZE_LABEL })}
         </p>
-      </section>
+      </SettingsSection>
 
-      <section
-        data-setting-anchor="remote.access.allowBlockList"
-        className="border-ink-700/60 space-y-2 rounded-lg border p-3"
+      <SettingsSection
+        anchorId="remote.access.allowBlockList"
+        title={t('reticulumRemote.settings.allowBlockListTitle')}
+        bodyClassName="space-y-2"
       >
-        <h3 className="text-ink-300 text-sm font-medium">
-          {t('reticulumRemote.settings.allowBlockListTitle')}
-        </h3>
         {policyList.length === 0 ? (
           <p className="text-muted text-xs">{t('reticulumRemote.settings.allowBlockListEmpty')}</p>
         ) : (
@@ -522,12 +518,12 @@ export function RemoteSettingsSection({
             </div>
           ))
         )}
-      </section>
+      </SettingsSection>
 
-      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
-        <h3 className="text-ink-300 text-sm font-medium">
-          {t('reticulumRemote.settings.reliabilityTitle')}
-        </h3>
+      <SettingsSection
+        title={t('reticulumRemote.settings.reliabilityTitle')}
+        bodyClassName="space-y-2"
+      >
         <label
           data-setting-anchor="remote.reliability.autoReconnectShell"
           className="text-ink-300 flex items-center gap-2 text-xs"
@@ -558,12 +554,12 @@ export function RemoteSettingsSection({
           />
           {t('reticulumRemote.settings.autoRetryTransfer')}
         </label>
-      </section>
+      </SettingsSection>
 
-      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
-        <h3 className="text-ink-300 text-sm font-medium">
-          {t('reticulumRemote.settings.identityTitle')}
-        </h3>
+      <SettingsSection
+        title={t('reticulumRemote.settings.identityTitle')}
+        bodyClassName="space-y-2"
+      >
         <div className="text-ink-300 flex flex-wrap items-center gap-2 text-xs">
           <span>{t('reticulumRemote.settings.myIdentity')}</span>
           <code className="min-w-0 flex-1 truncate">{identity?.identity_hash ?? '—'}</code>
@@ -606,7 +602,7 @@ export function RemoteSettingsSection({
         >
           {t('reticulumRemote.settings.announceReceiveDest')}
         </button>
-      </section>
+      </SettingsSection>
     </div>
   );
 }

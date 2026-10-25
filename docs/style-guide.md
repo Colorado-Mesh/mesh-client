@@ -253,25 +253,27 @@ Use the class strings and primitives; do not restyle native elements per panel.
 - On/off settings: `Switch`. Small integers: `Stepper`. Read-only values: `CopyField`.
 - Label and value pairs: `LabelValueGrid` inside their card, about 560px wide at most.
 - Cards: `Panel` (`bg-deep-black`, `border-ink-800`, `rounded-card`, level 1). Settings sections: `bg-deep-black rounded-xl border border-ink-800`.
+- Settings subsections: `SettingsSection` (static muted title outside a filled card) or `SettingsCollapsible` (collapsed-by-default native `<details>`, muted summary). Do not invent per-panel chrome. MECP / danger / warning tints stay intentional exceptions.
 - Notices: `NOTICE_CLASS.info|warn|error|success`.
 - Map overlays: `MAP_CONTROL_CLASS`, `MAP_CHIP_CLASS`, `MAP_OVERLAY_PANEL_CLASS` (`map/mapControlClasses.ts`); Leaflet's own controls are restyled in `styles.css`.
 - Status: `StatusDot` only where it carries state; pulses on a separate `aria-hidden` element, never on small text.
 
-| Need                                          | Use                                                         |
-| --------------------------------------------- | ----------------------------------------------------------- |
-| Buttons, icon buttons                         | `Button`, `IconButton`, `buttonClassName` (`ui/Button.tsx`) |
-| Split button, overflow menu                   | `SplitButton`, `MenuButton`, `Menu` (`ui/Menu.tsx`)         |
-| Single choice                                 | `SegmentedControl`                                          |
-| Switch, stepper                               | `Switch`, `Stepper`                                         |
-| Card with header                              | `Panel`                                                     |
-| Link status                                   | `StatusTile`, `StatusDot`                                   |
-| Label and value pairs                         | `LabelValueGrid`, `LabelValue`                              |
-| Copyable value                                | `CopyField`                                                 |
-| Horizontal strip of chips                     | `ScrollStrip`                                               |
-| Shortcut hint                                 | `Kbd`                                                       |
-| Fields, chips, notices                        | `ui/formClasses.ts`                                         |
-| Conversation layout                           | `chat/ConversationLayout`                                   |
-| Channel or DM switcher (thousands of entries) | `chat/ChatChannelSwitcher`                                  |
+| Need                                          | Use                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------- |
+| Buttons, icon buttons                         | `Button`, `IconButton`, `buttonClassName` (`ui/Button.tsx`)         |
+| Split button, overflow menu                   | `SplitButton`, `MenuButton`, `Menu` (`ui/Menu.tsx`)                 |
+| Single choice                                 | `SegmentedControl`                                                  |
+| Switch, stepper                               | `Switch`, `Stepper`                                                 |
+| Card with header                              | `Panel`                                                             |
+| Settings subsection (static or collapsible)   | `SettingsSection`, `SettingsCollapsible` (`ui/SettingsSection.tsx`) |
+| Link status                                   | `StatusTile`, `StatusDot`                                           |
+| Label and value pairs                         | `LabelValueGrid`, `LabelValue`                                      |
+| Copyable value                                | `CopyField`                                                         |
+| Horizontal strip of chips                     | `ScrollStrip`                                                       |
+| Shortcut hint                                 | `Kbd`                                                               |
+| Fields, chips, notices                        | `ui/formClasses.ts`                                                 |
+| Conversation layout                           | `chat/ConversationLayout`                                           |
+| Channel or DM switcher (thousands of entries) | `chat/ChatChannelSwitcher`                                          |
 
 Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outside click and return focus to the trigger.
 

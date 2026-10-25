@@ -2,8 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
-
 import type { MeshCoreContactRaw, MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import {
   countMeshcoreContactsWithFlagMask,
@@ -14,6 +12,7 @@ import {
   type MeshcoreTelemetryTriState,
   meshcoreTriStateToTelemetryMode,
 } from '../lib/meshcoreTelemetryPrivacy';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 function TriStateRow({
   title,
@@ -150,84 +149,79 @@ export default function MeshcoreTelemetryPrivacySection({
   const no = t('common.no');
 
   return (
-    <details
-      data-setting-anchor="radio.telemetryPrivacy.section"
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    <SettingsCollapsible
+      title={t('meshcoreTelemetryPrivacy.summary')}
+      titleAs="span"
+      anchorId="radio.telemetryPrivacy.section"
     >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        <p className="text-muted text-xs">{t('meshcoreTelemetryPrivacy.description')}</p>
-        <TriStateRow
-          anchorId="radio.telemetryPrivacy.allowTelemetry"
-          title={t('meshcoreTelemetryPrivacy.allowTelemetryTitle')}
-          groupName="meshcore-telem-req"
-          value={base}
-          onChange={setBase}
-          disabled={disabled || applying}
-          specificLabel={t('meshcoreTelemetryPrivacy.fromSpecificContacts')}
-          specificCount={cBase}
-          specificPermissionPhraseKey="baseTelemetryPermission"
-          yesDescription={t('meshcoreTelemetryPrivacy.allowAllBase')}
-          noDescription={t('meshcoreTelemetryPrivacy.denyBase')}
-          yesLabel={yes}
-          noLabel={no}
-        />
-        <TriStateRow
-          anchorId="radio.telemetryPrivacy.location"
-          title={t('meshcoreTelemetryPrivacy.includeLocationTitle')}
-          groupName="meshcore-telem-loc"
-          value={loc}
-          onChange={setLoc}
-          disabled={disabled || applying}
-          specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
-          specificCount={cLoc}
-          specificPermissionPhraseKey="locationPermission"
-          yesDescription={t('meshcoreTelemetryPrivacy.allowAllLoc')}
-          noDescription={t('meshcoreTelemetryPrivacy.denyLoc')}
-          yesLabel={yes}
-          noLabel={no}
-        />
-        <TriStateRow
-          anchorId="radio.telemetryPrivacy.environment"
-          title={t('meshcoreTelemetryPrivacy.includeEnvironmentTitle')}
-          groupName="meshcore-telem-env"
-          value={env}
-          onChange={setEnv}
-          disabled={disabled || applying}
-          specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
-          specificCount={cEnv}
-          specificPermissionPhraseKey="environmentPermission"
-          yesDescription={t('meshcoreTelemetryPrivacy.allowAllEnv')}
-          noDescription={t('meshcoreTelemetryPrivacy.denyEnv')}
-          yesLabel={yes}
-          noLabel={no}
-        />
-        <button
-          type="button"
-          disabled={disabled || applying || !dirty}
-          onClick={() =>
-            void onApply({
-              telemetryModeBase: meshcoreTriStateToTelemetryMode(base),
-              telemetryModeLoc: meshcoreTriStateToTelemetryMode(loc),
-              telemetryModeEnv: meshcoreTriStateToTelemetryMode(env),
-            }).catch((err: unknown) => {
-              // catch-no-log-ok parent onApply usually handles errors; defensive for unhandled callers
-              console.warn(
-                '[MeshcoreTelemetryPrivacySection] onApply rejected:',
-                err instanceof Error ? err.message : String(err),
-              );
-            })
-          }
-          className="bg-brand-green text-app-bg rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {applying
-            ? t('meshcoreTelemetryPrivacy.applying')
-            : t('meshcoreTelemetryPrivacy.applyButton')}
-        </button>
-      </div>
-    </details>
+      <p className="text-muted text-xs">{t('meshcoreTelemetryPrivacy.description')}</p>
+      <TriStateRow
+        anchorId="radio.telemetryPrivacy.allowTelemetry"
+        title={t('meshcoreTelemetryPrivacy.allowTelemetryTitle')}
+        groupName="meshcore-telem-req"
+        value={base}
+        onChange={setBase}
+        disabled={disabled || applying}
+        specificLabel={t('meshcoreTelemetryPrivacy.fromSpecificContacts')}
+        specificCount={cBase}
+        specificPermissionPhraseKey="baseTelemetryPermission"
+        yesDescription={t('meshcoreTelemetryPrivacy.allowAllBase')}
+        noDescription={t('meshcoreTelemetryPrivacy.denyBase')}
+        yesLabel={yes}
+        noLabel={no}
+      />
+      <TriStateRow
+        anchorId="radio.telemetryPrivacy.location"
+        title={t('meshcoreTelemetryPrivacy.includeLocationTitle')}
+        groupName="meshcore-telem-loc"
+        value={loc}
+        onChange={setLoc}
+        disabled={disabled || applying}
+        specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
+        specificCount={cLoc}
+        specificPermissionPhraseKey="locationPermission"
+        yesDescription={t('meshcoreTelemetryPrivacy.allowAllLoc')}
+        noDescription={t('meshcoreTelemetryPrivacy.denyLoc')}
+        yesLabel={yes}
+        noLabel={no}
+      />
+      <TriStateRow
+        anchorId="radio.telemetryPrivacy.environment"
+        title={t('meshcoreTelemetryPrivacy.includeEnvironmentTitle')}
+        groupName="meshcore-telem-env"
+        value={env}
+        onChange={setEnv}
+        disabled={disabled || applying}
+        specificLabel={t('meshcoreTelemetryPrivacy.forSpecificContacts')}
+        specificCount={cEnv}
+        specificPermissionPhraseKey="environmentPermission"
+        yesDescription={t('meshcoreTelemetryPrivacy.allowAllEnv')}
+        noDescription={t('meshcoreTelemetryPrivacy.denyEnv')}
+        yesLabel={yes}
+        noLabel={no}
+      />
+      <button
+        type="button"
+        disabled={disabled || applying || !dirty}
+        onClick={() =>
+          void onApply({
+            telemetryModeBase: meshcoreTriStateToTelemetryMode(base),
+            telemetryModeLoc: meshcoreTriStateToTelemetryMode(loc),
+            telemetryModeEnv: meshcoreTriStateToTelemetryMode(env),
+          }).catch((err: unknown) => {
+            // catch-no-log-ok parent onApply usually handles errors; defensive for unhandled callers
+            console.warn(
+              '[MeshcoreTelemetryPrivacySection] onApply rejected:',
+              err instanceof Error ? err.message : String(err),
+            );
+          })
+        }
+        className="bg-brand-green text-app-bg rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+      >
+        {applying
+          ? t('meshcoreTelemetryPrivacy.applying')
+          : t('meshcoreTelemetryPrivacy.applyButton')}
+      </button>
+    </SettingsCollapsible>
   );
 }

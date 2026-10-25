@@ -2,12 +2,12 @@ import type { TFunction } from 'i18next';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
 
 import { HelpTooltip } from './HelpTooltip';
 import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 export function cfgBool(v: unknown, fallback: boolean): boolean {
   return typeof v === 'boolean' ? v : fallback;
@@ -243,33 +243,24 @@ export function ModuleSection({
   const { t } = useTranslation();
   const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
   return (
-    <details
-      data-setting-anchor={anchorId}
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
-    >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        {showSliceWaiting && !sliceReady && (
-          <p className="text-xs text-orange-300/90">
-            {t('radioPanel.waitingForConfigSection', { section: title })}
-          </p>
-        )}
-        {children}
-        <button
-          type="button"
-          onClick={onApply}
-          disabled={applyDisabled}
-          className={buttonClassName('primary', 'md')}
-        >
-          {applying
-            ? t('modulePanel.applyingButton')
-            : t('modulePanel.applySection', { section: title })}
-        </button>
-      </div>
-    </details>
+    <SettingsCollapsible title={title} anchorId={anchorId} titleAs="span">
+      {showSliceWaiting && !sliceReady && (
+        <p className="text-xs text-orange-300/90">
+          {t('radioPanel.waitingForConfigSection', { section: title })}
+        </p>
+      )}
+      {children}
+      <button
+        type="button"
+        onClick={onApply}
+        disabled={applyDisabled}
+        className={buttonClassName('primary', 'md')}
+      >
+        {applying
+          ? t('modulePanel.applyingButton')
+          : t('modulePanel.applySection', { section: title })}
+      </button>
+    </SettingsCollapsible>
   );
 }
 
@@ -281,13 +272,9 @@ export function StatusOnlySection({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">{children}</div>
-    </details>
+    <SettingsCollapsible title={title} titleAs="span">
+      {children}
+    </SettingsCollapsible>
   );
 }
 

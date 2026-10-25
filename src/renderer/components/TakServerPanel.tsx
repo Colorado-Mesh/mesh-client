@@ -18,6 +18,7 @@ import TakChannelRelaySection, {
 import TakRemoteRelaySection from './TakRemoteRelaySection';
 import TakUnitFiltersSection from './TakUnitFiltersSection';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
+import { SettingsSection } from './ui/SettingsSection';
 
 interface AtakMessage {
   from: number;
@@ -181,9 +182,7 @@ export default function TakServerPanel({
       )}
 
       {/* Settings form */}
-      <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-        <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.serverSettings')}</h3>
-
+      <SettingsSection title={t('takServerPanel.serverSettings')} bodyClassName="space-y-4">
         <div className="space-y-3">
           <div data-setting-anchor="tak.server.port">
             <label htmlFor={`${id}-port`} className="text-ink-400 mb-1 block text-xs">
@@ -276,14 +275,14 @@ export default function TakServerPanel({
             </button>
           )}
         </div>
-      </div>
+      </SettingsSection>
 
       {/* Connected clients */}
       {status.running && (
-        <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-          <h3 className="text-ink-300 text-sm font-medium">
-            {t('takServerPanel.connectedClients', { count: clients.length })}
-          </h3>
+        <SettingsSection
+          title={t('takServerPanel.connectedClients', { count: clients.length })}
+          bodyClassName="space-y-3"
+        >
           {clients.length === 0 ? (
             <p className="text-muted text-xs">{t('takServerPanel.noClientsConnected')}</p>
           ) : (
@@ -299,7 +298,7 @@ export default function TakServerPanel({
               ))}
             </ul>
           )}
-        </div>
+        </SettingsSection>
       )}
 
       <TakRemoteRelaySection />
@@ -343,16 +342,20 @@ export default function TakServerPanel({
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (
-        <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-          <h3 className="text-ink-300 text-sm font-medium">
-            {t('takServerPanel.atakPluginMessages')}
-            {atakMessages && atakMessages.size > 0 && (
-              <span className="text-muted ml-2">
-                ({Array.from(atakMessages.values()).reduce((sum, arr) => sum + arr.length, 0)})
-              </span>
-            )}
-          </h3>
-          <p className="text-ink-400 text-xs">{t('takServerPanel.atakPluginDesc')}</p>
+        <SettingsSection
+          title={
+            <>
+              {t('takServerPanel.atakPluginMessages')}
+              {atakMessages && atakMessages.size > 0 && (
+                <span className="ml-2">
+                  ({Array.from(atakMessages.values()).reduce((sum, arr) => sum + arr.length, 0)})
+                </span>
+              )}
+            </>
+          }
+          description={t('takServerPanel.atakPluginDesc')}
+          bodyClassName="space-y-3"
+        >
           {atakMessages && atakMessages.size > 0 ? (
             <ul className="space-y-1.5">
               {Array.from(atakMessages.entries()).map(([nodeId, messages]) => {
@@ -377,13 +380,15 @@ export default function TakServerPanel({
           ) : (
             <p className="text-muted text-xs">{t('takServerPanel.noAtakMessages')}</p>
           )}
-        </div>
+        </SettingsSection>
       )}
 
       {/* Data package */}
-      <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-        <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.atakDataPackage')}</h3>
-        <p className="text-ink-400 text-xs">{t('takServerPanel.atakDataPackageDesc')}</p>
+      <SettingsSection
+        title={t('takServerPanel.atakDataPackage')}
+        description={t('takServerPanel.atakDataPackageDesc')}
+        bodyClassName="space-y-3"
+      >
         <div data-setting-anchor="tak.dataPackage.generate" className="flex items-center gap-3">
           <button
             type="button"
@@ -400,12 +405,14 @@ export default function TakServerPanel({
             <span className="text-muted text-xs">{t('takServerPanel.startServerFirst')}</span>
           )}
         </div>
-      </div>
+      </SettingsSection>
 
       {/* Certificate management */}
-      <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-        <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.certificates')}</h3>
-        <p className="text-ink-400 text-xs">{t('takServerPanel.certificatesDesc')}</p>
+      <SettingsSection
+        title={t('takServerPanel.certificates')}
+        description={t('takServerPanel.certificatesDesc')}
+        bodyClassName="space-y-3"
+      >
         <button
           data-setting-anchor="tak.certificates.regenerate"
           type="button"
@@ -416,7 +423,7 @@ export default function TakServerPanel({
           {t('takServerPanel.regenerateCerts')}
         </button>
         <p className="text-muted text-xs">{t('takServerPanel.regenerateWarning')}</p>
-      </div>
+      </SettingsSection>
     </div>
   );
 }

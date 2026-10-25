@@ -67,6 +67,7 @@ import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
 import SetLocationCard from './SetLocationCard';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
+import { SettingsSection } from './ui/SettingsSection';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -1213,10 +1214,7 @@ export default function DiagnosticsPanel({
       {/* Settings */}
       {showLoRaMeshDiagnostics && (
         <>
-          <div className="bg-deep-black border-ink-800 rounded-xl border p-4">
-            <h3 className="text-muted mb-3 text-sm font-medium">
-              {t('diagnosticsPanel.displaySettings')}
-            </h3>
+          <SettingsSection title={t('diagnosticsPanel.displaySettings')}>
             <div className="flex flex-col gap-2">
               <div
                 className="flex items-center gap-2"
@@ -1387,17 +1385,14 @@ export default function DiagnosticsPanel({
                 <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
               </div>
             </div>
-          </div>
+          </SettingsSection>
 
           {/* Per-Node MQTT Filters */}
           {showMqttControls && mqttIgnoredNodes.size > 0 && (
-            <div
-              className="bg-deep-black border-ink-800 rounded-xl border p-3"
-              data-setting-anchor="diagnostics.mqttFilters.perNode"
+            <SettingsSection
+              anchorId="diagnostics.mqttFilters.perNode"
+              title={t('diagnosticsPanel.perNodeMqttFilters')}
             >
-              <h3 className="text-muted mb-2 text-xs font-medium">
-                {t('diagnosticsPanel.perNodeMqttFilters')}
-              </h3>
               <div className="flex flex-wrap gap-1.5">
                 {[...mqttIgnoredNodes].map((nodeId) => {
                   const n = nodes.get(nodeId);
@@ -1423,7 +1418,7 @@ export default function DiagnosticsPanel({
                   );
                 })}
               </div>
-            </div>
+            </SettingsSection>
           )}
 
           {/* Mesh-wide routing stress (independent of packet path mix samples) */}

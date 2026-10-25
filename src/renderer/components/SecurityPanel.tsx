@@ -22,6 +22,7 @@ import { MeshtasticExtraConfigField } from './MeshtasticExtraConfigField';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
+import { SettingsSection } from './ui/SettingsSection';
 
 interface SecurityConfig {
   publicKey: Uint8Array;
@@ -75,12 +76,6 @@ function isValidBase64Key(b64: string): boolean {
 }
 
 // ─── Reusable UI components ────────────────────────────────────
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <h3 className="border-ink-700 text-ink-200 border-b pb-2 text-sm font-semibold">{title}</h3>
-  );
-}
 
 function ConfigToggle({
   label,
@@ -507,8 +502,7 @@ export default function SecurityPanel({
       {!isMeshcore && <ConfigApplyNotice />}
 
       {/* ── DM Keys ─────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionHeader title={t('securityPanel.sectionDmKeys')} />
+      <SettingsSection title={t('securityPanel.sectionDmKeys')} bodyClassName="space-y-4">
         <div data-setting-anchor="security.dmKeys.publicKey" className="space-y-1">
           <label htmlFor="security-public-key" className="text-muted text-sm">
             {t('securityPanel.publicKeyLabel')}
@@ -591,16 +585,17 @@ export default function SecurityPanel({
         {isMeshcore && !isRemoteTarget && (
           <p className="text-muted text-xs">{t('securityPanel.meshcorePrivateKeyHint')}</p>
         )}
-      </section>
+      </SettingsSection>
 
       {!isMeshcore && (
         <>
           {/* ── Admin Keys ──────────────────────────────────────────── */}
-          <section data-setting-anchor="security.adminKeys.keys" className="space-y-4">
-            <SectionHeader title={t('securityPanel.sectionAdminKeys')} />
-            <p className="text-muted text-xs">
-              {t('securityPanel.adminKeysIntro', { max: MAX_ADMIN_KEYS })}
-            </p>
+          <SettingsSection
+            anchorId="security.adminKeys.keys"
+            title={t('securityPanel.sectionAdminKeys')}
+            description={t('securityPanel.adminKeysIntro', { max: MAX_ADMIN_KEYS })}
+            bodyClassName="space-y-4"
+          >
             <div className="space-y-3">
               {adminKeys.map((key, i) => (
                 <div key={i} className="space-y-1">
@@ -659,11 +654,13 @@ export default function SecurityPanel({
               applying={applyingAdmin}
               disabled={disabled || !securityConfig}
             />
-          </section>
+          </SettingsSection>
 
           {/* ── Administration Settings ──────────────────────────────── */}
-          <section className="space-y-4">
-            <SectionHeader title={t('securityPanel.sectionAdminSettings')} />
+          <SettingsSection
+            title={t('securityPanel.sectionAdminSettings')}
+            bodyClassName="space-y-4"
+          >
             <ConfigToggle
               anchorId="security.adminSettings.managedDevice"
               label={t('securityPanel.managedDevice')}
@@ -710,14 +707,17 @@ export default function SecurityPanel({
               applying={applyingToggles}
               disabled={disabled || !securityConfig}
             />
-          </section>
+          </SettingsSection>
         </>
       )}
 
       {/* ── Key Backup / Restore ─────────────────────────────────── */}
       {!isRemoteTarget && (
-        <section data-setting-anchor="security.keyBackup.backupRestore" className="space-y-4">
-          <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
+        <SettingsSection
+          anchorId="security.keyBackup.backupRestore"
+          title={t('securityPanel.sectionKeyBackup')}
+          bodyClassName="space-y-4"
+        >
           <KeyBackupRestoreSection
             protocol={isMeshcore ? 'meshcore' : 'meshtastic'}
             disabled={disabled}
@@ -731,15 +731,16 @@ export default function SecurityPanel({
             onMeshcoreRestore={onMeshcoreRestore}
             addToast={addToast}
           />
-        </section>
+        </SettingsSection>
       )}
 
       {/* ── MeshCore Crypto Operations ───────────────────────────────── */}
       {protocol === 'meshcore' && (onSignData || onExportPrivateKey || onImportPrivateKey) && (
-        <section className="space-y-4">
-          <SectionHeader title={t('securityPanel.sectionMeshcoreCrypto')} />
-          <p className="text-muted text-xs">{t('securityPanel.meshcoreCryptoDesc')}</p>
-
+        <SettingsSection
+          title={t('securityPanel.sectionMeshcoreCrypto')}
+          description={t('securityPanel.meshcoreCryptoDesc')}
+          bodyClassName="space-y-4"
+        >
           {/* Sign Data */}
           {onSignData && (
             <div data-setting-anchor="security.crypto.signData" className="space-y-2">
@@ -840,7 +841,7 @@ export default function SecurityPanel({
               </button>
             </div>
           )}
-        </section>
+        </SettingsSection>
       )}
 
       {pendingRegenerate && (
