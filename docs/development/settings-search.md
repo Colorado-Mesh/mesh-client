@@ -4,18 +4,18 @@ Developer reference for the **Settings** group in the Ctrl/Cmd+K launcher (`Pane
 
 ## Layout
 
-| Piece                                   | Path                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Types, build, match, exemption matching | `src/renderer/lib/settingsSearch.ts`                                                        |
-| Registry (one file per surface)         | `src/renderer/lib/settingsSearchEntries/*.ts`, each a `SettingsSearchSurface`               |
-| Merged entries, files, exemptions       | `src/renderer/lib/settingsSearchEntries/index.ts`                                           |
-| Lazy registry loader (own chunk)        | `src/renderer/lib/settingsSearchEntriesLoader.ts`; never import the registry from `App.tsx` |
-| Reveal (details, scroll, flash, focus)  | `src/renderer/lib/settingsAnchor.ts`                                                        |
-| rAF retry hook                          | `src/renderer/hooks/usePendingSettingAnchor.ts`                                             |
-| Launcher group                          | `src/renderer/components/shell/PanelLauncher.tsx` (`settings` / `onOpenSetting`)            |
-| App wiring                              | `src/renderer/App.tsx` (`buildLauncherSettings`, `openSettingFromLauncher`)                 |
-| Anchor props                            | `Panel` `anchorId`, RadioPanel's local `ConfigSection` `anchorId`, or `data-setting-anchor` |
-| Flash style                             | `src/renderer/styles.css` (`[data-setting-anchor][data-setting-flash]`)                     |
+| Piece                                   | Path                                                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Types, build, match, exemption matching | `src/renderer/lib/settingsSearch.ts`                                                                                                    |
+| Registry (one file per surface)         | `src/renderer/lib/settingsSearchEntries/*.ts`, each a `SettingsSearchSurface`                                                           |
+| Merged entries, files, exemptions       | `src/renderer/lib/settingsSearchEntries/index.ts`                                                                                       |
+| Lazy registry loader (own chunk)        | `src/renderer/lib/settingsSearchEntriesLoader.ts`; never import the registry from `App.tsx`                                             |
+| Reveal (details, scroll, flash, focus)  | `src/renderer/lib/settingsAnchor.ts`                                                                                                    |
+| rAF retry hook                          | `src/renderer/hooks/usePendingSettingAnchor.ts`                                                                                         |
+| Launcher group                          | `src/renderer/components/shell/PanelLauncher.tsx` (`settings` / `onOpenSetting`)                                                        |
+| App wiring                              | `src/renderer/App.tsx` (`buildLauncherSettings`, `openSettingFromLauncher`)                                                             |
+| Anchor props                            | `Panel` / `SettingsCollapsible` / `SettingsSection` `anchorId`, RadioPanel's local `ConfigSection` `anchorId`, or `data-setting-anchor` |
+| Flash style                             | `src/renderer/styles.css` (`[data-setting-anchor][data-setting-flash]`)                                                                 |
 
 ## Adding a searchable setting (checklist)
 
@@ -39,6 +39,10 @@ Developer reference for the **Settings** group in the Ctrl/Cmd+K launcher (`Pane
 ## Shared sections
 
 Do **not** put literal anchors inside a component that more than one panel renders: the id would no longer map to one slot and Guard A would see it in the wrong file. Pass `anchorId` down from the owning panel instead.
+
+## Collapsible chrome
+
+Settings subsections that collapse must use a native `<details>` (prefer `SettingsCollapsible` in `ui/SettingsSection.tsx`). `revealSettingAnchor` walks ancestors and sets `HTMLDetailsElement.open = true`; custom non-`<details>` disclosure widgets break launcher jumps. Keep section children mounted while closed (do not gate render on `open`) so anchors exist before the 600 ms retry ends.
 
 ## Guards
 

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import {
   type MeshcoreTelemetryPushActions,
@@ -16,6 +15,7 @@ import {
   type MeshcoreTelemetryPushMetric,
   type MeshcoreTelemetryPushThresholds,
 } from '../lib/meshcore/meshcoreTelemetryPush';
+import { SettingsCollapsible } from './ui/SettingsSection';
 import { Switch } from './ui/Switch';
 
 export interface MeshcoreTelemetryPushSectionProps {
@@ -108,75 +108,69 @@ export default function MeshcoreTelemetryPushSection({
   const inputsDisabled = disabled || busy || subscription != null;
 
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('meshcoreTelemetryPush.summary')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        <Switch
-          checked={subscription != null}
-          onChange={(on) => {
-            void (on ? start() : stop());
-          }}
-          label={t('meshcoreTelemetryPush.enableLabel')}
-          description={t('meshcoreTelemetryPush.enableDescription')}
-          disabled={disabled || busy}
-        />
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        {subscription && (
-          <p className="text-muted text-sm" role="status">
-            {subscription.lastPushAt != null
-              ? t('meshcoreTelemetryPush.lastPush', {
-                  time: new Date(subscription.lastPushAt).toLocaleTimeString(),
-                })
-              : t('meshcoreTelemetryPush.waitingForPush')}
-          </p>
-        )}
-        <fieldset className="space-y-2" disabled={inputsDisabled}>
-          <legend className="text-ink-300 text-xs font-semibold">
-            {t('meshcoreTelemetryPush.thresholdsLegend')}
-          </legend>
-          <p className="text-muted text-xs">{t('meshcoreTelemetryPush.thresholdsHint')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {MESHCORE_TELEMETRY_PUSH_METRICS.map((metric) => (
-              <label key={metric} className="text-ink-300 flex flex-col gap-1 text-xs">
-                {metricLabels[metric]}
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  aria-label={metricLabels[metric]}
-                  value={thresholds[metric]}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setThresholds((prev) => ({ ...prev, [metric]: value }));
-                  }}
-                  className="bg-secondary-dark border-ink-600 text-ink-200 rounded-control border px-2 py-1 text-sm disabled:opacity-50"
-                />
-              </label>
-            ))}
-          </div>
-          <label className="text-ink-300 flex flex-col gap-1 text-xs">
-            {t('meshcoreTelemetryPush.leaseLabel')}
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_LEASE_MINUTES}
-              max={MAX_LEASE_MINUTES}
-              step={1}
-              aria-label={t('meshcoreTelemetryPush.leaseLabel')}
-              value={leaseMinutes}
-              onChange={(e) => {
-                setLeaseMinutes(e.target.value);
-              }}
-              className="bg-secondary-dark border-ink-600 text-ink-200 rounded-control border px-2 py-1 text-sm disabled:opacity-50"
-            />
-          </label>
-          <p className="text-muted text-xs">{t('meshcoreTelemetryPush.leaseHint')}</p>
-        </fieldset>
-      </div>
-    </details>
+    <SettingsCollapsible title={t('meshcoreTelemetryPush.summary')} titleAs="span">
+      <Switch
+        checked={subscription != null}
+        onChange={(on) => {
+          void (on ? start() : stop());
+        }}
+        label={t('meshcoreTelemetryPush.enableLabel')}
+        description={t('meshcoreTelemetryPush.enableDescription')}
+        disabled={disabled || busy}
+      />
+      {error && <p className="text-sm text-red-400">{error}</p>}
+      {subscription && (
+        <p className="text-muted text-sm" role="status">
+          {subscription.lastPushAt != null
+            ? t('meshcoreTelemetryPush.lastPush', {
+                time: new Date(subscription.lastPushAt).toLocaleTimeString(),
+              })
+            : t('meshcoreTelemetryPush.waitingForPush')}
+        </p>
+      )}
+      <fieldset className="space-y-2" disabled={inputsDisabled}>
+        <legend className="text-ink-300 text-xs font-semibold">
+          {t('meshcoreTelemetryPush.thresholdsLegend')}
+        </legend>
+        <p className="text-muted text-xs">{t('meshcoreTelemetryPush.thresholdsHint')}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {MESHCORE_TELEMETRY_PUSH_METRICS.map((metric) => (
+            <label key={metric} className="text-ink-300 flex flex-col gap-1 text-xs">
+              {metricLabels[metric]}
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                aria-label={metricLabels[metric]}
+                value={thresholds[metric]}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setThresholds((prev) => ({ ...prev, [metric]: value }));
+                }}
+                className="bg-secondary-dark border-ink-600 text-ink-200 rounded-control border px-2 py-1 text-sm disabled:opacity-50"
+              />
+            </label>
+          ))}
+        </div>
+        <label className="text-ink-300 flex flex-col gap-1 text-xs">
+          {t('meshcoreTelemetryPush.leaseLabel')}
+          <input
+            type="number"
+            inputMode="numeric"
+            min={MIN_LEASE_MINUTES}
+            max={MAX_LEASE_MINUTES}
+            step={1}
+            aria-label={t('meshcoreTelemetryPush.leaseLabel')}
+            value={leaseMinutes}
+            onChange={(e) => {
+              setLeaseMinutes(e.target.value);
+            }}
+            className="bg-secondary-dark border-ink-600 text-ink-200 rounded-control border px-2 py-1 text-sm disabled:opacity-50"
+          />
+        </label>
+        <p className="text-muted text-xs">{t('meshcoreTelemetryPush.leaseHint')}</p>
+      </fieldset>
+    </SettingsCollapsible>
   );
 }

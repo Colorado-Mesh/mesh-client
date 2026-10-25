@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import type { NotificationSoundEvent } from '@/shared/notificationSounds';
 
 import {
@@ -19,6 +18,7 @@ import {
   saveNotificationSoundSetting,
 } from '../lib/notificationSoundSettings';
 import { SELECT_BOX_CLASS } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 const EVENT_LABELS = {
   channel: 'notificationSounds.channel',
@@ -132,134 +132,126 @@ export default function NotificationSoundSettings() {
   }
 
   return (
-    <details className="group bg-deep-black border-secondary-dark rounded-lg border">
-      <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-        <span>{t('notificationSounds.title')}</span>
-        <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="border-ink-700 border-t px-4 pt-3 pb-4">
-        <p className="text-muted text-xs leading-relaxed">{t('notificationSounds.hint')}</p>
-        <p className="text-muted mt-2 text-xs leading-relaxed">
-          {t('notificationSounds.emergencyHint')}
-        </p>
-        <div className="divide-ink-700 mt-3 divide-y">
-          {NOTIFICATION_SOUND_EVENTS.map((event) => {
-            const setting = settings[event];
-            const label = t(EVENT_LABELS[event]);
-            return (
-              <fieldset key={event} aria-busy={busy} className="py-3">
-                <legend className="text-ink-300 text-sm font-medium">{label}</legend>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={typeof setting.sound === 'string' ? setting.sound : 'custom'}
-                    onChange={(e) => {
-                      if (e.target.value === 'custom') return;
-                      void change(event, {
-                        ...setting,
-                        sound: e.target.value as NotificationSoundSetting['sound'],
-                      });
-                    }}
-                    aria-label={t('notificationSounds.toneFor', { event: label })}
-                    aria-disabled={busy}
-                    className={`${SELECT_BOX_CLASS} min-w-0 flex-1`}
-                  >
-                    {BUILTIN_NOTIFICATION_SOUNDS.map((preset) => (
-                      <option key={preset} value={preset}>
-                        {t(PRESET_LABELS[preset])}
-                      </option>
-                    ))}
-                    {typeof setting.sound === 'object' && (
-                      <option value="custom">{setting.sound.name}</option>
-                    )}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void playPreview(event);
-                    }}
-                    disabled={busy || setting.volume === 0}
-                    aria-label={t(
-                      preview === event
-                        ? 'notificationSounds.stopFor'
-                        : 'notificationSounds.previewFor',
-                      { event: label },
-                    )}
-                    className={buttonClass}
-                  >
-                    {t(
-                      preview === event ? 'notificationSounds.stop' : 'notificationSounds.preview',
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void change(event, setting, true);
-                    }}
-                    aria-label={t('notificationSounds.chooseFor', { event: label })}
-                    disabled={busy}
-                    className={buttonClass}
-                  >
-                    {t('notificationSounds.choose')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void change(event, { sound: 'default', volume: 100 });
-                    }}
-                    aria-label={t('notificationSounds.resetFor', { event: label })}
-                    disabled={busy}
-                    className={buttonClass}
-                  >
-                    {t('notificationSounds.reset')}
-                  </button>
-                </div>
-                <label className="text-muted mt-2 flex items-center gap-2 text-xs">
-                  {t('notificationSounds.volume')}
-                  <input
-                    type="range"
-                    min={minimumNotificationVolume(event)}
-                    max={100}
-                    step={5}
-                    value={setting.volume}
-                    onChange={(e) => {
-                      if (pending.current) return;
-                      const volume = Number(e.target.value);
-                      stopPreview();
-                      setSettings((current) => ({
-                        ...current,
-                        [event]: { ...current[event], volume },
-                      }));
-                    }}
-                    onPointerUp={(e) => {
-                      saveVolume(event, Number(e.currentTarget.value));
-                    }}
-                    onKeyUp={(e) => {
-                      saveVolume(event, Number(e.currentTarget.value));
-                    }}
-                    onBlur={(e) => {
-                      saveVolume(event, Number(e.currentTarget.value));
-                    }}
-                    aria-label={t('notificationSounds.volumeFor', { event: label })}
-                    aria-disabled={busy}
-                    className="accent-brand-green min-w-0 flex-1"
-                  />
-                  <span className="w-9 text-right tabular-nums">{setting.volume}%</span>
-                </label>
-              </fieldset>
-            );
-          })}
-        </div>
-        {busy && (
-          <p role="status" className="text-muted text-xs">
-            {t('notificationSounds.saving')}
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-red-300">
-            {error}
-          </p>
-        )}
+    <SettingsCollapsible title={t('notificationSounds.title')} titleAs="span">
+      <p className="text-muted text-xs leading-relaxed">{t('notificationSounds.hint')}</p>
+      <p className="text-muted mt-2 text-xs leading-relaxed">
+        {t('notificationSounds.emergencyHint')}
+      </p>
+      <div className="divide-ink-700 mt-3 divide-y">
+        {NOTIFICATION_SOUND_EVENTS.map((event) => {
+          const setting = settings[event];
+          const label = t(EVENT_LABELS[event]);
+          return (
+            <fieldset key={event} aria-busy={busy} className="py-3">
+              <legend className="text-ink-300 text-sm font-medium">{label}</legend>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={typeof setting.sound === 'string' ? setting.sound : 'custom'}
+                  onChange={(e) => {
+                    if (e.target.value === 'custom') return;
+                    void change(event, {
+                      ...setting,
+                      sound: e.target.value as NotificationSoundSetting['sound'],
+                    });
+                  }}
+                  aria-label={t('notificationSounds.toneFor', { event: label })}
+                  aria-disabled={busy}
+                  className={`${SELECT_BOX_CLASS} min-w-0 flex-1`}
+                >
+                  {BUILTIN_NOTIFICATION_SOUNDS.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {t(PRESET_LABELS[preset])}
+                    </option>
+                  ))}
+                  {typeof setting.sound === 'object' && (
+                    <option value="custom">{setting.sound.name}</option>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void playPreview(event);
+                  }}
+                  disabled={busy || setting.volume === 0}
+                  aria-label={t(
+                    preview === event
+                      ? 'notificationSounds.stopFor'
+                      : 'notificationSounds.previewFor',
+                    { event: label },
+                  )}
+                  className={buttonClass}
+                >
+                  {t(preview === event ? 'notificationSounds.stop' : 'notificationSounds.preview')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void change(event, setting, true);
+                  }}
+                  aria-label={t('notificationSounds.chooseFor', { event: label })}
+                  disabled={busy}
+                  className={buttonClass}
+                >
+                  {t('notificationSounds.choose')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void change(event, { sound: 'default', volume: 100 });
+                  }}
+                  aria-label={t('notificationSounds.resetFor', { event: label })}
+                  disabled={busy}
+                  className={buttonClass}
+                >
+                  {t('notificationSounds.reset')}
+                </button>
+              </div>
+              <label className="text-muted mt-2 flex items-center gap-2 text-xs">
+                {t('notificationSounds.volume')}
+                <input
+                  type="range"
+                  min={minimumNotificationVolume(event)}
+                  max={100}
+                  step={5}
+                  value={setting.volume}
+                  onChange={(e) => {
+                    if (pending.current) return;
+                    const volume = Number(e.target.value);
+                    stopPreview();
+                    setSettings((current) => ({
+                      ...current,
+                      [event]: { ...current[event], volume },
+                    }));
+                  }}
+                  onPointerUp={(e) => {
+                    saveVolume(event, Number(e.currentTarget.value));
+                  }}
+                  onKeyUp={(e) => {
+                    saveVolume(event, Number(e.currentTarget.value));
+                  }}
+                  onBlur={(e) => {
+                    saveVolume(event, Number(e.currentTarget.value));
+                  }}
+                  aria-label={t('notificationSounds.volumeFor', { event: label })}
+                  aria-disabled={busy}
+                  className="accent-brand-green min-w-0 flex-1"
+                />
+                <span className="w-9 text-right tabular-nums">{setting.volume}%</span>
+              </label>
+            </fieldset>
+          );
+        })}
       </div>
-    </details>
+      {busy && (
+        <p role="status" className="text-muted text-xs">
+          {t('notificationSounds.saving')}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+    </SettingsCollapsible>
   );
 }

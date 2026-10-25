@@ -99,6 +99,7 @@ import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
 import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
 const CLEAR_ALL_CHANNELS_VALUE = -999_999;
@@ -861,15 +862,11 @@ export default function AppPanel({
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-1">
-          <h3 className="text-muted text-sm font-medium">{t('appPanel.protocolsSection')}</h3>
-          <HelpTooltip text={t('appPanel.protocolsEnabledDesc')} />
-        </div>
-        <div
-          data-setting-anchor="app.protocols.enabled"
-          className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4"
-        >
+      <SettingsCollapsible
+        title={t('appPanel.protocolsSection')}
+        summaryExtra={<HelpTooltip text={t('appPanel.protocolsEnabledDesc')} />}
+      >
+        <div data-setting-anchor="app.protocols.enabled" className="space-y-2">
           {REGISTERED_MESH_PROTOCOLS.map((proto) => {
             const enabled = !settings.hiddenProtocols.includes(proto);
             const isLastEnabled =
@@ -904,16 +901,12 @@ export default function AppPanel({
             );
           })}
         </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Log panel visibility */}
       {onLogPanelVisibleChange && (
-        <div className="space-y-2">
-          <h3 className="text-muted text-sm font-medium">{t('appPanel.logPanelSection')}</h3>
-          <div
-            data-setting-anchor="app.logPanel.showLogPanel"
-            className="bg-deep-black border-ink-800 rounded-xl border p-4"
-          >
+        <SettingsCollapsible title={t('appPanel.logPanelSection')}>
+          <div data-setting-anchor="app.logPanel.showLogPanel">
             <div className="flex items-center gap-2">
               <input
                 id="log-panel-visible-checkbox"
@@ -934,14 +927,13 @@ export default function AppPanel({
             </div>
             <p className="text-muted mt-2 text-xs">{t('appPanel.logPanelHelp')}</p>
           </div>
-        </div>
+        </SettingsCollapsible>
       )}
 
       {/* Flood Advert schedule (MeshCore only) */}
       {protocol === 'meshcore' && (
-        <div className="space-y-2">
-          <h3 className="text-muted text-sm font-medium">{t('appPanel.floodAdvertSection')}</h3>
-          <div className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4">
+        <SettingsCollapsible title={t('appPanel.floodAdvertSection')}>
+          <div className="space-y-2">
             <label htmlFor="flood-advert-interval" className="text-ink-300 text-sm">
               {t('appPanel.floodAdvertScheduleLabel')}
             </label>
@@ -979,13 +971,12 @@ export default function AppPanel({
               <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
             </select>
           </div>
-        </div>
+        </SettingsCollapsible>
       )}
 
       {/* GPS / Location */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.gpsSection')}</h3>
-        <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
+      <SettingsCollapsible title={t('appPanel.gpsSection')}>
+        <div className="space-y-4">
           <div data-setting-anchor="app.gps.shareLocation" className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1089,12 +1080,11 @@ export default function AppPanel({
             {gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
           </button>
         </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Map & Node Filtering */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.mapFilterSection')}</h3>
-        <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
+      <SettingsCollapsible title={t('appPanel.mapFilterSection')}>
+        <div className="space-y-4">
           <p className="text-muted text-xs leading-relaxed">{t('appPanel.mapFilterDesc')}</p>
           <div data-setting-anchor="app.mapFilter.distantNodes" className="flex items-center gap-2">
             <input
@@ -1220,825 +1210,737 @@ export default function AppPanel({
             </select>
           </div>
         </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Retention & limits (config only — destructive actions are in Danger Zone below) */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.retentionLimitsHeading')}</h3>
-
-        {/* Meshtastic node retention */}
-        {protocol === 'meshtastic' && (
-          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-            {/* Auto-prune nodes on startup */}
-            <div
-              data-setting-anchor="app.retention.autoPruneNodes"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="autoPrune"
-                checked={settings.autoPruneEnabled}
-                onChange={(e) => {
-                  updateSetting('autoPruneEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.autoPruneNodesOlderThan')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-auto-prune-label"
-                htmlFor="autoPrune"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
+      <SettingsCollapsible title={t('appPanel.retentionLimitsHeading')}>
+        <div className="space-y-3">
+          {/* Meshtastic node retention */}
+          {protocol === 'meshtastic' && (
+            <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
+              {/* Auto-prune nodes on startup */}
+              <div
+                data-setting-anchor="app.retention.autoPruneNodes"
+                className="flex items-center gap-2"
               >
-                {t('appPanel.autoPruneNodesOlderThan')}
-              </label>
-              <input
-                id="apppanel-auto-prune-days"
-                type="number"
-                min={1}
-                value={settings.autoPruneDays}
-                onChange={(e) => {
-                  updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1));
-                }}
-                disabled={!settings.autoPruneEnabled}
-                aria-labelledby="apppanel-auto-prune-label"
-                aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
-                  days: settings.autoPruneDays,
-                })}
-                className={`${INPUT_BOX_CLASS} w-20 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.days')}</span>
-            </div>
-
-            {/* Prune unnamed nodes on startup */}
-            <div data-setting-anchor="app.retention.pruneUnnamedNodes" className="space-y-1">
-              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="pruneEmptyNames"
-                  checked={settings.pruneEmptyNamesEnabled}
+                  id="autoPrune"
+                  checked={settings.autoPruneEnabled}
                   onChange={(e) => {
-                    updateSetting('pruneEmptyNamesEnabled', e.target.checked);
+                    updateSetting('autoPruneEnabled', e.target.checked);
                   }}
-                  aria-label={t('appPanel.removeUnnamedNodes')}
+                  aria-label={t('appPanel.autoPruneNodesOlderThan')}
                   className="accent-brand-green"
                 />
                 <label
-                  htmlFor="pruneEmptyNames"
+                  id="apppanel-auto-prune-label"
+                  htmlFor="autoPrune"
                   className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
-                  {t('appPanel.removeUnnamedNodesLabel')}
+                  {t('appPanel.autoPruneNodesOlderThan')}
                 </label>
+                <input
+                  id="apppanel-auto-prune-days"
+                  type="number"
+                  min={1}
+                  value={settings.autoPruneDays}
+                  onChange={(e) => {
+                    updateSetting('autoPruneDays', Math.max(1, parseInt(e.target.value) || 1));
+                  }}
+                  disabled={!settings.autoPruneEnabled}
+                  aria-labelledby="apppanel-auto-prune-label"
+                  aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
+                    days: settings.autoPruneDays,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.days')}</span>
               </div>
-              <p className="text-muted pl-6 text-xs">{t('appPanel.unnamedNodesHint')}</p>
-            </div>
 
-            {/* Node cap */}
-            <div data-setting-anchor="app.retention.nodeCap" className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="nodeCap"
-                checked={settings.nodeCapEnabled}
-                onChange={(e) => {
-                  updateSetting('nodeCapEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.capTotalNodes')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-node-cap-label"
-                htmlFor="nodeCap"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.capTotalNodesLabel')}
-              </label>
-              <input
-                id="apppanel-node-cap-count"
-                type="number"
-                min={1}
-                value={settings.nodeCapCount}
-                onChange={(e) => {
-                  updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1));
-                }}
-                disabled={!settings.nodeCapEnabled}
-                aria-labelledby="apppanel-node-cap-label"
-                aria-label={t('appPanel.capTotalNodesCountAria', { count: settings.nodeCapCount })}
-                className={`${INPUT_BOX_CLASS} w-24 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.nodes')}</span>
-            </div>
+              {/* Prune unnamed nodes on startup */}
+              <div data-setting-anchor="app.retention.pruneUnnamedNodes" className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pruneEmptyNames"
+                    checked={settings.pruneEmptyNamesEnabled}
+                    onChange={(e) => {
+                      updateSetting('pruneEmptyNamesEnabled', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.removeUnnamedNodes')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    htmlFor="pruneEmptyNames"
+                    className="text-ink-300 flex-1 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.removeUnnamedNodesLabel')}
+                  </label>
+                </div>
+                <p className="text-muted pl-6 text-xs">{t('appPanel.unnamedNodesHint')}</p>
+              </div>
 
-            {/* Position history prune */}
-            <div
-              data-setting-anchor="app.retention.positionHistoryPrune"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="positionHistoryPrune"
-                checked={settings.positionHistoryPruneEnabled}
-                onChange={(e) => {
-                  updateSetting('positionHistoryPruneEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.autoPrunePositionHistory')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-position-history-prune-label"
-                htmlFor="positionHistoryPrune"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.autoPrunePositionHistoryLabel')}
-              </label>
-              <input
-                id="apppanel-position-history-prune-days"
-                type="number"
-                min={1}
-                value={settings.positionHistoryPruneDays}
-                onChange={(e) => {
-                  updateSetting(
-                    'positionHistoryPruneDays',
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  );
-                }}
-                disabled={!settings.positionHistoryPruneEnabled}
-                aria-labelledby="apppanel-position-history-prune-label"
-                aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
-                  days: settings.positionHistoryPruneDays,
-                })}
-                className={`${INPUT_BOX_CLASS} w-20 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.days')}</span>
-            </div>
-          </div>
-        )}
-
-        {/* MeshCore contact retention */}
-        {protocol === 'meshcore' && (
-          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-            {/* Delete contacts that never advertised */}
-            <div data-setting-anchor="app.retention.neverAdvertisedContacts" className="space-y-1">
-              <div className="flex items-center gap-2">
+              {/* Node cap */}
+              <div data-setting-anchor="app.retention.nodeCap" className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  id="meshcoreDeleteNeverAdvertised"
-                  checked={settings.meshcoreDeleteNeverAdvertised}
+                  id="nodeCap"
+                  checked={settings.nodeCapEnabled}
                   onChange={(e) => {
-                    updateSetting('meshcoreDeleteNeverAdvertised', e.target.checked);
+                    updateSetting('nodeCapEnabled', e.target.checked);
                   }}
-                  aria-label={t('appPanel.removeContactsNeverAdvertised')}
+                  aria-label={t('appPanel.capTotalNodes')}
                   className="accent-brand-green"
                 />
                 <label
-                  htmlFor="meshcoreDeleteNeverAdvertised"
+                  id="apppanel-node-cap-label"
+                  htmlFor="nodeCap"
                   className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
-                  {t('appPanel.meshcoreRemoveNeverAdvertisedLabel')}
+                  {t('appPanel.capTotalNodesLabel')}
                 </label>
+                <input
+                  id="apppanel-node-cap-count"
+                  type="number"
+                  min={1}
+                  value={settings.nodeCapCount}
+                  onChange={(e) => {
+                    updateSetting('nodeCapCount', Math.max(1, parseInt(e.target.value) || 1));
+                  }}
+                  disabled={!settings.nodeCapEnabled}
+                  aria-labelledby="apppanel-node-cap-label"
+                  aria-label={t('appPanel.capTotalNodesCountAria', {
+                    count: settings.nodeCapCount,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.nodes')}</span>
               </div>
-              <p className="text-muted pl-6 text-xs">
-                {t('appPanel.meshcoreRemoveNeverAdvertisedHint')}
+
+              {/* Position history prune */}
+              <div
+                data-setting-anchor="app.retention.positionHistoryPrune"
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="positionHistoryPrune"
+                  checked={settings.positionHistoryPruneEnabled}
+                  onChange={(e) => {
+                    updateSetting('positionHistoryPruneEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.autoPrunePositionHistory')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-position-history-prune-label"
+                  htmlFor="positionHistoryPrune"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.autoPrunePositionHistoryLabel')}
+                </label>
+                <input
+                  id="apppanel-position-history-prune-days"
+                  type="number"
+                  min={1}
+                  value={settings.positionHistoryPruneDays}
+                  onChange={(e) => {
+                    updateSetting(
+                      'positionHistoryPruneDays',
+                      Math.max(1, parseInt(e.target.value) || 1),
+                    );
+                  }}
+                  disabled={!settings.positionHistoryPruneEnabled}
+                  aria-labelledby="apppanel-position-history-prune-label"
+                  aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
+                    days: settings.positionHistoryPruneDays,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.days')}</span>
+              </div>
+            </div>
+          )}
+
+          {/* MeshCore contact retention */}
+          {protocol === 'meshcore' && (
+            <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
+              {/* Delete contacts that never advertised */}
+              <div
+                data-setting-anchor="app.retention.neverAdvertisedContacts"
+                className="space-y-1"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="meshcoreDeleteNeverAdvertised"
+                    checked={settings.meshcoreDeleteNeverAdvertised}
+                    onChange={(e) => {
+                      updateSetting('meshcoreDeleteNeverAdvertised', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.removeContactsNeverAdvertised')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    htmlFor="meshcoreDeleteNeverAdvertised"
+                    className="text-ink-300 flex-1 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.meshcoreRemoveNeverAdvertisedLabel')}
+                  </label>
+                </div>
+                <p className="text-muted pl-6 text-xs">
+                  {t('appPanel.meshcoreRemoveNeverAdvertisedHint')}
+                </p>
+              </div>
+
+              {/* Auto-prune contacts by age */}
+              <div
+                data-setting-anchor="app.retention.autoPruneContacts"
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="meshcoreAutoPrune"
+                  checked={settings.meshcoreAutoPruneEnabled}
+                  onChange={(e) => {
+                    updateSetting('meshcoreAutoPruneEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.autoPruneUnheardContacts')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-meshcore-auto-prune-label"
+                  htmlFor="meshcoreAutoPrune"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.autoPruneUnheardContactsLabel')}
+                </label>
+                <input
+                  id="apppanel-meshcore-auto-prune-days"
+                  type="number"
+                  min={1}
+                  value={settings.meshcoreAutoPruneDays}
+                  onChange={(e) => {
+                    updateSetting(
+                      'meshcoreAutoPruneDays',
+                      Math.max(1, parseInt(e.target.value) || 1),
+                    );
+                  }}
+                  disabled={!settings.meshcoreAutoPruneEnabled}
+                  aria-labelledby="apppanel-meshcore-auto-prune-label"
+                  aria-label={t('appPanel.autoPruneUnheardContactsDaysAria', {
+                    days: settings.meshcoreAutoPruneDays,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.days')}</span>
+              </div>
+
+              {/* Contact cap */}
+              <div
+                data-setting-anchor="app.retention.contactCap"
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="meshcoreContactCap"
+                  checked={settings.meshcoreContactCapEnabled}
+                  onChange={(e) => {
+                    updateSetting('meshcoreContactCapEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capTotalContacts')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-meshcore-contact-cap-label"
+                  htmlFor="meshcoreContactCap"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.capTotalContactsLabel')}
+                </label>
+                <input
+                  id="apppanel-meshcore-contact-cap-count"
+                  type="number"
+                  min={1}
+                  max={10000}
+                  value={settings.meshcoreContactCapCount}
+                  onChange={(e) => {
+                    updateSetting(
+                      'meshcoreContactCapCount',
+                      Math.max(1, Math.min(10000, parseInt(e.target.value) || 1)),
+                    );
+                  }}
+                  disabled={!settings.meshcoreContactCapEnabled}
+                  aria-labelledby="apppanel-meshcore-contact-cap-label"
+                  aria-label={t('appPanel.capTotalContactsCountAria', {
+                    count: settings.meshcoreContactCapCount,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.contacts')}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
+          {protocol === 'reticulum' && (
+            <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
+              <p className="text-muted text-xs leading-relaxed">
+                {t('appPanel.reticulumDestinationRetentionHint')}
               </p>
+              <div
+                data-setting-anchor="app.retention.autoPruneDestinations"
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="reticulumAutoPrune"
+                  checked={settings.reticulumAutoPruneEnabled}
+                  onChange={(e) => {
+                    updateSetting('reticulumAutoPruneEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.reticulumAutoPruneDestinations')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-reticulum-auto-prune-label"
+                  htmlFor="reticulumAutoPrune"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.reticulumAutoPruneDestinationsLabel')}
+                </label>
+                <input
+                  id="apppanel-reticulum-auto-prune-days"
+                  type="number"
+                  min={1}
+                  value={settings.reticulumAutoPruneDays}
+                  onChange={(e) => {
+                    updateSetting(
+                      'reticulumAutoPruneDays',
+                      Math.max(1, parseInt(e.target.value) || 1),
+                    );
+                  }}
+                  disabled={!settings.reticulumAutoPruneEnabled}
+                  aria-labelledby="apppanel-reticulum-auto-prune-label"
+                  aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
+                    days: settings.reticulumAutoPruneDays,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
+                />
+                <span className="text-ink-300 text-sm">{t('common.days')}</span>
+              </div>
+              <div
+                data-setting-anchor="app.retention.destinationCap"
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="reticulumDestinationCap"
+                  checked={settings.reticulumDestinationCapEnabled}
+                  onChange={(e) => {
+                    updateSetting('reticulumDestinationCapEnabled', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.reticulumCapDestinations')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-reticulum-destination-cap-label"
+                  htmlFor="reticulumDestinationCap"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+                >
+                  {t('appPanel.reticulumCapDestinationsLabel')}
+                </label>
+                <input
+                  id="apppanel-reticulum-destination-cap-count"
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={settings.reticulumDestinationCapCount}
+                  onChange={(e) => {
+                    updateSetting(
+                      'reticulumDestinationCapCount',
+                      Math.max(1, Math.min(100000, parseInt(e.target.value) || 1)),
+                    );
+                  }}
+                  disabled={!settings.reticulumDestinationCapEnabled}
+                  aria-labelledby="apppanel-reticulum-destination-cap-label"
+                  aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
+                    count: settings.reticulumDestinationCapCount,
+                  })}
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                />
+                <span className="text-ink-300 text-sm">
+                  {t('appPanel.reticulumDestinationsUnit', {
+                    count: settings.reticulumDestinationCapCount,
+                  })}
+                </span>
+              </div>
             </div>
+          )}
 
-            {/* Auto-prune contacts by age */}
+          {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
+          <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
+            <p className="text-muted text-xs leading-relaxed">
+              {t('appPanel.messagesLoadLimitIntro')}
+            </p>
             <div
-              data-setting-anchor="app.retention.autoPruneContacts"
+              data-setting-anchor="app.retention.messageLimit"
               className="flex items-center gap-2"
             >
               <input
                 type="checkbox"
-                id="meshcoreAutoPrune"
-                checked={settings.meshcoreAutoPruneEnabled}
+                id="messageLimit"
+                checked={settings.messageLimitEnabled}
                 onChange={(e) => {
-                  updateSetting('meshcoreAutoPruneEnabled', e.target.checked);
+                  updateSetting('messageLimitEnabled', e.target.checked);
                 }}
-                aria-label={t('appPanel.autoPruneUnheardContacts')}
+                aria-label={t('appPanel.limitMessagesLoaded')}
                 className="accent-brand-green"
               />
               <label
-                id="apppanel-meshcore-auto-prune-label"
-                htmlFor="meshcoreAutoPrune"
+                id="apppanel-message-limit-label"
+                htmlFor="messageLimit"
                 className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
-                {t('appPanel.autoPruneUnheardContactsLabel')}
+                {t('appPanel.limitMessagesLoadedLabel')}
               </label>
               <input
-                id="apppanel-meshcore-auto-prune-days"
-                type="number"
-                min={1}
-                value={settings.meshcoreAutoPruneDays}
-                onChange={(e) => {
-                  updateSetting(
-                    'meshcoreAutoPruneDays',
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  );
-                }}
-                disabled={!settings.meshcoreAutoPruneEnabled}
-                aria-labelledby="apppanel-meshcore-auto-prune-label"
-                aria-label={t('appPanel.autoPruneUnheardContactsDaysAria', {
-                  days: settings.meshcoreAutoPruneDays,
-                })}
-                className={`${INPUT_BOX_CLASS} w-20 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.days')}</span>
-            </div>
-
-            {/* Contact cap */}
-            <div data-setting-anchor="app.retention.contactCap" className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="meshcoreContactCap"
-                checked={settings.meshcoreContactCapEnabled}
-                onChange={(e) => {
-                  updateSetting('meshcoreContactCapEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.capTotalContacts')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-meshcore-contact-cap-label"
-                htmlFor="meshcoreContactCap"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.capTotalContactsLabel')}
-              </label>
-              <input
-                id="apppanel-meshcore-contact-cap-count"
+                id="apppanel-message-limit-count"
                 type="number"
                 min={1}
                 max={10000}
-                value={settings.meshcoreContactCapCount}
+                value={settings.messageLimitCount}
                 onChange={(e) => {
                   updateSetting(
-                    'meshcoreContactCapCount',
-                    Math.max(1, Math.min(10000, parseInt(e.target.value) || 1)),
+                    'messageLimitCount',
+                    Math.max(1, Math.min(10000, parseInt(e.target.value) || 1000)),
                   );
                 }}
-                disabled={!settings.meshcoreContactCapEnabled}
-                aria-labelledby="apppanel-meshcore-contact-cap-label"
-                aria-label={t('appPanel.capTotalContactsCountAria', {
-                  count: settings.meshcoreContactCapCount,
-                })}
-                className={`${INPUT_BOX_CLASS} w-24 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.contacts')}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
-        {protocol === 'reticulum' && (
-          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-            <p className="text-muted text-xs leading-relaxed">
-              {t('appPanel.reticulumDestinationRetentionHint')}
-            </p>
-            <div
-              data-setting-anchor="app.retention.autoPruneDestinations"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="reticulumAutoPrune"
-                checked={settings.reticulumAutoPruneEnabled}
-                onChange={(e) => {
-                  updateSetting('reticulumAutoPruneEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.reticulumAutoPruneDestinations')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-reticulum-auto-prune-label"
-                htmlFor="reticulumAutoPrune"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.reticulumAutoPruneDestinationsLabel')}
-              </label>
-              <input
-                id="apppanel-reticulum-auto-prune-days"
-                type="number"
-                min={1}
-                value={settings.reticulumAutoPruneDays}
-                onChange={(e) => {
-                  updateSetting(
-                    'reticulumAutoPruneDays',
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  );
-                }}
-                disabled={!settings.reticulumAutoPruneEnabled}
-                aria-labelledby="apppanel-reticulum-auto-prune-label"
-                aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
-                  days: settings.reticulumAutoPruneDays,
-                })}
-                className={`${INPUT_BOX_CLASS} w-20 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.days')}</span>
-            </div>
-            <div
-              data-setting-anchor="app.retention.destinationCap"
-              className="flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="reticulumDestinationCap"
-                checked={settings.reticulumDestinationCapEnabled}
-                onChange={(e) => {
-                  updateSetting('reticulumDestinationCapEnabled', e.target.checked);
-                }}
-                aria-label={t('appPanel.reticulumCapDestinations')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-reticulum-destination-cap-label"
-                htmlFor="reticulumDestinationCap"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.reticulumCapDestinationsLabel')}
-              </label>
-              <input
-                id="apppanel-reticulum-destination-cap-count"
-                type="number"
-                min={1}
-                max={100000}
-                value={settings.reticulumDestinationCapCount}
-                onChange={(e) => {
-                  updateSetting(
-                    'reticulumDestinationCapCount',
-                    Math.max(1, Math.min(100000, parseInt(e.target.value) || 1)),
-                  );
-                }}
-                disabled={!settings.reticulumDestinationCapEnabled}
-                aria-labelledby="apppanel-reticulum-destination-cap-label"
-                aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
-                  count: settings.reticulumDestinationCapCount,
-                })}
-                className={`${INPUT_BOX_CLASS} w-24 text-right`}
-              />
-              <span className="text-ink-300 text-sm">
-                {t('appPanel.reticulumDestinationsUnit', {
-                  count: settings.reticulumDestinationCapCount,
-                })}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
-        <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-          <p className="text-muted text-xs leading-relaxed">
-            {t('appPanel.messagesLoadLimitIntro')}
-          </p>
-          <div data-setting-anchor="app.retention.messageLimit" className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="messageLimit"
-              checked={settings.messageLimitEnabled}
-              onChange={(e) => {
-                updateSetting('messageLimitEnabled', e.target.checked);
-              }}
-              aria-label={t('appPanel.limitMessagesLoaded')}
-              className="accent-brand-green"
-            />
-            <label
-              id="apppanel-message-limit-label"
-              htmlFor="messageLimit"
-              className="text-ink-300 flex-1 cursor-pointer text-sm"
-            >
-              {t('appPanel.limitMessagesLoadedLabel')}
-            </label>
-            <input
-              id="apppanel-message-limit-count"
-              type="number"
-              min={1}
-              max={10000}
-              value={settings.messageLimitCount}
-              onChange={(e) => {
-                updateSetting(
-                  'messageLimitCount',
-                  Math.max(1, Math.min(10000, parseInt(e.target.value) || 1000)),
-                );
-              }}
-              disabled={!settings.messageLimitEnabled}
-              aria-labelledby="apppanel-message-limit-label"
-              aria-label={t('appPanel.limitMessagesLoadedCountAria', {
-                count: settings.messageLimitCount,
-              })}
-              className={`${INPUT_BOX_CLASS} w-24 text-right`}
-            />
-            <span className="text-ink-300 text-sm">{t('common.messages')}</span>
-          </div>
-          {protocol === 'meshcore' ? (
-            <div
-              data-setting-anchor="app.retention.meshcoreMessageCap"
-              className="border-ink-700 flex items-center gap-2 border-t pt-2"
-            >
-              <input
-                type="checkbox"
-                id="messageRetentionMeshcore"
-                checked={retention.meshcoreEnabled}
-                onChange={(e) => {
-                  updateRetentionEnabled('meshcore', e.target.checked);
-                }}
-                aria-label={t('appPanel.capStoredMessages')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-message-retention-meshcore-label"
-                htmlFor="messageRetentionMeshcore"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
-              >
-                {t('appPanel.capStoredMessagesLabel')}
-              </label>
-              <input
-                id="apppanel-message-retention-meshcore-count"
-                type="number"
-                min={MESSAGE_RETENTION_MIN_COUNT}
-                max={MESSAGE_RETENTION_MAX_COUNT}
-                value={retention.meshcoreCount}
-                onChange={(e) => {
-                  updateRetentionCount(
-                    'meshcore',
-                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                  );
-                }}
-                disabled={!retention.meshcoreEnabled}
-                aria-labelledby="apppanel-message-retention-meshcore-label"
-                aria-label={t('appPanel.capStoredMessagesCountAria', {
-                  count: retention.meshcoreCount,
+                disabled={!settings.messageLimitEnabled}
+                aria-labelledby="apppanel-message-limit-label"
+                aria-label={t('appPanel.limitMessagesLoadedCountAria', {
+                  count: settings.messageLimitCount,
                 })}
                 className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
-          ) : protocol === 'reticulum' ? (
-            <>
+            {protocol === 'meshcore' ? (
               <div
-                data-setting-anchor="app.retention.reticulumMessageCap"
+                data-setting-anchor="app.retention.meshcoreMessageCap"
                 className="border-ink-700 flex items-center gap-2 border-t pt-2"
               >
                 <input
                   type="checkbox"
-                  id="messageRetentionReticulum"
-                  checked={retention.reticulumEnabled}
+                  id="messageRetentionMeshcore"
+                  checked={retention.meshcoreEnabled}
                   onChange={(e) => {
-                    updateRetentionEnabled('reticulum', e.target.checked);
+                    updateRetentionEnabled('meshcore', e.target.checked);
                   }}
                   aria-label={t('appPanel.capStoredMessages')}
                   className="accent-brand-green"
                 />
                 <label
-                  id="apppanel-message-retention-reticulum-label"
-                  htmlFor="messageRetentionReticulum"
+                  id="apppanel-message-retention-meshcore-label"
+                  htmlFor="messageRetentionMeshcore"
                   className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
                   {t('appPanel.capStoredMessagesLabel')}
                 </label>
                 <input
-                  id="apppanel-message-retention-reticulum-count"
+                  id="apppanel-message-retention-meshcore-count"
                   type="number"
                   min={MESSAGE_RETENTION_MIN_COUNT}
                   max={MESSAGE_RETENTION_MAX_COUNT}
-                  value={retention.reticulumCount}
+                  value={retention.meshcoreCount}
                   onChange={(e) => {
                     updateRetentionCount(
-                      'reticulum',
+                      'meshcore',
                       parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
                     );
                   }}
-                  disabled={!retention.reticulumEnabled}
-                  aria-labelledby="apppanel-message-retention-reticulum-label"
+                  disabled={!retention.meshcoreEnabled}
+                  aria-labelledby="apppanel-message-retention-meshcore-label"
                   aria-label={t('appPanel.capStoredMessagesCountAria', {
-                    count: retention.reticulumCount,
+                    count: retention.meshcoreCount,
                   })}
                   className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
                 <span className="text-ink-300 text-sm">{t('common.messages')}</span>
               </div>
+            ) : protocol === 'reticulum' ? (
+              <>
+                <div
+                  data-setting-anchor="app.retention.reticulumMessageCap"
+                  className="border-ink-700 flex items-center gap-2 border-t pt-2"
+                >
+                  <input
+                    type="checkbox"
+                    id="messageRetentionReticulum"
+                    checked={retention.reticulumEnabled}
+                    onChange={(e) => {
+                      updateRetentionEnabled('reticulum', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.capStoredMessages')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    id="apppanel-message-retention-reticulum-label"
+                    htmlFor="messageRetentionReticulum"
+                    className="text-ink-300 flex-1 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.capStoredMessagesLabel')}
+                  </label>
+                  <input
+                    id="apppanel-message-retention-reticulum-count"
+                    type="number"
+                    min={MESSAGE_RETENTION_MIN_COUNT}
+                    max={MESSAGE_RETENTION_MAX_COUNT}
+                    value={retention.reticulumCount}
+                    onChange={(e) => {
+                      updateRetentionCount(
+                        'reticulum',
+                        parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                      );
+                    }}
+                    disabled={!retention.reticulumEnabled}
+                    aria-labelledby="apppanel-message-retention-reticulum-label"
+                    aria-label={t('appPanel.capStoredMessagesCountAria', {
+                      count: retention.reticulumCount,
+                    })}
+                    className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                  />
+                  <span className="text-ink-300 text-sm">{t('common.messages')}</span>
+                </div>
+                <div
+                  data-setting-anchor="app.retention.rrcMessageCap"
+                  className="border-ink-700 flex items-center gap-2 border-t pt-2"
+                >
+                  <input
+                    type="checkbox"
+                    id="messageRetentionRrc"
+                    checked={retention.rrcEnabled}
+                    onChange={(e) => {
+                      updateRetentionEnabled('rrc', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.capStoredRrcMessages')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    id="apppanel-message-retention-rrc-label"
+                    htmlFor="messageRetentionRrc"
+                    className="text-ink-300 flex-1 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.capStoredRrcMessagesLabel')}
+                  </label>
+                  <input
+                    id="apppanel-message-retention-rrc-count"
+                    type="number"
+                    min={MESSAGE_RETENTION_MIN_COUNT}
+                    max={MESSAGE_RETENTION_MAX_COUNT}
+                    value={retention.rrcCount}
+                    onChange={(e) => {
+                      updateRetentionCount(
+                        'rrc',
+                        Number.parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                      );
+                    }}
+                    disabled={!retention.rrcEnabled}
+                    aria-labelledby="apppanel-message-retention-rrc-label"
+                    aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
+                      count: retention.rrcCount,
+                    })}
+                    className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                  />
+                  <span className="text-ink-300 text-sm">{t('common.messages')}</span>
+                </div>
+              </>
+            ) : (
               <div
-                data-setting-anchor="app.retention.rrcMessageCap"
+                data-setting-anchor="app.retention.meshtasticMessageCap"
                 className="border-ink-700 flex items-center gap-2 border-t pt-2"
               >
                 <input
                   type="checkbox"
-                  id="messageRetentionRrc"
-                  checked={retention.rrcEnabled}
+                  id="messageRetentionMeshtastic"
+                  checked={retention.meshtasticEnabled}
                   onChange={(e) => {
-                    updateRetentionEnabled('rrc', e.target.checked);
+                    updateRetentionEnabled('meshtastic', e.target.checked);
                   }}
-                  aria-label={t('appPanel.capStoredRrcMessages')}
+                  aria-label={t('appPanel.capStoredMessages')}
                   className="accent-brand-green"
                 />
                 <label
-                  id="apppanel-message-retention-rrc-label"
-                  htmlFor="messageRetentionRrc"
+                  id="apppanel-message-retention-meshtastic-label"
+                  htmlFor="messageRetentionMeshtastic"
                   className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
-                  {t('appPanel.capStoredRrcMessagesLabel')}
+                  {t('appPanel.capStoredMessagesLabel')}
                 </label>
                 <input
-                  id="apppanel-message-retention-rrc-count"
+                  id="apppanel-message-retention-meshtastic-count"
                   type="number"
                   min={MESSAGE_RETENTION_MIN_COUNT}
                   max={MESSAGE_RETENTION_MAX_COUNT}
-                  value={retention.rrcCount}
+                  value={retention.meshtasticCount}
                   onChange={(e) => {
                     updateRetentionCount(
-                      'rrc',
-                      Number.parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                      'meshtastic',
+                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
                     );
                   }}
-                  disabled={!retention.rrcEnabled}
-                  aria-labelledby="apppanel-message-retention-rrc-label"
-                  aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
-                    count: retention.rrcCount,
+                  disabled={!retention.meshtasticEnabled}
+                  aria-labelledby="apppanel-message-retention-meshtastic-label"
+                  aria-label={t('appPanel.capStoredMessagesCountAria', {
+                    count: retention.meshtasticCount,
                   })}
                   className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
                 <span className="text-ink-300 text-sm">{t('common.messages')}</span>
               </div>
-            </>
-          ) : (
+            )}
             <div
-              data-setting-anchor="app.retention.meshtasticMessageCap"
+              data-setting-anchor="app.retention.compactMessages"
               className="border-ink-700 flex items-center gap-2 border-t pt-2"
             >
               <input
                 type="checkbox"
-                id="messageRetentionMeshtastic"
-                checked={retention.meshtasticEnabled}
+                id="chatCompactMode"
+                checked={settings.chatCompactMode}
                 onChange={(e) => {
-                  updateRetentionEnabled('meshtastic', e.target.checked);
+                  updateSetting('chatCompactMode', e.target.checked);
                 }}
-                aria-label={t('appPanel.capStoredMessages')}
+                aria-label={t('appPanel.compactMessages')}
+                className="accent-brand-green"
+              />
+              <label htmlFor="chatCompactMode" className="text-ink-300 cursor-pointer text-sm">
+                {t('appPanel.compactMessages')}
+              </label>
+            </div>
+            <div
+              data-setting-anchor="app.retention.alwaysShowMessageActions"
+              className="flex items-center gap-2"
+            >
+              <input
+                type="checkbox"
+                id="alwaysShowMessageActions"
+                checked={settings.alwaysShowMessageActions}
+                onChange={(e) => {
+                  updateSetting('alwaysShowMessageActions', e.target.checked);
+                }}
+                aria-label={t('appPanel.alwaysShowMessageActions')}
                 className="accent-brand-green"
               />
               <label
-                id="apppanel-message-retention-meshtastic-label"
-                htmlFor="messageRetentionMeshtastic"
-                className="text-ink-300 flex-1 cursor-pointer text-sm"
+                htmlFor="alwaysShowMessageActions"
+                className="text-ink-300 cursor-pointer text-sm"
               >
-                {t('appPanel.capStoredMessagesLabel')}
+                {t('appPanel.alwaysShowMessageActions')}
               </label>
-              <input
-                id="apppanel-message-retention-meshtastic-count"
-                type="number"
-                min={MESSAGE_RETENTION_MIN_COUNT}
-                max={MESSAGE_RETENTION_MAX_COUNT}
-                value={retention.meshtasticCount}
-                onChange={(e) => {
-                  updateRetentionCount(
-                    'meshtastic',
-                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                  );
-                }}
-                disabled={!retention.meshtasticEnabled}
-                aria-labelledby="apppanel-message-retention-meshtastic-label"
-                aria-label={t('appPanel.capStoredMessagesCountAria', {
-                  count: retention.meshtasticCount,
-                })}
-                className={`${INPUT_BOX_CLASS} w-24 text-right`}
-              />
-              <span className="text-ink-300 text-sm">{t('common.messages')}</span>
+              <HelpTooltip text={t('appPanel.alwaysShowMessageActionsDesc')} />
             </div>
-          )}
-          <div
-            data-setting-anchor="app.retention.compactMessages"
-            className="border-ink-700 flex items-center gap-2 border-t pt-2"
-          >
-            <input
-              type="checkbox"
-              id="chatCompactMode"
-              checked={settings.chatCompactMode}
-              onChange={(e) => {
-                updateSetting('chatCompactMode', e.target.checked);
-              }}
-              aria-label={t('appPanel.compactMessages')}
-              className="accent-brand-green"
-            />
-            <label htmlFor="chatCompactMode" className="text-ink-300 cursor-pointer text-sm">
-              {t('appPanel.compactMessages')}
-            </label>
-          </div>
-          <div
-            data-setting-anchor="app.retention.alwaysShowMessageActions"
-            className="flex items-center gap-2"
-          >
-            <input
-              type="checkbox"
-              id="alwaysShowMessageActions"
-              checked={settings.alwaysShowMessageActions}
-              onChange={(e) => {
-                updateSetting('alwaysShowMessageActions', e.target.checked);
-              }}
-              aria-label={t('appPanel.alwaysShowMessageActions')}
-              className="accent-brand-green"
-            />
-            <label
-              htmlFor="alwaysShowMessageActions"
-              className="text-ink-300 cursor-pointer text-sm"
-            >
-              {t('appPanel.alwaysShowMessageActions')}
-            </label>
-            <HelpTooltip text={t('appPanel.alwaysShowMessageActionsDesc')} />
-          </div>
-          {protocol === 'meshtastic' && (
-            <>
-              <div
-                data-setting-anchor="app.retention.storeForwardHistory"
-                className="flex items-center gap-2 pt-2"
-              >
-                <input
-                  type="checkbox"
-                  id="storeForwardAutoFetchHistory"
-                  checked={settings.storeForwardAutoFetchHistory}
-                  onChange={(e) => {
-                    const enabled = e.target.checked;
-                    updateSetting('storeForwardAutoFetchHistory', enabled);
-                    void window.electronAPI.appSettings
-                      .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
-                      .catch((err: unknown) => {
-                        console.warn(
-                          '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
-                            errLikeToLogString(err),
-                        );
-                      });
-                  }}
-                  aria-label={t('appPanel.storeForwardAutoFetchHistory')}
-                  className="accent-brand-green"
-                />
-                <label
-                  htmlFor="storeForwardAutoFetchHistory"
-                  className="text-ink-300 cursor-pointer text-sm"
-                >
-                  {t('appPanel.storeForwardAutoFetchHistory')}
-                </label>
-                <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
-              </div>
-              {settings.storeForwardAutoFetchHistory && (
+            {protocol === 'meshtastic' && (
+              <>
                 <div
-                  data-setting-anchor="app.retention.storeForwardProfile"
-                  className="flex flex-wrap items-center gap-2 pl-6"
+                  data-setting-anchor="app.retention.storeForwardHistory"
+                  className="flex items-center gap-2 pt-2"
                 >
-                  <label htmlFor="storeForwardHistoryProfile" className="text-ink-300 text-sm">
-                    {t('appPanel.storeForwardHistoryProfileLabel')}
-                  </label>
-                  <select
-                    id="storeForwardHistoryProfile"
-                    value={settings.storeForwardHistoryProfile}
+                  <input
+                    type="checkbox"
+                    id="storeForwardAutoFetchHistory"
+                    checked={settings.storeForwardAutoFetchHistory}
                     onChange={(e) => {
-                      const value = e.target.value === 'aggressive' ? 'aggressive' : 'conservative';
-                      updateSetting('storeForwardHistoryProfile', value);
+                      const enabled = e.target.checked;
+                      updateSetting('storeForwardAutoFetchHistory', enabled);
                       void window.electronAPI.appSettings
-                        .set('storeForwardHistoryProfile', value)
+                        .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
                         .catch((err: unknown) => {
                           console.warn(
-                            '[AppPanel] storeForwardHistoryProfile persist failed ' +
+                            '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
                               errLikeToLogString(err),
                           );
                         });
                     }}
-                    aria-label={t('appPanel.storeForwardHistoryProfileAria')}
-                    className={SELECT_BOX_CLASS}
+                    aria-label={t('appPanel.storeForwardAutoFetchHistory')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    htmlFor="storeForwardAutoFetchHistory"
+                    className="text-ink-300 cursor-pointer text-sm"
                   >
-                    <option value="conservative">
-                      {t('appPanel.storeForwardHistoryProfileConservative')}
-                    </option>
-                    <option value="aggressive">
-                      {t('appPanel.storeForwardHistoryProfileAggressive')}
-                    </option>
-                  </select>
-                  <HelpTooltip text={t('appPanel.storeForwardHistoryProfileHint')} />
+                    {t('appPanel.storeForwardAutoFetchHistory')}
+                  </label>
+                  <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
                 </div>
-              )}
-              <div
-                data-setting-anchor="app.retention.shareLocationWaypoint"
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="checkbox"
-                  id="shareLocationSendWaypoint"
-                  checked={settings.shareLocationSendWaypoint}
-                  onChange={(e) => {
-                    updateSetting('shareLocationSendWaypoint', e.target.checked);
-                  }}
-                  aria-label={t('appPanel.shareLocationSendWaypoint')}
-                  className="accent-brand-green"
-                />
-                <label
-                  htmlFor="shareLocationSendWaypoint"
-                  className="text-ink-300 cursor-pointer text-sm"
+                {settings.storeForwardAutoFetchHistory && (
+                  <div
+                    data-setting-anchor="app.retention.storeForwardProfile"
+                    className="flex flex-wrap items-center gap-2 pl-6"
+                  >
+                    <label htmlFor="storeForwardHistoryProfile" className="text-ink-300 text-sm">
+                      {t('appPanel.storeForwardHistoryProfileLabel')}
+                    </label>
+                    <select
+                      id="storeForwardHistoryProfile"
+                      value={settings.storeForwardHistoryProfile}
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === 'aggressive' ? 'aggressive' : 'conservative';
+                        updateSetting('storeForwardHistoryProfile', value);
+                        void window.electronAPI.appSettings
+                          .set('storeForwardHistoryProfile', value)
+                          .catch((err: unknown) => {
+                            console.warn(
+                              '[AppPanel] storeForwardHistoryProfile persist failed ' +
+                                errLikeToLogString(err),
+                            );
+                          });
+                      }}
+                      aria-label={t('appPanel.storeForwardHistoryProfileAria')}
+                      className={SELECT_BOX_CLASS}
+                    >
+                      <option value="conservative">
+                        {t('appPanel.storeForwardHistoryProfileConservative')}
+                      </option>
+                      <option value="aggressive">
+                        {t('appPanel.storeForwardHistoryProfileAggressive')}
+                      </option>
+                    </select>
+                    <HelpTooltip text={t('appPanel.storeForwardHistoryProfileHint')} />
+                  </div>
+                )}
+                <div
+                  data-setting-anchor="app.retention.shareLocationWaypoint"
+                  className="flex items-center gap-2"
                 >
-                  {t('appPanel.shareLocationSendWaypoint')}
-                </label>
-                <HelpTooltip text={t('appPanel.shareLocationSendWaypointHint')} />
-              </div>
-            </>
-          )}
+                  <input
+                    type="checkbox"
+                    id="shareLocationSendWaypoint"
+                    checked={settings.shareLocationSendWaypoint}
+                    onChange={(e) => {
+                      updateSetting('shareLocationSendWaypoint', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.shareLocationSendWaypoint')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    htmlFor="shareLocationSendWaypoint"
+                    className="text-ink-300 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.shareLocationSendWaypoint')}
+                  </label>
+                  <HelpTooltip text={t('appPanel.shareLocationSendWaypointHint')} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-
-      <AppSupportSection exporting={supportBundleExporting} onExport={handleExportSupportBundle} />
-
-      {/* Data Management */}
-      <div className="space-y-3">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.dataManagementSection')}</h3>
-        <p className="text-muted text-xs">{t('appPanel.dataManagementDesc')}</p>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          <button
-            data-setting-anchor="app.data.exportDatabase"
-            type="button"
-            aria-label={t('appPanel.exportDatabase')}
-            onClick={async () => {
-              try {
-                console.debug('[AppPanel] exportDb');
-                const path = await window.electronAPI.db.exportDb();
-                if (path) {
-                  addToast(t('appPanel.exportedTo', { path }), 'success');
-                }
-              } catch (err) {
-                console.warn('[AppPanel] export failed ' + errLikeToLogString(err));
-                addToast(
-                  t('appPanel.exportFailed', {
-                    message: err instanceof Error ? err.message : t('appPanel.unknownError'),
-                  }),
-                  'error',
-                );
-              }
-            }}
-            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-          >
-            {t('appPanel.exportDatabaseButton')}
-          </button>
-
-          <button
-            data-setting-anchor="app.data.copyDebugSnapshot"
-            type="button"
-            aria-label={t('appPanel.copyDebugSnapshot')}
-            onClick={async () => {
-              try {
-                const copied = await copyDebugSnapshotToClipboard();
-                if (copied) {
-                  addToast(t('appPanel.debugSnapshotCopied'), 'success');
-                } else {
-                  addToast(t('appPanel.debugSnapshotFailed'), 'error');
-                }
-              } catch (err) {
-                console.warn('[AppPanel] debug snapshot failed ' + errLikeToLogString(err));
-                addToast(t('appPanel.debugSnapshotFailed'), 'error');
-              }
-            }}
-            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-          >
-            {t('appPanel.copyDebugSnapshotButton')}
-          </button>
-
-          <button
-            data-setting-anchor="app.data.importMerge"
-            type="button"
-            aria-label={t('appPanel.importMerge')}
-            onClick={async () => {
-              try {
-                console.debug('[AppPanel] importDb');
-                const result = await window.electronAPI.db.importDb();
-                if (result) {
-                  addToast(
-                    t('appPanel.dbMerged', {
-                      nodesAdded: result.nodesAdded,
-                      messagesAdded: result.messagesAdded,
-                    }),
-                    'success',
-                  );
-                }
-              } catch (err) {
-                console.warn('[AppPanel] import failed ' + errLikeToLogString(err));
-                const schemaTooNew =
-                  err instanceof Error ? parseDatabaseSchemaTooNewFromMessage(err.message) : null;
-                addToast(
-                  schemaTooNew
-                    ? t('appPanel.importSchemaTooNew', {
-                        dbVersion: schemaTooNew.dbVersion,
-                        appVersion: schemaTooNew.appVersion,
-                      })
-                    : t('appPanel.importFailed', {
-                        message: err instanceof Error ? err.message : t('appPanel.unknownError'),
-                      }),
-                  'error',
-                );
-              }
-            }}
-            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
-          >
-            {t('appPanel.importMergeButton')}
-          </button>
-        </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Window — close button hides to the tray while connected. */}
-      <div className="space-y-2">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.windowSection')}</h3>
-        <div
-          data-setting-anchor="app.window.closeToTray"
-          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
-        >
+      <SettingsCollapsible title={t('appPanel.windowSection')}>
+        <div data-setting-anchor="app.window.closeToTray" className="flex items-center gap-2">
           <input
             type="checkbox"
             id="closeToTray"
@@ -2054,15 +1956,11 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.closeToTrayDesc')} />
         </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Updates — auto-download of packaged update artifacts (install stays manual). */}
-      <div className="space-y-2">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.updatesSection')}</h3>
-        <div
-          data-setting-anchor="app.updates.autoDownload"
-          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
-        >
+      <SettingsCollapsible title={t('appPanel.updatesSection')}>
+        <div data-setting-anchor="app.updates.autoDownload" className="flex items-center gap-2">
           <input
             type="checkbox"
             id="autoUpdateDownloadEnabled"
@@ -2081,15 +1979,11 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.autoUpdateDownloadDesc')} />
         </div>
-      </div>
+      </SettingsCollapsible>
 
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
-      <div className="space-y-2">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
-        <div
-          data-setting-anchor="app.appearance.reduceMotion"
-          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
-        >
+      <SettingsCollapsible title={t('appPanel.appearanceSection')}>
+        <div data-setting-anchor="app.appearance.reduceMotion" className="flex items-center gap-2">
           <input
             type="checkbox"
             id="reduceMotion"
@@ -2105,10 +1999,7 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
         </div>
-        <div
-          data-setting-anchor="app.appearance.use24HourTime"
-          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
-        >
+        <div data-setting-anchor="app.appearance.use24HourTime" className="flex items-center gap-2">
           <input
             type="checkbox"
             id="use24HourTime"
@@ -2125,10 +2016,7 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
-        <div
-          data-setting-anchor="app.appearance.fontSize"
-          className="bg-deep-black border-ink-800 flex flex-col gap-2 rounded-xl border px-4 py-3"
-        >
+        <div data-setting-anchor="app.appearance.fontSize" className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <label htmlFor="fontScale" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.fontSize')}
@@ -2196,7 +2084,7 @@ export default function AppPanel({
           data-setting-anchor="app.appearance.colorScheme"
           className="group bg-deep-black border-secondary-dark rounded-lg border"
         >
-          <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+          <summary className="text-muted hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>
             <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
           </summary>
@@ -2310,11 +2198,10 @@ export default function AppPanel({
             </div>
           </div>
         </details>
-      </div>
+      </SettingsCollapsible>
 
       {/* Notifications */}
-      <div className="space-y-2">
-        <h3 className="text-muted text-sm font-medium">{t('appPanel.notificationsSection')}</h3>
+      <SettingsCollapsible title={t('appPanel.notificationsSection')}>
         <div data-setting-anchor="app.notifications.sound" className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -2422,10 +2309,113 @@ export default function AppPanel({
             </p>
           </div>
         )}
-      </div>
+      </SettingsCollapsible>
 
       <AppTranslationSection />
       <AppAiSection />
+
+      {/* Data Management */}
+      <SettingsCollapsible
+        title={t('appPanel.dataManagementSection')}
+        description={t('appPanel.dataManagementDesc')}
+      >
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <button
+            data-setting-anchor="app.data.exportDatabase"
+            type="button"
+            aria-label={t('appPanel.exportDatabase')}
+            onClick={async () => {
+              try {
+                console.debug('[AppPanel] exportDb');
+                const path = await window.electronAPI.db.exportDb();
+                if (path) {
+                  addToast(t('appPanel.exportedTo', { path }), 'success');
+                }
+              } catch (err) {
+                console.warn('[AppPanel] export failed ' + errLikeToLogString(err));
+                addToast(
+                  t('appPanel.exportFailed', {
+                    message: err instanceof Error ? err.message : t('appPanel.unknownError'),
+                  }),
+                  'error',
+                );
+              }
+            }}
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+          >
+            {t('appPanel.exportDatabaseButton')}
+          </button>
+
+          <button
+            data-setting-anchor="app.data.copyDebugSnapshot"
+            type="button"
+            aria-label={t('appPanel.copyDebugSnapshot')}
+            onClick={async () => {
+              try {
+                const copied = await copyDebugSnapshotToClipboard();
+                if (copied) {
+                  addToast(t('appPanel.debugSnapshotCopied'), 'success');
+                } else {
+                  addToast(t('appPanel.debugSnapshotFailed'), 'error');
+                }
+              } catch (err) {
+                console.warn('[AppPanel] debug snapshot failed ' + errLikeToLogString(err));
+                addToast(t('appPanel.debugSnapshotFailed'), 'error');
+              }
+            }}
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+          >
+            {t('appPanel.copyDebugSnapshotButton')}
+          </button>
+
+          <button
+            data-setting-anchor="app.data.importMerge"
+            type="button"
+            aria-label={t('appPanel.importMerge')}
+            onClick={async () => {
+              try {
+                console.debug('[AppPanel] importDb');
+                const result = await window.electronAPI.db.importDb();
+                if (result) {
+                  addToast(
+                    t('appPanel.dbMerged', {
+                      nodesAdded: result.nodesAdded,
+                      messagesAdded: result.messagesAdded,
+                    }),
+                    'success',
+                  );
+                }
+              } catch (err) {
+                console.warn('[AppPanel] import failed ' + errLikeToLogString(err));
+                const schemaTooNew =
+                  err instanceof Error ? parseDatabaseSchemaTooNewFromMessage(err.message) : null;
+                addToast(
+                  schemaTooNew
+                    ? t('appPanel.importSchemaTooNew', {
+                        dbVersion: schemaTooNew.dbVersion,
+                        appVersion: schemaTooNew.appVersion,
+                      })
+                    : t('appPanel.importFailed', {
+                        message: err instanceof Error ? err.message : t('appPanel.unknownError'),
+                      }),
+                  'error',
+                );
+              }
+            }}
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+          >
+            {t('appPanel.importMergeButton')}
+          </button>
+        </div>
+      </SettingsCollapsible>
+
+      <AppSupportSection exporting={supportBundleExporting} onExport={handleExportSupportBundle} />
+
+      {isLoraBlocklistProtocol(protocol) ? (
+        <div data-setting-anchor="app.blockedNodes">
+          <LoraBlockedNodesSection protocol={protocol} nodes={nodesProp} />
+        </div>
+      ) : null}
 
       <details className="group rounded-lg border border-red-900/40 bg-red-950/10">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 hover:bg-red-950/30 [&::-webkit-details-marker]:hidden">
@@ -2576,624 +2566,599 @@ export default function AppPanel({
         </div>
       </details>
 
-      {isLoraBlocklistProtocol(protocol) ? (
-        <div data-setting-anchor="app.blockedNodes">
-          <LoraBlockedNodesSection protocol={protocol} nodes={nodesProp} />
-        </div>
-      ) : null}
-
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium text-red-400">{t('appPanel.dangerZoneSection')}</h3>
-        <details className="group rounded-lg border border-red-900 bg-red-950/20">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-red-300 hover:bg-red-950/40 [&::-webkit-details-marker]:hidden">
-            <span>{t('appPanel.destructiveActions')}</span>
-            <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="space-y-4 border-t border-red-900/50 px-4 pt-1 pb-4">
-            <p className="text-xs text-red-400/80">{t('appPanel.dangerZoneIntro')}</p>
+      <SettingsCollapsible
+        variant="danger"
+        title={t('appPanel.dangerZoneSection')}
+        description={t('appPanel.destructiveActions')}
+      >
+        <p className="text-xs text-red-400/80">{t('appPanel.dangerZoneIntro')}</p>
 
-            {/* Diagnostics (in-memory reset) */}
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-red-400/90">
-                {t('appPanel.dangerZoneDiagnosticsHeading')}
-              </div>
-              <p className="text-muted text-xs leading-relaxed">
-                {t('appPanel.dangerZoneDiagnosticsDesc')}
-              </p>
-              <button
-                data-setting-anchor="app.danger.resetDiagnostics"
-                type="button"
-                aria-label={t('appPanel.resetDiagnostics')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'resetDiagnostics',
-                    title: t('appPanel.resetDiagnostics'),
-                    message: t('appPanel.resetDiagnosticsConfirm'),
-                    confirmLabel: t('appPanel.resetDiagnostics'),
-                    danger: true,
-                    action: async () => {
-                      await Promise.resolve();
-                      clearDiagnostics();
-                    },
-                  });
-                }}
-                className={buttonClassName('danger', 'md')}
-              >
-                {t('appPanel.resetDiagnostics')}
-              </button>
+        {/* Diagnostics (in-memory reset) */}
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-red-400/90">
+            {t('appPanel.dangerZoneDiagnosticsHeading')}
+          </div>
+          <p className="text-muted text-xs leading-relaxed">
+            {t('appPanel.dangerZoneDiagnosticsDesc')}
+          </p>
+          <button
+            data-setting-anchor="app.danger.resetDiagnostics"
+            type="button"
+            aria-label={t('appPanel.resetDiagnostics')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'resetDiagnostics',
+                title: t('appPanel.resetDiagnostics'),
+                message: t('appPanel.resetDiagnosticsConfirm'),
+                confirmLabel: t('appPanel.resetDiagnostics'),
+                danger: true,
+                action: async () => {
+                  await Promise.resolve();
+                  clearDiagnostics();
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.resetDiagnostics')}
+          </button>
+        </div>
+
+        <div className="space-y-2 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400/90">
+            {t('appPanel.dangerZoneGpsHeading')}
+          </div>
+          <p className="text-muted text-xs leading-relaxed">{t('appPanel.dangerZoneGpsDesc')}</p>
+          <button
+            data-setting-anchor="app.danger.clearGpsData"
+            type="button"
+            aria-label={t('appPanel.clearGpsData')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'clearGpsData',
+                title: t('appPanel.clearGpsData'),
+                message: t('appPanel.clearGpsDataConfirm'),
+                confirmLabel: t('appPanel.clearGpsData'),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.clearNodePositions();
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.clearGpsData')}
+          </button>
+        </div>
+
+        <div className="space-y-2 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400/90">
+            {t('appPanel.dangerZonePositionHistoryHeading')}
+          </div>
+          <p className="text-muted text-xs leading-relaxed">
+            {t('appPanel.dangerZonePositionHistoryDesc')}
+          </p>
+          <button
+            data-setting-anchor="app.danger.clearPositionHistory"
+            type="button"
+            aria-label={t('appPanel.clearPositionHistory')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'clearPositionHistory',
+                title: t('appPanel.clearPositionHistory'),
+                message: t('appPanel.clearPositionHistoryConfirm'),
+                confirmLabel: t('appPanel.clearPositionHistory'),
+                danger: true,
+                action: async () => {
+                  await Promise.resolve();
+                  clearHistory();
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.clearPositionHistory')}
+          </button>
+        </div>
+
+        {/* Nodes */}
+        <div className="space-y-3 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400/90">
+            {t('appPanel.dangerZoneNodesHeading')}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="apppanel-delete-age-days" className="text-ink-300 text-sm">
+              {t('appPanel.deleteNodesOlderThanLabel')}
+            </label>
+            <input
+              id="apppanel-delete-age-days"
+              type="number"
+              min={1}
+              value={deleteAgeDays}
+              onChange={(e) => {
+                setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
+              }}
+              aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
+              className="bg-app-bg text-body text-ink-200 h-8 w-20 rounded-lg border border-red-800/60 px-2.5 text-right focus:border-red-500 focus:outline-none pointer-coarse:h-10"
+            />
+            <span className="text-ink-300 text-sm">{t('common.days')}</span>
+            <button
+              data-setting-anchor="app.danger.deleteOldNodes"
+              type="button"
+              aria-label={t('appPanel.deleteOldNodes')}
+              onClick={() => {
+                executeWithConfirmation({
+                  actionId: 'deleteOldNodes',
+                  title: t('appPanel.deleteOldNodes'),
+                  message: t('appPanel.deleteOldNodesConfirm', {
+                    days: deleteAgeDays,
+                    count: deleteAgeDays,
+                  }),
+                  confirmLabel: t('appPanel.deleteOldNodes'),
+                  danger: true,
+                  action: async () => {
+                    await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
+                  },
+                });
+              }}
+              className={buttonClassName('danger', 'md')}
+            >
+              {t('appPanel.deleteOldNodes')}
+            </button>
+          </div>
+          <button
+            data-setting-anchor="app.danger.pruneMqttOnlyNodes"
+            type="button"
+            aria-label={t('appPanel.pruneMqttOnlyNodes')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'pruneMqttOnlyNodes',
+                title: t('appPanel.pruneMqttOnlyNodes'),
+                message: t('appPanel.pruneMqttOnlyNodesConfirm'),
+                confirmLabel: t('appPanel.pruneMqttNodesConfirmLabel'),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.deleteNodesBySource('mqtt');
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            {t('appPanel.pruneMqttOnlyNodes')}
+          </button>
+          <button
+            data-setting-anchor="app.danger.pruneUnnamedNodes"
+            type="button"
+            aria-label={t('appPanel.pruneUnnamedNodes')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'pruneUnnamedNodes',
+                title: t('appPanel.pruneUnnamedNodes'),
+                message: t('appPanel.pruneUnnamedNodesConfirm'),
+                confirmLabel: t('appPanel.pruneUnnamedNodes'),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.deleteNodesWithoutLongname();
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            {t('appPanel.pruneUnnamedNodes')}
+          </button>
+          <button
+            data-setting-anchor="app.danger.pruneNoFixNodes"
+            type="button"
+            aria-label={t('appPanel.pruneNoFixNodes')}
+            onClick={() => {
+              const zeroIslandNodes = Array.from(resolveNodes().values()).filter(
+                (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
+              );
+              if (zeroIslandNodes.length === 0) {
+                addToast(t('appPanel.noNoFixNodes'), 'success');
+                return;
+              }
+              executeWithConfirmation({
+                actionId: 'pruneNoFixNodes',
+                title: t('appPanel.pruneNoFixNodesTitle'),
+                message: t('appPanel.pruneNoFixNodesConfirm', {
+                  count: zeroIslandNodes.length,
+                }),
+                confirmLabel: t('appPanel.pruneNoFixDeleteConfirm', {
+                  count: zeroIslandNodes.length,
+                }),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.deleteNodesBatch(
+                    zeroIslandNodes.map((n) => n.node_id),
+                  );
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            <div className="font-medium">{t('appPanel.pruneNoFixNodesTitle')}</div>
+            <div className="text-muted text-xs font-normal">{t('appPanel.pruneNoFixSubtitle')}</div>
+          </button>
+          <button
+            data-setting-anchor="app.danger.pruneDistantNodes"
+            type="button"
+            aria-label={t('appPanel.pruneDistantNodes')}
+            onClick={() => {
+              const nodes = resolveNodes();
+              const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
+              const homeLat = homeNode?.latitude ?? ourPosition?.lat;
+              const homeLon = homeNode?.longitude ?? ourPosition?.lon;
+              const hasHome =
+                homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
+              if (!hasHome) {
+                addToast(t('appPanel.noGpsPosition'), 'error');
+                return;
+              }
+              const maxKm =
+                settings.distanceUnit === 'miles'
+                  ? settings.distanceFilterMax * 1.60934
+                  : settings.distanceFilterMax;
+              const distantNodes = Array.from(nodes.values()).filter((n) => {
+                if (n.node_id === myNodeNum) return false;
+                if (n.latitude == null || n.longitude == null) return false;
+                const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
+                return d > maxKm;
+              });
+              if (distantNodes.length === 0) {
+                addToast(t('appPanel.noNodesAboveDistance'), 'success');
+                return;
+              }
+              executeWithConfirmation({
+                actionId: 'pruneDistantNodes',
+                title: t('appPanel.pruneDistantNodesTitle'),
+                message: t('appPanel.pruneDistantNodesConfirm', {
+                  count: distantNodes.length,
+                  distance: settings.distanceFilterMax,
+                  unit: settings.distanceUnit,
+                }),
+                confirmLabel: t('appPanel.pruneDistantDeleteConfirm', {
+                  count: distantNodes.length,
+                }),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.deleteNodesBatch(distantNodes.map((n) => n.node_id));
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
+            <div className="text-muted text-xs font-normal">
+              {t('appPanel.pruneDistantSubtitle')}
             </div>
-
-            <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium text-red-400/90">
-                {t('appPanel.dangerZoneGpsHeading')}
-              </div>
-              <p className="text-muted text-xs leading-relaxed">
-                {t('appPanel.dangerZoneGpsDesc')}
-              </p>
-              <button
-                data-setting-anchor="app.danger.clearGpsData"
-                type="button"
-                aria-label={t('appPanel.clearGpsData')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'clearGpsData',
-                    title: t('appPanel.clearGpsData'),
-                    message: t('appPanel.clearGpsDataConfirm'),
-                    confirmLabel: t('appPanel.clearGpsData'),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.clearNodePositions();
-                    },
-                  });
-                }}
-                className={buttonClassName('danger', 'md')}
-              >
-                {t('appPanel.clearGpsData')}
-              </button>
+          </button>
+          <button
+            data-setting-anchor="app.danger.pruneOfflineNodes"
+            type="button"
+            aria-label={t('appPanel.pruneOfflineNodes')}
+            onClick={() => {
+              const offlineNodes = Array.from(resolveNodes().values()).filter(
+                (n) =>
+                  n.node_id !== myNodeNum &&
+                  !n.favorited &&
+                  getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
+                    'offline',
+              );
+              if (offlineNodes.length === 0) {
+                addToast(t('appPanel.noOfflineNodes'), 'success');
+                return;
+              }
+              const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
+              executeWithConfirmation({
+                actionId: 'pruneOfflineNodes',
+                title: t('appPanel.pruneOfflineNodesTitle'),
+                message: t('appPanel.pruneOfflineNodesConfirm', {
+                  count: offlineNodes.length,
+                  days: offlineDays,
+                  daysLabel: offlineDays === 1 ? t('appPanel.daySingular') : t('common.days'),
+                }),
+                confirmLabel: t('appPanel.pruneOfflineDeleteConfirm', {
+                  count: offlineNodes.length,
+                }),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.deleteNodesBatch(offlineNodes.map((n) => n.node_id));
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
+            <div className="text-muted text-xs font-normal">
+              {t('appPanel.pruneOfflineSubtitle', {
+                days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
+              })}
             </div>
+          </button>
+          <button
+            data-setting-anchor="app.danger.clearAllNodes"
+            type="button"
+            aria-label={t('appPanel.clearAllNodesButton', { count: nodeCount })}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'clearNodes',
+                title: t('appPanel.clearAllNodesButton', { count: nodeCount }),
+                message: t('appPanel.clearNodesConfirm', { count: nodeCount }),
+                confirmLabel: t('appPanel.clearNodesConfirmLabel', { count: nodeCount }),
+                danger: true,
+                action: async () => {
+                  await window.electronAPI.db.clearNodes();
+                },
+              });
+            }}
+            className={DANGER_ROW_CLASS}
+          >
+            {t('appPanel.clearAllNodesButton', { count: nodeCount })}
+          </button>
 
-            <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium text-red-400/90">
-                {t('appPanel.dangerZonePositionHistoryHeading')}
-              </div>
-              <p className="text-muted text-xs leading-relaxed">
-                {t('appPanel.dangerZonePositionHistoryDesc')}
-              </p>
-              <button
-                data-setting-anchor="app.danger.clearPositionHistory"
-                type="button"
-                aria-label={t('appPanel.clearPositionHistory')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'clearPositionHistory',
-                    title: t('appPanel.clearPositionHistory'),
-                    message: t('appPanel.clearPositionHistoryConfirm'),
-                    confirmLabel: t('appPanel.clearPositionHistory'),
-                    danger: true,
-                    action: async () => {
-                      await Promise.resolve();
-                      clearHistory();
-                    },
-                  });
-                }}
-                className={buttonClassName('danger', 'md')}
-              >
-                {t('appPanel.clearPositionHistory')}
-              </button>
-            </div>
-
-            {/* Nodes */}
-            <div className="space-y-3 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium text-red-400/90">
-                {t('appPanel.dangerZoneNodesHeading')}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="apppanel-delete-age-days" className="text-ink-300 text-sm">
-                  {t('appPanel.deleteNodesOlderThanLabel')}
-                </label>
-                <input
-                  id="apppanel-delete-age-days"
-                  type="number"
-                  min={1}
-                  value={deleteAgeDays}
-                  onChange={(e) => {
-                    setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
-                  }}
-                  aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
-                  className="bg-app-bg text-body text-ink-200 h-8 w-20 rounded-lg border border-red-800/60 px-2.5 text-right focus:border-red-500 focus:outline-none pointer-coarse:h-10"
-                />
-                <span className="text-ink-300 text-sm">{t('common.days')}</span>
-                <button
-                  data-setting-anchor="app.danger.deleteOldNodes"
-                  type="button"
-                  aria-label={t('appPanel.deleteOldNodes')}
-                  onClick={() => {
-                    executeWithConfirmation({
-                      actionId: 'deleteOldNodes',
-                      title: t('appPanel.deleteOldNodes'),
-                      message: t('appPanel.deleteOldNodesConfirm', {
-                        days: deleteAgeDays,
-                        count: deleteAgeDays,
+          {/* MeshCore contacts cleanup */}
+          {protocol === 'meshcore' && (
+            <button
+              data-setting-anchor="app.danger.deleteContactsWithoutPubkeys"
+              type="button"
+              aria-label={t('appPanel.deleteNodesWithoutPubkeys')}
+              onClick={() => {
+                executeWithConfirmation({
+                  actionId: 'deleteContactsNoPubkeys',
+                  title: t('appPanel.deleteContactsNoPubkeysTitle'),
+                  message: t('appPanel.deleteContactsNoPubkeysConfirm'),
+                  confirmLabel: t('appPanel.deleteContactsNoPubkeysConfirmButton'),
+                  danger: true,
+                  action: async () => {
+                    const result =
+                      await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
+                    addToast(
+                      t('appPanel.deletedContactsNoPubkey', {
+                        deleted: result.deleted,
+                        excludedStubCount: result.excludedStubCount,
                       }),
-                      confirmLabel: t('appPanel.deleteOldNodes'),
-                      danger: true,
-                      action: async () => {
-                        await window.electronAPI.db.deleteNodesByAge(deleteAgeDays);
-                      },
-                    });
-                  }}
-                  className={buttonClassName('danger', 'md')}
-                >
-                  {t('appPanel.deleteOldNodes')}
-                </button>
+                      'success',
+                    );
+                  },
+                });
+              }}
+              className={DANGER_ROW_CLASS}
+            >
+              <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
+              <div className="text-muted text-xs font-normal">
+                {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
               </div>
-              <button
-                data-setting-anchor="app.danger.pruneMqttOnlyNodes"
-                type="button"
-                aria-label={t('appPanel.pruneMqttOnlyNodes')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'pruneMqttOnlyNodes',
-                    title: t('appPanel.pruneMqttOnlyNodes'),
-                    message: t('appPanel.pruneMqttOnlyNodesConfirm'),
-                    confirmLabel: t('appPanel.pruneMqttNodesConfirmLabel'),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.deleteNodesBySource('mqtt');
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                {t('appPanel.pruneMqttOnlyNodes')}
-              </button>
-              <button
-                data-setting-anchor="app.danger.pruneUnnamedNodes"
-                type="button"
-                aria-label={t('appPanel.pruneUnnamedNodes')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'pruneUnnamedNodes',
-                    title: t('appPanel.pruneUnnamedNodes'),
-                    message: t('appPanel.pruneUnnamedNodesConfirm'),
-                    confirmLabel: t('appPanel.pruneUnnamedNodes'),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.deleteNodesWithoutLongname();
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                {t('appPanel.pruneUnnamedNodes')}
-              </button>
-              <button
-                data-setting-anchor="app.danger.pruneNoFixNodes"
-                type="button"
-                aria-label={t('appPanel.pruneNoFixNodes')}
-                onClick={() => {
-                  const zeroIslandNodes = Array.from(resolveNodes().values()).filter(
-                    (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
-                  );
-                  if (zeroIslandNodes.length === 0) {
-                    addToast(t('appPanel.noNoFixNodes'), 'success');
-                    return;
-                  }
-                  executeWithConfirmation({
-                    actionId: 'pruneNoFixNodes',
-                    title: t('appPanel.pruneNoFixNodesTitle'),
-                    message: t('appPanel.pruneNoFixNodesConfirm', {
-                      count: zeroIslandNodes.length,
-                    }),
-                    confirmLabel: t('appPanel.pruneNoFixDeleteConfirm', {
-                      count: zeroIslandNodes.length,
-                    }),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.deleteNodesBatch(
-                        zeroIslandNodes.map((n) => n.node_id),
-                      );
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                <div className="font-medium">{t('appPanel.pruneNoFixNodesTitle')}</div>
-                <div className="text-muted text-xs font-normal">
-                  {t('appPanel.pruneNoFixSubtitle')}
-                </div>
-              </button>
-              <button
-                data-setting-anchor="app.danger.pruneDistantNodes"
-                type="button"
-                aria-label={t('appPanel.pruneDistantNodes')}
-                onClick={() => {
-                  const nodes = resolveNodes();
-                  const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
-                  const homeLat = homeNode?.latitude ?? ourPosition?.lat;
-                  const homeLon = homeNode?.longitude ?? ourPosition?.lon;
-                  const hasHome =
-                    homeLat != null && homeLon != null && (homeLat !== 0 || homeLon !== 0);
-                  if (!hasHome) {
-                    addToast(t('appPanel.noGpsPosition'), 'error');
-                    return;
-                  }
-                  const maxKm =
-                    settings.distanceUnit === 'miles'
-                      ? settings.distanceFilterMax * 1.60934
-                      : settings.distanceFilterMax;
-                  const distantNodes = Array.from(nodes.values()).filter((n) => {
-                    if (n.node_id === myNodeNum) return false;
-                    if (n.latitude == null || n.longitude == null) return false;
-                    const d = haversineDistanceKm(homeLat, homeLon, n.latitude, n.longitude);
-                    return d > maxKm;
-                  });
-                  if (distantNodes.length === 0) {
-                    addToast(t('appPanel.noNodesAboveDistance'), 'success');
-                    return;
-                  }
-                  executeWithConfirmation({
-                    actionId: 'pruneDistantNodes',
-                    title: t('appPanel.pruneDistantNodesTitle'),
-                    message: t('appPanel.pruneDistantNodesConfirm', {
-                      count: distantNodes.length,
-                      distance: settings.distanceFilterMax,
-                      unit: settings.distanceUnit,
-                    }),
-                    confirmLabel: t('appPanel.pruneDistantDeleteConfirm', {
-                      count: distantNodes.length,
-                    }),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.deleteNodesBatch(
-                        distantNodes.map((n) => n.node_id),
-                      );
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
-                <div className="text-muted text-xs font-normal">
-                  {t('appPanel.pruneDistantSubtitle')}
-                </div>
-              </button>
-              <button
-                data-setting-anchor="app.danger.pruneOfflineNodes"
-                type="button"
-                aria-label={t('appPanel.pruneOfflineNodes')}
-                onClick={() => {
-                  const offlineNodes = Array.from(resolveNodes().values()).filter(
-                    (n) =>
-                      n.node_id !== myNodeNum &&
-                      !n.favorited &&
-                      getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-                        'offline',
-                  );
-                  if (offlineNodes.length === 0) {
-                    addToast(t('appPanel.noOfflineNodes'), 'success');
-                    return;
-                  }
-                  const offlineDays = Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000));
-                  executeWithConfirmation({
-                    actionId: 'pruneOfflineNodes',
-                    title: t('appPanel.pruneOfflineNodesTitle'),
-                    message: t('appPanel.pruneOfflineNodesConfirm', {
-                      count: offlineNodes.length,
-                      days: offlineDays,
-                      daysLabel: offlineDays === 1 ? t('appPanel.daySingular') : t('common.days'),
-                    }),
-                    confirmLabel: t('appPanel.pruneOfflineDeleteConfirm', {
-                      count: offlineNodes.length,
-                    }),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.deleteNodesBatch(
-                        offlineNodes.map((n) => n.node_id),
-                      );
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
-                <div className="text-muted text-xs font-normal">
-                  {t('appPanel.pruneOfflineSubtitle', {
-                    days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
-                  })}
-                </div>
-              </button>
-              <button
-                data-setting-anchor="app.danger.clearAllNodes"
-                type="button"
-                aria-label={t('appPanel.clearAllNodesButton', { count: nodeCount })}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'clearNodes',
-                    title: t('appPanel.clearAllNodesButton', { count: nodeCount }),
-                    message: t('appPanel.clearNodesConfirm', { count: nodeCount }),
-                    confirmLabel: t('appPanel.clearNodesConfirmLabel', { count: nodeCount }),
-                    danger: true,
-                    action: async () => {
-                      await window.electronAPI.db.clearNodes();
-                    },
-                  });
-                }}
-                className={DANGER_ROW_CLASS}
-              >
-                {t('appPanel.clearAllNodesButton', { count: nodeCount })}
-              </button>
+            </button>
+          )}
+        </div>
 
-              {/* MeshCore contacts cleanup */}
-              {protocol === 'meshcore' && (
-                <button
-                  data-setting-anchor="app.danger.deleteContactsWithoutPubkeys"
-                  type="button"
-                  aria-label={t('appPanel.deleteNodesWithoutPubkeys')}
-                  onClick={() => {
-                    executeWithConfirmation({
-                      actionId: 'deleteContactsNoPubkeys',
-                      title: t('appPanel.deleteContactsNoPubkeysTitle'),
-                      message: t('appPanel.deleteContactsNoPubkeysConfirm'),
-                      confirmLabel: t('appPanel.deleteContactsNoPubkeysConfirmButton'),
-                      danger: true,
-                      action: async () => {
-                        const result =
-                          await window.electronAPI.db.deleteMeshcoreContactsWithoutPubkey();
-                        addToast(
-                          t('appPanel.deletedContactsNoPubkey', {
-                            deleted: result.deleted,
-                            excludedStubCount: result.excludedStubCount,
-                          }),
-                          'success',
-                        );
-                      },
-                    });
-                  }}
-                  className={DANGER_ROW_CLASS}
-                >
-                  <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
-                  <div className="text-muted text-xs font-normal">
-                    {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
-                  </div>
-                </button>
-              )}
+        {/* Reticulum contacts */}
+        {protocol === 'reticulum' && (
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium text-red-400/90">
+              {t('appPanel.dangerZoneReticulumHeading')}
             </div>
-
-            {/* Reticulum contacts */}
-            {protocol === 'reticulum' && (
-              <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium text-red-400/90">
-                  {t('appPanel.dangerZoneReticulumHeading')}
-                </div>
-                <p className="text-muted text-xs leading-relaxed">
-                  {t('appPanel.clearReticulumContactsDesc')}
-                </p>
-                <button
-                  type="button"
-                  data-setting-anchor="app.danger.clearReticulumContacts"
-                  disabled={!reticulumSidecarReady}
-                  aria-label={t('appPanel.clearReticulumContactsButton', {
+            <p className="text-muted text-xs leading-relaxed">
+              {t('appPanel.clearReticulumContactsDesc')}
+            </p>
+            <button
+              type="button"
+              data-setting-anchor="app.danger.clearReticulumContacts"
+              disabled={!reticulumSidecarReady}
+              aria-label={t('appPanel.clearReticulumContactsButton', {
+                count: reticulumContactCount,
+              })}
+              onClick={() => {
+                executeWithConfirmation({
+                  actionId: 'clearReticulumContacts',
+                  title: t('appPanel.clearReticulumContactsTitle'),
+                  message: t('appPanel.clearReticulumContactsConfirm', {
                     count: reticulumContactCount,
-                  })}
-                  onClick={() => {
-                    executeWithConfirmation({
-                      actionId: 'clearReticulumContacts',
-                      title: t('appPanel.clearReticulumContactsTitle'),
-                      message: t('appPanel.clearReticulumContactsConfirm', {
-                        count: reticulumContactCount,
-                      }),
-                      confirmLabel: t('appPanel.clearReticulumContactsConfirmButton', {
-                        count: reticulumContactCount,
-                      }),
-                      danger: true,
-                      action: async () => {
-                        await clearAllReticulumContacts();
-                      },
-                    });
-                  }}
-                  className={DANGER_ROW_CLASS}
-                >
-                  <div className="font-medium">
-                    {t('appPanel.clearReticulumContactsButton', {
-                      count: reticulumContactCount,
-                    })}
-                  </div>
-                </button>
+                  }),
+                  confirmLabel: t('appPanel.clearReticulumContactsConfirmButton', {
+                    count: reticulumContactCount,
+                  }),
+                  danger: true,
+                  action: async () => {
+                    await clearAllReticulumContacts();
+                  },
+                });
+              }}
+              className={DANGER_ROW_CLASS}
+            >
+              <div className="font-medium">
+                {t('appPanel.clearReticulumContactsButton', {
+                  count: reticulumContactCount,
+                })}
               </div>
-            )}
+            </button>
+          </div>
+        )}
 
-            {/* Messages */}
-            <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium text-red-400/90">
-                {t('appPanel.messagesSection')}
-              </div>
-              {isReticulumDmOnly ? (
-                <p className="text-muted text-xs leading-relaxed">
-                  {t('appPanel.reticulumDmOnlyMessagesHint')}
-                </p>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <label htmlFor="apppanel-clear-channel" className="text-ink-400 shrink-0 text-sm">
-                    {t('appPanel.clearChannelLabel')}
-                  </label>
-                  <select
-                    id="apppanel-clear-channel"
-                    value={clearChannelTarget}
-                    onChange={(e) => {
-                      setClearChannelTarget(parseInt(e.target.value, 10));
-                    }}
-                    aria-label={t('common.channel')}
-                    className="bg-app-bg text-body text-ink-200 h-8 flex-1 rounded-lg border border-red-800/60 px-2 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
-                  >
-                    <option value={CLEAR_ALL_CHANNELS_VALUE}>
-                      {t('appPanel.allChannelsOption')}
-                    </option>
-                    {msgChannels.map((ch) => (
-                      <option key={ch} value={ch}>
-                        {getChannelLabel(ch)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <button
-                data-setting-anchor="app.danger.clearMessages"
-                type="button"
-                aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
-                onClick={() => {
-                  if (isReticulumDmOnly) {
-                    executeWithConfirmation({
-                      actionId: 'clearMessages',
-                      title: t('appPanel.clearReticulumMessagesTitle'),
-                      message: t('appPanel.clearReticulumMessagesConfirm', { count: messageCount }),
-                      confirmLabel: t('appPanel.clearReticulumMessagesConfirmButton', {
-                        count: messageCount,
-                      }),
-                      danger: true,
-                      messageClearMeta: {
-                        clearedAll: true,
-                        replaceFromDb: true,
-                        messagesMode: 'replace',
-                      },
-                      action: async () => {
-                        if (!reticulumIdentityId) return;
-                        await window.electronAPI.db.clearReticulumMessages(reticulumIdentityId);
-                      },
-                    });
-                    return;
-                  }
-                  const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
-                  const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
-                  const radioNodeId = myNodeNum ?? 0;
-                  const keyProtocol = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
-                  const channelKey = isAll
-                    ? null
-                    : getLiveChannelKey(keyProtocol, clearChannelTarget);
-                  executeWithConfirmation({
-                    actionId: 'clearMessages',
-                    title: t('appPanel.clearMessagesTitle'),
-                    message: isAll
-                      ? t('appPanel.clearMessagesAllConfirm', { count: messageCount })
-                      : t('appPanel.clearMessagesChannelConfirm', { channel: channelName }),
-                    confirmLabel: isAll
-                      ? t('appPanel.clearMessagesAllConfirmLabel', { count: messageCount })
-                      : t('appPanel.clearMessagesChannelConfirmLabel', { channel: channelName }),
-                    danger: true,
-                    messageClearMeta: isAll
-                      ? { clearedAll: true, replaceFromDb: true, messagesMode: 'replace' }
-                      : {
-                          clearedChannel: clearChannelTarget,
-                          replaceFromDb: true,
-                          messagesMode: 'replace',
-                        },
-                    channelClearGuard: isAll
-                      ? undefined
-                      : {
-                          protocol: keyProtocol,
-                          channelIndex: clearChannelTarget,
-                          nodeId: radioNodeId,
-                          channelKey,
-                          channelLabel: channelName,
-                        },
-                    action: async () => {
-                      if (protocol === 'meshcore') {
-                        if (isAll) {
-                          await window.electronAPI.db.clearMeshcoreMessages();
-                        } else {
-                          await window.electronAPI.db.clearMeshcoreMessagesByChannel(
-                            clearChannelTarget,
-                            radioNodeId,
-                            channelKey ?? undefined,
-                          );
-                        }
-                      } else if (isAll) {
-                        await window.electronAPI.db.clearMessages();
-                      } else {
-                        await window.electronAPI.db.clearMessagesByChannel(
-                          clearChannelTarget,
-                          radioNodeId,
-                          channelKey ?? undefined,
-                        );
-                      }
-                    },
-                  });
+        {/* Messages */}
+        <div className="space-y-2 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400/90">{t('appPanel.messagesSection')}</div>
+          {isReticulumDmOnly ? (
+            <p className="text-muted text-xs leading-relaxed">
+              {t('appPanel.reticulumDmOnlyMessagesHint')}
+            </p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <label htmlFor="apppanel-clear-channel" className="text-ink-400 shrink-0 text-sm">
+                {t('appPanel.clearChannelLabel')}
+              </label>
+              <select
+                id="apppanel-clear-channel"
+                value={clearChannelTarget}
+                onChange={(e) => {
+                  setClearChannelTarget(parseInt(e.target.value, 10));
                 }}
-                className={buttonClassName('danger', 'md')}
+                aria-label={t('common.channel')}
+                className="bg-app-bg text-body text-ink-200 h-8 flex-1 rounded-lg border border-red-800/60 px-2 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
               >
-                {t('appPanel.clearMessagesCount', { count: messageCount })}
-              </button>
+                <option value={CLEAR_ALL_CHANNELS_VALUE}>{t('appPanel.allChannelsOption')}</option>
+                {msgChannels.map((ch) => (
+                  <option key={ch} value={ch}>
+                    {getChannelLabel(ch)}
+                  </option>
+                ))}
+              </select>
             </div>
-
-            {/* MeshCore */}
-            {onClearMeshcoreRepeaters && (
-              <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium text-red-400">
-                  {t('appPanel.dangerZoneMeshcoreHeading')}
-                </div>
-                <button
-                  data-setting-anchor="app.danger.clearAllRepeaters"
-                  type="button"
-                  aria-label={t('appPanel.clearAllRepeaters')}
-                  onClick={() => {
-                    executeWithConfirmation({
-                      actionId: 'clearAllRepeaters',
-                      title: t('appPanel.clearAllRepeaters'),
-                      message: t('appPanel.clearAllRepeatersConfirm'),
-                      confirmLabel: t('appPanel.clearAllRepeaters'),
-                      danger: true,
-                      action: onClearMeshcoreRepeaters,
-                    });
-                  }}
-                  className={buttonClassName('danger', 'md')}
-                >
-                  {t('appPanel.clearAllRepeaters')}
-                </button>
-              </div>
-            )}
-
-            {/* Everything */}
-            <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium text-red-400">
-                {t('appPanel.dangerZoneEverythingHeading')}
-              </div>
-              <button
-                data-setting-anchor="app.danger.clearAllLocalData"
-                type="button"
-                aria-label={t('appPanel.clearAllLocalData')}
-                onClick={() => {
-                  executeWithConfirmation({
-                    actionId: 'clearAllData',
-                    title: t('appPanel.clearAllLocalDataTitle'),
-                    message: t('appPanel.clearAllLocalDataConfirm'),
-                    confirmLabel: t('appPanel.clearEverythingConfirmButton'),
-                    danger: true,
-                    messageClearMeta: {
-                      clearedAll: true,
+          )}
+          <button
+            data-setting-anchor="app.danger.clearMessages"
+            type="button"
+            aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
+            onClick={() => {
+              if (isReticulumDmOnly) {
+                executeWithConfirmation({
+                  actionId: 'clearMessages',
+                  title: t('appPanel.clearReticulumMessagesTitle'),
+                  message: t('appPanel.clearReticulumMessagesConfirm', { count: messageCount }),
+                  confirmLabel: t('appPanel.clearReticulumMessagesConfirmButton', {
+                    count: messageCount,
+                  }),
+                  danger: true,
+                  messageClearMeta: {
+                    clearedAll: true,
+                    replaceFromDb: true,
+                    messagesMode: 'replace',
+                  },
+                  action: async () => {
+                    if (!reticulumIdentityId) return;
+                    await window.electronAPI.db.clearReticulumMessages(reticulumIdentityId);
+                  },
+                });
+                return;
+              }
+              const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
+              const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
+              const radioNodeId = myNodeNum ?? 0;
+              const keyProtocol = protocol === 'meshcore' ? 'meshcore' : 'meshtastic';
+              const channelKey = isAll ? null : getLiveChannelKey(keyProtocol, clearChannelTarget);
+              executeWithConfirmation({
+                actionId: 'clearMessages',
+                title: t('appPanel.clearMessagesTitle'),
+                message: isAll
+                  ? t('appPanel.clearMessagesAllConfirm', { count: messageCount })
+                  : t('appPanel.clearMessagesChannelConfirm', { channel: channelName }),
+                confirmLabel: isAll
+                  ? t('appPanel.clearMessagesAllConfirmLabel', { count: messageCount })
+                  : t('appPanel.clearMessagesChannelConfirmLabel', { channel: channelName }),
+                danger: true,
+                messageClearMeta: isAll
+                  ? { clearedAll: true, replaceFromDb: true, messagesMode: 'replace' }
+                  : {
+                      clearedChannel: clearChannelTarget,
                       replaceFromDb: true,
                       messagesMode: 'replace',
                     },
-                    action: async () => {
-                      if (protocol === 'meshcore') {
-                        await window.electronAPI.db.clearMeshcoreMessages();
-                        await window.electronAPI.db.clearMeshcoreContacts();
-                      } else {
-                        await window.electronAPI.db.clearMessages();
-                      }
-                      await window.electronAPI.db.clearNodes();
-                      await window.electronAPI.clearSessionData();
+                channelClearGuard: isAll
+                  ? undefined
+                  : {
+                      protocol: keyProtocol,
+                      channelIndex: clearChannelTarget,
+                      nodeId: radioNodeId,
+                      channelKey,
+                      channelLabel: channelName,
                     },
-                  });
-                }}
-                className={buttonClassName('danger', 'md')}
-              >
-                {t('appPanel.clearAllLocalData')}
-              </button>
+                action: async () => {
+                  if (protocol === 'meshcore') {
+                    if (isAll) {
+                      await window.electronAPI.db.clearMeshcoreMessages();
+                    } else {
+                      await window.electronAPI.db.clearMeshcoreMessagesByChannel(
+                        clearChannelTarget,
+                        radioNodeId,
+                        channelKey ?? undefined,
+                      );
+                    }
+                  } else if (isAll) {
+                    await window.electronAPI.db.clearMessages();
+                  } else {
+                    await window.electronAPI.db.clearMessagesByChannel(
+                      clearChannelTarget,
+                      radioNodeId,
+                      channelKey ?? undefined,
+                    );
+                  }
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.clearMessagesCount', { count: messageCount })}
+          </button>
+        </div>
+
+        {/* MeshCore */}
+        {onClearMeshcoreRepeaters && (
+          <div className="space-y-2 border-t border-red-900/50 pt-4">
+            <div className="text-xs font-medium text-red-400">
+              {t('appPanel.dangerZoneMeshcoreHeading')}
             </div>
+            <button
+              data-setting-anchor="app.danger.clearAllRepeaters"
+              type="button"
+              aria-label={t('appPanel.clearAllRepeaters')}
+              onClick={() => {
+                executeWithConfirmation({
+                  actionId: 'clearAllRepeaters',
+                  title: t('appPanel.clearAllRepeaters'),
+                  message: t('appPanel.clearAllRepeatersConfirm'),
+                  confirmLabel: t('appPanel.clearAllRepeaters'),
+                  danger: true,
+                  action: onClearMeshcoreRepeaters,
+                });
+              }}
+              className={buttonClassName('danger', 'md')}
+            >
+              {t('appPanel.clearAllRepeaters')}
+            </button>
           </div>
-        </details>
-      </div>
+        )}
+
+        {/* Everything */}
+        <div className="space-y-2 border-t border-red-900/50 pt-4">
+          <div className="text-xs font-medium text-red-400">
+            {t('appPanel.dangerZoneEverythingHeading')}
+          </div>
+          <button
+            data-setting-anchor="app.danger.clearAllLocalData"
+            type="button"
+            aria-label={t('appPanel.clearAllLocalData')}
+            onClick={() => {
+              executeWithConfirmation({
+                actionId: 'clearAllData',
+                title: t('appPanel.clearAllLocalDataTitle'),
+                message: t('appPanel.clearAllLocalDataConfirm'),
+                confirmLabel: t('appPanel.clearEverythingConfirmButton'),
+                danger: true,
+                messageClearMeta: {
+                  clearedAll: true,
+                  replaceFromDb: true,
+                  messagesMode: 'replace',
+                },
+                action: async () => {
+                  if (protocol === 'meshcore') {
+                    await window.electronAPI.db.clearMeshcoreMessages();
+                    await window.electronAPI.db.clearMeshcoreContacts();
+                  } else {
+                    await window.electronAPI.db.clearMessages();
+                  }
+                  await window.electronAPI.db.clearNodes();
+                  await window.electronAPI.clearSessionData();
+                },
+              });
+            }}
+            className={buttonClassName('danger', 'md')}
+          >
+            {t('appPanel.clearAllLocalData')}
+          </button>
+        </div>
+      </SettingsCollapsible>
 
       {/* Confirmation Modal */}
       {pendingAction && (

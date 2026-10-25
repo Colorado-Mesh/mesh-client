@@ -6,6 +6,7 @@ import type { MeshNode } from '@/renderer/lib/types';
 import { useBlockedEntries, useBlockStore } from '@/renderer/stores/blockStore';
 
 import { useToast } from './Toast';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 function labelForBlockedHash(hash: string, nodes: Map<number, MeshNode> | undefined): string {
   if (!/^\d+$/.test(hash)) return hash;
@@ -27,11 +28,10 @@ export function LoraBlockedNodesSection({
   const unblock = useBlockStore((s) => s.unblock);
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-ink-300 text-sm font-medium">{t('appPanel.loraBlocklist.title')}</h3>
-      <p className="text-muted text-xs leading-relaxed">
-        {t('appPanel.loraBlocklist.description')}
-      </p>
+    <SettingsCollapsible
+      title={t('appPanel.loraBlocklist.title')}
+      description={t('appPanel.loraBlocklist.description')}
+    >
       {entries.length === 0 ? (
         <p className="text-muted text-xs italic">{t('appPanel.loraBlocklist.empty')}</p>
       ) : (
@@ -69,6 +69,6 @@ export function LoraBlockedNodesSection({
           })}
         </ul>
       )}
-    </div>
+    </SettingsCollapsible>
   );
 }

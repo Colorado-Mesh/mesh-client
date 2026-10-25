@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { handleReticulumQrIngest } from '@/renderer/lib/reticulum/handleReticulumQrIngest';
 import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
@@ -63,6 +62,7 @@ import {
   TEXTAREA_BOX_CLASS,
   TEXTAREA_BOX_SM_CLASS,
 } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 type IdentityReplaceAction = 'generate' | 'importPhrase' | 'importBackup' | 'importPrivate';
 
@@ -105,21 +105,15 @@ function ReticulumCollapsibleSection({
   anchorId?: string;
 }) {
   return (
-    <details
-      data-setting-anchor={anchorId}
-      className={`group bg-deep-black/50 rounded-lg border ${danger ? 'border-red-900/50' : 'border-ink-700'}`}
-      open={defaultOpen || undefined}
+    <SettingsCollapsible
+      title={title}
+      anchorId={anchorId}
+      defaultOpen={defaultOpen}
+      variant={danger ? 'danger' : 'default'}
+      titleAs="span"
     >
-      <summary
-        className={`hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors ${
-          danger ? 'text-red-300' : 'text-ink-200'
-        }`}
-      >
-        <span>{title}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">{children}</div>
-    </details>
+      {children}
+    </SettingsCollapsible>
   );
 }
 

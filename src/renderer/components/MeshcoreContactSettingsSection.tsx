@@ -3,7 +3,6 @@ import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import type { MeshCoreSelfInfo } from '../lib/meshcore/meshcoreHookTypes';
 import {
@@ -13,6 +12,7 @@ import {
 } from '../lib/meshcoreContactAutoAdd';
 import { useToast } from './Toast';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
+import { SettingsCollapsible } from './ui/SettingsSection';
 
 function parseMaxHopsInput(raw: string): { wire: number; invalid: boolean } {
   const trimmed = raw.trim();
@@ -104,331 +104,326 @@ export default function MeshcoreContactSettingsSection({
   };
 
   return (
-    <details
-      data-setting-anchor="radio.contacts.management"
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    <SettingsCollapsible
+      title={t('meshcoreContactSettings.contactManagement')}
+      titleAs="span"
+      anchorId="radio.contacts.management"
     >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('meshcoreContactSettings.contactManagement')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
-        <p className="text-muted text-xs">{t('meshcoreContactSettings.intro')}</p>
-        <fieldset
-          data-setting-anchor="radio.contacts.autoAddMode"
-          className="border-ink-600/80 space-y-3 rounded-lg border p-3"
-          disabled={disabled || applying}
-        >
-          <legend className="text-ink-200 px-1 text-sm font-medium">
-            {t('meshcoreContactSettings.autoAddModeLegend')}
-          </legend>
-          <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
-            <input
-              id={`${modeGroupId}-all`}
-              type="radio"
-              name={modeGroupId}
-              checked={autoAddAll}
-              onChange={() => {
-                setAutoAddAll(true);
-                triggerApply({ autoAddAll: true });
-              }}
-              disabled={disabled || applying}
-              className="mt-1"
-            />
-            <label
-              htmlFor={`${modeGroupId}-all`}
-              className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
-            >
-              <span className="text-ink-200 text-sm">
-                {t('meshcoreContactSettings.autoAddAllTitle')}
-              </span>
-              <span className="text-muted text-xs">
-                {t('meshcoreContactSettings.autoAddAllDesc')}
-              </span>
-            </label>
-          </div>
-          <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
-            <input
-              id={`${modeGroupId}-selected`}
-              type="radio"
-              name={modeGroupId}
-              checked={!autoAddAll}
-              onChange={() => {
-                setAutoAddAll(false);
-                triggerApply({ autoAddAll: false });
-              }}
-              disabled={disabled || applying}
-              className="mt-1"
-            />
-            <label
-              htmlFor={`${modeGroupId}-selected`}
-              className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
-            >
-              <span className="text-ink-200 text-sm">
-                {t('meshcoreContactSettings.autoAddSelectedTitle')}
-              </span>
-              <span className="text-muted text-xs">
-                {t('meshcoreContactSettings.autoAddSelectedDesc')}
-              </span>
-            </label>
-          </div>
-        </fieldset>
-
-        <div
-          data-setting-anchor="radio.contacts.autoAddTypes"
-          className={`border-ink-600/60 space-y-2 rounded-lg border p-3 ${autoAddAll ? 'opacity-50' : ''}`}
-          aria-disabled={autoAddAll}
-        >
-          <p className="text-ink-300 text-xs font-medium">
-            {t('meshcoreContactSettings.autoAddTypesHeading')}
-          </p>
-          {[
-            {
-              id: 'meshcore-autoadd-chat',
-              label: t('meshcoreContactSettings.typeChatUsers'),
-              checked: chat,
-              onChange: (val: boolean) => {
-                setChat(val);
-                triggerApply({ chat: val });
-              },
-            },
-            {
-              id: 'meshcore-autoadd-rep',
-              label: t('meshcoreContactSettings.typeRepeaters'),
-              checked: repeater,
-              onChange: (val: boolean) => {
-                setRepeater(val);
-                triggerApply({ repeater: val });
-              },
-            },
-            {
-              id: 'meshcore-autoadd-room',
-              label: t('meshcoreContactSettings.typeRoomServers'),
-              checked: roomServer,
-              onChange: (val: boolean) => {
-                setRoomServer(val);
-                triggerApply({ roomServer: val });
-              },
-            },
-            {
-              id: 'meshcore-autoadd-sens',
-              label: t('meshcoreContactSettings.typeSensors'),
-              checked: sensor,
-              onChange: (val: boolean) => {
-                setSensor(val);
-                triggerApply({ sensor: val });
-              },
-            },
-          ].map((row) => (
-            <div key={row.id} className="flex items-center justify-between gap-3">
-              <label htmlFor={row.id} className="text-ink-200 text-sm">
-                {row.label}
-              </label>
-              <input
-                id={row.id}
-                type="checkbox"
-                checked={row.checked}
-                onChange={(e) => {
-                  row.onChange(e.target.checked);
-                }}
-                disabled={disabled || applying || autoAddAll}
-                className="h-4 w-4 shrink-0"
-                aria-label={row.label}
-              />
-            </div>
-          ))}
+      <p className="text-muted text-xs">{t('meshcoreContactSettings.intro')}</p>
+      <fieldset
+        data-setting-anchor="radio.contacts.autoAddMode"
+        className="border-ink-600/80 space-y-3 rounded-lg border p-3"
+        disabled={disabled || applying}
+      >
+        <legend className="text-ink-200 px-1 text-sm font-medium">
+          {t('meshcoreContactSettings.autoAddModeLegend')}
+        </legend>
+        <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
+          <input
+            id={`${modeGroupId}-all`}
+            type="radio"
+            name={modeGroupId}
+            checked={autoAddAll}
+            onChange={() => {
+              setAutoAddAll(true);
+              triggerApply({ autoAddAll: true });
+            }}
+            disabled={disabled || applying}
+            className="mt-1"
+          />
+          <label
+            htmlFor={`${modeGroupId}-all`}
+            className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
+          >
+            <span className="text-ink-200 text-sm">
+              {t('meshcoreContactSettings.autoAddAllTitle')}
+            </span>
+            <span className="text-muted text-xs">
+              {t('meshcoreContactSettings.autoAddAllDesc')}
+            </span>
+          </label>
         </div>
+        <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
+          <input
+            id={`${modeGroupId}-selected`}
+            type="radio"
+            name={modeGroupId}
+            checked={!autoAddAll}
+            onChange={() => {
+              setAutoAddAll(false);
+              triggerApply({ autoAddAll: false });
+            }}
+            disabled={disabled || applying}
+            className="mt-1"
+          />
+          <label
+            htmlFor={`${modeGroupId}-selected`}
+            className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
+          >
+            <span className="text-ink-200 text-sm">
+              {t('meshcoreContactSettings.autoAddSelectedTitle')}
+            </span>
+            <span className="text-muted text-xs">
+              {t('meshcoreContactSettings.autoAddSelectedDesc')}
+            </span>
+          </label>
+        </div>
+      </fieldset>
 
+      <div
+        data-setting-anchor="radio.contacts.autoAddTypes"
+        className={`border-ink-600/60 space-y-2 rounded-lg border p-3 ${autoAddAll ? 'opacity-50' : ''}`}
+        aria-disabled={autoAddAll}
+      >
+        <p className="text-ink-300 text-xs font-medium">
+          {t('meshcoreContactSettings.autoAddTypesHeading')}
+        </p>
+        {[
+          {
+            id: 'meshcore-autoadd-chat',
+            label: t('meshcoreContactSettings.typeChatUsers'),
+            checked: chat,
+            onChange: (val: boolean) => {
+              setChat(val);
+              triggerApply({ chat: val });
+            },
+          },
+          {
+            id: 'meshcore-autoadd-rep',
+            label: t('meshcoreContactSettings.typeRepeaters'),
+            checked: repeater,
+            onChange: (val: boolean) => {
+              setRepeater(val);
+              triggerApply({ repeater: val });
+            },
+          },
+          {
+            id: 'meshcore-autoadd-room',
+            label: t('meshcoreContactSettings.typeRoomServers'),
+            checked: roomServer,
+            onChange: (val: boolean) => {
+              setRoomServer(val);
+              triggerApply({ roomServer: val });
+            },
+          },
+          {
+            id: 'meshcore-autoadd-sens',
+            label: t('meshcoreContactSettings.typeSensors'),
+            checked: sensor,
+            onChange: (val: boolean) => {
+              setSensor(val);
+              triggerApply({ sensor: val });
+            },
+          },
+        ].map((row) => (
+          <div key={row.id} className="flex items-center justify-between gap-3">
+            <label htmlFor={row.id} className="text-ink-200 text-sm">
+              {row.label}
+            </label>
+            <input
+              id={row.id}
+              type="checkbox"
+              checked={row.checked}
+              onChange={(e) => {
+                row.onChange(e.target.checked);
+              }}
+              disabled={disabled || applying || autoAddAll}
+              className="h-4 w-4 shrink-0"
+              aria-label={row.label}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div
+        data-setting-anchor="radio.contacts.overwriteOldest"
+        className="border-ink-600/60 flex items-center justify-between gap-3 rounded-lg border p-3"
+      >
+        <div>
+          <label htmlFor="meshcore-overwrite-oldest" className="text-ink-200 text-sm">
+            {t('meshcoreContactSettings.overwriteOldestTitle')}
+          </label>
+          <p className="text-muted mt-0.5 text-xs">
+            {t('meshcoreContactSettings.overwriteOldestHelp')}
+          </p>
+        </div>
+        <input
+          id="meshcore-overwrite-oldest"
+          type="checkbox"
+          checked={overwriteOldest}
+          onChange={(e) => {
+            const val = e.target.checked;
+            setOverwriteOldest(val);
+            triggerApply({ overwriteOldest: val });
+          }}
+          disabled={disabled || applying}
+          className="h-4 w-4 shrink-0"
+          aria-label={t('meshcoreContactSettings.overwriteOldest')}
+        />
+      </div>
+
+      <div data-setting-anchor="radio.contacts.maxHops" className="space-y-1">
+        <label htmlFor="meshcore-autoadd-max-hops" className="text-ink-200 text-sm">
+          {t('meshcoreContactSettings.maxHopsLabel')}
+        </label>
+        <p className="text-muted text-xs">
+          {t('meshcoreContactSettings.maxHopsHelp', {
+            uiMax: Math.min(63, MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX),
+            wireMax: MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX,
+          })}
+        </p>
+        <input
+          id="meshcore-autoadd-max-hops"
+          type="text"
+          inputMode="numeric"
+          placeholder={t('meshcoreContactSettings.noLimitPlaceholder')}
+          value={maxHopsInput}
+          onChange={(e) => {
+            setMaxHopsInput(e.target.value);
+            setHopsError(null);
+          }}
+          onBlur={() => {
+            triggerApply();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              triggerApply();
+            }
+          }}
+          disabled={disabled || applying}
+          className={`${INPUT_BOX_CLASS} w-full`}
+          aria-invalid={Boolean(hopsError)}
+          aria-describedby={hopsError ? 'meshcore-autoadd-hops-err' : undefined}
+        />
+        {hopsError && (
+          <p id="meshcore-autoadd-hops-err" className="text-xs text-red-400">
+            {hopsError}
+          </p>
+        )}
+      </div>
+
+      <div className="border-ink-600/80 space-y-3 border-t pt-4">
+        <p className="text-ink-400 text-xs font-medium">
+          {t('meshcoreContactSettings.contactsListAppHeading')}
+        </p>
         <div
-          data-setting-anchor="radio.contacts.overwriteOldest"
-          className="border-ink-600/60 flex items-center justify-between gap-3 rounded-lg border p-3"
+          data-setting-anchor="radio.contacts.autoOffload"
+          className="flex items-center justify-between gap-3"
         >
           <div>
-            <label htmlFor="meshcore-overwrite-oldest" className="text-ink-200 text-sm">
-              {t('meshcoreContactSettings.overwriteOldestTitle')}
-            </label>
+            <span className="text-ink-200 text-sm">
+              {t('meshcoreContactSettings.autoOffloadWhenFullLabel')}
+            </span>
             <p className="text-muted mt-0.5 text-xs">
-              {t('meshcoreContactSettings.overwriteOldestHelp')}
+              {t('meshcoreContactSettings.autoOffloadWhenFullDesc')}
             </p>
           </div>
           <input
-            id="meshcore-overwrite-oldest"
             type="checkbox"
-            checked={overwriteOldest}
+            checked={meshcoreAutoOffloadWhenFull}
             onChange={(e) => {
-              const val = e.target.checked;
-              setOverwriteOldest(val);
-              triggerApply({ overwriteOldest: val });
+              onMeshcoreAutoOffloadWhenFullChange(e.target.checked);
             }}
             disabled={disabled || applying}
             className="h-4 w-4 shrink-0"
-            aria-label={t('meshcoreContactSettings.overwriteOldest')}
+            aria-label={t('meshcoreContactSettings.autoOffloadWhenFull')}
           />
         </div>
-
-        <div data-setting-anchor="radio.contacts.maxHops" className="space-y-1">
-          <label htmlFor="meshcore-autoadd-max-hops" className="text-ink-200 text-sm">
-            {t('meshcoreContactSettings.maxHopsLabel')}
-          </label>
-          <p className="text-muted text-xs">
-            {t('meshcoreContactSettings.maxHopsHelp', {
-              uiMax: Math.min(63, MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX),
-              wireMax: MESHCORE_AUTOADD_MAX_HOPS_WIRE_MAX,
-            })}
+        {meshcoreAutoOffloadWhenFull && overwriteOldest && (
+          <p className="text-muted text-xs" data-testid="meshcore-overwrite-oldest-evicts-note">
+            {t('meshcoreContactSettings.overwriteOldestEvictsNote')}
           </p>
+        )}
+        <div
+          data-setting-anchor="radio.contacts.showRefresh"
+          className="flex items-center justify-between gap-3"
+        >
+          <div>
+            <span className="text-ink-200 text-sm">
+              {t('meshcoreContactSettings.showRefreshLabel')}
+            </span>
+            <p className="text-muted mt-0.5 text-xs">
+              {t('meshcoreContactSettings.showRefreshDesc')}
+            </p>
+          </div>
           <input
-            id="meshcore-autoadd-max-hops"
-            type="text"
-            inputMode="numeric"
-            placeholder={t('meshcoreContactSettings.noLimitPlaceholder')}
-            value={maxHopsInput}
+            type="checkbox"
+            checked={meshcoreContactsShowRefreshControl}
             onChange={(e) => {
-              setMaxHopsInput(e.target.value);
-              setHopsError(null);
-            }}
-            onBlur={() => {
-              triggerApply();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                triggerApply();
-              }
+              onMeshcoreContactsShowRefreshControlChange(e.target.checked);
             }}
             disabled={disabled || applying}
-            className={`${INPUT_BOX_CLASS} w-full`}
-            aria-invalid={Boolean(hopsError)}
-            aria-describedby={hopsError ? 'meshcore-autoadd-hops-err' : undefined}
+            className="h-4 w-4 shrink-0"
+            aria-label={t('meshcoreContactSettings.showRefreshControl')}
           />
-          {hopsError && (
-            <p id="meshcore-autoadd-hops-err" className="text-xs text-red-400">
-              {hopsError}
-            </p>
-          )}
         </div>
-
-        <div className="border-ink-600/80 space-y-3 border-t pt-4">
-          <p className="text-ink-400 text-xs font-medium">
-            {t('meshcoreContactSettings.contactsListAppHeading')}
-          </p>
-          <div
-            data-setting-anchor="radio.contacts.autoOffload"
-            className="flex items-center justify-between gap-3"
-          >
-            <div>
-              <span className="text-ink-200 text-sm">
-                {t('meshcoreContactSettings.autoOffloadWhenFullLabel')}
-              </span>
-              <p className="text-muted mt-0.5 text-xs">
-                {t('meshcoreContactSettings.autoOffloadWhenFullDesc')}
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={meshcoreAutoOffloadWhenFull}
-              onChange={(e) => {
-                onMeshcoreAutoOffloadWhenFullChange(e.target.checked);
-              }}
-              disabled={disabled || applying}
-              className="h-4 w-4 shrink-0"
-              aria-label={t('meshcoreContactSettings.autoOffloadWhenFull')}
-            />
-          </div>
-          {meshcoreAutoOffloadWhenFull && overwriteOldest && (
-            <p className="text-muted text-xs" data-testid="meshcore-overwrite-oldest-evicts-note">
-              {t('meshcoreContactSettings.overwriteOldestEvictsNote')}
+        <div
+          data-setting-anchor="radio.contacts.showPublicKeys"
+          className="flex items-center justify-between gap-3"
+        >
+          <div>
+            <span className="text-ink-200 text-sm">
+              {t('meshcoreContactSettings.showPublicKeysLabel')}
+            </span>
+            <p className="text-muted mt-0.5 text-xs">
+              {t('meshcoreContactSettings.showPublicKeysDesc')}
             </p>
-          )}
-          <div
-            data-setting-anchor="radio.contacts.showRefresh"
-            className="flex items-center justify-between gap-3"
-          >
-            <div>
-              <span className="text-ink-200 text-sm">
-                {t('meshcoreContactSettings.showRefreshLabel')}
-              </span>
-              <p className="text-muted mt-0.5 text-xs">
-                {t('meshcoreContactSettings.showRefreshDesc')}
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={meshcoreContactsShowRefreshControl}
-              onChange={(e) => {
-                onMeshcoreContactsShowRefreshControlChange(e.target.checked);
-              }}
-              disabled={disabled || applying}
-              className="h-4 w-4 shrink-0"
-              aria-label={t('meshcoreContactSettings.showRefreshControl')}
-            />
           </div>
-          <div
-            data-setting-anchor="radio.contacts.showPublicKeys"
-            className="flex items-center justify-between gap-3"
-          >
-            <div>
-              <span className="text-ink-200 text-sm">
-                {t('meshcoreContactSettings.showPublicKeysLabel')}
-              </span>
-              <p className="text-muted mt-0.5 text-xs">
-                {t('meshcoreContactSettings.showPublicKeysDesc')}
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={meshcoreContactsShowPublicKeys}
-              onChange={(e) => {
-                onMeshcoreContactsShowPublicKeysChange(e.target.checked);
-              }}
-              disabled={disabled || applying}
-              className="h-4 w-4 shrink-0"
-              aria-label={t('meshcoreContactSettings.showPublicKeys')}
-            />
-          </div>
+          <input
+            type="checkbox"
+            checked={meshcoreContactsShowPublicKeys}
+            onChange={(e) => {
+              onMeshcoreContactsShowPublicKeysChange(e.target.checked);
+            }}
+            disabled={disabled || applying}
+            className="h-4 w-4 shrink-0"
+            aria-label={t('meshcoreContactSettings.showPublicKeys')}
+          />
         </div>
-
-        {onClearAllContacts ? (
-          <div
-            data-setting-anchor="radio.contacts.clearAll"
-            className="border-t border-red-900/50 pt-4"
-          >
-            <p className="text-muted mb-2 text-xs">{t('meshcoreContactSettings.clearAllIntro')}</p>
-            <button
-              type="button"
-              disabled={disabled || applying || clearingAll}
-              onClick={() => {
-                if (!window.confirm(t('meshcoreContactSettings.clearAllContactsConfirm'))) {
-                  return;
-                }
-                setClearingAll(true);
-                void onClearAllContacts()
-                  .then(() => {
-                    addToast(t('meshcoreContactSettings.allContactsCleared'), 'success');
-                  })
-                  .catch((e: unknown) => {
-                    console.warn(
-                      '[MeshcoreContactSettingsSection] clear all failed ' + errLikeToLogString(e),
-                    );
-                    addToast(
-                      e instanceof Error
-                        ? e.message
-                        : t('meshcoreContactSettings.failedClearContacts'),
-                      'error',
-                    );
-                  })
-                  .finally(() => {
-                    setClearingAll(false);
-                  });
-              }}
-              className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-900/50 disabled:opacity-50"
-              aria-label={t('meshcoreContactSettings.clearAllContacts')}
-            >
-              {clearingAll
-                ? t('meshcoreContactSettings.clearingContacts')
-                : t('meshcoreContactSettings.clearAllContactsButton')}
-            </button>
-          </div>
-        ) : null}
       </div>
-    </details>
+
+      {onClearAllContacts ? (
+        <div
+          data-setting-anchor="radio.contacts.clearAll"
+          className="border-t border-red-900/50 pt-4"
+        >
+          <p className="text-muted mb-2 text-xs">{t('meshcoreContactSettings.clearAllIntro')}</p>
+          <button
+            type="button"
+            disabled={disabled || applying || clearingAll}
+            onClick={() => {
+              if (!window.confirm(t('meshcoreContactSettings.clearAllContactsConfirm'))) {
+                return;
+              }
+              setClearingAll(true);
+              void onClearAllContacts()
+                .then(() => {
+                  addToast(t('meshcoreContactSettings.allContactsCleared'), 'success');
+                })
+                .catch((e: unknown) => {
+                  console.warn(
+                    '[MeshcoreContactSettingsSection] clear all failed ' + errLikeToLogString(e),
+                  );
+                  addToast(
+                    e instanceof Error
+                      ? e.message
+                      : t('meshcoreContactSettings.failedClearContacts'),
+                    'error',
+                  );
+                })
+                .finally(() => {
+                  setClearingAll(false);
+                });
+            }}
+            className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-sm font-medium text-red-200 hover:bg-red-900/50 disabled:opacity-50"
+            aria-label={t('meshcoreContactSettings.clearAllContacts')}
+          >
+            {clearingAll
+              ? t('meshcoreContactSettings.clearingContacts')
+              : t('meshcoreContactSettings.clearAllContactsButton')}
+          </button>
+        </div>
+      ) : null}
+    </SettingsCollapsible>
   );
 }

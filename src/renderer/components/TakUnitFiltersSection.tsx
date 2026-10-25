@@ -28,6 +28,7 @@ import {
   NOTICE_CLASS,
   SELECT_BOX_SM_CLASS,
 } from './ui/formClasses';
+import { SettingsSection } from './ui/SettingsSection';
 
 const COT_TYPE_LABEL_KEYS: Record<(typeof TAK_UNIT_COT_TYPES)[number], string> = {
   'a-f-G-U-C': 'takServerPanel.unitTypeTeamMember',
@@ -627,13 +628,15 @@ export default function TakUnitFiltersSection() {
   const { t } = useTranslation();
   const { settings, isSaving, error, save } = useTakStyleSettings();
   return (
-    <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-      <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.unitStylesTitle')}</h3>
-      <p className="text-ink-400 text-xs">{t('takServerPanel.unitStylesDesc')}</p>
+    <SettingsSection
+      title={t('takServerPanel.unitStylesTitle')}
+      description={t('takServerPanel.unitStylesDesc')}
+      bodyClassName="space-y-3"
+    >
       {error && <div className={NOTICE_CLASS.error}>{error}</div>}
       {settings !== undefined && (
         <UnitFiltersForm initial={settings} isSaving={isSaving} onSave={save} />
       )}
-    </div>
+    </SettingsSection>
   );
 }

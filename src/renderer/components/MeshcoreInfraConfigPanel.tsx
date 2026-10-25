@@ -107,7 +107,7 @@ function SectionHeading({
   badge?: ReactNode;
 }) {
   return (
-    <summary className="text-ink-200 hover:bg-sidebar-active-bg grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-4 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
+    <summary className="text-muted hover:bg-sidebar-active-bg grid cursor-pointer list-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-4 text-sm font-medium transition-colors sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] [&::-webkit-details-marker]:hidden">
       <span className="bg-app-bg text-muted rounded-control flex h-10 w-10 shrink-0 items-center justify-center">
         {icon}
       </span>
@@ -339,7 +339,7 @@ function ConfigSection({
 
   return (
     <details
-      className="group bg-deep-black border-ink-700 rounded-card border"
+      className="group bg-deep-black border-secondary-dark rounded-card border"
       onToggle={(event) => {
         setOpen(event.currentTarget.open);
       }}
@@ -522,7 +522,7 @@ function RoomPermissions({
     return succeeded;
   };
   return (
-    <details className="group bg-deep-black border-ink-700 rounded-card border">
+    <details className="group bg-deep-black border-secondary-dark rounded-card border">
       <SectionHeading
         title={t('infraConfig.permissions')}
         description={t('infraConfig.permissionsSummary')}
@@ -666,7 +666,7 @@ export function MeshcoreInfraConfigPanel({ node, isConnected, onSend, onBack, on
         />
       ))}
       {node.hw_model === 'Room' && <RoomPermissions {...shared} />}
-      <details className="group bg-deep-black border-ink-700 rounded-card border">
+      <details className="group bg-deep-black border-secondary-dark rounded-card border">
         <SectionHeading
           title={t('infraConfig.advanced')}
           description={t('infraConfig.cliHint')}

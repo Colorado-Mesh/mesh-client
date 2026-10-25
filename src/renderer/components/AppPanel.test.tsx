@@ -833,6 +833,10 @@ describe('AppPanel: support bundle exports', () => {
       // Process working-set sampling remains available without COI (force-file recovery).
       expect(await screen.findByRole('button', { name: 'Sample now' })).toBeEnabled();
       expect(screen.getByText(/recovery mode/i)).toBeInTheDocument();
+      // Support export actions live in the sibling Support / Bug reports collapsible.
+      const supportDetails = memory.previousElementSibling;
+      expect(supportDetails).toBeInstanceOf(HTMLDetailsElement);
+      (supportDetails as HTMLDetailsElement).open = true;
       fireEvent.click(
         await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),
       );
@@ -846,11 +850,22 @@ describe('AppPanel: support bundle exports', () => {
   );
 
   it('invokes support.exportBundle with developer mode', async () => {
-    render(
+    const { container } = render(
       <ToastProvider>
         <AppPanel {...defaultProps} protocol="meshtastic" />
       </ToastProvider>,
     );
+
+    const memory = await waitFor(() => {
+      const details = container.querySelector(
+        'details[data-setting-anchor="app.support.rendererMemory"]',
+      );
+      expect(details).toBeInstanceOf(HTMLDetailsElement);
+      return details as HTMLDetailsElement;
+    });
+    const supportDetails = memory.previousElementSibling;
+    expect(supportDetails).toBeInstanceOf(HTMLDetailsElement);
+    (supportDetails as HTMLDetailsElement).open = true;
 
     expect(
       await screen.findByText(/MECP emergency audit logs.*sender and channel identifiers/i),

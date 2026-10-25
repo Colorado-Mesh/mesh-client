@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import {
@@ -22,6 +21,7 @@ import {
   readAllMeshcoreCompanionSettings,
 } from '../lib/meshcore/meshcoreCompanionSettings';
 import { ConfirmModal } from './ConfirmModal';
+import { SettingsCollapsible } from './ui/SettingsSection';
 import { Switch } from './ui/Switch';
 
 type PendingConfirm = 'reboot' | 'poweroff' | 'clearWifi' | null;
@@ -449,20 +449,17 @@ export default function MeshcoreCompanionCliSection({
   };
 
   return (
-    <details
-      data-setting-anchor="radio.companionCli.section"
-      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
-      onToggle={(e) => {
-        if (e.currentTarget.open && !snapshot && !loading && cli.available) {
-          void load();
-        }
-      }}
-    >
-      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
-        <span>{t('meshcoreCompanionCli.summary')}</span>
-        <DetailsChevron />
-      </summary>
-      <div className="space-y-4 px-4 pb-4">
+    <>
+      <SettingsCollapsible
+        title={t('meshcoreCompanionCli.summary')}
+        titleAs="span"
+        anchorId="radio.companionCli.section"
+        onToggle={(open) => {
+          if (open && !snapshot && !loading && cli.available) {
+            void load();
+          }
+        }}
+      >
         <p className="text-muted text-xs">{t('meshcoreCompanionCli.description')}</p>
         {!cli.available ? (
           <p className="text-muted text-sm">{t('meshcoreCompanionCli.requiresFirmware')}</p>
@@ -586,7 +583,7 @@ export default function MeshcoreCompanionCliSection({
             </GroupFieldset>
           </>
         )}
-      </div>
+      </SettingsCollapsible>
       {confirm && (
         <ConfirmModal
           title={t(`meshcoreCompanionCli.confirm.${confirm}.title`)}
@@ -599,6 +596,6 @@ export default function MeshcoreCompanionCliSection({
           }}
         />
       )}
-    </details>
+    </>
   );
 }
