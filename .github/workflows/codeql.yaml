@@ -1,0 +1,101 @@
+name: CodeQL (advanced)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    # PRs validate the replacement without uploading while default setup is active.
+    # Enable uploads only after disabling default setup; see .github/codeql/README.md.
+    if: >-
+      github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' ||
+      vars.CODEQL_ADVANCED_ENABLED == 'true'
+    permissions:
+      contents: read
+      security-events: write
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            os: ubuntu-latest
+            build-mode: none
+          - language: csharp
+            os: ubuntu-latest
+            build-mode: none
+          - language: javascript-typescript
+            os: ubuntu-latest
+            build-mode: none
+          - language: python
+            os: ubuntu-latest
+            build-mode: none
+          - language: rust
+            os: ubuntu-latest
+            build-mode: none
+          - language: swift
+            os: macos-latest
+            build-mode: manual
+    steps:
+      # actions/checkout v6.1.0
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      # github/codeql-action v4.39.1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@8498dc4c2b27cdd99baf0f87955b29ebbf30c78d
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+          dependency-caching: true
+          # Deliberately do not load the legacy config that excludes a query.
+          config: |
+            threat-models: [remote]
+
+      - name: Build Swift helper
+        if: matrix.language == 'swift'
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_dir=$(mktemp -d "${RUNNER_TEMP}/mesh-codeql-swift.XXXXXX")
+          sdk=$(xcrun --show-sdk-path)
+          # Compile the production source once for the runner, without SwiftPM discovery.
+          xcrun swiftc -parse-as-library -Onone -sdk "$sdk" \
+            -target "$(uname -m)-apple-macosx26.0" \
+            -module-cache-path "$build_dir/module-cache" \
+            native/ai/apple/main.swift -o "$build_dir/mesh-ai"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@8498dc4c2b27cdd99baf0f87955b29ebbf30c78d
+        with:
+          category: /language:${{ matrix.language }}
+          output: ${{ runner.temp }}/codeql-results
+          upload: ${{ vars.CODEQL_ADVANCED_ENABLED == 'true' && 'always' || 'never' }}
+
+      - name: Upload analysis results
+        if: always()
+        # actions/upload-artifact v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: ${{ runner.temp }}/codeql-results
+          retention-days: 7
+          if-no-files-found: warn

@@ -288,6 +288,21 @@ describe('CI workflow contracts', () => {
     }
   });
 
+  it('partitions renderer UI into four shards while retaining both other projects', () => {
+    const workflow = load(testsWorkflow);
+    const matrix = workflow.jobs['test-shards'].strategy.matrix.include;
+    expect(matrix).toEqual([
+      { project: 'renderer-ui', shard: 1, shards: 4 },
+      { project: 'renderer-ui', shard: 2, shards: 4 },
+      { project: 'renderer-ui', shard: 3, shards: 4 },
+      { project: 'renderer-ui', shard: 4, shards: 4 },
+      { project: 'renderer-logic', shard: 1, shards: 1 },
+      { project: 'main', shard: 1, shards: 1 },
+    ]);
+    expect(workflow.jobs['test-shards'].strategy['fail-fast']).toBe(false);
+    expect(workflow.jobs['merge-reports'].needs).toContain('tests');
+  });
+
   it('uses distinct artifact names for shards and bounds lint concurrency', () => {
     expect(testsWorkflow).toContain('name: vitest-blob-${{ matrix.project }}-${{ matrix.shard }}');
     expect(testsWorkflow).toContain('VITEST_SHARD: ${{ matrix.shard }}/${{ matrix.shards }}');

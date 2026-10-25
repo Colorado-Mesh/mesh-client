@@ -26,9 +26,10 @@ describe('ci-run-vitest', () => {
   it.each(['full', 'related'])('shards %s runs without colliding reports', (mode) => {
     const reporter = mode === 'full' ? 'blob' : 'junit';
     const shards = [
-      ['renderer-ui', '1/3'],
-      ['renderer-ui', '2/3'],
-      ['renderer-ui', '3/3'],
+      ['renderer-ui', '1/4'],
+      ['renderer-ui', '2/4'],
+      ['renderer-ui', '3/4'],
+      ['renderer-ui', '4/4'],
       ['renderer-logic', '1/1'],
       ['main', '1/1'],
     ];
@@ -49,11 +50,11 @@ describe('ci-run-vitest', () => {
       }
       return args.find((arg) => arg.startsWith(`--outputFile.${reporter}=`));
     });
-    expect(new Set(outputs).size).toBe(5);
+    expect(new Set(outputs).size).toBe(6);
     expect(outputs[0]).toBe(
       mode === 'full'
-        ? '--outputFile.blob=.vitest-reports/blob-renderer-ui-1-3.json'
-        : '--outputFile.junit=test-results/junit-renderer-ui-1-3.xml',
+        ? '--outputFile.blob=.vitest-reports/blob-renderer-ui-1-4.json'
+        : '--outputFile.junit=test-results/junit-renderer-ui-1-4.xml',
     );
   });
 
