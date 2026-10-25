@@ -3500,8 +3500,9 @@ budgets live in
 <li>Audit licenses (<code>pnpm run check:licenses</code>)</li>
 <li>Regenerate <code>docs/third-party-licenses.md</code> (<code>pnpm run docs:licenses</code>)</li>
 <li>Open a PR via <code>peter-evans/create-pull-request</code> when the file changed (branch <code>chore/third-party-licenses-&lt;run_id&gt;</code>)</li>
+<li>Admin-merge that docs-only PR with <code>LICENSE_PR_TOKEN</code> (no maintainer review)</li>
 </ol>
-<p><strong>Authority:</strong> the <code>license-automation</code> environment accepts only <code>main</code> and has no release approval requirement. The job uses <code>GITHUB_TOKEN</code> with Contents and Pull requests write to open a PR restricted to <code>docs/third-party-licenses.md</code>. It has no release, signing, or release-cut credentials and does not create tags or releases. An optional environment secret <code>LICENSE_PR_TOKEN</code> can supply a dedicated Contents and Pull requests write token so required PR checks run automatically. With the default <code>GITHUB_TOKEN</code>, GitHub suppresses those workflow events; a maintainer must start the required checks before merging the documentation PR. Direct pushes to <code>main</code> remain blocked by the merge-queue ruleset.</p>
+<p><strong>Authority:</strong> the <code>license-automation</code> environment accepts only <code>main</code> and has no required reviewers. It has no release, signing, or release-cut credentials. Direct pushes to <code>main</code> remain blocked by the merge-queue ruleset, so the job opens a PR restricted to <code>docs/third-party-licenses.md</code> and admin-merges it. Environment secret <strong><code>LICENSE_PR_TOKEN</code> is required</strong> for that path: a repo-admin fine-grained PAT (Contents + Pull requests write). Falling back to <code>GITHUB_TOKEN</code> leaves PRs stuck on the merge-queue review / unattributed-change gate (see #1311). The file is already validated in-job (<code>check:licenses</code>, <code>docs:licenses</code>, Rust stub refuse) before merge.</p>
 <hr />
 <h2 id="docs-docsyml">Docs (<code>docs.yml</code>)<a class="headerlink" href="#docs-docsyml" title="Permanent link">&para;</a></h2>
 <p>Builds the documentation site with <code>mkdocs build --strict</code> on pull requests that touch <code>docs/**</code>, <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>mkdocs.yml</code>, or the MkDocs scripts. On every push to <code>main</code> it builds the site the same way and deploys it to GitHub Pages:</p>
@@ -3959,7 +3960,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 12:25:41 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 13:26:40 UTC">October 25, 2026</span>
   </span>
 
     

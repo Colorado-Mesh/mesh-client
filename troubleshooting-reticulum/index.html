@@ -3966,7 +3966,8 @@
 <li><strong>No path yet</strong> → <code>PROPAGATION_PATH_UNKNOWN</code> (hard-fail after announce settle; UI <code>syncPathUnknown</code>) — not a 45s Establishing stall. Wait for a path / <strong>Announce now</strong>, retry.</li>
 <li>Remote sync needs a known identity. Missing identity → <code>PROPAGATION_IDENTITY_UNKNOWN</code>.</li>
 <li>Destinations that announce as delivery/other (including TCP hubs) → <code>PROPAGATION_TARGET_NOT_PN</code>. Add a destination that announces <code>lxmf.propagation</code>.</li>
-<li>Establishing with <strong>no LRPROOF</strong> often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits ~10s before Linking; if that still stalls, use the Propagation recovery callout (<strong>Announce now</strong>, wait, <strong>Retry Sync</strong>), or Network → <strong>Announce now</strong> and retry. Auto stops cascading other remotes after this class of establish failure (client reverse-path). Dual enabled TCP backbones can cause announce/Link asymmetry — try one backbone.</li>
+<li>Establishing with <strong>no LRPROOF</strong> (<code>NoLinkProof</code> / identity-missing / invalid proof) often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits ~10s before Linking; if that still stalls, use the Propagation recovery callout (<strong>Announce now</strong>, wait, <strong>Retry Sync</strong>), or Network → <strong>Announce now</strong> and retry. Auto stops cascading other remotes after this class of establish failure (client reverse-path). Dual enabled TCP backbones can cause announce/Link asymmetry — try one backbone.</li>
+<li><strong><code>LinkEstablishTimeout</code></strong> is different: the Link closed before any LRPROOF arrived (path-scaled hop budget exhausted). That usually means the PN is slow or unreachable on the current path — Auto <strong>continues</strong> cascading other remotes (the failed node is omitted for ~15 minutes). Device logs show <code>path_hops</code> / <code>link_hops</code> / <code>proof_budget_secs</code> on <code>propagation-retrieve</code> start and failover.</li>
 <li>Soft-defer <code>PROPAGATION_RETRIEVE_BUSY</code> means Host silent <code>/get</code> or another retrieve owns the client — wait or Cancel; Cancel must call rsLXMF <code>abort_transfer</code> or the next Sync stays busy.</li>
 <li>Auto keeps picking a bad Discovered PN → <strong>Ignore for Auto</strong> on that row (Manual Prefer/Sync still works).</li>
 <li>HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.</li>
@@ -4267,7 +4268,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 01:28:44 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 13:26:40 UTC">October 25, 2026</span>
   </span>
 
     
