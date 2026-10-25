@@ -301,8 +301,13 @@ export async function openAppTab(page: Page): Promise<void> {
  * Open collapsed `<details>` around a settings-search anchor (and nested details under it), then
  * scroll the anchor into view. Mirrors renderer `revealSettingAnchor` for E2E after App sections
  * became collapsed-by-default (`SettingsCollapsible`).
+ *
+ * Waits for the anchor to attach first — App tab content sits behind Suspense (`PanelSkeleton`),
+ * so a one-shot query can miss a still-loading panel.
  */
 export async function revealSettingInPage(page: Page, anchorId: string): Promise<void> {
+  const anchor = page.locator(`[data-setting-anchor="${anchorId}"]`);
+  await anchor.waitFor({ state: 'attached' });
   const found = await page.evaluate((id) => {
     const el = document.querySelector<HTMLElement>(`[data-setting-anchor="${id}"]`);
     if (!el) return false;
