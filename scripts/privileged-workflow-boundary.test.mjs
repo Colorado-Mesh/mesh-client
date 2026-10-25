@@ -115,6 +115,8 @@ describe('privileged workflow boundaries', () => {
     expect(stepNames).toContain('Admin-merge license documentation PR');
     expect(source).toContain('gh pr merge');
     expect(source).toContain('--admin');
+    expect(source).toContain('--match-head-commit');
+    expect(source).toContain('steps.cpr.outputs.pull-request-head-sha');
     expect(source).not.toMatch(
       /RELEASE_(?:PUSH|CUT)_TOKEN|environment: release|refs\/tags|pnpm run release|gh release/,
     );

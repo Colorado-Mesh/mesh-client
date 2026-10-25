@@ -7126,6 +7126,7 @@ async fn propagation_download_attempt_failover(
     current_iface: &mut Option<String>,
     current_via: &mut Option<String>,
     path_hops: &mut u8,
+    active_link_hops: &mut u8,
 ) -> bool {
     if live.is_none() || !should_attempt_propagation_via_failover(*failover_round) {
         return false;
@@ -7152,6 +7153,7 @@ async fn propagation_download_attempt_failover(
     }
     let (link_hops, egress, proof_budget_secs) =
         resolve_propagation_link_hops(current_iface.as_deref(), *path_hops);
+    *active_link_hops = link_hops;
     tracing::info!(
         target: "propagation-sync",
         pn_hash = %pn_hex,
@@ -7212,8 +7214,18 @@ fn spawn_client_download_driver_task(
     }
     tokio::spawn(async move {
         const POLL_INTERVAL: Duration = Duration::from_millis(500);
-        const DOWNLOAD_WATCHDOG: Duration = Duration::from_secs(180);
-        const ESTABLISH_STALL: Duration = Duration::from_secs(45);
+        // Extra wait after Link proof budget before treating Establishing as stalled.
+        const ESTABLISH_STALL_GRACE: Duration = Duration::from_secs(5);
+        // Cover RF max initiator hops (32×6s) across 1+MAX_VIA_FAILOVERS attempts plus
+        // rediscovery probe waits so the overall watchdog does not cut off failover.
+        let download_watchdog = Duration::from_secs(
+            nomad_timeouts::propagation_link_proof_budget_secs(32)
+                * u64::from(1 + path_failover::MAX_VIA_FAILOVERS)
+                + path_failover::VIA_FAILOVER_PROBE_WAIT.as_secs()
+                    * u64::from(path_failover::MAX_VIA_FAILOVERS)
+                + path_failover::VIA_FAILOVER_EXTRA_PROBE_WAIT.as_secs()
+                    * u64::from(path_failover::MAX_VIA_FAILOVERS),
+        );
         let mut interval = tokio::time::interval(POLL_INTERVAL);
         let attempt_started = Instant::now();
         let mut failover_round: u8 = 0;
@@ -7223,6 +7235,7 @@ fn spawn_client_download_driver_task(
         let mut live_ifaces: Vec<String> = Vec::new();
         let mut current_iface: Option<String> = None;
         let mut current_via: Option<String> = None;
+        let mut active_link_hops = link_hops;
         if let Some(ref live_ref) = live {
             if let Ok(ifaces) = live_ref.fetch_interfaces().await {
                 live_ifaces = super::auto_path_policy::order_live_ifaces_private_first(
@@ -7324,6 +7337,9 @@ fn spawn_client_download_driver_task(
             };
         'attempt: loop {
             let round_started = Instant::now();
+            let establish_stall = Duration::from_secs(
+                nomad_timeouts::propagation_link_proof_budget_secs(active_link_hops),
+            ) + ESTABLISH_STALL_GRACE;
             let mut last_logged_progress = -1.0_f64;
             run_guarded(&|| {
                 emit_progress(true, 10.0, None);
@@ -7342,12 +7358,14 @@ fn spawn_client_download_driver_task(
                 let progress = bridge.client_download_progress();
                 if progress <= 10.0
                     && bridge.client_download_active()
-                    && round_started.elapsed() > ESTABLISH_STALL
+                    && round_started.elapsed() > establish_stall
                 {
                     tracing::info!(
                         target: "propagation-retrieve",
                         pn_hash = %pn_hex,
                         failover_round,
+                        active_link_hops,
+                        establish_stall_secs = establish_stall.as_secs(),
                         establish_error = ?bridge.last_establish_error(),
                         "client /get stalled while establishing"
                     );
@@ -7364,6 +7382,7 @@ fn spawn_client_download_driver_task(
                         &mut current_iface,
                         &mut current_via,
                         &mut path_hops,
+                        &mut active_link_hops,
                     )
                     .await
                     {
@@ -7383,10 +7402,11 @@ fn spawn_client_download_driver_task(
                     });
                     break 'attempt;
                 }
-                if attempt_started.elapsed() > DOWNLOAD_WATCHDOG {
+                if attempt_started.elapsed() > download_watchdog {
                     tracing::info!(
                         target: "propagation-retrieve",
                         pn_hash = %pn_hex,
+                        download_watchdog_secs = download_watchdog.as_secs(),
                         "client /get download watchdog timeout"
                     );
                     if propagation_download_attempt_failover(
@@ -7402,6 +7422,7 @@ fn spawn_client_download_driver_task(
                         &mut current_iface,
                         &mut current_via,
                         &mut path_hops,
+                        &mut active_link_hops,
                     )
                     .await
                     {
@@ -7461,6 +7482,7 @@ fn spawn_client_download_driver_task(
                                 &mut current_iface,
                                 &mut current_via,
                                 &mut path_hops,
+                                &mut active_link_hops,
                             )
                             .await
                         {

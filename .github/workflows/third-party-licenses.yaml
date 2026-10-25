@@ -138,7 +138,10 @@ jobs:
           GH_TOKEN: ${{ secrets.LICENSE_PR_TOKEN }}
           PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
           PR_OPERATION: ${{ steps.cpr.outputs.pull-request-operation }}
+          PR_HEAD_SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
         run: |
           set -euo pipefail
-          echo "Merging PR #${PR_NUMBER} (operation=${PR_OPERATION})"
-          gh pr merge "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --squash --admin --delete-branch
+          echo "Merging PR #${PR_NUMBER} (operation=${PR_OPERATION} head=${PR_HEAD_SHA})"
+          # Refuse merge if the PR tip moved after create-pull-request stamped the SHA.
+          gh pr merge "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --squash --admin \
+            --delete-branch --match-head-commit "${PR_HEAD_SHA}"
