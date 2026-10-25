@@ -66,7 +66,10 @@ Secure-store queries explicitly alias result columns: SQLite identifier matching
 while returned JavaScript property names can retain an existing table's casing. Real ciphertext
 read-back mismatches still reject and roll back the write and retirement receipt. Errors identify
 the verification stage, credential category/key, SQLite change count and returned type, without
-logging credential values or ciphertext.
+logging credential values or ciphertext. Empty secret values are rejected: on macOS,
+`safeStorage.encryptStringAsync('')` yields empty ciphertext, which must not be persisted.
+Empty legacy `meshcoreRoomCredential:*` / repeater app_settings slots are dropped during
+migration instead of calling `secureSecrets:set`.
 
 Before the map is established, recovery fills missing fields in a partial app-settings blob from
 the verified origin export while preserving present values. Once established, canonical removals

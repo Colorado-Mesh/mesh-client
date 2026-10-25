@@ -33,7 +33,13 @@ function assertSecretKey(key: unknown): asserts key is string {
 }
 
 function assertSecretValue(value: unknown): asserts value is string {
-  if (typeof value !== 'string' || Buffer.byteLength(value, 'utf8') > MAX_SECRET_BYTES) {
+  // Electron safeStorage.encryptStringAsync('') returns an empty buffer on macOS;
+  // empty ciphertext then fails durable read-back verification. Empty is not a secret.
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    Buffer.byteLength(value, 'utf8') > MAX_SECRET_BYTES
+  ) {
     throw new Error('secureSecrets: invalid value');
   }
 }
@@ -194,6 +200,9 @@ export class SecureSecretStore {
     }
 
     const ciphertext = (await safeStorage.encryptStringAsync(value)).toString('base64');
+    if (ciphertext.length === 0) {
+      throw new Error(`secureSecrets: persistence verification failed (empty ciphertext; ${key})`);
+    }
     const { result } = await safeStorage.decryptStringAsync(Buffer.from(ciphertext, 'base64'));
     if (result !== value)
       throw new Error(
@@ -212,7 +221,8 @@ export class SecureSecretStore {
           .prepareOnce('SELECT ciphertext AS ciphertext FROM secure_secrets WHERE key = ?')
           .get(key) as { ciphertext?: unknown } | undefined;
         const stored = typeof row?.ciphertext === 'string' ? row.ciphertext : '';
-        if (stored.length === 0 || stored !== ciphertext) {
+        // Missing/non-string columns become ''; compare content only (empty ciphertext rejected above).
+        if (stored !== ciphertext) {
           throw new Error(
             `secureSecrets: persistence verification failed (SQLite read-back; ${key}; changes=${changes}; type=${typeof row?.ciphertext})`,
           );

@@ -400,6 +400,10 @@ async function hydrateExistingSecrets(): Promise<void> {
       await clearCompatibilityCredential(key);
       continue;
     }
+    if (value.length === 0) {
+      await clearCompatibilityCredential(key);
+      continue;
+    }
     deletedCredentials.delete(key);
     // A compatibility copy may contain a newer user edit than an older protected
     // row retained during a keyring outage.
@@ -718,7 +722,11 @@ async function migrateCredentialRecord(
   if (typeof raw !== 'string') {
     throw new Error('secure secret migration: malformed legacy MeshCore credential');
   }
+  // Empty app_settings slots are not secrets (Electron encrypts '' to empty ciphertext).
+  // Drop them so startup does not call secureSecrets:set with an empty value.
+  if (raw.length === 0) return true;
   const value = preserveCurrent ? (cache.get(secretKey) ?? raw) : raw;
+  if (value.length === 0) return true;
   requireAcknowledgedMigration(secretKey, await persistMigratedSecret(secretKey, value));
   return getCachedSecureSecret(secretKey) === value;
 }

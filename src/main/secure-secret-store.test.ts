@@ -475,6 +475,7 @@ describe('SecureSecretStore', () => {
     const { db, store } = createStore();
     try {
       await expect(store.set('arbitrary:key', 'secret')).rejects.toThrow(/invalid key/);
+      await expect(store.set('meshcore:room:1', '')).rejects.toThrow(/invalid value/);
       await expect(store.set('meshcore:room:1', 'x'.repeat(64 * 1024 + 1))).rejects.toThrow(
         /invalid value/,
       );

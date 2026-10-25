@@ -402,6 +402,24 @@ describe('secureSecretStorage migrations', () => {
     );
   });
 
+  it('drops empty legacy room credential slots without calling secureSecrets:set', async () => {
+    const settingKey = `${MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX}9677130`;
+    const key = meshcoreRoomSecretKey(9677130);
+    appSettingsValues.set(settingKey, '');
+    localStorage.setItem(
+      `mesh-client:credentialCompatibility:${key}`,
+      JSON.stringify({ value: '', id: 'empty', origin: 'file://' }),
+    );
+
+    await initializeSecureSecretsFailClosed();
+
+    expect(window.electronAPI.secureSecrets.set).not.toHaveBeenCalled();
+    expect(window.electronAPI.appSettings.remove).toHaveBeenCalledWith(settingKey);
+    expect(appSettingsValues.has(settingKey)).toBe(false);
+    expect(localStorage.getItem(`mesh-client:credentialCompatibility:${key}`)).toBeNull();
+    expect(getCachedSecureSecret(key)).toBeNull();
+  });
+
   it('opens with retained encrypted legacy values when the keyring is unavailable', async () => {
     localStorage.setItem('mesh-client:meshcoreIdentityEncPK', 'still-encrypted');
     localStorage.setItem('mesh-client:meshcore-key-backup:14', 'still-encrypted');
