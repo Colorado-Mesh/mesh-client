@@ -1,7 +1,5 @@
 // @vitest-environment node
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,53 +9,19 @@ import { describe, expect, it } from 'vitest';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const workflow = load(fs.readFileSync(path.join(root, '.github/workflows/codeql.yaml'), 'utf8'));
 const job = workflow.jobs.analyze;
-const build = job.steps.find((step) => step.name === 'Build Swift helper');
+const scope = workflow.jobs.scope;
+const filter = scope.steps[0];
+const filters = load(filter.with.filters);
+const swiftInputs = filters.swift;
+const selected = "matrix.language != 'swift' || needs.scope.outputs.swift == 'true'";
 
-/** Exercise the actual workflow shell with fake compiler/SDK boundaries. */
-function runBuild(arch, failure = '') {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-codeql-build-'));
-  try {
-    const bin = path.join(dir, 'bin');
-    fs.mkdirSync(bin);
-    fs.writeFileSync(
-      path.join(bin, 'xcrun'),
-      `#!/bin/sh
-if [ "$1" = '--show-sdk-path' ]; then
-  [ "$CI_CODEQL_TEST_FAILURE" != sdk ] || exit 17
-  printf '%s\\n' '/SDK with spaces'
-else
-  printf '%s\\n' "$@" >> "$CI_CODEQL_TEST_ARGS"
-  [ "$CI_CODEQL_TEST_FAILURE" != compile ] || exit 19
-fi
-`,
-      { mode: 0o755 },
-    );
-    fs.writeFileSync(path.join(bin, 'uname'), `#!/bin/sh\nprintf '%s\\n' '${arch}'\n`, {
-      mode: 0o755,
-    });
-    const argsFile = path.join(dir, 'args');
-    const result = spawnSync('bash', ['-c', build.run], {
-      cwd: root,
-      env: {
-        ...process.env,
-        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
-        RUNNER_TEMP: dir,
-        CI_CODEQL_TEST_ARGS: argsFile,
-        CI_CODEQL_TEST_FAILURE: failure,
-      },
-      encoding: 'utf8',
-    });
-    return {
-      status: result.status,
-      args: fs.existsSync(argsFile) ? fs.readFileSync(argsFile, 'utf8').trim().split('\n') : [],
-    };
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+/** Small, portable glob syntax shared by the workflow filter and Node's matcher. */
+function selectsSwift(file) {
+  return swiftInputs.some((pattern) => path.matchesGlob(file, pattern));
 }
 
 describe('CodeQL advanced workflow', () => {
-  it('retains all six languages and uses manual compilation only for Swift', () => {
+  it('retains all six languages, extended queries and the existing Swift autobuild', () => {
     expect(job.strategy['fail-fast']).toBe(false);
     expect(job.strategy.matrix.include).toEqual([
       { language: 'actions', os: 'ubuntu-latest', 'build-mode': 'none' },
@@ -65,23 +29,78 @@ describe('CodeQL advanced workflow', () => {
       { language: 'javascript-typescript', os: 'ubuntu-latest', 'build-mode': 'none' },
       { language: 'python', os: 'ubuntu-latest', 'build-mode': 'none' },
       { language: 'rust', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'swift', os: 'macos-latest', 'build-mode': 'manual' },
+      { language: 'swift', os: 'macos-latest', 'build-mode': 'autobuild' },
     ]);
-    expect(build.if).toBe("matrix.language == 'swift'");
     const init = job.steps.find((step) => step.name === 'Initialize CodeQL');
     expect(init.with.queries).toBe('security-extended');
     expect(init.with['build-mode']).toBe('${{ matrix.build-mode }}');
     expect(init.with['dependency-caching']).toBe(true);
     expect(load(init.with.config)).toEqual({ 'threat-models': ['remote'] });
     expect(init.with['config-file']).toBeUndefined();
-    expect(job.steps.some((step) => step.uses?.includes('/autobuild@'))).toBe(false);
+    const build = job.steps.find((step) => step.name === 'Build Swift helper');
+    expect(build.if).toBe("matrix.language == 'swift' && needs.scope.outputs.swift == 'true'");
+    expect(build.uses).toMatch(/^github\/codeql-action\/autobuild@[a-f0-9]{40}$/);
+    expect(job.steps.filter((step) => step.uses?.includes('/autobuild@'))).toHaveLength(1);
   });
 
-  it('validates PRs and dispatches without uploading until the explicit migration switch', () => {
-    expect(job.if).toBe(
-      "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || " +
-        "vars.CODEQL_ADVANCED_ENABLED == 'true'",
+  it('limits only unchanged PR Swift inputs and fails closed on detector errors', () => {
+    expect(job.needs).toBe('scope');
+    expect(scope.outputs.swift).toBe(
+      "${{ github.event_name != 'pull_request' || steps.filter.outcome != 'success' || " +
+        "steps.filter.outputs.all_count == '' || steps.filter.outputs.all_count >= 3000 || " +
+        "steps.filter.outputs.swift != 'false' }}",
     );
+    expect(filter.if).toBe("github.event_name == 'pull_request'");
+    expect(filter['continue-on-error']).toBe(true);
+    expect(filter.uses).toMatch(/^dorny\/paths-filter@[a-f0-9]{40}$/);
+    expect(scope.permissions).toEqual({ contents: 'read', 'pull-requests': 'read' });
+    expect(scope.steps).toHaveLength(1);
+    expect(filters.all).toEqual(['**']);
+    for (const file of ['README.md', 'native/ai/apple/main.swift']) {
+      expect(path.matchesGlob(file, filters.all[0])).toBe(true);
+    }
+    for (const step of job.steps.filter(
+      (step) =>
+        step.uses && !step.uses.includes('/autobuild@') && !step.uses.includes('upload-artifact@'),
+    )) {
+      expect(step.if).toBe(selected);
+    }
+    expect(job.steps.find((step) => step.name === 'Record unchanged Swift inputs').if).toBe(
+      "matrix.language == 'swift' && needs.scope.outputs.swift != 'true'",
+    );
+  });
+
+  it.each([
+    'Package.swift',
+    'native/ai/apple/main.swift',
+    'native/ai/apple/deleted.swift',
+    'native/ai/apple/future/new.swift',
+    'other/new.swift',
+    'native/ai/apple/Package.resolved',
+    'scripts/build-ai-helper.mjs',
+    'scripts/codeql-workflow.test.mjs',
+    '.github/workflows/codeql.yaml',
+    '.github/codeql/codeql-config.yml',
+    'package.json',
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+  ])('scans Swift when its source, build or analysis input changes: %s', (file) => {
+    expect(selectsSwift(file)).toBe(true);
+  });
+
+  it.each(['README.md', 'docs/ci-cd.md', 'src/renderer/App.tsx', 'src/main/database.ts'])(
+    'avoids a redundant Swift PR build for %s',
+    (file) => {
+      expect(selectsSwift(file)).toBe(false);
+    },
+  );
+
+  it('validates PRs and dispatches without uploading until the explicit migration switch', () => {
+    const enabled =
+      "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || " +
+      "vars.CODEQL_ADVANCED_ENABLED == 'true'";
+    expect(job.if).toBe(enabled);
+    expect(scope.if).toBe(enabled);
     const analyze = job.steps.find((step) => step.name === 'Perform CodeQL Analysis');
     expect(analyze.with.upload).toBe(
       "${{ vars.CODEQL_ADVANCED_ENABLED == 'true' && 'always' || 'never' }}",
@@ -90,12 +109,6 @@ describe('CodeQL advanced workflow', () => {
     expect(job.permissions).toEqual({ contents: 'read', 'security-events': 'write' });
     expect(workflow.permissions).toEqual({ contents: 'read' });
     expect(job.steps[0].with['persist-credentials']).toBe(false);
-    expect(job.steps.map((step) => step.name).filter(Boolean)).toEqual([
-      'Initialize CodeQL',
-      'Build Swift helper',
-      'Perform CodeQL Analysis',
-      'Upload analysis results',
-    ]);
   });
 
   it('scans protected events and retains independent per-language SARIF artifacts', () => {
@@ -109,35 +122,9 @@ describe('CodeQL advanced workflow', () => {
     expect(workflow.concurrency['cancel-in-progress']).toBe(true);
     expect(workflow.concurrency.group).toContain('github.event.pull_request.number || github.ref');
     const artifact = job.steps.find((step) => step.name === 'Upload analysis results');
-    expect(artifact.if).toBe('always()');
+    expect(artifact.if).toBe(`always() && (${selected})`);
     expect(artifact.with.name).toBe('codeql-sarif-${{ matrix.language }}');
     expect(artifact.with.path).toBe('${{ runner.temp }}/codeql-results');
     expect(artifact.with['retention-days']).toBe(7);
-  });
-
-  it.each(['arm64', 'x86_64'])('compiles the production source exactly once on %s', (arch) => {
-    const result = runBuild(arch);
-    expect(result.status).toBe(0);
-    expect(result.args.slice(0, 7)).toEqual([
-      'swiftc',
-      '-parse-as-library',
-      '-Onone',
-      '-sdk',
-      '/SDK with spaces',
-      '-target',
-      `${arch}-apple-macosx26.0`,
-    ]);
-    expect(result.args[7]).toBe('-module-cache-path');
-    expect(result.args[8]).toMatch(/mesh-codeql-swift\.[^/]+\/module-cache$/);
-    expect(result.args.slice(9, 11)).toEqual(['native/ai/apple/main.swift', '-o']);
-    expect(result.args[11]).toMatch(/mesh-codeql-swift\.[^/]+\/mesh-ai$/);
-    expect(result.args).toHaveLength(12);
-  });
-
-  it.each([
-    ['sdk', 17],
-    ['compile', 19],
-  ])('fails the step when %s fails', (failure, status) => {
-    expect(runBuild('arm64', failure).status).toBe(status);
   });
 });

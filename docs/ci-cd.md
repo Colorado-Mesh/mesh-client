@@ -6,20 +6,20 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                    | Trigger                                                        | Purpose                                                                                      |
-| --------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                         |
-| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change              |
-| `codeql.yaml`               | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; direct Swift compilation; see [activation](../.github/codeql/README.md) |
-| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                             |
-| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate             |
-| `build.yaml`                | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                        |
-| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                    |
-| `release.yaml`              | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                  |
-| `flatpak.yaml`              | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags                |
-| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                    |
-| `docs.yml`                  | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                                |
-| `third-party-licenses.yaml` | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation                |
+| Workflow                    | Trigger                                                        | Purpose                                                                                    |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
+| `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
+| `codeql.yaml`               | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
+| `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
+| `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
+| `build.yaml`                | Manual `workflow_dispatch`                                     | Native 3-OS packaging smoke build (+ schema compare vs last official)                      |
+| `reticulum-sidecar.yaml`    | Path-filtered push/PR to `main`                                | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                                  |
+| `release.yaml`              | Version tags (`v*`)                                            | Build & publish releases (AppImage/deb/rpm)                                                |
+| `flatpak.yaml`              | Version tags (`v*`), manual                                    | Build Flatpak (+ schema compare vs last official); publish to release on tags              |
+| `cut-release.yaml`          | Manual `workflow_dispatch` on `main`                           | **Primary** release cut via protected `release-cut` / `RELEASE_CUT_TOKEN`                  |
+| `docs.yml`                  | Push to `main`                                                 | Deploy MkDocs to GitHub Pages                                                              |
+| `third-party-licenses.yaml` | Path-filtered push to `main`                                   | Regenerate licenses and open a documentation PR using license-only automation              |
 
 ---
 

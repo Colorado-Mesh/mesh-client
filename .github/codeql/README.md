@@ -2,10 +2,13 @@
 
 ## Faster advanced workflow and activation
 
-[`.github/workflows/codeql.yaml`](../workflows/codeql.yaml) replaces Swift autobuild with a
-single host-architecture `swiftc` invocation of `native/ai/apple/main.swift`. It retains the six
+[`.github/workflows/codeql.yaml`](../workflows/codeql.yaml) avoids rebuilding unchanged Swift code on
+pull requests. Swift analysis runs whenever Swift source, native AI helpers, helper build scripts,
+dependency manifests, or analysis configuration changes. Every `main` push, merge group, weekly
+scan and manual run still analyzes Swift. A failed or ambiguous PR path detector scans Swift.
+It retains the six
 languages currently scanned by default setup (Actions, C#, JavaScript/TypeScript, Python, Rust,
-and Swift), the `security-extended` suite, the remote threat model, and the embedded model packs.
+and Swift), the `security-extended` suite, the remote threat model, and the existing model-pack files.
 It does not load the legacy query-exclusion config below or skip tests/scripts from analysis.
 
 **Default setup remains the authoritative scanner until activation.** With the repository Actions
@@ -42,14 +45,20 @@ GitHub references:
 
 ## Swift (`native/ai/apple`)
 
-The production Apple OS-AI helper uses `swiftc` + `lipo` (`scripts/build-ai-helper.mjs`). Advanced
-CodeQL compiles the same source once for the macOS runner with optimization disabled and a fresh
-module-cache directory. Compilation occurs after CodeQL initialization, so extraction observes a
-real build every run. Neither a cached executable nor a universal binary is needed for analysis.
-SDK lookup and compiler failures fail the job.
+Swift keeps the existing default-setup autobuild through the root `Package.swift`, which points at
+`native/ai/apple/main.swift`. Production packaging continues using its existing optimized
+`swiftc` + `lipo` two-architecture build (`scripts/build-ai-helper.mjs`).
 
-The root `Package.swift` remains for default-setup discovery and rollback. Production packaging
-continues using its existing two-architecture optimized build.
+Only unrelated PRs skip Swift. The PR files API handles additions, deletions and renames; no PR
+checkout or dependency installation is needed for scope detection. A successful explicit `false`
+is required to skip. Missing file counts and responses reaching the API's 3,000-file limit also
+force Swift analysis. All other languages always scan, and protected events scan every language.
+
+The embedded sanitizer pack currently targets `codeql/javascript-all >=2.25.0`; CLI 2.27.3 bundles
+[`javascript-all` 2.10.4](https://github.com/github/codeql/blob/codeql-cli/v2.27.3/javascript/ql/lib/qlpack.yml).
+That inherited mismatch prevents those barriers from applying under either setup. This PR leaves
+the pack unchanged and does not claim active sanitizer models; correcting the range needs separate
+validation because it changes scan results.
 
 ## Timing audit (2026-10-25)
 
@@ -57,7 +66,7 @@ These are observed baselines, not predictions for the replacement:
 
 | Workflow/job                                                                                            | Observed time                                          | Finding / decision                                                                                                    |
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| [CodeQL PR run](https://github.com/Colorado-Mesh/mesh-client/actions/runs/40205510217) / Swift          | 14m 21s job; 12m 44s autobuild                         | Main bottleneck; direct compiler build avoids SwiftPM discovery.                                                      |
+| [CodeQL PR run](https://github.com/Colorado-Mesh/mesh-client/actions/runs/40205510217) / Swift          | 14m 21s job; 12m 44s autobuild                         | Main bottleneck; scope unchanged Swift out of unrelated PRs, retain full protected-event scans.                       |
 | Same run / other languages                                                                              | Actions 44s; C# 87s; JS/TS 158s; Python 50s; Rust 149s | Retain every language and the extended suite.                                                                         |
 | [CI Build](https://github.com/Colorado-Mesh/mesh-client/actions/runs/40206966613) / ESLint              | 4m 13s job; 3m 42s lint                                | Retain full type-aware lint; file-only caches can miss cross-file type changes.                                       |
 | Same run / quality, typecheck, app build                                                                | 96s, 91s, 35s                                          | Already parallel; dependency setup costs about 20–25s per lane.                                                       |
@@ -66,9 +75,15 @@ These are observed baselines, not predictions for the replacement:
 | [Reticulum sidecar](https://github.com/Colorado-Mesh/mesh-client/actions/runs/40197636095) / full stack | 4m 31s–6m 44s                                          | Existing dependency caches; retain native host tests and optimized linking.                                           |
 | [Daily E2E](https://github.com/Colorado-Mesh/mesh-client/actions/runs/40198406662)                      | Release preflight 24m 26s; three Electron jobs failed  | Preflight runs the comprehensive release gate. E2E failures need separate diagnosis; no checks removed to shorten it. |
 
-Compare future hosted job/step timings on equivalent scopes. Additional sharding trades one runner
-setup for less wall time; it is not a claim of reduced total runner minutes. The advanced PR run
-will measure extraction/query execution, while upload processing remains unverified until activation.
+A same-commit experiment found that direct `swiftc` compilation with a fresh module cache was
+slower under CodeQL than default Swift autobuild (default job 6m 56s), despite a 2.85s ordinary
+local compile. The direct build was removed. Swift extraction can include SDK modules, so ordinary
+compiler speed is not a proxy for scanner speed.
+
+The first hosted four-shard run passed all tests and merged coverage. Renderer UI jobs ranged
+from 2m 49s to 4m 5s, compared with the baseline 4m 27s to 5m 14s. Compare future hosted job/step
+timings on equivalent scopes. The extra shard trades one runner setup for less wall time; it is
+not a claim of reduced total runner minutes. SARIF upload processing remains unverified until activation.
 
 ## `js/insecure-temporary-file` (tests and scripts)
 
@@ -90,7 +105,7 @@ Do **not** rely on dismissals for new findings. Local/pre-commit guard: `pnpm ru
 
 [`codeql-config.yml`](./codeql-config.yml) **excludes** `js/http-to-file-access` because our disk writes are sanitized log lines to a fixed path, not arbitrary remote-to-file backdoors.
 
-**Important:** **Default setup does not read `codeql-config.yml`.** With default setup only, alerts may still appear until you **dismiss** them in the Security / PR UI (false positive, with justification pointing to CONTRIBUTING) **or** switch to **advanced** CodeQL and pass this config.
+**Important:** The active scanner does not load this legacy config. The new workflow also leaves it unused to preserve query coverage; follow the activation instructions above without adding this config. Existing false positives require individual review and justification in the Security / PR UI.
 
 ## Legacy `codeql-config.yml`
 
