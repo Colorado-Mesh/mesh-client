@@ -387,18 +387,27 @@ function withoutDeletionJournal(entries: WebStorageEntries, historical = false):
 
 /**
  * Keep the canonical preference map aligned with top-level preference caches during repair.
- * An empty clear() envelope is rebuilt entirely. An established map that lost export-only keys
- * after clear()+write-through still receives those top-level keys so finalize cannot drop them.
+ * Export-only top-level keys fill gaps only; only current-origin top-level caches may override
+ * an existing map value (so a conflicting export scalar cannot replace newer preferences).
  */
-function withRebuiltPreferenceMap(entries: WebStorageEntries): WebStorageEntries {
+function withRebuiltPreferenceMap(
+  entries: WebStorageEntries,
+  currentEntries: WebStorageEntries,
+): WebStorageEntries {
   const prefsRaw = entries['mesh-client:rendererPreferences'];
   if (isExplicitResetPreferenceBaseline(prefsRaw)) return entries;
   const topLevel = Object.fromEntries(
     Object.entries(entries).filter(([key]) => isRendererPreferenceKey(key)),
   );
+  const currentTopLevel = Object.fromEntries(
+    Object.entries(currentEntries).filter(([key]) => isRendererPreferenceKey(key)),
+  );
   const existingValues = parseRendererPreferenceValues(prefsRaw) ?? {};
-  // Map-only keys survive; top-level caches fill gaps and win on conflict.
-  const values = { ...existingValues, ...topLevel };
+  const values: Record<string, unknown> = { ...existingValues };
+  for (const [key, value] of Object.entries(topLevel)) {
+    if (!Object.hasOwn(values, key)) values[key] = value;
+  }
+  Object.assign(values, currentTopLevel);
   if (Object.keys(values).length === 0) return entries;
   const next = JSON.stringify({ legacyAliasesImported: true, values });
   if (prefsRaw === next) return entries;
@@ -606,6 +615,7 @@ async function repairStorage(
   );
   const merged = withRebuiltPreferenceMap(
     recoverMissingAppFields(retained, { ...retained, ...retainedCurrent }),
+    retainedCurrent,
   );
   await importAndVerify(options, snapshot, merged, true);
 }

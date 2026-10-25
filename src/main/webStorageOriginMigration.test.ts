@@ -1451,15 +1451,23 @@ describe('renderer origin migration', () => {
 
   it('repairs export markers into an established clear() write-through preference map', async () => {
     legacy.set('mesh-client:origin-e2e-marker', 'original profile');
+    legacy.set('mesh-client:themeColor', 'export-stale');
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     target.delete(RENDERER_ORIGIN_STORAGE_SENTINEL_KEY);
     target.delete('mesh-client:origin-e2e-marker');
+    // Drop the live top-level cache so themeColor exists only in the current map; the export
+    // still has a conflicting top-level scalar that must not win.
+    target.delete('mesh-client:themeColor');
     // Live clear() + preference persistence rewrites a nonempty map without export-only keys.
     target.set(
       'mesh-client:rendererPreferences',
       JSON.stringify({
         legacyAliasesImported: true,
-        values: { 'mesh-client:protocol': 'meshcore', 'mesh-client:fontScale': '1' },
+        values: {
+          'mesh-client:protocol': 'meshcore',
+          'mesh-client:fontScale': '1',
+          'mesh-client:themeColor': 'current-map-only',
+        },
       }),
     );
     target.set('mesh-client:protocol', 'meshcore');
@@ -1474,6 +1482,7 @@ describe('renderer origin migration', () => {
     expect(JSON.parse(target.get('mesh-client:rendererPreferences')!).values).toMatchObject({
       'mesh-client:protocol': 'meshcore',
       'mesh-client:fontScale': '1',
+      'mesh-client:themeColor': 'current-map-only',
     });
   });
 
