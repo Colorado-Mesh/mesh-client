@@ -3578,6 +3578,11 @@ impl LiveBridge {
                 if let Some((peer_hash, retrieve_mode)) = start_silent_get {
                     let pn_hex = hex::encode(peer_hash);
                     let outbound_for_clear = Arc::clone(&outbound);
+                    // Path-table hops from the maintenance tick — avoid hops=1 default on RF.
+                    let initial_path_hops = outbound
+                        .lock()
+                        .ok()
+                        .and_then(|d| d.path_route_for(&peer_hash).map(|(hops, _)| hops));
                     // Only clear the sync latch when we still own this peer — a newer
                     // user Sync may have claimed the target after cancel_client_download.
                     let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
@@ -3605,7 +3610,7 @@ impl LiveBridge {
                         Some(on_terminal),
                         false,
                         retrieve_mode,
-                        None,
+                        initial_path_hops,
                     );
                     if started {
                         tracing::info!(
@@ -4701,21 +4706,24 @@ impl LiveBridge {
         // Hard path gate after announce settle so RequestPath can benefit from the announce.
         // Do this before peering PoW — nonzero peering_cost stamps are expensive and useless
         // when there is no path (would previously burn CPU then stall into syncTimedOut).
-        let hops = self.hops_to_destination(&dest_hex).await;
         if let Err(err) = self
             .ensure_propagation_path_or_unknown(&dest_hex, false)
             .await
         {
             // Path gate awaits; only clear if we still own this attempt's latch.
+            let hops_at_abort = self.hops_to_destination(&dest_hex).await;
             release_claim();
             tracing::info!(
                 target: "propagation-sync",
                 dest = %dest_hex,
-                hops = ?hops,
+                hops = ?hops_at_abort,
                 "propagation sync aborted — no path to PN"
             );
             return Err(err);
         }
+        // Re-read after ensure: RequestPath may have installed a multi-hop route that
+        // was absent (None) before the gate — pass that into the download driver.
+        let hops = self.hops_to_destination(&dest_hex).await;
         // Pin PN pubkey for the duration of the client `/get` link so announce-flood
         // eviction cannot drop it before LRPROOF validation (see known_identities cap).
         let pin_known = || {
@@ -7190,16 +7198,26 @@ fn spawn_client_download_driver_task(
     retrieve_mode: &'static str,
     initial_path_hops: Option<u8>,
 ) -> bool {
-    // Path-scaled hops before Link start (TCP floor 3) — avoids the overnight
-    // 6s hops=1 establish timeout when path_hops is already known from sync.
-    let mut path_hops = initial_path_hops.unwrap_or(1).max(1);
-    let (link_hops, egress, proof_budget_secs) = resolve_propagation_link_hops(None, path_hops);
+    // Resolve egress iface + hops from the path-table cache before Link start so
+    // RF/BLE routes use path-scaled initiator hops (not the network TCP floor default).
+    let cached_route = outbound
+        .lock()
+        .ok()
+        .and_then(|d| d.path_route_for(&pn_hash));
+    let route_iface = cached_route.as_ref().and_then(|(_, iface)| iface.clone());
+    let mut path_hops = initial_path_hops
+        .or_else(|| cached_route.map(|(hops, _)| hops))
+        .unwrap_or(1)
+        .max(1);
+    let (link_hops, egress, proof_budget_secs) =
+        resolve_propagation_link_hops(route_iface.as_deref(), path_hops);
     tracing::info!(
         target: "propagation-retrieve",
         pn_hash = %pn_hex,
         path_hops,
         link_hops,
         egress,
+        path_iface = ?route_iface,
         proof_budget_secs,
         retrieve_mode,
         "starting client /get download"
@@ -7233,7 +7251,7 @@ fn spawn_client_download_driver_task(
         let mut blocked_ifaces: Vec<String> = Vec::new();
         let mut blocked_vias: Vec<String> = Vec::new();
         let mut live_ifaces: Vec<String> = Vec::new();
-        let mut current_iface: Option<String> = None;
+        let mut current_iface: Option<String> = route_iface;
         let mut current_via: Option<String> = None;
         let mut active_link_hops = link_hops;
         if let Some(ref live_ref) = live {
@@ -7257,6 +7275,10 @@ fn spawn_client_download_driver_task(
                     if let Some(h) = active.get("hops").and_then(serde_json::Value::as_u64) {
                         path_hops = (h as u8).max(1);
                     }
+                    // Stall budget only — Link already started with pre-slot hops.
+                    let (refined, _, _) =
+                        resolve_propagation_link_hops(current_iface.as_deref(), path_hops);
+                    active_link_hops = refined;
                 }
             }
             record_path_failover_attempt(

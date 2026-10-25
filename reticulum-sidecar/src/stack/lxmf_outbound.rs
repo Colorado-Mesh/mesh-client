@@ -479,6 +479,16 @@ impl LxmfOutboundDriver {
             .contains(&destination_hex.to_lowercase())
     }
 
+    /// Cached path-table hops and egress interface for a destination, when known.
+    ///
+    /// Used by PN Sync / silent `/get` to scale `Link::new_initiator` hops for RF/BLE
+    /// before the first establish attempt (network default would under-budget RF).
+    pub fn path_route_for(&self, dest: &[u8; 16]) -> Option<(u8, Option<String>)> {
+        let hops = self.route_hops.get(dest).copied()?;
+        let iface = self.path_interfaces.get(dest).cloned();
+        Some((hops.max(1), iface))
+    }
+
     fn enqueue_or_fail(
         &mut self,
         router: &mut LxmRouter,
@@ -2321,6 +2331,26 @@ mod tests {
         assert!(
             saw_failed,
             "ticket preparation failure must emit outbound failed status"
+        );
+    }
+
+    #[test]
+    fn path_route_for_returns_cached_hops_and_iface() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
+        let dest_hash = dest(0xcd);
+        assert_eq!(driver.path_route_for(&dest_hash), None);
+        driver.update_path_table(&[PathTableRoute {
+            hash: dest_hash,
+            hops: 4,
+            hex_key: hex::encode(dest_hash),
+            interface: Some("RNode Serial".into()),
+            via: None,
+        }]);
+        assert_eq!(
+            driver.path_route_for(&dest_hash),
+            Some((4, Some("RNode Serial".into())))
         );
     }
 
