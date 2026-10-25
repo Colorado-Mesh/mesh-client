@@ -3337,6 +3337,11 @@
 <td>Vitest coverage + merge; Reticulum sidecar <code>llvm-cov</code> when sidecar paths change</td>
 </tr>
 <tr>
+<td><code>codeql.yaml</code></td>
+<td>PR/manual validation; push/merge queue/weekly after activation</td>
+<td>Six-language CodeQL; Swift PR input scoping; see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/codeql/README.md">activation</a></td>
+</tr>
+<tr>
 <td><code>buttonmash.yaml</code></td>
 <td>PR/<code>merge_group</code>/<code>workflow_dispatch</code></td>
 <td>Browser-based chaos testing of the Vite renderer</td>
@@ -3422,7 +3427,7 @@ budgets live in
 <li><strong>Pull requests:</strong> run <code>vitest related</code> without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.</li>
 <li><strong>Safe fallback:</strong> test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.</li>
 <li><strong>Protected events:</strong> <code>merge_group</code>, pushes to <code>main</code>, and manual runs always run full coverage across <code>renderer-ui</code>, <code>renderer-logic</code>, and <code>main</code>.</li>
-<li><strong>Sharding:</strong> <code>renderer-ui</code> runs in three shards; <code>renderer-logic</code> and <code>main</code> each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named <code>junit-&lt;project&gt;-&lt;shard&gt;-&lt;total&gt;.xml</code> and print results in each shard's log. The existing <code>Coverage (...)</code> required checks verify that detection and every shard succeeded.</li>
+<li><strong>Sharding:</strong> <code>renderer-ui</code> runs in four shards; <code>renderer-logic</code> and <code>main</code> each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named <code>junit-&lt;project&gt;-&lt;shard&gt;-&lt;total&gt;.xml</code> and print results in each shard's log. The existing <code>Coverage (...)</code> required checks verify that detection and every shard succeeded.</li>
 <li><strong>Merge job:</strong> collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run <code>pnpm run test:coverage:merge</code> to enforce global thresholds.</li>
 <li><strong><code>reticulum-sidecar-coverage</code>:</strong> when sidecar paths change, clone the <code>.rsstack/</code> workspace, run <code>cargo llvm-cov --fail-under-lines 45</code>, and upload <code>lcov.info</code>.</li>
 <li>Upload the <code>vitest-report</code> artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged <code>junit.xml</code> for full runs.</li>
@@ -3687,7 +3692,7 @@ budgets live in
 </tr>
 <tr>
 <td>CodeQL / CodeRabbit</td>
-<td>Done (CodeQL <strong>default setup</strong> — PR/push/schedule; not merge-queue)</td>
+<td>Done (CodeQL default setup until <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/codeql/README.md">advanced activation</a>)</td>
 </tr>
 <tr>
 <td>Tag → draft multi-OS + Flatpak + packaging smoke</td>
@@ -3762,7 +3767,7 @@ budgets live in
 <ul>
 <li><code>Reticulum sidecar coverage</code> (path-filtered)</li>
 <li><code>fmt + clippy</code> / sidecar build matrix (<code>reticulum-sidecar.yaml</code>, path-filtered)</li>
-<li>CodeQL <code>Analyze (*)</code> — <strong>default setup does not run on <code>merge_group</code></strong>; CodeQL still runs on PRs/pushes. Requiring it would hang the merge queue until advanced setup + <code>merge_group</code> exists.</li>
+<li>CodeQL <code>Analyze (*)</code> — <strong>default setup does not run on <code>merge_group</code></strong>. The advanced workflow supports merge groups after <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/codeql/README.md">activation</a>, but no CodeQL ruleset requirement is added by that migration.</li>
 <li>E2E, packaging smoke, Flatpak, release jobs</li>
 </ul>
 <p><code>ci.yaml</code> and <code>tests.yaml</code> both listen for <code>merge_group</code> so the queue’s temporary ref re-runs the same gates.</p>
@@ -3960,7 +3965,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 13:26:40 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 17:30:11 UTC">October 25, 2026</span>
   </span>
 
     
