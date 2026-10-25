@@ -830,7 +830,9 @@ describe('AppPanel: support bundle exports', () => {
       });
       expect(memory.open).toBe(false);
       memory.open = true;
-      expect(await screen.findByRole('button', { name: 'Sample now' })).toBeDisabled();
+      // Process working-set sampling remains available without COI (force-file recovery).
+      expect(await screen.findByRole('button', { name: 'Sample now' })).toBeEnabled();
+      expect(screen.getByText(/recovery mode/i)).toBeInTheDocument();
       fireEvent.click(
         await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),
       );

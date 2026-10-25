@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { bundledWllamaThreadCount } from '@/renderer/lib/aiWorkerHost';
 import {
   getCoiMemorySnapshot,
   sampleCoiMemoryNow,
@@ -8,6 +9,7 @@ import {
 } from '@/renderer/lib/coiMemorySampler';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { getRendererTimingsSnapshot } from '@/renderer/lib/rendererTimings';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
@@ -25,6 +27,10 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
   const latest = memory.samples.at(-1);
   const source = latest?.source ?? 'user-agent';
   const samples = memory.samples.filter((sample) => (sample.source ?? 'user-agent') === source);
+  const canSample = memory.supported && !memory.sampling;
+  const timings = getRendererTimingsSnapshot();
+  const threadBudget = bundledWllamaThreadCount();
+  const sabAvailable = typeof SharedArrayBuffer === 'function';
   const formatMemory = (bytes: number) =>
     new Intl.NumberFormat(i18n.resolvedLanguage, {
       style: 'unit',
@@ -84,24 +90,55 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
             <button
               type="button"
               aria-label={t('appPanel.memorySampleNow')}
-              disabled={!memory.crossOriginIsolated || !memory.supported || memory.sampling}
+              disabled={!canSample}
               onClick={() => void sampleCoiMemoryNow()}
               className={buttonClassName('secondary', 'sm')}
             >
               {memory.sampling ? t('appPanel.memorySampling') : t('appPanel.memorySampleNow')}
             </button>
           </div>
+          <div
+            className="border-ink-800 bg-ink-900/40 space-y-1 rounded-lg border p-2"
+            data-setting-anchor="app.support.coiCapability"
+            aria-label={t('appPanel.coiCapabilityTitle')}
+          >
+            <p className="text-ink-200 text-xs font-medium">{t('appPanel.coiCapabilityTitle')}</p>
+            <p className="text-muted text-xs">
+              {t('appPanel.coiCapabilityIsolated', {
+                value: memory.crossOriginIsolated ? t('appPanel.coiYes') : t('appPanel.coiNo'),
+              })}
+            </p>
+            <p className="text-muted text-xs">
+              {t('appPanel.coiCapabilitySab', {
+                value: sabAvailable ? t('appPanel.coiYes') : t('appPanel.coiNo'),
+              })}
+            </p>
+            <p className="text-muted text-xs">
+              {t('appPanel.coiCapabilityThreads', { count: threadBudget })}
+            </p>
+            <p className="text-muted text-xs">
+              {t('appPanel.coiCapabilityTiming', {
+                value:
+                  timings.resolutionLabel === 'fine'
+                    ? t('appPanel.coiTimingFine')
+                    : t('appPanel.coiTimingCoarse'),
+              })}
+            </p>
+          </div>
           <p className="text-muted text-xs">
             {source === 'renderer-process'
               ? t('appPanel.memoryRendererProcess')
               : t('appPanel.memoryDescription')}
           </p>
+          {!memory.crossOriginIsolated && source === 'renderer-process' && (
+            <p className="text-muted text-xs">{t('appPanel.memoryProcessOnly')}</p>
+          )}
           <p className="text-muted text-xs">
             {memory.crossOriginIsolated
               ? t('appPanel.memoryIsolated')
               : t('appPanel.memoryNotIsolated')}
           </p>
-          {memory.crossOriginIsolated && !memory.supported && (
+          {!memory.supported && (
             <p className="text-muted text-xs">{t('appPanel.memoryUnsupported')}</p>
           )}
           <div role="status" className="text-ink-200 text-sm">
@@ -111,7 +148,7 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
               <p className="font-mono tabular-nums">
                 {t('appPanel.memoryLatest', { value: formatMemory(latest.bytes) })}
               </p>
-            ) : memory.crossOriginIsolated && memory.supported ? (
+            ) : memory.supported ? (
               <p className="text-muted text-xs">{t('appPanel.memoryEmpty')}</p>
             ) : null}
           </div>

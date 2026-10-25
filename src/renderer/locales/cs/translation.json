@@ -510,7 +510,17 @@
     "memoryFailed": "Měření paměti selhalo. Můžete to zkusit znovu.",
     "memoryLatest": "Poslední odhad: {{value}}",
     "memoryEmpty": "Zatím žádná měření. Spusťte měření nebo ponechte okno viditelné.",
-    "memoryHistory": "Nedávná měření"
+    "memoryHistory": "Nedávná měření",
+    "memoryProcessOnly": "Použití pracovní sady procesu vykreslovače (API paměti prohlížeče vyžaduje izolaci).",
+    "coiCapabilityTitle": "Schopnost vykreslovače",
+    "coiCapabilityIsolated": "Izolováno: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "Dohnat vlákna WASM: {{count}}",
+    "coiCapabilityTiming": "Rozlišení časovače: {{value}}",
+    "coiYes": "ano",
+    "coiNo": "no",
+    "coiTimingFine": "jemný (~5 µs)",
+    "coiTimingCoarse": "hrubá (~100 µs)"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

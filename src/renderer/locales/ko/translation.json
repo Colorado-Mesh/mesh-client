@@ -502,7 +502,17 @@
     "memoryFailed": "메모리 측정에 실패했습니다. 다시 시도할 수 있습니다.",
     "memoryLatest": "최근 추정치: {{value}}",
     "memoryEmpty": "아직 측정값이 없습니다. 측정을 시작하거나 창을 표시한 상태로 두세요.",
-    "memoryHistory": "최근 측정값"
+    "memoryHistory": "최근 측정값",
+    "memoryProcessOnly": "렌더러 프로세스 작업 집합 사용 (브라우저 메모리 API를 격리해야 함).",
+    "coiCapabilityTitle": "렌더러 기능",
+    "coiCapabilityIsolated": "격리됨: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "WASM 스레드 따라잡기: {{count}}",
+    "coiCapabilityTiming": "타이머 해상도: {{value}}",
+    "coiYes": "예",
+    "coiNo": "아니오",
+    "coiTimingFine": "미세 (~ 5 µs)",
+    "coiTimingCoarse": "거친 (~ 100 µs)"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

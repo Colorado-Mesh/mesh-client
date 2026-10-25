@@ -246,6 +246,7 @@ describe('renderer preference recovery', () => {
         notificationSounds: JSON.stringify({ dm: { sound: 'bell', volume: 33 } }),
         'meshtasticRemoteAdminKey:7': 'old-public-key',
         'meshcoreRoomLastPost:7': '123',
+        locale: 'en',
         unrelatedDomain: 'keep',
       });
       await boot();
@@ -257,7 +258,8 @@ describe('renderer preference recovery', () => {
         'meshcoreRoomLastPost:7',
       ])
         expect(database[key], key).toBeUndefined();
-      expect(database).toMatchObject({ ...native, unrelatedDomain: 'keep' });
+      // Clear All Local Data preserves locale; empty app must not delete it.
+      expect(database).toMatchObject({ ...native, locale: 'en', unrelatedDomain: 'keep' });
       vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue(database);
       const identity = await import('./meshtasticMqttIdentity');
       expect(await identity.hydrateLastRfSelfNodeIdFromAppSettings()).toBe(0);

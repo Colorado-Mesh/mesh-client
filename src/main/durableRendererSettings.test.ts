@@ -6,6 +6,7 @@ import {
   DURABLE_RENDERER_STORAGE_KEYS,
   DURABLE_RENDERER_STORAGE_MIGRATIONS,
 } from '../shared/rendererOrigin';
+import { explicitResetPreferenceBaselineJson } from '../shared/rendererPreferences';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
 import { resetDurableRendererData, seedDurableRendererSettings } from './durableRendererSettings';
@@ -44,6 +45,34 @@ describe('legacy renderer settings migration', () => {
     seedDurableRendererSettings(db, { [legacy]: '{"channel":10}' });
     expect(db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key)).toEqual({
       value: '{"channel":20}',
+    });
+  });
+
+  it('replaces an empty preference map when repair seeds restored values', () => {
+    const prefsKey = DURABLE_RENDERER_STORAGE_KEYS.preferences;
+    const empty = JSON.stringify({ legacyAliasesImported: true, values: {} });
+    const restored = JSON.stringify({
+      legacyAliasesImported: true,
+      values: { 'mesh-client:origin-e2e-marker': 'original profile' },
+    });
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(prefsKey, empty);
+    seedDurableRendererSettings(db, { 'mesh-client:rendererPreferences': restored });
+    expect(db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(prefsKey)).toEqual({
+      value: restored,
+    });
+  });
+
+  it('preserves an explicit-reset preference baseline against a replayed export', () => {
+    const prefsKey = DURABLE_RENDERER_STORAGE_KEYS.preferences;
+    const baseline = explicitResetPreferenceBaselineJson();
+    const restored = JSON.stringify({
+      legacyAliasesImported: true,
+      values: { 'mesh-client:origin-e2e-marker': 'original profile' },
+    });
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(prefsKey, baseline);
+    seedDurableRendererSettings(db, { 'mesh-client:rendererPreferences': restored });
+    expect(db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(prefsKey)).toEqual({
+      value: baseline,
     });
   });
 
@@ -165,7 +194,7 @@ describe('explicit durable renderer data reset', () => {
     const keys = DURABLE_RENDERER_STORAGE_KEYS;
     return {
       ...existingSettings,
-      [keys.preferences]: JSON.stringify({ legacyAliasesImported: true, values: {} }),
+      [keys.preferences]: explicitResetPreferenceBaselineJson(),
       [keys.chatLastRead.meshtastic]: '{}',
       [keys.chatLastRead.meshcore]: '{}',
       [keys.chatLastRead.reticulum]: '{}',

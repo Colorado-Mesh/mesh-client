@@ -502,7 +502,17 @@
     "memoryFailed": "Die Speichermessung ist fehlgeschlagen. Sie können es erneut versuchen.",
     "memoryLatest": "Letzte Schätzung: {{value}}",
     "memoryEmpty": "Noch keine Messungen. Starten Sie eine Messung oder lassen Sie das Fenster sichtbar.",
-    "memoryHistory": "Letzte Messungen"
+    "memoryHistory": "Letzte Messungen",
+    "memoryProcessOnly": "Verwenden des Renderer-Prozess-Arbeitssatzes (Browserspeicher-API muss isoliert werden).",
+    "coiCapabilityTitle": "Renderer-Fähigkeit",
+    "coiCapabilityIsolated": "Isoliert: {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer: {{value}}",
+    "coiCapabilityThreads": "WASM-Threads nachholen: {{count}}",
+    "coiCapabilityTiming": "Timer-Auflösung: {{value}}",
+    "coiYes": "ja",
+    "coiNo": "nicht",
+    "coiTimingFine": "fein (~5 µs)",
+    "coiTimingCoarse": "grob (~100 µs)"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

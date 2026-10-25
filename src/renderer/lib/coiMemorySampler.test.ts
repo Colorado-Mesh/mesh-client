@@ -57,9 +57,9 @@ describe('COI renderer memory sampler', () => {
   });
 
   it.each([
-    { isolated: false, supported: true },
-    { isolated: true, supported: false },
-  ])('does not sample without COI and the API: %j', async (availability) => {
+    { isolated: false, supported: true, processSupported: false },
+    { isolated: true, supported: false, processSupported: false },
+  ])('does not sample without a usable API: %j', async (availability) => {
     const { sampler, measure } = setup(availability);
     const stop = sampler.start();
     expect(await sampler.sampleNow()).toBeNull();
@@ -68,10 +68,26 @@ describe('COI renderer memory sampler', () => {
     expect(vi.getTimerCount()).toBe(0);
     expect(sampler.getSnapshot()).toMatchObject({
       crossOriginIsolated: availability.isolated,
-      supported: availability.supported,
+      supported: availability.supported || availability.processSupported,
       samples: [],
     });
     stop();
+  });
+
+  it('samples process memory when not isolated but getAppMetrics is available', async () => {
+    const { sampler, measure, measureProcess } = setup({
+      isolated: false,
+      supported: false,
+      processSupported: true,
+    });
+    const sample = await sampler.sampleNow();
+    expect(measure).not.toHaveBeenCalled();
+    expect(measureProcess).toHaveBeenCalledTimes(1);
+    expect(sample).toEqual({
+      at: Date.now(),
+      bytes: 1024,
+      source: 'renderer-process',
+    });
   });
 
   it('keeps a bounded history of totals without retaining browser attribution', async () => {
@@ -209,21 +225,18 @@ describe('COI renderer memory sampler', () => {
     });
   });
 
-  it.each([{ isolated: false }, { visible: false }])(
-    'gates process sampling on isolation and visibility: %j',
-    async (availability) => {
-      const { sampler, measureProcess } = setup({
-        ...availability,
-        supported: false,
-        processSupported: true,
-      });
-      const stop = sampler.start();
-      expect(await sampler.sampleNow()).toBeNull();
-      await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
-      expect(measureProcess).not.toHaveBeenCalled();
-      stop();
-    },
-  );
+  it('gates process sampling while the window is hidden', async () => {
+    const { sampler, measureProcess } = setup({
+      visible: false,
+      supported: false,
+      processSupported: true,
+    });
+    const stop = sampler.start();
+    expect(await sampler.sampleNow()).toBeNull();
+    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
+    expect(measureProcess).not.toHaveBeenCalled();
+    stop();
+  });
 
   it('does not start a fallback measurement after the owner stops', async () => {
     const { sampler, measure, measureProcess } = setup({ processSupported: true });

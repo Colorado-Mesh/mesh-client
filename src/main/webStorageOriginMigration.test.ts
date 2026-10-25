@@ -1388,9 +1388,11 @@ describe('renderer origin migration', () => {
 
   it('does not repair twice when the reloaded actual document still loses critical storage', async () => {
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
-    target.delete('mesh-client:protocol');
+    // Prefer a non-preference critical key: once the preference map is established, missing
+    // preference keys are intentional and reconciled from SQLite rather than re-repaired.
+    target.delete('mesh-client:lastRead:meshcore');
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('repaired');
-    target.delete('mesh-client:protocol');
+    target.delete('mesh-client:lastRead:meshcore');
     windows = [];
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget(), false)).toBe(
       'failed',
@@ -1416,8 +1418,35 @@ describe('renderer origin migration', () => {
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
     target.clear();
     expect(await runWebStorageOriginMigration(options)).toBe('completed');
-    expect(targetEntriesWithoutSentinel()).toEqual(Object.fromEntries(legacy));
+    const restored = targetEntriesWithoutSentinel();
+    expect(restored).toMatchObject(Object.fromEntries(legacy));
+    const preferencesRaw = restored['mesh-client:rendererPreferences'];
+    expect(typeof preferencesRaw).toBe('string');
+    if (typeof preferencesRaw !== 'string') throw new Error('missing rebuilt preferences');
+    expect(JSON.parse(preferencesRaw).values).toMatchObject({
+      'mesh-client:protocol': 'meshcore',
+      'mesh-client:chatMacros': legacy.get('mesh-client:chatMacros'),
+    });
     expect(await checkRendererOriginStorageHealth(options, contentsForTarget())).toBe('healthy');
+  });
+
+  it('repairs exported preferences after an empty clear() preference envelope', async () => {
+    legacy.set('mesh-client:origin-e2e-marker', 'original profile');
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    for (const key of [...target.keys()]) {
+      if (key !== RENDERER_ORIGIN_STORAGE_SENTINEL_KEY) target.delete(key);
+    }
+    target.set(
+      'mesh-client:rendererPreferences',
+      JSON.stringify({ legacyAliasesImported: true, values: {} }),
+    );
+    expect(await runWebStorageOriginMigration(options)).toBe('completed');
+    expect(target.get('mesh-client:origin-e2e-marker')).toBe('original profile');
+    expect(
+      JSON.parse(target.get('mesh-client:rendererPreferences')!).values[
+        'mesh-client:origin-e2e-marker'
+      ],
+    ).toBe('original profile');
   });
 
   it('repairs a foreign migration marker without replacing existing values', async () => {

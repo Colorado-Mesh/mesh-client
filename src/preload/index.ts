@@ -272,6 +272,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getNodeNote: (nodeId: number) => ipcRenderer.invoke('db:getNodeNote', nodeId),
     setNodeNote: (nodeId: number, note: string) =>
       ipcRenderer.invoke('db:setNodeNote', nodeId, note),
+    recordRendererMemorySample: (sample: {
+      capturedAt: number;
+      bytes: number;
+      source: 'user-agent' | 'renderer-process';
+      sessionId?: string;
+    }) => ipcRenderer.invoke('db:recordRendererMemorySample', sample),
+    getRendererMemorySampleSummary: () => ipcRenderer.invoke('db:getRendererMemorySampleSummary'),
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),

@@ -9,7 +9,6 @@ import {
 } from '@/renderer/lib/forceDirectedGraphLayout';
 import { isReticulumHashPrefixAlias } from '@/renderer/lib/ingest/reticulumIngest';
 import {
-  buildReticulumMeshTopologyGraph,
   type ReticulumTopologyGraph,
   type ReticulumTopologyGraphNode,
 } from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
@@ -32,6 +31,7 @@ import {
   TOPOLOGY_GRAPH_DISTANT_NODE_CAP,
   topologyGraphVisibleNodeCap,
 } from '@/renderer/lib/topologyGraphLimits';
+import { runTopologyBuild } from '@/renderer/lib/workers/runTopologyBuild';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
@@ -241,6 +241,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
   const snapshotRafRef = useRef<number | null>(null);
   const refreshGenerationRef = useRef(0);
+  /** Invalidates cached rebuilds so they cannot overwrite a fresher refresh apply. */
+  const rebuildGenerationRef = useRef(0);
   const refreshInFlightRef = useRef(false);
   const refreshPendingRef = useRef(false);
   const lastFetchRef = useRef<{
@@ -329,8 +331,9 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
     });
     const width = svgRef.current?.clientWidth ?? 800;
     const height = svgRef.current?.clientHeight ?? 600;
-    const graph = buildReticulumMeshTopologyGraph(
-      cached.interfaces.map((iface) => ({
+    const generation = ++rebuildGenerationRef.current;
+    void runTopologyBuild({
+      interfaces: cached.interfaces.map((iface) => ({
         id: iface.id,
         name: iface.name,
         type: iface.type,
@@ -338,8 +341,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         status: iface.status,
         serial_port: iface.serial_port,
       })),
-      uniquePeers,
-      {
+      peers: uniquePeers,
+      opts: {
         selfLabel: cached.selfLabel,
         unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
         cx: width / 2,
@@ -349,8 +352,14 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
         ),
       },
-    );
-    applyGraph(graph);
+    })
+      .then((graph) => {
+        if (generation !== rebuildGenerationRef.current) return;
+        applyGraph(graph);
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumTopologyPanel] rebuild ' + errLikeToLogString(e));
+      });
   }, [applyGraph, includeDistantPeers, maxHops, rfOnly, t]);
 
   const refresh = useCallback(async () => {
@@ -389,6 +398,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           });
           const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
           lastFetchRef.current = { interfaces, peers: uniqueByHash, selfLabel };
+          // Drop any rebuild that started against the previous cache before this write.
+          rebuildGenerationRef.current += 1;
           const uniquePeers = selectReticulumTopologyPeersForRender(uniqueByHash, interfaces, {
             rfOnly: rfOnlyRef.current,
             includeDistantPeers: includeDistantPeersRef.current,
@@ -401,8 +412,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
           const width = svgRef.current?.clientWidth ?? 800;
           const height = svgRef.current?.clientHeight ?? 600;
-          const graph = buildReticulumMeshTopologyGraph(
-            interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
+          const graph = await runTopologyBuild({
+            interfaces: interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
               id: iface.id,
               name: iface.name,
               type: iface.type,
@@ -410,8 +421,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
               status: iface.status,
               serial_port: iface.serial_port,
             })),
-            uniquePeers,
-            {
+            peers: uniquePeers,
+            opts: {
               selfLabel,
               unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
               cx: width / 2,
@@ -423,7 +434,8 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
               },
               serverPeerHashes,
             },
-          );
+          });
+          if (generation !== refreshGenerationRef.current) continue;
           applyGraph(graph);
           setLoading(false);
         } catch (e) {

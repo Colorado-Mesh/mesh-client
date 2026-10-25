@@ -15,7 +15,10 @@ import {
   RENDERER_ORIGIN_EXPORT_FORMAT_VERSION,
   RENDERER_STORAGE_DELETION_PREFIX,
 } from '../shared/rendererOrigin';
-import { isRendererPreferenceKey } from '../shared/rendererPreferences';
+import {
+  hasEstablishedRendererPreferenceValues,
+  isRendererPreferenceKey,
+} from '../shared/rendererPreferences';
 import {
   hasAppliedRendererStorageIntent,
   parseRendererStorageIntent,
@@ -380,12 +383,35 @@ function withoutDeletionJournal(entries: WebStorageEntries, historical = false):
   );
 }
 
+/**
+ * When repair restores preference keys into an empty canonical envelope, rebuild the map so
+ * SQLite seed can replace the empty row before finalize runs.
+ */
+function withRebuiltPreferenceMap(entries: WebStorageEntries): WebStorageEntries {
+  if (hasEstablishedRendererPreferenceValues(entries['mesh-client:rendererPreferences'])) {
+    return entries;
+  }
+  const values = Object.fromEntries(
+    Object.entries(entries).filter(([key]) => isRendererPreferenceKey(key)),
+  );
+  if (Object.keys(values).length === 0) return entries;
+  return {
+    ...entries,
+    'mesh-client:rendererPreferences': JSON.stringify({
+      legacyAliasesImported: true,
+      values,
+    }),
+  };
+}
+
 /** Before the canonical map exists, a partial app blob must not hide recoverable fields. */
 function recoverMissingAppFields(
   retained: WebStorageEntries,
   current: WebStorageEntries,
 ): WebStorageEntries {
-  if (Object.hasOwn(current, 'mesh-client:rendererPreferences')) return current;
+  if (hasEstablishedRendererPreferenceValues(current['mesh-client:rendererPreferences'])) {
+    return current;
+  }
   const result = { ...current };
   for (const key of ['mesh-client:appSettings', 'mesh-client:adminSettings']) {
     if (retained[key] === undefined || current[key] === undefined) continue;
@@ -438,6 +464,26 @@ async function importAndVerify(
       }
       const deletions = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('${encodedDeletions}'), character => character.charCodeAt(0))));
       for (const key of deletions) localStorage.removeItem(key);
+      // Empty clear() envelopes must not block writing a repaired nonempty preference map.
+      const prefsKey = 'mesh-client:rendererPreferences';
+      const prefsRaw = localStorage.getItem(prefsKey);
+      if (prefsRaw !== null) {
+        try {
+          const parsed = JSON.parse(prefsRaw);
+          if (
+            parsed &&
+            typeof parsed === 'object' &&
+            parsed.values &&
+            typeof parsed.values === 'object' &&
+            !Array.isArray(parsed.values) &&
+            Object.keys(parsed.values).length === 0
+          ) {
+            localStorage.removeItem(prefsKey);
+          }
+        } catch {
+          // catch-no-log-ok leave malformed preference envelopes for the set loop
+        }
+      }
       for (const [key, value] of Object.entries(entries)) {
         if (${hasCompleted} && (key === 'mesh-client:appSettings' || key === 'mesh-client:adminSettings') && localStorage.getItem(key) !== null && localStorage.getItem(key) !== value) {
           const restored = JSON.parse(value), current = JSON.parse(localStorage.getItem(key));
@@ -500,9 +546,12 @@ function storageHealthy(
   if (entries[RENDERER_ORIGIN_STORAGE_SENTINEL_KEY] !== storageSentinel(snapshot)) return false;
   const deleted = deletedStorageKeys(options, entries);
   if ([...deleted].some((key) => Object.hasOwn(entries, key))) return false;
-  // Once the renderer has established its canonical preference map, missing individual
+  // Once the renderer has established a nonempty canonical preference map, missing individual
   // caches (including intentional removals) are reconciled from SQLite before App mounts.
-  const preferencesBackedUp = Object.hasOwn(entries, 'mesh-client:rendererPreferences');
+  // An empty map (e.g. after localStorage.clear write-through) must not skip export repair.
+  const preferencesBackedUp = hasEstablishedRendererPreferenceValues(
+    entries['mesh-client:rendererPreferences'],
+  );
   const recovered = recoverMissingAppFields(snapshot.entries, entries);
   if (
     recovered['mesh-client:appSettings'] !== entries['mesh-client:appSettings'] ||
@@ -544,7 +593,9 @@ async function repairStorage(
   const retainedCurrent = Object.fromEntries(
     Object.entries(current).filter(([key]) => !deleted.has(key)),
   );
-  const merged = recoverMissingAppFields(retained, { ...retained, ...retainedCurrent });
+  const merged = withRebuiltPreferenceMap(
+    recoverMissingAppFields(retained, { ...retained, ...retainedCurrent }),
+  );
   await importAndVerify(options, snapshot, merged, true);
 }
 

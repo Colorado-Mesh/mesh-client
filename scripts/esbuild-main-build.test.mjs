@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** All-settings recovery and atomic credential receipts bring main to 723.4 KiB. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 724 * 1024;
+/** Renderer memory-sample IPC + durable summary handlers bring main to ~727.8 KiB. */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 729 * 1024;
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */

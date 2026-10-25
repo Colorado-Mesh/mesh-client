@@ -502,7 +502,17 @@
     "memoryFailed": "内存测量失败。您可以重试。",
     "memoryLatest": "最新估计值：{{value}}",
     "memoryEmpty": "暂无测量值。请开始测量或保持窗口可见。",
-    "memoryHistory": "近期测量值"
+    "memoryHistory": "近期测量值",
+    "memoryProcessOnly": "使用渲染器进程工作集（浏览器内存API需要隔离）。",
+    "coiCapabilityTitle": "渲染器功能",
+    "coiCapabilityIsolated": "隔离： {{value}}",
+    "coiCapabilitySab": "SharedArrayBuffer ： {{value}}",
+    "coiCapabilityThreads": "追赶WASM线程： {{count}}",
+    "coiCapabilityTiming": "计时器分辨率： {{value}}",
+    "coiYes": "是",
+    "coiNo": "否",
+    "coiTimingFine": "精细（ ~ 5 µs ）",
+    "coiTimingCoarse": "粗略（ ~ 100 µs ）"
   },
   "aria": {
     "closeDialog": "关闭对话框",
