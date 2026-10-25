@@ -486,9 +486,12 @@ impl PropagationBridge {
     ///
     /// This is the retrieval half of Sync (Python
     /// `request_messages_from_propagation_node`): list → get → purge over an
-    /// `lxmf.propagation.client` link. Returns false when a download is already
-    /// in flight or the client refuses to start.
-    pub fn start_client_download(&self, pn_hash: [u8; 16]) -> bool {
+    /// `lxmf.propagation.client` link. `link_hops` scales Link establishment
+    /// timeout (`ESTABLISHMENT_TIMEOUT_PER_HOP` × hops) — pass
+    /// [`super::nomad_timeouts::propagation_link_initiator_hops`] for path-aware
+    /// budgets. Returns false when a download is already in flight or the
+    /// client refuses to start.
+    pub fn start_client_download(&self, pn_hash: [u8; 16], link_hops: u8) -> bool {
         if let Ok(mut slot) = self.last_establish_error.lock() {
             *slot = None;
         }
@@ -496,7 +499,7 @@ impl PropagationBridge {
             return false;
         };
         client.set_propagation_node(pn_hash);
-        client.start_download()
+        client.start_download_with_limit(None, link_hops.max(1))
     }
 
     /// Map client `/get` state to UI progress (user Sync is `/get`-primary).
@@ -561,6 +564,13 @@ impl PropagationBridge {
             }
         }
         client.tick();
+        // LinkEstablishTimeout is stamped inside tick() on Closed(Timeout); copy
+        // again so a same-poll Failed terminal still surfaces the sticky reason.
+        if let Some(err) = client.last_establish_error() {
+            if let Ok(mut slot) = self.last_establish_error.lock() {
+                *slot = Some(err);
+            }
+        }
         match client.state() {
             PropagationClientState::Idle => ClientDownloadPoll::Idle,
             PropagationClientState::Failed => ClientDownloadPoll::Failed,
@@ -1519,6 +1529,13 @@ mod tests {
             bridge.propagation_establish_fail_message(),
             "propagation establish failed: LrproofIdentityMissing"
         );
+        if let Ok(mut slot) = bridge.last_establish_error.lock() {
+            *slot = Some("LinkEstablishTimeout");
+        }
+        assert_eq!(
+            bridge.propagation_establish_fail_message(),
+            "propagation establish failed: LinkEstablishTimeout"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1570,7 +1587,7 @@ mod tests {
         if let Ok(mut slot) = bridge.last_establish_error.lock() {
             *slot = Some("LrproofInvalid");
         }
-        let _started = bridge.start_client_download([0xcd; 16]);
+        let _started = bridge.start_client_download([0xcd; 16], 3);
         assert_eq!(bridge.last_establish_error(), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -1768,14 +1785,14 @@ mod tests {
         let pn = [0x44u8; 16];
         // First start may or may not enter a non-Idle state without a live Link —
         // cancel must still leave the client restartable.
-        let _ = bridge.start_client_download(pn);
+        let _ = bridge.start_client_download(pn, 3);
         bridge.cancel_client_download();
         assert!(
             !bridge.client_download_active(),
             "abort_transfer must leave download inactive"
         );
         assert!(
-            bridge.start_client_download(pn),
+            bridge.start_client_download(pn, 3),
             "second Sync after cancel must start (not permanent RETRIEVE_BUSY)"
         );
         bridge.cancel_client_download();

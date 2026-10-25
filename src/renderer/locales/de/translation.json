@@ -5304,7 +5304,8 @@
     "establishRecoveryDualTcpTip": "Zwei oder mehr TCP-Schnittstellen sind aktiviert. Ankündigen und der Sync-Link kann auf verschiedenen Pfaden verlassen werden — deaktivieren Sie einen Backbone unter Verbindungsschnittstellen, kündigen Sie → dann an und versuchen Sie es erneut.",
     "establishRecoveryOpenInterfaces": "Offene Schnittstellen",
     "establishRecoveryOpenInterfacesAria": "Öffnen Sie Verbindungsschnittstellen, um TCP-Backbones anzupassen",
-    "syncRequestFailed": "Die Propagationssynchronisierung erreichte den Knoten, aber die Anforderung wurde nicht abgeschlossen. Es wird bei der nächsten Synchronisierung erneut versucht."
+    "syncRequestFailed": "Die Propagationssynchronisierung erreichte den Knoten, aber die Anforderung wurde nicht abgeschlossen. Es wird bei der nächsten Synchronisierung erneut versucht.",
+    "syncEstablishTimeout": "Zeitüberschreitung der Ausbreitungssynchronisation beim Herstellen einer Verbindung zu diesem Knoten — es kann langsam oder nicht erreichbar sein. Andere Knoten können noch funktionieren."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 Entdeckung",

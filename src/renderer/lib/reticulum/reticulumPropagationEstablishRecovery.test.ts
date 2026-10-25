@@ -34,6 +34,10 @@ describe('reticulumPropagationEstablishRecovery', () => {
     expect(isClientLocalPropagationEstablishError('reticulumPropagation.syncRetrieveBusy')).toBe(
       false,
     );
+    // LinkEstablishTimeout is a remote/unreachable class — cascade continues.
+    expect(
+      isClientLocalPropagationEstablishError('reticulumPropagation.syncEstablishTimeout'),
+    ).toBe(false);
   });
 
   it('matches sidecar announce settle wait (10s)', () => {

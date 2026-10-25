@@ -5386,7 +5386,8 @@
     "establishRecoveryDualTcpTip": "Dwa lub więcej interfejsów TCP są włączone. Ogłoszenie i link do synchronizacji mogą pozostać na różnych ścieżkach — wyłącz jedną sieć szkieletową w obszarze → Interfejsy połączeń, a następnie ogłoś i spróbuj ponownie.",
     "establishRecoveryOpenInterfaces": "Otwarte interfejsy",
     "establishRecoveryOpenInterfacesAria": "Otwórz interfejsy połączeń, aby dostosować szkielety TCP",
-    "syncRequestFailed": "Synchronizacja propagacji dotarła do węzła, ale żądanie nie zostało zakończone. Spróbuje ponownie przy następnej synchronizacji."
+    "syncRequestFailed": "Synchronizacja propagacji dotarła do węzła, ale żądanie nie zostało zakończone. Spróbuje ponownie przy następnej synchronizacji.",
+    "syncEstablishTimeout": "Synchronizacja propagacji przekroczyła limit czasu podczas ustanawiania łącza do tego węzła — może być powolna lub nieosiągalna. Inne węzły mogą nadal działać."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

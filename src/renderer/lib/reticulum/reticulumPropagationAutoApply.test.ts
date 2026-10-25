@@ -493,6 +493,45 @@ describe('reticulumPropagationAutoApply', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(errorKey);
   });
 
+  it('Auto still cascades after LinkEstablishTimeout', async () => {
+    const startSync = vi
+      .fn()
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: 'reticulumPropagation.syncEstablishTimeout',
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('failed' as const);
+      })
+      .mockImplementationOnce((id?: string) => {
+        useReticulumPropagationStore.setState({
+          syncTargetId: id ?? null,
+          lastSyncError: null,
+          sync: { active: false, progress: 0, message: null },
+        });
+        return Promise.resolve('accepted' as const);
+      });
+    useReticulumPropagationStore.setState({
+      nodes: [
+        { id: 'local-prop', name: 'Local', enabled: true, status: 'known' },
+        {
+          id: 'pn-aabb1111',
+          name: 'Remote',
+          enabled: true,
+          status: 'known',
+          hops: 2,
+          destination_hash: 'aabb'.repeat(8),
+        },
+      ],
+      discovered: [],
+      preferredId: null,
+      startSync,
+    });
+    await expect(startPropagationSyncCascade({ hasEnabledInterfaces: true })).resolves.toBe(true);
+    expect(startSync.mock.calls.map((c) => c[0])).toEqual(['pn-aabb1111', 'local-prop']);
+  });
+
   it('Auto still cascades after ordinary syncFailed', async () => {
     const startSync = vi
       .fn()

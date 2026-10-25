@@ -5304,7 +5304,8 @@
     "establishRecoveryDualTcpTip": "Deux interfaces TCP ou plus sont activées. Annoncez et le lien de synchronisation peut partir sur différents chemins — désactivez une dorsale sous → Interfaces de connexion, puis annoncez et réessayez.",
     "establishRecoveryOpenInterfaces": "interfaces ouverts",
     "establishRecoveryOpenInterfacesAria": "Ouvrir les interfaces de connexion pour ajuster les backbones TCP",
-    "syncRequestFailed": "La synchronisation de la propagation a atteint le nœud, mais la demande n'a pas abouti. Il réessayera lors de la prochaine synchronisation."
+    "syncRequestFailed": "La synchronisation de la propagation a atteint le nœud, mais la demande n'a pas abouti. Il réessayera lors de la prochaine synchronisation.",
+    "syncEstablishTimeout": "La synchronisation de la propagation a expiré lors de l'établissement d'un lien vers ce nœud — il peut être lent ou inaccessible. D'autres nœuds peuvent encore fonctionner."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

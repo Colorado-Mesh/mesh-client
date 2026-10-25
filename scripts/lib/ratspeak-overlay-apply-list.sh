@@ -30,6 +30,7 @@ RS_LXMF_APPLY_SCRIPTS=(
   apply-rsLXMF-link-delivery-has-pending-to.sh
   apply-rsLXMF-propagation-client-abort-transfer.sh
   apply-rsLXMF-propagation-client-lrproof-diagnostics.sh
+  apply-rsLXMF-propagation-client-link-hops.sh
 )
 
 RS_NOMAD_APPLY_SCRIPTS=(

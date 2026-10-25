@@ -5304,7 +5304,8 @@
     "establishRecoveryDualTcpTip": "İki veya daha fazla TCP arayüzü etkinleştirildi. Anons ve senkronizasyon bağlantısı farklı yollarda bırakılabilir — Bağlantı → Arabirimleri altında bir omurgayı devre dışı bırakın, ardından anons edin ve yeniden deneyin.",
     "establishRecoveryOpenInterfaces": "Açık Arayüzler",
     "establishRecoveryOpenInterfacesAria": "TCP omurgalarını ayarlamak için Bağlantı Arayüzlerini açın",
-    "syncRequestFailed": "Yayılma senkronizasyonu düğüme ulaştı, ancak istek tamamlanmadı. Bir sonraki senkronizasyonda tekrar deneyecektir."
+    "syncRequestFailed": "Yayılma senkronizasyonu düğüme ulaştı, ancak istek tamamlanmadı. Bir sonraki senkronizasyonda tekrar deneyecektir.",
+    "syncEstablishTimeout": "Bu düğüme bir bağlantı kurulurken yayılım senkronizasyonu zaman aşımına uğradı — yavaş veya ulaşılamaz olabilir. Diğer düğümler hala çalışıyor olabilir."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

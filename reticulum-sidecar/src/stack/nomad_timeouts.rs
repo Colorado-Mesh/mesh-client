@@ -88,6 +88,18 @@ pub fn nomad_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
     }
 }
 
+/// PN Sync client `/get` Link initiator hops — same TCP floor/cap as Nomad so
+/// multi-hop TCP/RMAP paths are not stuck at hops=1 (6s) establish timeouts.
+pub fn propagation_link_initiator_hops(egress_via: &str, path_hops: u8) -> u8 {
+    nomad_link_initiator_hops(egress_via, path_hops)
+}
+
+/// Approximate LRPROOF wait implied by `Link::new_initiator` hops (6s × hops).
+pub fn propagation_link_proof_budget_secs(link_hops: u8) -> u64 {
+    const ESTABLISHMENT_TIMEOUT_PER_HOP_SECS: u64 = 6;
+    u64::from(link_hops.max(1)) * ESTABLISHMENT_TIMEOUT_PER_HOP_SECS
+}
+
 /// Effective LRPROOF budget reported to the UI / failure logs.
 ///
 /// Matches `rsReticulum-link-client-proof-budget.patch` (release parity):
@@ -231,6 +243,10 @@ mod tests {
         assert_eq!(nomad_link_initiator_hops("rf", 8), 8);
         assert_eq!(nomad_link_initiator_hops("ble", 6), 6);
         assert_eq!(nomad_link_initiator_hops("rf", 1), 1);
+        // PN Sync reuses the same hop scaling.
+        assert_eq!(propagation_link_initiator_hops("network", 2), 3);
+        assert_eq!(propagation_link_proof_budget_secs(3), 18);
+        assert_eq!(propagation_link_proof_budget_secs(1), 6);
     }
 
     #[test]

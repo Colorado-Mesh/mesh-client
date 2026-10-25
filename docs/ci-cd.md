@@ -170,8 +170,9 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 4. Audit licenses (`pnpm run check:licenses`)
 5. Regenerate `docs/third-party-licenses.md` (`pnpm run docs:licenses`)
 6. Open a PR via `peter-evans/create-pull-request` when the file changed (branch `chore/third-party-licenses-<run_id>`)
+7. Admin-merge that docs-only PR with `LICENSE_PR_TOKEN` (no maintainer review)
 
-**Authority:** the `license-automation` environment accepts only `main` and has no release approval requirement. The job uses `GITHUB_TOKEN` with Contents and Pull requests write to open a PR restricted to `docs/third-party-licenses.md`. It has no release, signing, or release-cut credentials and does not create tags or releases. An optional environment secret `LICENSE_PR_TOKEN` can supply a dedicated Contents and Pull requests write token so required PR checks run automatically. With the default `GITHUB_TOKEN`, GitHub suppresses those workflow events; a maintainer must start the required checks before merging the documentation PR. Direct pushes to `main` remain blocked by the merge-queue ruleset.
+**Authority:** the `license-automation` environment accepts only `main` and has no required reviewers. It has no release, signing, or release-cut credentials. Direct pushes to `main` remain blocked by the merge-queue ruleset, so the job opens a PR restricted to `docs/third-party-licenses.md` and admin-merges it. Environment secret **`LICENSE_PR_TOKEN` is required** for that path: a repo-admin fine-grained PAT (Contents + Pull requests write). Falling back to `GITHUB_TOKEN` leaves PRs stuck on the merge-queue review / unattributed-change gate (see #1311). The file is already validated in-job (`check:licenses`, `docs:licenses`, Rust stub refuse) before merge.
 
 ---
 

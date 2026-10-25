@@ -625,6 +625,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 After upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, advance `RS_LXMF_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
 
+## rsLXMF-propagation-client-link-hops.patch
+
+Path-scales `Link::new_initiator` hops on `PropagationClient::start_download_with_limit` (was hard-coded `hops=1` → 6s establish) and stamps `LinkEstablishTimeout` when the Link closes with `CloseReason::Timeout` during `LinkEstablishing` without a prior LRPROOF sticky error. Sidecar passes Nomad-style TCP hop floors (`propagation_link_initiator_hops`) so multi-hop TCP/RMAP Sync is not false-`NoLinkProof`.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | reviewed `RS_LXMF_PIN` @ `74dc13f` (v1.3.0) after `rsLXMF-propagation-client-lrproof-diagnostics` |
+| **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
+
+**Touches:** rsLXMF `PropagationClient` (`start_download_with_limit` hops arg; `tick` Closed(Timeout) → `LinkEstablishTimeout`)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-link-hops.sh
+```
+
+Must run after `apply-rsLXMF-propagation-client-lrproof-diagnostics.sh`. Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+After upstream rsLXMF accepts path-scaled initiator hops and a distinct establish-timeout sticky error, advance `RS_LXMF_PIN` through review to a full SHA containing it and pass the full-feature checks before removing this patch or its apply step.
+
 ## Removed: rsLXMF-propagation-client-request-resource.patch
 
 Sunset when [ratspeak/rsLXMF#8](https://github.com/ratspeak/rsLXMF/issues/8) landed in rsLXMF [v1.3.0](https://github.com/ratspeak/rsLXMF/releases/tag/v1.3.0) (`74dc13f` via `5fe094c` — *propagation: transfer oversized requests as bounded Resources*). Upstream `PropagationClient::send_get_path_request` sends packed `/get` bodies larger than the Link MDU as request Resources (`flags.is_request`), so the local overlay is fully superseded. Tracked entry removed from `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh` after pin-based sunset confirmation.
