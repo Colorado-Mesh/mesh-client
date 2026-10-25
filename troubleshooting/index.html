@@ -1163,6 +1163,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#renderer-migration-blank-window-or-older-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer migration: blank window or older preferences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#linux-packaged-app-cannot-find-module-readable-stream" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2801,6 +2812,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2926,6 +2941,62 @@
     
   
     Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-origin-coi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer origin and recovery
   
 
     
@@ -3606,6 +3677,17 @@
   
     <nav class="md-nav" aria-label="Installation and packaged apps">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#renderer-migration-blank-window-or-older-preferences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer migration: blank window or older preferences
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#linux-packaged-app-cannot-find-module-readable-stream" class="md-nav__link">
@@ -4717,6 +4799,11 @@
 <td><code>mainUptimeSec</code>, <code>lastRendererHeartbeatAgeMs</code>, <code>rendererUnresponsiveSeen</code>, <code>rss</code>, <code>heapUsed</code> — hang triage</td>
 </tr>
 <tr>
+<td><code>rendererMemory</code> (top-level)</td>
+<td>object</td>
+<td>Isolation/API availability and up to 24 timestamped renderer memory totals; separate from main-process memory</td>
+</tr>
+<tr>
 <td><code>meshcore.roomsUnreadEstimate</code></td>
 <td>number</td>
 <td>Computed Rooms tab badge (known room servers only)</td>
@@ -4804,6 +4891,22 @@
 </ul>
 <h2 id="installation-and-packaged-apps">Installation and packaged apps<a class="headerlink" href="#installation-and-packaged-apps" title="Permanent link">&para;</a></h2>
 <p>Installers, Flatpak, Gatekeeper, and first-launch failures.</p>
+<h3 id="renderer-migration-blank-window-or-older-preferences">Renderer migration: blank window or older preferences<a class="headerlink" href="#renderer-migration-blank-window-or-older-preferences" title="Permanent link">&para;</a></h3>
+<p>Installed apps and <code>pnpm start</code> migrate localStorage from <code>file://</code> to <code>mesh-client://renderer</code> before using the
+new origin. If export, import, or verification fails, the app retains the file origin. Look for
+<code>Renderer origin migration/health check failed; retaining file origin</code> and the renderer load
+source in the startup log.</p>
+<p><code>pnpm run dev</code> explicitly uses Vite with isolation headers. A Vite server running in another
+terminal does not change <code>pnpm start</code>. Use the <a href="../development/renderer-origin-coi/#verify-the-normal-local-start">startup verification steps</a>
+to confirm the actual document origin, isolation, and migration completion.</p>
+<p>For recovery, fully quit the app and launch it with <code>MESH_CLIENT_FORCE_FILE_ORIGIN=1</code> in the
+launcher's environment. This uses the retained legacy preferences; changes saved only at the new
+origin can look older, while SQLite-backed records are shared. Do not delete browser storage or
+the <code>migration/</code> directory to troubleshoot this transition. Preserve the logs and recovery files
+under the <a href="#reporting-bugs-export-for-github-app-tab">local data directory</a>, and follow the
+<a href="../development/renderer-origin-coi/#support-recovery">origin recovery runbook</a> for verified repair.</p>
+<p>USB serial may ask you to choose the port again because browser grants belong to an origin.
+LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to migrate.</p>
 <h3 id="linux-packaged-app-cannot-find-module-readable-stream">Linux packaged app: <code>Cannot find module 'readable-stream'</code><a class="headerlink" href="#linux-packaged-app-cannot-find-module-readable-stream" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (<code>bl</code> → <code>mqtt-packet</code> → <code>mqtt</code> require stack).</p>
 <p><strong>Cause</strong>: With a hoisted <code>nodeLinker</code>, electron-builder can omit some transitive packages from <code>app.asar</code> unless a full copy exists at a predictable path (historically worsened when <code>pnpm list --json</code> marked nodes as deduped). <code>mqtt</code> is loaded from <code>node_modules</code> at runtime (not bundled into the main esbuild output).</p>
@@ -5157,6 +5260,13 @@
 <li>If the app crashes, save <strong><code>~/Library/Logs/DiagnosticReports/Mesh-client-*.ips</code></strong> (macOS) before relaunching; include the <code>.ips</code> and exported log when reporting.</li>
 <li><strong>Reporting a crash or lockup:</strong> Prefer <strong>Export for Developer / GitHub before restart</strong> if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as <code>mesh-client.log.1</code> (also included in support bundles). Note app version, OS, uptime (<code>[main] long-session health</code> / snapshot <code>mainLiveness</code>), whether MeshCore BLE was connected, and any <code>[main] renderer heartbeat stalled</code> / <code>webContents unresponsive</code> lines.</li>
 </ul>
+<p><strong>Renderer memory:</strong> App → Support shows the latest browser estimate and recent samples. Use
+<strong>Sample now</strong>, or keep the window visible for automatic samples about every five minutes.
+The history retains 24 totals for the current session and is included as <code>rendererMemory</code> in
+support bundles and Copy Debug Snapshot. Sampling pauses while hidden. If isolation or the
+browser memory API is unavailable, the section explains why; file-origin recovery normally
+has no samples. Compare trends within a session, since browser estimates vary between app
+versions and do not measure the same allocations as <code>mainLiveness</code>.</p>
 <p>After <strong>24 hours</strong> of uptime, the main process logs periodic <strong>long-session health</strong> lines (<code>[main] long-session health …</code>) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log <code>[main] renderer heartbeat stalled</code>. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.</p>
 <h3 id="app-shows-disconnected-but-device-is-still-on">App shows "disconnected" but device is still on<a class="headerlink" href="#app-shows-disconnected-but-device-is-still-on" title="Permanent link">&para;</a></h3>
 <ul>
@@ -5623,7 +5733,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 18:38:59 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 12:25:41 UTC">October 25, 2026</span>
   </span>
 
     

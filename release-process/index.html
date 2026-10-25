@@ -1593,6 +1593,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#windows-signing-readiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows signing readiness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#manual-verification-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2093,6 +2104,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2221,6 +2236,62 @@
     
   
     Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-origin-coi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer origin and recovery
   
 
     
@@ -2936,6 +3007,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#windows-signing-readiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows signing readiness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#manual-verification-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3346,6 +3428,40 @@
 <p>Before every official Electron macOS release build, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/release.yaml"><code>release.yaml</code></a> runs <strong>Validate macOS signing secrets</strong>. If any of <code>CSC_LINK</code>, <code>CSC_KEY_PASSWORD</code>, <code>APPLE_ID</code>, <code>APPLE_APP_SPECIFIC_PASSWORD</code>, or <code>APPLE_TEAM_ID</code> is missing, the job <strong>fails early</strong> with a clear list.</p>
 <p>Fork workflows and local <code>pnpm run dist:mac</code> without these env vars produce <strong>unsigned</strong> <code>.dmg</code> / <code>.zip</code> bundles (still validated by <code>verify-mac-packaging.mjs</code>). See <a href="../ci-cd/#macos-packaging-verify-verify-mac-packagingmjs">CI/CD — macOS packaging verify</a>.</p>
 <hr />
+<h2 id="windows-signing-readiness">Windows signing readiness<a class="headerlink" href="#windows-signing-readiness" title="Permanent link">&para;</a></h2>
+<p>Windows NSIS installers are currently <strong>unsigned</strong>. The Windows release job does not pass
+signing credentials, and <code>electron-builder.yml</code> has no Windows signing provider configured.
+Microsoft account approval is a prerequisite for the intended signing service; it does not
+configure this repository or prove an installer is signed.</p>
+<p>Windows signing is an owner-managed follow-up and <strong>does not block the next release</strong>, per the
+maintainer's release decision. Existing unsigned Windows packaging and installation checks remain
+the release behavior while Microsoft/provider setup is pending.</p>
+<p>When the owner enables Windows signing, use this checklist to verify that work:</p>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Confirm the approved Microsoft signing service, account, certificate/profile, and expected
+      publisher identity. Record its required configuration without guessing service-specific values.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configure that provider in the protected <strong><code>release</code></strong> environment and the Windows-only
+      official release job. Keep arbitrary-ref <code>build.yaml</code>, pull requests, and local unsigned
+      builds free of release credentials.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Once signing is enabled for official Windows releases, fail that job early when its required
+      signing configuration is missing so a provider failure cannot silently ship unsigned files.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Sign the application, bundled executable components (including the Reticulum sidecar), and
+      both x64 and arm64 NSIS installers. Check the final packaged payload, not just an intermediate
+      build directory.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Before upload, verify Authenticode signatures, expected publisher, and timestamp on both
+      installers and their installed executable payloads. Run the existing x64 and arm64 NSIS
+      installation smoke tests against those same artifacts.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Validate an update from the currently published unsigned release to the signed build, then
+      an update between signed builds. Preserve the exact installer names and <code>latest.yml</code> hashes;
+      do not sign or otherwise modify an installer after updater metadata is generated.</li>
+</ul>
+<p>The current <code>verify-win-packaging.mjs</code> checks executable presence/size, bundled sidecar presence,
+per-architecture installers, and updater metadata. <code>test-win-nsis-install.mjs</code> checks installed
+payloads on x64 and arm64. Neither currently verifies Authenticode signatures, publisher identity,
+or trusted timestamps. A green packaging job therefore proves packaging readiness only; it does
+not establish that Windows artifacts are signed. The signing follow-up remains separate from
+approval of the next unsigned Windows release.</p>
+<hr />
 <h2 id="manual-verification-optional">Manual verification (optional)<a class="headerlink" href="#manual-verification-optional" title="Permanent link">&para;</a></h2>
 <p>If you need to run checks outside <code>release.sh</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>format:check
@@ -3575,7 +3691,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 14, 2026 18:43:13 UTC">October 14, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 12:25:41 UTC">October 25, 2026</span>
   </span>
 
     

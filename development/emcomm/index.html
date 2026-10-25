@@ -1682,6 +1682,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1810,6 +1814,62 @@
     
   
     Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../renderer-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../renderer-origin-coi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer origin and recovery
   
 
     
@@ -2790,7 +2850,7 @@
 <h2 id="ws1--incident-tab-store-watcher-hydrate-upsert">WS1 — Incident tab, store, watcher hydrate upsert<a class="headerlink" href="#ws1--incident-tab-store-watcher-hydrate-upsert" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Types:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/mecp/incidentTypes.ts"><code>incidentTypes.ts</code></a> — <code>EmergencyIncident</code> (<code>status: 'open' | 'acked' | 'resolved'</code>, <code>protocolsSeen</code>, <code>ackPeerIds</code>/<code>ackCount</code>, <code>beaconActive</code>/<code>beaconAcked</code>, <code>lat</code>/<code>lon</code> + <code>coordsSource: 'message' | 'lastKnown' | null</code>, <code>isDrill</code>).</li>
-<li><strong>Store:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/stores/incidentStore.ts"><code>incidentStore.ts</code></a> (Zustand <code>persist</code>, localStorage key <code>mesh-client:incidents</code>, cap <code>MAX_INCIDENTS = 200</code>).</li>
+<li><strong>Store:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/stores/incidentStore.ts"><code>incidentStore.ts</code></a> (Zustand, canonical SQLite <code>emergency_incidents</code> / <code>emergency_incident_tombstones</code>, legacy localStorage recovery cache <code>mesh-client:incidents</code>, cap <code>MAX_INCIDENTS = 200</code>). Startup awaits <code>hydrateIncidentStore</code> before mounting watcher and retention effects; mutators write through ordered IPC, and one-time legacy import is transactional and idempotent. See <a href="../renderer-storage/">renderer storage</a>.</li>
 <li>Fingerprint strips GPS from freetext so a GPS update does not fork a row. Bridged copies from a <strong>different</strong> sender id merge within <code>CROSS_PROTOCOL_MERGE_WINDOW_MS</code> (10 min) only when the relay arrives on a <strong>new</strong> protocol, stripped text is <strong>non-empty</strong>, and the full payload (including coords) matches; original <code>senderId</code> is kept and relays go in <code>relaySenderIds</code>. GPS-only MAYDAYs from two victims never merge. Relays never overwrite victim coords / <code>lastKnown</code>.</li>
 <li>Resolve / prune tombstones both the sender fingerprint and <code>incidentPayloadMatchKey</code> (when stripped freetext is <strong>non-empty</strong>) so seed cannot reopen via a relay or escalated copy. GPS-only MAYDAYs skip payload tombs so different victims do not collide.</li>
 <li>Cap eviction: resolved → drills → higher severity number → oldest; <strong>never</strong> evict open non-drill sev 0/1 (temporary over-cap allowed).</li>
@@ -2798,8 +2858,8 @@
 <li>Seed (<code>fromSeed</code>): applies the same own/history/S&amp;F/tapback skips as the live watcher path, skips messages older than <code>INCIDENT_SEED_MAX_AGE_MS</code> (24h), and honors tombstones.</li>
 <li><strong>Watcher:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/useMecpAlertWatcher.ts"><code>useMecpAlertWatcher.ts</code></a> upserts on live messages and on a one-shot hydration seed (S4). Seed applies the same own/history/S&amp;F/tapback skips as live, except an own B01/B03 is still recorded (no alert/audit) so the originator can cancel the beacon — see WS3. Passes <code>fromSeed</code>, and uses <code>resolveLastKnown</code> from UI nodes when present so incidents without GPS in freetext can still map-pin.</li>
 <li><strong>UI:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/incident"><code>components/incident/</code></a> — <code>IncidentPanel.tsx</code> (lazy via <code>lazyTabPanels.ts</code>, mounted in <code>App.tsx</code>, S8), <code>EmergencyIncidentRow.tsx</code>, <code>AckIncidentButton.tsx</code>, <code>ResolveIncidentButton.tsx</code>. Tab slot <code>Incident</code> in <code>tabSlotIds.ts</code> / <code>appTabMappings.ts</code> (<code>INCIDENT_PANEL_INDEX</code>) sits <strong>just before App</strong> (always visible on all three protocols; rarely used day-to-day — badge still surfaces open MAYDAY/URGENT); icon in <code>tabIcons.tsx</code>. Panel intro + empty hint copy live under <code>incidentPanel.*</code> in <code>en/translation.json</code>. User-facing “what’s here” also in <a href="../../emcomm/"><code>../emcomm.md</code></a>, README <strong>EMCOMM / Incident Command</strong>, and troubleshooting <strong>What is the Incident tab?</strong>.</li>
-<li><strong>Standing alert (unseen MAYDAY/URGENT):</strong> <code>EmergencyIncident.seenAt</code> is local only (never on the wire). Live-created rows start without it; seed (<code>fromSeed</code>) and own (<code>localOrigin</code>) rows get <code>seenAt</code> on creation, and the v3 persist migration stamps pre-existing rows so an upgrade never raises a banner. A live reopen or escalation into sev 0/1 clears it again. <code>markSeen</code> / <code>markAllSeen</code>, <code>resolveIncident</code>, and <code>confirmBeacon</code> set it; App calls <code>markSeen</code> in <code>handleIncidentAck</code> and <code>markAllSeen</code> only when <code>activePanelIndex</code> <strong>changes to</strong> the Incident tab (an already-open tab does not prove anyone is watching). <code>selectUnseenCriticalIncidents</code> (open, non-drill, sev ≤ 1, no <code>seenAt</code>) drives <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/incident/UnseenEmergencyBanner.tsx"><code>UnseenEmergencyBanner.tsx</code></a> (mounted once in <code>App.tsx</code> under <code>ConnectionBanner</code>) and <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/useUnseenEmergencyAlerts.ts"><code>useUnseenEmergencyAlerts.ts</code></a>: each newly unseen id calls <code>app:requestAttention</code> (main <code>BrowserWindow.flashFrame(true)</code> on the sender window when unfocused, cleared on next <code>focus</code>; no platform branch), and when <code>mecpRepeatAlertMinutes</code> (<code>null</code> = off, 1–60) is set the siren / EAS tone replays every interval until nothing is unseen. The first tone stays owned by <code>triggerMecpAlert</code>. All of this is <strong>opt-in</strong> via App → MECP → <strong>Incident Command station</strong> (<code>mecpStandingAlertEnabled</code>, default <code>false</code>, S17): when off, App does not render the banner and the hook skips attention and repeats; seen-state bookkeeping still runs. The repeat-minutes field lives under that toggle. <code>getOperationalAlertSettings</code> treats a stored non-null <code>mecpRepeatAlertMinutes</code> with no stored toggle as enabled, so stations that already opted into repeats keep station mode. Rows upserted with <code>quiet: true</code> (alert-throttled senders, see <a href="../mecp/#receive-path">mecp.md</a>) are created seen and escalation does not clear it.</li>
-<li><strong>Event timeline:</strong> <code>EmergencyIncident.events</code> (<code>IncidentEvent[]</code>, oldest first, capped at <code>MAX_EVENTS_PER_INCIDENT = 500</code>; over the cap the original <code>received</code> entry is kept and the oldest later events drop). Only distinct ACK peers grow a timeline without bound; the store lives in <code>localStorage</code>, so a SQLite table with date retention is the path if this ever needs to be unbounded. Appended in store mutators only: <code>received</code> (create), <code>relayHeard</code> (merge from a relay or a new protocol), <code>ackHeard</code> / <code>ackSent</code> (<code>recordAck</code>; peer id <code>'local'</code> is ours), <code>beaconConfirmed</code>, <code>beaconCancelled</code> (B03 ingest), <code>resolved</code>, <code>reopened</code>. Records only what the mesh carried or the operator did. There are no responder status codes in MECP, so do not invent status events.</li>
+<li><strong>Standing alert (unseen MAYDAY/URGENT):</strong> <code>EmergencyIncident.seenAt</code> is local only (never on the wire). Live-created rows start without it; seed (<code>fromSeed</code>) and own (<code>localOrigin</code>) rows get <code>seenAt</code> on creation, and the legacy v3 storage migration stamps pre-existing rows so an upgrade never raises a banner. A live reopen or escalation into sev 0/1 clears it again. <code>markSeen</code> / <code>markAllSeen</code>, <code>resolveIncident</code>, and <code>confirmBeacon</code> set it; App calls <code>markSeen</code> in <code>handleIncidentAck</code> and <code>markAllSeen</code> only when <code>activePanelIndex</code> <strong>changes to</strong> the Incident tab (an already-open tab does not prove anyone is watching). <code>selectUnseenCriticalIncidents</code> (open, non-drill, sev ≤ 1, no <code>seenAt</code>) drives <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/incident/UnseenEmergencyBanner.tsx"><code>UnseenEmergencyBanner.tsx</code></a> (mounted once in <code>App.tsx</code> under <code>ConnectionBanner</code>) and <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/useUnseenEmergencyAlerts.ts"><code>useUnseenEmergencyAlerts.ts</code></a>: each newly unseen id calls <code>app:requestAttention</code> (main <code>BrowserWindow.flashFrame(true)</code> on the sender window when unfocused, cleared on next <code>focus</code>; no platform branch), and when <code>mecpRepeatAlertMinutes</code> (<code>null</code> = off, 1–60) is set the siren / EAS tone replays every interval until nothing is unseen. The first tone stays owned by <code>triggerMecpAlert</code>. All of this is <strong>opt-in</strong> via App → MECP → <strong>Incident Command station</strong> (<code>mecpStandingAlertEnabled</code>, default <code>false</code>, S17): when off, App does not render the banner and the hook skips attention and repeats; seen-state bookkeeping still runs. The repeat-minutes field lives under that toggle. <code>getOperationalAlertSettings</code> treats a stored non-null <code>mecpRepeatAlertMinutes</code> with no stored toggle as enabled, so stations that already opted into repeats keep station mode. Rows upserted with <code>quiet: true</code> (alert-throttled senders, see <a href="../mecp/#receive-path">mecp.md</a>) are created seen and escalation does not clear it.</li>
+<li><strong>Event timeline:</strong> <code>EmergencyIncident.events</code> (<code>IncidentEvent[]</code>, oldest first, capped at <code>MAX_EVENTS_PER_INCIDENT = 500</code>; over the cap the original <code>received</code> entry is kept and the oldest later events drop). Only distinct ACK peers grow a timeline without bound; records now live in the dedicated SQLite incident table; event caps still apply, and any future unbounded history requires an explicit retention policy. Appended in store mutators only: <code>received</code> (create), <code>relayHeard</code> (merge from a relay or a new protocol), <code>ackHeard</code> / <code>ackSent</code> (<code>recordAck</code>; peer id <code>'local'</code> is ours), <code>beaconConfirmed</code>, <code>beaconCancelled</code> (B03 ingest), <code>resolved</code>, <code>reopened</code>. Records only what the mesh carried or the operator did. There are no responder status codes in MECP, so do not invent status events.</li>
 <li><strong>Map:</strong> open incidents with coordinates render via <code>IncidentMarkersLayer</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/map/emcommMapLayers.tsx"><code>components/map/emcommMapLayers.tsx</code></a> on <strong>both</strong> the LoRa Map tab and the <strong>Reticulum</strong> Map tab (Layers → Emergency incidents, <code>mapLayerStore.showIncidents</code>, default on; drills dashed). Reticulum hears MECP over LXMF chat the same way as LoRa; markers are protocol-agnostic from <code>incidentStore</code>.</li>
 </ul>
 <h2 id="ws2--emergency-priority-outbox">WS2 — Emergency-priority outbox<a class="headerlink" href="#ws2--emergency-priority-outbox" title="Permanent link">&para;</a></h2>
@@ -2941,7 +3001,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 13:15:11 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 12:25:41 UTC">October 25, 2026</span>
   </span>
 
     
