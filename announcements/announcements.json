@@ -1,4 +1,16 @@
 {
   "schema": 1,
-  "announcements": []
+  "announcements": [
+    {
+      "id": "2026-electron-origin-migration",
+      "severity": "warning",
+      "title": "Upcoming update: settings migration",
+      "body": "Mesh Client 6.5.0 modernizes the app (new secure renderer origin) and unlocks new features.\n\nWe have worked to keep your settings intact, but please note or screenshot device settings, MQTT settings, and open RRC hubs before you update — and re-check them after.\n\nIf something looks reset, restore from your notes; chat and keys should still be present.",
+      "url": "https://gist.github.com/rinchen/2d334111171380d0c4cd5a8e16767344",
+      "urlLabel": "Details",
+      "startsAt": "2026-10-25T00:00:00Z",
+      "expiresAt": "2026-11-22T00:00:00Z",
+      "maxAppVersion": "6.4.0"
+    }
+  ]
 }
