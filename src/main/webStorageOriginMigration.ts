@@ -17,7 +17,10 @@ import {
 } from '../shared/rendererOrigin';
 import {
   hasEstablishedRendererPreferenceValues,
+  isExplicitResetPreferenceBaseline,
   isRendererPreferenceKey,
+  parseRendererPreferenceValues,
+  sanitizeRendererPreferenceValue,
 } from '../shared/rendererPreferences';
 import {
   hasAppliedRendererStorageIntent,
@@ -383,24 +386,59 @@ function withoutDeletionJournal(entries: WebStorageEntries, historical = false):
   );
 }
 
-/**
- * When repair restores preference keys into an empty canonical envelope, rebuild the map so
- * SQLite seed can replace the empty row before finalize runs.
- */
-function withRebuiltPreferenceMap(entries: WebStorageEntries): WebStorageEntries {
-  if (hasEstablishedRendererPreferenceValues(entries['mesh-client:rendererPreferences'])) {
-    return entries;
+/** Copy public preference fields only; skip unusable credential-bearing blobs. */
+function assignPublicPreferenceValues(
+  target: Record<string, unknown>,
+  source: WebStorageEntries,
+  mode: 'gap-fill' | 'override',
+): void {
+  for (const [key, raw] of Object.entries(source)) {
+    if (!isRendererPreferenceKey(key)) continue;
+    if (mode === 'gap-fill' && Object.hasOwn(target, key)) continue;
+    const clean = sanitizeRendererPreferenceValue(key, raw);
+    if (clean !== null) target[key] = clean;
   }
-  const values = Object.fromEntries(
-    Object.entries(entries).filter(([key]) => isRendererPreferenceKey(key)),
-  );
+}
+
+/**
+ * Keep the canonical preference map aligned with top-level preference caches during repair.
+ * Export-only top-level keys fill gaps only; only current-origin top-level caches may override
+ * an existing map value (so a conflicting export scalar cannot replace newer preferences).
+ * Inline credentials are stripped before any value enters the recovery map.
+ */
+function withRebuiltPreferenceMap(
+  entries: WebStorageEntries,
+  currentEntries: WebStorageEntries,
+): WebStorageEntries {
+  const prefsRaw = entries['mesh-client:rendererPreferences'];
+  if (isExplicitResetPreferenceBaseline(prefsRaw)) return entries;
+  const existingValues = parseRendererPreferenceValues(prefsRaw) ?? {};
+  const values: Record<string, unknown> = {};
+  // Re-snapshot existing map entries through the sanitizer so a dirty map cannot persist secrets.
+  for (const [key, value] of Object.entries(existingValues)) {
+    if (!isRendererPreferenceKey(key)) continue;
+    const raw = typeof value === 'string' ? value : JSON.stringify(value);
+    const clean = sanitizeRendererPreferenceValue(key, raw);
+    if (clean === null) continue;
+    if (typeof value === 'string') {
+      values[key] = clean;
+      continue;
+    }
+    try {
+      values[key] = JSON.parse(clean) as unknown;
+    } catch {
+      // catch-no-log-ok keep the sanitized string when structured round-trip fails
+      values[key] = clean;
+    }
+  }
+  assignPublicPreferenceValues(values, entries, 'gap-fill');
+  assignPublicPreferenceValues(values, currentEntries, 'override');
   if (Object.keys(values).length === 0) return entries;
+  const next = JSON.stringify({ legacyAliasesImported: true, values });
+  if (prefsRaw === next) return entries;
   return {
     ...entries,
-    'mesh-client:rendererPreferences': JSON.stringify({
-      legacyAliasesImported: true,
-      values,
-    }),
+    'mesh-client:rendererPreferences': next,
   };
 }
 
@@ -464,24 +502,31 @@ async function importAndVerify(
       }
       const deletions = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('${encodedDeletions}'), character => character.charCodeAt(0))));
       for (const key of deletions) localStorage.removeItem(key);
-      // Empty clear() envelopes must not block writing a repaired nonempty preference map.
+      // clear() write-through may leave an empty or incomplete preference envelope. Remove it
+      // (unless it is an explicit-reset baseline) so the repaired map can be written when
+      // hasCompleted otherwise refuses to overwrite surviving keys.
       const prefsKey = 'mesh-client:rendererPreferences';
+      const expectedPrefs = entries[prefsKey];
       const prefsRaw = localStorage.getItem(prefsKey);
-      if (prefsRaw !== null) {
+      if (
+        typeof expectedPrefs === 'string' &&
+        prefsRaw !== null &&
+        prefsRaw !== expectedPrefs
+      ) {
         try {
           const parsed = JSON.parse(prefsRaw);
-          if (
+          const baseline =
             parsed &&
             typeof parsed === 'object' &&
+            parsed.resetBaseline === true &&
             parsed.values &&
             typeof parsed.values === 'object' &&
             !Array.isArray(parsed.values) &&
-            Object.keys(parsed.values).length === 0
-          ) {
-            localStorage.removeItem(prefsKey);
-          }
+            Object.keys(parsed.values).length === 0;
+          if (!baseline) localStorage.removeItem(prefsKey);
         } catch {
-          // catch-no-log-ok leave malformed preference envelopes for the set loop
+          // catch-no-log-ok malformed preference envelopes are replaced by the set loop
+          localStorage.removeItem(prefsKey);
         }
       }
       for (const [key, value] of Object.entries(entries)) {
@@ -595,6 +640,7 @@ async function repairStorage(
   );
   const merged = withRebuiltPreferenceMap(
     recoverMissingAppFields(retained, { ...retained, ...retainedCurrent }),
+    retainedCurrent,
   );
   await importAndVerify(options, snapshot, merged, true);
 }

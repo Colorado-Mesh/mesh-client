@@ -62,6 +62,39 @@ describe('legacy renderer settings migration', () => {
     });
   });
 
+  it('gap-fills export markers into an established clear() write-through preference map', () => {
+    const prefsKey = DURABLE_RENDERER_STORAGE_KEYS.preferences;
+    const incomplete = JSON.stringify({
+      legacyAliasesImported: true,
+      values: { 'mesh-client:protocol': 'reticulum', 'mesh-client:fontScale': '1' },
+    });
+    const restored = JSON.stringify({
+      legacyAliasesImported: true,
+      values: {
+        'mesh-client:protocol': 'meshcore',
+        'mesh-client:origin-e2e-marker': 'original profile',
+      },
+    });
+    db.prepareOnce('INSERT INTO app_settings(key, value) VALUES (?, ?)').run(prefsKey, incomplete);
+    seedDurableRendererSettings(db, { 'mesh-client:rendererPreferences': restored });
+    expect(
+      JSON.parse(
+        (
+          db.prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(prefsKey) as {
+            value: string;
+          }
+        ).value,
+      ),
+    ).toEqual({
+      legacyAliasesImported: true,
+      values: {
+        'mesh-client:protocol': 'reticulum',
+        'mesh-client:fontScale': '1',
+        'mesh-client:origin-e2e-marker': 'original profile',
+      },
+    });
+  });
+
   it('preserves an explicit-reset preference baseline against a replayed export', () => {
     const prefsKey = DURABLE_RENDERER_STORAGE_KEYS.preferences;
     const baseline = explicitResetPreferenceBaselineJson();

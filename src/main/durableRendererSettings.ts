@@ -8,6 +8,7 @@ import {
   explicitResetPreferenceBaselineJson,
   hasEstablishedRendererPreferenceValues,
   isExplicitResetPreferenceBaseline,
+  mergeRendererPreferenceEnvelopes,
 } from '../shared/rendererPreferences';
 import type { NodeSqliteDB } from './db-compat';
 import { withFullSqliteSync } from './sqliteDurability';
@@ -77,21 +78,24 @@ export function seedDurableRendererSettings(
       if (value.length > DURABLE_RENDERER_SETTING_MAX_LENGTH) {
         throw new Error(`Renderer migration setting exceeds storage limit: ${databaseKey}`);
       }
-      // Origin repair may replace a plain empty clear() envelope, but never an explicit-reset baseline.
+      // Origin repair may replace a plain empty clear() envelope and gap-fill keys lost after
+      // clear()+write-through, but never an explicit-reset baseline or newer SQLite choices.
       if (databaseKey === DURABLE_RENDERER_STORAGE_KEYS.preferences) {
         const existing = db
           .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
           .get(databaseKey) as { value: string } | undefined;
         if (
           hasEstablishedRendererPreferenceValues(value) &&
-          !hasEstablishedRendererPreferenceValues(existing?.value) &&
           !isExplicitResetPreferenceBaseline(existing?.value)
         ) {
-          db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)').run(
-            databaseKey,
-            value,
-          );
-          continue;
+          const merged = mergeRendererPreferenceEnvelopes(existing?.value, value);
+          if (merged !== existing?.value) {
+            db.prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)').run(
+              databaseKey,
+              merged,
+            );
+            continue;
+          }
         }
       }
       insert.run(databaseKey, value);
