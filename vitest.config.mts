@@ -91,6 +91,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/connectionPanelErrorHumanize.test.ts',
   'src/renderer/lib/controlledEditableValue.test.ts',
   'src/renderer/lib/debugSnapshot.test.ts',
+  'src/renderer/lib/exportSupportBundle.test.ts',
   'src/renderer/lib/devElectronApiStub.test.ts',
   'src/renderer/lib/drivers/attachTypedPacketListener.test.ts',
   'src/renderer/lib/drivers/PacketRouter.test.ts',

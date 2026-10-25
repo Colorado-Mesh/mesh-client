@@ -37,6 +37,15 @@ function updateMemory(next: Partial<CoiMemorySnapshot>) {
   });
 }
 
+function openMemoryDetails(container: HTMLElement) {
+  const details = container.querySelector(
+    'details[data-setting-anchor="app.support.rendererMemory"]',
+  );
+  expect(details).toBeInstanceOf(HTMLDetailsElement);
+  expect((details as HTMLDetailsElement).open).toBe(false);
+  (details as HTMLDetailsElement).open = true;
+}
+
 beforeEach(async () => {
   await i18n.changeLanguage('en');
   memory.snapshot = {
@@ -57,7 +66,8 @@ afterEach(() => {
 
 describe('App Support memory diagnostics', () => {
   it('shows an empty state, samples manually, and renders published results', () => {
-    render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
     expect(screen.getByText(/No samples yet/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Sample now' }));
     expect(memory.sampleNow).toHaveBeenCalledTimes(1);
@@ -81,7 +91,8 @@ describe('App Support memory diagnostics', () => {
     [{ supported: false }, /does not support memory sampling/],
   ] as const)('explains unavailable sampling: %j', (state, explanation) => {
     memory.snapshot = { ...memory.snapshot, ...state };
-    render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
     expect(screen.getByText(explanation)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sample now' })).toBeDisabled();
   });
@@ -92,7 +103,8 @@ describe('App Support memory diagnostics', () => {
       failed: true,
       samples: [{ at: 1_000, bytes: 10_000_000 }],
     };
-    render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
     expect(screen.getByRole('status')).toHaveTextContent('Memory sampling failed');
     expect(screen.getByText('10 MB')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sample now' })).toBeEnabled();
@@ -107,6 +119,7 @@ describe('App Support memory diagnostics', () => {
       ],
     };
     const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
     expect(screen.getByText(/Renderer process memory \(physical RAM\)/)).toBeInTheDocument();
     expect(screen.queryByText(/Browser estimates/)).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Latest estimate: 120 MB');
@@ -129,6 +142,7 @@ describe('App Support memory diagnostics', () => {
       samples: [{ at: 1000, bytes: 120_000_000, source: 'renderer-process' }],
     };
     const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });

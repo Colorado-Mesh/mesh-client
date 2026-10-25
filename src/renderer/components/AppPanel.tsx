@@ -11,7 +11,6 @@ import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
-import { requestOpenSetting } from '@/renderer/lib/openSettingRequest';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
@@ -861,16 +860,6 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
-      <button
-        type="button"
-        className={buttonClassName('secondary', 'md')}
-        aria-label={t('appPanel.memoryTitle')}
-        onClick={() => {
-          requestOpenSetting({ slot: 'App', id: 'app.support.rendererMemory' });
-        }}
-      >
-        {t('appPanel.memoryTitle')}
-      </button>
 
       <div className="space-y-2">
         <div className="flex items-center gap-1">

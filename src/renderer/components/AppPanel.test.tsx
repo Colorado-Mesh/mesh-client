@@ -816,11 +816,20 @@ describe('AppPanel: support bundle exports', () => {
   it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
     'shows renderer memory and exports a GitHub bundle for %s',
     async (protocol) => {
-      render(
+      const { container } = render(
         <ToastProvider>
           <AppPanel {...defaultProps} protocol={protocol} />
         </ToastProvider>,
       );
+      const memory = await waitFor(() => {
+        const details = container.querySelector(
+          'details[data-setting-anchor="app.support.rendererMemory"]',
+        );
+        expect(details).toBeInstanceOf(HTMLDetailsElement);
+        return details as HTMLDetailsElement;
+      });
+      expect(memory.open).toBe(false);
+      memory.open = true;
       expect(await screen.findByRole('button', { name: 'Sample now' })).toBeDisabled();
       fireEvent.click(
         await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),

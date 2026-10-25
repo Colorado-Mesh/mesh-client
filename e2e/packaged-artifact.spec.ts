@@ -741,6 +741,7 @@ test.describe('actual packaged renderer artifact', () => {
     await openAppTab(page);
     const memory = page.locator('[data-setting-anchor="app.support.rendererMemory"]');
     await expect(memory).toBeVisible();
+    await memory.locator('summary').click();
     await memory.getByRole('button', { name: 'Sample now' }).click();
     await expect(memory).toContainText('Latest estimate:');
     await expect(memory).toContainText('Renderer process memory (physical RAM)');
@@ -783,10 +784,8 @@ test.describe('actual packaged renderer artifact', () => {
     expect(page.url()).toMatch(/^file:/);
     expect(await page.evaluate(() => crossOriginIsolated)).toBe(false);
     await openAppTab(page);
-    await expect(
-      page
-        .locator('[data-setting-anchor="app.support.rendererMemory"]')
-        .getByRole('button', { name: 'Sample now' }),
-    ).toBeDisabled();
+    const memoryFileOrigin = page.locator('[data-setting-anchor="app.support.rendererMemory"]');
+    await memoryFileOrigin.locator('summary').click();
+    await expect(memoryFileOrigin.getByRole('button', { name: 'Sample now' })).toBeDisabled();
   });
 });

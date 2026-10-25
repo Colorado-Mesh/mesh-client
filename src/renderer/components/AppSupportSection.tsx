@@ -7,6 +7,7 @@ import {
   subscribeCoiMemorySnapshot,
 } from '@/renderer/lib/coiMemorySampler';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
@@ -70,72 +71,80 @@ export function AppSupportSection({ exporting, onExport }: AppSupportSectionProp
           <p className="text-xs text-orange-300">{t('appPanel.exportForDeveloperWarning')}</p>
         </div>
       </div>
-      <div
+      <details
         data-setting-anchor="app.support.rendererMemory"
-        className="border-ink-800 space-y-2 border-t pt-3"
+        className="group border-ink-800 border-t pt-3"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-ink-200 text-sm font-medium">{t('appPanel.memoryTitle')}</h4>
-          <button
-            type="button"
-            aria-label={t('appPanel.memorySampleNow')}
-            disabled={!memory.crossOriginIsolated || !memory.supported || memory.sampling}
-            onClick={() => void sampleCoiMemoryNow()}
-            className={buttonClassName('secondary', 'sm')}
-          >
-            {memory.sampling ? t('appPanel.memorySampling') : t('appPanel.memorySampleNow')}
-          </button>
+        <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg py-1 text-sm font-medium [&::-webkit-details-marker]:hidden">
+          <h4>{t('appPanel.memoryTitle')}</h4>
+          <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="space-y-2 pt-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              aria-label={t('appPanel.memorySampleNow')}
+              disabled={!memory.crossOriginIsolated || !memory.supported || memory.sampling}
+              onClick={() => void sampleCoiMemoryNow()}
+              className={buttonClassName('secondary', 'sm')}
+            >
+              {memory.sampling ? t('appPanel.memorySampling') : t('appPanel.memorySampleNow')}
+            </button>
+          </div>
+          <p className="text-muted text-xs">
+            {source === 'renderer-process'
+              ? t('appPanel.memoryRendererProcess')
+              : t('appPanel.memoryDescription')}
+          </p>
+          <p className="text-muted text-xs">
+            {memory.crossOriginIsolated
+              ? t('appPanel.memoryIsolated')
+              : t('appPanel.memoryNotIsolated')}
+          </p>
+          {memory.crossOriginIsolated && !memory.supported && (
+            <p className="text-muted text-xs">{t('appPanel.memoryUnsupported')}</p>
+          )}
+          <div role="status" className="text-ink-200 text-sm">
+            {memory.failed ? (
+              <p className="text-orange-300">{t('appPanel.memoryFailed')}</p>
+            ) : latest ? (
+              <p className="font-mono tabular-nums">
+                {t('appPanel.memoryLatest', { value: formatMemory(latest.bytes) })}
+              </p>
+            ) : memory.crossOriginIsolated && memory.supported ? (
+              <p className="text-muted text-xs">{t('appPanel.memoryEmpty')}</p>
+            ) : null}
+          </div>
+          {samples.length > 1 && (
+            <svg
+              viewBox="0 0 300 50"
+              preserveAspectRatio="none"
+              className="text-bright-green h-12 w-full"
+              aria-hidden="true"
+            >
+              <polyline points={historyPoints} fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          )}
+          {latest && (
+            <details className="text-muted text-xs">
+              <summary className="cursor-pointer">{t('appPanel.memoryHistory')}</summary>
+              <ul className="mt-2 space-y-1 font-mono tabular-nums">
+                {samples.map((sample, index) => (
+                  <li
+                    key={`${sample.at}:${index}`}
+                    className="flex flex-wrap justify-between gap-2"
+                  >
+                    <time dateTime={new Date(sample.at).toISOString()}>
+                      {formatDisplayTime(sample.at, { use24Hour, withSeconds: true })}
+                    </time>
+                    <span>{formatMemory(sample.bytes)}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
-        <p className="text-muted text-xs">
-          {source === 'renderer-process'
-            ? t('appPanel.memoryRendererProcess')
-            : t('appPanel.memoryDescription')}
-        </p>
-        <p className="text-muted text-xs">
-          {memory.crossOriginIsolated
-            ? t('appPanel.memoryIsolated')
-            : t('appPanel.memoryNotIsolated')}
-        </p>
-        {memory.crossOriginIsolated && !memory.supported && (
-          <p className="text-muted text-xs">{t('appPanel.memoryUnsupported')}</p>
-        )}
-        <div role="status" className="text-ink-200 text-sm">
-          {memory.failed ? (
-            <p className="text-orange-300">{t('appPanel.memoryFailed')}</p>
-          ) : latest ? (
-            <p className="font-mono tabular-nums">
-              {t('appPanel.memoryLatest', { value: formatMemory(latest.bytes) })}
-            </p>
-          ) : memory.crossOriginIsolated && memory.supported ? (
-            <p className="text-muted text-xs">{t('appPanel.memoryEmpty')}</p>
-          ) : null}
-        </div>
-        {samples.length > 1 && (
-          <svg
-            viewBox="0 0 300 50"
-            preserveAspectRatio="none"
-            className="text-bright-green h-12 w-full"
-            aria-hidden="true"
-          >
-            <polyline points={historyPoints} fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
-        )}
-        {latest && (
-          <details className="text-muted text-xs">
-            <summary className="cursor-pointer">{t('appPanel.memoryHistory')}</summary>
-            <ul className="mt-2 space-y-1 font-mono tabular-nums">
-              {samples.map((sample, index) => (
-                <li key={`${sample.at}:${index}`} className="flex flex-wrap justify-between gap-2">
-                  <time dateTime={new Date(sample.at).toISOString()}>
-                    {formatDisplayTime(sample.at, { use24Hour, withSeconds: true })}
-                  </time>
-                  <span>{formatMemory(sample.bytes)}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-      </div>
+      </details>
     </section>
   );
 }
