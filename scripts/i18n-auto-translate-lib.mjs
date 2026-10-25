@@ -227,14 +227,6 @@ const SKIP_AUDIT_LEAF_KEYS = new Set([
   'filterChipPath',
   'filterChipTrace',
   'filterChipAnon',
-  'seedAddressesPlaceholder',
-  'networkNamePlaceholder',
-  'networkIdentityPlaceholder',
-  'staticPeersPlaceholder',
-  'enterUrlPlaceholder',
-  'xmodemFilenamePlaceholder',
-  'aclPubkeyPlaceholder',
-  'manualHashPlaceholder',
 ]);
 
 /**
@@ -295,13 +287,24 @@ export function looksLikeTechnicalSample(enVal) {
   // Hex digests / ellipsis-truncated hashes (length checks avoid unbounded quantifiers)
   const hexBody = t.replace(/(?:…|\.\.\.)$/u, '');
   if (/^[0-9A-Fa-f]+$/u.test(hexBody) && hexBody.length >= 8 && t.length <= 128) return true;
-  // Path / URI samples with no prose spaces (hash:/…, ~/.reticulum/…, config.txt)
-  if (!/\s/.test(t) && (t.startsWith('~/') || t.startsWith('hash:/') || t.includes('/'))) {
-    return true;
-  }
-  if (!/\s/.test(t) && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
+  // Path / URI samples only — a bare slash (e.g. "WiFi/HTTP") is not enough.
+  if (!/\s/.test(t) && looksLikePathOrUriSample(t)) return true;
   // snake_case network ids used as placeholders
   if (!/\s/.test(t) && t.includes('_') && /^[a-z][a-z0-9_]*$/i.test(t)) return true;
+  return false;
+}
+
+/**
+ * True for filesystem / URI wire samples (not protocol token pairs like "WiFi/HTTP").
+ * @param {string} t
+ */
+function looksLikePathOrUriSample(t) {
+  if (t.startsWith('~/') || t.startsWith('/') || t.startsWith('hash:/')) return true;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(t)) return true;
+  // Relative path with an extension (page/index.mu, dir/config.txt)
+  if (t.includes('/') && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
+  // Bare filename with a short extension and no slash
+  if (!t.includes('/') && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
   return false;
 }
 

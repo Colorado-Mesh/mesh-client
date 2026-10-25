@@ -221,6 +221,38 @@ describe('filterMissingKeysToTranslate', () => {
       }),
     ).toEqual(['prose']);
   });
+
+  it('auditIdentical: does not treat WiFi/HTTP as a technical path sample', () => {
+    const enFlat = {
+      'connectionPanel.transports': 'WiFi/HTTP',
+      path: '~/.reticulum/storage/identities/my_network',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['connectionPanel.transports']);
+  });
+
+  it('auditIdentical: does not skip placeholder leaf names that hold prose', () => {
+    const enFlat = {
+      'rrc.manualHashPlaceholder': 'Hub destination hash (32 hex)',
+      'connectionPanel.reticulumInterfaces.seedAddressesPlaceholder': 'AA:BB:CC:DD:EE:FF',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['rrc.manualHashPlaceholder']);
+  });
 });
 
 describe('normalizeMachineTranslation', () => {
