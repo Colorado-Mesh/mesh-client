@@ -6,12 +6,16 @@ import { type NodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { getTakRelayPrefs } from '../../stores/takRelayPrefsStore';
 import { isTakSinkActive } from '../../stores/takSinkStore';
 import { recordTakTrackerFix } from '../../stores/takTrackerStore';
+import { getIdentityChatMessages } from '../identityStoreReads';
 import { parseMt1Payload } from '../meshcore/mt1Tracker';
+import { meshtasticPacketIdsEqual } from '../meshtasticMessageDedup';
 import { effectiveMessageTimestampMs } from '../nodeStatus';
+import { reactionDisplayGlyph } from '../reactions';
 import type { ChatMessage, IdentityId } from '../types';
 import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
+import { formatTakReplyText, type TakReplyContext } from './takReplyText';
 import { isFirstSeen } from './takSeenOnce';
 import { findServedChannel } from './takServedChannels';
 
@@ -33,6 +37,8 @@ export interface TakChannelMessage {
    * would otherwise match. Every copy of one packet carries the same wire text.
    */
   wireText?: string;
+  /** Set for a reply or reaction: what it answers, which TAK clients see with it. */
+  reply?: TakReplyContext;
   hops?: number;
   /**
    * Known to come from another node, so it cannot be this radio's own send heard back. Matters
@@ -94,7 +100,7 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
-    text,
+    text: formatTakReplyText(text, msg.reply).slice(0, TAK_GEOCHAT_TEXT_MAX_LEN),
     timeMs: msg.timestampMs,
     ...(msg.latitude != null && msg.longitude != null
       ? { latitude: msg.latitude, longitude: msg.longitude }
@@ -123,13 +129,16 @@ export function relayMeshcoreChannelToTak(identityId: IdentityId, msg: TakChanne
 
 /**
  * Hand one newly heard Meshtastic message (RF or MQTT) to TAK clients: a channel message if its
- * channel is served, a direct message to this radio if direct messages are on for it. Skips
- * reactions, history replay and DMs between other nodes. This direction never transmits on RF.
+ * channel is served, with what a reply or reaction answers; a direct message to this radio if
+ * direct messages are on for it. Skips history replay, reactions in direct messages and DMs
+ * between other nodes. This direction never transmits on RF.
  */
 export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessage): void {
   if (!isTakSinkActive()) return;
-  if (chat.emoji || chat.isHistory) return;
+  if (chat.isHistory) return;
+  const reaction = Boolean(chat.emoji);
   if (chat.to != null && !isMeshtasticBroadcastNodeNum(chat.to)) {
+    if (reaction) return;
     const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
     if (myNodeNum <= 0 || chat.to !== myNodeNum || chat.sender_id === myNodeNum) return;
     relayDirectMessageToTak(identityId, 'meshtastic', {
@@ -144,15 +153,41 @@ export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessa
     Record<number, NodeRecord | undefined> | undefined;
   const sender = identityNodes?.[chat.sender_id];
   const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
+  const text = reaction ? reactionDisplayGlyph(chat.emoji, chat.payload) : chat.payload;
+  const reply = meshtasticReplyContext(identityId, chat, reaction);
   bridgeChannelToGeochat(identityId, {
     channelIndex: chat.channel,
     senderName: chat.sender_name,
+    ...(reply ? { reply } : {}),
     ...(chat.packetId != null && chat.packetId !== 0 ? { packetId: chat.packetId } : {}),
     ...(myNodeNum > 0 && chat.sender_id !== myNodeNum ? { fromOther: true } : {}),
-    text: chat.payload,
+    text,
     timestampMs: effectiveMessageTimestampMs(chat.timestamp),
     ...(sender?.latitude != null && sender.longitude != null
       ? { latitude: sender.latitude, longitude: sender.longitude }
       : {}),
   });
+}
+
+/**
+ * What a Meshtastic reply or reaction answers: the sender and text of the message its reply id
+ * names, from the preview Chat filled in or from the stored message itself.
+ */
+function meshtasticReplyContext(
+  identityId: IdentityId,
+  chat: ChatMessage,
+  reaction: boolean,
+): TakReplyContext | undefined {
+  if (chat.replyId == null || chat.replyId === 0) return undefined;
+  let to = chat.replyPreviewSender?.trim();
+  let quote = chat.replyPreviewText;
+  if (!to) {
+    const parent = getIdentityChatMessages(identityId).find(
+      (m) => m.channel === chat.channel && meshtasticPacketIdsEqual(m.packetId, chat.replyId),
+    );
+    if (!parent) return undefined;
+    to = parent.sender_name;
+    quote = parent.payload;
+  }
+  return { reaction, to, ...(quote ? { quote } : {}) };
 }

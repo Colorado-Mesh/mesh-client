@@ -4,6 +4,7 @@ import { MESHTASTIC_BROADCAST_NODE_NUM } from '@/shared/nodeNameUtils';
 import { TAK_GEOCHAT_TEXT_MAX_LEN } from '@/shared/tak-types';
 
 import { setConnection, useConnectionStore } from '../../stores/connectionStore';
+import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { setTakChannels, setTakRadio, useTakChannelStore } from '../../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
@@ -113,6 +114,63 @@ describe('relayMeshtasticChatToTak', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
+  describe('replies and reactions', () => {
+    const ALICE = 0x0a11ce;
+    beforeEach(() => {
+      useMessageStore.setState({ messages: {} });
+      upsertMessage(ID, {
+        id: '77',
+        from: ALICE,
+        senderName: 'Alice',
+        to: 0xffffffff,
+        payload: 'meet at the trailhead at 9',
+        channelIndex: 1,
+        timestamp: NOW - 60_000,
+      });
+    });
+    afterEach(() => {
+      useMessageStore.setState({ messages: {} });
+    });
+
+    const sentText = () => (pushChatMessage.mock.calls[0]?.[0] as { text: string }).text;
+
+    it('hands on a reaction, saying what it reacts to', () => {
+      relayMeshtasticChatToTak(ID, chat({ payload: '👍', emoji: 1, replyId: 77 }));
+      expect(sentText()).toBe('👍 to Alice: "meet at the trailhead at 9"');
+    });
+
+    it('says whom a reply answers', () => {
+      relayMeshtasticChatToTak(ID, chat({ payload: 'copy that', replyId: 77 }));
+      expect(sentText()).toBe('@Alice copy that');
+    });
+
+    it('uses the preview Chat filled in when there is one', () => {
+      relayMeshtasticChatToTak(
+        ID,
+        chat({ payload: 'copy', replyId: 5, replyPreviewSender: 'Carol', replyPreviewText: 'x' }),
+      );
+      expect(sentText()).toBe('@Carol copy');
+    });
+
+    it('hands on a reaction to a message it does not have as the emoji alone', () => {
+      relayMeshtasticChatToTak(ID, chat({ payload: '👍', emoji: 1, replyId: 99 }));
+      expect(sentText()).toBe('👍');
+    });
+
+    it('still leaves out a reaction in a direct message', () => {
+      setConnection(ID, { myNodeNum: 0x0badf00d });
+      useTakRelayPrefsStore.getState().setDirectMessages(ID, true);
+      setTakRadio('meshtastic', ID);
+      const pushDirectMessage = vi.fn().mockResolvedValue(undefined);
+      vi.spyOn(window.electronAPI.tak, 'pushDirectMessage').mockImplementation(pushDirectMessage);
+      relayMeshtasticChatToTak(ID, chat({ to: 0x0badf00d, payload: '👍', emoji: 1, replyId: 77 }));
+      expect(pushDirectMessage).not.toHaveBeenCalled();
+      expect(pushChatMessage).not.toHaveBeenCalled();
+      setTakRadio('meshtastic', null);
+      useConnectionStore.setState({ connections: {} });
+    });
+  });
+
   it('treats the broadcast address as a channel message', () => {
     relayMeshtasticChatToTak(ID, chat({ to: MESHTASTIC_BROADCAST_NODE_NUM }));
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
@@ -137,7 +195,6 @@ describe('relayMeshtasticChatToTak', () => {
 
   it.each([
     ['a DM', chat({ to: 0x0badf00d })],
-    ['a reaction', chat({ emoji: 1 })],
     ['history', chat({ isHistory: true })],
     ['a channel that is not served', chat({ channel: 2 })],
     ['a channel the radio does not have', chat({ channel: 7 })],
