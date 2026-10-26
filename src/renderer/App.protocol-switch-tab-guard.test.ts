@@ -36,4 +36,16 @@ describe('App protocol-switch tab guard (regression)', () => {
       body.indexOf('setActiveTab('),
     );
   });
+
+  it('clears keep-alive visit flags inside the protocol transition (not only in useEffect)', () => {
+    const start = SOURCE.indexOf('const handleProtocolChange');
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('const handleTabSelect', start);
+    const body = SOURCE.slice(start, end > start ? end : start + 8000);
+    expect(body).toContain('resetProtocolTabVisitFlags()');
+    expect(body.indexOf('resetProtocolTabVisitFlags()')).toBeLessThan(
+      body.lastIndexOf('setProtocol(newProtocol)'),
+    );
+    expect(body).toContain('setPendingProtocolSelection(newProtocol)');
+  });
 });

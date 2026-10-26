@@ -847,6 +847,34 @@ function AppContent() {
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
   const [protocolSwitchPending, startProtocolTransition] = useTransition();
+  /** Immediate rail selection while `setProtocol` is still in a transition commit. */
+  const [pendingProtocolSelection, setPendingProtocolSelection] = useState<MeshProtocol | null>(
+    null,
+  );
+  const switcherProtocol = pendingProtocolSelection ?? protocol;
+  const [chatTabVisited, setChatTabVisited] = useState(false);
+  const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [gamesTabVisited, setGamesTabVisited] = useState(false);
+  const [rrcTabVisited, setRrcTabVisited] = useState(false);
+  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
+  const [nomadTabVisited, setNomadTabVisited] = useState(false);
+  const [peersTabVisited, setPeersTabVisited] = useState(false);
+  const [appTabVisited, setAppTabVisited] = useState(false);
+  const resetProtocolTabVisitFlags = useCallback(() => {
+    setChatTabVisited(false);
+    setRoomsTabVisited(false);
+    setGamesTabVisited(false);
+    setRrcTabVisited(false);
+    setRemoteTabVisited(false);
+    setNomadTabVisited(false);
+    setPeersTabVisited(false);
+    setAppTabVisited(false);
+  }, []);
+  useEffect(() => {
+    if (pendingProtocolSelection == null || pendingProtocolSelection !== protocol) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic rail once protocol commits
+    setPendingProtocolSelection(null);
+  }, [protocol, pendingProtocolSelection]);
   const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
   const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
   const reticulumEnabled = enabledProtocols.includes('reticulum');
@@ -2328,7 +2356,7 @@ function AppContent() {
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
-      if (newProtocol === protocol) return;
+      if (newProtocol === protocol || newProtocol === pendingProtocolSelection) return;
 
       const savedPanel = lastPanelByProtocol.current.get(newProtocol) ?? null;
       const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
@@ -2344,18 +2372,33 @@ function AppContent() {
       // of ms of render work after time away (large peer/message stores).
       // As a transition, React keeps the current UI interactive and renders
       // the incoming protocol's tree interruptibly instead of freezing input
-      // on one blocking commit.
+      // on one blocking commit. Optimistic `pendingProtocolSelection` updates
+      // the rail immediately so the click is not silent for that whole window.
+      // Drop keep-alive visit flags in the *same* transition as setProtocol so
+      // Chat/Peers do not remount for one frame on the new protocol when the
+      // destination tab is Connection (visit useEffect would clear too late).
+      setPendingProtocolSelection(newProtocol);
       startProtocolTransition(() => {
+        resetProtocolTabVisitFlags();
         setActiveTab(targetTab);
         setProtocol(newProtocol);
       });
     },
-    [protocol, activeTab, activePanelIndex, tabsByProtocol],
+    [
+      protocol,
+      pendingProtocolSelection,
+      activeTab,
+      activePanelIndex,
+      tabsByProtocol,
+      resetProtocolTabVisitFlags,
+    ],
   );
 
   useEffect(() => {
     const fallback = enabledProtocols[0];
-    if (fallback && !enabledProtocols.includes(protocol)) handleProtocolChange(fallback);
+    if (!fallback || enabledProtocols.includes(protocol)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop hidden active protocol onto first enabled
+    handleProtocolChange(fallback);
   }, [enabledProtocols, protocol, handleProtocolChange]);
 
   // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
@@ -2798,14 +2841,6 @@ function AppContent() {
     ],
   );
 
-  const [chatTabVisited, setChatTabVisited] = useState(false);
-  const [roomsTabVisited, setRoomsTabVisited] = useState(false);
-  const [gamesTabVisited, setGamesTabVisited] = useState(false);
-  const [rrcTabVisited, setRrcTabVisited] = useState(false);
-  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
-  const [nomadTabVisited, setNomadTabVisited] = useState(false);
-  const [peersTabVisited, setPeersTabVisited] = useState(false);
-  const [appTabVisited, setAppTabVisited] = useState(false);
   const [visitedMapProtocols, setVisitedMapProtocols] = useState<ReadonlySet<MeshProtocol>>(
     () => new Set(),
   );
@@ -2823,16 +2858,11 @@ function AppContent() {
   }, [activePanelIndex]);
 
   useEffect(() => {
+    // Deep links / setProtocol outside handleProtocolChange still need a clear.
+    // handleProtocolChange also clears inside the transition for atomicity.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
-    setChatTabVisited(false);
-    setRoomsTabVisited(false);
-    setGamesTabVisited(false);
-    setRrcTabVisited(false);
-    setRemoteTabVisited(false);
-    setNomadTabVisited(false);
-    setPeersTabVisited(false);
-    setAppTabVisited(false);
-  }, [protocol]);
+    resetProtocolTabVisitFlags();
+  }, [protocol, resetProtocolTabVisitFlags]);
 
   useEffect(() => {
     if (capabilities.hasRoomServersPanel && activePanelIndex === ROOMS_PANEL_INDEX) {
@@ -4258,7 +4288,7 @@ function AppContent() {
               header={
                 enabledProtocols.length > 1 ? (
                   <ProtocolSwitcher
-                    protocol={protocol}
+                    protocol={switcherProtocol}
                     protocols={enabledProtocols}
                     unreadByProtocol={protocolSwitcherUnreadByProtocol}
                     onProtocolChange={handleProtocolChange}
@@ -6171,7 +6201,7 @@ function AppContent() {
             shellCompact && enabledProtocols.length > 1 ? (
               <ProtocolSwitcher
                 orientation="horizontal"
-                protocol={protocol}
+                protocol={switcherProtocol}
                 protocols={enabledProtocols}
                 unreadByProtocol={protocolSwitcherUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
