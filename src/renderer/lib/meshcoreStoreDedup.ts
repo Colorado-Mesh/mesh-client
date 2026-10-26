@@ -278,6 +278,87 @@ function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): C
   };
 }
 
+/**
+ * True when a store row is the same logical MeshCore message as the merge target.
+ * Required before deleting `meshcoreMessageStoreId` alts: that id omits wire text, so two
+ * distinct posts from the same sender in the same UTC second share one store id.
+ */
+function meshcoreAltRecordMatchesMergedMessage(
+  record: MessageRecord,
+  incoming: ChatMessage,
+  existing?: ChatMessage,
+): boolean {
+  const chat = messageRecordToChatMessage(record);
+  const candidates = existing ? [incoming, existing] : [incoming];
+  for (const candidate of candidates) {
+    if (meshcoreMessageDedupeKey(chat) === meshcoreMessageDedupeKey(candidate)) {
+      return true;
+    }
+    if (chat.channel !== candidate.channel || chat.timestamp !== candidate.timestamp) {
+      continue;
+    }
+    const chatWire = chat.meshcoreDedupeKey;
+    const candidateWire = candidate.meshcoreDedupeKey;
+    if (chatWire != null && candidateWire != null) {
+      if (chatWire === candidateWire) return true;
+      continue;
+    }
+    const chatBody = chatWire ?? chat.payload;
+    const candidateBody = candidateWire ?? candidate.payload;
+    if (chatBody === candidateBody || chat.payload === candidate.payload) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Drop store rows left behind when PacketRouter / hydrate / waiting-drain use different id
+ * schemes for the same logical MeshCore message (e.g. `ch:0:ts:wire` vs `${sender}-${ts}-0`).
+ */
+function removeMeshcoreAlternateStoreIds(
+  identityId: IdentityId,
+  canonicalId: string,
+  opts: {
+    preferredId?: string;
+    existingRecordId?: string;
+    existingMessage?: ChatMessage;
+    incomingMessage: ChatMessage;
+  },
+): boolean {
+  const incomingId = meshcoreMessageStoreId(opts.incomingMessage);
+  const altIds = new Set<string>();
+  if (opts.preferredId && opts.preferredId !== canonicalId) {
+    altIds.add(opts.preferredId);
+  }
+  if (opts.existingRecordId && opts.existingRecordId !== canonicalId) {
+    altIds.add(opts.existingRecordId);
+  }
+  if (incomingId !== canonicalId) {
+    altIds.add(incomingId);
+  }
+  let removed = false;
+  for (const altId of altIds) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
+    const record = useMessageStore.getState().messages[identityId]?.[altId];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+    if (!record) continue;
+    if (
+      !meshcoreAltRecordMatchesMergedMessage(record, opts.incomingMessage, opts.existingMessage)
+    ) {
+      continue;
+    }
+    deleteMessage(identityId, altId);
+    removed = true;
+    if (altId === incomingId) {
+      removeMeshcoreDedupeIndexForMessage(identityId, opts.incomingMessage);
+    } else if (opts.existingMessage && altId === opts.existingRecordId) {
+      removeMeshcoreDedupeIndexForMessage(identityId, opts.existingMessage);
+    }
+  }
+  return removed;
+}
+
 function applyRoomPostDuplicateMerge(
   identityId: IdentityId,
   roomDup: ChatMessage,
@@ -291,22 +372,12 @@ function applyRoomPostDuplicateMerge(
   record.id = canonicalId;
   upsertMessage(identityId, record);
   persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-  const altIds = new Set<string>();
-  if (existingRecordId && existingRecordId !== canonicalId) {
-    altIds.add(existingRecordId);
-  }
-  const incomingId = meshcoreMessageStoreId(msg);
-  if (incomingId !== canonicalId) {
-    altIds.add(incomingId);
-  }
-  for (const altId of altIds) {
-    deleteMessage(identityId, altId);
-    if (altId === incomingId) {
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    } else if (altId === existingRecordId) {
-      removeMeshcoreDedupeIndexForMessage(identityId, roomDup);
-    }
-  }
+  removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+    preferredId,
+    existingRecordId,
+    existingMessage: roomDup,
+    incomingMessage: msg,
+  });
   return { inserted: false, storeUpdated: true, message: merged, canonicalId };
 }
 
@@ -332,16 +403,20 @@ export function upsertMeshcoreMessageWithDedup(
 
   const exactMatch = resolveExactKeyDuplicate(identityId, incomingKey, storeMessages);
   if (exactMatch) {
-    const canonicalId =
-      findStoreRecordIdForMessage(identityId, exactMatch) ??
-      preferredId ??
-      meshcoreMessageStoreId(exactMatch);
+    const existingRecordId = findStoreRecordIdForMessage(identityId, exactMatch);
+    const canonicalId = existingRecordId ?? preferredId ?? meshcoreMessageStoreId(exactMatch);
     const merged = mergeExactKeyDuplicate(exactMatch, msg);
     if (merged) {
       const record = chatMessageToMessageRecord(merged);
       record.id = canonicalId;
       upsertMessage(identityId, record);
       persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
+      removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+        preferredId,
+        existingRecordId,
+        existingMessage: exactMatch,
+        incomingMessage: msg,
+      });
       return { inserted: false, storeUpdated: true, message: merged, canonicalId };
     }
     const replyFields = meshcorePreferIncomingReplyFields(exactMatch, msg);
@@ -356,11 +431,23 @@ export function upsertMeshcoreMessageWithDedup(
       record.id = canonicalId;
       upsertMessage(identityId, record);
       persistMeshcoreDedupeIndex(identityId, upgraded, canonicalId);
+      removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+        preferredId,
+        existingRecordId,
+        existingMessage: exactMatch,
+        incomingMessage: msg,
+      });
       return { inserted: false, storeUpdated: true, message: upgraded, canonicalId };
     }
+    const removedOrphans = removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: exactMatch,
+      incomingMessage: msg,
+    });
     return {
       inserted: false,
-      storeUpdated: false,
+      storeUpdated: removedOrphans,
       message: exactMatch,
       canonicalId,
     };
@@ -368,54 +455,53 @@ export function upsertMeshcoreMessageWithDedup(
 
   const tapbackDup = findMeshcoreTapbackEchoDuplicate(storeMessages, msg);
   if (tapbackDup) {
+    const existingRecordId = findStoreRecordIdForMessage(identityId, tapbackDup);
     const merged: ChatMessage = {
       ...tapbackDup,
       receivedVia: mergeMeshcoreReceivedVia(tapbackDup.receivedVia, msg.receivedVia),
       rxHops: tapbackDup.rxHops ?? msg.rxHops,
       meshcoreDedupeKey: msg.meshcoreDedupeKey ?? tapbackDup.meshcoreDedupeKey,
     };
-    const canonicalId =
-      preferredId ??
-      findStoreRecordIdForMessage(identityId, tapbackDup) ??
-      meshcoreMessageStoreId(merged);
+    const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-    const altId = meshcoreMessageStoreId(msg);
-    if (altId !== canonicalId) {
-      deleteMessage(identityId, altId);
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    }
+    removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: tapbackDup,
+      incomingMessage: msg,
+    });
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
 
   const tapbackRfDup = findMeshcoreTapbackRfReplayDuplicate(storeMessages, msg);
   if (tapbackRfDup) {
+    const existingRecordId = findStoreRecordIdForMessage(identityId, tapbackRfDup);
     const merged: ChatMessage = {
       ...tapbackRfDup,
       receivedVia: mergeMeshcoreReceivedVia(tapbackRfDup.receivedVia, msg.receivedVia),
       rxHops: tapbackRfDup.rxHops ?? msg.rxHops,
       meshcoreDedupeKey: msg.meshcoreDedupeKey ?? tapbackRfDup.meshcoreDedupeKey,
     };
-    const canonicalId =
-      preferredId ??
-      findStoreRecordIdForMessage(identityId, tapbackRfDup) ??
-      meshcoreMessageStoreId(merged);
+    const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-    const altId = meshcoreMessageStoreId(msg);
-    if (altId !== canonicalId) {
-      deleteMessage(identityId, altId);
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    }
+    removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: tapbackRfDup,
+      incomingMessage: msg,
+    });
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
 
   const crossDup = findMeshcoreCrossTransportDuplicate(storeMessages, msg);
   if (crossDup) {
+    const existingRecordId = findStoreRecordIdForMessage(identityId, crossDup);
     const adoptChannelTimestamp =
       meshcoreIsBroadcastChannelMessage(crossDup) &&
       msg.receivedVia === 'rf' &&
@@ -427,67 +513,63 @@ export function upsertMeshcoreMessageWithDedup(
       rxHops: crossDup.rxHops ?? msg.rxHops,
       ...(adoptChannelTimestamp ? { timestamp: msg.timestamp } : {}),
     };
-    const canonicalId =
-      preferredId ??
-      findStoreRecordIdForMessage(identityId, crossDup) ??
-      meshcoreMessageStoreId(merged);
+    const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-    const altId = meshcoreMessageStoreId(msg);
-    if (altId !== canonicalId) {
-      deleteMessage(identityId, altId);
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    }
+    removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: crossDup,
+      incomingMessage: msg,
+    });
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
 
   const dmRfDup = findMeshcoreDmRfDuplicate(storeMessages, msg);
   if (dmRfDup) {
+    const existingRecordId = findStoreRecordIdForMessage(identityId, dmRfDup);
     const merged: ChatMessage = {
       ...dmRfDup,
       ...meshcorePreferIncomingReplyFields(dmRfDup, msg),
       receivedVia: mergeMeshcoreReceivedVia(dmRfDup.receivedVia, msg.receivedVia),
       rxHops: dmRfDup.rxHops ?? msg.rxHops,
     };
-    const canonicalId =
-      preferredId ??
-      findStoreRecordIdForMessage(identityId, dmRfDup) ??
-      meshcoreMessageStoreId(merged);
+    const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-    const altId = meshcoreMessageStoreId(msg);
-    if (altId !== canonicalId) {
-      deleteMessage(identityId, altId);
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    }
+    removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: dmRfDup,
+      incomingMessage: msg,
+    });
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
 
   const channelRfDup = findMeshcoreChannelRfDuplicate(storeMessages, msg);
   if (channelRfDup) {
+    const existingRecordId = findStoreRecordIdForMessage(identityId, channelRfDup);
     const merged: ChatMessage = {
       ...channelRfDup,
       ...meshcorePreferIncomingReplyFields(channelRfDup, msg),
       receivedVia: mergeMeshcoreReceivedVia(channelRfDup.receivedVia, msg.receivedVia),
       rxHops: channelRfDup.rxHops ?? msg.rxHops,
     };
-    const canonicalId =
-      preferredId ??
-      findStoreRecordIdForMessage(identityId, channelRfDup) ??
-      meshcoreMessageStoreId(merged);
+    const canonicalId = preferredId ?? existingRecordId ?? meshcoreMessageStoreId(merged);
     const record = chatMessageToMessageRecord(merged);
     record.id = canonicalId;
     upsertMessage(identityId, record);
     persistMeshcoreDedupeIndex(identityId, merged, canonicalId);
-    const altId = meshcoreMessageStoreId(msg);
-    if (altId !== canonicalId) {
-      deleteMessage(identityId, altId);
-      removeMeshcoreDedupeIndexForMessage(identityId, msg);
-    }
+    removeMeshcoreAlternateStoreIds(identityId, canonicalId, {
+      preferredId,
+      existingRecordId,
+      existingMessage: channelRfDup,
+      incomingMessage: msg,
+    });
     return { inserted: false, storeUpdated: true, message: merged, canonicalId };
   }
 

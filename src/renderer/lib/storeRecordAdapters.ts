@@ -138,6 +138,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
     ...(record.channelKey ? { channelKey: record.channelKey } : {}),
     ...(record.radioNodeId != null ? { radioNodeId: record.radioNodeId } : {}),
+    ...(record.meshcoreDedupeKey ? { meshcoreDedupeKey: record.meshcoreDedupeKey } : {}),
     ...(record.reticulumDeliveryMethod
       ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
       : {}),
@@ -449,6 +450,7 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
     ...(msg.channelKey ? { channelKey: msg.channelKey } : {}),
     ...(msg.radioNodeId != null ? { radioNodeId: msg.radioNodeId } : {}),
+    ...(msg.meshcoreDedupeKey ? { meshcoreDedupeKey: msg.meshcoreDedupeKey } : {}),
   };
 }
 
