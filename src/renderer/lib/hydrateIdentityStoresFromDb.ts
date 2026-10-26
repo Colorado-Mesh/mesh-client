@@ -80,14 +80,30 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
   );
 }
 
-/** MeshCore chat rows → store records; packetless DMs retain their recipient in the fallback ID. */
+/**
+ * MeshCore chat rows → store records.
+ * Channel / room / packetless DM ids must match live ingest (`meshcoreMessageStoreId`), not
+ * `chatMessageToMessageRecord`'s `${sender}-${ts}-${channel}` fallback — otherwise RF merges
+ * that prefer PacketRouter `ch:…:wire` ids leave orphan hydrate rows (perfect UI duplicates).
+ */
 export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
 ) {
+  const usedIds = new Set<string>();
   return messages.map((msg) => {
     const record = chatMessageToMessageRecord(msg);
-    if (isMeshcoreRoomChatMessage(msg) || (msg.channel === -1 && msg.packetId == null)) {
-      record.id = msg.storeId ?? meshcoreMessageStoreId(msg);
+    if (
+      isMeshcoreRoomChatMessage(msg) ||
+      msg.channel >= 0 ||
+      (msg.channel === -1 && msg.packetId == null)
+    ) {
+      let id = msg.storeId ?? meshcoreMessageStoreId(msg);
+      // Same sender + UTC second share one meshcoreMessageStoreId; keep later DB rows distinct.
+      if (usedIds.has(id) && msg.id != null) {
+        id = `${id}:${msg.id}`;
+      }
+      usedIds.add(id);
+      record.id = id;
     }
     return record;
   });

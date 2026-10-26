@@ -64,6 +64,106 @@ describe('meshcoreStoreDedup', () => {
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(2);
   });
 
+  it('keeps two same-sender channel posts in the same UTC second when preferredIds differ', () => {
+    // PacketRouter ids embed wire text; meshcoreMessageStoreId does not. Scrubbing the shared
+    // store id without a content match would delete the sibling post.
+    const senderId = 0x11;
+    const tsMs = 1_700_000_007_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const firstWire = 'Alice: first line';
+    const secondWire = 'Alice: second line';
+    const sharedStoreId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const secondProtocolId = `ch:0:${tsSec}:${secondWire}`;
+
+    const first = buildMeshcoreChannelIncomingMessage([], {
+      rawText: firstWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    // Sibling already occupies the shared canonical store id (waiting-drain / no preferredId).
+    upsertMeshcoreMessageWithDedup(ID, first, sharedStoreId);
+
+    const second = buildMeshcoreChannelIncomingMessage([], {
+      rawText: secondWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMessage(ID, {
+      id: secondProtocolId,
+      from: 0,
+      to: 0,
+      payload: secondWire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    // First upsert inserts; second exercises merge/cleanup against the shared store id.
+    expect(upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId).inserted).toBe(true);
+    expect(upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId).inserted).toBe(false);
+
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(byId[sharedStoreId].payload).toBe('first line');
+    expect(byId[secondProtocolId].payload).toBe('second line');
+    expect(Object.keys(byId)).toHaveLength(2);
+  });
+
+  it('keeps same-payload channel siblings with distinct wire texts under preferredIds', () => {
+    // `Alice: hello` and `Alice: @[Bob] hello` both normalize to payload `hello`.
+    const senderId = 0x11;
+    const tsMs = 1_700_000_008_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const plainWire = 'Alice: hello';
+    const replyWire = 'Alice: @[Bob] hello';
+    const sharedStoreId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const replyProtocolId = `ch:0:${tsSec}:${replyWire}`;
+
+    const plain = buildMeshcoreChannelIncomingMessage([], {
+      rawText: plainWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, plain, sharedStoreId);
+    expect(plain.payload).toBe('hello');
+
+    const withReply = buildMeshcoreChannelIncomingMessage([], {
+      rawText: replyWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    expect(withReply.payload).toBe('hello');
+    expect(withReply.meshcoreDedupeKey).not.toBe(plain.meshcoreDedupeKey);
+
+    // PacketRouter provisional: raw wire payload, from=0 (no meshcoreDedupeKey yet).
+    upsertMessage(ID, {
+      id: replyProtocolId,
+      from: 0,
+      to: 0,
+      payload: replyWire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    expect(upsertMeshcoreMessageWithDedup(ID, withReply, replyProtocolId).inserted).toBe(true);
+    expect(upsertMeshcoreMessageWithDedup(ID, withReply, replyProtocolId).inserted).toBe(false);
+
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(byId[sharedStoreId].meshcoreDedupeKey).toBe(plainWire);
+    expect(byId[replyProtocolId].meshcoreDedupeKey).toBe(replyWire);
+    expect(Object.keys(byId)).toHaveLength(2);
+  });
+
   it('merges RF store row with MQTT duplicate into one entry', () => {
     const tsSec = 1_700_000_010;
     const tsMs = tsSec * 1000;
@@ -165,6 +265,98 @@ describe('meshcoreStoreDedup', () => {
 
     expect(result.inserted).toBe(false);
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
+  });
+
+  it('drops hydrate composite id when PacketRouter preferredId merges the same channel RF', () => {
+    // Legacy hydrate used chatMessageToMessageRecord's `${sender}-${ts}-${channel}` id.
+    // PacketRouter then upserts `ch:${channel}:${ts}:${wire}` before ingest prefers that id.
+    // Fuzzy merge must delete the hydrate orphan — otherwise every channel line appears twice.
+    const senderId = 0xabcd1234;
+    const tsMs = 1_700_000_021_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const wire = 'Alice: good afternoon from buckley';
+    const hydrateId = `${senderId}-${tsMs}-0`;
+    const protocolId = `ch:0:${tsSec}:${wire}`;
+
+    const hydrated = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 6,
+    });
+    upsertMessage(ID, { ...chatMessageToMessageRecord(hydrated), id: hydrateId });
+
+    // PacketRouter provisional row (raw wire payload, from=0) — same as live companion event.
+    upsertMessage(ID, {
+      id: protocolId,
+      from: 0,
+      to: 0,
+      payload: wire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      hopCount: 6,
+      receivedVia: 'rf',
+    });
+
+    const live = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 6,
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, live, protocolId);
+
+    expect(result.inserted).toBe(false);
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    // Exact-key merge prefers the existing hydrate id and scrubs the PacketRouter preferredId
+    // (or vice versa if fuzzy merge runs first) — either way only one row remains.
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(Object.keys(byId)[0] === hydrateId || Object.keys(byId)[0] === protocolId).toBe(true);
+    expect(messageRecordToChatMessage(Object.values(byId)[0]).payload).toBe(
+      'good afternoon from buckley',
+    );
+  });
+
+  it('collapses PacketRouter provisional row with an existing canonical channel store id', () => {
+    const senderId = 0x11;
+    const tsMs = 1_700_000_022_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const wire = 'Bob: MHC-CF6177';
+    const storeId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const protocolId = `ch:0:${tsSec}:${wire}`;
+
+    const first = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Bob',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 4,
+    });
+    upsertMeshcoreMessageWithDedup(ID, first, storeId);
+    upsertMessage(ID, {
+      id: protocolId,
+      from: 0,
+      to: 0,
+      payload: wire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      hopCount: 4,
+      receivedVia: 'rf',
+    });
+
+    const result = upsertMeshcoreMessageWithDedup(ID, first, protocolId);
+    expect(result.inserted).toBe(false);
+    const ids = Object.keys(useMessageStore.getState().messages[ID] ?? {});
+    expect(ids).toHaveLength(1);
+    expect(ids[0] === storeId || ids[0] === protocolId).toBe(true);
   });
 
   it('assigns room store ids for room server posts', () => {
