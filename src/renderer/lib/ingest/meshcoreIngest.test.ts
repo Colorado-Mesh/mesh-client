@@ -21,6 +21,7 @@ import {
 import { getNodeStatus } from '../nodeStatus';
 import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
 import { messageRecordToChatMessage } from '../storeRecordAdapters';
+import { resetTakRelayedChannelLines } from '../tak/takChannelRelay';
 import { resetTakRelayedDirectMessages } from '../tak/takDirectMessages';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
@@ -742,6 +743,7 @@ describe('meshcore ingest TAK channel relay', () => {
     useTakRelayPrefsStore.setState({ byIdentity: {} });
     useTakChannelStore.setState({ channelsByIdentity: {} });
     clearTakTrackerFixes();
+    resetTakRelayedChannelLines();
     setTakSinkActive(true);
   });
 
@@ -788,6 +790,29 @@ describe('meshcore ingest TAK channel relay', () => {
         text: 'on scene',
       }),
     );
+  });
+
+  it.each([
+    ['a reaction', 'Bob: @[Alice] 👍'],
+    ['a keyed reaction', 'Bob: @[Alice#1700000900000] 👍'],
+    ['a reply', 'Bob: @[Alice] copy that'],
+  ])('hands %s to TAK clients once when the radio delivers it twice', (_label, wire) => {
+    serveTakChannel(TAK_ID, 3, '0123456789abcdef');
+    /** One delivery from the companion: its event id is the channel, send time and text. */
+    const deliver = (text: string, sec: number) => {
+      const id = `ch:3:${sec}:${text}`;
+      const timestamp = sec * 1000;
+      upsertMessage(TAK_ID, { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp });
+      meshcoreIngestHandleTextMessage(TAK_ID, {
+        type: 'text_message',
+        payload: { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp },
+      });
+    };
+    deliver('Alice: hello', 1_700_000_900);
+    pushChatMessage.mockClear();
+    deliver(wire, 1_700_000_960);
+    deliver(wire, 1_700_000_960);
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
   it('does not hand on channels that are not served', () => {

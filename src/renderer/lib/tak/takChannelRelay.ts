@@ -32,6 +32,35 @@ export interface TakChannelMessage {
   longitude?: number;
 }
 
+/** Another copy of a channel message arrives within this long of the first. */
+const RELAYED_CHANNEL_TTL_MS = 10 * 60 * 1000;
+const RELAYED_CHANNEL_MAX = 512;
+/** Channel messages already handed to TAK, by radio, channel, sender, send time and text. */
+const relayedChannelLines = new Map<string, number>();
+
+/**
+ * True the first time a channel message is seen within the window. ATAK gives every message it
+ * is handed a new id, so a second copy shows twice there. The radio can hand mesh-client the
+ * same packet more than once, and Chat merges the copies by parsing them, which a reply or
+ * reaction can come out of differently each time; the sender's own send time and text do not.
+ */
+function isFirstChannelCopy(key: string, nowMs: number): boolean {
+  for (const [k, at] of relayedChannelLines) {
+    if (nowMs - at < RELAYED_CHANNEL_TTL_MS && relayedChannelLines.size < RELAYED_CHANNEL_MAX) {
+      break;
+    }
+    relayedChannelLines.delete(k);
+  }
+  if (relayedChannelLines.has(key)) return false;
+  relayedChannelLines.set(key, nowMs);
+  return true;
+}
+
+/** Forget which channel messages were relayed; for tests. */
+export function resetTakRelayedChannelLines(): void {
+  relayedChannelLines.clear();
+}
+
 /** Hand one channel message to TAK clients, if its channel is served to them. */
 function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage): void {
   const channel = findServedChannel(identityId, msg.channelIndex);
@@ -41,6 +70,8 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   // A TAK client's own message heard back off the mesh: the clients already have it.
   if (!msg.fromOther && consumeTakEcho(identityId, msg.channelIndex, text)) return;
   if (!sender) return;
+  const copyKey = [identityId, msg.channelIndex, sender, msg.timestampMs, text].join('\u0000');
+  if (!isFirstChannelCopy(copyKey, Date.now())) return;
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,

@@ -9,7 +9,7 @@ import { setTakChannels, setTakRadio, useTakChannelStore } from '../../stores/ta
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import type { ChatMessage } from '../types';
-import { relayMeshtasticChatToTak } from './takChannelRelay';
+import { relayMeshtasticChatToTak, resetTakRelayedChannelLines } from './takChannelRelay';
 import { resetTakRelayedDirectMessages } from './takDirectMessages';
 import { rememberTakSend, resetTakEchoForTests } from './takEchoGuard';
 
@@ -43,6 +43,7 @@ describe('relayMeshtasticChatToTak', () => {
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'selected');
     useTakRelayPrefsStore.getState().setChatChannel(ID, KEY, true);
     useNodeStore.setState({ nodes: {} });
+    resetTakRelayedChannelLines();
     setTakSinkActive(true);
   });
 
@@ -83,6 +84,15 @@ describe('relayMeshtasticChatToTak', () => {
       text: 'on scene',
       timeMs: NOW,
     });
+  });
+
+  it('hands each message to TAK clients once, however many copies arrive', () => {
+    relayMeshtasticChatToTak(ID, chat());
+    relayMeshtasticChatToTak(ID, chat());
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    // The same words sent again later are a new message.
+    relayMeshtasticChatToTak(ID, chat({ timestamp: NOW + 5000 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(2);
   });
 
   it('treats the broadcast address as a channel message', () => {
