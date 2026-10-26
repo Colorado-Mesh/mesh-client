@@ -42,10 +42,27 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(start).toBeGreaterThan(-1);
     const end = SOURCE.indexOf('const handleTabSelect', start);
     const body = SOURCE.slice(start, end > start ? end : start + 8000);
-    expect(body).toContain('resetProtocolTabVisitFlags()');
-    expect(body.indexOf('resetProtocolTabVisitFlags()')).toBeLessThan(
-      body.lastIndexOf('setProtocol(newProtocol)'),
-    );
     expect(body).toContain('setPendingProtocolSelection(newProtocol)');
+    const resetIdx = body.indexOf('resetProtocolTabVisitFlags()');
+    expect(resetIdx).toBeGreaterThan(-1);
+    const transitionStart = body.lastIndexOf('startProtocolTransition(() => {', resetIdx);
+    expect(transitionStart).toBeGreaterThan(-1);
+    const setProtocolIdx = body.indexOf('setProtocol(newProtocol)', resetIdx);
+    expect(setProtocolIdx).toBeGreaterThan(resetIdx);
+    // Both must sit in the same transition callback (before its closing `});`).
+    const callbackClose = body.indexOf('});', setProtocolIdx);
+    expect(callbackClose).toBeGreaterThan(setProtocolIdx);
+    expect(body.slice(transitionStart, callbackClose)).toContain('resetProtocolTabVisitFlags()');
+    expect(body.slice(transitionStart, callbackClose)).toContain('setProtocol(newProtocol)');
+  });
+
+  it('cancels an in-flight protocol switch when re-selecting the active protocol', () => {
+    const start = SOURCE.indexOf('const handleProtocolChange');
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('const handleTabSelect', start);
+    const body = SOURCE.slice(start, end > start ? end : start + 8000);
+    expect(body).toContain('if (newProtocol === pendingProtocolSelection) return;');
+    expect(body).toContain('if (newProtocol === protocol)');
+    expect(body).toContain('if (pendingProtocolSelection == null) return;');
   });
 });

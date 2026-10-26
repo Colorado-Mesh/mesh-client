@@ -2356,7 +2356,20 @@ function AppContent() {
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
-      if (newProtocol === protocol || newProtocol === pendingProtocolSelection) return;
+      if (newProtocol === pendingProtocolSelection) return;
+
+      // Clicking the already-active protocol while a switch is in flight must
+      // cancel that pending transition (otherwise it still commits later).
+      if (newProtocol === protocol) {
+        if (pendingProtocolSelection == null) return;
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, protocol);
+        startProtocolTransition(() => {
+          setActiveTab(activeTab);
+          setProtocol(protocol);
+        });
+        return;
+      }
 
       const savedPanel = lastPanelByProtocol.current.get(newProtocol) ?? null;
       const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
@@ -2891,6 +2904,7 @@ function AppContent() {
           lastTabByProtocol.current.set(protocol, activeTab);
           lastPanelByProtocol.current.set(protocol, activePanelIndex);
           localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          setPendingProtocolSelection(null);
           setProtocol('reticulum');
         }
         const gamesTabIndex = findFilteredTabIndexForPanel(
@@ -2939,6 +2953,7 @@ function AppContent() {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+        setPendingProtocolSelection(null);
         setProtocol('reticulum');
       }
       const nomadTabIndex = findFilteredTabIndexForPanel(
@@ -2985,6 +3000,7 @@ function AppContent() {
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+      setPendingProtocolSelection(null);
       setProtocol('reticulum');
     }
     const rrcTabIndex = findFilteredTabIndexForPanel(
@@ -3017,6 +3033,7 @@ function AppContent() {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
+        setPendingProtocolSelection(null);
         setProtocol(targetProtocol);
       }
       const tabIndex = findFilteredTabIndexForPanel(
