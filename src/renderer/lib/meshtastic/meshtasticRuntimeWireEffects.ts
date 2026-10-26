@@ -765,6 +765,14 @@ export function attachMeshtasticRuntimeWireEffects(
         setDeviceOwner,
         setTelemetry,
         setEnvironmentTelemetry,
+        onSelfRadioPosition: () => {
+          void refreshOurPositionRef.current().catch((e: unknown) => {
+            console.debug(
+              '[meshtasticRuntimeWireEffects] refreshOurPosition after self radio GPS ' +
+                errLikeToLogString(e),
+            );
+          });
+        },
       }),
     );
   }

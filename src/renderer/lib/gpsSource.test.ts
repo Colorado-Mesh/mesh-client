@@ -4,6 +4,7 @@ import * as appSettingsStorage from './appSettingsStorage';
 import {
   GPS_SETTINGS_STORAGE_KEY,
   hasStoredStaticGps,
+  overlayStoredStaticGpsOnSelfNode,
   persistStoredStaticGps,
   readGpsRefreshIntervalSecs,
   readStoredStaticGps,
@@ -90,6 +91,35 @@ describe('shouldPreserveStaticGpsForSelfNode', () => {
   it('is true for self node when static GPS is stored', () => {
     localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ staticLat: 1, staticLon: 2 }));
     expect(shouldPreserveStaticGpsForSelfNode(0x42, 0x42)).toBe(true);
+  });
+});
+
+describe('overlayStoredStaticGpsOnSelfNode', () => {
+  afterEach(() => {
+    localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
+  });
+
+  it('overlays static coords onto the self node when stored', () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 41.59375, staticLon: -73.02428 }),
+    );
+    const map = new Map([
+      [0x42, { latitude: 40.0, longitude: -74.0 }],
+      [0x99, { latitude: 39.0, longitude: -105.0 }],
+    ]);
+    overlayStoredStaticGpsOnSelfNode(map, 0x42);
+    expect(map.get(0x42)).toEqual({ latitude: 41.59375, longitude: -73.02428 });
+    expect(map.get(0x99)).toEqual({ latitude: 39.0, longitude: -105.0 });
+  });
+
+  it('is a no-op without static GPS or when self is missing', () => {
+    const map = new Map([[0x42, { latitude: 40.0, longitude: -74.0 }]]);
+    overlayStoredStaticGpsOnSelfNode(map, 0x42);
+    expect(map.get(0x42)).toEqual({ latitude: 40.0, longitude: -74.0 });
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ staticLat: 1, staticLon: 2 }));
+    overlayStoredStaticGpsOnSelfNode(map, 0x99);
+    expect(map.get(0x42)).toEqual({ latitude: 40.0, longitude: -74.0 });
   });
 });
 

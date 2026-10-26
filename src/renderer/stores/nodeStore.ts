@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import { preferNonEmptyTrimmedString } from '@/shared/nodeNameUtils';
 
+import { shouldPreserveStaticGpsForSelfNode } from '../lib/gpsSource';
+import { loadPersistedMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import {
   getMeshtasticConfigurePhase,
   touchMeshtasticConfigureProgress,
@@ -403,6 +405,15 @@ export function bumpMeshtasticNodesLastHeardAt(
   });
 }
 
+function selfNodeIdForStaticGpsPreserve(identityId: IdentityId): number {
+  const fromConn = getConnection(identityId)?.myNodeNum ?? 0;
+  if (fromConn > 0) return fromConn;
+  if (getIdentity(identityId)?.protocol.type === 'meshcore') {
+    return loadPersistedMeshcoreSelfNodeId();
+  }
+  return 0;
+}
+
 export function updatePosition(identityId: IdentityId, event: PositionEvent): void {
   useNodeStore.setState((s) => {
     const byId = s.nodes[identityId] ?? {};
@@ -410,14 +421,22 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
     const existing = byId[nodeId];
     const lastHeardAt = meshtasticLastHeardPatch(identityId, timestamp, existing?.lastHeardAt);
     maybeTouchMeshtasticNodeDbConfigureProgress(identityId);
+    const preserveStatic = shouldPreserveStaticGpsForSelfNode(
+      nodeId,
+      selfNodeIdForStaticGpsPreserve(identityId),
+    );
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
           [nodeId]: mergeNode(existing, nodeId, {
-            latitude,
-            longitude,
+            ...(preserveStatic
+              ? {}
+              : {
+                  latitude,
+                  longitude,
+                }),
             altitude,
             positionTimestamp: timestamp,
             groundSpeed,

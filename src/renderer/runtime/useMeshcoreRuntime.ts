@@ -116,9 +116,11 @@ import type { OurPosition } from '../lib/gpsSource';
 import {
   hasStoredStaticGps,
   isLowAccuracyPosition,
+  overlayStoredStaticGpsOnSelfNode,
   persistStoredStaticGps,
   readStoredStaticGps,
   resolveOurPosition,
+  shouldPreserveStaticGpsForSelfNode,
 } from '../lib/gpsSource';
 import {
   loadMeshcoreMessagesForHydration,
@@ -1279,7 +1281,12 @@ export function useMeshcoreRuntime() {
       const dbContacts = rows as MeshcoreContactDbRow[];
       const meshcoreRows = dbMsgs;
       const mappedPreview = mapMeshcoreDbRowsToChatMessages(meshcoreRows);
-      const initial = buildMeshcoreNodeMapFromDb(dbContacts, savedNodes, mappedPreview);
+      const initial = buildMeshcoreNodeMapFromDb(
+        dbContacts,
+        savedNodes,
+        mappedPreview,
+        myNodeNumRef.current,
+      );
       const dbPubKeyHexByNodeId = new Map<number, string>();
       for (const row of dbContacts) {
         if (row.nickname) nicknameMapRef.current.set(row.node_id, row.nickname);
@@ -2578,7 +2585,12 @@ export function useMeshcoreRuntime() {
               meshcoreRoomServerIdsFromContacts(contactRows),
               myNodeNumRef.current,
             );
-            const cachedNodes = buildMeshcoreNodeMapFromDb(contactRows, savedNodes, mapped);
+            const cachedNodes = buildMeshcoreNodeMapFromDb(
+              contactRows,
+              savedNodes,
+              mapped,
+              myNodeNumRef.current,
+            );
             dbCacheNodeCount = cachedNodes.size;
             meshcoreLastPersistedNodesRef.current = new Map(cachedNodes);
             applyMeshcoreNodesToUi(cachedNodes);
@@ -8362,6 +8374,7 @@ export function useMeshcoreRuntime() {
       let nextMap: Map<number, MeshNode> | null = null;
       setNodes((prev) => {
         const next = new Map(prev);
+        const selfId = myNodeNumRef.current;
         for (const row of dbContacts) {
           const existing = next.get(row.node_id);
           const mergedHopsAway =
@@ -8375,6 +8388,8 @@ export function useMeshcoreRuntime() {
             next.set(row.node_id, { ...existing, hops_away: mergedHopsAway });
             continue;
           }
+          const useStatic = shouldPreserveStaticGpsForSelfNode(row.node_id, selfId);
+          const storedStatic = useStatic ? readStoredStaticGps() : null;
           next.set(row.node_id, {
             node_id: row.node_id,
             long_name: row.adv_name ?? `Node-${row.node_id.toString(16).toUpperCase()}`,
@@ -8384,12 +8399,13 @@ export function useMeshcoreRuntime() {
             snr: row.last_snr ?? 0,
             rssi: row.last_rssi ?? 0,
             last_heard: row.last_advert ?? 0,
-            latitude: row.adv_lat ?? null,
-            longitude: row.adv_lon ?? null,
+            latitude: storedStatic?.lat ?? row.adv_lat ?? null,
+            longitude: storedStatic?.lon ?? row.adv_lon ?? null,
             favorited: row.favorited === 1,
             ...(mergedHopsAway != null ? { hops_away: mergedHopsAway } : {}),
           });
         }
+        overlayStoredStaticGpsOnSelfNode(next, selfId);
         nextMap = next;
         return next;
       });

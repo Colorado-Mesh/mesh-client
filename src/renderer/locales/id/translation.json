@@ -512,7 +512,8 @@
     "coiYes": "Ya",
     "coiNo": "tidak",
     "coiTimingFine": "baik (~5 µs)",
-    "coiTimingCoarse": "kasar (~100 µs)"
+    "coiTimingCoarse": "kasar (~100 µs)",
+    "shareMyLocationOffStaticActive": "Berbagi lokasi tidak aktif — penyegaran otomatis GPS tuan rumah dan pengiriman jala dinonaktifkan. Lokasi tersimpan aktif Anda (dan GPS radio bila tersedia) masih digunakan secara lokal untuk filter peta dan jarak."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

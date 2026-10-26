@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import type { GpsSource } from './gpsSource';
-import { getLocationTrust, homeNodeForDistanceChecks, type LocationTrust } from './locationTrust';
+import {
+  getLocationTrust,
+  homeCoordsForDistanceFilter,
+  homeNodeForDistanceChecks,
+  type LocationTrust,
+} from './locationTrust';
 import type { MeshNode } from './types';
 
 const home = { id: 'home' };
@@ -78,5 +83,76 @@ describe('homeNodeForDistanceChecks', () => {
       longitude: null,
     });
     expect(homeNodeForDistanceChecks(null, null)).toBeNull();
+  });
+});
+
+describe('homeCoordsForDistanceFilter', () => {
+  const selfNode: MeshNode = {
+    node_id: 1,
+    long_name: 'Self',
+    short_name: 'S',
+    hw_model: 'TBEAM',
+    snr: 0,
+    battery: 100,
+    last_heard: 0,
+    latitude: 10,
+    longitude: 20,
+  };
+
+  it('prefers trusted reference over stale self-row coords', () => {
+    expect(
+      homeCoordsForDistanceFilter(selfNode, {
+        lat: 41.59,
+        lon: -73.02,
+        source: 'static',
+        trust: 'trusted',
+      }),
+    ).toEqual({ lat: 41.59, lon: -73.02 });
+  });
+
+  it('uses static reference even when trust is needsConfirm', () => {
+    expect(
+      homeCoordsForDistanceFilter(selfNode, {
+        lat: 41.59,
+        lon: -73.02,
+        source: 'static',
+        trust: 'needsConfirm',
+      }),
+    ).toEqual({ lat: 41.59, lon: -73.02 });
+  });
+
+  it('uses static ourPosition when reference is absent', () => {
+    expect(
+      homeCoordsForDistanceFilter(selfNode, null, {
+        lat: 41.59,
+        lon: -73.02,
+        source: 'static',
+      }),
+    ).toEqual({ lat: 41.59, lon: -73.02 });
+  });
+
+  it('uses device ourPosition when reference is absent (share-off radio GPS)', () => {
+    expect(
+      homeCoordsForDistanceFilter(selfNode, null, {
+        lat: 41.1,
+        lon: -73.1,
+        source: 'device',
+      }),
+    ).toEqual({ lat: 41.1, lon: -73.1 });
+  });
+
+  it('falls back to self-row when no static/trusted reference', () => {
+    expect(
+      homeCoordsForDistanceFilter(selfNode, {
+        lat: 1,
+        lon: 2,
+        source: 'ip',
+        trust: 'approximate',
+      }),
+    ).toEqual({ lat: 10, lon: 20 });
+  });
+
+  it('returns null without usable home coords', () => {
+    expect(homeCoordsForDistanceFilter({ latitude: null, longitude: null }, null)).toBeNull();
   });
 });

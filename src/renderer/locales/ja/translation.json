@@ -512,7 +512,8 @@
     "coiYes": "あり",
     "coiNo": "なし",
     "coiTimingFine": "細かい（〜5 µ s ）",
-    "coiTimingCoarse": "粗い（〜100 µ s ）"
+    "coiTimingCoarse": "粗い（〜100 µ s ）",
+    "shareMyLocationOffStaticActive": "位置情報の共有がオフになっています。ホストのGPS自動更新とメッシュ送信は無効になっています。アクティブな保存済みの位置情報（および利用可能な場合は無線GPS ）は、地図と距離のフィルタにローカルで引き続き使用されます。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

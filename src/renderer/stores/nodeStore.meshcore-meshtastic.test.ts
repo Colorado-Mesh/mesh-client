@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { GPS_SETTINGS_STORAGE_KEY } from '../lib/gpsSource';
 import { syncNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import type { MeshNode } from '../lib/types';
+import { setConnection, useConnectionStore } from './connectionStore';
 import { addIdentity } from './identityStore';
 import {
   bumpMeshtasticNodesLastHeardAt,
@@ -12,6 +14,26 @@ import {
   upsertNode,
   useNodeStore,
 } from './nodeStore';
+
+function stubMemoryLocalStorage(): void {
+  const store = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+    key: () => null,
+    get length() {
+      return store.size;
+    },
+  });
+}
 
 const ID_MC = 'id-mc-store';
 const ID_MT = 'id-mt-store';
@@ -71,6 +93,37 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
       timestamp: rxMs,
     });
     expect(useNodeStore.getState().nodes[ID_MT][1].lastHeardAt).toBe(rxMs);
+  });
+
+  it('updatePosition keeps App static GPS on MeshCore self when static is stored', () => {
+    stubMemoryLocalStorage();
+    try {
+      localStorage.setItem(
+        GPS_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ staticLat: 41.59375, staticLon: -73.02428 }),
+      );
+      setConnection(ID_MC, { myNodeNum: 0x42, status: 'connected' });
+      useNodeStore.setState({
+        nodes: {
+          [ID_MC]: { 0x42: { nodeId: 0x42, latitude: 41.59375, longitude: -73.02428 } },
+        },
+        traceRoutes: {},
+        waypoints: {},
+        neighborInfo: {},
+      });
+      updatePosition(ID_MC, {
+        nodeId: 0x42,
+        latitude: 40.0,
+        longitude: -74.0,
+        timestamp: Date.now(),
+      });
+      const self = useNodeStore.getState().nodes[ID_MC][0x42];
+      expect(self.latitude).toBe(41.59375);
+      expect(self.longitude).toBe(-73.02428);
+    } finally {
+      vi.unstubAllGlobals();
+      useConnectionStore.setState({ connections: {} });
+    }
   });
 
   it('upsertNode preserves MeshCore longName when advert omits advName', () => {

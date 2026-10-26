@@ -512,7 +512,8 @@
     "coiYes": "oui",
     "coiNo": "non=",
     "coiTimingFine": "fin (~5 µs)",
-    "coiTimingCoarse": "grossier (~100 µs)"
+    "coiTimingCoarse": "grossier (~100 µs)",
+    "shareMyLocationOffStaticActive": "Le partage de localisation est désactivé — l'actualisation automatique du GPS de l'hôte et l'envoi maillé sont désactivés. Votre position enregistrée active (et le GPS radio lorsqu'il est disponible) sont toujours utilisés localement pour les filtres de carte et de distance."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

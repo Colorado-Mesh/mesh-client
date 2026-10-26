@@ -85,6 +85,11 @@ export interface MeshtasticNodeSideEffectsDeps {
   >;
   setTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
   setEnvironmentTelemetry: Dispatch<SetStateAction<EnvironmentTelemetryPoint[]>>;
+  /**
+   * After a valid self Position from the radio this session. Re-resolves ourPosition /
+   * reference for local map use without requiring Share my location (transmit stays gated).
+   */
+  onSelfRadioPosition?: () => void;
 }
 
 function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefined {
@@ -244,6 +249,8 @@ function handleNodeDbNodeInfo(
       positionCoords.longitude,
       info.altitude,
     );
+    // Skip NodeDB replay storms; post-configure refresh picks up the recorded fix.
+    if (!deps.getIsConfiguring()) deps.onSelfRadioPosition?.();
   }
   const positionPatch = applyNodeDbPositionCoords(
     positionCoords,
@@ -369,6 +376,8 @@ function handlePosition(
 
   if (myNodeNum > 0 && nodeNum === myNodeNum) {
     recordRadioSelfPosition('meshtastic', position.latitude, position.longitude, position.altitude);
+    // Local map / distance use radio GPS even when Share is off; refresh does not transmit.
+    if (!deps.getIsConfiguring()) deps.onSelfRadioPosition?.();
   }
   if (shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) return;
 

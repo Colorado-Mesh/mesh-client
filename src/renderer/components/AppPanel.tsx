@@ -998,7 +998,11 @@ export default function AppPanel({
             <HelpTooltip text={t('appPanel.shareMyLocationHint')} />
           </div>
           {!settings.shareMyLocation && (
-            <p className="text-muted text-xs">{t('appPanel.shareMyLocationOffInfo')}</p>
+            <p className="text-muted text-xs">
+              {hasStaticPosition
+                ? t('appPanel.shareMyLocationOffStaticActive')
+                : t('appPanel.shareMyLocationOffInfo')}
+            </p>
           )}
           {ourPosition && (
             <p className="text-brand-green text-xs">
@@ -1072,10 +1076,18 @@ export default function AppPanel({
             data-setting-anchor="app.gps.refreshNow"
             type="button"
             onClick={() => onRefreshGps?.()}
-            disabled={gpsLoading || !settings.shareMyLocation}
-            title={!settings.shareMyLocation ? t('appPanel.shareMyLocationOffInfo') : undefined}
+            disabled={gpsLoading}
+            title={
+              !settings.shareMyLocation
+                ? t(
+                    hasStaticPosition
+                      ? 'appPanel.shareMyLocationOffStaticActive'
+                      : 'appPanel.shareMyLocationOffInfo',
+                  )
+                : undefined
+            }
             aria-label={gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
-            className={`bg-secondary-dark text-ink-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${gpsLoading || !settings.shareMyLocation ? 'cursor-not-allowed opacity-50' : 'hover:bg-ink-600'}`}
+            className={`bg-secondary-dark text-ink-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${gpsLoading ? 'cursor-not-allowed opacity-50' : 'hover:bg-ink-600'}`}
           >
             {gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
           </button>
