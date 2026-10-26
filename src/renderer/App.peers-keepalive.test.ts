@@ -19,5 +19,6 @@ describe('App Peers tab keep-alive (regression)', () => {
 
   it('clears peersTabVisited on protocol switch', () => {
     expect(SOURCE).toMatch(/setPeersTabVisited\(false\)/);
+    expect(SOURCE).toContain('resetProtocolTabVisitFlags');
   });
 });
