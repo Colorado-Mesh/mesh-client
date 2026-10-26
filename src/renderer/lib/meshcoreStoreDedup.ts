@@ -297,8 +297,14 @@ function meshcoreAltRecordMatchesMergedMessage(
     if (chat.channel !== candidate.channel || chat.timestamp !== candidate.timestamp) {
       continue;
     }
-    const chatBody = chat.meshcoreDedupeKey ?? chat.payload;
-    const candidateBody = candidate.meshcoreDedupeKey ?? candidate.payload;
+    const chatWire = chat.meshcoreDedupeKey;
+    const candidateWire = candidate.meshcoreDedupeKey;
+    if (chatWire != null && candidateWire != null) {
+      if (chatWire === candidateWire) return true;
+      continue;
+    }
+    const chatBody = chatWire ?? chat.payload;
+    const candidateBody = candidateWire ?? candidate.payload;
     if (chatBody === candidateBody || chat.payload === candidate.payload) {
       return true;
     }

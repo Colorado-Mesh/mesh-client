@@ -498,8 +498,15 @@ export function meshcoreChannelRfMatch(
   if (existing.channel !== incoming.channel) return false;
   if ((existing.to ?? undefined) !== (incoming.to ?? undefined)) return false;
   if ((existing.replyId ?? undefined) !== (incoming.replyId ?? undefined)) return false;
-  const existingBody = existing.meshcoreDedupeKey ?? existing.payload;
-  const incomingBody = incoming.meshcoreDedupeKey ?? incoming.payload;
+  const existingWire = existing.meshcoreDedupeKey;
+  const incomingWire = incoming.meshcoreDedupeKey;
+  // Distinct wire identities (e.g. plain body vs `@[target] body`) must not merge even when
+  // normalized display payloads match.
+  if (existingWire != null && incomingWire != null && existingWire !== incomingWire) {
+    return false;
+  }
+  const existingBody = existingWire ?? existing.payload;
+  const incomingBody = incomingWire ?? incoming.payload;
   if (existingBody !== incomingBody && existing.payload !== incoming.payload) return false;
   if (Math.abs(existing.timestamp - incoming.timestamp) > windowMs) return false;
   return true;

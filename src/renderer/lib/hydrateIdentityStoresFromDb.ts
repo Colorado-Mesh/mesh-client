@@ -89,6 +89,7 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
 export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
 ) {
+  const usedIds = new Set<string>();
   return messages.map((msg) => {
     const record = chatMessageToMessageRecord(msg);
     if (
@@ -96,7 +97,13 @@ export function meshcoreHydratedMessageRecords(
       msg.channel >= 0 ||
       (msg.channel === -1 && msg.packetId == null)
     ) {
-      record.id = msg.storeId ?? meshcoreMessageStoreId(msg);
+      let id = msg.storeId ?? meshcoreMessageStoreId(msg);
+      // Same sender + UTC second share one meshcoreMessageStoreId; keep later DB rows distinct.
+      if (usedIds.has(id) && msg.id != null) {
+        id = `${id}:${msg.id}`;
+      }
+      usedIds.add(id);
+      record.id = id;
     }
     return record;
   });

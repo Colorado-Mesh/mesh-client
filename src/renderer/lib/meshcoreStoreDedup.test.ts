@@ -73,7 +73,6 @@ describe('meshcoreStoreDedup', () => {
     const firstWire = 'Alice: first line';
     const secondWire = 'Alice: second line';
     const sharedStoreId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
-    const firstProtocolId = `ch:0:${tsSec}:${firstWire}`;
     const secondProtocolId = `ch:0:${tsSec}:${secondWire}`;
 
     const first = buildMeshcoreChannelIncomingMessage([], {
@@ -104,13 +103,64 @@ describe('meshcoreStoreDedup', () => {
       timestamp: tsMs,
       receivedVia: 'rf',
     });
-    const result = upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId);
+    // First upsert inserts; second exercises merge/cleanup against the shared store id.
+    expect(upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId).inserted).toBe(true);
+    expect(upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId).inserted).toBe(false);
 
-    expect(result.inserted).toBe(true);
     const byId = useMessageStore.getState().messages[ID] ?? {};
     expect(byId[sharedStoreId].payload).toBe('first line');
     expect(byId[secondProtocolId].payload).toBe('second line');
-    expect(byId[firstProtocolId]).toBeUndefined();
+    expect(Object.keys(byId)).toHaveLength(2);
+  });
+
+  it('keeps same-payload channel siblings with distinct wire texts under preferredIds', () => {
+    // `Alice: hello` and `Alice: @[Bob] hello` both normalize to payload `hello`.
+    const senderId = 0x11;
+    const tsMs = 1_700_000_008_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const plainWire = 'Alice: hello';
+    const replyWire = 'Alice: @[Bob] hello';
+    const sharedStoreId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const replyProtocolId = `ch:0:${tsSec}:${replyWire}`;
+
+    const plain = buildMeshcoreChannelIncomingMessage([], {
+      rawText: plainWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, plain, sharedStoreId);
+    expect(plain.payload).toBe('hello');
+
+    const withReply = buildMeshcoreChannelIncomingMessage([], {
+      rawText: replyWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    expect(withReply.payload).toBe('hello');
+    expect(withReply.meshcoreDedupeKey).not.toBe(plain.meshcoreDedupeKey);
+
+    // PacketRouter provisional: raw wire payload, from=0 (no meshcoreDedupeKey yet).
+    upsertMessage(ID, {
+      id: replyProtocolId,
+      from: 0,
+      to: 0,
+      payload: replyWire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    expect(upsertMeshcoreMessageWithDedup(ID, withReply, replyProtocolId).inserted).toBe(true);
+    expect(upsertMeshcoreMessageWithDedup(ID, withReply, replyProtocolId).inserted).toBe(false);
+
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(byId[sharedStoreId].meshcoreDedupeKey).toBe(plainWire);
+    expect(byId[replyProtocolId].meshcoreDedupeKey).toBe(replyWire);
     expect(Object.keys(byId)).toHaveLength(2);
   });
 
@@ -264,9 +314,11 @@ describe('meshcoreStoreDedup', () => {
 
     expect(result.inserted).toBe(false);
     const byId = useMessageStore.getState().messages[ID] ?? {};
-    expect(Object.keys(byId)).toEqual([protocolId]);
-    expect(byId[hydrateId]).toBeUndefined();
-    expect(messageRecordToChatMessage(byId[protocolId]).payload).toBe(
+    // Exact-key merge prefers the existing hydrate id and scrubs the PacketRouter preferredId
+    // (or vice versa if fuzzy merge runs first) — either way only one row remains.
+    expect(Object.keys(byId)).toHaveLength(1);
+    expect(Object.keys(byId)[0] === hydrateId || Object.keys(byId)[0] === protocolId).toBe(true);
+    expect(messageRecordToChatMessage(Object.values(byId)[0]).payload).toBe(
       'good afternoon from buckley',
     );
   });

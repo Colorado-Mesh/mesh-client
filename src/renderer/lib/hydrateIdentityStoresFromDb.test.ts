@@ -586,6 +586,38 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(record.id).not.toBe(
       `${channelMsg.sender_id}-${channelMsg.timestamp}-${channelMsg.channel}`,
     );
+    expect(record.meshcoreDedupeKey).toBe('Half Live: good afternoon from buckley');
+  });
+
+  it('suffixes colliding channel hydrate ids with the DB row id', () => {
+    const tsMs = 1_700_000_401_000;
+    const senderId = 0x11;
+    const first = {
+      ...buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: one',
+        senderId,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: tsMs,
+        receivedVia: 'rf' as const,
+      }),
+      id: 101,
+    };
+    const second = {
+      ...buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: two',
+        senderId,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: tsMs,
+        receivedVia: 'rf' as const,
+      }),
+      id: 102,
+    };
+    const [a, b] = meshcoreHydratedMessageRecords([first, second]);
+    const baseId = meshcoreMessageStoreId(first);
+    expect(a.id).toBe(baseId);
+    expect(b.id).toBe(`${baseId}:102`);
   });
 
   it('dispatches by protocol via hydrateIdentityStoresFromDb', async () => {

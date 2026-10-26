@@ -80,6 +80,11 @@ export interface MessageRecord {
   channelKey?: string;
   /** Radio (local node number) that recorded this message, when known. */
   radioNodeId?: number;
+  /**
+   * MeshCore wire text used for dedupe (often `Name: body` or reply/reaction wire).
+   * Distinct from display `payload`, which may strip brackets / name prefixes.
+   */
+  meshcoreDedupeKey?: string;
 }
 
 interface MessageStoreState {

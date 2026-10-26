@@ -247,6 +247,23 @@ describe('meshcoreChannelRfMatch', () => {
     expect(findMeshcoreChannelRfDuplicate([first], replay)).toBe(first);
   });
 
+  it('does not match distinct wire texts that normalize to the same payload', () => {
+    const plain = baseMsg({
+      receivedVia: 'rf',
+      payload: 'hello',
+      meshcoreDedupeKey: 'Alice: hello',
+      timestamp: 1_700_000_000_000,
+    });
+    const withMention = baseMsg({
+      receivedVia: 'rf',
+      payload: 'hello',
+      meshcoreDedupeKey: 'Alice: @[Bob] hello',
+      timestamp: plain.timestamp + 1_000,
+    });
+    expect(meshcoreChannelRfMatch(plain, withMention)).toBe(false);
+    expect(findMeshcoreChannelRfDuplicate([plain], withMention)).toBeUndefined();
+  });
+
   it('does not match when timestamps exceed the window', () => {
     const first = baseMsg({ receivedVia: 'rf', timestamp: 0 });
     const replay = baseMsg({
