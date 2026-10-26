@@ -55,12 +55,14 @@ describe('relayMeshtasticChatToTak', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not mirror back a TAK client message heard off the mesh, once', () => {
+  it('does not mirror back a TAK client message heard off the mesh, however many copies', () => {
     resetTakEchoForTests();
     rememberTakSend(ID, 1, '[VIPER] on scene');
     relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
-    expect(pushChatMessage).not.toHaveBeenCalled();
     relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    // The same words heard later are someone's new message.
+    relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene', timestamp: NOW + 5000 }));
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 

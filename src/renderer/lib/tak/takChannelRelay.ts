@@ -59,12 +59,13 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   const channel = findServedChannel(identityId, msg.channelIndex);
   const text = msg.text.trim().slice(0, TAK_GEOCHAT_TEXT_MAX_LEN);
   const sender = msg.senderName.trim().slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN);
-  if (!channel || !text) return;
-  // A TAK client's own message heard back off the mesh: the clients already have it.
-  if (!msg.fromOther && consumeTakEcho(identityId, msg.channelIndex, text)) return;
-  if (!sender) return;
+  if (!channel || !text || !sender) return;
+  // Before the echo check: a TAK client's own message can be heard back more than once, and the
+  // echo guard only catches the first copy.
   const copyKey = [identityId, msg.channelIndex, sender, msg.timestampMs, text].join('\u0000');
   if (!isFirstChannelCopy(copyKey, Date.now())) return;
+  // A TAK client's own message heard back off the mesh: the clients already have it.
+  if (!msg.fromOther && consumeTakEcho(identityId, msg.channelIndex, text)) return;
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
