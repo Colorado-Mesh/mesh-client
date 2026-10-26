@@ -847,6 +847,34 @@ function AppContent() {
 
   const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
   const [protocolSwitchPending, startProtocolTransition] = useTransition();
+  /** Immediate rail selection while `setProtocol` is still in a transition commit. */
+  const [pendingProtocolSelection, setPendingProtocolSelection] = useState<MeshProtocol | null>(
+    null,
+  );
+  const switcherProtocol = pendingProtocolSelection ?? protocol;
+  const [chatTabVisited, setChatTabVisited] = useState(false);
+  const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [gamesTabVisited, setGamesTabVisited] = useState(false);
+  const [rrcTabVisited, setRrcTabVisited] = useState(false);
+  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
+  const [nomadTabVisited, setNomadTabVisited] = useState(false);
+  const [peersTabVisited, setPeersTabVisited] = useState(false);
+  const [appTabVisited, setAppTabVisited] = useState(false);
+  const resetProtocolTabVisitFlags = useCallback(() => {
+    setChatTabVisited(false);
+    setRoomsTabVisited(false);
+    setGamesTabVisited(false);
+    setRrcTabVisited(false);
+    setRemoteTabVisited(false);
+    setNomadTabVisited(false);
+    setPeersTabVisited(false);
+    setAppTabVisited(false);
+  }, []);
+  useEffect(() => {
+    if (pendingProtocolSelection == null || pendingProtocolSelection !== protocol) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic rail once protocol commits
+    setPendingProtocolSelection(null);
+  }, [protocol, pendingProtocolSelection]);
   const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
   const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
   const reticulumEnabled = enabledProtocols.includes('reticulum');
@@ -2328,7 +2356,20 @@ function AppContent() {
 
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
-      if (newProtocol === protocol) return;
+      if (newProtocol === pendingProtocolSelection) return;
+
+      // Clicking the already-active protocol while a switch is in flight must
+      // cancel that pending transition (otherwise it still commits later).
+      if (newProtocol === protocol) {
+        if (pendingProtocolSelection == null) return;
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, protocol);
+        startProtocolTransition(() => {
+          setActiveTab(activeTab);
+          setProtocol(protocol);
+        });
+        return;
+      }
 
       const savedPanel = lastPanelByProtocol.current.get(newProtocol) ?? null;
       const savedTab = lastTabByProtocol.current.get(newProtocol) ?? 0;
@@ -2344,19 +2385,35 @@ function AppContent() {
       // of ms of render work after time away (large peer/message stores).
       // As a transition, React keeps the current UI interactive and renders
       // the incoming protocol's tree interruptibly instead of freezing input
-      // on one blocking commit.
+      // on one blocking commit. Optimistic `pendingProtocolSelection` updates
+      // the rail immediately so the click is not silent for that whole window.
+      // Drop keep-alive visit flags in the *same* transition as setProtocol so
+      // Chat/Peers do not remount for one frame on the new protocol when the
+      // destination tab is Connection (visit useEffect would clear too late).
+      setPendingProtocolSelection(newProtocol);
       startProtocolTransition(() => {
+        resetProtocolTabVisitFlags();
         setActiveTab(targetTab);
         setProtocol(newProtocol);
       });
     },
-    [protocol, activeTab, activePanelIndex, tabsByProtocol],
+    [
+      protocol,
+      pendingProtocolSelection,
+      activeTab,
+      activePanelIndex,
+      tabsByProtocol,
+      resetProtocolTabVisitFlags,
+    ],
   );
 
   useEffect(() => {
     const fallback = enabledProtocols[0];
-    if (fallback && !enabledProtocols.includes(protocol)) handleProtocolChange(fallback);
-  }, [enabledProtocols, protocol, handleProtocolChange]);
+    const effectiveProtocol = pendingProtocolSelection ?? protocol;
+    if (!fallback || enabledProtocols.includes(effectiveProtocol)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop hidden active/pending protocol onto first enabled
+    handleProtocolChange(fallback);
+  }, [enabledProtocols, protocol, pendingProtocolSelection, handleProtocolChange]);
 
   // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
   // whose commit can block for hundreds of ms after time away. Rendering the
@@ -2798,14 +2855,6 @@ function AppContent() {
     ],
   );
 
-  const [chatTabVisited, setChatTabVisited] = useState(false);
-  const [roomsTabVisited, setRoomsTabVisited] = useState(false);
-  const [gamesTabVisited, setGamesTabVisited] = useState(false);
-  const [rrcTabVisited, setRrcTabVisited] = useState(false);
-  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
-  const [nomadTabVisited, setNomadTabVisited] = useState(false);
-  const [peersTabVisited, setPeersTabVisited] = useState(false);
-  const [appTabVisited, setAppTabVisited] = useState(false);
   const [visitedMapProtocols, setVisitedMapProtocols] = useState<ReadonlySet<MeshProtocol>>(
     () => new Set(),
   );
@@ -2823,16 +2872,11 @@ function AppContent() {
   }, [activePanelIndex]);
 
   useEffect(() => {
+    // Deep links / setProtocol outside handleProtocolChange still need a clear.
+    // handleProtocolChange also clears inside the transition for atomicity.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
-    setChatTabVisited(false);
-    setRoomsTabVisited(false);
-    setGamesTabVisited(false);
-    setRrcTabVisited(false);
-    setRemoteTabVisited(false);
-    setNomadTabVisited(false);
-    setPeersTabVisited(false);
-    setAppTabVisited(false);
-  }, [protocol]);
+    resetProtocolTabVisitFlags();
+  }, [protocol, resetProtocolTabVisitFlags]);
 
   useEffect(() => {
     if (capabilities.hasRoomServersPanel && activePanelIndex === ROOMS_PANEL_INDEX) {
@@ -2861,7 +2905,15 @@ function AppContent() {
           lastTabByProtocol.current.set(protocol, activeTab);
           lastPanelByProtocol.current.set(protocol, activePanelIndex);
           localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          setPendingProtocolSelection(null);
           setProtocol('reticulum');
+        } else if (pendingProtocolSelection != null) {
+          // Already on Reticulum but a queued switch would steal focus — cancel it.
+          setPendingProtocolSelection(null);
+          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          startProtocolTransition(() => {
+            setProtocol('reticulum');
+          });
         }
         const gamesTabIndex = findFilteredTabIndexForPanel(
           selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -2877,6 +2929,7 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
+      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasLrgpGames,
       reticulumEnabled,
@@ -2909,7 +2962,14 @@ function AppContent() {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+        setPendingProtocolSelection(null);
         setProtocol('reticulum');
+      } else if (pendingProtocolSelection != null) {
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+        startProtocolTransition(() => {
+          setProtocol('reticulum');
+        });
       }
       const nomadTabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -2924,6 +2984,7 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
+      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasNomadNetworkPanel,
       reticulumEnabled,
@@ -2955,7 +3016,14 @@ function AppContent() {
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+      setPendingProtocolSelection(null);
       setProtocol('reticulum');
+    } else if (pendingProtocolSelection != null) {
+      setPendingProtocolSelection(null);
+      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+      startProtocolTransition(() => {
+        setProtocol('reticulum');
+      });
     }
     const rrcTabIndex = findFilteredTabIndexForPanel(
       selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -2968,6 +3036,7 @@ function AppContent() {
   }, [
     activePanelIndex,
     activeTab,
+    pendingProtocolSelection,
     protocol,
     reticulumCapabilities.hasRrcPanel,
     reticulumEnabled,
@@ -2987,7 +3056,15 @@ function AppContent() {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
+        setPendingProtocolSelection(null);
         setProtocol(targetProtocol);
+      } else if (pendingProtocolSelection != null) {
+        // Stay on the notification's protocol/tab; supersede any queued switch.
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
+        startProtocolTransition(() => {
+          setProtocol(targetProtocol);
+        });
       }
       const tabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, targetProtocol),
@@ -3003,7 +3080,14 @@ function AppContent() {
         setPendingChannelTarget(target.channel);
       }
     },
-    [activePanelIndex, activeTab, enabledProtocols, protocol, tabsByProtocol],
+    [
+      activePanelIndex,
+      activeTab,
+      enabledProtocols,
+      pendingProtocolSelection,
+      protocol,
+      tabsByProtocol,
+    ],
   );
   const openChatFromNotificationRef = useRef(openChatFromNotification);
   useEffect(() => {
@@ -4258,7 +4342,7 @@ function AppContent() {
               header={
                 enabledProtocols.length > 1 ? (
                   <ProtocolSwitcher
-                    protocol={protocol}
+                    protocol={switcherProtocol}
                     protocols={enabledProtocols}
                     unreadByProtocol={protocolSwitcherUnreadByProtocol}
                     onProtocolChange={handleProtocolChange}
@@ -6171,7 +6255,7 @@ function AppContent() {
             shellCompact && enabledProtocols.length > 1 ? (
               <ProtocolSwitcher
                 orientation="horizontal"
-                protocol={protocol}
+                protocol={switcherProtocol}
                 protocols={enabledProtocols}
                 unreadByProtocol={protocolSwitcherUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
