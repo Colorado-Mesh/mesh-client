@@ -97,6 +97,22 @@ describe('relayMeshtasticChatToTak', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('hands on two packets alike but for their packet id as two messages', () => {
+    relayMeshtasticChatToTak(ID, chat({ packetId: 11 }));
+    relayMeshtasticChatToTak(ID, chat({ packetId: 11 }));
+    relayMeshtasticChatToTak(ID, chat({ packetId: 12 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears a nameless echo of this radio's own send, so it hides nothing later", () => {
+    resetTakEchoForTests();
+    rememberTakSend(ID, 1, 'on scene');
+    relayMeshtasticChatToTak(ID, chat({ sender_name: '  ' }));
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    relayMeshtasticChatToTak(ID, chat({ timestamp: NOW + 5000 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('treats the broadcast address as a channel message', () => {
     relayMeshtasticChatToTak(ID, chat({ to: MESHTASTIC_BROADCAST_NODE_NUM }));
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
