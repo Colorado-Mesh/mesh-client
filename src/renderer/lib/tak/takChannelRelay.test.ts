@@ -160,6 +160,29 @@ describe('relayMeshtasticChatToTak', () => {
       expect(sentText()).toBe('👍 to Alice: "meet at the trailhead at 9"');
     });
 
+    it('never quotes a direct message a channel reaction names', () => {
+      upsertMessage(ID, {
+        id: '88',
+        from: ALICE,
+        senderName: 'Alice',
+        to: 0x0badf00d,
+        payload: 'gate code is 4321',
+        channelIndex: 1,
+        timestamp: NOW - 30_000,
+      });
+      relayMeshtasticChatToTak(
+        ID,
+        chat({
+          payload: '👍',
+          emoji: 1,
+          replyId: 88,
+          replyPreviewSender: 'Alice',
+          replyPreviewText: 'gate code is 4321',
+        }),
+      );
+      expect(sentText()).toBe('👍');
+    });
+
     it('hands on a reaction to a message it does not have as the emoji alone', () => {
       relayMeshtasticChatToTak(ID, chat({ payload: '👍', emoji: 1, replyId: 99 }));
       expect(sentText()).toBe('👍');

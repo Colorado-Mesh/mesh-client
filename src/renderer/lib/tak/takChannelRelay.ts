@@ -170,8 +170,9 @@ export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessa
 }
 
 /**
- * What a Meshtastic reply or reaction answers: the sender and text of the message its reply id
- * names, from the preview Chat filled in or from the stored message itself.
+ * What a Meshtastic reply or reaction answers: the sender and text of the channel message its
+ * reply id names, from the stored message or else the preview Chat filled in. None when the id
+ * names a direct message.
  */
 function meshtasticReplyContext(
   identityId: IdentityId,
@@ -180,17 +181,15 @@ function meshtasticReplyContext(
 ): TakReplyContext | undefined {
   const replyId = chat.replyId;
   if (replyId == null || replyId === 0) return undefined;
-  const previewTo = chat.replyPreviewSender?.trim();
-  const previewQuote = chat.replyPreviewText?.trim();
-  // The preview can carry the sender alone; the stored message fills in what it lacks.
-  const parent =
-    previewTo && (previewQuote || !reaction)
-      ? undefined
-      : getIdentityChatMessages(identityId).find(
-          (m) => m.channel === chat.channel && meshtasticPacketIdsEqual(m.packetId, replyId),
-        );
-  const to = previewTo || parent?.sender_name.trim();
+  const matches = getIdentityChatMessages(identityId).filter(
+    (m) => m.channel === chat.channel && meshtasticPacketIdsEqual(m.packetId, replyId),
+  );
+  const parent = matches.find((m) => m.to == null || isMeshtasticBroadcastNodeNum(m.to));
+  // Packet ids travel in the clear, so anyone can name a direct message in a channel reply.
+  // Its sender and text never go to the channel, and neither does a preview, which may hold them.
+  if (!parent && matches.length > 0) return undefined;
+  const to = parent?.sender_name.trim() || chat.replyPreviewSender?.trim();
   if (!to) return undefined;
-  const quote = previewQuote || parent?.payload;
+  const quote = parent?.payload || chat.replyPreviewText?.trim();
   return { reaction, to, ...(quote ? { quote } : {}) };
 }
