@@ -26,6 +26,13 @@ describe('formatTakReplyText', () => {
     expect(out).toBe(`👍 to Alice: "${'😀'.repeat(TAK_REPLY_QUOTE_MAX - 1)}…"`);
   });
 
+  it('never splits an emoji made of several code points', () => {
+    const family = '👨‍👩‍👧';
+    const quote = 'x'.repeat(TAK_REPLY_QUOTE_MAX - 2) + family + 'yz';
+    const out = formatTakReplyText('👍', { reaction: true, to: 'Alice', quote });
+    expect(out).toBe(`👍 to Alice: "${'x'.repeat(TAK_REPLY_QUOTE_MAX - 2)}${family}…"`);
+  });
+
   it('passes a reply on as it is when its target is not known', () => {
     expect(formatTakReplyText('👍', { reaction: true, to: '  ' })).toBe('👍');
     expect(formatTakReplyText('copy', { reaction: false })).toBe('copy');

@@ -12,10 +12,19 @@ export interface TakReplyContext {
   quote?: string;
 }
 
+/** User-perceived characters of `text`, so an emoji made of several code points stays whole. */
+function graphemes(text: string): string[] {
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return Array.from(segmenter.segment(text), (s) => s.segment);
+  }
+  return Array.from(text);
+}
+
 /** `raw` on one line, cut to {@link TAK_REPLY_QUOTE_MAX} characters with an ellipsis. */
 function shortQuote(raw: string | undefined): string {
   const flat = (raw ?? '').replace(/\s+/gu, ' ').trim();
-  const chars = Array.from(flat);
+  const chars = graphemes(flat);
   if (chars.length <= TAK_REPLY_QUOTE_MAX) return flat;
   return (
     chars

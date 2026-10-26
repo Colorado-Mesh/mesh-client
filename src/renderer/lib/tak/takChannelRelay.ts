@@ -178,16 +178,19 @@ function meshtasticReplyContext(
   chat: ChatMessage,
   reaction: boolean,
 ): TakReplyContext | undefined {
-  if (chat.replyId == null || chat.replyId === 0) return undefined;
-  let to = chat.replyPreviewSender?.trim();
-  let quote = chat.replyPreviewText;
-  if (!to) {
-    const parent = getIdentityChatMessages(identityId).find(
-      (m) => m.channel === chat.channel && meshtasticPacketIdsEqual(m.packetId, chat.replyId),
-    );
-    if (!parent) return undefined;
-    to = parent.sender_name;
-    quote = parent.payload;
-  }
+  const replyId = chat.replyId;
+  if (replyId == null || replyId === 0) return undefined;
+  const previewTo = chat.replyPreviewSender?.trim();
+  const previewQuote = chat.replyPreviewText?.trim();
+  // The preview can carry the sender alone; the stored message fills in what it lacks.
+  const parent =
+    previewTo && (previewQuote || !reaction)
+      ? undefined
+      : getIdentityChatMessages(identityId).find(
+          (m) => m.channel === chat.channel && meshtasticPacketIdsEqual(m.packetId, replyId),
+        );
+  const to = previewTo || parent?.sender_name.trim();
+  if (!to) return undefined;
+  const quote = previewQuote || parent?.payload;
   return { reaction, to, ...(quote ? { quote } : {}) };
 }

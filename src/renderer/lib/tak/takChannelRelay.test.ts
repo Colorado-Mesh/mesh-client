@@ -152,6 +152,14 @@ describe('relayMeshtasticChatToTak', () => {
       expect(sentText()).toBe('@Carol copy');
     });
 
+    it("quotes the stored message when Chat's preview names only its sender", () => {
+      relayMeshtasticChatToTak(
+        ID,
+        chat({ payload: '👍', emoji: 1, replyId: 77, replyPreviewSender: 'Alice' }),
+      );
+      expect(sentText()).toBe('👍 to Alice: "meet at the trailhead at 9"');
+    });
+
     it('hands on a reaction to a message it does not have as the emoji alone', () => {
       relayMeshtasticChatToTak(ID, chat({ payload: '👍', emoji: 1, replyId: 99 }));
       expect(sentText()).toBe('👍');
