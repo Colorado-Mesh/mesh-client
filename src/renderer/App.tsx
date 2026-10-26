@@ -2409,10 +2409,11 @@ function AppContent() {
 
   useEffect(() => {
     const fallback = enabledProtocols[0];
-    if (!fallback || enabledProtocols.includes(protocol)) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop hidden active protocol onto first enabled
+    const effectiveProtocol = pendingProtocolSelection ?? protocol;
+    if (!fallback || enabledProtocols.includes(effectiveProtocol)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop hidden active/pending protocol onto first enabled
     handleProtocolChange(fallback);
-  }, [enabledProtocols, protocol, handleProtocolChange]);
+  }, [enabledProtocols, protocol, pendingProtocolSelection, handleProtocolChange]);
 
   // Section-tab switches (e.g. RRC <-> Chat) reactivate keep-alive panels
   // whose commit can block for hundreds of ms after time away. Rendering the
@@ -2906,6 +2907,13 @@ function AppContent() {
           localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
           setPendingProtocolSelection(null);
           setProtocol('reticulum');
+        } else if (pendingProtocolSelection != null) {
+          // Already on Reticulum but a queued switch would steal focus — cancel it.
+          setPendingProtocolSelection(null);
+          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+          startProtocolTransition(() => {
+            setProtocol('reticulum');
+          });
         }
         const gamesTabIndex = findFilteredTabIndexForPanel(
           selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -2921,6 +2929,7 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
+      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasLrgpGames,
       reticulumEnabled,
@@ -2955,6 +2964,12 @@ function AppContent() {
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
         setPendingProtocolSelection(null);
         setProtocol('reticulum');
+      } else if (pendingProtocolSelection != null) {
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+        startProtocolTransition(() => {
+          setProtocol('reticulum');
+        });
       }
       const nomadTabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -2969,6 +2984,7 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
+      pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasNomadNetworkPanel,
       reticulumEnabled,
@@ -3002,6 +3018,12 @@ function AppContent() {
       localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
       setPendingProtocolSelection(null);
       setProtocol('reticulum');
+    } else if (pendingProtocolSelection != null) {
+      setPendingProtocolSelection(null);
+      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+      startProtocolTransition(() => {
+        setProtocol('reticulum');
+      });
     }
     const rrcTabIndex = findFilteredTabIndexForPanel(
       selectByProtocol(tabsByProtocol, 'reticulum'),
@@ -3014,6 +3036,7 @@ function AppContent() {
   }, [
     activePanelIndex,
     activeTab,
+    pendingProtocolSelection,
     protocol,
     reticulumCapabilities.hasRrcPanel,
     reticulumEnabled,
@@ -3035,6 +3058,13 @@ function AppContent() {
         localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
         setPendingProtocolSelection(null);
         setProtocol(targetProtocol);
+      } else if (pendingProtocolSelection != null) {
+        // Stay on the notification's protocol/tab; supersede any queued switch.
+        setPendingProtocolSelection(null);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
+        startProtocolTransition(() => {
+          setProtocol(targetProtocol);
+        });
       }
       const tabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, targetProtocol),
@@ -3050,7 +3080,14 @@ function AppContent() {
         setPendingChannelTarget(target.channel);
       }
     },
-    [activePanelIndex, activeTab, enabledProtocols, protocol, tabsByProtocol],
+    [
+      activePanelIndex,
+      activeTab,
+      enabledProtocols,
+      pendingProtocolSelection,
+      protocol,
+      tabsByProtocol,
+    ],
   );
   const openChatFromNotificationRef = useRef(openChatFromNotification);
   useEffect(() => {
