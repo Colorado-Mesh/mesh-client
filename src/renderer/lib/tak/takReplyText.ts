@@ -21,6 +21,17 @@ function graphemes(text: string): string[] {
   return Array.from(text);
 }
 
+/** The longest start of `text` within `maxUnits` UTF-16 units that ends on a whole character. */
+export function capTakText(text: string, maxUnits: number): string {
+  if (text.length <= maxUnits) return text;
+  let out = '';
+  for (const g of graphemes(text)) {
+    if (out.length + g.length > maxUnits) break;
+    out += g;
+  }
+  return out;
+}
+
 /** `raw` on one line, cut to {@link TAK_REPLY_QUOTE_MAX} characters with an ellipsis. */
 function shortQuote(raw: string | undefined): string {
   const flat = (raw ?? '').replace(/\s+/gu, ' ').trim();

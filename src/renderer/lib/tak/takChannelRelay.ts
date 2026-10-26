@@ -15,7 +15,7 @@ import type { ChatMessage, IdentityId } from '../types';
 import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
-import { formatTakReplyText, type TakReplyContext } from './takReplyText';
+import { capTakText, formatTakReplyText, type TakReplyContext } from './takReplyText';
 import { isFirstSeen } from './takSeenOnce';
 import { findServedChannel } from './takServedChannels';
 
@@ -74,7 +74,7 @@ export function resetTakRelayedChannelLines(): void {
 /** Hand one channel message to TAK clients, if its channel is served to them. */
 function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage): void {
   const channel = findServedChannel(identityId, msg.channelIndex);
-  const text = msg.text.trim().slice(0, TAK_GEOCHAT_TEXT_MAX_LEN);
+  const text = capTakText(msg.text.trim(), TAK_GEOCHAT_TEXT_MAX_LEN);
   const sender = msg.senderName.trim().slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN);
   if (!channel || !text) return;
   if (!sender) {
@@ -100,7 +100,7 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
-    text: formatTakReplyText(text, msg.reply).slice(0, TAK_GEOCHAT_TEXT_MAX_LEN),
+    text: capTakText(formatTakReplyText(text, msg.reply), TAK_GEOCHAT_TEXT_MAX_LEN),
     timeMs: msg.timestampMs,
     ...(msg.latitude != null && msg.longitude != null
       ? { latitude: msg.latitude, longitude: msg.longitude }
