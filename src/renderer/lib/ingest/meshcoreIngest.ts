@@ -356,6 +356,7 @@ function handleTextMessage(
       channelIndex: event.payload.channelIndex,
       senderName: displayName,
       text: channelSender.payload,
+      wireText: event.payload.payload,
       timestampMs: wireTimestampMs,
       // This radio's own sends are left out above, so this is always another node.
       fromOther: true,

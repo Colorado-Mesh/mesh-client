@@ -9,7 +9,7 @@ import { setTakChannels, setTakRadio, useTakChannelStore } from '../../stores/ta
 import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../../stores/takSinkStore';
 import type { ChatMessage } from '../types';
-import { relayMeshtasticChatToTak } from './takChannelRelay';
+import { relayMeshtasticChatToTak, resetTakRelayedChannelLines } from './takChannelRelay';
 import { resetTakRelayedDirectMessages } from './takDirectMessages';
 import { rememberTakSend, resetTakEchoForTests } from './takEchoGuard';
 
@@ -43,6 +43,7 @@ describe('relayMeshtasticChatToTak', () => {
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'selected');
     useTakRelayPrefsStore.getState().setChatChannel(ID, KEY, true);
     useNodeStore.setState({ nodes: {} });
+    resetTakRelayedChannelLines();
     setTakSinkActive(true);
   });
 
@@ -54,12 +55,14 @@ describe('relayMeshtasticChatToTak', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not mirror back a TAK client message heard off the mesh, once', () => {
+  it('does not mirror back a TAK client message heard off the mesh, however many copies', () => {
     resetTakEchoForTests();
     rememberTakSend(ID, 1, '[VIPER] on scene');
     relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
-    expect(pushChatMessage).not.toHaveBeenCalled();
     relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene' }));
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    // The same words heard later are someone's new message.
+    relayMeshtasticChatToTak(ID, chat({ payload: '[VIPER] on scene', timestamp: NOW + 5000 }));
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -83,6 +86,31 @@ describe('relayMeshtasticChatToTak', () => {
       text: 'on scene',
       timeMs: NOW,
     });
+  });
+
+  it('hands each message to TAK clients once, however many copies arrive', () => {
+    relayMeshtasticChatToTak(ID, chat());
+    relayMeshtasticChatToTak(ID, chat());
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    // The same words sent again later are a new message.
+    relayMeshtasticChatToTak(ID, chat({ timestamp: NOW + 5000 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('hands on two packets alike but for their packet id as two messages', () => {
+    relayMeshtasticChatToTak(ID, chat({ packetId: 11 }));
+    relayMeshtasticChatToTak(ID, chat({ packetId: 11 }));
+    relayMeshtasticChatToTak(ID, chat({ packetId: 12 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears a nameless echo of this radio's own send, so it hides nothing later", () => {
+    resetTakEchoForTests();
+    rememberTakSend(ID, 1, 'on scene');
+    relayMeshtasticChatToTak(ID, chat({ sender_name: '  ' }));
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    relayMeshtasticChatToTak(ID, chat({ timestamp: NOW + 5000 }));
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
   it('treats the broadcast address as a channel message', () => {

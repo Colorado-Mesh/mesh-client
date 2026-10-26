@@ -12,6 +12,7 @@ import type { ChatMessage, IdentityId } from '../types';
 import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
+import { isFirstSeen } from './takSeenOnce';
 import { findServedChannel } from './takServedChannels';
 
 export interface TakChannelMessage {
@@ -21,6 +22,17 @@ export interface TakChannelMessage {
   /** Message text without the `NAME: ` prefix. */
   text: string;
   timestampMs: number;
+  /**
+   * The packet's id where the protocol has one (Meshtastic), so two packets alike in every other
+   * way are two messages; every copy of one packet carries the same id.
+   */
+  packetId?: number;
+  /**
+   * The text exactly as it came off the radio, where the protocol has no packet id (MeshCore):
+   * `text` loses a reply's `@[name]` target, so two replies alike but for whom they answer
+   * would otherwise match. Every copy of one packet carries the same wire text.
+   */
+  wireText?: string;
   hops?: number;
   /**
    * Known to come from another node, so it cannot be this radio's own send heard back. Matters
@@ -32,15 +44,53 @@ export interface TakChannelMessage {
   longitude?: number;
 }
 
+/** Another copy of a channel message arrives within this long of the first. */
+const RELAYED_CHANNEL_TTL_MS = 10 * 60 * 1000;
+const RELAYED_CHANNEL_MAX = 512;
+/** Channel messages already handed to TAK, by radio, channel, sender, send time and text. */
+const relayedChannelLines = new Map<string, number>();
+
+/**
+ * True the first time a channel message is seen within the window. ATAK gives every message it
+ * is handed a new id, so a second copy shows twice there. The radio can hand mesh-client the
+ * same packet more than once, and Chat merges the copies by parsing them, which a reply or
+ * reaction can come out of differently each time; the sender's own send time and text do not.
+ */
+function isFirstChannelCopy(key: string, nowMs: number): boolean {
+  return isFirstSeen(relayedChannelLines, key, nowMs, RELAYED_CHANNEL_TTL_MS, RELAYED_CHANNEL_MAX);
+}
+
+/** Forget which channel messages were relayed; for tests. */
+export function resetTakRelayedChannelLines(): void {
+  relayedChannelLines.clear();
+}
+
 /** Hand one channel message to TAK clients, if its channel is served to them. */
 function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage): void {
   const channel = findServedChannel(identityId, msg.channelIndex);
   const text = msg.text.trim().slice(0, TAK_GEOCHAT_TEXT_MAX_LEN);
   const sender = msg.senderName.trim().slice(0, TAK_GEOCHAT_CALLSIGN_MAX_LEN);
   if (!channel || !text) return;
+  if (!sender) {
+    // Never shown, but it can still be this radio's own send heard back: clear its echo so a
+    // later message with the same words is not taken for it.
+    if (!msg.fromOther) consumeTakEcho(identityId, msg.channelIndex, text);
+    return;
+  }
+  // Before the echo check: a TAK client's own message can be heard back more than once, and the
+  // echo guard only catches the first copy.
+  const copyKey = [
+    identityId,
+    msg.channelIndex,
+    msg.packetId ?? '',
+    msg.wireText ?? '',
+    sender,
+    msg.timestampMs,
+    text,
+  ].join('\u0000');
+  if (!isFirstChannelCopy(copyKey, Date.now())) return;
   // A TAK client's own message heard back off the mesh: the clients already have it.
   if (!msg.fromOther && consumeTakEcho(identityId, msg.channelIndex, text)) return;
-  if (!sender) return;
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
@@ -97,6 +147,7 @@ export function relayMeshtasticChatToTak(identityId: IdentityId, chat: ChatMessa
   bridgeChannelToGeochat(identityId, {
     channelIndex: chat.channel,
     senderName: chat.sender_name,
+    ...(chat.packetId != null && chat.packetId !== 0 ? { packetId: chat.packetId } : {}),
     ...(myNodeNum > 0 && chat.sender_id !== myNodeNum ? { fromOther: true } : {}),
     text: chat.payload,
     timestampMs: effectiveMessageTimestampMs(chat.timestamp),
