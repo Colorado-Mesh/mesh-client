@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Berichtenlimiet inhalen",
     "maxCollectedMessagesHint": "Maximaal aantal berichten dat een Catch-up mag verzamelen (100–5000). Standaard 2000. Hogere waarden duren langer en hebben mogelijk een grotere time-out nodig.",
     "capacityHint": "Over {{count}} typische mesh-berichten passen in één inferentiepass met deze engine (eerst nieuwer). Bijpraten kan tot {{ceiling}} berichten via meerdere doorgangen verwerken. Langere berichten gebruiken meer van elke doorgang. Grote reeksen hebben een langere time-out nodig.",
-    "capacityHintChooseEngine": "Ingebouwde OS AI en gedownloade modellen passen ongeveer {{onDevice}} typische berichten per pas; een lokale of externe server over {{endpoint}}. Met multi-pass kun je tot {{ceiling}} berichten inhalen. Verhoog de berichtlimiet en time-out voor drukke mazen."
+    "capacityHintChooseEngine": "Ingebouwde OS AI en gedownloade modellen passen ongeveer {{onDevice}} typische berichten per pas; een lokale of externe server over {{endpoint}}. Met multi-pass kun je tot {{ceiling}} berichten inhalen. Verhoog de berichtlimiet en time-out voor drukke mazen.",
+    "lowThreadBudgetWarning": "Dit apparaat heeft slechts {{count}} WASM-draad (en). Gedownloade modeloverzichten hebben meestal ongeveer 6 of meer nodig om goed te werken en zullen hier langer duren. Geef de voorkeur aan een andere motor of verhoog de time-out hieronder."
   }
 }

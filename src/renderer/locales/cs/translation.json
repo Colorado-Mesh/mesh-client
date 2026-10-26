@@ -7785,6 +7785,7 @@
     "maxCollectedMessages": "Limit pro dohánění zpráv",
     "maxCollectedMessagesHint": "Maximální počet zpráv, které může jeden dohnat (100–5000). Výchozí 2000. Vyšší hodnoty trvají déle a mohou vyžadovat delší časový limit.",
     "capacityHint": "Typické síťové zprávy {{count}} odpovídají jednomu inferenčnímu průchodu s tímto motorem (novější jako první). Dohnat můžeš až {{ceiling}} zpráv prostřednictvím více průkazů. Delší zprávy používají více z každého průchodu. Velké rozsahy vyžadují delší časový limit.",
-    "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým zprávám na jeden průchod; místní nebo vzdálený server přibližně {{endpoint}}. Dohánění může pokrýt až {{ceiling}} zprávy s více průchody. Zvyšte limit zpráv a časový limit pro zaneprázdněné sítě."
+    "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým zprávám na jeden průchod; místní nebo vzdálený server přibližně {{endpoint}}. Dohánění může pokrýt až {{ceiling}} zprávy s více průchody. Zvyšte limit zpráv a časový limit pro zaneprázdněné sítě.",
+    "lowThreadBudgetWarning": "Toto zařízení má pouze {{count}} Dohnat WASM vlákna. Souhrny stažených modelů obvykle potřebují asi 6 nebo více, aby fungovaly dobře, a zde to bude trvat déle. Preferujte jiný motor nebo zvyšte časový limit níže."
   }
 }

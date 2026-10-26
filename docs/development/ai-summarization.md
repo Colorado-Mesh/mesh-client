@@ -121,7 +121,11 @@ CDN compatibility fallback and suppresses native logging. Vite and the built
 `Cross-Origin-Embedder-Policy: credentialless`. Both `pnpm start` and installed apps switch origins only after the
 legacy storage copy verifies; failure or a recovery flag keeps `file://`. When
 `crossOriginIsolated` is true, `SharedArrayBuffer` enables about half of
-`navigator.hardwareConcurrency` (capped at 8); otherwise Wllama uses one thread. `pnpm run dev`
+`navigator.hardwareConcurrency` (capped at 8); otherwise Wllama uses one thread. App → AI
+warns when that budget is below 6 (`isBundledWllamaThreadBudgetLow`); the floor is a comfort
+threshold from maintainer timing (~45–60s for ~240 messages at 6 threads on one machine), not a
+wall-clock guarantee—core speed and model size still dominate, so the UI stays platform-neutral
+and does not predict duration. `pnpm run dev`
 explicitly selects Vite; a running Vite server cannot redirect `pnpm start`. See
 [renderer origin and recovery](renderer-origin-coi.md) for the startup matrix, migration, recovery
 flags, and local/installed smoke checks, and [renderer storage](renderer-storage.md)

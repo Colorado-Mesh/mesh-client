@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Limite de mensagens de recuperação",
     "maxCollectedMessagesHint": "Máximo de mensagens que um Catch up pode coletar (100–5000). Padrão 2000. Valores mais altos demoram mais e podem precisar de um tempo limite maior.",
     "capacityHint": "Sobre {{count}} mensagens de malha típicas cabem uma passagem de inferência com este mecanismo (mais recentes primeiro). A atualização pode processar até {{ceiling}} mensagens através de vários passes. Mensagens mais longas usam mais de cada passagem. Grandes faixas precisam de um tempo limite mais longo.",
-    "capacityHintChooseEngine": "Os modelos integrados de OS AI e baixados se encaixam em cerca de {{onDevice}} mensagens típicas por passagem; um servidor local ou remoto sobre {{endpoint}}. A atualização pode cobrir até {{ceiling}} mensagens com várias passagens. Aumente o limite de mensagens e o tempo limite para malhas ocupadas."
+    "capacityHintChooseEngine": "Os modelos integrados de OS AI e baixados se encaixam em cerca de {{onDevice}} mensagens típicas por passagem; um servidor local ou remoto sobre {{endpoint}}. A atualização pode cobrir até {{ceiling}} mensagens com várias passagens. Aumente o limite de mensagens e o tempo limite para malhas ocupadas.",
+    "lowThreadBudgetWarning": "Este dispositivo tem apenas {{count}} Atualizar thread(s) WASM. Os resumos de modelos baixados geralmente precisam de cerca de 6 ou mais para funcionar bem e levarão mais tempo aqui. Prefira outro motor ou aumente o tempo limite abaixo."
   }
 }
