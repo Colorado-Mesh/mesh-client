@@ -12,6 +12,7 @@ import type { ChatMessage, IdentityId } from '../types';
 import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
+import { isFirstSeen } from './takSeenOnce';
 import { findServedChannel } from './takServedChannels';
 
 export interface TakChannelMessage {
@@ -45,15 +46,7 @@ const relayedChannelLines = new Map<string, number>();
  * reaction can come out of differently each time; the sender's own send time and text do not.
  */
 function isFirstChannelCopy(key: string, nowMs: number): boolean {
-  for (const [k, at] of relayedChannelLines) {
-    if (nowMs - at < RELAYED_CHANNEL_TTL_MS && relayedChannelLines.size < RELAYED_CHANNEL_MAX) {
-      break;
-    }
-    relayedChannelLines.delete(k);
-  }
-  if (relayedChannelLines.has(key)) return false;
-  relayedChannelLines.set(key, nowMs);
-  return true;
+  return isFirstSeen(relayedChannelLines, key, nowMs, RELAYED_CHANNEL_TTL_MS, RELAYED_CHANNEL_MAX);
 }
 
 /** Forget which channel messages were relayed; for tests. */

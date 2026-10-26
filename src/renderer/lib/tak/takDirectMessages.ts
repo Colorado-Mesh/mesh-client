@@ -21,6 +21,7 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import { isMeshcoreDmExcludedHwModel } from '../meshcoreUtils';
 import { resolveReticulumChatLxmfDestination } from '../reticulum/resolveReticulumChatLxmfDest';
 import type { IdentityId, MeshNode } from '../types';
+import { isFirstSeen } from './takSeenOnce';
 
 /**
  * Whether a Reticulum peer's LXMF delivery destination is known under its own node id, so a
@@ -91,13 +92,7 @@ const relayedDms = new Map<string, number>();
  * hear its ack sends the same message again, with the same send time and text.
  */
 function isFirstCopy(key: string, nowMs: number): boolean {
-  for (const [k, at] of relayedDms) {
-    if (nowMs - at < RELAYED_DM_TTL_MS && relayedDms.size < RELAYED_DM_MAX) break;
-    relayedDms.delete(k);
-  }
-  if (relayedDms.has(key)) return false;
-  relayedDms.set(key, nowMs);
-  return true;
+  return isFirstSeen(relayedDms, key, nowMs, RELAYED_DM_TTL_MS, RELAYED_DM_MAX);
 }
 
 /** Forget which direct messages were relayed; for tests. */
