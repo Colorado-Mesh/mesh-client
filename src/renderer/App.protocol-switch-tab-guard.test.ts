@@ -36,4 +36,41 @@ describe('App protocol-switch tab guard (regression)', () => {
       body.indexOf('setActiveTab('),
     );
   });
+
+  it('clears keep-alive visit flags inside the protocol transition (not only in useEffect)', () => {
+    const start = SOURCE.indexOf('const handleProtocolChange');
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('const handleTabSelect', start);
+    const body = SOURCE.slice(start, end > start ? end : start + 8000);
+    expect(body).toContain('setPendingProtocolSelection(newProtocol)');
+    const resetIdx = body.indexOf('resetProtocolTabVisitFlags()');
+    expect(resetIdx).toBeGreaterThan(-1);
+    const transitionStart = body.lastIndexOf('startProtocolTransition(() => {', resetIdx);
+    expect(transitionStart).toBeGreaterThan(-1);
+    const setProtocolIdx = body.indexOf('setProtocol(newProtocol)', resetIdx);
+    expect(setProtocolIdx).toBeGreaterThan(resetIdx);
+    // Both must sit in the same transition callback (before its closing `});`).
+    const callbackClose = body.indexOf('});', setProtocolIdx);
+    expect(callbackClose).toBeGreaterThan(setProtocolIdx);
+    expect(body.slice(transitionStart, callbackClose)).toContain('resetProtocolTabVisitFlags()');
+    expect(body.slice(transitionStart, callbackClose)).toContain('setProtocol(newProtocol)');
+  });
+
+  it('cancels an in-flight protocol switch when re-selecting the active protocol', () => {
+    const start = SOURCE.indexOf('const handleProtocolChange');
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('const handleTabSelect', start);
+    const body = SOURCE.slice(start, end > start ? end : start + 8000);
+    expect(body).toContain('if (newProtocol === pendingProtocolSelection) return;');
+    const sameProtocolBranch = body.indexOf('if (newProtocol === protocol)');
+    expect(sameProtocolBranch).toBeGreaterThan(-1);
+    const nextSibling =
+      body.indexOf('\n      const savedPanel', sameProtocolBranch) > sameProtocolBranch
+        ? body.indexOf('\n      const savedPanel', sameProtocolBranch)
+        : body.length;
+    const branch = body.slice(sameProtocolBranch, nextSibling);
+    expect(branch).toContain('if (pendingProtocolSelection == null) return;');
+    expect(branch).toContain('setPendingProtocolSelection(null)');
+    expect(branch).toContain('setProtocol(protocol)');
+  });
 });
