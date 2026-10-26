@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Limite de messages de rattrapage",
     "maxCollectedMessagesHint": "Nombre maximum de messages qu'un Rattrapage peut collecter (100–5000). 2000 par défaut. Les valeurs plus élevées prennent plus de temps et peuvent nécessiter un délai d'attente plus long.",
     "capacityHint": "Environ {{count}} messages maillés typiques correspondent à une passe d'inférence avec ce moteur (plus récent en premier). Le rattrapage peut traiter jusqu'à {{ceiling}} messages via plusieurs passes. Les messages plus longs utilisent plus de chaque passe. Les grandes plages nécessitent un délai d'attente plus long.",
-    "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages typiques par passage ; un serveur local ou distant à propos de {{endpoint}}. Le rattrapage peut couvrir jusqu'à {{ceiling}} messages avec plusieurs passes. Augmentez la limite de message et le délai d'expiration pour les maillages occupés."
+    "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages typiques par passage ; un serveur local ou distant à propos de {{endpoint}}. Le rattrapage peut couvrir jusqu'à {{ceiling}} messages avec plusieurs passes. Augmentez la limite de message et le délai d'expiration pour les maillages occupés.",
+    "lowThreadBudgetWarning": "Cet appareil n'a que {{count}} fil(s) de rattrapage WASM. Les résumés de modèles téléchargés ont généralement besoin d'environ 6 ou plus pour bien fonctionner et prendront plus de temps ici. Préférez un autre moteur ou augmentez le délai d'attente ci-dessous."
   }
 }

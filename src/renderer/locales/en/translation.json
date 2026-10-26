@@ -7705,6 +7705,7 @@
     "capacityHint": "About {{count}} typical mesh messages fit one inference pass with this engine. Catch up can process up to {{ceiling}} messages via multiple passes. Longer messages use more of each pass. Large ranges need a longer timeout.",
     "capacityHintChooseEngine": "Built-in OS AI and downloaded models fit about {{onDevice}} typical messages per pass; a local or remote server about {{endpoint}}. Catch up can cover up to {{ceiling}} messages with multi-pass. Raise the message limit and timeout for busy meshes.",
     "offlineSummaryHint": "Downloads use the internet once. Summaries run offline on this device. Large conversations can take a few minutes with downloaded models. Larger models need more memory.",
+    "lowThreadBudgetWarning": "This device has only {{count}} Catch up WASM thread(s). Downloaded-model summaries usually need about 6 or more to run well and will take longer here. Prefer another engine, or raise the timeout below.",
     "timeoutSeconds": "Summary timeout (seconds)",
     "timeoutHint": "Maximum time for a whole Catch up, including every multi-pass step and model loading. Choose 30–1800 seconds. Large ranges often need 10–30 minutes on downloaded models. You can cancel at any time.",
     "maxCollectedMessages": "Catch up message limit",

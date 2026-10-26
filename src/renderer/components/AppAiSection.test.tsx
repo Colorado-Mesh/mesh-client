@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import * as aiWorkerHost from '@/renderer/lib/aiWorkerHost';
 import i18n from '@/renderer/lib/i18n';
 import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import type { AiProviderStatus } from '@/shared/ai-types';
@@ -65,6 +66,33 @@ it('explains offline processing time in the downloaded-model settings', async ()
   expect(
     await screen.findByText(/Large conversations can take a few minutes with downloaded models/),
   ).toBeVisible();
+});
+
+it('warns when the bundled WASM thread budget is below six', async () => {
+  vi.spyOn(aiWorkerHost, 'isBundledWllamaThreadBudgetLow').mockReturnValue(true);
+  vi.spyOn(aiWorkerHost, 'bundledWllamaThreadCount').mockReturnValue(2);
+  await openSettings({ engine: 'bundled' });
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    /only 2 Catch up WASM thread\(s\).*about 6 or more/i,
+  );
+});
+
+it('hides the thread-budget warning when the bundled budget is sufficient', async () => {
+  vi.spyOn(aiWorkerHost, 'isBundledWllamaThreadBudgetLow').mockReturnValue(false);
+  vi.spyOn(aiWorkerHost, 'bundledWllamaThreadCount').mockReturnValue(6);
+  await openSettings({ engine: 'bundled' });
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
+it('hides the thread-budget warning for non-bundled engines even when the budget is low', async () => {
+  vi.spyOn(aiWorkerHost, 'isBundledWllamaThreadBudgetLow').mockReturnValue(true);
+  vi.spyOn(aiWorkerHost, 'bundledWllamaThreadCount').mockReturnValue(1);
+  await openSettings({
+    engine: 'local',
+    wireFormat: 'openai',
+    baseUrl: 'http://127.0.0.1:11434',
+  });
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 async function openSettings(patch: Partial<AiProviderStatus> = {}) {

@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  bundledWllamaThreadCount,
+  isBundledWllamaThreadBudgetLow,
+} from '@/renderer/lib/aiWorkerHost';
+import {
   refreshAiStatus,
   subscribeAiEvents,
   useAiSummaryStore,
@@ -252,6 +256,13 @@ export function AppAiSection() {
             <div data-setting-anchor="app.aiProvider.catalog" className="space-y-3">
               <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
               <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
+              {isBundledWllamaThreadBudgetLow() && (
+                <p role="alert" className="text-xs text-orange-400">
+                  {t('aiSummary.lowThreadBudgetWarning', {
+                    count: bundledWllamaThreadCount(),
+                  })}
+                </p>
+              )}
               {models.map((item) => {
                 const p = progress.find((p) => p.modelId === item.id);
                 const downloading = p && ['queued', 'downloading', 'verifying'].includes(p.state);
