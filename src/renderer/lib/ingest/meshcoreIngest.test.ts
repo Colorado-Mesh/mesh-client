@@ -815,6 +815,39 @@ describe('meshcore ingest TAK channel relay', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
+  describe('replies and reactions', () => {
+    const deliver = (text: string, sec: number) => {
+      const id = `ch:3:${sec}:${text}`;
+      const timestamp = sec * 1000;
+      upsertMessage(TAK_ID, { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp });
+      meshcoreIngestHandleTextMessage(TAK_ID, {
+        type: 'text_message',
+        payload: { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp },
+      });
+    };
+    const sentText = () => (pushChatMessage.mock.calls.at(-1)?.[0] as { text: string }).text;
+
+    beforeEach(() => {
+      serveTakChannel(TAK_ID, 3, '0123456789abcdef');
+      deliver('Alice: meet at the trailhead at 9', 1_700_000_900);
+    });
+
+    it.each([
+      ['a reaction', 'Bob: @[Alice] 👍', '👍 to Alice: "meet at the trailhead at 9"'],
+      [
+        'a keyed reaction',
+        'Bob: @[Alice#1700000900000] 👍',
+        '👍 to Alice: "meet at the trailhead at 9"',
+      ],
+      ['a reply', 'Bob: @[Alice] copy that', '@Alice copy that'],
+      ['a reply to a message not heard', 'Bob: @[Carol] you there?', '@Carol you there?'],
+      ['a plain message', 'Bob: on my way', 'on my way'],
+    ])('hands on %s with what it answers', (_label, wire, expected) => {
+      deliver(wire, 1_700_000_960);
+      expect(sentText()).toBe(expected);
+    });
+  });
+
   it('hands on two replies alike but for whom they answer, sent in the same second', () => {
     serveTakChannel(TAK_ID, 3, '0123456789abcdef');
     const deliver = (text: string, sec: number) => {
