@@ -31,6 +31,8 @@ import {
 } from '../meshcore/meshcorePubKeyRegistry';
 import {
   buildMeshcoreRoomIncomingMessage,
+  meshcoreMessageMatchesReplyKey,
+  normalizeMeshcoreIncomingText,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
@@ -55,6 +57,7 @@ import { effectiveMessageTimestampMs } from '../nodeStatus';
 import type { DomainEvent } from '../protocols/Protocol';
 import { relayMeshcoreChannelToTak } from '../tak/takChannelRelay';
 import { relayDirectMessageToTak } from '../tak/takDirectMessages';
+import type { TakReplyContext } from '../tak/takReplyText';
 import type { ChatMessage, IdentityId } from '../types';
 
 export interface MeshcoreIngestOptions {
@@ -180,6 +183,37 @@ function resolveRoomServerIdForIngest(
     return event.from;
   }
   return event.from;
+}
+
+/**
+ * What a MeshCore channel reply or reaction answers, for the TAK line: the sender of the message
+ * Chat linked it to, or else the `@[name]` the sender addressed, and for a reaction the text it
+ * reacts to. None for a message that answers nobody.
+ */
+function meshcoreTakReplyContext(
+  stored: ChatMessage,
+  wireText: string,
+  thread: readonly ChatMessage[],
+): TakReplyContext | undefined {
+  const replyId = stored.replyId;
+  const parent =
+    replyId != null
+      ? thread.find(
+          (m) =>
+            m.channel === stored.channel &&
+            m.emoji == null &&
+            m.timestamp < stored.timestamp &&
+            meshcoreMessageMatchesReplyKey(m, replyId),
+        )
+      : undefined;
+  const to =
+    stored.replyPreviewSender?.trim() ||
+    parent?.sender_name.trim() ||
+    normalizeMeshcoreIncomingText(wireText).bracketTargetName?.trim();
+  if (!to) return undefined;
+  const reaction = stored.emoji != null;
+  const quote = stored.replyPreviewText ?? parent?.payload;
+  return { reaction, to, ...(reaction && quote ? { quote } : {}) };
 }
 
 function handleTextMessage(
@@ -352,11 +386,13 @@ function handleTextMessage(
     const identityNodes = useNodeStore.getState().nodes[identityId] as
       Record<number, NodeRecord> | undefined;
     const senderNode = identityNodes?.[senderId];
+    const reply = meshcoreTakReplyContext(stored, event.payload.payload, messages);
     relayMeshcoreChannelToTak(identityId, {
       channelIndex: event.payload.channelIndex,
       senderName: displayName,
       text: channelSender.payload,
       wireText: event.payload.payload,
+      ...(reply ? { reply } : {}),
       timestampMs: wireTimestampMs,
       // This radio's own sends are left out above, so this is always another node.
       fromOther: true,
