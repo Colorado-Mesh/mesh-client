@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Menangkap batas pesan",
     "maxCollectedMessagesHint": "Pesan maksimum yang dapat dikumpulkan oleh satu Penangkapan (100 -5000). Default 2000. Nilai yang lebih tinggi membutuhkan waktu lebih lama dan mungkin memerlukan batas waktu yang lebih besar.",
     "capacityHint": "Tentang {{count}} pesan mesh biasa sesuai dengan satu pass inferensi dengan mesin ini (lebih baru terlebih dahulu). Mengejar ketinggalan bisa memproses hingga {{ceiling}} pesan melalui beberapa pass. Pesan yang lebih panjang menggunakan lebih banyak pass. Rentang yang besar membutuhkan batas waktu yang lebih lama.",
-    "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan khas per pass; server lokal atau jarak jauh untuk {{endpoint}}. Kejar - kejaran bisa mencakup hingga {{ceiling}} pesan dengan multi - pass. Naikkan batas pesan dan batas waktu untuk jerat yang sibuk."
+    "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan khas per pass; server lokal atau jarak jauh untuk {{endpoint}}. Kejar - kejaran bisa mencakup hingga {{ceiling}} pesan dengan multi - pass. Naikkan batas pesan dan batas waktu untuk jerat yang sibuk.",
+    "lowThreadBudgetWarning": "Perangkat ini hanya memiliki {{count}} Tangkap utas WASM. Ringkasan model yang diunduh biasanya membutuhkan sekitar 6 atau lebih untuk berjalan dengan baik dan akan memakan waktu lebih lama di sini. Pilih mesin lain, atau naikkan batas waktu di bawah ini."
   }
 }

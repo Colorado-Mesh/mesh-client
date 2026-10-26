@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Límite de mensajes para ponerse al día",
     "maxCollectedMessagesHint": "Mensajes máximos que un Catch up puede recopilar (100–5000). Predeterminado 2000. Los valores más altos tardan más y pueden necesitar un tiempo de espera mayor.",
     "capacityHint": "Aproximadamente {{count}} los mensajes de malla típicos se ajustan a un paso de inferencia con este motor (primero los más nuevos). Póngase al día puede procesar hasta {{ceiling}} mensajes a través de varios pases. Los mensajes más largos usan más de cada pase. Los rangos grandes necesitan un tiempo de espera más largo.",
-    "capacityHintChooseEngine": "La IA del sistema operativo incorporado y los modelos descargados caben alrededor de {{onDevice}} mensajes típicos por pase; un servidor local o remoto alrededor de {{endpoint}}. Ponerse al día puede cubrir hasta {{ceiling}} mensajes con varias pasadas. Aumente el límite de mensajes y el tiempo de espera para las mallas ocupadas."
+    "capacityHintChooseEngine": "La IA del sistema operativo incorporado y los modelos descargados caben alrededor de {{onDevice}} mensajes típicos por pase; un servidor local o remoto alrededor de {{endpoint}}. Ponerse al día puede cubrir hasta {{ceiling}} mensajes con varias pasadas. Aumente el límite de mensajes y el tiempo de espera para las mallas ocupadas.",
+    "lowThreadBudgetWarning": "Este dispositivo solo tiene {{count}} hilos WASM para ponerse al día. Los resúmenes de modelos descargados generalmente necesitan alrededor de 6 o más para funcionar bien y tomarán más tiempo aquí. Prefiera otro motor o aumente el tiempo de espera a continuación."
   }
 }

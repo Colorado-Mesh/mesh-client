@@ -7709,6 +7709,7 @@
     "maxCollectedMessages": "Raggiungi il limite di messaggi",
     "maxCollectedMessagesHint": "Numero massimo di messaggi che un Recupero può raccogliere (100–5000). Valore predefinito 2000. I valori più alti richiedono più tempo e potrebbero richiedere un timeout maggiore.",
     "capacityHint": "Circa {{count}} i messaggi mesh tipici si adattano a un passaggio di inferenza con questo motore (prima i più recenti). Il recupero può elaborare fino a {{ceiling}} messaggi tramite più passaggi. I messaggi più lunghi utilizzano più di ogni passaggio. Le grandi gamme richiedono un timeout più lungo.",
-    "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi tipici per passaggio; un server locale o remoto a circa {{endpoint}}. Il recupero può coprire fino a {{ceiling}} messaggi con multi-pass. Aumentare il limite di messaggi e il timeout per le mesh occupate."
+    "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi tipici per passaggio; un server locale o remoto a circa {{endpoint}}. Il recupero può coprire fino a {{ceiling}} messaggi con multi-pass. Aumentare il limite di messaggi e il timeout per le mesh occupate.",
+    "lowThreadBudgetWarning": "Questo dispositivo ha solo {{count}} Recupera thread WASM. I riepiloghi dei modelli scaricati di solito ne richiedono circa 6 o più per funzionare bene e richiederanno più tempo qui. Preferisci un altro motore o aumenta il timeout qui sotto."
   }
 }

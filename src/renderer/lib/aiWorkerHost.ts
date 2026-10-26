@@ -17,6 +17,13 @@ export interface AiWorkerGenerateOptions {
 const sampling = { repeat_penalty: 1.1, repeat_last_n: 64 };
 
 /**
+ * Comfort floor for bundled Catch up WASM threads (not a wall-clock guarantee;
+ * core speed and model size still dominate). Used by App → AI to warn when the
+ * budget is lower. See docs/development/ai-summarization.md for calibration notes.
+ */
+export const AI_BUNDLED_RECOMMENDED_MIN_THREADS = 6;
+
+/**
  * Thread count for bundled CPU WASM. Multi-thread needs SharedArrayBuffer
  * (`crossOriginIsolated`); otherwise wllama falls back to 1 regardless.
  * Cap leaves headroom for the UI while using about half of logical cores.
@@ -28,6 +35,13 @@ export function bundledWllamaThreadCount(
   if (!isolated) return 1;
   const half = Math.floor(Math.max(1, cores) / 2);
   return Math.max(1, Math.min(8, half));
+}
+
+/** True when the WASM thread budget is below {@link AI_BUNDLED_RECOMMENDED_MIN_THREADS}. */
+export function isBundledWllamaThreadBudgetLow(
+  threads: number = bundledWllamaThreadCount(),
+): boolean {
+  return threads < AI_BUNDLED_RECOMMENDED_MIN_THREADS;
 }
 
 // Wllama owns the dedicated WASM worker. No runtime, worker or assets load at import time.

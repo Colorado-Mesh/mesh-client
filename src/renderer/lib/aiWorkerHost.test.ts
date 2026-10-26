@@ -2,7 +2,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RepetitiveAiOutputError } from './aiSummaryOutput';
-import { AiWorkerHost, bundledWllamaThreadCount } from './aiWorkerHost';
+import {
+  AI_BUNDLED_RECOMMENDED_MIN_THREADS,
+  AiWorkerHost,
+  bundledWllamaThreadCount,
+  isBundledWllamaThreadBudgetLow,
+} from './aiWorkerHost';
 
 const fixture = vi.hoisted(() => ({
   load: vi.fn(),
@@ -53,6 +58,16 @@ describe('bundledWllamaThreadCount', () => {
     expect(bundledWllamaThreadCount(12, true)).toBe(6);
     expect(bundledWllamaThreadCount(2, true)).toBe(1);
     expect(bundledWllamaThreadCount(32, true)).toBe(8);
+  });
+});
+
+describe('isBundledWllamaThreadBudgetLow', () => {
+  it('is true below the recommended floor and false at or above it', () => {
+    expect(AI_BUNDLED_RECOMMENDED_MIN_THREADS).toBe(6);
+    expect(isBundledWllamaThreadBudgetLow(1)).toBe(true);
+    expect(isBundledWllamaThreadBudgetLow(5)).toBe(true);
+    expect(isBundledWllamaThreadBudgetLow(6)).toBe(false);
+    expect(isBundledWllamaThreadBudgetLow(8)).toBe(false);
   });
 });
 

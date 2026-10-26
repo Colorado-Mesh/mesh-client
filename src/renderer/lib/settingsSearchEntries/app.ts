@@ -757,6 +757,8 @@ export const appSurface: SettingsSearchSurface = {
     'aiSummary.localEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.offlineSummaryHint':
       'AI setting help, option, status or child action; parent is indexed',
+    'aiSummary.lowThreadBudgetWarning':
+      'AI capability status when WASM thread budget is low; parent catalog is indexed',
     'aiSummary.optIn': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.osEngine': 'AI setting help, option, status or child action; parent is indexed',
     'aiSummary.osUnavailable': 'AI setting help, option, status or child action; parent is indexed',
