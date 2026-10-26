@@ -279,6 +279,34 @@ function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): C
 }
 
 /**
+ * True when a store row is the same logical MeshCore message as the merge target.
+ * Required before deleting `meshcoreMessageStoreId` alts: that id omits wire text, so two
+ * distinct posts from the same sender in the same UTC second share one store id.
+ */
+function meshcoreAltRecordMatchesMergedMessage(
+  record: MessageRecord,
+  incoming: ChatMessage,
+  existing?: ChatMessage,
+): boolean {
+  const chat = messageRecordToChatMessage(record);
+  const candidates = existing ? [incoming, existing] : [incoming];
+  for (const candidate of candidates) {
+    if (meshcoreMessageDedupeKey(chat) === meshcoreMessageDedupeKey(candidate)) {
+      return true;
+    }
+    if (chat.channel !== candidate.channel || chat.timestamp !== candidate.timestamp) {
+      continue;
+    }
+    const chatBody = chat.meshcoreDedupeKey ?? chat.payload;
+    const candidateBody = candidate.meshcoreDedupeKey ?? candidate.payload;
+    if (chatBody === candidateBody || chat.payload === candidate.payload) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Drop store rows left behind when PacketRouter / hydrate / waiting-drain use different id
  * schemes for the same logical MeshCore message (e.g. `ch:0:ts:wire` vs `${sender}-${ts}-0`).
  */
@@ -306,7 +334,14 @@ function removeMeshcoreAlternateStoreIds(
   let removed = false;
   for (const altId of altIds) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Identity bucket may be absent at runtime.
-    if (!useMessageStore.getState().messages[identityId]?.[altId]) continue;
+    const record = useMessageStore.getState().messages[identityId]?.[altId];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+    if (!record) continue;
+    if (
+      !meshcoreAltRecordMatchesMergedMessage(record, opts.incomingMessage, opts.existingMessage)
+    ) {
+      continue;
+    }
     deleteMessage(identityId, altId);
     removed = true;
     if (altId === incomingId) {

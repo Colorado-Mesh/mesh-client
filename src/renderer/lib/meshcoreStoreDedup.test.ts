@@ -64,6 +64,56 @@ describe('meshcoreStoreDedup', () => {
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(2);
   });
 
+  it('keeps two same-sender channel posts in the same UTC second when preferredIds differ', () => {
+    // PacketRouter ids embed wire text; meshcoreMessageStoreId does not. Scrubbing the shared
+    // store id without a content match would delete the sibling post.
+    const senderId = 0x11;
+    const tsMs = 1_700_000_007_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const firstWire = 'Alice: first line';
+    const secondWire = 'Alice: second line';
+    const sharedStoreId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const firstProtocolId = `ch:0:${tsSec}:${firstWire}`;
+    const secondProtocolId = `ch:0:${tsSec}:${secondWire}`;
+
+    const first = buildMeshcoreChannelIncomingMessage([], {
+      rawText: firstWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    // Sibling already occupies the shared canonical store id (waiting-drain / no preferredId).
+    upsertMeshcoreMessageWithDedup(ID, first, sharedStoreId);
+
+    const second = buildMeshcoreChannelIncomingMessage([], {
+      rawText: secondWire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMessage(ID, {
+      id: secondProtocolId,
+      from: 0,
+      to: 0,
+      payload: secondWire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, second, secondProtocolId);
+
+    expect(result.inserted).toBe(true);
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(byId[sharedStoreId].payload).toBe('first line');
+    expect(byId[secondProtocolId].payload).toBe('second line');
+    expect(byId[firstProtocolId]).toBeUndefined();
+    expect(Object.keys(byId)).toHaveLength(2);
+  });
+
   it('merges RF store row with MQTT duplicate into one entry', () => {
     const tsSec = 1_700_000_010;
     const tsMs = tsSec * 1000;
