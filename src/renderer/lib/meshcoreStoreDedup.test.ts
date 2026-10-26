@@ -167,6 +167,96 @@ describe('meshcoreStoreDedup', () => {
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
   });
 
+  it('drops hydrate composite id when PacketRouter preferredId merges the same channel RF', () => {
+    // Legacy hydrate used chatMessageToMessageRecord's `${sender}-${ts}-${channel}` id.
+    // PacketRouter then upserts `ch:${channel}:${ts}:${wire}` before ingest prefers that id.
+    // Fuzzy merge must delete the hydrate orphan — otherwise every channel line appears twice.
+    const senderId = 0xabcd1234;
+    const tsMs = 1_700_000_021_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const wire = 'Alice: good afternoon from buckley';
+    const hydrateId = `${senderId}-${tsMs}-0`;
+    const protocolId = `ch:0:${tsSec}:${wire}`;
+
+    const hydrated = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 6,
+    });
+    upsertMessage(ID, { ...chatMessageToMessageRecord(hydrated), id: hydrateId });
+
+    // PacketRouter provisional row (raw wire payload, from=0) — same as live companion event.
+    upsertMessage(ID, {
+      id: protocolId,
+      from: 0,
+      to: 0,
+      payload: wire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      hopCount: 6,
+      receivedVia: 'rf',
+    });
+
+    const live = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 6,
+    });
+    const result = upsertMeshcoreMessageWithDedup(ID, live, protocolId);
+
+    expect(result.inserted).toBe(false);
+    const byId = useMessageStore.getState().messages[ID] ?? {};
+    expect(Object.keys(byId)).toEqual([protocolId]);
+    expect(byId[hydrateId]).toBeUndefined();
+    expect(messageRecordToChatMessage(byId[protocolId]).payload).toBe(
+      'good afternoon from buckley',
+    );
+  });
+
+  it('collapses PacketRouter provisional row with an existing canonical channel store id', () => {
+    const senderId = 0x11;
+    const tsMs = 1_700_000_022_000;
+    const tsSec = Math.floor(tsMs / 1000);
+    const wire = 'Bob: MHC-CF6177';
+    const storeId = meshcoreChannelMessageStoreId(0, tsSec, senderId);
+    const protocolId = `ch:0:${tsSec}:${wire}`;
+
+    const first = buildMeshcoreChannelIncomingMessage([], {
+      rawText: wire,
+      senderId,
+      displayName: 'Bob',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 4,
+    });
+    upsertMeshcoreMessageWithDedup(ID, first, storeId);
+    upsertMessage(ID, {
+      id: protocolId,
+      from: 0,
+      to: 0,
+      payload: wire,
+      channelIndex: 0,
+      timestamp: tsMs,
+      hopCount: 4,
+      receivedVia: 'rf',
+    });
+
+    const result = upsertMeshcoreMessageWithDedup(ID, first, protocolId);
+    expect(result.inserted).toBe(false);
+    const ids = Object.keys(useMessageStore.getState().messages[ID] ?? {});
+    expect(ids).toHaveLength(1);
+    expect(ids[0] === storeId || ids[0] === protocolId).toBe(true);
+  });
+
   it('assigns room store ids for room server posts', () => {
     const roomId = 0xac200e59;
     const msg = {

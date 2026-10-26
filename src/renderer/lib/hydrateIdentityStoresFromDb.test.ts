@@ -12,11 +12,15 @@ import {
   hydrateMeshtasticNodesFromDb,
   mergeMeshcoreDbMessageRowsForHydration,
   MESHCORE_DB_ROOM_MESSAGE_LOAD_LIMIT,
+  meshcoreHydratedMessageRecords,
   replaceNodesMapInIdentityStore,
   syncNodesMapToIdentityStore,
 } from './hydrateIdentityStoresFromDb';
 import { resetIdentityHydrationCoordinatorForTests } from './identityHydrationCoordinator';
-import { buildMeshcoreRoomIncomingMessage } from './meshcoreChannelText';
+import {
+  buildMeshcoreChannelIncomingMessage,
+  buildMeshcoreRoomIncomingMessage,
+} from './meshcoreChannelText';
 import { meshcoreMessageStoreId } from './meshcoreStoreDedup';
 import { messageRecordsToChatMessages } from './storeRecordAdapters';
 
@@ -564,6 +568,23 @@ describe('hydrateIdentityStoresFromDb', () => {
     const canonicalId = meshcoreMessageStoreId(roomMsg);
     expect(useMessageStore.getState().messages[ID_MC][canonicalId].payload).toBe(
       'persisted room post',
+    );
+  });
+
+  it('hydrates channel messages under meshcoreMessageStoreId, not sender-ts-channel', () => {
+    const channelMsg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Half Live: good afternoon from buckley',
+      senderId: 2861156262,
+      displayName: 'Half Live',
+      channel: 0,
+      timestamp: 1_700_000_400_000,
+      receivedVia: 'rf',
+      rxHops: 6,
+    });
+    const [record] = meshcoreHydratedMessageRecords([channelMsg]);
+    expect(record.id).toBe(meshcoreMessageStoreId(channelMsg));
+    expect(record.id).not.toBe(
+      `${channelMsg.sender_id}-${channelMsg.timestamp}-${channelMsg.channel}`,
     );
   });
 
