@@ -27,6 +27,12 @@ export interface TakChannelMessage {
    * way are two messages; every copy of one packet carries the same id.
    */
   packetId?: number;
+  /**
+   * The text exactly as it came off the radio, where the protocol has no packet id (MeshCore):
+   * `text` loses a reply's `@[name]` target, so two replies alike but for whom they answer
+   * would otherwise match. Every copy of one packet carries the same wire text.
+   */
+  wireText?: string;
   hops?: number;
   /**
    * Known to come from another node, so it cannot be this radio's own send heard back. Matters
@@ -77,6 +83,7 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
     identityId,
     msg.channelIndex,
     msg.packetId ?? '',
+    msg.wireText ?? '',
     sender,
     msg.timestampMs,
     text,

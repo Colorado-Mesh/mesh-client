@@ -815,6 +815,25 @@ describe('meshcore ingest TAK channel relay', () => {
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('hands on two replies alike but for whom they answer, sent in the same second', () => {
+    serveTakChannel(TAK_ID, 3, '0123456789abcdef');
+    const deliver = (text: string, sec: number) => {
+      const id = `ch:3:${sec}:${text}`;
+      const timestamp = sec * 1000;
+      upsertMessage(TAK_ID, { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp });
+      meshcoreIngestHandleTextMessage(TAK_ID, {
+        type: 'text_message',
+        payload: { id, from: 0, to: 0, payload: text, channelIndex: 3, timestamp },
+      });
+    };
+    deliver('Alice: hello', 1_700_000_900);
+    deliver('Carol: hi all', 1_700_000_901);
+    pushChatMessage.mockClear();
+    deliver('Bob: @[Alice] 👍', 1_700_000_960);
+    deliver('Bob: @[Carol] 👍', 1_700_000_960);
+    expect(pushChatMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('does not hand on channels that are not served', () => {
     serveTakChannel(TAK_ID, 4, 'fedcba9876543210');
     channelMessage('Bob: on scene');
