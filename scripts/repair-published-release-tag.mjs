@@ -50,8 +50,7 @@ export async function repairPublishedReleaseTag(tag, token, fallbackToken) {
 async function main() {
   const tag = resolveTag(process.argv.slice(2), process.env);
   const token = authToken(process.env);
-  const fallbackToken = process.env.RELEASE_PUSH_TOKEN;
-  const release = await repairPublishedReleaseTag(tag, token, fallbackToken);
+  const release = await repairPublishedReleaseTag(tag, token);
   console.debug(
     `[repair-published-release-tag] OK release ${release.id} tag_name=${release.tag_name}`,
   );

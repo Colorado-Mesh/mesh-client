@@ -362,6 +362,14 @@ import {
   writeLauncherPins,
 } from './lib/panelLauncher';
 import { parseStoredJson } from './lib/parseStoredJson';
+import {
+  beginProtocolSwitch,
+  ignoreProtocolSwitchAutoConnect,
+  ignoreProtocolSwitchConnect,
+  isCurrentProtocolSwitch,
+  type ProtocolVisitFlags,
+  visitFlagsForProtocolCommit,
+} from './lib/protocolSwitchCommit';
 import { queueBadgeColorClass } from './lib/queueBadgeColors';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
@@ -860,16 +868,37 @@ function AppContent() {
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
-  const resetProtocolTabVisitFlags = useCallback(() => {
-    setChatTabVisited(false);
-    setRoomsTabVisited(false);
-    setGamesTabVisited(false);
-    setRrcTabVisited(false);
-    setRemoteTabVisited(false);
-    setNomadTabVisited(false);
-    setPeersTabVisited(false);
-    setAppTabVisited(false);
-  }, []);
+  const visitFlagsRef = useRef<ProtocolVisitFlags>({
+    chat: false,
+    rooms: false,
+    games: false,
+    rrc: false,
+    remote: false,
+    nomad: false,
+    peers: false,
+    app: false,
+  });
+  useEffect(() => {
+    visitFlagsRef.current = {
+      chat: chatTabVisited,
+      rooms: roomsTabVisited,
+      games: gamesTabVisited,
+      rrc: rrcTabVisited,
+      remote: remoteTabVisited,
+      nomad: nomadTabVisited,
+      peers: peersTabVisited,
+      app: appTabVisited,
+    };
+  }, [
+    appTabVisited,
+    chatTabVisited,
+    gamesTabVisited,
+    nomadTabVisited,
+    peersTabVisited,
+    remoteTabVisited,
+    roomsTabVisited,
+    rrcTabVisited,
+  ]);
   useEffect(() => {
     if (pendingProtocolSelection == null || pendingProtocolSelection !== protocol) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic rail once protocol commits
@@ -1251,11 +1280,12 @@ function AppContent() {
   }, [hasMeshtasticSendingRow, nowMs, activeFacade.messages, myNodeNumForQueue, sendingWindowMs]);
   const handleSend = useCallback(
     (text: string, channel: number, destination?: number, replyRef?: number | string) => {
+      if (protocolSwitchPending) return;
       const replyTo =
         replyRef == null ? undefined : typeof replyRef === 'string' ? replyRef : String(replyRef);
       return sendMessage(text, channel, destination, replyTo);
     },
-    [sendMessage],
+    [protocolSwitchPending, sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const takRemoteStatus = useTakRemoteStatus();
@@ -2354,6 +2384,46 @@ function AppContent() {
     }
   }, [activePanelIndex]);
 
+  const scheduleProtocolCommit = useCallback(
+    (input: {
+      pending: MeshProtocol | null;
+      nextProtocol: MeshProtocol;
+      nextTab: number;
+      destinationPanel: number | null;
+      protocolChanged: boolean;
+      enablePeers: boolean;
+    }) => {
+      const id = beginProtocolSwitch();
+      // Rail updates immediately. Storage, diagnostics, and setProtocol wait
+      // until this commit is still the latest one.
+      setPendingProtocolSelection(input.pending);
+      startProtocolTransition(() => {
+        if (!isCurrentProtocolSwitch(id)) return;
+        const flags = visitFlagsForProtocolCommit(
+          visitFlagsRef.current,
+          input.destinationPanel,
+          input.protocolChanged,
+          input.enablePeers,
+        );
+        setChatTabVisited(flags.chat);
+        setRoomsTabVisited(flags.rooms);
+        setGamesTabVisited(flags.games);
+        setRrcTabVisited(flags.rrc);
+        setRemoteTabVisited(flags.remote);
+        setNomadTabVisited(flags.nomad);
+        setPeersTabVisited(flags.peers);
+        setAppTabVisited(flags.app);
+        if (input.protocolChanged) {
+          useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
+        }
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, input.nextProtocol);
+        setActiveTab(input.nextTab);
+        setProtocol(input.nextProtocol);
+      });
+    },
+    [startProtocolTransition],
+  );
+
   const handleProtocolChange = useCallback(
     (newProtocol: MeshProtocol) => {
       if (newProtocol === pendingProtocolSelection) return;
@@ -2362,11 +2432,13 @@ function AppContent() {
       // cancel that pending transition (otherwise it still commits later).
       if (newProtocol === protocol) {
         if (pendingProtocolSelection == null) return;
-        setPendingProtocolSelection(null);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, protocol);
-        startProtocolTransition(() => {
-          setActiveTab(activeTab);
-          setProtocol(protocol);
+        scheduleProtocolCommit({
+          pending: null,
+          nextProtocol: protocol,
+          nextTab: activeTab,
+          destinationPanel: null,
+          protocolChanged: false,
+          enablePeers: false,
         });
         return;
       }
@@ -2379,22 +2451,19 @@ function AppContent() {
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
 
-      useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
-      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, newProtocol);
       // Protocol switches remount per-protocol panels and can take hundreds
       // of ms of render work after time away (large peer/message stores).
       // As a transition, React keeps the current UI interactive and renders
       // the incoming protocol's tree interruptibly instead of freezing input
-      // on one blocking commit. Optimistic `pendingProtocolSelection` updates
-      // the rail immediately so the click is not silent for that whole window.
-      // Drop keep-alive visit flags in the *same* transition as setProtocol so
-      // Chat/Peers do not remount for one frame on the new protocol when the
-      // destination tab is Connection (visit useEffect would clear too late).
-      setPendingProtocolSelection(newProtocol);
-      startProtocolTransition(() => {
-        resetProtocolTabVisitFlags();
-        setActiveTab(targetTab);
-        setProtocol(newProtocol);
+      // on one blocking commit. Optimistic pending selection updates the rail
+      // immediately so the click is not silent for that whole window.
+      scheduleProtocolCommit({
+        pending: newProtocol,
+        nextProtocol: newProtocol,
+        nextTab: targetTab,
+        destinationPanel: targetTabs.tabIndexToPanelIndex[targetTab] ?? null,
+        protocolChanged: true,
+        enablePeers: selectByProtocol(capabilitiesByProtocol, newProtocol).hasReticulumPeersList,
       });
     },
     [
@@ -2403,7 +2472,8 @@ function AppContent() {
       activeTab,
       activePanelIndex,
       tabsByProtocol,
-      resetProtocolTabVisitFlags,
+      capabilitiesByProtocol,
+      scheduleProtocolCommit,
     ],
   );
 
@@ -2813,6 +2883,7 @@ function AppContent() {
 
   const handleResend = useCallback(
     (msg: ChatMessage) => {
+      if (protocolSwitchPending) return;
       const args = buildResendArgs(msg);
       sendMessage(
         args.text,
@@ -2822,7 +2893,7 @@ function AppContent() {
         args.retryOfStoreId,
       );
     },
-    [sendMessage],
+    [protocolSwitchPending, sendMessage],
   );
 
   const traceRouteHops = useMemo(() => {
@@ -2872,13 +2943,6 @@ function AppContent() {
   }, [activePanelIndex]);
 
   useEffect(() => {
-    // Deep links / setProtocol outside handleProtocolChange still need a clear.
-    // handleProtocolChange also clears inside the transition for atomicity.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
-    resetProtocolTabVisitFlags();
-  }, [protocol, resetProtocolTabVisitFlags]);
-
-  useEffect(() => {
     if (capabilities.hasRoomServersPanel && activePanelIndex === ROOMS_PANEL_INDEX) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- track Rooms tab visit for unread badge
       setRoomsTabVisited(true);
@@ -2901,27 +2965,28 @@ function AppContent() {
         return;
       }
       void (async () => {
-        if (protocol !== 'reticulum') {
-          lastTabByProtocol.current.set(protocol, activeTab);
-          lastPanelByProtocol.current.set(protocol, activePanelIndex);
-          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-          setPendingProtocolSelection(null);
-          setProtocol('reticulum');
-        } else if (pendingProtocolSelection != null) {
-          // Already on Reticulum but a queued switch would steal focus — cancel it.
-          setPendingProtocolSelection(null);
-          localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-          startProtocolTransition(() => {
-            setProtocol('reticulum');
-          });
-        }
         const gamesTabIndex = findFilteredTabIndexForPanel(
           selectByProtocol(tabsByProtocol, 'reticulum'),
           GAMES_PANEL_INDEX,
         );
-        if (gamesTabIndex >= 0) {
-          setActiveTab(gamesTabIndex);
-          setGamesTabVisited(true);
+        if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+          if (gamesTabIndex >= 0) {
+            setActiveTab(gamesTabIndex);
+            setGamesTabVisited(true);
+          }
+        } else {
+          if (protocol !== 'reticulum') {
+            lastTabByProtocol.current.set(protocol, activeTab);
+            lastPanelByProtocol.current.set(protocol, activePanelIndex);
+          }
+          scheduleProtocolCommit({
+            pending: protocol === 'reticulum' ? null : 'reticulum',
+            nextProtocol: 'reticulum',
+            nextTab: gamesTabIndex >= 0 ? gamesTabIndex : 0,
+            destinationPanel: gamesTabIndex >= 0 ? GAMES_PANEL_INDEX : null,
+            protocolChanged: protocol !== 'reticulum',
+            enablePeers: reticulumCapabilities.hasReticulumPeersList,
+          });
         }
         await openReticulumGameSession(sessionId);
       })();
@@ -2932,7 +2997,9 @@ function AppContent() {
       pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasLrgpGames,
+      reticulumCapabilities.hasReticulumPeersList,
       reticulumEnabled,
+      scheduleProtocolCommit,
       tabsByProtocol,
     ],
   );
@@ -2958,26 +3025,28 @@ function AppContent() {
         console.debug('[App] Nomad link ignored: Reticulum disabled in App → Protocols');
         return;
       }
-      if (protocol !== 'reticulum') {
-        lastTabByProtocol.current.set(protocol, activeTab);
-        lastPanelByProtocol.current.set(protocol, activePanelIndex);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-        setPendingProtocolSelection(null);
-        setProtocol('reticulum');
-      } else if (pendingProtocolSelection != null) {
-        setPendingProtocolSelection(null);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-        startProtocolTransition(() => {
-          setProtocol('reticulum');
-        });
-      }
       const nomadTabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, 'reticulum'),
         NOMAD_NETWORK_PANEL_INDEX,
       );
-      if (nomadTabIndex >= 0) {
-        setActiveTab(nomadTabIndex);
-        setNomadTabVisited(true);
+      if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+        if (nomadTabIndex >= 0) {
+          setActiveTab(nomadTabIndex);
+          setNomadTabVisited(true);
+        }
+      } else {
+        if (protocol !== 'reticulum') {
+          lastTabByProtocol.current.set(protocol, activeTab);
+          lastPanelByProtocol.current.set(protocol, activePanelIndex);
+        }
+        scheduleProtocolCommit({
+          pending: protocol === 'reticulum' ? null : 'reticulum',
+          nextProtocol: 'reticulum',
+          nextTab: nomadTabIndex >= 0 ? nomadTabIndex : 0,
+          destinationPanel: nomadTabIndex >= 0 ? NOMAD_NETWORK_PANEL_INDEX : null,
+          protocolChanged: protocol !== 'reticulum',
+          enablePeers: reticulumCapabilities.hasReticulumPeersList,
+        });
       }
       void useNomadPageViewerStore.getState().loadPage(destinationHash, path);
     },
@@ -2987,7 +3056,9 @@ function AppContent() {
       pendingProtocolSelection,
       protocol,
       reticulumCapabilities.hasNomadNetworkPanel,
+      reticulumCapabilities.hasReticulumPeersList,
       reticulumEnabled,
+      scheduleProtocolCommit,
       tabsByProtocol,
     ],
   );
@@ -3012,34 +3083,38 @@ function AppContent() {
       console.debug('[App] rrc:// link ignored: Reticulum disabled in App → Protocols');
       return;
     }
-    if (protocol !== 'reticulum') {
-      lastTabByProtocol.current.set(protocol, activeTab);
-      lastPanelByProtocol.current.set(protocol, activePanelIndex);
-      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-      setPendingProtocolSelection(null);
-      setProtocol('reticulum');
-    } else if (pendingProtocolSelection != null) {
-      setPendingProtocolSelection(null);
-      localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
-      startProtocolTransition(() => {
-        setProtocol('reticulum');
-      });
-    }
     const rrcTabIndex = findFilteredTabIndexForPanel(
       selectByProtocol(tabsByProtocol, 'reticulum'),
       RRC_PANEL_INDEX,
     );
-    if (rrcTabIndex >= 0) {
-      setActiveTab(rrcTabIndex);
-      setRrcTabVisited(true);
+    if (protocol === 'reticulum' && pendingProtocolSelection == null) {
+      if (rrcTabIndex >= 0) {
+        setActiveTab(rrcTabIndex);
+        setRrcTabVisited(true);
+      }
+    } else {
+      if (protocol !== 'reticulum') {
+        lastTabByProtocol.current.set(protocol, activeTab);
+        lastPanelByProtocol.current.set(protocol, activePanelIndex);
+      }
+      scheduleProtocolCommit({
+        pending: protocol === 'reticulum' ? null : 'reticulum',
+        nextProtocol: 'reticulum',
+        nextTab: rrcTabIndex >= 0 ? rrcTabIndex : 0,
+        destinationPanel: rrcTabIndex >= 0 ? RRC_PANEL_INDEX : null,
+        protocolChanged: protocol !== 'reticulum',
+        enablePeers: reticulumCapabilities.hasReticulumPeersList,
+      });
     }
   }, [
     activePanelIndex,
     activeTab,
     pendingProtocolSelection,
     protocol,
+    reticulumCapabilities.hasReticulumPeersList,
     reticulumCapabilities.hasRrcPanel,
     reticulumEnabled,
+    scheduleProtocolCommit,
     tabsByProtocol,
   ]);
 
@@ -3052,27 +3127,31 @@ function AppContent() {
         );
         return;
       }
-      if (protocol !== targetProtocol) {
-        lastTabByProtocol.current.set(protocol, activeTab);
-        lastPanelByProtocol.current.set(protocol, activePanelIndex);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
-        setPendingProtocolSelection(null);
-        setProtocol(targetProtocol);
-      } else if (pendingProtocolSelection != null) {
-        // Stay on the notification's protocol/tab; supersede any queued switch.
-        setPendingProtocolSelection(null);
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
-        startProtocolTransition(() => {
-          setProtocol(targetProtocol);
-        });
-      }
+      const destinationPanelIndex = target.kind === 'rrc' ? RRC_PANEL_INDEX : CHAT_PANEL_INDEX;
       const tabIndex = findFilteredTabIndexForPanel(
         selectByProtocol(tabsByProtocol, targetProtocol),
-        target.kind === 'rrc' ? RRC_PANEL_INDEX : CHAT_PANEL_INDEX,
+        destinationPanelIndex,
       );
-      if (tabIndex >= 0) setActiveTab(tabIndex);
+      if (protocol === targetProtocol && pendingProtocolSelection == null) {
+        if (tabIndex >= 0) setActiveTab(tabIndex);
+        if (target.kind === 'rrc') setRrcTabVisited(true);
+        else setChatTabVisited(true);
+      } else {
+        if (protocol !== targetProtocol) {
+          lastTabByProtocol.current.set(protocol, activeTab);
+          lastPanelByProtocol.current.set(protocol, activePanelIndex);
+        }
+        scheduleProtocolCommit({
+          pending: protocol === targetProtocol ? null : targetProtocol,
+          nextProtocol: targetProtocol,
+          nextTab: tabIndex >= 0 ? tabIndex : 0,
+          destinationPanel: tabIndex >= 0 ? destinationPanelIndex : null,
+          protocolChanged: protocol !== targetProtocol,
+          enablePeers: selectByProtocol(capabilitiesByProtocol, targetProtocol)
+            .hasReticulumPeersList,
+        });
+      }
       if (target.kind === 'rrc') {
-        setRrcTabVisited(true);
         focusRrcNotificationTarget(target, useRrcSessionStore.getState());
       } else if (target.dmPeer != null) {
         setPendingDmTarget(target.dmPeer);
@@ -3083,9 +3162,11 @@ function AppContent() {
     [
       activePanelIndex,
       activeTab,
+      capabilitiesByProtocol,
       enabledProtocols,
       pendingProtocolSelection,
       protocol,
+      scheduleProtocolCommit,
       tabsByProtocol,
     ],
   );
@@ -3795,6 +3876,7 @@ function AppContent() {
   // Manual reconnect from banner
   const reconnectInFlightRef = useRef(false);
   const handleReconnect = useCallback(() => {
+    if (protocolSwitchPending) return;
     if (reconnectInFlightRef.current) return;
     reconnectInFlightRef.current = true;
 
@@ -3844,6 +3926,7 @@ function AppContent() {
     activeConnectionView.state.serialNeedsReselect,
     activeConnection,
     protocol,
+    protocolSwitchPending,
     protocolConnect,
     protocolDisconnect,
   ]);
@@ -4476,8 +4559,16 @@ function AppContent() {
                           {showConnectionPanel && (
                             <ConnectionPanel
                               state={activeConnection.state}
-                              onConnect={activeConnection.connect}
-                              onAutoConnect={activeConnection.connectAutomatic}
+                              onConnect={
+                                protocolSwitchPending
+                                  ? ignoreProtocolSwitchConnect
+                                  : activeConnection.connect
+                              }
+                              onAutoConnect={
+                                protocolSwitchPending
+                                  ? ignoreProtocolSwitchAutoConnect
+                                  : activeConnection.connectAutomatic
+                              }
                               onDisconnect={activeConnection.disconnect}
                               mqttStatus={activeConnection.mqttStatus}
                               mqttConnectionLoss={mqttLoss}

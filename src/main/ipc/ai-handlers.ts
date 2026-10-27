@@ -9,6 +9,7 @@ import {
   safeStorage,
   type WebContents,
 } from 'electron';
+import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici';
 
 import {
   AI_MAX_RESPONSE_BYTES,
@@ -64,9 +65,11 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       send('ai:modelProgress', progress);
     },
   });
-  const client = new AiClient((input, init) =>
-    net.fetch(input instanceof URL ? input.href : input, init),
-  );
+  const client = new AiClient((input, init) => {
+    const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    // undici honors the pinned lookup dispatcher; Chromium net.fetch does not.
+    return undiciFetch(href, init as UndiciRequestInit) as unknown as Promise<Response>;
+  });
   // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
   const os = new OsAiHelper(() =>
     path.join(

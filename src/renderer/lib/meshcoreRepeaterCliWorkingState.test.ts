@@ -165,8 +165,10 @@ describe('meshcore repeater CLI working state', () => {
   it('rejects CLI commands longer than REPEATER_CLI_MAX_COMMAND_LENGTH before send', () => {
     expect(REPEATER_CMD_SOURCE).toContain('export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512');
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
-    expect(cliBody).toContain('REPEATER_CLI_MAX_COMMAND_LENGTH');
-    expect(cliBody).toContain('repeatersPanel.cliCommandTooLong');
+    const assertIdx = cliBody.indexOf('assertMeshcoreRepeaterCliCommand(command)');
+    const queueIdx = cliBody.indexOf('repeaterCliQueueRef.current');
+    expect(assertIdx).toBeGreaterThan(-1);
+    expect(queueIdx).toBeGreaterThan(assertIdx);
   });
 
   it('requires confirmedDanger for dangerous CLI commands', () => {

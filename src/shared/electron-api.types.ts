@@ -1216,8 +1216,8 @@ export interface ElectronAPI {
   };
 
   // ─── Connection status ───────────────────────────────────────────────────────
-  notifyDeviceConnected: () => void;
-  notifyDeviceDisconnected: () => void;
+  notifyDeviceConnected: (source?: 'meshtastic' | 'meshcore') => void;
+  notifyDeviceDisconnected: (source?: 'meshtastic' | 'meshcore') => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
   /** Full process relaunch. */

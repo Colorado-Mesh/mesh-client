@@ -5093,6 +5093,7 @@
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
     "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
     "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。",
+    "cliCommandMustBeSingleLine": "CLI コマンドは 1 行である必要があります。",
     "currentRouteLabel": "現在のルート:",
     "neighborsLoadMore": "さらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadMoreAria": "隣接ノードをさらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
@@ -7397,6 +7398,10 @@
     "consoleInput": "コンパニオンコマンド",
     "consolePlaceholder": "例： GET RADIO",
     "consoleSend": "送信",
+    "notConnected": "MeshCore 無線機に接続されていません。",
+    "requiresCliFirmware": "Companion CLI には MeshCore companion ファームウェア v1.18 以降が必要です。",
+    "commandMustBeSingleLine": "Companion コマンドは 1 行である必要があります。",
+    "commandTooLong": "Companion コマンドが長すぎます（最大 {{max}} バイト）。",
     "groups": {
       "device": "デバイス",
       "radio": "ラジオチューニング",

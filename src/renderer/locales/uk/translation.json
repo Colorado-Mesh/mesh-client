@@ -5175,6 +5175,7 @@
     "cliAutoPingToast": "Встановлення маршруту за допомогою Ping перед CLI...",
     "cliAutoPingFailed": "Не вдалося виконати Ping; запустіть Ping вручну, перш ніж повторити спробу CLI на ретрансляторах з декількома стрибками.",
     "cliCommandTooLong": "Команда CLI задовга (макс. {{max}} символів).",
+    "cliCommandMustBeSingleLine": "Команда CLI має бути в одному рядку.",
     "currentRouteLabel": "Поточний маршрут:",
     "neighborsLoadMore": "Завантажити більше ({{loaded}} з {{total}})",
     "neighborsLoadMoreAria": "Завантажити більше сусідів (завантажено {{loaded}} з {{total}})",
@@ -7519,6 +7520,10 @@
     "consoleInput": "Командування супутника",
     "consolePlaceholder": "наприклад, отримати радіо",
     "consoleSend": "Надіслати",
+    "notConnected": "Немає з’єднання з радіо MeshCore.",
+    "requiresCliFirmware": "Companion CLI потребує прошивки MeshCore companion v1.18 або новішої.",
+    "commandMustBeSingleLine": "Команда companion має бути в одному рядку.",
+    "commandTooLong": "Команда companion занадто довга (макс. {{max}} байт).",
     "groups": {
       "device": "Пристрій",
       "radio": "Радіо тюнінг",

@@ -5093,6 +5093,7 @@
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
     "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
     "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
+    "cliCommandMustBeSingleLine": "CLI 명령은 한 줄이어야 합니다.",
     "currentRouteLabel": "현재 경로:",
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
@@ -7397,6 +7398,10 @@
     "consoleInput": "동반자 명령",
     "consolePlaceholder": "예: GET 라디오",
     "consoleSend": "보내기",
+    "notConnected": "MeshCore 무전기에 연결되어 있지 않습니다.",
+    "requiresCliFirmware": "Companion CLI에는 MeshCore companion 펌웨어 v1.18 이상이 필요합니다.",
+    "commandMustBeSingleLine": "Companion 명령은 한 줄이어야 합니다.",
+    "commandTooLong": "Companion 명령이 너무 깁니다(최대 {{max}}바이트).",
     "groups": {
       "device": "장치",
       "radio": "라디오 튜닝",

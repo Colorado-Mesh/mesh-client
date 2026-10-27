@@ -23,14 +23,17 @@ function selectsSwift(file) {
 describe('CodeQL advanced workflow', () => {
   it('retains all six languages, extended queries and the existing Swift autobuild', () => {
     expect(job.strategy['fail-fast']).toBe(false);
-    expect(job.strategy.matrix.include).toEqual([
-      { language: 'actions', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'csharp', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'javascript-typescript', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'python', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'rust', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'swift', os: 'macos-latest', 'build-mode': 'autobuild' },
-    ]);
+    expect(job.strategy.matrix.include).toBe('${{ fromJson(needs.scope.outputs.matrix) }}');
+    const matrixStep = scope.steps.find((step) => step.id === 'matrix');
+    const script = matrixStep.run;
+    for (const language of ['actions', 'csharp', 'javascript-typescript', 'python', 'rust']) {
+      expect(script).toContain(`language: '${language}'`);
+      expect(script).toContain("os: 'ubuntu-latest'");
+    }
+    expect(script).toContain("language: 'swift'");
+    expect(script).toContain("os: 'macos-latest'");
+    expect(script).toContain("'build-mode': 'autobuild'");
+    expect(script).toContain("process.env.SWIFT === 'true'");
     const init = job.steps.find((step) => step.name === 'Initialize CodeQL');
     expect(init.with.queries).toBe('security-extended');
     expect(init.with['build-mode']).toBe('${{ matrix.build-mode }}');
@@ -54,7 +57,8 @@ describe('CodeQL advanced workflow', () => {
     expect(filter['continue-on-error']).toBe(true);
     expect(filter.uses).toMatch(/^dorny\/paths-filter@[a-f0-9]{40}$/);
     expect(scope.permissions).toEqual({ contents: 'read', 'pull-requests': 'read' });
-    expect(scope.steps).toHaveLength(1);
+    expect(scope.steps).toHaveLength(2);
+    expect(scope.outputs.matrix).toBe('${{ steps.matrix.outputs.matrix }}');
     expect(filters.all).toEqual(['**']);
     for (const file of ['README.md', 'native/ai/apple/main.swift']) {
       expect(path.matchesGlob(file, filters.all[0])).toBe(true);

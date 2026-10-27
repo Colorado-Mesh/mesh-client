@@ -5,6 +5,10 @@ import {
   normalizeMeshcoreCliCommand,
   redactMeshcoreCliSecrets,
 } from './meshcoreRepeaterCliQueue';
+import {
+  assertMeshcoreRepeaterCliCommand,
+  REPEATER_CLI_MAX_COMMAND_LENGTH,
+} from './repeaterCommandService';
 
 describe('infrastructure CLI command queue', () => {
   it('waits for the full reply before running a different command on the same node', async () => {
@@ -49,6 +53,22 @@ describe('infrastructure CLI command queue', () => {
   ])('redacts both command and reply for %s', (command) => {
     expect(redactMeshcoreCliSecrets(command)).not.toContain('secret');
     expect(redactMeshcoreCliSecrets(command, '> secret')).toBe('[redacted]');
+  });
+
+  it('rejects an embedded newline, return, or NUL before a command is queued', () => {
+    expect(() => assertMeshcoreRepeaterCliCommand('ver\nreboot')).toThrow(
+      'repeatersPanel.cliCommandMustBeSingleLine',
+    );
+    expect(() => assertMeshcoreRepeaterCliCommand('ver\rreboot')).toThrow(
+      'repeatersPanel.cliCommandMustBeSingleLine',
+    );
+    expect(() => assertMeshcoreRepeaterCliCommand('ver\0reboot')).toThrow(
+      'repeatersPanel.cliCommandMustBeSingleLine',
+    );
+    expect(() =>
+      assertMeshcoreRepeaterCliCommand('x'.repeat(REPEATER_CLI_MAX_COMMAND_LENGTH + 1)),
+    ).toThrow('repeatersPanel.cliCommandTooLong');
+    expect(assertMeshcoreRepeaterCliCommand('  neighbors  ')).toBe('neighbors');
   });
 
   it('preserves empty string setter delimiters while trimming normal commands', () => {

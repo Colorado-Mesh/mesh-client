@@ -5175,6 +5175,7 @@
     "cliAutoPingToast": "Создание маршрута с помощью Ping перед CLI...",
     "cliAutoPingFailed": "Не удалось выполнить Ping; запустите Ping вручную, прежде чем повторить попытку CLI на многоузловых повторителях.",
     "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов).",
+    "cliCommandMustBeSingleLine": "Команда CLI должна быть в одной строке.",
     "currentRouteLabel": "Текущий маршрут:",
     "neighborsLoadMore": "Загрузить больше ({{loaded}} из {{total}})",
     "neighborsLoadMoreAria": "Загрузить больше соседей ({{loaded}} из {{total}} загружено)",
@@ -7519,6 +7520,10 @@
     "consoleInput": "Сопутствующая команда",
     "consolePlaceholder": "например, получить радио",
     "consoleSend": "Отправить",
+    "notConnected": "Нет подключения к радио MeshCore.",
+    "requiresCliFirmware": "Companion CLI требует прошивку MeshCore companion v1.18 или новее.",
+    "commandMustBeSingleLine": "Команда companion должна быть в одной строке.",
+    "commandTooLong": "Команда companion слишком длинная (макс. {{max}} байт).",
     "groups": {
       "device": "Устройство",
       "radio": "Радио тюнинг",

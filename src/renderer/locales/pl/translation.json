@@ -5175,6 +5175,7 @@
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
     "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
     "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
+    "cliCommandMustBeSingleLine": "Polecenie CLI musi być w jednym wierszu.",
     "currentRouteLabel": "Aktualna trasa:",
     "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
@@ -7519,6 +7520,10 @@
     "consoleInput": "Dowództwo towarzyszące",
     "consolePlaceholder": "np. uzyskaj radio",
     "consoleSend": "Wyślij",
+    "notConnected": "Brak połączenia z radiem MeshCore.",
+    "requiresCliFirmware": "Companion CLI wymaga oprogramowania MeshCore companion v1.18 lub nowszego.",
+    "commandMustBeSingleLine": "Polecenie companion musi być w jednym wierszu.",
+    "commandTooLong": "Polecenie companion jest za długie (maks. {{max}} bajtów).",
     "groups": {
       "device": "Urządzenie",
       "radio": "Dostrajanie radia",

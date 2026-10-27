@@ -101,7 +101,25 @@ describe('useMeshcoreCompanionCli', () => {
 
   it('refuses CLI commands on pre-v14 companions', async () => {
     const { result } = setup(13);
-    await expect(result.current.run('ver')).rejects.toThrow(/v1\.18/);
+    await expect(result.current.run('ver')).rejects.toThrow(
+      'meshcoreCompanionCli.requiresCliFirmware',
+    );
+  });
+
+  it('refuses CLI commands when the radio is disconnected', async () => {
+    const disconnected = renderHook(() =>
+      useMeshcoreCompanionCli({
+        connRef: { current: null },
+        companionProtocolVersion: 14,
+        plannedRebootRef: { current: false },
+        connectionLostRef: { current: () => true },
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        sleep: () => Promise.resolve(),
+      }),
+    );
+    await expect(disconnected.result.current.run('ver')).rejects.toThrow(
+      'meshcoreCompanionCli.notConnected',
+    );
   });
 
   it('runs a command and never logs a WiFi password', async () => {

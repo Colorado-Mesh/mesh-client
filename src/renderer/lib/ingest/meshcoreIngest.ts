@@ -216,6 +216,41 @@ function meshcoreTakReplyContext(
   return { reaction, to, ...(reaction && quote ? { quote } : {}) };
 }
 
+/**
+ * Hand a MeshCore channel message that arrived only over MQTT to TAK, using the same
+ * fields as RF ingest. `inserted` is the dedup result: a copy already stored from RF is not sent again.
+ */
+export function relayInsertedMeshcoreMqttChannel(args: {
+  inserted: boolean;
+  identityId: IdentityId;
+  message: ChatMessage;
+  wireText: string;
+  displayName: string;
+  prior: readonly ChatMessage[];
+}): void {
+  if (!args.inserted) return;
+  if (isMeshcoreRoomChatMessage(args.message)) return;
+  const myNodeNum = getConnection(args.identityId)?.myNodeNum ?? 0;
+  if (myNodeNum > 0 && args.message.sender_id === myNodeNum) return;
+  const reply = meshcoreTakReplyContext(args.message, args.wireText, args.prior);
+  const identityNodes = useNodeStore.getState().nodes[args.identityId] as
+    Record<number, NodeRecord> | undefined;
+  const senderNode = identityNodes?.[args.message.sender_id];
+  relayMeshcoreChannelToTak(args.identityId, {
+    channelIndex: args.message.channel,
+    senderName: args.displayName,
+    text: args.message.payload,
+    wireText: args.wireText,
+    ...(reply ? { reply } : {}),
+    timestampMs: args.message.timestamp,
+    fromOther: true,
+    ...(args.message.rxHops != null ? { hops: args.message.rxHops } : {}),
+    ...(senderNode?.latitude != null && senderNode.longitude != null
+      ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
+      : {}),
+  });
+}
+
 function handleTextMessage(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'text_message' }>,

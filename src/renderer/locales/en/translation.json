@@ -3087,6 +3087,10 @@
     "consoleInput": "Companion command",
     "consolePlaceholder": "e.g. get radio",
     "consoleSend": "Send",
+    "notConnected": "Not connected to a MeshCore radio.",
+    "requiresCliFirmware": "Companion CLI requires MeshCore companion firmware v1.18 or newer.",
+    "commandMustBeSingleLine": "Companion command must be a single line.",
+    "commandTooLong": "Companion command is too long (max {{max}} bytes).",
     "groups": {
       "device": "Device",
       "radio": "Radio tuning",
@@ -5527,6 +5531,7 @@
     "cliDangerConfirmMessage": "This command may reboot, shut down, erase, or factory-reset the node: \"{{command}}\". Continue only if you intend this change.",
     "cliDangerConfirmAction": "Run command",
     "cliCommandTooLong": "CLI command is too long (max {{max}} characters).",
+    "cliCommandMustBeSingleLine": "CLI command must be a single line.",
     "cliClockCannotGoBackwards": "This node's clock is ahead of this computer ({{utc}}). MeshCore firmware will not set the clock backwards. After you confirm, run clkreboot, then clock sync.",
     "searchRepeatersPlaceholder": "Search repeaters and rooms…",
     "pathHashCliGet": "Get path hash mode",

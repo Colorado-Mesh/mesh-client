@@ -5093,6 +5093,7 @@
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
     "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
     "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
+    "cliCommandMustBeSingleLine": "Perintah CLI harus satu baris.",
     "currentRouteLabel": "Rute saat ini:",
     "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
     "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
@@ -7397,6 +7398,10 @@
     "consoleInput": "Perintah pendamping",
     "consolePlaceholder": "mis. dapatkan radio",
     "consoleSend": "Kirim",
+    "notConnected": "Tidak terhubung ke radio MeshCore.",
+    "requiresCliFirmware": "CLI companion memerlukan firmware MeshCore companion v1.18 atau yang lebih baru.",
+    "commandMustBeSingleLine": "Perintah companion harus satu baris.",
+    "commandTooLong": "Perintah companion terlalu panjang (maks. {{max}} byte).",
     "groups": {
       "device": "Perangkat",
       "radio": "Penyetelan radio",

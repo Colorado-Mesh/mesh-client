@@ -1,6 +1,7 @@
 import { MESHCORE_CLI_REDACTED, redactMeshcoreCliSecretsInText } from '@/shared/meshcoreCliSecrets';
 
-import { redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
+import { serializeMeshcoreUserMessage } from './meshcore/meshcoreMessageI18n';
+import { normalizeMeshcoreCliCommand, redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
 
 export interface PendingCommand {
   command: string;
@@ -38,6 +39,23 @@ export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
 export const REPEATER_CLI_MAX_TIMEOUT_MS = 120_000;
 /** Max repeater CLI command length before send (BLE to-radio payload cap). */
 export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512;
+
+/** Reject a repeater CLI line before it is queued. Returns the normalized command. */
+export function assertMeshcoreRepeaterCliCommand(command: string): string {
+  const trimmed = normalizeMeshcoreCliCommand(command);
+  if (/[\r\n\0]/.test(trimmed)) {
+    throw new Error(serializeMeshcoreUserMessage('repeatersPanel.cliCommandMustBeSingleLine'));
+  }
+  if (trimmed.length > REPEATER_CLI_MAX_COMMAND_LENGTH) {
+    throw new Error(
+      serializeMeshcoreUserMessage({
+        key: 'repeatersPanel.cliCommandTooLong',
+        params: { max: REPEATER_CLI_MAX_COMMAND_LENGTH },
+      }),
+    );
+  }
+  return trimmed;
+}
 
 const DEFAULT_TIMEOUT_MS = REPEATER_CLI_BASE_TIMEOUT_MS;
 const MAX_RETRIES = 5;

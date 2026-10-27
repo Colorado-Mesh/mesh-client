@@ -20,6 +20,7 @@ import {
   type MeshcoreCompanionSettingsSnapshot,
   readAllMeshcoreCompanionSettings,
 } from '../lib/meshcore/meshcoreCompanionSettings';
+import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { ConfirmModal } from './ConfirmModal';
 import { SettingsCollapsible } from './ui/SettingsSection';
 import { Switch } from './ui/Switch';
@@ -240,10 +241,13 @@ export default function MeshcoreCompanionCliSection({
       }
       setConsoleInput('');
     } catch (e) {
+      const raw = errLikeToLogString(e);
       const message = isMeshcoreCompanionSensitiveCommand(command)
         ? t('meshcoreCompanionCli.actionFailed')
-        : sanitizeLogMessage(errLikeToLogString(e));
-      console.warn('[MeshcoreCompanionCliSection] console command failed ' + message);
+        : translateMeshcoreUserMessage(t, raw);
+      console.warn(
+        '[MeshcoreCompanionCliSection] console command failed ' + sanitizeLogMessage(raw),
+      );
       pushConsole('error', message);
     } finally {
       setConsoleBusy(false);

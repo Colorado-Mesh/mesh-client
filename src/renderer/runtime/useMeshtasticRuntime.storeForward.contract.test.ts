@@ -41,6 +41,20 @@ describe('useMeshtasticRuntime Store & Forward history request (contract)', () =
     expect(afterHistory).toContain('clearSfHistoryFetch(serverNodeId)');
   });
 
+  it('returns missing_router_key before reserving or recording a fetch (auto and manual)', () => {
+    const fn = SOURCE.slice(SOURCE.indexOf('const requestStoreForwardHistory = useCallback'));
+    const missing = fn.indexOf("code: 'missing_router_key'");
+    const reserve = fn.indexOf('reserveStoreForwardHistoryRequest(');
+    const record = fn.indexOf('recordSfHistoryFetch(serverNodeId, now)');
+    expect(missing).toBeGreaterThan(-1);
+    expect(reserve).toBeGreaterThan(missing);
+    expect(record).toBeGreaterThan(missing);
+    const branch = fn.slice(fn.indexOf('if (!destPublicKey)'), missing);
+    expect(branch).toContain('NODEINFO_APP');
+    expect(branch).not.toContain('reserveStoreForwardHistoryRequest');
+    expect(branch).not.toContain('recordSfHistoryFetch');
+  });
+
   it('sends local owner User bytes for S&F NODEINFO requests', () => {
     expect(SOURCE).toContain('ownerUserBytes');
     expect(SOURCE).toContain(

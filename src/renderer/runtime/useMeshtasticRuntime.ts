@@ -418,7 +418,8 @@ export type RequestStoreForwardHistoryResult =
         | 'send_failed'
         | 'cooldown'
         | 'offline_gate'
-        | 'already_requested';
+        | 'already_requested'
+        | 'missing_router_key';
     };
 
 const MQTT_ONLY_VIRTUAL_LONG_NAME = 'MQTT-only Virtual Address';
@@ -1952,57 +1953,15 @@ export function useMeshtasticRuntime() {
           }
           return { ok: false, code: 'no_server' };
         }
-        if (
-          !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
-        ) {
-          return { ok: false, code: 'already_requested' };
-        }
       }
 
       const serverNode = getIdentityNode(meshtasticIdentityIdRef.current, serverNodeId);
       const destPublicKey = resolveMeshtasticDestPublicKeyBytes({
         publicKeyHex: serverNode?.public_key_hex,
       });
-      const canJitContact =
-        destPublicKey != null &&
-        canBuildMeshtasticSharedContact({
-          publicKeyHex: serverNode?.public_key_hex,
-          longName: serverNode?.long_name,
-          shortName: serverNode?.short_name,
-        });
-
-      // Only attach publicKey on CLIENT_HISTORY when the radio NodeDB is known to hold a
-      // matching key (successful SharedContact push). If push is skipped/failed, omit the
-      // wire key so firmware can still auto-PKI from a preexisting NodeDB entry.
-      let radioHasMatchingDestKey = false;
-      if (canJitContact && serverNode && destPublicKey) {
-        const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
-        registerMeshtasticNonChatWirePacketId(contactPacketId);
-        try {
-          const contactBytes = buildLocalAddContactToRadioBytes({
-            myNodeNum: myNode,
-            packetId: contactPacketId,
-            nodeNum: serverNodeId,
-            longName: serverNode.long_name,
-            shortName: serverNode.short_name,
-            publicKey: destPublicKey,
-          });
-          await writeToRadioWithoutQueue(activeDevice, contactBytes);
-          radioHasMatchingDestKey = true;
-          console.debug(
-            `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
-          );
-        } catch (e: unknown) {
-          // catch-no-log-ok continue with history; radio may already hold the key
-          console.debug(
-            '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
-              errLikeToLogString(e),
-          );
-        }
-      } else if (!destPublicKey) {
-        // App NodeDB lacks the router key — ask for NODEINFO so a later heartbeat can JIT.
-        // Send our User (not empty bytes): firmware applies the request payload to the
-        // sender's NodeDB entry before replying.
+      if (!destPublicKey) {
+        // Router key is missing. Ask for NODEINFO and stop. Do not reserve this
+        // session or record a fetch cooldown — history was not requested.
         const selfNode = getIdentityNode(meshtasticIdentityIdRef.current, myNode);
         const selfLong = selfNode?.long_name?.trim() ?? '';
         const selfShort = selfNode?.short_name?.trim() ?? '';
@@ -2035,6 +1994,50 @@ export function useMeshtasticRuntime() {
                 '[useMeshtasticRuntime] NODEINFO request failed ' + errLikeToLogString(e),
               );
             });
+        }
+        return { ok: false, code: 'missing_router_key' };
+      }
+
+      if (!manual) {
+        if (
+          !reserveStoreForwardHistoryRequest(sfHistoryRequestedServersRef.current, serverNodeId)
+        ) {
+          return { ok: false, code: 'already_requested' };
+        }
+      }
+
+      const canJitContact = canBuildMeshtasticSharedContact({
+        publicKeyHex: serverNode?.public_key_hex,
+        longName: serverNode?.long_name,
+        shortName: serverNode?.short_name,
+      });
+
+      // Attach publicKey on CLIENT_HISTORY only after a successful SharedContact push.
+      // If that push fails, omit the wire key so firmware can auto-PKI from NodeDB.
+      let radioHasMatchingDestKey = false;
+      if (canJitContact && serverNode) {
+        const contactPacketId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
+        registerMeshtasticNonChatWirePacketId(contactPacketId);
+        try {
+          const contactBytes = buildLocalAddContactToRadioBytes({
+            myNodeNum: myNode,
+            packetId: contactPacketId,
+            nodeNum: serverNodeId,
+            longName: serverNode.long_name,
+            shortName: serverNode.short_name,
+            publicKey: destPublicKey,
+          });
+          await writeToRadioWithoutQueue(activeDevice, contactBytes);
+          radioHasMatchingDestKey = true;
+          console.debug(
+            `[useMeshtasticRuntime] Store & Forward SharedContact pushed for 0x${serverNodeId.toString(16)}`,
+          );
+        } catch (e: unknown) {
+          // catch-no-log-ok continue with history; radio may already hold the key
+          console.debug(
+            '[useMeshtasticRuntime] Store & Forward SharedContact push failed ' +
+              errLikeToLogString(e),
+          );
         }
       }
 

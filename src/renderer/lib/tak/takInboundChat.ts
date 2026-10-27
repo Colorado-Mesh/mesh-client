@@ -146,11 +146,19 @@ export async function relayTakChatToMesh(
     // Only a channel message is heard back off the mesh; a direct message has no echo.
     const onChannel = target.destination === undefined;
     if (onChannel) rememberTakSend(target.identityId, target.channelIndex, text, nowMs);
+    // MeshCore channel sends already time out inside the radio wait. A second timer here
+    // reports the send failed, then the late echo is posted back into ATAK.
+    const meshcoreChannel = onChannel && target.protocol === 'meshcore';
     try {
-      await withSendTimeout(sendFn(target, text));
+      if (meshcoreChannel) await sendFn(target, text);
+      else await withSendTimeout(sendFn(target, text));
       sent++;
     } catch (e) {
-      if (onChannel) consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
+      const meshcoreWaitTimedOut =
+        meshcoreChannel && e instanceof Error && e.message === 'mesh send timed out';
+      if (onChannel && !meshcoreWaitTimedOut) {
+        consumeTakEcho(target.identityId, target.channelIndex, text, nowMs);
+      }
       if (target.dmRef) reportTakDmOutcome(target.dmRef, 'not-sent');
       console.warn('[TakInboundChat] mesh send failed ' + errLikeToLogString(e));
     }

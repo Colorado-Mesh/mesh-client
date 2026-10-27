@@ -33,6 +33,8 @@ jobs:
         ${{ github.event_name != 'pull_request' || steps.filter.outcome != 'success' ||
         steps.filter.outputs.all_count == '' || steps.filter.outputs.all_count >= 3000 ||
         steps.filter.outputs.swift != 'false' }}
+      # Swift is omitted here, not in the analyze job if: that if cannot read matrix.
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       # The PR files API handles additions, deletions and renames without checkout.
       # dorny/paths-filter v4.0.0
@@ -55,12 +57,37 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+      # matrix is not a job-level context, so drop the Swift cell before the
+      # runner is chosen. A false SWIFT value means the paths filter succeeded
+      # and Swift inputs did not change.
+      - id: matrix
+        env:
+          SWIFT: >-
+            ${{ github.event_name != 'pull_request' || steps.filter.outcome != 'success' ||
+            steps.filter.outputs.all_count == '' || steps.filter.outputs.all_count >= 3000 ||
+            steps.filter.outputs.swift != 'false' }}
+        run: |
+          node <<'EOF' >> "$GITHUB_OUTPUT"
+          const rows = [
+            { language: 'actions', os: 'ubuntu-latest', 'build-mode': 'none' },
+            { language: 'csharp', os: 'ubuntu-latest', 'build-mode': 'none' },
+            { language: 'javascript-typescript', os: 'ubuntu-latest', 'build-mode': 'none' },
+            { language: 'python', os: 'ubuntu-latest', 'build-mode': 'none' },
+            { language: 'rust', os: 'ubuntu-latest', 'build-mode': 'none' },
+          ];
+          if (process.env.SWIFT === 'true') {
+            rows.push({ language: 'swift', os: 'macos-latest', 'build-mode': 'autobuild' });
+          }
+          process.stdout.write(`matrix=${JSON.stringify(rows)}\n`);
+          EOF
 
   analyze:
     name: Analyze (${{ matrix.language }})
     needs: scope
     # PRs validate the replacement without uploading while default setup is active.
     # Enable uploads only after disabling default setup; see .github/codeql/README.md.
+    # The matrix from scope omits Swift when it is out of scope, so a macOS runner
+    # is not allocated. Other languages keep the default CodeQL setup behavior.
     if: >-
       github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' ||
       vars.CODEQL_ADVANCED_ENABLED == 'true'
@@ -72,25 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - language: actions
-            os: ubuntu-latest
-            build-mode: none
-          - language: csharp
-            os: ubuntu-latest
-            build-mode: none
-          - language: javascript-typescript
-            os: ubuntu-latest
-            build-mode: none
-          - language: python
-            os: ubuntu-latest
-            build-mode: none
-          - language: rust
-            os: ubuntu-latest
-            build-mode: none
-          - language: swift
-            os: macos-latest
-            build-mode: autobuild
+        include: ${{ fromJson(needs.scope.outputs.matrix) }}
     steps:
       # actions/checkout v6.1.0
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803

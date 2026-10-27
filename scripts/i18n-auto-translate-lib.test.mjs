@@ -222,6 +222,24 @@ describe('filterMissingKeysToTranslate', () => {
     ).toEqual(['prose']);
   });
 
+  it('auditIdentical: does not treat a dotted column label as a filename', () => {
+    const enFlat = {
+      'nodeListPanel.columnChUtil': 'Ch.Util',
+      prose: 'Channel utilization',
+      file: 'dir/config.txt',
+      home: '~/config.txt',
+    };
+    const existing = { ...enFlat };
+    expect(
+      filterMissingKeysToTranslate(Object.keys(enFlat), existing, null, {
+        translateAllGaps: false,
+        hasGitBaseline: false,
+        auditIdentical: true,
+        enFlat,
+      }),
+    ).toEqual(['nodeListPanel.columnChUtil', 'prose']);
+  });
+
   it('auditIdentical: does not treat WiFi/HTTP as a technical path sample', () => {
     const enFlat = {
       'connectionPanel.transports': 'WiFi/HTTP',

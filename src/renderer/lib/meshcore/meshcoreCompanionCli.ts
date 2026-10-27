@@ -6,6 +6,7 @@ import {
 } from '@/shared/meshcoreCliSecrets';
 
 import { MC_CMD_RUN_CLI_COMMAND, MC_RESP_CLI_REPLY } from '../meshcoreWireCodes';
+import { serializeMeshcoreUserMessage } from './meshcoreMessageI18n';
 
 /** Companion protocol version (`deviceQuery().firmwareVer`) that added CMD_RUN_CLI_COMMAND. */
 export const MESHCORE_COMPANION_CLI_MIN_VER = 14;
@@ -78,9 +79,18 @@ export function randomMeshcoreCliPrefix(): string {
 export function validateMeshcoreCompanionCliCommand(command: string): string {
   const trimmed = command.replace(/^\s+/, '');
   if (trimmed.trim().length === 0) throw new Error('empty companion CLI command');
-  if (/[\r\n\0]/.test(trimmed)) throw new Error('companion CLI command must be a single line');
+  if (/[\r\n\0]/.test(trimmed)) {
+    throw new Error(
+      serializeMeshcoreUserMessage({ key: 'meshcoreCompanionCli.commandMustBeSingleLine' }),
+    );
+  }
   if (new TextEncoder().encode(trimmed).length > MESHCORE_COMPANION_CLI_MAX_COMMAND_BYTES) {
-    throw new Error('companion CLI command too long');
+    throw new Error(
+      serializeMeshcoreUserMessage({
+        key: 'meshcoreCompanionCli.commandTooLong',
+        params: { max: MESHCORE_COMPANION_CLI_MAX_COMMAND_BYTES },
+      }),
+    );
   }
   return trimmed;
 }

@@ -5093,6 +5093,7 @@
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
     "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
     "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
+    "cliCommandMustBeSingleLine": "Het CLI-commando moet op één regel staan.",
     "currentRouteLabel": "Huidig ​​traject:",
     "neighborsLoadMore": "Laad meer ({{loaded}} van {{total}})",
     "neighborsLoadMoreAria": "Laad meer buren ({{loaded}} van {{total}} geladen)",
@@ -7397,6 +7398,10 @@
     "consoleInput": "Begeleidingsopdracht",
     "consolePlaceholder": "bijv. haal radio",
     "consoleSend": "Verzenden",
+    "notConnected": "Niet verbonden met een MeshCore-radio.",
+    "requiresCliFirmware": "Companion CLI vereist MeshCore companion-firmware v1.18 of nieuwer.",
+    "commandMustBeSingleLine": "Het companion-commando moet op één regel staan.",
+    "commandTooLong": "Het companion-commando is te lang (max. {{max}} bytes).",
     "groups": {
       "device": "Toestel",
       "radio": "Radiotuning",

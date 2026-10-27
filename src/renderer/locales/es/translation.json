@@ -5093,6 +5093,7 @@
     "cliAutoPingToast": "Estableciendo ruta con Ping antes de CLI...",
     "cliAutoPingFailed": "Ping falló; ejecute Ping manualmente antes de reintentar la CLI en nodos multihop.",
     "cliCommandTooLong": "El comando CLI es demasiado largo (máx. {{max}} caracteres).",
+    "cliCommandMustBeSingleLine": "El comando CLI debe ser una sola línea.",
     "currentRouteLabel": "Ruta actual:",
     "neighborsLoadMore": "Cargar más ({{loaded}} de {{total}})",
     "neighborsLoadMoreAria": "Cargar más vecinos ({{loaded}} de {{total}} cargados)",
@@ -7397,6 +7398,10 @@
     "consoleInput": "Comando de acompañamiento",
     "consolePlaceholder": "por ejemplo, obtener radio",
     "consoleSend": "Enviar",
+    "notConnected": "No hay conexión con una radio MeshCore.",
+    "requiresCliFirmware": "La CLI del companion requiere firmware MeshCore companion v1.18 o posterior.",
+    "commandMustBeSingleLine": "El comando del companion debe ser una sola línea.",
+    "commandTooLong": "El comando del companion es demasiado largo (máx. {{max}} bytes).",
     "groups": {
       "device": "Dispositivo",
       "radio": "[sintonización de radio]",

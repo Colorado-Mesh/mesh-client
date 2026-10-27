@@ -326,7 +326,6 @@ export async function isReleaseTagNameInUse(tagName, token) {
  * @param {unknown} previousTagName
  * @param {string} token
  * @param {{
- *   fallbackToken?: string,
  *   log?: (...args: unknown[]) => void,
  *   isTagNameInUse?: (tagName: string) => Promise<boolean>,
  * }} [opts]
@@ -335,7 +334,7 @@ export async function isReleaseTagNameInUse(tagName, token) {
 export async function deleteOrphanUntaggedRef(
   previousTagName,
   token,
-  { fallbackToken, log = console.debug, isTagNameInUse } = {},
+  { log = console.debug, isTagNameInUse } = {},
 ) {
   if (!isUntaggedPlaceholderTag(previousTagName)) {
     return false;
@@ -366,17 +365,7 @@ export async function deleteOrphanUntaggedRef(
       method: 'DELETE',
     });
 
-  let { response, json } = await attempt(token);
-  if (
-    !response.ok &&
-    response.status === 403 &&
-    typeof fallbackToken === 'string' &&
-    fallbackToken &&
-    fallbackToken !== token
-  ) {
-    log(`[github-release] orphan ref DELETE 403 for ${safe}; retrying with fallback token`);
-    ({ response, json } = await attempt(fallbackToken));
-  }
+  const { response, json } = await attempt(token);
 
   // Untagged drafts often never materialize their placeholder ref; GitHub answers 422
   // "Reference does not exist" instead of 404 in that case.
@@ -431,7 +420,7 @@ export async function repairReleaseTagAndCleanupOrphan(
         `tag_name=${JSON.stringify(updated.tag_name)} (expected ${tag})`,
     );
   }
-  await deleteOrphanUntaggedRef(previousTagName, token, { fallbackToken, log });
+  await deleteOrphanUntaggedRef(previousTagName, token, { log });
   return updated;
 }
 
@@ -844,7 +833,7 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
     );
   }
   if (previousKeeperTag !== tag) {
-    await deleteOrphanUntaggedRef(previousKeeperTag, token, { fallbackToken, log });
+    await deleteOrphanUntaggedRef(previousKeeperTag, token, { log });
   }
 
   const keeperAssetNames = new Set(
@@ -887,7 +876,7 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
     const dupTag = release.tag_name;
     await deleteRelease(release.id, token);
     log(`[github-release] Deleted duplicate release ${release.id} for ${tag}`);
-    await deleteOrphanUntaggedRef(dupTag, token, { fallbackToken, log });
+    await deleteOrphanUntaggedRef(dupTag, token, { log });
   }
 
   const bodyPatch =
