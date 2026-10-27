@@ -527,9 +527,9 @@ export function useMeshtasticRuntime() {
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const refreshOurPositionRef = useRef<() => Promise<OurPosition | null>>(() =>
-    Promise.resolve(null),
-  );
+  const refreshOurPositionRef = useRef<
+    (opts?: { allowTransmit?: boolean }) => Promise<OurPosition | null>
+  >(() => Promise.resolve(null));
   // ─── MQTT session tracking ────────────────────────────────────
   // Tracks current MQTT connection status in a ref for use in callbacks
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
@@ -4367,96 +4367,103 @@ export function useMeshtasticRuntime() {
     });
   }, []);
 
-  const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
-    // Dual-protocol: Meshtastic hook stays mounted when user switches to MeshCore; skip GPS work
-    // so we do not overwrite Meshtastic state or call getGpsFix / IP while MeshCore is active.
-    if (getStoredMeshProtocol() !== 'meshtastic') {
-      return null;
-    }
-    setGpsLoading(true);
-    try {
-      const storedStatic = readStoredStaticGps();
-      const staticLat = storedStatic?.lat;
-      const staticLon = storedStatic?.lon;
-      // Only a fix the radio reported this session counts as device GPS; the self node row may
-      // hold app-resolved or SQLite-restored coords. A static position still wins over it.
-      const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshtastic');
-      const pos = await resolveOurPosition(
-        radioSelf?.lat,
-        radioSelf?.lon,
-        staticLat,
-        staticLon,
-        radioSelf?.altitudeMeters,
-      );
-      setOurPosition(pos);
-      if (getStoredMeshProtocol() === 'meshtastic') {
-        publishOurPositionReference(pos);
+  const refreshOurPosition = useCallback(
+    async (opts?: { allowTransmit?: boolean }): Promise<OurPosition | null> => {
+      // Dual-protocol: Meshtastic hook stays mounted when user switches to MeshCore; skip GPS work
+      // so we do not overwrite Meshtastic state or call getGpsFix / IP while MeshCore is active.
+      if (getStoredMeshProtocol() !== 'meshtastic') {
+        return null;
       }
-
-      // IP/browser fixes are city-level: never write them into the self node or SQLite.
-      if (pos && !isLowAccuracyPosition(pos.source)) {
-        const hasDevice = !!deviceRef.current;
-        const selfNodeId =
-          hasDevice && myNodeNumRef.current > 0
-            ? myNodeNumRef.current
-            : mqttStatusRef.current === 'connected'
-              ? virtualNodeIdRef.current
-              : 0;
-        if (selfNodeId > 0) {
-          const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
-          let selfNodeToPersist: MeshNode | undefined;
-          updateNodes((prev) => {
-            const updated = new Map(prev);
-            const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
-            const node: MeshNode = {
-              ...existing,
-              node_id: selfNodeId,
-              latitude: pos.lat,
-              longitude: pos.lon,
-              last_heard: Date.now(),
-              lastPositionWarning: undefined,
-              ...(isVirtualNode
-                ? { long_name: MQTT_ONLY_VIRTUAL_LONG_NAME, role: ROLE_CLIENT, hops_away: 0 }
-                : {}),
-            };
-            updated.set(selfNodeId, node);
-            if (!isVirtualNode) selfNodeToPersist = node;
-            return updated;
-          });
-          if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
-        }
-
-        const meshtasticRole = readAppliedMeshtasticRole(
-          meshtasticIdentityIdRef.current,
-          myNodeNumRef.current,
+      setGpsLoading(true);
+      try {
+        const storedStatic = readStoredStaticGps();
+        const staticLat = storedStatic?.lat;
+        const staticLon = storedStatic?.lon;
+        // Only a fix the radio reported this session counts as device GPS; the self node row may
+        // hold app-resolved or SQLite-restored coords. A static position still wins over it.
+        const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshtastic');
+        const pos = await resolveOurPosition(
+          radioSelf?.lat,
+          radioSelf?.lon,
+          staticLat,
+          staticLon,
+          radioSelf?.altitudeMeters,
         );
-        const wouldSendWithoutMute =
-          deviceRef.current &&
-          (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
-        const shouldSendToDevice =
-          canTransmitLocation({ protocol: 'meshtastic', meshtasticRole }) && wouldSendWithoutMute;
-
-        if (shouldSendToDevice && deviceRef.current) {
-          deviceRef.current
-            .setPosition(
-              create(meshtasticMeshProtobuf.PositionSchema, {
-                latitudeI: Math.round(pos.lat * 1e7),
-                longitudeI: Math.round(pos.lon * 1e7),
-                time: Math.floor(Date.now() / 1000),
-              }) as unknown as PositionType,
-            )
-            .catch((e: unknown) => {
-              console.debug(
-                '[useMeshtasticRuntime] setPosition non-fatal ' + errLikeToLogString(e),
-              );
-            });
+        setOurPosition(pos);
+        if (getStoredMeshProtocol() === 'meshtastic') {
+          publishOurPositionReference(pos);
         }
+
+        // IP/browser fixes are city-level: never write them into the self node or SQLite.
+        if (pos && !isLowAccuracyPosition(pos.source)) {
+          const hasDevice = !!deviceRef.current;
+          const selfNodeId =
+            hasDevice && myNodeNumRef.current > 0
+              ? myNodeNumRef.current
+              : mqttStatusRef.current === 'connected'
+                ? virtualNodeIdRef.current
+                : 0;
+          if (selfNodeId > 0) {
+            const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
+            let selfNodeToPersist: MeshNode | undefined;
+            updateNodes((prev) => {
+              const updated = new Map(prev);
+              const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
+              const node: MeshNode = {
+                ...existing,
+                node_id: selfNodeId,
+                latitude: pos.lat,
+                longitude: pos.lon,
+                last_heard: Date.now(),
+                lastPositionWarning: undefined,
+                ...(isVirtualNode
+                  ? { long_name: MQTT_ONLY_VIRTUAL_LONG_NAME, role: ROLE_CLIENT, hops_away: 0 }
+                  : {}),
+              };
+              updated.set(selfNodeId, node);
+              if (!isVirtualNode) selfNodeToPersist = node;
+              return updated;
+            });
+            if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
+          }
+
+          const meshtasticRole = readAppliedMeshtasticRole(
+            meshtasticIdentityIdRef.current,
+            myNodeNumRef.current,
+          );
+          const wouldSendWithoutMute =
+            deviceRef.current &&
+            (pos.source === 'static' ||
+              (pos.source === 'browser' && deviceGpsModeRef.current === 2));
+          // Radio-driven local re-resolve (onSelfRadioPosition) must not push setPosition.
+          const shouldSendToDevice =
+            opts?.allowTransmit !== false &&
+            canTransmitLocation({ protocol: 'meshtastic', meshtasticRole }) &&
+            wouldSendWithoutMute;
+
+          if (shouldSendToDevice && deviceRef.current) {
+            deviceRef.current
+              .setPosition(
+                create(meshtasticMeshProtobuf.PositionSchema, {
+                  latitudeI: Math.round(pos.lat * 1e7),
+                  longitudeI: Math.round(pos.lon * 1e7),
+                  time: Math.floor(Date.now() / 1000),
+                }) as unknown as PositionType,
+              )
+              .catch((e: unknown) => {
+                console.debug(
+                  '[useMeshtasticRuntime] setPosition non-fatal ' + errLikeToLogString(e),
+                );
+              });
+          }
+        }
+        return pos;
+      } finally {
+        setGpsLoading(false);
       }
-      return pos;
-    } finally {
-      setGpsLoading(false);
-    }
-  }, [updateNodes]);
+    },
+    [updateNodes],
+  );
 
   // Keep ref in sync so intervals/callbacks always call the latest version
   refreshOurPositionRef.current = refreshOurPosition;

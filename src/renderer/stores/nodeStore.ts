@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { preferNonEmptyTrimmedString } from '@/shared/nodeNameUtils';
 
-import { shouldPreserveStaticGpsForSelfNode } from '../lib/gpsSource';
+import { readStoredStaticGps, shouldPreserveStaticGpsForSelfNode } from '../lib/gpsSource';
 import { loadPersistedMeshcoreSelfNodeId } from '../lib/meshcoreLastSelfNodeId';
 import {
   getMeshtasticConfigurePhase,
@@ -425,18 +425,29 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
       nodeId,
       selfNodeIdForStaticGpsPreserve(identityId),
     );
+    let positionPatch: { latitude?: number; longitude?: number } = {
+      latitude,
+      longitude,
+    };
+    if (preserveStatic) {
+      const existingHasGps =
+        existing?.latitude != null &&
+        existing.longitude != null &&
+        (Math.abs(existing.latitude) > 0.0001 || Math.abs(existing.longitude) > 0.0001);
+      if (existingHasGps) {
+        positionPatch = {};
+      } else {
+        const stored = readStoredStaticGps();
+        positionPatch = stored ? { latitude: stored.lat, longitude: stored.lon } : {};
+      }
+    }
     return {
       nodes: {
         ...s.nodes,
         [identityId]: {
           ...byId,
           [nodeId]: mergeNode(existing, nodeId, {
-            ...(preserveStatic
-              ? {}
-              : {
-                  latitude,
-                  longitude,
-                }),
+            ...positionPatch,
             altitude,
             positionTimestamp: timestamp,
             groundSpeed,

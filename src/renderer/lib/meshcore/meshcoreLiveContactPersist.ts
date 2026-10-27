@@ -117,8 +117,9 @@ export function persistMeshcoreNodeInfoAfterAdvert(
   const existingLat = existingRecord?.latitude ?? null;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent at runtime.
   const existingLon = existingRecord?.longitude ?? null;
-  const latDeg = preserveStaticSelf ? existingLat : (opts?.latitudeDeg ?? existingLat);
-  const lonDeg = preserveStaticSelf ? existingLon : (opts?.longitudeDeg ?? existingLon);
+  // Persist advert coords from the radio when present; static GPS is display-only (nodeStore / overlay).
+  const latDeg = opts?.latitudeDeg ?? existingLat;
+  const lonDeg = opts?.longitudeDeg ?? existingLon;
 
   if (
     !preserveStaticSelf &&

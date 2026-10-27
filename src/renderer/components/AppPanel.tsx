@@ -1076,7 +1076,7 @@ export default function AppPanel({
             data-setting-anchor="app.gps.refreshNow"
             type="button"
             onClick={() => onRefreshGps?.()}
-            disabled={gpsLoading}
+            disabled={gpsLoading || !onRefreshGps}
             title={
               !settings.shareMyLocation
                 ? t(
@@ -1087,7 +1087,7 @@ export default function AppPanel({
                 : undefined
             }
             aria-label={gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
-            className={`bg-secondary-dark text-ink-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${gpsLoading ? 'cursor-not-allowed opacity-50' : 'hover:bg-ink-600'}`}
+            className={`bg-secondary-dark text-ink-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${gpsLoading || !onRefreshGps ? 'cursor-not-allowed opacity-50' : 'hover:bg-ink-600'}`}
           >
             {gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
           </button>

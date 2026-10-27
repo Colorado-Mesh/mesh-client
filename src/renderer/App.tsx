@@ -5829,7 +5829,9 @@ function AppContent() {
                                   onRefreshGps={
                                     capabilities.hasFullPositionConfig
                                       ? meshtasticPanelActions.refreshOurPosition
-                                      : undefined
+                                      : capabilities.prefersDeviceOwnerLongNameInHeader
+                                        ? meshcorePanelActions.refreshOurPosition
+                                        : undefined
                                   }
                                   onLocationChanged={refreshActiveOurPosition}
                                   gpsLoading={activeRuntime.gpsLoading}

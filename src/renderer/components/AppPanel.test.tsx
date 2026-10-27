@@ -8,7 +8,11 @@ import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { GPS_SETTINGS_STORAGE_KEY } from '../lib/gpsSource';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
-import { SAVED_LOCATIONS_STORAGE_KEY, saveNewLocation } from '../lib/savedLocations';
+import {
+  resetSavedLocationsCacheForTests,
+  SAVED_LOCATIONS_STORAGE_KEY,
+  saveNewLocation,
+} from '../lib/savedLocations';
 import {
   resetLiveChannelKeyStoreForTests,
   setLiveChannelKeys,
@@ -21,6 +25,7 @@ describe('AppPanel GPS refresh with Share off', () => {
     localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
     localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
     localStorage.removeItem(SAVED_LOCATIONS_STORAGE_KEY);
+    resetSavedLocationsCacheForTests();
   });
 
   it('keeps Refresh Now enabled when share is off so radio/static GPS can re-resolve locally', async () => {
@@ -49,6 +54,24 @@ describe('AppPanel GPS refresh with Share off', () => {
     expect(onRefreshGps).toHaveBeenCalledOnce();
   });
 
+  it('disables Refresh Now when no onRefreshGps is wired', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="reticulum"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByText('GPS / Location'));
+    expect(screen.getByRole('button', { name: 'Refresh Now' })).toBeDisabled();
+  });
+
   it('mentions saved location local use when share is off and static is active', async () => {
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
     saveNewLocation({ name: 'Desktop', lat: 41.59375, lon: -73.02428, fixed: true });
@@ -61,6 +84,7 @@ describe('AppPanel GPS refresh with Share off', () => {
           channels={[]}
           myNodeNum={null}
           onLocationFilterChange={vi.fn()}
+          onRefreshGps={vi.fn()}
         />
       </ToastProvider>,
     );
