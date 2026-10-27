@@ -6,6 +6,8 @@ vi.mock('node:dns/promises', () => ({
   lookup: dnsLookup,
 }));
 
+import { Agent } from 'undici';
+
 import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '../../shared/ai-types';
 import { buildRequest, parseDelta } from './adapters';
 import { AiClient } from './aiClient';
@@ -473,6 +475,51 @@ describe('AI bounded streaming client', () => {
     };
     await expect(consume()).rejects.toThrow('httpError');
     expect(cancel).toHaveBeenCalledOnce();
+  });
+  it('closes the pinned agent when stream reader.cancel rejects', async () => {
+    const close = vi.spyOn(Agent.prototype, 'close');
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n',
+          ),
+        );
+      },
+      cancel() {
+        return Promise.reject(new Error('cancel failed'));
+      },
+    });
+    const consume = async () => {
+      for await (const part of new AiClient(async () => new Response(body)).stream(
+        'openai',
+        input,
+        true,
+        new AbortController().signal,
+      )) {
+        expect(part).toBe('hi');
+      }
+    };
+    await expect(consume()).rejects.toThrow('cancel failed');
+    expect(close).toHaveBeenCalled();
+    close.mockRestore();
+  });
+  it('closes the pinned agent when list reader.cancel rejects', async () => {
+    const close = vi.spyOn(Agent.prototype, 'close');
+    const response = new Response('{"models":[]}');
+    Object.defineProperty(response, 'body', {
+      value: {
+        getReader: () => ({
+          read: () => Promise.resolve({ done: true, value: undefined }),
+          cancel: () => Promise.reject(new Error('cancel failed')),
+        }),
+      },
+    });
+    await expect(new AiClient(async () => response).list('openai', input, true)).rejects.toThrow(
+      'cancel failed',
+    );
+    expect(close).toHaveBeenCalled();
+    close.mockRestore();
   });
   it('rejects incomplete streams, caps responses and gates before fetch', async () => {
     const fetchImpl = vi.fn(

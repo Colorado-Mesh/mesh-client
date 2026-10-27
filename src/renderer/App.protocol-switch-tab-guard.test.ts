@@ -38,7 +38,7 @@ describe('App protocol-switch tab guard (regression)', () => {
     );
   });
 
-  it('commits protocol, storage, and diagnostics in one helper', () => {
+  it('commits protocol in the helper and persists storage after the protocol changes', () => {
     expect(SOURCE.match(/setProtocol\(/g)).toHaveLength(1);
     expect(SOURCE.match(/localStorage\.setItem\(MESH_PROTOCOL_STORAGE_KEY/g)).toHaveLength(1);
     expect(SOURCE.match(/clearDiagnostics\(/g)).toHaveLength(1);
@@ -49,9 +49,16 @@ describe('App protocol-switch tab guard (regression)', () => {
     );
     expect(helper).toContain('if (!isCurrentProtocolSwitch(id)) return;');
     expect(helper).toContain('setProtocol(input.nextProtocol)');
-    expect(helper).toContain('if (input.protocolChanged)');
-    expect(helper.indexOf('if (input.protocolChanged)')).toBeLessThan(
-      helper.indexOf('clearDiagnostics('),
+    expect(helper).not.toContain('clearDiagnostics(');
+    expect(helper).not.toContain('localStorage.setItem');
+    const effectStart = SOURCE.indexOf('const previousCommittedProtocolRef');
+    expect(effectStart).toBeGreaterThan(-1);
+    const effect = SOURCE.slice(effectStart, effectStart + 600);
+    expect(effect.indexOf('if (previous === protocol) return;')).toBeLessThan(
+      effect.indexOf('clearDiagnostics('),
+    );
+    expect(effect.indexOf('clearDiagnostics(')).toBeLessThan(
+      effect.indexOf('localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY'),
     );
   });
 
@@ -60,17 +67,24 @@ describe('App protocol-switch tab guard (regression)', () => {
       SOURCE.indexOf('const handleSend'),
       SOURCE.indexOf('const { status: takStatus'),
     );
-    expect(send).toContain('if (protocolSwitchPending) return;');
+    expect(send.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      send.indexOf('sendMessage('),
+    );
     const resend = SOURCE.slice(
       SOURCE.indexOf('const handleResend'),
       SOURCE.indexOf('const traceRouteHops'),
     );
-    expect(resend).toContain('if (protocolSwitchPending) return;');
+    expect(resend.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      resend.indexOf('sendMessage('),
+    );
     const reconnect = SOURCE.slice(
       SOURCE.indexOf('const handleReconnect'),
       SOURCE.indexOf('const handleMessageNode'),
     );
-    expect(reconnect).toContain('if (protocolSwitchPending) return;');
+    expect(reconnect.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      reconnect.indexOf('reconnectInFlightRef.current = true'),
+    );
+    expect(SOURCE).toContain('composerDisabled={protocolSwitchPending}');
     expect(SOURCE).toContain(
       'protocolSwitchPending\n                                  ? ignoreProtocolSwitchConnect',
     );

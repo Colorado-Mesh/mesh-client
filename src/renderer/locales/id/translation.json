@@ -616,7 +616,8 @@
       "send_failed": "Tidak dapat mengirim permintaan riwayat ke radio. Sambungkan kembali atau coba lagi.",
       "cooldown": "Riwayat baru saja diambil untuk router ini. Tunggu sebelum meminta lagi.",
       "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Kejar dari Toko & Teruskan secara manual.",
-      "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini."
+      "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini.",
+      "missing_router_key": "Kunci router belum diketahui. Tunggu informasi node, lalu coba lagi."
     },
     "replyRequiresPacketId": "Balasan memerlukan ID paket RF pesan (tunggu konfirmasi kirim atau segarkan obrolan).",
     "queueButton": "Antrian",

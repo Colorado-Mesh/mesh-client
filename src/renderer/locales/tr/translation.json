@@ -616,7 +616,8 @@
       "send_failed": "Radyoya geçmiş isteği gönderilemedi. Yeniden bağlanın veya tekrar deneyin.",
       "cooldown": "Bu yönlendirici için geçmiş yakın zamanda alındı. Yeniden istek göndermeden önce bekleyin.",
       "offline_gate": "Otomatik yakalama çalıştırmadan önce yeniden bağladıktan sonra birkaç dakika bekleyin; manuel olarak Yakala'yı kullanın.",
-      "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor."
+      "already_requested": "Bu yönlendirici için bir geçmiş isteği zaten devam ediyor.",
+      "missing_router_key": "Yönlendirici anahtarı henüz bilinmiyor. Düğüm bilgisini bekleyin, sonra yeniden deneyin."
     },
     "replyRequiresPacketId": "Yanıt, RF paket kimliği mesajını gerektirir (mesajın gönderilmesini bekleyin veya sohbeti yenileyin).",
     "queueButton": "Kuyruk (sıra)",

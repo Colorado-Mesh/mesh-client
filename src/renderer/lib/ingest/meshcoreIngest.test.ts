@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setConnection, useConnectionStore } from '../../stores/connectionStore';
 import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
@@ -24,6 +25,7 @@ import { loadRuntimeSource } from '../sourceContractTestHelpers';
 import { messageRecordToChatMessage } from '../storeRecordAdapters';
 import { resetTakRelayedChannelLines } from '../tak/takChannelRelay';
 import { resetTakRelayedDirectMessages } from '../tak/takDirectMessages';
+import { rememberTakSend, resetTakEchoForTests } from '../tak/takEchoGuard';
 import {
   attachMeshcoreIngest,
   meshcoreIngestHandleTextMessage,
@@ -947,6 +949,8 @@ describe('MeshCore MQTT channel messages to TAK', () => {
 
   afterEach(() => {
     setTakSinkActive(false);
+    useConnectionStore.setState({ connections: {} });
+    resetTakEchoForTests();
     vi.restoreAllMocks();
   });
 
@@ -967,6 +971,33 @@ describe('MeshCore MQTT channel messages to TAK', () => {
         text: 'on scene',
       }),
     );
+  });
+
+  it('lets consumeTakEcho drop the line while the local node is unknown', () => {
+    rememberTakSend(MQTT_ID, 3, 'on scene');
+    relayInsertedMeshcoreMqttChannel({
+      inserted: true,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('relays when the sender is known to be another node, even if the text matches a TAK echo', () => {
+    setConnection(MQTT_ID, { myNodeNum: 7, status: 'connected' });
+    rememberTakSend(MQTT_ID, 3, 'on scene');
+    relayInsertedMeshcoreMqttChannel({
+      inserted: true,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
   });
 
   it('does not relay a message already stored from RF', () => {

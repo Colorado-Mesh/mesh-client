@@ -4088,6 +4088,34 @@ describe('ChatPanel — sender filter', () => {
 });
 
 describe('ChatPanel — draft persistence', () => {
+  it('keeps the draft and does not send while the composer is disabled', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const view = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={onSend} />
+      </ToastProvider>,
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'keep me');
+    view.rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={onSend} composerDisabled />
+      </ToastProvider>,
+    );
+    expect(textarea).toHaveValue('keep me');
+    expect(textarea).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    expect(onSend).not.toHaveBeenCalled();
+    view.rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={onSend} />
+      </ToastProvider>,
+    );
+    expect(screen.getByRole('textbox')).toHaveValue('keep me');
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
+
   it('preserves unsent input when switching channels', async () => {
     const user = userEvent.setup();
     localStorage.clear();

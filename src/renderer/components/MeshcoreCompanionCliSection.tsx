@@ -1,7 +1,6 @@
 import { type ReactNode, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
@@ -241,13 +240,13 @@ export default function MeshcoreCompanionCliSection({
       }
       setConsoleInput('');
     } catch (e) {
-      const raw = errLikeToLogString(e);
+      // errLikeToLogString strips the i18n marker. Translation needs the original message.
+      const raw =
+        e instanceof Error ? e.message : typeof e === 'string' ? e : errLikeToLogString(e);
       const message = isMeshcoreCompanionSensitiveCommand(command)
         ? t('meshcoreCompanionCli.actionFailed')
         : translateMeshcoreUserMessage(t, raw);
-      console.warn(
-        '[MeshcoreCompanionCliSection] console command failed ' + sanitizeLogMessage(raw),
-      );
+      console.warn('[MeshcoreCompanionCliSection] console command failed ' + errLikeToLogString(e));
       pushConsole('error', message);
     } finally {
       setConsoleBusy(false);

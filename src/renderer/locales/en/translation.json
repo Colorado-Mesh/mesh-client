@@ -823,7 +823,8 @@
       "send_failed": "Could not send history request to the radio. Reconnect or try again.",
       "cooldown": "History was fetched recently for this router. Wait before requesting again.",
       "offline_gate": "Wait a few minutes after reconnecting before auto-fetch runs; use Catch up manually.",
-      "already_requested": "A history request is already in progress for this router."
+      "already_requested": "A history request is already in progress for this router.",
+      "missing_router_key": "The router key is not known yet. Wait for node information, then try again."
     },
     "exportChatFailed": "Export failed",
     "dmNodeLastHeard": "Last heard {{time}}",

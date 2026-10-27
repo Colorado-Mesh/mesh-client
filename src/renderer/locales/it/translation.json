@@ -615,7 +615,8 @@
       "send_failed": "Impossibile inviare la richiesta di cronologia alla radio. Riconnettiti o riprova.",
       "cooldown": "La cronologia è stata recuperata di recente per questo router. Attendi prima di richiedere di nuovo.",
       "offline_gate": "Attendere alcuni minuti dopo la riconnessione prima di eseguire il recupero automatico; utilizzare Recupera manualmente.",
-      "already_requested": "È già in corso una richiesta di cronologia per questo router."
+      "already_requested": "È già in corso una richiesta di cronologia per questo router.",
+      "missing_router_key": "La chiave del router non è ancora nota. Attendi le informazioni del nodo, poi riprova."
     },
     "replyRequiresPacketId": "La risposta richiede l'ID del pacchetto RF del messaggio (attendere la conferma di invio o aggiornare la chat).",
     "queueButton": "Coda",

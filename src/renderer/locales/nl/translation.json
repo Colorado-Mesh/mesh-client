@@ -615,7 +615,8 @@
       "send_failed": "Kan geschiedenisverzoek niet naar de radio sturen. Maak opnieuw verbinding of probeer het opnieuw.",
       "cooldown": "Er is onlangs geschiedenis opgehaald voor deze router. Wacht voordat je opnieuw een aanvraag indient.",
       "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
-      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
+      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router.",
+      "missing_router_key": "De routersleutel is nog niet bekend. Wacht op knooppuntinformatie en probeer het daarna opnieuw."
     },
     "replyRequiresPacketId": "Antwoorden vereist het RF-pakket-ID van het bericht (wacht op verzendbevestiging of ververs de chat).",
     "queueButton": "Wachtrij",

@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 import type { MeshcoreCompanionCliActions } from '../hooks/meshcore/useMeshcoreCompanionCli';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshcoreCompanionCliResult } from '../lib/meshcore/meshcoreCompanionCli';
+import { serializeMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import MeshcoreCompanionCliSection from './MeshcoreCompanionCliSection';
 
@@ -149,6 +150,39 @@ describe('MeshcoreCompanionCliSection', () => {
       expect(log.textContent).toContain('[redacted]');
     });
     expect(log.textContent).not.toContain('hunter2');
+  });
+
+  it('translates a serialized console failure and sanitizes only the log line', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const base = makeCli();
+    const cli = makeCli({
+      run: vi.fn((command: string) =>
+        command === 'set af 99'
+          ? Promise.reject(
+              new Error(
+                serializeMeshcoreUserMessage({
+                  key: 'meshcoreCompanionCli.commandMustBeSingleLine',
+                }),
+              ),
+            )
+          : base.run(command),
+      ),
+    });
+    renderWithToast(<MeshcoreCompanionCliSection cli={cli} disabled={false} />);
+    openSection();
+    await screen.findByDisplayValue('HomeNet');
+    const input = screen.getByRole('textbox', { name: 'Companion command' });
+    fireEvent.change(input, { target: { value: 'set af 99' } });
+    fireEvent.submit(input.closest('form')!);
+    const log = screen.getByRole('list', { name: 'Companion command history' });
+    await waitFor(() => {
+      expect(log.textContent).toContain('Companion command must be a single line.');
+    });
+    expect(log.textContent).not.toContain('MC_I18N');
+    const logged = warn.mock.calls.map((call) => call.join(' ')).join('\n');
+    expect(logged).toContain('commandMustBeSingleLine');
+    expect(logged).not.toContain('\x1e');
+    warn.mockRestore();
   });
 
   it('hides error text for a failed sensitive console command', async () => {

@@ -44,10 +44,10 @@ Docs are built with MkDocs Material.
 
 1. Create and activate a local virtual environment (recommended on macOS/Homebrew Python because of PEP 668 externally managed environments):
    - macOS/Linux:
-     - `python3 -m venv .venv`
+     - `python3.14 -m venv .venv`
      - `source .venv/bin/activate`
    - Windows PowerShell:
-     - `py -3 -m venv .venv`
+     - `py -3.14 -m venv .venv`
      - `.\.venv\Scripts\Activate.ps1`
 2. Install the docs dependencies with Python 3.14 (not 3.15: `pyyaml==6.0.3` in `docs/requirements.txt` has no cp315 wheel and the install is `--only-binary`, matching [CI](ci-cd.md)):
    - `pnpm run docs:install`

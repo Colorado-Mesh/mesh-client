@@ -164,8 +164,11 @@ export class AiClient {
         }
       }
     } finally {
-      await reader.cancel();
-      await opened.close();
+      try {
+        await reader.cancel();
+      } finally {
+        await opened.close();
+      }
     }
   }
   async list(
@@ -199,8 +202,11 @@ export class AiClient {
         chunks.push(chunk.value);
       }
     } finally {
-      await reader.cancel();
-      await opened.close();
+      try {
+        await reader.cancel();
+      } finally {
+        await opened.close();
+      }
     }
     try {
       return parseModels(JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown);

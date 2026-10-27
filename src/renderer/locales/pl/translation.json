@@ -631,7 +631,8 @@
       "send_failed": "Nie można wysłać żądania historii do radia. Połącz ponownie lub spróbuj ponownie.",
       "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim ponownie wyślesz żądanie.",
       "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
-      "already_requested": "Żądanie historii dla tego routera jest już w toku."
+      "already_requested": "Żądanie historii dla tego routera jest już w toku.",
+      "missing_router_key": "Klucz routera nie jest jeszcze znany. Poczekaj na informacje o węźle i spróbuj ponownie."
     },
     "replyRequiresPacketId": "Odpowiedź wymaga identyfikatora pakietu RF wiadomości (poczekaj na potwierdzenie wysłania lub odśwież czat).",
     "queueButton": "Kolejka",

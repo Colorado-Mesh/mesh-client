@@ -904,6 +904,14 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clear optimistic rail once protocol commits
     setPendingProtocolSelection(null);
   }, [protocol, pendingProtocolSelection]);
+  const previousCommittedProtocolRef = useRef(protocol);
+  useEffect(() => {
+    const previous = previousCommittedProtocolRef.current;
+    if (previous === protocol) return;
+    previousCommittedProtocolRef.current = protocol;
+    useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, protocol);
+  }, [protocol]);
   const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
   const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
   const reticulumEnabled = enabledProtocols.includes('reticulum');
@@ -2394,8 +2402,9 @@ function AppContent() {
       enablePeers: boolean;
     }) => {
       const id = beginProtocolSwitch();
-      // Rail updates immediately. Storage, diagnostics, and setProtocol wait
-      // until this commit is still the latest one.
+      // Rail updates immediately. Visit flags, the tab, and setProtocol wait
+      // until this commit is still the latest one. Storage and diagnostics
+      // follow the committed protocol, not this transition id.
       setPendingProtocolSelection(input.pending);
       startProtocolTransition(() => {
         if (!isCurrentProtocolSwitch(id)) return;
@@ -2413,10 +2422,6 @@ function AppContent() {
         setNomadTabVisited(flags.nomad);
         setPeersTabVisited(flags.peers);
         setAppTabVisited(flags.app);
-        if (input.protocolChanged) {
-          useDiagnosticsStore.getState().clearDiagnostics({ preserveForeignLora: true });
-        }
-        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, input.nextProtocol);
         setActiveTab(input.nextTab);
         setProtocol(input.nextProtocol);
       });
@@ -4700,6 +4705,7 @@ function AppContent() {
                                     : Array.from(meshcoreOwnNodeIdSet)
                               }
                               onSend={handleSend}
+                              composerDisabled={protocolSwitchPending}
                               onReact={selectByProtocol(sendReactionByProtocol, protocol)}
                               onResend={handleResend}
                               onNodeClick={setSelectedNodeId}

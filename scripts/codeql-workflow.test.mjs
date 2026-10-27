@@ -1,5 +1,7 @@
 // @vitest-environment node
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +16,23 @@ const filter = scope.steps[0];
 const filters = load(filter.with.filters);
 const swiftInputs = filters.swift;
 const selected = "matrix.language != 'swift' || needs.scope.outputs.swift == 'true'";
+
+/** Run the scope job's matrix step and parse the matrix it writes to GITHUB_OUTPUT. */
+function matrixFromStep(script, swift) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeql-matrix-'));
+  const githubOutput = path.join(dir, 'output');
+  const result = spawnSync('bash', ['-c', script], {
+    env: { ...process.env, SWIFT: swift, GITHUB_OUTPUT: githubOutput },
+    encoding: 'utf8',
+  });
+  expect(result.status, result.stderr).toBe(0);
+  const line = fs
+    .readFileSync(githubOutput, 'utf8')
+    .split('\n')
+    .find((entry) => entry.startsWith('matrix='));
+  expect(line).toBeTruthy();
+  return JSON.parse(line.slice('matrix='.length));
+}
 
 /** Small, portable glob syntax shared by the workflow filter and Node's matcher. */
 function selectsSwift(file) {
@@ -34,6 +53,19 @@ describe('CodeQL advanced workflow', () => {
     expect(script).toContain("os: 'macos-latest'");
     expect(script).toContain("'build-mode': 'autobuild'");
     expect(script).toContain("process.env.SWIFT === 'true'");
+    const withSwift = matrixFromStep(script, 'true');
+    const withoutSwift = matrixFromStep(script, 'false');
+    expect(withSwift.some((row) => row.language === 'swift' && row.os === 'macos-latest')).toBe(
+      true,
+    );
+    expect(withoutSwift.some((row) => row.language === 'swift')).toBe(false);
+    expect(withoutSwift.map((row) => row.language)).toEqual([
+      'actions',
+      'csharp',
+      'javascript-typescript',
+      'python',
+      'rust',
+    ]);
     const init = job.steps.find((step) => step.name === 'Initialize CodeQL');
     expect(init.with.queries).toBe('security-extended');
     expect(init.with['build-mode']).toBe('${{ matrix.build-mode }}');

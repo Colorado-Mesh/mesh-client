@@ -243,7 +243,8 @@ export function relayInsertedMeshcoreMqttChannel(args: {
     wireText: args.wireText,
     ...(reply ? { reply } : {}),
     timestampMs: args.message.timestamp,
-    fromOther: true,
+    // Unresolved local node stays false so consumeTakEcho can drop this app's own echo.
+    fromOther: myNodeNum > 0 && args.message.sender_id !== myNodeNum,
     ...(args.message.rxHops != null ? { hops: args.message.rxHops } : {}),
     ...(senderNode?.latitude != null && senderNode.longitude != null
       ? { latitude: senderNode.latitude, longitude: senderNode.longitude }
