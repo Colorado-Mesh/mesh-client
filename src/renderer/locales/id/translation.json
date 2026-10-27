@@ -1184,7 +1184,10 @@
         "accessDeniedLinuxHint": "Di Linux, tambahkan pengguna Anda ke grup dialout: sudo usermod -aG dialout $USER (lalu logout dan masuk kembali)",
         "disconnectedHint": "Pastikan kabel USB terhubung dan perangkat dihidupkan.",
         "timeoutHint": "Jika port muncul sebentar, coba sambungkan kembali kabel USB.",
-        "portStillOpenHint": "Port serial USB tidak terlepas dengan bersih. Keluar dari mesh-client sepenuhnya dan buka kembali, atau cabut dan pasang kembali kabel USB, lalu sambungkan lagi."
+        "portStillOpenHint": "Port serial USB tidak terlepas dengan bersih. Keluar dari mesh-client sepenuhnya dan buka kembali, atau cabut dan pasang kembali kabel USB, lalu sambungkan lagi.",
+        "openFailedLinuxHint": "Pada Linux ini sering berarti pengguna Anda tidak berada dalam grup dialout (sudo usermod - aG dialout $USER, lalu keluar dan masuk kembali), atau program lain menggunakan port (close flasher, ModemManager, atau terminal serial).",
+        "openFailedWindowsHint": "Pastikan driver USB yang benar terpasang (CH340, CP210x, atau FTDI), tutup aplikasi lain menggunakan port com, lalu cabut dan pasang kembali kabelnya.",
+        "openFailedGenericHint": "Tutup aplikasi lain menggunakan port serial, lalu cabut dan pasang kembali kabel USB dan coba lagi."
       },
       "http": {
         "timeoutMdnsWindows": "Di Windows, meshtastic.local memerlukan Bonjour (diinstal dengan iTunes). Gunakan alamat IP perangkat sebagai gantinya.",

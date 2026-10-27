@@ -1220,7 +1220,10 @@
         "accessDeniedLinuxHint": "W systemie Linux dodaj użytkownika do grupy dialout: sudo usermod -aG dialout $USER (następnie wyloguj się i zaloguj ponownie)",
         "disconnectedHint": "Upewnij się, że kabel USB jest podłączony, a urządzenie jest włączone.",
         "timeoutHint": "Jeśli port pojawił się na chwilę, spróbuj ponownie podłączyć kabel USB.",
-        "portStillOpenHint": "Port szeregowy USB nie został prawidłowo zwolniony. Zamknij całkowicie mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel USB, a następnie podłącz ponownie."
+        "portStillOpenHint": "Port szeregowy USB nie został prawidłowo zwolniony. Zamknij całkowicie mesh-client i otwórz go ponownie lub odłącz i ponownie podłącz kabel USB, a następnie podłącz ponownie.",
+        "openFailedLinuxHint": "W dniu Linux często oznacza to, że Twój użytkownik nie znajduje się w grupie dial-out (UŻYTKOWNIK sudo usermod -aG dialout $, a następnie wylogowuje się i ponownie wchodzi) lub inny program korzysta z portu (migacze zamykania, ModemManager lub terminale szeregowe).",
+        "openFailedWindowsHint": "Upewnij się, że zainstalowany jest prawidłowy sterownik USB (CH340, CP210x lub FTDI), zamknij dowolną inną aplikację za pomocą portu COM, a następnie odłącz i ponownie podłącz kabel.",
+        "openFailedGenericHint": "Zamknij dowolną inną aplikację za pomocą portu szeregowego, a następnie odłącz i ponownie podłącz kabel USB i spróbuj ponownie."
       },
       "http": {
         "timeoutMdnsWindows": "W systemie Windows meshtastic.local wymaga Bonjour (instalowanego z iTunes). Zamiast tego użyj adresu IP urządzenia.",

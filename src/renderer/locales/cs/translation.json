@@ -1205,7 +1205,10 @@
         "accessDeniedLinuxHint": "V systému Linux přidejte svého uživatele do skupiny dialout: sudo usermod -aG dialout $USER (pak se odhlaste a znovu přihlaste)",
         "disconnectedHint": "Ujistěte se, že je připojen kabel USB a zařízení je zapnuté.",
         "timeoutHint": "Pokud se port krátce objeví, zkuste znovu připojit kabel USB.",
-        "portStillOpenHint": "Sériový port USB se neuvolnil čistě. Úplně ukončete mesh-client a znovu jej otevřete, nebo odpojte a znovu připojte kabel USB a poté jej znovu připojte."
+        "portStillOpenHint": "Sériový port USB se neuvolnil čistě. Úplně ukončete mesh-client a znovu jej otevřete, nebo odpojte a znovu připojte kabel USB a poté jej znovu připojte.",
+        "openFailedLinuxHint": "Dne Linux to často znamená, že váš uživatel není ve skupině vytáčených čísel (sudo usermod -aG vytáčený UŽIVATEL $, poté se odhlásí a znovu přihlásí) nebo jiný program používá port (blikače, ModemManager nebo sériové terminály).",
+        "openFailedWindowsHint": "Ujistěte se, že je nainstalován správný ovladač USB (CH340, CP210x nebo FTDI), zavřete jakoukoli jinou aplikaci pomocí portu COM, poté odpojte a znovu zapojte kabel.",
+        "openFailedGenericHint": "Zavřete jakoukoli jinou aplikaci pomocí sériového portu, odpojte a znovu připojte kabel USB a zkuste to znovu."
       },
       "http": {
         "timeoutMdnsWindows": "Ve Windows vyžaduje meshtastic.local Bonjour (nainstalovaný s iTunes). Místo toho použijte IP adresu zařízení.",

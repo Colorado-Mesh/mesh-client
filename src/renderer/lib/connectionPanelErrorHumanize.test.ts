@@ -86,6 +86,14 @@ describe('humanizeSerialError', () => {
     ['any', 'linux', 'device not found', 'disconnectedHint'],
     ['any', 'linux', 'connection timed out', 'timeoutHint'],
     ['any', 'linux', 'port is already open', 'portStillOpenHint'],
+    [
+      'chromium open fail linux',
+      'linux',
+      "Failed to execute 'open' on 'SerialPort': Failed to open serial port.",
+      'openFailedLinuxHint',
+    ],
+    ['chromium open fail win32', 'win32', 'Failed to open serial port.', 'openFailedWindowsHint'],
+    ['chromium open fail darwin', 'darwin', 'Failed to open serial port.', 'openFailedGenericHint'],
   ] as const)('maps %s serial error "%s"', (_label, platform, message, hintKey) => {
     mockPlatform(platform);
     const result = humanizeSerialError(new Error(message), t);

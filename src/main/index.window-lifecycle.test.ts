@@ -332,6 +332,19 @@ describe('Web Serial window ownership', () => {
       pendingSerialCallback: null as ((portId: string) => void) | null,
       pendingSerialSelectionTimer: null,
       lastSerialPortIds: new Set<string>(),
+      lastSerialPortsById: new Map<
+        string,
+        {
+          displayName: string;
+          portName: string;
+          vendorId: string | number | undefined;
+          productId: string | number | undefined;
+        }
+      >(),
+      clearLastSerialPortDiscovery() {
+        this.lastSerialPortIds.clear();
+        this.lastSerialPortsById.clear();
+      },
       clearPendingSerialSelectionTimer: vi.fn(),
       SERIAL_PORT_SELECTION_TIMEOUT_MS: 120_000,
       setTimeout: vi.fn(() => 1),

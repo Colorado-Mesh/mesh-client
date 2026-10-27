@@ -1184,7 +1184,10 @@
         "accessDeniedLinuxHint": "Linux では、ユーザーをダイヤルアウト グループに追加します: sudo usermod -aG digialout $USER (その後、ログアウトして再度ログインします)",
         "disconnectedHint": "USB ケーブルが接続されており、デバイスの電源が入っていることを確認します。",
         "timeoutHint": "ポートが一時的に表示された場合は、USB ケーブルを再接続してみてください。",
-        "portStillOpenHint": "USB シリアル ポートが正常に解放されませんでした。 mesh-client を完全に終了して再度開くか、USB ケーブルを抜き差しし、再度接続します。"
+        "portStillOpenHint": "USB シリアル ポートが正常に解放されませんでした。 mesh-client を完全に終了して再度開くか、USB ケーブルを抜き差しし、再度接続します。",
+        "openFailedLinuxHint": "Linuxでは、これは多くの場合、ユーザーがダイヤルアウトグループ（ sudo usermod - aG dialout $ USER、ログアウトして再度ログイン）に属していないこと、または他のプログラムがポート（ close flashers、ModemManager、またはシリアル端末）を使用していることを意味します。",
+        "openFailedWindowsHint": "正しいUSBドライバ（ CH 340、CP 210 x、またはFTDI ）がインストールされていることを確認し、COMポートを使用して他のアプリを閉じてから、ケーブルを抜き差しします。",
+        "openFailedGenericHint": "シリアルポートを使用して他のアプリを閉じ、USBケーブルのプラグを抜いて交換してから、もう一度やり直してください。"
       },
       "http": {
         "timeoutMdnsWindows": "Windows では、meshtastic.local には Bonjour (iTunes とともにインストールされる) が必要です。代わりにデバイスの IP アドレスを使用してください。",

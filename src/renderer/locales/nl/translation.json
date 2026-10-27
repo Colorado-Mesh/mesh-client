@@ -1183,7 +1183,10 @@
         "accessDeniedLinuxHint": "Voeg op Linux uw gebruiker toe aan de dialout-groep: sudo usermod -aG dialout $USER (log vervolgens uit en weer in)",
         "disconnectedHint": "Zorg ervoor dat de USB-kabel is aangesloten en dat het apparaat is ingeschakeld.",
         "timeoutHint": "Als de poort even verschijnt, probeer dan de USB-kabel opnieuw aan te sluiten.",
-        "portStillOpenHint": "De USB seriële poort is niet schoon losgekomen. Sluit de mesh-client volledig af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de USB-kabel opnieuw aan."
+        "portStillOpenHint": "De USB seriële poort is niet schoon losgekomen. Sluit de mesh-client volledig af en open deze opnieuw, of trek de stekker uit het stopcontact en sluit de USB-kabel opnieuw aan.",
+        "openFailedLinuxHint": "Op Linux betekent dit vaak dat je gebruiker niet in de belgroep zit (sudo usermod -aG dialout $USER, log dan uit en weer in), of dat een ander programma de poort gebruikt (sluit flashers, ModemManager of seriële terminals).",
+        "openFailedWindowsHint": "Zorg ervoor dat het juiste USB -stuurprogramma is geïnstalleerd (CH340, CP210x of FTDI), sluit elke andere app met behulp van de COM-poort en koppel vervolgens de kabel los en weer aan.",
+        "openFailedGenericHint": "Sluit een andere app via de seriële poort, trek de stekker uit het stopcontact, sluit de USB -kabel weer aan en probeer het opnieuw."
       },
       "http": {
         "timeoutMdnsWindows": "Op Windows vereist meshtastic.local Bonjour (geïnstalleerd met iTunes). Gebruik in plaats daarvan het IP-adres van het apparaat.",

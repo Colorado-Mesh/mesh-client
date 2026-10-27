@@ -70,6 +70,16 @@ export function humanizeSerialError(err: unknown, t: TFunction): string {
           : t('connectionPanel.humanize.serial.disconnectedHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
+  // Chromium often reports EACCES/EBUSY as this generic string (no "access denied").
+  if (/failed to open serial port/i.test(msg)) {
+    const hint =
+      platform === 'linux'
+        ? t('connectionPanel.humanize.serial.openFailedLinuxHint')
+        : platform === 'win32'
+          ? t('connectionPanel.humanize.serial.openFailedWindowsHint')
+          : t('connectionPanel.humanize.serial.openFailedGenericHint');
+    return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
+  }
   if (/no port|not found|disconnected|device not found/i.test(msg)) {
     return t('connectionPanel.humanize.prefixedHint', {
       message: msg,
