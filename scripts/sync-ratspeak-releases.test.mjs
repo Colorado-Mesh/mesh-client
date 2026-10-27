@@ -25,21 +25,33 @@ describe('vaultNeedsDurablePersistence', () => {
   });
 });
 
+const FULL_DURABLE_EXPORTS =
+  'pub use strict::{DurableFileReceipt, DurableCommitPhase, durable_write, durable_remove};';
+
 describe('persistenceExportsDurableApis', () => {
-  it('requires both DurableFileReceipt and durable_write', () => {
+  it('requires all four durable symbols', () => {
+    expect(persistenceExportsDurableApis(FULL_DURABLE_EXPORTS)).toBe(true);
+    expect(persistenceExportsDurableApis('pub use strict::{DurableFileReceipt};')).toBe(false);
+    expect(persistenceExportsDurableApis('fn read_file_bounded() {}')).toBe(false);
+  });
+
+  it('rejects a partial export set missing a required symbol', () => {
     expect(
       persistenceExportsDurableApis(
         'pub use strict::{DurableFileReceipt, durable_write, durable_remove};',
       ),
-    ).toBe(true);
-    expect(persistenceExportsDurableApis('pub use strict::{DurableFileReceipt};')).toBe(false);
-    expect(persistenceExportsDurableApis('fn read_file_bounded() {}')).toBe(false);
+    ).toBe(false);
+    expect(
+      persistenceExportsDurableApis(
+        'pub use strict::{DurableFileReceipt, DurableCommitPhase, durable_write};',
+      ),
+    ).toBe(false);
   });
 });
 
 describe('shouldRefreshVaultAgainstReticulum', () => {
   it('allows refresh when vault does not need durable APIs', () => {
-    expect(shouldRefreshVaultAgainstReticulum('encrypt_identity', 'fn old() {}')).toBe(true);
+    expect(shouldRefreshVaultAgainstReticulum('encrypt_identity', '')).toBe(true);
   });
 
   it('holds vault when durable APIs are missing from the pin', () => {
@@ -55,7 +67,7 @@ describe('shouldRefreshVaultAgainstReticulum', () => {
     expect(
       shouldRefreshVaultAgainstReticulum(
         'DurableFileReceipt + durable_write',
-        'pub use strict::{DurableFileReceipt, durable_write};',
+        FULL_DURABLE_EXPORTS,
       ),
     ).toBe(true);
   });

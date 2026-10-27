@@ -108,7 +108,10 @@ export function vaultNeedsDurablePersistence(vaultBody) {
  */
 export function persistenceExportsDurableApis(persistenceRsBody) {
   return (
-    /\bDurableFileReceipt\b/.test(persistenceRsBody) && /\bdurable_write\b/.test(persistenceRsBody)
+    /\bDurableFileReceipt\b/.test(persistenceRsBody) &&
+    /\bDurableCommitPhase\b/.test(persistenceRsBody) &&
+    /\bdurable_write\b/.test(persistenceRsBody) &&
+    /\bdurable_remove\b/.test(persistenceRsBody)
   );
 }
 
@@ -230,7 +233,9 @@ function main() {
   const vault = fetchVaultFromRatspeakRelease(ratspeakTag);
   const reticulum = resolved.get('RS_RETICULUM_PIN');
   if (!reticulum) throw new Error('missing RS_RETICULUM_PIN resolution');
-  const persistenceRs = fetchReticulumPersistenceRs(reticulum.sha);
+  const persistenceRs = vaultNeedsDurablePersistence(vault.body)
+    ? fetchReticulumPersistenceRs(reticulum.sha)
+    : '';
   if (!shouldRefreshVaultAgainstReticulum(vault.body, persistenceRs)) {
     console.warn(
       `  Skipping vault refresh from ${ratspeakTag}: needs DurableFileReceipt APIs not in rsReticulum @ ${reticulum.sha.slice(0, 12)} (hold until a release includes them).`,
