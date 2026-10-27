@@ -117,6 +117,9 @@ describe('privileged workflow boundaries', () => {
     expect(source).toContain('--admin');
     expect(source).toContain('--match-head-commit');
     expect(source).toContain('steps.cpr.outputs.pull-request-head-sha');
+    // Merge queue rejects `gh pr merge --delete-branch`; delete the ref separately.
+    expect(source).not.toMatch(/gh pr merge[\s\S]*--delete-branch/);
+    expect(source).toContain('git/refs/heads/');
     expect(source).not.toMatch(
       /RELEASE_(?:PUSH|CUT)_TOKEN|environment: release|refs\/tags|pnpm run release|gh release/,
     );
