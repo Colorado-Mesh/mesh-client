@@ -155,6 +155,37 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
     }
   });
 
+  it('updatePosition replaces stale self-row coords with stored static', () => {
+    stubMemoryLocalStorage();
+    try {
+      localStorage.setItem(
+        GPS_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ staticLat: 41.59375, staticLon: -73.02428 }),
+      );
+      setConnection(ID_MC, { myNodeNum: 0x42, status: 'connected' });
+      useNodeStore.setState({
+        nodes: {
+          [ID_MC]: { 0x42: { nodeId: 0x42, latitude: 40.0, longitude: -74.0 } },
+        },
+        traceRoutes: {},
+        waypoints: {},
+        neighborInfo: {},
+      });
+      updatePosition(ID_MC, {
+        nodeId: 0x42,
+        latitude: 39.0,
+        longitude: -105.0,
+        timestamp: Date.now(),
+      });
+      const self = useNodeStore.getState().nodes[ID_MC][0x42];
+      expect(self.latitude).toBe(41.59375);
+      expect(self.longitude).toBe(-73.02428);
+    } finally {
+      vi.unstubAllGlobals();
+      useConnectionStore.setState({ connections: {} });
+    }
+  });
+
   it('upsertNode preserves MeshCore longName when advert omits advName', () => {
     upsertNode(ID_MC, { nodeId: 0xabc, longName: 'Mountain Repeater', hwModel: 'Repeater' });
     upsertNode(ID_MC, { nodeId: 0xabc, lastHeardAt: 1_700_000_300 });

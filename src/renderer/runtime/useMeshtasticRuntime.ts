@@ -527,6 +527,8 @@ export function useMeshtasticRuntime() {
   // ─── GPS tracking ─────────────────────────────────────────────
   const deviceGpsModeRef = useRef<number>(0); // 0=DISABLED,1=ENABLED,2=NOT_PRESENT
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Bumped on each refreshOurPosition entry so superseded awaits skip commits. */
+  const refreshOurPositionGenerationRef = useRef(0);
   const refreshOurPositionRef = useRef<
     (opts?: { allowTransmit?: boolean }) => Promise<OurPosition | null>
   >(() => Promise.resolve(null));
@@ -4374,6 +4376,7 @@ export function useMeshtasticRuntime() {
       if (getStoredMeshProtocol() !== 'meshtastic') {
         return null;
       }
+      const generation = ++refreshOurPositionGenerationRef.current;
       setGpsLoading(true);
       try {
         const storedStatic = readStoredStaticGps();
@@ -4389,6 +4392,9 @@ export function useMeshtasticRuntime() {
           staticLon,
           radioSelf?.altitudeMeters,
         );
+        if (generation !== refreshOurPositionGenerationRef.current) {
+          return null;
+        }
         setOurPosition(pos);
         if (getStoredMeshProtocol() === 'meshtastic') {
           publishOurPositionReference(pos);
@@ -4459,7 +4465,9 @@ export function useMeshtasticRuntime() {
         }
         return pos;
       } finally {
-        setGpsLoading(false);
+        if (generation === refreshOurPositionGenerationRef.current) {
+          setGpsLoading(false);
+        }
       }
     },
     [updateNodes],

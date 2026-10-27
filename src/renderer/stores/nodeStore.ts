@@ -430,16 +430,8 @@ export function updatePosition(identityId: IdentityId, event: PositionEvent): vo
       longitude,
     };
     if (preserveStatic) {
-      const existingHasGps =
-        existing?.latitude != null &&
-        existing.longitude != null &&
-        (Math.abs(existing.latitude) > 0.0001 || Math.abs(existing.longitude) > 0.0001);
-      if (existingHasGps) {
-        positionPatch = {};
-      } else {
-        const stored = readStoredStaticGps();
-        positionPatch = stored ? { latitude: stored.lat, longitude: stored.lon } : {};
-      }
+      const stored = readStoredStaticGps();
+      positionPatch = stored ? { latitude: stored.lat, longitude: stored.lon } : {};
     }
     return {
       nodes: {

@@ -42,6 +42,20 @@ describe('useMeshtasticRuntime radio self position', () => {
     );
     expect(body).toContain("readRadioSelfPosition('meshtastic')");
   });
+
+  it('drops superseded refresh commits after await', () => {
+    const body = refreshBody(
+      loadRuntimeSource('useMeshtasticRuntime.ts'),
+      'const refreshOurPosition = useCallback',
+    );
+    expect(body).toContain('refreshOurPositionGenerationRef');
+    expect(body).toMatch(
+      /await resolveOurPosition\([\s\S]*?generation !== refreshOurPositionGenerationRef\.current/,
+    );
+    expect(body).toMatch(
+      /generation !== refreshOurPositionGenerationRef\.current[\s\S]*?return null/,
+    );
+  });
 });
 
 describe('useMeshcoreRuntime radio self position', () => {
