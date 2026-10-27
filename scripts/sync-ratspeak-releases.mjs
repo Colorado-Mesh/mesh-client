@@ -11,7 +11,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PINS_FILE = path.join(ROOT, 'reticulum-sidecar', 'ratspeak-stack-pins.env');
@@ -39,11 +39,6 @@ function gh(args) {
 }
 
 /**
- * @param {string} owner
- * @param {string} repo
- * @returns {{ tag: string | null, sha: string }}
- */
-/**
  * @param {string} full owner/repo
  * @returns {string | null}
  */
@@ -55,6 +50,11 @@ function latestReleaseTag(full) {
   }
 }
 
+/**
+ * @param {string} owner
+ * @param {string} repo
+ * @returns {{ tag: string | null, sha: string }}
+ */
 function resolveLatest(owner, repo) {
   const full = `${owner}/${repo}`;
   const tag = latestReleaseTag(full);
@@ -86,6 +86,43 @@ function resolveLatest(owner, repo) {
 }
 
 /**
+ * Vault releases that import DurableFileReceipt / durable_* need an rsReticulum
+ * pin that already exports those symbols. Prefer-latest holds the vault when the
+ * published rsReticulum release has not caught up yet.
+ *
+ * @param {string} vaultBody
+ * @returns {boolean}
+ */
+export function vaultNeedsDurablePersistence(vaultBody) {
+  return (
+    /\bDurableFileReceipt\b/.test(vaultBody) ||
+    /\bDurableCommitPhase\b/.test(vaultBody) ||
+    /\bdurable_write\b/.test(vaultBody) ||
+    /\bdurable_remove\b/.test(vaultBody)
+  );
+}
+
+/**
+ * @param {string} persistenceRsBody crates/rns-identity/src/persistence.rs
+ * @returns {boolean}
+ */
+export function persistenceExportsDurableApis(persistenceRsBody) {
+  return (
+    /\bDurableFileReceipt\b/.test(persistenceRsBody) && /\bdurable_write\b/.test(persistenceRsBody)
+  );
+}
+
+/**
+ * @param {string} vaultBody
+ * @param {string} persistenceRsBody
+ * @returns {boolean} true when the vault may be written against this pin
+ */
+export function shouldRefreshVaultAgainstReticulum(vaultBody, persistenceRsBody) {
+  if (!vaultNeedsDurablePersistence(vaultBody)) return true;
+  return persistenceExportsDurableApis(persistenceRsBody);
+}
+
+/**
  * @param {string} tag
  * @returns {{ sha: string, body: string }}
  */
@@ -111,6 +148,20 @@ function fetchVaultFromRatspeakRelease(tag) {
     throw new Error(`Ratspeak@${tag}: vault.rs content looks wrong`);
   }
   return { sha, body };
+}
+
+/**
+ * @param {string} reticulumSha
+ * @returns {string}
+ */
+function fetchReticulumPersistenceRs(reticulumSha) {
+  const encoded = gh([
+    'api',
+    `repos/ratspeak/rsReticulum/contents/crates/rns-identity/src/persistence.rs?ref=${encodeURIComponent(reticulumSha)}`,
+    '--jq',
+    '.content',
+  ]);
+  return Buffer.from(encoded.replace(/\n/g, ''), 'base64').toString('utf8');
 }
 
 /**
@@ -177,9 +228,21 @@ function main() {
   ]);
   console.log(`Syncing identity vault from ratspeak/Ratspeak ${ratspeakTag}...`);
   const vault = fetchVaultFromRatspeakRelease(ratspeakTag);
-  writeVaultVendor(vault.sha, vault.body);
-  console.log(`  vault.rs @ ${vault.sha.slice(0, 12)} (from ${ratspeakTag})`);
+  const reticulum = resolved.get('RS_RETICULUM_PIN');
+  if (!reticulum) throw new Error('missing RS_RETICULUM_PIN resolution');
+  const persistenceRs = fetchReticulumPersistenceRs(reticulum.sha);
+  if (!shouldRefreshVaultAgainstReticulum(vault.body, persistenceRs)) {
+    console.warn(
+      `  Skipping vault refresh from ${ratspeakTag}: needs DurableFileReceipt APIs not in rsReticulum @ ${reticulum.sha.slice(0, 12)} (hold until a release includes them).`,
+    );
+  } else {
+    writeVaultVendor(vault.sha, vault.body);
+    console.log(`  vault.rs @ ${vault.sha.slice(0, 12)} (from ${ratspeakTag})`);
+  }
   console.log(`Wrote ${path.relative(ROOT, PINS_FILE)}`);
 }
 
-main();
+const entry = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (entry && import.meta.url === entry) {
+  main();
+}
