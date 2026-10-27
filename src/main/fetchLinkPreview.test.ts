@@ -43,6 +43,7 @@ import {
   isLikelyDirectImageUrl,
   isLinkPreviewImageMime,
   isYouTubePreviewHostname,
+  LINK_PREVIEW_MAX_REDIRECTS,
   LINK_PREVIEW_RATE_LIMIT_MAX,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
@@ -291,7 +292,8 @@ describe('fetchLinkPreview', () => {
 
     await fetchLinkPreview('https://attacker.example/page');
 
-    expect(mockDnsLookup).toHaveBeenCalledTimes(2);
+    // SSRF check in uncached + per-hop allow check in HTML redirect guard + pin lookup.
+    expect(mockDnsLookup).toHaveBeenCalledTimes(3);
     const connect = agentConnectOpts.at(-1);
     await expect(runPinnedLookup(connect?.lookup)).resolves.toEqual({
       address: '93.184.216.34',
@@ -302,7 +304,7 @@ describe('fetchLinkPreview', () => {
       family: undefined,
     });
     expect(connect?.servername).toBe('attacker.example');
-    expect(mockDnsLookup).toHaveBeenCalledTimes(2);
+    expect(mockDnsLookup).toHaveBeenCalledTimes(3);
   });
 
   it('allows a global IPv6 literal', async () => {
@@ -334,7 +336,7 @@ describe('fetchLinkPreview', () => {
     expect(await fetchLinkPreview('https://example.com/missing')).toBeNull();
   });
 
-  it('returns null for redirects (redirect:manual gives ok=false)', async () => {
+  it('returns null for redirects without a Location header', async () => {
     mockFetch.mockResolvedValue(
       mockUndiciResponse({
         ok: false,
@@ -344,6 +346,103 @@ describe('fetchLinkPreview', () => {
       }),
     );
     expect(await fetchLinkPreview('https://example.com')).toBeNull();
+  });
+
+  it('follows a single HTTPS redirect to scrape Open Graph metadata', async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        mockUndiciResponse({
+          ok: false,
+          status: 301,
+          headers: new Headers({ location: 'https://dest.example.com/ruling' }),
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeStreamResponse(
+          [
+            '<meta property="og:title" content="FCC Ruling">',
+            '<meta property="og:description" content="Latest order">',
+          ].join('\n'),
+        ),
+      );
+
+    expect(await fetchLinkPreview('https://tinyurl.com/2pry8wax')).toEqual({
+      title: 'FCC Ruling',
+      description: 'Latest order',
+      image: undefined,
+    });
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      'https://tinyurl.com/2pry8wax',
+      expect.objectContaining({ redirect: 'manual' }),
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://dest.example.com/ruling',
+      expect.objectContaining({ redirect: 'manual' }),
+    );
+  });
+
+  it('resolves relative Location against the redirecting URL', async () => {
+    mockFetch
+      .mockResolvedValueOnce(
+        mockUndiciResponse({
+          ok: false,
+          status: 302,
+          headers: new Headers({ location: '/final' }),
+        }),
+      )
+      .mockResolvedValueOnce(makeStreamResponse('<title>Relative hop</title>'));
+
+    expect(await fetchLinkPreview('https://short.example.com/abc')).toEqual({
+      title: 'Relative hop',
+      description: undefined,
+      image: undefined,
+    });
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://short.example.com/final',
+      expect.objectContaining({ redirect: 'manual' }),
+    );
+  });
+
+  it('returns null when an HTML redirect targets http', async () => {
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: false,
+        status: 302,
+        headers: new Headers({ location: 'http://dest.example.com/page' }),
+      }),
+    );
+    expect(await fetchLinkPreview('https://tinyurl.com/abc')).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when an HTML redirect targets a private host', async () => {
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: false,
+        status: 302,
+        headers: new Headers({ location: 'https://127.0.0.1/admin' }),
+      }),
+    );
+    expect(await fetchLinkPreview('https://tinyurl.com/abc')).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when HTML redirects exceed the hop cap', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(
+        mockUndiciResponse({
+          ok: false,
+          status: 302,
+          headers: new Headers({ location: 'https://hop.example.com/next' }),
+        }),
+      ),
+    );
+    expect(await fetchLinkPreview('https://tinyurl.com/loop')).toBeNull();
+    // Initial fetch + LINK_PREVIEW_MAX_REDIRECTS follow-ups, then fail closed.
+    expect(mockFetch).toHaveBeenCalledTimes(LINK_PREVIEW_MAX_REDIRECTS + 1);
   });
 
   it('passes redirect:manual to fetch', async () => {

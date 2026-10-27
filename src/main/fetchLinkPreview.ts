@@ -28,7 +28,8 @@ export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 /** Max IPC link-preview fetches per rolling window (DoS / resource guard). */
 export const LINK_PREVIEW_RATE_LIMIT_MAX = 20;
 export const LINK_PREVIEW_RATE_LIMIT_WINDOW_MS = 60_000;
-const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
+/** Shared hop cap for HTML page and image preview redirect following. */
+export const LINK_PREVIEW_MAX_REDIRECTS = 5;
 const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
 const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
 
@@ -235,32 +236,37 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
     };
 
     const reader = upstream.getReader();
-    const stream = new ReadableStream<Uint8Array>({
-      async pull(controller) {
-        try {
-          const { done, value } = await reader.read();
-          if (done) {
-            controller.close();
+    // highWaterMark 0: do not auto-pull on construct. Default HWM can drain an empty
+    // upstream before discardResponseBody runs, so cancel never reaches the Agent body.
+    const stream = new ReadableStream<Uint8Array>(
+      {
+        async pull(controller) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.close();
+              closeAgent();
+              return;
+            }
+            controller.enqueue(value);
+          } catch (err) {
+            // catch-no-log-ok forward stream failure to consumer via controller.error
             closeAgent();
-            return;
+            controller.error(err);
           }
-          controller.enqueue(value);
-        } catch (err) {
-          // catch-no-log-ok forward stream failure to consumer via controller.error
-          closeAgent();
-          controller.error(err);
-        }
+        },
+        async cancel(reason) {
+          try {
+            await reader.cancel(reason);
+          } catch {
+            // catch-no-log-ok cancel may race with stream abort
+          } finally {
+            closeAgent();
+          }
+        },
       },
-      async cancel(reason) {
-        try {
-          await reader.cancel(reason);
-        } catch {
-          // catch-no-log-ok cancel may race with stream abort
-        } finally {
-          closeAgent();
-        }
-      },
-    });
+      { highWaterMark: 0 },
+    );
 
     return new Response(stream, {
       status: response.status,
@@ -353,12 +359,13 @@ export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {
   }
 }
 
-async function isAllowedHttpsImageUrl(imageUrl: string): Promise<boolean> {
+/** HTTPS + SSRF checks for each preview fetch hop (page or image). */
+async function isAllowedHttpsPreviewUrl(urlString: string): Promise<boolean> {
   let parsed: URL;
   try {
-    parsed = new URL(imageUrl);
+    parsed = new URL(urlString);
   } catch {
-    // catch-no-log-ok invalid image URL string
+    // catch-no-log-ok invalid preview URL string
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
@@ -401,8 +408,8 @@ async function fetchImageResponseWithRedirectGuard(
   imageUrl: string,
   redirectCount = 0,
 ): Promise<Response | null> {
-  if (!(await isAllowedHttpsImageUrl(imageUrl))) return null;
-  if (redirectCount > LINK_PREVIEW_IMAGE_MAX_REDIRECTS) return null;
+  if (!(await isAllowedHttpsPreviewUrl(imageUrl))) return null;
+  if (redirectCount > LINK_PREVIEW_MAX_REDIRECTS) return null;
 
   const response = await fetchWithResolvedHost(imageUrl, {
     method: 'GET',
@@ -432,8 +439,47 @@ async function fetchImageResponseWithRedirectGuard(
   return response;
 }
 
+/**
+ * Follow HTTPS redirects for HTML/page preview fetches with per-hop SSRF checks
+ * (same policy as image embeds). URL shorteners like TinyURL need this path.
+ */
+async function fetchHtmlResponseWithRedirectGuard(
+  pageUrl: string,
+  redirectCount = 0,
+): Promise<{ response: Response; finalUrl: string } | null> {
+  if (!(await isAllowedHttpsPreviewUrl(pageUrl))) return null;
+  if (redirectCount > LINK_PREVIEW_MAX_REDIRECTS) return null;
+
+  const response = await fetchWithResolvedHost(pageUrl, {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
+    signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
+  });
+
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('location');
+    if (!location) {
+      await discardResponseBody(response);
+      return null;
+    }
+    let nextUrl: string;
+    try {
+      nextUrl = new URL(location, pageUrl).href;
+    } catch {
+      // catch-no-log-ok malformed redirect Location header
+      await discardResponseBody(response);
+      return null;
+    }
+    await discardResponseBody(response);
+    return fetchHtmlResponseWithRedirectGuard(nextUrl, redirectCount + 1);
+  }
+
+  return { response, finalUrl: pageUrl };
+}
+
 async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | undefined> {
-  if (!(await isAllowedHttpsImageUrl(imageUrl))) return undefined;
+  if (!(await isAllowedHttpsPreviewUrl(imageUrl))) return undefined;
 
   const now = Date.now();
   const cached = imageCache.get(imageUrl);
@@ -655,13 +701,10 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
     const direct = await tryDirectImageUrlPreview(url);
     if (direct) return direct;
 
-    const response = await fetchWithResolvedHost(urlString, {
-      method: 'GET',
-      redirect: 'manual',
-      headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
-      signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
-    });
-    return await fetchLinkPreviewFromHttpResponse(url, urlString, response);
+    const fetched = await fetchHtmlResponseWithRedirectGuard(urlString);
+    if (!fetched) return null;
+    const finalUrl = new URL(fetched.finalUrl);
+    return await fetchLinkPreviewFromHttpResponse(finalUrl, fetched.finalUrl, fetched.response);
   } catch (err) {
     console.debug(
       '[chat] fetchLinkPreview error:',
