@@ -238,7 +238,7 @@ describe('enqueueTakChatRelay', () => {
   it('times out a send that never settles and carries on with the next message', async () => {
     vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mt', 'meshtastic', 2, OPS, true);
     const send = vi
       .fn<TakMeshSendFn>()
       .mockImplementationOnce(() => new Promise<void>(() => {}))
@@ -251,7 +251,22 @@ describe('enqueueTakChatRelay', () => {
     expect(await hung).toBe(0);
     expect(await next).toBe(1);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('mesh send timed out'));
-    expect(consumeTakEcho('mc', 2, '[VIPER] stuck')).toBe(false);
+    expect(consumeTakEcho('mt', 2, '[VIPER] stuck')).toBe(false);
+    warn.mockRestore();
+  });
+
+  it('keeps a MeshCore echo when the radio wait times out, and drops it when the send fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    serve('mc', 'meshcore', 2, OPS, true);
+    await relayTakChatToMesh(message({ text: 'late' }), () =>
+      Promise.reject(new Error('mesh send timed out')),
+    );
+    expect(consumeTakEcho('mc', 2, '[VIPER] late')).toBe(true);
+
+    await relayTakChatToMesh(message({ text: 'dead' }), () =>
+      Promise.reject(new Error('MeshCore send failed')),
+    );
+    expect(consumeTakEcho('mc', 2, '[VIPER] dead')).toBe(false);
     warn.mockRestore();
   });
 });

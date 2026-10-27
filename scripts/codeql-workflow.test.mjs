@@ -1,5 +1,7 @@
 // @vitest-environment node
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +17,23 @@ const filters = load(filter.with.filters);
 const swiftInputs = filters.swift;
 const selected = "matrix.language != 'swift' || needs.scope.outputs.swift == 'true'";
 
+/** Run the scope job's matrix step and parse the matrix it writes to GITHUB_OUTPUT. */
+function matrixFromStep(script, swift) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeql-matrix-'));
+  const githubOutput = path.join(dir, 'output');
+  const result = spawnSync('bash', ['-c', script], {
+    env: { ...process.env, SWIFT: swift, GITHUB_OUTPUT: githubOutput },
+    encoding: 'utf8',
+  });
+  expect(result.status, result.stderr).toBe(0);
+  const line = fs
+    .readFileSync(githubOutput, 'utf8')
+    .split('\n')
+    .find((entry) => entry.startsWith('matrix='));
+  expect(line).toBeTruthy();
+  return JSON.parse(line.slice('matrix='.length));
+}
+
 /** Small, portable glob syntax shared by the workflow filter and Node's matcher. */
 function selectsSwift(file) {
   return swiftInputs.some((pattern) => path.matchesGlob(file, pattern));
@@ -23,13 +42,29 @@ function selectsSwift(file) {
 describe('CodeQL advanced workflow', () => {
   it('retains all six languages, extended queries and the existing Swift autobuild', () => {
     expect(job.strategy['fail-fast']).toBe(false);
-    expect(job.strategy.matrix.include).toEqual([
-      { language: 'actions', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'csharp', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'javascript-typescript', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'python', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'rust', os: 'ubuntu-latest', 'build-mode': 'none' },
-      { language: 'swift', os: 'macos-latest', 'build-mode': 'autobuild' },
+    expect(job.strategy.matrix.include).toBe('${{ fromJson(needs.scope.outputs.matrix) }}');
+    const matrixStep = scope.steps.find((step) => step.id === 'matrix');
+    const script = matrixStep.run;
+    for (const language of ['actions', 'csharp', 'javascript-typescript', 'python', 'rust']) {
+      expect(script).toContain(`language: '${language}'`);
+      expect(script).toContain("os: 'ubuntu-latest'");
+    }
+    expect(script).toContain("language: 'swift'");
+    expect(script).toContain("os: 'macos-latest'");
+    expect(script).toContain("'build-mode': 'autobuild'");
+    expect(script).toContain("process.env.SWIFT === 'true'");
+    const withSwift = matrixFromStep(script, 'true');
+    const withoutSwift = matrixFromStep(script, 'false');
+    expect(withSwift.some((row) => row.language === 'swift' && row.os === 'macos-latest')).toBe(
+      true,
+    );
+    expect(withoutSwift.some((row) => row.language === 'swift')).toBe(false);
+    expect(withoutSwift.map((row) => row.language)).toEqual([
+      'actions',
+      'csharp',
+      'javascript-typescript',
+      'python',
+      'rust',
     ]);
     const init = job.steps.find((step) => step.name === 'Initialize CodeQL');
     expect(init.with.queries).toBe('security-extended');
@@ -54,7 +89,8 @@ describe('CodeQL advanced workflow', () => {
     expect(filter['continue-on-error']).toBe(true);
     expect(filter.uses).toMatch(/^dorny\/paths-filter@[a-f0-9]{40}$/);
     expect(scope.permissions).toEqual({ contents: 'read', 'pull-requests': 'read' });
-    expect(scope.steps).toHaveLength(1);
+    expect(scope.steps).toHaveLength(2);
+    expect(scope.outputs.matrix).toBe('${{ steps.matrix.outputs.matrix }}');
     expect(filters.all).toEqual(['**']);
     for (const file of ['README.md', 'native/ai/apple/main.swift']) {
       expect(path.matchesGlob(file, filters.all[0])).toBe(true);

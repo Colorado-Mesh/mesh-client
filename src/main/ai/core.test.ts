@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await -- deterministic async fetch/runtime test doubles */
 import { describe, expect, it, vi } from 'vitest';
 
+const dnsLookup = vi.hoisted(() => vi.fn(async () => ({ address: '8.8.8.8', family: 4 as const })));
+vi.mock('node:dns/promises', () => ({
+  lookup: dnsLookup,
+}));
+
+import { Agent } from 'undici';
+
 import { AI_MAX_RESPONSE_BYTES, aiSummaryTimeoutMs } from '../../shared/ai-types';
 import { buildRequest, parseDelta } from './adapters';
 import { AiClient } from './aiClient';
@@ -41,13 +48,26 @@ describe('AI endpoint privacy policy', () => {
     '[fe80::1]',
     'ollama.local',
     '[::ffff:192.168.1.1]',
+    '169.254.169.254',
+    '0.0.0.0',
+    '100.64.0.1',
+    '[fc00::1]',
+    '[::ffff:169.254.169.254]',
   ])('allows local HTTP %s', (host) => {
     expect(classifyEndpoint(`http://${host}:1234`)).toMatchObject({ ok: true, cls: 'local' });
   });
   it.each([
+    'https://169.254.169.254',
+    'https://0.0.0.0',
+    'https://100.64.0.1',
+    'https://[fe80::1]',
+    'https://[::ffff:100.64.0.1]',
+  ])('classifies non-global %s as local, not remote', (url) => {
+    expect(classifyEndpoint(url)).toMatchObject({ ok: true, cls: 'local' });
+  });
+  it.each([
     'http://provider.test',
     'http://172.32.0.1',
-    'http://169.254.169.254',
     'http://[2001:4860::1]',
     'http://[::ffff:8.8.8.8]',
     'file:///tmp/model',
@@ -399,7 +419,27 @@ describe('AI bounded streaming client', () => {
       out.push(part);
     expect(out.join('')).toBe('héllo');
     expect(cancelled).toHaveBeenCalled();
-    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ redirect: 'error' });
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({
+      redirect: 'error',
+      dispatcher: expect.any(Object),
+    });
+  });
+  it('does not fetch a remote hostname that resolves to a non-global address', async () => {
+    dnsLookup.mockResolvedValueOnce({ address: '169.254.169.254', family: 4 });
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response('ok'));
+    const consume = async () => {
+      for await (const _part of new AiClient(fetchImpl).stream(
+        'openai',
+        input,
+        true,
+        new AbortController().signal,
+      )) {
+        expect(typeof _part).toBe('string');
+      }
+    };
+    await expect(consume()).rejects.toThrow('error');
+    expect(fetchImpl).not.toHaveBeenCalled();
+    dnsLookup.mockResolvedValue({ address: '8.8.8.8', family: 4 });
   });
   it('caps visible output independently of a provider reasoning budget', async () => {
     const cancel = vi.fn();
@@ -435,6 +475,51 @@ describe('AI bounded streaming client', () => {
     };
     await expect(consume()).rejects.toThrow('httpError');
     expect(cancel).toHaveBeenCalledOnce();
+  });
+  it('closes the pinned agent when stream reader.cancel rejects', async () => {
+    const close = vi.spyOn(Agent.prototype, 'close');
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n',
+          ),
+        );
+      },
+      cancel() {
+        return Promise.reject(new Error('cancel failed'));
+      },
+    });
+    const consume = async () => {
+      for await (const part of new AiClient(async () => new Response(body)).stream(
+        'openai',
+        input,
+        true,
+        new AbortController().signal,
+      )) {
+        expect(part).toBe('hi');
+      }
+    };
+    await expect(consume()).rejects.toThrow('cancel failed');
+    expect(close).toHaveBeenCalled();
+    close.mockRestore();
+  });
+  it('closes the pinned agent when list reader.cancel rejects', async () => {
+    const close = vi.spyOn(Agent.prototype, 'close');
+    const response = new Response('{"models":[]}');
+    Object.defineProperty(response, 'body', {
+      value: {
+        getReader: () => ({
+          read: () => Promise.resolve({ done: true, value: undefined }),
+          cancel: () => Promise.reject(new Error('cancel failed')),
+        }),
+      },
+    });
+    await expect(new AiClient(async () => response).list('openai', input, true)).rejects.toThrow(
+      'cancel failed',
+    );
+    expect(close).toHaveBeenCalled();
+    close.mockRestore();
   });
   it('rejects incomplete streams, caps responses and gates before fetch', async () => {
     const fetchImpl = vi.fn(

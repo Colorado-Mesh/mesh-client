@@ -615,7 +615,8 @@
       "send_failed": "No se ha podido enviar la solicitud de historial a la radio. Vuelve a conectarte o inténtalo de nuevo.",
       "cooldown": "Recientemente se ha recuperado el historial de este router. Espera antes de volver a solicitar.",
       "offline_gate": "Espere unos minutos después de volver a conectarse antes de que se ejecute la recuperación automática; utilice Póngase al día manualmente.",
-      "already_requested": "Ya hay una solicitud de historial en curso para este router."
+      "already_requested": "Ya hay una solicitud de historial en curso para este router.",
+      "missing_router_key": "La clave del router aún no se conoce. Espera la información del nodo e inténtalo de nuevo."
     },
     "replyRequiresPacketId": "La respuesta requiere el ID del paquete de RF del mensaje (esperar a que se envíe el acuse de recibo o se actualice el chat).",
     "queueButton": "Lista de espera",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "Estableciendo ruta con Ping antes de CLI...",
     "cliAutoPingFailed": "Ping falló; ejecute Ping manualmente antes de reintentar la CLI en nodos multihop.",
     "cliCommandTooLong": "El comando CLI es demasiado largo (máx. {{max}} caracteres).",
+    "cliCommandMustBeSingleLine": "El comando CLI debe ser una sola línea.",
     "currentRouteLabel": "Ruta actual:",
     "neighborsLoadMore": "Cargar más ({{loaded}} de {{total}})",
     "neighborsLoadMoreAria": "Cargar más vecinos ({{loaded}} de {{total}} cargados)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "Comando de acompañamiento",
     "consolePlaceholder": "por ejemplo, obtener radio",
     "consoleSend": "Enviar",
+    "notConnected": "No hay conexión con una radio MeshCore.",
+    "requiresCliFirmware": "La CLI del companion requiere firmware MeshCore companion v1.18 o posterior.",
+    "commandMustBeSingleLine": "El comando del companion debe ser una sola línea.",
+    "commandTooLong": "El comando del companion es demasiado largo (máx. {{max}} bytes).",
     "groups": {
       "device": "Dispositivo",
       "radio": "[sintonización de radio]",

@@ -631,7 +631,8 @@
       "send_failed": "Nie można wysłać żądania historii do radia. Połącz ponownie lub spróbuj ponownie.",
       "cooldown": "Niedawno pobrano historię tego routera. Poczekaj, zanim ponownie wyślesz żądanie.",
       "offline_gate": "Odczekaj kilka minut po ponownym połączeniu przed automatycznym pobieraniem cykli; użyj ręcznego nadrobienia zaległości.",
-      "already_requested": "Żądanie historii dla tego routera jest już w toku."
+      "already_requested": "Żądanie historii dla tego routera jest już w toku.",
+      "missing_router_key": "Klucz routera nie jest jeszcze znany. Poczekaj na informacje o węźle i spróbuj ponownie."
     },
     "replyRequiresPacketId": "Odpowiedź wymaga identyfikatora pakietu RF wiadomości (poczekaj na potwierdzenie wysłania lub odśwież czat).",
     "queueButton": "Kolejka",
@@ -5175,6 +5176,7 @@
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
     "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
     "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
+    "cliCommandMustBeSingleLine": "Polecenie CLI musi być w jednym wierszu.",
     "currentRouteLabel": "Aktualna trasa:",
     "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
     "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
@@ -7519,6 +7521,10 @@
     "consoleInput": "Dowództwo towarzyszące",
     "consolePlaceholder": "np. uzyskaj radio",
     "consoleSend": "Wyślij",
+    "notConnected": "Brak połączenia z radiem MeshCore.",
+    "requiresCliFirmware": "Companion CLI wymaga oprogramowania MeshCore companion v1.18 lub nowszego.",
+    "commandMustBeSingleLine": "Polecenie companion musi być w jednym wierszu.",
+    "commandTooLong": "Polecenie companion jest za długie (maks. {{max}} bajtów).",
     "groups": {
       "device": "Urządzenie",
       "radio": "Dostrajanie radia",

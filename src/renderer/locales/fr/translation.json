@@ -615,7 +615,8 @@
       "send_failed": "Impossible d'envoyer la demande d'historique à la radio. Reconnectez-vous ou réessayez.",
       "cooldown": "L'historique a été récupéré récemment pour ce routeur. Attendez avant de refaire une demande.",
       "offline_gate": "Attendez quelques minutes après la reconnexion avant que la récupération automatique ne s'exécute ; utilisez Rattraper manuellement.",
-      "already_requested": "Une demande d'historique est déjà en cours pour ce routeur."
+      "already_requested": "Une demande d'historique est déjà en cours pour ce routeur.",
+      "missing_router_key": "La clé du routeur n'est pas encore connue. Attendez les informations du nœud, puis réessayez."
     },
     "replyRequiresPacketId": "La réponse nécessite l'identifiant du paquet RF du message (attendez l'envoi de l'ack ou l'actualisation du chat).",
     "queueButton": "File d’attente",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "Établissement de l'itinéraire avec Ping avant CLI…",
     "cliAutoPingFailed": "Échec du Ping ; lancez Ping manuellement avant de réessayer la CLI sur les nœuds multi-sauts.",
     "cliCommandTooLong": "La commande CLI est trop longue (max {{max}} caractères).",
+    "cliCommandMustBeSingleLine": "La commande CLI doit tenir sur une seule ligne.",
     "currentRouteLabel": "Itinéraire actuel :",
     "neighborsLoadMore": "Charger plus ({{loaded}} sur {{total}})",
     "neighborsLoadMoreAria": "Charger plus de voisins ({{loaded}} sur {{total}} chargés)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "Commande compagnon",
     "consolePlaceholder": "par exemple, obtenir la radio",
     "consoleSend": "Envoyer",
+    "notConnected": "Non connecté à une radio MeshCore.",
+    "requiresCliFirmware": "La CLI companion exige le firmware MeshCore companion v1.18 ou plus récent.",
+    "commandMustBeSingleLine": "La commande companion doit tenir sur une seule ligne.",
+    "commandTooLong": "La commande companion est trop longue ({{max}} octets maximum).",
     "groups": {
       "device": "Dispositif",
       "radio": "Réglage radio",

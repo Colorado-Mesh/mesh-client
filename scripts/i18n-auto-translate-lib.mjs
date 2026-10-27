@@ -301,10 +301,9 @@ export function looksLikeTechnicalSample(enVal) {
 function looksLikePathOrUriSample(t) {
   if (t.startsWith('~/') || t.startsWith('/') || t.startsWith('hash:/')) return true;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(t)) return true;
-  // Relative path with an extension (page/index.mu, dir/config.txt)
-  if (t.includes('/') && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
-  // Bare filename with a short extension and no slash
-  if (!t.includes('/') && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
+  // Relative path with an extension (page/index.mu, dir/config.txt). A dotted
+  // label with no slash (Ch.Util) is not a filename.
+  if ((t.includes('/') || t.startsWith('~/')) && /\.[a-z0-9]{1,5}$/i.test(t)) return true;
   return false;
 }
 

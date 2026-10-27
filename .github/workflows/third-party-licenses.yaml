@@ -12,14 +12,17 @@ on:
     paths:
       - package.json
       - pnpm-lock.yaml
+      - reticulum-sidecar/Cargo.lock
+      - reticulum-sidecar/Cargo.toml
+      - reticulum-sidecar/ratspeak-stack-pins.env
       - scripts/generate-third-party-licenses.mjs
       - .github/workflows/third-party-licenses.yaml
 
-# Coalesce overlapping regenerations (path-filtered pushes can stack) so we do not
-# leave multiple stale license PRs from canceled/superseded runs.
+# Queue overlapping regenerations. Do not cancel an in-progress run: cancellation
+# can strand a license PR that the job already opened.
 concurrency:
   group: third-party-licenses
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update:

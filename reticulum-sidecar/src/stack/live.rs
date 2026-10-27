@@ -145,7 +145,9 @@ pub(crate) const ANNOUNCE_QUEUE_WATCHDOG_MAX_BITRATE_BPS: u64 = 10_000;
 pub(crate) const ANNOUNCE_QUEUE_WATCHDOG_COOLDOWN: Duration = Duration::from_secs(600);
 
 pub(crate) fn announce_queue_watchdog_needed(announce_queue: u64, bitrate_bps: u64) -> bool {
+    // bitrate 0 is unknown, not slow RF (same predicate as the slow-RF announce filter).
     announce_queue >= ANNOUNCE_QUEUE_WATCHDOG_MAX
+        && bitrate_bps > 0
         && bitrate_bps <= ANNOUNCE_QUEUE_WATCHDOG_MAX_BITRATE_BPS
 }
 
@@ -9069,6 +9071,8 @@ mod live_tx_queue_fields_tests {
         // Below threshold, or a fast interface, does not.
         assert!(!announce_queue_watchdog_needed(999, 3_125));
         assert!(!announce_queue_watchdog_needed(5_000, 1_000_000));
+        // Unknown bitrate (0) is not a slow interface.
+        assert!(!announce_queue_watchdog_needed(1_000, 0));
     }
 
     #[test]

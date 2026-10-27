@@ -616,7 +616,8 @@
       "send_failed": "无法向收音机发送历史记录请求。请重新连接或重试。",
       "cooldown": "最近已为此路由器获取历史记录。请稍候再请求。",
       "offline_gate": "重新连接后等待几分钟，然后自动提取运行；手动使用“追赶”。",
-      "already_requested": "此路由器的历史记录请求已在进行中。"
+      "already_requested": "此路由器的历史记录请求已在进行中。",
+      "missing_router_key": "路由器密钥尚不可用。请等待节点信息后再试。"
     },
     "replyRequiresPacketId": "回复需要消息RF数据包ID （等待发送确认或刷新聊天）。",
     "queueButton": "队列",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "在CLI之前使用Ping建立路由…",
     "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
     "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。",
+    "cliCommandMustBeSingleLine": "CLI 命令必须为单行。",
     "currentRouteLabel": "当前路线：",
     "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
     "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
@@ -7397,6 +7399,10 @@
     "consoleInput": "精灵命令",
     "consolePlaceholder": "例如：获取无线电",
     "consoleSend": "傳送",
+    "notConnected": "未连接到 MeshCore 电台。",
+    "requiresCliFirmware": "Companion CLI 需要 MeshCore companion 固件 v1.18 或更高版本。",
+    "commandMustBeSingleLine": "Companion 命令必须为单行。",
+    "commandTooLong": "Companion 命令过长（最多 {{max}} 字节）。",
     "groups": {
       "device": "设备",
       "radio": "无线电调谐",

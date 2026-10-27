@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setConnection, useConnectionStore } from '../../stores/connectionStore';
 import { addIdentity } from '../../stores/identityStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
@@ -20,10 +21,16 @@ import {
 } from '../meshcoreUtils';
 import { getNodeStatus } from '../nodeStatus';
 import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
+import { loadRuntimeSource } from '../sourceContractTestHelpers';
 import { messageRecordToChatMessage } from '../storeRecordAdapters';
 import { resetTakRelayedChannelLines } from '../tak/takChannelRelay';
 import { resetTakRelayedDirectMessages } from '../tak/takDirectMessages';
-import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
+import { rememberTakSend, resetTakEchoForTests } from '../tak/takEchoGuard';
+import {
+  attachMeshcoreIngest,
+  meshcoreIngestHandleTextMessage,
+  relayInsertedMeshcoreMqttChannel,
+} from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
 
@@ -914,5 +921,107 @@ describe('meshcore ingest TAK channel relay', () => {
       });
       expect(pushChatMessage).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('MeshCore MQTT channel messages to TAK', () => {
+  const MQTT_ID = 'meshcore-mqtt-tak-test';
+  const pushChatMessage = vi.fn().mockResolvedValue(undefined);
+
+  const message = {
+    sender_id: 42,
+    sender_name: 'Bob',
+    payload: 'on scene',
+    channel: 3,
+    timestamp: 1_700_000_700_000,
+  };
+
+  beforeEach(() => {
+    vi.spyOn(window.electronAPI.tak, 'pushChatMessage').mockImplementation(pushChatMessage);
+    pushChatMessage.mockClear();
+    useMessageStore.setState({ messages: {} });
+    useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakChannelStore.setState({ channelsByIdentity: {} });
+    resetTakRelayedChannelLines();
+    setTakSinkActive(true);
+    serveTakChannel(MQTT_ID, 3, '0123456789abcdef');
+  });
+
+  afterEach(() => {
+    setTakSinkActive(false);
+    useConnectionStore.setState({ connections: {} });
+    resetTakEchoForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('relays a newly inserted MQTT channel message once', () => {
+    relayInsertedMeshcoreMqttChannel({
+      inserted: true,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    expect(pushChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelKey: '0123456789abcdef',
+        senderCallsign: 'Bob',
+        text: 'on scene',
+      }),
+    );
+  });
+
+  it('lets consumeTakEcho drop the line while the local node is unknown', () => {
+    rememberTakSend(MQTT_ID, 3, 'on scene');
+    relayInsertedMeshcoreMqttChannel({
+      inserted: true,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('relays when the sender is known to be another node, even if the text matches a TAK echo', () => {
+    setConnection(MQTT_ID, { myNodeNum: 7, status: 'connected' });
+    rememberTakSend(MQTT_ID, 3, 'on scene');
+    relayInsertedMeshcoreMqttChannel({
+      inserted: true,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not relay a message already stored from RF', () => {
+    relayInsertedMeshcoreMqttChannel({
+      inserted: false,
+      identityId: MQTT_ID,
+      message,
+      wireText: 'Bob: on scene',
+      displayName: 'Bob',
+      prior: [],
+    });
+    expect(pushChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('calls the helper with the MQTT dedup result after the message is stored', () => {
+    const source = loadRuntimeSource('useMeshcoreRuntime.ts');
+    const start = source.indexOf('mqtt.onMeshcoreChat');
+    const end = source.indexOf('}, [addMessage, readMeshcoreNodes]);', start);
+    expect(start).toBeGreaterThan(-1);
+    const body = source.slice(start, end);
+    const stored = body.indexOf('const added = addMessage(');
+    const relay = body.indexOf('relayInsertedMeshcoreMqttChannel({');
+    expect(stored).toBeGreaterThan(-1);
+    expect(relay).toBeGreaterThan(stored);
+    expect(body).toContain('inserted: added.inserted');
   });
 });

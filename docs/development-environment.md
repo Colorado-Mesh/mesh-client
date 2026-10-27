@@ -11,7 +11,7 @@ These requirements apply to all platforms.
 - Git
 - Node.js **22.15.0+** and pnpm **12+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) when available, or `npm install -g corepack@latest` / `npm install -g pnpm@<pin>` on Node 25+ where Corepack is not bundled). `pnpm install` fails on engine mismatch. After pulling a pnpm major bump, `preinstall` and `pnpm run dev` print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.
 - [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
-- Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
+- Python **3.14** + `pip` (needed for MkDocs documentation build and yamllint; `docs/requirements.txt` has no Python 3.15 wheels and the install is `--only-binary`)
 
 Verify:
 
@@ -44,12 +44,12 @@ Docs are built with MkDocs Material.
 
 1. Create and activate a local virtual environment (recommended on macOS/Homebrew Python because of PEP 668 externally managed environments):
    - macOS/Linux:
-     - `python3 -m venv .venv`
+     - `python3.14 -m venv .venv`
      - `source .venv/bin/activate`
    - Windows PowerShell:
-     - `py -3 -m venv .venv`
+     - `py -3.14 -m venv .venv`
      - `.\.venv\Scripts\Activate.ps1`
-2. Install the docs dependencies:
+2. Install the docs dependencies with Python 3.14 (not 3.15: `pyyaml==6.0.3` in `docs/requirements.txt` has no cp315 wheel and the install is `--only-binary`, matching [CI](ci-cd.md)):
    - `pnpm run docs:install`
    - or (manual): `python3 -m pip install --require-hashes --only-binary=:all: -r docs/requirements.txt`
 3. Build locally:

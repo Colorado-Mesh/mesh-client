@@ -11,6 +11,7 @@ import {
   type MeshcoreCompanionCliResult,
   runMeshcoreCompanionCli,
 } from '../../lib/meshcore/meshcoreCompanionCli';
+import { serializeMeshcoreUserMessage } from '../../lib/meshcore/meshcoreMessageI18n';
 
 /** Gap between writing `reboot` and tearing down the transport so the frame flushes. */
 export const MESHCORE_PLANNED_REBOOT_FLUSH_MS = 500;
@@ -54,8 +55,14 @@ export function useMeshcoreCompanionCli(
   const run = useCallback(
     async (command: string): Promise<MeshcoreCompanionCliResult> => {
       const conn = connRef.current;
-      if (!conn) throw new Error('MeshCore not connected');
-      if (!available) throw new Error('companion CLI requires MeshCore companion firmware v1.18+');
+      if (!conn) {
+        throw new Error(serializeMeshcoreUserMessage({ key: 'meshcoreCompanionCli.notConnected' }));
+      }
+      if (!available) {
+        throw new Error(
+          serializeMeshcoreUserMessage({ key: 'meshcoreCompanionCli.requiresCliFirmware' }),
+        );
+      }
       try {
         const result = await runMeshcoreCompanionCli(conn, command);
         console.debug(

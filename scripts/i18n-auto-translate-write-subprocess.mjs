@@ -42,6 +42,8 @@ try {
   process.stderr.write(
     `i18n-auto-translate-write-subprocess: ${err instanceof Error ? err.message : String(err)}\n`,
   );
+  // process.exit skips finally, which would leak the mesh-i18n-write-* stage dir.
+  rmSync(stageDir, { recursive: true, force: true });
   process.exit(1);
 } finally {
   rmSync(stageDir, { recursive: true, force: true });

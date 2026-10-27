@@ -22,7 +22,6 @@ import {
 } from '@/renderer/lib/meshcoreOffload';
 import {
   createMeshcoreRepeaterCliQueue,
-  normalizeMeshcoreCliCommand,
   redactMeshcoreCliSecrets,
 } from '@/renderer/lib/meshcoreRepeaterCliQueue';
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
@@ -135,7 +134,10 @@ import {
   getIdentityNode,
   getIdentityNodeMap,
 } from '../lib/identityStoreReads';
-import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
+import {
+  attachMeshcoreIngest,
+  relayInsertedMeshcoreMqttChannel,
+} from '../lib/ingest/meshcoreIngest';
 import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
 import {
   rehydrateMeshcoreConnectionParamsFromStorage,
@@ -493,12 +495,12 @@ import { clearRadioSelfPosition } from '../lib/radioSelfPosition';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
+  assertMeshcoreRepeaterCliCommand,
   calculateRepeaterCliTimeout,
   type CliHistoryEntry,
   computeRepeaterCliHopCount,
   createRepeaterCommandService,
   padRepeaterCliTimeoutForWaitingDrain,
-  REPEATER_CLI_MAX_COMMAND_LENGTH,
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
@@ -1395,83 +1397,98 @@ export function useMeshcoreRuntime() {
     });
   }, [selfInfo?.batteryMilliVolts, state.connectionType]);
 
-  const addMessage = useCallback((msg: ChatMessage): string | undefined => {
-    const storeId = meshcoreIdentityIdRef.current;
-    let result: {
+  const addMessage = useCallback(
+    (
+      msg: ChatMessage,
+    ): {
+      canonicalId: string | undefined;
       inserted: boolean;
-      storeUpdated: boolean;
       message: ChatMessage;
-      canonicalId: string;
-    };
-    if (storeId) {
-      result = upsertMeshcoreMessageWithDedup(storeId, msg);
-    } else {
-      let inserted = false;
-      flushSync(() => {
-        setMessages((prev) => {
-          const incomingKey = meshcoreMessageDedupeKey(msg);
-          if (prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey)) {
-            return prev;
-          }
-          const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
-          if (crossTransportDup) {
-            const { messages: next, matched } = upgradeMeshcoreCrossTransportMessage(prev, msg);
-            if (matched) return next;
-            return prev;
-          }
-          inserted = true;
-          return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
-        });
-      });
-      result = {
-        inserted,
-        storeUpdated: inserted,
-        message: msg,
-        canonicalId: meshcoreMessageStoreId(msg),
+    } => {
+      const storeId = meshcoreIdentityIdRef.current;
+      let result: {
+        inserted: boolean;
+        storeUpdated: boolean;
+        message: ChatMessage;
+        canonicalId: string;
       };
-    }
-
-    const incomingKey = meshcoreMessageDedupeKey(result.message);
-    if (storeId) {
-      flushSync(() => {
-        setMessages((prev) => {
-          const exactDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
-          if (exactDup) {
-            if (!result.inserted) {
-              return prev.map((m) =>
-                meshcoreMessageDedupeKey(m) === incomingKey
-                  ? { ...m, receivedVia: result.message.receivedVia }
-                  : m,
-              );
+      if (storeId) {
+        result = upsertMeshcoreMessageWithDedup(storeId, msg);
+      } else {
+        let inserted = false;
+        flushSync(() => {
+          setMessages((prev) => {
+            const incomingKey = meshcoreMessageDedupeKey(msg);
+            if (prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey)) {
+              return prev;
             }
-            return prev;
-          }
-          if (!result.inserted) {
-            const crossDup = findMeshcoreCrossTransportDuplicate(prev, msg);
-            if (crossDup) {
+            const crossTransportDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+            if (crossTransportDup) {
               const { messages: next, matched } = upgradeMeshcoreCrossTransportMessage(prev, msg);
               if (matched) return next;
+              return prev;
             }
-            return prev;
-          }
-          return trimChatMessagesToMax([...prev, result.message], MAX_IN_MEMORY_CHAT_MESSAGES);
-        });
-      });
-    }
-
-    if (result.inserted || result.storeUpdated) {
-      const skipSendingRoomPersist =
-        result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
-      if (!skipSendingRoomPersist) {
-        void window.electronAPI.db
-          .saveMeshcoreMessage(messageToDbRow(result.message, myNodeNumRef.current))
-          .catch((e: unknown) => {
-            console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
+            inserted = true;
+            return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
           });
+        });
+        result = {
+          inserted,
+          storeUpdated: inserted,
+          message: msg,
+          canonicalId: meshcoreMessageStoreId(msg),
+        };
       }
-    }
-    return storeId ? result.canonicalId : undefined;
-  }, []);
+
+      const incomingKey = meshcoreMessageDedupeKey(result.message);
+      if (storeId) {
+        flushSync(() => {
+          setMessages((prev) => {
+            const exactDup = prev.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+            if (exactDup) {
+              if (!result.inserted) {
+                return prev.map((m) =>
+                  meshcoreMessageDedupeKey(m) === incomingKey
+                    ? { ...m, receivedVia: result.message.receivedVia }
+                    : m,
+                );
+              }
+              return prev;
+            }
+            if (!result.inserted) {
+              const crossDup = findMeshcoreCrossTransportDuplicate(prev, msg);
+              if (crossDup) {
+                const { messages: next, matched } = upgradeMeshcoreCrossTransportMessage(prev, msg);
+                if (matched) return next;
+              }
+              return prev;
+            }
+            return trimChatMessagesToMax([...prev, result.message], MAX_IN_MEMORY_CHAT_MESSAGES);
+          });
+        });
+      }
+
+      if (result.inserted || result.storeUpdated) {
+        const skipSendingRoomPersist =
+          result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
+        if (!skipSendingRoomPersist) {
+          void window.electronAPI.db
+            .saveMeshcoreMessage(messageToDbRow(result.message, myNodeNumRef.current))
+            .catch((e: unknown) => {
+              console.warn(
+                '[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e),
+              );
+            });
+        }
+      }
+      return {
+        canonicalId: storeId ? result.canonicalId : undefined,
+        inserted: result.inserted,
+        message: result.message,
+      };
+    },
+    [],
+  );
 
   const addMessagesBatch = useCallback((batch: ChatMessage[]) => {
     if (batch.length === 0) return;
@@ -1615,7 +1632,7 @@ export function useMeshcoreRuntime() {
       const normProbe = normalizeMeshcoreIncomingText(m.text);
       const rawForBuild = normProbe.senderName ? m.text : `${displayName}: ${m.text}`;
       const prior = storeId ? meshcoreSortedStorePrior(storeId) : [];
-      addMessage(
+      const added = addMessage(
         parseMeshcoreChannelIncomingFromThread(prior, {
           rawText: rawForBuild,
           senderId: resolvedId,
@@ -1625,6 +1642,16 @@ export function useMeshcoreRuntime() {
           receivedVia: 'mqtt',
         }),
       );
+      if (storeId) {
+        relayInsertedMeshcoreMqttChannel({
+          inserted: added.inserted,
+          identityId: storeId,
+          message: added.message,
+          wireText: m.text,
+          displayName,
+          prior,
+        });
+      }
     });
   }, [addMessage, readMeshcoreNodes]);
 
@@ -4669,7 +4696,7 @@ export function useMeshcoreRuntime() {
               timestamp: sentAt,
               status: 'acked',
               replyId: replyField,
-            });
+            }).canonicalId;
             if (channelMsgId && heardIdentityId && channelMsgId !== provisionalHeardId) {
               renameHeardRepeatWindowMessageId(heardIdentityId, provisionalHeardId, channelMsgId);
               useRelayCoverageStore
@@ -6326,6 +6353,7 @@ export function useMeshcoreRuntime() {
           throw new Error(MESHCORE_ERR_NOT_CONNECTED);
         }
       };
+      const trimmed = assertMeshcoreRepeaterCliCommand(command);
       return repeaterCliQueueRef.current(`${identityAtRequest}:${nodeId}`, async () => {
         assertRequestCurrent();
         setMeshcoreRepeaterRpcPending((prev) =>
@@ -6339,15 +6367,6 @@ export function useMeshcoreRuntime() {
         const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
         repeaterCommandServiceRef.current ??= service;
         try {
-          const trimmed = normalizeMeshcoreCliCommand(command);
-          if (trimmed.length > REPEATER_CLI_MAX_COMMAND_LENGTH) {
-            throw new Error(
-              serializeMeshcoreUserMessage({
-                key: 'repeatersPanel.cliCommandTooLong',
-                params: { max: REPEATER_CLI_MAX_COMMAND_LENGTH },
-              }),
-            );
-          }
           if (isMeshcoreRepeaterCliDangerCommand(trimmed) && !opts?.confirmedDanger) {
             throw new Error(serializeMeshcoreUserMessage('meshcore.errors.cliDangerNotConfirmed'));
           }
@@ -7272,7 +7291,7 @@ export function useMeshcoreRuntime() {
         to: nodeId,
       };
       const storeId = meshcoreIdentityIdRef.current;
-      const canonicalId = addMessage(tempMsg);
+      const canonicalId = addMessage(tempMsg).canonicalId;
       try {
         const hopsAway = resolveRoomLoginHopsForNode(nodeId);
         console.debug(
@@ -8480,6 +8499,13 @@ export function useMeshcoreRuntime() {
       mqttStatus,
     });
   }, [meshcoreIdentityId, state, mqttStatus]);
+
+  useEffect(() => {
+    const active = ['connected', 'configured', 'stale', 'reconnecting'].includes(state.status);
+    if (active) window.electronAPI.notifyDeviceConnected('meshcore');
+    else if (state.status === 'disconnected')
+      window.electronAPI.notifyDeviceDisconnected('meshcore');
+  }, [state.status]);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
     (params: {

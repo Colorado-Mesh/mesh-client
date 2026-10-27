@@ -68,7 +68,12 @@ describe('meshcoreCompanionCli', () => {
   it('rejects multi-line, empty and oversized commands', () => {
     expect(() => validateMeshcoreCompanionCliCommand('set name x\nreboot')).toThrow();
     expect(() => validateMeshcoreCompanionCliCommand('   ')).toThrow();
-    expect(() => validateMeshcoreCompanionCliCommand('x'.repeat(151))).toThrow();
+    expect(() => validateMeshcoreCompanionCliCommand('ver\nreboot')).toThrow(
+      'meshcoreCompanionCli.commandMustBeSingleLine',
+    );
+    expect(() => validateMeshcoreCompanionCliCommand('x'.repeat(151))).toThrow(
+      'meshcoreCompanionCli.commandTooLong',
+    );
     expect(validateMeshcoreCompanionCliCommand('  ver')).toBe('ver');
     expect(validateMeshcoreCompanionCliCommand('set wifi.pwd pass ')).toBe('set wifi.pwd pass ');
   });

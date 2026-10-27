@@ -616,7 +616,8 @@
       "send_failed": "라디오에 기록 요청을 보낼 수 없습니다. 다시 연결하거나 다시 시도하세요.",
       "cooldown": "최근 이 라우터에 대한 기록을 가져왔습니다. 다시 요청하기 전에 기다리세요.",
       "offline_gate": "자동 가져오기가 실행되기 전에 다시 연결한 후 몇 분 정도 기다리십시오. 수동으로 따라잡기를 사용하십시오.",
-      "already_requested": "이 라우터에 대한 기록 요청이 이미 진행 중입니다."
+      "already_requested": "이 라우터에 대한 기록 요청이 이미 진행 중입니다.",
+      "missing_router_key": "라우터 키를 아직 모릅니다. 노드 정보를 기다린 다음 다시 시도하세요."
     },
     "replyRequiresPacketId": "회신하려면 메시지 RF 패킷 ID가 필요합니다 (ACK 전송 또는 채팅 새로 고침을 기다림).",
     "queueButton": "대기열",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
     "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
     "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
+    "cliCommandMustBeSingleLine": "CLI 명령은 한 줄이어야 합니다.",
     "currentRouteLabel": "현재 경로:",
     "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
     "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "동반자 명령",
     "consolePlaceholder": "예: GET 라디오",
     "consoleSend": "보내기",
+    "notConnected": "MeshCore 무전기에 연결되어 있지 않습니다.",
+    "requiresCliFirmware": "Companion CLI에는 MeshCore companion 펌웨어 v1.18 이상이 필요합니다.",
+    "commandMustBeSingleLine": "Companion 명령은 한 줄이어야 합니다.",
+    "commandTooLong": "Companion 명령이 너무 깁니다(최대 {{max}}바이트).",
     "groups": {
       "device": "장치",
       "radio": "라디오 튜닝",

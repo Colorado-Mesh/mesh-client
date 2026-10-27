@@ -91,7 +91,8 @@ export type RequestStoreForwardHistoryResult =
         | 'send_failed'
         | 'cooldown'
         | 'offline_gate'
-        | 'already_requested';
+        | 'already_requested'
+        | 'missing_router_key';
     };
 
 export interface MeshtasticRuntimeWireEffectsDeps {

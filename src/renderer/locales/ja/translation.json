@@ -616,7 +616,8 @@
       "send_failed": "ラジオに履歴リクエストを送信できませんでした。再接続するか、もう一度お試しください。",
       "cooldown": "このルーターの履歴は最近取得されました。再度リクエストする前にお待ちください。",
       "offline_gate": "自動フェッチが実行されるまで、再接続後数分待ちます。手動でキャッチアップを使用してください。",
-      "already_requested": "このルーターの履歴リクエストはすでに進行中です。"
+      "already_requested": "このルーターの履歴リクエストはすでに進行中です。",
+      "missing_router_key": "ルーターキーはまだ不明です。ノード情報を待ってから、もう一度試してください。"
     },
     "replyRequiresPacketId": "応答には、メッセージRFパケットIDが必要です（送信確認またはチャットの更新を待ちます）。",
     "queueButton": "キュー処理",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
     "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
     "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。",
+    "cliCommandMustBeSingleLine": "CLI コマンドは 1 行である必要があります。",
     "currentRouteLabel": "現在のルート:",
     "neighborsLoadMore": "さらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
     "neighborsLoadMoreAria": "隣接ノードをさらに読み込む（{{loaded}}/{{total}} 読み込み済み）",
@@ -7397,6 +7399,10 @@
     "consoleInput": "コンパニオンコマンド",
     "consolePlaceholder": "例： GET RADIO",
     "consoleSend": "送信",
+    "notConnected": "MeshCore 無線機に接続されていません。",
+    "requiresCliFirmware": "Companion CLI には MeshCore companion ファームウェア v1.18 以降が必要です。",
+    "commandMustBeSingleLine": "Companion コマンドは 1 行である必要があります。",
+    "commandTooLong": "Companion コマンドが長すぎます（最大 {{max}} バイト）。",
     "groups": {
       "device": "デバイス",
       "radio": "ラジオチューニング",

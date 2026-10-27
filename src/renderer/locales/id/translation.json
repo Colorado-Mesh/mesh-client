@@ -616,7 +616,8 @@
       "send_failed": "Tidak dapat mengirim permintaan riwayat ke radio. Sambungkan kembali atau coba lagi.",
       "cooldown": "Riwayat baru saja diambil untuk router ini. Tunggu sebelum meminta lagi.",
       "offline_gate": "Tunggu beberapa menit setelah tersambung kembali sebelum pengambilan otomatis berjalan; gunakan Kejar dari Toko & Teruskan secara manual.",
-      "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini."
+      "already_requested": "Permintaan riwayat sudah berlangsung untuk router ini.",
+      "missing_router_key": "Kunci router belum diketahui. Tunggu informasi node, lalu coba lagi."
     },
     "replyRequiresPacketId": "Balasan memerlukan ID paket RF pesan (tunggu konfirmasi kirim atau segarkan obrolan).",
     "queueButton": "Antrian",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
     "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
     "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
+    "cliCommandMustBeSingleLine": "Perintah CLI harus satu baris.",
     "currentRouteLabel": "Rute saat ini:",
     "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
     "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "Perintah pendamping",
     "consolePlaceholder": "mis. dapatkan radio",
     "consoleSend": "Kirim",
+    "notConnected": "Tidak terhubung ke radio MeshCore.",
+    "requiresCliFirmware": "CLI companion memerlukan firmware MeshCore companion v1.18 atau yang lebih baru.",
+    "commandMustBeSingleLine": "Perintah companion harus satu baris.",
+    "commandTooLong": "Perintah companion terlalu panjang (maks. {{max}} byte).",
     "groups": {
       "device": "Perangkat",
       "radio": "Penyetelan radio",

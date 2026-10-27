@@ -615,7 +615,8 @@
       "send_failed": "Kan geschiedenisverzoek niet naar de radio sturen. Maak opnieuw verbinding of probeer het opnieuw.",
       "cooldown": "Er is onlangs geschiedenis opgehaald voor deze router. Wacht voordat je opnieuw een aanvraag indient.",
       "offline_gate": "Wacht een paar minuten na het opnieuw verbinden voordat de auto-fetch wordt uitgevoerd; gebruik Inhalen handmatig.",
-      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router."
+      "already_requested": "Er wordt al een geschiedenisverzoek uitgevoerd voor deze router.",
+      "missing_router_key": "De routersleutel is nog niet bekend. Wacht op knooppuntinformatie en probeer het daarna opnieuw."
     },
     "replyRequiresPacketId": "Antwoorden vereist het RF-pakket-ID van het bericht (wacht op verzendbevestiging of ververs de chat).",
     "queueButton": "Wachtrij",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
     "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
     "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
+    "cliCommandMustBeSingleLine": "Het CLI-commando moet op één regel staan.",
     "currentRouteLabel": "Huidig ​​traject:",
     "neighborsLoadMore": "Laad meer ({{loaded}} van {{total}})",
     "neighborsLoadMoreAria": "Laad meer buren ({{loaded}} van {{total}} geladen)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "Begeleidingsopdracht",
     "consolePlaceholder": "bijv. haal radio",
     "consoleSend": "Verzenden",
+    "notConnected": "Niet verbonden met een MeshCore-radio.",
+    "requiresCliFirmware": "Companion CLI vereist MeshCore companion-firmware v1.18 of nieuwer.",
+    "commandMustBeSingleLine": "Het companion-commando moet op één regel staan.",
+    "commandTooLong": "Het companion-commando is te lang (max. {{max}} bytes).",
     "groups": {
       "device": "Toestel",
       "radio": "Radiotuning",

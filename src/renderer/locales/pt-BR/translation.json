@@ -616,7 +616,8 @@
       "send_failed": "Não foi possível enviar a solicitação de histórico para o rádio. Reconecte ou tente novamente.",
       "cooldown": "O histórico foi obtido recentemente para este roteador. Aguarde antes de solicitar novamente.",
       "offline_gate": "Aguarde alguns minutos após a reconexão antes de executar a busca automática; use Atualizar a partir da Loja e Encaminhar manualmente.",
-      "already_requested": "Uma solicitação de histórico já está em andamento para este roteador."
+      "already_requested": "Uma solicitação de histórico já está em andamento para este roteador.",
+      "missing_router_key": "A chave do roteador ainda não é conhecida. Aguarde as informações do nó e tente novamente."
     },
     "replyRequiresPacketId": "A resposta requer o ID do pacote RF da mensagem (aguarde a confirmação de envio ou atualize o chat).",
     "queueButton": "Fila de espera",
@@ -5093,6 +5094,7 @@
     "cliAutoPingToast": "Estabelecendo a rota com o Ping antes da CLI...",
     "cliAutoPingFailed": "Falha no ping; execute o ping manualmente antes de tentar novamente a CLI em repetidores multi-hop.",
     "cliCommandTooLong": "O comando CLI é muito longo (máx. {{max}} caracteres).",
+    "cliCommandMustBeSingleLine": "O comando CLI deve ser uma única linha.",
     "currentRouteLabel": "Rota atual:",
     "neighborsLoadMore": "Carregar mais ({{loaded}} de {{total}} carregados)",
     "neighborsLoadMoreAria": "Carregar mais vizinhos ({{loaded}} de {{total}} carregados)",
@@ -7397,6 +7399,10 @@
     "consoleInput": "Comando acompanhante",
     "consolePlaceholder": "por exemplo, obter rádio",
     "consoleSend": "Enviar",
+    "notConnected": "Não conectado a um rádio MeshCore.",
+    "requiresCliFirmware": "A CLI do companion exige o firmware MeshCore companion v1.18 ou mais recente.",
+    "commandMustBeSingleLine": "O comando do companion deve ser uma única linha.",
+    "commandTooLong": "O comando do companion é longo demais (máx. {{max}} bytes).",
     "groups": {
       "device": "Dispositivo",
       "radio": "...",

@@ -400,6 +400,9 @@ let reticulumSidecarManager: ReticulumSidecarManager | null = null;
 function ensureReticulumSidecarManager(): ReticulumSidecarManager {
   if (!reticulumSidecarManager) {
     reticulumSidecarManager = new ReticulumSidecarManager();
+    reticulumSidecarManager.on('status', () => {
+      syncPowerSaveBlocker();
+    });
     wireReticulumSidecarBridge(reticulumSidecarManager, () => mainWindow);
   }
   return reticulumSidecarManager;
@@ -485,6 +488,25 @@ function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
 }
 
+function isReticulumSidecarRunning(): boolean {
+  return reticulumSidecarManager?.getStatus().running === true;
+}
+
+/** Meshtastic, MeshCore, the Reticulum sidecar, and MQTT are independent. */
+function hasLiveConnection(): boolean {
+  return (
+    meshtasticDeviceConnected ||
+    meshcoreDeviceConnected ||
+    isReticulumSidecarRunning() ||
+    isAnyMqttConnected()
+  );
+}
+
+function syncPowerSaveBlocker(): void {
+  if (hasLiveConnection()) startPowerSaveBlocker();
+  else stopPowerSaveBlocker();
+}
+
 let mainWindow: BrowserWindow | null = null;
 let reloadMainRenderer: ((beforeLoad?: () => void) => Promise<void>) | null = null;
 let rendererLoadPromise: Promise<void> | null = null;
@@ -497,7 +519,8 @@ let tray: Tray | null = null;
 let trayContextMenu: Menu | null = null;
 /** Retain application menu on macOS so the menu bridge has a stable model. */
 let appMenu: Menu | null = null;
-let isConnected = false;
+let meshtasticDeviceConnected = false;
+let meshcoreDeviceConnected = false;
 let isQuitting = false;
 let shutdownDone = false;
 /** Shared quit/relaunch single-flight (app:quit, app:relaunch). */
@@ -513,7 +536,8 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   if (quitMainInFlight) return;
   quitMainInFlight = true;
   isQuitting = true;
-  isConnected = false;
+  meshtasticDeviceConnected = false;
+  meshcoreDeviceConnected = false;
   gattSidecarProxy.setQuitting();
   // Drop exclusive hold locally without HTTP so quit never ensurePort()-respawns sidecar.
   gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
@@ -1376,7 +1400,8 @@ function setupTray(window: BrowserWindow) {
           isQuitting = true;
           mqttManager.disconnect();
           meshcoreMqttAdapter.disconnect();
-          isConnected = false;
+          meshtasticDeviceConnected = false;
+          meshcoreDeviceConnected = false;
           mainWindow?.destroy();
           app.quit();
         },
@@ -2372,7 +2397,7 @@ function createWindow() {
     const action = resolveWindowCloseAction({
       platform: process.platform,
       isQuitting,
-      hasConnection: isConnected || isAnyMqttConnected(),
+      hasConnection: hasLiveConnection(),
       closeToTrayEnabled: readCloseToTrayEnabled(),
       trayAvailable: tray !== null,
     });
@@ -3048,23 +3073,25 @@ ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
 });
 
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
-ipcMain.on('device-connected', (event) => {
+ipcMain.on('device-connected', (event, source: unknown) => {
   if (!validateIpcSender(event)) {
     console.warn('[IPC] device-connected: unauthorized sender');
     return;
   }
-  console.debug('[main] device-connected: isConnected = true');
-  isConnected = true;
-  startPowerSaveBlocker();
+  if (source === 'meshcore') meshcoreDeviceConnected = true;
+  else meshtasticDeviceConnected = true;
+  console.debug('[main] device-connected');
+  syncPowerSaveBlocker();
 });
-ipcMain.on('device-disconnected', (event) => {
+ipcMain.on('device-disconnected', (event, source: unknown) => {
   if (!validateIpcSender(event)) {
     console.warn('[IPC] device-disconnected: unauthorized sender');
     return;
   }
-  console.debug('[main] device-disconnected: isConnected = false');
-  isConnected = false;
-  stopPowerSaveBlocker();
+  if (source === 'meshcore') meshcoreDeviceConnected = false;
+  else meshtasticDeviceConnected = false;
+  console.debug('[main] device-disconnected');
+  syncPowerSaveBlocker();
 });
 
 // ─── GATT BLE: Forward proxy events to renderer ─────────────────────
@@ -3330,6 +3357,7 @@ registerGattPairingIpcHandlers({
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
 mqttManager.on('status', (s: string) => {
+  syncPowerSaveBlocker();
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshtastic' });
   else console.debug('[main] mqtt:status dropped (mainWindow not ready)', sanitizeLogMessage(s));
 });
@@ -3381,6 +3409,7 @@ mqttManager.on('brokerRaw', (payload: { topic: string; payload: Buffer; retained
 });
 
 meshcoreMqttAdapter.on('status', (s: string) => {
+  syncPowerSaveBlocker();
   if (mainWindow) mainWindow.webContents.send('mqtt:status', { status: s, protocol: 'meshcore' });
   else
     console.debug(
@@ -7475,7 +7504,7 @@ app.on('will-quit', (event) => {
 });
 
 app.on('window-all-closed', () => {
-  const hasConnection = isConnected || isAnyMqttConnected();
+  const hasConnection = hasLiveConnection();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
   if (process.platform !== 'darwin' || isQuitting || !hasConnection) {
     app.quit();

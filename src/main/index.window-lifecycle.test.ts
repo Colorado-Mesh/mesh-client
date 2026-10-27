@@ -236,7 +236,62 @@ describe('window close-to-tray behaviour', () => {
     expect(body).toContain('resolveWindowCloseAction({');
     expect(body).toContain('closeToTrayEnabled: readCloseToTrayEnabled()');
     expect(body).toContain('trayAvailable: tray !== null');
-    expect(body).toContain('hasConnection: isConnected || isAnyMqttConnected()');
+    expect(body).toContain('hasConnection: hasLiveConnection()');
+  });
+
+  function closeActionFor(flags: {
+    meshcore?: boolean;
+    sidecar?: boolean;
+    meshtastic?: boolean;
+    mqtt?: boolean;
+  }): 'allow' | 'hide' | 'minimize' {
+    const state = {
+      process: { platform: 'linux' as const },
+      resolveWindowCloseAction,
+      isQuitting: false,
+      meshtasticDeviceConnected: flags.meshtastic ?? false,
+      meshcoreDeviceConnected: flags.meshcore ?? false,
+      reticulumSidecarManager: flags.sidecar ? { getStatus: () => ({ running: true }) } : null,
+      isAnyMqttConnected: () => flags.mqtt ?? false,
+      readCloseToTrayEnabled: () => true,
+      tray: {},
+      console: { debug: vi.fn() },
+    };
+    const fnStart = INDEX_SOURCE.indexOf('function isReticulumSidecarRunning()');
+    const fnEnd = INDEX_SOURCE.indexOf('let mainWindow: BrowserWindow | null = null;');
+    const closeStart = INDEX_SOURCE.indexOf("win.on('close', (event)");
+    const closeEnd = INDEX_SOURCE.indexOf("win.on('focus'", closeStart);
+    expect(fnStart).toBeGreaterThan(-1);
+    expect(fnEnd).toBeGreaterThan(fnStart);
+    expect(closeStart).toBeGreaterThan(-1);
+    const source = `(function (win) {
+      ${INDEX_SOURCE.slice(fnStart, fnEnd)}
+      ${INDEX_SOURCE.slice(closeStart, closeEnd)}
+      return win;
+    })`;
+    const register = runInNewContext(transpileModule(source, {}).outputText, state) as (
+      win: ReturnType<typeof createCloseWindow>,
+    ) => ReturnType<typeof createCloseWindow>;
+    const win = createCloseWindow();
+    register(win);
+    const event = { preventDefault: vi.fn() };
+    win.emit('close', event);
+    if (!event.preventDefault.mock.calls.length) return 'allow';
+    if (win.hide.mock.calls.length) return 'hide';
+    return 'minimize';
+  }
+
+  function createCloseWindow() {
+    return Object.assign(new EventEmitter(), {
+      hide: vi.fn(),
+      minimize: vi.fn(),
+    });
+  }
+
+  it('keeps the window when only MeshCore, or only the sidecar, is up', () => {
+    expect(closeActionFor({ meshcore: true })).toBe('hide');
+    expect(closeActionFor({ sidecar: true })).toBe('hide');
+    expect(closeActionFor({})).toBe('allow');
   });
 
   it('hides to tray and keeps the minimize fallback', () => {
@@ -268,7 +323,7 @@ describe('Web Serial window ownership', () => {
       process: { platform },
       resolveWindowCloseAction,
       isQuitting: false,
-      isConnected: true,
+      hasLiveConnection: () => true,
       isAnyMqttConnected: () => false,
       readCloseToTrayEnabled: () => true,
       tray: {},

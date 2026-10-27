@@ -9,7 +9,7 @@ import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
 
-const fixture = vi.hoisted(() => ({ directory: '' }));
+const fixture = vi.hoisted(() => ({ directory: '', fetch: vi.fn() }));
 vi.mock('electron', () => ({
   app: {
     getPath: () => fixture.directory,
@@ -18,13 +18,20 @@ vi.mock('electron', () => ({
     whenReady: () => Promise.resolve(),
   },
   ipcMain: { handle: vi.fn() },
-  net: { fetch: vi.fn() },
+  net: { fetch: fixture.fetch },
   protocol: { handle: vi.fn() },
   safeStorage: {
     isEncryptionAvailable: () => true,
     encryptString: (value: string) => Buffer.from(value),
     decryptString: (value: Buffer) => value.toString(),
   },
+}));
+vi.mock('undici', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('undici');
+  return { ...actual, fetch: fixture.fetch };
+});
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(() => Promise.resolve({ address: '8.8.8.8', family: 4 })),
 }));
 vi.mock('../validate-ipc-sender', () => ({ assertIpcSender: vi.fn() }));
 vi.mock('../db-ipc-lifecycle', () => ({ getDbForIpc: vi.fn() }));

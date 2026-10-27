@@ -960,6 +960,30 @@ describe('deleteOrphanUntaggedRef', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('does not retry a 403 DELETE', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const fetchMock = vi.fn(async (url, init) => {
+      if ((init?.method ?? 'GET') === 'DELETE' && String(url).includes('/git/refs/tags/')) {
+        return new Response(JSON.stringify({ message: 'Resource not accessible by integration' }), {
+          status: 403,
+        });
+      }
+      throw new Error(`Unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      deleteOrphanUntaggedRef('untagged-deadbeef', 'token', {
+        log: () => {},
+        isTagNameInUse: async () => false,
+      }),
+    ).rejects.toThrow(/exit:1/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    exitSpy.mockRestore();
+  });
+
   it('still fails on other 422 errors', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
       throw new Error(`exit:${code}`);

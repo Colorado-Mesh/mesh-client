@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,6 +71,25 @@ describe('i18n-auto-translate-write-subprocess', () => {
 
     chmodSync(localeDir, 0o755);
     expect(readFileSync(outPath, 'utf8')).toBe(existing);
+  });
+
+  it('removes the stage directory when rename fails', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-i18n-parent-'));
+    const localesRoot = dir;
+    const localeDir = join(localesRoot, 'es');
+    mkdirSync(localeDir, { recursive: true });
+    // A directory at the destination makes rename fail after the stage dir exists.
+    const outPath = join(localeDir, 'translation.json');
+    mkdirSync(outPath);
+
+    const res = spawnSync(process.execPath, [SCRIPT, localesRoot, outPath], {
+      input: '{\n  "ok": false\n}\n',
+      encoding: 'utf8',
+    });
+    expect(res.status).toBe(1);
+    expect(readdirSync(localeDir).filter((name) => name.startsWith('mesh-i18n-write-'))).toEqual(
+      [],
+    );
   });
 
   it('refuses an outPath that escapes the locales root', () => {

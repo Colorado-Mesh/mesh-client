@@ -1,6 +1,20 @@
 import { Address4, Address6 } from 'ip-address';
 
 export type EndpointClass = 'local' | 'remote';
+
+/** Host with brackets removed. Null when `host` is not an IP literal. */
+export function literalAddressIsGlobal(host: string): boolean | null {
+  const bare = host.replace(/^\[|\]$/g, '').toLowerCase();
+  if (Address4.isValid(bare)) return new Address4(bare).isGlobal();
+  if (Address6.isValid(bare)) {
+    const ip = new Address6(bare);
+    // IPv4-mapped addresses use the IPv4 global predicate.
+    if (ip.is4()) return ip.to4().isGlobal();
+    return ip.isGlobal();
+  }
+  return null;
+}
+
 export function classifyEndpoint(
   raw: string,
 ): { ok: true; cls: EndpointClass; url: string } | { ok: false; reason: 'invalid' | 'insecure' } {
@@ -15,19 +29,10 @@ export function classifyEndpoint(
     )
       return { ok: false, reason: 'invalid' };
     const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-    let local = host === 'localhost' || host.endsWith('.local');
-    if (Address4.isValid(host)) {
-      const ip = new Address4(host);
-      local = ['127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'].some((range) =>
-        ip.isInSubnet(new Address4(range)),
-      );
-    } else if (Address6.isValid(host)) {
-      const ip = new Address6(host);
-      // IPv4-mapped addresses must satisfy the IPv4 policy too.
-      local = ip.isInSubnet(new Address6('::ffff:0:0/96'))
-        ? classifyEndpoint(`http://${ip.to4().address}`).ok
-        : ['::1/128', 'fc00::/7', 'fe80::/10'].some((range) => ip.isInSubnet(new Address6(range)));
-    }
+    const globalLiteral = literalAddressIsGlobal(host);
+    // Non-global literals (loopback, RFC1918, link-local, CGNAT, unspecified) are local.
+    const local =
+      globalLiteral == null ? host === 'localhost' || host.endsWith('.local') : !globalLiteral;
     if (!local && url.protocol !== 'https:') return { ok: false, reason: 'insecure' };
     return { ok: true, cls: local ? 'local' : 'remote', url: url.href.replace(/\/+$/, '') };
   } catch {

@@ -623,7 +623,8 @@
       "send_failed": "Nelze odeslat požadavek na historii do rádia. Připojte se znovu nebo to zkuste znovu.",
       "cooldown": "Pro tento směrovač byla nedávno načtena historie. Než požádáš znovu, počkej.",
       "offline_gate": "Před spuštěním automatického načítání počkejte několik minut po opětovném připojení; použijte možnost Dohnat ručně.",
-      "already_requested": "Žádost o historii pro tento směrovač již probíhá."
+      "already_requested": "Žádost o historii pro tento směrovač již probíhá.",
+      "missing_router_key": "Klíč routeru ještě není znám. Počkejte na informace o uzlu a zkuste to znovu."
     },
     "replyRequiresPacketId": "Odpověď vyžaduje ID RF paketu zprávy (počkejte na odeslání ack nebo obnovení chatu).",
     "queueButton": "Fronta",
@@ -5137,6 +5138,7 @@
     "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
     "cliAutoPingFailed": "Ping selhal; před dalším CLI na vícehopových uzlech spusťte Ping ručně.",
     "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků).",
+    "cliCommandMustBeSingleLine": "Příkaz CLI musí být na jednom řádku.",
     "currentRouteLabel": "Aktuální trasa:",
     "neighborsLoadMore": "Načíst další ({{loaded}} z {{total}} načteno)",
     "neighborsLoadMoreAria": "Načíst další sousedy ({{loaded}} z {{total}} načteno)",
@@ -7470,6 +7472,10 @@
     "consoleInput": "Doprovodný příkaz",
     "consolePlaceholder": "např. získat rádio",
     "consoleSend": "Odeslat",
+    "notConnected": "Nepřipojeno k rádiu MeshCore.",
+    "requiresCliFirmware": "Companion CLI vyžaduje firmware MeshCore companion v1.18 nebo novější.",
+    "commandMustBeSingleLine": "Příkaz companion musí být na jednom řádku.",
+    "commandTooLong": "Příkaz companion je příliš dlouhý (max. {{max}} bajtů).",
     "groups": {
       "device": "Zařízení",
       "radio": "Ladění rádia",

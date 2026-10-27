@@ -1,5 +1,7 @@
-# Opt out of pnpm 11+ default minimumReleaseAge (1440). Zero disables the gate.
-minimumReleaseAge: 0
+# 12 hours. pnpm 11+ defaults to 1440; 0 disables the gate. #1304 set 0 so a
+# same-day undici/i18next refresh could install. Those versions are in the
+# lockfile now, so the age gate is back.
+minimumReleaseAge: 720
 
 # Reject transitive git/tarball/exotic sources (registry + scoped JSR only)
 blockExoticSubdeps: true

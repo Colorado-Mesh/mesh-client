@@ -1,6 +1,7 @@
 /**
  * Source contract: section-tab selections must not queue an old-protocol tab
  * index behind a pending protocol switch (tab indices are per-protocol).
+ * Protocol changes themselves go through one commit helper.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,23 +38,59 @@ describe('App protocol-switch tab guard (regression)', () => {
     );
   });
 
-  it('clears keep-alive visit flags inside the protocol transition (not only in useEffect)', () => {
-    const start = SOURCE.indexOf('const handleProtocolChange');
-    expect(start).toBeGreaterThan(-1);
-    const end = SOURCE.indexOf('const handleTabSelect', start);
-    const body = SOURCE.slice(start, end > start ? end : start + 8000);
-    expect(body).toContain('setPendingProtocolSelection(newProtocol)');
-    const resetIdx = body.indexOf('resetProtocolTabVisitFlags()');
-    expect(resetIdx).toBeGreaterThan(-1);
-    const transitionStart = body.lastIndexOf('startProtocolTransition(() => {', resetIdx);
-    expect(transitionStart).toBeGreaterThan(-1);
-    const setProtocolIdx = body.indexOf('setProtocol(newProtocol)', resetIdx);
-    expect(setProtocolIdx).toBeGreaterThan(resetIdx);
-    // Both must sit in the same transition callback (before its closing `});`).
-    const callbackClose = body.indexOf('});', setProtocolIdx);
-    expect(callbackClose).toBeGreaterThan(setProtocolIdx);
-    expect(body.slice(transitionStart, callbackClose)).toContain('resetProtocolTabVisitFlags()');
-    expect(body.slice(transitionStart, callbackClose)).toContain('setProtocol(newProtocol)');
+  it('commits protocol in the helper and persists storage after the protocol changes', () => {
+    expect(SOURCE.match(/setProtocol\(/g)).toHaveLength(1);
+    expect(SOURCE.match(/localStorage\.setItem\(MESH_PROTOCOL_STORAGE_KEY/g)).toHaveLength(1);
+    expect(SOURCE.match(/clearDiagnostics\(/g)).toHaveLength(1);
+    expect(SOURCE).not.toContain('resetProtocolTabVisitFlags');
+    const helper = SOURCE.slice(
+      SOURCE.indexOf('const scheduleProtocolCommit'),
+      SOURCE.indexOf('const handleProtocolChange'),
+    );
+    expect(helper).toContain('if (!isCurrentProtocolSwitch(id)) return;');
+    expect(helper).toContain('setProtocol(input.nextProtocol)');
+    expect(helper).not.toContain('clearDiagnostics(');
+    expect(helper).not.toContain('localStorage.setItem');
+    const effectStart = SOURCE.indexOf('const previousCommittedProtocolRef');
+    expect(effectStart).toBeGreaterThan(-1);
+    const effect = SOURCE.slice(effectStart, effectStart + 600);
+    expect(effect.indexOf('if (previous === protocol) return;')).toBeLessThan(
+      effect.indexOf('clearDiagnostics('),
+    );
+    expect(effect.indexOf('clearDiagnostics(')).toBeLessThan(
+      effect.indexOf('localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY'),
+    );
+  });
+
+  it('ignores send and connect until the protocol switch commits', () => {
+    const send = SOURCE.slice(
+      SOURCE.indexOf('const handleSend'),
+      SOURCE.indexOf('const { status: takStatus'),
+    );
+    expect(send.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      send.indexOf('sendMessage('),
+    );
+    const resend = SOURCE.slice(
+      SOURCE.indexOf('const handleResend'),
+      SOURCE.indexOf('const traceRouteHops'),
+    );
+    expect(resend.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      resend.indexOf('sendMessage('),
+    );
+    const reconnect = SOURCE.slice(
+      SOURCE.indexOf('const handleReconnect'),
+      SOURCE.indexOf('const handleMessageNode'),
+    );
+    expect(reconnect.indexOf('if (protocolSwitchPending) return;')).toBeLessThan(
+      reconnect.indexOf('reconnectInFlightRef.current = true'),
+    );
+    expect(SOURCE).toContain('composerDisabled={protocolSwitchPending}');
+    expect(SOURCE).toContain(
+      'protocolSwitchPending\n                                  ? ignoreProtocolSwitchConnect',
+    );
+    expect(SOURCE).toContain(
+      'protocolSwitchPending\n                                  ? ignoreProtocolSwitchAutoConnect',
+    );
   });
 
   it('cancels an in-flight protocol switch when re-selecting the active protocol', () => {
@@ -64,13 +101,11 @@ describe('App protocol-switch tab guard (regression)', () => {
     expect(body).toContain('if (newProtocol === pendingProtocolSelection) return;');
     const sameProtocolBranch = body.indexOf('if (newProtocol === protocol)');
     expect(sameProtocolBranch).toBeGreaterThan(-1);
-    const nextSibling =
-      body.indexOf('\n      const savedPanel', sameProtocolBranch) > sameProtocolBranch
-        ? body.indexOf('\n      const savedPanel', sameProtocolBranch)
-        : body.length;
+    const nextSibling = body.indexOf('\n      const savedPanel', sameProtocolBranch);
     const branch = body.slice(sameProtocolBranch, nextSibling);
     expect(branch).toContain('if (pendingProtocolSelection == null) return;');
-    expect(branch).toContain('setPendingProtocolSelection(null)');
-    expect(branch).toContain('setProtocol(protocol)');
+    expect(branch).toContain('pending: null');
+    expect(branch).toContain('protocolChanged: false');
+    expect(branch).toContain('scheduleProtocolCommit(');
   });
 });
