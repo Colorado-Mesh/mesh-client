@@ -19,6 +19,7 @@
   <url type="bugtracker">https://github.com/Colorado-Mesh/mesh-client/issues</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="6.5.0" date="2026-10-27"/>
     <release version="6.4.0" date="2026-10-12"/>
     <release version="6.3.0" date="2026-10-09"/>
     <release version="6.2.0" date="2026-10-07"/>
