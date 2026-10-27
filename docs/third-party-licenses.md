@@ -25,8 +25,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | electron-updater           | MIT                           | ^6.8.11         | 6.8.11            | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
-| i18next                    | MIT                           | ^26.5.10        | 26.5.10           | git+https://github.com/i18next/i18next.git                                     |
-| ip-address                 | MIT                           | ^10.7.4         | 10.7.4            | git+https://github.com/beaugunderson/ip-address.git                            |
+| i18next                    | MIT                           | ^26.5.11        | 26.5.11           | git+https://github.com/i18next/i18next.git                                     |
+| ip-address                 | MIT                           | ^10.7.4         | 10.7.5            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.2         | 3.10.2            | git+https://github.com/Stuk/jszip.git                                          |
@@ -37,7 +37,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | mqtt                       | MIT                           | ^5.16.1         | 5.16.1            | git://github.com/mqttjs/MQTT.js.git                                            |
 | node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.0          | 1.4.0             | git+https://github.com/digitalbazaar/forge.git                                 |
 | qrcode                     | MIT                           | ^1.5.4          | 1.5.4             | git://github.com/soldair/node-qrcode.git                                       |
-| react-i18next              | MIT                           | ^17.1.8         | 17.1.8            | git+https://github.com/i18next/react-i18next.git                               |
+| react-i18next              | MIT                           | ^17.1.9         | 17.1.9            | git+https://github.com/i18next/react-i18next.git                               |
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
@@ -58,7 +58,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.64.1         | 1.64.1            | git+https://github.com/microsoft/playwright.git                                      |
 | @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
-| @tanstack/react-virtual               | MIT             | ^3.14.22        | 3.14.22           | git+https://github.com/TanStack/virtual.git                                          |
+| @tanstack/react-virtual               | MIT             | ^3.14.23        | 3.14.23           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
 | @testing-library/user-event           | MIT             | ^14.6.8         | 14.6.8            | git+https://github.com/testing-library/user-event.git                                |
