@@ -512,7 +512,8 @@
     "coiYes": "예",
     "coiNo": "아니오",
     "coiTimingFine": "미세 (~ 5 µs)",
-    "coiTimingCoarse": "거친 (~ 100 µs)"
+    "coiTimingCoarse": "거친 (~ 100 µs)",
+    "shareMyLocationOffStaticActive": "위치 공유가 꺼져 있음 — 호스트 GPS 자동 새로 고침 및 메시 전송이 비활성화되었습니다. 활성 저장 위치 (및 사용 가능한 경우 무선 GPS) 는 여전히 지도 및 거리 필터에 로컬로 사용됩니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

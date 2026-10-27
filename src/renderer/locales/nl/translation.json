@@ -512,7 +512,8 @@
     "coiYes": "Ja",
     "coiNo": "nee",
     "coiTimingFine": "fijn (~5 µs)",
-    "coiTimingCoarse": "grof (~100 µs)"
+    "coiTimingCoarse": "grof (~100 µs)",
+    "shareMyLocationOffStaticActive": "Locatie delen is uitgeschakeld — host GPS automatisch vernieuwen en mesh verzenden zijn uitgeschakeld. Je actieve opgeslagen locatie (en radio GPS indien beschikbaar) worden nog steeds lokaal gebruikt voor de kaart- en afstandsfilters."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

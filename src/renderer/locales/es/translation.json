@@ -512,7 +512,8 @@
     "coiYes": "sí",
     "coiNo": "no",
     "coiTimingFine": "fino (~5 µs)",
-    "coiTimingCoarse": "grueso (~100 µs)"
+    "coiTimingCoarse": "grueso (~100 µs)",
+    "shareMyLocationOffStaticActive": "El uso compartido de la ubicación está desactivado: la actualización automática del GPS del host y el envío en malla están desactivados. Tu ubicación guardada activa (y el GPS de radio cuando esté disponible) todavía se utilizan localmente para los filtros de mapa y distancia."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

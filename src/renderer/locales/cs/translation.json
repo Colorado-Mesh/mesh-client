@@ -520,7 +520,8 @@
     "coiYes": "ano",
     "coiNo": "no",
     "coiTimingFine": "jemný (~5 µs)",
-    "coiTimingCoarse": "hrubá (~100 µs)"
+    "coiTimingCoarse": "hrubá (~100 µs)",
+    "shareMyLocationOffStaticActive": "Sdílení polohy je vypnuto — automatické obnovení GPS hostitele a odesílání sítě jsou zakázány. Vaše aktivní uložená poloha (a rádiová GPS, pokud je k dispozici) se stále používá místně pro mapy a filtry vzdálenosti."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

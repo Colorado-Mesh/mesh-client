@@ -139,7 +139,9 @@ export interface MeshtasticRuntimeWireEffectsDeps {
   ackMeshPacketIdByTempIdRef: RefObject<Map<number, number>>;
   pendingTracePacketIdToTargetRef: RefObject<Map<number, number>>;
   pendingTraceRequestsRef: RefObject<Map<number, number>>;
-  refreshOurPositionRef: RefObject<() => Promise<OurPosition | null>>;
+  refreshOurPositionRef: RefObject<
+    (opts?: { allowTransmit?: boolean }) => Promise<OurPosition | null>
+  >;
   remoteAdminClientRef: RefObject<MeshtasticRemoteAdminClient | null>;
   remoteAdminStatusRef: RefObject<RemoteAdminStatus>;
   requestStoreForwardHistoryRef: RefObject<
@@ -765,6 +767,14 @@ export function attachMeshtasticRuntimeWireEffects(
         setDeviceOwner,
         setTelemetry,
         setEnvironmentTelemetry,
+        onSelfRadioPosition: () => {
+          void refreshOurPositionRef.current({ allowTransmit: false }).catch((e: unknown) => {
+            console.debug(
+              '[meshtasticRuntimeWireEffects] refreshOurPosition after self radio GPS ' +
+                errLikeToLogString(e),
+            );
+          });
+        },
       }),
     );
   }

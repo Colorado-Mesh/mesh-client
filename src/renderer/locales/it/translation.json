@@ -512,7 +512,8 @@
     "coiYes": "si",
     "coiNo": "no",
     "coiTimingFine": "fine (~5 µs)",
-    "coiTimingCoarse": "grossolana (~100 µs)"
+    "coiTimingCoarse": "grossolana (~100 µs)",
+    "shareMyLocationOffStaticActive": "La condivisione della posizione è disattivata: l'aggiornamento automatico del GPS dell'host e l'invio di mesh sono disabilitati. La tua posizione salvata attiva (e il GPS radio quando disponibile) sono ancora utilizzati localmente per i filtri mappa e distanza."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

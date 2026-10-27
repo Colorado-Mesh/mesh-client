@@ -10,6 +10,8 @@ import { bytesToHex } from '@/shared/hexBytes';
 import { useNodeStore } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
+import { loadPersistedMeshcoreSelfNodeId } from '../meshcoreLastSelfNodeId';
 import {
   clearMeshcoreLocallyDeletedContact,
   shouldApplyMeshcoreContact,
@@ -106,12 +108,21 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     nowSec,
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
-  const latDeg = opts?.latitudeDeg ?? existingRecord?.latitude ?? null;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
-  const lonDeg = opts?.longitudeDeg ?? existingRecord?.longitude ?? null;
+  const preserveStaticSelf = shouldPreserveStaticGpsForSelfNode(
+    nodeId,
+    loadPersistedMeshcoreSelfNodeId(),
+  );
+  // Store typings treat the bucket/node as always present; runtime may still lack the row.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent at runtime.
+  const existingLat = existingRecord?.latitude ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent at runtime.
+  const existingLon = existingRecord?.longitude ?? null;
+  // Persist advert coords from the radio when present; static GPS is display-only (nodeStore / overlay).
+  const latDeg = opts?.latitudeDeg ?? existingLat;
+  const lonDeg = opts?.longitudeDeg ?? existingLon;
 
   if (
+    !preserveStaticSelf &&
     latDeg != null &&
     lonDeg != null &&
     Number.isFinite(latDeg) &&

@@ -35,6 +35,7 @@ import {
 import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
+import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
@@ -804,13 +805,11 @@ function OverviewMapPanel({
     });
   }, [routeWeightsSupported, showRouteWeights, nodes, loadPathHistoryForNode, pathRecords.size]);
 
+  const ourPositionReference = useDiagnosticsStore((s) => s.ourPositionReference);
+
   const nodesWithPosition = useMemo(() => {
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
-    const homeHasLocation =
-      homeNode?.latitude != null &&
-      homeNode.latitude !== 0 &&
-      homeNode.longitude != null &&
-      homeNode.longitude !== 0;
+    const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference, ourPosition);
     const maxKm =
       locationFilter.unit === 'miles'
         ? locationFilter.maxDistance * 1.60934
@@ -833,10 +832,10 @@ function OverviewMapPanel({
         if (locationFilter.hideMqttOnly && mapped.heard_via_mqtt_only) {
           return [];
         }
-        if (locationFilter.enabled && homeHasLocation) {
+        if (locationFilter.enabled && homeCoords) {
           const d = haversineDistanceKm(
-            homeNode?.latitude ?? 0,
-            homeNode?.longitude ?? 0,
+            homeCoords.lat,
+            homeCoords.lon,
             mapped.latitude!,
             mapped.longitude!,
           );
@@ -852,6 +851,7 @@ function OverviewMapPanel({
     excludeMeshcoreContactTypesInMeshtastic,
     positionHistory,
     ourPosition,
+    ourPositionReference,
   ]);
   const nodesToRender = useMemo(() => {
     const idSet = new Set(nodesWithPosition.map((n) => n.node_id));

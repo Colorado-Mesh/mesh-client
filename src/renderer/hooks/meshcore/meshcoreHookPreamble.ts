@@ -8,6 +8,7 @@ import { withTimeout } from '../../../shared/withTimeout';
 import { resolveChannelKeyForPersist } from '../../lib/channelIdentity';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
+import { hasStoredStaticGps, overlayStoredStaticGpsOnSelfNode } from '../../lib/gpsSource';
 import type {
   MeshCoreConnection,
   MeshcoreContactDbRow,
@@ -23,6 +24,7 @@ import {
   meshcoreMessageMatchesReplyKey,
   meshcorePayloadIsTapbackEmojiOnly,
 } from '../../lib/meshcoreChannelText';
+import { loadPersistedMeshcoreSelfNodeId } from '../../lib/meshcoreLastSelfNodeId';
 import {
   isMeshcoreLocallyDeletedContact,
   shouldApplyMeshcoreContact,
@@ -818,11 +820,13 @@ export interface MeshcoreSavedNodeHopRow {
 /**
  * Build a MeshNode map from persisted MeshCore contacts + hop counts (+ optional message stubs).
  * Mirrors mount hydration in `useMeshcoreRuntime.reloadMeshcoreNodesFromDb`.
+ * When App static GPS is set, overlays those coords on the self-node (does not require Share).
  */
 export function buildMeshcoreNodeMapFromDb(
   dbContacts: MeshcoreContactDbRow[],
   savedNodes: MeshcoreSavedNodeHopRow[],
   messages: ChatMessage[] = [],
+  selfNodeId?: number,
 ): Map<number, MeshNode> {
   const initial = new Map<number, MeshNode>();
   for (const row of dbContacts) {
@@ -863,7 +867,10 @@ export function buildMeshcoreNodeMapFromDb(
       mergedInitial.set(n.node_id, { ...existing, hops_away: hopCount });
     }
   }
-  return mergedInitial;
+  if (!hasStoredStaticGps()) return mergedInitial;
+  const resolvedSelf =
+    selfNodeId != null && selfNodeId > 0 ? selfNodeId : loadPersistedMeshcoreSelfNodeId();
+  return overlayStoredStaticGpsOnSelfNode(mergedInitial, resolvedSelf);
 }
 
 /** Row shape from `db:getMeshcoreMessages` — shared by initConn, mount load, refreshMessagesFromDb. */

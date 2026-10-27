@@ -1,8 +1,29 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { GPS_SETTINGS_STORAGE_KEY } from '../../lib/gpsSource';
 import type { MeshcoreContactDbRow } from '../../lib/meshcore/meshcoreHookTypes';
 import { pubkeyToNodeId } from '../../lib/meshcoreUtils';
 import { buildMeshcoreNodeMapFromDb } from './meshcoreHookPreamble';
+
+function stubMemoryLocalStorage(): void {
+  const store = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+    key: () => null,
+    get length() {
+      return store.size;
+    },
+  });
+}
 
 const REMOTE_PUBKEY = (() => {
   const b = new Uint8Array(32);
@@ -87,5 +108,38 @@ describe('buildMeshcoreNodeMapFromDb', () => {
     expect(node?.last_heard).toBe(0);
     expect(node?.latitude).toBeNull();
     expect(node?.longitude).toBeNull();
+  });
+
+  it('overlays App static GPS onto the self-node from DB advert coords', () => {
+    stubMemoryLocalStorage();
+    try {
+      localStorage.setItem(
+        GPS_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ staticLat: 41.59375, staticLon: -73.02428 }),
+      );
+      const selfId = 0x11112222;
+      const contact: MeshcoreContactDbRow = {
+        node_id: selfId,
+        public_key: 'aa'.repeat(32),
+        adv_name: 'Self',
+        contact_type: 1,
+        last_advert: 1_700_000_000,
+        adv_lat: 40.0,
+        adv_lon: -74.0,
+        last_snr: 0,
+        last_rssi: 0,
+        favorited: 0,
+        nickname: null,
+        hops_away: 0,
+        contact_flags: null,
+        on_radio: 1,
+        last_synced_from_radio: null,
+      };
+      const map = buildMeshcoreNodeMapFromDb([contact], [], [], selfId);
+      expect(map.get(selfId)?.latitude).toBe(41.59375);
+      expect(map.get(selfId)?.longitude).toBe(-73.02428);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -512,7 +512,8 @@
     "coiYes": "是",
     "coiNo": "否",
     "coiTimingFine": "精细（ ~ 5 µs ）",
-    "coiTimingCoarse": "粗略（ ~ 100 µs ）"
+    "coiTimingCoarse": "粗略（ ~ 100 µs ）",
+    "shareMyLocationOffStaticActive": "位置共享已关闭—主机GPS自动刷新和网格发送已禁用。您保存的有效位置（以及可用的无线电GPS ）仍会在本地用于地图和距离过滤器。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

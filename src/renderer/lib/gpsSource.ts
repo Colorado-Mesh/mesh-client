@@ -103,6 +103,22 @@ export function shouldPreserveStaticGpsForSelfNode(nodeId: number, selfNodeId: n
   return selfNodeId > 0 && nodeId === selfNodeId && hasStoredStaticGps();
 }
 
+/**
+ * Overlay App static GPS onto the self-node row in a MeshNode map (DB hydrate / contact rebuild).
+ * Mutates and returns the same map for chaining.
+ */
+export function overlayStoredStaticGpsOnSelfNode<
+  T extends { latitude?: number | null; longitude?: number | null },
+>(nodes: Map<number, T>, selfNodeId: number): Map<number, T> {
+  if (!shouldPreserveStaticGpsForSelfNode(selfNodeId, selfNodeId)) return nodes;
+  const stored = readStoredStaticGps();
+  if (!stored) return nodes;
+  const existing = nodes.get(selfNodeId);
+  if (!existing) return nodes;
+  nodes.set(selfNodeId, { ...existing, latitude: stored.lat, longitude: stored.lon });
+  return nodes;
+}
+
 /** Sources that provide only city-level (~10–50 km) accuracy (browser WiFi/IP positioning included) */
 export const LOW_ACCURACY_SOURCES: ReadonlySet<GpsSource> = new Set(['ip', 'browser']);
 

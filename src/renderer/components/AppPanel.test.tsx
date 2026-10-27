@@ -1,18 +1,100 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import joeyPreferences from '../../../e2e/fixtures/renderer-preferences.json';
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
+import { GPS_SETTINGS_STORAGE_KEY } from '../lib/gpsSource';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
+import {
+  resetSavedLocationsCacheForTests,
+  SAVED_LOCATIONS_STORAGE_KEY,
+  saveNewLocation,
+} from '../lib/savedLocations';
 import {
   resetLiveChannelKeyStoreForTests,
   setLiveChannelKeys,
 } from '../stores/liveChannelKeyStore';
 import AppPanel from './AppPanel';
 import { ToastProvider } from './Toast';
+
+describe('AppPanel GPS refresh with Share off', () => {
+  afterEach(() => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+    localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
+    localStorage.removeItem(SAVED_LOCATIONS_STORAGE_KEY);
+    resetSavedLocationsCacheForTests();
+  });
+
+  it('keeps Refresh Now enabled when share is off so radio/static GPS can re-resolve locally', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    const onRefreshGps = vi.fn();
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="meshtastic"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+          onRefreshGps={onRefreshGps}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByText('GPS / Location'));
+    const refresh = screen.getByRole('button', { name: 'Refresh Now' });
+    expect(refresh).toBeEnabled();
+    expect(
+      screen.getByText(/Radio GPS and saved locations still work locally/),
+    ).toBeInTheDocument();
+    fireEvent.click(refresh);
+    expect(onRefreshGps).toHaveBeenCalledOnce();
+  });
+
+  it('disables Refresh Now when no onRefreshGps is wired', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="reticulum"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByText('GPS / Location'));
+    expect(screen.getByRole('button', { name: 'Refresh Now' })).toBeDisabled();
+  });
+
+  it('mentions saved location local use when share is off and static is active', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    saveNewLocation({ name: 'Desktop', lat: 41.59375, lon: -73.02428, fixed: true });
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="meshtastic"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+          onRefreshGps={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByText('GPS / Location'));
+    expect(screen.getByRole('button', { name: 'Refresh Now' })).toBeEnabled();
+    expect(
+      screen.getByText(/Your active saved location \(and radio GPS when available\)/),
+    ).toBeInTheDocument();
+  });
+});
 
 describe('AppPanel migrated settings preservation', () => {
   it('shows a saved manual GPS interval instead of replacing zero with the hourly default', async () => {

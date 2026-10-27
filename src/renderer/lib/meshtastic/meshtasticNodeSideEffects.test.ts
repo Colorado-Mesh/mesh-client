@@ -151,6 +151,50 @@ describe('attachMeshtasticNodeSideEffects', () => {
     detach();
   });
 
+  it('notifies onSelfRadioPosition for a live self Position (local use without share)', () => {
+    const onSelfRadioPosition = vi.fn();
+    const { deps } = makeDeps({ onSelfRadioPosition });
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'position',
+        payload: {
+          nodeId: MY_NODE,
+          latitude: 41.59375,
+          longitude: -73.02428,
+          timestamp: Date.now(),
+        },
+      },
+      IDENTITY,
+    );
+    expect(onSelfRadioPosition).toHaveBeenCalledOnce();
+    expect(getIdentityNode(IDENTITY, MY_NODE)?.latitude).toBeCloseTo(41.59375);
+    detach();
+  });
+
+  it('skips onSelfRadioPosition during NodeDB configure replay', () => {
+    const onSelfRadioPosition = vi.fn();
+    const { deps } = makeDeps({
+      onSelfRadioPosition,
+      getIsConfiguring: () => true,
+    });
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'position',
+        payload: {
+          nodeId: MY_NODE,
+          latitude: 41.59375,
+          longitude: -73.02428,
+          timestamp: Date.now(),
+        },
+      },
+      IDENTITY,
+    );
+    expect(onSelfRadioPosition).not.toHaveBeenCalled();
+    detach();
+  });
+
   it('charts deviceMetrics telemetry and updates battery on an existing node', () => {
     const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);

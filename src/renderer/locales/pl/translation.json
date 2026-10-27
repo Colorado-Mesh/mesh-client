@@ -528,7 +528,8 @@
     "coiYes": "tak",
     "coiNo": "nie",
     "coiTimingFine": "drobny (~5 µs)",
-    "coiTimingCoarse": "gruboziarnisty (~100 µs)"
+    "coiTimingCoarse": "gruboziarnisty (~100 µs)",
+    "shareMyLocationOffStaticActive": "Udostępnianie lokalizacji jest wyłączone — automatyczne odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Twoja aktywna zapisana lokalizacja (i radiowy GPS, jeśli jest dostępny) są nadal używane lokalnie do filtrowania mapy i odległości."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

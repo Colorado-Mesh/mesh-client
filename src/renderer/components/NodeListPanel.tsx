@@ -53,6 +53,7 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../lib/exportFormats';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -254,6 +255,7 @@ export default function NodeListPanel({
   );
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const nodeRedundancy = useDiagnosticsStore((s) => s.nodeRedundancy);
+  const ourPositionReference = useDiagnosticsStore((s) => s.ourPositionReference);
   const [listTab, setListTab] = useState<NodeListTab>('all');
   const [dbDmPeers, setDbDmPeers] = useState<ChatDmPeerDbRow[]>([]);
   const [sortField, setSortField] = useState<SortField>('last_heard');
@@ -499,12 +501,8 @@ export default function NodeListPanel({
     // Filter by distance
     if (listTab === 'all' && locationFilter.enabled) {
       const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
-      const homeHasLocation =
-        homeNode?.latitude != null &&
-        homeNode.latitude !== 0 &&
-        homeNode.longitude != null &&
-        homeNode.longitude !== 0;
-      if (homeHasLocation) {
+      const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
+      if (homeCoords) {
         const maxKm =
           locationFilter.unit === 'miles'
             ? locationFilter.maxDistance * 1.60934
@@ -513,12 +511,7 @@ export default function NodeListPanel({
           if (n.node_id === myNodeNum) return true;
           // Nodes without GPS can't be distance-filtered — keep them visible
           if (n.latitude == null || n.longitude == null) return true;
-          const d = haversineDistanceKm(
-            homeNode.latitude!,
-            homeNode.longitude!,
-            n.latitude,
-            n.longitude,
-          );
+          const d = haversineDistanceKm(homeCoords.lat, homeCoords.lon, n.latitude, n.longitude);
           return d <= maxKm;
         });
       }
@@ -619,6 +612,7 @@ export default function NodeListPanel({
     mode,
     selectedGroupId,
     groupMemberIds,
+    ourPositionReference,
   ]);
 
   // Status depends on elapsed time, so the counts and the filter follow a once-a-minute clock
@@ -678,12 +672,8 @@ export default function NodeListPanel({
   const filterStatus = useMemo(() => {
     if (!locationFilter.enabled) return null;
     const homeNode = myNodeNum ? nodes.get(myNodeNum) : undefined;
-    const homeHasLocation =
-      homeNode?.latitude != null &&
-      homeNode.latitude !== 0 &&
-      homeNode.longitude != null &&
-      homeNode.longitude !== 0;
-    if (!homeHasLocation) return 'no-gps';
+    const homeCoords = homeCoordsForDistanceFilter(homeNode, ourPositionReference);
+    if (!homeCoords) return 'no-gps';
     const totalWithGps = Array.from(nodes.values()).filter(
       (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
     ).length;
@@ -691,7 +681,7 @@ export default function NodeListPanel({
       (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
     ).length;
     return { hidden: totalWithGps - visibleWithGps };
-  }, [locationFilter, myNodeNum, nodes, baseNodeList]);
+  }, [locationFilter, myNodeNum, nodes, baseNodeList, ourPositionReference]);
   const totalNodeCount = listTab === 'history' ? dmPeerIndex.size : nodes.size;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =

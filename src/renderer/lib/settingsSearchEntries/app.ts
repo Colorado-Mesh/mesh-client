@@ -886,6 +886,8 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.failedSaveRetention': 'error toast, not a control',
     'appPanel.destructiveActions': 'Danger Zone disclosure summary; each action row is indexed',
     'appPanel.shareMyLocationOffInfo': 'status text for the indexed share location toggle',
+    'appPanel.shareMyLocationOffStaticActive':
+      'status text for the indexed share location toggle when a saved location is active',
     'appPanel.autoRefreshDisabledStatic': 'status text for the indexed GPS refresh interval',
     'appPanel.gpsRefreshing': 'busy label of the indexed GPS refresh button',
     'appPanel.filterDistantNodes': 'accessible name of the indexed distant-node filter',

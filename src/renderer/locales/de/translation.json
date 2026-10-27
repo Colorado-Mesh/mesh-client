@@ -512,7 +512,8 @@
     "coiYes": "ja",
     "coiNo": "nicht",
     "coiTimingFine": "fein (~5 µs)",
-    "coiTimingCoarse": "grob (~100 µs)"
+    "coiTimingCoarse": "grob (~100 µs)",
+    "shareMyLocationOffStaticActive": "Die Standortfreigabe ist deaktiviert — Host-GPS-Autoaktualisierung und Mesh-Versand sind deaktiviert. Ihr aktiver gespeicherter Standort (und Funk-GPS, wenn verfügbar) werden weiterhin lokal für die Karten- und Entfernungsfilter verwendet."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
