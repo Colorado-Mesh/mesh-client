@@ -1182,7 +1182,10 @@
         "accessDeniedLinuxHint": "Su Linux, aggiungi il tuo utente al gruppo dialout: sudo usermod -aG dialout $USER (quindi disconnettiti e accedi nuovamente)",
         "disconnectedHint": "Assicurarsi che il cavo USB sia collegato e che il dispositivo sia acceso.",
         "timeoutHint": "Se la porta viene visualizzata brevemente, provare a ricollegare il cavo USB.",
-        "portStillOpenHint": "La porta seriale USB non è stata rilasciata in modo corretto. Esci completamente da mesh-client e riaprilo oppure scollega e ricollega il cavo USB, quindi ricollegalo."
+        "portStillOpenHint": "La porta seriale USB non è stata rilasciata in modo corretto. Esci completamente da mesh-client e riaprilo oppure scollega e ricollega il cavo USB, quindi ricollegalo.",
+        "openFailedLinuxHint": "Il Linux questo spesso significa che il tuo utente non è nel gruppo di chiamate in uscita (sudo usermod -aG dialout $USER, quindi esci e riaccedi), o che un altro programma sta utilizzando la porta (chiudi flashers, ModemManager o terminali seriali).",
+        "openFailedWindowsHint": "Assicurarsi che sia installato il driver USB corretto (CH340, CP210x o FTDI), chiudere qualsiasi altra app utilizzando la porta COM, quindi scollegare e ricollegare il cavo.",
+        "openFailedGenericHint": "Chiudere qualsiasi altra app utilizzando la porta seriale, quindi scollegare e ricollegare il cavo USB e riprovare."
       },
       "http": {
         "timeoutMdnsWindows": "Su Windows, Meshtastic.local richiede Bonjour (installato con iTunes). Utilizza invece l'indirizzo IP del dispositivo.",

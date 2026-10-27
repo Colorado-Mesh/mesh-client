@@ -1182,7 +1182,10 @@
         "accessDeniedLinuxHint": "Fügen Sie unter Linux Ihren Benutzer zur Dialout-Gruppe hinzu: sudo usermod -aG dialout $USER (dann abmelden und wieder anmelden)",
         "disconnectedHint": "Stellen Sie sicher, dass das USB-Kabel angeschlossen und das Gerät eingeschaltet ist.",
         "timeoutHint": "Wenn der Anschluss kurzzeitig angezeigt wird, versuchen Sie, das USB-Kabel erneut anzuschließen.",
-        "portStillOpenHint": "Die serielle USB-Schnittstelle wurde nicht sauber freigegeben. Beenden Sie den mesh-client vollständig und öffnen Sie ihn erneut, oder ziehen Sie den Stecker und stecken Sie das USB-Kabel erneut ein und schließen Sie es erneut an."
+        "portStillOpenHint": "Die serielle USB-Schnittstelle wurde nicht sauber freigegeben. Beenden Sie den mesh-client vollständig und öffnen Sie ihn erneut, oder ziehen Sie den Stecker und stecken Sie das USB-Kabel erneut ein und schließen Sie es erneut an.",
+        "openFailedLinuxHint": "Auf Linux bedeutet dies oft, dass sich dein Benutzer nicht in der Dialout-Gruppe befindet (sudo usermod -aG dialout $USER, dann abmelden und wieder einloggen) oder ein anderes Programm den Port verwendet (Close Flashers, ModemManager oder serielle Terminals).",
+        "openFailedWindowsHint": "Stelle sicher, dass der richtige USB -Treiber installiert ist (CH340, CP210x oder FTDI). Schließe jede andere App über den COM-Port, ziehe dann den Stecker und stecke das Kabel erneut ein.",
+        "openFailedGenericHint": "Schließen Sie eine andere App über den seriellen Anschluss, ziehen Sie dann den Netzstecker und stecken Sie das USB -Kabel erneut ein, und versuchen Sie es erneut."
       },
       "http": {
         "timeoutMdnsWindows": "Unter Windows erfordert meshtastic.local Bonjour (installiert mit iTunes). Verwenden Sie stattdessen die IP-Adresse des Geräts.",

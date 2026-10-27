@@ -1184,7 +1184,10 @@
         "accessDeniedLinuxHint": "Linux'ta kullanıcınızı arama grubuna ekleyin: sudo usermod -aG dialout $USER (sonra oturumu kapatıp tekrar açın)",
         "disconnectedHint": "USB kablosunun bağlı olduğundan ve cihazın açık olduğundan emin olun.",
         "timeoutHint": "Bağlantı noktası kısa süreliğine belirirse USB kablosunu yeniden bağlamayı deneyin.",
-        "portStillOpenHint": "USB seri bağlantı noktası temiz bir şekilde serbest bırakılmadı. mesh-client'ten tamamen çıkın ve yeniden açın veya USB kablosunu çıkarıp yeniden takın ve ardından tekrar bağlayın."
+        "portStillOpenHint": "USB seri bağlantı noktası temiz bir şekilde serbest bırakılmadı. mesh-client'ten tamamen çıkın ve yeniden açın veya USB kablosunu çıkarıp yeniden takın ve ardından tekrar bağlayın.",
+        "openFailedLinuxHint": "Linux tarihinde bu genellikle kullanıcınızın arama grubunda olmadığı (sudo usermod - aG dialout $USER, ardından çıkış yapıp tekrar giriş yaptığı) veya başka bir programın bağlantı noktasını kullandığı (flaşörleri, ModemManager'ı veya seri terminalleri kapattığı) anlamına gelir.",
+        "openFailedWindowsHint": "Doğru USB sürücüsünün (CH340, CP210x veya FTDI) yüklendiğinden emin olun, com bağlantı noktasını kullanarak diğer uygulamaları kapatın, ardından kabloyu çıkarıp yeniden takın.",
+        "openFailedGenericHint": "Seri bağlantı noktasını kullanarak diğer uygulamaları kapatın, ardından USB kablosunu çıkarıp yeniden takın ve tekrar deneyin."
       },
       "http": {
         "timeoutMdnsWindows": "Windows'ta meshtastic.local, Bonjour'u (iTunes ile birlikte yüklenir) gerektirir. Bunun yerine cihazın IP adresini kullanın.",

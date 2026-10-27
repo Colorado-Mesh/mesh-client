@@ -692,6 +692,19 @@ function clearPendingSerialSelectionTimer(): void {
 // Last serial port discovery set: only allow selection IPC to resolve with ids from this set
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
+/** Short-lived metadata from the pending select-serial-port list (for support-bundle logs). */
+interface PendingSerialPortMeta {
+  displayName: string;
+  portName: string;
+  vendorId: string | number | undefined;
+  productId: string | number | undefined;
+}
+let lastSerialPortsById = new Map<string, PendingSerialPortMeta>();
+
+function clearLastSerialPortDiscovery(): void {
+  lastSerialPortIds.clear();
+  lastSerialPortsById.clear();
+}
 
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
@@ -2041,12 +2054,23 @@ function createWindow() {
         console.warn('[IPC] Serial port selection callback stale after timeout — auto-cancelling');
         pendingSerialCallback('');
         pendingSerialCallback = null;
-        lastSerialPortIds.clear();
+        clearLastSerialPortDiscovery();
       }
       pendingSerialSelectionTimer = null;
     }, SERIAL_PORT_SELECTION_TIMEOUT_MS);
 
     lastSerialPortIds = new Set(portList.map((p) => p.portId));
+    lastSerialPortsById = new Map(
+      portList.map((p) => [
+        p.portId,
+        {
+          displayName: p.displayName || p.portName || `Port ${p.portId}`,
+          portName: p.portName || '',
+          vendorId: p.vendorId,
+          productId: p.productId,
+        },
+      ]),
+    );
     // Send port list to renderer for selection
     mainWindow?.webContents.send(
       'serial-ports-discovered',
@@ -2551,11 +2575,23 @@ ipcMain.on('serial-port-selected', (event, portId: unknown) => {
     console.warn('[IPC] serial-port-selected: ignoring unknown portId');
     return;
   }
-  console.debug('[IPC] serial-port-selected:', sanitizeLogMessage(id || '(cancelled)'));
+  if (id === '') {
+    console.debug('[IPC] serial-port-selected:', '(cancelled)');
+  } else {
+    const meta = lastSerialPortsById.get(id);
+    console.debug(
+      '[IPC] serial-port-selected:',
+      sanitizeLogMessage(id),
+      sanitizeLogMessage(meta?.displayName || ''),
+      sanitizeLogMessage(meta?.portName || ''),
+      `vid=${sanitizeLogMessage(meta?.vendorId != null ? String(meta.vendorId) : '')}`,
+      `pid=${sanitizeLogMessage(meta?.productId != null ? String(meta.productId) : '')}`,
+    );
+  }
   clearPendingSerialSelectionTimer();
   pendingSerialCallback(id);
   pendingSerialCallback = null;
-  lastSerialPortIds.clear();
+  clearLastSerialPortDiscovery();
 });
 
 // ─── IPC: Cancel Serial selection ───────────────────────────────────
@@ -2569,7 +2605,7 @@ ipcMain.on('serial-port-cancelled', (event) => {
     pendingSerialCallback(''); // Empty string cancels the request
     pendingSerialCallback = null;
   }
-  lastSerialPortIds.clear();
+  clearLastSerialPortDiscovery();
 });
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──

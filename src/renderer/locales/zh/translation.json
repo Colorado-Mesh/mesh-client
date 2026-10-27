@@ -1184,7 +1184,10 @@
         "accessDeniedLinuxHint": "在 Linux 上，将您的用户添加到 dialout 组： sudo usermod -aG dialout $USER （然后注销并重新登录）",
         "disconnectedHint": "确保 USB 电缆已连接并且设备已开机。",
         "timeoutHint": "如果该端口短暂出现，请尝试重新连接 USB 电缆。",
-        "portStillOpenHint": "USB 串口没有完全释放。完全退出 mesh-client 并重新打开它，或者拔下并重新插入 USB 电缆，然后重新连接。"
+        "portStillOpenHint": "USB 串口没有完全释放。完全退出 mesh-client 并重新打开它，或者拔下并重新插入 USB 电缆，然后重新连接。",
+        "openFailedLinuxHint": "在Linux ，这通常意味着您的用户不在拨出组中（ sudo usermod -aG dialout $ USER ，然后注销并重新登录） ，或者其他程序正在使用端口（关闭闪光灯、ModemManager或串行终端）。",
+        "openFailedWindowsHint": "确保安装了正确的USB驱动程序（ CH340、CP210x或FTDI ） ，使用COM端口关闭任何其他应用程序，然后拔下并重新插入电缆。",
+        "openFailedGenericHint": "使用串行端口关闭任何其他应用程序，然后拔下并重新插入USB电缆，然后重试。"
       },
       "http": {
         "timeoutMdnsWindows": "在 Windows 上，meshtastic.local 需要 Bonjour（与 iTunes 一起安装）。请改用设备的 IP 地址。",
