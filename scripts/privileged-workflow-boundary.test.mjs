@@ -119,7 +119,9 @@ describe('privileged workflow boundaries', () => {
     expect(source).toContain('steps.cpr.outputs.pull-request-head-sha');
     // Merge queue rejects `gh pr merge --delete-branch`; delete the ref separately.
     expect(source).not.toMatch(/gh pr merge[\s\S]*--delete-branch/);
-    expect(source).toContain('git/refs/heads/');
+    expect(source).toMatch(
+      /gh api -X DELETE "repos\/\$\{GITHUB_REPOSITORY\}\/git\/refs\/heads\/\$\{PR_BRANCH\}"/,
+    );
     expect(source).not.toMatch(
       /RELEASE_(?:PUSH|CUT)_TOKEN|environment: release|refs\/tags|pnpm run release|gh release/,
     );
