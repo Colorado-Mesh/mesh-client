@@ -142,9 +142,13 @@ jobs:
           PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
           PR_OPERATION: ${{ steps.cpr.outputs.pull-request-operation }}
           PR_HEAD_SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
+          PR_BRANCH: chore/third-party-licenses-${{ github.run_id }}
         run: |
           set -euo pipefail
           echo "Merging PR #${PR_NUMBER} (operation=${PR_OPERATION} head=${PR_HEAD_SHA})"
           # Refuse merge if the PR tip moved after create-pull-request stamped the SHA.
+          # Do not pass --delete-branch: gh rejects it when the merge queue is enabled.
           gh pr merge "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --squash --admin \
-            --delete-branch --match-head-commit "${PR_HEAD_SHA}"
+            --match-head-commit "${PR_HEAD_SHA}"
+          # Best-effort cleanup after admin squash (merge-queue path skips CPR delete-branch).
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${PR_BRANCH}" || true
