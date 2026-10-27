@@ -38,6 +38,7 @@ const OPS: TakChatChannel = {
   name: '#MC \u{1F512} Ops',
   send: true,
   remote: false,
+  protocol: 'meshcore',
 };
 
 describe('useTakInboundChat', () => {

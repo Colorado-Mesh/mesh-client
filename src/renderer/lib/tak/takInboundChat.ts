@@ -39,10 +39,14 @@ function truncateUtf8(text: string, maxBytes: number): string {
   return out;
 }
 
+/** A MeshCore reply's `@[Name]` at the start of a message, and the space after it. */
+const MESHCORE_REPLY_PREFIX_RE = /^(@\[[^\]\n]+\])\s*/u;
+
 /**
  * Text to transmit for a TAK client's message: `[CALLSIGN] text`, since every bridged message
- * leaves from this app's own node, or the text alone when `withCallsign` is false. Cut to the
- * byte budget with an ellipsis when it is too long.
+ * leaves from this app's own node, or the text alone when `withCallsign` is false. A MeshCore
+ * reply keeps its `@[Name]` first, where MeshCore apps look for it: `@[Name] [CALLSIGN] text`.
+ * Cut to the byte budget with an ellipsis when it is too long.
  */
 export function formatTakMeshText(
   senderCallsign: string,
@@ -50,7 +54,14 @@ export function formatTakMeshText(
   maxBytes: number = TAK_MESH_SEND_MAX_BYTES,
   withCallsign = true,
 ): string {
-  const full = withCallsign ? `[${senderCallsign.trim()}] ${text.trim()}` : text.trim();
+  const body = text.trim();
+  const reply = MESHCORE_REPLY_PREFIX_RE.exec(body);
+  const tag = `[${senderCallsign.trim()}]`;
+  const full = !withCallsign
+    ? body
+    : reply
+      ? `${reply[1]} ${tag}${body.length > reply[0].length ? ` ${body.slice(reply[0].length)}` : ''}`
+      : `${tag} ${body}`;
   if (utf8Length(full) <= maxBytes) return full;
   return truncateUtf8(full, maxBytes - utf8Length(ELLIPSIS)).trimEnd() + ELLIPSIS;
 }

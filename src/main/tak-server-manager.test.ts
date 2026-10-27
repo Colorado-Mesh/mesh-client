@@ -1100,6 +1100,78 @@ describe('TakServerManager chat from local clients', () => {
     expect(written(sender)[0]).toContain('>mesh-client: Not sent: this channel is receive only.');
   });
 
+  describe('typed @ replies on a MeshCore channel', () => {
+    const MC_OPS: TakChatChannel = { ...OPS, protocol: 'meshcore' };
+    /** A manager serving MC_OPS that has heard each of `names` speak on it. */
+    function heardFrom(...names: string[]): TakServerManager {
+      const manager = chatManager([MC_OPS]);
+      for (const name of names) {
+        manager.sendChat({ ...heard('hello', MC_OPS), senderCallsign: name });
+      }
+      return manager;
+    }
+
+    it("sends MeshCore's reply form, and shows the other clients the reply as heard ones read", () => {
+      const manager = heardFrom('Silver Eagle', 'Hobo');
+      const inbound = listen(manager);
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+      const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+
+      sender.emit('data', Buffer.from(CHAT('@silver are you on?', { channel: MC_OPS })));
+      sender.emit('data', Buffer.from(CHAT('@@ thanks', { channel: MC_OPS })));
+
+      expect(inbound.map((m) => m.text)).toEqual(['@[Silver Eagle] are you on?', '@[Hobo] thanks']);
+      expect(written(other)[0]).toContain('>VIPER: @Silver Eagle are you on?</remarks>');
+      expect(written(other)[1]).toContain('>VIPER: @Hobo thanks</remarks>');
+      expect(sender.write).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing when the name fits several people, and says who', () => {
+      const manager = heardFrom('Silver Eagle', 'SCRAM-A1');
+      const inbound = listen(manager);
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+      const other = connect(manager, ['ANDROID-2', 'EAGLE']);
+
+      sender.emit('data', Buffer.from(CHAT('@s hello', { channel: MC_OPS })));
+
+      expect(inbound).toEqual([]);
+      expect(other.write).not.toHaveBeenCalled();
+      expect(written(sender)[0]).toContain(
+        '>mesh-client: Not sent: @s matches SCRAM-A1, Silver Eagle. Type more of the name.',
+      );
+    });
+
+    it('sends nothing for @@ when nobody has spoken, and says so', () => {
+      const manager = heardFrom();
+      const inbound = listen(manager);
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+
+      sender.emit('data', Buffer.from(CHAT('@@ anyone?', { channel: MC_OPS })));
+
+      expect(inbound).toEqual([]);
+      expect(written(sender)[0]).toContain('>mesh-client: Not sent: nobody has spoken');
+    });
+
+    it('lists at most five matching names', () => {
+      const manager = heardFrom('Sa', 'Sb', 'Sc', 'Sd', 'Se', 'Sf', 'Sg');
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+      sender.emit('data', Buffer.from(CHAT('@s hi', { channel: MC_OPS })));
+      expect(written(sender)[0]).toContain('matches Sg, Sf, Se, Sd, Sc and 2 more.');
+    });
+
+    it('sends text as typed when nobody matches, and on a channel with no reply form', () => {
+      const manager = chatManager([MC_OPS, { ...WATCH, send: true }]);
+      manager.sendChat({ ...heard('hi', WATCH), senderCallsign: 'Silver Eagle' });
+      const inbound = listen(manager);
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+
+      sender.emit('data', Buffer.from(CHAT('@home in 10', { channel: MC_OPS })));
+      sender.emit('data', Buffer.from(CHAT('@silver hi', { channel: WATCH })));
+
+      expect(inbound.map((m) => m.text)).toEqual(['@home in 10', '@silver hi']);
+    });
+  });
+
   it('passes plain GeoChat on to the other clients without sending it to the mesh', () => {
     const manager = chatManager();
     const inbound = listen(manager);

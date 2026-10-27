@@ -35,6 +35,7 @@ import {
   regenerateCerts,
   type TakServerIdentity,
 } from './tak/certificate-manager';
+import { ChannelReplies, type ChannelReplyOutcome } from './tak/channel-replies';
 import { TakContactCache } from './tak/contact-cache';
 import {
   COT_STALE_MS,
@@ -112,6 +113,19 @@ const TAK_CHAT_HELD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Written into a receive-only channel's conversation when a client messages it. */
 const RECEIVE_ONLY_NOTE =
   'Not sent: this channel is receive only. Turn on "ATAK can send" for it in mesh-client.';
+/** How many matching names a note lists before "and N more". */
+const REPLY_NAMES_SHOWN = 5;
+
+/** Why a typed `@` reply was not sent, for the conversation it was typed in. */
+function channelReplyNote(reply: Exclude<ChannelReplyOutcome, { kind: 'send' }>): string {
+  if (reply.kind === 'nobody') {
+    return 'Not sent: nobody has spoken on this channel recently, so @@ has no one to reply to.';
+  }
+  const shown = reply.names.slice(0, REPLY_NAMES_SHOWN).join(', ');
+  const more = reply.names.length - REPLY_NAMES_SHOWN;
+  const rest = more > 0 ? ` and ${more} more` : '';
+  return `Not sent: @${reply.typed} matches ${shown}${rest}. Type more of the name.`;
+}
 /** Written into a companion's conversation when its radio has direct messages off. */
 const DM_OFF_NOTE =
   'Not sent: direct messages are off for this radio. Turn on "Direct messages" for it in mesh-client.';
@@ -235,6 +249,8 @@ export class TakServerManager extends EventEmitter {
   private chatChannels = new Map<string, TakChatChannel>();
   /** Heard messages held while no local client could be addressed, oldest first. */
   private heldChat: HeldChat[] = [];
+  /** Who spoke on each channel lately, so a TAK client's `@name` reply can find them. */
+  private readonly channelReplies = new ChannelReplies();
   /** Radios whose companions TAK clients may message. */
   private dmProtocols = new Set<TakDmProtocol>();
   /** Companions a direct message passed with in the last day, by uid, oldest first. */
@@ -408,6 +424,7 @@ export class TakServerManager extends EventEmitter {
     this.server.close();
     this.server = null;
     this.contacts.removeSource('local');
+    this.channelReplies.clear();
     this._status = { running: false, port: this.settings?.port ?? 8089, clientCount: 0 };
     this.emit('status', this.getStatus());
     console.debug('[TakServer] Stopped');
@@ -448,6 +465,7 @@ export class TakServerManager extends EventEmitter {
   sendChat(msg: TAKChannelChatMessage): void {
     const channel = this.chatChannels.get(channelContactUid(msg.channelKey));
     if (!channel) return;
+    this.channelReplies.heard(msg.channelKey, msg.senderCallsign, Date.now());
     const line: ChannelChatLine = {
       senderCallsign: msg.senderCallsign,
       text: msg.text,
@@ -1133,27 +1151,46 @@ export class TakServerManager extends EventEmitter {
       return;
     }
     if (!channel.send) {
-      const recipient = this.recipientFor(client);
-      if (recipient) {
-        const note = {
-          senderCallsign: CHANNEL_NOTE_SENDER,
-          text: RECEIVE_ONLY_NOTE,
-          timeMs: nowMs,
-        };
-        this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));
-      }
+      this.writeChannelNote(id, client, channel, RECEIVE_ONLY_NOTE, nowMs);
       return;
     }
-    const line: ChannelChatLine = { senderCallsign, text: chat.text, timeMs: nowMs };
+    const reply: ChannelReplyOutcome =
+      channel.protocol === 'meshcore'
+        ? this.channelReplies.resolve(channel.key, chat.text, nowMs)
+        : { kind: 'send', text: chat.text };
+    if (reply.kind !== 'send') {
+      this.writeChannelNote(id, client, channel, channelReplyNote(reply), nowMs);
+      return;
+    }
+    // The other clients see a reply as one heard from the mesh reads, `@Name …`.
+    const shown =
+      reply.repliedTo === undefined
+        ? chat.text
+        : `@${reply.repliedTo}${reply.message ? ` ${reply.message}` : ''}`;
+    const line: ChannelChatLine = { senderCallsign, text: shown, timeMs: nowMs };
     this.writeChannelChat(channel, line, id, chat.messageId);
     const inbound: TAKInboundChat = {
       target: { kind: 'channel', channelKey: channel.key },
       senderCallsign,
-      text: chat.text,
+      text: reply.text,
       clientId: id,
       timeMs: nowMs,
     };
     this.emit('client-chat', inbound);
+  }
+
+  /** A note from mesh-client in a channel's conversation, to the one client it concerns. */
+  private writeChannelNote(
+    id: string,
+    client: ConnectedClient,
+    channel: TakChatChannel,
+    text: string,
+    nowMs: number,
+  ): void {
+    const recipient = this.recipientFor(client);
+    if (!recipient) return;
+    const note = { senderCallsign: CHANNEL_NOTE_SENDER, text, timeMs: nowMs };
+    this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));
   }
 
   /**

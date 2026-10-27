@@ -105,6 +105,8 @@ interface Props {
   emptyText: string;
   /** Settings search anchor for the section. */
   anchorId: string;
+  /** Shown under the channels while any are served, after the callsign hint. */
+  servedHint?: string;
   /** Shown at the end of the section: the radio's direct message switch. */
   children?: ReactNode;
 }
@@ -122,6 +124,7 @@ export default function TakChannelRelaySection({
   description,
   emptyText,
   anchorId,
+  servedHint,
   children,
 }: Props) {
   const { t } = useTranslation();
@@ -255,7 +258,10 @@ export default function TakChannelRelaySection({
         </ul>
       )}
       {showList && mode !== 'off' && (
-        <p className="text-muted text-xs">{t('takServerPanel.channelCallsignHint')}</p>
+        <>
+          <p className="text-muted text-xs">{t('takServerPanel.channelCallsignHint')}</p>
+          {servedHint && <p className="text-muted text-xs">{servedHint}</p>}
+        </>
       )}
       {children}
     </SettingsSection>

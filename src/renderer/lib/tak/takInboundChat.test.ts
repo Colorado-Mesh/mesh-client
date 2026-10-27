@@ -94,6 +94,19 @@ describe('formatTakMeshText', () => {
     expect(formatTakMeshText(' VIPER ', '  on scene ')).toBe('[VIPER] on scene');
   });
 
+  it("keeps a MeshCore reply's @[Name] first, where MeshCore apps look for it", () => {
+    expect(formatTakMeshText('VIPER', '@[Silver Eagle] are you on?')).toBe(
+      '@[Silver Eagle] [VIPER] are you on?',
+    );
+    expect(formatTakMeshText('VIPER', '@[Hobo]')).toBe('@[Hobo] [VIPER]');
+    expect(formatTakMeshText('VIPER', '@[Silver Eagle] hi', TAK_MESH_SEND_MAX_BYTES, false)).toBe(
+      '@[Silver Eagle] hi',
+    );
+    // Only a whole marker at the very start counts.
+    expect(formatTakMeshText('VIPER', 'see @[Hobo] later')).toBe('[VIPER] see @[Hobo] later');
+    expect(formatTakMeshText('VIPER', '@[unclosed hi')).toBe('[VIPER] @[unclosed hi');
+  });
+
   it('cuts an overlong message to the byte budget with an ellipsis', () => {
     const out = formatTakMeshText('VIPER', 'x'.repeat(500));
     expect(new TextEncoder().encode(out).length).toBeLessThanOrEqual(TAK_MESH_SEND_MAX_BYTES);

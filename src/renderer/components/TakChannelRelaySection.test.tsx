@@ -199,6 +199,27 @@ describe('TakChannelRelaySection', () => {
     expect(screen.getByText(/Turn it off for a bot channel/)).toBeInTheDocument();
   });
 
+  it('shows its hint for served channels only while any are served', () => {
+    const hinted = (
+      <TakChannelRelaySection
+        identityId={ID}
+        showTrackers
+        title="MeshCore messaging in ATAK"
+        description="Choose channels."
+        emptyText="No channels."
+        anchorId="tak.channelRelay.test"
+        servedHint="Reply with @name."
+      />
+    );
+    const { rerender } = render(hinted);
+    expect(screen.queryByText('Reply with @name.')).toBeNull();
+    act(() => {
+      useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+    });
+    rerender(hinted);
+    expect(screen.getByText('Reply with @name.')).toBeInTheDocument();
+  });
+
   it("keeps a channel's settings with the channel when another takes its slot", async () => {
     const user = userEvent.setup();
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
