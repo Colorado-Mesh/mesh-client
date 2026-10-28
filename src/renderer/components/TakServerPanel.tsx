@@ -326,6 +326,7 @@ export default function TakServerPanel({
         description={t('takServerPanel.messagingIntroMeshcore')}
         emptyText={t('takServerPanel.channelRelayNoChannels')}
         anchorId="tak.channelRelay.trackers"
+        servedHint={t('takServerPanel.channelRepliesHint')}
       >
         <TakDirectMessagesToggle
           identityId={meshcoreIdentityId ?? null}

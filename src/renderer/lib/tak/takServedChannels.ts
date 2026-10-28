@@ -154,6 +154,7 @@ export function toTakChatChannels(served: readonly TakServedChannel[]): TakChatC
       name: prev?.name ?? c.atakName,
       send: (prev?.send ?? false) || c.send,
       remote: (prev?.remote ?? false) || c.remote,
+      protocol: c.protocol,
     });
   }
   return [...byKey.values()];

@@ -156,6 +156,8 @@ const takEntries: readonly SettingSearchEntry[] = [
       'meshcore',
       'tracker',
       'mt1',
+      'reply',
+      'mention',
       'chat',
       'channel',
       'contact',
@@ -282,6 +284,7 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.channelRemote*': 'per-channel checkbox in each indexed messaging section',
     'takServerPanel.channelCallsign*':
       'per-channel checkbox and hint in each indexed messaging section',
+    'takServerPanel.channelRepliesHint': 'hint under the indexed MeshCore messaging section',
     'takServerPanel.channelTrackersFor': 'accessible name of the indexed tracker checkbox',
     'takServerPanel.channelRelayUnnamed': 'fallback channel name in a row',
     'takServerPanel.channelRelayNoChannels*': 'empty-state text before a radio lists channels',

@@ -5855,7 +5855,8 @@
     "messagingIntroReticulum": "Atak cihazlarının LXMF akranlarına mesaj göndermesine izin verin. Bir pozisyona sahip bir akran, işaretçisinden mesajlaşabilir; mesh-client onunla bir konuşma yaptıktan sonra 0, 0 konumunda olmayan bir akran görünür, bu nedenle kişi listesi duyulan her akranla dolu değildir.",
     "channelCallsign": "Çağrı işareti ekle",
     "channelCallsignFor": "{{channel}} adresine gönderilen mesajların önüne gönderenin atak çağrı işaretini koyun",
-    "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır."
+    "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır.",
+    "channelRepliesHint": "ATAK'tan birine yanıt vermek için @ ile başlayın ve adının başlangıcı: @silver are you on? MeshCore 'ın yanıtı olarak çıkar @[Silver Eagle] are you on?. @@, en son konuşan kişiye yanıt verir. Adın başlangıcı kanalda duyulan birkaç kişiye uyuyorsa, hiçbir şey gönderilmez ve sohbet kimin eşleştiğini söyler."
   },
   "telemetryPanel": {
     "title": "Telemetri",

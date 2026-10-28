@@ -253,6 +253,11 @@ export interface TakChatChannel {
   send: boolean;
   /** Also stream the channel to the remote TAK server, read only. */
   remote: boolean;
+  /**
+   * The channel's protocol. On a MeshCore channel, a TAK client's `@name …` becomes MeshCore's
+   * `@[Name] …` reply form; unset is taken as a channel with no reply form.
+   */
+  protocol?: 'meshcore' | 'meshtastic';
 }
 
 /** A message heard on a served mesh channel, for TAK clients. */

@@ -93,7 +93,16 @@ export function parseTakChatChannels(raw: unknown): TakChatChannel[] {
     if (typeof c.send !== 'boolean' || typeof c.remote !== 'boolean') {
       throw bad('send and remote must be booleans');
     }
-    byKey.set(c.key, { key: c.key, name, send: c.send, remote: c.remote });
+    if (c.protocol !== undefined && c.protocol !== 'meshcore' && c.protocol !== 'meshtastic') {
+      throw bad('protocol must be meshcore or meshtastic');
+    }
+    byKey.set(c.key, {
+      key: c.key,
+      name,
+      send: c.send,
+      remote: c.remote,
+      ...(c.protocol ? { protocol: c.protocol } : {}),
+    });
   }
   return [...byKey.values()];
 }

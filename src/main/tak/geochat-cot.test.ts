@@ -163,6 +163,12 @@ describe('parseTakChatChannels', () => {
     expect(parseTakChatChannels([])).toEqual([]);
   });
 
+  it("keeps a channel's protocol", () => {
+    expect(parseTakChatChannels([{ ...CHANNEL, protocol: 'meshcore' }])).toEqual([
+      { ...CHANNEL, protocol: 'meshcore' },
+    ]);
+  });
+
   it.each([
     ['not an array', CHANNEL],
     ['too many channels', Array.from({ length: 65 }, () => CHANNEL)],
@@ -173,6 +179,7 @@ describe('parseTakChatChannels', () => {
     ['a control character in a name', [{ ...CHANNEL, name: 'a\nb' }]],
     ['a send flag that is not boolean', [{ ...CHANNEL, send: 'yes' }]],
     ['no remote flag', [{ key: KEY, name: '#MC Ops', send: true }]],
+    ['an unknown protocol', [{ ...CHANNEL, protocol: 'reticulum' }]],
   ])('rejects %s', (_label, raw) => {
     expect(() => parseTakChatChannels(raw)).toThrow(/tak:setChatChannels/);
   });

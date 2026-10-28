@@ -5855,7 +5855,8 @@
     "messagingIntroReticulum": "Biarkan perangkat atak mengirimkan pesan kepada LXMF rekan. Seorang rekan dengan posisi dapat dikirimi pesan dari penanda; satu tanpa posisi muncul di 0, 0 setelah mesh-client melakukan percakapan dengannya, sehingga daftar kontak tidak diisi dengan setiap rekan yang didengar.",
     "channelCallsign": "Tambahkan callsign",
     "channelCallsignFor": "Letakkan tanda panggil atak pengirim di depan pesan yang dikirim ke {{channel}}",
-    "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil."
+    "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil.",
+    "channelRepliesHint": "Untuk membalas seseorang dari atak, mulailah dengan @ dan awal nama mereka: @silver are you on? keluar sebagai balasan MeshCore @[ Silver Eagle] are you on?. @@ membalas kepada siapa pun yang berbicara terakhir. Jika awal nama cocok dengan beberapa orang yang didengar di saluran, tidak ada yang dikirim dan obrolan mengatakan siapa yang cocok."
   },
   "telemetryPanel": {
     "title": "Telemetri",
