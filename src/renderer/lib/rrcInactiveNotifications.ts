@@ -2,6 +2,8 @@ import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
 import { isRrcRoomMuted, resolveRrcAlertType, type RrcNotifyMode } from '@/renderer/lib/rrcMention';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
+import { getChatNotificationMode } from './chatNotificationPolicy';
+
 export interface ResolveInactiveRrcNotificationTypeArgs {
   newMessages: readonly RrcChatMessage[];
   nickname: string;
@@ -57,7 +59,7 @@ export function resolveInactiveRrcNotification(
     const type = resolveRrcAlertType({
       msg,
       nickname: args.nickname,
-      notifyMode: args.notifyMode,
+      notifyMode: getChatNotificationMode() === 'mentions' ? 'mentions' : args.notifyMode,
       muted,
     });
     if (!type) continue;

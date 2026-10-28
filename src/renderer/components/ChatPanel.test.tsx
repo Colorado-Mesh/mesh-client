@@ -35,6 +35,7 @@ import {
 } from '../stores/liveChannelKeyStore';
 import type { MessageRecord } from '../stores/messageStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
+import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel } from './chat/ChatChannelSwitcher';
@@ -5152,6 +5153,14 @@ describe('ChatPanel reticulum dm-only chat', () => {
   it('wraps Reticulum DM pills in the channel row and preserves drafts, mute and close actions', async () => {
     const user = userEvent.setup();
     const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
+    useReticulumIdentityStore
+      .getState()
+      .setIdentity({ configured: true, identity_hash: 'a'.repeat(32), lxmf_hash: 'b'.repeat(32) });
+    for (const nodeId of peerIds)
+      registerReticulumDestinationHash(
+        nodeId,
+        nodeId.toString(16).padStart(12, '0') + 'ab'.repeat(10),
+      );
     localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));
     const nodes = new Map<number, MeshNode>(
       peerIds.map((nodeId, index) => [

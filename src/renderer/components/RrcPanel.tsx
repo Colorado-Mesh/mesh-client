@@ -29,7 +29,6 @@ import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDo
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
-import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatBadgeCount, NAV_BADGE_FILL_CLASS } from '@/renderer/lib/navBadges';
 import {
@@ -106,6 +105,8 @@ import {
 import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
+import { useConversationMutes } from '../hooks/useConversationMutes';
+import { isRrcRoomMuted, rrcMuteViewKey } from '../lib/rrcMention';
 import { CatchUpButton } from './chat/CatchUpButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
 
@@ -244,7 +245,7 @@ export default function RrcPanel({
   const [hubAutoJoinEpoch, setHubAutoJoinEpoch] = useState(0);
   /** Short-lived join/part only — never block the whole panel on connect. */
   const [actionBusy, setActionBusy] = useState(false);
-  const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
+  const [mutedViews, setMutedViews] = useConversationMutes('reticulum');
   const [composeSeed, setComposeSeed] = useState<{ text: string; token: number } | null>(null);
   const [confirmClearHistory, setConfirmClearHistory] = useState(false);
 
@@ -591,8 +592,9 @@ export default function RrcPanel({
   const hubMessages = useRrcSessionStore((s) => s.messages);
   const cachedHubNicks = useRrcSessionStore(selectRrcFocusedHubNicks);
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
-  const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
-  const isMuted = muteKey ? mutedViews.has(muteKey) : false;
+  const muteKey = hubDestHash && activeRoom ? rrcMuteViewKey(hubDestHash, activeRoom) : null;
+  const isMuted =
+    hubDestHash && activeRoom ? isRrcRoomMuted(hubDestHash, activeRoom, mutedViews) : false;
   const activeDmPeerHash = activeRoom ? parseRrcDmRoomKey(activeRoom) : null;
   const activeDmLabel = activeDmPeerHash
     ? (dmRoomLabels.get(rrcRoomMatchKey(activeRoom!)) ??
@@ -1261,10 +1263,12 @@ export default function RrcPanel({
   const toggleMute = () => {
     if (!muteKey) return;
     const next = new Set(mutedViews);
-    if (next.has(muteKey)) next.delete(muteKey);
-    else next.add(muteKey);
+    if (isMuted && hubDestHash && activeRoom) {
+      for (const key of next) {
+        if (isRrcRoomMuted(hubDestHash, activeRoom, new Set([key]))) next.delete(key);
+      }
+    } else next.add(muteKey);
     setMutedViews(next);
-    saveMutedViews('reticulum', next);
   };
 
   const bannerText = moderationBanner

@@ -4,10 +4,17 @@ import { useTranslation } from 'react-i18next';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 import { REGISTERED_MESH_PROTOCOLS } from '@/renderer/lib/types';
 
+import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
+import { getChatNotificationMode, mentionsLocalChatIdentity } from '../lib/chatNotificationPolicy';
+import { loadMutedViews } from '../lib/chatPanelProtocolStorage';
+import { chatViewKeyForMessage, resolveChatNotificationType } from '../lib/chatUnreadCounts';
 import { useToast } from './Toast';
+
+const EMPTY_OWN_IDS = new Set<number>();
 
 export interface InactiveProtocolNotifierProps {
   activeProtocol: MeshProtocol;
+  ownNodeIdsByProtocol?: Partial<Record<MeshProtocol, ReadonlySet<number>>>;
   messagesByProtocol: Record<MeshProtocol, ChatMessage[]>;
   /** Protocols enabled in App → Protocols; disabled ones never toast. */
   enabledProtocols?: readonly MeshProtocol[];
@@ -16,6 +23,7 @@ export interface InactiveProtocolNotifierProps {
 /** Toast when the inactive protocol receives new chat messages. */
 export function InactiveProtocolNotifier({
   activeProtocol,
+  ownNodeIdsByProtocol,
   messagesByProtocol,
   enabledProtocols = REGISTERED_MESH_PROTOCOLS,
 }: InactiveProtocolNotifierProps) {
@@ -53,7 +61,36 @@ export function InactiveProtocolNotifier({
         const newMsgs = messagesByProtocol[inactiveProtocol].slice(
           prevCountRef.current[inactiveProtocol],
         );
-        const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
+        const own = ownNodeIdsByProtocol?.[inactiveProtocol] ?? EMPTY_OWN_IDS;
+        const mutedViews = loadMutedViews(inactiveProtocol);
+        const realNew =
+          localStorage.getItem('mesh-client:notifMuted') === '1'
+            ? []
+            : newMsgs.filter((m) => {
+                if (m.emoji || m.isHistory || own.has(m.sender_id)) return false;
+                // Room posts retain their existing passive toast, without adding a new sound path.
+                if (isMeshcoreRoomChatMessage(m)) {
+                  return (
+                    !mutedViews.has(`room:${m.roomServerId}`) &&
+                    (getChatNotificationMode() === 'all' ||
+                      mentionsLocalChatIdentity(
+                        m.payload,
+                        inactiveProtocol,
+                        own,
+                        m.replyPreviewSender,
+                      ))
+                  );
+                }
+                return (
+                  !mutedViews.has(chatViewKeyForMessage(m, inactiveProtocol, own)) &&
+                  resolveChatNotificationType(
+                    m,
+                    messagesByProtocol[inactiveProtocol],
+                    own,
+                    inactiveProtocol,
+                  ) != null
+                );
+              });
         if (realNew.length > 0 && enabledProtocols.includes(inactiveProtocol)) {
           addToast(
             t('toasts.newMessages', {
@@ -67,7 +104,7 @@ export function InactiveProtocolNotifier({
       }
       prevCountRef.current[inactiveProtocol] = count;
     }
-  }, [activeProtocol, messagesByProtocol, enabledProtocols, addToast, t]);
+  }, [activeProtocol, ownNodeIdsByProtocol, messagesByProtocol, enabledProtocols, addToast, t]);
 
   return null;
 }

@@ -7811,5 +7811,12 @@
     "busy": "Čtení chatů z rádia...",
     "failed": "Nelze číst chaty z rádia. Existující chaty byly zachovány. Připojte se znovu a zkuste to znovu.",
     "done": "Chaty synchronizované z rádia."
+  },
+  "notificationPolicy": {
+    "label": "Upozornění na chat",
+    "all": "Všechny zprávy",
+    "mentions": "@Zmínky a přímé zprávy od:",
+    "help": "Upozornění na režim zmínek pro @[Your name], odpovědi na vaše zprávy a přímé zprávy. RRC používá přezdívku @nickname a zachovává si své nastavení upozornění na pokoj. Použijte zvonek v konverzaci k jeho ztlumení, včetně zmínek a DM. Zvukové notifikace musí být povoleny. Zprávy stále přicházejí v chatu. Nouzové a provozní výstrahy MECP si ponechávají svá vlastní nastavení.",
+    "saveFailed": "Předvolby oznámení nelze uložit. Zkuste to znovu, až bude identita konverzace k dispozici a místní úložiště bude zapisovatelné."
   }
 }

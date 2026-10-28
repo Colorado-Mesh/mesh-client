@@ -7735,5 +7735,12 @@
     "busy": "Membaca obrolan dari radio…",
     "failed": "Tidak dapat membaca obrolan dari radio. Obrolan yang ada disimpan. Sambungkan kembali dan coba lagi.",
     "done": "Obrolan disinkronkan dari radio."
+  },
+  "notificationPolicy": {
+    "label": "Notifikasi Obrolan",
+    "all": "Tampilkan Semua Pesan",
+    "mentions": "Penyebutan dan pesan langsung",
+    "help": "Pemberitahuan mode penyebutan untuk @[ Your name], membalas pesan Anda dan pesan langsung. RRC menggunakan @nickname dan menjaga pengaturan peringatan ruangannya. Gunakan bel dalam percakapan untuk membungkamnya, termasuk penyebutan dan DM. Pemberitahuan suara harus diaktifkan. Pesan masih sampai di chat. Peringatan darurat dan operasional MECP menjaga pengaturannya sendiri.",
+    "saveFailed": "Tidak dapat menyimpan preferensi notifikasi. Coba lagi setelah identitas percakapan tersedia dan penyimpanan lokal dapat ditulis."
   }
 }

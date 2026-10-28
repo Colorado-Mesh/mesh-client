@@ -7735,5 +7735,12 @@
     "busy": "Chats van de radio lezen...",
     "failed": "Kan chats van de radio niet lezen. Bestaande chats werden behouden. Maak opnieuw verbinding en probeer het opnieuw.",
     "done": "Chats gesynchroniseerd vanaf de radio."
+  },
+  "notificationPolicy": {
+    "label": "Chatmeldingen",
+    "all": "Alle berichten",
+    "mentions": "Vermeldingen en directe berichten",
+    "help": "Meldingenmoduswaarschuwingen voor @[Uw naam], antwoorden op uw berichten en directe berichten. RRC gebruikt @nickname en behoudt de instelling voor ruimtewaarschuwing. Gebruik de bel in een gesprek om het te dempen, inclusief vermeldingen en DM's. Geluidsmeldingen moeten zijn ingeschakeld. Berichten komen nog steeds aan in de chat. MECP-nood- en operationele waarschuwingen behouden hun eigen instellingen.",
+    "saveFailed": "Kan meldingsvoorkeuren niet opslaan. Probeer het opnieuw nadat de gespreksidentiteit beschikbaar is en lokale opslag beschrijfbaar is."
   }
 }

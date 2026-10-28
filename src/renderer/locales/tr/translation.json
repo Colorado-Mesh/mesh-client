@@ -7735,5 +7735,12 @@
     "busy": "Radyodan sohbetler okunuyor…",
     "failed": "Radyodan sohbetler okunamadı. Mevcut sohbetler tutuldu. Yeniden bağlanın ve tekrar deneyin.",
     "done": "Telsizden senkronize edilen sohbetler."
+  },
+  "notificationPolicy": {
+    "label": "Sohbet Bildirimleri",
+    "all": "Tüm Messajlar",
+    "mentions": "Anmalar ve doğrudan iletiler için",
+    "help": "@[ Adınız] için bahsi geçen mod uyarıları, mesajlarınıza ve doğrudan mesajlarınıza yanıtlar. RRC, @nickname kullanır ve oda alarmı ayarını korur. Bahsetmeler ve DM'ler de dahil olmak üzere bir konuşmada zili sessize almak için kullanın. Sesli bildirimler etkinleştirilmelidir. Mesajlar hala sohbete ulaşıyor. MECP acil durum ve operasyonel uyarıları kendi ayarlarını korur.",
+    "saveFailed": "Bildirim tercihleri kaydedilemedi. Konuşma kimliği mevcut ve yerel depolama yazılabilir olduktan sonra tekrar deneyin."
   }
 }

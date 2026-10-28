@@ -10,6 +10,7 @@ import {
   sanitizeNumericKeyLastRead,
   sanitizeViewKeyLastRead,
 } from './chatLastReadSanitize';
+import { projectConversationMutes } from './conversationMuteStorage';
 import { createDurableRendererSetting } from './durableRendererSetting';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
 import { parseStoredJson } from './parseStoredJson';
@@ -391,15 +392,15 @@ export function clearFloodScopeOverride(protocol: MeshProtocol, viewKey: string)
 export function loadMutedViews(protocol: MeshProtocol): Set<string> {
   try {
     const raw = localStorage.getItem(`mesh-client:mutedViews:${protocol}`);
-    if (!raw) return new Set();
+    if (!raw) return projectConversationMutes(protocol, new Set());
     const parsed = parseStoredJson<unknown>(raw, 'ChatPanel mutedViews');
     if (Array.isArray(parsed) && parsed.every((v): v is string => typeof v === 'string')) {
-      return new Set(parsed);
+      return projectConversationMutes(protocol, new Set(parsed));
     }
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] loadMutedViews failed ' + errLikeToLogString(e));
   }
-  return new Set();
+  return projectConversationMutes(protocol, new Set());
 }
 
 /** Persist muted view keys for this protocol. */

@@ -44,12 +44,10 @@ import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreR
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import {
-  loadMutedViews,
   loadPersistedRoomsLastRead,
   loadStarred,
   mergeRoomLastReadWatermark,
   notifyPersistedRoomsLastReadChanged,
-  saveMutedViews,
   savePersistedRoomsLastRead,
   saveStarred,
   type StarredMessage,
@@ -111,6 +109,7 @@ import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import { touch } from '@/shared/touch';
 
+import { useConversationMutes } from '../hooks/useConversationMutes';
 import {
   CHAT_SCROLL_END_THRESHOLD,
   CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
@@ -366,7 +365,7 @@ export default function RoomsPanel({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [jumpDate, setJumpDate] = useState('');
   const [filterSender, setFilterSender] = useState<number | null>(null);
-  const [mutedViews, setMutedViews] = useState<Set<string>>(() => loadMutedViews('meshcore'));
+  const [mutedViews, setMutedViews] = useConversationMutes('meshcore');
   const [roomListCollapsed, setRoomListCollapsed] = useState(
     () => localStorage.getItem(ROOMS_LIST_COLLAPSED_STORAGE_KEY) === 'true',
   );
@@ -1119,14 +1118,17 @@ export default function RoomsPanel({
     });
   }, []);
 
-  const toggleMuteView = useCallback((viewKey: string) => {
-    setMutedViews((prev) => {
-      const next = new Set(prev);
-      if (next.has(viewKey)) next.delete(viewKey);
-      else next.add(viewKey);
-      return next;
-    });
-  }, []);
+  const toggleMuteView = useCallback(
+    (viewKey: string) => {
+      setMutedViews((prev) => {
+        const next = new Set(prev);
+        if (next.has(viewKey)) next.delete(viewKey);
+        else next.add(viewKey);
+        return next;
+      });
+    },
+    [setMutedViews],
+  );
 
   const handleRoomListToggle = useCallback(() => {
     setRoomListCollapsed((prev) => {
@@ -1149,10 +1151,6 @@ export default function RoomsPanel({
     },
     [filteredRoomPosts],
   );
-
-  useEffect(() => {
-    saveMutedViews('meshcore', mutedViews);
-  }, [mutedViews]);
 
   useEffect(() => {
     setShowSearch(false);

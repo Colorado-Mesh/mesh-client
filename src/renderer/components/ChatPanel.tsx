@@ -150,6 +150,7 @@ import { touch } from '@/shared/touch';
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
+import { useConversationMutes } from '../hooks/useConversationMutes';
 import { useNowMs } from '../hooks/useNowMs';
 import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
@@ -161,7 +162,6 @@ import {
   loadActiveChannelInitial,
   loadActiveDmInitial,
   loadDraftsInitial,
-  loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   loadStarred,
@@ -169,7 +169,6 @@ import {
   openDmTabsStorageKey,
   saveActiveChannel,
   saveActiveDm,
-  saveMutedViews,
   savePersistedLastRead,
   saveStarred,
   type StarredMessage,
@@ -1357,7 +1356,7 @@ function ChatPanel({
   const prevMessagesLengthRef = useRef(messages.length);
 
   // Feature: per-conversation mute
-  const [mutedViews, setMutedViews] = useState<Set<string>>(() => loadMutedViews(protocol));
+  const [mutedViews, setMutedViews] = useConversationMutes(protocol);
 
   // Feature: message starring
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred(protocol));
@@ -1453,7 +1452,6 @@ function ChatPanel({
     setMutedViews((prev) => {
       const { next, changed } = remapDmMutedViews(prev, remapped.replacements);
       if (!changed) return prev;
-      saveMutedViews(protocol, next);
       return next;
     });
     setStarred((prev) => {
@@ -1477,6 +1475,7 @@ function ChatPanel({
     protocol,
     reticulumIdentityActivityByDestination,
     reticulumPeersRevision,
+    setMutedViews,
     openDmTabs,
     activeDmNode,
   ]);
@@ -1551,7 +1550,6 @@ function ChatPanel({
 
   useEffect(() => {
     setReplyTo(null);
-    setMutedViews(loadMutedViews(protocol));
     setStarred(loadStarred(protocol));
   }, [protocol]);
 
@@ -2058,11 +2056,6 @@ function ChatPanel({
   useEffect(() => {
     setFilterSender(null);
   }, [viewKey]);
-
-  // Persist per-conversation mute
-  useEffect(() => {
-    saveMutedViews(protocol, mutedViews);
-  }, [protocol, mutedViews]);
 
   // Persist starred messages
   useEffect(() => {
@@ -2640,17 +2633,20 @@ function ChatPanel({
     return msg.id != null ? String(msg.id) : `${msg.timestamp}-${msg.packetId ?? 'x'}`;
   }
 
-  const toggleMuteView = useCallback((vk: string) => {
-    setMutedViews((prev) => {
-      const next = new Set(prev);
-      if (next.has(vk)) {
-        next.delete(vk);
-      } else {
-        next.add(vk);
-      }
-      return next;
-    });
-  }, []);
+  const toggleMuteView = useCallback(
+    (vk: string) => {
+      setMutedViews((prev) => {
+        const next = new Set(prev);
+        if (next.has(vk)) {
+          next.delete(vk);
+        } else {
+          next.add(vk);
+        }
+        return next;
+      });
+    },
+    [setMutedViews],
+  );
 
   const toggleStar = useCallback(
     (msg: ChatMessage) => {
