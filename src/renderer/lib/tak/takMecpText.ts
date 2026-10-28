@@ -1,4 +1,3 @@
-import i18n from '../i18n';
 import {
   getCachedMecpLanguage,
   type LanguageFile,
@@ -13,16 +12,50 @@ import {
 /** A sign per severity, MAYDAY to ROUTINE, as MeshCore TAK Bridge shows them. */
 const SEVERITY_SIGNS = ['🆘', '🚨', '⚠️', 'ℹ️'] as const;
 
-type Translate = (key: string, opts?: Record<string, unknown>) => string;
+export type TakMecpTranslate = (key: string, opts?: Record<string, unknown>) => string;
 
-/** The MECP pack for the app's language; English until that pack has loaded. */
-function appMecpLanguage(): LanguageFile {
-  return getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en'));
+/** The app's words for a report, in English, until the app hands over its own. */
+const ENGLISH: Record<string, string> = {
+  'mecp.severity.mayday': 'MAYDAY',
+  'mecp.severity.urgent': 'URGENT',
+  'mecp.severity.safety': 'SAFETY',
+  'mecp.severity.routine': 'ROUTINE',
+  'mecp.atakDrill': 'DRILL',
+};
+
+const englishTranslate: TakMecpTranslate = (key, opts) => {
+  if (key === 'mecp.atakPeople') {
+    const count = Number(opts?.count);
+    return count === 1 ? '1 person' : `${count} people`;
+  }
+  return ENGLISH[key] ?? key;
+};
+
+/**
+ * The app's language for reports to TAK clients. Kept here, set by the TAK relay hook, so this
+ * module never loads the app's i18n itself: the relay also runs where there is none.
+ */
+let appTranslate: TakMecpTranslate = englishTranslate;
+let appPack: LanguageFile = getCachedMecpLanguage('en');
+let localeRequest = 0;
+
+/**
+ * Use the app's language for reports to TAK clients: its words now, and its MECP pack once it
+ * has loaded (English until then).
+ */
+export async function setTakMecpLocale(appLocale: string, t: TakMecpTranslate): Promise<void> {
+  const request = ++localeRequest;
+  appTranslate = t;
+  const pack = await loadMecpLanguage(mecpLanguageForAppLocale(appLocale || 'en'));
+  // A later change of language wins over this one, whichever pack loads first.
+  if (request === localeRequest) appPack = pack;
 }
 
-/** Load the MECP pack for the app's language, so TAK clients get reports in it. */
-export function warmTakMecpLanguage(appLocale: string): Promise<LanguageFile> {
-  return loadMecpLanguage(mecpLanguageForAppLocale(appLocale || 'en'));
+/** Back to English, as before the app hands over its language; for tests. */
+export function resetTakMecpLocale(): void {
+  localeRequest++;
+  appTranslate = englishTranslate;
+  appPack = getCachedMecpLanguage('en');
 }
 
 /** `text`'s words, without the first one `drop` picks out. */
@@ -39,7 +72,11 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
  * `🆘 MAYDAY: Injury · Fracture / immobile · 2 people · 48.6520, 20.1305`. Drills say so first.
  * The same shape as MeshCore TAK Bridge, in the app's language.
  */
-export function describeMecpForTak(parsed: MecpParsed, lang: LanguageFile, t: Translate): string {
+export function describeMecpForTak(
+  parsed: MecpParsed,
+  lang: LanguageFile,
+  t: TakMecpTranslate,
+): string {
   const severity = parsed.severity ?? 3;
   const label = `${SEVERITY_SIGNS[severity]} ${t(severityLabelKey(severity))}`;
   const head = parsed.isDrill ? `${t('mecp.atakDrill')} ${label}` : label;
@@ -67,8 +104,8 @@ export function describeMecpForTak(parsed: MecpParsed, lang: LanguageFile, t: Tr
  * app's language, with the code line kept below it, as MeshCore TAK Bridge shows one. Null for
  * any other message.
  */
-export function takMecpText(text: string, t: Translate = i18n.t.bind(i18n)): string | null {
+export function takMecpText(text: string): string | null {
   const parsed = tryParseMecp(text.trim());
   if (!parsed) return null;
-  return `${describeMecpForTak(parsed, appMecpLanguage(), t)}\n${parsed.raw.trim()}`;
+  return `${describeMecpForTak(parsed, appPack, appTranslate)}\n${parsed.raw.trim()}`;
 }

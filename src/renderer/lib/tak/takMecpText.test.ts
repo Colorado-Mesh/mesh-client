@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import en from '../mecp/languages/en.json';
 import type { LanguageFile } from '../mecp/mecpMessages';
 import { tryParseMecp } from '../mecp/mecpMessages';
-import { describeMecpForTak, takMecpText } from './takMecpText';
+import {
+  describeMecpForTak,
+  resetTakMecpLocale,
+  setTakMecpLocale,
+  takMecpText,
+} from './takMecpText';
 
 /** The app's strings for these keys, in English. */
 const t = (key: string, opts?: Record<string, unknown>): string => {
@@ -64,15 +69,34 @@ describe('describeMecpForTak', () => {
 });
 
 describe('takMecpText', () => {
-  it('keeps the code line below the words', () => {
-    expect(takMecpText(' MECP/0/M01 2pax ', t)).toBe(
-      '🆘 MAYDAY: Injury · 2 people\nMECP/0/M01 2pax',
+  afterEach(() => {
+    resetTakMecpLocale();
+  });
+
+  it('keeps the code line below the words, in English until the app says otherwise', () => {
+    expect(takMecpText(' MECP/0/M01 2pax ')).toBe('🆘 MAYDAY: Injury · 2 people\nMECP/0/M01 2pax');
+    expect(takMecpText('MECP/3/D01')).toBe('DRILL ℹ️ ROUTINE: This is a drill\nMECP/3/D01');
+  });
+
+  it("uses the app's language once it is handed over", async () => {
+    const german = (key: string, opts?: Record<string, unknown>) =>
+      key === 'mecp.atakPeople' ? `${String(opts?.count)} Personen` : t(key, opts);
+    await setTakMecpLocale('de-DE', german);
+    expect(takMecpText('MECP/0/M01 2pax')).toBe(
+      '🆘 MAYDAY: Verletzung · 2 Personen\nMECP/0/M01 2pax',
     );
   });
 
+  it('keeps the last language asked for when an earlier pack loads later', async () => {
+    const first = setTakMecpLocale('de', t);
+    const second = setTakMecpLocale('en', t);
+    await Promise.all([first, second]);
+    expect(takMecpText('MECP/0/M01')).toBe('🆘 MAYDAY: Injury\nMECP/0/M01');
+  });
+
   it('leaves anything else alone', () => {
-    expect(takMecpText('on scene', t)).toBeNull();
-    expect(takMecpText('see MECP/0/M01 later', t)).toBeNull();
-    expect(takMecpText('MECP/7/M01', t)).toBeNull();
+    expect(takMecpText('on scene')).toBeNull();
+    expect(takMecpText('see MECP/0/M01 later')).toBeNull();
+    expect(takMecpText('MECP/7/M01')).toBeNull();
   });
 });

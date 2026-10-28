@@ -7,7 +7,7 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { listTakConversationPeers, listTakDmProtocols } from '../lib/tak/takDirectMessages';
 import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
-import { warmTakMecpLanguage } from '../lib/tak/takMecpText';
+import { setTakMecpLocale } from '../lib/tak/takMecpText';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
   listTakServedChannels,
@@ -137,12 +137,12 @@ export function useTakInboundChat(sources: TakChannelSources): void {
   }, []);
 
   const sinkActive = useTakSinkStore((s) => s.active);
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   // MECP reports reach TAK clients in the app's language; its pack loads on demand.
   useEffect(() => {
     if (!sinkActive) return;
-    void warmTakMecpLanguage(i18n.language);
-  }, [sinkActive, i18n.language]);
+    void setTakMecpLocale(i18n.language, (key, opts) => t(key, opts));
+  }, [sinkActive, i18n.language, t]);
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
 
   // For a day after an upgrade, ATAK devices are told to drop the old GeoChat room contacts.

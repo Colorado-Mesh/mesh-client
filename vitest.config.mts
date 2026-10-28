@@ -108,7 +108,6 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/tak/takMeshSend.test.ts',
   'src/renderer/lib/tak/takDirectMessages.test.ts',
   'src/renderer/lib/tak/takDmStatus.test.ts',
-  'src/renderer/lib/tak/takMecpText.test.ts',
   'src/renderer/lib/letsMeshJwt.test.ts',
   'src/renderer/lib/messageRetention.test.ts',
   'src/renderer/lib/rrcMessagePersist.test.ts',
