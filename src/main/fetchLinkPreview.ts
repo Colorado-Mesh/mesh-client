@@ -601,6 +601,8 @@ export function decodeLinkPreviewHtmlEntities(value: string): string {
 }
 
 const META_ATTR_RE = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+/** Cap meta attribute text before regex parse (ReDoS guard on long tokens without `=`). */
+export const LINK_PREVIEW_MAX_META_ATTR_CHARS = 4_096;
 
 /** Parse attributes from a single `<meta …>` attribute string (order-independent). */
 export function parseMetaTagAttributes(attrText: string): Record<string, string> {
@@ -695,6 +697,7 @@ export function extractMetaContent(
     const tag = scanNextMetaTag(html, cursor);
     if (!tag) return undefined;
     cursor = tag.nextIndex;
+    if (tag.attrText.length > LINK_PREVIEW_MAX_META_ATTR_CHARS) continue;
     const attrs = parseMetaTagAttributes(tag.attrText);
     const content = attrs.content?.trim();
     if (!content) continue;

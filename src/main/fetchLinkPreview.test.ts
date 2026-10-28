@@ -45,6 +45,7 @@ import {
   isLikelyDirectImageUrl,
   isLinkPreviewImageMime,
   isYouTubePreviewHostname,
+  LINK_PREVIEW_MAX_META_ATTR_CHARS,
   LINK_PREVIEW_MAX_REDIRECTS,
   LINK_PREVIEW_RATE_LIMIT_MAX,
   parseMetaTagAttributes,
@@ -822,6 +823,12 @@ describe('fetchLinkPreview', () => {
   it('skips non-meta openers like <metal> without treating them as tags', () => {
     const html = `<metal property="og:title" content="nope"><meta property="og:title" content="yes">`;
     expect(extractMetaContent(html, { property: 'og:title' })).toBe('yes');
+  });
+
+  it('skips oversized meta attr text and continues to a later valid tag', () => {
+    const longToken = 'x'.repeat(LINK_PREVIEW_MAX_META_ATTR_CHARS + 1);
+    const html = `<meta ${longToken}>` + `<meta property="og:title" content="after oversized">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('after oversized');
   });
 
   it('produces a preview when og:title contains an embedded greater-than', async () => {
