@@ -6849,7 +6849,8 @@
     },
     "atakDrill": "DRILL (VRTÁK)",
     "atakPeople_one": "{{count}} osoba",
-    "atakPeople_other": "{{count}} lidí"
+    "atakPeople_few": "{{count}} osoby",
+    "atakPeople_other": "{{count}} osob"
   },
   "notificationSounds": {
     "title": "Tóny oznámení",

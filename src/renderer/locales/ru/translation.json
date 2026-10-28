@@ -6895,7 +6895,9 @@
     },
     "atakDrill": "БУРОВОЙ СТАНОК",
     "atakPeople_one": "{{count}} человек",
-    "atakPeople_other": "{{count}} чел."
+    "atakPeople_few": "{{count}} человека",
+    "atakPeople_many": "{{count}} человек",
+    "atakPeople_other": "{{count}} человека"
   },
   "notificationSounds": {
     "title": "Тональность уведомлений",

@@ -6895,7 +6895,9 @@
     },
     "atakDrill": "свердлити",
     "atakPeople_one": "{{count}} особа",
-    "atakPeople_other": "{{count}} чол."
+    "atakPeople_few": "{{count}} особи",
+    "atakPeople_many": "{{count}} осіб",
+    "atakPeople_other": "{{count}} особи"
   },
   "notificationSounds": {
     "title": "Сигнали сповіщень",
