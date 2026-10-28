@@ -460,13 +460,27 @@ const MESHCORE_CONTACT_UPSERT_SQL =
   'last_synced_from_radio = excluded.last_synced_from_radio';
 
 /** Persist many MeshCore contacts in one SQLite transaction (radio sync hot path). */
-export function saveMeshcoreContactsBatch(contacts: MeshcoreContactUpsertParams[]): number {
-  if (contacts.length === 0) return 0;
+export function saveMeshcoreContactsBatch(
+  contacts: MeshcoreContactUpsertParams[],
+  radioSnapshotBefore?: string,
+): number {
+  if (contacts.length === 0 && radioSnapshotBefore === undefined) return 0;
   const d = getDatabase();
   const stmt = d.prepareOnce(MESHCORE_CONTACT_UPSERT_SQL);
   const run = d.transaction(() => {
+    if (radioSnapshotBefore !== undefined) {
+      // Keep contact updates received after the snapshot began; rollback flags with upserts.
+      d.prepareOnce(
+        'UPDATE meshcore_contacts SET on_radio = 0 WHERE last_synced_from_radio IS NULL OR last_synced_from_radio < ?',
+      ).run(radioSnapshotBefore);
+    }
     for (const c of contacts) {
-      stmt.run(c);
+      // Live radio writers omit this timestamp; stamp at the common persistence boundary.
+      const row =
+        c.on_radio === 1 && c.last_synced_from_radio == null
+          ? { ...c, last_synced_from_radio: new Date().toISOString() }
+          : c;
+      stmt.run(row);
     }
   });
   run();

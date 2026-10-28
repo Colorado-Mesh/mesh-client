@@ -37,7 +37,12 @@ function readOrder(key: string): string[] {
 export function useChatOrder(scope: string, items: readonly OrderedChat[]) {
   const key = `mesh-client:chatOrder:${scope}`;
   const [stored, setStored] = useState(() => ({ key, ids: readOrder(key) }));
-  const ids = reconcileChatOrder(items, stored.key === key ? stored.ids : readOrder(key));
+  let current = stored;
+  if (stored.key !== key) {
+    current = { key, ids: readOrder(key) };
+    setStored(current);
+  }
+  const ids = reconcileChatOrder(items, current.ids);
   const save = useCallback(
     (next: readonly string[]) => {
       // Preserve absent ids so a temporary disconnect/filter cannot erase their chosen position.

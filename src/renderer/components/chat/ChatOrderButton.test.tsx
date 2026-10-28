@@ -53,6 +53,18 @@ describe('ChatOrderButton', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+  it('consumes Escape before background chat handlers and leaves their view unchanged', () => {
+    const background = vi.fn();
+    document.addEventListener('keydown', background);
+    try {
+      open();
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Drag Zulu' }), { key: 'Escape' });
+      expect(background).not.toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      document.removeEventListener('keydown', background);
+    }
+  });
   it('has no axe violations and traps focus', async () => {
     open();
     const dialog = screen.getByRole('dialog');

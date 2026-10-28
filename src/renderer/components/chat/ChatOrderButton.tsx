@@ -52,6 +52,7 @@ function ChatOrderDialog({ items, ids, onSave, onClose }: Props & { onClose: () 
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         onClose();
       }
       if (event.key !== 'Tab') return;
@@ -74,9 +75,9 @@ function ChatOrderDialog({ items, ids, onSave, onClose }: Props & { onClose: () 
         first?.focus();
       }
     };
-    document.addEventListener('keydown', handler);
+    window.addEventListener('keydown', handler, true);
     return () => {
-      document.removeEventListener('keydown', handler);
+      window.removeEventListener('keydown', handler, true);
       previous?.focus();
     };
   }, [onClose]);

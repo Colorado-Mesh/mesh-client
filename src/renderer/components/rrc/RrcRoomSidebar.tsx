@@ -114,10 +114,6 @@ export function RrcRoomSidebar({
     ...recent,
   ]).map((name) => ({ id: rrcRoomMatchKey(name), name: displayName(name) }));
   const order = useChatOrder(`reticulum:${orderScope}:rrc`, orderItems);
-  const ranks = new Map(order.ids.map((id, index) => [id, index]));
-  const compare = (a: string, b: string) =>
-    (ranks.get(rrcRoomMatchKey(a)) ?? Infinity) - (ranks.get(rrcRoomMatchKey(b)) ?? Infinity);
-  joinedDeduped.sort((a, b) => compare(a.name, b.name));
 
   const filterName = (name: string) => {
     if (!q) return true;

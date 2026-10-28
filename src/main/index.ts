@@ -6072,27 +6072,38 @@ ipcMain.handle('db:saveMeshcoreContact', (event, contact) => {
   }
 });
 
-ipcMain.handle('db:saveMeshcoreContactsBatch', (event, contacts: unknown) => {
-  if (!validateIpcSender(event))
-    throw new Error('db:saveMeshcoreContactsBatch: unauthorized sender');
-  try {
-    if (!getDbForIpc('db:saveMeshcoreContactsBatch')) return { changes: 0 };
-    if (!Array.isArray(contacts)) {
-      throw new Error('db:saveMeshcoreContactsBatch: contacts must be an array');
-    }
-    const rows: MeshcoreContactUpsertParams[] = [];
-    for (let i = 0; i < contacts.length; i += MESHCORE_CONTACTS_BATCH_MAX) {
-      const slice = contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX);
-      for (const contact of slice) {
-        validateSaveMeshcoreContact(contact);
-        rows.push(meshcoreContactInputToUpsertParams(contact));
+ipcMain.handle(
+  'db:saveMeshcoreContactsBatch',
+  (event, contacts: unknown, radioSnapshotBefore: unknown) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:saveMeshcoreContactsBatch: unauthorized sender');
+    try {
+      if (!getDbForIpc('db:saveMeshcoreContactsBatch')) return { changes: 0 };
+      if (!Array.isArray(contacts)) {
+        throw new Error('db:saveMeshcoreContactsBatch: contacts must be an array');
       }
+      if (
+        radioSnapshotBefore !== undefined &&
+        (typeof radioSnapshotBefore !== 'string' ||
+          !Number.isFinite(Date.parse(radioSnapshotBefore)) ||
+          new Date(radioSnapshotBefore).toISOString() !== radioSnapshotBefore)
+      ) {
+        throw new Error('db:saveMeshcoreContactsBatch: invalid snapshot timestamp');
+      }
+      const rows: MeshcoreContactUpsertParams[] = [];
+      for (let i = 0; i < contacts.length; i += MESHCORE_CONTACTS_BATCH_MAX) {
+        const slice = contacts.slice(i, i + MESHCORE_CONTACTS_BATCH_MAX);
+        for (const contact of slice) {
+          validateSaveMeshcoreContact(contact);
+          rows.push(meshcoreContactInputToUpsertParams(contact));
+        }
+      }
+      return saveMeshcoreContactsBatch(rows, radioSnapshotBefore);
+    } catch (err) {
+      finishDbIpcHandler('db:saveMeshcoreContactsBatch', err);
     }
-    return saveMeshcoreContactsBatch(rows);
-  } catch (err) {
-    finishDbIpcHandler('db:saveMeshcoreContactsBatch', err);
-  }
-});
+  },
+);
 
 ipcMain.handle(
   'db:updateMeshcoreContactRfTransport',

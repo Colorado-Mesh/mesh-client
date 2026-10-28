@@ -805,7 +805,17 @@ export async function disableReticulumRmapDiscovery(
   let applied = 0;
   for (const row of targets) {
     try {
-      await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
+      const reply: unknown = await window.electronAPI.reticulum.proxyPut(
+        `/api/v1/interfaces/${row.id}`,
+        patch,
+      );
+      if (reply && typeof reply === 'object' && 'ok' in reply && reply.ok === false) {
+        throw new Error(
+          'error' in reply && typeof reply.error === 'string'
+            ? reply.error
+            : 'RMAP configuration was not saved',
+        );
+      }
       applied++;
     } catch (e) {
       // catch-no-log-ok partial disable — surfaced via RmapBatchApplyResult.errors

@@ -5364,7 +5364,8 @@
     "lxmfAddressError": {
       "invalid": "오퍼레이터 LXMF 주소는 짝수 길이의 16진수여야 합니다.",
       "tooLong": "운영자 LXMF 주소가 너무 깁니다."
-    }
+    },
+    "existingPublish": "기존 RMAP 게시가 기본 구성에서 활성화되어 있습니다. 중지하려면 위의 RMAP에 게시를 끄십시오."
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",

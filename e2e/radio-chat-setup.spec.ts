@@ -1,12 +1,16 @@
 import { expect, test } from '@playwright/test';
 
+import type { ElectronAPI } from '../src/shared/electron-api.types';
 import { closeApp, launchApp, type LaunchedApp, openPanel, teardownApp } from './electronApp';
 import { startMeshcoreRadio } from './fixtures/meshcore-radio';
 
 let launched: LaunchedApp;
 let radio: Awaited<ReturnType<typeof startMeshcoreRadio>>;
 test.afterEach(async () => {
-  if (launched) await teardownApp(launched);
+  if (launched) {
+    launched.retainUserData = false;
+    await teardownApp(launched);
+  }
   if (radio) await radio.close();
 });
 
@@ -70,6 +74,32 @@ test('fresh opt-in defaults, radio import/sync, drag/A–Z and restart persisten
   await expect(
     page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
   ).toBeVisible();
+
+  // A complete snapshot clears stale on-radio flags without deleting stored rooms.
+  radio.setChats(['Zulu', 'Alpha', 'Beta', 'Delta'], ['Zulu Room', 'Delta Room']);
+  await page.getByRole('button', { name: 'Sync chats from radio', exact: true }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
+  ).toBeVisible();
+  await expect
+    .poll(async () =>
+      page.evaluate(async () => {
+        const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;
+        const contacts = (await api.db.getMeshcoreContacts()) as {
+          adv_name: string;
+          on_radio: number;
+        }[];
+        return contacts
+          .filter((contact) => contact.adv_name.endsWith('Room'))
+          .map((contact) => [contact.adv_name, contact.on_radio])
+          .sort();
+      }),
+    )
+    .toEqual([
+      ['Alpha Room', 0],
+      ['Delta Room', 1],
+      ['Zulu Room', 1],
+    ]);
 
   await openPanel(page, 'Chat', 'Rooms');
   await expect(page.getByRole('button', { name: /Delta Room/ }).first()).toBeVisible();
@@ -147,6 +177,7 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
       )
       .toEqual(desired);
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Order chats' }).last()).toBeEnabled();
   }
   await app.evaluate(({ BrowserWindow }) => {
     const win = BrowserWindow.getAllWindows()[0];

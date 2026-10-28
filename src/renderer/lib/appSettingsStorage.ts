@@ -79,13 +79,17 @@ export function getDistanceUnit(): 'miles' | 'km' {
   return parsed?.distanceUnit === 'km' ? 'km' : DEFAULT_APP_SETTINGS_SHARED.distanceUnit;
 }
 
-/** Whether mesh-client may look up host GPS and send the user's location on any protocol. */
-export function isShareMyLocationEnabled(): boolean {
+/** Persisted app choice; absence stays distinct when preserving native configuration. */
+export function getShareMyLocationPreference(): boolean | undefined {
   const parsed = parseStoredJson<{ shareMyLocation?: unknown }>(
     getAppSettingsRaw(),
     'isShareMyLocationEnabled',
   );
-  return parsed?.shareMyLocation === true;
+  return typeof parsed?.shareMyLocation === 'boolean' ? parsed.shareMyLocation : undefined;
+}
+
+export function isShareMyLocationEnabled(): boolean {
+  return getShareMyLocationPreference() === true;
 }
 
 /** Whether chat location share also sends a Meshtastic Waypoint packet. */

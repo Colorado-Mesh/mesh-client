@@ -5364,7 +5364,8 @@
     "lxmfAddressError": {
       "invalid": "Operatör LXMF adresi çift uzunlukta onaltılık olmalıdır.",
       "tooLong": "Operatör LXMF adresi çok uzun."
-    }
+    },
+    "existingPublish": "Mevcut RMAP yayınlama yerel yapılandırmada etkinleştirildi. Durdurmak için yukarıdaki RMAP'te Yayınla'yı kapatın."
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",

@@ -6134,7 +6134,8 @@
     "lxmfAddressError": {
       "invalid": "Operator LXMF address must be even-length hex.",
       "tooLong": "Operator LXMF address is too long."
-    }
+    },
+    "existingPublish": "Existing RMAP publishing is enabled in the native configuration. Turn off Publish on RMAP above to stop it."
   },
   "reticulumTopology": {
     "title": "Network topology",

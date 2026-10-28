@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { reconcileChatOrder, useChatOrder } from './useChatOrder';
 
@@ -49,6 +49,25 @@ describe('chat display order', () => {
     expect(result.current.ids).toEqual(['2', '1', '3']);
     rerender({ scope: 'reticulum:42:dms' });
     expect(result.current.ids).toEqual(['2', '1', '3']);
+  });
+  it('reads a new scope once and keeps later renders in memory', () => {
+    const get = vi.spyOn(localStorage, 'getItem');
+    try {
+      const { result, rerender } = renderHook(({ scope }) => useChatOrder(scope, items), {
+        initialProps: { scope: 'before' },
+      });
+      rerender({ scope: 'after' });
+      const reads = get.mock.calls.filter(([key]) => key === 'mesh-client:chatOrder:after').length;
+      rerender({ scope: 'after' });
+      rerender({ scope: 'after' });
+      expect(get.mock.calls.filter(([key]) => key === 'mesh-client:chatOrder:after')).toHaveLength(
+        reads,
+      );
+      expect(reads).toBe(1);
+      expect(result.current.ids).toEqual(['2', '1', '3']);
+    } finally {
+      get.mockRestore();
+    }
   });
   it('preserves absent entries in their prior slots while reordering visible entries', () => {
     localStorage.setItem('mesh-client:chatOrder:test', JSON.stringify(['2', '1', '3']));
