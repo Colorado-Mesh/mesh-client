@@ -285,7 +285,10 @@ describe('ReticulumRmapDiscoveryControls', () => {
       const toggle = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
       if (consent === false) {
         await waitFor(() => {
-          expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
+          expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+            '/api/v1/interfaces/rnode-1',
+            expect.objectContaining({ discoverable: false }),
+          );
         });
         await waitFor(() => {
           expect(toggle).not.toBeChecked();
@@ -385,7 +388,10 @@ describe('ReticulumRmapDiscoveryControls', () => {
     window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/interfaces/rnode-1',
+        expect.objectContaining({ discoverable: false }),
+      );
     });
     await waitFor(() => {
       expect(screen.getByLabelText('reticulumRmapDiscovery.publishToggle')).not.toBeChecked();
