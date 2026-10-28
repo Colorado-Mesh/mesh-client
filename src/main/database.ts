@@ -464,23 +464,18 @@ export function saveMeshcoreContactsBatch(
   contacts: MeshcoreContactUpsertParams[],
   radioSnapshotBefore?: string,
 ): number {
-  if (contacts.length === 0 && radioSnapshotBefore === undefined) return 0;
+  if (contacts.length === 0 && !radioSnapshotBefore) return 0;
   const d = getDatabase();
   const stmt = d.prepareOnce(MESHCORE_CONTACT_UPSERT_SQL);
   const run = d.transaction(() => {
-    if (radioSnapshotBefore !== undefined) {
+    if (radioSnapshotBefore) {
       // Keep contact updates received after the snapshot began; rollback flags with upserts.
       d.prepareOnce(
-        'UPDATE meshcore_contacts SET on_radio = 0 WHERE last_synced_from_radio IS NULL OR last_synced_from_radio < ?',
+        "UPDATE meshcore_contacts SET on_radio=0 WHERE ifnull(last_synced_from_radio,'')<?",
       ).run(radioSnapshotBefore);
     }
     for (const c of contacts) {
-      // Live radio writers omit this timestamp; stamp at the common persistence boundary.
-      const row =
-        c.on_radio === 1 && c.last_synced_from_radio == null
-          ? { ...c, last_synced_from_radio: new Date().toISOString() }
-          : c;
-      stmt.run(row);
+      stmt.run(c);
     }
   });
   run();
