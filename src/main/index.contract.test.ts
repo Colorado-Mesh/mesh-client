@@ -1025,6 +1025,16 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain('function stopPowerSaveBlocker(): void');
     expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker start failed:'");
     expect(INDEX_SOURCE).toContain("'[main] powerSaveBlocker stop failed:'");
+    expect(INDEX_SOURCE).toContain('shouldHoldPowerSaveBlocker(');
+    expect(INDEX_SOURCE).toContain('meshtasticConnectionType');
+    expect(INDEX_SOURCE).toContain('meshcoreConnectionType');
+    expect(INDEX_SOURCE).toContain('isAnyMqttConnected()');
+    expect(INDEX_SOURCE).toContain('isReticulumSidecarRunning()');
+    expect(INDEX_SOURCE).toContain('reticulumConfigDirHasEnabledLocalRadio');
+    expect(INDEX_SOURCE).toContain(
+      'if (key === PREVENT_SLEEP_SETTING_KEY) syncPowerSaveBlocker();',
+    );
+    expect(INDEX_SOURCE).toContain("'preventSleepWhileConnected'");
   });
 
   it('logs native IPC helper failures locally before fallback or rejection', () => {
@@ -1122,6 +1132,9 @@ describe('Native Electron call guards (source contract)', () => {
     );
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.on\('device-connected'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.on\('device-connected'[\s\S]*?normalizePowerSaveLinkType\(connectionType\)/,
     );
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.on\('device-disconnected'[\s\S]*?validateIpcSender\(event\)/,

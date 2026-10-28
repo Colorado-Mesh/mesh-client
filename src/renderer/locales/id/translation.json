@@ -513,7 +513,14 @@
     "coiNo": "tidak",
     "coiTimingFine": "baik (~5 µs)",
     "coiTimingCoarse": "kasar (~100 µs)",
-    "shareMyLocationOffStaticActive": "Berbagi lokasi tidak aktif — penyegaran otomatis GPS tuan rumah dan pengiriman jala dinonaktifkan. Lokasi tersimpan aktif Anda (dan GPS radio bila tersedia) masih digunakan secara lokal untuk filter peta dan jarak."
+    "shareMyLocationOffStaticActive": "Berbagi lokasi tidak aktif — penyegaran otomatis GPS tuan rumah dan pengiriman jala dinonaktifkan. Lokasi tersimpan aktif Anda (dan GPS radio bila tersedia) masih digunakan secara lokal untuk filter peta dan jarak.",
+    "preventSleep": "Jaga agar komputer tetap terjaga saat terhubung",
+    "preventSleepAria": "Jaga agar komputer tetap terjaga saat terhubung",
+    "preventSleepHint": "Tautan radio saja (default) menahan pemblokir untuk Bluetooth atau radio USB Meshtastic/MeshCore dan untuk Reticulum ketika antarmuka BLE atau serial RNode/KISS diaktifkan. TCP/Wi-Fi pendamping, MQTT, dan hanya jaringan Reticulum yang terhubung kembali setelah bangun tidur dan tidak membutuhkannya. Koneksi apa pun cocok dengan perilaku selalu aktif sebelumnya. Jangan biarkan sistem tidur bahkan dengan sambungan radio. Pada Linux, penghambatan Electron juga menghentikan layar agar tidak tidur saat pemblokir ditahan — pilih Jangan pernah jika monitor harus kosong.",
+    "preventSleepOptionRf": "Tautan radio saja (Bluetooth atau USB)",
+    "preventSleepOptionAlways": "Koneksi apa saja",
+    "preventSleepOptionOff": "Tidak pernah",
+    "preventSleepSaveFailed": "Tidak dapat menyimpan pengaturan keep - wake."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

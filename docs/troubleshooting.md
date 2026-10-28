@@ -632,6 +632,29 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 
 **Reticulum (all platforms):** On suspend, `onPowerSuspend` clears in-memory rnsh sessions and rncp transfers. On resume, `onPowerResume` restarts the sidecar via `connect()` unless the user disconnected.
 
+### Keeping the computer awake (power save)
+
+**App → Window → Keep computer awake while connected** controls when mesh-client holds Electron’s `prevent-app-suspension` blocker:
+
+| Mode                          | Behaviour                                                                                                                                                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Radio link only** (default) | Hold only while a Meshtastic/MeshCore link is live over Bluetooth or USB serial, or while the Reticulum sidecar is running with an enabled BLE RNode or serial RNode/KISS interface in config. TCP/Wi-Fi companions, MQTT, and network-only Reticulum do **not** hold it (wake recovery reconnects them — see above). |
+| **Any connection**            | Hold for any radio, MQTT, or Reticulum sidecar (previous always-on behaviour).                                                                                                                                                                                                                                        |
+| **Never**                     | Never hold the blocker.                                                                                                                                                                                                                                                                                               |
+
+**Linux display caveat:** On Linux, Chromium’s freedesktop PowerManagement inhibit also disables DPMS / screen blanking for many power managers (XFCE, KDE). If monitors must sleep while a BLE/USB radio is connected, choose **Never**. There is no Electron API for “block suspend only.”
+
+**Verify (Linux):**
+
+```bash
+gdbus call --session --dest org.freedesktop.PowerManagement \
+  --object-path /org/freedesktop/PowerManagement/Inhibit \
+  --method org.freedesktop.PowerManagement.Inhibit.GetInhibitors
+xset q | grep -A2 DPMS
+```
+
+Support log line: `[main] power-save policy: <mode> hold|release`.
+
 ### Long-running sessions (multi-day uptime)
 
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):

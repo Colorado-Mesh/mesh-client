@@ -513,7 +513,14 @@
     "coiNo": "non=",
     "coiTimingFine": "fin (~5 µs)",
     "coiTimingCoarse": "grossier (~100 µs)",
-    "shareMyLocationOffStaticActive": "Le partage de localisation est désactivé — l'actualisation automatique du GPS de l'hôte et l'envoi maillé sont désactivés. Votre position enregistrée active (et le GPS radio lorsqu'il est disponible) sont toujours utilisés localement pour les filtres de carte et de distance."
+    "shareMyLocationOffStaticActive": "Le partage de localisation est désactivé — l'actualisation automatique du GPS de l'hôte et l'envoi maillé sont désactivés. Votre position enregistrée active (et le GPS radio lorsqu'il est disponible) sont toujours utilisés localement pour les filtres de carte et de distance.",
+    "preventSleep": "Garder l'ordinateur éveillé pendant la connexion",
+    "preventSleepAria": "Garder l'ordinateur éveillé pendant la connexion",
+    "preventSleepHint": "La liaison radio uniquement (par défaut) maintient le bloqueur pour les radios Bluetooth ou USB Meshtastic/MeshCore et pour Reticulum lorsqu'une interface BLE ou série RNode/KISS est activée. TCP/Wi-Fi compagnons, MQTT et Reticulum réseau seul se reconnectent après le réveil et n'en ont pas besoin. Toute connexion correspond au comportement permanent précédent. Ne laissez jamais le système en veille même avec une liaison radio. Sur Linux, l'inhibition d'Electron empêche également l'écran de dormir lorsque le bloqueur est maintenu enfoncé — choisissez Jamais si les moniteurs doivent être vides.",
+    "preventSleepOptionRf": "Liaison radio uniquement (Bluetooth ou USB)",
+    "preventSleepOptionAlways": "Toute connexion",
+    "preventSleepOptionOff": "Jamais",
+    "preventSleepSaveFailed": "Impossible d'enregistrer le paramètre de veille prolongée."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

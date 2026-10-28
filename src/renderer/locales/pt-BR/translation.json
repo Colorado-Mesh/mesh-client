@@ -513,7 +513,14 @@
     "coiNo": "não",
     "coiTimingFine": "fino (~5 µs)",
     "coiTimingCoarse": "grosso (~100 µs)",
-    "shareMyLocationOffStaticActive": "O compartilhamento de localização está desativado — a atualização automática do GPS do anfitrião e o envio de malha estão desativados. Sua localização salva ativa (e GPS de rádio, quando disponível) ainda são usados localmente para os filtros de mapa e distância."
+    "shareMyLocationOffStaticActive": "O compartilhamento de localização está desativado — a atualização automática do GPS do anfitrião e o envio de malha estão desativados. Sua localização salva ativa (e GPS de rádio, quando disponível) ainda são usados localmente para os filtros de mapa e distância.",
+    "preventSleep": "Mantenha o computador acordado enquanto estiver conectado",
+    "preventSleepAria": "Mantenha o computador acordado enquanto estiver conectado",
+    "preventSleepHint": "Apenas o link de rádio (padrão) retém o bloqueador para rádios Bluetooth ou USB Meshtastic/MeshCore e para Reticulum quando uma interface BLE ou RNode/KISS serial está ativada. TCP/Wi-Fi companheiros, MQTT e Reticulum apenas de rede se reconectam após o despertar e não precisam disso. Qualquer conexão corresponde ao comportamento sempre ligado anterior. Nunca permite que o sistema durma mesmo com um link de rádio. Em Linux, a inibição do Electron também interrompe a suspensão do visor quando o bloqueador é mantido — escolha Nunca se os monitores precisarem ficar em branco.",
+    "preventSleepOptionRf": "Apenas link de rádio (Bluetooth ou USB)",
+    "preventSleepOptionAlways": "Qualquer conexão:",
+    "preventSleepOptionOff": "Nunca",
+    "preventSleepSaveFailed": "Não foi possível salvar a configuração de manter acordado."
   },
   "aria": {
     "closeDialog": "Fechar janela",

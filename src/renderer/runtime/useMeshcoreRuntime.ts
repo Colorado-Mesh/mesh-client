@@ -8631,10 +8631,18 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     const active = ['connected', 'configured', 'stale', 'reconnecting'].includes(state.status);
-    if (active) window.electronAPI.notifyDeviceConnected('meshcore');
+    if (active) window.electronAPI.notifyDeviceConnected('meshcore', state.connectionType);
     else if (state.status === 'disconnected')
       window.electronAPI.notifyDeviceDisconnected('meshcore');
-  }, [state.status]);
+  }, [state.status, state.connectionType]);
+
+  // Clear main's connection flag if this runtime unmounts while still "live"
+  // (e.g. protocol disabled); status-driven notifyDeviceDisconnected alone would not run.
+  useEffect(() => {
+    return () => {
+      window.electronAPI.notifyDeviceDisconnected('meshcore');
+    };
+  }, []);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
     (params: {

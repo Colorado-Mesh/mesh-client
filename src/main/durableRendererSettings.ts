@@ -1,3 +1,4 @@
+import { PREVENT_SLEEP_SETTING_KEY } from '../shared/powerSavePolicy';
 import {
   DURABLE_RENDERER_SETTING_MAX_LENGTH,
   DURABLE_RENDERER_STORAGE_KEYS,
@@ -68,6 +69,10 @@ export function seedDurableRendererSettings(
     ]) {
       if (typeof appPreferences?.[key] === 'boolean')
         insert.run(key, appPreferences[key] ? '1' : '0');
+    }
+    const legacyPreventSleep = appPreferences?.preventSleepWhileConnected;
+    if (typeof legacyPreventSleep === 'string') {
+      insert.run(PREVENT_SLEEP_SETTING_KEY, legacyPreventSleep);
     }
     for (const [legacyKey, databaseKey] of DURABLE_RENDERER_STORAGE_MIGRATIONS) {
       const value =

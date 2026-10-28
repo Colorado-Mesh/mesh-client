@@ -513,7 +513,14 @@
     "coiNo": "no",
     "coiTimingFine": "fino (~5 µs)",
     "coiTimingCoarse": "grueso (~100 µs)",
-    "shareMyLocationOffStaticActive": "El uso compartido de la ubicación está desactivado: la actualización automática del GPS del host y el envío en malla están desactivados. Tu ubicación guardada activa (y el GPS de radio cuando esté disponible) todavía se utilizan localmente para los filtros de mapa y distancia."
+    "shareMyLocationOffStaticActive": "El uso compartido de la ubicación está desactivado: la actualización automática del GPS del host y el envío en malla están desactivados. Tu ubicación guardada activa (y el GPS de radio cuando esté disponible) todavía se utilizan localmente para los filtros de mapa y distancia.",
+    "preventSleep": "Mantenga el ordenador despierto mientras está conectado",
+    "preventSleepAria": "Mantenga el ordenador despierto mientras está conectado",
+    "preventSleepHint": "Solo el enlace de radio (predeterminado) contiene el bloqueador para Bluetooth o USB Meshtastic/MeshCore radios y para Reticulum cuando está habilitada una interfaz BLE o RNode/KISS en serie. TCP/Wi-Fi companions, MQTT y Reticulum, solo en red, se vuelven a conectar después de despertar y no lo necesitan. Cualquier conexión coincide con el comportamiento anterior siempre activo. Nunca deje el sistema en reposo, incluso con un enlace de radio. En Linux, la inhibición de Electron también impide que la pantalla se duerma cuando se mantiene presionado el bloqueador; elija Nunca si los monitores deben estar en blanco.",
+    "preventSleepOptionRf": "Solo enlace de radio (Bluetooth o USB)",
+    "preventSleepOptionAlways": "¿Alguna conexión?",
+    "preventSleepOptionOff": "Nunca",
+    "preventSleepSaveFailed": "No se ha podido guardar la configuración de mantenerse despierto."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

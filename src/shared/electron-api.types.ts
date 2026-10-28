@@ -1216,7 +1216,11 @@ export interface ElectronAPI {
   };
 
   // ─── Connection status ───────────────────────────────────────────────────────
-  notifyDeviceConnected: (source?: 'meshtastic' | 'meshcore') => void;
+  /** `connectionType` is the renderer's ConnectionType (ble/serial/tcp/http) when known. */
+  notifyDeviceConnected: (
+    source?: 'meshtastic' | 'meshcore',
+    connectionType?: string | null,
+  ) => void;
   notifyDeviceDisconnected: (source?: 'meshtastic' | 'meshcore') => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;

@@ -513,7 +513,14 @@
     "coiNo": "아니오",
     "coiTimingFine": "미세 (~ 5 µs)",
     "coiTimingCoarse": "거친 (~ 100 µs)",
-    "shareMyLocationOffStaticActive": "위치 공유가 꺼져 있음 — 호스트 GPS 자동 새로 고침 및 메시 전송이 비활성화되었습니다. 활성 저장 위치 (및 사용 가능한 경우 무선 GPS) 는 여전히 지도 및 거리 필터에 로컬로 사용됩니다."
+    "shareMyLocationOffStaticActive": "위치 공유가 꺼져 있음 — 호스트 GPS 자동 새로 고침 및 메시 전송이 비활성화되었습니다. 활성 저장 위치 (및 사용 가능한 경우 무선 GPS) 는 여전히 지도 및 거리 필터에 로컬로 사용됩니다.",
+    "preventSleep": "연결되어 있는 동안 컴퓨터를 깨우십시오",
+    "preventSleepAria": "연결되어 있는 동안 컴퓨터를 깨우십시오",
+    "preventSleepHint": "라디오 링크만 (기본값) 은 블루투스 또는 USB Meshtastic/MeshCore 라디오에 대한 차단을 유지하고 BLE 또는 직렬 RNode/KISS 인터페이스가 활성화된 경우 Reticulum 에 대한 차단을 유지합니다. TCP/Wi-Fi COMPANIONS, MQTT 및 네트워크 전용 Reticulum 기상 후 다시 연결하면 필요하지 않습니다. 모든 연결이 이전의 상시 연결 동작과 일치합니다. 라디오 링크가 있어도 시스템을 절전 모드로 전환하지 마십시오. Linux 에서 Electron's inhibit는 차단기가 고정되어 있을 때 디스플레이가 절전 상태가 되지 않도록 합니다. 모니터가 비어 있어야 하는 경우 Never를 선택합니다.",
+    "preventSleepOptionRf": "라디오 링크만 (블루투스 또는 USB)",
+    "preventSleepOptionAlways": "모든 연결",
+    "preventSleepOptionOff": "절대",
+    "preventSleepSaveFailed": "킵 어웨이크 설정을 저장할 수 없습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

@@ -521,7 +521,14 @@
     "coiNo": "no",
     "coiTimingFine": "jemný (~5 µs)",
     "coiTimingCoarse": "hrubá (~100 µs)",
-    "shareMyLocationOffStaticActive": "Sdílení polohy je vypnuto — automatické obnovení GPS hostitele a odesílání sítě jsou zakázány. Vaše aktivní uložená poloha (a rádiová GPS, pokud je k dispozici) se stále používá místně pro mapy a filtry vzdálenosti."
+    "shareMyLocationOffStaticActive": "Sdílení polohy je vypnuto — automatické obnovení GPS hostitele a odesílání sítě jsou zakázány. Vaše aktivní uložená poloha (a rádiová GPS, pokud je k dispozici) se stále používá místně pro mapy a filtry vzdálenosti.",
+    "preventSleep": "Udržujte počítač během připojení v bdělém stavu",
+    "preventSleepAria": "Udržujte počítač během připojení v bdělém stavu",
+    "preventSleepHint": "Pouze rádiové spojení (výchozí) obsahuje blokátor pro Bluetooth nebo USB __ Meshtastic/MeshCore a pro Reticulum, pokud je povoleno rozhraní BLE nebo sériové RNode/KISS. TCP/Wi-Fi společníci, MQTT a pouze síť Reticulum se po probuzení znovu připojí a nepotřebují to. Jakékoli spojení odpovídá předchozímu vždy zapnutému chování. Nikdy nenechá systém spát ani s rádiovým spojením. Na Linux elektronová inhibice také zastaví zobrazení před spaním, když je blokátor podržen — zvolte Nikdy, pokud monitory musí být prázdné.",
+    "preventSleepOptionRf": "Pouze rádiové spojení (Bluetooth nebo USB)",
+    "preventSleepOptionAlways": "Jakékoli spojení",
+    "preventSleepOptionOff": "Nikdy",
+    "preventSleepSaveFailed": "Nastavení udržování bdělosti se nepodařilo uložit."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

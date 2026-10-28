@@ -513,7 +513,14 @@
     "coiNo": "なし",
     "coiTimingFine": "細かい（〜5 µ s ）",
     "coiTimingCoarse": "粗い（〜100 µ s ）",
-    "shareMyLocationOffStaticActive": "位置情報の共有がオフになっています。ホストのGPS自動更新とメッシュ送信は無効になっています。アクティブな保存済みの位置情報（および利用可能な場合は無線GPS ）は、地図と距離のフィルタにローカルで引き続き使用されます。"
+    "shareMyLocationOffStaticActive": "位置情報の共有がオフになっています。ホストのGPS自動更新とメッシュ送信は無効になっています。アクティブな保存済みの位置情報（および利用可能な場合は無線GPS ）は、地図と距離のフィルタにローカルで引き続き使用されます。",
+    "preventSleep": "接続中はコンピュータをスリープ状態に保つ",
+    "preventSleepAria": "接続中はコンピュータをスリープ状態に保つ",
+    "preventSleepHint": "無線リンクのみ（デフォルト）は、BLEまたはシリアルRNode/KISSインターフェースが有効になっている場合、BluetoothまたはUSB Meshtastic/MeshCore無線およびReticulumのブロッカーを保持します。TCP/Wi-Fi同伴者、MQTT、ネットワークのみのReticulumはウェイク後に再接続しますが、必要ありません。すべての接続は、以前の常時オンの動作と一致します。無線リンクを使用しても、システムをスリープ状態にしないでください。Linuxで、Electronの阻害は、ブロッカーが保持されているときにディスプレイのスリープ状態を停止します。モニターを空白にする必要がある場合は、Neverを選択します。",
+    "preventSleepOptionRf": "無線リンクのみ（ BluetoothまたはUSB ）",
+    "preventSleepOptionAlways": "任意の接続",
+    "preventSleepOptionOff": "まったく行わない",
+    "preventSleepSaveFailed": "キープアウェイク設定を保存できませんでした。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

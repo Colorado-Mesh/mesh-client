@@ -513,7 +513,14 @@
     "coiNo": "no",
     "coiTimingFine": "fine (~5 µs)",
     "coiTimingCoarse": "grossolana (~100 µs)",
-    "shareMyLocationOffStaticActive": "La condivisione della posizione è disattivata: l'aggiornamento automatico del GPS dell'host e l'invio di mesh sono disabilitati. La tua posizione salvata attiva (e il GPS radio quando disponibile) sono ancora utilizzati localmente per i filtri mappa e distanza."
+    "shareMyLocationOffStaticActive": "La condivisione della posizione è disattivata: l'aggiornamento automatico del GPS dell'host e l'invio di mesh sono disabilitati. La tua posizione salvata attiva (e il GPS radio quando disponibile) sono ancora utilizzati localmente per i filtri mappa e distanza.",
+    "preventSleep": "Tieni il computer sveglio mentre sei connesso",
+    "preventSleepAria": "Tieni il computer sveglio mentre sei connesso",
+    "preventSleepHint": "Solo il collegamento radio (impostazione predefinita) contiene il blocco per le radio Bluetooth o USB Meshtastic/MeshCore e per Reticulum quando è abilitata un'interfaccia BLE o seriale RNode/KISS. TCP/Wi-Fi companions, MQTT e Reticulum solo rete si riconnettono dopo la veglia e non ne hanno bisogno. Qualsiasi connessione corrisponde al precedente comportamento sempre attivo. Non lascia mai il sistema in standby anche con un collegamento radio. Su Linux, l'inibizione di Electron impedisce anche al display di dormire quando il bloccante viene tenuto premuto: scegli Mai se i monitor devono essere vuoti.",
+    "preventSleepOptionRf": "Solo collegamento radio (Bluetooth o USB)",
+    "preventSleepOptionAlways": "Qualsiasi connessione",
+    "preventSleepOptionOff": "Mai",
+    "preventSleepSaveFailed": "Impossibile salvare l'impostazione keep-awake."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

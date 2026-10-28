@@ -529,7 +529,14 @@
     "coiNo": "nie",
     "coiTimingFine": "drobny (~5 µs)",
     "coiTimingCoarse": "gruboziarnisty (~100 µs)",
-    "shareMyLocationOffStaticActive": "Udostępnianie lokalizacji jest wyłączone — automatyczne odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Twoja aktywna zapisana lokalizacja (i radiowy GPS, jeśli jest dostępny) są nadal używane lokalnie do filtrowania mapy i odległości."
+    "shareMyLocationOffStaticActive": "Udostępnianie lokalizacji jest wyłączone — automatyczne odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Twoja aktywna zapisana lokalizacja (i radiowy GPS, jeśli jest dostępny) są nadal używane lokalnie do filtrowania mapy i odległości.",
+    "preventSleep": "Nie wyłączaj komputera podczas połączenia",
+    "preventSleepAria": "Nie wyłączaj komputera podczas połączenia",
+    "preventSleepHint": "Tylko łącze radiowe (domyślnie) zawiera blokadę dla radiotelefonów Bluetooth lub USB Meshtastic/MeshCore oraz dla Reticulum, gdy włączony jest interfejs BLE lub szeregowy RNode/KISS. TCP/Wi-Fi towarzysze, MQTT i tylko sieć Reticulum łączą się ponownie po przebudzeniu i nie potrzebują tego. Każde połączenie jest zgodne z poprzednim zachowaniem „zawsze włączone”. Nigdy nie pozwala systemowi spać nawet za pomocą łącza radiowego. W Linux blokada elektronu zatrzymuje również wyświetlacz, gdy blokada jest przytrzymywana — wybierz Nigdy, jeśli monitory muszą zgasnąć.",
+    "preventSleepOptionRf": "Tylko łącze radiowe (Bluetooth lub USB)",
+    "preventSleepOptionAlways": "- Jakiś związek?",
+    "preventSleepOptionOff": "Nigdy",
+    "preventSleepSaveFailed": "Nie można zapisać ustawienia podtrzymywania aktywności."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

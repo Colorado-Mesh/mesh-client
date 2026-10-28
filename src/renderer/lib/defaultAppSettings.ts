@@ -89,6 +89,13 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    * system tray instead of minimizing (or quitting) — the app keeps running.
    */
   closeToTray: true,
+  /**
+   * Keep the computer awake while connected (`off` | `rf` | `always`).
+   * `rf` (default): only a BLE or USB-serial radio link (or Reticulum local radio)
+   * holds the blocker; TCP/HTTP, MQTT and network-only Reticulum do not
+   * (they reconnect after wake).
+   */
+  preventSleepWhileConnected: 'rf' as 'off' | 'rf' | 'always',
   /** Retry failed LXMF messages to a peer when that peer announces. */
   reticulumAutoResendOnAnnounce: false,
   /**
