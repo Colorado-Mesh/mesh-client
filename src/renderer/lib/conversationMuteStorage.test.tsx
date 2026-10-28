@@ -19,11 +19,12 @@ import {
   clearMeshcorePubKeyRegistry,
   registerMeshcorePubKey,
 } from './meshcore/meshcorePubKeyRegistry';
-import { pubkeyToNodeId } from './meshcoreUtils';
+import { meshcoreContactToMeshNode, pubkeyToNodeId } from './meshcoreUtils';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import { reticulumProtocol } from './protocols/ReticulumProtocol';
 import { isRrcRoomMuted } from './rrcMention';
+import { meshNodeToNodeRecord } from './storeRecordAdapters';
 
 function device(signature = 'aa' + '00'.repeat(31), slot = 0, key = 'channel-a') {
   useIdentityStore.setState({
@@ -203,6 +204,28 @@ describe('stable conversation mutes', () => {
     expect(toggle('dm:5')).toBe(true);
     expect(toggle('ch:0')).toBe(false);
     expect(loadMutedViews('meshcore')).toEqual(new Set(['room:192', 'dm:5']));
+  });
+
+  it('retains a live contact full key after RF disconnect clears the transport registry', () => {
+    device();
+    const publicKey = new Uint8Array(32);
+    publicKey[0] = 194;
+    const node = meshcoreContactToMeshNode({
+      publicKey,
+      type: 1,
+      advName: 'QA Peer',
+      lastAdvert: 100,
+      advLat: 0,
+      advLon: 0,
+    });
+    useNodeStore.setState({ nodes: { radio: { 194: meshNodeToNodeRecord(node) } } });
+    registerMeshcorePubKey(194, publicKey);
+    expect(toggle('dm:194')).toBe(true);
+    clearMeshcorePubKeyRegistry();
+    setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+    setConversationMuteMqttClientId('meshcore', 'meshcore-mqtt-' + 'a'.repeat(16));
+    expect(toggle('dm:194')).toBe(true);
+    expect(loadMutedViews('meshcore')).toEqual(new Set(['dm:194']));
   });
 
   it('refuses MQTT migration while a separate primary RF identity is connecting', () => {
