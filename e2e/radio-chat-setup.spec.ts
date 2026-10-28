@@ -14,6 +14,30 @@ test.afterEach(async () => {
   if (radio) await radio.close();
 });
 
+async function resizeChatWindow({ app, page }: LaunchedApp, width: number, height: number) {
+  await app.evaluate(
+    ({ BrowserWindow }, size) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      if (!win) throw new Error('Missing app window');
+      win.setMinimumSize(320, 600);
+      win.setContentSize(size.width, size.height);
+    },
+    { width, height },
+  );
+  await expect
+    .poll(async () => {
+      const actual = await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()[0].getContentSize(),
+      );
+      return page.evaluate(
+        ([width, height]) => innerWidth === width && innerHeight === height,
+        actual,
+      );
+    })
+    .toBe(true);
+  await expect.poll(() => page.evaluate(() => innerWidth)).toBe(width);
+}
+
 test('fresh opt-in defaults, radio import/sync, drag/A–Z and restart persistence', async () => {
   test.setTimeout(120_000);
   radio = await startMeshcoreRadio();
@@ -137,20 +161,13 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
   const testInfo = test.info();
   test.setTimeout(120_000);
   launched = await launchApp();
-  const { page, app } = launched;
+  const { page } = launched;
   for (const name of ['Meshtastic', 'MeshCore', 'Reticulum']) {
-    await app.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows()[0];
-      win?.setContentSize(1280, 900);
-    });
+    await resizeChatWindow(launched, 1280, 900);
     await page.getByRole('radio', { name: `Switch to ${name}` }).click();
     await openPanel(page, 'Chat');
     for (const width of [1024, 768, 390]) {
-      await app.evaluate(({ BrowserWindow }, width) => {
-        const win = BrowserWindow.getAllWindows()[0];
-        win?.setMinimumSize(360, 600);
-        win?.setContentSize(width, 844);
-      }, width);
+      await resizeChatWindow(launched, width, 844);
       await expect(page.getByText('DMs', { exact: true })).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -174,10 +191,7 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
   });
   await page.reload();
   for (const name of ['Meshtastic', 'MeshCore', 'Reticulum']) {
-    await app.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows()[0];
-      win?.setContentSize(1280, 900);
-    });
+    await resizeChatWindow(launched, 1280, 900);
     await page.getByRole('radio', { name: `Switch to ${name}` }).click();
     await openPanel(page, 'Chat');
     await expect(page.getByText('DMs', { exact: true })).toHaveCount(0);
@@ -217,12 +231,23 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
       .toEqual(desired);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Order chats' }).last()).toBeEnabled();
-    for (const width of [768, 390]) {
-      await app.evaluate(({ BrowserWindow }, width) => {
-        const win = BrowserWindow.getAllWindows()[0];
-        win?.setMinimumSize(360, 600);
-        win?.setContentSize(width, 844);
-      }, width);
+    for (const [width, height] of [
+      [768, 844],
+      [390, 844],
+      [390, 645],
+    ]) {
+      await resizeChatWindow(launched, width, height);
+      if (height === 645) {
+        await expect.poll(() => page.evaluate(() => innerHeight)).toBe(645);
+        await expect
+          .poll(() => page.getByTestId('chat-conversation-row').evaluate((row) => row.clientHeight))
+          .toBeGreaterThan(0);
+      }
+      if (height === 645 && name !== 'Reticulum') {
+        await expect(
+          page.getByRole('button', { name: 'Dismiss location prompt for this session' }),
+        ).toBeVisible();
+      }
       await expect(orderButton).toBeVisible();
       await orderButton.click();
       await expect(page.getByRole('dialog').locator('li')).toHaveCount(3);
@@ -305,7 +330,7 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
   const channels = Array.from({ length: 24 }, (_, index) => `Channel ${index + 1}`);
   radio.setChats(channels, ['Test Room']);
   launched = await launchApp();
-  const { page, app } = launched;
+  const { page } = launched;
   await page.getByRole('radio', { name: 'Switch to MeshCore' }).click();
   const sync = page.locator('header').getByRole('button', { name: 'Sync chats from radio' });
   await expect(sync).toBeDisabled();
@@ -350,13 +375,22 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
   ).toBeChecked();
   await openPanel(page, 'Chat');
   await page.getByRole('combobox', { name: 'Summary range' }).selectOption('custom');
-  for (const width of [1440, 1024, 768, 390, 360]) {
-    await app.evaluate(({ BrowserWindow }, size) => {
-      const win = BrowserWindow.getAllWindows()[0];
-      win?.setMinimumSize(320, 600);
-      win?.setContentSize(size, 900);
-    }, width);
-    await expect.poll(() => page.evaluate(() => innerWidth)).toBe(width);
+  for (const [width, height] of [
+    [1440, 900],
+    [1024, 900],
+    [768, 900],
+    [390, 900],
+    [360, 900],
+    [390, 645],
+  ]) {
+    await resizeChatWindow(launched, width, height);
+    if (height === 645) {
+      await expect.poll(() => page.evaluate(() => innerHeight)).toBe(645);
+      await expect.poll(() => region.evaluate((list) => list.clientHeight)).toBeGreaterThan(0);
+      await expect(
+        page.getByRole('button', { name: 'Dismiss location prompt for this session' }),
+      ).toBeVisible();
+    }
     await expect(sync).toBeVisible();
     const advert = page.getByRole('button', { name: 'Send flood advert', exact: true });
     await expect(advert).toBeVisible();
@@ -426,7 +460,7 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await page.screenshot({ path: testInfo.outputPath(`toolbar-${width}.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`toolbar-${width}-${height}.png`) });
   }
   radio.setReadFailure(true);
   await sync.click();

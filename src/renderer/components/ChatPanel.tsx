@@ -3149,7 +3149,7 @@ function ChatPanel({
     <div className={`flex h-full min-h-0 min-w-0 flex-col ${dmOnlyChat ? 'overflow-y-auto' : ''}`}>
       {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-w-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${
+        className={`mb-2 grid min-w-0 shrink-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${
           dmOnlyChat
             ? 'min-h-[7.5rem] grid-rows-[minmax(5rem,1fr)_auto] lg:min-h-[5rem] lg:grid-rows-[minmax(5rem,1fr)]'
             : 'min-h-0 grid-rows-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]'

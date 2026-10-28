@@ -119,7 +119,7 @@ export function WrappingChannelList({
 
   /* eslint-disable jsx-a11y/no-noninteractive-tabindex -- A named overflow region needs keyboard focus for native scrolling. */
   return (
-    <div ref={rootRef} className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+    <div ref={rootRef} className="flex h-full max-h-[30dvh] min-h-12 min-w-0 flex-1 flex-col">
       <div
         id={id}
         ref={viewportRef}
