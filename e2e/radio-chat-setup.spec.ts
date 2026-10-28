@@ -401,10 +401,13 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
           }
           throw new Error('Missing chat scroll parent');
         });
-      await region.hover();
+      // Keep wheel input inside the visible list without centering it by scrolling the parent.
+      await region.hover({ position: { x: 8, y: 8 } });
       await page.mouse.wheel(0, -4000);
       await expect.poll(() => region.evaluate((list) => list.scrollTop)).toBe(0);
       await page.mouse.wheel(0, -4000);
+      await expect.poll(outerScrollTop).toBe(0);
+      await region.hover({ position: { x: 8, y: 8 } });
       await expect.poll(outerScrollTop).toBe(0);
       await page.mouse.wheel(0, 4000);
       await expect
@@ -412,6 +415,8 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
           region.evaluate((list) => list.scrollHeight - list.clientHeight - list.scrollTop),
         )
         .toBeLessThanOrEqual(1);
+      await region.hover({ position: { x: 8, y: 8 } });
+      await expect.poll(outerScrollTop).toBe(0);
       await page.mouse.wheel(0, 4000);
       await expect.poll(outerScrollTop).toBeGreaterThan(0);
     }
