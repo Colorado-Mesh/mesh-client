@@ -390,6 +390,30 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
       await expect(
         page.getByRole('button', { name: 'Dismiss location prompt for this session' }),
       ).toBeVisible();
+      const outerScrollTop = () =>
+        region.evaluate((list) => {
+          let parent = list.parentElement;
+          while (parent) {
+            if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowY)) {
+              return parent.scrollTop;
+            }
+            parent = parent.parentElement;
+          }
+          throw new Error('Missing chat scroll parent');
+        });
+      await region.hover();
+      await page.mouse.wheel(0, -4000);
+      await expect.poll(() => region.evaluate((list) => list.scrollTop)).toBe(0);
+      await page.mouse.wheel(0, -4000);
+      await expect.poll(outerScrollTop).toBe(0);
+      await page.mouse.wheel(0, 4000);
+      await expect
+        .poll(() =>
+          region.evaluate((list) => list.scrollHeight - list.clientHeight - list.scrollTop),
+        )
+        .toBeLessThanOrEqual(1);
+      await page.mouse.wheel(0, 4000);
+      await expect.poll(outerScrollTop).toBeGreaterThan(0);
     }
     await expect(sync).toBeVisible();
     const advert = page.getByRole('button', { name: 'Send flood advert', exact: true });

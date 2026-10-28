@@ -130,7 +130,7 @@ export function WrappingChannelList({
         onFocusCapture={(event) => {
           if (event.target instanceof HTMLButtonElement) reveal(event.target);
         }}
-        className="rounded-control focus-visible:outline-brand-green min-h-0 overflow-y-auto overscroll-contain focus-visible:outline-2"
+        className="rounded-control focus-visible:outline-brand-green min-h-0 overflow-y-auto focus-visible:outline-2"
       >
         <div ref={contentRef} className="flex min-w-0 flex-wrap items-center gap-1 p-0.5">
           {children}
