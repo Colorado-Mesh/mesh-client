@@ -124,4 +124,12 @@ describe('ChannelReplies', () => {
     expect(normalizeReplyName('🔥 W0RMT 03')).toBe('w0rmt03');
     expect(normalizeReplyName('M🐻β')).toBe('mβ');
   });
+
+  it('matches an accented name however its accent is encoded', () => {
+    const r = new ChannelReplies();
+    r.heard(PUBLIC, 'Cafe\u0301 Crew', NOW - 1_000);
+    expect(r.resolve(PUBLIC, '@caf\u00e9 open?', NOW)).toMatchObject({
+      text: '@[Cafe\u0301 Crew] open?',
+    });
+  });
 });

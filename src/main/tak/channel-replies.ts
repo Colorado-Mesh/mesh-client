@@ -31,9 +31,16 @@ const MAX_NAME_CHARS = 40;
 const DEFAULT_MAX_NAMES_PER_CHANNEL = 50;
 const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** Lower case, letters and digits only, so emoji, spaces and punctuation do not matter. */
+/**
+ * Lower case, letters and digits only, so emoji, spaces and punctuation do not matter. Composed
+ * first (NFC), so an accented letter typed as one character matches one sent as a letter and a
+ * combining accent.
+ */
 export function normalizeReplyName(name: string): string {
-  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+  return name
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 function mention(name: string, rest: string): { text: string; message: string } {

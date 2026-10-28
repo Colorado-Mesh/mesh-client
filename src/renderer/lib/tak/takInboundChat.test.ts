@@ -94,17 +94,17 @@ describe('formatTakMeshText', () => {
     expect(formatTakMeshText(' VIPER ', '  on scene ')).toBe('[VIPER] on scene');
   });
 
-  it("keeps a MeshCore reply's @[Name] first, where MeshCore apps look for it", () => {
-    expect(formatTakMeshText('VIPER', '@[Silver Eagle] are you on?')).toBe(
-      '@[Silver Eagle] [VIPER] are you on?',
-    );
-    expect(formatTakMeshText('VIPER', '@[Hobo]')).toBe('@[Hobo] [VIPER]');
-    expect(formatTakMeshText('VIPER', '@[Silver Eagle] hi', TAK_MESH_SEND_MAX_BYTES, false)).toBe(
-      '@[Silver Eagle] hi',
-    );
+  it("keeps a MeshCore reply's @[Name] first on a MeshCore channel", () => {
+    const meshcore = (text: string, withCallsign = true) =>
+      formatTakMeshText('VIPER', text, TAK_MESH_SEND_MAX_BYTES, withCallsign, true);
+    expect(meshcore('@[Silver Eagle] are you on?')).toBe('@[Silver Eagle] [VIPER] are you on?');
+    expect(meshcore('@[Hobo]')).toBe('@[Hobo] [VIPER]');
+    expect(meshcore('@[Silver Eagle] hi', false)).toBe('@[Silver Eagle] hi');
     // Only a whole marker at the very start counts.
-    expect(formatTakMeshText('VIPER', 'see @[Hobo] later')).toBe('[VIPER] see @[Hobo] later');
-    expect(formatTakMeshText('VIPER', '@[unclosed hi')).toBe('[VIPER] @[unclosed hi');
+    expect(meshcore('see @[Hobo] later')).toBe('[VIPER] see @[Hobo] later');
+    expect(meshcore('@[unclosed hi')).toBe('[VIPER] @[unclosed hi');
+    // Anywhere else the callsign leads as before.
+    expect(formatTakMeshText('VIPER', '@[Hobo] hi')).toBe('[VIPER] @[Hobo] hi');
   });
 
   it('cuts an overlong message to the byte budget with an ellipsis', () => {
@@ -197,6 +197,23 @@ describe('relayTakChatToMesh', () => {
     );
     expect(consumeTakEcho('mc', 2, '!ping', NOW + 1000)).toBe(true);
     expect(consumeTakEcho('mt', 1, '[VIPER] !ping', NOW + 1000)).toBe(true);
+  });
+
+  it('moves the callsign after a reply marker only on a MeshCore channel', async () => {
+    serve('mc', 'meshcore', 2, OPS, true);
+    serve('mt', 'meshtastic', 1, OPS, true);
+    const send = vi.fn<TakMeshSendFn>().mockResolvedValue(undefined);
+
+    await relayTakChatToMesh(message({ text: '@[Hobo] copy' }), send, NOW);
+
+    expect(send).toHaveBeenCalledWith(
+      { identityId: 'mc', protocol: 'meshcore', channelIndex: 2 },
+      '@[Hobo] [VIPER] copy',
+    );
+    expect(send).toHaveBeenCalledWith(
+      { identityId: 'mt', protocol: 'meshtastic', channelIndex: 1 },
+      '[VIPER] @[Hobo] copy',
+    );
   });
 
   it('keeps going when one channel fails and forgets the echo for the failed send', async () => {

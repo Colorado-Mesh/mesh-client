@@ -44,18 +44,19 @@ const MESHCORE_REPLY_PREFIX_RE = /^(@\[[^\]\n]+\])\s*/u;
 
 /**
  * Text to transmit for a TAK client's message: `[CALLSIGN] text`, since every bridged message
- * leaves from this app's own node, or the text alone when `withCallsign` is false. A MeshCore
- * reply keeps its `@[Name]` first, where MeshCore apps look for it: `@[Name] [CALLSIGN] text`.
- * Cut to the byte budget with an ellipsis when it is too long.
+ * leaves from this app's own node, or the text alone when `withCallsign` is false. On a MeshCore
+ * channel (`meshcoreReply`), a reply keeps its `@[Name]` first, where MeshCore apps look for it:
+ * `@[Name] [CALLSIGN] text`. Cut to the byte budget with an ellipsis when it is too long.
  */
 export function formatTakMeshText(
   senderCallsign: string,
   text: string,
   maxBytes: number = TAK_MESH_SEND_MAX_BYTES,
   withCallsign = true,
+  meshcoreReply = false,
 ): string {
   const body = text.trim();
-  const reply = MESHCORE_REPLY_PREFIX_RE.exec(body);
+  const reply = meshcoreReply ? MESHCORE_REPLY_PREFIX_RE.exec(body) : null;
   const tag = `[${senderCallsign.trim()}]`;
   const full = !withCallsign
     ? body
@@ -148,14 +149,15 @@ export async function relayTakChatToMesh(
   }
   let sent = 0;
   for (const target of targets) {
+    // Only a channel message is heard back off the mesh; a direct message has no echo.
+    const onChannel = target.destination === undefined;
     const text = formatTakMeshText(
       message.senderCallsign,
       message.text,
       TAK_MESH_SEND_MAX_BYTES,
       target.callsign !== false,
+      onChannel && target.protocol === 'meshcore',
     );
-    // Only a channel message is heard back off the mesh; a direct message has no echo.
-    const onChannel = target.destination === undefined;
     if (onChannel) rememberTakSend(target.identityId, target.channelIndex, text, nowMs);
     // MeshCore channel sends already time out inside the radio wait. A second timer here
     // reports the send failed, then the late echo is posted back into ATAK.
