@@ -631,6 +631,25 @@ describe('direct message handlers', () => {
     expect((await register(null, 'tak:setDirectPeers'))({}, [])).toBeUndefined();
   });
 
+  it('hands the incident markers to the manager, once it exists', async () => {
+    const setIncidentMarkers = vi.fn();
+    const handler = await register({ setIncidentMarkers }, 'tak:setIncidentMarkers');
+    const marker = {
+      id: 'mecp-abc',
+      callsign: '🆘 MAYDAY Alice',
+      remarks: '🆘 MAYDAY: Injury\nMECP/0/M01',
+      lat: 39.7,
+      lon: -105.1,
+      severity: 0,
+      drill: false,
+    };
+    handler({}, [marker]);
+    expect(setIncidentMarkers).toHaveBeenCalledWith([marker]);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:setIncidentMarkers');
+    expect(() => handler({}, [{ ...marker, lat: 91 }])).toThrow(/tak:setIncidentMarkers/);
+    expect((await register(null, 'tak:setIncidentMarkers'))({}, [])).toBeUndefined();
+  });
+
   it('hands the radios with direct messages on to the manager, once it exists', async () => {
     const setDirectMessaging = vi.fn();
     const handler = await register({ setDirectMessaging }, 'tak:setDirectMessaging');

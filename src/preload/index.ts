@@ -72,6 +72,7 @@ import type {
   TakDmStatusUpdate,
   TAKEnrollmentRequest,
   TAKInboundChat,
+  TakIncidentMarker,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1471,6 +1472,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tak:dmStatus', update),
     setDirectPeers: (peers: TakDirectPeer[]): Promise<void> =>
       ipcRenderer.invoke('tak:setDirectPeers', peers),
+    setIncidentMarkers: (markers: TakIncidentMarker[]): Promise<void> =>
+      ipcRenderer.invoke('tak:setIncidentMarkers', markers),
     getStyleSettings: (): Promise<TakStyleSettings> => ipcRenderer.invoke('tak:getStyleSettings'),
     setStyleSettings: (settings: TakStyleSettings): Promise<TakStyleSettings> =>
       ipcRenderer.invoke('tak:setStyleSettings', settings),

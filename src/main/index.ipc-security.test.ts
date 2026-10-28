@@ -475,6 +475,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:setDirectMessaging',
     'tak:dmStatus',
     'tak:setDirectPeers',
+    'tak:setIncidentMarkers',
   ] as const;
 
   it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {
