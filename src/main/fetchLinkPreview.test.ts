@@ -37,14 +37,19 @@ import { fetch as undiciFetch } from 'undici';
 import {
   canonicalizeYouTubeWatchUrl,
   clearLinkPreviewCachesForTests,
+  decodeLinkPreviewHtmlEntities,
+  extractMetaContent,
   fetchLinkPreview,
   isBlockedHostname,
   isBlockedHostnameResolved,
   isLikelyDirectImageUrl,
   isLinkPreviewImageMime,
   isYouTubePreviewHostname,
+  LINK_PREVIEW_MAX_META_ATTR_CHARS,
   LINK_PREVIEW_MAX_REDIRECTS,
   LINK_PREVIEW_RATE_LIMIT_MAX,
+  parseMetaTagAttributes,
+  scanNextMetaTag,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
 
@@ -761,6 +766,194 @@ describe('fetchLinkPreview', () => {
     mockFetch.mockResolvedValue(makeStreamResponse(html));
     const result = await fetchLinkPreview('https://example.com');
     expect(result?.title).toBe('Plain Title');
+  });
+
+  it('decodes a minimal set of HTML entities in meta content', () => {
+    expect(decodeLinkPreviewHtmlEntities('a &amp; b &lt;c&gt; &quot;d&quot; &#39;e&apos;')).toBe(
+      `a & b <c> "d" 'e'`,
+    );
+    // &amp; must be unescaped last so &amp;lt; does not become <
+    expect(decodeLinkPreviewHtmlEntities('&amp;lt;')).toBe('&lt;');
+  });
+
+  it('parses meta attributes regardless of order and extras', () => {
+    expect(
+      parseMetaTagAttributes('property="og:title" data-react-helmet="true" content="Album"'),
+    ).toEqual({
+      property: 'og:title',
+      'data-react-helmet': 'true',
+      content: 'Album',
+    });
+    expect(
+      parseMetaTagAttributes(`name='twitter:image' content='https://cdn.example/x.jpg'`),
+    ).toEqual({
+      name: 'twitter:image',
+      content: 'https://cdn.example/x.jpg',
+    });
+  });
+
+  it('extracts meta content when extra attributes sit between property and content', () => {
+    const html = `<meta property="og:title" data-react-helmet="true" content="imgur.com">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('imgur.com');
+  });
+
+  it('extracts meta content when a quoted attribute embeds a literal >', () => {
+    const html = `<meta property="og:title" content="A > B"><meta name="description" content="ok">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('A > B');
+    expect(extractMetaContent(html, { name: 'description' })).toBe('ok');
+  });
+
+  it('decodes &gt; inside a quoted meta attribute value', () => {
+    const html = `<meta property="og:title" content="A &gt; B">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('A > B');
+    expect(parseMetaTagAttributes('content="A &gt; B"').content).toBe('A > B');
+  });
+
+  it('advances past a completed meta tag and ignores an unterminated opener suffix', () => {
+    const html =
+      `<meta property="og:title" content="Before">` +
+      `<meta property="og:description" content="never closed`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('Before');
+    expect(extractMetaContent(html, { property: 'og:description' })).toBeUndefined();
+    const first = scanNextMetaTag(html, 0);
+    expect(first?.attrText).toContain('og:title');
+    expect(scanNextMetaTag(html, first!.nextIndex)).toBeNull();
+  });
+
+  it('skips non-meta openers like <metal> without treating them as tags', () => {
+    const html = `<metal property="og:title" content="nope"><meta property="og:title" content="yes">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('yes');
+  });
+
+  it('skips oversized meta attr text and continues to a later valid tag', () => {
+    const longToken = 'x'.repeat(LINK_PREVIEW_MAX_META_ATTR_CHARS + 1);
+    const html = `<meta ${longToken}>` + `<meta property="og:title" content="after oversized">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('after oversized');
+  });
+
+  it('produces a preview when og:title contains an embedded greater-than', async () => {
+    const html = `<meta property="og:title" content="Score A &gt; B">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    const result = await fetchLinkPreview('https://example.com');
+    expect(result).toEqual({ title: 'Score A > B' });
+  });
+
+  it('parses Imgur-style React Helmet OG tags with interleaved attributes', async () => {
+    const html = [
+      `<title>Imgur: The magic of the Internet</title>`,
+      `<meta property="og:title" data-react-helmet="true" content="imgur.com">`,
+      `<meta property="og:description" data-react-helmet="true" content="Discover the magic">`,
+      `<meta property="og:image" data-react-helmet="true" content="https://i.imgur.com/ryoxde9.jpeg?fb">`,
+    ].join('');
+    const jpegBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]);
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let hostname = '';
+      try {
+        hostname = new URL(href).hostname.toLowerCase();
+      } catch {
+        // catch-no-log-ok test mock may receive partial URLs
+      }
+      if (hostname === 'i.imgur.com') {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/jpeg' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(jpegBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    }) as typeof undiciFetch);
+    const result = await fetchLinkPreview('https://imgur.com/a/lo1IoGq');
+    expect(result).toEqual({
+      title: 'imgur.com',
+      description: 'Discover the magic',
+      image: expect.stringMatching(/^data:image\/jpeg;base64,/),
+    });
+  });
+
+  it('parses single-quoted meta attributes', async () => {
+    const html = `<meta property='og:title' content='Quoted Title'>`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    const result = await fetchLinkPreview('https://example.com');
+    expect(result?.title).toBe('Quoted Title');
+  });
+
+  it('falls back to twitter:image when og:image is absent', async () => {
+    const html = [
+      `<meta property="og:title" content="Tweet Card">`,
+      `<meta name="twitter:image" content="https://example.com/tw.png">`,
+    ].join('\n');
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (href.endsWith('/tw.png')) {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/png' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(pngBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    }) as typeof undiciFetch);
+    const result = await fetchLinkPreview('https://example.com');
+    expect(result).toEqual({
+      title: 'Tweet Card',
+      image: expect.stringMatching(/^data:image\/png;base64,/),
+    });
+  });
+
+  it('decodes HTML entities in og:image URLs before fetch', async () => {
+    const html = [
+      `<meta property="og:title" content="Entity URL">`,
+      `<meta property="og:image" content="https://example.com/a.jpg?x=1&amp;y=2">`,
+    ].join('\n');
+    const jpegBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]);
+    const fetchedHrefs: string[] = [];
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      fetchedHrefs.push(href);
+      if (href.includes('/a.jpg')) {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/jpeg' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(jpegBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    }) as typeof undiciFetch);
+    const result = await fetchLinkPreview('https://example.com');
+    expect(fetchedHrefs.some((h) => h === 'https://example.com/a.jpg?x=1&y=2')).toBe(true);
+    expect(result).toEqual({
+      title: 'Entity URL',
+      image: expect.stringMatching(/^data:image\/jpeg;base64,/),
+    });
   });
 
   it('proxies https og:image URLs as data URLs in main (SSRF guard)', async () => {
