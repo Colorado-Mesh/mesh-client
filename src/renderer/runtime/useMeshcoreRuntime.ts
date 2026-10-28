@@ -8631,10 +8631,10 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     const active = ['connected', 'configured', 'stale', 'reconnecting'].includes(state.status);
-    if (active) window.electronAPI.notifyDeviceConnected('meshcore');
+    if (active) window.electronAPI.notifyDeviceConnected('meshcore', state.connectionType);
     else if (state.status === 'disconnected')
       window.electronAPI.notifyDeviceDisconnected('meshcore');
-  }, [state.status]);
+  }, [state.status, state.connectionType]);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
     (params: {

@@ -4670,11 +4670,11 @@ export function useMeshtasticRuntime() {
   const sendStatusEvents = useCallback(() => {
     const activeStatuses = ['connected', 'configured', 'stale', 'reconnecting'];
     if (activeStatuses.includes(state.status)) {
-      window.electronAPI.notifyDeviceConnected();
+      window.electronAPI.notifyDeviceConnected(undefined, state.connectionType);
     } else if (state.status === 'disconnected') {
       window.electronAPI.notifyDeviceDisconnected();
     }
-  }, [state.status]);
+  }, [state.status, state.connectionType]);
 
   useEffect(() => {
     sendStatusEvents();

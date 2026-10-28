@@ -61,6 +61,15 @@ import {
   parseMeshtasticBluetoothPin,
 } from '../shared/meshtasticBluetoothPin';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
+import {
+  DEFAULT_POWER_SAVE_MODE,
+  normalizePowerSaveLinkType,
+  type PowerSaveLinkType,
+  type PowerSaveMode,
+  powerSaveModeFromStored,
+  PREVENT_SLEEP_SETTING_KEY,
+  shouldHoldPowerSaveBlocker,
+} from '../shared/powerSavePolicy';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import {
   DURABLE_RENDERER_SETTING_MAX_LENGTH,
@@ -240,6 +249,8 @@ import {
   takeReticulumAttachmentImageRateToken,
 } from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
+import { reticulumConfigDirHasEnabledLocalRadio } from './reticulum-ble-rnode-config';
+import { reticulumUserConfigDir } from './reticulum-config-validate';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { SecureSecretStore } from './secure-secret-store';
 import {
@@ -502,8 +513,25 @@ function hasLiveConnection(): boolean {
   );
 }
 
+/** Last computed decision; used only to avoid a debug line per status event. */
+let lastPowerSaveHold: boolean | null = null;
+
 function syncPowerSaveBlocker(): void {
-  if (hasLiveConnection()) startPowerSaveBlocker();
+  const mode = readPowerSaveMode();
+  const sidecarRunning = isReticulumSidecarRunning();
+  const hold = shouldHoldPowerSaveBlocker(mode, {
+    meshtastic: { connected: meshtasticDeviceConnected, link: meshtasticConnectionType },
+    meshcore: { connected: meshcoreDeviceConnected, link: meshcoreConnectionType },
+    mqtt: isAnyMqttConnected(),
+    reticulumSidecar: sidecarRunning,
+    reticulumLocalRadio:
+      sidecarRunning && reticulumConfigDirHasEnabledLocalRadio(reticulumUserConfigDir()),
+  });
+  if (hold !== lastPowerSaveHold) {
+    lastPowerSaveHold = hold;
+    console.debug('[main] power-save policy:', mode, hold ? 'hold' : 'release');
+  }
+  if (hold) startPowerSaveBlocker();
   else stopPowerSaveBlocker();
 }
 
@@ -521,6 +549,8 @@ let trayContextMenu: Menu | null = null;
 let appMenu: Menu | null = null;
 let meshtasticDeviceConnected = false;
 let meshcoreDeviceConnected = false;
+let meshtasticConnectionType: PowerSaveLinkType | null = null;
+let meshcoreConnectionType: PowerSaveLinkType | null = null;
 let isQuitting = false;
 let shutdownDone = false;
 /** Shared quit/relaunch single-flight (app:quit, app:relaunch). */
@@ -538,6 +568,8 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   isQuitting = true;
   meshtasticDeviceConnected = false;
   meshcoreDeviceConnected = false;
+  meshtasticConnectionType = null;
+  meshcoreConnectionType = null;
   gattSidecarProxy.setQuitting();
   // Drop exclusive hold locally without HTTP so quit never ensurePort()-respawns sidecar.
   gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
@@ -1883,6 +1915,26 @@ function readCloseToTrayEnabled(): boolean {
   }
 }
 
+/**
+ * App → Window keep-awake mode. Main reads only SQLite (the renderer persists via
+ * appSettings:set), so no extra IPC channel is needed. A read error is not a stored
+ * "off"; fall back to the default (radio hardware only).
+ */
+function readPowerSaveMode(): PowerSaveMode {
+  try {
+    const row = getDatabase()
+      .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+      .get(PREVENT_SLEEP_SETTING_KEY) as { value: string } | undefined;
+    return powerSaveModeFromStored(row?.value);
+  } catch (e) {
+    console.debug(
+      '[main] power-save mode read failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return DEFAULT_POWER_SAVE_MODE;
+  }
+}
+
 function createWindow() {
   rendererHeartbeatWatchdog.expectVisibleHeartbeat();
   const savedState = loadWindowState();
@@ -3109,13 +3161,19 @@ ipcMain.on('ble-reset-pairing-retry-count', (event, sessionKind?: unknown) => {
 });
 
 // ─── IPC: Connection status tracking (module-scope, not per-window) ─
-ipcMain.on('device-connected', (event, source: unknown) => {
+ipcMain.on('device-connected', (event, source: unknown, connectionType: unknown) => {
   if (!validateIpcSender(event)) {
     console.warn('[IPC] device-connected: unauthorized sender');
     return;
   }
-  if (source === 'meshcore') meshcoreDeviceConnected = true;
-  else meshtasticDeviceConnected = true;
+  const link = normalizePowerSaveLinkType(connectionType);
+  if (source === 'meshcore') {
+    meshcoreDeviceConnected = true;
+    meshcoreConnectionType = link;
+  } else {
+    meshtasticDeviceConnected = true;
+    meshtasticConnectionType = link;
+  }
   console.debug('[main] device-connected');
   syncPowerSaveBlocker();
 });
@@ -3124,8 +3182,13 @@ ipcMain.on('device-disconnected', (event, source: unknown) => {
     console.warn('[IPC] device-disconnected: unauthorized sender');
     return;
   }
-  if (source === 'meshcore') meshcoreDeviceConnected = false;
-  else meshtasticDeviceConnected = false;
+  if (source === 'meshcore') {
+    meshcoreDeviceConnected = false;
+    meshcoreConnectionType = null;
+  } else {
+    meshtasticDeviceConnected = false;
+    meshtasticConnectionType = null;
+  }
   console.debug('[main] device-disconnected');
   syncPowerSaveBlocker();
 });
@@ -4159,6 +4222,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'reticulumAutoResendOnAnnounce',
   'autoUpdateDownloadEnabled',
   'closeToTray',
+  'preventSleepWhileConnected',
   'reticulumLastSelfLxmfHash',
   'reticulumRmapAnnounceIntervalMin',
   'reticulumRmapReachableOn',
@@ -4264,6 +4328,7 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
           .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
           .run(key, value);
     console.debug(`[IPC] appSettings:set: ${sanitizeLogMessage(key)} (${result.changes} rows)`);
+    if (key === PREVENT_SLEEP_SETTING_KEY) syncPowerSaveBlocker();
     return { changes: Number(result.changes) };
   } catch (err) {
     console.error(
@@ -4286,6 +4351,7 @@ ipcMain.handle('appSettings:remove', (event, key: unknown) => {
     throw new Error('appSettings:remove: key not allowed');
   }
   const result = getDatabase().prepareOnce('DELETE FROM app_settings WHERE key = ?').run(key);
+  if (key === PREVENT_SLEEP_SETTING_KEY) syncPowerSaveBlocker();
   return { changes: Number(result.changes) };
 });
 

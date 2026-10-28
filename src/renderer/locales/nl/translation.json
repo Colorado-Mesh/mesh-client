@@ -513,7 +513,14 @@
     "coiNo": "nee",
     "coiTimingFine": "fijn (~5 µs)",
     "coiTimingCoarse": "grof (~100 µs)",
-    "shareMyLocationOffStaticActive": "Locatie delen is uitgeschakeld — host GPS automatisch vernieuwen en mesh verzenden zijn uitgeschakeld. Je actieve opgeslagen locatie (en radio GPS indien beschikbaar) worden nog steeds lokaal gebruikt voor de kaart- en afstandsfilters."
+    "shareMyLocationOffStaticActive": "Locatie delen is uitgeschakeld — host GPS automatisch vernieuwen en mesh verzenden zijn uitgeschakeld. Je actieve opgeslagen locatie (en radio GPS indien beschikbaar) worden nog steeds lokaal gebruikt voor de kaart- en afstandsfilters.",
+    "preventSleep": "Houd de computer wakker terwijl deze is aangesloten",
+    "preventSleepAria": "Houd de computer wakker terwijl deze is aangesloten",
+    "preventSleepHint": "Alleen radioverbinding (standaard) bevat de blokkering voor Bluetooth of USB __ Meshtastic/MeshCore radio's en voor Reticulum wanneer een BLE of seriële RNode/KISS -interface is ingeschakeld. TCP/Wi-Fi metgezellen, MQTT en alleen netwerk Reticulum maken na het ontwaken opnieuw verbinding en hebben dit niet nodig. Elke verbinding komt overeen met het eerdere always-on gedrag. Laat het systeem nooit slapen, zelfs niet met een radioverbinding. Op Linux zorgt de inhibitie van Electron er ook voor dat het scherm niet meer slaapt wanneer de blocker wordt vastgehouden. Kies Nooit als monitoren leeg moeten zijn.",
+    "preventSleepOptionRf": "Alleen radioverbinding (Bluetooth of USB)",
+    "preventSleepOptionAlways": "Elke verbinding",
+    "preventSleepOptionOff": "Nooit",
+    "preventSleepSaveFailed": "Kon de instelling voor wakker blijven niet opslaan."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

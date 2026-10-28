@@ -513,7 +513,14 @@
     "coiNo": "否",
     "coiTimingFine": "精细（ ~ 5 µs ）",
     "coiTimingCoarse": "粗略（ ~ 100 µs ）",
-    "shareMyLocationOffStaticActive": "位置共享已关闭—主机GPS自动刷新和网格发送已禁用。您保存的有效位置（以及可用的无线电GPS ）仍会在本地用于地图和距离过滤器。"
+    "shareMyLocationOffStaticActive": "位置共享已关闭—主机GPS自动刷新和网格发送已禁用。您保存的有效位置（以及可用的无线电GPS ）仍会在本地用于地图和距离过滤器。",
+    "preventSleep": "连接时保持计算机唤醒",
+    "preventSleepAria": "连接时保持计算机唤醒",
+    "preventSleepHint": "仅当启用了BLE或串行RNode/KISS接口时，无线电链路（默认）会保持蓝牙或USB Meshtastic/MeshCore无线电和Reticulum的拦截器。TCP/Wi-Fi同伴、MQTT和仅网络连接的Reticulum在唤醒后重新连接，不需要。任何连接都与之前的始终在线行为相匹配。即使有无线电连接，也不要让系统休眠。在Linux ， Electron的抑制也会在屏蔽剂被保持时停止显示器睡眠—如果监视器必须保留空白，请选择Never （永不）。",
+    "preventSleepOptionRf": "仅限无线电链路（蓝牙或USB ）",
+    "preventSleepOptionAlways": "任何连接",
+    "preventSleepOptionOff": "从未",
+    "preventSleepSaveFailed": "无法保存保持唤醒设置。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

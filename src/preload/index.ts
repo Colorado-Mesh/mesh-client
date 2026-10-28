@@ -1166,8 +1166,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ─── Connection status ─────────────────────────────────────────
-  notifyDeviceConnected: (source?: 'meshtastic' | 'meshcore') => {
-    ipcRenderer.send('device-connected', source === 'meshcore' ? 'meshcore' : 'meshtastic');
+  notifyDeviceConnected: (source?: 'meshtastic' | 'meshcore', connectionType?: string | null) => {
+    ipcRenderer.send(
+      'device-connected',
+      source === 'meshcore' ? 'meshcore' : 'meshtastic',
+      connectionType ?? null,
+    );
   },
   notifyDeviceDisconnected: (source?: 'meshtastic' | 'meshcore') => {
     ipcRenderer.send('device-disconnected', source === 'meshcore' ? 'meshcore' : 'meshtastic');

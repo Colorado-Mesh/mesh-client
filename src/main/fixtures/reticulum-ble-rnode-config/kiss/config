@@ -1,0 +1,4 @@
+[[tnc]]
+type = KISSInterface
+enabled = Yes
+port = /dev/ttyUSB0
