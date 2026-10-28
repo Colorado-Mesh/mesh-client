@@ -6843,7 +6843,12 @@
     },
     "atakDrill": "DRILL (VRTÁK)",
     "atakPeople_one": "{{count}} osoba",
-    "atakPeople_other": "{{count}} lidí"
+    "atakPeople_other": "{{count}} lidí",
+    "atakMarkerFrom": "Od {{sender}}, naposledy slyšeno {{time}} UTC",
+    "atakMarkerLastKnown": "Pozice: kde byl odesílatel naposledy vyslechnut, nikoli ze zprávy",
+    "atakMarkerBeacon": "Nouzový maják aktivní",
+    "atakMarkerAcks_one": "{{count}} bylo vyslyšeno potvrzení",
+    "atakMarkerAcks_other": "{{count}} slyšení o poděkování"
   },
   "notificationSounds": {
     "title": "Tóny oznámení",

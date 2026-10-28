@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "TALADRO",
     "atakPeople_one": "{{count}} persona",
-    "atakPeople_other": "{{count}} personas"
+    "atakPeople_other": "{{count}} personas",
+    "atakMarkerFrom": "De {{sender}}, se escuchó por última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posición: donde se escuchó por última vez al remitente, no del informe",
+    "atakMarkerBeacon": "Baliza de socorro activa",
+    "atakMarkerAcks_one": "{{count}} acuse DE recibo escuchado",
+    "atakMarkerAcks_other": "{{count}} agradecimientos escuchados"
   },
   "notificationSounds": {
     "title": "Tonos de notificación",

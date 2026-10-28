@@ -6888,7 +6888,12 @@
     },
     "atakDrill": "Wiertarka",
     "atakPeople_one": "{{count}} osoba",
-    "atakPeople_other": "{{count}} osób"
+    "atakPeople_other": "{{count}} osób",
+    "atakMarkerFrom": "Od {{sender}}, ostatnio słyszano o {{time}} UTC",
+    "atakMarkerLastKnown": "Stanowisko: gdzie ostatnio słyszano nadawcę, a nie z raportu",
+    "atakMarkerBeacon": "Sygnalizator alarmowy aktywny",
+    "atakMarkerAcks_one": "Wysłuchano potwierdzenia: {{count}}",
+    "atakMarkerAcks_other": "Wysłuchane podziękowania: {{count}}"
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",

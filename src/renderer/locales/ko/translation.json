@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "드릴",
     "atakPeople_one": "{{count}} 명",
-    "atakPeople_other": "{{count}} 명"
+    "atakPeople_other": "{{count}} 명",
+    "atakMarkerFrom": "{{sender}} 부터 마지막으로 들은 시간: {{time}} UTC",
+    "atakMarkerLastKnown": "위치: 보고서가 아닌 발신자가 마지막으로 들은 위치",
+    "atakMarkerBeacon": "조난 신호 활성",
+    "atakMarkerAcks_one": "{{count}} 수신 확인",
+    "atakMarkerAcks_other": "{{count}} 수신 확인"
   },
   "notificationSounds": {
     "title": "알림음",

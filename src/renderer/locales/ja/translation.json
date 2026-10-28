@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "DRILL",
     "atakPeople_one": "{{count}}人",
-    "atakPeople_other": "{{count}}人"
+    "atakPeople_other": "{{count}}人",
+    "atakMarkerFrom": "{{sender}}から、最後に聞いたのは{{time}} UTC",
+    "atakMarkerLastKnown": "ポジション：レポートからではなく、送信者が最後に聞かれた場所",
+    "atakMarkerBeacon": "救難ビーコン発動中",
+    "atakMarkerAcks_one": "{{count}}確認の音声が聞こえました",
+    "atakMarkerAcks_other": "{{count}}確認音声が聞こえました"
   },
   "notificationSounds": {
     "title": "通知トーン",

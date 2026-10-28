@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "DRILL",
     "atakPeople_one": "{{count}} persoon",
-    "atakPeople_other": "{{count}} personen"
+    "atakPeople_other": "{{count}} personen",
+    "atakMarkerFrom": "Vanaf {{sender}}, laatst gehoord {{time}} UTC",
+    "atakMarkerLastKnown": "Positie: waar de afzender het laatst is gehoord, niet uit het rapport",
+    "atakMarkerBeacon": "Noodbaken actief",
+    "atakMarkerAcks_one": "{{count}} bevestiging gehoord",
+    "atakMarkerAcks_other": "{{count}} bevestigingen gehoord"
   },
   "notificationSounds": {
     "title": "Meldingstonen",

@@ -6888,7 +6888,12 @@
     },
     "atakDrill": "свердлити",
     "atakPeople_one": "{{count}} особа",
-    "atakPeople_other": "{{count}} чол."
+    "atakPeople_other": "{{count}} чол.",
+    "atakMarkerFrom": "Від {{sender}}, востаннє чули {{time}} UTC",
+    "atakMarkerLastKnown": "Посада: де востаннє було почуто відправника, а не зі звіту",
+    "atakMarkerBeacon": "Активований аварійний маяк",
+    "atakMarkerAcks_one": "{{count}} підтвердження заслухано",
+    "atakMarkerAcks_other": "{{count}} підтвердження заслухано"
   },
   "notificationSounds": {
     "title": "Сигнали сповіщень",

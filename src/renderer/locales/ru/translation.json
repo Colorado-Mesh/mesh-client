@@ -6888,7 +6888,12 @@
     },
     "atakDrill": "БУРОВОЙ СТАНОК",
     "atakPeople_one": "{{count}} человек",
-    "atakPeople_other": "{{count}} чел."
+    "atakPeople_other": "{{count}} чел.",
+    "atakMarkerFrom": "От {{sender}}, последний раз слышно {{time}} UTC",
+    "atakMarkerLastKnown": "Должность: где отправитель был в последний раз услышан, а не из отчета",
+    "atakMarkerBeacon": "Аварийный маяк активен",
+    "atakMarkerAcks_one": "{{count}} подтверждение получено",
+    "atakMarkerAcks_other": "{{count}} подтверждений получено"
   },
   "notificationSounds": {
     "title": "Тональность уведомлений",

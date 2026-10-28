@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "Bor",
     "atakPeople_one": "{{count}} orang",
-    "atakPeople_other": "{{count}} orang"
+    "atakPeople_other": "{{count}} orang",
+    "atakMarkerFrom": "Dari {{sender}}, terakhir terdengar {{time}} UTC",
+    "atakMarkerLastKnown": "Posisi: tempat pengirim terakhir kali didengar, bukan dari laporan",
+    "atakMarkerBeacon": "Distress beacon aktif",
+    "atakMarkerAcks_one": "{{count}} pengakuan didengar",
+    "atakMarkerAcks_other": "{{count}} pengakuan didengar"
   },
   "notificationSounds": {
     "title": "Nada notifikasi",

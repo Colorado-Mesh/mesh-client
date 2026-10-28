@@ -6782,7 +6782,12 @@
     },
     "atakDrill": "tatbik",
     "atakPeople_one": "{{count}} kişi",
-    "atakPeople_other": "{{count}} kişi"
+    "atakPeople_other": "{{count}} kişi",
+    "atakMarkerFrom": "{{sender}} tarihinden itibaren en son {{time}} UTC tarihinde duyuldu",
+    "atakMarkerLastKnown": "Pozisyon: gönderenin rapordan değil, en son duyulduğu yer",
+    "atakMarkerBeacon": "İmdat lambası aktif",
+    "atakMarkerAcks_one": "{{count}} onay duyuldu",
+    "atakMarkerAcks_other": "{{count}} onaylar duyuldu"
   },
   "notificationSounds": {
     "title": "Bildirim tonları",
