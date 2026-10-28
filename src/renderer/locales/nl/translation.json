@@ -5862,7 +5862,8 @@
     "messagingIntroReticulum": "Laat ATAK-apparaten LXMF peers berichten. Een collega met een functie kan worden gecommuniceerd vanuit de markering; een zonder positie verschijnt op 0, 0 zodra mesh-client er een gesprek mee heeft, dus de lijst met contactpersonen wordt niet gevuld met elke collega die wordt gehoord.",
     "channelCallsign": "Oproepen toevoegen",
     "channelCallsignFor": "Zet het ATAK-oproepteken van de afzender voor berichten die naar {{channel}} worden verzonden",
-    "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam."
+    "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam.",
+    "channelRepliesHint": "Om te reageren op iemand van ATAK, begin je met @ en het begin van hun naam: @Silver are you on? gaat uit als MeshCore's reply @[Silver Eagle] are you on?. @@ replies to who spoke last. Als het begin van de naam past bij meerdere mensen die op het kanaal worden gehoord, wordt er niets verzonden en wordt in de chat vermeld wie heeft gematcht."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

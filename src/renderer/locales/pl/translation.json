@@ -5946,7 +5946,8 @@
     "messagingIntroReticulum": "Pozwól, aby urządzenia Atak wysłały wiadomość do współpracowników LXMF. Rówieśnik z pozycją może otrzymywać wiadomości ze swojego znacznika; osoba bez pozycji pojawia się w 0, 0, gdy mesh-client prowadzi z nią rozmowę, więc lista kontaktów nie wypełnia się każdym usłyszanym rówieśnikiem.",
     "channelCallsign": "Dodaj nazwę użytkownika",
     "channelCallsignFor": "Umieść znak ak nadawcy przed wiadomościami wysłanymi do {{channel}}",
-    "channelCallsignHint": "Gdy funkcja Add callign jest wyłączona, to, co wysyła urządzenie atak, jest wysyłane dokładnie tak, jak zostało wpisane. Wyłącz go dla kanału bota: bot szuka swojego polecenia na początku wiadomości, aby przegapić takie, które zaczyna się od znaku wywoławczego."
+    "channelCallsignHint": "Gdy funkcja Add callign jest wyłączona, to, co wysyła urządzenie atak, jest wysyłane dokładnie tak, jak zostało wpisane. Wyłącz go dla kanału bota: bot szuka swojego polecenia na początku wiadomości, aby przegapić takie, które zaczyna się od znaku wywoławczego.",
+    "channelRepliesHint": "Aby odpowiedzieć komuś z atak, zacznij od @ i rozpocznij od jego imienia: @Silver are you on? wychodzi jako odpowiedź MeshCore @[Silver Eagle] jesteś włączony?. @@ odpowiada temu, kto mówił ostatni. Jeśli początek nazwy pasuje do kilku osób usłyszanych na kanale, nic nie zostanie wysłane, a na czacie pojawi się informacja, kto pasuje."
   },
   "telemetryPanel": {
     "title": "Telemetria",

@@ -5862,7 +5862,8 @@
     "messagingIntroReticulum": "Lascia che i dispositivi ATAK inviino un messaggio ai colleghi LXMF. Un collega con una posizione può ricevere messaggi dal suo marcatore; uno senza posizione appare a 0, 0 una volta che mesh-client ha una conversazione con lui, quindi l'elenco dei contatti non viene riempito con tutti i colleghi ascoltati.",
     "channelCallsign": "Aggiungi nominativo",
     "channelCallsignFor": "Metti il nominativo ATAK del mittente davanti ai messaggi inviati a {{channel}}",
-    "channelCallsignHint": "Con Add callsign disattivato, ciò che un dispositivo ATAK invia esce esattamente come digitato. Disattivarlo per un canale bot: un bot cerca il suo comando all'inizio del messaggio, quindi ne manca uno che inizia con un nominativo."
+    "channelCallsignHint": "Con Add callsign disattivato, ciò che un dispositivo ATAK invia esce esattamente come digitato. Disattivarlo per un canale bot: un bot cerca il suo comando all'inizio del messaggio, quindi ne manca uno che inizia con un nominativo.",
+    "channelRepliesHint": "Per rispondere a qualcuno di ATAK, inizia con @ e inizia con il suo nome: @Silver are you on? esce come risposta di MeshCore @[Silver Eagle]?. @@ risponde a chi ha parlato per ultimo. Se l'inizio del nome si adatta a più persone ascoltate sul canale, non viene inviato nulla e la chat dice chi corrisponde."
   },
   "telemetryPanel": {
     "title": "Telemetria",

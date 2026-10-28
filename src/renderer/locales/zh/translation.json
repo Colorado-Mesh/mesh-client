@@ -5862,7 +5862,8 @@
     "messagingIntroReticulum": "让ATAK设备向LXMF个同行发送消息。可以从其标记向具有位置的同行发送消息；一旦mesh-client与之进行对话，没有位置的同行将显示为0、0 ，因此联系人列表中不会填写每个听到的同行。",
     "channelCallsign": "添加呼号",
     "channelCallsignFor": "将发件人的ATAK呼号放在发送到{{channel}}的消息前面",
-    "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。"
+    "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。",
+    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。"
   },
   "telemetryPanel": {
     "title": "遥测",

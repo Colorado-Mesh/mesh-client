@@ -153,7 +153,7 @@ describe('served channels', () => {
       remote: true,
     };
     expect(toTakChatChannels([ops, twin])).toEqual([
-      { key: ops.key, name: '#MC \u{1F512} Ops', send: true, remote: true },
+      { key: ops.key, name: '#MC \u{1F512} Ops', send: true, remote: true, protocol: 'meshcore' },
     ]);
   });
 });

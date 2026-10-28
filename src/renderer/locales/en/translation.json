@@ -6854,6 +6854,7 @@
     "channelCallsign": "Add callsign",
     "channelCallsignFor": "Put the sender's ATAK callsign in front of messages sent to {{channel}}",
     "channelCallsignHint": "With Add callsign off, what an ATAK device sends goes out exactly as typed. Turn it off for a bot channel: a bot looks for its command at the start of the message, so it misses one that starts with a callsign.",
+    "channelRepliesHint": "To reply to someone from ATAK, start with @ and the start of their name: @silver are you on? goes out as MeshCore's reply @[Silver Eagle] are you on?. @@ replies to whoever spoke last. If the start of the name fits several people heard on the channel, nothing is sent and the chat says who matched.",
     "channelRemote": "Remote server",
     "channelRemoteFor": "Stream {{channel}} to the remote TAK server",
     "channelTrackersFor": "Tracker fixes from {{channel}}",
