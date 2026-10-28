@@ -7105,6 +7105,9 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP from {{sender}}",
+    "atakDrill": "DRILL",
+    "atakPeople_one": "{{count}} person",
+    "atakPeople_other": "{{count}} people",
     "notificationTitle": "MECP alert",
     "exportLog": "Export MECP log",
     "exportLogSuccess": "MECP log exported",

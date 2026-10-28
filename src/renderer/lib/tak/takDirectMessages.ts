@@ -21,6 +21,8 @@ import { errLikeToLogString } from '../errLikeToLogString';
 import { isMeshcoreDmExcludedHwModel } from '../meshcoreUtils';
 import { resolveReticulumChatLxmfDestination } from '../reticulum/resolveReticulumChatLxmfDest';
 import type { IdentityId, MeshNode } from '../types';
+import { takMecpText } from './takMecpText';
+import { capTakText } from './takReplyText';
 import { isFirstSeen } from './takSeenOnce';
 
 /**
@@ -138,7 +140,8 @@ export function relayDirectMessageToTak(
       protocol,
       nodeId: msg.nodeId,
       senderCallsign,
-      text,
+      // An MECP report is shown in words, with its code line below.
+      text: capTakText(takMecpText(text) ?? text, TAK_GEOCHAT_TEXT_MAX_LEN),
       timeMs: msg.timestampMs,
     })
     .catch((e: unknown) => {

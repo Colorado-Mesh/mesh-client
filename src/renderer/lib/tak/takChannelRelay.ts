@@ -15,6 +15,7 @@ import type { ChatMessage, IdentityId } from '../types';
 import { relayDirectMessageToTak } from './takDirectMessages';
 import { consumeTakEcho } from './takEchoGuard';
 import { pushTakGeochat } from './takGeochatPush';
+import { takMecpText } from './takMecpText';
 import { capTakText, formatTakReplyText, type TakReplyContext } from './takReplyText';
 import { isFirstSeen } from './takSeenOnce';
 import { findServedChannel } from './takServedChannels';
@@ -100,7 +101,11 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
-    text: capTakText(formatTakReplyText(text, msg.reply), TAK_GEOCHAT_TEXT_MAX_LEN),
+    // An MECP report is shown in words, with its code line below.
+    text: capTakText(
+      takMecpText(text) ?? formatTakReplyText(text, msg.reply),
+      TAK_GEOCHAT_TEXT_MAX_LEN,
+    ),
     timeMs: msg.timestampMs,
     ...(msg.latitude != null && msg.longitude != null
       ? { latitude: msg.latitude, longitude: msg.longitude }
