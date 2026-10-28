@@ -61,7 +61,7 @@ Keychain. This is not physical radio or native credential-storage validation.
   harness-only: a double-click action timed out (low) and a form was deliberately skipped by the
   auth-form guardrail (info). Report: `/tmp/mesh-discord-chaos/report.html`.
 - Electron: the final rebased build passed both feature journeys plus existing empty-state,
-  protocol-switch and dialog-cancel regressions: 5 tests, 35.7 s. Initial failed runs
+  protocol-switch and dialog-cancel regressions: 5 tests, 33.6 s (final rebuilt application). Initial failed runs
   exposed an unavailable native Keychain, test navigation/selector mistakes, invalid synthetic
   public keys and an unsupported identity-export response. Those test issues were corrected;
   the real frame normalization and setup-wait paths were also exercised and fixed.
@@ -71,22 +71,19 @@ Keychain. This is not physical radio or native credential-storage validation.
   mobile move/save and no page errors. Synthetic hub state; no live hub connected.
   Harness: `/tmp/mesh-discord-rrc-ui.mjs`; screenshots inspected locally.
 - Upstream connection/error regression rerun passed 169 tests after rebase.
-- Earlier comprehensive `pnpm run check:pr`: lint + all typechecks + 17,435 tests / 1,403 files
-  passed. The final committed-branch run is tracked below.
-- Full-feature Rust formatting, Clippy and tests passed: 844 tests. The final aggregate must also
-  include this path after the source commit (the detector examines committed branch paths).
-- Production build passed. Exact final revision checks, hooks, pushed-content verification and
-  hosted results are tracked below.
+- Final comprehensive `pnpm run check:pr` on code revision
+  `2be1d81b04fadf2355f0becc617b8f4032b56d21`: full lint, all typechecks,
+  strict-shared, 17,455 tests / 1,403 files, full-feature Rust formatting, Clippy and
+  844 Rust tests passed. Required commit hooks and security/source scanners passed;
+  the implementation hook also ran 6,392 related Vitest tests.
+- Final production build and the five Electron journeys passed after translation corrections.
+- Final request/diff/checklist audit passed. Dedicated review found no remaining material
+  issues; the latest persistence/capacity regression set passed all 28 tests.
 
-| Completion gate                              | Result  | Evidence / remaining work                                              |
-| -------------------------------------------- | ------- | ---------------------------------------------------------------------- |
-| Final full request/diff/checklist audit      | passed  | Request, callers, storage, platform/protocol coverage and diff audited |
-| Final check:pr and required scanners         | pending | Must run against rebased implementation                                |
-| Final production build and Electron journeys | passed  | Rebased production build; 5 Electron tests passed                      |
-| Final dedicated review                       | passed  | No remaining material issues; 28 regression tests passed               |
-| Draft PR and remote commit/diff verification | pending | No merge or release authorized                                         |
-| CodeRabbit                                   | pending | Monitor exact PR head; fix relevant actionable findings                |
-| CodeQL and CI                                | pending | Monitor exact PR head; unavailable/skipped checks are not passes       |
+This document records local evidence. Publication, pushed-commit verification, CodeRabbit,
+CodeQL and CI are checked separately on the pull request's delivered head and reported in the
+handoff. Local passes do not imply hosted approval or physical hardware validation. The only
+later local change is this evidence document; it does not invalidate the code/runtime results.
 
 The physical Windows BLE failure is not claimed fixed or fully verified. Test it by installing
 this PR build on Windows with the affected companion: close the official app, scan with and
