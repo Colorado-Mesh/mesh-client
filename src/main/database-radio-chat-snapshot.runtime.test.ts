@@ -6,6 +6,7 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as DatabaseModule from './database';
+import { meshcoreContactInputToUpsertParams } from './meshcoreContactInput';
 
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-radio-snapshot-'));
 vi.mock('electron', () => ({
@@ -68,12 +69,14 @@ describe('atomic radio contact snapshots', () => {
       { node_id: 4, on_radio: 1, nickname: 'Local nickname', favorited: 0 },
     ]);
   });
-  it('stamps the null timestamp produced by live contact IPC and protects it during a dump', () => {
+  it('stamps omitted live-contact IPC timestamps and protects them during a dump', () => {
     runtime.saveMeshcoreContactsBatch([row(1)]);
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date(after));
-      runtime.saveMeshcoreContactsBatch([{ ...row(2), last_synced_from_radio: null }]);
+      runtime.saveMeshcoreContactsBatch([
+        meshcoreContactInputToUpsertParams({ ...row(2), last_synced_from_radio: undefined }),
+      ]);
       runtime.saveMeshcoreContactsBatch([], cutoff);
       expect(flags()).toEqual([
         { node_id: 1, on_radio: 0, nickname: 'Local nickname', favorited: 0 },

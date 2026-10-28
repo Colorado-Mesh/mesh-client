@@ -197,6 +197,7 @@ import {
 } from './mecp-received-log';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
+import { meshcoreContactInputToUpsertParams } from './meshcoreContactInput';
 import {
   clearMeshcoreMessagesByChannel,
   MESHCORE_MESSAGE_CHANNEL_SQL,
@@ -989,34 +990,6 @@ function validateSaveMeshcoreContact(contact: unknown): asserts contact is Recor
   ) {
     throw new Error('db:saveMeshcoreContact: last_synced_from_radio must be a string <= 128');
   }
-}
-
-function meshcoreContactInputToUpsertParams(
-  c: Record<string, unknown>,
-): MeshcoreContactUpsertParams {
-  const coords = sanitizeMeshcoreAdvLatLonForDb(
-    c.adv_lat != null ? Number(c.adv_lat) : null,
-    c.adv_lon != null ? Number(c.adv_lon) : null,
-  );
-  return {
-    node_id: Number(c.node_id),
-    public_key: c.public_key as string,
-    adv_name: typeof c.adv_name === 'string' ? c.adv_name : null,
-    contact_type: c.contact_type != null ? Number(c.contact_type) : 0,
-    last_advert: sanitizeMeshcoreLastAdvertForDb(
-      c.last_advert != null ? Number(c.last_advert) : null,
-    ),
-    adv_lat: coords.adv_lat,
-    adv_lon: coords.adv_lon,
-    last_snr: c.last_snr != null ? Number(c.last_snr) : null,
-    last_rssi: c.last_rssi != null ? Number(c.last_rssi) : null,
-    nickname: typeof c.nickname === 'string' ? c.nickname : null,
-    contact_flags: c.contact_flags != null ? Number(c.contact_flags) : 0,
-    hops_away: c.hops_away != null ? Number(c.hops_away) : null,
-    on_radio: c.on_radio != null ? Number(c.on_radio) : null,
-    last_synced_from_radio:
-      typeof c.last_synced_from_radio === 'string' ? c.last_synced_from_radio : null,
-  };
 }
 
 function validateTakSettings(settings: unknown): asserts settings is TAKSettings {
@@ -6085,10 +6058,9 @@ ipcMain.handle(
       if (
         radioSnapshotBefore !== undefined &&
         (typeof radioSnapshotBefore !== 'string' ||
-          !Number.isFinite(Date.parse(radioSnapshotBefore)) ||
-          new Date(radioSnapshotBefore).toISOString() !== radioSnapshotBefore)
+          new Date(radioSnapshotBefore).toJSON() !== radioSnapshotBefore)
       ) {
-        throw new Error('db:saveMeshcoreContactsBatch: invalid snapshot timestamp');
+        throw new Error('Invalid snapshot');
       }
       const rows: MeshcoreContactUpsertParams[] = [];
       for (let i = 0; i < contacts.length; i += MESHCORE_CONTACTS_BATCH_MAX) {
