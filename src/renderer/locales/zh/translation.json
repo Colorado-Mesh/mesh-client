@@ -1785,14 +1785,14 @@
         "scan_busy": "另一个蓝牙扫描正在进行中。请稍等片刻，然后重试。",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "蓝牙连接超时。保持收音机清醒并靠近，然后重试。",
-        "gatt_discover_failed": "无法在设备上发现蓝牙服务。请重新配对收音机，然后重试。",
         "pairing_required": "必须先配对此设备。使用“删除并重新配对设备” ，然后输入收音机上显示的PIN码。",
         "bond_removed": "蓝牙绑定不再有效。在系统设置中忘记设备，然后重新配对。",
         "write_failed": "无法写入蓝牙设备。请重新连接并重试。",
         "session_not_found": "蓝牙会话不再可用。断开连接，然后重新连接。",
         "notified_read_forbidden": "无法以这种方式读取此蓝牙特征。请重新连接并重试。",
         "feature_disabled": "此版本中不支持蓝牙GATT。",
-        "sidecar_down": "蓝牙服务未运行。稍等片刻或重新启动 mesh-client，然后重试。"
+        "sidecar_down": "蓝牙服务未运行。稍等片刻或重新启动 mesh-client，然后重试。",
+        "gatt_discover_failed": "无法发现所需的蓝牙服务。关闭连接到收音机的其他应用程序，重新启动收音机，然后再次扫描。检查它是否运行兼容的配套固件。仅当蓝牙报告身份验证或配对错误时才重新配对。"
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "已连接",
       "reconnecting": "正在重新连接…"
     },
-    "joinedRooms": "已加入",
-    "recentRooms": "最近",
     "roomKeyOptional": "房间钥匙（选填）",
     "joinRoomHelp": "房间是这个中心的现场群组。按姓名加入，试试Listed ，或键入/list和/help。",
     "listHint": "提示：/list显示rrcd集线器上已注册的公共房间。/help命令。",
@@ -6049,7 +6047,6 @@
       "usageMsg": "用法：/msg NICK |哈希文本",
       "msgTargetNotFound": "无法将/msg目标解析为完整的身份哈希。加入房间或使用完整的哈希值。"
     },
-    "listedRooms": "已上市",
     "refreshRoomList": "刷新房间列表(/list)",
     "favoriteRoom": "最喜爱的房间",
     "unfavoriteRoom": "删除房间收藏夹",
@@ -7721,5 +7718,21 @@
     "capacityHint": "关于{{count}}的典型网格消息适合此引擎的一个推理通道（首先是较新的）。Catch up可以通过多次通行证处理最多{{ceiling}}条消息。较长的消息每次使用通行证的使用次数较多。较大的范围需要较长的超时时间。",
     "capacityHintChooseEngine": "内置操作系统的人工智能和下载的模型每通约适合{{onDevice}}条典型消息；本地或远程服务器约适合{{endpoint}}条。使用多重通行证，最多可以覆盖{{ceiling}}条消息。提高繁忙网格的消息限制和超时。",
     "lowThreadBudgetWarning": "此设备只有{{count}}个追赶WASM线程。下载的模型摘要通常需要大约6个或更多才能正常运行，并且在这里需要更长的时间。首选其他引擎，或提高下面的超时时间。"
+  },
+  "chatOrder": {
+    "title": "订单聊天",
+    "hint": "拖动手柄、使用箭头键或使用箭头按钮移动条目。这只会更改其显示顺序。",
+    "alphabetical": "按A-Z排序",
+    "default": "默认排序",
+    "drag": "拖动{{name}}",
+    "up": "将{{name}}上移",
+    "down": "下移{{name}}",
+    "saveFailed": "无法保存订单。请重试。"
+  },
+  "radioChatSync": {
+    "sync": "从收音机同步聊天",
+    "busy": "正在从收音机读取聊天记录……",
+    "failed": "无法从收音机中读取聊天。已保留现有聊天记录。请重新连接并重试。",
+    "done": "从收音机同步的聊天。"
   }
 }

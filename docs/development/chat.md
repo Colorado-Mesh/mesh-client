@@ -107,3 +107,27 @@ until the stack restarts.
 When a verified reception has no numeric measurements, the action sends only a receipt such
 as `ack: received via RF` or `ack: received via BLE`. A BLE label is reported as BLE and does
 not assert a LoRa path.
+
+## Chat display order and radio recovery
+
+**Order chats** opens the same ordering dialog for channel pills and direct messages on all
+protocols, MeshCore Rooms, and Reticulum RRC rooms. Drag a handle with a pointer or touch, use
+Up/Down on a focused handle, or use the arrow buttons. **Sort A–Z** orders by displayed name;
+**Default order** restores the surface's original order. Save applies the order; Cancel/Escape
+leaves it unchanged. Preferences persist through the renderer-preference map, scoped by protocol,
+radio/self id and surface (RRC uses the hub). This changes presentation only, never radio channel
+indices, message destinations, room membership, favorites or credentials. Temporarily absent
+entries retain their slots while visible entries are reordered.
+
+MeshCore Chat and Rooms offer **Sync chats from radio** for a connected companion after setup.
+This reads contacts and channel slots without changing the radio. Room contacts merge with local
+history, names, favorites and saved credentials. The explicit reader checks ChannelInfo indices,
+reads the v3+ DeviceInfo channel capacity, and rejects every
+busy/error/timeout response instead of accepting the SDK's partial-success result. Very old firmware without capacity
+metadata keeps the normal connect-time import; explicit sync asks for compatible firmware rather
+than reporting an unverifiable partial import. Absent slots
+in partial connect-time reads do not delete known channels; an explicit empty slot is respected.
+Sync is single-flight, excludes setup/channel writes, checks connection generation before applying
+asynchronous work, and awaits contact persistence before reporting success. Failure leaves the
+existing chat list available for retry. A companion cannot provide room passwords or local chat
+history that were never stored on it; it can restore the room contacts and configured channels.

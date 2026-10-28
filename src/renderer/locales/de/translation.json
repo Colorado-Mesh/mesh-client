@@ -1785,14 +1785,14 @@
         "scan_busy": "Ein weiterer Bluetooth-Scan ist im Gange. Warten Sie einen Moment und versuchen Sie es erneut.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Zeitüberschreitung der Bluetooth-Verbindung. Halten Sie das Radio wach und in der Nähe und versuchen Sie es dann erneut.",
-        "gatt_discover_failed": "Bluetooth-Dienste konnten auf dem Gerät nicht erkannt werden. Koppeln Sie das Radio erneut und versuchen Sie es erneut.",
         "pairing_required": "Dieses Gerät muss zuerst gekoppelt werden. Verwenden Sie Gerät entfernen und neu koppeln und geben Sie dann die im Radio angezeigte PIN ein.",
         "bond_removed": "Die Bluetooth-Bindung ist nicht mehr gültig. Vergessen Sie das Gerät in den Systemeinstellungen und koppeln Sie es erneut.",
         "write_failed": "Schreiben auf das Bluetooth-Gerät fehlgeschlagen. Verbinden Sie sich erneut und versuchen Sie es erneut.",
         "session_not_found": "Die Bluetooth-Sitzung ist nicht mehr verfügbar. Trennen Sie die Verbindung und schließen Sie sie erneut an.",
         "notified_read_forbidden": "Diese Bluetooth-Eigenschaft kann nicht auf diese Weise gelesen werden. Verbinden Sie sich erneut und versuchen Sie es erneut.",
         "feature_disabled": "Bluetooth GATT-Unterstützung ist in diesem Build nicht verfügbar.",
-        "sidecar_down": "Der Bluetooth-Dienst wird nicht ausgeführt. Warten Sie einen Moment oder starten Sie den mesh-client neu und versuchen Sie es dann erneut."
+        "sidecar_down": "Der Bluetooth-Dienst wird nicht ausgeführt. Warten Sie einen Moment oder starten Sie den mesh-client neu und versuchen Sie es dann erneut.",
+        "gatt_discover_failed": "Die erforderlichen Bluetooth-Dienste konnten nicht gefunden werden. Schließen Sie andere mit dem Radio verbundene Apps, starten Sie das Radio neu und scannen Sie erneut. Überprüfen Sie, ob die Firmware des Begleiters kompatibel ist. Koppeln Sie nur erneut, wenn Bluetooth einen Authentifizierungs- oder Kopplungsfehler meldet."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Verbunden",
       "reconnecting": "Ankommen"
     },
-    "joinedRooms": "Beigetreten",
-    "recentRooms": "Letzte",
     "roomKeyOptional": "Raumschlüssel (optional)",
     "joinRoomHelp": "Räume sind Live-Gruppen auf diesem Hub. Per Name beitreten, Gelistet versuchen, oder /list und /help tippen.",
     "listHint": "Tipp: /list zeigt registrierte öffentliche Räume auf rrcd-Hubs an. /help für Befehle.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Aufruf: /msg NICK| Hash-Text",
       "msgTargetNotFound": "Das /msg-Ziel konnte nicht in einen vollständigen Identitäts-Hash aufgelöst werden. Treten Sie einem Raum bei oder nutzen Sie den vollständigen Hash."
     },
-    "listedRooms": "Gelistet",
     "refreshRoomList": "Raumliste aktualisieren (/list)",
     "favoriteRoom": "Raum favorisieren",
     "unfavoriteRoom": "Raumfavorit entfernen",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Über {{count}} typische Mesh-Nachrichten passen zu einem Inferenzdurchgang mit dieser Engine (neuere zuerst). Nachholen kann bis zu {{ceiling}} Nachrichten über mehrere Durchgänge verarbeiten. Längere Nachrichten verbrauchen mehr von jedem Durchgang. Große Reichweiten benötigen ein längeres Timeout.",
     "capacityHintChooseEngine": "Die integrierte Betriebssystem-KI und heruntergeladene Modelle passen zu {{onDevice}} typischen Nachrichten pro Durchgang; ein lokaler oder Remote-Server zu {{endpoint}}. Nachholen kann bis zu {{ceiling}} Nachrichten mit Multi-Pass abdecken. Erhöhen Sie das Nachrichtenlimit und die Zeitüberschreitung für ausgelastete Netze.",
     "lowThreadBudgetWarning": "Dieses Gerät hat nur {{count}} Aufhol-WASM-Thread (s). Zusammenfassungen von heruntergeladenen Modellen benötigen in der Regel etwa 6 oder mehr, um gut zu laufen, und werden hier länger dauern. Bevorzugen Sie einen anderen Motor oder erhöhen Sie die Zeitüberschreitung unten."
+  },
+  "chatOrder": {
+    "title": "Bestell-Chats",
+    "hint": "Ziehen Sie die Griffe, verwenden Sie Pfeiltasten oder verschieben Sie Einträge mit den Pfeiltasten. Dies ändert nur ihre Anzeigereihenfolge.",
+    "alphabetical": "Von A-Z sortieren",
+    "default": "Standardsortierung",
+    "drag": "Ziehen {{name}}",
+    "up": "{{name}} nach oben verschieben",
+    "down": "{{name}} nach unten verschieben",
+    "saveFailed": "Die Bestellung konnte nicht gespeichert werden. Versuchen Sie es erneut."
+  },
+  "radioChatSync": {
+    "sync": "Chats aus dem Radio synchronisieren",
+    "busy": "Chats aus dem Radio lesen...",
+    "failed": "Chats aus dem Radio konnten nicht gelesen werden. Bestehende Chats wurden beibehalten. Verbinden Sie sich erneut und versuchen Sie es erneut.",
+    "done": "Über Funk synchronisierte Chats."
   }
 }

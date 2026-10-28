@@ -38,6 +38,7 @@ function renderControls(props?: Partial<ComponentProps<typeof ReticulumRmapDisco
 describe('ReticulumRmapDiscoveryControls', () => {
   beforeEach(() => {
     localStorage.clear();
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: true }));
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/interfaces') {
         return Promise.resolve({
@@ -66,6 +67,13 @@ describe('ReticulumRmapDiscoveryControls', () => {
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ id: 'hub-1' });
     window.electronAPI.appSettings.set = vi.fn().mockResolvedValue({ changes: 1 });
+  });
+
+  it('keeps publishing disabled in a fresh profile until explicit location consent', async () => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+    renderControls();
+    expect(await screen.findByLabelText('reticulumRmapDiscovery.publishToggle')).toBeDisabled();
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
   });
 
   it('renders publish toggle and field labels', async () => {

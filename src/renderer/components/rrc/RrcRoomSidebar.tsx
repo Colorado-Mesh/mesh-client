@@ -5,10 +5,12 @@ import {
   isRrcByteLimitOverMax,
   RrcByteLimitHint,
 } from '@/renderer/components/rrc/RrcByteLimitHint';
+import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { isRrcWhisperRoom } from '@/renderer/lib/rrcMention';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type { RrcListedRoom, RrcRoomInfo } from '@/shared/rrc-types';
 
+import { ChatOrderButton } from '../chat/ChatOrderButton';
 import { IconButton } from '../ui/Button';
 import { chipClass, INPUT_CLASS } from '../ui/formClasses';
 
@@ -44,6 +46,7 @@ function dedupeJoinedRooms(joined: RrcRoomInfo[]): RrcRoomInfo[] {
 
 /** Room list body for the RRC list column (Refresh room list lives in the column header). */
 export interface RrcRoomSidebarProps {
+  orderScope?: string;
   roomSearch: string;
   onRoomSearchChange: (v: string) => void;
   joinRoomName: string;
@@ -69,6 +72,7 @@ export interface RrcRoomSidebarProps {
 }
 
 export function RrcRoomSidebar({
+  orderScope = 'rrc',
   roomSearch,
   onRoomSearchChange,
   joinRoomName,
@@ -102,6 +106,18 @@ export function RrcRoomSidebar({
     }
     return name;
   };
+
+  const orderItems = dedupeByMatchKey([
+    ...joinedDeduped.map((room) => room.name),
+    ...listed.map((room) => room.name),
+    ...favourites,
+    ...recent,
+  ]).map((name) => ({ id: rrcRoomMatchKey(name), name: displayName(name) }));
+  const order = useChatOrder(`reticulum:${orderScope}:rrc`, orderItems);
+  const ranks = new Map(order.ids.map((id, index) => [id, index]));
+  const compare = (a: string, b: string) =>
+    (ranks.get(rrcRoomMatchKey(a)) ?? Infinity) - (ranks.get(rrcRoomMatchKey(b)) ?? Infinity);
+  joinedDeduped.sort((a, b) => compare(a.name, b.name));
 
   const filterName = (name: string) => {
     if (!q) return true;
@@ -197,26 +213,16 @@ export function RrcRoomSidebar({
     );
   };
 
-  const listedNotJoined = listed.filter(
-    (r) => filterName(r.name) && !joinedKeys.has(rrcRoomMatchKey(r.name)),
+  const canonicalNames = new Map(
+    dedupeByMatchKey([
+      ...joinedDeduped.map((room) => room.name),
+      ...listed.map((room) => room.name),
+      ...favourites,
+      ...recent,
+    ]).map((name) => [rrcRoomMatchKey(name), name]),
   );
-  const listedMatchKeys = new Set(listedNotJoined.map((r) => rrcRoomMatchKey(r.name)));
-  const favNotJoined = dedupeByMatchKey(
-    favourites.filter(
-      (r) =>
-        filterName(r) &&
-        !joinedKeys.has(rrcRoomMatchKey(r)) &&
-        !listedMatchKeys.has(rrcRoomMatchKey(r)),
-    ),
-  );
-  const recentVisible = dedupeByMatchKey(
-    recent.filter(
-      (r) =>
-        filterName(r) &&
-        !joinedKeys.has(rrcRoomMatchKey(r)) &&
-        !listedMatchKeys.has(rrcRoomMatchKey(r)) &&
-        !favNotJoined.some((f) => rrcRoomsMatch(f, r)),
-    ),
+  const metadata = new Map(
+    [...listed, ...joinedDeduped].map((room) => [rrcRoomMatchKey(room.name), room]),
   );
 
   return (
@@ -274,47 +280,22 @@ export function RrcRoomSidebar({
           className={INPUT_CLASS}
         />
       </div>
+      <ChatOrderButton items={orderItems} ids={order.ids} onSave={order.save} />
       <ul className="min-h-0 flex-1 overflow-y-auto p-2">
-        {joinedDeduped.some((r) => filterName(r.name)) && (
-          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
-            {t('rrc.joinedRooms')}
-          </li>
+        {order.ids.length === 0 && (
+          <li className="text-muted px-2 py-3 text-xs">{t('rrc.noRoomsJoined')}</li>
         )}
-        {joinedDeduped
-          .filter((r) => filterName(r.name))
-          .map((room) =>
-            renderRoomButton(room.name, {
-              unread: unreadFor(room.name),
-              joined: true,
-              topic: room.topic ?? undefined,
+        {order.ids.flatMap((id) => {
+          const name = canonicalNames.get(id);
+          if (!name || !filterName(name)) return [];
+          return [
+            renderRoomButton(name, {
+              unread: unreadFor(name),
+              joined: joinedKeys.has(id),
+              topic: metadata.get(id)?.topic ?? undefined,
             }),
-          )}
-        {(listedNotJoined.length > 0 || favNotJoined.length > 0) && (
-          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
-            {t('rrc.listedRooms')}
-          </li>
-        )}
-        {listedNotJoined.map((r) =>
-          renderRoomButton(r.name, {
-            unread: unreadFor(r.name),
-            joined: false,
-            topic: r.topic,
-          }),
-        )}
-        {favNotJoined.map((name) =>
-          renderRoomButton(name, { unread: unreadFor(name), joined: false }),
-        )}
-        {recentVisible.length > 0 && (
-          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
-            {t('rrc.recentRooms')}
-          </li>
-        )}
-        {recentVisible.map((name) =>
-          renderRoomButton(name, { unread: unreadFor(name), joined: false }),
-        )}
-        {joinedDeduped.length === 0 && (
-          <li className="text-muted px-2 py-2 text-xs">{t('rrc.noRoomsJoined')}</li>
-        )}
+          ];
+        })}
       </ul>
       <div className="text-muted border-ink-800 space-y-1 border-t px-3 py-2 text-xs leading-snug">
         <p>{t('rrc.roomLegend')}</p>

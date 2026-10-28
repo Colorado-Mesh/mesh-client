@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
+import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
@@ -125,8 +126,10 @@ import {
   scheduleVirtualRowRemeasure,
 } from '../lib/chatScrollUtils';
 import { CatchUpButton } from './chat/CatchUpButton';
+import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
 import { ConversationLayout, useConversationLayoutMode } from './chat/ConversationLayout';
+import { RadioChatSyncButton } from './chat/RadioChatSyncButton';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
@@ -200,6 +203,7 @@ interface Props {
       forceRelogin?: boolean;
     },
   ) => Promise<void>;
+  onSyncRadioChats?: () => Promise<void>;
   onLoginAllSaved?: (roomNodeIds: number[]) => Promise<void>;
   onCancelRoomLogin: (nodeId: number) => void;
   onLeaveRoom: (nodeId: number) => Promise<void>;
@@ -277,6 +281,7 @@ export default function RoomsPanel({
   onInitialRoomConsumed,
   onLoginRoom,
   onLoginAllSaved,
+  onSyncRadioChats,
   onCancelRoomLogin,
   onLeaveRoom,
   onSendRoomPost,
@@ -423,6 +428,14 @@ export default function RoomsPanel({
         }),
     [nodes],
   );
+
+  const roomOrderItems = roomServers.map((room) => ({
+    id: String(room.node_id),
+    name: room.long_name ?? String(room.node_id),
+  }));
+  const roomOrder = useChatOrder(`meshcore:${myNodeNum}:rooms`, roomOrderItems);
+  const roomById = new Map(roomServers.map((room) => [room.node_id, room]));
+  const orderedRoomServers = roomOrder.ids.flatMap((id) => roomById.get(Number(id)) ?? []);
 
   const activeRoom = selectedRoomId != null ? nodes.get(selectedRoomId) : undefined;
 
@@ -1459,7 +1472,7 @@ export default function RoomsPanel({
       : []),
   ];
 
-  const roomRows = roomServers.map((room) => {
+  const roomRows = orderedRoomServers.map((room) => {
     const count = postCountByRoom.get(room.node_id) ?? 0;
     const selected = selectedRoomId === room.node_id;
     const unread = selected ? 0 : (roomUnreadCounts.get(room.node_id) ?? 0);
@@ -1580,6 +1593,10 @@ export default function RoomsPanel({
           {t('roomsPanel.title')}{' '}
           <span className="text-muted font-normal tabular-nums">({roomServers.length})</span>
         </h2>
+        <ChatOrderButton items={roomOrderItems} ids={roomOrder.ids} onSave={roomOrder.save} />
+        {onSyncRadioChats && (
+          <RadioChatSyncButton onSync={onSyncRadioChats} disabled={!isConnected} />
+        )}
         {onLoginAllSaved && roomServers.length > 0 ? (
           <Button
             size="sm"

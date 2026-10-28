@@ -1807,14 +1807,14 @@
         "scan_busy": "Probíhá další skenování Bluetooth. Chvíli počkejte a zkuste to znovu.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Vypršel časový limit připojení Bluetooth. Udržujte rádio v bdělém stavu a poblíž a zkuste to znovu.",
-        "gatt_discover_failed": "V zařízení se nepodařilo zjistit služby Bluetooth. Znovu spárujte rádio a zkuste to znovu.",
         "pairing_required": "Toto zařízení musí být nejprve spárováno. Použijte Odebrat a znovu spárovat zařízení a poté zadejte PIN zobrazený na rádiu.",
         "bond_removed": "Spojení Bluetooth již není platné. Zapomeňte zařízení v nastavení systému a poté jej znovu spárujte.",
         "write_failed": "Zápis do zařízení Bluetooth se nezdařil. Znovu se připojte a zkuste to znovu.",
         "session_not_found": "Relace Bluetooth již není k dispozici. Odpojte a znovu připojte.",
         "notified_read_forbidden": "Tuto charakteristiku Bluetooth nelze takto přečíst. Znovu se připojte a zkuste to znovu.",
         "feature_disabled": "Podpora Bluetooth GATT není v tomto sestavení k dispozici.",
-        "sidecar_down": "Služba Bluetooth není spuštěna. Chvíli počkejte nebo restartujte mesh-client a zkuste to znovu."
+        "sidecar_down": "Služba Bluetooth není spuštěna. Chvíli počkejte nebo restartujte mesh-client a zkuste to znovu.",
+        "gatt_discover_failed": "Nepodařilo se zjistit požadované služby Bluetooth. Zavřete ostatní aplikace připojené k rádiu, restartujte rádio a skenujte znovu. Zkontrolujte, zda je spuštěn kompatibilní doprovodný firmware. Párování opakujte pouze v případě, že Bluetooth nahlásí chybu ověření nebo párování."
       }
     },
     "tiles": {
@@ -6067,8 +6067,6 @@
       "active": "Připojeno",
       "reconnecting": "Probíhá opětovné připojování…"
     },
-    "joinedRooms": "Připojen",
-    "recentRooms": "Nedávné",
     "roomKeyOptional": "Klíč od pokoje (volitelné)",
     "joinRoomHelp": "Pokoje jsou v tomto centru živé skupiny. Připojte se podle jména, zkuste Navrhované nebo napište /list a /help.",
     "listHint": "Tip: /list zobrazuje registrované veřejné místnosti na rrcd hubech. /help pro příkazy.",
@@ -6095,7 +6093,6 @@
       "usageMsg": "Použití: /msg NICK|HASH TEXT",
       "msgTargetNotFound": "Nelze přeložit /msg cíl na úplný hash identity. Připojte se k místnosti nebo použijte celý hash."
     },
-    "listedRooms": "Uvedeno",
     "refreshRoomList": "Aktualizovat seznam místností (/list)",
     "favoriteRoom": "Oblíbený pokoj",
     "unfavoriteRoom": "Odebrat oblíbený pokoj",
@@ -7797,5 +7794,21 @@
     "capacityHint": "Typické síťové zprávy {{count}} odpovídají jednomu inferenčnímu průchodu s tímto motorem (novější jako první). Dohnat můžeš až {{ceiling}} zpráv prostřednictvím více průkazů. Delší zprávy používají více z každého průchodu. Velké rozsahy vyžadují delší časový limit.",
     "capacityHintChooseEngine": "Vestavěná OS AI a stažené modely odpovídají přibližně {{onDevice}} typickým zprávám na jeden průchod; místní nebo vzdálený server přibližně {{endpoint}}. Dohánění může pokrýt až {{ceiling}} zprávy s více průchody. Zvyšte limit zpráv a časový limit pro zaneprázdněné sítě.",
     "lowThreadBudgetWarning": "Toto zařízení má pouze {{count}} Dohnat WASM vlákna. Souhrny stažených modelů obvykle potřebují asi 6 nebo více, aby fungovaly dobře, a zde to bude trvat déle. Preferujte jiný motor nebo zvyšte časový limit níže."
+  },
+  "chatOrder": {
+    "title": "Objednat chaty",
+    "hint": "Přetáhněte úchyty, použijte klávesy se šipkami nebo přesuňte položky pomocí tlačítek se šipkami. Tím se změní pouze jejich pořadí zobrazení.",
+    "alphabetical": "Seřadit: A-Z",
+    "default": "Výchozí pořadí",
+    "drag": "Přetáhnout {{name}}",
+    "up": "Posunout {{name}} nahoru",
+    "down": "Posunout {{name}} dolů",
+    "saveFailed": "Objednávku se nepodařilo uložit. Zkuste to znovu."
+  },
+  "radioChatSync": {
+    "sync": "Synchronizovat chaty z rádia",
+    "busy": "Čtení chatů z rádia...",
+    "failed": "Nelze číst chaty z rádia. Existující chaty byly zachovány. Připojte se znovu a zkuste to znovu.",
+    "done": "Chaty synchronizované z rádia."
   }
 }

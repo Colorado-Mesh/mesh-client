@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
+import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
 import {
   type BatchedMessageAnnouncer,
@@ -246,7 +247,9 @@ import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { BotBadge } from './BotBadge';
 import { CatchUpButton } from './chat/CatchUpButton';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
+import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
+import { RadioChatSyncButton } from './chat/RadioChatSyncButton';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
@@ -706,6 +709,7 @@ export interface ChatPanelProps {
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
+  onSyncRadioChats?: () => Promise<void>;
   /** Full MeshCore channel list with PSK metadata for unread filtering (display uses `channels`). */
   meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
   /** MeshCore: save a channel on the connected companion radio. */
@@ -810,6 +814,7 @@ function ChatPanel({
   getReceptionStats,
   messagesForUnread,
   channels,
+  onSyncRadioChats,
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
@@ -3002,14 +3007,23 @@ function ChatPanel({
       </ScrollStrip>
     );
 
+  const channelOrderItems = channels.map((ch) => ({ id: String(ch.index), name: ch.name }));
+  const channelOrder = useChatOrder(`${protocol}:${myNodeNum}:channels`, channelOrderItems);
+  const dmOrderItems = visibleDmTabs.map((id) => ({ id: String(id), name: getDmLabel(id) }));
+  const dmOrder = useChatOrder(`${protocol}:${myNodeNum}:dms`, dmOrderItems);
+  const orderedDmTabs = dmOrder.ids.map(Number);
+  const channelByIndex = new Map(channels.map((ch) => [ch.index, ch]));
+  const orderedChannels = channelOrder.ids.flatMap((id) => channelByIndex.get(Number(id)) ?? []);
+
   /** Reticulum wraps its DM pills in Row 1; LoRa protocols keep the separate DM strip. */
   const dmTabPills = (
     <>
       <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
+      <ChatOrderButton items={dmOrderItems} ids={dmOrder.ids} onSave={dmOrder.save} />
       {!dmOnlyChat && visibleDmTabs.length > 0 && (
         <ChatChannelSwitcher
           kind="dms"
-          channels={visibleDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
+          channels={orderedDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
           unreadCounts={dmUnreadCounts}
           mecpSeverityByIndex={unreadMecpSeverity.dms}
           activeIndex={viewMode === 'dm' ? activeDmNode : null}
@@ -3022,7 +3036,7 @@ function ChatPanel({
         </span>
       ) : (
         renderDmTabList(
-          visibleDmTabs.map((nodeNum) => {
+          orderedDmTabs.map((nodeNum) => {
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
             const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
             const showDmUnreadBadge = dmUnread > 0;
@@ -3154,8 +3168,19 @@ function ChatPanel({
             dmTabPills
           ) : (
             <>
+              <ChatOrderButton
+                items={channelOrderItems}
+                ids={channelOrder.ids}
+                onSave={channelOrder.save}
+              />
+              {onSyncRadioChats && (
+                <RadioChatSyncButton
+                  onSync={onSyncRadioChats}
+                  disabled={meshcoreChannelManagementDisabled}
+                />
+              )}
               <WrappingChannelList activeKey={channelViewActive ? channel : null}>
-                {channels.map((ch, chIdx) => {
+                {orderedChannels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
                   // Selection alone does not advance the read watermark.
                   const unread = unreadCounts.get(ch.index) ?? 0;

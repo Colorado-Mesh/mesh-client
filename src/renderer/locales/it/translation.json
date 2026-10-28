@@ -1785,14 +1785,14 @@
         "scan_busy": "È in corso un'altra scansione Bluetooth. Attendi un momento e riprova.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Connessione Bluetooth scaduta. Tieni la radio sveglia e nelle vicinanze, quindi riprova.",
-        "gatt_discover_failed": "Impossibile rilevare i servizi Bluetooth sul dispositivo. Ricollegare la radio e riprovare.",
         "pairing_required": "Questo dispositivo deve essere prima accoppiato. Utilizzare Remove & Re-pair Device, quindi inserire il PIN mostrato sulla radio.",
         "bond_removed": "Il legame Bluetooth non è più valido. Dimenticare il dispositivo nelle impostazioni di sistema, quindi eseguire nuovamente l'associazione.",
         "write_failed": "Impossibile scrivere sul dispositivo Bluetooth. Riconnettiti e riprova.",
         "session_not_found": "La sessione Bluetooth non è più disponibile. Scollegare e ricollegare.",
         "notified_read_forbidden": "Questa caratteristica Bluetooth non può essere letta in questo modo. Riconnettiti e riprova.",
         "feature_disabled": "Il supporto Bluetooth GATT non è disponibile in questa build.",
-        "sidecar_down": "Il servizio Bluetooth non è in esecuzione. Attendere un momento o riavviare mesh-client, quindi riprovare."
+        "sidecar_down": "Il servizio Bluetooth non è in esecuzione. Attendere un momento o riavviare mesh-client, quindi riprovare.",
+        "gatt_discover_failed": "Impossibile scoprire i servizi Bluetooth richiesti. Chiudere le altre app collegate alla radio, riavviare la radio e ripetere la scansione. Verificare che esegua il firmware complementare compatibile. Eseguire nuovamente l'associazione solo se il Bluetooth segnala un errore di autenticazione o di associazione."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Connesso",
       "reconnecting": "La riconnessione"
     },
-    "joinedRooms": "Unito",
-    "recentRooms": "Recenti",
     "roomKeyOptional": "Chiave della sala (opzionale)",
     "joinRoomHelp": "Le sale sono gruppi dal vivo su questo hub. Unisciti per nome, prova Suggerito o digita /list e /help.",
     "listHint": "Suggerimento: /list mostra le sale pubbliche registrate sugli hub rrcd. /help per i comandi.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Sintassi: /msg NICK|HASH TEXT",
       "msgTargetNotFound": "Impossibile risolvere la destinazione /msg in un hash di identità completo. Unisciti a una stanza o usa l'hash completo."
     },
-    "listedRooms": "Quotazioni",
     "refreshRoomList": "Aggiorna l'elenco delle stanze (/list)",
     "favoriteRoom": "favourite room",
     "unfavoriteRoom": "Rimuovi sala preferita",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Circa {{count}} i messaggi mesh tipici si adattano a un passaggio di inferenza con questo motore (prima i più recenti). Il recupero può elaborare fino a {{ceiling}} messaggi tramite più passaggi. I messaggi più lunghi utilizzano più di ogni passaggio. Le grandi gamme richiedono un timeout più lungo.",
     "capacityHintChooseEngine": "L'intelligenza artificiale del sistema operativo integrato e i modelli scaricati si adattano a circa {{onDevice}} messaggi tipici per passaggio; un server locale o remoto a circa {{endpoint}}. Il recupero può coprire fino a {{ceiling}} messaggi con multi-pass. Aumentare il limite di messaggi e il timeout per le mesh occupate.",
     "lowThreadBudgetWarning": "Questo dispositivo ha solo {{count}} Recupera thread WASM. I riepiloghi dei modelli scaricati di solito ne richiedono circa 6 o più per funzionare bene e richiederanno più tempo qui. Preferisci un altro motore o aumenta il timeout qui sotto."
+  },
+  "chatOrder": {
+    "title": "Ordina chat",
+    "hint": "Trascina le maniglie, usa i tasti freccia o sposta le voci con i pulsanti freccia. Questo cambia solo il loro ordine di visualizzazione.",
+    "alphabetical": "Ordinamento A-Z",
+    "default": "Ordinamento predefinito",
+    "drag": "Trascina {{name}}",
+    "up": "Sposta {{name}} in alto",
+    "down": "Sposta {{name}} in basso",
+    "saveFailed": "Impossibile salvare l'ordine. Riprova."
+  },
+  "radioChatSync": {
+    "sync": "Sincronizza le chat dalla radio",
+    "busy": "Lettura delle chat dalla radio in corso...",
+    "failed": "Impossibile leggere le chat dalla radio. Le chat esistenti sono state mantenute. Riconnettiti e riprova.",
+    "done": "Chat sincronizzate dalla radio."
   }
 }

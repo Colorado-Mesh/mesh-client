@@ -71,7 +71,7 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    * When false, mesh-client skips host GPS lookups and blocks all app-initiated location
    * transmission (Meshtastic, MeshCore, Reticulum). Static coords remain for local map only.
    */
-  shareMyLocation: true,
+  shareMyLocation: false,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */

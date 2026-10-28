@@ -115,8 +115,8 @@ impl BleBackend for FakeBleBackend {
         }
         let needle = match profile {
             GattProfile::Meshtastic => "6ba1b218",
-            GattProfile::Meshcore | GattProfile::Rnode => "6e400001",
-            GattProfile::Peer => "",
+            GattProfile::Rnode => "6e400001",
+            GattProfile::Meshcore | GattProfile::Peer => "",
         };
         Ok(guard
             .devices

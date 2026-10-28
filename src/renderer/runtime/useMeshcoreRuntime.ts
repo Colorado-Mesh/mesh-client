@@ -3,7 +3,6 @@ import { CayenneLpp } from '@liamcottle/meshcore.js';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 /* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import {
@@ -222,6 +221,14 @@ import {
   replaceMeshcorePubKeyRegistry,
   setMeshcorePubKeyRegistryRefSync,
 } from '../lib/meshcore/meshcorePubKeyRegistry';
+import {
+  mergeLiveMapChanges,
+  readRadioChannels,
+  readRadioChats,
+  reconcileRadioChatChannels,
+  runRadioChatOperation,
+  waitForRadioChatSetup,
+} from '../lib/meshcore/meshcoreRadioChatSync';
 import { attachMeshcoreSerialTransportLossWatch } from '../lib/meshcore/meshcoreSerialTransportLoss';
 import {
   clearMeshcoreOpenHopPendingUserTx,
@@ -1669,14 +1676,13 @@ export function useMeshcoreRuntime() {
         deferDbMerge?: boolean;
         /** Skip path-history writes during large radio contact sync. */
         deferPathHistory?: boolean;
+        /** Explicit sync must never publish a snapshot from a disconnected generation. */
+        assertCurrent?: () => void;
+        awaitPersistence?: boolean;
       },
     ): Promise<Map<number, MeshNode>> => {
       const prevSnap = opts?.previousNodes ?? new Map<number, MeshNode>();
       const nextNodes = new Map<number, MeshNode>();
-      pubKeyMapRef.current.clear();
-      pubKeyPrefixMapRef.current.clear();
-      outPathMapRef.current.clear();
-      radioContactPathLenByNodeRef.current.clear();
       // Persisted hop counts from `nodes` are the source of truth across app restarts and
       // contact-table cleanups. Pre-fetch so each contact merge can fall back when the radio
       // reports no outPath and prevSnap has no entry yet.
@@ -1697,6 +1703,25 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
       }
+      opts?.assertCurrent?.();
+      const staged = opts?.awaitPersistence === true;
+      const baselinePubKeys = new Map(pubKeyMapRef.current);
+      const baselinePrefixes = new Map(pubKeyPrefixMapRef.current);
+      const baselinePaths = new Map(outPathMapRef.current);
+      const baselineNames = new Map(
+        contacts.map((contact) => {
+          const id = pubkeyToNodeId(contact.publicKey);
+          return [id, rememberedMeshcoreLiveAdvertName(id)] as const;
+        }),
+      );
+      const buildPubKeys = staged ? new Map<number, Uint8Array>() : pubKeyMapRef.current;
+      const buildPrefixes = staged ? new Map<string, number>() : pubKeyPrefixMapRef.current;
+      const buildPaths = staged ? new Map<number, Uint8Array>() : outPathMapRef.current;
+      const advertNames = new Map<number, string>();
+      buildPubKeys.clear();
+      buildPrefixes.clear();
+      buildPaths.clear();
+      if (!staged) radioContactPathLenByNodeRef.current.clear();
       const pendingDbRows: ReturnType<typeof contactToDbRow>[] = [];
       for (const contact of contacts) {
         const base = meshcoreContactToMeshNode(contact);
@@ -1728,7 +1753,8 @@ export function useMeshcoreRuntime() {
             radioLastAdvert: contact.lastAdvert,
           },
         );
-        rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
+        if (staged) advertNames.set(base.node_id, mergedAdvName);
+        else rememberMeshcoreLiveAdvertName(base.node_id, mergedAdvName);
         const node: MeshNode = {
           ...base,
           last_heard,
@@ -1749,8 +1775,8 @@ export function useMeshcoreRuntime() {
           node.hw_model = mergedHwModel;
         }
         nextNodes.set(node.node_id, node);
-        pubKeyMapRef.current.set(node.node_id, contact.publicKey);
-        outPathMapRef.current.set(node.node_id, slicedPath);
+        buildPubKeys.set(node.node_id, contact.publicKey);
+        buildPaths.set(node.node_id, slicedPath);
         const contactPathBytes = slicedPath.length > 0 ? Array.from(slicedPath) : [];
         if (!opts?.deferPathHistory && contactPathBytes.length > 0) {
           const pathHash = computePathHash(contactPathBytes);
@@ -1765,7 +1791,7 @@ export function useMeshcoreRuntime() {
         const prefix = Array.from(contact.publicKey.slice(0, 6))
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
-        pubKeyPrefixMapRef.current.set(prefix, node.node_id);
+        buildPrefixes.set(prefix, node.node_id);
         // Save with on_radio=1 when contacts came from radio
         const now = new Date().toISOString();
         const onRadio = opts?.contactsFromRadio ? 1 : 0;
@@ -1780,22 +1806,37 @@ export function useMeshcoreRuntime() {
         );
         pendingDbRows.push(dbRow);
       }
-      replaceMeshcorePubKeyRegistry(
-        contacts
-          .map((contact): [number, Uint8Array] => [
-            pubkeyToNodeId(contact.publicKey),
-            contact.publicKey,
-          ])
-          .filter(([id]) => id !== 0),
-      );
-      copyMeshcorePubKeyRegistryToRefs(pubKeyMapRef.current, pubKeyPrefixMapRef.current);
       if (pendingDbRows.length > 0) {
-        void window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows).catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] saveMeshcoreContactsBatch error ' + errLikeToLogString(e),
-          );
-        });
+        const persist = window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
+        if (opts?.awaitPersistence) {
+          await persist;
+          opts.assertCurrent?.();
+        } else {
+          void persist.catch((e: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] saveMeshcoreContactsBatch error ' + errLikeToLogString(e),
+            );
+          });
+        }
       }
+      if (staged) {
+        opts?.assertCurrent?.();
+        mergeLiveMapChanges(baselinePubKeys, pubKeyMapRef.current, buildPubKeys);
+        mergeLiveMapChanges(baselinePrefixes, pubKeyPrefixMapRef.current, buildPrefixes);
+        mergeLiveMapChanges(baselinePaths, outPathMapRef.current, buildPaths);
+        pubKeyMapRef.current = buildPubKeys;
+        pubKeyPrefixMapRef.current = buildPrefixes;
+        outPathMapRef.current = buildPaths;
+        radioContactPathLenByNodeRef.current.clear();
+        for (const [id, name] of advertNames) {
+          const liveName = rememberedMeshcoreLiveAdvertName(id);
+          if (liveName === baselineNames.get(id)) rememberMeshcoreLiveAdvertName(id, name);
+          else if (liveName && nextNodes.has(id))
+            nextNodes.set(id, { ...nextNodes.get(id)!, long_name: liveName });
+        }
+      }
+      replaceMeshcorePubKeyRegistry([...buildPubKeys].filter(([id]) => id !== 0));
+      copyMeshcorePubKeyRegistryToRefs(buildPubKeys, buildPrefixes);
       if (!opts?.deferDbMerge) {
         try {
           await mergeMeshcoreContactsFromDbIntoNodeMap(nextNodes, prevSnap, {
@@ -1915,13 +1956,32 @@ export function useMeshcoreRuntime() {
   );
 
   const deferMeshcoreDbContactMerge = useCallback(
-    async (nodeMap: Map<number, MeshNode>, prevSnap: Map<number, MeshNode>) => {
+    async (
+      nodeMap: Map<number, MeshNode>,
+      prevSnap: Map<number, MeshNode>,
+      assertCurrent?: () => void,
+    ) => {
       try {
+        const pubKeys = assertCurrent ? new Map(pubKeyMapRef.current) : pubKeyMapRef.current;
+        const prefixes = assertCurrent
+          ? new Map(pubKeyPrefixMapRef.current)
+          : pubKeyPrefixMapRef.current;
+        const nicknames = assertCurrent ? new Map(nicknameMapRef.current) : nicknameMapRef.current;
         await mergeMeshcoreContactsFromDbIntoNodeMap(nodeMap, prevSnap, {
-          pubKeyByNodeId: pubKeyMapRef.current,
-          pubKeyPrefixByHex: pubKeyPrefixMapRef.current,
-          nicknameByNodeId: nicknameMapRef.current,
+          pubKeyByNodeId: pubKeys,
+          pubKeyPrefixByHex: prefixes,
+          nicknameByNodeId: nicknames,
         });
+        assertCurrent?.();
+        if (assertCurrent) {
+          // Preserve live updates received while SQLite was loading this same session.
+          for (const [key, value] of pubKeyMapRef.current) pubKeys.set(key, value);
+          for (const [key, value] of pubKeyPrefixMapRef.current) prefixes.set(key, value);
+          for (const [key, value] of nicknameMapRef.current) nicknames.set(key, value);
+          pubKeyMapRef.current = pubKeys;
+          pubKeyPrefixMapRef.current = prefixes;
+          nicknameMapRef.current = nicknames;
+        }
         for (const [nodeId, node] of nodeMap) {
           const nick = nicknameMapRef.current.get(nodeId);
           if (nick) nodeMap.set(nodeId, { ...node, long_name: nick, short_name: '' });
@@ -1931,6 +1991,7 @@ export function useMeshcoreRuntime() {
         console.warn(
           '[useMeshcoreRuntime] deferred db contact merge failed ' + errLikeToLogString(e),
         );
+        if (assertCurrent) throw e;
       }
     },
     [applyMeshcoreNodesToUi],
@@ -2494,11 +2555,7 @@ export function useMeshcoreRuntime() {
           void (async () => {
             try {
               const rawChannels = await channelsPromise;
-              setChannels(
-                dedupeChannelPillsByIndex(
-                  rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-                ),
-              );
+              setChannels((previous) => reconcileRadioChatChannels(previous, rawChannels));
             } catch (e) {
               if (isMeshcoreSetupAbortError(e)) return;
               console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
@@ -2943,11 +3000,7 @@ export function useMeshcoreRuntime() {
                     : await channelsWork;
                 })(),
               );
-              setChannels(
-                dedupeChannelPillsByIndex(
-                  rawChannels.map((c) => ({ index: c.channelIdx, name: c.name, secret: c.secret })),
-                ),
-              );
+              setChannels((previous) => reconcileRadioChatChannels(previous, rawChannels));
               const getChannelsMs = Math.round(performance.now() - getChannelsStart);
               console.debug(
                 `[useMeshcoreRuntime] initConn getChannels ${getChannelsMs}ms (${rawChannels.length} channels)`,
@@ -3313,6 +3366,7 @@ export function useMeshcoreRuntime() {
       // (BLE auto-connect vs manual TCP race — openMeshCoreTransport can leave a live
       // meshcore:tcp socket before attachRfSession sets driverConnected).
       meshcoreSetupGenerationRef.current += 1;
+      radioChatSyncInFlightRef.current = null;
       resetMeshcoreWaitingMessagesDrainSchedule();
       resetMeshcoreRepeaterRpcInFlightOnDisconnect();
       setMeshcoreRepeaterRpcPending(new Map());
@@ -3540,6 +3594,7 @@ export function useMeshcoreRuntime() {
       meshcoreReconnectGenerationRef.current += 1;
       meshcoreRfReconnectRef.current.cancel();
       meshcoreSetupGenerationRef.current += 1;
+      radioChatSyncInFlightRef.current = null;
       const ackEntries = new Set(pendingAcksRef.current.values());
       for (const e of ackEntries) {
         clearTimeout(e.timeoutId);
@@ -3841,6 +3896,7 @@ export function useMeshcoreRuntime() {
         // path — bumping only for BLE here left non-BLE stale setup RPCs free to keep running
         // and apply state after the attempt was already declared failed.
         meshcoreSetupGenerationRef.current += 1;
+        radioChatSyncInFlightRef.current = null;
         if (isMeshcoreSetupAbortError(err)) {
           // Setup abort means connection-lost (or a newer connect) bumped setup generation while
           // this attempt's initConn was still running. Do NOT clear isReconnecting — that flag is
@@ -3926,6 +3982,7 @@ export function useMeshcoreRuntime() {
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
     meshcoreSetupGenerationRef.current += 1;
+    radioChatSyncInFlightRef.current = null;
     resetMeshcoreWaitingMessagesDrainSchedule();
     resetMeshcoreRepeaterRpcInFlightOnDisconnect();
     setMeshcoreRepeaterRpcPending(new Map());
@@ -4763,7 +4820,9 @@ export function useMeshcoreRuntime() {
       // Mark all existing contacts as not on radio before refreshing
       await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
 
-      const contactsRaw = await connRef.current.getContacts();
+      const contactsRaw = await runRadioChatOperation(connRef.current, () =>
+        connRef.current!.getContacts(),
+      );
       const contacts = await retryRadioRemoveDeletedContacts(
         connRef.current,
         contactsRaw.map(meshcoreContactRawFromDevice),
@@ -4803,6 +4862,74 @@ export function useMeshcoreRuntime() {
     selfInfo,
     applyMeshcoreNodesToUi,
     deferMeshcoreDbContactMerge,
+  ]);
+
+  const radioChatSyncInFlightRef = useRef<Promise<void> | null>(null);
+  const syncRadioChats = useCallback((): Promise<void> => {
+    const conn = connRef.current;
+    if (radioChatSyncInFlightRef.current) return radioChatSyncInFlightRef.current;
+    if (!conn || !meshcoreDeviceConfiguredRef.current)
+      return Promise.reject(new Error('Radio is not connected'));
+    const generation = meshcoreSetupGenerationRef.current;
+    const assertCurrent = () => {
+      if (connRef.current !== conn || meshcoreSetupGenerationRef.current !== generation) {
+        throw new Error('Radio disconnected during chat sync');
+      }
+    };
+    const work = (async () => {
+      await waitForRadioChatSetup(() => meshcoreInitConnInFlightRef.current, assertCurrent);
+      return runRadioChatOperation(conn, async () => {
+        const snapshot = await readRadioChats(
+          {
+            getContacts: () =>
+              withTimeout(
+                fetchMeshcoreContactsForInit(conn, {
+                  totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
+                  isCancelled: () => meshcoreSetupGenerationRef.current !== generation,
+                }),
+                MESHCORE_INIT_TIMEOUT_MS,
+                'sync chat contacts',
+              ),
+            getChannels: () => readRadioChannels(conn, assertCurrent),
+          },
+          assertCurrent,
+        );
+        const previousNodes = meshcorePreviousNodesBaselineForBuild();
+        const contacts = snapshot.contacts.map(meshcoreContactRawFromDevice);
+        const merged = await buildNodesFromContacts(contacts, {
+          self: selfInfo,
+          myNodeId: myNodeNumRef.current,
+          previousNodes,
+          contactsFromRadio: true,
+          deferDbMerge: true,
+          deferPathHistory: true,
+          assertCurrent,
+          awaitPersistence: true,
+        });
+        assertCurrent();
+        applyMeshcoreNodesToUi(merged, { fromRadio: true });
+        setChannels((previous) => reconcileRadioChatChannels(previous, snapshot.channels));
+        setMeshcoreContactsForTelemetry(contacts);
+        setMeshcoreRadioContactsLoaded(true);
+        setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
+        await deferMeshcoreDbContactMerge(merged, previousNodes, assertCurrent);
+      });
+    })();
+    radioChatSyncInFlightRef.current = work;
+    void work
+      .finally(() => {
+        if (radioChatSyncInFlightRef.current === work) radioChatSyncInFlightRef.current = null;
+      })
+      .catch(() => {
+        /* catch-no-log-ok the caller owns sync errors */
+      });
+    return work;
+  }, [
+    applyMeshcoreNodesToUi,
+    buildNodesFromContacts,
+    deferMeshcoreDbContactMerge,
+    meshcorePreviousNodesBaselineForBuild,
+    selfInfo,
   ]);
 
   const sendAdvert = useCallback(async () => {
@@ -7562,7 +7689,9 @@ export function useMeshcoreRuntime() {
             console.warn('[useMeshcoreRuntime] setMeshcoreChannel: no connection');
             throw new Error('Not connected to radio');
           }
-          const work = withTimeout(liveConn.setChannel(idx, name, secret), 10_000, 'setChannel');
+          const work = runRadioChatOperation(liveConn, () =>
+            withTimeout(liveConn.setChannel(idx, name, secret), 10_000, 'setChannel'),
+          );
           if (
             isMeshcoreTcpOpenHopDeadAccepted() ||
             meshcoreOpenHopUserTxReopenInFlightRef.current
@@ -7600,7 +7729,7 @@ export function useMeshcoreRuntime() {
           if (!liveConn) {
             throw new Error('Not connected to radio');
           }
-          const work = liveConn.deleteChannel(idx);
+          const work = runRadioChatOperation(liveConn, () => liveConn.deleteChannel(idx));
           if (
             isMeshcoreTcpOpenHopDeadAccepted() ||
             meshcoreOpenHopUserTxReopenInFlightRef.current
@@ -8728,6 +8857,7 @@ export function useMeshcoreRuntime() {
       applyMeshcorePathHashMode,
       syncClock,
       refreshContacts,
+      syncRadioChats,
       reboot,
       companionCli,
       companionRemote,
@@ -8884,6 +9014,7 @@ export function useMeshcoreRuntime() {
       applyMeshcorePathHashMode,
       syncClock,
       refreshContacts,
+      syncRadioChats,
       reboot,
       companionCli,
       companionRemote,

@@ -1785,14 +1785,14 @@
         "scan_busy": "Se está realizando otro escaneo Bluetooth. Espera un momento e inténtalo de nuevo.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Se ha agotado el tiempo de espera de la conexión Bluetooth. Mantenga la radio despierta y cerca, luego inténtelo de nuevo.",
-        "gatt_discover_failed": "No se han podido descubrir los servicios Bluetooth en el dispositivo. Vuelva a emparejar la radio e inténtelo de nuevo",
         "pairing_required": "Este dispositivo debe emparejarse primero. Utilice Eliminar y volver a emparejar el dispositivo y, a continuación, introduzca el PIN que se muestra en la radio.",
         "bond_removed": "El enlace Bluetooth ya no es válido. Olvídese del dispositivo en la configuración del sistema y vuelva a emparejarlo.",
         "write_failed": "Error al escribir en el dispositivo Bluetooth. Vuelve a conectarte e inténtalo de nuevo.",
         "session_not_found": "La sesión Bluetooth ya no está disponible. Desconéctese y conéctese de nuevo.",
         "notified_read_forbidden": "Esta característica de Bluetooth no se puede leer de esa manera. Vuelve a conectarte e inténtalo de nuevo.",
         "feature_disabled": "La compatibilidad con Bluetooth GATT no está disponible en esta compilación.",
-        "sidecar_down": "El servicio Bluetooth no se está ejecutando. Espere un momento o reinicie mesh-client, luego inténtelo de nuevo."
+        "sidecar_down": "El servicio Bluetooth no se está ejecutando. Espere un momento o reinicie mesh-client, luego inténtelo de nuevo.",
+        "gatt_discover_failed": "No se han podido encontrar los servicios Bluetooth necesarios. Cierre otras aplicaciones conectadas a la radio, reinicie la radio y vuelva a escanear. Compruebe que se ejecuta el firmware complementario compatible. Vuelva a emparejar solo si Bluetooth informa de un error de autenticación o de emparejamiento."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Conectado",
       "reconnecting": "Reconectando..."
     },
-    "joinedRooms": "Se unió",
-    "recentRooms": "Reciente",
     "roomKeyOptional": "Clave de sala (opcional)",
     "joinRoomHelp": "Las salas son grupos en vivo en este hub. Únete por nombre, prueba Listadas, o escribe /list y /help.",
     "listHint": "Sugerencia: /list muestra las salas públicas registradas en los concentradores rrcd. /help para comandos.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Uso: /msg NICK|HASH TEXT",
       "msgTargetNotFound": "No se pudo resolver el destino /msg en un hash de identidad completo. Únete a una sala o usa el hash completo."
     },
-    "listedRooms": "Listadas",
     "refreshRoomList": "Actualizar la lista de salas (/list)",
     "favoriteRoom": "Sala favorita",
     "unfavoriteRoom": "Quitar sala de favoritos",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Aproximadamente {{count}} los mensajes de malla típicos se ajustan a un paso de inferencia con este motor (primero los más nuevos). Póngase al día puede procesar hasta {{ceiling}} mensajes a través de varios pases. Los mensajes más largos usan más de cada pase. Los rangos grandes necesitan un tiempo de espera más largo.",
     "capacityHintChooseEngine": "La IA del sistema operativo incorporado y los modelos descargados caben alrededor de {{onDevice}} mensajes típicos por pase; un servidor local o remoto alrededor de {{endpoint}}. Ponerse al día puede cubrir hasta {{ceiling}} mensajes con varias pasadas. Aumente el límite de mensajes y el tiempo de espera para las mallas ocupadas.",
     "lowThreadBudgetWarning": "Este dispositivo solo tiene {{count}} hilos WASM para ponerse al día. Los resúmenes de modelos descargados generalmente necesitan alrededor de 6 o más para funcionar bien y tomarán más tiempo aquí. Prefiera otro motor o aumente el tiempo de espera a continuación."
+  },
+  "chatOrder": {
+    "title": "Chats de pedidos",
+    "hint": "Arrastre los controladores, use las teclas de flecha o mueva las entradas con los botones de flecha. Esto solo cambia su orden de visualización.",
+    "alphabetical": "Ordenar A-Z",
+    "default": "Orden predeterminado",
+    "drag": "Arrastra {{name}}",
+    "up": "Mover {{name}} hacia arriba",
+    "down": "Mover {{name}} hacia abajo",
+    "saveFailed": "No se ha podido guardar el pedido. Inténtalo de nuevo."
+  },
+  "radioChatSync": {
+    "sync": "Sincronizar chats desde la radio",
+    "busy": "Leyendo chats de radio...",
+    "failed": "No se han podido leer los chats de la radio. Se mantuvieron los chats existentes. Vuelve a conectarte e inténtalo de nuevo.",
+    "done": "Chats sincronizados desde la radio."
   }
 }
