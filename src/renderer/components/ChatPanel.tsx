@@ -1440,8 +1440,17 @@ function ChatPanel({
       activeDmNodeRef.current,
       dismissedDmTabsRef.current,
     );
-    if (!remapped.changed) return;
-    const remappedMutes = remapDmMutedViews(mutedViews, remapped.replacements);
+    // Closing an empty DM leaves only its mute preference, with no tab/history entry.
+    const mutedDmIds = [...mutedViews].flatMap((view) => {
+      const match = /^dm:(\d+)$/.exec(view);
+      return match ? [Number(match[1])] : [];
+    });
+    const replacements = [
+      ...remapped.replacements,
+      ...remapReticulumChatDmTabIds(mutedDmIds, null, {}).replacements,
+    ];
+    const remappedMutes = remapDmMutedViews(mutedViews, replacements);
+    if (!remapped.changed && !remappedMutes.changed) return;
     if (remappedMutes.changed) {
       // Discovery can resolve the destination before the mute's local/peer bindings hydrate.
       // Keep all conversation state on the old key until the mute can move with it.
@@ -1459,23 +1468,23 @@ function ChatPanel({
     setOpenDmTabs(remapped.openDmTabs);
     setActiveDmNode(remapped.activeDmNode);
     setDismissedDmTabs(remapped.dismissedDmTabs);
-    if (remapped.replacements.length === 0) return;
+    if (replacements.length === 0) return;
 
     setPersistedLastRead((prev) => {
-      const { next, changed } = remapDmViewKeyedRecord(prev, remapped.replacements, (a, b) =>
+      const { next, changed } = remapDmViewKeyedRecord(prev, replacements, (a, b) =>
         Math.max(a, b),
       );
       return changed ? next : prev;
     });
     setStarred((prev) => {
-      const { next, changed } = remapDmStarredViewKeys(prev, remapped.replacements);
+      const { next, changed } = remapDmStarredViewKeys(prev, replacements);
       if (!changed) return prev;
       saveStarred(protocol, next);
       return next;
     });
     try {
       const drafts = loadDraftsInitial(protocol);
-      const { next, changed } = remapDmViewKeyedRecord(drafts, remapped.replacements, (a, b) =>
+      const { next, changed } = remapDmViewKeyedRecord(drafts, replacements, (a, b) =>
         b.length >= a.length ? b : a,
       );
       if (changed) {

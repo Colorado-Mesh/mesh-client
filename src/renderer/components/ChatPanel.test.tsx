@@ -5011,15 +5011,20 @@ describe('ChatPanel reticulum dm-only chat', () => {
     dmOnlyChat: true,
   };
 
-  it.each(['linux', 'darwin', 'win32'] as const)(
-    'retains a closed DM mute until its local identity and remapped peer binding are ready on %s',
-    async (platform) => {
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      [false, true].map((hasHistory) => ({ platform, hasHistory })),
+    ),
+  )(
+    'retains a closed DM mute through delayed discovery and failed writes on $platform (history: $hasHistory)',
+    async ({ platform, hasHistory }) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const telephony = 'ab'.repeat(16);
       const lxmf = 'cd'.repeat(16);
       const telephonyId = reticulumHashToNodeId(telephony);
       const lxmfId = reticulumHashToNodeId(lxmf);
       const identity = 'ef'.repeat(16);
+      const dismissed = (id: number) => JSON.stringify(hasHistory ? { [id]: 1 } : {});
       const activity = new Map([
         [
           telephony,
@@ -5050,10 +5055,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
       clearReticulumHashRegistry();
       registerReticulumDestinationHash(telephonyId, telephony);
       useReticulumIdentityStore.getState().setIdentity(null);
-      localStorage.setItem(
-        'mesh-client:dismissedDmTabs:reticulum',
-        JSON.stringify({ [telephonyId]: 1 }),
-      );
+      localStorage.setItem('mesh-client:dismissedDmTabs:reticulum', dismissed(telephonyId));
       localStorage.setItem(
         'mesh-client:mutedViews:reticulum',
         JSON.stringify([`dm:${telephonyId}`]),
@@ -5070,7 +5072,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
           useReticulumIdentityActivityStore.setState({ byDestination: activity });
         });
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
-          JSON.stringify({ [telephonyId]: 1 }),
+          dismissed(telephonyId),
         );
         expect(screen.queryByText(i18n.t('notificationPolicy.saveFailed'))).not.toBeInTheDocument();
         act(() => {
@@ -5081,7 +5083,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
           });
         });
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
-          JSON.stringify({ [telephonyId]: 1 }),
+          dismissed(telephonyId),
         );
         const originalWrite = localStorage.setItem;
         const write = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
@@ -5094,7 +5096,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
           useReticulumPeerStore.setState((state) => ({ peersRevision: state.peersRevision + 1 }));
         });
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
-          JSON.stringify({ [telephonyId]: 1 }),
+          dismissed(telephonyId),
         );
         expect(loadMutedViews('reticulum')).toEqual(new Set([`dm:${telephonyId}`]));
         expect(screen.getByText(i18n.t('notificationPolicy.saveFailed'))).toBeInTheDocument();
@@ -5105,7 +5107,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
         });
         await waitFor(() => {
           expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
-            JSON.stringify({ [lxmfId]: 1 }),
+            dismissed(lxmfId),
           );
         });
         expect(loadMutedViews('reticulum')).toEqual(new Set([`dm:${lxmfId}`]));
