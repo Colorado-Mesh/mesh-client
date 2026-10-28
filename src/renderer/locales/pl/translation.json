@@ -6888,7 +6888,9 @@
     },
     "atakDrill": "Wiertarka",
     "atakPeople_one": "{{count}} osoba",
-    "atakPeople_other": "{{count}} osób"
+    "atakPeople_few": "{{count}} osoby",
+    "atakPeople_many": "{{count}} osób",
+    "atakPeople_other": "{{count}} osoby"
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",
