@@ -6716,6 +6716,11 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, dernière audition {{time}} UTC",
+    "atakMarkerLastKnown": "Position : là où l'expéditeur a été entendu pour la dernière fois, pas à partir du rapport",
+    "atakMarkerBeacon": "Balise de détresse active",
+    "atakMarkerAcks_one": "{{count}} accusé DE réception entendu",
+    "atakMarkerAcks_other": "{{count}} remerciements entendus",
     "notificationTitle": "Alerte MECP",
     "exportLog": "Exporter le journal MECP",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "PERÇAGE",
     "atakPeople_one": "{{count}} personne",
-    "atakPeople_other": "{{count}} personnes",
-    "atakMarkerFrom": "De {{sender}}, dernière audition {{time}} UTC",
-    "atakMarkerLastKnown": "Position : là où l'expéditeur a été entendu pour la dernière fois, pas à partir du rapport",
-    "atakMarkerBeacon": "Balise de détresse active",
-    "atakMarkerAcks_one": "{{count}} accusé DE réception entendu",
-    "atakMarkerAcks_other": "{{count}} remerciements entendus"
+    "atakPeople_other": "{{count}} personnes"
   },
   "notificationSounds": {
     "title": "Tonalités de notification",

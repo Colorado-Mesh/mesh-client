@@ -6822,6 +6822,13 @@
       "routine": "RUTYNOWY"
     },
     "incomingToast": "{{severity}} MECP z {{sender}}",
+    "atakMarkerFrom": "Od {{sender}}, ostatnio słyszano o {{time}} UTC",
+    "atakMarkerLastKnown": "Stanowisko: gdzie ostatnio słyszano nadawcę, a nie z raportu",
+    "atakMarkerBeacon": "Sygnalizator alarmowy aktywny",
+    "atakMarkerAcks_one": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_few": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_many": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_other": "Usłyszane potwierdzenia: {{count}}",
     "notificationTitle": "Alert MECP",
     "exportLog": "Eksportuj dziennik MECP",
     "compose": {
@@ -6888,12 +6895,7 @@
     },
     "atakDrill": "Wiertarka",
     "atakPeople_one": "{{count}} osoba",
-    "atakPeople_other": "{{count}} osób",
-    "atakMarkerFrom": "Od {{sender}}, ostatnio słyszano o {{time}} UTC",
-    "atakMarkerLastKnown": "Stanowisko: gdzie ostatnio słyszano nadawcę, a nie z raportu",
-    "atakMarkerBeacon": "Sygnalizator alarmowy aktywny",
-    "atakMarkerAcks_one": "Wysłuchano potwierdzenia: {{count}}",
-    "atakMarkerAcks_other": "Wysłuchane podziękowania: {{count}}"
+    "atakPeople_other": "{{count}} osób"
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",

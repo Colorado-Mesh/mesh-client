@@ -6716,6 +6716,11 @@
       "routine": "ROTINA"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, ouvido pela última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posição: onde o remetente foi ouvido pela última vez, não do relatório",
+    "atakMarkerBeacon": "Farol de socorro ativo",
+    "atakMarkerAcks_one": "{{count}} reconhecimento ouvido",
+    "atakMarkerAcks_other": "{{count}} reconhecimentos ouvidos",
     "notificationTitle": "Alerta MECP",
     "exportLog": "Exportar registro MECP",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "EXERCÍCIO",
     "atakPeople_one": "{{count}} pessoa",
-    "atakPeople_other": "{{count}} pessoas",
-    "atakMarkerFrom": "De {{sender}}, ouvido pela última vez {{time}} UTC",
-    "atakMarkerLastKnown": "Posição: onde o remetente foi ouvido pela última vez, não do relatório",
-    "atakMarkerBeacon": "Farol de socorro ativo",
-    "atakMarkerAcks_one": "{{count}} reconhecimento ouvido",
-    "atakMarkerAcks_other": "{{count}} reconhecimentos ouvidos"
+    "atakPeople_other": "{{count}} pessoas"
   },
   "notificationSounds": {
     "title": "Tons de notificação",

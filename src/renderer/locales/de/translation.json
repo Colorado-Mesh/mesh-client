@@ -6716,6 +6716,11 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP von {{sender}}",
+    "atakMarkerFrom": "Von {{sender}}, zuletzt gehört {{time}} UTC",
+    "atakMarkerLastKnown": "Position: wo der Absender zuletzt gehört wurde, nicht aus dem Bericht",
+    "atakMarkerBeacon": "Notsignal aktiv",
+    "atakMarkerAcks_one": "{{count}} Bestätigung gehört",
+    "atakMarkerAcks_other": "{{count}} Bestätigungen gehört",
     "notificationTitle": "MECP-Alarm",
     "exportLog": "MECP-Protokoll exportieren",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "BOHREN",
     "atakPeople_one": "{{count}} Person",
-    "atakPeople_other": "{{count}} Personen",
-    "atakMarkerFrom": "Von {{sender}}, zuletzt gehört {{time}} UTC",
-    "atakMarkerLastKnown": "Position: wo der Absender zuletzt gehört wurde, nicht aus dem Bericht",
-    "atakMarkerBeacon": "Notsignal aktiv",
-    "atakMarkerAcks_one": "{{count}} Bestätigung gehört",
-    "atakMarkerAcks_other": "{{count}} Bestätigungen gehört"
+    "atakPeople_other": "{{count}} Personen"
   },
   "notificationSounds": {
     "title": "Benachrichtigungstöne",

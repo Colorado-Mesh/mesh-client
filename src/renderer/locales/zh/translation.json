@@ -6716,6 +6716,11 @@
       "routine": "常规"
     },
     "incomingToast": "{{severity}} MECP来自{{sender}}",
+    "atakMarkerFrom": "从{{sender}} ，最后一次听到{{time}} UTC",
+    "atakMarkerLastKnown": "位置：最后一次听到发件人的位置，而不是来自报告",
+    "atakMarkerBeacon": "遇险信标已激活",
+    "atakMarkerAcks_one": "听到{{count}}确认",
+    "atakMarkerAcks_other": "听到{{count}}确认",
     "notificationTitle": "MECP警报",
     "exportLog": "导出MECP日志",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "钻头",
     "atakPeople_one": "{{count}}人",
-    "atakPeople_other": "{{count}}人",
-    "atakMarkerFrom": "从{{sender}} ，最后一次听到{{time}} UTC",
-    "atakMarkerLastKnown": "位置：最后一次听到发件人的位置，而不是来自报告",
-    "atakMarkerBeacon": "遇险信标已激活",
-    "atakMarkerAcks_one": "听到{{count}}确认",
-    "atakMarkerAcks_other": "听到{{count}}确认"
+    "atakPeople_other": "{{count}}人"
   },
   "notificationSounds": {
     "title": "通知提示音",

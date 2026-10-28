@@ -6822,6 +6822,13 @@
       "routine": "ЗВИЧАЙНЕ"
     },
     "incomingToast": "{{severity}} MECP від {{sender}}",
+    "atakMarkerFrom": "Від {{sender}}, востаннє чули {{time}} UTC",
+    "atakMarkerLastKnown": "Посада: де востаннє було почуто відправника, а не зі звіту",
+    "atakMarkerBeacon": "Активований аварійний маяк",
+    "atakMarkerAcks_one": "Отримано підтверджень: {{count}}",
+    "atakMarkerAcks_few": "Отримано підтверджень: {{count}}",
+    "atakMarkerAcks_many": "Отримано підтверджень: {{count}}",
+    "atakMarkerAcks_other": "Отримано підтверджень: {{count}}",
     "notificationTitle": "Сповіщення MECP",
     "exportLog": "Експортувати журнал MECP",
     "compose": {
@@ -6888,12 +6895,7 @@
     },
     "atakDrill": "свердлити",
     "atakPeople_one": "{{count}} особа",
-    "atakPeople_other": "{{count}} чол.",
-    "atakMarkerFrom": "Від {{sender}}, востаннє чули {{time}} UTC",
-    "atakMarkerLastKnown": "Посада: де востаннє було почуто відправника, а не зі звіту",
-    "atakMarkerBeacon": "Активований аварійний маяк",
-    "atakMarkerAcks_one": "{{count}} підтвердження заслухано",
-    "atakMarkerAcks_other": "{{count}} підтвердження заслухано"
+    "atakPeople_other": "{{count}} чол."
   },
   "notificationSounds": {
     "title": "Сигнали сповіщень",

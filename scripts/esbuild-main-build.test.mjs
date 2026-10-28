@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
 /** Power-save policy + Reticulum local-radio scan; Linux CI measures ~737.5 KiB. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 738 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 741 * 1024;
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */

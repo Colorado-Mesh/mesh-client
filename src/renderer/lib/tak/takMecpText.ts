@@ -85,12 +85,6 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
   return words.join(' ');
 }
 
-/**
- * A report in words, on one line: the severity, what each code means, the people, the position,
- * and whatever free text is left, in quotes, e.g.
- * `🆘 MAYDAY: Injury · Fracture / immobile · 2 people · 48.6520, 20.1305`. Drills say so first.
- * The same shape as MeshCore TAK Bridge, in the app's language.
- */
 /** `🆘 MAYDAY`, or `DRILL 🆘 MAYDAY` for a drill. */
 export function takMecpHeadline(
   severity: 0 | 1 | 2 | 3,
@@ -101,6 +95,12 @@ export function takMecpHeadline(
   return drill ? `${t('mecp.atakDrill')} ${label}` : label;
 }
 
+/**
+ * A report in words, on one line: the severity, what each code means, the people, the position,
+ * and whatever free text is left, in quotes, e.g.
+ * `🆘 MAYDAY: Injury · Fracture / immobile · 2 people · 48.6520, 20.1305`. Drills say so first.
+ * The same shape as MeshCore TAK Bridge, in the app's language.
+ */
 export function describeMecpForTak(
   parsed: MecpParsed,
   lang: LanguageFile,

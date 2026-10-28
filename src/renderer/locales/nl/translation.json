@@ -6716,6 +6716,11 @@
       "routine": "Routine"
     },
     "incomingToast": "{{severity}} MECP van {{sender}}",
+    "atakMarkerFrom": "Vanaf {{sender}}, laatst gehoord {{time}} UTC",
+    "atakMarkerLastKnown": "Positie: waar de afzender het laatst is gehoord, niet uit het rapport",
+    "atakMarkerBeacon": "Noodbaken actief",
+    "atakMarkerAcks_one": "{{count}} bevestiging gehoord",
+    "atakMarkerAcks_other": "{{count}} bevestigingen gehoord",
     "notificationTitle": "MECP-waarschuwing",
     "exportLog": "MECP-logboek exporteren",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "DRILL",
     "atakPeople_one": "{{count}} persoon",
-    "atakPeople_other": "{{count}} personen",
-    "atakMarkerFrom": "Vanaf {{sender}}, laatst gehoord {{time}} UTC",
-    "atakMarkerLastKnown": "Positie: waar de afzender het laatst is gehoord, niet uit het rapport",
-    "atakMarkerBeacon": "Noodbaken actief",
-    "atakMarkerAcks_one": "{{count}} bevestiging gehoord",
-    "atakMarkerAcks_other": "{{count}} bevestigingen gehoord"
+    "atakPeople_other": "{{count}} personen"
   },
   "notificationSounds": {
     "title": "Meldingstonen",

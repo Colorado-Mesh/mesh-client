@@ -6716,6 +6716,11 @@
       "routine": "LOW TOUCH"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, se escuchó por última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posición: donde se escuchó por última vez al remitente, no del informe",
+    "atakMarkerBeacon": "Baliza de socorro activa",
+    "atakMarkerAcks_one": "{{count}} acuse DE recibo escuchado",
+    "atakMarkerAcks_other": "{{count}} agradecimientos escuchados",
     "notificationTitle": "Alerta MECP",
     "exportLog": "Exportar registro MECP",
     "compose": {
@@ -6782,12 +6787,7 @@
     },
     "atakDrill": "TALADRO",
     "atakPeople_one": "{{count}} persona",
-    "atakPeople_other": "{{count}} personas",
-    "atakMarkerFrom": "De {{sender}}, se escuchó por última vez {{time}} UTC",
-    "atakMarkerLastKnown": "Posición: donde se escuchó por última vez al remitente, no del informe",
-    "atakMarkerBeacon": "Baliza de socorro activa",
-    "atakMarkerAcks_one": "{{count}} acuse DE recibo escuchado",
-    "atakMarkerAcks_other": "{{count}} agradecimientos escuchados"
+    "atakPeople_other": "{{count}} personas"
   },
   "notificationSounds": {
     "title": "Tonos de notificación",
