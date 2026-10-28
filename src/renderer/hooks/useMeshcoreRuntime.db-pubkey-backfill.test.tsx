@@ -272,7 +272,11 @@ describe('useMeshcoreRuntime DB pubkey backfill for DM send', () => {
       await result.current.refreshContacts();
     });
 
-    expect(window.electronAPI.db.markAllMeshcoreContactsOffRadio).toHaveBeenCalled();
+    expect(window.electronAPI.db.markAllMeshcoreContactsOffRadio).not.toHaveBeenCalled();
+    expect(window.electronAPI.db.saveMeshcoreContactsBatch).toHaveBeenCalledWith(
+      [],
+      expect.any(String),
+    );
     expect(window.electronAPI.db.getMeshcoreContacts).toHaveBeenCalled();
 
     await act(async () => {

@@ -5364,7 +5364,8 @@
     "lxmfAddressError": {
       "invalid": "オペレータLXMFアドレスは偶数長の16進数でなければなりません。",
       "tooLong": "オペレータLXMFアドレスが長すぎます。"
-    }
+    },
+    "existingPublish": "既存のRMAP発行は、ネイティブ構成で有効になっています。上のRMAPで公開をオフにして停止します。"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",

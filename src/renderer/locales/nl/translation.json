@@ -5364,7 +5364,8 @@
     "lxmfAddressError": {
       "invalid": "Het LXMF-adres van de operator moet even lang zijn.",
       "tooLong": "Het LXMF-adres van de operator is te lang."
-    }
+    },
+    "existingPublish": "Bestaande RMAP-publicatie is ingeschakeld in de systeemeigen configuratie. Schakel Publiceren uit op RMAP hierboven om het te stoppen."
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",

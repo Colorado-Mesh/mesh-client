@@ -90,3 +90,9 @@ An explicit saved boolean is preserved, including legacy app-settings migration.
 `true` values cannot be distinguished from deliberate choices, so upgrades do not rewrite them.
 Host lookup and app transmission continue to use the existing shared consent guard; local radio
 GPS and saved locations remain usable for map/distance calculations without sharing.
+
+RMAP native interface publishing is a separate saved choice. An explicit app opt-out is
+reconciled when interfaces load, including partial publishing sets; native interface changes
+still require the normal stack restart. With no saved app choice, an existing native publishing
+opt-in is preserved and can be disabled directly without first enabling app location sharing.
+Fresh profiles cannot enable publishing before app consent.

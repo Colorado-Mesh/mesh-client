@@ -896,6 +896,7 @@ mod tests {
         fake.add_device(without_service).await;
         let mc = mgr.scan("meshcore", 1).await.unwrap();
         assert_eq!(mc.len(), 3);
+        assert_eq!(mgr.scan("meshtastic", 1).await.unwrap().len(), 1);
         assert!(
             mc.iter()
                 .any(|device| device.address == "aa:00:00:00:00:03")

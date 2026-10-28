@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getAppSettingsRaw, isShareMyLocationEnabled } from '@/renderer/lib/appSettingsStorage';
+import { getAppSettingsRaw, getShareMyLocationPreference } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
@@ -15,6 +15,7 @@ import {
   isReticulumRmapServerDiscoveryRow,
   listReticulumRmapDiscoveryCapable,
   persistRmapUiPrefs,
+  readRmapAnyPublishing,
   readRmapPublishPartial,
   readRmapPublishState,
   resolveRmapCoordinates,
@@ -154,15 +155,20 @@ export function ReticulumRmapDiscoveryControls({
     };
   }, []);
 
-  const shareMyLocationLive = useMemo(
-    () => isShareMyLocationEnabled(),
+  const sharePreference = useMemo(
+    () => getShareMyLocationPreference(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick forces re-read after appSettings event
     [shareSettingsTick],
   );
 
+  const shareMyLocationLive = sharePreference === true;
+  const publishing = readRmapAnyPublishing(interfaces);
+  const toggleDisabled =
+    disabled || busy || !sidecarApiReady || (!shareMyLocationLive && !publishing);
   const controlsDisabled = disabled || busy || !sidecarApiReady || !shareMyLocationLive;
   const prevShareMyLocationRef = useRef(shareMyLocationLive);
   const shareOffDisableInFlightRef = useRef(false);
+  const shareOffAttemptRef = useRef<string | null>(null);
 
   const disableRmapPublish = useCallback(async () => {
     setBusy(true);
@@ -200,19 +206,36 @@ export function ReticulumRmapDiscoveryControls({
   useEffect(() => {
     const prev = prevShareMyLocationRef.current;
     prevShareMyLocationRef.current = shareMyLocationLive;
+    const attempt = `${String(sharePreference)}:${interfaces
+      .filter((row) => row.discoverable)
+      .map((row) => row.id)
+      .sort()
+      .join(',')}`;
+    if (shareMyLocationLive || !publishing) shareOffAttemptRef.current = null;
     if (
-      prev &&
+      // A missing app flag must not revoke an existing native RMAP opt-in.
+      // A saved app opt-out (including initial load) does override publishing.
+      (prev || sharePreference === false) &&
       !shareMyLocationLive &&
-      publishOn &&
+      publishing &&
       sidecarApiReady &&
-      !shareOffDisableInFlightRef.current
+      !shareOffDisableInFlightRef.current &&
+      shareOffAttemptRef.current !== attempt
     ) {
       shareOffDisableInFlightRef.current = true;
+      shareOffAttemptRef.current = attempt;
       void disableRmapPublish().finally(() => {
         shareOffDisableInFlightRef.current = false;
       });
     }
-  }, [shareMyLocationLive, publishOn, sidecarApiReady, disableRmapPublish]);
+  }, [
+    shareMyLocationLive,
+    sharePreference,
+    publishing,
+    interfaces,
+    sidecarApiReady,
+    disableRmapPublish,
+  ]);
 
   const hasServerPublishTarget = useMemo(
     () => listReticulumRmapDiscoveryCapable(interfaces).some(isReticulumRmapServerDiscoveryRow),
@@ -328,9 +351,8 @@ export function ReticulumRmapDiscoveryControls({
   };
 
   const handleToggle = () => {
-    if (controlsDisabled) return;
-    if (!shareMyLocationLive) return;
-    const next = !publishOn;
+    if (toggleDisabled) return;
+    const next = shareMyLocationLive ? !publishOn : false;
     if (next && !resolveRmapCoordinates()) {
       setShowGpsPrompt(true);
       return;
@@ -347,7 +369,7 @@ export function ReticulumRmapDiscoveryControls({
               ref={publishCheckboxRef}
               type="checkbox"
               checked={publishOn}
-              disabled={controlsDisabled}
+              disabled={toggleDisabled}
               aria-label={t('reticulumRmapDiscovery.publishToggle')}
               onChange={() => {
                 handleToggle();
@@ -379,7 +401,13 @@ export function ReticulumRmapDiscoveryControls({
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
         {!shareMyLocationLive && (
-          <p className="text-xs text-orange-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
+          <p className="text-xs text-orange-300">
+            {t(
+              publishing
+                ? 'reticulumRmapDiscovery.existingPublish'
+                : 'reticulumRmapDiscovery.disabledShareOff',
+            )}
+          </p>
         )}
         {coords ? (
           <p className="text-ink-300 text-xs" role="status">

@@ -437,6 +437,26 @@ describe('reticulumRmapDiscovery', () => {
     });
   });
 
+  it('reports native HTTP-200 failure envelopes and can retry disablement', async () => {
+    const interfaces = [
+      row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+    ];
+    window.electronAPI.reticulum.proxyPut = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, error: 'disk full' })
+      .mockResolvedValue({ ok: true });
+    expect(await disableReticulumRmapDiscovery(interfaces)).toEqual({
+      applied: 0,
+      total: 1,
+      errors: ['disk full'],
+    });
+    expect(await disableReticulumRmapDiscovery(interfaces)).toEqual({
+      applied: 1,
+      total: 1,
+      errors: [],
+    });
+  });
+
   it('summarizeRmapPublishStatus and rmapPublishCoverageTone cover off/partial/full', () => {
     const partial = [
       row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
