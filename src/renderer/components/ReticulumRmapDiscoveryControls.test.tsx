@@ -285,9 +285,11 @@ describe('ReticulumRmapDiscoveryControls', () => {
       const toggle = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
       if (consent === false) {
         await waitFor(() => {
+          expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
+        });
+        await waitFor(() => {
           expect(toggle).not.toBeChecked();
         });
-        expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
       } else {
         await waitFor(() => {
           expect(toggle).toBeChecked();

@@ -51,6 +51,7 @@ describe('chat display order', () => {
     expect(result.current.ids).toEqual(['2', '1', '3']);
   });
   it('reads a new scope once and keeps later renders in memory', () => {
+    localStorage.setItem('mesh-client:chatOrder:after', JSON.stringify(['3', '1', '2']));
     const get = vi.spyOn(localStorage, 'getItem');
     try {
       const { result, rerender } = renderHook(({ scope }) => useChatOrder(scope, items), {
@@ -64,7 +65,7 @@ describe('chat display order', () => {
         reads,
       );
       expect(reads).toBe(1);
-      expect(result.current.ids).toEqual(['2', '1', '3']);
+      expect(result.current.ids).toEqual(['3', '1', '2']);
     } finally {
       get.mockRestore();
     }

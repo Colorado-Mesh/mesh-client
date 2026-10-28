@@ -207,3 +207,36 @@ test('shared DM ordering works across protocols, reload, keyboard and touch', as
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(launched.crashed).toBe(false);
 });
+
+test('stalled radio sync closes the old stream and reconnect recovers', async () => {
+  test.setTimeout(90_000);
+  radio = await startMeshcoreRadio();
+  launched = await launchApp();
+  const { page } = launched;
+  await page.getByRole('radio', { name: 'Switch to MeshCore' }).click();
+  await openPanel(page, 'Device', 'Connection');
+  await page.getByRole('radio', { name: 'TCP/IP', exact: true }).click();
+  await page.locator('#connection-meshcore-tcp-host').fill('127.0.0.1');
+  await page.locator('#connection-meshcore-tcp-port').fill(String(radio.port));
+  await page.locator('[data-setting-anchor="connection.radio.connect"]').click();
+  await openPanel(page, 'Chat');
+  await expect(page.getByRole('button', { name: 'Zulu', exact: true })).toBeVisible();
+  radio.setContactStall(true);
+  const sync = page.getByRole('button', { name: 'Sync chats from radio', exact: true });
+  await sync.click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Could not read chats' })).toBeVisible({
+    timeout: 35_000,
+  });
+  await expect(sync).toBeDisabled();
+  radio.setContactStall(false);
+  await openPanel(page, 'Device', 'Connection');
+  await page.locator('[data-setting-anchor="connection.radio.connect"]').click();
+  await openPanel(page, 'Chat');
+  await expect(sync).toBeEnabled();
+  await sync.click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Chats synced from radio.' }),
+  ).toBeVisible();
+  expect(radio.commands).not.toContain(14);
+  expect(launched.crashed).toBe(false);
+});

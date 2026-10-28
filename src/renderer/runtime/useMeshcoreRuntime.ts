@@ -193,7 +193,11 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
-import { fetchMeshcoreContactsForInit } from '../lib/meshcore/meshcoreInitContacts';
+import {
+  fetchMeshcoreContactsForInit,
+  MeshcoreContactsStallError,
+  MeshcoreContactsTimeoutError,
+} from '../lib/meshcore/meshcoreInitContacts';
 import {
   rememberedMeshcoreLiveAdvertName,
   rememberMeshcoreLiveAdvertName,
@@ -4824,18 +4828,25 @@ export function useMeshcoreRuntime() {
   const readChatContacts = useCallback(
     async (conn: MeshCoreConnection, generation: number) => {
       try {
-        return await withTimeout(
-          fetchMeshcoreContactsForInit(conn, {
-            totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
-            isCancelled: () => meshcoreSetupGenerationRef.current !== generation,
-          }),
-          MESHCORE_INIT_TIMEOUT_MS,
-          'read chat contacts',
-        );
+        return await fetchMeshcoreContactsForInit(conn, {
+          totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
+          isCancelled: () => meshcoreSetupGenerationRef.current !== generation,
+        });
       } catch (error) {
-        // The SDK dump may still own untagged replies after its timeout. Close before retry.
-        if (connRef.current === conn && meshcoreSetupGenerationRef.current === generation)
-          await disconnect();
+        // Only an incomplete dump can still own untagged replies after rejection.
+        if (
+          (error instanceof MeshcoreContactsStallError ||
+            error instanceof MeshcoreContactsTimeoutError) &&
+          connRef.current === conn &&
+          meshcoreSetupGenerationRef.current === generation
+        ) {
+          await disconnect().catch((closeError: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] close after contact stall failed ' +
+                errLikeToLogString(closeError),
+            );
+          });
+        }
         throw error;
       }
     },
@@ -4852,7 +4863,9 @@ export function useMeshcoreRuntime() {
         throw new Error('Radio disconnected during contact refresh');
     };
     try {
-      await radioChatSyncInFlightRef.current;
+      await radioChatSyncInFlightRef.current?.catch(() => {
+        // catch-no-log-ok the sync caller owns its error; refresh waits only for ordering
+      });
       assertCurrent();
       await runRadioChatOperation(conn, async () => {
         const radioSnapshotBefore = new Date().toISOString();

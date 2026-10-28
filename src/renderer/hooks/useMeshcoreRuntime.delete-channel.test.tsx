@@ -349,6 +349,64 @@ describe('useMeshcoreRuntime deleteMeshcoreChannel', () => {
     unmount();
   });
   it.each(['syncRadioChats', 'refreshContacts'] as const)(
+    'keeps the link after an ordinary %s rejection',
+    async (operation) => {
+      const { result, unmount } = await connectWithTwoChannels();
+      const error = new Error('radio busy');
+      getContactsMock.mockRejectedValueOnce(error);
+      await act(async () => {
+        await expect(result.current[operation]()).rejects.toBe(error);
+      });
+      expect(result.current.state.status).toBe('configured');
+      await act(async () => {
+        await result.current[operation]();
+      });
+      expect(result.current.state.status).toBe('configured');
+      await act(async () => {
+        await result.current.disconnect();
+      });
+      unmount();
+    },
+  );
+  it('continues a queued refresh after sync persistence fails', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    let fail!: (error: Error) => void;
+    vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mockImplementationOnce(
+      () =>
+        new Promise<number>((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+    let sync!: Promise<void>;
+    act(() => {
+      sync = result.current.syncRadioChats();
+    });
+    const failure = expect(sync).rejects.toThrow('disk full');
+    await waitFor(() => {
+      expect(fail).toBeDefined();
+    });
+    const dumps = getContactsMock.mock.calls.length;
+    let refresh!: Promise<void>;
+    act(() => {
+      refresh = result.current.refreshContacts();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(dumps);
+    fail(new Error('disk full'));
+    await act(async () => {
+      await failure;
+      await refresh;
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(dumps + 1);
+    expect(result.current.state.status).toBe('configured');
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+  it.each(['syncRadioChats', 'refreshContacts'] as const)(
     'closes a stalled %s dump before retry can own the stream',
     async (operation) => {
       const { result, unmount } = await connectWithTwoChannels();
