@@ -6779,7 +6779,10 @@
       "throttledToast": "Silenziare gli avvisi di emergenza ripetuti da {{sender}}. I loro rapporti appaiono ancora nella scheda Incidente.",
       "throttledBlock": "Blocca mittente",
       "floodToast": "Molte stazioni inviano rapporti di emergenza contemporaneamente. Ulteriori toni di avviso vengono messi in pausa brevemente; controllare la scheda Incidente."
-    }
+    },
+    "atakDrill": "IL DRILL",
+    "atakPeople_one": "{{count}} persona",
+    "atakPeople_other": "{{count}} persone"
   },
   "notificationSounds": {
     "title": "Toni di notifica",

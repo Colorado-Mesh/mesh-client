@@ -6885,7 +6885,10 @@
       "throttledToast": "Wyciszanie powtarzających się alertów awaryjnych z {{sender}}. Raporty wciąż pojawiają się w zakładce Incydent.",
       "throttledBlock": "Zablokuj nadawcę",
       "floodToast": "Wiele stacji wysyła zgłoszenia alarmowe jednocześnie. Kolejne dźwięki alarmowe są na krótko wstrzymane; sprawdź kartę Zdarzenie."
-    }
+    },
+    "atakDrill": "Wiertarka",
+    "atakPeople_one": "{{count}} osoba",
+    "atakPeople_other": "{{count}} osób"
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",

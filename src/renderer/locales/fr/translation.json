@@ -6779,7 +6779,10 @@
       "throttledToast": "Mise en sourdine des alertes d'urgence répétées de {{sender}}. Leurs rapports apparaissent toujours dans l'onglet Incident.",
       "throttledBlock": "Bloquer l’expéditeur",
       "floodToast": "De nombreuses stations envoient des rapports d'urgence à la fois. D'autres tonalités d'alerte sont brièvement mises en pause ; vérifiez l'onglet Incident."
-    }
+    },
+    "atakDrill": "PERÇAGE",
+    "atakPeople_one": "{{count}} personne",
+    "atakPeople_other": "{{count}} personnes"
   },
   "notificationSounds": {
     "title": "Tonalités de notification",

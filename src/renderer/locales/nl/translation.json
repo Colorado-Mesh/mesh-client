@@ -6779,7 +6779,10 @@
       "throttledToast": "Het dempen van herhaalde noodwaarschuwingen van {{sender}}. Hun rapporten verschijnen nog steeds op het tabblad Incident.",
       "throttledBlock": "Afzender blokkeren",
       "floodToast": "Veel stations sturen noodmeldingen in één keer. Verdere waarschuwingstonen worden kort gepauzeerd; controleer het tabblad Incident."
-    }
+    },
+    "atakDrill": "DRILL",
+    "atakPeople_one": "{{count}} persoon",
+    "atakPeople_other": "{{count}} personen"
   },
   "notificationSounds": {
     "title": "Meldingstonen",

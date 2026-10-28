@@ -6779,7 +6779,10 @@
       "throttledToast": "{{sender}} 'dan itibaren tekrarlanan acil durum uyarılarını susturma. Raporları hala Olay sekmesinde görünür.",
       "throttledBlock": "Göndereni Engelle",
       "floodToast": "Birçok istasyon aynı anda acil durum raporları gönderiyor. Diğer uyarı tonları kısa bir süre duraklatılır; Olay sekmesini kontrol edin."
-    }
+    },
+    "atakDrill": "tatbik",
+    "atakPeople_one": "{{count}} kişi",
+    "atakPeople_other": "{{count}} kişi"
   },
   "notificationSounds": {
     "title": "Bildirim tonları",
