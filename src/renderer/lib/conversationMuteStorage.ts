@@ -172,6 +172,11 @@ function sameBinding(a: Omit<MuteEntry, 'muted'>, b: Omit<MuteEntry, 'muted'>): 
   );
 }
 
+/** Automatic view remaps wait for discovery instead of reporting a user save failure. */
+export function canBindConversationMute(protocol: MeshProtocol, view: string): boolean {
+  return binding(protocol, view) != null;
+}
+
 /** Project stable preferences into the legacy UI key space without rewriting legacy data. */
 export function projectConversationMutes(protocol: MeshProtocol, legacy: Set<string>): Set<string> {
   const result = new Set(legacy);

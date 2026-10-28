@@ -196,6 +196,7 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { canBindConversationMute } from '../lib/conversationMuteStorage';
 import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import { isMecpAlertThrottled } from '../lib/mecp/mecpAlertThrottle';
@@ -240,6 +241,7 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useBotSendersStore } from '../stores/botSendersStore';
 import { isMecpSenderBlocked, mecpBlockKey } from '../stores/mecpBlockStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
+import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
@@ -1402,6 +1404,7 @@ function ChatPanel({
     (s) => s.byDestination,
   );
   const reticulumPeersRevision = useReticulumPeerStore((s) => s.peersRevision);
+  const reticulumLocalLxmfHash = useReticulumIdentityStore((s) => s.identity?.lxmf_hash);
 
   // Keep refs aligned with committed state before remap / initialDmTarget effects read them.
   useEffect(() => {
@@ -1438,6 +1441,21 @@ function ChatPanel({
       dismissedDmTabsRef.current,
     );
     if (!remapped.changed) return;
+    const remappedMutes = remapDmMutedViews(mutedViews, remapped.replacements);
+    if (remappedMutes.changed) {
+      // Discovery can resolve the destination before the mute's local/peer bindings hydrate.
+      // Keep all conversation state on the old key until the mute can move with it.
+      if (
+        !reticulumLocalLxmfHash ||
+        [...new Set([...mutedViews, ...remappedMutes.next])].some(
+          (view) =>
+            mutedViews.has(view) !== remappedMutes.next.has(view) &&
+            !canBindConversationMute(protocol, view),
+        )
+      )
+        return;
+      if (!setMutedViews(remappedMutes.next)) return;
+    }
     setOpenDmTabs(remapped.openDmTabs);
     setActiveDmNode(remapped.activeDmNode);
     setDismissedDmTabs(remapped.dismissedDmTabs);
@@ -1448,11 +1466,6 @@ function ChatPanel({
         Math.max(a, b),
       );
       return changed ? next : prev;
-    });
-    setMutedViews((prev) => {
-      const { next, changed } = remapDmMutedViews(prev, remapped.replacements);
-      if (!changed) return prev;
-      return next;
     });
     setStarred((prev) => {
       const { next, changed } = remapDmStarredViewKeys(prev, remapped.replacements);
@@ -1475,6 +1488,9 @@ function ChatPanel({
     protocol,
     reticulumIdentityActivityByDestination,
     reticulumPeersRevision,
+    reticulumLocalLxmfHash,
+    nodes,
+    mutedViews,
     setMutedViews,
     openDmTabs,
     activeDmNode,

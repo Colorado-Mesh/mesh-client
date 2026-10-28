@@ -90,8 +90,12 @@ export function useConversationMutes(protocol: MeshProtocol) {
     (action: SetStateAction<Set<string>>) => {
       const before = loadMutedViews(protocol);
       const after = typeof action === 'function' ? action(before) : action;
-      if (saveConversationMutes(protocol, before, after)) notifyMutedViewsChanged(protocol);
-      else addToast(t('notificationPolicy.saveFailed'), 'error');
+      if (saveConversationMutes(protocol, before, after)) {
+        notifyMutedViewsChanged(protocol);
+        return true;
+      }
+      addToast(t('notificationPolicy.saveFailed'), 'error');
+      return false;
     },
     [protocol, addToast, t],
   );
