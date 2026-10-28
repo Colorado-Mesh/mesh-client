@@ -66,6 +66,7 @@ describe('ci-test-scope planning', () => {
 
   it.each([
     '.github/workflows/tests.yaml',
+    '.github/workflows/bundle-size.yaml',
     '.github/actions/setup-node-pnpm/action.yaml',
     'scripts/ci-test-scope.mjs',
     'scripts/precommit-tests.test.mjs',
