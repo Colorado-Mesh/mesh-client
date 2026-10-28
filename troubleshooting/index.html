@@ -1584,6 +1584,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keeping-the-computer-awake-power-save" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping the computer awake (power save)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#long-running-sessions-multi-day-uptime" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4100,6 +4111,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keeping-the-computer-awake-power-save" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping the computer awake (power save)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#long-running-sessions-multi-day-uptime" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5250,6 +5272,38 @@ LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to mig
 </ul>
 <p><strong>Linux:</strong> Same sidecar GATT path as macOS/Windows; see <strong>Linux-specific</strong> under <a href="#ble-known-issues">BLE known issues</a> for BlueZ / Flatpak steps.</p>
 <p><strong>Reticulum (all platforms):</strong> On suspend, <code>onPowerSuspend</code> clears in-memory rnsh sessions and rncp transfers. On resume, <code>onPowerResume</code> restarts the sidecar via <code>connect()</code> unless the user disconnected.</p>
+<h3 id="keeping-the-computer-awake-power-save">Keeping the computer awake (power save)<a class="headerlink" href="#keeping-the-computer-awake-power-save" title="Permanent link">&para;</a></h3>
+<p><strong>App → Window → Keep computer awake while connected</strong> controls when mesh-client holds Electron’s <code>prevent-app-suspension</code> blocker:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Radio link only</strong> (default)</td>
+<td>Hold only while a Meshtastic/MeshCore link is live over Bluetooth or USB serial, or while the Reticulum sidecar is running with an enabled BLE RNode or serial RNode/KISS interface in config. TCP/Wi-Fi companions, MQTT, and network-only Reticulum do <strong>not</strong> hold it (wake recovery reconnects them — see above).</td>
+</tr>
+<tr>
+<td><strong>Any connection</strong></td>
+<td>Hold for any radio, MQTT, or Reticulum sidecar (previous always-on behaviour).</td>
+</tr>
+<tr>
+<td><strong>Never</strong></td>
+<td>Never hold the blocker.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Linux display caveat:</strong> On Linux, Chromium’s freedesktop PowerManagement inhibit also disables DPMS / screen blanking for many power managers (XFCE, KDE). If monitors must sleep while a BLE/USB radio is connected, choose <strong>Never</strong>. There is no Electron API for “block suspend only.”</p>
+<p><strong>Verify (Linux):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>gdbus<span class="w"> </span>call<span class="w"> </span>--session<span class="w"> </span>--dest<span class="w"> </span>org.freedesktop.PowerManagement<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>--object-path<span class="w"> </span>/org/freedesktop/PowerManagement/Inhibit<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>--method<span class="w"> </span>org.freedesktop.PowerManagement.Inhibit.GetInhibitors
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>xset<span class="w"> </span>q<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A2<span class="w"> </span>DPMS
+</code></pre></div>
+<p>Support log line: <code>[main] power-save policy: &lt;mode&gt; hold|release</code>.</p>
 <h3 id="long-running-sessions-multi-day-uptime">Long-running sessions (multi-day uptime)<a class="headerlink" href="#long-running-sessions-multi-day-uptime" title="Permanent link">&para;</a></h3>
 <p>If mesh-client stays open for <strong>days</strong> on a busy mesh (especially <strong>MeshCore BLE-only</strong> with hundreds of repeaters):</p>
 <ul>
@@ -5449,8 +5503,8 @@ versions and do not measure the same allocations as <code>mainLiveness</code>.</
 <li><strong>Generate data package</strong> again and import the new zip on the EUD (remove any previous mesh-client connection/package first).</li>
 </ol>
 <p>On an older build, convert the CA by hand and import it in ATAK under <strong>Settings → Network Preferences → TAK Servers → Mesh Client → Import Trust Store</strong> (password <code>atakatak</code>):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>openssl<span class="w"> </span>pkcs12<span class="w"> </span>-export<span class="w"> </span>-nokeys<span class="w"> </span>-in<span class="w"> </span>ca.pem<span class="w"> </span>-out<span class="w"> </span>truststore.p12<span class="w"> </span>-caname<span class="w"> </span>mesh-client-ca<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>-passout<span class="w"> </span>pass:atakatak<span class="w"> </span>-certpbe<span class="w"> </span>PBE-SHA1-3DES<span class="w"> </span>-macalg<span class="w"> </span>sha1
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>openssl<span class="w"> </span>pkcs12<span class="w"> </span>-export<span class="w"> </span>-nokeys<span class="w"> </span>-in<span class="w"> </span>ca.pem<span class="w"> </span>-out<span class="w"> </span>truststore.p12<span class="w"> </span>-caname<span class="w"> </span>mesh-client-ca<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span>-passout<span class="w"> </span>pass:atakatak<span class="w"> </span>-certpbe<span class="w"> </span>PBE-SHA1-3DES<span class="w"> </span>-macalg<span class="w"> </span>sha1
 </code></pre></div>
 <h2 id="chat-nodes-and-notifications">Chat, nodes, and notifications<a class="headerlink" href="#chat-nodes-and-notifications" title="Permanent link">&para;</a></h2>
 <h3 id="unread-messages-but-no-app-icon-badge">Unread messages but no app-icon badge<a class="headerlink" href="#unread-messages-but-no-app-icon-badge" title="Permanent link">&para;</a></h3>
@@ -5733,7 +5787,7 @@ versions and do not measure the same allocations as <code>mainLiveness</code>.</
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 12:25:41 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 28, 2026 17:53:21 UTC">October 28, 2026</span>
   </span>
 
     
