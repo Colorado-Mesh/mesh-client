@@ -48,6 +48,7 @@ import {
   LINK_PREVIEW_MAX_REDIRECTS,
   LINK_PREVIEW_RATE_LIMIT_MAX,
   parseMetaTagAttributes,
+  scanNextMetaTag,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
 
@@ -793,6 +794,41 @@ describe('fetchLinkPreview', () => {
   it('extracts meta content when extra attributes sit between property and content', () => {
     const html = `<meta property="og:title" data-react-helmet="true" content="imgur.com">`;
     expect(extractMetaContent(html, { property: 'og:title' })).toBe('imgur.com');
+  });
+
+  it('extracts meta content when a quoted attribute embeds a literal >', () => {
+    const html = `<meta property="og:title" content="A > B"><meta name="description" content="ok">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('A > B');
+    expect(extractMetaContent(html, { name: 'description' })).toBe('ok');
+  });
+
+  it('decodes &gt; inside a quoted meta attribute value', () => {
+    const html = `<meta property="og:title" content="A &gt; B">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('A > B');
+    expect(parseMetaTagAttributes('content="A &gt; B"').content).toBe('A > B');
+  });
+
+  it('advances past a completed meta tag and ignores an unterminated opener suffix', () => {
+    const html =
+      `<meta property="og:title" content="Before">` +
+      `<meta property="og:description" content="never closed`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('Before');
+    expect(extractMetaContent(html, { property: 'og:description' })).toBeUndefined();
+    const first = scanNextMetaTag(html, 0);
+    expect(first?.attrText).toContain('og:title');
+    expect(scanNextMetaTag(html, first!.nextIndex)).toBeNull();
+  });
+
+  it('skips non-meta openers like <metal> without treating them as tags', () => {
+    const html = `<metal property="og:title" content="nope"><meta property="og:title" content="yes">`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe('yes');
+  });
+
+  it('produces a preview when og:title contains an embedded greater-than', async () => {
+    const html = `<meta property="og:title" content="Score A &gt; B">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    const result = await fetchLinkPreview('https://example.com');
+    expect(result).toEqual({ title: 'Score A > B' });
   });
 
   it('parses Imgur-style React Helmet OG tags with interleaved attributes', async () => {

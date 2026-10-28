@@ -600,7 +600,6 @@ export function decodeLinkPreviewHtmlEntities(value: string): string {
     .replace(/&amp;/gi, '&');
 }
 
-const META_TAG_RE = /<meta\b([^>]*)>/gi;
 const META_ATTR_RE = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
 
 /** Parse attributes from a single `<meta …>` attribute string (order-independent). */
@@ -617,6 +616,70 @@ export function parseMetaTagAttributes(attrText: string): Record<string, string>
   return attrs;
 }
 
+function isMetaTagOpenerAt(html: string, index: number): boolean {
+  if (html[index] !== '<') return false;
+  if (index + 4 >= html.length) return false;
+  const c0 = html.charCodeAt(index + 1);
+  const c1 = html.charCodeAt(index + 2);
+  const c2 = html.charCodeAt(index + 3);
+  const c3 = html.charCodeAt(index + 4);
+  // ASCII case-insensitive "meta"
+  return (
+    (c0 === 109 || c0 === 77) &&
+    (c1 === 101 || c1 === 69) &&
+    (c2 === 116 || c2 === 84) &&
+    (c3 === 97 || c3 === 65)
+  );
+}
+
+/**
+ * Find the next `<meta …>` tag starting at `from`, respecting `>` inside quotes.
+ * Always advances past the candidate opener so unterminated tags are O(n) overall.
+ * Returns attribute text and the index to continue from, or null when no opener remains.
+ */
+export function scanNextMetaTag(
+  html: string,
+  from: number,
+): { attrText: string; nextIndex: number } | null {
+  let i = Math.max(0, from);
+  while (i < html.length) {
+    if (!isMetaTagOpenerAt(html, i)) {
+      i += 1;
+      continue;
+    }
+    const opener = i;
+    const afterKeyword = opener + 5; // length of '<meta'
+    const boundary = html[afterKeyword];
+    // Require a tag boundary (same idea as \b): end, `>`, `/`, or whitespace before attrs.
+    if (boundary !== undefined && boundary !== '>' && boundary !== '/' && !/\s/.test(boundary)) {
+      i = opener + 1;
+      continue;
+    }
+
+    let quote: '"' | "'" | null = null;
+    for (let j = afterKeyword; j < html.length; j++) {
+      const ch = html[j];
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        quote = ch;
+        continue;
+      }
+      if (ch === '>') {
+        return {
+          attrText: html.slice(afterKeyword, j),
+          nextIndex: j + 1,
+        };
+      }
+    }
+    // No '>' remains after this opener — do not rescan the unterminated suffix.
+    return null;
+  }
+  return null;
+}
+
 /**
  * Extract meta `content` by Open Graph `property` or HTML `name`, ignoring extra
  * attributes (e.g. React Helmet `data-react-helmet`) and attribute order.
@@ -627,10 +690,12 @@ export function extractMetaContent(
 ): string | undefined {
   const wantProperty = opts.property?.toLowerCase();
   const wantName = opts.name?.toLowerCase();
-  META_TAG_RE.lastIndex = 0;
-  let tagMatch: RegExpExecArray | null;
-  while ((tagMatch = META_TAG_RE.exec(html)) !== null) {
-    const attrs = parseMetaTagAttributes(tagMatch[1] ?? '');
+  let cursor = 0;
+  while (cursor < html.length) {
+    const tag = scanNextMetaTag(html, cursor);
+    if (!tag) return undefined;
+    cursor = tag.nextIndex;
+    const attrs = parseMetaTagAttributes(tag.attrText);
     const content = attrs.content?.trim();
     if (!content) continue;
     if (wantProperty && attrs.property?.toLowerCase() === wantProperty) return content;
