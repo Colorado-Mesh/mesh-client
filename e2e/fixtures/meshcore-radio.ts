@@ -4,11 +4,16 @@ import { createServer, type Socket } from 'node:net';
 export async function startMeshcoreRadio() {
   const sockets = new Set<Socket>();
   const commands: number[] = [];
+  const channelCapacity = 40;
   let channels = ['Zulu', 'Alpha', 'Beta'];
   let rooms = ['Zulu Room', 'Alpha Room'];
   let failChannelRead = false;
   let stallContacts = false;
   const roomKeys = new Map<string, number>();
+  let failChannelSave = false;
+  let holdChannelSaves = false;
+  const pendingSaves: (() => void)[] = [];
+  const secrets = new Map<number, Buffer>();
   const text = (value: string, length: number) => {
     const bytes = Buffer.alloc(length);
     bytes.write(value, 0, length - 1);
@@ -50,7 +55,7 @@ export async function startMeshcoreRadio() {
         case 22:
           send(
             Buffer.concat([
-              Buffer.from([13, 14, 100, channels.length, 0, 0, 0, 0]),
+              Buffer.from([13, 14, 100, channelCapacity, 0, 0, 0, 0]),
               text('2026-10-27', 12),
               text('E2E Radio', 40),
               text('1.18.0', 20),
@@ -81,15 +86,34 @@ export async function startMeshcoreRadio() {
         case 31: {
           const index = command[1];
           if (failChannelRead) send(Buffer.from([1, 4]));
-          else if (index >= channels.length) send(Buffer.from([1, 2]));
+          else if (index >= channelCapacity) send(Buffer.from([1, 2]));
           else
             send(
               Buffer.concat([
                 Buffer.from([18, index]),
-                text(channels[index], 32),
-                Buffer.alloc(16, index + 1),
+                text(channels[index] ?? '', 32),
+                secrets.get(index) ?? Buffer.alloc(16, channels[index] ? index + 1 : 0),
               ]),
             );
+          break;
+        }
+        case 32: {
+          const save = () => {
+            if (failChannelSave) {
+              send(Buffer.from([1, 4]));
+              return;
+            }
+            const index = command[1];
+            if (index >= channelCapacity) {
+              send(Buffer.from([1, 2]));
+              return;
+            }
+            channels[index] = command.subarray(2, 34).toString().split('\0')[0];
+            secrets.set(index, Buffer.from(command.subarray(34, 50)));
+            send(Buffer.from([0]));
+          };
+          if (holdChannelSaves) pendingSaves.push(save);
+          else save();
           break;
         }
         case 23:
@@ -144,7 +168,8 @@ export async function startMeshcoreRadio() {
     port: address.port,
     commands,
     setChats: (nextChannels: string[], nextRooms: string[]) => {
-      channels = nextChannels;
+      channels = [...nextChannels];
+      secrets.clear();
       rooms = nextRooms;
     },
     setContactStall(stall: boolean) {
@@ -153,6 +178,17 @@ export async function startMeshcoreRadio() {
     setReadFailure: (value: boolean) => {
       failChannelRead = value;
     },
+    setSaveFailure: (value: boolean) => {
+      failChannelSave = value;
+    },
+    holdSaves: (value: boolean) => {
+      holdChannelSaves = value;
+      if (!value)
+        pendingSaves.splice(0).forEach((save) => {
+          save();
+        });
+    },
+    getChannel: (index: number) => ({ name: channels[index], secret: secrets.get(index) }),
     close: async () => {
       for (const socket of sockets) socket.destroy();
       await new Promise<void>((resolve) =>
