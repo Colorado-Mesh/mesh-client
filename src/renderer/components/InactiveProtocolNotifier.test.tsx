@@ -89,4 +89,22 @@ describe('InactiveProtocolNotifier', () => {
     );
     expect(addToast).not.toHaveBeenCalled();
   });
+
+  it('preserves the existing passive MECP toast independently of chat filtering', () => {
+    localStorage.setItem('mesh-client:chatNotificationMode', 'mentions');
+    localStorage.setItem('mesh-client:notifMuted', '1');
+    const { rerender } = render(
+      <InactiveProtocolNotifier activeProtocol="meshtastic" messagesByProtocol={byProtocol(1)} />,
+    );
+    rerender(
+      <InactiveProtocolNotifier
+        activeProtocol="meshtastic"
+        messagesByProtocol={{
+          ...byProtocol(1),
+          meshcore: [msg(1), { ...msg(2), payload: 'MECP/0/M01' }],
+        }}
+      />,
+    );
+    expect(addToast).toHaveBeenCalledTimes(1);
+  });
 });

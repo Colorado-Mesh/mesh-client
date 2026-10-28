@@ -19,6 +19,7 @@ import {
 } from './meshcore/meshcorePubKeyRegistry';
 import { pubkeyToNodeId } from './meshcoreUtils';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
+import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import { reticulumProtocol } from './protocols/ReticulumProtocol';
 import { isRrcRoomMuted } from './rrcMention';
 
@@ -117,6 +118,41 @@ describe('stable conversation mutes', () => {
     expect(loadMutedViews('meshcore')).toEqual(new Set(['ch:0', 'dm:5']));
   });
 
+  it('scopes Meshtastic channel and DM choices to the finalized radio identity', () => {
+    useIdentityStore.setState({
+      activeIdentityId: 'radio',
+      identities: {
+        radio: {
+          id: 'radio',
+          protocol: meshtasticProtocol,
+          signature: 'meshtastic:node:1',
+          transports: [],
+          createdAt: 1,
+          lastSeenAt: 1,
+        },
+      },
+    });
+    setLiveChannelKeys('meshtastic', { radioNodeId: 1, keyByIndex: { 0: 'channel-a' } });
+    expect(saveConversationMutes('meshtastic', new Set(), new Set(['ch:0', 'dm:5']))).toBe(true);
+    setLiveChannelKeys('meshtastic', { radioNodeId: 1, keyByIndex: { 2: 'channel-a' } });
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['ch:2', 'dm:5']));
+    useIdentityStore.setState((state) => ({
+      identities: { radio: { ...state.identities.radio, signature: 'meshtastic:node:2' } },
+    }));
+    setLiveChannelKeys('meshtastic', { radioNodeId: 2, keyByIndex: { 0: 'channel-a' } });
+    expect(loadMutedViews('meshtastic').size).toBe(0);
+    expect(loadMutedViews('meshcore').size).toBe(0);
+  });
+
+  it('does not transfer a MeshCore peer mute to a colliding short node id', () => {
+    device();
+    expect(toggle('dm:5')).toBe(true);
+    useNodeStore.setState({
+      nodes: { radio: { 5: { nodeId: 5, publicKey: new Uint8Array(32).fill(3) } } },
+    });
+    expect(loadMutedViews('meshcore').size).toBe(0);
+  });
+
   it('resolves real MeshCore contact keys from the shared registry and persisted hex records', () => {
     device();
     useNodeStore.setState({ nodes: {} });
@@ -206,6 +242,21 @@ describe('stable conversation mutes', () => {
     expect(loadMutedViews('meshcore')).toEqual(new Set(['ch:2']));
     expect(toggle('ch:2')).toBe(true);
     expect(loadMutedViews('meshcore').size).toBe(0);
+  });
+
+  it('does not project an obsolete channel slot before discovery after restart', async () => {
+    device();
+    expect(toggle('ch:0')).toBe(true);
+    device('aa' + '00'.repeat(31), 2);
+    expect(loadMutedViews('meshcore')).toEqual(new Set(['ch:2']));
+    // A fresh module has no retained layout, as on a cold renderer start.
+    vi.resetModules();
+    const { projectConversationMutes } = await import('./conversationMuteStorage');
+    const { saveConversationMutes: saveAfterRestart } = await import('./conversationMuteStorage');
+    const identities = await import('../stores/identityStore');
+    identities.useIdentityStore.setState(useIdentityStore.getState());
+    expect(projectConversationMutes('meshcore', new Set())).toEqual(new Set());
+    expect(saveAfterRestart('meshcore', new Set(), new Set(['ch:0']))).toBe(false);
   });
 
   it('uses the real Reticulum local LXMF identity with its offline store bucket', () => {

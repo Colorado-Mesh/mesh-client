@@ -9,6 +9,7 @@ import {
   CHAT_NOTIFICATION_MODE_KEY,
   getChatNotificationMode,
   mentionsChatName,
+  mentionsLocalChatIdentity,
   saveChatNotificationMode,
 } from './chatNotificationPolicy';
 import { getProtocolForType } from './protocols/protocolRegistry';
@@ -123,6 +124,37 @@ describe('chat notification policy', () => {
   it('keeps Reticulum DMs eligible without requiring a mention', () => {
     saveChatNotificationMode('mentions');
     expect(classify('reticulum', message({ channel: -1, to: 1 }))?.type).toBe('dm');
+  });
+
+  it('uses the displayed offline bucket when its primary identity has no hydrated data', () => {
+    const protocol = getProtocolForType('meshcore')!;
+    useIdentityStore.setState({
+      activeIdentityId: 'primary',
+      identities: {
+        primary: {
+          id: 'primary',
+          protocol,
+          signature: 'meshcore:pk:' + 'ab'.repeat(32),
+          selfNodeNum: 1,
+          transports: [],
+          createdAt: 1,
+          lastSeenAt: 1,
+        },
+        'offline-meshcore': {
+          id: 'offline-meshcore',
+          protocol,
+          signature: '',
+          selfNodeNum: 1,
+          transports: [],
+          createdAt: 0,
+          lastSeenAt: 0,
+        },
+      },
+    });
+    useNodeStore.setState({
+      nodes: { 'offline-meshcore': { 1: { nodeId: 1, longName: 'Hydrated Radio' } } },
+    });
+    expect(mentionsLocalChatIdentity('@[Hydrated Radio]', 'meshcore', new Set([1]))).toBe(true);
   });
 
   it('combines RRC global and existing room mode, with whispers explicit', () => {

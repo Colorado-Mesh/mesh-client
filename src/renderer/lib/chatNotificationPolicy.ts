@@ -1,6 +1,7 @@
 import { useIdentityStore } from '../stores/identityStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { parseChatMentionSegments } from './chatMentionSegments';
+import { getIdentityIdForProtocol } from './identityByProtocol';
 import type { MeshProtocol } from './types';
 
 export type ChatNotificationMode = 'all' | 'mentions';
@@ -38,11 +39,8 @@ export function subscribeChatNotificationMode(listener: () => void): () => void 
 }
 
 export function getNotificationIdentity(protocol: MeshProtocol) {
-  const { identities, activeIdentityId } = useIdentityStore.getState();
-  const active = activeIdentityId ? identities[activeIdentityId] : undefined;
-  return active?.protocol.type === protocol
-    ? active
-    : Object.values(identities).find((identity) => identity.protocol.type === protocol);
+  const id = getIdentityIdForProtocol(protocol);
+  return id ? useIdentityStore.getState().identities[id] : undefined;
 }
 
 /** The composer sends bracket mentions, not substring matches or email addresses. */

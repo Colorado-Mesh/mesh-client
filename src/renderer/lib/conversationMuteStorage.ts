@@ -1,7 +1,9 @@
+import { useIdentityStore } from '../stores/identityStore';
 import { getLiveChannelKeys } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { getNotificationIdentity } from './chatNotificationPolicy';
+import { resolvePrimaryIdentityIdForProtocol } from './identityByProtocol';
 import { getMeshcorePubKey } from './meshcore/meshcorePubKeyRegistry';
 import { pubkeyToNodeId } from './meshcoreUtils';
 import { resolveReticulumDestinationHash } from './reticulum/destHash';
@@ -40,7 +42,11 @@ function notificationDeviceSignature(protocol: MeshProtocol): string {
   if (protocol === 'reticulum') {
     return useReticulumIdentityStore.getState().identity?.lxmf_hash.toLowerCase() ?? '';
   }
-  const signature = getNotificationIdentity(protocol)?.signature ?? '';
+  // Hydrated peer data can live in the offline bucket while the radio owns the
+  // finalized signature. Never use a display-bucket fallback as device identity.
+  const { identities, activeIdentityId } = useIdentityStore.getState();
+  const id = resolvePrimaryIdentityIdForProtocol(identities, activeIdentityId, protocol);
+  const signature = id ? identities[id].signature : '';
   const ready = protocol === 'meshtastic' ? /^meshtastic:node:\d+$/ : /^meshcore:pk:[0-9a-f]{64}$/i;
   return ready.test(signature) ? signature.toLowerCase() : '';
 }
@@ -141,7 +147,7 @@ export function projectConversationMutes(protocol: MeshProtocol, legacy: Set<str
       // exists, verify it so an id collision cannot inherit another peer's preference.
       const waitingForPeer =
         !current &&
-        /^(ch|dm|room):/.test(view) &&
+        /^(dm|room):/.test(view) &&
         notificationDeviceSignature(protocol) === entry.device;
       if (!waitingForPeer && (!current || !sameBinding(current, entry))) continue;
       if (view.startsWith('rrc:')) {
@@ -183,7 +189,7 @@ export function saveConversationMutes(
             entry.protocol === protocol &&
             entry.device === notificationDeviceSignature(protocol) &&
             entry.view === view &&
-            /^(ch|dm|room):/.test(view),
+            /^(dm|room):/.test(view),
         );
       if (!current) throw new Error('Conversation identity is not ready');
       const previous = entries.find((entry) => sameBinding(entry, current));

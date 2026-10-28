@@ -8,6 +8,7 @@ import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreambl
 import { getChatNotificationMode, mentionsLocalChatIdentity } from '../lib/chatNotificationPolicy';
 import { loadMutedViews } from '../lib/chatPanelProtocolStorage';
 import { chatViewKeyForMessage, resolveChatNotificationType } from '../lib/chatUnreadCounts';
+import { isMecpMessage } from '../lib/mecp/mecpMessages';
 import { useToast } from './Toast';
 
 const EMPTY_OWN_IDS = new Set<number>();
@@ -63,34 +64,30 @@ export function InactiveProtocolNotifier({
         );
         const own = ownNodeIdsByProtocol?.[inactiveProtocol] ?? EMPTY_OWN_IDS;
         const mutedViews = loadMutedViews(inactiveProtocol);
-        const realNew =
-          localStorage.getItem('mesh-client:notifMuted') === '1'
-            ? []
-            : newMsgs.filter((m) => {
-                if (m.emoji || m.isHistory || own.has(m.sender_id)) return false;
-                // Room posts retain their existing passive toast, without adding a new sound path.
-                if (isMeshcoreRoomChatMessage(m)) {
-                  return (
-                    !mutedViews.has(`room:${m.roomServerId}`) &&
-                    (getChatNotificationMode() === 'all' ||
-                      mentionsLocalChatIdentity(
-                        m.payload,
-                        inactiveProtocol,
-                        own,
-                        m.replyPreviewSender,
-                      ))
-                  );
-                }
-                return (
-                  !mutedViews.has(chatViewKeyForMessage(m, inactiveProtocol, own)) &&
-                  resolveChatNotificationType(
-                    m,
-                    messagesByProtocol[inactiveProtocol],
-                    own,
-                    inactiveProtocol,
-                  ) != null
-                );
-              });
+        const realNew = newMsgs.filter((m) => {
+          if (m.emoji || m.isHistory || own.has(m.sender_id)) return false;
+          // Preserve the existing passive emergency toast; dedicated MECP
+          // alert owners continue to enforce their own severity/mute policy.
+          if (isMecpMessage(m.payload)) return true;
+          if (localStorage.getItem('mesh-client:notifMuted') === '1') return false;
+          // Room posts retain their existing passive toast, without adding a new sound path.
+          if (isMeshcoreRoomChatMessage(m)) {
+            return (
+              !mutedViews.has(`room:${m.roomServerId}`) &&
+              (getChatNotificationMode() === 'all' ||
+                mentionsLocalChatIdentity(m.payload, inactiveProtocol, own, m.replyPreviewSender))
+            );
+          }
+          return (
+            !mutedViews.has(chatViewKeyForMessage(m, inactiveProtocol, own)) &&
+            resolveChatNotificationType(
+              m,
+              messagesByProtocol[inactiveProtocol],
+              own,
+              inactiveProtocol,
+            ) != null
+          );
+        });
         if (realNew.length > 0 && enabledProtocols.includes(inactiveProtocol)) {
           addToast(
             t('toasts.newMessages', {
