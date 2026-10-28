@@ -101,9 +101,9 @@ function bridgeChannelToGeochat(identityId: IdentityId, msg: TakChannelMessage):
   pushTakGeochat({
     channelKey: channel.key,
     senderCallsign: sender,
-    // An MECP report is shown in words, with its code line below.
+    // An MECP report is shown in words, with its code line below; a reply keeps its @Name.
     text: capTakText(
-      takMecpText(text) ?? formatTakReplyText(text, msg.reply),
+      formatTakReplyText(takMecpText(text) ?? text, msg.reply),
       TAK_GEOCHAT_TEXT_MAX_LEN,
     ),
     timeMs: msg.timestampMs,

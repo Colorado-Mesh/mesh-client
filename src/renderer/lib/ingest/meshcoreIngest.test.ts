@@ -849,6 +849,11 @@ describe('meshcore ingest TAK channel relay', () => {
       ['a reply', 'Bob: @[Alice] copy that', '@Alice copy that'],
       ['a reply to a message not heard', 'Bob: @[Carol] you there?', '@Carol you there?'],
       ['a plain message', 'Bob: on my way', 'on my way'],
+      [
+        'an MECP report sent as a reply',
+        'Bob: @[Alice] MECP/1/M05',
+        '@Alice 🚨 URGENT: Hypothermia\nMECP/1/M05',
+      ],
     ])('hands on %s with what it answers', (_label, wire, expected) => {
       deliver(wire, 1_700_000_960);
       expect(sentText()).toBe(expected);
