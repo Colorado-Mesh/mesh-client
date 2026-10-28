@@ -588,6 +588,56 @@ async function fetchYouTubeOEmbedPreview(pageUrl: URL): Promise<LinkPreviewMetad
   };
 }
 
+/** Decode a minimal set of HTML entities in OG/meta content values. */
+export function decodeLinkPreviewHtmlEntities(value: string): string {
+  return value
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'");
+}
+
+const META_TAG_RE = /<meta\b([^>]*)>/gi;
+const META_ATTR_RE = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+
+/** Parse attributes from a single `<meta …>` attribute string (order-independent). */
+export function parseMetaTagAttributes(attrText: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  META_ATTR_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = META_ATTR_RE.exec(attrText)) !== null) {
+    const name = match[1]?.toLowerCase();
+    if (!name) continue;
+    const raw = match[2] ?? match[3] ?? '';
+    attrs[name] = decodeLinkPreviewHtmlEntities(raw);
+  }
+  return attrs;
+}
+
+/**
+ * Extract meta `content` by Open Graph `property` or HTML `name`, ignoring extra
+ * attributes (e.g. React Helmet `data-react-helmet`) and attribute order.
+ */
+export function extractMetaContent(
+  html: string,
+  opts: { property?: string; name?: string },
+): string | undefined {
+  const wantProperty = opts.property?.toLowerCase();
+  const wantName = opts.name?.toLowerCase();
+  META_TAG_RE.lastIndex = 0;
+  let tagMatch: RegExpExecArray | null;
+  while ((tagMatch = META_TAG_RE.exec(html)) !== null) {
+    const attrs = parseMetaTagAttributes(tagMatch[1] ?? '');
+    const content = attrs.content?.trim();
+    if (!content) continue;
+    if (wantProperty && attrs.property?.toLowerCase() === wantProperty) return content;
+    if (wantName && attrs.name?.toLowerCase() === wantName) return content;
+  }
+  return undefined;
+}
+
 async function fetchHtmlLinkPreview(
   urlString: string,
   response: Response,
@@ -600,22 +650,20 @@ async function fetchHtmlLinkPreview(
   const html = new TextDecoder().decode(merged);
 
   const ogTitle =
-    /<meta\s+property="og:title"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-    /<meta\s+content="([^"]+)"\s+property="og:title"/i.exec(html)?.[1] ??
+    extractMetaContent(html, { property: 'og:title' }) ??
     /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
   if (!ogTitle?.trim()) return null;
 
-  const title = ogTitle.trim();
+  const title = decodeLinkPreviewHtmlEntities(ogTitle.trim());
 
   const ogDesc =
-    /<meta\s+property="og:description"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-    /<meta\s+content="([^"]+)"\s+property="og:description"/i.exec(html)?.[1] ??
-    /<meta\s+name="description"\s+content="([^"]+)"/i.exec(html)?.[1];
+    extractMetaContent(html, { property: 'og:description' }) ??
+    extractMetaContent(html, { name: 'description' });
   const description = ogDesc?.trim() || undefined;
 
   const ogImage =
-    /<meta\s+property="og:image"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-    /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
+    extractMetaContent(html, { property: 'og:image' }) ??
+    extractMetaContent(html, { name: 'twitter:image' });
   let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
 
   if (image) {
