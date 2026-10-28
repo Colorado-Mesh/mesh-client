@@ -115,6 +115,15 @@ describe('ChannelReplies', () => {
     expect(r.recent(PUBLIC, NOW)).toEqual([]);
   });
 
+  it('refuses a reply to a name the @[…] marker cannot hold, and never picks someone else', () => {
+    const r = new ChannelReplies();
+    r.heard(PUBLIC, 'Alan', NOW - 2_000);
+    r.heard(PUBLIC, 'Alice]', NOW - 1_000);
+    expect(r.resolve(PUBLIC, '@alice hi', NOW)).toEqual({ kind: 'unencodable', name: 'Alice]' });
+    expect(r.resolve(PUBLIC, '@@ hi', NOW)).toEqual({ kind: 'unencodable', name: 'Alice]' });
+    expect(r.resolve(PUBLIC, '@alan hi', NOW)).toMatchObject({ text: '@[Alan] hi' });
+  });
+
   it('forgets everyone on clear', () => {
     replies.clear();
     expect(send('@@ hi')).toEqual({ kind: 'nobody' });

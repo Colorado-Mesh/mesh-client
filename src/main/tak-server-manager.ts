@@ -121,6 +121,9 @@ function channelReplyNote(reply: Exclude<ChannelReplyOutcome, { kind: 'send' }>)
   if (reply.kind === 'nobody') {
     return 'Not sent: nobody has spoken on this channel recently, so @@ has no one to reply to.';
   }
+  if (reply.kind === 'unencodable') {
+    return `Not sent: ${reply.name} has a "]" in their name, which a MeshCore reply cannot hold. Leave out the @ to send it as plain text.`;
+  }
   const shown = reply.names.slice(0, REPLY_NAMES_SHOWN).join(', ');
   const more = reply.names.length - REPLY_NAMES_SHOWN;
   const rest = more > 0 ? ` and ${more} more` : '';

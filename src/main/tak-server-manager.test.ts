@@ -1152,6 +1152,15 @@ describe('TakServerManager chat from local clients', () => {
       expect(written(sender)[0]).toContain('>mesh-client: Not sent: nobody has spoken');
     });
 
+    it("says so when the reply is for a name MeshCore's reply form cannot hold", () => {
+      const manager = heardFrom('Alice]');
+      const inbound = listen(manager);
+      const sender = connect(manager, ['ANDROID-1', 'VIPER']);
+      sender.emit('data', Buffer.from(CHAT('@alice hi', { channel: MC_OPS })));
+      expect(inbound).toEqual([]);
+      expect(written(sender)[0]).toContain('>mesh-client: Not sent: Alice] has a');
+    });
+
     it('lists at most five matching names', () => {
       const manager = heardFrom('Sa', 'Sb', 'Sc', 'Sd', 'Se', 'Sf', 'Sg');
       const sender = connect(manager, ['ANDROID-1', 'VIPER']);

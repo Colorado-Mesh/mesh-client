@@ -10,7 +10,7 @@
  * - `@@ thanks` replies to whoever spoke last on that channel.
  *
  * When several people match, nothing is sent and the caller says who matched, so a reply never goes
- * to the wrong person. When nobody matches, the text is sent exactly as typed, so a message that
+ * to the wrong person. Nothing is sent either for a name the marker cannot hold (one with `]`). When nobody matches, the text is sent exactly as typed, so a message that
  * just starts with "@" is not changed by surprise. Text already in the `@[Name]` form is left alone.
  *
  * The same rules as MeshCore TAK Bridge (`ChannelReplies` in Colorado-Mesh/meshcore-kotlin), so a
@@ -24,7 +24,9 @@ export type ChannelReplyOutcome =
   /** `typed` matches several `names`, most recently heard first; send nothing. */
   | { kind: 'ambiguous'; typed: string; names: string[] }
   /** `@@` was used, but nobody has been heard on the channel recently; send nothing. */
-  | { kind: 'nobody' };
+  | { kind: 'nobody' }
+  /** The reply is for `name`, which `@[…]` cannot hold (it has a `]`); send nothing. */
+  | { kind: 'unencodable'; name: string };
 
 /** MeshCore names are at most 32 bytes; a little slack for multi-byte characters. */
 const MAX_NAME_CHARS = 40;
@@ -41,6 +43,20 @@ export function normalizeReplyName(name: string): string {
     .normalize('NFC')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+/**
+ * Whether `name` fits MeshCore's `@[Name]` marker: apps read the name up to the first `]`, so a
+ * name with one would be cut short and the rest would spill into the message.
+ */
+function fitsReplyMarker(name: string): boolean {
+  return !name.includes(']');
+}
+
+/** The reply to `name`, or an outcome saying it cannot be written. */
+function replyTo(name: string, rest: string): ChannelReplyOutcome {
+  if (!fitsReplyMarker(name)) return { kind: 'unencodable', name };
+  return { kind: 'send', ...mention(name, rest), repliedTo: name };
 }
 
 function mention(name: string, rest: string): { text: string; message: string } {
@@ -109,7 +125,8 @@ export class ChannelReplies {
     if (text === '@@' || (text.startsWith('@@') && /\s/u.test(text[2]))) {
       const last = recent.at(0);
       if (last === undefined) return { kind: 'nobody' };
-      return { kind: 'send', ...mention(last, text.slice(2)), repliedTo: last };
+      // Never an older speaker in their place: the reply would go to someone not meant.
+      return replyTo(last, text.slice(2));
     }
     const split = splitTyped(text.slice(1));
     if (!split) return { kind: 'send', text };
@@ -121,6 +138,6 @@ export class ChannelReplies {
       exact.length === 1 ? exact : recent.filter((n) => normalizeReplyName(n).startsWith(key));
     if (matches.length === 0) return { kind: 'send', text };
     if (matches.length > 1) return { kind: 'ambiguous', typed, names: matches };
-    return { kind: 'send', ...mention(matches[0], rest), repliedTo: matches[0] };
+    return replyTo(matches[0], rest);
   }
 }
