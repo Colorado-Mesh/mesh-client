@@ -112,6 +112,7 @@ import {
 } from '@/renderer/lib/reticulum/remapReticulumChatDmTabs';
 import {
   isReticulumTelephonyOnlyDestination,
+  remapReticulumChatDmTabNodeId,
   resolveReticulumChatLxmfDestination,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import { resolveReticulumStaleChatDest } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
@@ -1435,10 +1436,21 @@ function ChatPanel({
   // Also re-run after initialDmTarget / open/active tab state commits.
   useEffect(() => {
     if (protocol !== 'reticulum') return;
+    const readyDestination = (nodeId: number) => {
+      const destination = remapReticulumChatDmTabNodeId(nodeId);
+      if (destination === nodeId || !mutedViews.has(`dm:${nodeId}`)) return destination;
+      // A pending mute binding holds only its own conversation; other peers can advance.
+      return reticulumLocalLxmfHash &&
+        canBindConversationMute(protocol, `dm:${nodeId}`) &&
+        canBindConversationMute(protocol, `dm:${destination}`)
+        ? destination
+        : nodeId;
+    };
     const remapped = remapReticulumChatDmTabIds(
       openDmTabsRef.current,
       activeDmNodeRef.current,
       dismissedDmTabsRef.current,
+      readyDestination,
     );
     // Closing an empty DM leaves only its mute preference, with no tab/history entry.
     const mutedDmIds = [...mutedViews].flatMap((view) => {
@@ -1447,22 +1459,11 @@ function ChatPanel({
     });
     const replacements = [
       ...remapped.replacements,
-      ...remapReticulumChatDmTabIds(mutedDmIds, null, {}).replacements,
+      ...remapReticulumChatDmTabIds(mutedDmIds, null, {}, readyDestination).replacements,
     ];
     const remappedMutes = remapDmMutedViews(mutedViews, replacements);
     if (!remapped.changed && !remappedMutes.changed) return;
     if (remappedMutes.changed) {
-      // Discovery can resolve the destination before the mute's local/peer bindings hydrate.
-      // Keep all conversation state on the old key until the mute can move with it.
-      if (
-        !reticulumLocalLxmfHash ||
-        [...new Set([...mutedViews, ...remappedMutes.next])].some(
-          (view) =>
-            mutedViews.has(view) !== remappedMutes.next.has(view) &&
-            !canBindConversationMute(protocol, view),
-        )
-      )
-        return;
       if (!setMutedViews(remappedMutes.next)) return;
     }
     setOpenDmTabs(remapped.openDmTabs);

@@ -5013,18 +5013,27 @@ describe('ChatPanel reticulum dm-only chat', () => {
 
   it.each(
     (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
-      [false, true].map((hasHistory) => ({ platform, hasHistory })),
+      [false, true].flatMap((hasHistory) =>
+        [false, true].map((readyMuted) => ({ platform, hasHistory, readyMuted })),
+      ),
     ),
   )(
-    'retains a closed DM mute through delayed discovery and failed writes on $platform (history: $hasHistory)',
-    async ({ platform, hasHistory }) => {
+    'retains a closed DM mute through delayed discovery and failed writes on $platform (history: $hasHistory, ready peer muted: $readyMuted)',
+    async ({ platform, hasHistory, readyMuted }) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
       const telephony = 'ab'.repeat(16);
       const lxmf = 'cd'.repeat(16);
       const telephonyId = reticulumHashToNodeId(telephony);
       const lxmfId = reticulumHashToNodeId(lxmf);
       const identity = 'ef'.repeat(16);
-      const dismissed = (id: number) => JSON.stringify(hasHistory ? { [id]: 1 } : {});
+      const readyOld = '34'.repeat(16);
+      const readyNew = '56'.repeat(16);
+      const readyOldId = reticulumHashToNodeId(readyOld);
+      const readyNewId = reticulumHashToNodeId(readyNew);
+      const dismissed = (id: number, readyId = readyNewId) =>
+        JSON.stringify({ ...(hasHistory ? { [id]: 1 } : {}), [readyId]: 2 });
+      const expectedMutes = (id: number) =>
+        new Set([`dm:${id}`, ...(readyMuted ? [`dm:${readyNewId}`] : [])]);
       const activity = new Map([
         [
           telephony,
@@ -5049,16 +5058,41 @@ describe('ChatPanel reticulum dm-only chat', () => {
           ],
         ],
       ]);
+      activity.set(readyOld, [
+        {
+          destination_hash: readyOld,
+          aspect: LXST_TELEPHONY_ASPECT,
+          identity_hash: '78'.repeat(16),
+          last_seen: 1,
+        },
+      ]);
+      activity.set(readyNew, [
+        {
+          destination_hash: readyNew,
+          aspect: LXMF_DELIVERY_ASPECT,
+          identity_hash: '78'.repeat(16),
+          last_seen: 2,
+        },
+      ]);
       const readActivity = vi
         .spyOn(window.electronAPI.db, 'getReticulumIdentityActivity')
         .mockImplementation((hash) => Promise.resolve(activity.get(hash) ?? []));
       clearReticulumHashRegistry();
       registerReticulumDestinationHash(telephonyId, telephony);
+      registerReticulumDestinationHash(readyOldId, readyOld);
+      registerReticulumDestinationHash(readyNewId, readyNew);
       useReticulumIdentityStore.getState().setIdentity(null);
-      localStorage.setItem('mesh-client:dismissedDmTabs:reticulum', dismissed(telephonyId));
+      localStorage.setItem(
+        'mesh-client:dismissedDmTabs:reticulum',
+        dismissed(telephonyId, readyOldId),
+      );
+      localStorage.setItem(
+        'mesh-client:drafts:reticulum',
+        JSON.stringify({ [`dm:${readyOldId}`]: 'ready peer draft' }),
+      );
       localStorage.setItem(
         'mesh-client:mutedViews:reticulum',
-        JSON.stringify([`dm:${telephonyId}`]),
+        JSON.stringify([`dm:${telephonyId}`, ...(readyMuted ? [`dm:${readyOldId}`] : [])]),
       );
       useReticulumIdentityActivityStore.setState({ byDestination: new Map() });
       const view = render(
@@ -5072,7 +5106,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
           useReticulumIdentityActivityStore.setState({ byDestination: activity });
         });
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
-          dismissed(telephonyId),
+          dismissed(telephonyId, readyMuted ? readyOldId : readyNewId),
         );
         expect(screen.queryByText(i18n.t('notificationPolicy.saveFailed'))).not.toBeInTheDocument();
         act(() => {
@@ -5085,6 +5119,9 @@ describe('ChatPanel reticulum dm-only chat', () => {
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
           dismissed(telephonyId),
         );
+        expect(JSON.parse(localStorage.getItem('mesh-client:drafts:reticulum') ?? '{}')).toEqual({
+          [`dm:${readyNewId}`]: 'ready peer draft',
+        });
         const originalWrite = localStorage.setItem;
         const write = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
           if (key === 'mesh-client:conversationMutes:v1') throw new Error('quota');
@@ -5098,7 +5135,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
         expect(localStorage.getItem('mesh-client:dismissedDmTabs:reticulum')).toBe(
           dismissed(telephonyId),
         );
-        expect(loadMutedViews('reticulum')).toEqual(new Set([`dm:${telephonyId}`]));
+        expect(loadMutedViews('reticulum')).toEqual(expectedMutes(telephonyId));
         expect(screen.getByText(i18n.t('notificationPolicy.saveFailed'))).toBeInTheDocument();
         write.mockRestore();
         warn.mockRestore();
@@ -5110,7 +5147,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
             dismissed(lxmfId),
           );
         });
-        expect(loadMutedViews('reticulum')).toEqual(new Set([`dm:${lxmfId}`]));
+        expect(loadMutedViews('reticulum')).toEqual(expectedMutes(lxmfId));
         fireEvent.change(screen.getByRole('textbox', { name: 'Destination address' }), {
           target: { value: lxmf },
         });
