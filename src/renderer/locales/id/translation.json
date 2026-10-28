@@ -1785,14 +1785,14 @@
         "scan_busy": "Pemindaian Bluetooth lainnya sedang berlangsung. Tunggu sebentar dan coba lagi.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Waktu koneksi Bluetooth habis. Jaga agar radio tetap aktif dan berada di dekat Anda, lalu coba lagi.",
-        "gatt_discover_failed": "Tidak dapat menemukan layanan Bluetooth di perangkat. Pasangkan kembali radio dan coba lagi.",
         "pairing_required": "Perangkat ini harus dipasangkan terlebih dahulu. Gunakan Hapus & Pasangkan Ulang Perangkat, lalu masukkan PIN yang ditampilkan di radio.",
         "bond_removed": "Ikatan Bluetooth tidak berlaku lagi. Lupakan perangkat di pengaturan sistem, lalu pasangkan kembali.",
         "write_failed": "Gagal menulis ke perangkat Bluetooth. Hubungkan kembali dan coba lagi.",
         "session_not_found": "Sesi Bluetooth tidak lagi tersedia. Putuskan sambungan dan sambungkan kembali.",
         "notified_read_forbidden": "Karakteristik Bluetooth ini tidak dapat dibaca seperti itu. Hubungkan kembali dan coba lagi.",
         "feature_disabled": "Dukungan Bluetooth GATT tidak tersedia di build ini.",
-        "sidecar_down": "Layanan Bluetooth tidak berjalan. Tunggu sebentar atau restart mesh-client, lalu coba lagi."
+        "sidecar_down": "Layanan Bluetooth tidak berjalan. Tunggu sebentar atau restart mesh-client, lalu coba lagi.",
+        "gatt_discover_failed": "Tidak dapat menemukan layanan Bluetooth yang diperlukan. Tutup aplikasi lain yang terhubung ke radio, mulai ulang radio, dan pindai lagi. Periksa apakah menjalankan firmware pendamping yang kompatibel. Pasangkan kembali hanya jika Bluetooth melaporkan kesalahan otentikasi atau pemasangan."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Tersambung",
       "reconnecting": "Menyambungkan kembali"
     },
-    "joinedRooms": "Sudah bergabung",
-    "recentRooms": "Terkini",
     "roomKeyOptional": "Kunci ruangan (opsional)",
     "joinRoomHelp": "Ruangan adalah grup langsung di hub ini. Bergabunglah berdasarkan nama, coba Terdaftar, atau ketik /list dan /help.",
     "listHint": "Tip: /list menampilkan ruangan publik terdaftar di hub rrcd. /help untuk perintah.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Penggunaan: /msg NICK|HASH TEXT",
       "msgTargetNotFound": "Tidak dapat menyelesaikan target /msg ke hash identitas lengkap. Bergabunglah dengan ruangan atau gunakan hash lengkap."
     },
-    "listedRooms": "tercantum",
     "refreshRoomList": "Segarkan daftar ruangan (/list)",
     "favoriteRoom": "ruangan favorit",
     "unfavoriteRoom": "Hapus ruangan favorit",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Tentang {{count}} pesan mesh biasa sesuai dengan satu pass inferensi dengan mesin ini (lebih baru terlebih dahulu). Mengejar ketinggalan bisa memproses hingga {{ceiling}} pesan melalui beberapa pass. Pesan yang lebih panjang menggunakan lebih banyak pass. Rentang yang besar membutuhkan batas waktu yang lebih lama.",
     "capacityHintChooseEngine": "Model AI dan unduhan OS bawaan cocok untuk {{onDevice}} pesan khas per pass; server lokal atau jarak jauh untuk {{endpoint}}. Kejar - kejaran bisa mencakup hingga {{ceiling}} pesan dengan multi - pass. Naikkan batas pesan dan batas waktu untuk jerat yang sibuk.",
     "lowThreadBudgetWarning": "Perangkat ini hanya memiliki {{count}} Tangkap utas WASM. Ringkasan model yang diunduh biasanya membutuhkan sekitar 6 atau lebih untuk berjalan dengan baik dan akan memakan waktu lebih lama di sini. Pilih mesin lain, atau naikkan batas waktu di bawah ini."
+  },
+  "chatOrder": {
+    "title": "Atur urutan obrolan",
+    "hint": "Seret gagang, gunakan tombol panah, atau pindahkan entri dengan tombol panah. Ini hanya mengubah urutan tampilan mereka.",
+    "alphabetical": "Urutkan A - Z",
+    "default": "Susunan Urutan Asal",
+    "drag": "Seret {{name}}",
+    "up": "Pindahkan {{name}} ke atas",
+    "down": "Pindahkan {{name}} ke bawah",
+    "saveFailed": "Tidak dapat menyimpan urutan. Coba lagi."
+  },
+  "radioChatSync": {
+    "sync": "Sinkronkan obrolan dari radio",
+    "busy": "Membaca obrolan dari radio…",
+    "failed": "Tidak dapat membaca obrolan dari radio. Obrolan yang ada disimpan. Sambungkan kembali dan coba lagi.",
+    "done": "Obrolan disinkronkan dari radio."
   }
 }

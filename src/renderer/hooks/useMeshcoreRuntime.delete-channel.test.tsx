@@ -7,11 +7,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { touch } from '@/shared/touch';
 
+import { getMeshcorePubKey, registerMeshcorePubKey } from '../lib/meshcore/meshcorePubKeyRegistry';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 
 const deleteChannelMock = vi.fn();
+const getContactsMock = vi.fn();
+const getChannelsMock = vi.fn();
 
-const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
+const makePublicKey = (id: number) => {
+  const key = new Uint8Array(32);
+  new DataView(key.buffer).setUint32(0, id, true);
+  return key;
+};
+const SELF_PUBKEY = makePublicKey(171);
 const SECRET = new Uint8Array(16).fill(1);
 
 vi.mock('@liamcottle/meshcore.js', () => {
@@ -29,11 +37,8 @@ vi.mock('@liamcottle/meshcore.js', () => {
       txPower: 22,
       radioFreq: 902_000_000,
     });
-    getContacts = vi.fn().mockResolvedValue([]);
-    getChannels = vi.fn().mockResolvedValue([
-      { channelIdx: 0, name: 'Public', secret: SECRET },
-      { channelIdx: 3, name: '#test', secret: SECRET },
-    ]);
+    getContacts = getContactsMock;
+    getChannels = getChannelsMock;
     deleteChannel = deleteChannelMock;
     deviceQuery = vi.fn().mockResolvedValue({
       firmwareVer: 1,
@@ -72,9 +77,41 @@ vi.mock('@liamcottle/meshcore.js', () => {
     });
     sendFloodAdvert = vi.fn().mockResolvedValue(undefined);
     close = vi.fn().mockResolvedValue(undefined);
-    sendToRadioFrame = vi.fn().mockImplementation((data: Uint8Array) => {
-      touch(data);
-      this.emit('rx', new Uint8Array([25, 0x0f, 3]));
+    sendToRadioFrame = vi.fn().mockImplementation(async (data: Uint8Array) => {
+      if (data[0] === 22) {
+        const channels = await getChannelsMock();
+        this.emit(
+          'rx',
+          new Uint8Array([
+            13,
+            14,
+            100,
+            Math.max(...channels.map((channel: { channelIdx: number }) => channel.channelIdx)) + 1,
+            0,
+            0,
+            0,
+            0,
+          ]),
+        );
+      } else if (data[0] === 31) {
+        const channels = await getChannelsMock();
+        const index = data[1];
+        const maxIndex = Math.max(
+          ...channels.map((channel: { channelIdx: number }) => channel.channelIdx),
+        );
+        if (index > maxIndex) this.emit(1, { errCode: 2 });
+        else
+          this.emit(
+            18,
+            channels.find((channel: { channelIdx: number }) => channel.channelIdx === index) ?? {
+              channelIdx: index,
+              name: '',
+              secret: new Uint8Array(16),
+            },
+          );
+      } else {
+        this.emit('rx', new Uint8Array([25, 0x0f, 3]));
+      }
     });
     on(event: string | number, cb: (...args: unknown[]) => void) {
       const listeners = this.listeners.get(event) ?? new Set();
@@ -137,6 +174,11 @@ describe('useMeshcoreRuntime deleteMeshcoreChannel', () => {
 
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
+    getContactsMock.mockReset().mockResolvedValue([]);
+    getChannelsMock.mockReset().mockResolvedValue([
+      { channelIdx: 0, name: 'Public', secret: SECRET },
+      { channelIdx: 3, name: '#test', secret: SECRET },
+    ]);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([]);
     subscribeSpy = vi.spyOn(meshcoreProtocol, 'subscribe').mockReturnValue(() => {});
@@ -205,6 +247,184 @@ describe('useMeshcoreRuntime deleteMeshcoreChannel', () => {
     });
 
     expect(result.current.channels.map((c) => c.index)).toEqual([0]);
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+  it('imports radio channels and Room contacts on fresh setup and repeated explicit sync without radio writes', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: makePublicKey(193),
+        type: 3,
+        flags: 0,
+        advName: 'Restored Room',
+        lastAdvert: 0,
+        advLat: 0,
+        advLon: 0,
+        outPathLen: 0,
+        outPath: new Uint8Array(),
+      },
+    ]);
+    getChannelsMock.mockResolvedValue([{ channelIdx: 2, name: 'Restored Ops', secret: SECRET }]);
+    await act(async () => {
+      await result.current.syncRadioChats();
+    });
+    expect(result.current.channels.map((c) => c.index)).toEqual([0, 1, 2, 3]);
+    expect([...result.current.nodes.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ hw_model: 'Room', long_name: 'Restored Room' }),
+      ]),
+    );
+    await act(async () => {
+      await result.current.syncRadioChats();
+    });
+    expect(
+      [...result.current.nodes.values()].filter((node) => node.hw_model === 'Room'),
+    ).toHaveLength(1);
+    expect(deleteChannelMock).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+
+  it('keeps existing channels and contacts on failed sync, then allows retry', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    getChannelsMock.mockRejectedValueOnce(new Error('radio busy'));
+    await act(async () => {
+      await expect(result.current.syncRadioChats()).rejects.toThrow('radio busy');
+    });
+    expect(result.current.channels.map((c) => c.index)).toEqual([0, 3]);
+    await act(async () => {
+      await result.current.syncRadioChats();
+    });
+    expect(result.current.channels.map((c) => c.index)).toEqual([0, 1, 2, 3]);
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+
+  it('rejects sync while disconnected', async () => {
+    const { result, unmount } = renderHook(() => useMeshcoreRuntime());
+    await expect(result.current.syncRadioChats()).rejects.toThrow('Radio is not connected');
+    expect(getChannelsMock).not.toHaveBeenCalled();
+    unmount();
+  });
+  it('does not publish stale contacts when disconnect happens during the builder database read', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    let resolveRead!: (rows: []) => void;
+    vi.mocked(window.electronAPI.db.getNodes).mockImplementationOnce(
+      () =>
+        new Promise<[]>((resolve) => {
+          resolveRead = resolve;
+        }),
+    );
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: makePublicKey(194),
+        type: 3,
+        flags: 0,
+        advName: 'Old radio room',
+        lastAdvert: 0,
+        advLat: 0,
+        advLon: 0,
+      },
+    ]);
+    const savedBefore = vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mock.calls
+      .length;
+    let sync!: Promise<void>;
+    act(() => {
+      sync = result.current.syncRadioChats();
+      void sync.catch(() => {});
+    });
+    await waitFor(() => {
+      expect(resolveRead).toBeDefined();
+    });
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    resolveRead([]);
+    await act(async () => {
+      await expect(sync).rejects.toThrow('disconnected');
+    });
+    expect(vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mock.calls.length).toBe(
+      savedBefore,
+    );
+    expect(
+      [...result.current.nodes.values()].some((node) => node.long_name === 'Old radio room'),
+    ).toBe(false);
+    unmount();
+  });
+
+  it('surfaces durable room import failures and allows retry', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: makePublicKey(194),
+        type: 3,
+        flags: 0,
+        advName: 'Restored Room',
+        lastAdvert: 0,
+        advLat: 0,
+        advLon: 0,
+      },
+    ]);
+    vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mockRejectedValueOnce(
+      new Error('disk full'),
+    );
+    await act(async () => {
+      await expect(result.current.syncRadioChats()).rejects.toThrow('disk full');
+    });
+    await act(async () => {
+      await result.current.syncRadioChats();
+    });
+    expect(
+      [...result.current.nodes.values()].some((node) => node.long_name === 'Restored Room'),
+    ).toBe(true);
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+  it('preserves a live contact registered while the snapshot waits for durable storage', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: makePublicKey(194),
+        type: 3,
+        flags: 0,
+        advName: 'Radio Room',
+        lastAdvert: 0,
+        advLat: 0,
+        advLon: 0,
+      },
+    ]);
+    let acknowledge!: () => void;
+    vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mockImplementationOnce(
+      () =>
+        new Promise<number>((resolve) => {
+          acknowledge = () => {
+            resolve(1);
+          };
+        }),
+    );
+    let sync!: Promise<void>;
+    act(() => {
+      sync = result.current.syncRadioChats();
+    });
+    await waitFor(() => {
+      expect(acknowledge).toBeDefined();
+    });
+    const liveKey = makePublicKey(195);
+    registerMeshcorePubKey(195, liveKey);
+    acknowledge();
+    await act(async () => {
+      await sync;
+    });
+    expect(getMeshcorePubKey(195)).toEqual(liveKey);
     await act(async () => {
       await result.current.disconnect();
     });

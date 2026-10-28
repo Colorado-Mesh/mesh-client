@@ -229,6 +229,7 @@ function loadSettings(): AppSettings {
   return {
     ...DEFAULT_SETTINGS,
     ...parsed,
+    shareMyLocation: parsed.shareMyLocation === true,
     hiddenProtocols: sanitizeHiddenProtocols(parsed.hiddenProtocols),
     mecpStandingAlertEnabled: getOperationalAlertSettings().mecpStandingAlertEnabled,
   };

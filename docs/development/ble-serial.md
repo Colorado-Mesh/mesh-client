@@ -58,3 +58,10 @@ Do **not** reintroduce Meshtastic-only startup gates or child-before-parent init
 - Reticulum BLE RNode/Peer and LoRa GATT run in the **same process** with **separate centrals**. The main coordinator serializes app-requested scans and LoRa connection setup without disconnecting links to other devices. Autonomous rsReticulum discovery/reconnect is not covered by that lease, and these checks do not establish hardware coexistence on every adapter.
 - Stale bonds / pairing timeouts still latch sidecar alerts (`bleBondRemoved`, `blePairingTimedOut`) — Forget/re-pair; Admin Start pairing shows PIN in-panel over USB (never Meshtastic `123456`).
 - Meshtastic/MeshCore may see `scan_busy` while an app-requested Reticulum scan holds the lease; `connectGattWithScanBusyRetry` / `startGattScanningWithRetry` wait for release.
+
+MeshCore picker scans are unfiltered on all three platforms, matching connect-by-id discovery:
+some companions advertise their name without the NUS service UUID. The picker may consequently
+show other nearby devices; connection still requires the expected NUS characteristics. Meshtastic
+and RNode keep their service filters. A generic service-discovery failure does not establish a
+pairing problem: the UI suggests closing another connected app, restarting/scanning the radio,
+and checking companion firmware. Authentication failures retain the explicit pairing flow.

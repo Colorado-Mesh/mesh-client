@@ -1785,14 +1785,14 @@
         "scan_busy": "Er wordt een nieuwe Bluetooth-scan uitgevoerd. Wacht even en probeer het opnieuw.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Er is een time-out opgetreden in de Bluetooth-verbinding. Houd de radio wakker en dichtbij en probeer het opnieuw.",
-        "gatt_discover_failed": "Kon geen Bluetooth-services op het apparaat vinden. Koppel de radio opnieuw en probeer het opnieuw.",
         "pairing_required": "Dit apparaat moet eerst worden gekoppeld. Gebruik Apparaat verwijderen en opnieuw koppelen en voer vervolgens de pincode in die op de radio wordt weergegeven.",
         "bond_removed": "De Bluetooth-verbinding is niet langer geldig. Vergeet het apparaat in de systeeminstellingen en koppel het opnieuw.",
         "write_failed": "Kan niet naar het Bluetooth-apparaat schrijven. Maak opnieuw verbinding en probeer het opnieuw.",
         "session_not_found": "De Bluetooth-sessie is niet langer beschikbaar. Ontkoppel en maak opnieuw verbinding.",
         "notified_read_forbidden": "Deze Bluetooth-eigenschap kan op die manier niet worden gelezen. Maak opnieuw verbinding en probeer het opnieuw.",
         "feature_disabled": "Bluetooth GATT-ondersteuning is niet beschikbaar in deze build.",
-        "sidecar_down": "De Bluetooth-service is niet actief. Wacht even of start mesh-client opnieuw op en probeer het opnieuw."
+        "sidecar_down": "De Bluetooth-service is niet actief. Wacht even of start mesh-client opnieuw op en probeer het opnieuw.",
+        "gatt_discover_failed": "Kon de vereiste Bluetooth-services niet ontdekken. Sluit andere apps die op de radio zijn aangesloten, start de radio opnieuw op en scan opnieuw. Controleer of er compatibele bijbehorende firmware wordt uitgevoerd. Koppel alleen opnieuw als Bluetooth een verificatie- of koppelingsfout meldt."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Verbonden",
       "reconnecting": "Heraansluiten"
     },
-    "joinedRooms": "Toegetreden",
-    "recentRooms": "Recent",
     "roomKeyOptional": "Sleutel kamer (optioneel)",
     "joinRoomHelp": "Kamers zijn live groepen op deze hub. Doe mee op naam, probeer Aanbevolen of typ /list en /help.",
     "listHint": "Tip: /list toont geregistreerde openbare ruimtes op rrcd-hubs. /help voor opdrachten.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Gebruik: /msg NICK|HASH TEKST",
       "msgTargetNotFound": "Kan /msg-doel niet omzetten in een volledige identiteitshash. Sluit je aan bij een kamer of gebruik de volledige hash."
     },
-    "listedRooms": "Vermeld.",
     "refreshRoomList": "Lijst met kamers vernieuwen (/list)",
     "favoriteRoom": "Favoriete kamer",
     "unfavoriteRoom": "Kamerfavoriet verwijderen",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Over {{count}} typische mesh-berichten passen in één inferentiepass met deze engine (eerst nieuwer). Bijpraten kan tot {{ceiling}} berichten via meerdere doorgangen verwerken. Langere berichten gebruiken meer van elke doorgang. Grote reeksen hebben een langere time-out nodig.",
     "capacityHintChooseEngine": "Ingebouwde OS AI en gedownloade modellen passen ongeveer {{onDevice}} typische berichten per pas; een lokale of externe server over {{endpoint}}. Met multi-pass kun je tot {{ceiling}} berichten inhalen. Verhoog de berichtlimiet en time-out voor drukke mazen.",
     "lowThreadBudgetWarning": "Dit apparaat heeft slechts {{count}} WASM-draad (en). Gedownloade modeloverzichten hebben meestal ongeveer 6 of meer nodig om goed te werken en zullen hier langer duren. Geef de voorkeur aan een andere motor of verhoog de time-out hieronder."
+  },
+  "chatOrder": {
+    "title": "Chats ordenen",
+    "hint": "Sleep de grepen, gebruik de pijltjestoetsen of verplaats items met de pijltjestoetsen. Dit verandert alleen de weergavevolgorde.",
+    "alphabetical": "Sorteren [A -> Z]",
+    "default": "Standaard volgorde",
+    "drag": "Sleep {{name}}",
+    "up": "{{name}} omhoog verplaatsen",
+    "down": "{{name}} omlaag verplaatsen",
+    "saveFailed": "De volgorde kon niet worden opgeslagen. Probeer het opnieuw."
+  },
+  "radioChatSync": {
+    "sync": "Chats synchroniseren vanaf de radio",
+    "busy": "Chats van de radio lezen...",
+    "failed": "Kan chats van de radio niet lezen. Bestaande chats werden behouden. Maak opnieuw verbinding en probeer het opnieuw.",
+    "done": "Chats gesynchroniseerd vanaf de radio."
   }
 }

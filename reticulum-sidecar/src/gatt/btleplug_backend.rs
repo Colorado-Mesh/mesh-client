@@ -431,8 +431,10 @@ impl BtleplugBackend {
     fn service_uuid(profile: GattProfile) -> Option<Uuid> {
         match profile {
             GattProfile::Meshtastic => Some(profile::meshtastic::service()),
-            GattProfile::Meshcore | GattProfile::Rnode => Some(profile::nus::service()),
-            GattProfile::Peer => None,
+            GattProfile::Rnode => Some(profile::nus::service()),
+            // MeshCore companions can advertise their name without the NUS service UUID.
+            // Use the same unfiltered discovery as connect-by-id; validate NUS after connecting.
+            GattProfile::Meshcore | GattProfile::Peer => None,
         }
     }
 
@@ -1002,6 +1004,19 @@ impl BleBackend for BtleplugBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn meshcore_picker_does_not_require_advertised_nus() {
+        assert_eq!(BtleplugBackend::service_uuid(GattProfile::Meshcore), None);
+        assert_eq!(
+            BtleplugBackend::service_uuid(GattProfile::Meshtastic),
+            Some(profile::meshtastic::service())
+        );
+        assert_eq!(
+            BtleplugBackend::service_uuid(GattProfile::Rnode),
+            Some(profile::nus::service())
+        );
+    }
 
     #[test]
     fn os_link_probe_only_for_windows_macs() {

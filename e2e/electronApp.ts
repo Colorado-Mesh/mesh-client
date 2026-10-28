@@ -130,6 +130,8 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
     path.join(repoRoot, 'e2e/fixtures/origin-migration.cjs'),
     `--user-data-dir=${userDataDir}`,
   ];
+  // OS-specific: disposable macOS E2E profiles must not wait for or access the user's Keychain.
+  if (process.platform === 'darwin') args.push('--use-mock-keychain');
   // OS-specific: Chromium setuid sandbox is unreliable in headless/CI Linux; match start-electron.mjs.
   if (process.platform === 'linux') {
     args.push('--disable-setuid-sandbox');

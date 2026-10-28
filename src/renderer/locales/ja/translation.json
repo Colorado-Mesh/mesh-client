@@ -1785,14 +1785,14 @@
         "scan_busy": "別の Bluetooth スキャンが進行中です。しばらく待ってからもう一度試してください。",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Bluetooth 接続がタイムアウトしました。無線を起動した状態で近くに置いてから、もう一度試してください。",
-        "gatt_discover_failed": "デバイス上で Bluetooth サービスを検出できませんでした。無線機を再ペアリングして、もう一度試してください。",
         "pairing_required": "このデバイスは最初にペアリングする必要があります。 [デバイスの削除と再ペアリング] を使用して、無線機に表示されている PIN を入力します。",
         "bond_removed": "Bluetooth ボンディングは有効ではなくなりました。システム設定でデバイスを忘れてから、再ペアリングしてください。",
         "write_failed": "Bluetoothデバイスへの書き込みに失敗しました。再接続してもう一度お試しください。",
         "session_not_found": "Bluetooth セッションは利用できなくなりました。切断して再度接続します。",
         "notified_read_forbidden": "この Bluetooth の特性はそのようには読み取れません。再接続してもう一度お試しください。",
         "feature_disabled": "このビルドでは Bluetooth GATT サポートは利用できません。",
-        "sidecar_down": "Bluetooth サービスが実行されていません。しばらく待つか、mesh-client を再起動してから、もう一度試してください。"
+        "sidecar_down": "Bluetooth サービスが実行されていません。しばらく待つか、mesh-client を再起動してから、もう一度試してください。",
+        "gatt_discover_failed": "必要なBluetoothサービスを検出できませんでした。ラジオに接続されている他のアプリを閉じ、ラジオを再起動して、もう一度スキャンしてください。互換性のあるコンパニオンファームウェアが実行されていることを確認してください。Bluetoothが認証またはペアリングエラーを報告した場合にのみ、再ペアリングしてください。"
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "接続済み",
       "reconnecting": "再接続中…"
     },
-    "joinedRooms": "結合",
-    "recentRooms": "最近",
     "roomKeyOptional": "ルームキー（任意）",
     "joinRoomHelp": "ルームはこのハブ上のライブグループです。名前で参加、公開を試す、または /list と /help を入力。",
     "listHint": "ヒント：/listは、rrcdハブに登録されているパブリックルームを表示します。/helpはコマンド用です。",
@@ -6049,7 +6047,6 @@
       "usageMsg": "使用法:/msg NICK |ハッシュテキスト",
       "msgTargetNotFound": "/msgターゲットを完全なIDハッシュに解決できませんでした。ルームに参加するか、完全なハッシュを使用してください。"
     },
-    "listedRooms": "公開",
     "refreshRoomList": "ルームリストを更新(/list)",
     "favoriteRoom": "お気に入りルーム",
     "unfavoriteRoom": "ルームのお気に入りを解除",
@@ -7721,5 +7718,21 @@
     "capacityHint": "{{count}}についての典型的なメッシュメッセージは、このエンジンで1つの推論パスに適合します（新しいものが最初）。キャッチアップは、複数のパスを介して最大{{ceiling}}件のメッセージを処理できます。メッセージが長いほど、各パスの使用回数が増えます。大規模な範囲では、より長いタイムアウトが必要です。",
     "capacityHintChooseEngine": "組み込みのOS AIとダウンロードされたモデルは、パスあたり約{{onDevice}}の典型的なメッセージに適合します。ローカルまたはリモートサーバーは約{{endpoint}}です。キャッチアップは、マルチパスで最大{{ceiling}}件のメッセージをカバーできます。ビジーメッシュのメッセージ制限とタイムアウトを上げます。",
     "lowThreadBudgetWarning": "このデバイスは{{count}}のみWASMスレッドをキャッチアップしています。ダウンロードしたモデルのサマリーは、通常、正常に実行するには約6つ以上必要で、ここでは時間がかかります。別のエンジンを使用するか、以下のタイムアウトを上げてください。"
+  },
+  "chatOrder": {
+    "title": "チャットを並べ替える",
+    "hint": "ハンドルをドラッグするか、矢印キーを使用するか、矢印ボタンでエントリを移動します。これは表示順序を変更するだけです。",
+    "alphabetical": "並べ替え: A - Z",
+    "default": "既定の注文状況",
+    "drag": "{{name}}をドラッグ",
+    "up": "{{name}}を上に移動",
+    "down": "{{name}}を下に移動",
+    "saveFailed": "並び順を保存できませんでした。もう一度お試しください。"
+  },
+  "radioChatSync": {
+    "sync": "ラジオからチャットを同期",
+    "busy": "ラジオからチャットを読み取っています…",
+    "failed": "ラジオからチャットを読み取れませんでした。既存のチャットは維持されました。再接続してもう一度お試しください。",
+    "done": "ラジオから同期されたチャット。"
   }
 }

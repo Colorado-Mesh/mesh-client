@@ -1785,14 +1785,14 @@
         "scan_busy": "Başka bir Bluetooth taraması sürüyor. Bir süre bekleyip tekrar deneyin.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Bluetooth bağlantısı zaman aşımına uğradı. Radyoyu uyanık ve yakınınızda tutun, ardından tekrar deneyin.",
-        "gatt_discover_failed": "Cihazda Bluetooth hizmetleri bulunamadı. Radyoyu yeniden eşleştirin ve tekrar deneyin.",
         "pairing_required": "Önce bu cihazın eşleştirilmesi gerekir. Cihazı Kaldır ve Yeniden Eşleştir'i kullanın, ardından radyoda gösterilen PIN'i girin.",
         "bond_removed": "Bluetooth bağı artık geçerli değil. Sistem ayarlarında cihazı unutun, ardından yeniden eşleştirin.",
         "write_failed": "Bluetooth cihazına yazılamadı. Yeniden bağlanın ve tekrar deneyin.",
         "session_not_found": "Bluetooth oturumu artık kullanılamıyor. Bağlantıyı kesip tekrar bağlanın.",
         "notified_read_forbidden": "Bu Bluetooth özelliği bu şekilde okunamaz. Yeniden bağlanın ve tekrar deneyin.",
         "feature_disabled": "Bu yapıda Bluetooth GATT desteği mevcut değildir.",
-        "sidecar_down": "Bluetooth hizmeti çalışmıyor. Bir süre bekleyin veya mesh-client'i yeniden başlatın ve tekrar deneyin."
+        "sidecar_down": "Bluetooth hizmeti çalışmıyor. Bir süre bekleyin veya mesh-client'i yeniden başlatın ve tekrar deneyin.",
+        "gatt_discover_failed": "Gerekli Bluetooth hizmetleri bulunamadı. Radyoya bağlı diğer uygulamaları kapatın, radyoyu yeniden başlatın ve tekrar tarayın. Uyumlu yardımcı ürün yazılımını çalıştırıp çalıştırmadığını kontrol edin. Yalnızca Bluetooth bir kimlik doğrulama veya eşleştirme hatası bildirirse yeniden eşleştirin."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Bağlandı",
       "reconnecting": "Yeniden bağlanıyor"
     },
-    "joinedRooms": "katıldı",
-    "recentRooms": "Güncel",
     "roomKeyOptional": "Oda anahtarı (isteğe bağlı)",
     "joinRoomHelp": "Odalar bu merkezdeki canlı gruplardır. Ada göre katılın, Listelenenleri deneyin veya /list ve /help yazın.",
     "listHint": "İpucu: /list, rrcd hub'larındaki kayıtlı genel odaları gösterir. /help for commands.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Kullanım: /msg NICK|KARMA METİN",
       "msgTargetNotFound": "/msg hedefi tam kimlik karmasına çözülemedi. Bir odaya katılın veya tam karmayı kullanın."
     },
-    "listedRooms": "Listelenmiş",
     "refreshRoomList": "Oda listesini yenile (/list)",
     "favoriteRoom": "Favori oda",
     "unfavoriteRoom": "Odanın favorisini kaldır",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Yaklaşık {{count}} tipik mesh mesajları bu motorla bir çıkarım geçişine uyar (önce daha yeni). Yetişme, birden fazla paso aracılığıyla {{ceiling}} kadar mesajı işleyebilir. Daha uzun mesajlarda her pasodan daha fazla kullanılır. Büyük aralıkların daha uzun bir zaman aşımına ihtiyacı vardır.",
     "capacityHintChooseEngine": "Yerleşik işletim sistemi yapay zekası ve indirilen modeller, geçiş başına yaklaşık {{onDevice}} tipik mesaja uyar; {{endpoint}} hakkında yerel veya uzak bir sunucu. Arayı kapatmak {{ceiling}} kadar mesajı çoklu geçişle kapatabilir. Meşgul ağlar için mesaj sınırını ve zaman aşımını artırın.",
     "lowThreadBudgetWarning": "Bu cihazda yalnızca {{count}} WASM ileti dizilerini yakalayın. İndirilen model özetlerinin iyi çalışması için genellikle yaklaşık 6 veya daha fazlasına ihtiyaç vardır ve burada daha uzun sürecektir. Başka bir motor tercih edin veya aşağıdaki zaman aşımını artırın."
+  },
+  "chatOrder": {
+    "title": "Sohbetleri sırala",
+    "hint": "Tutamaçları sürükleyin, ok tuşlarını kullanın veya ok düğmeleriyle girişleri taşıyın. Bu yalnızca görüntüleme sırasını değiştirir.",
+    "alphabetical": "A'dan Z'ye Sırala",
+    "default": "Varsayılan Sıralama",
+    "drag": "Sürükle {{name}}",
+    "up": "{{name}} yukarı taşı",
+    "down": "{{name}} aşağı taşı",
+    "saveFailed": "Sıralama kaydedilemedi. Tekrar deneyin."
+  },
+  "radioChatSync": {
+    "sync": "Radyodaki sohbetleri senkronize et",
+    "busy": "Radyodan sohbetler okunuyor…",
+    "failed": "Radyodan sohbetler okunamadı. Mevcut sohbetler tutuldu. Yeniden bağlanın ve tekrar deneyin.",
+    "done": "Telsizden senkronize edilen sohbetler."
   }
 }

@@ -34,10 +34,13 @@ describe('canTransmitLocation', () => {
     },
   );
 
-  it('defaults shareMyLocation to true when unset', () => {
-    vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(true);
-    expect(canTransmitLocation({ protocol: 'meshcore' })).toBe(true);
-  });
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'blocks %s without location consent',
+    (protocol) => {
+      vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(false);
+      expect(canTransmitLocation({ protocol })).toBe(false);
+    },
+  );
 
   it('blocks meshtastic when applied config role is Client Mute even if NodeDB differs', () => {
     vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(true);

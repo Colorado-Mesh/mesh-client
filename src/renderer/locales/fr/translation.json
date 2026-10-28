@@ -1785,14 +1785,14 @@
         "scan_busy": "Une autre analyse Bluetooth est en cours. Attendez un instant et réessayez.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "La connexion Bluetooth a expiré. Gardez la radio éveillée et à proximité, puis réessayez.",
-        "gatt_discover_failed": "Impossible de découvrir les services Bluetooth sur l'appareil. Réappairer la radio et réessayer.",
         "pairing_required": "Cet appareil doit d'abord être jumelé. Utilisez Remove & Re-pair Device, puis entrez le CODE PIN affiché sur la radio.",
         "bond_removed": "La liaison Bluetooth n'est plus valide. Oubliez l'appareil dans les paramètres système, puis réappareillez-le.",
         "write_failed": "Échec de l'écriture sur l'appareil Bluetooth. Reconnectez-vous et réessayez.",
         "session_not_found": "La session Bluetooth n'est plus disponible. Déconnectez-vous et reconnectez-vous.",
         "notified_read_forbidden": "Cette caractéristique Bluetooth ne peut pas être lue de cette façon. Reconnectez-vous et réessayez.",
         "feature_disabled": "La prise en charge Bluetooth GATT n'est pas disponible dans cette version.",
-        "sidecar_down": "Le service Bluetooth ne fonctionne pas. Attendez un moment ou redémarrez mesh-client, puis réessayez."
+        "sidecar_down": "Le service Bluetooth ne fonctionne pas. Attendez un moment ou redémarrez mesh-client, puis réessayez.",
+        "gatt_discover_failed": "Impossible de découvrir les services Bluetooth requis. Fermez les autres applications connectées à la radio, redémarrez la radio et scannez à nouveau. Vérifiez qu'il exécute un micrologiciel compagnon compatible. Réappairer uniquement si Bluetooth signale une erreur d'authentification ou de jumelage."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "Connecté",
       "reconnecting": "Reconnexion…"
     },
-    "joinedRooms": "Souscrit le",
-    "recentRooms": "Récent",
     "roomKeyOptional": "Clé de la salle (en option)",
     "joinRoomHelp": "Les salles sont des groupes en direct sur ce hub. Inscrivez-vous par nom, essayez Suggestions ou tapez /list et /help.",
     "listHint": "Astuce : /list affiche les salles publiques enregistrées sur les concentrateurs rrcd. /help pour les commandes.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "Utilisation : /msg NICK| texte DE HACHAGE",
       "msgTargetNotFound": "Impossible de résoudre la cible /msg en un hachage d'identité complet. Rejoignez une salle ou utilisez le hachage complet."
     },
-    "listedRooms": "Liste",
     "refreshRoomList": "Actualiser la liste des salles (/list)",
     "favoriteRoom": "salle préférée",
     "unfavoriteRoom": "Supprimer le favori de la salle",
@@ -7721,5 +7718,21 @@
     "capacityHint": "Environ {{count}} messages maillés typiques correspondent à une passe d'inférence avec ce moteur (plus récent en premier). Le rattrapage peut traiter jusqu'à {{ceiling}} messages via plusieurs passes. Les messages plus longs utilisent plus de chaque passe. Les grandes plages nécessitent un délai d'attente plus long.",
     "capacityHintChooseEngine": "L'IA intégrée du système d'exploitation et les modèles téléchargés correspondent à environ {{onDevice}} messages typiques par passage ; un serveur local ou distant à propos de {{endpoint}}. Le rattrapage peut couvrir jusqu'à {{ceiling}} messages avec plusieurs passes. Augmentez la limite de message et le délai d'expiration pour les maillages occupés.",
     "lowThreadBudgetWarning": "Cet appareil n'a que {{count}} fil(s) de rattrapage WASM. Les résumés de modèles téléchargés ont généralement besoin d'environ 6 ou plus pour bien fonctionner et prendront plus de temps ici. Préférez un autre moteur ou augmentez le délai d'attente ci-dessous."
+  },
+  "chatOrder": {
+    "title": "Réorganiser les discussions",
+    "hint": "Faites glisser les poignées, utilisez les touches fléchées ou déplacez les entrées à l'aide des boutons fléchés. Cela ne fait que modifier leur ordre d'affichage.",
+    "alphabetical": "Trier de A à Z",
+    "default": "Commande par défaut",
+    "drag": "Drag {{name}}",
+    "up": "Déplacer {{name}} vers le haut",
+    "down": "Déplacer {{name}} vers le bas",
+    "saveFailed": "Impossible d'enregistrer l'ordre des discussions. Réessayez."
+  },
+  "radioChatSync": {
+    "sync": "Synchroniser les discussions à partir de la radio",
+    "busy": "Lecture de chats à la radio…",
+    "failed": "Impossible de lire les chats de la radio. Les chats existants ont été conservés. Reconnectez-vous et réessayez.",
+    "done": "Chats synchronisés à partir de la radio."
   }
 }

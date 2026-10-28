@@ -1392,3 +1392,42 @@ describe('AppPanel: clear messages by channel (#1098)', () => {
     }
   });
 });
+
+describe('AppPanel fresh location consent', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'starts %s sharing off and preserves an explicit opt-in',
+    async (protocol) => {
+      const props = {
+        protocol,
+        nodeCount: 0,
+        messageCount: 0,
+        channels: [],
+        myNodeNum: null,
+        onLocationFilterChange: vi.fn(),
+      };
+      const first = render(
+        <ToastProvider>
+          <AppPanel {...props} />
+        </ToastProvider>,
+      );
+      fireEvent.click(await screen.findByText('GPS / Location'));
+      const sharing = screen.getByRole('checkbox', { name: 'Share my location' });
+      expect(sharing).not.toBeChecked();
+      fireEvent.click(sharing);
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).toMatchObject({
+        shareMyLocation: true,
+      });
+      first.unmount();
+      render(
+        <ToastProvider>
+          <AppPanel {...props} />
+        </ToastProvider>,
+      );
+      fireEvent.click(await screen.findByText('GPS / Location'));
+      expect(screen.getByRole('checkbox', { name: 'Share my location' })).toBeChecked();
+    },
+  );
+});

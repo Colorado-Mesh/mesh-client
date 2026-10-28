@@ -1785,14 +1785,14 @@
         "scan_busy": "다른 Bluetooth 검색이 진행 중입니다. 잠시 기다렸다가 다시 시도해 보세요.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "블루투스 연결 시간이 초과되었습니다. 라디오를 깨어 있는 상태로 근처에 두고 다시 시도하십시오.",
-        "gatt_discover_failed": "장치에서 Bluetooth 서비스를 검색할 수 없습니다. 라디오를 다시 페어링하고 다시 시도하세요.",
         "pairing_required": "이 장치는 먼저 페어링되어야 합니다. 장치 제거 및 다시 페어링을 사용한 다음 라디오에 표시된 PIN을 입력하세요.",
         "bond_removed": "Bluetooth 결합은 더 이상 유효하지 않습니다. 시스템 설정에서 장치를 삭제한 후 다시 페어링하세요.",
         "write_failed": "Bluetooth 장치에 쓰지 못했습니다. 다시 연결하고 다시 시도해 보세요.",
         "session_not_found": "Bluetooth 세션을 더 이상 사용할 수 없습니다. 연결을 끊었다가 다시 연결하세요.",
         "notified_read_forbidden": "이 Bluetooth 특성은 그런 식으로 읽을 수 없습니다. 다시 연결하고 다시 시도해 보세요.",
         "feature_disabled": "이 빌드에서는 Bluetooth GATT 지원을 사용할 수 없습니다.",
-        "sidecar_down": "블루투스 서비스가 실행되고 있지 않습니다. 잠시 기다리거나 mesh-client를 다시 시작한 후 다시 시도하세요."
+        "sidecar_down": "블루투스 서비스가 실행되고 있지 않습니다. 잠시 기다리거나 mesh-client를 다시 시작한 후 다시 시도하세요.",
+        "gatt_discover_failed": "필요한 블루투스 서비스를 찾을 수 없습니다. 라디오에 연결된 다른 앱을 닫고 라디오를 다시 시작한 다음 다시 스캔하십시오. 호환되는 컴패니언 펌웨어가 실행되는지 확인하십시오. 블루투스가 인증 또는 페어링 오류를 보고하는 경우에만 다시 페어링하십시오."
       }
     },
     "tiles": {
@@ -6021,8 +6021,6 @@
       "active": "연결됨",
       "reconnecting": "다시 연결 중"
     },
-    "joinedRooms": "가입일",
-    "recentRooms": "최근",
     "roomKeyOptional": "룸 열쇠 (선택 사항)",
     "joinRoomHelp": "침실은 이 허브의 라이브 그룹입니다. 이름으로 가입하거나, 제안을 시도하거나,/list 및/help를 입력하십시오.",
     "listHint": "팁:/list는 rrcd 허브에 등록된 공개 룸을 표시합니다./help for commands.",
@@ -6049,7 +6047,6 @@
       "usageMsg": "사용법:/msg NICK | 해시 텍스트",
       "msgTargetNotFound": "/msg 대상을 전체 ID 해시로 해결할 수 없습니다. 방에 가입하거나 전체 해시를 사용하세요."
     },
-    "listedRooms": "등재됨",
     "refreshRoomList": "룸 목록 새로 고침 (/list)",
     "favoriteRoom": "즐겨찾는 방",
     "unfavoriteRoom": "룸 즐겨찾기 삭제",
@@ -7721,5 +7718,21 @@
     "capacityHint": "약 {{count}} 일반적인 메시 메시 메시지는 이 엔진과 하나의 추론 패스에 적합합니다 (최신 버전 우선). 여러 패스를 통해 최대 {{ceiling}} 개의 메시지를 처리할 수 있습니다. 더 긴 메시지는 각 이용권을 더 많이 사용합니다. 큰 범위에는 더 긴 시간 초과가 필요합니다.",
     "capacityHintChooseEngine": "내장된 OS AI와 다운로드된 모델은 패스당 약 {{onDevice}} 개의 일반 메시지에 적합하며, 로컬 또는 원격 서버는 약 {{endpoint}} 입니다. 멀티 패스로 최대 {{ceiling}} 개의 메시지를 커버할 수 있습니다. 혼잡 메시에 대한 메시지 제한 및 시간 초과를 높입니다.",
     "lowThreadBudgetWarning": "이 장치에는 {{count}} 개의 WASM 스레드만 있습니다. 다운로드한 모델 요약은 일반적으로 잘 실행하려면 약 6개 이상이 필요하며 여기서 더 오래 걸립니다. 다른 엔진을 선호하거나 아래 시간 초과를 올리십시오."
+  },
+  "chatOrder": {
+    "title": "채팅 순서 변경",
+    "hint": "화살표 버튼으로 핸들을 드래그하거나 화살표 키를 사용하거나 항목을 이동합니다. 이렇게 하면 표시 순서만 변경됩니다.",
+    "alphabetical": "A–Z 정렬",
+    "default": "기본 순서",
+    "drag": "드래그 {{name}}",
+    "up": "{{name}} 위로 이동",
+    "down": "{{name}} 아래로 이동",
+    "saveFailed": "순서를 저장할 수 없습니다. 다시 시도하세요."
+  },
+  "radioChatSync": {
+    "sync": "라디오에서 채팅 동기화",
+    "busy": "라디오에서 채팅을 읽는 중...",
+    "failed": "라디오에서 채팅을 읽을 수 없습니다. 기존 채팅이 유지되었습니다. 다시 연결하고 다시 시도하세요.",
+    "done": "라디오에서 채팅이 동기화되었습니다."
   }
 }
