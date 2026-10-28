@@ -791,7 +791,12 @@ describe('ChatPanel accessibility', () => {
     );
 
     expect(screen.queryByText('!ffffffff')).not.toBeInTheDocument();
-    expect(screen.getByText('No conversations yet')).toBeInTheDocument();
+    expect(screen.queryByText('DMs', { exact: true })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'DMs' })).getByRole('button', {
+        name: 'Order chats',
+      }),
+    ).toBeDisabled();
   });
 
   it('allows closing inferred DM tab and resurfaces on subsequent message (even if timestamp is stale)', async () => {
@@ -6230,6 +6235,37 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
       expect(within(group).getByRole('button', { name })).toBeInTheDocument();
     }
   });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'keeps DM ordering in the toolbar without a visible heading on %s',
+    async (protocol) => {
+      const { rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol={protocol} />
+        </ToastProvider>,
+      );
+      const tools = await screen.findByRole('group', { name: 'Conversation tools' });
+      const dmTools = within(tools).getByRole('group', { name: 'DMs' });
+      expect(within(dmTools).getByRole('button', { name: 'Order chats' })).toBeDisabled();
+      expect(screen.queryByText('DMs', { exact: true })).not.toBeInTheDocument();
+      localStorage.setItem(`mesh-client:openDmTabs:${protocol}`, '[42,43]');
+      rerender(
+        <ToastProvider>
+          <ChatPanel key="populated" {...baseProps} protocol={protocol} />
+        </ToastProvider>,
+      );
+      const populatedTools = within(
+        screen.getByRole('group', { name: 'Conversation tools' }),
+      ).getByRole('group', { name: 'DMs' });
+      const order = within(populatedTools).getByRole('button', { name: 'Order chats' });
+      expect(order).toBeEnabled();
+      expect(order).toHaveAttribute('title', 'Order chats: DMs');
+      order.focus();
+      await userEvent.setup().keyboard('{Enter}');
+      expect(await screen.findByRole('dialog', { name: 'Order chats' })).toBeVisible();
+      expect(screen.getByRole('dialog').querySelectorAll('li')).toHaveLength(2);
+    },
+  );
 
   it('opens a channel requested from outside (the launcher) and reports it consumed', async () => {
     const consumed = vi.fn();

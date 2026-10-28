@@ -12,9 +12,10 @@ interface Props {
   items: readonly OrderedChat[];
   ids: readonly string[];
   onSave: (ids: readonly string[]) => void;
+  title?: string;
 }
 
-export function ChatOrderButton({ items, ids, onSave }: Props) {
+export function ChatOrderButton({ items, ids, onSave, title }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => {
@@ -25,6 +26,7 @@ export function ChatOrderButton({ items, ids, onSave }: Props) {
       <IconButton
         size="sm"
         aria-label={t('chatOrder.title')}
+        title={title}
         disabled={items.length < 2}
         onClick={() => {
           setOpen(true);
