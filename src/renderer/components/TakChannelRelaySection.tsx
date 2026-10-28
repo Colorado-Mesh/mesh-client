@@ -105,7 +105,7 @@ interface Props {
   emptyText: string;
   /** Settings search anchor for the section. */
   anchorId: string;
-  /** Shown under the channels while any are served, after the callsign hint. */
+  /** Shown under the channels while a served one can be sent to, after the callsign hint. */
   servedHint?: string;
   /** Shown at the end of the section: the radio's direct message switch. */
   children?: ReactNode;
@@ -145,6 +145,12 @@ export default function TakChannelRelaySection({
   const mode = prefs?.channelMode ?? 'off';
   const modeId = `tak-channel-mode-${identityId}`;
   const showList = channels.length > 0 && (mode !== 'off' || showTrackers);
+  // A served channel ATAK can send to, where the served-channel hint (how to reply) applies.
+  const anySending = channels.some(
+    (ch) =>
+      (prefs?.sendChannels.includes(ch.key) ?? false) &&
+      (mode === 'all' || (mode === 'selected' && (prefs?.chatChannels.includes(ch.key) ?? false))),
+  );
 
   return (
     <SettingsSection
@@ -260,7 +266,7 @@ export default function TakChannelRelaySection({
       {showList && mode !== 'off' && (
         <>
           <p className="text-muted text-xs">{t('takServerPanel.channelCallsignHint')}</p>
-          {servedHint && <p className="text-muted text-xs">{servedHint}</p>}
+          {servedHint && anySending && <p className="text-muted text-xs">{servedHint}</p>}
         </>
       )}
       {children}

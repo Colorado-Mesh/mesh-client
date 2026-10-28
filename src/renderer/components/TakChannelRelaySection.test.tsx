@@ -199,7 +199,7 @@ describe('TakChannelRelaySection', () => {
     expect(screen.getByText(/Turn it off for a bot channel/)).toBeInTheDocument();
   });
 
-  it('shows its hint for served channels only while any are served', () => {
+  it('shows its hint only while a served channel can be sent to', () => {
     const hinted = (
       <TakChannelRelaySection
         identityId={ID}
@@ -212,12 +212,27 @@ describe('TakChannelRelaySection', () => {
       />
     );
     const { rerender } = render(hinted);
-    expect(screen.queryByText('Reply with @name.')).toBeNull();
+    const prefs = useTakRelayPrefsStore.getState();
+    const shown = () => screen.queryByText('Reply with @name.') !== null;
+    expect(shown()).toBe(false);
     act(() => {
-      useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');
+      prefs.setChannelMode(ID, 'selected');
+      prefs.setChatSend(ID, SAR, true);
     });
     rerender(hinted);
-    expect(screen.getByText('Reply with @name.')).toBeInTheDocument();
+    // Sending is on for a channel that is not picked, so nothing is served to send to.
+    expect(shown()).toBe(false);
+    act(() => {
+      prefs.setChatChannel(ID, SAR, true);
+    });
+    rerender(hinted);
+    expect(shown()).toBe(true);
+    act(() => {
+      prefs.setChatSend(ID, SAR, false);
+      prefs.setChannelMode(ID, 'all');
+    });
+    rerender(hinted);
+    expect(shown()).toBe(false);
   });
 
   it("keeps a channel's settings with the channel when another takes its slot", async () => {
