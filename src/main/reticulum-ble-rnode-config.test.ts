@@ -36,8 +36,11 @@ describe('reticulumConfigDirHasEnabledLocalRadio', () => {
     expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'kiss'))).toBe(true);
   });
 
-  it('ignores disabled local radio and TCP-only stacks', () => {
+  it('ignores disabled local radio, TCPClient stacks, and tcp:// Wi-Fi RNodes', () => {
     expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'disabled'))).toBe(false);
     expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'tcp-only'))).toBe(false);
+    expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'tcp-rnode'))).toBe(
+      false,
+    );
   });
 });

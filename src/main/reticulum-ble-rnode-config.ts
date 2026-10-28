@@ -20,6 +20,11 @@ function isBlePort(port: string): boolean {
   return port.toLowerCase().startsWith('ble://');
 }
 
+/** RNode-over-IP uses `tcp://host[:7633]` — network, not local serial. */
+function isTcpRnodePort(port: string): boolean {
+  return port.toLowerCase().startsWith('tcp://');
+}
+
 function blockHasEnabledBleRnode(fields: InterfaceBlockFields): boolean {
   if (!fields.ifaceType || fields.enabled !== true || !fields.port) return false;
   const type = fields.ifaceType.toLowerCase();
@@ -31,7 +36,7 @@ function blockHasEnabledSerialLocalRadio(fields: InterfaceBlockFields): boolean 
   if (!fields.ifaceType || fields.enabled !== true || !fields.port) return false;
   const type = fields.ifaceType.toLowerCase();
   if (!SERIAL_LOCAL_RADIO_TYPES.has(type)) return false;
-  return !isBlePort(fields.port);
+  return !isBlePort(fields.port) && !isTcpRnodePort(fields.port);
 }
 
 function blockHasEnabledLocalRadio(fields: InterfaceBlockFields): boolean {
@@ -86,8 +91,9 @@ export function reticulumConfigDirHasEnabledBleRnode(configDir: string): boolean
 
 /**
  * True when mesh-client Reticulum config has an enabled local radio interface:
- * BLE RNode (`ble://…`) or serial RNode / KISS / AX.25 KISS (non-`ble://` port).
- * Used by the keep-awake `rf` policy while the sidecar is running.
+ * BLE RNode (`ble://…`) or serial RNode / KISS / AX.25 KISS (device path, not
+ * `ble://` or `tcp://` Wi-Fi RNode). Used by the keep-awake `rf` policy while
+ * the sidecar is running.
  */
 export function reticulumConfigDirHasEnabledLocalRadio(configDir: string): boolean {
   const content = readConfigContent(configDir);
