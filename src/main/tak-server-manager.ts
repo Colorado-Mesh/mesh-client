@@ -1154,7 +1154,7 @@ export class TakServerManager extends EventEmitter {
       return;
     }
     if (!channel.send) {
-      this.writeChannelNote(id, client, channel, RECEIVE_ONLY_NOTE, nowMs);
+      this.writeChannelNote(id, client, channel, RECEIVE_ONLY_NOTE, nowMs, senderCallsign);
       return;
     }
     const reply: ChannelReplyOutcome =
@@ -1162,7 +1162,7 @@ export class TakServerManager extends EventEmitter {
         ? this.channelReplies.resolve(channel.key, chat.text, nowMs)
         : { kind: 'send', text: chat.text };
     if (reply.kind !== 'send') {
-      this.writeChannelNote(id, client, channel, channelReplyNote(reply), nowMs);
+      this.writeChannelNote(id, client, channel, channelReplyNote(reply), nowMs, senderCallsign);
       return;
     }
     // The other clients see a reply as one heard from the mesh reads, `@Name …`.
@@ -1182,15 +1182,22 @@ export class TakServerManager extends EventEmitter {
     this.emit('client-chat', inbound);
   }
 
-  /** A note from mesh-client in a channel's conversation, to the one client it concerns. */
+  /**
+   * A note from mesh-client in a channel's conversation, to the one client it concerns. A client
+   * that chats before its first position report is addressed by the uid it chatted as and the
+   * callsign its message carried.
+   */
   private writeChannelNote(
     id: string,
     client: ConnectedClient,
     channel: TakChatChannel,
     text: string,
     nowMs: number,
+    chatCallsign: string,
   ): void {
-    const recipient = this.recipientFor(client);
+    const recipient =
+      this.recipientFor(client) ??
+      (client.selfUid ? { uid: client.selfUid, callsign: chatCallsign } : null);
     if (!recipient) return;
     const note = { senderCallsign: CHANNEL_NOTE_SENDER, text, timeMs: nowMs };
     this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));

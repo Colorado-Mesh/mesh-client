@@ -1161,6 +1161,14 @@ describe('TakServerManager chat from local clients', () => {
       expect(written(sender)[0]).toContain('>mesh-client: Not sent: Alice] has a');
     });
 
+    it('answers a client that has not reported its position yet', () => {
+      const manager = heardFrom('Silver Eagle', 'SCRAM-A1');
+      const sender = connect(manager);
+      sender.emit('data', Buffer.from(CHAT('@s hello', { channel: MC_OPS })));
+      expect(written(sender)[0]).toContain('chatroom="VIPER" id="ANDROID-1"');
+      expect(written(sender)[0]).toContain('>mesh-client: Not sent: @s matches');
+    });
+
     it('lists at most five matching names', () => {
       const manager = heardFrom('Sa', 'Sb', 'Sc', 'Sd', 'Se', 'Sf', 'Sg');
       const sender = connect(manager, ['ANDROID-1', 'VIPER']);
