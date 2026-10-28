@@ -47,7 +47,8 @@ describe('readGpsRefreshIntervalSecs / persistStoredStaticGps', () => {
     expect(readGpsRefreshIntervalSecs()).toBe(0);
   });
 
-  it('returns a positive refresh interval when configured', () => {
+  it('returns a positive refresh interval when configured and explicitly enabled', () => {
+    vi.spyOn(appSettingsStorage, 'isShareMyLocationEnabled').mockReturnValue(true);
     localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify({ refreshInterval: 30 }));
     expect(readGpsRefreshIntervalSecs()).toBe(30);
   });

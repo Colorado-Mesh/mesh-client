@@ -25,6 +25,7 @@ export function useMeshcorePanelActions(runtime: MeshcoreRuntime) {
       requestPosition: runtime.requestPosition,
       importContacts: runtime.importContacts,
       refreshContacts: runtime.refreshContacts,
+      syncRadioChats: runtime.syncRadioChats,
       sendAdvert: runtime.sendAdvert,
       sendZeroHopAdvert: runtime.sendZeroHopAdvert,
       applyMeshcoreFloodScopeHashtag: runtime.applyMeshcoreFloodScopeHashtag,

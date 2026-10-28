@@ -4695,6 +4695,11 @@ function AppContent() {
                                   ? clearMeshcoreChatChannelMessages
                                   : undefined
                               }
+                              onSyncRadioChats={
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? meshcorePanelActions.syncRadioChats
+                                  : undefined
+                              }
                               meshcoreChannelManagementDisabled={!isOperational}
                               myNodeNum={activeSelfNodeNum}
                               ownNodeIds={
@@ -5735,6 +5740,7 @@ function AppContent() {
                                   isActive={activePanelIndex === ROOMS_PANEL_INDEX}
                                   initialRoomTarget={pendingRoomTarget}
                                   onInitialRoomConsumed={handleRoomTargetConsumed}
+                                  onSyncRadioChats={meshcorePanelActions.syncRadioChats}
                                   onLoginRoom={meshcorePanelActions.loginRoom}
                                   onLoginAllSaved={meshcorePanelActions.loginAllSavedRooms}
                                   onCancelRoomLogin={meshcorePanelActions.cancelRoomLogin}

@@ -891,8 +891,20 @@ mod tests {
         fake.add_device(meshcore_dev("aa:00:00:00:00:02")).await;
         let mt = mgr.scan("meshtastic", 1).await.unwrap();
         assert_eq!(mt.len(), 1);
+        let mut without_service = meshcore_dev("aa:00:00:00:00:03");
+        without_service.service_uuids.clear();
+        fake.add_device(without_service).await;
         let mc = mgr.scan("meshcore", 1).await.unwrap();
-        assert_eq!(mc.len(), 1);
+        assert_eq!(mc.len(), 3);
+        assert!(
+            mc.iter()
+                .any(|device| device.address == "aa:00:00:00:00:03")
+        );
+        let (session, _) = mgr
+            .connect(GattProfile::Meshcore, "aa:00:00:00:00:03")
+            .await
+            .unwrap();
+        mgr.disconnect(&session).await.unwrap();
         let err = mgr.scan("nope", 1).await.unwrap_err();
         assert_eq!(err.code, GattErrorCode::InvalidProfile);
     }

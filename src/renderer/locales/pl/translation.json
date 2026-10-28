@@ -1823,14 +1823,14 @@
         "scan_busy": "Trwa kolejne skanowanie Bluetooth. Poczekaj chwilę i spróbuj ponownie.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
         "connect_timeout": "Upłynął limit czasu połączenia Bluetooth. Nie wyłączaj radia i trzymaj je w pobliżu, a następnie spróbuj ponownie.",
-        "gatt_discover_failed": "Nie można wykryć usług Bluetooth na urządzeniu. Ponownie sparuj radio i spróbuj ponownie.",
         "pairing_required": "To urządzenie musi być najpierw sparowane. Użyj polecenia Usuń i napraw urządzenie, a następnie wprowadź KOD PIN pokazany w radiu.",
         "bond_removed": "Wiązanie Bluetooth nie jest już ważne. Zapomnij o urządzeniu w ustawieniach systemowych, a następnie ponownie sparuj.",
         "write_failed": "Nie udało się zapisać do urządzenia Bluetooth. Połącz się ponownie i spróbuj ponownie.",
         "session_not_found": "Sesja Bluetooth nie jest już dostępna. Odłącz i podłącz ponownie.",
         "notified_read_forbidden": "Tej charakterystyki Bluetooth nie można odczytać w ten sposób. Połącz się ponownie i spróbuj ponownie.",
         "feature_disabled": "Obsługa Bluetooth GATT nie jest dostępna w tej wersji.",
-        "sidecar_down": "Usługa Bluetooth nie działa. Poczekaj chwilę lub uruchom ponownie mesh-client, a następnie spróbuj ponownie."
+        "sidecar_down": "Usługa Bluetooth nie działa. Poczekaj chwilę lub uruchom ponownie mesh-client, a następnie spróbuj ponownie.",
+        "gatt_discover_failed": "Nie można znaleźć wymaganych usług Bluetooth. Zamknij inne aplikacje podłączone do radia, uruchom je ponownie i zeskanuj ponownie. Sprawdź, czy działa na nim kompatybilne oprogramowanie sprzętowe. Ponownie sparuj tylko wtedy, gdy Bluetooth zgłosi błąd uwierzytelnienia lub parowania."
       }
     },
     "tiles": {
@@ -6107,8 +6107,6 @@
       "active": "Połączono",
       "reconnecting": "Ponowne podłączenie"
     },
-    "joinedRooms": "Dołączono",
-    "recentRooms": "Ostatnie",
     "roomKeyOptional": "Klucz do pokoju (opcjonalnie)",
     "joinRoomHelp": "Pokoje to grupy na żywo w tym centrum. Dołącz za pomocą nazwy, wypróbuj opcję Listed lub wpisz /list i /help.",
     "listHint": "Wskazówka: /list pokazuje zarejestrowane pokoje publiczne w centrach rrcd. /help dla poleceń.",
@@ -6135,7 +6133,6 @@
       "usageMsg": "Użycie: /msg NICK|HASH TEXT",
       "msgTargetNotFound": "Nie można przetłumaczyć celu /msg na pełny skrót tożsamości. Dołącz do pokoju lub użyj pełnego skrótu."
     },
-    "listedRooms": "Wylistowany",
     "refreshRoomList": "Odśwież listę pokoi (/list)",
     "favoriteRoom": "Ulubiony pokój",
     "unfavoriteRoom": "Usuń ulubiony pokój",
@@ -7849,5 +7846,21 @@
     "capacityHint": "Około {{count}} typowych wiadomości siatkowych pasuje do jednego przejścia wnioskowania w tym silniku (najpierw nowsze). Nadrabianie zaległości pozwala przetworzyć do {{ceiling}} wiadomości za pomocą wielu przejść. Dłuższe wiadomości zużywają więcej z każdego przejścia. Duże zasięgi wymagają dłuższego czasu oczekiwania.",
     "capacityHintChooseEngine": "Wbudowana sztuczna inteligencja systemu operacyjnego i pobrane modele pasują do około {{onDevice}} typowych wiadomości na przejazd; lokalny lub zdalny serwer około {{endpoint}}. Nadrabianie zaległości może pokryć do {{ceiling}} wiadomości za pomocą wielu przepustek. Zwiększ limit komunikatów i limit czasu dla zajętych siatek.",
     "lowThreadBudgetWarning": "To urządzenie ma tylko {{count}} nadrobić zaległości w wątkach WASM. Podsumowania pobranych modeli zwykle potrzebują około 6 lub więcej, aby działać dobrze i potrwa to dłużej. Preferuj inny silnik lub zwiększ limit czasu poniżej."
+  },
+  "chatOrder": {
+    "title": "Zmień kolejność czatów",
+    "hint": "Przeciągnij uchwyty, użyj klawiszy strzałek lub przesuń wpisy za pomocą przycisków strzałek. Spowoduje to tylko zmianę kolejności wyświetlania.",
+    "alphabetical": "Sortuj od A do Z",
+    "default": "Kolejność domyślna",
+    "drag": "Przeciągnij {{name}}",
+    "up": "Przenieś {{name}} w górę",
+    "down": "Przenieś {{name}} w dół",
+    "saveFailed": "Nie udało się zapisać kolejności. Spróbuj ponownie."
+  },
+  "radioChatSync": {
+    "sync": "Synchronizuj czaty z radiem",
+    "busy": "Odczytywanie czatów z radia…",
+    "failed": "Nie można odczytać rozmów z radia. Dotychczasowe czaty zostały zachowane. Połącz się ponownie i spróbuj ponownie.",
+    "done": "Czaty zsynchronizowane z radiem."
   }
 }

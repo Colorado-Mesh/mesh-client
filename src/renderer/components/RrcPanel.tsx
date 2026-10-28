@@ -1429,6 +1429,7 @@ export default function RrcPanel({
         />
       ) : (
         <RrcRoomSidebar
+          orderScope={hubDestHash ?? undefined}
           roomSearch={roomSearch}
           onRoomSearchChange={setRoomSearch}
           joinRoomName={joinRoomName}

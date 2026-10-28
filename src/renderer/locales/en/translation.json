@@ -1820,7 +1820,7 @@
         "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
         "mac_conflict": "This Bluetooth device is already in use or still releasing a previous connection. Disconnect it from the other protocol tab if needed, then try again.",
         "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
-        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "gatt_discover_failed": "Could not discover the required Bluetooth services. Close other apps connected to the radio, restart the radio, and scan again. Check that it runs compatible companion firmware. Re-pair only if Bluetooth reports an authentication or pairing error.",
         "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
         "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
         "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
@@ -6406,9 +6406,6 @@
     "hopsAway_other": "{{count}} hops away",
     "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
     "rooms": "Rooms",
-    "joinedRooms": "Joined",
-    "listedRooms": "Listed",
-    "recentRooms": "Recent",
     "joinRoom": "Room name",
     "roomKeyOptional": "Room key (optional)",
     "join": "Join room",
@@ -7721,5 +7718,21 @@
     "maxCollectedMessages": "Catch up message limit",
     "maxCollectedMessagesHint": "Maximum messages one Catch up may collect (100–5000). Default 2000. Higher values take longer and may need a larger timeout.",
     "insecureKeyWarning": "This HTTP endpoint sends your API key and messages without transport encryption. Use HTTPS for a server on your network."
+  },
+  "chatOrder": {
+    "title": "Order chats",
+    "hint": "Drag the handles, use arrow keys, or move entries with the arrow buttons. This only changes their display order.",
+    "alphabetical": "Sort A–Z",
+    "default": "Default order",
+    "drag": "Drag {{name}}",
+    "up": "Move {{name}} up",
+    "down": "Move {{name}} down",
+    "saveFailed": "Could not save the order. Try again."
+  },
+  "radioChatSync": {
+    "sync": "Sync chats from radio",
+    "busy": "Reading chats from radio…",
+    "failed": "Could not read chats from the radio. Existing chats were kept. Reconnect and try again.",
+    "done": "Chats synced from radio."
   }
 }

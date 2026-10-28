@@ -84,3 +84,9 @@ prevent older pending compatibility journals from restoring forgotten or superse
 For a new durable store, cover legacy import, repeat import, database hydration with empty localStorage, mutations during hydration, ordered writes, failed writes, and clear/delete behavior after migration retry. Use a real temporary or in-memory SQLite database for transaction and schema tests. Test shared storage behavior across all three protocols; storage and migration do not depend on the host operating system.
 
 See [EMCOMM implementation](emcomm.md) for incident safety rules, and [renderer hooks](renderer-hooks.md) for runtime ownership.
+
+Location sharing defaults **off** when `shareMyLocation` is missing or is not a boolean `true`.
+An explicit saved boolean is preserved, including legacy app-settings migration. Historical
+`true` values cannot be distinguished from deliberate choices, so upgrades do not rewrite them.
+Host lookup and app transmission continue to use the existing shared consent guard; local radio
+GPS and saved locations remain usable for map/distance calculations without sharing.

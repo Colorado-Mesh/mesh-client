@@ -16,6 +16,7 @@ import {
 } from '@/shared/meshtasticUrlEncoder';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import RadioPanel, { ConfigNumber } from './RadioPanel';
 import { ToastProvider } from './Toast';
 
@@ -664,6 +665,7 @@ describe('RadioPanel remote target safeguards', () => {
 
 describe('RadioPanel MeshCore advert position synchronization', () => {
   it('hydrates, preserves dirty edits, and resumes syncing after a successful send', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: true }));
     const user = userEvent.setup();
     const onSendPositionToDevice = vi.fn().mockResolvedValue(undefined);
     const renderPanel = (selfInfo: MeshCoreSelfInfo) => (
