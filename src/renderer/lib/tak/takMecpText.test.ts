@@ -1,14 +1,22 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../mecp/languages/en.json';
 import type { LanguageFile } from '../mecp/mecpMessages';
-import { tryParseMecp } from '../mecp/mecpMessages';
+import { getCachedMecpLanguage, loadMecpLanguage, tryParseMecp } from '../mecp/mecpMessages';
 import {
   describeMecpForTak,
   resetTakMecpLocale,
   setTakMecpLocale,
   takMecpText,
 } from './takMecpText';
+
+// The real loader, wrapped so a test can decide when a pack arrives.
+vi.mock('../mecp/mecpMessages', async (importOriginal) => {
+  const actual = await importOriginal<{
+    loadMecpLanguage: (lang: string) => Promise<LanguageFile>;
+  }>();
+  return { ...actual, loadMecpLanguage: vi.fn(actual.loadMecpLanguage) };
+});
 
 /** The app's strings for these keys, in English. */
 const t = (key: string, opts?: Record<string, unknown>): string => {
@@ -57,6 +65,13 @@ describe('describeMecpForTak', () => {
     expect(describeIn('MECP/2/')).toBe('⚠️ SAFETY');
   });
 
+  it("fills the minutes whatever the pack calls them, and keeps them when it can't", () => {
+    const de: LanguageFile = { ...EN, codes: { ...EN.codes, R03: 'Ankunft in [Minuten]' } };
+    expect(describeIn('MECP/3/R03 15', de)).toBe('ℹ️ ROUTINE: Ankunft in 15');
+    const bare: LanguageFile = { ...EN, codes: { ...EN.codes, R03: 'ETA' } };
+    expect(describeIn('MECP/3/R03 15', bare)).toBe('ℹ️ ROUTINE: ETA · “15”');
+  });
+
   it("uses the pack it is given, as for the app's language", () => {
     const de: LanguageFile = {
       ...EN,
@@ -88,9 +103,29 @@ describe('takMecpText', () => {
   });
 
   it('keeps the last language asked for when an earlier pack loads later', async () => {
+    const german: LanguageFile = { ...EN, codes: { ...EN.codes, M01: 'Verletzung' } };
+    let releaseGerman: (pack: LanguageFile) => void = () => {};
+    vi.mocked(loadMecpLanguage)
+      .mockImplementationOnce(
+        () =>
+          new Promise<LanguageFile>((resolve) => {
+            releaseGerman = resolve;
+          }),
+      )
+      .mockImplementationOnce(() => Promise.resolve(getCachedMecpLanguage('en')));
     const first = setTakMecpLocale('de', t);
-    const second = setTakMecpLocale('en', t);
-    await Promise.all([first, second]);
+    await setTakMecpLocale('en', t);
+    releaseGerman(german);
+    await first;
+    expect(takMecpText('MECP/0/M01')).toBe('🆘 MAYDAY: Injury\nMECP/0/M01');
+  });
+
+  it("keeps the words English when the language's pack fails to load", async () => {
+    vi.mocked(loadMecpLanguage).mockImplementationOnce(() =>
+      Promise.resolve(getCachedMecpLanguage('en')),
+    );
+    const german = (key: string) => (key === 'mecp.severity.mayday' ? 'NOTRUF' : key);
+    await setTakMecpLocale('de', german);
     expect(takMecpText('MECP/0/M01')).toBe('🆘 MAYDAY: Injury\nMECP/0/M01');
   });
 

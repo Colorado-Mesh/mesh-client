@@ -45,10 +45,15 @@ let localeRequest = 0;
  */
 export async function setTakMecpLocale(appLocale: string, t: TakMecpTranslate): Promise<void> {
   const request = ++localeRequest;
-  appTranslate = t;
+  // English words with the English pack while the new one loads, never one with the other.
+  appTranslate = englishTranslate;
+  appPack = getCachedMecpLanguage('en');
   const pack = await loadMecpLanguage(mecpLanguageForAppLocale(appLocale || 'en'));
   // A later change of language wins over this one, whichever pack loads first.
-  if (request === localeRequest) appPack = pack;
+  if (request !== localeRequest) return;
+  // A pack that failed to load comes back as English; keep the words English with it.
+  appTranslate = pack === getCachedMecpLanguage('en') ? englishTranslate : t;
+  appPack = pack;
 }
 
 /** Back to English, as before the app hands over its language; for tests. */
@@ -57,6 +62,11 @@ export function resetTakMecpLocale(): void {
   appTranslate = englishTranslate;
   appPack = getCachedMecpLanguage('en');
 }
+
+/** The count in a code's meaning, `[N]` in every pack. */
+const COUNT_PLACEHOLDER = '[N]';
+/** Any other bracketed word is the minutes, which each pack names in its own language. */
+const MINUTES_PLACEHOLDER_RE = /\[(?!N\])[^\]]+\]/u;
 
 /** `text`'s words, without the first one `drop` picks out. */
 function withoutWord(text: string, drop: (word: string) => boolean): string {
@@ -82,19 +92,22 @@ export function describeMecpForTak(
   const head = parsed.isDrill ? `${t('mecp.atakDrill')} ${label}` : label;
   const { count, gps, eta } = parsed.extracted;
   const meanings = parsed.codes.map((code) => lang.codes[code] as string | undefined);
-  const countInCode = count != null && meanings.some((m) => m?.includes('[N]'));
+  const countInCode = count != null && meanings.some((m) => m?.includes(COUNT_PLACEHOLDER));
+  const etaInCode =
+    eta != null && meanings.some((m) => m !== undefined && MINUTES_PLACEHOLDER_RE.test(m));
   const parts = parsed.codes.map((code, i) => {
-    const meaning = meanings[i];
+    let meaning = meanings[i];
     if (meaning === undefined) return code;
-    return meaning
-      .replace('[N]', count != null ? String(count) : '[N]')
-      .replace('[minutes]', eta != null ? String(eta) : '[minutes]');
+    if (count != null) meaning = meaning.replace(COUNT_PLACEHOLDER, String(count));
+    if (eta != null) meaning = meaning.replace(MINUTES_PLACEHOLDER_RE, String(eta));
+    return meaning;
   });
   if (count != null && !countInCode) parts.push(t('mecp.atakPeople', { count }));
   if (gps) parts.push(`${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}`);
   let rest = stripMecpCoordsFromFreetext(parsed.freetext ?? '');
   if (count != null) rest = withoutWord(rest, (w) => w.toLowerCase() === `${count}pax`);
-  if (eta != null) rest = withoutWord(rest, (w) => w === String(eta));
+  // The minutes leave the free text only once the sentence shows them.
+  if (etaInCode) rest = withoutWord(rest, (w) => w === String(eta));
   if (rest) parts.push(`“${rest}”`);
   return parts.length > 0 ? `${head}: ${parts.join(' · ')}` : head;
 }
