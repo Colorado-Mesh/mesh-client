@@ -10,8 +10,10 @@ import {
 import {
   migrateLegacyConversationMutes,
   saveConversationMutes,
+  setConversationMuteMqttClientId,
 } from '../lib/conversationMuteStorage';
 import type { MeshProtocol } from '../lib/types';
+import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import { useLiveChannelKeyStore } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -25,6 +27,7 @@ function subscribe(protocol: MeshProtocol, listener: () => void) {
   const unsubscribers = [
     subscribeMutedViewsChanged(listener),
     useIdentityStore.subscribe(discovered),
+    useConnectionStore.subscribe(discovered),
     useLiveChannelKeyStore.subscribe(discovered),
     useNodeStore.subscribe(discovered),
     useReticulumIdentityStore.subscribe(discovered),
@@ -34,6 +37,39 @@ function subscribe(protocol: MeshProtocol, listener: () => void) {
     for (const unsubscribe of unsubscribers) unsubscribe();
     window.removeEventListener('storage', listener);
   };
+}
+
+/** Mount once from App so background MQTT alerts use the same identity as the bells. */
+export function useConversationMuteMqttIdentity() {
+  useEffect(() => {
+    let disposed = false;
+    const revisions = new Map<MeshProtocol, number>();
+    const update = (protocol: MeshProtocol, clientId: string) => {
+      setConversationMuteMqttClientId(protocol, clientId);
+      migrateLegacyConversationMutes(protocol);
+      notifyMutedViewsChanged(protocol);
+    };
+    const unsubscribe = window.electronAPI.mqtt.onClientId(({ protocol, clientId }) => {
+      if (disposed) return;
+      revisions.set(protocol, (revisions.get(protocol) ?? 0) + 1);
+      update(protocol, clientId);
+    });
+    for (const protocol of ['meshtastic', 'meshcore'] as const) {
+      const revision = revisions.get(protocol) ?? 0;
+      void window.electronAPI.mqtt
+        .getClientId(protocol)
+        .then((clientId) => {
+          if (!disposed && revision === (revisions.get(protocol) ?? 0)) update(protocol, clientId);
+        })
+        .catch((error: unknown) => {
+          console.warn('[conversationMuteStorage] MQTT identity read failed', error);
+        });
+    }
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, []);
 }
 
 export function useConversationMutes(protocol: MeshProtocol) {

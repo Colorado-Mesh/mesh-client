@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
   resetLiveChannelKeyStoreForTests,
@@ -12,6 +13,7 @@ import {
   CONVERSATION_MUTES_KEY,
   migrateLegacyConversationMutes,
   saveConversationMutes,
+  setConversationMuteMqttClientId,
 } from './conversationMuteStorage';
 import {
   clearMeshcorePubKeyRegistry,
@@ -55,6 +57,9 @@ function toggle(view: string) {
 describe('stable conversation mutes', () => {
   beforeEach(() => {
     localStorage.clear();
+    useConnectionStore.setState({ connections: {} });
+    setConversationMuteMqttClientId('meshtastic', '');
+    setConversationMuteMqttClientId('meshcore', '');
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     useNodeStore.setState({
       nodes: {
@@ -151,6 +156,73 @@ describe('stable conversation mutes', () => {
       nodes: { radio: { 5: { nodeId: 5, publicKey: new Uint8Array(32).fill(3) } } },
     });
     expect(loadMutedViews('meshcore').size).toBe(0);
+  });
+
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'persists %s MQTT-only choices separately from a radio and other client identities',
+    (protocol) => {
+      device();
+      useIdentityStore.setState((state) => ({
+        identities: {
+          radio: {
+            ...state.identities.radio,
+            protocol: protocol === 'meshtastic' ? meshtasticProtocol : meshcoreProtocol,
+            signature: '',
+          },
+        },
+      }));
+      setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 77 });
+      const prefix = protocol === 'meshtastic' ? 'meshtastic-electron-' : 'meshcore-mqtt-';
+      setConversationMuteMqttClientId(protocol, prefix + 'a'.repeat(16));
+      setLiveChannelKeys(protocol, { radioNodeId: 77, keyByIndex: { 0: 'mqtt-channel' } });
+      expect(saveConversationMutes(protocol, new Set(), new Set(['ch:0', 'dm:5']))).toBe(true);
+      expect(loadMutedViews(protocol)).toEqual(new Set(['ch:0', 'dm:5']));
+      expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).toContain(':mqtt:client:');
+      setConversationMuteMqttClientId(protocol, prefix + 'b'.repeat(16));
+      expect(loadMutedViews(protocol).size).toBe(0);
+      setConversationMuteMqttClientId(protocol, prefix + 'a'.repeat(16));
+      setConnection('radio', { status: 'connecting' });
+      expect(loadMutedViews(protocol).size).toBe(0);
+      expect(saveConversationMutes(protocol, new Set(), new Set(['ch:0']))).toBe(false);
+      setConnection('radio', { status: 'disconnected' });
+      expect(loadMutedViews(protocol)).toEqual(new Set(['ch:0', 'dm:5']));
+      setLiveChannelKeys(protocol, { radioNodeId: 88, keyByIndex: { 0: 'mqtt-channel' } });
+      expect(loadMutedViews(protocol)).toEqual(new Set(['dm:5']));
+    },
+  );
+
+  it('supports MeshCore MQTT peer bells without inventing unavailable channel metadata', () => {
+    device();
+    useIdentityStore.setState((state) => ({
+      identities: { radio: { ...state.identities.radio, signature: '' } },
+    }));
+    setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+    setConversationMuteMqttClientId('meshcore', 'v1_' + 'ab'.repeat(32));
+    setLiveChannelKeys('meshcore', null);
+    expect(toggle('room:192')).toBe(true);
+    expect(toggle('dm:5')).toBe(true);
+    expect(toggle('ch:0')).toBe(false);
+    expect(loadMutedViews('meshcore')).toEqual(new Set(['room:192', 'dm:5']));
+  });
+
+  it('refuses MQTT migration while a separate primary RF identity is connecting', () => {
+    device();
+    const original = useIdentityStore.getState().identities.radio;
+    useIdentityStore.setState({
+      activeIdentityId: 'pending',
+      identities: {
+        pending: { ...original, id: 'pending', signature: 'meshcore:tcp:127.0.0.1' },
+        'offline-meshcore': { ...original, id: 'offline-meshcore', signature: '' },
+      },
+    });
+    useNodeStore.setState({ nodes: { 'offline-meshcore': useNodeStore.getState().nodes.radio } });
+    setConnection('pending', { status: 'connecting', mqttStatus: 'disconnected' });
+    setConnection('offline-meshcore', { status: 'disconnected', mqttStatus: 'connected' });
+    setConversationMuteMqttClientId('meshcore', 'meshcore-mqtt-' + 'a'.repeat(16));
+    localStorage.setItem('mesh-client:mutedViews:meshcore', '["room:192"]');
+    expect(migrateLegacyConversationMutes('meshcore')).toBe(false);
+    expect(toggle('dm:5')).toBe(false);
+    expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).toBeNull();
   });
 
   it('mutes every slot of the same logical channel and unmutes from either bell', () => {

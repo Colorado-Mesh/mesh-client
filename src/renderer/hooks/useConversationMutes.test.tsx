@@ -1,17 +1,22 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
+import { setConversationMuteMqttClientId } from '../lib/conversationMuteStorage';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import { setLiveChannelKeys } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
-import { useConversationMutes } from './useConversationMutes';
+import { useConversationMuteMqttIdentity, useConversationMutes } from './useConversationMutes';
 
 const addToast = vi.hoisted(() => vi.fn());
 vi.mock('../components/Toast', () => ({ useToast: () => ({ addToast }) }));
 
 beforeEach(() => {
   localStorage.clear();
+  useConnectionStore.setState({ connections: {} });
+  setConversationMuteMqttClientId('meshcore', '');
+  setConversationMuteMqttClientId('meshtastic', '');
   addToast.mockReset();
   useNodeStore.setState({
     nodes: { radio: { 192: { nodeId: 192, publicKey: new Uint8Array(32).fill(1) } } },
@@ -69,4 +74,44 @@ it('keeps both views unchanged on failure and exposes a retryable error', () => 
     view.result.current[1](new Set(['ch:0']));
   });
   expect(view.result.current[0]).toEqual(new Set(['ch:0']));
+});
+
+it('hydrates MQTT identity before legacy migration and ignores a stale initial response', async () => {
+  let completeInitial: (id: string) => void = () => {};
+  let clientEvent: Parameters<typeof window.electronAPI.mqtt.onClientId>[0] = () => {};
+  const unsubscribe = vi.fn();
+  vi.mocked(window.electronAPI.mqtt.getClientId).mockImplementation((protocol) =>
+    protocol === 'meshcore'
+      ? new Promise((resolve) => {
+          completeInitial = resolve;
+        })
+      : Promise.resolve(''),
+  );
+  vi.mocked(window.electronAPI.mqtt.onClientId).mockImplementation((callback) => {
+    clientEvent = callback;
+    return unsubscribe;
+  });
+  useIdentityStore.setState((state) => ({
+    identities: { radio: { ...state.identities.radio, signature: '' } },
+  }));
+  setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+  localStorage.setItem('mesh-client:mutedViews:meshcore', '["room:192"]');
+  const view = renderHook(() => {
+    useConversationMuteMqttIdentity();
+    return useConversationMutes('meshcore');
+  });
+  await act(async () => {
+    clientEvent({ protocol: 'meshcore', clientId: 'meshcore-mqtt-' + 'a'.repeat(16) });
+    completeInitial('meshcore-mqtt-' + 'b'.repeat(16));
+    await Promise.resolve();
+  });
+  expect(view.result.current[0]).toEqual(new Set(['room:192']));
+  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).toContain('a'.repeat(16));
+  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).not.toContain('b'.repeat(16));
+  act(() => {
+    view.result.current[1](new Set());
+  });
+  expect(view.result.current[0].size).toBe(0);
+  view.unmount();
+  expect(unsubscribe).toHaveBeenCalledOnce();
 });

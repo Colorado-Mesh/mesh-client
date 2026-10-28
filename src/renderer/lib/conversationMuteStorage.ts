@@ -1,3 +1,4 @@
+import { useConnectionStore } from '../stores/connectionStore';
 import { useIdentityStore } from '../stores/identityStore';
 import { getLiveChannelKeys } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -11,6 +12,23 @@ import { rrcRoomMatchKey, rrcRoomsMatch } from './rrcRoomName';
 import type { MeshProtocol } from './types';
 
 export const CONVERSATION_MUTES_KEY = 'mesh-client:conversationMutes:v1';
+const mqttClientIds = new Map<MeshProtocol, string>();
+
+/** Public, main-owned client ids are stable per install; no broker credentials are cached. */
+export function setConversationMuteMqttClientId(protocol: MeshProtocol, clientId: string): void {
+  const valid =
+    protocol === 'meshtastic'
+      ? /^meshtastic-electron-[0-9a-f]{16}$/.test(clientId)
+      : protocol === 'meshcore' && /^(meshcore-mqtt-[0-9a-f]{16}|v1_[0-9a-f]{64})$/i.test(clientId);
+  if (valid) mqttClientIds.set(protocol, clientId.toLowerCase());
+  else mqttClientIds.delete(protocol);
+}
+
+function notificationConnection(protocol: MeshProtocol) {
+  const id = getNotificationIdentity(protocol)?.id;
+  return id ? useConnectionStore.getState().connections[id] : undefined;
+}
+
 interface MuteEntry {
   protocol: MeshProtocol;
   device: string;
@@ -54,12 +72,23 @@ function notificationDeviceSignature(protocol: MeshProtocol): string {
   if (protocol === 'reticulum') {
     return useReticulumIdentityStore.getState().identity?.lxmf_hash.toLowerCase() ?? '';
   }
-  // Hydrated peer data can live in the offline bucket while the radio owns the
-  // finalized signature. Never use a display-bucket fallback as device identity.
   const { identities, activeIdentityId } = useIdentityStore.getState();
   const id = resolvePrimaryIdentityIdForProtocol(identities, activeIdentityId, protocol);
   const signature = id ? identities[id].signature : '';
   const ready = protocol === 'meshtastic' ? /^meshtastic:node:\d+$/ : /^meshcore:pk:[0-9a-f]{64}$/i;
+  const primaryConnection = id ? useConnectionStore.getState().connections[id] : undefined;
+  const connection = notificationConnection(protocol);
+  if (
+    connection?.status === 'disconnected' &&
+    connection.mqttStatus === 'connected' &&
+    (!signature || ready.test(signature)) &&
+    (!primaryConnection || primaryConnection.status === 'disconnected')
+  ) {
+    const clientId = mqttClientIds.get(protocol);
+    return clientId ? `${protocol}:mqtt:client:${clientId}` : '';
+  }
+  // Hydrated peer data can live in the offline bucket while the radio owns the
+  // finalized signature. Never use a display-bucket fallback as device identity.
   return ready.test(signature) ? signature.toLowerCase() : '';
 }
 
@@ -70,14 +99,16 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
   const device = notificationDeviceSignature(protocol);
   if (!device) return null;
   const live = getLiveChannelKeys(protocol);
-  const radioNodeId =
-    protocol === 'meshtastic'
+  const radioNodeId = device.includes(':mqtt:client:')
+    ? notificationConnection(protocol)?.myNodeNum
+    : protocol === 'meshtastic'
       ? Number(device.slice('meshtastic:node:'.length))
       : pubkeyToNodeId(
           Uint8Array.from(device.slice('meshcore:pk:'.length).match(/../g) ?? [], (byte) =>
             Number.parseInt(byte, 16),
           ),
         );
+  if (radioNodeId == null || radioNodeId <= 0) return null;
   if (live?.radioNodeId != null && live.radioNodeId !== radioNodeId) return null;
   if (live?.radioNodeId === radioNodeId && Object.keys(live.keyByIndex).length > 0) {
     retainedLayouts.set(device, live.keyByIndex);
