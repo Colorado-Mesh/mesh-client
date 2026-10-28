@@ -4680,6 +4680,14 @@ export function useMeshtasticRuntime() {
     sendStatusEvents();
   }, [sendStatusEvents]);
 
+  // Clear main's connection flag if this runtime unmounts while still "live"
+  // (e.g. protocol disabled); status-driven notifyDeviceDisconnected alone would not run.
+  useEffect(() => {
+    return () => {
+      window.electronAPI.notifyDeviceDisconnected();
+    };
+  }, []);
+
   useEffect(() => {
     if (state.status === 'disconnected') {
       setTelemetryDeviceUpdateInterval(null);
