@@ -32,6 +32,7 @@ describe('RadioChatSyncButton', () => {
     const button = screen.getByRole('button', { name: 'Sync chats from radio' });
     await user.tab();
     expect(button).toHaveFocus();
+    expect(button).toHaveAttribute('title', '');
     expect(screen.getByRole('tooltip')).toHaveTextContent('Sync chats from radio');
     await user.keyboard('{Enter}');
     expect(onSync).toHaveBeenCalledTimes(1);

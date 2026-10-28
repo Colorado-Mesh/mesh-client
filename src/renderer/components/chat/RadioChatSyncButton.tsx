@@ -27,6 +27,7 @@ export function RadioChatSyncButton({
         <IconButton
           size="sm"
           aria-label={t(busy ? 'radioChatSync.busy' : 'radioChatSync.sync')}
+          title=""
           disabled={disabled || busy}
           aria-busy={busy}
           icon={<RefreshCw aria-hidden size={16} className={busy ? 'animate-spin' : ''} />}

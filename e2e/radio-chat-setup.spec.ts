@@ -325,6 +325,7 @@ test('header sync leaves every channel reachable at desktop, narrow and phone wi
       .getByRole('button', { name: 'Order chats' }),
   ).toBeDisabled();
   await sync.focus();
+  await expect(sync).toHaveAttribute('title', '');
   await expect(
     page.getByRole('tooltip').filter({ hasText: 'Sync chats from radio' }),
   ).toBeVisible();
