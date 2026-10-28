@@ -5855,7 +5855,8 @@
     "messagingIntroReticulum": "Laissez les appareils ATAK envoyer un message à LXMF pairs. Un pair avec un poste peut être envoyé par message à partir de son marqueur ; celui sans poste apparaît à 0, 0 une fois que mesh-client a une conversation avec lui, de sorte que la liste de contacts ne se remplit pas avec tous les pairs entendus.",
     "channelCallsign": "Ajouter un indicatif d'appel",
     "channelCallsignFor": "Placez l'indicatif ATAK de l'expéditeur devant les messages envoyés à {{channel}}",
-    "channelCallsignHint": "Avec Add callsign off, ce qu'un appareil ATAK envoie s'éteint exactement comme il a été tapé. Désactivez-le pour un canal de bot : un bot recherche sa commande au début du message, il en manque donc une qui commence par un indicatif d'appel."
+    "channelCallsignHint": "Avec Add callsign off, ce qu'un appareil ATAK envoie s'éteint exactement comme il a été tapé. Désactivez-le pour un canal de bot : un bot recherche sa commande au début du message, il en manque donc une qui commence par un indicatif d'appel.",
+    "channelRepliesHint": "Pour répondre à quelqu'un d'ATAK, commencez par @ et le début de son nom : @silver are you on ? sort en tant que réponse de MeshCore @[Silver Eagle] are you on ?. @@ répond à la personne qui a pris la parole en dernier. Si le début du nom correspond à plusieurs personnes entendues sur la chaîne, rien n'est envoyé et le chat indique qui correspond."
   },
   "telemetryPanel": {
     "title": "Télémétrie",

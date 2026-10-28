@@ -5855,7 +5855,8 @@
     "messagingIntroReticulum": "Lassen Sie ATAK-Geräte LXMF Kollegen benachrichtigen. Ein Kollege mit einer Position kann von seinem Marker aus benachrichtigt werden; einer ohne Position erscheint bei 0, 0, sobald mesh-client ein Gespräch mit ihm führt, so dass die Kontaktliste nicht mit jedem gehörten Kollegen gefüllt wird.",
     "channelCallsign": "Rufzeichen hinzufügen",
     "channelCallsignFor": "Setzen Sie das ATAK-Rufzeichen des Absenders vor Nachrichten, die an {{channel}} gesendet werden",
-    "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt."
+    "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt.",
+    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

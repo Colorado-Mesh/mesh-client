@@ -5900,7 +5900,8 @@
     "messagingIntroReticulum": "Nechte zařízení atak komunikovat LXMF vrstevníky. Protějšek s pozicí může být odeslán ze své značky; ten, kdo nemá žádnou pozici, se objeví na 0, 0, jakmile s ním mesh-client konverzuje, takže seznam kontaktů se nezaplní každým slyšeným protějškem.",
     "channelCallsign": "Přidat volací značku",
     "channelCallsignFor": "Umístěte volací značku atak odesílatele před zprávy odeslané na {{channel}}",
-    "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou."
+    "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou.",
+    "channelRepliesHint": "Pokud chceš odpovědět někomu z Ataku, začni na @ a začni jeho/její jméno: @silver jedeš? vyjde, zatímco MeshCore odpoví @[Silver Eagle] jede?. @@ odpovídá tomu, kdo mluvil naposledy. Pokud se začátek jména vejde do několika lidí slyšených na kanálu, nic není odesláno a chat říká, kdo se shodoval."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
