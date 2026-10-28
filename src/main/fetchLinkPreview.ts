@@ -590,13 +590,14 @@ async function fetchYouTubeOEmbedPreview(pageUrl: URL): Promise<LinkPreviewMetad
 
 /** Decode a minimal set of HTML entities in OG/meta content values. */
 export function decodeLinkPreviewHtmlEntities(value: string): string {
+  // Unescape &amp; last so sequences like &amp;lt; stay as &lt; (not <).
   return value
-    .replace(/&amp;/gi, '&')
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'");
+    .replace(/&apos;/gi, "'")
+    .replace(/&amp;/gi, '&');
 }
 
 const META_TAG_RE = /<meta\b([^>]*)>/gi;
@@ -649,12 +650,13 @@ async function fetchHtmlLinkPreview(
 
   const html = new TextDecoder().decode(merged);
 
-  const ogTitle =
-    extractMetaContent(html, { property: 'og:title' }) ??
-    /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
+  const metaTitle = extractMetaContent(html, { property: 'og:title' });
+  const titleTag = /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
+  // Meta content is already entity-decoded in parseMetaTagAttributes; <title> is not.
+  const ogTitle = metaTitle ?? (titleTag ? decodeLinkPreviewHtmlEntities(titleTag) : undefined);
   if (!ogTitle?.trim()) return null;
 
-  const title = decodeLinkPreviewHtmlEntities(ogTitle.trim());
+  const title = ogTitle.trim();
 
   const ogDesc =
     extractMetaContent(html, { property: 'og:description' }) ??

@@ -770,6 +770,8 @@ describe('fetchLinkPreview', () => {
     expect(decodeLinkPreviewHtmlEntities('a &amp; b &lt;c&gt; &quot;d&quot; &#39;e&apos;')).toBe(
       `a & b <c> "d" 'e'`,
     );
+    // &amp; must be unescaped last so &amp;lt; does not become <
+    expect(decodeLinkPreviewHtmlEntities('&amp;lt;')).toBe('&lt;');
   });
 
   it('parses meta attributes regardless of order and extras', () => {
