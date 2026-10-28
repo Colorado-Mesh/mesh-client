@@ -24,6 +24,11 @@ import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 import { reticulumProtocol } from './protocols/ReticulumProtocol';
 import { isRrcRoomMuted } from './rrcMention';
+import {
+  MESHTASTIC_MQTT_SECRET_KEY,
+  resetSecureSecretCacheForTests,
+  setSecureSecret,
+} from './secureSecretStorage';
 import { meshNodeToNodeRecord } from './storeRecordAdapters';
 
 function device(signature = 'aa' + '00'.repeat(31), slot = 0, key = 'channel-a') {
@@ -58,6 +63,7 @@ function toggle(view: string) {
 describe('stable conversation mutes', () => {
   beforeEach(() => {
     localStorage.clear();
+    resetSecureSecretCacheForTests();
     useConnectionStore.setState({ connections: {} });
     setConversationMuteMqttClientId('meshtastic', '');
     setConversationMuteMqttClientId('meshcore', '');
@@ -188,7 +194,9 @@ describe('stable conversation mutes', () => {
       setConnection('radio', { status: 'disconnected' });
       expect(loadMutedViews(protocol)).toEqual(new Set(['ch:0', 'dm:5']));
       setLiveChannelKeys(protocol, { radioNodeId: 88, keyByIndex: { 0: 'mqtt-channel' } });
-      expect(loadMutedViews(protocol)).toEqual(new Set(['dm:5']));
+      expect(loadMutedViews(protocol)).toEqual(
+        new Set(protocol === 'meshtastic' ? ['ch:0', 'dm:5'] : ['dm:5']),
+      );
     },
   );
 
@@ -205,6 +213,28 @@ describe('stable conversation mutes', () => {
     expect(toggle('ch:0')).toBe(false);
     expect(loadMutedViews('meshcore')).toEqual(new Set(['room:192', 'dm:5']));
   });
+
+  it.each([undefined, 'LongFast@0=AQ==', 'QATest@0=AQEBAQEBAQEBAQEBAQEBAQ=='])(
+    'binds canonical Meshtastic MQTT defaults/settings before RF channel discovery: %s',
+    async (line) => {
+      device();
+      useIdentityStore.setState((state) => ({
+        identities: {
+          radio: { ...state.identities.radio, protocol: meshtasticProtocol, signature: '' },
+        },
+      }));
+      setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 77 });
+      setConversationMuteMqttClientId('meshtastic', 'meshtastic-electron-' + 'a'.repeat(16));
+      if (line)
+        await setSecureSecret(MESHTASTIC_MQTT_SECRET_KEY, JSON.stringify({ channelPsks: [line] }));
+      setLiveChannelKeys('meshtastic', null);
+      expect(saveConversationMutes('meshtastic', new Set(), new Set(['ch:0']))).toBe(true);
+      expect(loadMutedViews('meshtastic')).toEqual(new Set(['ch:0']));
+      expect(saveConversationMutes('meshtastic', new Set(['ch:0']), new Set())).toBe(true);
+      expect(loadMutedViews('meshtastic').size).toBe(0);
+      if (line) expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).not.toContain(line);
+    },
+  );
 
   it('retains a live contact full key after RF disconnect clears the transport registry', () => {
     device();

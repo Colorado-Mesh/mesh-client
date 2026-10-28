@@ -7,6 +7,7 @@ import { getNotificationIdentity } from './chatNotificationPolicy';
 import { resolvePrimaryIdentityIdForProtocol } from './identityByProtocol';
 import { getMeshcorePubKey } from './meshcore/meshcorePubKeyRegistry';
 import { pubkeyToNodeId } from './meshcoreUtils';
+import { notificationMqttChannelKeys } from './notificationMqttChannelKeys';
 import { resolveReticulumDestinationHash } from './reticulum/destHash';
 import { rrcRoomMatchKey, rrcRoomsMatch } from './rrcRoomName';
 import type { MeshProtocol } from './types';
@@ -109,6 +110,11 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
           ),
         );
   if (radioNodeId == null || radioNodeId <= 0) return null;
+  if (protocol === 'meshtastic' && device.includes(':mqtt:client:')) {
+    // Canonical MQTT settings own this namespace; a stale RF map must not.
+    const keys = notificationMqttChannelKeys();
+    return Object.keys(keys).length > 0 ? keys : null;
+  }
   if (live?.radioNodeId != null && live.radioNodeId !== radioNodeId) return null;
   if (live?.radioNodeId === radioNodeId && Object.keys(live.keyByIndex).length > 0) {
     retainedLayouts.set(device, live.keyByIndex);
