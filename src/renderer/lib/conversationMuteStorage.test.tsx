@@ -153,6 +153,36 @@ describe('stable conversation mutes', () => {
     expect(loadMutedViews('meshcore').size).toBe(0);
   });
 
+  it('mutes every slot of the same logical channel and unmutes from either bell', () => {
+    device();
+    setLiveChannelKeys('meshcore', {
+      radioNodeId: 170,
+      keyByIndex: { 0: 'channel-a', 2: 'channel-a' },
+    });
+    expect(toggle('ch:2')).toBe(true);
+    expect(loadMutedViews('meshcore')).toEqual(new Set(['ch:0', 'ch:2']));
+    expect(toggle('ch:0')).toBe(true);
+    expect(loadMutedViews('meshcore').size).toBe(0);
+    expect(toggle('ch:0')).toBe(true);
+    expect(toggle('ch:2')).toBe(true);
+    expect(loadMutedViews('meshcore').size).toBe(0);
+  });
+
+  it('migrates duplicate legacy slots once and prevents aliases leaking to a new radio', () => {
+    device();
+    setLiveChannelKeys('meshcore', {
+      radioNodeId: 170,
+      keyByIndex: { 0: 'channel-a', 2: 'channel-a' },
+    });
+    const legacy = '["ch:0","ch:2"]';
+    localStorage.setItem('mesh-client:mutedViews:meshcore', legacy);
+    expect(migrateLegacyConversationMutes('meshcore')).toBe(true);
+    expect(migrateLegacyConversationMutes('meshcore')).toBe(false);
+    device('bb' + '00'.repeat(31));
+    expect(loadMutedViews('meshcore').size).toBe(0);
+    expect(localStorage.getItem('mesh-client:mutedViews:meshcore')).toBe(legacy);
+  });
+
   it('resolves real MeshCore contact keys from the shared registry and persisted hex records', () => {
     device();
     useNodeStore.setState({ nodes: {} });

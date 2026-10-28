@@ -18,6 +18,18 @@ interface MuteEntry {
   target: string;
   muted: boolean;
   legacyView?: string;
+  legacyViews?: string[];
+}
+
+function legacyViews(entry: MuteEntry): string[] {
+  return [
+    ...new Set([
+      ...(typeof entry.legacyView === 'string' ? [entry.legacyView] : []),
+      ...(Array.isArray(entry.legacyViews)
+        ? entry.legacyViews.filter((view) => typeof view === 'string')
+        : []),
+    ]),
+  ];
 }
 
 function readEntries(): MuteEntry[] {
@@ -129,40 +141,44 @@ export function projectConversationMutes(protocol: MeshProtocol, legacy: Set<str
   try {
     const entries = readEntries();
     for (const entry of entries) {
-      if (entry.protocol === protocol && entry.legacyView) result.delete(entry.legacyView);
+      if (entry.protocol === protocol) {
+        for (const view of legacyViews(entry)) result.delete(view);
+      }
     }
     for (const entry of entries) {
       if (entry.protocol !== protocol) continue;
-      let view = entry.view;
-      if (view.startsWith('ch:') && protocol !== 'reticulum') {
+      let views = [entry.view];
+      if (entry.view.startsWith('ch:') && protocol !== 'reticulum') {
         const keys = notificationChannelKeys(protocol);
         if (keys) {
-          const slot = Object.entries(keys).find(([, key]) => key === entry.target);
-          if (!slot) continue;
-          view = `ch:${slot[0]}`;
+          views = Object.entries(keys)
+            .filter(([, key]) => key === entry.target)
+            .map(([slot]) => `ch:${slot}`);
         }
       }
-      const current = binding(protocol, view);
-      // A persisted full peer key remains muted while contacts reload. Once metadata
-      // exists, verify it so an id collision cannot inherit another peer's preference.
-      const waitingForPeer =
-        !current &&
-        /^(dm|room):/.test(view) &&
-        notificationDeviceSignature(protocol) === entry.device;
-      if (!waitingForPeer && (!current || !sameBinding(current, entry))) continue;
-      if (view.startsWith('rrc:')) {
-        for (const key of result) {
-          const [, hub, ...room] = key.split(':');
-          if (
-            key.startsWith('rrc:') &&
-            hub.toLowerCase() === entry.device &&
-            rrcRoomsMatch(room.join(':'), entry.target)
-          )
-            result.delete(key);
+      for (const view of views) {
+        const current = binding(protocol, view);
+        // A persisted full peer key remains muted while contacts reload. Once metadata
+        // exists, verify it so an id collision cannot inherit another peer's preference.
+        const waitingForPeer =
+          !current &&
+          /^(dm|room):/.test(view) &&
+          notificationDeviceSignature(protocol) === entry.device;
+        if (!waitingForPeer && (!current || !sameBinding(current, entry))) continue;
+        if (view.startsWith('rrc:')) {
+          for (const key of result) {
+            const [, hub, ...room] = key.split(':');
+            if (
+              key.startsWith('rrc:') &&
+              hub.toLowerCase() === entry.device &&
+              rrcRoomsMatch(room.join(':'), entry.target)
+            )
+              result.delete(key);
+          }
         }
+        if (entry.muted) result.add(view);
+        else result.delete(view);
       }
-      if (entry.muted) result.add(view);
-      else result.delete(view);
     }
   } catch (error) {
     console.warn('[conversationMuteStorage] read failed; preserving legacy mutes', error);
@@ -198,6 +214,7 @@ export function saveConversationMutes(
         ...current,
         muted: after.has(view),
         legacyView: previous?.legacyView ?? view,
+        legacyViews: [...new Set([...(previous ? legacyViews(previous) : []), view])],
       });
     }
     if (changed) localStorage.setItem(CONVERSATION_MUTES_KEY, JSON.stringify(entries));
@@ -223,13 +240,13 @@ export function migrateLegacyConversationMutes(protocol: MeshProtocol): boolean 
     for (const view of legacy) {
       if (
         typeof view !== 'string' ||
-        entries.some((e) => e.protocol === protocol && e.legacyView === view)
+        entries.some((e) => e.protocol === protocol && legacyViews(e).includes(view))
       )
         continue;
       const current = binding(protocol, view);
       if (!current) continue;
       const existing = entries.find((entry) => sameBinding(entry, current));
-      if (existing) existing.legacyView ??= view;
+      if (existing) existing.legacyViews = [...new Set([...legacyViews(existing), view])];
       else entries.push({ ...current, muted: true, legacyView: view });
       changed = true;
     }
