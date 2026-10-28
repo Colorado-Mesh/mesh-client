@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Este dispositivo tem apenas {{count}} Atualizar thread(s) WASM. Os resumos de modelos baixados geralmente precisam de cerca de 6 ou mais para funcionar bem e levarão mais tempo aqui. Prefira outro motor ou aumente o tempo limite abaixo."
   },
   "chatOrder": {
-    "title": "Pedir chats",
+    "title": "Reordenar conversas",
     "hint": "Arraste as alças, use as teclas de seta ou mova as entradas com os botões de seta. Isso só altera a ordem de exibição.",
     "alphabetical": "Sort A-Z (Ordenar A-Z)",
     "default": "Pedido padrão",
     "drag": "Arraste {{name}}",
     "up": "Mover {{name}} para cima",
     "down": "Mover {{name}} para baixo",
-    "saveFailed": "Não foi possível salvar o pedido. Tente novamente."
+    "saveFailed": "Não foi possível salvar a ordem. Tente novamente."
   },
   "radioChatSync": {
     "sync": "Sincronizar chats do rádio",

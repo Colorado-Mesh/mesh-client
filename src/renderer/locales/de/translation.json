@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Dieses Gerät hat nur {{count}} Aufhol-WASM-Thread (s). Zusammenfassungen von heruntergeladenen Modellen benötigen in der Regel etwa 6 oder mehr, um gut zu laufen, und werden hier länger dauern. Bevorzugen Sie einen anderen Motor oder erhöhen Sie die Zeitüberschreitung unten."
   },
   "chatOrder": {
-    "title": "Bestell-Chats",
+    "title": "Chats sortieren",
     "hint": "Ziehen Sie die Griffe, verwenden Sie Pfeiltasten oder verschieben Sie Einträge mit den Pfeiltasten. Dies ändert nur ihre Anzeigereihenfolge.",
     "alphabetical": "Von A-Z sortieren",
     "default": "Standardsortierung",
     "drag": "Ziehen {{name}}",
     "up": "{{name}} nach oben verschieben",
     "down": "{{name}} nach unten verschieben",
-    "saveFailed": "Die Bestellung konnte nicht gespeichert werden. Versuchen Sie es erneut."
+    "saveFailed": "Die Reihenfolge konnte nicht gespeichert werden. Versuchen Sie es erneut."
   },
   "radioChatSync": {
     "sync": "Chats aus dem Radio synchronisieren",

@@ -7848,14 +7848,14 @@
     "lowThreadBudgetWarning": "To urządzenie ma tylko {{count}} nadrobić zaległości w wątkach WASM. Podsumowania pobranych modeli zwykle potrzebują około 6 lub więcej, aby działać dobrze i potrwa to dłużej. Preferuj inny silnik lub zwiększ limit czasu poniżej."
   },
   "chatOrder": {
-    "title": "Zamów czaty",
+    "title": "Zmień kolejność czatów",
     "hint": "Przeciągnij uchwyty, użyj klawiszy strzałek lub przesuń wpisy za pomocą przycisków strzałek. Spowoduje to tylko zmianę kolejności wyświetlania.",
     "alphabetical": "Sortuj od A do Z",
     "default": "Kolejność domyślna",
     "drag": "Przeciągnij {{name}}",
     "up": "Przenieś {{name}} w górę",
     "down": "Przenieś {{name}} w dół",
-    "saveFailed": "Nie można zapisać zamówienia. Spróbuj ponownie."
+    "saveFailed": "Nie udało się zapisać kolejności. Spróbuj ponownie."
   },
   "radioChatSync": {
     "sync": "Synchronizuj czaty z radiem",

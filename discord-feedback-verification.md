@@ -65,6 +65,7 @@ Keychain. This is not physical radio or native credential-storage validation.
   exposed an unavailable native Keychain, test navigation/selector mistakes, invalid synthetic
   public keys and an unsupported identity-export response. Those test issues were corrected;
   the real frame normalization and setup-wait paths were also exercised and fixed.
+- Translation review corrected ambiguous purchase-order wording in the new ordering labels.
 - Latest focused persistence/capacity run: 28 tests in two suites passed.
 - Actual RRC browser validation passed cross-group A–Z, sidebar order, reload persistence,
   mobile move/save and no page errors. Synthetic hub state; no live hub connected.
@@ -77,15 +78,15 @@ Keychain. This is not physical radio or native credential-storage validation.
 - Production build passed. Exact final revision checks, hooks, pushed-content verification and
   hosted results are tracked below.
 
-| Completion gate                              | Result  | Evidence / remaining work                                        |
-| -------------------------------------------- | ------- | ---------------------------------------------------------------- |
-| Final full request/diff/checklist audit      | pending | Recheck after final fixes                                        |
-| Final check:pr and required scanners         | pending | Must run against rebased implementation                          |
-| Final production build and Electron journeys | passed  | Rebased production build; 5 Electron tests passed                |
-| Final dedicated review                       | passed  | No remaining material issues; 28 regression tests passed         |
-| Draft PR and remote commit/diff verification | pending | No merge or release authorized                                   |
-| CodeRabbit                                   | pending | Monitor exact PR head; fix relevant actionable findings          |
-| CodeQL and CI                                | pending | Monitor exact PR head; unavailable/skipped checks are not passes |
+| Completion gate                              | Result  | Evidence / remaining work                                              |
+| -------------------------------------------- | ------- | ---------------------------------------------------------------------- |
+| Final full request/diff/checklist audit      | passed  | Request, callers, storage, platform/protocol coverage and diff audited |
+| Final check:pr and required scanners         | pending | Must run against rebased implementation                                |
+| Final production build and Electron journeys | passed  | Rebased production build; 5 Electron tests passed                      |
+| Final dedicated review                       | passed  | No remaining material issues; 28 regression tests passed               |
+| Draft PR and remote commit/diff verification | pending | No merge or release authorized                                         |
+| CodeRabbit                                   | pending | Monitor exact PR head; fix relevant actionable findings                |
+| CodeQL and CI                                | pending | Monitor exact PR head; unavailable/skipped checks are not passes       |
 
 The physical Windows BLE failure is not claimed fixed or fully verified. Test it by installing
 this PR build on Windows with the affected companion: close the official app, scan with and

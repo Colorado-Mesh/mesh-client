@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Cet appareil n'a que {{count}} fil(s) de rattrapage WASM. Les résumés de modèles téléchargés ont généralement besoin d'environ 6 ou plus pour bien fonctionner et prendront plus de temps ici. Préférez un autre moteur ou augmentez le délai d'attente ci-dessous."
   },
   "chatOrder": {
-    "title": "Commander des chats",
+    "title": "Réorganiser les discussions",
     "hint": "Faites glisser les poignées, utilisez les touches fléchées ou déplacez les entrées à l'aide des boutons fléchés. Cela ne fait que modifier leur ordre d'affichage.",
     "alphabetical": "Trier de A à Z",
     "default": "Commande par défaut",
     "drag": "Drag {{name}}",
     "up": "Déplacer {{name}} vers le haut",
     "down": "Déplacer {{name}} vers le bas",
-    "saveFailed": "Impossible d'enregistrer la commande. Réessayez."
+    "saveFailed": "Impossible d'enregistrer l'ordre des discussions. Réessayez."
   },
   "radioChatSync": {
     "sync": "Synchroniser les discussions à partir de la radio",

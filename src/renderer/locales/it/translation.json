@@ -7720,7 +7720,7 @@
     "lowThreadBudgetWarning": "Questo dispositivo ha solo {{count}} Recupera thread WASM. I riepiloghi dei modelli scaricati di solito ne richiedono circa 6 o più per funzionare bene e richiederanno più tempo qui. Preferisci un altro motore o aumenta il timeout qui sotto."
   },
   "chatOrder": {
-    "title": "Ordina chat",
+    "title": "Riordina le chat",
     "hint": "Trascina le maniglie, usa i tasti freccia o sposta le voci con i pulsanti freccia. Questo cambia solo il loro ordine di visualizzazione.",
     "alphabetical": "Ordinamento A-Z",
     "default": "Ordinamento predefinito",

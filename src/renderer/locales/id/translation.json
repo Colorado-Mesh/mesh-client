@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Perangkat ini hanya memiliki {{count}} Tangkap utas WASM. Ringkasan model yang diunduh biasanya membutuhkan sekitar 6 atau lebih untuk berjalan dengan baik dan akan memakan waktu lebih lama di sini. Pilih mesin lain, atau naikkan batas waktu di bawah ini."
   },
   "chatOrder": {
-    "title": "Pesan obrolan",
+    "title": "Atur urutan obrolan",
     "hint": "Seret gagang, gunakan tombol panah, atau pindahkan entri dengan tombol panah. Ini hanya mengubah urutan tampilan mereka.",
     "alphabetical": "Urutkan A - Z",
     "default": "Susunan Urutan Asal",
     "drag": "Seret {{name}}",
     "up": "Pindahkan {{name}} ke atas",
     "down": "Pindahkan {{name}} ke bawah",
-    "saveFailed": "Tidak dapat menyimpan pesanan. Coba lagi."
+    "saveFailed": "Tidak dapat menyimpan urutan. Coba lagi."
   },
   "radioChatSync": {
     "sync": "Sinkronkan obrolan dari radio",

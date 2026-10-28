@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Dit apparaat heeft slechts {{count}} WASM-draad (en). Gedownloade modeloverzichten hebben meestal ongeveer 6 of meer nodig om goed te werken en zullen hier langer duren. Geef de voorkeur aan een andere motor of verhoog de time-out hieronder."
   },
   "chatOrder": {
-    "title": "Chats bestellen",
+    "title": "Chats ordenen",
     "hint": "Sleep de grepen, gebruik de pijltjestoetsen of verplaats items met de pijltjestoetsen. Dit verandert alleen de weergavevolgorde.",
     "alphabetical": "Sorteren [A -> Z]",
     "default": "Standaard volgorde",
     "drag": "Sleep {{name}}",
     "up": "{{name}} omhoog verplaatsen",
     "down": "{{name}} omlaag verplaatsen",
-    "saveFailed": "Kon de bestelling niet opslaan. Probeer het opnieuw."
+    "saveFailed": "De volgorde kon niet worden opgeslagen. Probeer het opnieuw."
   },
   "radioChatSync": {
     "sync": "Chats synchroniseren vanaf de radio",

@@ -7796,14 +7796,14 @@
     "lowThreadBudgetWarning": "Toto zařízení má pouze {{count}} Dohnat WASM vlákna. Souhrny stažených modelů obvykle potřebují asi 6 nebo více, aby fungovaly dobře, a zde to bude trvat déle. Preferujte jiný motor nebo zvyšte časový limit níže."
   },
   "chatOrder": {
-    "title": "Objednat chaty",
+    "title": "Změnit pořadí chatů",
     "hint": "Přetáhněte úchyty, použijte klávesy se šipkami nebo přesuňte položky pomocí tlačítek se šipkami. Tím se změní pouze jejich pořadí zobrazení.",
     "alphabetical": "Seřadit: A-Z",
     "default": "Výchozí pořadí",
     "drag": "Přetáhnout {{name}}",
     "up": "Posunout {{name}} nahoru",
     "down": "Posunout {{name}} dolů",
-    "saveFailed": "Objednávku se nepodařilo uložit. Zkuste to znovu."
+    "saveFailed": "Pořadí se nepodařilo uložit. Zkuste to znovu."
   },
   "radioChatSync": {
     "sync": "Synchronizovat chaty z rádia",

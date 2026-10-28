@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "Bu cihazda yalnızca {{count}} WASM ileti dizilerini yakalayın. İndirilen model özetlerinin iyi çalışması için genellikle yaklaşık 6 veya daha fazlasına ihtiyaç vardır ve burada daha uzun sürecektir. Başka bir motor tercih edin veya aşağıdaki zaman aşımını artırın."
   },
   "chatOrder": {
-    "title": "Sohbet siparişi verin",
+    "title": "Sohbetleri sırala",
     "hint": "Tutamaçları sürükleyin, ok tuşlarını kullanın veya ok düğmeleriyle girişleri taşıyın. Bu yalnızca görüntüleme sırasını değiştirir.",
     "alphabetical": "A'dan Z'ye Sırala",
     "default": "Varsayılan Sıralama",
     "drag": "Sürükle {{name}}",
     "up": "{{name}} yukarı taşı",
     "down": "{{name}} aşağı taşı",
-    "saveFailed": "Sipariş kaydedilemedi. Tekrar deneyin."
+    "saveFailed": "Sıralama kaydedilemedi. Tekrar deneyin."
   },
   "radioChatSync": {
     "sync": "Radyodaki sohbetleri senkronize et",

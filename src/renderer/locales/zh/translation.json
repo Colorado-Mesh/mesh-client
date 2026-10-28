@@ -7720,14 +7720,14 @@
     "lowThreadBudgetWarning": "此设备只有{{count}}个追赶WASM线程。下载的模型摘要通常需要大约6个或更多才能正常运行，并且在这里需要更长的时间。首选其他引擎，或提高下面的超时时间。"
   },
   "chatOrder": {
-    "title": "订单聊天",
+    "title": "调整聊天顺序",
     "hint": "拖动手柄、使用箭头键或使用箭头按钮移动条目。这只会更改其显示顺序。",
     "alphabetical": "按A-Z排序",
     "default": "默认排序",
     "drag": "拖动{{name}}",
     "up": "将{{name}}上移",
     "down": "下移{{name}}",
-    "saveFailed": "无法保存订单。请重试。"
+    "saveFailed": "无法保存顺序。请重试。"
   },
   "radioChatSync": {
     "sync": "从收音机同步聊天",
