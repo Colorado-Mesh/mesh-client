@@ -82,6 +82,8 @@ describe('MeshcoreChatChannelManager', () => {
 
     expect(props.onSetChannel).not.toHaveBeenCalled();
     expect(props.onSelectChannel).toHaveBeenCalledWith(0);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('#general is already added.')).toBeVisible();
   });
 
   it('adds a private channel with its supplied key and unprefixed name', async () => {
@@ -142,6 +144,8 @@ describe('MeshcoreChatChannelManager', () => {
       if (sameKey) {
         expect(props.onSetChannel).not.toHaveBeenCalled();
         expect(props.onSelectChannel).toHaveBeenCalledWith(0);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByText('#team is already added.')).toBeVisible();
       } else {
         await waitFor(() => {
           expect(props.onSetChannel).toHaveBeenCalledWith(

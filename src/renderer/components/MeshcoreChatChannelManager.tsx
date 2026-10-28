@@ -137,7 +137,9 @@ export default function MeshcoreChatChannelManager({
     });
     if (existing) {
       onSelectChannel(existing.index);
-      finishAdd(t('radioPanel.meshcoreChannel.alreadyAdded', { name: normalizedName }));
+      const message = t('radioPanel.meshcoreChannel.alreadyAdded', { name: normalizedName });
+      if (!keepOpen) addToast(message, 'success');
+      finishAdd(message);
       return;
     }
 

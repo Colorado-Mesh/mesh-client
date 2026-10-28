@@ -40,6 +40,13 @@ test('repeat add channels: opt-in, private/public, duplicates, retries, busy gua
   expect(radio.getChannel(3).name).toBe('#one');
 
   await add.click();
+  await name.fill('one');
+  await save.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('#one is already added.', { exact: true })).toBeVisible();
+  expect(radio.commands.filter((command) => command === 32)).toHaveLength(1);
+
+  await add.click();
   await repeat.click();
   for (const channel of ['two', 'three', 'two']) {
     await name.fill(channel);
@@ -69,6 +76,7 @@ test('repeat add channels: opt-in, private/public, duplicates, retries, busy gua
   await expect(repeat).toBeChecked();
   radio.setSaveFailure(false);
   radio.holdSaves(true);
+  const writesBeforeHeldSave = radio.commands.filter((command) => command === 32).length;
   await save.click();
   await expect(dialog).toHaveAttribute('aria-busy', 'true');
   await expect(dialog.getByRole('button', { name: 'Saving...' })).toBeDisabled();
@@ -77,7 +85,8 @@ test('repeat add channels: opt-in, private/public, duplicates, retries, busy gua
   await name.press('Enter');
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
-  const writes = radio.commands.filter((command) => command === 32).length;
+  const writes = writesBeforeHeldSave + 1;
+  await expect.poll(() => radio.commands.filter((command) => command === 32).length).toBe(writes);
   radio.holdSaves(false);
   await expect(name).toHaveValue('');
   await expect(key).toHaveValue('');
@@ -105,6 +114,15 @@ test('repeat add channels: opt-in, private/public, duplicates, retries, busy gua
   await expect(privateMode).not.toBeChecked();
   await expect(name).toHaveValue('');
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+
+  await add.click();
+  await privateMode.check();
+  await name.fill('Team');
+  await key.fill('ab'.repeat(16));
+  await save.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('Team is already added.', { exact: true })).toBeVisible();
+  expect(radio.commands.filter((command) => command === 32)).toHaveLength(writes);
 
   for (const [width, height, scale] of [
     [1024, 768, 1],
