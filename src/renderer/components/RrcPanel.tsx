@@ -1518,7 +1518,7 @@ export default function RrcPanel({
             {listToggleBadge}
           </span>
         ) : null}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-3/4 md:basis-0">
           <h2 className="text-ink-100 truncate text-sm font-semibold">{headerTitle}</h2>
           <p className="text-muted flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
             <span className="inline-flex items-center gap-1.5">
@@ -1538,7 +1538,7 @@ export default function RrcPanel({
           </p>
         </div>
         {connected && (
-          <div className="flex items-center gap-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5">
             <IconButton
               aria-label={t('rrc.toggleTimestamps')}
               aria-pressed={showTimestamps}
