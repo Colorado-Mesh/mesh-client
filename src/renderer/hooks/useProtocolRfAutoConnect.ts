@@ -365,7 +365,12 @@ export function useProtocolRfAutoConnect({
     return () => {
       cancelled = true;
     };
-  }, [enabled, protocol, state.status]);
+    // Intentionally omit state.status: connectAutomatic → prepareRfConnect flips status to
+    // connecting and must not re-run cleanup (that would set cancelled and skip serial→BLE
+    // fallback). Cancel only on unmount / enabled|protocol change, or via
+    // cancelProtocolRfAutoConnect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see comment above
+  }, [enabled, protocol]);
 
   useEffect(
     () => () => {

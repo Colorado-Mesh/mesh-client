@@ -528,6 +528,56 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     },
   );
 
+  it('falls back to BLE after serial fails even when prepareRfConnect flips status to connecting', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'serial',
+      serialPortId: 'port-1',
+      bleDeviceId: 'ble-fallback',
+      bleDeviceName: 'Radio',
+    });
+    mocks.loadLastBleDeviceId.mockReturnValue('ble-fallback');
+
+    let rejectSerial!: (error: Error) => void;
+    const serialAttempt = new Promise<void>((_resolve, reject) => {
+      rejectSerial = reject;
+    });
+    const connectAutomatic = vi
+      .fn()
+      .mockImplementationOnce(() => serialAttempt)
+      .mockResolvedValue(undefined);
+
+    const { rerender } = renderHook(
+      ({ state }) => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshcore',
+          state,
+          connectAutomatic,
+        });
+      },
+      { initialProps: { state: disconnected } },
+    );
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('serial', undefined, 'port-1');
+    });
+
+    // prepareRfConnect sets connecting mid-attempt — must not cancel serial→BLE fallback.
+    rerender({
+      state: {
+        ...disconnected,
+        status: 'connecting',
+        connectionType: 'serial',
+      },
+    });
+
+    rejectSerial(new Error('Serial auto-connect failed'));
+
+    await waitFor(() => {
+      expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'ble-fallback');
+    });
+    expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
+  });
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'auto-connects primary GATT BLE happy path (%s)',
     async (platform) => {
