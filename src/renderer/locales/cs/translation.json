@@ -6840,7 +6840,11 @@
       "throttledToast": "Umlčení opakovaných nouzových výstrah od {{sender}}. Jejich hlášení se stále zobrazují na kartě Incident.",
       "throttledBlock": "Blokovat tohoto odesilatele",
       "floodToast": "Mnoho stanic odesílá nouzová hlášení najednou. Další výstražné tóny jsou krátce pozastaveny; zkontrolujte kartu Incident (Incident)."
-    }
+    },
+    "atakDrill": "DRILL (VRTÁK)",
+    "atakPeople_one": "{{count}} osoba",
+    "atakPeople_few": "{{count}} osoby",
+    "atakPeople_other": "{{count}} osob"
   },
   "notificationSounds": {
     "title": "Tóny oznámení",

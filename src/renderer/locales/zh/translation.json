@@ -6779,7 +6779,10 @@
       "throttledToast": "将来自{{sender}}的重复紧急警报静音。他们的报告仍会显示在“事件”标签卡中。",
       "throttledBlock": "封鎖寄件人",
       "floodToast": "许多车站同时发送紧急报告。进一步的警报提示音将暂停；请检查事件选项卡。"
-    }
+    },
+    "atakDrill": "钻头",
+    "atakPeople_one": "{{count}}人",
+    "atakPeople_other": "{{count}}人"
   },
   "notificationSounds": {
     "title": "通知提示音",

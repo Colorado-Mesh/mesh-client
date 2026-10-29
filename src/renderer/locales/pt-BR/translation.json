@@ -6779,7 +6779,10 @@
       "throttledToast": "Silenciar alertas de emergência repetidos de {{sender}}. Seus relatórios ainda aparecem na guia Incidente.",
       "throttledBlock": "Bloquear remetente",
       "floodToast": "Muitas estações estão enviando relatórios de emergência de uma só vez. Outros tons de alerta são pausados brevemente; verifique a guia Incidente."
-    }
+    },
+    "atakDrill": "EXERCÍCIO",
+    "atakPeople_one": "{{count}} pessoa",
+    "atakPeople_other": "{{count}} pessoas"
   },
   "notificationSounds": {
     "title": "Tons de notificação",

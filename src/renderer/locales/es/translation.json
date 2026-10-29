@@ -6779,7 +6779,10 @@
       "throttledToast": "Cómo silenciar las alertas de emergencia repetidas de {{sender}}. Sus informes siguen apareciendo en la pestaña Incidencia.",
       "throttledBlock": "Bloquear remitente",
       "floodToast": "Muchas estaciones están enviando informes de emergencia a la vez. Los tonos de alerta adicionales se pausan brevemente; consulte la pestaña Incidencia."
-    }
+    },
+    "atakDrill": "TALADRO",
+    "atakPeople_one": "{{count}} persona",
+    "atakPeople_other": "{{count}} personas"
   },
   "notificationSounds": {
     "title": "Tonos de notificación",

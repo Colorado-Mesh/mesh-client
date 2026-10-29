@@ -6779,7 +6779,10 @@
       "throttledToast": "Membungkam peringatan darurat berulang dari {{sender}}. Laporan mereka masih muncul di tab Insiden.",
       "throttledBlock": "Blokir Pengirim",
       "floodToast": "Banyak stasiun yang mengirimkan laporan darurat sekaligus. Nada peringatan lebih lanjut dijeda sebentar; periksa tab Insiden."
-    }
+    },
+    "atakDrill": "Bor",
+    "atakPeople_one": "{{count}} orang",
+    "atakPeople_other": "{{count}} orang"
   },
   "notificationSounds": {
     "title": "Nada notifikasi",

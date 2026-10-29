@@ -86,6 +86,17 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 - Only reports heard over RF are bridged (not MQTT-only), and never your own reports, history, or drills. A loop guard prevents ping-ponging the same report.
 - After each bridged report, a short plain-text notice follows: `MECP from <sender> via <Meshtastic|MeshCore> (<channel name>)`.
 
+## Reports in ATAK
+
+When the TAK server is running and a channel is served to ATAK (or direct messages are on for the radio), an MECP report heard there reaches ATAK in words, in the app's language, with its code line kept below it, the same way MeshCore TAK Bridge shows one:
+
+```
+🆘 MAYDAY: Injury · Fracture / immobile · 2 people · 48.6520, 20.1305
+MECP/0/M01 M07 2pax 48.6520,20.1305
+```
+
+A drill starts with `DRILL`. Anything else is passed on to ATAK as it is.
+
 ## Operational alerts
 
 **App → Notifications** has ops alerts for nodes you mark as watched:

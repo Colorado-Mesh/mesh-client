@@ -6779,7 +6779,10 @@
       "throttledToast": "Wiederholte Notfallwarnungen von {{sender}} werden zum Schweigen gebracht. Ihre Berichte werden weiterhin auf der Registerkarte Vorfall angezeigt.",
       "throttledBlock": "Absender blockieren",
       "floodToast": "Viele Stationen senden sofort Notfallberichte. Weitere Alarmtöne werden kurz pausiert; überprüfen Sie die Registerkarte Vorfall."
-    }
+    },
+    "atakDrill": "BOHREN",
+    "atakPeople_one": "{{count}} Person",
+    "atakPeople_other": "{{count}} Personen"
   },
   "notificationSounds": {
     "title": "Benachrichtigungstöne",
