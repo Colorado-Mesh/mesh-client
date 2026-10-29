@@ -4,7 +4,6 @@ import { reconnectBleWithScan } from '@/renderer/lib/bleReconnectHelper';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   clearStoredBleSelection,
-  type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
   notifyBleSelectionCleared,
@@ -257,14 +256,15 @@ export function useProtocolRfAutoConnect({
         console.warn(
           `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
         );
-        const bleLast: LastConnection = {
-          type: 'ble',
-          bleDeviceId: lastBleId,
-          bleDeviceName: lastConnection.bleDeviceName,
-        };
-        saveLastConnection(protocol, bleLast);
         runBleAutoConnect(lastBleId)
           .then(() => {
+            // Promote to BLE only after fallback succeeds so a failed attempt keeps
+            // the remembered serial selection for the next cold start.
+            saveLastConnection(protocol, {
+              type: 'ble',
+              bleDeviceId: lastBleId,
+              bleDeviceName: lastConnection.bleDeviceName,
+            });
             clearAutoConnectTimeout();
             notifyPrimaryAutoConnectSettledIfNeeded(protocol);
           })
