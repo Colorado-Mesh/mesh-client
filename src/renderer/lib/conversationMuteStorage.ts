@@ -79,10 +79,12 @@ function notificationDeviceSignature(protocol: MeshProtocol): string {
   const ready = protocol === 'meshtastic' ? /^meshtastic:node:\d+$/ : /^meshcore:pk:[0-9a-f]{64}$/i;
   const primaryConnection = id ? useConnectionStore.getState().connections[id] : undefined;
   const connection = notificationConnection(protocol);
+  // The MQTT namespace is for sessions with no confirmed radio. Once a radio has finalized
+  // its signature, its mutes keep applying to MQTT traffic after the radio disconnects.
   if (
     connection?.status === 'disconnected' &&
     connection.mqttStatus === 'connected' &&
-    (!signature || ready.test(signature)) &&
+    !signature &&
     (!primaryConnection || primaryConnection.status === 'disconnected')
   ) {
     const clientId = mqttClientIds.get(protocol);
@@ -99,6 +101,12 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
   if (protocol === 'reticulum') return null;
   const device = notificationDeviceSignature(protocol);
   if (!device) return null;
+  if (protocol === 'meshtastic' && device.includes(':mqtt:client:')) {
+    // Canonical MQTT settings own this namespace; a stale RF map must not. They do not
+    // depend on myNodeNum, which a disconnect or failed connect resets to 0.
+    const keys = notificationMqttChannelKeys();
+    return Object.keys(keys).length > 0 ? keys : null;
+  }
   const live = getLiveChannelKeys(protocol);
   const radioNodeId = device.includes(':mqtt:client:')
     ? notificationConnection(protocol)?.myNodeNum
@@ -110,11 +118,6 @@ function notificationChannelKeys(protocol: MeshProtocol): Readonly<Record<number
           ),
         );
   if (radioNodeId == null || radioNodeId <= 0) return null;
-  if (protocol === 'meshtastic' && device.includes(':mqtt:client:')) {
-    // Canonical MQTT settings own this namespace; a stale RF map must not.
-    const keys = notificationMqttChannelKeys();
-    return Object.keys(keys).length > 0 ? keys : null;
-  }
   if (live?.radioNodeId != null && live.radioNodeId !== radioNodeId) return null;
   if (live?.radioNodeId === radioNodeId && Object.keys(live.keyByIndex).length > 0) {
     retainedLayouts.set(device, live.keyByIndex);
@@ -269,10 +272,12 @@ export function saveConversationMutes(
 
 /** Bind old slot-based choices once discovery supplies a stable conversation identity.
  * The legacy document stays intact for rollback; migration metadata prevents it leaking
- * into a different radio/channel after a successful atomic save.
+ * into a different radio/channel after a successful atomic save. An MQTT-only session
+ * never claims them: they stay projected there until the first confirmed radio binds them.
  */
 export function migrateLegacyConversationMutes(protocol: MeshProtocol): boolean {
   try {
+    if (notificationDeviceSignature(protocol).includes(':mqtt:client:')) return false;
     const raw = localStorage.getItem(`mesh-client:mutedViews:${protocol}`);
     if (!raw) return false;
     const legacy: unknown = JSON.parse(raw);

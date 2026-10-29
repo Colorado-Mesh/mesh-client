@@ -254,8 +254,83 @@ describe('stable conversation mutes', () => {
     clearMeshcorePubKeyRegistry();
     setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
     setConversationMuteMqttClientId('meshcore', 'meshcore-mqtt-' + 'a'.repeat(16));
-    expect(toggle('dm:194')).toBe(true);
+    // The radio mute keeps applying while MQTT carries traffic after the disconnect.
     expect(loadMutedViews('meshcore')).toEqual(new Set(['dm:194']));
+    expect(toggle('dm:194')).toBe(true);
+    expect(loadMutedViews('meshcore').size).toBe(0);
+    expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).not.toContain(':mqtt:client:');
+  });
+
+  it('keeps Meshtastic radio channel and DM mutes while MQTT continues after a disconnect', () => {
+    useIdentityStore.setState({
+      activeIdentityId: 'radio',
+      identities: {
+        radio: {
+          id: 'radio',
+          protocol: meshtasticProtocol,
+          signature: 'meshtastic:node:1',
+          transports: [],
+          createdAt: 1,
+          lastSeenAt: 1,
+        },
+      },
+    });
+    setLiveChannelKeys('meshtastic', { radioNodeId: 1, keyByIndex: { 0: 'channel-a' } });
+    expect(saveConversationMutes('meshtastic', new Set(), new Set(['ch:0', 'dm:5']))).toBe(true);
+    // An explicit disconnect resets myNodeNum to 0 and clears the live map; MQTT stays up.
+    setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+    setConversationMuteMqttClientId('meshtastic', 'meshtastic-electron-' + 'a'.repeat(16));
+    setLiveChannelKeys('meshtastic', null);
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['ch:0', 'dm:5']));
+    expect(saveConversationMutes('meshtastic', new Set(['ch:0', 'dm:5']), new Set(['dm:5']))).toBe(
+      true,
+    );
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['dm:5']));
+  });
+
+  it('saves Meshtastic MQTT-only channel mutes after a failed connect resets myNodeNum', () => {
+    device();
+    useIdentityStore.setState((state) => ({
+      identities: {
+        radio: { ...state.identities.radio, protocol: meshtasticProtocol, signature: '' },
+      },
+    }));
+    setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+    setConversationMuteMqttClientId('meshtastic', 'meshtastic-electron-' + 'a'.repeat(16));
+    setLiveChannelKeys('meshtastic', null);
+    expect(saveConversationMutes('meshtastic', new Set(), new Set(['ch:0']))).toBe(true);
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['ch:0']));
+  });
+
+  it('leaves legacy mutes for the first radio when MQTT connects first after an upgrade', () => {
+    useIdentityStore.setState({
+      activeIdentityId: 'radio',
+      identities: {
+        radio: {
+          id: 'radio',
+          protocol: meshtasticProtocol,
+          signature: '',
+          transports: [],
+          createdAt: 1,
+          lastSeenAt: 1,
+        },
+      },
+    });
+    setConnection('radio', { status: 'disconnected', mqttStatus: 'connected', myNodeNum: 0 });
+    setConversationMuteMqttClientId('meshtastic', 'meshtastic-electron-' + 'a'.repeat(16));
+    localStorage.setItem('mesh-client:mutedViews:meshtastic', '["dm:5","ch:0"]');
+    expect(migrateLegacyConversationMutes('meshtastic')).toBe(false);
+    expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).toBeNull();
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['dm:5', 'ch:0']));
+
+    useIdentityStore.setState((state) => ({
+      identities: { radio: { ...state.identities.radio, signature: 'meshtastic:node:1' } },
+    }));
+    setConnection('radio', { status: 'configured' });
+    setLiveChannelKeys('meshtastic', { radioNodeId: 1, keyByIndex: { 0: 'channel-a' } });
+    expect(migrateLegacyConversationMutes('meshtastic')).toBe(true);
+    expect(localStorage.getItem(CONVERSATION_MUTES_KEY)).toContain('meshtastic:node:1');
+    expect(loadMutedViews('meshtastic')).toEqual(new Set(['dm:5', 'ch:0']));
   });
 
   it('refuses MQTT migration while a separate primary RF identity is connecting', () => {

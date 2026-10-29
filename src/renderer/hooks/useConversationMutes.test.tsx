@@ -76,7 +76,7 @@ it('keeps both views unchanged on failure and exposes a retryable error', () => 
   expect(view.result.current[0]).toEqual(new Set(['ch:0']));
 });
 
-it('hydrates MQTT identity before legacy migration and ignores a stale initial response', async () => {
+it('hydrates MQTT identity, leaves legacy mutes unmigrated and ignores a stale response', async () => {
   let completeInitial: (id: string) => void = () => {};
   let clientEvent: Parameters<typeof window.electronAPI.mqtt.onClientId>[0] = () => {};
   const unsubscribe = vi.fn();
@@ -106,12 +106,14 @@ it('hydrates MQTT identity before legacy migration and ignores a stale initial r
     await Promise.resolve();
   });
   expect(view.result.current[0]).toEqual(new Set(['room:192']));
-  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).toContain('a'.repeat(16));
-  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).not.toContain('b'.repeat(16));
+  // An MQTT-only session leaves legacy mutes for the first confirmed radio to claim.
+  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).toBeNull();
   act(() => {
     view.result.current[1](new Set());
   });
   expect(view.result.current[0].size).toBe(0);
+  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).toContain('a'.repeat(16));
+  expect(localStorage.getItem('mesh-client:conversationMutes:v1')).not.toContain('b'.repeat(16));
   view.unmount();
   expect(unsubscribe).toHaveBeenCalledOnce();
 });
