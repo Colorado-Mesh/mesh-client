@@ -1101,6 +1101,49 @@ describe('TakServerManager incident markers', () => {
     expect(spots(late)).toHaveLength(1);
   });
 
+  /** The manager's own state, for the stop tests. */
+  interface StopInternals {
+    server: { close: () => void } | null;
+    remote: { stop: () => void; removeAllListeners: () => void; isConnected: () => boolean } | null;
+    incidentMarkers: Map<string, TakIncidentMarker>;
+    incidentMarkerTimer: unknown;
+  }
+  const stub = (manager: TakServerManager) => manager as unknown as StopInternals;
+  const remoteStub = () => ({
+    stop: vi.fn(),
+    removeAllListeners: vi.fn(),
+    isConnected: () => true,
+  });
+
+  it('forgets its markers when the server stops and no other sink is left', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    manager.setIncidentMarkers([MARKER]);
+    manager.stop();
+    expect(stub(manager).incidentMarkers.size).toBe(0);
+    expect(stub(manager).incidentMarkerTimer).toBeNull();
+  });
+
+  it('keeps them while the remote server is still up, and forgets them when it stops', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stop();
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+    manager.stopRemote();
+    expect(stub(manager).incidentMarkers.size).toBe(0);
+  });
+
+  it('keeps them when only the remote server stops', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stopRemote();
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+  });
+
   it('refreshes open markers before they go stale, and stops once there are none', () => {
     const manager = chatManager();
     const a = connect(manager, ['ANDROID-1', 'VIPER']);

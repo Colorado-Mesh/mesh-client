@@ -360,6 +360,7 @@ export class TakServerManager extends EventEmitter {
     remote.stop();
     remote.removeAllListeners();
     this.contacts.removeSource('remote');
+    if (!this.server) this.clearIncidentMarkers();
   }
 
   getConnectedClients(): TAKClientInfo[] {
@@ -437,6 +438,7 @@ export class TakServerManager extends EventEmitter {
     this.server = null;
     this.contacts.removeSource('local');
     this.channelReplies.clear();
+    if (!this.remote) this.clearIncidentMarkers();
     this._status = { running: false, port: this.settings?.port ?? 8089, clientCount: 0 };
     this.emit('status', this.getStatus());
     console.debug('[TakServer] Stopped');
@@ -810,6 +812,18 @@ export class TakServerManager extends EventEmitter {
     }
     this.incidentMarkers = next;
     this.scheduleIncidentMarkerRefresh();
+  }
+
+  /**
+   * Forget the incident markers once no sink is left. The renderer sends the current list again
+   * when a sink starts; while one is still up it keeps the list current, so it is kept.
+   */
+  private clearIncidentMarkers(): void {
+    this.incidentMarkers.clear();
+    if (this.incidentMarkerTimer) {
+      clearInterval(this.incidentMarkerTimer);
+      this.incidentMarkerTimer = null;
+    }
   }
 
   /** Refresh the incident markers inside their stale time while there are any. */
