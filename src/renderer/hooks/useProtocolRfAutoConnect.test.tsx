@@ -59,6 +59,8 @@ vi.mock('@/renderer/lib/sessions/meshcoreSession', () => ({
   tryGetMeshcoreSession: mocks.tryGetMeshcoreSession,
 }));
 
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
+
 import { useProtocolRfAutoConnect } from './useProtocolRfAutoConnect';
 
 const disconnected: DeviceState = {
@@ -489,41 +491,45 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     });
   });
 
-  it('falls back to Noble BLE when serial auto-connect fails and lastBleDevice exists', async () => {
-    mocks.loadLastConnection.mockReturnValue({
-      type: 'serial',
-      serialPortId: 'port-1',
-      bleDeviceId: 'ble-fallback',
-      bleDeviceName: 'Radio',
-    });
-    mocks.loadLastBleDeviceId.mockReturnValue('ble-fallback');
-    const connectAutomatic = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('Serial auto-connect failed'))
-      .mockResolvedValue(undefined);
-
-    renderHook(() => {
-      useProtocolRfAutoConnect({
-        protocol: 'meshcore',
-        state: disconnected,
-        connectAutomatic,
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'falls back to GATT BLE when serial auto-connect fails and lastBleDevice exists (%s)',
+    async (platform) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      mocks.loadLastConnection.mockReturnValue({
+        type: 'serial',
+        serialPortId: 'port-1',
+        bleDeviceId: 'ble-fallback',
+        bleDeviceName: 'Radio',
       });
-    });
+      mocks.loadLastBleDeviceId.mockReturnValue('ble-fallback');
+      const connectAutomatic = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Serial auto-connect failed'))
+        .mockResolvedValue(undefined);
 
-    await waitFor(() => {
-      expect(mocks.saveLastConnection).toHaveBeenCalledWith(
-        'meshcore',
-        expect.objectContaining({ type: 'ble', bleDeviceId: 'ble-fallback' }),
-      );
-    });
-    await waitFor(() => {
-      expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'ble-fallback');
-    });
-    expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
-  });
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshcore',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
 
-  it.each(['darwin', 'win32'] as const)(
-    'auto-connects primary Noble BLE happy path (%s)',
+      await waitFor(() => {
+        expect(mocks.saveLastConnection).toHaveBeenCalledWith(
+          'meshcore',
+          expect.objectContaining({ type: 'ble', bleDeviceId: 'ble-fallback' }),
+        );
+      });
+      await waitFor(() => {
+        expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'ble-fallback');
+      });
+      expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'auto-connects primary GATT BLE happy path (%s)',
     async (platform) => {
       vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
       mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'primary-ble' });
@@ -545,8 +551,8 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     },
   );
 
-  it.each(['darwin', 'win32'] as const)(
-    'settles dual-radio primary gate after Noble BLE auto-connect succeeds (%s)',
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'settles dual-radio primary gate after GATT BLE auto-connect succeeds (%s)',
     async (platform) => {
       vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
       mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'primary-ble' });
@@ -571,10 +577,10 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     },
   );
 
-  it('skips remembered BLE cold-start on Linux', async () => {
+  it('auto-connects remembered GATT BLE cold start on Linux', async () => {
     vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('linux');
     mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'linux-ble' });
-    const connectAutomatic = vi.fn();
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
 
     renderHook(() => {
       useProtocolRfAutoConnect({
@@ -586,12 +592,60 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
 
     await waitFor(() => {
       expect(mocks.tryGetMeshtasticSession).toHaveBeenCalled();
+      expect(connectAutomatic).toHaveBeenCalledWith('ble', undefined, undefined, 'linux-ble');
     });
-    expect(connectAutomatic).not.toHaveBeenCalled();
-    expect(mocks.awaitReticulumBleCoexistenceClear).not.toHaveBeenCalled();
+    expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
   });
 
-  it.each(['darwin', 'win32'] as const)(
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'auto-connects remembered GATT BLE on Linux for %s',
+    async (protocol) => {
+      vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('linux');
+      mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: `${protocol}-ble` });
+      const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+      renderHook(() => {
+        useProtocolRfAutoConnect({ protocol, state: disconnected, connectAutomatic });
+      });
+
+      await waitFor(() => {
+        expect(connectAutomatic).toHaveBeenCalledWith(
+          'ble',
+          undefined,
+          undefined,
+          `${protocol}-ble`,
+        );
+      });
+    },
+  );
+
+  it('logs Linux BLE auto-connect failure without clearing the stored selection', async () => {
+    vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue('linux');
+    mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'linux-ble' });
+    const connectAutomatic = vi.fn().mockRejectedValue(new Error('gatt connect failed'));
+    const warn = mockConsoleWarn();
+
+    try {
+      renderHook(() => {
+        useProtocolRfAutoConnect({
+          protocol: 'meshtastic',
+          state: disconnected,
+          connectAutomatic,
+        });
+      });
+
+      await waitFor(() => {
+        expect(warn.spy).toHaveBeenCalledWith(
+          expect.stringMatching(/meshtastic ble auto-connect failed/),
+        );
+      });
+      expect(mocks.clearStoredBleSelection).not.toHaveBeenCalled();
+    } finally {
+      warn.restore();
+    }
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
     'secondary waits for primary settle then protocol settle before BLE connect (%s)',
     async (platform) => {
       vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);

@@ -127,7 +127,6 @@ export function useProtocolRfAutoConnect({
     resetProtocolRfAutoConnectCancel(protocol);
 
     const lastBleId = lastConnection.bleDeviceId ?? loadLastBleDeviceId(protocol);
-    const isLinux = window.electronAPI.getPlatform() === 'linux';
     let cancelled = false;
 
     const isCancelled = () => cancelled || isProtocolRfAutoConnectCancelled(protocol);
@@ -254,9 +253,9 @@ export function useProtocolRfAutoConnect({
         onAutoConnectCancelled();
         return;
       }
-      if (lastBleId && !isLinux) {
+      if (lastBleId) {
         console.warn(
-          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(error)}`,
+          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
         );
         const bleLast: LastConnection = {
           type: 'ble',
@@ -321,7 +320,7 @@ export function useProtocolRfAutoConnect({
         return;
       }
 
-      if (lastConnection.type === 'ble' && lastBleId && !isLinux) {
+      if (lastConnection.type === 'ble' && lastBleId) {
         runBleAutoConnect(lastBleId)
           .then(() => {
             clearAutoConnectTimeout();

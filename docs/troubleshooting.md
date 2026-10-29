@@ -488,6 +488,8 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Fix**: Click **Forget this device** if shown, then **Connect** and select the radio again.
 
+Startup auto-connect now runs on Linux as well (same remembered-peripheral path as macOS/Windows). If the radio is off or unpaired, the **Restore connection** card remains; for Linux re-pair guidance see **Linux-specific** under BLE known issues (`bluetoothctl` remove + re-pair from the app).
+
 ### Dual-radio BLE startup / wake stagger
 
 When both Meshtastic and MeshCore have **different** saved BLE peripherals, concurrent sidecar GATT sessions are allowed. Startup and wake still **stagger** auto-connect so both stacks do not contend on the adapter at once:
