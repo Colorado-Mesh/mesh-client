@@ -743,27 +743,46 @@ export function attachMeshcoreConnSideEffects(
   ) => {
     const senderId = payload.senderNodeId;
     const service = repeaterCommandServiceRef.current;
-    const handled = service ? service.handleResponse(payload.text, senderId) : false;
-    if (service) {
-      if (handled) return;
-    } else {
+    if (!service) {
       console.warn(
         '[meshcoreConnSideEffects] CLI response received but no command service active (sender:',
         senderId.toString(16).toUpperCase(),
         ')',
       );
+      // No service — still surface the wire reply once under the looked-up sender.
+      if (senderId !== 0) {
+        addCliHistoryEntry(senderId, {
+          type: 'received',
+          text: redactMeshcoreCliSecretsInText(
+            payload.text.replace(/^password now:.*$/i, '[redacted]'),
+          ),
+          timestamp: Date.now(),
+        });
+      }
+      return;
     }
-    // CLI response without matching pending command — surface it in the panel history.
-    if (senderId !== 0) {
-      const { body } = service ? service.parseResponseToken(payload.text) : { body: payload.text };
-      addCliHistoryEntry(senderId, {
-        type: 'received',
-        text:
-          service?.redactResponseForHistory(payload.text) ??
-          redactMeshcoreCliSecretsInText(body.replace(/^password now:.*$/i, '[redacted]')),
-        timestamp: Date.now(),
-      });
+
+    const result = service.ingestResponse(payload.text, senderId);
+    if (result.kind === 'duplicate') {
+      const { token } = service.parseResponseToken(payload.text);
+      console.debug(
+        '[meshcoreConnSideEffects] duplicate CLI reply frame ignored (token:',
+        token ?? '?',
+        'prefix:',
+        payload.pubKeyPrefixHex,
+        ')',
+      );
+      return;
     }
+
+    // Sole writer of wire-originated received lines (resolved or unmatched/stray/late).
+    const nodeId = result.kind === 'resolved' ? result.nodeId : senderId;
+    if (nodeId === 0) return;
+    addCliHistoryEntry(nodeId, {
+      type: 'received',
+      text: result.historyText,
+      timestamp: Date.now(),
+    });
   };
 
   // --- RF RX (event 136) ---
