@@ -7866,7 +7866,7 @@
   },
   "notificationPolicy": {
     "label": "Powiadomienia na czacie",
-    "all": "Wszystkie komunikaty",
+    "all": "Wszystkie wiadomości",
     "mentions": "Wzmianki i bezpośrednie wiadomości",
     "help": "Alerty trybu wzmianek dla @[Twoje imię], odpowiedzi na Twoje wiadomości i wiadomości bezpośrednie. RRC używa @nickname i zachowuje ustawienie alertu pokoju. Użyj dzwonka w rozmowie, aby go wyciszyć, w tym wzmianki i wiadomości tekstowe. Powiadomienia dźwiękowe muszą być włączone. Wiadomości nadal docierają na czacie. Alarmy awaryjne i operacyjne MECP zachowują swoje własne ustawienia.",
     "saveFailed": "Nie można zapisać preferencji powiadomień. Spróbuj ponownie, gdy tożsamość rozmowy będzie dostępna, a lokalna pamięć będzie zapisywalna."

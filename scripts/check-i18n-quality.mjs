@@ -3149,6 +3149,13 @@ function checkMqttWifiAndScriptIssues(ctx) {
     issues.push('keep I2P as contiguous token (not "I 2 P")');
   }
 
+  // Users type mentions as shown; the parsers never match "@ [Name]", "@[ Name]" or "@ nick".
+  if (locale !== 'en' && /@\S/.test(enVal) && !/@\s|@\[\s/.test(enVal) && /@\s|@\[\s/.test(val)) {
+    issues.push(
+      'keep mention syntax contiguous: "@[Name]" and "@nickname", no space after "@" or "["',
+    );
+  }
+
   if (!CJK_LOCALES.has(locale) && CJK_SCRIPT_RE.test(val) && !CJK_SCRIPT_RE.test(enVal)) {
     issues.push('wrong-script contamination (CJK characters in a non-CJK locale)');
   }

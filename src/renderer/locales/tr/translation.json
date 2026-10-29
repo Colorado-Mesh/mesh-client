@@ -7738,9 +7738,9 @@
   },
   "notificationPolicy": {
     "label": "Sohbet Bildirimleri",
-    "all": "Tüm Messajlar",
-    "mentions": "Anmalar ve doğrudan iletiler için",
-    "help": "@[ Adınız] için bahsi geçen mod uyarıları, mesajlarınıza ve doğrudan mesajlarınıza yanıtlar. RRC, @nickname kullanır ve oda alarmı ayarını korur. Bahsetmeler ve DM'ler de dahil olmak üzere bir konuşmada zili sessize almak için kullanın. Sesli bildirimler etkinleştirilmelidir. Mesajlar hala sohbete ulaşıyor. MECP acil durum ve operasyonel uyarıları kendi ayarlarını korur.",
+    "all": "Tüm mesajlar",
+    "mentions": "Anmalar ve doğrudan iletiler",
+    "help": "Anmalar modu @[Adınız], mesajlarınıza verilen yanıtlar ve doğrudan iletiler için uyarır. RRC, @nickname kullanır ve oda alarmı ayarını korur. Bir konuşmayı anmalar ve DM'ler dahil sessize almak için o konuşmadaki zili kullanın. Sesli bildirimler etkinleştirilmelidir. Mesajlar hala sohbete ulaşıyor. MECP acil durum ve operasyonel uyarıları kendi ayarlarını korur.",
     "saveFailed": "Bildirim tercihleri kaydedilemedi. Konuşma kimliği mevcut ve yerel depolama yazılabilir olduktan sonra tekrar deneyin."
   }
 }

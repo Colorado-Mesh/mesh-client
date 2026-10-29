@@ -7740,7 +7740,7 @@
     "label": "Chat-Benachrichtigungen",
     "all": "Alle Nachrichten",
     "mentions": "Erwähnungen und Direktnachrichten",
-    "help": "Erwähnt Benachrichtigungen im Modus für @[Ihr Name], Antworten auf Ihre Nachrichten und Direktnachrichten. RRC verwendet @Nickname und behält seine Raumalarm-Einstellung bei. Verwenden Sie die Glocke in einem Gespräch, um sie stummzuschalten, einschließlich Erwähnungen und DMs. Tonbenachrichtigungen müssen aktiviert sein. Nachrichten kommen immer noch im Chat an. MECP-Notfall- und Betriebswarnungen behalten ihre eigenen Einstellungen bei.",
+    "help": "Der Erwähnungsmodus benachrichtigt bei @[Ihr Name], Antworten auf Ihre Nachrichten und Direktnachrichten. RRC verwendet @Nickname und behält seine Raumalarm-Einstellung bei. Mit der Glocke in einem Gespräch schalten Sie es stumm, auch für Erwähnungen und DMs. Tonbenachrichtigungen müssen aktiviert sein. Nachrichten kommen immer noch im Chat an. MECP-Notfall- und Betriebswarnungen behalten ihre eigenen Einstellungen bei.",
     "saveFailed": "Benachrichtigungseinstellungen konnten nicht gespeichert werden. Versuchen Sie es erneut, nachdem die Gesprächsidentität verfügbar und der lokale Speicher beschreibbar ist."
   }
 }

@@ -7738,7 +7738,7 @@
   },
   "notificationPolicy": {
     "label": "Notificaciones de chat",
-    "all": "Todos lo mensajes",
+    "all": "Todos los mensajes",
     "mentions": "Menciones y mensajes directos",
     "help": "Alertas del modo de menciones para @[Your name], respuestas a sus mensajes y mensajes directos. RRC utiliza @nickname y mantiene su configuración de alerta de sala. Use la campana en una conversación para silenciarla, incluidas las menciones y los DM. Las notificaciones de sonido deben estar habilitadas. Los mensajes siguen llegando al chat. Las alertas de emergencia y operativas de MECP mantienen sus propias configuraciones.",
     "saveFailed": "No se han podido guardar las preferencias de notificación. Inténtalo de nuevo después de que la identidad de la conversación esté disponible y el almacenamiento local se pueda escribir."

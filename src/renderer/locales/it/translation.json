@@ -7740,7 +7740,7 @@
     "label": "Notifiche chat",
     "all": "Tutti i messaggi",
     "mentions": "Menzioni e messaggi diretti",
-    "help": "Avvisi in modalità menzioni per @[Your name], risposte ai tuoi messaggi e messaggi diretti. RRC utilizza @nickname e mantiene la sua impostazione di avviso per la stanza. Usa la campana in una conversazione per disattivarla, incluse menzioni e DM. Le notifiche sonore devono essere abilitate. I messaggi arrivano ancora in chat. Gli avvisi di emergenza e operativi MeCP mantengono le proprie impostazioni.",
+    "help": "Avvisi in modalità menzioni per @[Your name], risposte ai tuoi messaggi e messaggi diretti. RRC utilizza @nickname e mantiene la sua impostazione di avviso per la stanza. Usa la campana in una conversazione per disattivarla, incluse menzioni e DM. Le notifiche sonore devono essere abilitate. I messaggi arrivano ancora in chat. Gli avvisi di emergenza e operativi MECP mantengono le proprie impostazioni.",
     "saveFailed": "Impossibile salvare le preferenze di notifica. Riprova quando l'identità della conversazione è disponibile e lo spazio di archiviazione locale è scrivibile."
   }
 }
