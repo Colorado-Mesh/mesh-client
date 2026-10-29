@@ -8870,7 +8870,8 @@ export function useMeshcoreRuntime() {
         );
         pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
         clearMeshcoreFirmwareContactsFullLatch();
-        return;
+        // The removals already happened; a zero count must keep the contacts-full debounce.
+        return removedFromRadio;
       }
       clearMeshcoreFirmwareContactsFullLatch();
       pushAppToast(
