@@ -21,9 +21,14 @@ function isPlaced(incident: EmergencyIncident): incident is PlacedIncident {
   return incident.status !== 'resolved' && isValidLatLon(incident.lat, incident.lon);
 }
 
-/** `text` with control characters as spaces, which main refuses; `keepLines` keeps line feeds. */
+/** Control characters, which main refuses, and characters XML cannot hold (U+FFFE, U+FFFF, a lone surrogate). */
+const NOT_PRINTABLE_RE = /[\p{Cc}\p{Cs}\uFFFE\uFFFF]/gu;
+/** The same, but line feeds stay. */
+const NOT_PRINTABLE_KEEP_LINES_RE = /[^\P{Cc}\n]|[\p{Cs}\uFFFE\uFFFF]/gu;
+
+/** `text` with characters main or XML cannot take as spaces; `keepLines` keeps line feeds. */
 function printable(text: string, keepLines = false): string {
-  return text.replace(keepLines ? /[^\P{Cc}\n]/gu : /\p{Cc}/gu, ' ');
+  return text.replace(keepLines ? NOT_PRINTABLE_KEEP_LINES_RE : NOT_PRINTABLE_RE, ' ');
 }
 
 /**

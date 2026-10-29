@@ -79,11 +79,29 @@ describe('takIncidentMarkers', () => {
   });
 
   it('turns control characters in a sender name into spaces, keeping the remark lines', () => {
-    const [marker] = takIncidentMarkers(byId(incident({ senderName: 'Al\nice\u0007' })));
+    const [marker] = takIncidentMarkers(
+      byId(
+        incident({ senderName: 'Al\nice\u0007', freetext: '2pax 39.7392,-104.9903 cold\u0007' }),
+      ),
+    );
     expect(marker.callsign).toBe('🆘 MAYDAY Al ice');
     expect(marker.remarks.split('\n')).toHaveLength(3);
     expect(marker.remarks).toContain('From Al ice, last heard');
     expect(marker.remarks).not.toMatch(/[^\P{Cc}\n]/u);
+  });
+
+  it('turns characters XML cannot hold into spaces, in the name and the report', () => {
+    const [marker] = takIncidentMarkers(
+      byId(
+        incident({
+          senderName: 'Al\uFFFEice',
+          freetext: '2pax 39.7392,-104.9903 cold\uFFFF here\uD800',
+        }),
+      ),
+    );
+    expect(marker.callsign).toBe('🆘 MAYDAY Al ice');
+    expect(marker.remarks).not.toMatch(/[\p{Cs}\uFFFE\uFFFF]/u);
+    expect(marker.remarks).toContain('cold  here');
   });
 
   it('says where the position came from, a beacon, and the acknowledgements heard', () => {
