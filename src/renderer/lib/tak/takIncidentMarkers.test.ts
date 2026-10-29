@@ -70,6 +70,22 @@ describe('takIncidentMarkers', () => {
     ).toEqual(['acked']);
   });
 
+  it('leaves out a position off the map, which main would refuse with the rest', () => {
+    expect(
+      takIncidentMarkers(
+        byId(incident({ id: 'off', lat: 123, lon: 456 }), incident({ id: 'ok' })),
+      ).map((m) => m.id),
+    ).toEqual(['ok']);
+  });
+
+  it('turns control characters in a sender name into spaces, keeping the remark lines', () => {
+    const [marker] = takIncidentMarkers(byId(incident({ senderName: 'Al\nice\u0007' })));
+    expect(marker.callsign).toBe('🆘 MAYDAY Al ice');
+    expect(marker.remarks.split('\n')).toHaveLength(3);
+    expect(marker.remarks).toContain('From Al ice, last heard');
+    expect(marker.remarks).not.toMatch(/[^\P{Cc}\n]/u);
+  });
+
   it('says where the position came from, a beacon, and the acknowledgements heard', () => {
     const [marker] = takIncidentMarkers(
       byId(incident({ coordsSource: 'lastKnown', beaconActive: true, ackCount: 2 })),
