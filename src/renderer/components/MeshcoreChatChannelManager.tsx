@@ -87,19 +87,16 @@ export default function MeshcoreChatChannelManager({
       ];
       const first = controls[0];
       const last = controls.at(-1);
+      // The panel itself (focused by clicking its heading or padding) counts as outside.
+      const active = document.activeElement;
+      const onControl = controls.some((control) => control === active);
       if (controls.length === 0) {
         event.preventDefault();
         panelRef.current?.focus();
-      } else if (
-        event.shiftKey &&
-        (document.activeElement === first || !panelRef.current?.contains(document.activeElement))
-      ) {
+      } else if (event.shiftKey && (active === first || !onControl)) {
         event.preventDefault();
         last?.focus();
-      } else if (
-        !event.shiftKey &&
-        (document.activeElement === last || !panelRef.current?.contains(document.activeElement))
-      ) {
+      } else if (!event.shiftKey && (active === last || !onControl)) {
         event.preventDefault();
         first?.focus();
       }

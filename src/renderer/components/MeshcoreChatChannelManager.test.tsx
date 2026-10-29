@@ -435,4 +435,17 @@ describe('MeshcoreChatChannelManager', () => {
     hydrateAxeThemeColors(screen.getByRole('dialog'));
     expect(await axe(screen.getByRole('dialog'))).toHaveNoViolations();
   });
+
+  it('keeps Shift+Tab inside the dialog when the panel itself has focus', async () => {
+    const user = userEvent.setup();
+    renderManager();
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+    // Clicking the heading or padding focuses the tabIndex=-1 panel.
+    screen.getByRole('dialog').focus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(screen.getByRole('switch', { name: 'Keep open after adding' })).toHaveFocus();
+    screen.getByRole('dialog').focus();
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+  });
 });
