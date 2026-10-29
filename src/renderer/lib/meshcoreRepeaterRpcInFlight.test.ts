@@ -26,6 +26,35 @@ describe('runMeshcoreRepeaterRpcOnce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('queues cli with different coalesceKeys so both fns run', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    const order: string[] = [];
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((r) => {
+      releaseFirst = r;
+    });
+    const fn1 = vi.fn(async () => {
+      order.push('1');
+      await firstGate;
+      return 'cli-1';
+    });
+    const fn2 = vi.fn(() => {
+      order.push('2');
+      return Promise.resolve('cli-2');
+    });
+    const first = runMeshcoreRepeaterRpcOnce('cli', 42, fn1, { coalesceKey: 'id:1' });
+    const second = runMeshcoreRepeaterRpcOnce('cli', 42, fn2, { coalesceKey: 'id:2' });
+    expect(second).not.toBe(first);
+    await Promise.resolve();
+    expect(fn1).toHaveBeenCalledTimes(1);
+    expect(fn2).not.toHaveBeenCalled();
+    releaseFirst();
+    await expect(first).resolves.toBe('cli-1');
+    await expect(second).resolves.toBe('cli-2');
+    expect(fn2).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['1', '2']);
+  });
+
   it('returns the same promise for duplicate neighbors requests on one node', async () => {
     resetMeshcoreRepeaterRpcInFlightForTests();
     const fn = vi.fn(async () => {
