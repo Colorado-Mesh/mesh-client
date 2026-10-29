@@ -92,7 +92,8 @@ It uses the shared pinned Node/pnpm setup and frozen install, then runs
 `pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs --coverage.enabled=false --reporter=default`.
 This explicitly selects the existing esbuild regression because its string entrypoint is invisible
 to Vitest's import-based related selection. The test builds the production minified main process,
-checks worker/license artifacts and enforces the unchanged strict **749,568-byte** budget.
+checks worker/license artifacts and enforces the strict `MAIN_BUNDLE_SIZE_BUDGET_BYTES` budget
+defined in that test.
 An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
 The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
 it uses no repository secrets or privileged `pull_request_target` execution.

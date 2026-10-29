@@ -53,7 +53,6 @@ describe('esbuild-main-build', () => {
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES - 1, true],
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES, false],
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES + 1, false],
-    [752_883, false],
     [0, false],
     [100_000, false],
   ])('enforces the strict budget for a %i-byte fixture (accepted: %s)', (bytes, accepted) => {

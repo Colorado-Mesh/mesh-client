@@ -18,6 +18,15 @@ const job = workflow.jobs['bundle-size'];
 const command = job.steps
   .find((step) => step.name === 'Validate production main bundle')
   .run.trim();
+// Read the budget from the suite the workflow runs, so a budget change there cannot leave
+// these fixtures testing a stale limit.
+const budgetMatch = /const MAIN_BUNDLE_SIZE_BUDGET_BYTES = (\d+) \* 1024;/.exec(
+  fs.readFileSync(path.join(ROOT, 'scripts/esbuild-main-build.test.mjs'), 'utf8'),
+);
+if (!budgetMatch) {
+  throw new Error('MAIN_BUNDLE_SIZE_BUDGET_BYTES not found in scripts/esbuild-main-build.test.mjs');
+}
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = Number(budgetMatch[1]) * 1024;
 
 describe('always-on bundle workflow', () => {
   it('runs for all PR targets and changes, including draft and retarget events', () => {
@@ -71,7 +80,7 @@ describe('always-on bundle workflow', () => {
 
   it.each([
     ['under budget', 110_000, 0],
-    ['over budget', 752_883, 1],
+    ['over budget', MAIN_BUNDLE_SIZE_BUDGET_BYTES, 1],
     ['missing suite', null, 1],
   ])(
     'the actual command fails closed with %s and empty related selection',
@@ -143,7 +152,7 @@ describe('always-on bundle workflow', () => {
           expect(output).toContain('scripts/esbuild-main-build.test.mjs');
           if (status !== 0) {
             expect(output).toContain('keeps the minified main bundle under the size budget');
-            expect(output).toContain('749568');
+            expect(output).toContain(String(MAIN_BUNDLE_SIZE_BUDGET_BYTES));
           }
         }
         for (const file of artifacts) {
