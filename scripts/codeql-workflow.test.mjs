@@ -40,21 +40,40 @@ function selectsSwift(file) {
 }
 
 describe('CodeQL advanced workflow', () => {
-  it('retains all six languages, extended queries and the existing Swift autobuild', () => {
+  it('retains all six languages, extended queries and Windows C# / Swift autobuild', () => {
     expect(job.strategy['fail-fast']).toBe(false);
     expect(job.strategy.matrix.include).toBe('${{ fromJson(needs.scope.outputs.matrix) }}');
     const matrixStep = scope.steps.find((step) => step.id === 'matrix');
     const script = matrixStep.run;
-    for (const language of ['actions', 'csharp', 'javascript-typescript', 'python', 'rust']) {
+    for (const language of ['actions', 'javascript-typescript', 'python', 'rust']) {
       expect(script).toContain(`language: '${language}'`);
-      expect(script).toContain("os: 'ubuntu-latest'");
     }
+    expect(script).toContain("language: 'csharp'");
+    expect(script).toContain(
+      "{ language: 'csharp', os: 'windows-latest', 'build-mode': 'autobuild' }",
+    );
     expect(script).toContain("language: 'swift'");
     expect(script).toContain("os: 'macos-latest'");
     expect(script).toContain("'build-mode': 'autobuild'");
     expect(script).toContain("process.env.SWIFT === 'true'");
     const withSwift = matrixFromStep(script, 'true');
     const withoutSwift = matrixFromStep(script, 'false');
+    expect(
+      withoutSwift.some(
+        (row) =>
+          row.language === 'csharp' &&
+          row.os === 'windows-latest' &&
+          row['build-mode'] === 'autobuild',
+      ),
+    ).toBe(true);
+    for (const language of ['actions', 'javascript-typescript', 'python', 'rust']) {
+      expect(
+        withoutSwift.some(
+          (row) =>
+            row.language === language && row.os === 'ubuntu-latest' && row['build-mode'] === 'none',
+        ),
+      ).toBe(true);
+    }
     expect(withSwift.some((row) => row.language === 'swift' && row.os === 'macos-latest')).toBe(
       true,
     );
@@ -79,8 +98,10 @@ describe('CodeQL advanced workflow', () => {
     expect(clone.run).toBe('bash scripts/clone-ratspeak-stack.sh');
     expect(job.steps.indexOf(clone)).toBeLessThan(job.steps.indexOf(init));
     expect(init.with['config-file']).toBeUndefined();
-    const build = job.steps.find((step) => step.name === 'Build Swift helper');
-    expect(build.if).toBe("matrix.language == 'swift' && needs.scope.outputs.swift == 'true'");
+    const build = job.steps.find((step) => step.name === 'Autobuild compiled languages');
+    expect(build.if).toBe(
+      "matrix['build-mode'] == 'autobuild' && (matrix.language != 'swift' || needs.scope.outputs.swift == 'true')",
+    );
     expect(build.uses).toMatch(/^github\/codeql-action\/autobuild@[a-f0-9]{40}$/);
     expect(job.steps.filter((step) => step.uses?.includes('/autobuild@'))).toHaveLength(1);
   });
