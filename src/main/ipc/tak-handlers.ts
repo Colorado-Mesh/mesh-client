@@ -24,6 +24,7 @@ import {
   parseTakDmStatus,
   parseTakRetiredRooms,
 } from '../tak/geochat-cot';
+import { parseTakIncidentMarkers } from '../tak/incident-cot';
 import { parseTakNodeUpdate } from '../tak/node-update';
 import {
   clearTakRemoteCredentials,
@@ -322,6 +323,20 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     if (!m) return;
     directPeerUpdates.checkOrThrow();
     m.setDirectPeers(parseTakDirectPeers(peers));
+  });
+
+  const incidentMarkerUpdates = createIpcRateLimiter({
+    max: 60,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:setIncidentMarkers',
+  });
+  ipcMain.handle('tak:setIncidentMarkers', (event, markers: unknown) => {
+    assertIpcSender(event, 'tak:setIncidentMarkers');
+    // As for channels: the renderer sends the list again when a sink starts.
+    const m = getTakServerManager();
+    if (!m) return;
+    incidentMarkerUpdates.checkOrThrow();
+    m.setIncidentMarkers(parseTakIncidentMarkers(markers));
   });
 
   const dmStatusUpdates = createIpcRateLimiter({

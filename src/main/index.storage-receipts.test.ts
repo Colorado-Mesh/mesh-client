@@ -6,6 +6,7 @@ import { transpileModule } from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
 import * as appSettingsKeyPrefixes from '../shared/appSettingsKeyPrefixes';
+import { PREVENT_SLEEP_SETTING_KEY } from '../shared/powerSavePolicy';
 import * as rendererOrigin from '../shared/rendererOrigin';
 import * as rendererStorageIntent from '../shared/rendererStorageIntent';
 import { writeRendererStorageDeletionState } from './rendererStorageIntentMigration';
@@ -34,6 +35,8 @@ function receiptIpcHarness() {
       ...appSettingsKeyPrefixes,
       ...rendererOrigin,
       ...rendererStorageIntent,
+      PREVENT_SLEEP_SETTING_KEY,
+      syncPowerSaveBlocker: () => {},
       writeRendererStorageDeletionState,
       ipcMain: {
         handle: (

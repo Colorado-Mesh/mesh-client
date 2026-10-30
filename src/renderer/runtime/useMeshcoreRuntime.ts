@@ -894,6 +894,8 @@ export function useMeshcoreRuntime() {
   const meshcoreHookMountedRef = useRef(true);
   const repeaterCommandServiceRef = useRef<RepeaterCommandService | null>(null);
   const repeaterCliQueueRef = useRef(createMeshcoreRepeaterCliQueue());
+  /** Monotonic id so CLI exchanges never share an in-flight coalesce slot. */
+  const repeaterCliCoalesceSeqRef = useRef(0);
   const repeaterRemoteRpcRef = useRef(createRepeaterRemoteRpcQueue());
   const lastMeshcoreRoomSyncTxAtRef = useRef(0);
   const roomSyncSchedulerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -6574,8 +6576,10 @@ export function useMeshcoreRuntime() {
 
           let cliTimeoutMs = calculateRepeaterCliTimeout(0, trimmed.length);
           try {
-            // Return the reply promise from the once slot so coalesced callers share it
-            // (and do not throw MESHCORE_ERR_REQUEST_FAILED / end the hold early).
+            // CLI is non-idempotent: never coalesce exchanges. Admin per-node queue still
+            // serializes. Return the reply promise from the once slot so the slot frees at
+            // SENT (reply wait continues outside) without ending the CLI reply hold early.
+            const cliCoalesceKey = `${identityAtRequest ?? 'none'}:${++repeaterCliCoalesceSeqRef.current}`;
             const onceResult = await runMeshcoreRepeaterRpcOnce(
               'cli',
               nodeId,
@@ -6756,6 +6760,7 @@ export function useMeshcoreRuntime() {
                 }
                 return { responsePromise: promise, timeoutMs: replyTimeoutMs };
               },
+              { coalesceKey: cliCoalesceKey },
             );
             cliTimeoutMs = onceResult.timeoutMs;
             const kickCliReplyDrain = () => {
@@ -6773,11 +6778,7 @@ export function useMeshcoreRuntime() {
             cliReplyDrainKickTimer = setInterval(kickCliReplyDrain, 1_000);
             const response = await onceResult.responsePromise;
             assertRequestCurrent();
-            addCliHistoryEntry(nodeId, {
-              type: 'received',
-              text: redactMeshcoreCliSecrets(trimmed, response),
-              timestamp: Date.now(),
-            });
+            // Wire-originated `<` lines are appended only in handleCliResponse (single writer).
             bumpMeshcoreNodeLastHeardFromRpc(nodeId);
             return response;
           } catch (e: unknown) {
@@ -6799,7 +6800,7 @@ export function useMeshcoreRuntime() {
               return next;
             });
             addCliHistoryEntry(nodeId, {
-              type: 'received',
+              type: 'received', // source-policy-ok meshcore-cli-received-single-writer local error path only
               text: `[Error: ${friendlyErr}]`,
               timestamp: Date.now(),
             });
@@ -8681,10 +8682,18 @@ export function useMeshcoreRuntime() {
 
   useEffect(() => {
     const active = ['connected', 'configured', 'stale', 'reconnecting'].includes(state.status);
-    if (active) window.electronAPI.notifyDeviceConnected('meshcore');
+    if (active) window.electronAPI.notifyDeviceConnected('meshcore', state.connectionType);
     else if (state.status === 'disconnected')
       window.electronAPI.notifyDeviceDisconnected('meshcore');
-  }, [state.status]);
+  }, [state.status, state.connectionType]);
+
+  // Clear main's connection flag if this runtime unmounts while still "live"
+  // (e.g. protocol disabled); status-driven notifyDeviceDisconnected alone would not run.
+  useEffect(() => {
+    return () => {
+      window.electronAPI.notifyDeviceDisconnected('meshcore');
+    };
+  }, []);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
     (params: {
@@ -8870,7 +8879,8 @@ export function useMeshcoreRuntime() {
         );
         pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
         clearMeshcoreFirmwareContactsFullLatch();
-        return;
+        // The removals already happened; a zero count must keep the contacts-full debounce.
+        return removedFromRadio;
       }
       clearMeshcoreFirmwareContactsFullLatch();
       pushAppToast(

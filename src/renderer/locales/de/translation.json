@@ -513,7 +513,14 @@
     "coiNo": "nicht",
     "coiTimingFine": "fein (~5 µs)",
     "coiTimingCoarse": "grob (~100 µs)",
-    "shareMyLocationOffStaticActive": "Die Standortfreigabe ist deaktiviert — Host-GPS-Autoaktualisierung und Mesh-Versand sind deaktiviert. Ihr aktiver gespeicherter Standort (und Funk-GPS, wenn verfügbar) werden weiterhin lokal für die Karten- und Entfernungsfilter verwendet."
+    "shareMyLocationOffStaticActive": "Die Standortfreigabe ist deaktiviert — Host-GPS-Autoaktualisierung und Mesh-Versand sind deaktiviert. Ihr aktiver gespeicherter Standort (und Funk-GPS, wenn verfügbar) werden weiterhin lokal für die Karten- und Entfernungsfilter verwendet.",
+    "preventSleep": "Halten Sie den Computer wach, während Sie verbunden sind",
+    "preventSleepAria": "Halten Sie den Computer wach, während Sie verbunden sind",
+    "preventSleepHint": "Nur Funkverbindung (Standard) hält den Blocker für Bluetooth oder USB Meshtastic/MeshCore -Funkgeräte und für Reticulum, wenn eine BLE - oder serielle RNode/KISS -Schnittstelle aktiviert ist. TCP/Wi-Fi Companions, MQTT und nur über das Netzwerk Reticulum nach dem Aufwachen wieder verbinden und nicht benötigen. Jede Verbindung entspricht dem vorherigen Always-On-Verhalten. Lassen Sie das System niemals schlafen, auch nicht mit einer Funkverbindung. Auf Linux verhindert die Sperre von Electron auch, dass das Display schläft, wenn die Sperre gedrückt wird — wähle Nie, wenn Monitore leer sein müssen.",
+    "preventSleepOptionRf": "Nur Funkverbindung (Bluetooth oder USB)",
+    "preventSleepOptionAlways": "Any connection?",
+    "preventSleepOptionOff": "Nie",
+    "preventSleepSaveFailed": "Die Wachhaltungseinstellung konnte nicht gespeichert werden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -5860,7 +5867,8 @@
     "messagingIntroReticulum": "Lassen Sie ATAK-Geräte LXMF Kollegen benachrichtigen. Ein Kollege mit einer Position kann von seinem Marker aus benachrichtigt werden; einer ohne Position erscheint bei 0, 0, sobald mesh-client ein Gespräch mit ihm führt, so dass die Kontaktliste nicht mit jedem gehörten Kollegen gefüllt wird.",
     "channelCallsign": "Rufzeichen hinzufügen",
     "channelCallsignFor": "Setzen Sie das ATAK-Rufzeichen des Absenders vor Nachrichten, die an {{channel}} gesendet werden",
-    "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt."
+    "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt.",
+    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -6713,6 +6721,11 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP von {{sender}}",
+    "atakMarkerFrom": "Von {{sender}}, zuletzt gehört {{time}} UTC",
+    "atakMarkerLastKnown": "Position: wo der Absender zuletzt gehört wurde, nicht aus dem Bericht",
+    "atakMarkerBeacon": "Notsignal aktiv",
+    "atakMarkerAcks_one": "{{count}} Bestätigung gehört",
+    "atakMarkerAcks_other": "{{count}} Bestätigungen gehört",
     "notificationTitle": "MECP-Alarm",
     "exportLog": "MECP-Protokoll exportieren",
     "compose": {
@@ -6776,7 +6789,10 @@
       "throttledToast": "Wiederholte Notfallwarnungen von {{sender}} werden zum Schweigen gebracht. Ihre Berichte werden weiterhin auf der Registerkarte Vorfall angezeigt.",
       "throttledBlock": "Absender blockieren",
       "floodToast": "Viele Stationen senden sofort Notfallberichte. Weitere Alarmtöne werden kurz pausiert; überprüfen Sie die Registerkarte Vorfall."
-    }
+    },
+    "atakDrill": "BOHREN",
+    "atakPeople_one": "{{count}} Person",
+    "atakPeople_other": "{{count}} Personen"
   },
   "notificationSounds": {
     "title": "Benachrichtigungstöne",

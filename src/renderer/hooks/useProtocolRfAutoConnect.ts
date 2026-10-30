@@ -4,7 +4,6 @@ import { reconnectBleWithScan } from '@/renderer/lib/bleReconnectHelper';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   clearStoredBleSelection,
-  type LastConnection,
   loadLastBleDeviceId,
   loadLastConnection,
   notifyBleSelectionCleared,
@@ -127,7 +126,6 @@ export function useProtocolRfAutoConnect({
     resetProtocolRfAutoConnectCancel(protocol);
 
     const lastBleId = lastConnection.bleDeviceId ?? loadLastBleDeviceId(protocol);
-    const isLinux = window.electronAPI.getPlatform() === 'linux';
     let cancelled = false;
 
     const isCancelled = () => cancelled || isProtocolRfAutoConnectCancelled(protocol);
@@ -254,18 +252,19 @@ export function useProtocolRfAutoConnect({
         onAutoConnectCancelled();
         return;
       }
-      if (lastBleId && !isLinux) {
+      if (lastBleId) {
         console.warn(
-          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(error)}`,
+          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
         );
-        const bleLast: LastConnection = {
-          type: 'ble',
-          bleDeviceId: lastBleId,
-          bleDeviceName: lastConnection.bleDeviceName,
-        };
-        saveLastConnection(protocol, bleLast);
         runBleAutoConnect(lastBleId)
           .then(() => {
+            // Promote to BLE only after fallback succeeds so a failed attempt keeps
+            // the remembered serial selection for the next cold start.
+            saveLastConnection(protocol, {
+              type: 'ble',
+              bleDeviceId: lastBleId,
+              bleDeviceName: lastConnection.bleDeviceName,
+            });
             clearAutoConnectTimeout();
             notifyPrimaryAutoConnectSettledIfNeeded(protocol);
           })
@@ -321,7 +320,7 @@ export function useProtocolRfAutoConnect({
         return;
       }
 
-      if (lastConnection.type === 'ble' && lastBleId && !isLinux) {
+      if (lastConnection.type === 'ble' && lastBleId) {
         runBleAutoConnect(lastBleId)
           .then(() => {
             clearAutoConnectTimeout();
@@ -366,7 +365,12 @@ export function useProtocolRfAutoConnect({
     return () => {
       cancelled = true;
     };
-  }, [enabled, protocol, state.status]);
+    // Intentionally omit state.status: connectAutomatic → prepareRfConnect flips status to
+    // connecting and must not re-run cleanup (that would set cancelled and skip serial→BLE
+    // fallback). Cancel only on unmount / enabled|protocol change, or via
+    // cancelProtocolRfAutoConnect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see comment above
+  }, [enabled, protocol]);
 
   useEffect(
     () => () => {

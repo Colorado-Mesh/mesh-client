@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Close-to-tray connection flags and pinned Catch up lookups bring main to ~731.3 KiB. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 732 * 1024;
+/** Power-save policy + Reticulum local-radio scan; Linux CI measures ~737.5 KiB. */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 741 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);
@@ -53,7 +53,6 @@ describe('esbuild-main-build', () => {
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES - 1, true],
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES, false],
     [MAIN_BUNDLE_SIZE_BUDGET_BYTES + 1, false],
-    [752_883, false],
     [0, false],
     [100_000, false],
   ])('enforces the strict budget for a %i-byte fixture (accepted: %s)', (bytes, accepted) => {

@@ -124,6 +124,25 @@ describe('legacy renderer settings migration', () => {
     expect(db.prepareOnce('SELECT key, value FROM app_settings ORDER BY key').all()).toEqual(rows);
   });
 
+  it('seeds preventSleepWhileConnected string mode from legacy app preferences', () => {
+    seedDurableRendererSettings(db, {
+      'mesh-client:appSettings': '{"preventSleepWhileConnected":"always"}',
+    });
+    expect(
+      db
+        .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+        .get('preventSleepWhileConnected'),
+    ).toEqual({ value: 'always' });
+    seedDurableRendererSettings(db, {
+      'mesh-client:appSettings': '{"preventSleepWhileConnected":"off"}',
+    });
+    expect(
+      db
+        .prepareOnce('SELECT value FROM app_settings WHERE key = ?')
+        .get('preventSleepWhileConnected'),
+    ).toEqual({ value: 'always' });
+  });
+
   it('seeds Meshtastic from the unsuffixed map on legacy-only installations', () => {
     seedDurableRendererSettings(db, { 'mesh-client:lastRead': '{"ch:0":100}' });
     expect(

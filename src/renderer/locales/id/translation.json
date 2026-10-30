@@ -513,7 +513,14 @@
     "coiNo": "tidak",
     "coiTimingFine": "baik (~5 µs)",
     "coiTimingCoarse": "kasar (~100 µs)",
-    "shareMyLocationOffStaticActive": "Berbagi lokasi tidak aktif — penyegaran otomatis GPS tuan rumah dan pengiriman jala dinonaktifkan. Lokasi tersimpan aktif Anda (dan GPS radio bila tersedia) masih digunakan secara lokal untuk filter peta dan jarak."
+    "shareMyLocationOffStaticActive": "Berbagi lokasi tidak aktif — penyegaran otomatis GPS tuan rumah dan pengiriman jala dinonaktifkan. Lokasi tersimpan aktif Anda (dan GPS radio bila tersedia) masih digunakan secara lokal untuk filter peta dan jarak.",
+    "preventSleep": "Jaga agar komputer tetap terjaga saat terhubung",
+    "preventSleepAria": "Jaga agar komputer tetap terjaga saat terhubung",
+    "preventSleepHint": "Tautan radio saja (default) menahan pemblokir untuk Bluetooth atau radio USB Meshtastic/MeshCore dan untuk Reticulum ketika antarmuka BLE atau serial RNode/KISS diaktifkan. TCP/Wi-Fi pendamping, MQTT, dan hanya jaringan Reticulum yang terhubung kembali setelah bangun tidur dan tidak membutuhkannya. Koneksi apa pun cocok dengan perilaku selalu aktif sebelumnya. Jangan biarkan sistem tidur bahkan dengan sambungan radio. Pada Linux, penghambatan Electron juga menghentikan layar agar tidak tidur saat pemblokir ditahan — pilih Jangan pernah jika monitor harus kosong.",
+    "preventSleepOptionRf": "Tautan radio saja (Bluetooth atau USB)",
+    "preventSleepOptionAlways": "Koneksi apa saja",
+    "preventSleepOptionOff": "Tidak pernah",
+    "preventSleepSaveFailed": "Tidak dapat menyimpan pengaturan keep - wake."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -5860,7 +5867,8 @@
     "messagingIntroReticulum": "Biarkan perangkat atak mengirimkan pesan kepada LXMF rekan. Seorang rekan dengan posisi dapat dikirimi pesan dari penanda; satu tanpa posisi muncul di 0, 0 setelah mesh-client melakukan percakapan dengannya, sehingga daftar kontak tidak diisi dengan setiap rekan yang didengar.",
     "channelCallsign": "Tambahkan callsign",
     "channelCallsignFor": "Letakkan tanda panggil atak pengirim di depan pesan yang dikirim ke {{channel}}",
-    "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil."
+    "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil.",
+    "channelRepliesHint": "Untuk membalas seseorang dari atak, mulailah dengan @ dan awal nama mereka: @silver are you on? keluar sebagai balasan MeshCore @[ Silver Eagle] are you on?. @@ membalas kepada siapa pun yang berbicara terakhir. Jika awal nama cocok dengan beberapa orang yang didengar di saluran, tidak ada yang dikirim dan obrolan mengatakan siapa yang cocok."
   },
   "telemetryPanel": {
     "title": "Telemetri",
@@ -6713,6 +6721,11 @@
       "routine": "Routine (Rutinitas)"
     },
     "incomingToast": "{{severity}} MECP dari {{sender}}",
+    "atakMarkerFrom": "Dari {{sender}}, terakhir terdengar {{time}} UTC",
+    "atakMarkerLastKnown": "Posisi: tempat pengirim terakhir kali didengar, bukan dari laporan",
+    "atakMarkerBeacon": "Distress beacon aktif",
+    "atakMarkerAcks_one": "{{count}} pengakuan didengar",
+    "atakMarkerAcks_other": "{{count}} pengakuan didengar",
     "notificationTitle": "Peringatan MECP",
     "exportLog": "Ekspor log MECP",
     "compose": {
@@ -6776,7 +6789,10 @@
       "throttledToast": "Membungkam peringatan darurat berulang dari {{sender}}. Laporan mereka masih muncul di tab Insiden.",
       "throttledBlock": "Blokir Pengirim",
       "floodToast": "Banyak stasiun yang mengirimkan laporan darurat sekaligus. Nada peringatan lebih lanjut dijeda sebentar; periksa tab Insiden."
-    }
+    },
+    "atakDrill": "Bor",
+    "atakPeople_one": "{{count}} orang",
+    "atakPeople_other": "{{count}} orang"
   },
   "notificationSounds": {
     "title": "Nada notifikasi",

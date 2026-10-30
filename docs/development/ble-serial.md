@@ -2,7 +2,7 @@
 
 Developer reference for LoRa BLE/serial transports, sidecar GATT reconnect, dual-radio wake stagger, or multi-protocol BLE coexistence. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
-Meshtastic and MeshCore share LoRa BLE reconnect contracts on **all platforms** (linux, darwin, win32). **BLE transport** is reticulum-sidecar **btleplug** GATT (`/api/v1/gatt/*`), proxied by Electron main `gatt-sidecar-proxy.ts` over `gatt:*` IPC. Renderer transport: `transportSidecarGatt.ts` (Meshtastic) / MeshCore framing over the same GATT sessions. Session ids remain `meshtastic` / `meshcore`. Serial: `connection.ts`, `serialPortSignature.ts`. Meshtastic BLE open: `connection.ts` / `TransportManager`. Reticulum BLE RNode / BLE Peer use the same sidecar process through rsReticulum and `/api/v1/ble/*`, with separate BLE centrals.
+Meshtastic and MeshCore share LoRa BLE reconnect contracts on **all platforms** (linux, darwin, win32). Cold-start BLE auto-connect and the serial → BLE fallback are enabled on linux, darwin, and win32 via `useProtocolRfAutoConnect`; there is no platform guard. Reticulum stack autostart + `awaitReticulumBleCoexistenceClear()` still serialize Reticulum BLE ahead of LoRa GATT. The remaining Linux-specific reconnect branch is manual Restore in `rfReconnectHelper` (direct GATT connect without scan fallback). **BLE transport** is reticulum-sidecar **btleplug** GATT (`/api/v1/gatt/*`), proxied by Electron main `gatt-sidecar-proxy.ts` over `gatt:*` IPC. Renderer transport: `transportSidecarGatt.ts` (Meshtastic) / MeshCore framing over the same GATT sessions. Session ids remain `meshtastic` / `meshcore`. Serial: `connection.ts`, `serialPortSignature.ts`. Meshtastic BLE open: `connection.ts` / `TransportManager`. Reticulum BLE RNode / BLE Peer use the same sidecar process through rsReticulum and `/api/v1/ble/*`, with separate BLE centrals.
 
 There is **no** Noble manager, **no** Web Bluetooth LoRa path, **no** Noble yield for Reticulum, and **no** 4-day Noble restart nudge.
 
@@ -50,7 +50,7 @@ Concurrent GATT sessions to **different** MACs are supported in the sidecar. Sta
 | Scans          | Main coordinator serializes app-requested scans and LoRa connection setup (`scan_busy`); existing links to other devices stay connected. |
 | Tests          | `meshcoreDualNobleBleInit.test.ts`, ConnectionPanel auto-connect coverage.                                                               |
 
-Do **not** reintroduce Meshtastic-only startup gates or child-before-parent init — ConnectionPanel owns auto-connect for both protocols.
+Do **not** reintroduce Meshtastic-only startup gates or child-before-parent init — `ProtocolAutoConnectCoordinator` / `useProtocolRfAutoConnect` owns cold-start auto-connect for both protocols.
 
 ## Multi-protocol BLE coexistence (incl. Reticulum)
 

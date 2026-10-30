@@ -545,6 +545,7 @@ export function createElectronAPIMock(): ElectronAPI {
       setDirectMessaging: vi.fn().mockResolvedValue(undefined),
       dmStatus: vi.fn().mockResolvedValue(undefined),
       setDirectPeers: vi.fn().mockResolvedValue(undefined),
+      setIncidentMarkers: vi.fn().mockResolvedValue(undefined),
       onInboundChat: vi.fn().mockReturnValue(() => {}),
     },
     bleCoexistence: {

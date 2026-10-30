@@ -513,7 +513,14 @@
     "coiNo": "hayır",
     "coiTimingFine": "ince (~5 µs)",
     "coiTimingCoarse": "kaba (~100 µs)",
-    "shareMyLocationOffStaticActive": "Konum paylaşımı kapalı. Ana bilgisayar GPS otomatik yenileme ve mesh gönderme devre dışı. Kaydedilen etkin konumunuz (ve mevcut olduğunda radyo GPS'iniz) harita ve mesafe filtreleri için yerel olarak kullanılmaya devam eder."
+    "shareMyLocationOffStaticActive": "Konum paylaşımı kapalı. Ana bilgisayar GPS otomatik yenileme ve mesh gönderme devre dışı. Kaydedilen etkin konumunuz (ve mevcut olduğunda radyo GPS'iniz) harita ve mesafe filtreleri için yerel olarak kullanılmaya devam eder.",
+    "preventSleep": "Bağlıyken bilgisayarı uyanık tutun",
+    "preventSleepAria": "Bağlıyken bilgisayarı uyanık tutun",
+    "preventSleepHint": "Yalnızca radyo bağlantısı (varsayılan), BLE veya seri RNode/KISS arayüzü etkinleştirildiğinde Bluetooth veya USB Meshtastic/MeshCore radyoları ve Reticulum için engelleyiciyi tutar. TCP/Wi-Fi refakatçiler, MQTT ve yalnızca ağ üzerinden Reticulum uyandıktan sonra yeniden bağlanın ve buna ihtiyacınız yok. Herhangi bir bağlantı, önceki her zaman açık davranışla eşleşir. Radyo bağlantısı olsa bile sistemin uyumasına asla izin vermez. Linux üzerinde, Electron'un engellemesi, engelleyici tutulduğunda ekranın uyumasını da durdurur — Monitörlerin boş olması gerekiyorsa Asla'yı seçin.",
+    "preventSleepOptionRf": "Yalnızca radyo bağlantısı (Bluetooth veya USB)",
+    "preventSleepOptionAlways": "Herhangi bir bağlantı",
+    "preventSleepOptionOff": "Hiç",
+    "preventSleepSaveFailed": "Uyanık tutma ayarı kaydedilemedi."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -5860,7 +5867,8 @@
     "messagingIntroReticulum": "Atak cihazlarının LXMF akranlarına mesaj göndermesine izin verin. Bir pozisyona sahip bir akran, işaretçisinden mesajlaşabilir; mesh-client onunla bir konuşma yaptıktan sonra 0, 0 konumunda olmayan bir akran görünür, bu nedenle kişi listesi duyulan her akranla dolu değildir.",
     "channelCallsign": "Çağrı işareti ekle",
     "channelCallsignFor": "{{channel}} adresine gönderilen mesajların önüne gönderenin atak çağrı işaretini koyun",
-    "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır."
+    "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır.",
+    "channelRepliesHint": "ATAK'tan birine yanıt vermek için @ ile başlayın ve adının başlangıcı: @silver are you on? MeshCore 'ın yanıtı olarak çıkar @[Silver Eagle] are you on?. @@, en son konuşan kişiye yanıt verir. Adın başlangıcı kanalda duyulan birkaç kişiye uyuyorsa, hiçbir şey gönderilmez ve sohbet kimin eşleştiğini söyler."
   },
   "telemetryPanel": {
     "title": "Telemetri",
@@ -6713,6 +6721,11 @@
       "routine": "RUTİN"
     },
     "incomingToast": "{{severity}} MECP, {{sender}}'den",
+    "atakMarkerFrom": "{{sender}} tarihinden itibaren en son {{time}} UTC tarihinde duyuldu",
+    "atakMarkerLastKnown": "Pozisyon: gönderenin rapordan değil, en son duyulduğu yer",
+    "atakMarkerBeacon": "İmdat lambası aktif",
+    "atakMarkerAcks_one": "{{count}} onay duyuldu",
+    "atakMarkerAcks_other": "{{count}} onaylar duyuldu",
     "notificationTitle": "MECP alarmı",
     "exportLog": "MECP günlüğünü dışa aktar",
     "compose": {
@@ -6776,7 +6789,10 @@
       "throttledToast": "{{sender}} 'dan itibaren tekrarlanan acil durum uyarılarını susturma. Raporları hala Olay sekmesinde görünür.",
       "throttledBlock": "Göndereni Engelle",
       "floodToast": "Birçok istasyon aynı anda acil durum raporları gönderiyor. Diğer uyarı tonları kısa bir süre duraklatılır; Olay sekmesini kontrol edin."
-    }
+    },
+    "atakDrill": "tatbik",
+    "atakPeople_one": "{{count}} kişi",
+    "atakPeople_other": "{{count}} kişi"
   },
   "notificationSounds": {
     "title": "Bildirim tonları",

@@ -202,6 +202,30 @@ describe('relayMeshtasticChatToTak', () => {
     });
   });
 
+  it('hands on an MECP report in words, with its code line below', () => {
+    relayMeshtasticChatToTak(ID, chat({ payload: 'MECP/0/M01 2pax 39.7392,-104.9903' }));
+    expect(pushChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: '🆘 MAYDAY: Injury · 2 people · 39.7392, -104.9903\nMECP/0/M01 2pax 39.7392,-104.9903',
+      }),
+    );
+  });
+
+  it('hands on an MECP report in a direct message in words too', () => {
+    const pushDirectMessage = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.tak, 'pushDirectMessage').mockImplementation(pushDirectMessage);
+    resetTakRelayedDirectMessages();
+    setConnection(ID, { myNodeNum: 0x0badf00d });
+    setTakRadio('meshtastic', ID);
+    useTakRelayPrefsStore.getState().setDirectMessages(ID, true);
+    relayMeshtasticChatToTak(ID, chat({ to: 0x0badf00d, payload: 'MECP/1/M05' }));
+    expect(pushDirectMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: '🚨 URGENT: Hypothermia\nMECP/1/M05' }),
+    );
+    setTakRadio('meshtastic', null);
+    useConnectionStore.setState({ connections: {} });
+  });
+
   it('treats the broadcast address as a channel message', () => {
     relayMeshtasticChatToTak(ID, chat({ to: MESHTASTIC_BROADCAST_NODE_NUM }));
     expect(pushChatMessage).toHaveBeenCalledTimes(1);
