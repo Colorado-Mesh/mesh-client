@@ -2566,7 +2566,7 @@
 <tbody>
 <tr>
 <td><strong>macOS</strong></td>
-<td><strong>13 Ventura</strong> or later (Electron 44; Monterey is not supported)</td>
+<td><strong>13 Ventura</strong> or later (Monterey is not supported)</td>
 </tr>
 <tr>
 <td><strong>Windows</strong></td>
@@ -2583,8 +2583,8 @@
 <li><strong>Windows (Intel/AMD x64):</strong> <code>Mesh-client-Setup-{version}.exe</code></li>
 <li><strong>Windows 11 on ARM (Snapdragon, etc.):</strong> <code>Mesh-client-Setup-{version}-arm64.exe</code> — do not use the x64 installer on native ARM hardware.</li>
 </ul>
-<p><strong>Flatpak</strong> bundles (<code>org.coloradomesh.MeshClient-x86_64.flatpak</code> and <code>org.coloradomesh.MeshClient-aarch64.flatpak</code>) are published on each version tag for Flatpak-enabled Linux:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>./org.coloradomesh.MeshClient-x86_64.flatpak<span class="w"> </span><span class="c1"># or -aarch64</span>
+<p><strong>Flatpak</strong> bundles (<code>org.coloradomesh.MeshClient.flatpak-x86_64.flatpak</code> and <code>org.coloradomesh.MeshClient.flatpak-aarch64.flatpak</code>) are published on each version tag for Flatpak-enabled Linux:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>./org.coloradomesh.MeshClient.flatpak-x86_64.flatpak<span class="w"> </span><span class="c1"># or -aarch64</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>flatpak<span class="w"> </span>run<span class="w"> </span>org.coloradomesh.MeshClient
 </code></pre></div>
 <p>VMware guests and other GPU edge cases: <a href="../troubleshooting/#flatpak-vmwgfx-driver-missing-vmware-on-macos">Flatpak troubleshooting</a>.</p>
@@ -2595,7 +2595,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>nix<span class="w"> </span>run<span class="w"> </span>github:Colorado-Mesh/mesh-client<span class="w">               </span><span class="c1"># build and launch</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>nix<span class="w"> </span>build<span class="w"> </span>github:Colorado-Mesh/mesh-client#mesh-client<span class="w"> </span><span class="c1"># or from a clone: nix run / nix build</span>
 </code></pre></div>
-<p>Install Nix with the <a href="https://install.determinate.systems/">Determinate Systems installer</a> if you do not have it. Flake developer shells: <a href="../development-environment/#nix-nixos-and-macos">Development Guide — Nix</a>.</p>
+<p>Install Nix using the <a href="https://docs.determinate.systems/">Determinate installation guide</a> if you do not have it. Flake developer shells: <a href="../development-environment/#nix-nixos-and-macos">Development Guide — Nix</a>.</p>
 <p><strong>macOS (release download):</strong></p>
 <ul>
 <li>Requires <strong>macOS 13 Ventura</strong> or later.</li>
@@ -2635,7 +2635,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 30, 2026 00:42:10 UTC">October 30, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 30, 2026 14:56:07 UTC">October 30, 2026</span>
   </span>
 
     

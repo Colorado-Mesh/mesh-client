@@ -1493,6 +1493,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#bundle-size-bundle-sizeyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundle size (bundle-size.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#electron-e2e-e2eyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2946,6 +2957,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#bundle-size-bundle-sizeyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundle size (bundle-size.yaml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#electron-e2e-e2eyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3337,6 +3359,11 @@
 <td>Vitest coverage + merge; Reticulum sidecar <code>llvm-cov</code> when sidecar paths change</td>
 </tr>
 <tr>
+<td><code>bundle-size.yaml</code></td>
+<td>All PRs; main push/<code>merge_group</code>/manual</td>
+<td>Independent production main bundle size regression</td>
+</tr>
+<tr>
 <td><code>codeql.yaml</code></td>
 <td>PR/manual validation; push/merge queue/weekly after activation</td>
 <td>Six-language CodeQL; Swift PR input scoping; see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/codeql/README.md">activation</a></td>
@@ -3435,6 +3462,22 @@ budgets live in
 <p>The three <code>Coverage (...)</code> job names and <code>Merge coverage</code> remain stable for the repository ruleset, including when a project or the whole test matrix has no relevant PR work. Superseded runs for the same pull request or ref are cancelled.</p>
 <p>Static analysis on PRs is <strong>CodeQL</strong> (security) plus ESLint, Clippy, and pre-commit <code>check:*</code> scanners. AI PR review is <strong>CodeRabbit</strong> (see <a href="#coderabbit">CodeRabbit</a> below). SonarQube Cloud is not used.</p>
 <p>Test results are available as a downloadable artifact from the workflow run.</p>
+<h3 id="bundle-size-bundle-sizeyaml">Bundle size (<code>bundle-size.yaml</code>)<a class="headerlink" href="#bundle-size-bundle-sizeyaml" title="Permanent link">&para;</a></h3>
+<p>The independent <strong>Main bundle size</strong> check runs on every pull request, including docs-only,
+draft, fork and stacked PRs targeting any branch. It runs on opening, new commits, reopening,
+edits (including retargeting), and draft/ready transitions, plus main pushes, merge queues
+and manual dispatches. It has no path filter or dependency on related-test selection.</p>
+<p>It uses the shared pinned Node/pnpm setup and frozen install, then runs
+<code>pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs --coverage.enabled=false --reporter=default</code>.
+This explicitly selects the existing esbuild regression because its string entrypoint is invisible
+to Vitest's import-based related selection. The test builds the production minified main process,
+checks worker/license artifacts and enforces the strict <code>MAIN_BUNDLE_SIZE_BUDGET_BYTES</code> budget
+defined in that test.
+An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
+The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
+it uses no repository secrets or privileged <code>pull_request_target</code> execution.</p>
+<p>Making this new check required is a separate repository-admin ruleset/branch-protection decision.
+The workflow does not change repository security settings. Existing global coverage gates remain.</p>
 <h3 id="electron-e2e-e2eyaml">Electron E2E (<code>e2e.yaml</code>)<a class="headerlink" href="#electron-e2e-e2eyaml" title="Permanent link">&para;</a></h3>
 <p>Not a PR gate. Runs on a <strong>daily schedule</strong> (default branch only) and on <strong>manual</strong> <code>workflow_dispatch</code>:</p>
 <ol>
@@ -3965,7 +4008,7 @@ budgets live in
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 17:30:11 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 30, 2026 14:55:29 UTC">October 30, 2026</span>
   </span>
 
     
