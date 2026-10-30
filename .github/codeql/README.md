@@ -60,6 +60,19 @@ That inherited mismatch prevents those barriers from applying under either setup
 the pack unchanged and does not claim active sanitizer models; correcting the range needs separate
 validation because it changes scan results.
 
+## Rust (`reticulum-sidecar`)
+
+The sidecar's Ratspeak crates are path dependencies under the gitignored `.rsstack/`, which only
+`scripts/clone-ratspeak-stack.sh` creates. Default setup cannot run that script, so Cargo cannot
+load the sidecar and its `serde_json::json!` and `tracing` macros fail to expand. On `main` at
+`98342088`, 35 of 102 Rust files extracted with errors
+([run](https://github.com/Colorado-Mesh/mesh-client/actions/runs/41086597091)), and the CodeQL
+status page reports it.
+
+The advanced workflow clones the stack before analyzing Rust, and `paths-ignore: [.rsstack]` keeps
+the cloned upstream crates out of the results while they still resolve the sidecar. The warning
+clears only after the activation steps above, because default setup keeps uploading until then.
+
 ## Timing audit (2026-10-25)
 
 These are observed baselines, not predictions for the replacement:
