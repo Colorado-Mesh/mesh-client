@@ -108,7 +108,11 @@ export async function startMeshcoreRadio(selfId = 171) {
               send(Buffer.from([1, 2]));
               return;
             }
-            channels[index] = command.subarray(2, 34).toString().split('\0')[0];
+            const name = command.subarray(2, 34).toString().split('\0')[0];
+            // splice, not an indexed write: CodeQL reads an index taken from socket bytes as a
+            // remote property name. Unsaved slots below it read back as empty channels.
+            while (channels.length < index) channels.push('');
+            channels.splice(index, 1, name);
             secrets.set(index, Buffer.from(command.subarray(34, 50)));
             send(Buffer.from([0]));
           };
