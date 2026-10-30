@@ -149,6 +149,7 @@ import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
 import { AppAboutSection } from './components/AppAboutSection';
+import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -4462,6 +4463,13 @@ function AppContent() {
                       onSendZeroHop={meshcorePanelActions.sendZeroHopAdvert}
                     />
                   ) : null}
+                  {capabilities.hasCompanionContactManagementConfig ? (
+                    <RadioChatSyncButton
+                      onSync={meshcorePanelActions.syncRadioChats}
+                      disabled={!isOperational}
+                      feedback="toast"
+                    />
+                  ) : null}
                   <button
                     type="button"
                     onClick={toggleLauncher}
@@ -4693,11 +4701,6 @@ function AppContent() {
                               onClearChannelMessages={
                                 capabilities.hasCompanionContactManagementConfig
                                   ? clearMeshcoreChatChannelMessages
-                                  : undefined
-                              }
-                              onSyncRadioChats={
-                                capabilities.hasCompanionContactManagementConfig
-                                  ? meshcorePanelActions.syncRadioChats
                                   : undefined
                               }
                               meshcoreChannelManagementDisabled={!isOperational}

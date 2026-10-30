@@ -10,6 +10,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | --------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`                      | Lint, typecheck, build, policy scanners, Flatpak manifest validation                       |
 | `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`                      | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change            |
+| `bundle-size.yaml`          | All PRs; main push/`merge_group`/manual                        | Independent production main bundle size regression                                         |
 | `codeql.yaml`               | PR/manual validation; push/merge queue/weekly after activation | Six-language CodeQL; Swift PR input scoping; see [activation](../.github/codeql/README.md) |
 | `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`                           | Browser-based chaos testing of the Vite renderer                                           |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch`                   | Playwright Electron E2E (unpackaged build, 3-OS) + Release preflight; no PR gate           |
@@ -79,6 +80,26 @@ The three `Coverage (...)` job names and `Merge coverage` remain stable for the 
 Static analysis on PRs is **CodeQL** (security) plus ESLint, Clippy, and pre-commit `check:*` scanners. AI PR review is **CodeRabbit** (see [CodeRabbit](#coderabbit) below). SonarQube Cloud is not used.
 
 Test results are available as a downloadable artifact from the workflow run.
+
+### Bundle size (`bundle-size.yaml`)
+
+The independent **Main bundle size** check runs on every pull request, including docs-only,
+draft, fork and stacked PRs targeting any branch. It runs on opening, new commits, reopening,
+edits (including retargeting), and draft/ready transitions, plus main pushes, merge queues
+and manual dispatches. It has no path filter or dependency on related-test selection.
+
+It uses the shared pinned Node/pnpm setup and frozen install, then runs
+`pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs --coverage.enabled=false --reporter=default`.
+This explicitly selects the existing esbuild regression because its string entrypoint is invisible
+to Vitest's import-based related selection. The test builds the production minified main process,
+checks worker/license artifacts and enforces the strict `MAIN_BUNDLE_SIZE_BUDGET_BYTES` budget
+defined in that test.
+An oversized bundle or missing test suite fails; the job writes no coverage/blob/JUnit reports.
+The default checkout validates the PR merge ref, with credentials disabled and a read-only token;
+it uses no repository secrets or privileged `pull_request_target` execution.
+
+Making this new check required is a separate repository-admin ruleset/branch-protection decision.
+The workflow does not change repository security settings. Existing global coverage gates remain.
 
 ### Electron E2E (`e2e.yaml`)
 

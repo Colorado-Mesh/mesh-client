@@ -5371,7 +5371,8 @@
     "lxmfAddressError": {
       "invalid": "Alamat LXMF operator harus sama panjangnya dengan hex.",
       "tooLong": "Alamat LXMF operator terlalu panjang."
-    }
+    },
+    "existingPublish": "Penerbitan RMAP yang ada diaktifkan dalam konfigurasi asli. Nonaktifkan Publikasikan di RMAP di atas untuk menghentikannya."
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",

@@ -729,6 +729,7 @@ export interface ElectronAPI {
         on_radio?: number | null;
         last_synced_from_radio?: string | null;
       }[],
+      radioSnapshotBefore?: string,
     ) => Promise<number>;
     updateMeshcoreContactRfTransport: (
       nodeId: number,

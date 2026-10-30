@@ -5415,7 +5415,8 @@
     "lxmfAddressError": {
       "invalid": "Adresa operátora LXMF musí být hexadecimální s rovnoměrnou délkou.",
       "tooLong": "Adresa operátora LXMF je příliš dlouhá."
-    }
+    },
+    "existingPublish": "Existující publikování RMAP je povoleno v nativní konfiguraci. Vypnutím možnosti Publikovat na RMAP výše ji zastavíte."
   },
   "reticulumTopology": {
     "title": "topologie sítě",

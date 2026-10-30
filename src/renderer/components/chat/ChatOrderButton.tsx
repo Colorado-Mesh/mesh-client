@@ -12,9 +12,10 @@ interface Props {
   items: readonly OrderedChat[];
   ids: readonly string[];
   onSave: (ids: readonly string[]) => void;
+  title?: string;
 }
 
-export function ChatOrderButton({ items, ids, onSave }: Props) {
+export function ChatOrderButton({ items, ids, onSave, title }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => {
@@ -25,6 +26,7 @@ export function ChatOrderButton({ items, ids, onSave }: Props) {
       <IconButton
         size="sm"
         aria-label={t('chatOrder.title')}
+        title={title}
         disabled={items.length < 2}
         onClick={() => {
           setOpen(true);
@@ -52,6 +54,7 @@ function ChatOrderDialog({ items, ids, onSave, onClose }: Props & { onClose: () 
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         onClose();
       }
       if (event.key !== 'Tab') return;
@@ -74,9 +77,9 @@ function ChatOrderDialog({ items, ids, onSave, onClose }: Props & { onClose: () 
         first?.focus();
       }
     };
-    document.addEventListener('keydown', handler);
+    window.addEventListener('keydown', handler, true);
     return () => {
-      document.removeEventListener('keydown', handler);
+      window.removeEventListener('keydown', handler, true);
       previous?.focus();
     };
   }, [onClose]);

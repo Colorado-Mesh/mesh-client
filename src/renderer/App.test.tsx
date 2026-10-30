@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -1397,6 +1398,42 @@ describe('App accessibility', () => {
     });
     expect(screen.queryByRole('heading', { name: 'Channel Utilization' })).not.toBeInTheDocument();
   });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'places radio sync beside the flood advert only when supported on %s',
+    async (protocol) => {
+      getStoredMeshProtocolMock.mockReturnValue(protocol);
+      const syncRadioChats = vi.fn().mockResolvedValue(undefined);
+      useMeshCoreMock.mockReturnValue({
+        ...createMeshCoreMock(),
+        syncRadioChats,
+        state: { status: 'configured', myNodeNum: 0x12345678, connectionType: 'serial' },
+      });
+      if (protocol === 'meshcore') {
+        setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+          status: 'configured',
+          myNodeNum: 0x12345678,
+          connectionType: 'serial',
+          mqttStatus: 'disconnected',
+        });
+      }
+      renderApp();
+      if (protocol !== 'meshcore') {
+        expect(
+          screen.queryByRole('button', { name: 'Sync chats from radio' }),
+        ).not.toBeInTheDocument();
+        return;
+      }
+      const sync = await screen.findByRole('button', { name: 'Sync chats from radio' });
+      const advert = screen.getByRole('button', { name: 'Send flood advert' });
+      expect(sync.closest('header')).toBe(advert.closest('header'));
+      expect((advert.closest('[role="group"]') ?? advert).nextElementSibling).toContainElement(
+        sync,
+      );
+      await userEvent.setup().click(sync);
+      expect(syncRadioChats).toHaveBeenCalledOnce();
+    },
+  );
 
   it('passes only configured MeshCore channels through to ChatPanel', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');

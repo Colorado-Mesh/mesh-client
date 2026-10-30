@@ -252,6 +252,103 @@ describe('ReticulumRmapDiscoveryControls', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it.each([true, false, undefined])(
+    'honors saved consent %s when an existing native publisher loads',
+    async (consent) => {
+      if (consent === undefined) localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+      else
+        localStorage.setItem(
+          APP_SETTINGS_STORAGE_KEY,
+          JSON.stringify({ shareMyLocation: consent }),
+        );
+      let discoverable = true;
+      window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation(() =>
+        Promise.resolve({
+          interfaces: [
+            {
+              id: 'rnode-1',
+              type: 'rnode',
+              name: 'LoRa',
+              enabled: true,
+              serial_port: '/dev/ttyUSB0',
+              discoverable,
+            },
+          ],
+        }),
+      );
+      window.electronAPI.reticulum.proxyPut = vi.fn().mockImplementation(() => {
+        discoverable = false;
+        return Promise.resolve({});
+      });
+      const user = userEvent.setup();
+      renderControls();
+      const toggle = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+      if (consent === false) {
+        await waitFor(() => {
+          expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+            '/api/v1/interfaces/rnode-1',
+            expect.objectContaining({ discoverable: false }),
+          );
+        });
+        await waitFor(() => {
+          expect(toggle).not.toBeChecked();
+        });
+      } else {
+        await waitFor(() => {
+          expect(toggle).toBeChecked();
+        });
+        expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
+        if (consent === undefined) {
+          expect(toggle).toBeEnabled();
+          expect(screen.getByText('reticulumRmapDiscovery.existingPublish')).toBeInTheDocument();
+          await user.click(toggle);
+          await waitFor(() => {
+            expect(toggle).not.toBeChecked();
+          });
+          expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBeNull();
+        }
+      }
+    },
+  );
+
+  it('reports an initial opt-out failure once and allows a direct retry', async () => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: false }));
+    let discoverable = true;
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        interfaces: [
+          {
+            id: 'rnode-1',
+            type: 'rnode',
+            name: 'LoRa',
+            enabled: true,
+            serial_port: '/dev/ttyUSB0',
+            discoverable,
+          },
+        ],
+      }),
+    );
+    window.electronAPI.reticulum.proxyPut = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, error: 'offline' })
+      .mockImplementation(() => {
+        discoverable = false;
+        return Promise.resolve({});
+      });
+    const user = userEvent.setup();
+    renderControls();
+    const toggle = await screen.findByLabelText('reticulumRmapDiscovery.publishToggle');
+    await screen.findByText('reticulumRmapDiscovery.applyFailed:offline');
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledTimes(1);
+    expect(toggle).toBeChecked();
+    expect(toggle).toBeEnabled();
+    await user.click(toggle);
+    await waitFor(() => {
+      expect(toggle).not.toBeChecked();
+    });
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledTimes(2);
+  });
+
   it('disables an active publisher when shareMyLocation turns off', async () => {
     localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify({ shareMyLocation: true }));
     localStorage.setItem(
@@ -291,7 +388,10 @@ describe('ReticulumRmapDiscoveryControls', () => {
     window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalled();
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+        '/api/v1/interfaces/rnode-1',
+        expect.objectContaining({ discoverable: false }),
+      );
     });
     await waitFor(() => {
       expect(screen.getByLabelText('reticulumRmapDiscovery.publishToggle')).not.toBeChecked();

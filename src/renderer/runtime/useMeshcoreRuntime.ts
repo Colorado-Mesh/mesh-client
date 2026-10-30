@@ -193,7 +193,11 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
-import { fetchMeshcoreContactsForInit } from '../lib/meshcore/meshcoreInitContacts';
+import {
+  fetchMeshcoreContactsForInit,
+  MeshcoreContactsStallError,
+  MeshcoreContactsTimeoutError,
+} from '../lib/meshcore/meshcoreInitContacts';
 import {
   rememberedMeshcoreLiveAdvertName,
   rememberMeshcoreLiveAdvertName,
@@ -1681,6 +1685,7 @@ export function useMeshcoreRuntime() {
         /** Explicit sync must never publish a snapshot from a disconnected generation. */
         assertCurrent?: () => void;
         awaitPersistence?: boolean;
+        radioSnapshotBefore?: string;
       },
     ): Promise<Map<number, MeshNode>> => {
       const prevSnap = opts?.previousNodes ?? new Map<number, MeshNode>();
@@ -1808,8 +1813,14 @@ export function useMeshcoreRuntime() {
         );
         pendingDbRows.push(dbRow);
       }
-      if (pendingDbRows.length > 0) {
-        const persist = window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
+      if (pendingDbRows.length > 0 || opts?.radioSnapshotBefore !== undefined) {
+        const persist =
+          opts?.radioSnapshotBefore !== undefined
+            ? window.electronAPI.db.saveMeshcoreContactsBatch(
+                pendingDbRows,
+                opts.radioSnapshotBefore,
+              )
+            : window.electronAPI.db.saveMeshcoreContactsBatch(pendingDbRows);
         if (opts?.awaitPersistence) {
           await persist;
           opts.assertCurrent?.();
@@ -4816,57 +4827,101 @@ export function useMeshcoreRuntime() {
     ],
   );
 
+  const readChatContacts = useCallback(
+    async (conn: MeshCoreConnection, generation: number) => {
+      try {
+        return await fetchMeshcoreContactsForInit(conn, {
+          totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
+          isCancelled: () => meshcoreSetupGenerationRef.current !== generation,
+        });
+      } catch (error) {
+        // Only an incomplete dump can still own untagged replies after rejection.
+        if (
+          (error instanceof MeshcoreContactsStallError ||
+            error instanceof MeshcoreContactsTimeoutError) &&
+          connRef.current === conn &&
+          meshcoreSetupGenerationRef.current === generation
+        ) {
+          await disconnect().catch((closeError: unknown) => {
+            console.warn(
+              '[useMeshcoreRuntime] close after contact stall failed ' +
+                errLikeToLogString(closeError),
+            );
+          });
+        }
+        throw error;
+      }
+    },
+    [disconnect],
+  );
+
+  const radioChatSyncInFlightRef = useRef<Promise<void> | null>(null);
   const refreshContacts = useCallback(async () => {
-    if (!connRef.current) return;
+    const conn = connRef.current;
+    if (!conn) return;
+    const generation = meshcoreSetupGenerationRef.current;
+    const assertCurrent = () => {
+      if (connRef.current !== conn || meshcoreSetupGenerationRef.current !== generation)
+        throw new Error('Radio disconnected during contact refresh');
+    };
     try {
-      // Mark all existing contacts as not on radio before refreshing
-      await window.electronAPI.db.markAllMeshcoreContactsOffRadio();
-
-      const contactsRaw = await runRadioChatOperation(connRef.current, () =>
-        connRef.current!.getContacts(),
-      );
-      const contacts = await retryRadioRemoveDeletedContacts(
-        connRef.current,
-        contactsRaw.map(meshcoreContactRawFromDevice),
-      );
-      setMeshcoreContactsForTelemetry(contacts);
-      setMeshcoreRadioContactsLoaded(true);
-      setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
-      const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
-      const newNodes = await buildNodesFromContacts(contacts, {
-        self: selfInfo,
-        myNodeId: myNodeNumRef.current,
-        previousNodes: previousNodesBaseline,
-        contactsFromRadio: true,
-        deferDbMerge: true,
-        deferPathHistory: true,
+      await radioChatSyncInFlightRef.current?.catch(() => {
+        // catch-no-log-ok the sync caller owns its error; refresh waits only for ordering
       });
-      applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
-      const identityId = meshcoreIdentityIdRef.current;
-      if (identityId) {
-        repairMeshcoreChannelSenderIdsInStore(identityId);
-      }
-      await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
+      assertCurrent();
+      await runRadioChatOperation(conn, async () => {
+        const radioSnapshotBefore = new Date().toISOString();
 
-      const radioMax = getMeshcoreRadioMaxContacts();
-      if (contacts.length > meshcoreContactThresholds(radioMax).warning) {
-        console.warn(
-          `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${radioMax})`,
+        const contactsRaw = await readChatContacts(conn, generation);
+        assertCurrent();
+        const contacts = await retryRadioRemoveDeletedContacts(
+          conn,
+          contactsRaw.map(meshcoreContactRawFromDevice),
         );
-      }
-      maybeRequestMeshcoreAutoOffloadForCount(contacts.length);
+        assertCurrent();
+        setMeshcoreContactsForTelemetry(contacts);
+        setMeshcoreRadioContactsLoaded(true);
+        setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, selfInfo));
+        const previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
+        const newNodes = await buildNodesFromContacts(contacts, {
+          self: selfInfo,
+          myNodeId: myNodeNumRef.current,
+          previousNodes: previousNodesBaseline,
+          contactsFromRadio: true,
+          deferDbMerge: true,
+          deferPathHistory: true,
+          assertCurrent,
+          awaitPersistence: true,
+          radioSnapshotBefore,
+        });
+        applyMeshcoreNodesToUi(newNodes, { fromRadio: true });
+        const identityId = meshcoreIdentityIdRef.current;
+        if (identityId) {
+          repairMeshcoreChannelSenderIdsInStore(identityId);
+        }
+        await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline, assertCurrent);
+
+        const radioMax = getMeshcoreRadioMaxContacts();
+        if (contacts.length > meshcoreContactThresholds(radioMax).warning) {
+          console.warn(
+            `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${radioMax})`,
+          );
+        }
+        maybeRequestMeshcoreAutoOffloadForCount(contacts.length);
+      });
     } catch (e) {
       console.error('[useMeshcoreRuntime] refreshContacts error ' + errLikeToLogString(e));
+      throw e;
     }
   }, [
     buildNodesFromContacts,
+    readChatContacts,
     meshcorePreviousNodesBaselineForBuild,
     selfInfo,
     applyMeshcoreNodesToUi,
     deferMeshcoreDbContactMerge,
   ]);
 
-  const radioChatSyncInFlightRef = useRef<Promise<void> | null>(null);
   const syncRadioChats = useCallback((): Promise<void> => {
     const conn = connRef.current;
     if (radioChatSyncInFlightRef.current) return radioChatSyncInFlightRef.current;
@@ -4881,17 +4936,10 @@ export function useMeshcoreRuntime() {
     const work = (async () => {
       await waitForRadioChatSetup(() => meshcoreInitConnInFlightRef.current, assertCurrent);
       return runRadioChatOperation(conn, async () => {
+        const radioSnapshotBefore = new Date().toISOString();
         const snapshot = await readRadioChats(
           {
-            getContacts: () =>
-              withTimeout(
-                fetchMeshcoreContactsForInit(conn, {
-                  totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
-                  isCancelled: () => meshcoreSetupGenerationRef.current !== generation,
-                }),
-                MESHCORE_INIT_TIMEOUT_MS,
-                'sync chat contacts',
-              ),
+            getContacts: () => readChatContacts(conn, generation),
             getChannels: () => readRadioChannels(conn, assertCurrent),
           },
           assertCurrent,
@@ -4907,6 +4955,7 @@ export function useMeshcoreRuntime() {
           deferPathHistory: true,
           assertCurrent,
           awaitPersistence: true,
+          radioSnapshotBefore,
         });
         assertCurrent();
         applyMeshcoreNodesToUi(merged, { fromRadio: true });
@@ -4929,6 +4978,7 @@ export function useMeshcoreRuntime() {
   }, [
     applyMeshcoreNodesToUi,
     buildNodesFromContacts,
+    readChatContacts,
     deferMeshcoreDbContactMerge,
     meshcorePreviousNodesBaselineForBuild,
     selfInfo,
@@ -8828,6 +8878,9 @@ export function useMeshcoreRuntime() {
             errLikeToLogString(e),
         );
         pushAppToast(i18n.t('radioPanel.offloadReconcileRefreshFailed'), 'error');
+        clearMeshcoreFirmwareContactsFullLatch();
+        // The removals already happened; a zero count must keep the contacts-full debounce.
+        return removedFromRadio;
       }
       clearMeshcoreFirmwareContactsFullLatch();
       pushAppToast(

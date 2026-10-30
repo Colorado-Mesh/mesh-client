@@ -21,6 +21,7 @@ export const ALL_VITEST_PROJECTS = ['renderer-ui', 'renderer-logic', 'main'];
 const CI_FORCE_FULL_PATTERNS = [
   /^\.github\/actions\/setup-node-pnpm\//,
   /^\.github\/workflows\/tests\.yaml$/,
+  /^\.github\/workflows\/bundle-size\.yaml$/,
   /^scripts\/ci-(?:run-vitest|test-scope)(?:\.test)?\.mjs$/,
   /^scripts\/precommit-tests(?:\.test)?\.mjs$/,
   /^\.npmrc$/,

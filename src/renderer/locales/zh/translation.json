@@ -5371,7 +5371,8 @@
     "lxmfAddressError": {
       "invalid": "操作员LXMF地址必须是偶数长度的十六进制。",
       "tooLong": "操作员LXMF地址太长。"
-    }
+    },
+    "existingPublish": "在本机配置中启用了现有RMAP发布。关闭上面的“在RMAP上发布”以停止它。"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",

@@ -249,7 +249,6 @@ import { CatchUpButton } from './chat/CatchUpButton';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
-import { RadioChatSyncButton } from './chat/RadioChatSyncButton';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
@@ -709,7 +708,6 @@ export interface ChatPanelProps {
   /** Live message list for unread badges when `messages` is frozen (leaving Chat tab). */
   messagesForUnread?: ChatMessage[];
   channels: { index: number; name: string }[];
-  onSyncRadioChats?: () => Promise<void>;
   /** Full MeshCore channel list with PSK metadata for unread filtering (display uses `channels`). */
   meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
   /** MeshCore: save a channel on the connected companion radio. */
@@ -814,7 +812,6 @@ function ChatPanel({
   getReceptionStats,
   messagesForUnread,
   channels,
-  onSyncRadioChats,
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
@@ -3018,8 +3015,6 @@ function ChatPanel({
   /** Reticulum wraps its DM pills in Row 1; LoRa protocols keep the separate DM strip. */
   const dmTabPills = (
     <>
-      <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
-      <ChatOrderButton items={dmOrderItems} ids={dmOrder.ids} onSave={dmOrder.save} />
       {!dmOnlyChat && visibleDmTabs.length > 0 && (
         <ChatChannelSwitcher
           kind="dms"
@@ -3154,7 +3149,7 @@ function ChatPanel({
     <div className={`flex h-full min-h-0 min-w-0 flex-col ${dmOnlyChat ? 'overflow-y-auto' : ''}`}>
       {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-w-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${
+        className={`mb-2 grid min-w-0 shrink-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${
           dmOnlyChat
             ? 'min-h-[7.5rem] grid-rows-[minmax(5rem,1fr)_auto] lg:min-h-[5rem] lg:grid-rows-[minmax(5rem,1fr)]'
             : 'min-h-0 grid-rows-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]'
@@ -3173,12 +3168,6 @@ function ChatPanel({
                 ids={channelOrder.ids}
                 onSave={channelOrder.save}
               />
-              {onSyncRadioChats && (
-                <RadioChatSyncButton
-                  onSync={onSyncRadioChats}
-                  disabled={meshcoreChannelManagementDisabled}
-                />
-              )}
               <WrappingChannelList activeKey={channelViewActive ? channel : null}>
                 {orderedChannels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
@@ -3335,8 +3324,16 @@ function ChatPanel({
         <div
           role="group"
           aria-label={t('chatPanel.toolbarLabel')}
-          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 justify-self-end rounded-lg border p-0.5"
+          className="border-secondary-dark bg-deep-black flex max-w-full shrink-0 flex-wrap items-center justify-end gap-0.5 justify-self-end rounded-lg border p-0.5"
         >
+          <div role="group" aria-label={t('chatPanel.dms')} className="flex shrink-0">
+            <ChatOrderButton
+              items={dmOrderItems}
+              ids={dmOrder.ids}
+              onSave={dmOrder.save}
+              title={`${t('chatOrder.title')}: ${t('chatPanel.dms')}`}
+            />
+          </div>
           <CatchUpButton summary={summary} />
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
@@ -3494,7 +3491,7 @@ function ChatPanel({
       ) : null}
 
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
-      {!dmOnlyChat ? (
+      {!dmOnlyChat && visibleDmTabs.length > 0 ? (
         <div
           className={`mb-2 flex min-h-7 min-w-0 items-center gap-2 ${channelViewActive ? 'opacity-60' : ''}`}
         >

@@ -6,8 +6,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { touch } from '@/shared/touch';
 
+import type * as CapacityPush from '../lib/meshcore/meshcoreContactCapacityPush';
 import { isMeshcoreOffloadAbortError } from '../lib/meshcoreOffload';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
+
+type OffloadRunner = CapacityPush.MeshcoreContactsFullOffloadRunner;
+
+const offloadRunners = vi.hoisted(() => [] as (OffloadRunner | null)[]);
+
+vi.mock('../lib/meshcore/meshcoreContactCapacityPush', async (importOriginal) => {
+  const actual = await importOriginal<typeof CapacityPush>();
+  return {
+    ...actual,
+    registerMeshcoreContactsFullOffloadRunner: (runner: OffloadRunner | null) => {
+      offloadRunners.push(runner);
+      actual.registerMeshcoreContactsFullOffloadRunner(runner);
+    },
+  };
+});
 
 vi.spyOn(console, 'warn').mockImplementation(() => {});
 vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -414,6 +430,38 @@ describe('useMeshcoreRuntime offloadContactsFromRadio', () => {
     });
 
     expect(removeContactMock).toHaveBeenCalledTimes(1);
+    expect(removeContactMock).toHaveBeenCalledWith(PEER_PUBKEY);
+  });
+
+  it('contacts-full runner reports zero removals when the follow-up refresh fails', async () => {
+    const port = makeMockSerialPort();
+    Object.defineProperty(navigator, 'serial', {
+      configurable: true,
+      value: { requestPort: vi.fn().mockResolvedValue(port) },
+    });
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await act(async () => {
+      await result.current.connect('serial');
+    });
+
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    // The radio refuses every removal, then the reconcile read fails. A count of zero keeps
+    // the contacts-full debounce; an undefined result would reset it.
+    removeContactMock.mockImplementation(() => {
+      getContactsMock.mockRejectedValue(new Error('radio busy'));
+      return Promise.reject(new Error('refused'));
+    });
+    const runner = offloadRunners.filter((entry): entry is OffloadRunner => entry !== null).at(-1);
+    if (!runner) throw new Error('runtime registered no contacts-full offload runner');
+
+    await act(async () => {
+      await expect(runner()).resolves.toBe(0);
+    });
     expect(removeContactMock).toHaveBeenCalledWith(PEER_PUBKEY);
   });
 });

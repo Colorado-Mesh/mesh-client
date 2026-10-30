@@ -455,7 +455,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         on_radio?: number | null;
         last_synced_from_radio?: string | null;
       }[],
-    ) => ipcRenderer.invoke('db:saveMeshcoreContactsBatch', contacts),
+      radioSnapshotBefore?: string,
+    ) => ipcRenderer.invoke('db:saveMeshcoreContactsBatch', contacts, radioSnapshotBefore),
     updateMeshcoreContactRfTransport: (
       nodeId: number,
       transportScope: number | null,

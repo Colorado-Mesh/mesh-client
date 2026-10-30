@@ -5371,7 +5371,8 @@
     "lxmfAddressError": {
       "invalid": "L'indirizzo LXMF dell'operatore deve essere esadecimale di lunghezza pari.",
       "tooLong": "L'indirizzo LXMF dell'operatore è troppo lungo."
-    }
+    },
+    "existingPublish": "La pubblicazione RMAP esistente è abilitata nella configurazione nativa. Disattiva Pubblica su RMAP sopra per interromperlo."
   },
   "reticulumTopology": {
     "title": "Topologia di rete.",

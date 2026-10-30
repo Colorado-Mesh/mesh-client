@@ -49,6 +49,13 @@ export class MeshcoreContactsStallError extends Error {
   }
 }
 
+export class MeshcoreContactsTimeoutError extends Error {
+  constructor(totalTimeoutMs: number) {
+    super(`getContacts timed out after ${totalTimeoutMs}ms`);
+    this.name = 'MeshcoreContactsTimeoutError';
+  }
+}
+
 interface ContactsAttempt {
   result: Promise<MeshCoreContactRaw[]>;
   /** Resolves when this attempt's `getContacts()` settles, even after an idle reject. */
@@ -69,7 +76,7 @@ function runAttempt(
     const remaining = deadline - Date.now();
     if (remaining <= 0) {
       markDumpSettled();
-      reject(new Error(`getContacts timed out after ${totalTimeoutMs}ms`));
+      reject(new MeshcoreContactsTimeoutError(totalTimeoutMs));
       return;
     }
     let received = 0;
@@ -101,7 +108,7 @@ function runAttempt(
 
     conn.on(MESHCORE_RESPONSE_CONTACT, onContact);
     const totalTimer = setTimeout(() => {
-      fail(new Error(`getContacts timed out after ${totalTimeoutMs}ms`));
+      fail(new MeshcoreContactsTimeoutError(totalTimeoutMs));
     }, remaining);
     armIdle();
 
@@ -159,7 +166,7 @@ export async function fetchMeshcoreContactsForInit(
     const dumped = await waitForDumpOrDeadline(first.dumpSettled, graceDeadline);
     if (opts.isCancelled?.()) throw e;
     if (deadline - Date.now() <= 0) {
-      throw new Error(`getContacts timed out after ${opts.totalTimeoutMs}ms`);
+      throw new MeshcoreContactsTimeoutError(opts.totalTimeoutMs);
     }
     if (!dumped) throw e;
     opts.onStallRetry?.({ contactsBeforeStall: e.contactsBeforeStall, idleTimeoutMs });

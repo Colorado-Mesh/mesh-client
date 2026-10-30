@@ -307,6 +307,130 @@ describe('useMeshcoreRuntime deleteMeshcoreChannel', () => {
     unmount();
   });
 
+  it('waits for an active sync before refreshing contacts and propagates refresh errors', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    let acknowledge!: () => void;
+    vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mockImplementationOnce(
+      () =>
+        new Promise<number>((resolve) => {
+          acknowledge = () => {
+            resolve(0);
+          };
+        }),
+    );
+    let sync!: Promise<void>;
+    act(() => {
+      sync = result.current.syncRadioChats();
+    });
+    await waitFor(() => {
+      expect(acknowledge).toBeDefined();
+    });
+    const before = getContactsMock.mock.calls.length;
+    let refresh!: Promise<void>;
+    act(() => {
+      refresh = result.current.refreshContacts();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(before);
+    acknowledge();
+    await act(async () => {
+      await Promise.all([sync, refresh]);
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(before + 1);
+    getContactsMock.mockRejectedValueOnce(new Error('read failed'));
+    await act(async () => {
+      await expect(result.current.refreshContacts()).rejects.toThrow('read failed');
+    });
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+  it.each(['syncRadioChats', 'refreshContacts'] as const)(
+    'keeps the link after an ordinary %s rejection',
+    async (operation) => {
+      const { result, unmount } = await connectWithTwoChannels();
+      const error = new Error('radio busy');
+      getContactsMock.mockRejectedValueOnce(error);
+      await act(async () => {
+        await expect(result.current[operation]()).rejects.toBe(error);
+      });
+      expect(result.current.state.status).toBe('configured');
+      await act(async () => {
+        await result.current[operation]();
+      });
+      expect(result.current.state.status).toBe('configured');
+      await act(async () => {
+        await result.current.disconnect();
+      });
+      unmount();
+    },
+  );
+  it('continues a queued refresh after sync persistence fails', async () => {
+    const { result, unmount } = await connectWithTwoChannels();
+    let fail!: (error: Error) => void;
+    vi.mocked(window.electronAPI.db.saveMeshcoreContactsBatch).mockImplementationOnce(
+      () =>
+        new Promise<number>((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+    let sync!: Promise<void>;
+    act(() => {
+      sync = result.current.syncRadioChats();
+    });
+    const failure = expect(sync).rejects.toThrow('disk full');
+    await waitFor(() => {
+      expect(fail).toBeDefined();
+    });
+    const dumps = getContactsMock.mock.calls.length;
+    let refresh!: Promise<void>;
+    act(() => {
+      refresh = result.current.refreshContacts();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(dumps);
+    fail(new Error('disk full'));
+    await act(async () => {
+      await failure;
+      await refresh;
+    });
+    expect(getContactsMock).toHaveBeenCalledTimes(dumps + 1);
+    expect(result.current.state.status).toBe('configured');
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    unmount();
+  });
+  it.each(['syncRadioChats', 'refreshContacts'] as const)(
+    'closes a stalled %s dump before retry can own the stream',
+    async (operation) => {
+      const { result, unmount } = await connectWithTwoChannels();
+      vi.useFakeTimers();
+      try {
+        getContactsMock.mockImplementation(() => new Promise(() => {}));
+        let pending!: Promise<void>;
+        act(() => {
+          pending = result.current[operation]();
+        });
+        const failure = expect(pending).rejects.toThrow(/stalled|timed out/);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(30_000);
+        });
+        await failure;
+        const dumps = getContactsMock.mock.calls.length;
+        await expect(result.current.syncRadioChats()).rejects.toThrow('Radio is not connected');
+        expect(getContactsMock).toHaveBeenCalledTimes(dumps);
+      } finally {
+        vi.useRealTimers();
+        unmount();
+      }
+    },
+  );
   it('rejects sync while disconnected', async () => {
     const { result, unmount } = renderHook(() => useMeshcoreRuntime());
     await expect(result.current.syncRadioChats()).rejects.toThrow('Radio is not connected');

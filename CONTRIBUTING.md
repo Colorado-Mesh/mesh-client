@@ -7,7 +7,7 @@ Thank you for your interest in contributing.
 | Clone, prerequisites, commands, test harness, git hooks, i18n | [docs/development-environment.md](docs/development-environment.md) |
 | Code style, testing, architecture, security (AI assistants)   | [AGENTS.md](AGENTS.md)                                             |
 | Protocol additions (RF mesh only)                             | [Protocol scope](#protocol-scope)                                  |
-| PR flow and contribution expectations                         | **This file**                                                      |
+| PR flow and contribution expectations                         | [CONTRIBUTING.md](CONTRIBUTING.md#pr-process)                      |
 
 ## Code style & standards
 

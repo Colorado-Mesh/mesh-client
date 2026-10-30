@@ -45,6 +45,8 @@ import {
   isLikelyDirectImageUrl,
   isLinkPreviewImageMime,
   isYouTubePreviewHostname,
+  LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES,
+  LINK_PREVIEW_IMAGE_MAX_BYTES,
   LINK_PREVIEW_MAX_META_ATTR_CHARS,
   LINK_PREVIEW_MAX_REDIRECTS,
   LINK_PREVIEW_RATE_LIMIT_MAX,
@@ -92,6 +94,20 @@ function makeStreamResponse(
     status: 200,
     headers: new Headers({ 'content-type': contentType }),
     body: stream,
+  });
+}
+
+function makeImageResponse(chunks: Uint8Array[]): UndiciFetchResponse {
+  return mockUndiciResponse({
+    ok: true,
+    status: 200,
+    headers: new Headers({ 'content-type': 'image/png' }),
+    body: new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const chunk of chunks) controller.enqueue(chunk);
+        controller.close();
+      },
+    }),
   });
 }
 
@@ -238,6 +254,20 @@ describe('isLinkPreviewImageMime / isLikelyDirectImageUrl', () => {
 });
 
 describe('YouTube URL helpers', () => {
+  it.each([
+    ['https://youtu.be/path_id-123?v=query_id123', 'path_id-123'],
+    ['https://www.youtu.be/?v=query_id123', null],
+    ['https://music.youtube.com/live/path_id-123?v=query_id123', 'query_id123'],
+    ['https://m.youtube.com/embed/path_id-123?v=invalid', 'path_id-123'],
+    ['https://www.youtube.com//shorts//path_id-123/extra', 'path_id-123'],
+    ['https://youtube.com/unknown/path_id-123?v=invalid', null],
+    ['https://not-youtu.be/path_id-123', null],
+  ])('preserves query/path precedence for %s', (input, expectedId) => {
+    expect(canonicalizeYouTubeWatchUrl(new URL(input))).toBe(
+      expectedId ? `https://www.youtube.com/watch?v=${expectedId}` : null,
+    );
+  });
+
   it('recognizes YouTube hosts', () => {
     expect(isYouTubePreviewHostname('www.youtube.com')).toBe(true);
     expect(isYouTubePreviewHostname('youtu.be')).toBe(true);
@@ -493,6 +523,138 @@ describe('fetchLinkPreview', () => {
       image: expect.stringMatching(/^data:image\/png;base64,/),
       kind: 'image',
     });
+  });
+
+  it.each(['extension', 'content-type', 'og'])(
+    'preserves chunk bytes and typed-array offsets for %s images',
+    async (route) => {
+      const expected = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      const first = Uint8Array.from([99, ...expected.subarray(0, 3), 99]).subarray(1, 4);
+      const last = Uint8Array.from([99, ...expected.subarray(3), 99]).subarray(1, 6);
+      mockFetch.mockImplementation(((input: string | URL | Request) => {
+        if (route === 'og' && fetchRequestHostname(input) === 'example.com') {
+          return Promise.resolve(
+            makeStreamResponse(
+              '<title>Chunks</title><meta property="og:image" content="https://cdn.example.com/image.png">',
+            ),
+          );
+        }
+        return Promise.resolve(makeImageResponse([first, last]));
+      }) as typeof undiciFetch);
+      const url =
+        route === 'extension'
+          ? 'https://cdn.example.com/image.png'
+          : route === 'og'
+            ? 'https://example.com/page'
+            : 'https://cdn.example.com/image';
+      const result = await fetchLinkPreview(url);
+      expect(result?.image).toBe(`data:image/png;base64,${expected.toString('base64')}`);
+      expect(result?.kind).toBe(route === 'og' ? undefined : 'image');
+    },
+  );
+
+  it.each([
+    ['https://cdn.example.com/%E0%A4%A.png', '%E0%A4%A.png'],
+    ['https://cdn.example.com/a%20b.png', 'a b.png'],
+    ['https://cdn.example.com/', 'cdn.example.com'],
+  ])('preserves direct-image title fallback for %s', async (url, title) => {
+    mockFetch.mockResolvedValue(
+      makeImageResponse([Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])]),
+    );
+    expect((await fetchLinkPreview(url))?.title).toBe(title);
+  });
+
+  it.each([-1, 0, 1])('keeps the image cache boundary at cap offset %i', async (delta) => {
+    const bytes = new Uint8Array(LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES + delta);
+    bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    let imageFetches = 0;
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      if (fetchRequestHostname(input) === 'cdn.example.com') {
+        imageFetches++;
+        return Promise.resolve(makeImageResponse([bytes]));
+      }
+      return Promise.resolve(
+        makeStreamResponse(
+          '<title>Cache cap</title><meta property="og:image" content="https://cdn.example.com/shared.png">',
+        ),
+      );
+    }) as typeof undiciFetch);
+    for (const page of ['first', 'second']) {
+      expect((await fetchLinkPreview(`https://example.com/${page}`))?.image).toBe(
+        `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,
+      );
+    }
+    expect(imageFetches).toBe(delta <= 0 ? 1 : 2);
+  });
+
+  it('caps image bytes and cancels the reader at the same limit', async () => {
+    const bytes = new Uint8Array(LINK_PREVIEW_IMAGE_MAX_BYTES + 32);
+    bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        body: {
+          getReader: () => ({ read: () => Promise.resolve({ done: false, value: bytes }), cancel }),
+        },
+      }),
+    );
+    const result = await fetchLinkPreview('https://cdn.example.com/image');
+    const actual = Buffer.from(result!.image!.split(',')[1], 'base64');
+    expect(actual.length).toBe(LINK_PREVIEW_IMAGE_MAX_BYTES);
+    expect(actual.equals(Buffer.from(bytes.subarray(0, LINK_PREVIEW_IMAGE_MAX_BYTES)))).toBe(true);
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('retains image redirect headers, hop limit and body cleanup', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      if (fetchRequestHostname(input) === 'example.com') {
+        return Promise.resolve(
+          makeStreamResponse(
+            '<title>Redirect cap</title><meta property="og:image" content="https://cdn.example.com/loop.png">',
+          ),
+        );
+      }
+      return Promise.resolve(
+        mockUndiciResponse({
+          ok: false,
+          status: 302,
+          headers: new Headers({ location: '/loop.png' }),
+          body: {
+            getReader: () => ({
+              read: () => Promise.resolve({ done: true, value: undefined }),
+              cancel,
+            }),
+          },
+        }),
+      );
+    }) as typeof undiciFetch);
+    expect(await fetchLinkPreview('https://example.com/page')).toEqual({
+      title: 'Redirect cap',
+      description: undefined,
+      image: undefined,
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(LINK_PREVIEW_MAX_REDIRECTS + 2);
+    expect(cancel).toHaveBeenCalledTimes(LINK_PREVIEW_MAX_REDIRECTS + 1);
+    const calls = mockFetch.mock.calls;
+    expect(calls[0][1]).toEqual(
+      expect.objectContaining({
+        method: 'GET',
+        redirect: 'manual',
+        headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
+      }),
+    );
+    for (const call of calls.slice(1))
+      expect(call[1]).toEqual(
+        expect.objectContaining({
+          method: 'GET',
+          redirect: 'manual',
+          headers: { Accept: 'image/*' },
+        }),
+      );
   });
 
   it('rejects http Content-Type image embeds (HTTPS-only)', async () => {
@@ -795,6 +957,47 @@ describe('fetchLinkPreview', () => {
   it('extracts meta content when extra attributes sit between property and content', () => {
     const html = `<meta property="og:title" data-react-helmet="true" content="imgur.com">`;
     expect(extractMetaContent(html, { property: 'og:title' })).toBe('imgur.com');
+  });
+
+  it.each([-Infinity, -1, 0, 1, 1.5, NaN, Infinity])(
+    'preserves scanner start-index behavior for %s',
+    (from) => {
+      const html = '<meta content="ok">';
+      expect(scanNextMetaTag(html, from)).toEqual(
+        from <= 0 ? { attrText: ' content="ok"', nextIndex: html.length } : null,
+      );
+    },
+  );
+
+  it('keeps duplicate attributes last-wins and skips their final empty content', () => {
+    const attrs = 'PROPERTY="wrong" property="og:title" CONTENT="first" content=""';
+    expect(parseMetaTagAttributes(attrs)).toEqual({ property: 'og:title', content: '' });
+    expect(
+      extractMetaContent(`<META ${attrs}><meta content='next' property='og:title'/>`, {
+        property: 'OG:TITLE',
+      }),
+    ).toBe('next');
+  });
+
+  it('keeps first matching tag order when both property and name are requested', () => {
+    expect(
+      extractMetaContent(
+        '<meta name="description" content="first"><meta property="og:title" content="second">',
+        { property: 'og:title', name: 'description' },
+      ),
+    ).toBe('first');
+  });
+
+  it('does not recover a fake opener inside an unterminated quoted suffix', () => {
+    const html =
+      '<meta content="' + '<metal>'.repeat(8192) + "<meta property='og:title' content='fake'>";
+    expect(scanNextMetaTag(html, 0)).toBeNull();
+    expect(extractMetaContent(html, { property: 'og:title' })).toBeUndefined();
+  });
+
+  it.each(['\t', '\r\n', '/', ' '])('keeps meta opener boundary %j', (boundary) => {
+    const html = `<MeTa${boundary}property='og:title' content='&amp;apos; &APOS; &#39;'>`;
+    expect(extractMetaContent(html, { property: 'og:title' })).toBe("&apos; ' '");
   });
 
   it('extracts meta content when a quoted attribute embeds a literal >', () => {

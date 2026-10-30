@@ -50,7 +50,7 @@ export function linkPreviewBaseMime(contentType: string): string {
 }
 
 export function isLinkPreviewImageMime(contentType: string): boolean {
-  return LINK_PREVIEW_IMAGE_MIMES.has(linkPreviewBaseMime(contentType));
+  return LINK_PREVIEW_IMAGE_MIMES.has(baseMimeFromContentType(contentType));
 }
 
 /** Cancel an unused body so the undici Agent pinned to the stream can close. */
@@ -75,41 +75,24 @@ export function isYouTubePreviewHostname(hostname: string): boolean {
 export function canonicalizeYouTubeWatchUrl(url: URL): string | null {
   const host = url.hostname.toLowerCase();
   if (!isYouTubePreviewHostname(host)) return null;
-
-  if (host === 'youtu.be' || host === 'www.youtu.be') {
-    const id = url.pathname.split('/').find((seg) => seg.length > 0);
-    if (id && YOUTUBE_VIDEO_ID.test(id)) {
-      return `https://www.youtube.com/watch?v=${id}`;
-    }
-    return null;
-  }
-
-  const fromQuery = url.searchParams.get('v');
-  if (fromQuery && YOUTUBE_VIDEO_ID.test(fromQuery)) {
-    return `https://www.youtube.com/watch?v=${fromQuery}`;
-  }
-
   const parts = url.pathname.split('/').filter(Boolean);
-  const kind = parts[0];
-  const id = parts[1];
-  if (
-    id &&
-    YOUTUBE_VIDEO_ID.test(id) &&
-    (kind === 'shorts' || kind === 'embed' || kind === 'live' || kind === 'v')
-  ) {
-    return `https://www.youtube.com/watch?v=${id}`;
-  }
-  return null;
+  const query = url.searchParams.get('v');
+  let id: string | undefined;
+  if (host.endsWith('youtu.be')) id = parts[0];
+  else if (query && YOUTUBE_VIDEO_ID.test(query)) id = query;
+  else if (['shorts', 'embed', 'live', 'v'].includes(parts[0])) id = parts[1];
+  return id && YOUTUBE_VIDEO_ID.test(id) ? `https://www.youtube.com/watch?v=${id}` : null;
 }
 
 function titleFromImageUrl(url: URL): string {
   const seg = url.pathname.split('/').findLast((s) => s.length > 0) ?? '';
+  let title = seg;
   try {
-    return decodeURIComponent(seg) || url.hostname;
+    title = decodeURIComponent(seg);
   } catch {
-    // catch-no-log-ok malformed percent-encoding in path segment
-    return seg || url.hostname;
+    // catch-no-log-ok malformed percent-encoding retains the original segment
   }
+  return title || url.hostname;
 }
 
 function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void {
@@ -395,66 +378,27 @@ async function readResponseBodyUpTo(
     }
   }
   if (total === 0) return null;
-  const merged = new Uint8Array(total);
-  let pos = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, pos);
-    pos += chunk.length;
-  }
-  return merged;
-}
-
-async function fetchImageResponseWithRedirectGuard(
-  imageUrl: string,
-  redirectCount = 0,
-): Promise<Response | null> {
-  if (!(await isAllowedHttpsPreviewUrl(imageUrl))) return null;
-  if (redirectCount > LINK_PREVIEW_MAX_REDIRECTS) return null;
-
-  const response = await fetchWithResolvedHost(imageUrl, {
-    method: 'GET',
-    headers: { Accept: 'image/*' },
-    redirect: 'manual',
-    signal: AbortSignal.timeout(LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS),
-  });
-
-  if (response.status >= 300 && response.status < 400) {
-    const location = response.headers.get('location');
-    if (!location) {
-      await discardResponseBody(response);
-      return null;
-    }
-    let nextUrl: string;
-    try {
-      nextUrl = new URL(location, imageUrl).href;
-    } catch {
-      // catch-no-log-ok malformed redirect Location header
-      await discardResponseBody(response);
-      return null;
-    }
-    await discardResponseBody(response);
-    return fetchImageResponseWithRedirectGuard(nextUrl, redirectCount + 1);
-  }
-
-  return response;
+  return Buffer.concat(chunks, total);
 }
 
 /**
- * Follow HTTPS redirects for HTML/page preview fetches with per-hop SSRF checks
- * (same policy as image embeds). URL shorteners like TinyURL need this path.
+ * Follow page/image HTTPS redirects with the same per-hop checks and body cleanup.
+ * Callers retain their Accept header and timeout, and pages retain the final URL.
  */
-async function fetchHtmlResponseWithRedirectGuard(
-  pageUrl: string,
+async function fetchPreviewResponseWithRedirectGuard(
+  urlString: string,
+  accept: string,
+  timeoutMs: number,
   redirectCount = 0,
 ): Promise<{ response: Response; finalUrl: string } | null> {
-  if (!(await isAllowedHttpsPreviewUrl(pageUrl))) return null;
+  if (!(await isAllowedHttpsPreviewUrl(urlString))) return null;
   if (redirectCount > LINK_PREVIEW_MAX_REDIRECTS) return null;
 
-  const response = await fetchWithResolvedHost(pageUrl, {
+  const response = await fetchWithResolvedHost(urlString, {
     method: 'GET',
     redirect: 'manual',
-    headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
-    signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
+    headers: { Accept: accept },
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (response.status >= 300 && response.status < 400) {
@@ -465,17 +409,28 @@ async function fetchHtmlResponseWithRedirectGuard(
     }
     let nextUrl: string;
     try {
-      nextUrl = new URL(location, pageUrl).href;
+      nextUrl = new URL(location, urlString).href;
     } catch {
       // catch-no-log-ok malformed redirect Location header
       await discardResponseBody(response);
       return null;
     }
     await discardResponseBody(response);
-    return fetchHtmlResponseWithRedirectGuard(nextUrl, redirectCount + 1);
+    return fetchPreviewResponseWithRedirectGuard(nextUrl, accept, timeoutMs, redirectCount + 1);
   }
 
-  return { response, finalUrl: pageUrl };
+  return { response, finalUrl: urlString };
+}
+
+async function readPreviewImageResponse(
+  response: Response,
+): Promise<{ dataUrl: string; size: number } | null> {
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+  const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
+  if (!bytes) return null;
+  const mime = resolveSafeRasterImageMime(bytes, LINK_PREVIEW_IMAGE_MIMES);
+  return mime ? { dataUrl: bufferToRasterImageDataUrl(bytes, mime), size: bytes.length } : null;
 }
 
 async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | undefined> {
@@ -489,7 +444,12 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
 
   return withInflightDedup(imageInFlight, imageUrl, async (): Promise<string | undefined> => {
     try {
-      const response = await fetchImageResponseWithRedirectGuard(imageUrl);
+      const fetched = await fetchPreviewResponseWithRedirectGuard(
+        imageUrl,
+        'image/*',
+        LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS,
+      );
+      const response = fetched?.response;
       if (!response?.ok) {
         if (response) await discardResponseBody(response);
         imageCache.set(imageUrl, {
@@ -504,17 +464,11 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
         return undefined;
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) return undefined;
-      const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
-      if (!bytes) return undefined;
-
-      const mime = resolveSafeRasterImageMime(bytes, LINK_PREVIEW_IMAGE_MIMES);
-      if (!mime) return undefined;
-
-      const dataUrl = bufferToRasterImageDataUrl(bytes, mime);
+      const image = await readPreviewImageResponse(response);
+      if (!image) return undefined;
+      const { dataUrl, size } = image;
       // Only cache payloads within the tighter cache ceiling to bound main-process memory.
-      if (bytes.length <= LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES) {
+      if (size <= LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES) {
         evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
         imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
       }
@@ -595,12 +549,11 @@ export function decodeLinkPreviewHtmlEntities(value: string): string {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'")
+    .replace(/&(?:#39|apos);/gi, "'")
     .replace(/&amp;/gi, '&');
 }
 
-const META_ATTR_RE = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+const META_ATTR_RE = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 /** Cap meta attribute text before regex parse (ReDoS guard on long tokens without `=`). */
 export const LINK_PREVIEW_MAX_META_ATTR_CHARS = 4_096;
 
@@ -610,74 +563,33 @@ export function parseMetaTagAttributes(attrText: string): Record<string, string>
   META_ATTR_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = META_ATTR_RE.exec(attrText)) !== null) {
-    const name = match[1]?.toLowerCase();
-    if (!name) continue;
-    const raw = match[2] ?? match[3] ?? '';
+    // The pattern requires a nonempty name and one of the quoted-value captures.
+    const name = match[1].toLowerCase();
+    const raw = match[2] ?? match[3];
     attrs[name] = decodeLinkPreviewHtmlEntities(raw);
   }
   return attrs;
 }
 
-function isMetaTagOpenerAt(html: string, index: number): boolean {
-  if (html[index] !== '<') return false;
-  if (index + 4 >= html.length) return false;
-  const c0 = html.charCodeAt(index + 1);
-  const c1 = html.charCodeAt(index + 2);
-  const c2 = html.charCodeAt(index + 3);
-  const c3 = html.charCodeAt(index + 4);
-  // ASCII case-insensitive "meta"
-  return (
-    (c0 === 109 || c0 === 77) &&
-    (c1 === 101 || c1 === 69) &&
-    (c2 === 116 || c2 === 84) &&
-    (c3 === 97 || c3 === 65)
-  );
-}
+const META_OPEN_RE = /<meta(?=[\s/>]|$)/gi;
 
-/**
- * Find the next `<meta …>` tag starting at `from`, respecting `>` inside quotes.
- * Always advances past the candidate opener so unterminated tags are O(n) overall.
- * Returns attribute text and the index to continue from, or null when no opener remains.
- */
+/** Scan each candidate once, respecting quotes and stopping at an unterminated suffix. */
 export function scanNextMetaTag(
   html: string,
   from: number,
 ): { attrText: string; nextIndex: number } | null {
-  let i = Math.max(0, from);
-  while (i < html.length) {
-    if (!isMetaTagOpenerAt(html, i)) {
-      i += 1;
-      continue;
-    }
-    const opener = i;
-    const afterKeyword = opener + 5; // length of '<meta'
-    const boundary = html[afterKeyword];
-    // Require a tag boundary (same idea as \b): end, `>`, `/`, or whitespace before attrs.
-    if (boundary !== undefined && boundary !== '>' && boundary !== '/' && !/\s/.test(boundary)) {
-      i = opener + 1;
-      continue;
-    }
-
-    let quote: '"' | "'" | null = null;
-    for (let j = afterKeyword; j < html.length; j++) {
-      const ch = html[j];
-      if (quote) {
-        if (ch === quote) quote = null;
-        continue;
-      }
-      if (ch === '"' || ch === "'") {
-        quote = ch;
-        continue;
-      }
-      if (ch === '>') {
-        return {
-          attrText: html.slice(afterKeyword, j),
-          nextIndex: j + 1,
-        };
-      }
-    }
-    // No '>' remains after this opener — do not rescan the unterminated suffix.
-    return null;
+  const start = Math.max(0, from);
+  if (!Number.isInteger(start)) return null;
+  META_OPEN_RE.lastIndex = start;
+  if (!META_OPEN_RE.exec(html)) return null;
+  const afterKeyword = META_OPEN_RE.lastIndex;
+  let quote = '';
+  for (let i = afterKeyword; i < html.length; i++) {
+    const ch = html[i];
+    if (quote) {
+      if (ch === quote) quote = '';
+    } else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '>') return { attrText: html.slice(afterKeyword, i), nextIndex: i + 1 };
   }
   return null;
 }
@@ -721,20 +633,19 @@ async function fetchHtmlLinkPreview(
   const metaTitle = extractMetaContent(html, { property: 'og:title' });
   const titleTag = /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
   // Meta content is already entity-decoded in parseMetaTagAttributes; <title> is not.
-  const ogTitle = metaTitle ?? (titleTag ? decodeLinkPreviewHtmlEntities(titleTag) : undefined);
-  if (!ogTitle?.trim()) return null;
+  const title = (
+    metaTitle ?? (titleTag ? decodeLinkPreviewHtmlEntities(titleTag) : undefined)
+  )?.trim();
+  if (!title) return null;
 
-  const title = ogTitle.trim();
-
-  const ogDesc =
+  const description =
     extractMetaContent(html, { property: 'og:description' }) ??
     extractMetaContent(html, { name: 'description' });
-  const description = ogDesc?.trim() || undefined;
 
   const ogImage =
     extractMetaContent(html, { property: 'og:image' }) ??
     extractMetaContent(html, { name: 'twitter:image' });
-  let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
+  let image = ogImage?.startsWith('https://') ? ogImage : undefined;
 
   if (image) {
     image = await fetchPreviewImageAsDataUrl(image);
@@ -747,17 +658,9 @@ async function fetchDirectImagePreviewFromResponse(
   url: URL,
   response: Response,
 ): Promise<LinkPreviewMetadata | null> {
-  const reader = response.body?.getReader();
-  if (!reader) return null;
-  const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
-  if (!bytes) return null;
-  const mime = resolveSafeRasterImageMime(bytes, LINK_PREVIEW_IMAGE_MIMES);
-  if (!mime) return null;
-  return {
-    title: titleFromImageUrl(url),
-    image: bufferToRasterImageDataUrl(bytes, mime),
-    kind: 'image',
-  };
+  const image = await readPreviewImageResponse(response);
+  if (!image) return null;
+  return { title: titleFromImageUrl(url), image: image.dataUrl, kind: 'image' };
 }
 
 /** Extension-hinted HTTPS images via the dedicated image fetcher (follows redirects). */
@@ -799,15 +702,10 @@ async function fetchLinkPreviewFromHttpResponse(
   return await fetchHtmlLinkPreview(urlString, response);
 }
 
-async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewMetadata | null> {
-  let url: URL;
-  try {
-    url = new URL(urlString);
-  } catch {
-    // catch-no-log-ok invalid URL string — silent failure by design
-    return null;
-  }
-  if (url.protocol !== 'https:') return null;
+async function fetchLinkPreviewUncached(
+  urlString: string,
+  url: URL,
+): Promise<LinkPreviewMetadata | null> {
   if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
@@ -819,7 +717,11 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
     const direct = await tryDirectImageUrlPreview(url);
     if (direct) return direct;
 
-    const fetched = await fetchHtmlResponseWithRedirectGuard(urlString);
+    const fetched = await fetchPreviewResponseWithRedirectGuard(
+      urlString,
+      'text/html,image/*,*/*;q=0.8',
+      LINK_PREVIEW_FETCH_TIMEOUT_MS,
+    );
     if (!fetched) return null;
     const finalUrl = new URL(fetched.finalUrl);
     return await fetchLinkPreviewFromHttpResponse(finalUrl, fetched.finalUrl, fetched.response);
@@ -833,8 +735,10 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
 }
 
 export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMetadata | null> {
+  let url: URL;
   try {
-    if (new URL(urlString).protocol !== 'https:') return null;
+    url = new URL(urlString);
+    if (url.protocol !== 'https:') return null;
   } catch {
     // catch-no-log-ok invalid URL strings fail closed without preview work
     return null;
@@ -859,7 +763,7 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
     previewInFlight,
     urlString,
     async (): Promise<LinkPreviewMetadata | null> => {
-      const value = await fetchLinkPreviewUncached(urlString);
+      const value = await fetchLinkPreviewUncached(urlString, url);
       evictOldestCacheEntry(previewCache, LINK_PREVIEW_MAX_CACHE_ENTRIES);
       previewCache.set(urlString, { value, expires: Date.now() + LINK_PREVIEW_CACHE_TTL_MS });
       return value;

@@ -7,6 +7,8 @@ export async function startMeshcoreRadio() {
   let channels = ['Zulu', 'Alpha', 'Beta'];
   let rooms = ['Zulu Room', 'Alpha Room'];
   let failChannelRead = false;
+  let stallContacts = false;
+  const roomKeys = new Map<string, number>();
   const text = (value: string, length: number) => {
     const bytes = Buffer.alloc(length);
     bytes.write(value, 0, length - 1);
@@ -57,12 +59,14 @@ export async function startMeshcoreRadio() {
           );
           break;
         case 4:
+          if (stallContacts) break;
           send(Buffer.concat([Buffer.from([2]), u32(rooms.length)]));
-          for (const [index, name] of rooms.entries())
+          for (const name of rooms) {
+            if (!roomKeys.has(name)) roomKeys.set(name, 192 + roomKeys.size);
             send(
               Buffer.concat([
                 Buffer.from([3]),
-                publicKey(192 + index),
+                publicKey(roomKeys.get(name)!),
                 Buffer.from([3, 0, 0]),
                 Buffer.alloc(64),
                 text(name, 32),
@@ -71,6 +75,7 @@ export async function startMeshcoreRadio() {
                 u32(Math.floor(Date.now() / 1000)),
               ]),
             );
+          }
           send(Buffer.concat([Buffer.from([4]), u32(0)]));
           break;
         case 31: {
@@ -141,6 +146,9 @@ export async function startMeshcoreRadio() {
     setChats: (nextChannels: string[], nextRooms: string[]) => {
       channels = nextChannels;
       rooms = nextRooms;
+    },
+    setContactStall(stall: boolean) {
+      stallContacts = stall;
     },
     setReadFailure: (value: boolean) => {
       failChannelRead = value;

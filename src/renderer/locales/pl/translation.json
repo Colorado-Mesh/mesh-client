@@ -5453,7 +5453,8 @@
     "lxmfAddressError": {
       "invalid": "Adres LXMF operatora musi być sześciokątem równej długości.",
       "tooLong": "Adres operatora LXMF jest zbyt długi."
-    }
+    },
+    "existingPublish": "Istniejące publikowanie RMAP jest włączone w konfiguracji natywnej. Wyłącz opcję Publikuj w RMAP powyżej, aby ją zatrzymać."
   },
   "reticulumTopology": {
     "title": "Topologia sieci",

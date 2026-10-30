@@ -460,11 +460,20 @@ const MESHCORE_CONTACT_UPSERT_SQL =
   'last_synced_from_radio = excluded.last_synced_from_radio';
 
 /** Persist many MeshCore contacts in one SQLite transaction (radio sync hot path). */
-export function saveMeshcoreContactsBatch(contacts: MeshcoreContactUpsertParams[]): number {
-  if (contacts.length === 0) return 0;
+export function saveMeshcoreContactsBatch(
+  contacts: MeshcoreContactUpsertParams[],
+  radioSnapshotBefore?: string,
+): number {
+  if (contacts.length === 0 && !radioSnapshotBefore) return 0;
   const d = getDatabase();
   const stmt = d.prepareOnce(MESHCORE_CONTACT_UPSERT_SQL);
   const run = d.transaction(() => {
+    if (radioSnapshotBefore) {
+      // Keep contact updates received after the snapshot began; rollback flags with upserts.
+      d.prepareOnce(
+        "UPDATE meshcore_contacts SET on_radio=0 WHERE ifnull(last_synced_from_radio,'')<?",
+      ).run(radioSnapshotBefore);
+    }
     for (const c of contacts) {
       stmt.run(c);
     }

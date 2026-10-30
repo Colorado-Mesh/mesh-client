@@ -4,6 +4,7 @@ import type { MeshCoreContactRaw } from './meshcoreHookTypes';
 import {
   fetchMeshcoreContactsForInit,
   MESHCORE_RESPONSE_CONTACT,
+  MeshcoreContactsTimeoutError,
   type MeshcoreInitContactsConn,
 } from './meshcoreInitContacts';
 
@@ -123,7 +124,7 @@ describe('fetchMeshcoreContactsForInit', () => {
   it('does not start a second dump when the stalled one is still in flight at the total cap', async () => {
     const { conn, maxInFlight } = makeConn();
     const p = fetchMeshcoreContactsForInit(conn, { totalTimeoutMs: 1_500, idleTimeoutMs: 1_000 });
-    const assertion = expect(p).rejects.toThrow('getContacts timed out after 1500ms');
+    const assertion = expect(p).rejects.toBeInstanceOf(MeshcoreContactsTimeoutError);
     await vi.advanceTimersByTimeAsync(1_500);
     await assertion;
     expect(conn.getContacts).toHaveBeenCalledTimes(1);
