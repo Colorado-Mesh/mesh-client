@@ -513,7 +513,14 @@
     "coiNo": "não",
     "coiTimingFine": "fino (~5 µs)",
     "coiTimingCoarse": "grosso (~100 µs)",
-    "shareMyLocationOffStaticActive": "O compartilhamento de localização está desativado — a atualização automática do GPS do anfitrião e o envio de malha estão desativados. Sua localização salva ativa (e GPS de rádio, quando disponível) ainda são usados localmente para os filtros de mapa e distância."
+    "shareMyLocationOffStaticActive": "O compartilhamento de localização está desativado — a atualização automática do GPS do anfitrião e o envio de malha estão desativados. Sua localização salva ativa (e GPS de rádio, quando disponível) ainda são usados localmente para os filtros de mapa e distância.",
+    "preventSleep": "Mantenha o computador acordado enquanto estiver conectado",
+    "preventSleepAria": "Mantenha o computador acordado enquanto estiver conectado",
+    "preventSleepHint": "Apenas o link de rádio (padrão) retém o bloqueador para rádios Bluetooth ou USB Meshtastic/MeshCore e para Reticulum quando uma interface BLE ou RNode/KISS serial está ativada. TCP/Wi-Fi companheiros, MQTT e Reticulum apenas de rede se reconectam após o despertar e não precisam disso. Qualquer conexão corresponde ao comportamento sempre ligado anterior. Nunca permite que o sistema durma mesmo com um link de rádio. Em Linux, a inibição do Electron também interrompe a suspensão do visor quando o bloqueador é mantido — escolha Nunca se os monitores precisarem ficar em branco.",
+    "preventSleepOptionRf": "Apenas link de rádio (Bluetooth ou USB)",
+    "preventSleepOptionAlways": "Qualquer conexão:",
+    "preventSleepOptionOff": "Nunca",
+    "preventSleepSaveFailed": "Não foi possível salvar a configuração de manter acordado."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "Deixe os dispositivos ATAK enviarem mensagens para LXMF colegas. Um par com uma posição pode receber mensagens de seu marcador; um sem posição aparece em 0, 0 uma vez que mesh-client tem uma conversa com ele, então a lista de contatos não é preenchida com todos os pares ouvidos.",
     "channelCallsign": "Adicionar indicativo de chamada",
     "channelCallsignFor": "Coloque o indicativo ATAK do remetente na frente das mensagens enviadas para {{channel}}",
-    "channelCallsignHint": "Com o sinal de chamada Add desligado, o que um dispositivo ATAK envia sai exatamente como digitado. Desligue-o para um canal de bot: um bot procura seu comando no início da mensagem, então ele perde um que começa com um indicativo de chamada."
+    "channelCallsignHint": "Com o sinal de chamada Add desligado, o que um dispositivo ATAK envia sai exatamente como digitado. Desligue-o para um canal de bot: um bot procura seu comando no início da mensagem, então ele perde um que começa com um indicativo de chamada.",
+    "channelRepliesHint": "Para responder a alguém da ATAK, comece com @ e o início do nome: @Silver você está? sai como resposta de MeshCore @[Silver Eagle] você está?. @@ responde a quem falou por último. Se o início do nome se encaixa em várias pessoas ouvidas no canal, nada é enviado e o chat diz quem combinou."
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -6709,6 +6717,11 @@
       "routine": "ROTINA"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, ouvido pela última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posição: onde o remetente foi ouvido pela última vez, não do relatório",
+    "atakMarkerBeacon": "Farol de socorro ativo",
+    "atakMarkerAcks_one": "{{count}} reconhecimento ouvido",
+    "atakMarkerAcks_other": "{{count}} reconhecimentos ouvidos",
     "notificationTitle": "Alerta MECP",
     "exportLog": "Exportar registro MECP",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "Silenciar alertas de emergência repetidos de {{sender}}. Seus relatórios ainda aparecem na guia Incidente.",
       "throttledBlock": "Bloquear remetente",
       "floodToast": "Muitas estações estão enviando relatórios de emergência de uma só vez. Outros tons de alerta são pausados brevemente; verifique a guia Incidente."
-    }
+    },
+    "atakDrill": "EXERCÍCIO",
+    "atakPeople_one": "{{count}} pessoa",
+    "atakPeople_other": "{{count}} pessoas"
   },
   "notificationSounds": {
     "title": "Tons de notificação",

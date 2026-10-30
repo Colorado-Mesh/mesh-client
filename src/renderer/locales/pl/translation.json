@@ -529,7 +529,14 @@
     "coiNo": "nie",
     "coiTimingFine": "drobny (~5 µs)",
     "coiTimingCoarse": "gruboziarnisty (~100 µs)",
-    "shareMyLocationOffStaticActive": "Udostępnianie lokalizacji jest wyłączone — automatyczne odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Twoja aktywna zapisana lokalizacja (i radiowy GPS, jeśli jest dostępny) są nadal używane lokalnie do filtrowania mapy i odległości."
+    "shareMyLocationOffStaticActive": "Udostępnianie lokalizacji jest wyłączone — automatyczne odświeżanie GPS hosta i wysyłanie siatki są wyłączone. Twoja aktywna zapisana lokalizacja (i radiowy GPS, jeśli jest dostępny) są nadal używane lokalnie do filtrowania mapy i odległości.",
+    "preventSleep": "Nie wyłączaj komputera podczas połączenia",
+    "preventSleepAria": "Nie wyłączaj komputera podczas połączenia",
+    "preventSleepHint": "Tylko łącze radiowe (domyślnie) zawiera blokadę dla radiotelefonów Bluetooth lub USB Meshtastic/MeshCore oraz dla Reticulum, gdy włączony jest interfejs BLE lub szeregowy RNode/KISS. TCP/Wi-Fi towarzysze, MQTT i tylko sieć Reticulum łączą się ponownie po przebudzeniu i nie potrzebują tego. Każde połączenie jest zgodne z poprzednim zachowaniem „zawsze włączone”. Nigdy nie pozwala systemowi spać nawet za pomocą łącza radiowego. W Linux blokada elektronu zatrzymuje również wyświetlacz, gdy blokada jest przytrzymywana — wybierz Nigdy, jeśli monitory muszą zgasnąć.",
+    "preventSleepOptionRf": "Tylko łącze radiowe (Bluetooth lub USB)",
+    "preventSleepOptionAlways": "- Jakiś związek?",
+    "preventSleepOptionOff": "Nigdy",
+    "preventSleepSaveFailed": "Nie można zapisać ustawienia podtrzymywania aktywności."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -5940,7 +5947,8 @@
     "messagingIntroReticulum": "Pozwól, aby urządzenia Atak wysłały wiadomość do współpracowników LXMF. Rówieśnik z pozycją może otrzymywać wiadomości ze swojego znacznika; osoba bez pozycji pojawia się w 0, 0, gdy mesh-client prowadzi z nią rozmowę, więc lista kontaktów nie wypełnia się każdym usłyszanym rówieśnikiem.",
     "channelCallsign": "Dodaj nazwę użytkownika",
     "channelCallsignFor": "Umieść znak ak nadawcy przed wiadomościami wysłanymi do {{channel}}",
-    "channelCallsignHint": "Gdy funkcja Add callign jest wyłączona, to, co wysyła urządzenie atak, jest wysyłane dokładnie tak, jak zostało wpisane. Wyłącz go dla kanału bota: bot szuka swojego polecenia na początku wiadomości, aby przegapić takie, które zaczyna się od znaku wywoławczego."
+    "channelCallsignHint": "Gdy funkcja Add callign jest wyłączona, to, co wysyła urządzenie atak, jest wysyłane dokładnie tak, jak zostało wpisane. Wyłącz go dla kanału bota: bot szuka swojego polecenia na początku wiadomości, aby przegapić takie, które zaczyna się od znaku wywoławczego.",
+    "channelRepliesHint": "Aby odpowiedzieć komuś z atak, zacznij od @ i rozpocznij od jego imienia: @Silver are you on? wychodzi jako odpowiedź MeshCore @[Silver Eagle] jesteś włączony?. @@ odpowiada temu, kto mówił ostatni. Jeśli początek nazwy pasuje do kilku osób usłyszanych na kanale, nic nie zostanie wysłane, a na czacie pojawi się informacja, kto pasuje."
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -6815,6 +6823,13 @@
       "routine": "RUTYNOWY"
     },
     "incomingToast": "{{severity}} MECP z {{sender}}",
+    "atakMarkerFrom": "Od {{sender}}, ostatnio słyszano o {{time}} UTC",
+    "atakMarkerLastKnown": "Stanowisko: gdzie ostatnio słyszano nadawcę, a nie z raportu",
+    "atakMarkerBeacon": "Sygnalizator alarmowy aktywny",
+    "atakMarkerAcks_one": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_few": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_many": "Usłyszane potwierdzenia: {{count}}",
+    "atakMarkerAcks_other": "Usłyszane potwierdzenia: {{count}}",
     "notificationTitle": "Alert MECP",
     "exportLog": "Eksportuj dziennik MECP",
     "compose": {
@@ -6878,7 +6893,12 @@
       "throttledToast": "Wyciszanie powtarzających się alertów awaryjnych z {{sender}}. Raporty wciąż pojawiają się w zakładce Incydent.",
       "throttledBlock": "Zablokuj nadawcę",
       "floodToast": "Wiele stacji wysyła zgłoszenia alarmowe jednocześnie. Kolejne dźwięki alarmowe są na krótko wstrzymane; sprawdź kartę Zdarzenie."
-    }
+    },
+    "atakDrill": "Wiertarka",
+    "atakPeople_one": "{{count}} osoba",
+    "atakPeople_few": "{{count}} osoby",
+    "atakPeople_many": "{{count}} osób",
+    "atakPeople_other": "{{count}} osoby"
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",

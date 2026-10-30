@@ -7,8 +7,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Close-to-tray connection flags and pinned Catch up lookups bring main to ~731.3 KiB. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 732 * 1024;
+/** Power-save policy + Reticulum local-radio scan; Linux CI measures ~737.5 KiB. */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 741 * 1024;
+
+function expectMainBundleSize(outfile) {
+  const { size } = fs.statSync(outfile);
+  expect(size).toBeGreaterThan(100_000);
+  expect(size).toBeLessThan(MAIN_BUNDLE_SIZE_BUDGET_BYTES);
+}
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */
@@ -40,6 +46,21 @@ describe('esbuild-main-build', () => {
 
   it('rejects unknown CLI flags', () => {
     expect(() => parseEsbuildMainBuildArgs(['--watch'])).toThrow(/Unknown/);
+  });
+
+  it.each([
+    [100_001, true],
+    [MAIN_BUNDLE_SIZE_BUDGET_BYTES - 1, true],
+    [MAIN_BUNDLE_SIZE_BUDGET_BYTES, false],
+    [MAIN_BUNDLE_SIZE_BUDGET_BYTES + 1, false],
+    [0, false],
+    [100_000, false],
+  ])('enforces the strict budget for a %i-byte fixture (accepted: %s)', (bytes, accepted) => {
+    tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-budget-'));
+    const outfile = path.join(tempDir, 'index.js');
+    fs.writeFileSync(outfile, Buffer.alloc(bytes));
+    if (accepted) expectMainBundleSize(outfile);
+    else expect(() => expectMainBundleSize(outfile)).toThrow();
   });
 
   it('uses the esbuild JS API instead of spawning bin/esbuild (Windows shim)', () => {
@@ -84,9 +105,7 @@ describe('esbuild-main-build', () => {
         expect(fs.readFileSync(path.join(tempDir, 'ai-licenses', notice), 'utf8')).toContain(
           'Permission is hereby granted',
         );
-      const { size } = fs.statSync(outfile);
-      expect(size).toBeGreaterThan(100_000);
-      expect(size).toBeLessThan(MAIN_BUNDLE_SIZE_BUDGET_BYTES);
+      expectMainBundleSize(outfile);
     },
   );
 });

@@ -19,6 +19,7 @@ import type {
   TakDmStatusUpdate,
   TAKGeochatMessage,
   TAKInboundChat,
+  TakIncidentMarker,
   TakRelayExtras,
   TAKRemoteSettings,
   TAKRemoteStatus,
@@ -35,6 +36,7 @@ import {
   regenerateCerts,
   type TakServerIdentity,
 } from './tak/certificate-manager';
+import { ChannelReplies, type ChannelReplyOutcome } from './tak/channel-replies';
 import { TakContactCache } from './tak/contact-cache';
 import {
   COT_STALE_MS,
@@ -71,6 +73,11 @@ import {
   type GeochatRecipient,
   retiredRoomContactUid,
 } from './tak/geochat-cot';
+import {
+  buildIncidentMarkerCot,
+  INCIDENT_MARKER_STALE_MS,
+  incidentMarkerUid,
+} from './tak/incident-cot';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
@@ -112,6 +119,22 @@ const TAK_CHAT_HELD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Written into a receive-only channel's conversation when a client messages it. */
 const RECEIVE_ONLY_NOTE =
   'Not sent: this channel is receive only. Turn on "ATAK can send" for it in mesh-client.';
+/** How many matching names a note lists before "and N more". */
+const REPLY_NAMES_SHOWN = 5;
+
+/** Why a typed `@` reply was not sent, for the conversation it was typed in. */
+function channelReplyNote(reply: Exclude<ChannelReplyOutcome, { kind: 'send' }>): string {
+  if (reply.kind === 'nobody') {
+    return 'Not sent: nobody has spoken on this channel recently, so @@ has no one to reply to.';
+  }
+  if (reply.kind === 'unencodable') {
+    return `Not sent: ${reply.name} has a "]" in their name, which a MeshCore reply cannot hold. Leave out the @ to send it as plain text.`;
+  }
+  const shown = reply.names.slice(0, REPLY_NAMES_SHOWN).join(', ');
+  const more = reply.names.length - REPLY_NAMES_SHOWN;
+  const rest = more > 0 ? ` and ${more} more` : '';
+  return `Not sent: @${reply.typed} matches ${shown}${rest}. Type more of the name.`;
+}
 /** Written into a companion's conversation when its radio has direct messages off. */
 const DM_OFF_NOTE =
   'Not sent: direct messages are off for this radio. Turn on "Direct messages" for it in mesh-client.';
@@ -235,6 +258,8 @@ export class TakServerManager extends EventEmitter {
   private chatChannels = new Map<string, TakChatChannel>();
   /** Heard messages held while no local client could be addressed, oldest first. */
   private heldChat: HeldChat[] = [];
+  /** Who spoke on each channel lately, so a TAK client's `@name` reply can find them. */
+  private readonly channelReplies = new ChannelReplies();
   /** Radios whose companions TAK clients may message. */
   private dmProtocols = new Set<TakDmProtocol>();
   /** Companions a direct message passed with in the last day, by uid, oldest first. */
@@ -249,6 +274,9 @@ export class TakServerManager extends EventEmitter {
    */
   private conversationPeers = new Map<string, ConversationPeer>();
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
+  /** Open MECP emergencies on TAK clients' maps, by marker uid. */
+  private incidentMarkers = new Map<string, TakIncidentMarker>();
+  private incidentMarkerTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
   constructor() {
@@ -290,7 +318,9 @@ export class TakServerManager extends EventEmitter {
   async startRemote(settings: TAKRemoteSettings): Promise<void> {
     const credentials = await loadTakRemoteCredentials();
     saveTakRemoteSettings(settings);
-    this.stopRemote();
+    // A restart in place: the renderer may never see the sink drop, so it would not send the
+    // markers again.
+    this.stopRemote(false);
     this.remoteSettings = settings;
     const remote = new TakRemoteClient({
       host: settings.host.trim(),
@@ -325,13 +355,15 @@ export class TakServerManager extends EventEmitter {
     if (this.remote && this.remoteSettings) await this.startRemote(this.remoteSettings);
   }
 
-  stopRemote(): void {
+  /** Stop the remote relay; with no local server left, the incident markers go too. */
+  stopRemote(clearIncidentMarkers = true): void {
     const remote = this.remote;
     if (!remote) return;
     this.remote = null;
     remote.stop();
     remote.removeAllListeners();
     this.contacts.removeSource('remote');
+    if (clearIncidentMarkers && !this.server) this.clearIncidentMarkers();
   }
 
   getConnectedClients(): TAKClientInfo[] {
@@ -408,6 +440,8 @@ export class TakServerManager extends EventEmitter {
     this.server.close();
     this.server = null;
     this.contacts.removeSource('local');
+    this.channelReplies.clear();
+    if (!this.remote) this.clearIncidentMarkers();
     this._status = { running: false, port: this.settings?.port ?? 8089, clientCount: 0 };
     this.emit('status', this.getStatus());
     console.debug('[TakServer] Stopped');
@@ -448,6 +482,7 @@ export class TakServerManager extends EventEmitter {
   sendChat(msg: TAKChannelChatMessage): void {
     const channel = this.chatChannels.get(channelContactUid(msg.channelKey));
     if (!channel) return;
+    this.channelReplies.heard(msg.channelKey, msg.senderCallsign, Date.now());
     const line: ChannelChatLine = {
       senderCallsign: msg.senderCallsign,
       text: msg.text,
@@ -762,6 +797,56 @@ export class TakServerManager extends EventEmitter {
    * Re-announce channel and companion contacts well inside their stale time so they do not
    * expire in ATAK. Runs while there is any contact to announce.
    */
+  /**
+   * Replace the open MECP emergencies on TAK clients' maps. A new or changed one is sent to every
+   * local client, and one no longer open is deleted from their maps. The rest are sent again
+   * every few minutes, and to each client that connects. Not sent to the remote server.
+   */
+  setIncidentMarkers(markers: TakIncidentMarker[]): void {
+    const next = new Map(markers.map((m) => [incidentMarkerUid(m.id), m]));
+    const now = Date.now();
+    for (const uid of this.incidentMarkers.keys()) {
+      if (!next.has(uid)) this.writeToClients(cotDeleteEvent(uid, now));
+    }
+    for (const [uid, marker] of next) {
+      const prev = this.incidentMarkers.get(uid);
+      if (prev && JSON.stringify(prev) === JSON.stringify(marker)) continue;
+      this.writeToClients(buildIncidentMarkerCot(marker, now));
+    }
+    this.incidentMarkers = next;
+    this.scheduleIncidentMarkerRefresh();
+  }
+
+  /**
+   * Forget the incident markers once no sink is left. The renderer sends the current list again
+   * when a sink starts; while one is still up it keeps the list current, so it is kept.
+   */
+  private clearIncidentMarkers(): void {
+    this.incidentMarkers.clear();
+    if (this.incidentMarkerTimer) {
+      clearInterval(this.incidentMarkerTimer);
+      this.incidentMarkerTimer = null;
+    }
+  }
+
+  /** Refresh the incident markers inside their stale time while there are any. */
+  private scheduleIncidentMarkerRefresh(): void {
+    const needed = this.incidentMarkers.size > 0;
+    if (needed === (this.incidentMarkerTimer !== null)) return;
+    if (this.incidentMarkerTimer) {
+      clearInterval(this.incidentMarkerTimer);
+      this.incidentMarkerTimer = null;
+      return;
+    }
+    this.incidentMarkerTimer = setInterval(() => {
+      const now = Date.now();
+      for (const marker of this.incidentMarkers.values()) {
+        this.writeToClients(buildIncidentMarkerCot(marker, now));
+      }
+    }, INCIDENT_MARKER_STALE_MS / 3);
+    this.incidentMarkerTimer.unref();
+  }
+
   private scheduleChatRoomAnnouncements(): void {
     const needed =
       this.chatChannels.size > 0 || this.directContacts.size > 0 || this.conversationPeers.size > 0;
@@ -1133,27 +1218,53 @@ export class TakServerManager extends EventEmitter {
       return;
     }
     if (!channel.send) {
-      const recipient = this.recipientFor(client);
-      if (recipient) {
-        const note = {
-          senderCallsign: CHANNEL_NOTE_SENDER,
-          text: RECEIVE_ONLY_NOTE,
-          timeMs: nowMs,
-        };
-        this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));
-      }
+      this.writeChannelNote(id, client, channel, RECEIVE_ONLY_NOTE, nowMs, senderCallsign);
       return;
     }
-    const line: ChannelChatLine = { senderCallsign, text: chat.text, timeMs: nowMs };
+    const reply: ChannelReplyOutcome =
+      channel.protocol === 'meshcore'
+        ? this.channelReplies.resolve(channel.key, chat.text, nowMs)
+        : { kind: 'send', text: chat.text };
+    if (reply.kind !== 'send') {
+      this.writeChannelNote(id, client, channel, channelReplyNote(reply), nowMs, senderCallsign);
+      return;
+    }
+    // The other clients see a reply as one heard from the mesh reads, `@Name …`.
+    const shown =
+      reply.repliedTo === undefined
+        ? chat.text
+        : `@${reply.repliedTo}${reply.message ? ` ${reply.message}` : ''}`;
+    const line: ChannelChatLine = { senderCallsign, text: shown, timeMs: nowMs };
     this.writeChannelChat(channel, line, id, chat.messageId);
     const inbound: TAKInboundChat = {
       target: { kind: 'channel', channelKey: channel.key },
       senderCallsign,
-      text: chat.text,
+      text: reply.text,
       clientId: id,
       timeMs: nowMs,
     };
     this.emit('client-chat', inbound);
+  }
+
+  /**
+   * A note from mesh-client in a channel's conversation, to the one client it concerns. A client
+   * that chats before its first position report is addressed by the uid it chatted as and the
+   * callsign its message carried.
+   */
+  private writeChannelNote(
+    id: string,
+    client: ConnectedClient,
+    channel: TakChatChannel,
+    text: string,
+    nowMs: number,
+    chatCallsign: string,
+  ): void {
+    const recipient =
+      this.recipientFor(client) ??
+      (client.selfUid ? { uid: client.selfUid, callsign: chatCallsign } : null);
+    if (!recipient) return;
+    const note = { senderCallsign: CHANNEL_NOTE_SENDER, text, timeMs: nowMs };
+    this.writeToClient(id, client, buildChannelChatCot(channel, note, recipient, nowMs));
   }
 
   /**
@@ -1318,6 +1429,9 @@ export class TakServerManager extends EventEmitter {
       this.writeToClient(id, client, cot);
     });
     const now = Date.now();
+    for (const marker of this.incidentMarkers.values()) {
+      this.writeToClient(id, client, buildIncidentMarkerCot(marker, now));
+    }
     for (const uid of this.retiredRoomUids) {
       if (!this.chatChannels.has(uid)) this.writeToClient(id, client, cotDeleteEvent(uid, now));
     }

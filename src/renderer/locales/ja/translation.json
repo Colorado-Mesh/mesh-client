@@ -513,7 +513,14 @@
     "coiNo": "なし",
     "coiTimingFine": "細かい（〜5 µ s ）",
     "coiTimingCoarse": "粗い（〜100 µ s ）",
-    "shareMyLocationOffStaticActive": "位置情報の共有がオフになっています。ホストのGPS自動更新とメッシュ送信は無効になっています。アクティブな保存済みの位置情報（および利用可能な場合は無線GPS ）は、地図と距離のフィルタにローカルで引き続き使用されます。"
+    "shareMyLocationOffStaticActive": "位置情報の共有がオフになっています。ホストのGPS自動更新とメッシュ送信は無効になっています。アクティブな保存済みの位置情報（および利用可能な場合は無線GPS ）は、地図と距離のフィルタにローカルで引き続き使用されます。",
+    "preventSleep": "接続中はコンピュータをスリープ状態に保つ",
+    "preventSleepAria": "接続中はコンピュータをスリープ状態に保つ",
+    "preventSleepHint": "無線リンクのみ（デフォルト）は、BLEまたはシリアルRNode/KISSインターフェースが有効になっている場合、BluetoothまたはUSB Meshtastic/MeshCore無線およびReticulumのブロッカーを保持します。TCP/Wi-Fi同伴者、MQTT、ネットワークのみのReticulumはウェイク後に再接続しますが、必要ありません。すべての接続は、以前の常時オンの動作と一致します。無線リンクを使用しても、システムをスリープ状態にしないでください。Linuxで、Electronの阻害は、ブロッカーが保持されているときにディスプレイのスリープ状態を停止します。モニターを空白にする必要がある場合は、Neverを選択します。",
+    "preventSleepOptionRf": "無線リンクのみ（ BluetoothまたはUSB ）",
+    "preventSleepOptionAlways": "任意の接続",
+    "preventSleepOptionOff": "まったく行わない",
+    "preventSleepSaveFailed": "キープアウェイク設定を保存できませんでした。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "ATAKデバイスがLXMFピアにメッセージを送信できるようにします。ポジションを持つピアは、そのマーカーからメッセージを送ることができます。ポジションを持たないピアは、mesh-clientがそれと会話をすると0、0に表示されるため、連絡先リストはすべてのピアで満たされるわけではありません。",
     "channelCallsign": "コールサインを追加",
     "channelCallsignFor": "送信者のATAKコールサインを{{channel}}に送信されたメッセージの前に置きます",
-    "channelCallsignHint": "Addコールサインをオフにすると、ATAKデバイスが送信するものは、入力されたとおりに送信されます。ボットチャンネルの場合はオフにします。ボットはメッセージの先頭でコマンドを探し、コールサインで始まるコマンドを見逃します。"
+    "channelCallsignHint": "Addコールサインをオフにすると、ATAKデバイスが送信するものは、入力されたとおりに送信されます。ボットチャンネルの場合はオフにします。ボットはメッセージの先頭でコマンドを探し、コールサインで始まるコマンドを見逃します。",
+    "channelRepliesHint": "ATAKの担当者に返信するには、@で始まり、名前の先頭に「@ silver are you on ?」と入力します。@ MeshCore __の返信@[ Silver Eagle]が表示されます。@@は最後に発言した人に返信します。名前の先頭がチャンネルで聞いた複数の人に合っている場合、何も送信されず、チャットには誰が一致したかが表示されます。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",
@@ -6709,6 +6717,11 @@
       "routine": "通常"
     },
     "incomingToast": "{{severity}} {{sender}} からの MECP",
+    "atakMarkerFrom": "{{sender}}から、最後に聞いたのは{{time}} UTC",
+    "atakMarkerLastKnown": "ポジション：レポートからではなく、送信者が最後に聞かれた場所",
+    "atakMarkerBeacon": "救難ビーコン発動中",
+    "atakMarkerAcks_one": "{{count}}確認の音声が聞こえました",
+    "atakMarkerAcks_other": "{{count}}確認音声が聞こえました",
     "notificationTitle": "MECPアラート",
     "exportLog": "MECPログのエクスポート",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "{{sender}}から繰り返される緊急アラートを消音します。レポートは引き続き[インシデント]タブに表示されます。",
       "throttledBlock": "送信したユーザをブロック",
       "floodToast": "多くのステーションが一度に緊急通報を送信しています。その後の警告音は一時停止されます。[インシデント]タブを確認してください。"
-    }
+    },
+    "atakDrill": "DRILL",
+    "atakPeople_one": "{{count}}人",
+    "atakPeople_other": "{{count}}人"
   },
   "notificationSounds": {
     "title": "通知トーン",

@@ -167,4 +167,11 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'Setting anchor ids are <slotCamel>.<subsectionCamel>.<settingCamel> and live in the owning panel (see docs/development/settings-search.md)',
   },
+  {
+    id: 'meshcore-cli-received-single-writer',
+    include: ['src/renderer/runtime/useMeshcoreRuntime.ts'],
+    forbid: /type:\s*['"]received['"]/,
+    message:
+      'Wire-originated CLI received lines belong in handleCliResponse; runtime may only append local [Error: …] (suppress with source-policy-ok)',
+  },
 ];

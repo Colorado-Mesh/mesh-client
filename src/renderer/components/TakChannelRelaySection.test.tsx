@@ -199,6 +199,42 @@ describe('TakChannelRelaySection', () => {
     expect(screen.getByText(/Turn it off for a bot channel/)).toBeInTheDocument();
   });
 
+  it('shows its hint only while a served channel can be sent to', () => {
+    const hinted = (
+      <TakChannelRelaySection
+        identityId={ID}
+        showTrackers
+        title="MeshCore messaging in ATAK"
+        description="Choose channels."
+        emptyText="No channels."
+        anchorId="tak.channelRelay.test"
+        servedHint="Reply with @name."
+      />
+    );
+    const { rerender } = render(hinted);
+    const prefs = useTakRelayPrefsStore.getState();
+    const shown = () => screen.queryByText('Reply with @name.') !== null;
+    expect(shown()).toBe(false);
+    act(() => {
+      prefs.setChannelMode(ID, 'selected');
+      prefs.setChatSend(ID, SAR, true);
+    });
+    rerender(hinted);
+    // Sending is on for a channel that is not picked, so nothing is served to send to.
+    expect(shown()).toBe(false);
+    act(() => {
+      prefs.setChatChannel(ID, SAR, true);
+    });
+    rerender(hinted);
+    expect(shown()).toBe(true);
+    act(() => {
+      prefs.setChatSend(ID, SAR, false);
+      prefs.setChannelMode(ID, 'all');
+    });
+    rerender(hinted);
+    expect(shown()).toBe(false);
+  });
+
   it("keeps a channel's settings with the channel when another takes its slot", async () => {
     const user = userEvent.setup();
     useTakRelayPrefsStore.getState().setChannelMode(ID, 'all');

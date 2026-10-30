@@ -513,7 +513,14 @@
     "coiNo": "no",
     "coiTimingFine": "fino (~5 µs)",
     "coiTimingCoarse": "grueso (~100 µs)",
-    "shareMyLocationOffStaticActive": "El uso compartido de la ubicación está desactivado: la actualización automática del GPS del host y el envío en malla están desactivados. Tu ubicación guardada activa (y el GPS de radio cuando esté disponible) todavía se utilizan localmente para los filtros de mapa y distancia."
+    "shareMyLocationOffStaticActive": "El uso compartido de la ubicación está desactivado: la actualización automática del GPS del host y el envío en malla están desactivados. Tu ubicación guardada activa (y el GPS de radio cuando esté disponible) todavía se utilizan localmente para los filtros de mapa y distancia.",
+    "preventSleep": "Mantenga el ordenador despierto mientras está conectado",
+    "preventSleepAria": "Mantenga el ordenador despierto mientras está conectado",
+    "preventSleepHint": "Solo el enlace de radio (predeterminado) contiene el bloqueador para Bluetooth o USB Meshtastic/MeshCore radios y para Reticulum cuando está habilitada una interfaz BLE o RNode/KISS en serie. TCP/Wi-Fi companions, MQTT y Reticulum, solo en red, se vuelven a conectar después de despertar y no lo necesitan. Cualquier conexión coincide con el comportamiento anterior siempre activo. Nunca deje el sistema en reposo, incluso con un enlace de radio. En Linux, la inhibición de Electron también impide que la pantalla se duerma cuando se mantiene presionado el bloqueador; elija Nunca si los monitores deben estar en blanco.",
+    "preventSleepOptionRf": "Solo enlace de radio (Bluetooth o USB)",
+    "preventSleepOptionAlways": "¿Alguna conexión?",
+    "preventSleepOptionOff": "Nunca",
+    "preventSleepSaveFailed": "No se ha podido guardar la configuración de mantenerse despierto."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "Permite que los dispositivos ATAK envíen un mensaje a LXMF Peers. Se puede enviar un mensaje a un compañero con una posición desde su marcador; uno sin posición aparece en 0, 0 una vez que mesh-client tiene una conversación con él, por lo que la lista de contactos no se llena con todos los compañeros escuchados.",
     "channelCallsign": "Añadir indicativo de llamada",
     "channelCallsignFor": "Ponga el indicativo ATAK del remitente frente a los mensajes enviados a {{channel}}",
-    "channelCallsignHint": "Con Add callsign OFF, lo que envía un dispositivo ATAK se apaga exactamente como se escribió. Desactivarlo para un canal de bot: un bot busca su comando al comienzo del mensaje, por lo que pierde uno que comienza con un indicativo de llamada."
+    "channelCallsignHint": "Con Add callsign OFF, lo que envía un dispositivo ATAK se apaga exactamente como se escribió. Desactivarlo para un canal de bot: un bot busca su comando al comienzo del mensaje, por lo que pierde uno que comienza con un indicativo de llamada.",
+    "channelRepliesHint": "Para responder a alguien de ATAK, comienza con @ y el comienzo de su nombre: @Silver estás en? sale como la respuesta de MeshCore @[Silver Eagle] estás en?. @@ responde a quien habló por última vez. Si el inicio del nombre se ajusta a varias personas escuchadas en el canal, no se envía nada y el chat dice quién coincidió."
   },
   "telemetryPanel": {
     "title": "Telemetría",
@@ -6709,6 +6717,11 @@
       "routine": "LOW TOUCH"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, se escuchó por última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posición: donde se escuchó por última vez al remitente, no del informe",
+    "atakMarkerBeacon": "Baliza de socorro activa",
+    "atakMarkerAcks_one": "{{count}} acuse DE recibo escuchado",
+    "atakMarkerAcks_other": "{{count}} agradecimientos escuchados",
     "notificationTitle": "Alerta MECP",
     "exportLog": "Exportar registro MECP",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "Cómo silenciar las alertas de emergencia repetidas de {{sender}}. Sus informes siguen apareciendo en la pestaña Incidencia.",
       "throttledBlock": "Bloquear remitente",
       "floodToast": "Muchas estaciones están enviando informes de emergencia a la vez. Los tonos de alerta adicionales se pausan brevemente; consulte la pestaña Incidencia."
-    }
+    },
+    "atakDrill": "TALADRO",
+    "atakPeople_one": "{{count}} persona",
+    "atakPeople_other": "{{count}} personas"
   },
   "notificationSounds": {
     "title": "Tonos de notificación",

@@ -488,6 +488,8 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Fix**: Click **Forget this device** if shown, then **Connect** and select the radio again.
 
+Startup auto-connect now runs on Linux as well (same remembered-peripheral path as macOS/Windows). If the radio is off or unpaired, the **Restore connection** card remains; for Linux re-pair guidance see **Linux-specific** under BLE known issues (`bluetoothctl` remove + re-pair from the app).
+
 ### Dual-radio BLE startup / wake stagger
 
 When both Meshtastic and MeshCore have **different** saved BLE peripherals, concurrent sidecar GATT sessions are allowed. Startup and wake still **stagger** auto-connect so both stacks do not contend on the adapter at once:
@@ -631,6 +633,29 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 **Linux:** Same sidecar GATT path as macOS/Windows; see **Linux-specific** under [BLE known issues](#ble-known-issues) for BlueZ / Flatpak steps.
 
 **Reticulum (all platforms):** On suspend, `onPowerSuspend` clears in-memory rnsh sessions and rncp transfers. On resume, `onPowerResume` restarts the sidecar via `connect()` unless the user disconnected.
+
+### Keeping the computer awake (power save)
+
+**App → Window → Keep computer awake while connected** controls when mesh-client holds Electron’s `prevent-app-suspension` blocker:
+
+| Mode                          | Behaviour                                                                                                                                                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Radio link only** (default) | Hold only while a Meshtastic/MeshCore link is live over Bluetooth or USB serial, or while the Reticulum sidecar is running with an enabled BLE RNode or serial RNode/KISS interface in config. TCP/Wi-Fi companions, MQTT, and network-only Reticulum do **not** hold it (wake recovery reconnects them — see above). |
+| **Any connection**            | Hold for any radio, MQTT, or Reticulum sidecar (previous always-on behaviour).                                                                                                                                                                                                                                        |
+| **Never**                     | Never hold the blocker.                                                                                                                                                                                                                                                                                               |
+
+**Linux display caveat:** On Linux, Chromium’s freedesktop PowerManagement inhibit also disables DPMS / screen blanking for many power managers (XFCE, KDE). If monitors must sleep while a BLE/USB radio is connected, choose **Never**. There is no Electron API for “block suspend only.”
+
+**Verify (Linux):**
+
+```bash
+gdbus call --session --dest org.freedesktop.PowerManagement \
+  --object-path /org/freedesktop/PowerManagement/Inhibit \
+  --method org.freedesktop.PowerManagement.Inhibit.GetInhibitors
+xset q | grep -A2 DPMS
+```
+
+Support log line: `[main] power-save policy: <mode> hold|release`.
 
 ### Long-running sessions (multi-day uptime)
 

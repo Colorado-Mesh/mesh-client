@@ -23,6 +23,25 @@ describe('meshcore repeater CLI working state', () => {
     expect(cliBody).toMatch(/runMeshcoreRepeaterRpcOnce\(\s*'cli'/);
   });
 
+  it('passes a unique coalesceKey so CLI exchanges never share an in-flight slot', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('coalesceKey: cliCoalesceKey');
+    expect(cliBody).toContain('repeaterCliCoalesceSeqRef');
+  });
+
+  it('does not append wire-originated received CLI history on the success path', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    const successWait = cliBody.indexOf('const response = await onceResult.responsePromise');
+    expect(successWait).toBeGreaterThan(-1);
+    const catchIdx = cliBody.indexOf('} catch (e: unknown) {', successWait);
+    expect(catchIdx).toBeGreaterThan(successWait);
+    const successSlice = cliBody.slice(successWait, catchIdx);
+    expect(successSlice).not.toMatch(/type:\s*['"]received['"]/);
+    expect(cliBody).toMatch(
+      /type:\s*['"]received['"].*source-policy-ok meshcore-cli-received-single-writer/,
+    );
+  });
+
   it('checks the captured session and caller lifetime before queued CLI transmission', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     expect(cliBody).toContain('connectionAtRequest !== connRef.current');

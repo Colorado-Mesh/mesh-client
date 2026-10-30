@@ -1,0 +1,37 @@
+name: Bundle size
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    # Include retargeting and draft transitions; stacked and fork PRs use this too.
+    types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft]
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle-size:
+    name: Main bundle size
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # actions/checkout v6.1.0; default PR checkout tests the proposed merge.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+      # esbuild's string entrypoint is invisible to Vitest's related import graph.
+      - name: Validate production main bundle
+        run: >-
+          pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs
+          --coverage.enabled=false --reporter=default

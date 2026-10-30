@@ -513,7 +513,14 @@
     "coiNo": "nee",
     "coiTimingFine": "fijn (~5 µs)",
     "coiTimingCoarse": "grof (~100 µs)",
-    "shareMyLocationOffStaticActive": "Locatie delen is uitgeschakeld — host GPS automatisch vernieuwen en mesh verzenden zijn uitgeschakeld. Je actieve opgeslagen locatie (en radio GPS indien beschikbaar) worden nog steeds lokaal gebruikt voor de kaart- en afstandsfilters."
+    "shareMyLocationOffStaticActive": "Locatie delen is uitgeschakeld — host GPS automatisch vernieuwen en mesh verzenden zijn uitgeschakeld. Je actieve opgeslagen locatie (en radio GPS indien beschikbaar) worden nog steeds lokaal gebruikt voor de kaart- en afstandsfilters.",
+    "preventSleep": "Houd de computer wakker terwijl deze is aangesloten",
+    "preventSleepAria": "Houd de computer wakker terwijl deze is aangesloten",
+    "preventSleepHint": "Alleen radioverbinding (standaard) bevat de blokkering voor Bluetooth of USB __ Meshtastic/MeshCore radio's en voor Reticulum wanneer een BLE of seriële RNode/KISS -interface is ingeschakeld. TCP/Wi-Fi metgezellen, MQTT en alleen netwerk Reticulum maken na het ontwaken opnieuw verbinding en hebben dit niet nodig. Elke verbinding komt overeen met het eerdere always-on gedrag. Laat het systeem nooit slapen, zelfs niet met een radioverbinding. Op Linux zorgt de inhibitie van Electron er ook voor dat het scherm niet meer slaapt wanneer de blocker wordt vastgehouden. Kies Nooit als monitoren leeg moeten zijn.",
+    "preventSleepOptionRf": "Alleen radioverbinding (Bluetooth of USB)",
+    "preventSleepOptionAlways": "Elke verbinding",
+    "preventSleepOptionOff": "Nooit",
+    "preventSleepSaveFailed": "Kon de instelling voor wakker blijven niet opslaan."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "Laat ATAK-apparaten LXMF peers berichten. Een collega met een functie kan worden gecommuniceerd vanuit de markering; een zonder positie verschijnt op 0, 0 zodra mesh-client er een gesprek mee heeft, dus de lijst met contactpersonen wordt niet gevuld met elke collega die wordt gehoord.",
     "channelCallsign": "Oproepen toevoegen",
     "channelCallsignFor": "Zet het ATAK-oproepteken van de afzender voor berichten die naar {{channel}} worden verzonden",
-    "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam."
+    "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam.",
+    "channelRepliesHint": "Om te reageren op iemand van ATAK, begin je met @ en het begin van hun naam: @Silver are you on? gaat uit als MeshCore's reply @[Silver Eagle] are you on?. @@ replies to who spoke last. Als het begin van de naam past bij meerdere mensen die op het kanaal worden gehoord, wordt er niets verzonden en wordt in de chat vermeld wie heeft gematcht."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -6709,6 +6717,11 @@
       "routine": "Routine"
     },
     "incomingToast": "{{severity}} MECP van {{sender}}",
+    "atakMarkerFrom": "Vanaf {{sender}}, laatst gehoord {{time}} UTC",
+    "atakMarkerLastKnown": "Positie: waar de afzender het laatst is gehoord, niet uit het rapport",
+    "atakMarkerBeacon": "Noodbaken actief",
+    "atakMarkerAcks_one": "{{count}} bevestiging gehoord",
+    "atakMarkerAcks_other": "{{count}} bevestigingen gehoord",
     "notificationTitle": "MECP-waarschuwing",
     "exportLog": "MECP-logboek exporteren",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "Het dempen van herhaalde noodwaarschuwingen van {{sender}}. Hun rapporten verschijnen nog steeds op het tabblad Incident.",
       "throttledBlock": "Afzender blokkeren",
       "floodToast": "Veel stations sturen noodmeldingen in één keer. Verdere waarschuwingstonen worden kort gepauzeerd; controleer het tabblad Incident."
-    }
+    },
+    "atakDrill": "DRILL",
+    "atakPeople_one": "{{count}} persoon",
+    "atakPeople_other": "{{count}} personen"
   },
   "notificationSounds": {
     "title": "Meldingstonen",

@@ -32,6 +32,17 @@ export interface RepeaterCommandServiceOptions {
   maxTimeoutMs?: number;
 }
 
+/** Result of ingesting one wire CLI reply frame into the command service. */
+export type MeshcoreCliIngestResult =
+  | { kind: 'resolved'; nodeId: number; historyText: string }
+  | { kind: 'duplicate' }
+  | { kind: 'unmatched'; historyText: string };
+
+interface SettledCliReply {
+  senderNodeId: number;
+  body: string;
+}
+
 /** Floor for direct (0-hop) repeater CLI response wait. */
 export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
 export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
@@ -101,6 +112,11 @@ export class RepeaterCommandService {
   private pendingCommands = new Map<string, PendingCommand>();
   /** Keep sensitive token tombstones until reuse so late replies are also redacted. */
   private sensitiveTokens = new Set<string>();
+  /**
+   * Resolved token→body tombstones until the token is reused. Identical re-deliveries of a
+   * just-resolved reply are reported as `duplicate` so CLI history stays single-writer.
+   */
+  private settled = new Map<string, SettledCliReply>();
   private timeoutMs: number;
   private maxRetries: number;
   private baseTimeoutMs: number;
@@ -153,6 +169,7 @@ export class RepeaterCommandService {
     },
   ): { token: string; promise: Promise<string>; timeoutMs: number } {
     const token = options?.token ?? this.generateToken();
+    this.settled.delete(token);
     if (redactMeshcoreCliSecrets(command) !== command) this.sensitiveTokens.add(token);
     else this.sensitiveTokens.delete(token);
     const timeoutMs = options?.timeoutMs ?? this.calculateTimeout(path, command.length);
@@ -190,6 +207,12 @@ export class RepeaterCommandService {
     return { token, promise, timeoutMs };
   }
 
+  /** True when sender is unknown (0/omit) or matches the expected node. */
+  private senderMatches(expectedSenderNodeId: number, senderId?: number): boolean {
+    if (senderId == null || senderId === 0 || expectedSenderNodeId === 0) return true;
+    return expectedSenderNodeId === senderId;
+  }
+
   /** Lengthen an in-flight CLI wait when drain is busy at SENT. */
   extendPendingTimeout(token: string, newTimeoutMs: number): void {
     const pending = this.pendingCommands.get(token);
@@ -221,26 +244,40 @@ export class RepeaterCommandService {
     }, timeoutMs);
   }
 
-  handleResponse(rawResponse: string, senderId?: number): boolean {
+  /**
+   * Ingest one CLI reply frame. Resolves a pending command, suppresses an identical
+   * re-delivery of a just-settled token, or reports unmatched (stray / late / different body).
+   */
+  ingestResponse(rawResponse: string, senderId?: number): MeshcoreCliIngestResult {
     const { token, body } = this.parseResponseToken(rawResponse);
-    if (!token) return false;
+    const historyText = this.redactResponseForHistory(rawResponse);
 
-    const pending = this.pendingCommands.get(token);
-    if (!pending) return false;
+    if (token) {
+      const pending = this.pendingCommands.get(token);
+      if (pending && this.senderMatches(pending.senderNodeId, senderId)) {
+        clearTimeout(pending.timerId);
+        this.pendingCommands.delete(token);
+        this.settled.set(token, { senderNodeId: pending.senderNodeId, body });
+        pending.resolve(body);
+        return {
+          kind: 'resolved',
+          nodeId: pending.senderNodeId,
+          historyText,
+        };
+      }
 
-    if (
-      senderId != null &&
-      senderId !== 0 &&
-      pending.senderNodeId !== 0 &&
-      pending.senderNodeId !== senderId
-    ) {
-      return false;
+      const prior = this.settled.get(token);
+      if (prior?.body === body && this.senderMatches(prior.senderNodeId, senderId)) {
+        return { kind: 'duplicate' };
+      }
     }
 
-    clearTimeout(pending.timerId);
-    this.pendingCommands.delete(token);
-    pending.resolve(body);
-    return true;
+    return { kind: 'unmatched', historyText };
+  }
+
+  /** Resolve-or-not wrapper around {@link ingestResponse} for call sites that only need a boolean. */
+  handleResponse(rawResponse: string, senderId?: number): boolean {
+    return this.ingestResponse(rawResponse, senderId).kind === 'resolved';
   }
 
   redactResponseForHistory(rawResponse: string): string {
@@ -294,6 +331,7 @@ export class RepeaterCommandService {
       pending.reject(new Error('CLI command cancelled'));
     }
     this.pendingCommands.clear();
+    this.settled.clear();
   }
 }
 

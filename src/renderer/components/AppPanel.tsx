@@ -14,6 +14,7 @@ import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
+import { powerSaveModeFromStored } from '@/shared/powerSavePolicy';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import type { LocationFilter } from '../App';
@@ -201,6 +202,8 @@ interface AppSettings {
   autoUpdateDownloadEnabled: boolean;
   /** Closing the window while connected hides it to the tray; App → Window toggle. */
   closeToTray: boolean;
+  /** App → Window: keep the computer awake while connected. */
+  preventSleepWhileConnected: 'off' | 'rf' | 'always';
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
@@ -378,6 +381,10 @@ export default function AppPanel({
   const closeToTrayConfirmedRef = useRef<boolean>(DEFAULT_APP_SETTINGS_SHARED.closeToTray);
   /** User toggled close-to-tray before the mount getAll() resolved; skip its stale value. */
   const closeToTrayTouchedRef = useRef(false);
+  const preventSleepConfirmedRef = useRef<AppSettings['preventSleepWhileConnected']>(
+    DEFAULT_APP_SETTINGS_SHARED.preventSleepWhileConnected,
+  );
+  const preventSleepTouchedRef = useRef(false);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
   const [themeSurfaceId, setThemeSurfaceId] = useState<ThemeSurfaceId>(loadThemeSurfaceId);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
@@ -578,6 +585,28 @@ export default function AppPanel({
     [addToast, t],
   );
 
+  const persistPreventSleep = useCallback(
+    (mode: AppSettings['preventSleepWhileConnected']) => {
+      preventSleepTouchedRef.current = true;
+      void window.electronAPI.appSettings
+        .set('preventSleepWhileConnected', mode)
+        .then(() => {
+          preventSleepConfirmedRef.current = mode;
+        })
+        .catch((err: unknown) => {
+          console.warn(
+            '[AppPanel] preventSleepWhileConnected persist failed ' + errLikeToLogString(err),
+          );
+          // Main reads only SQLite, so roll the UI back to the persisted policy.
+          const confirmed = preventSleepConfirmedRef.current;
+          setSettings((prev) => ({ ...prev, preventSleepWhileConnected: confirmed }));
+          mergeAppSetting('preventSleepWhileConnected', confirmed, 'AppPanel updateSetting');
+          addToast(t('appPanel.preventSleepSaveFailed'), 'error');
+        });
+    },
+    [addToast, t],
+  );
+
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     mergeAppSetting(key, value, 'AppPanel updateSetting');
@@ -601,6 +630,9 @@ export default function AppPanel({
     }
     if (key === 'closeToTray') {
       persistCloseToTray(Boolean(value));
+    }
+    if (key === 'preventSleepWhileConnected') {
+      persistPreventSleep(value as AppSettings['preventSleepWhileConnected']);
     }
   };
 
@@ -635,6 +667,15 @@ export default function AppPanel({
             prev.closeToTray === enabled ? prev : { ...prev, closeToTray: enabled },
           );
         }
+        if (!preventSleepTouchedRef.current) {
+          const mode = powerSaveModeFromStored(raw?.preventSleepWhileConnected);
+          preventSleepConfirmedRef.current = mode;
+          setSettings((prev) =>
+            prev.preventSleepWhileConnected === mode
+              ? prev
+              : { ...prev, preventSleepWhileConnected: mode },
+          );
+        }
         const loaded = parseMessageRetention(raw);
         setRetention(loaded);
         lastSavedRetentionRef.current = loaded;
@@ -652,6 +693,16 @@ export default function AppPanel({
           // Main falls back to the default (on) when the flag cannot be read.
           closeToTrayConfirmedRef.current = true;
           setSettings((prev) => (prev.closeToTray ? prev : { ...prev, closeToTray: true }));
+        }
+        if (!preventSleepTouchedRef.current) {
+          // Main falls back to the default (`rf`) when the flag cannot be read.
+          const fallback = DEFAULT_APP_SETTINGS_SHARED.preventSleepWhileConnected;
+          preventSleepConfirmedRef.current = fallback;
+          setSettings((prev) =>
+            prev.preventSleepWhileConnected === fallback
+              ? prev
+              : { ...prev, preventSleepWhileConnected: fallback },
+          );
         }
       });
     return () => {
@@ -1969,6 +2020,27 @@ export default function AppPanel({
             {t('appPanel.closeToTray')}
           </label>
           <HelpTooltip text={t('appPanel.closeToTrayDesc')} />
+        </div>
+        <div data-setting-anchor="app.window.preventSleep" className="flex items-center gap-2">
+          <label htmlFor="preventSleepWhileConnected" className="text-ink-300 text-sm">
+            {t('appPanel.preventSleep')}
+          </label>
+          <select
+            id="preventSleepWhileConnected"
+            value={settings.preventSleepWhileConnected}
+            onChange={(e) => {
+              const value =
+                e.target.value === 'always' ? 'always' : e.target.value === 'off' ? 'off' : 'rf';
+              updateSetting('preventSleepWhileConnected', value);
+            }}
+            aria-label={t('appPanel.preventSleepAria')}
+            className={SELECT_BOX_CLASS}
+          >
+            <option value="rf">{t('appPanel.preventSleepOptionRf')}</option>
+            <option value="always">{t('appPanel.preventSleepOptionAlways')}</option>
+            <option value="off">{t('appPanel.preventSleepOptionOff')}</option>
+          </select>
+          <HelpTooltip text={t('appPanel.preventSleepHint')} />
         </div>
       </SettingsCollapsible>
 

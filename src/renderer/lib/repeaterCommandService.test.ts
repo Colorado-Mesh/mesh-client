@@ -259,6 +259,127 @@ describe('RepeaterCommandService', () => {
     });
   });
 
+  describe('ingestResponse', () => {
+    it('returns resolved with historyText and records a settled tombstone', async () => {
+      const { token, promise } = service.registerPendingCommand('uptime', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      const first = service.ingestResponse('A1|uptime 42', 0x1234);
+      expect(first).toEqual({
+        kind: 'resolved',
+        nodeId: 0x1234,
+        historyText: 'uptime 42',
+      });
+      await expect(promise).resolves.toBe('uptime 42');
+      expect(service.hasPendingCommand(token)).toBe(false);
+    });
+
+    it('returns duplicate for an identical re-delivery of a settled frame', async () => {
+      const { promise } = service.registerPendingCommand('name', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|Unknown command', 0x1234).kind).toBe('resolved');
+      await promise;
+      expect(service.ingestResponse('A1|Unknown command', 0x1234)).toEqual({ kind: 'duplicate' });
+    });
+
+    it('returns unmatched when the same token has a different body', async () => {
+      const { promise } = service.registerPendingCommand('cmd', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|first', 0x1234).kind).toBe('resolved');
+      await promise;
+      expect(service.ingestResponse('A1|second', 0x1234)).toEqual({
+        kind: 'unmatched',
+        historyText: 'second',
+      });
+    });
+
+    it('returns unmatched for a late reply after timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        const { promise } = service.registerPendingCommand('cmd', [], {
+          token: 'A1',
+          senderNodeId: 0x1234,
+          timeoutMs: 10,
+        });
+        const rejected = expect(promise).rejects.toThrow('timed out');
+        await vi.advanceTimersByTimeAsync(10);
+        await rejected;
+        expect(service.ingestResponse('A1|late', 0x1234)).toEqual({
+          kind: 'unmatched',
+          historyText: 'late',
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('clears the settled tombstone when the token is reused', async () => {
+      const first = service.registerPendingCommand('cmd', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|one', 0x1234).kind).toBe('resolved');
+      await first.promise;
+      expect(service.ingestResponse('A1|one', 0x1234).kind).toBe('duplicate');
+
+      const second = service.registerPendingCommand('cmd2', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|one', 0x1234)).toEqual({
+        kind: 'resolved',
+        nodeId: 0x1234,
+        historyText: 'one',
+      });
+      await second.promise;
+    });
+
+    it('drops settled tombstones on clear()', async () => {
+      const { promise } = service.registerPendingCommand('cmd', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|ok', 0x1234).kind).toBe('resolved');
+      await promise;
+      service.clear();
+      expect(service.ingestResponse('A1|ok', 0x1234)).toEqual({
+        kind: 'unmatched',
+        historyText: 'ok',
+      });
+    });
+
+    it('does not treat a sender mismatch as a duplicate', async () => {
+      const { promise } = service.registerPendingCommand('cmd', [], {
+        token: 'A1',
+        senderNodeId: 0x1234,
+      });
+      expect(service.ingestResponse('A1|ok', 0x1234).kind).toBe('resolved');
+      await promise;
+      expect(service.ingestResponse('A1|ok', 0x5678)).toEqual({
+        kind: 'unmatched',
+        historyText: 'ok',
+      });
+    });
+
+    it('redacts historyText for secret commands', async () => {
+      const { promise } = service.registerPendingCommand('get guest.password', [], {
+        token: 'AB',
+        senderNodeId: 1,
+      });
+      expect(service.ingestResponse('AB|> secret', 1)).toEqual({
+        kind: 'resolved',
+        nodeId: 1,
+        historyText: '[redacted]',
+      });
+      await promise;
+    });
+  });
+
   describe('clear', () => {
     it('should reject all pending commands', () => {
       const { promise: p1 } = service.registerPendingCommand('cmd1', []);

@@ -48,7 +48,7 @@ interface Harness {
   signal: TelemetryPoint[];
   state: DeviceState;
   cliHistory: { nodeId: number; text: string }[];
-  handleResponse: ReturnType<typeof vi.fn>;
+  ingestResponse: ReturnType<typeof vi.fn>;
   teardownConn: ReturnType<typeof vi.fn>;
   handleConnectionLost: ReturnType<typeof vi.fn>;
   syncNextMessage: ReturnType<typeof vi.fn>;
@@ -56,7 +56,11 @@ interface Harness {
   messages: ChatMessage[];
 }
 
-function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
+function makeHarness(overrides?: {
+  handleResponseResult?: boolean;
+  ingestKind?: 'resolved' | 'duplicate' | 'unmatched';
+  resolvedNodeId?: number;
+}): Harness {
   const deviceLogs: DeviceLogEntry[] = [];
   const rawPackets: RxPacketEntry[] = [];
   const signal: TelemetryPoint[] = [];
@@ -76,7 +80,21 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     close: vi.fn().mockResolvedValue(undefined),
   } as unknown as MeshCoreConnection;
 
-  const handleResponse = vi.fn().mockReturnValue(overrides?.handleResponseResult ?? false);
+  const resolvedByDefault = overrides?.handleResponseResult === true;
+  const ingestKind = overrides?.ingestKind ?? (resolvedByDefault ? 'resolved' : 'unmatched');
+  const ingestResponse = vi.fn().mockImplementation((text: string, senderId?: number) => {
+    if (ingestKind === 'duplicate') return { kind: 'duplicate' as const };
+    const pipe = text.indexOf('|');
+    const historyText = pipe >= 0 ? text.slice(pipe + 1) : text;
+    if (ingestKind === 'resolved') {
+      return {
+        kind: 'resolved' as const,
+        nodeId: overrides?.resolvedNodeId ?? (senderId && senderId !== 0 ? senderId : 0x1234),
+        historyText,
+      };
+    }
+    return { kind: 'unmatched' as const, historyText };
+  });
   const teardownConn = vi.fn();
   const handleConnectionLost = vi.fn();
 
@@ -108,9 +126,16 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     pubKeyPrefixMapRef: ref(new Map<string, number>()),
     rawPacketsRef: ref(rawPackets),
     repeaterCommandServiceRef: ref({
-      handleResponse,
+      ingestResponse,
+      handleResponse: (text: string, senderId?: number) =>
+        ingestResponse(text, senderId).kind === 'resolved',
       clear: vi.fn(),
-      parseResponseToken: (text: string) => ({ token: null, body: text }),
+      parseResponseToken: (text: string) => {
+        const match = /^([0-9A-Fa-f]{2})\|(.*)$/s.exec(text);
+        return match
+          ? { token: match[1].toUpperCase(), body: match[2] }
+          : { token: null, body: text };
+      },
       redactResponseForHistory: (text: string) => text,
     } as never),
     selfInfoRef: ref(null),
@@ -156,7 +181,7 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
       return state;
     },
     cliHistory,
-    handleResponse,
+    ingestResponse,
     teardownConn,
     handleConnectionLost,
     syncNextMessage,
@@ -188,7 +213,7 @@ describe('attachMeshcoreConnSideEffects', () => {
     vi.restoreAllMocks();
   });
 
-  it('routes CLI data responses to the repeater command service', () => {
+  it('routes CLI data responses to the repeater command service and appends one received line', () => {
     const h = makeHarness({ handleResponseResult: true });
     detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
 
@@ -197,8 +222,8 @@ describe('attachMeshcoreConnSideEffects', () => {
       payload: { text: 'A1|uptime 42', senderNodeId: 0x1234, pubKeyPrefixHex: 'aabbcc' },
     });
 
-    expect(h.handleResponse).toHaveBeenCalledWith('A1|uptime 42', 0x1234);
-    expect(h.cliHistory).toHaveLength(0);
+    expect(h.ingestResponse).toHaveBeenCalledWith('A1|uptime 42', 0x1234);
+    expect(h.cliHistory).toEqual([{ nodeId: 0x1234, text: 'uptime 42' }]);
   });
 
   it('appends unmatched CLI responses to panel history', () => {
@@ -213,6 +238,34 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.cliHistory).toEqual([{ nodeId: 0x99, text: 'stray output' }]);
   });
 
+  it('does not append a second history line for a duplicate CLI reply frame', () => {
+    const h = makeHarness({ ingestKind: 'duplicate' });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    const payload = {
+      text: 'A1|Unknown command',
+      senderNodeId: 0x1234,
+      pubKeyPrefixHex: 'aabbcc',
+    };
+
+    dispatch({ type: 'meshcore_cli_response', payload });
+    dispatch({ type: 'meshcore_cli_response', payload });
+
+    expect(h.ingestResponse).toHaveBeenCalledTimes(2);
+    expect(h.cliHistory).toHaveLength(0);
+  });
+
+  it('appends under pending nodeId when resolved with senderId 0', () => {
+    const h = makeHarness({ handleResponseResult: true, resolvedNodeId: 0xabcd });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({
+      type: 'meshcore_cli_response',
+      payload: { text: 'A1|ok', senderNodeId: 0, pubKeyPrefixHex: 'aabbcc' },
+    });
+
+    expect(h.cliHistory).toEqual([{ nodeId: 0xabcd, text: 'ok' }]);
+  });
+
   it('ignores events routed to a different identity', () => {
     const h = makeHarness({ handleResponseResult: true });
     detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
@@ -225,7 +278,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       'some-other-identity',
     );
 
-    expect(h.handleResponse).not.toHaveBeenCalled();
+    expect(h.ingestResponse).not.toHaveBeenCalled();
   });
 
   it('records RF RX into device logs, signal telemetry, and the raw packet log', () => {
@@ -316,7 +369,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       type: 'meshcore_cli_response',
       payload: { text: 'A1|frozen', senderNodeId: 0x55, pubKeyPrefixHex: 'aabbcc' },
     });
-    expect(h.handleResponse).toHaveBeenCalledWith('A1|frozen', 0x55);
+    expect(h.ingestResponse).toHaveBeenCalledWith('A1|frozen', 0x55);
   });
 
   it('prefers finalized meshcoreIdentityIdRef over pending attach identity', () => {
@@ -333,9 +386,9 @@ describe('attachMeshcoreConnSideEffects', () => {
       },
       ID,
     );
-    expect(h.handleResponse).toHaveBeenCalledWith('A1|final', 1);
+    expect(h.ingestResponse).toHaveBeenCalledWith('A1|final', 1);
 
-    h.handleResponse.mockClear();
+    h.ingestResponse.mockClear();
     dispatch(
       {
         type: 'meshcore_cli_response',
@@ -343,7 +396,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       },
       'pending-driver-id',
     );
-    expect(h.handleResponse).not.toHaveBeenCalled();
+    expect(h.ingestResponse).not.toHaveBeenCalled();
   });
 
   it('rate-limits MQTT packet-log publishes with a token bucket', () => {
@@ -980,7 +1033,7 @@ describe('attachMeshcoreConnSideEffects', () => {
       payload: { text: 'after detach', senderNodeId: 5, pubKeyPrefixHex: 'aabbcc' },
     });
 
-    expect(h.handleResponse).not.toHaveBeenCalled();
+    expect(h.ingestResponse).not.toHaveBeenCalled();
     expect(h.ctx.processWaitingMessagesRef.current).toBeNull();
   });
 });
