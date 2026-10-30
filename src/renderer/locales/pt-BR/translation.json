@@ -7384,7 +7384,18 @@
       "all": "Todo o tráfego",
       "viewport": "Área atual do mapa"
     },
-    "fitTraffic": "Enquadrar tráfego"
+    "fitTraffic": "Enquadrar tráfego",
+    "window": {
+      "open": "Abrir em nova janela",
+      "title": "Tráfego ao vivo: {{protocol}}",
+      "openElsewhere": "O tráfego ao vivo está aberto em outra janela",
+      "openElsewhereHint": "Ele continua sendo atualizado lá enquanto você usa o restante do aplicativo.",
+      "show": "Mostrar janela",
+      "moveBack": "Trazer de volta para cá",
+      "keepOnTop": "Manter em primeiro plano",
+      "return": "Voltar para a janela principal",
+      "unavailable": "Abra as janelas de tráfego ao vivo pelo painel Mapa do Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Configurações do dispositivo complementar",

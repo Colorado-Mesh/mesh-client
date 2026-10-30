@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <!-- Default RID so WindowsAppSDKSelfContained builds (incl. CodeQL autobuild) are not AnyCPU. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

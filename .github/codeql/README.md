@@ -43,6 +43,21 @@ GitHub references:
 - [Manual Swift builds](https://docs.github.com/en/code-security/tutorials/customize-code-scanning/prepare-code-for-analysis)
 - [Embedded model packs also work with advanced setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/edit-default-setup)
 
+## C# (`native/ai/windows`)
+
+C# must run on `windows-latest` with `build-mode: autobuild`. `native/ai/windows/MeshAi.csproj`
+targets `net8.0-windows10.0.22621.0` and references `Microsoft.WindowsAppSDK`, so an Ubuntu
+analysis cannot restore WinRT / Windows App SDK reference assemblies. `build-mode: none` on
+Ubuntu leaves call-target and typed-expression metrics below CodeQL's quality thresholds (the
+"Low C# analysis quality" advisory). The project sets `<RuntimeIdentifier>win-x64</RuntimeIdentifier>`
+so `WindowsAppSDKSelfContained` builds under CodeQL autobuild (plain `dotnet build` without `-r`)
+are not AnyCPU; packaging still passes `-r win-x64` / `win-arm64` from
+`scripts/build-ai-helper.mjs`. Default setup cannot fix the Ubuntu quality issue: it uses a
+repo-wide runner and only a per-language build mode, with no way to give C# its own Windows
+runner. That is one more reason the advanced workflow is the long-term configuration. Empty
+`AiLafToken` / `AiLafAttestation` assembly metadata during the CodeQL build is expected;
+extraction does not need those secrets (same as non-secret builds in `ai-helper.yaml`).
+
 ## Swift (`native/ai/apple`)
 
 Swift keeps the existing default-setup autobuild through the root `Package.swift`, which points at
@@ -59,6 +74,19 @@ The embedded sanitizer pack currently targets `codeql/javascript-all >=2.25.0`; 
 That inherited mismatch prevents those barriers from applying under either setup. This PR leaves
 the pack unchanged and does not claim active sanitizer models; correcting the range needs separate
 validation because it changes scan results.
+
+## Rust (`reticulum-sidecar`)
+
+The sidecar's Ratspeak crates are path dependencies under the gitignored `.rsstack/`, which only
+`scripts/clone-ratspeak-stack.sh` creates. Default setup cannot run that script, so Cargo cannot
+load the sidecar and its `serde_json::json!` and `tracing` macros fail to expand. On `main` at
+`98342088`, 35 of 102 Rust files extracted with errors
+([run](https://github.com/Colorado-Mesh/mesh-client/actions/runs/41086597091)), and the CodeQL
+status page reports it.
+
+The advanced workflow clones the stack before analyzing Rust, and `paths-ignore: [.rsstack]` keeps
+the cloned upstream crates out of the results while they still resolve the sidecar. The warning
+clears only after the activation steps above, because default setup keeps uploading until then.
 
 ## Timing audit (2026-10-25)
 

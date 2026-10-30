@@ -32,6 +32,21 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       disconnect: noopAsync,
       onUpdate: noopUnsub,
     },
+    liveMap: {
+      available: false,
+      open: noopAsync,
+      close: noopAsync,
+      getOpen: async () => [],
+      publish: noop,
+      onState: noopUnsub,
+      onNodeSelected: noopUnsub,
+      init: async () => null,
+      onSnapshot: noopUnsub,
+      reportView: noop,
+      selectNode: noop,
+      setAlwaysOnTop: async () => false,
+      dock: noopAsync,
+    },
     db: {
       getIncidents: async () => incidents ?? { incidents: {}, resolvedTombstones: {} },
       saveIncidents: async (snapshot: IncidentSnapshot) => {

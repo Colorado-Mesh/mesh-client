@@ -7384,7 +7384,18 @@
       "all": "すべてのトラフィック",
       "viewport": "現在の地図範囲"
     },
-    "fitTraffic": "トラフィックに合わせて表示"
+    "fitTraffic": "トラフィックに合わせて表示",
+    "window": {
+      "open": "新しいウィンドウで開く",
+      "title": "{{protocol}} のライブトラフィック",
+      "openElsewhere": "ライブトラフィックは別のウィンドウで開いています",
+      "openElsewhereHint": "アプリのほかの画面を使っている間も、そちらで更新が続きます。",
+      "show": "ウィンドウを表示",
+      "moveBack": "ここに戻す",
+      "keepOnTop": "常に手前に表示",
+      "return": "メインウィンドウに戻す",
+      "unavailable": "ライブトラフィックのウィンドウは Mesh Client の地図パネルから開いてください。"
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "コンパニオンデバイスの設定",

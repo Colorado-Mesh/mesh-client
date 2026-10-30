@@ -70,7 +70,7 @@ jobs:
           node <<'EOF' >> "$GITHUB_OUTPUT"
           const rows = [
             { language: 'actions', os: 'ubuntu-latest', 'build-mode': 'none' },
-            { language: 'csharp', os: 'ubuntu-latest', 'build-mode': 'none' },
+            { language: 'csharp', os: 'windows-latest', 'build-mode': 'autobuild' },
             { language: 'javascript-typescript', os: 'ubuntu-latest', 'build-mode': 'none' },
             { language: 'python', os: 'ubuntu-latest', 'build-mode': 'none' },
             { language: 'rust', os: 'ubuntu-latest', 'build-mode': 'none' },
@@ -107,6 +107,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # The sidecar's Ratspeak crates are path dependencies under the gitignored .rsstack/.
+      # Without them Cargo cannot load the sidecar, and its serde_json and tracing macros
+      # fail to expand, so about a third of the sidecar files extract with errors.
+      - name: Clone Ratspeak stack
+        if: matrix.language == 'rust'
+        run: bash scripts/clone-ratspeak-stack.sh
+
       # github/codeql-action v4.39.1
       - name: Initialize CodeQL
         if: matrix.language != 'swift' || needs.scope.outputs.swift == 'true'
@@ -117,11 +124,16 @@ jobs:
           queries: security-extended
           dependency-caching: true
           # Deliberately do not load the legacy config that excludes a query.
+          # .rsstack/ holds the cloned upstream crates; they resolve the sidecar but are not ours to scan.
           config: |
             threat-models: [remote]
+            paths-ignore:
+              - .rsstack
 
-      - name: Build Swift helper
-        if: matrix.language == 'swift' && needs.scope.outputs.swift == 'true'
+      - name: Autobuild compiled languages
+        if: >-
+          matrix['build-mode'] == 'autobuild' &&
+          (matrix.language != 'swift' || needs.scope.outputs.swift == 'true')
         uses: github/codeql-action/autobuild@8498dc4c2b27cdd99baf0f87955b29ebbf30c78d
 
       - name: Perform CodeQL Analysis

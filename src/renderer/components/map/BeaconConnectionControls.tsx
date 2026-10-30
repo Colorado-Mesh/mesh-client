@@ -22,14 +22,31 @@ function savedFeedUrl(provider: RegionalFeedProvider): string {
 interface ConnectionControlsProps {
   feed: ReturnType<typeof useBeaconTraffic>;
   provider?: RegionalFeedProvider;
+  /** Server region of a session continued from another window. */
+  initialRegion?: string;
 }
 
-export function BeaconConnectionControls({ feed, provider = 'beacon' }: ConnectionControlsProps) {
+export function BeaconConnectionControls({
+  feed,
+  provider = 'beacon',
+  initialRegion,
+}: ConnectionControlsProps) {
   // A provider change resets drafts, selected server region, and saved-URL lookup together.
-  return <RegionalConnectionForm key={provider} feed={feed} provider={provider} />;
+  return (
+    <RegionalConnectionForm
+      key={provider}
+      feed={feed}
+      provider={provider}
+      initialRegion={initialRegion}
+    />
+  );
 }
 
-function RegionalConnectionForm({ feed, provider = 'beacon' }: ConnectionControlsProps) {
+function RegionalConnectionForm({
+  feed,
+  provider = 'beacon',
+  initialRegion,
+}: ConnectionControlsProps) {
   const { t } = useTranslation();
   const presets = getRegionalFeedPresets(provider);
   const [url, setUrl] = useState(() => savedFeedUrl(provider));
@@ -40,7 +57,7 @@ function RegionalConnectionForm({ feed, provider = 'beacon' }: ConnectionControl
     findRegionalFeedPreset(url, provider) ? '' : url,
   );
   const [directoryUrl, setDirectoryUrl] = useState(url);
-  const [region, setRegion] = useState('');
+  const [region, setRegion] = useState(initialRegion ?? '');
   const [stopping, setStopping] = useState(false);
   const [actionError, setActionError] = useState(false);
   const attempt = useRef(0);

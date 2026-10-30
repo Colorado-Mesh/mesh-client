@@ -19,6 +19,7 @@ import type {
 } from './games-types';
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
 import type { IncidentSnapshot } from './incidentTypes';
+import type { LiveMapWindowApi } from './liveMapWindow';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
@@ -387,6 +388,7 @@ export type BleCoexistenceAcquireScanResult =
 
 export interface ElectronAPI {
   beacon: BeaconFeedApi;
+  liveMap: LiveMapWindowApi;
   translation: TranslationAPI;
   ai: AiAPI;
   // ─── Database operations ────────────────────────────────────────────────────
