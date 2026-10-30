@@ -1143,6 +1143,19 @@ describe('repairMeshcoreDisplayMessages', () => {
     expect(thanks?.replyPreviewText).toBe(', ack: SNR 9.0 dB, 7 hops');
   });
 
+  it('threads my own row by name when it carries only the target name', () => {
+    // An echo of my keyless reply heard before its parent keeps the name but no replyId.
+    const thread = ownReplyToEarlierMessageThread(100).map((m) =>
+      m.payload === 'Thank you'
+        ? { ...m, replyId: undefined, replyPreviewSender: 'Signal Bot' }
+        : m,
+    );
+    const out = meshcoreChatMessagesForDisplay(thread, { selfNodeId: 100 });
+    const thanks = out.find((m) => m.payload === 'Thank you');
+    expect(thanks?.replyId).toBe(3_000);
+    expect(thanks?.replyPreviewText).toBe(', ack: SNR 12.0 dB, 4 hops');
+  });
+
   it("still moves someone else's name-only reply to that sender's newest message", () => {
     const thread = ownReplyToEarlierMessageThread(100);
     const aliceThanks: ChatMessage = {

@@ -1035,10 +1035,10 @@ function refreshMeshcoreReplyParent(
     replyId != null ? findMeshcoreParentMessageForReply(prior, replyId, lookupOpts) : undefined;
 
   const targetName = meshcoreReplyTargetName(msg);
-  // The composer recorded which message an own reply answers; only replies heard from others
-  // carry just a name and need re-resolving.
-  const ownSent = meshcoreIsOwnSentMessage(msg, selfNodeId);
-  const incomingBracket = !ownSent && meshcoreIsIncomingBracketReply(msg, targetName);
+  // The composer recorded which message an own reply answers. An own row with only a name (an
+  // echo heard before its parent) has nothing better than the name, so it resolves like any other.
+  const keepPickedParent = msg.replyId != null && meshcoreIsOwnSentMessage(msg, selfNodeId);
+  const incomingBracket = !keepPickedParent && meshcoreIsIncomingBracketReply(msg, targetName);
   const explicitWireKey = meshcoreWireHadExplicitReplyKey(msg);
 
   if (incomingBracket && targetName) {
@@ -1059,7 +1059,7 @@ function refreshMeshcoreReplyParent(
         parent = upgraded.parent;
       }
     }
-  } else if (!ownSent && !parent && targetName && !explicitWireKey) {
+  } else if (!keepPickedParent && !parent && targetName && !explicitWireKey) {
     const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
       msg,
       prior,
