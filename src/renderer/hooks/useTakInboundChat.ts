@@ -12,7 +12,11 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { listTakConversationPeers, listTakDmProtocols } from '../lib/tak/takDirectMessages';
 import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
-import { takIncidentMarkers } from '../lib/tak/takIncidentMarkers';
+import {
+  resetTakIncidentAlarms,
+  type TakIncidentAlarm,
+  takIncidentMarkers,
+} from '../lib/tak/takIncidentMarkers';
 import { setTakMecpLocale } from '../lib/tak/takMecpText';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -24,6 +28,7 @@ import {
 import type { IdentityId } from '../lib/types';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useIncidentStore } from '../stores/incidentStore';
+import { mecpBlockKey, useMecpBlockStore } from '../stores/mecpBlockStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { setTakChannels, setTakRadio, type TakChannelInfo } from '../stores/takChannelStore';
@@ -161,15 +166,31 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     };
   }, [sinkActive, i18n.language, t]);
 
-  // Open MECP emergencies with a position, as markers on TAK clients' maps.
+  // Open MECP emergencies with a position, as markers on TAK clients' maps; a MAYDAY's marker
+  // also sounds ATAK's emergency alarm when the user has turned it on.
   const incidents = useIncidentStore((s) => s.incidents);
-  const incidentMarkersJson = useMemo(
+  const mecpAlarm = useTakRelayPrefsStore((s) => s.mecpAlarm);
+  const blockedSenders = useMecpBlockStore((s) => s.blocked);
+  const incidentMarkers = useMemo(() => {
     // Only built while a sink is up: nothing is sent otherwise.
-    () => (sinkActive ? JSON.stringify(takIncidentMarkers(incidents)) : '[]'),
+    if (!sinkActive) {
+      // Main forgets the alarms with the sink; a MAYDAY still unseen sounds again with the next.
+      resetTakIncidentAlarms();
+      return [];
+    }
+    const alarm: TakIncidentAlarm | undefined = mecpAlarm
+      ? {
+          isBlocked: (incident) =>
+            incident.protocolsSeen.some((protocol) =>
+              Object.hasOwn(blockedSenders, mecpBlockKey(protocol, incident.senderId)),
+            ),
+        }
+      : undefined;
+    return takIncidentMarkers(incidents, alarm);
     // The markers' words follow the app's language once its pack has loaded.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mecpLocaleLoads only triggers a rebuild.
-    [sinkActive, incidents, mecpLocaleLoads],
-  );
+  }, [sinkActive, incidents, mecpLocaleLoads, mecpAlarm, blockedSenders]);
+  const incidentMarkersJson = useMemo(() => JSON.stringify(incidentMarkers), [incidentMarkers]);
   useSendWhileSinkActive(
     sinkActive,
     incidentMarkersJson,

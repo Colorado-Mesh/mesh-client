@@ -11,7 +11,7 @@ import type { IdentityId } from '../lib/types';
 const takRelayPersistence = createDurableRendererSetting(
   'mesh-client:takRelayPrefs',
   DURABLE_RENDERER_STORAGE_KEYS.takRelayPrefs,
-  JSON.stringify({ state: { byIdentity: {}, retiredRooms: null }, version: 3 }),
+  JSON.stringify({ state: { byIdentity: {}, retiredRooms: null, mecpAlarm: false }, version: 3 }),
   // A first edit creates a full default row; replay only the fields the user changed.
   (path) =>
     path.length === 3 && path[0] === 'state' && path[1] === 'byIdentity' ? EMPTY_PREFS : undefined,
@@ -262,6 +262,12 @@ interface TakRelayPrefsState {
   byIdentity: Record<IdentityId, TakRelayIdentityPrefs>;
   /** Version 1 room contacts for ATAK devices to drop; null when there are none. */
   retiredRooms: TakRetiredRooms | null;
+  /**
+   * Sound ATAK's emergency alarm for an MECP MAYDAY with a position. Off by default: anyone on a
+   * channel can send one. For every radio, as the incidents are.
+   */
+  mecpAlarm: boolean;
+  setMecpAlarm: (enabled: boolean) => void;
   setTrackerChannel: (identityId: IdentityId, slot: number, enabled: boolean) => void;
   setChannelMode: (identityId: IdentityId, mode: TakChannelMode) => void;
   /** Serve one channel, by key, in `selected` mode. */
@@ -309,6 +315,10 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
       return {
         byIdentity: {},
         retiredRooms: null,
+        mecpAlarm: false,
+        setMecpAlarm: (enabled) => {
+          set({ mecpAlarm: enabled });
+        },
         setTrackerChannel: (identityId, slot, enabled) => {
           if (!isChannelIndex(slot)) return;
           update(identityId, (prev) => {
@@ -362,11 +372,16 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
       storage: createJSONStorage(() => takRelayPersistence.storage),
       skipHydration: true,
       version: 3,
-      partialize: (s) => ({ byIdentity: s.byIdentity, retiredRooms: s.retiredRooms }),
+      partialize: (s) => ({
+        byIdentity: s.byIdentity,
+        retiredRooms: s.retiredRooms,
+        mecpAlarm: s.mecpAlarm,
+      }),
       // sanitizeStore reads every earlier shape, so the stored state passes through to merge.
       migrate: (persisted) => persisted,
       merge: (persisted, current) => {
-        const p = persisted as { byIdentity?: unknown; retiredRooms?: unknown } | undefined;
+        const p = persisted as
+          { byIdentity?: unknown; retiredRooms?: unknown; mecpAlarm?: unknown } | undefined;
         const now = Date.now();
         const { byIdentity, contactRooms } = sanitizeStore(p?.byIdentity);
         // Room contacts are retired once, when the version 1 settings are read.
@@ -375,7 +390,7 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
           (contactRooms.length > 0
             ? { rooms: contactRooms, untilMs: now + RETIRED_ROOM_TTL_MS }
             : null);
-        return { ...current, byIdentity, retiredRooms };
+        return { ...current, byIdentity, retiredRooms, mecpAlarm: p?.mecpAlarm === true };
       },
     },
   ),
@@ -388,8 +403,10 @@ takRelayPersistence.hydrateLocal(() => {
 export async function hydrateTakRelayPrefs(settings: Record<string, string>): Promise<void> {
   await takRelayPersistence.hydrate(settings, () => {
     void useTakRelayPrefsStore.persist.rehydrate();
-    const { byIdentity, retiredRooms } = useTakRelayPrefsStore.getState();
-    takRelayPersistence.write(JSON.stringify({ state: { byIdentity, retiredRooms }, version: 3 }));
+    const { byIdentity, retiredRooms, mecpAlarm } = useTakRelayPrefsStore.getState();
+    takRelayPersistence.write(
+      JSON.stringify({ state: { byIdentity, retiredRooms, mecpAlarm }, version: 3 }),
+    );
   });
 }
 

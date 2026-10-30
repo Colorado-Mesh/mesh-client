@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { EmergencyIncident } from '../mecp/incidentTypes';
-import { takIncidentMarkers } from './takIncidentMarkers';
+import { resetTakIncidentAlarms, takIncidentMarkers } from './takIncidentMarkers';
 import { resetTakMecpLocale } from './takMecpText';
 
 const SEEN = Date.parse('2026-10-28T19:58:30Z');
@@ -38,6 +38,7 @@ const byId = (...list: EmergencyIncident[]) => Object.fromEntries(list.map((i) =
 
 afterEach(() => {
   resetTakMecpLocale();
+  resetTakIncidentAlarms();
 });
 
 describe('takIncidentMarkers', () => {
@@ -146,5 +147,83 @@ describe('takIncidentMarkers', () => {
     );
     const many = Array.from({ length: 60 }, (_, i) => incident({ id: `mecp-${i}` }));
     expect(takIncidentMarkers(byId(...many))).toHaveLength(50);
+  });
+});
+
+describe("takIncidentMarkers and ATAK's emergency alarm", () => {
+  const NOBODY_BLOCKED = { isBlocked: () => false };
+  /** Who each marker's alarm names, by incident id. */
+  const alarms = (
+    incidents: Record<string, EmergencyIncident>,
+    alarm: Parameters<typeof takIncidentMarkers>[1] = NOBODY_BLOCKED,
+  ) =>
+    Object.fromEntries(
+      takIncidentMarkers(incidents, alarm)
+        .filter((m) => m.alarm !== undefined)
+        .map((m) => [m.id, m.alarm]),
+    );
+
+  it('sounds for an unseen MAYDAY with a position, named for the sender', () => {
+    expect(alarms(byId(incident()))).toEqual({ 'mecp-abc': 'Alice' });
+    expect(alarms(byId(incident({ senderName: ' ' })))).toEqual({ 'mecp-abc': '12345' });
+  });
+
+  it('never sounds unless the user turned it on', () => {
+    expect(takIncidentMarkers(byId(incident()))[0]).not.toHaveProperty('alarm');
+  });
+
+  it("stays quiet for a drill, a lesser report, or this station's own beacon", () => {
+    expect(
+      alarms(
+        byId(
+          incident({ id: 'drill', isDrill: true }),
+          incident({ id: 'urgent', severity: 1 }),
+          incident({ id: 'own', localOrigin: true, beaconActive: true }),
+        ),
+      ),
+    ).toEqual({});
+  });
+
+  it('stays quiet for one already seen: read from history, or from a throttled sender', () => {
+    expect(alarms(byId(incident({ seenAt: SEEN })))).toEqual({});
+  });
+
+  it('stays quiet for a blocked sender, whichever protocol it was heard on', () => {
+    const relayed = incident({ protocol: 'meshtastic', protocolsSeen: ['meshcore', 'meshtastic'] });
+    expect(
+      alarms(byId(relayed), {
+        isBlocked: (inc) => inc.protocolsSeen.includes('meshcore') && inc.senderId === '12345',
+      }),
+    ).toEqual({});
+  });
+
+  it('keeps sounding once the operator has seen it, until there is a reason to stop', () => {
+    expect(alarms(byId(incident()))).toEqual({ 'mecp-abc': 'Alice' });
+    expect(alarms(byId(incident({ seenAt: SEEN + 1 })))).toEqual({ 'mecp-abc': 'Alice' });
+    // Building the same list again gives the same alarms.
+    expect(alarms(byId(incident({ seenAt: SEEN + 1 })))).toEqual({ 'mecp-abc': 'Alice' });
+    expect(alarms(byId(incident({ seenAt: SEEN + 1, status: 'resolved' })))).toEqual({});
+    // Gone once stopped: seen, it does not start again.
+    expect(alarms(byId(incident({ seenAt: SEEN + 1 })))).toEqual({});
+  });
+
+  it('stops when the beacon is cancelled, and may sound again once the incident reopens', () => {
+    const cancelled = incident({
+      events: [
+        { at: SEEN, kind: 'received' },
+        { at: SEEN + 1, kind: 'beaconCancelled' },
+      ],
+    });
+    expect(alarms(byId(cancelled))).toEqual({});
+    const reopened = incident({
+      events: [...(cancelled.events ?? []), { at: SEEN + 2, kind: 'reopened' }],
+    });
+    expect(alarms(byId(reopened))).toEqual({ 'mecp-abc': 'Alice' });
+  });
+
+  it('forgets what was sounding when turned off', () => {
+    expect(alarms(byId(incident()))).toEqual({ 'mecp-abc': 'Alice' });
+    takIncidentMarkers(byId(incident({ seenAt: SEEN + 1 })));
+    expect(alarms(byId(incident({ seenAt: SEEN + 1 })))).toEqual({});
   });
 });
