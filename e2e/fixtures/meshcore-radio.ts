@@ -1,14 +1,19 @@
 import { createServer, type Socket } from 'node:net';
 
 /** Local companion protocol fixture: real Electron TCP/SDK/DB path, no radio or RF. */
-export async function startMeshcoreRadio() {
+export async function startMeshcoreRadio(selfId = 171) {
   const sockets = new Set<Socket>();
   const commands: number[] = [];
+  const channelCapacity = 40;
   let channels = ['Zulu', 'Alpha', 'Beta'];
   let rooms = ['Zulu Room', 'Alpha Room'];
   let failChannelRead = false;
   let stallContacts = false;
   const roomKeys = new Map<string, number>();
+  let failChannelSave = false;
+  let holdChannelSaves = false;
+  const pendingSaves: (() => void)[] = [];
+  const secrets = new Map<number, Buffer>();
   const text = (value: string, length: number) => {
     const bytes = Buffer.alloc(length);
     bytes.write(value, 0, length - 1);
@@ -26,7 +31,7 @@ export async function startMeshcoreRadio() {
   };
   const self = Buffer.concat([
     Buffer.from([5, 1, 22, 22]),
-    publicKey(171),
+    publicKey(selfId),
     Buffer.alloc(12),
     u32(902000000),
     u32(250000),
@@ -50,7 +55,7 @@ export async function startMeshcoreRadio() {
         case 22:
           send(
             Buffer.concat([
-              Buffer.from([13, 14, 100, channels.length, 0, 0, 0, 0]),
+              Buffer.from([13, 14, 100, channelCapacity, 0, 0, 0, 0]),
               text('2026-10-27', 12),
               text('E2E Radio', 40),
               text('1.18.0', 20),
@@ -81,19 +86,52 @@ export async function startMeshcoreRadio() {
         case 31: {
           const index = command[1];
           if (failChannelRead) send(Buffer.from([1, 4]));
-          else if (index >= channels.length) send(Buffer.from([1, 2]));
+          else if (index >= channelCapacity) send(Buffer.from([1, 2]));
           else
             send(
               Buffer.concat([
                 Buffer.from([18, index]),
-                text(channels[index], 32),
-                Buffer.alloc(16, index + 1),
+                text(channels[index] ?? '', 32),
+                secrets.get(index) ?? Buffer.alloc(16, channels[index] ? index + 1 : 0),
               ]),
             );
           break;
         }
+        case 32: {
+          const save = () => {
+            if (failChannelSave) {
+              send(Buffer.from([1, 4]));
+              return;
+            }
+            const index = command[1];
+            if (index >= channelCapacity) {
+              send(Buffer.from([1, 2]));
+              return;
+            }
+            const name = command.subarray(2, 34).toString().split('\0')[0];
+            // splice, not an indexed write: CodeQL reads an index taken from socket bytes as a
+            // remote property name. Unsaved slots below it read back as empty channels.
+            while (channels.length < index) channels.push('');
+            channels.splice(index, 1, name);
+            secrets.set(index, Buffer.from(command.subarray(34, 50)));
+            send(Buffer.from([0]));
+          };
+          if (holdChannelSaves) pendingSaves.push(save);
+          else save();
+          break;
+        }
         case 23:
           send(Buffer.from([15])); // Test radio does not export identity secrets.
+          break;
+        case 26:
+          send(
+            Buffer.concat([
+              Buffer.from([0x85, 0]),
+              command.subarray(1, 7),
+              u32(Math.floor(Date.now() / 1000)),
+              Buffer.from([1, 7]),
+            ]),
+          );
           break;
         case 10:
           send(Buffer.from([10]));
@@ -143,8 +181,18 @@ export async function startMeshcoreRadio() {
   return {
     port: address.port,
     commands,
+    receiveChannel: (channel: number, body: string, timestamp = Math.floor(Date.now() / 1000)) => {
+      const payload = Buffer.concat([
+        Buffer.from([8, channel, 0xff, 0]),
+        u32(timestamp),
+        Buffer.from(body),
+      ]);
+      const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
+      for (const socket of sockets) socket.write(Buffer.concat([header, payload]));
+    },
     setChats: (nextChannels: string[], nextRooms: string[]) => {
-      channels = nextChannels;
+      channels = [...nextChannels];
+      secrets.clear();
       rooms = nextRooms;
     },
     setContactStall(stall: boolean) {
@@ -153,6 +201,17 @@ export async function startMeshcoreRadio() {
     setReadFailure: (value: boolean) => {
       failChannelRead = value;
     },
+    setSaveFailure: (value: boolean) => {
+      failChannelSave = value;
+    },
+    holdSaves: (value: boolean) => {
+      holdChannelSaves = value;
+      if (!value)
+        pendingSaves.splice(0).forEach((save) => {
+          save();
+        });
+    },
+    getChannel: (index: number) => ({ name: channels[index], secret: secrets.get(index) }),
     /** Push an RF packet the radio "heard" (companion push 0x88: SNR x4, RSSI, raw bytes). */
     pushRxLog: (raw: Buffer, snr = 6, rssi = -80) => {
       const signal = Buffer.alloc(2);

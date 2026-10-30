@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "Tampilkan QR saluran MeshCore untuk {{name}}",
       "privateChannel": "Saluran pribadi (masukkan kunci)",
+      "keepOpen": "Tetap buka setelah menambahkan",
+      "slotsFull": "Semua slot kanal penuh. Hapus satu kanal sebelum menambahkan yang lain.",
+      "added": "{{name}} ditambahkan.",
+      "alreadyAdded": "{{name}} sudah ditambahkan.",
       "privateKeyHint": "Masukkan kunci saluran bersama: tepat 32 karakter heksadesimal (16 byte), tidak semuanya nol.",
       "scopeLabel": "Kirim ruang lingkup untuk saluran ini",
       "scopeEffective": "Lingkup pengiriman efektif: {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Membaca obrolan dari radio…",
     "failed": "Tidak dapat membaca obrolan dari radio. Obrolan yang ada disimpan. Sambungkan kembali dan coba lagi.",
     "done": "Obrolan disinkronkan dari radio."
+  },
+  "notificationPolicy": {
+    "label": "Notifikasi Obrolan",
+    "all": "Semua pesan",
+    "mentions": "Penyebutan dan pesan langsung",
+    "help": "Mode penyebutan memberi peringatan untuk @[Your name], balasan atas pesan Anda, dan pesan langsung. RRC menggunakan @nickname dan menjaga pengaturan peringatan ruangannya. Gunakan bel dalam percakapan untuk membungkamnya, termasuk penyebutan dan DM. Pemberitahuan suara harus diaktifkan. Pesan masih sampai di chat. Peringatan darurat dan operasional MECP menjaga pengaturannya sendiri.",
+    "saveFailed": "Tidak dapat menyimpan preferensi notifikasi. Coba lagi setelah identitas percakapan tersedia dan penyimpanan lokal dapat ditulis."
   }
 }

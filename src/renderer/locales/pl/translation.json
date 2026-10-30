@@ -4708,6 +4708,10 @@
       "shareQr": "QR",
       "shareQrAria": "Pokaż QR kanału MeshCore dla {{name}}",
       "privateChannel": "Kanał prywatny (wprowadź klucz)",
+      "keepOpen": "Pozostaw otwarte po dodaniu",
+      "slotsFull": "Wszystkie miejsca na kanały są zajęte. Usuń kanał przed dodaniem kolejnego.",
+      "added": "Dodano {{name}}.",
+      "alreadyAdded": "{{name}} już dodano.",
       "privateKeyHint": "Wprowadź klucz kanału współdzielonego: dokładnie 32 znaki szesnastkowe (16 bajtów), a nie same zera.",
       "scopeLabel": "Wyślij zakres dla tego kanału",
       "scopeEffective": "Efektywny zakres wysyłania: {{scope}}",
@@ -7894,5 +7898,12 @@
     "busy": "Odczytywanie czatów z radia…",
     "failed": "Nie można odczytać rozmów z radia. Dotychczasowe czaty zostały zachowane. Połącz się ponownie i spróbuj ponownie.",
     "done": "Czaty zsynchronizowane z radiem."
+  },
+  "notificationPolicy": {
+    "label": "Powiadomienia na czacie",
+    "all": "Wszystkie wiadomości",
+    "mentions": "Wzmianki i bezpośrednie wiadomości",
+    "help": "Alerty trybu wzmianek dla @[Twoje imię], odpowiedzi na Twoje wiadomości i wiadomości bezpośrednie. RRC używa @nickname i zachowuje ustawienie alertu pokoju. Użyj dzwonka w rozmowie, aby go wyciszyć, w tym wzmianki i wiadomości tekstowe. Powiadomienia dźwiękowe muszą być włączone. Wiadomości nadal docierają na czacie. Alarmy awaryjne i operacyjne MECP zachowują swoje własne ustawienia.",
+    "saveFailed": "Nie można zapisać preferencji powiadomień. Spróbuj ponownie, gdy tożsamość rozmowy będzie dostępna, a lokalna pamięć będzie zapisywalna."
   }
 }

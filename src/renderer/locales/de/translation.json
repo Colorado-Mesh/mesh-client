@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "MeshCore-Kanal-QR für {{name}} anzeigen",
       "privateChannel": "Privater Kanal (Schlüssel eingeben)",
+      "keepOpen": "Nach dem Hinzufügen geöffnet lassen",
+      "slotsFull": "Alle Kanalplätze sind belegt. Entferne einen Kanal, bevor du einen weiteren hinzufügst.",
+      "added": "{{name}} hinzugefügt.",
+      "alreadyAdded": "{{name}} ist bereits hinzugefügt.",
       "privateKeyHint": "Geben Sie den Shared-Channel-Schlüssel ein: genau 32 Hexadezimalzeichen (16 Bytes), nicht nur Nullen.",
       "scopeLabel": "Sendeumfang für diesen Kanal",
       "scopeEffective": "Gültiger Sendeumfang: {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Chats aus dem Radio lesen...",
     "failed": "Chats aus dem Radio konnten nicht gelesen werden. Bestehende Chats wurden beibehalten. Verbinden Sie sich erneut und versuchen Sie es erneut.",
     "done": "Über Funk synchronisierte Chats."
+  },
+  "notificationPolicy": {
+    "label": "Chat-Benachrichtigungen",
+    "all": "Alle Nachrichten",
+    "mentions": "Erwähnungen und Direktnachrichten",
+    "help": "Der Erwähnungsmodus benachrichtigt bei @[Ihr Name], Antworten auf Ihre Nachrichten und Direktnachrichten. RRC verwendet @Nickname und behält seine Raumalarm-Einstellung bei. Mit der Glocke in einem Gespräch schalten Sie es stumm, auch für Erwähnungen und DMs. Tonbenachrichtigungen müssen aktiviert sein. Nachrichten kommen immer noch im Chat an. MECP-Notfall- und Betriebswarnungen behalten ihre eigenen Einstellungen bei.",
+    "saveFailed": "Benachrichtigungseinstellungen konnten nicht gespeichert werden. Versuchen Sie es erneut, nachdem die Gesprächsidentität verfügbar und der lokale Speicher beschreibbar ist."
   }
 }

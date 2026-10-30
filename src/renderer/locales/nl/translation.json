@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "Toon MeshCore-kanaal QR voor {{name}}",
       "privateChannel": "Privékanaal (sleutel invoeren)",
+      "keepOpen": "Open houden na toevoegen",
+      "slotsFull": "Alle kanaalplaatsen zijn bezet. Verwijder een kanaal voordat je er nog een toevoegt.",
+      "added": "{{name}} toegevoegd.",
+      "alreadyAdded": "{{name}} is al toegevoegd.",
       "privateKeyHint": "Voer de gedeelde kanaalsleutel in: exact 32 hexadecimale tekens (16 bytes), niet allemaal nullen.",
       "scopeLabel": "Bereik verzenden voor dit kanaal",
       "scopeEffective": "Effectief verzendbereik: {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Chats van de radio lezen...",
     "failed": "Kan chats van de radio niet lezen. Bestaande chats werden behouden. Maak opnieuw verbinding en probeer het opnieuw.",
     "done": "Chats gesynchroniseerd vanaf de radio."
+  },
+  "notificationPolicy": {
+    "label": "Chatmeldingen",
+    "all": "Alle berichten",
+    "mentions": "Vermeldingen en directe berichten",
+    "help": "De modus Vermeldingen waarschuwt bij @[Uw naam], antwoorden op uw berichten en directe berichten. RRC gebruikt @nickname en behoudt de instelling voor ruimtewaarschuwing. Gebruik de bel in een gesprek om het te dempen, inclusief vermeldingen en DM's. Geluidsmeldingen moeten zijn ingeschakeld. Berichten komen nog steeds aan in de chat. MECP-nood- en operationele waarschuwingen behouden hun eigen instellingen.",
+    "saveFailed": "Kan meldingsvoorkeuren niet opslaan. Probeer het opnieuw nadat de gespreksidentiteit beschikbaar is en lokale opslag beschrijfbaar is."
   }
 }

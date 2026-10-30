@@ -1,4 +1,11 @@
 {
+  "notificationPolicy": {
+    "label": "Chat notifications",
+    "all": "All messages",
+    "mentions": "Mentions and direct messages",
+    "help": "Mentions mode alerts for @[Your name], replies to your messages and direct messages. RRC uses @nickname and keeps its room alert setting. Use the bell in a conversation to mute it, including mentions and DMs. Sound notifications must be enabled. Messages still arrive in chat. MECP emergency and operational alerts keep their own settings.",
+    "saveFailed": "Could not save notification preferences. Try again after the conversation identity is available and local storage is writable."
+  },
   "adminPanel": {
     "reticulumFactoryReset": {
       "title": "Factory reset",
@@ -4916,6 +4923,10 @@
     "meshcoreChannelNameLabel": "Name",
     "meshcoreChannel": {
       "privateChannel": "Private channel (enter key)",
+      "keepOpen": "Keep open after adding",
+      "slotsFull": "All channel slots are full. Remove a channel before adding another.",
+      "added": "{{name}} added.",
+      "alreadyAdded": "{{name}} is already added.",
       "privateKeyHint": "Enter the shared channel key: exactly 32 hexadecimal characters (16 bytes), not all zeros.",
       "defaultName": "Channel {{index}}",
       "addTitle": "Add Channel",

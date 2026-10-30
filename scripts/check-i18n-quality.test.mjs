@@ -523,6 +523,42 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'Wi-Fi" without spaces');
   });
 
+  it('flags spaces inside chat mention syntax from auto-translate', () => {
+    for (const val of [
+      '@ [Your name] 님에 대한 알림.',
+      '@[ Your name]の通知。',
+      'RRC는 @ nickname을 사용',
+    ]) {
+      const issues = localeStringQualityIssues({
+        locale: 'ko',
+        flatKey: 'notificationPolicy.help',
+        val,
+        enVal: 'Mentions mode alerts for @[Your name]. RRC uses @nickname.',
+      });
+      expectIssue(issues, 'mention syntax');
+    }
+  });
+
+  it('accepts contiguous translated mention placeholders', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'notificationPolicy.help',
+      val: 'Der Erwähnungsmodus benachrichtigt bei @[Ihr Name]. RRC verwendet @Nickname.',
+      enVal: 'Mentions mode alerts for @[Your name]. RRC uses @nickname.',
+    });
+    expect(issues.filter((issue) => issue.includes('mention syntax'))).toEqual([]);
+  });
+
+  it('allows a bare @ when English also writes one', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.channelPsksMqttOnlyIndexHint',
+      val: 'Verwenden Sie LongFast@1=AQ==. LongFast ohne @ wird Slot 0 zugeordnet.',
+      enVal: 'Use LongFast@1=AQ==. LongFast without @ maps to slot 0.',
+    });
+    expect(issues.filter((issue) => issue.includes('mention syntax'))).toEqual([]);
+  });
+
   it('flags CJK contamination in Italian', () => {
     const issues = localeStringQualityIssues({
       locale: 'it',

@@ -112,6 +112,7 @@ import {
 } from '@/renderer/lib/reticulum/remapReticulumChatDmTabs';
 import {
   isReticulumTelephonyOnlyDestination,
+  remapReticulumChatDmTabNodeId,
   resolveReticulumChatLxmfDestination,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import { resolveReticulumStaleChatDest } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
@@ -150,6 +151,7 @@ import { touch } from '@/shared/touch';
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
+import { useConversationMutes } from '../hooks/useConversationMutes';
 import { useNowMs } from '../hooks/useNowMs';
 import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
@@ -161,7 +163,6 @@ import {
   loadActiveChannelInitial,
   loadActiveDmInitial,
   loadDraftsInitial,
-  loadMutedViews,
   loadOpenDmTabsInitial,
   loadPersistedLastReadInitial,
   loadStarred,
@@ -169,7 +170,6 @@ import {
   openDmTabsStorageKey,
   saveActiveChannel,
   saveActiveDm,
-  saveMutedViews,
   savePersistedLastRead,
   saveStarred,
   type StarredMessage,
@@ -197,6 +197,7 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { canBindConversationMute } from '../lib/conversationMuteStorage';
 import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import { isMecpAlertThrottled } from '../lib/mecp/mecpAlertThrottle';
@@ -241,6 +242,7 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useBotSendersStore } from '../stores/botSendersStore';
 import { isMecpSenderBlocked, mecpBlockKey } from '../stores/mecpBlockStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
+import { useReticulumIdentityStore } from '../stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
@@ -1357,7 +1359,7 @@ function ChatPanel({
   const prevMessagesLengthRef = useRef(messages.length);
 
   // Feature: per-conversation mute
-  const [mutedViews, setMutedViews] = useState<Set<string>>(() => loadMutedViews(protocol));
+  const [mutedViews, setMutedViews] = useConversationMutes(protocol);
 
   // Feature: message starring
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred(protocol));
@@ -1403,6 +1405,7 @@ function ChatPanel({
     (s) => s.byDestination,
   );
   const reticulumPeersRevision = useReticulumPeerStore((s) => s.peersRevision);
+  const reticulumLocalLxmfHash = useReticulumIdentityStore((s) => s.identity?.lxmf_hash);
 
   // Keep refs aligned with committed state before remap / initialDmTarget effects read them.
   useEffect(() => {
@@ -1433,38 +1436,56 @@ function ChatPanel({
   // Also re-run after initialDmTarget / open/active tab state commits.
   useEffect(() => {
     if (protocol !== 'reticulum') return;
+    const readyDestination = (nodeId: number) => {
+      const destination = remapReticulumChatDmTabNodeId(nodeId);
+      if (destination === nodeId || !mutedViews.has(`dm:${nodeId}`)) return destination;
+      // A pending mute binding holds only its own conversation; other peers can advance.
+      return reticulumLocalLxmfHash &&
+        canBindConversationMute(protocol, `dm:${nodeId}`) &&
+        canBindConversationMute(protocol, `dm:${destination}`)
+        ? destination
+        : nodeId;
+    };
     const remapped = remapReticulumChatDmTabIds(
       openDmTabsRef.current,
       activeDmNodeRef.current,
       dismissedDmTabsRef.current,
+      readyDestination,
     );
-    if (!remapped.changed) return;
+    // Closing an empty DM leaves only its mute preference, with no tab/history entry.
+    const mutedDmIds = [...mutedViews].flatMap((view) => {
+      const match = /^dm:(\d+)$/.exec(view);
+      return match ? [Number(match[1])] : [];
+    });
+    const replacements = [
+      ...remapped.replacements,
+      ...remapReticulumChatDmTabIds(mutedDmIds, null, {}, readyDestination).replacements,
+    ];
+    const remappedMutes = remapDmMutedViews(mutedViews, replacements);
+    if (!remapped.changed && !remappedMutes.changed) return;
+    if (remappedMutes.changed) {
+      if (!setMutedViews(remappedMutes.next)) return;
+    }
     setOpenDmTabs(remapped.openDmTabs);
     setActiveDmNode(remapped.activeDmNode);
     setDismissedDmTabs(remapped.dismissedDmTabs);
-    if (remapped.replacements.length === 0) return;
+    if (replacements.length === 0) return;
 
     setPersistedLastRead((prev) => {
-      const { next, changed } = remapDmViewKeyedRecord(prev, remapped.replacements, (a, b) =>
+      const { next, changed } = remapDmViewKeyedRecord(prev, replacements, (a, b) =>
         Math.max(a, b),
       );
       return changed ? next : prev;
     });
-    setMutedViews((prev) => {
-      const { next, changed } = remapDmMutedViews(prev, remapped.replacements);
-      if (!changed) return prev;
-      saveMutedViews(protocol, next);
-      return next;
-    });
     setStarred((prev) => {
-      const { next, changed } = remapDmStarredViewKeys(prev, remapped.replacements);
+      const { next, changed } = remapDmStarredViewKeys(prev, replacements);
       if (!changed) return prev;
       saveStarred(protocol, next);
       return next;
     });
     try {
       const drafts = loadDraftsInitial(protocol);
-      const { next, changed } = remapDmViewKeyedRecord(drafts, remapped.replacements, (a, b) =>
+      const { next, changed } = remapDmViewKeyedRecord(drafts, replacements, (a, b) =>
         b.length >= a.length ? b : a,
       );
       if (changed) {
@@ -1477,6 +1498,10 @@ function ChatPanel({
     protocol,
     reticulumIdentityActivityByDestination,
     reticulumPeersRevision,
+    reticulumLocalLxmfHash,
+    nodes,
+    mutedViews,
+    setMutedViews,
     openDmTabs,
     activeDmNode,
   ]);
@@ -1551,7 +1576,6 @@ function ChatPanel({
 
   useEffect(() => {
     setReplyTo(null);
-    setMutedViews(loadMutedViews(protocol));
     setStarred(loadStarred(protocol));
   }, [protocol]);
 
@@ -2058,11 +2082,6 @@ function ChatPanel({
   useEffect(() => {
     setFilterSender(null);
   }, [viewKey]);
-
-  // Persist per-conversation mute
-  useEffect(() => {
-    saveMutedViews(protocol, mutedViews);
-  }, [protocol, mutedViews]);
 
   // Persist starred messages
   useEffect(() => {
@@ -2640,17 +2659,20 @@ function ChatPanel({
     return msg.id != null ? String(msg.id) : `${msg.timestamp}-${msg.packetId ?? 'x'}`;
   }
 
-  const toggleMuteView = useCallback((vk: string) => {
-    setMutedViews((prev) => {
-      const next = new Set(prev);
-      if (next.has(vk)) {
-        next.delete(vk);
-      } else {
-        next.add(vk);
-      }
-      return next;
-    });
-  }, []);
+  const toggleMuteView = useCallback(
+    (vk: string) => {
+      setMutedViews((prev) => {
+        const next = new Set(prev);
+        if (next.has(vk)) {
+          next.delete(vk);
+        } else {
+          next.add(vk);
+        }
+        return next;
+      });
+    },
+    [setMutedViews],
+  );
 
   const toggleStar = useCallback(
     (msg: ChatMessage) => {

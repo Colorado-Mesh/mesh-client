@@ -18,6 +18,13 @@ const WINDOW = 'appPanel.windowSection';
 
 const appEntries: readonly SettingSearchEntry[] = [
   {
+    id: 'app.notifications.mode',
+    slot: 'App',
+    labelKey: 'notificationPolicy.label',
+    sectionKey: 'appPanel.notificationsSection',
+    keywords: ['mentions', 'mute', 'notifications', 'direct messages', 'channels', 'rooms'],
+  },
+  {
     id: 'app.protocols.enabled',
     slot: 'App',
     labelKey: 'appPanel.protocolsSection',

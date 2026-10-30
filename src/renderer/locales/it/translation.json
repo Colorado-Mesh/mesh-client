@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "Mostra QR del canale MeshCore per {{name}}",
       "privateChannel": "Canale privato (inserisci chiave)",
+      "keepOpen": "Mantieni aperto dopo l’aggiunta",
+      "slotsFull": "Tutti gli slot dei canali sono occupati. Rimuovi un canale prima di aggiungerne un altro.",
+      "added": "{{name}} aggiunto.",
+      "alreadyAdded": "{{name}} è già stato aggiunto.",
       "privateKeyHint": "Immettere la chiave del canale condiviso: esattamente 32 caratteri esadecimali (16 byte), non tutti zeri.",
       "scopeLabel": "Invia ambito per questo canale",
       "scopeEffective": "Ambito di invio effettivo: {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Lettura delle chat dalla radio in corso...",
     "failed": "Impossibile leggere le chat dalla radio. Le chat esistenti sono state mantenute. Riconnettiti e riprova.",
     "done": "Chat sincronizzate dalla radio."
+  },
+  "notificationPolicy": {
+    "label": "Notifiche chat",
+    "all": "Tutti i messaggi",
+    "mentions": "Menzioni e messaggi diretti",
+    "help": "Avvisi in modalità menzioni per @[Your name], risposte ai tuoi messaggi e messaggi diretti. RRC utilizza @nickname e mantiene la sua impostazione di avviso per la stanza. Usa la campana in una conversazione per disattivarla, incluse menzioni e DM. Le notifiche sonore devono essere abilitate. I messaggi arrivano ancora in chat. Gli avvisi di emergenza e operativi MECP mantengono le proprie impostazioni.",
+    "saveFailed": "Impossibile salvare le preferenze di notifica. Riprova quando l'identità della conversazione è disponibile e lo spazio di archiviazione locale è scrivibile."
   }
 }

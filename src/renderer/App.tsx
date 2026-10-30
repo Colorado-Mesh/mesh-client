@@ -186,6 +186,7 @@ import { useBotSenderDetection } from './hooks/useBotSenderDetection';
 import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
+import { useConversationMuteMqttIdentity } from './hooks/useConversationMutes';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
@@ -956,6 +957,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  useConversationMuteMqttIdentity();
   useEffect(() => startCoiMemorySampler(), []);
   useWeatherForecastIngest();
   const serviceAnnouncements = useServiceAnnouncements();
@@ -3655,10 +3657,7 @@ function AppContent() {
       !isAppWindowInactive();
     if (count > prevMeshtasticMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshtasticMsgsRef.current.slice(prevMeshtasticMsgCountRef.current);
-      const mutedRaw = localStorage.getItem('mesh-client:mutedViews:meshtastic');
-      const mutedViews: Set<string> = mutedRaw
-        ? new Set(JSON.parse(mutedRaw) as string[])
-        : new Set();
+      const mutedViews = loadMutedViews('meshtastic');
       const notification = resolveInactiveChatNotification({
         newMessages: newMsgs,
         allMessages: meshtasticMsgsRef.current,
@@ -4402,6 +4401,11 @@ function AppContent() {
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         activeProtocol={protocol}
+        ownNodeIdsByProtocol={{
+          meshtastic: meshtasticOwnNodeIdSet,
+          meshcore: meshcoreOwnNodeIdSet,
+          reticulum: reticulumOwnNodeIdSet,
+        }}
         messagesByProtocol={uiMessagesByProtocol}
         enabledProtocols={enabledProtocols}
       />

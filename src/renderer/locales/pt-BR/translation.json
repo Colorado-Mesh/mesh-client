@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "Mostrar QR do canal MeshCore para {{name}}",
       "privateChannel": "Canal privado (inserir chave)",
+      "keepOpen": "Manter aberto após adicionar",
+      "slotsFull": "Todos os espaços de canal estão ocupados. Remova um canal antes de adicionar outro.",
+      "added": "{{name}} adicionado.",
+      "alreadyAdded": "{{name}} já foi adicionado.",
       "privateKeyHint": "Insira a chave do canal compartilhado: exatamente 32 caracteres hexadecimais (16 bytes), nem todos zeros.",
       "scopeLabel": "Enviar escopo para este canal",
       "scopeEffective": "Escopo de envio efetivo: {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Lendo bate-papos do rádio...",
     "failed": "Não foi possível ler as conversas do rádio. Os chats existentes foram mantidos. Reconecte-se e tente novamente.",
     "done": "Chats sincronizados a partir do rádio."
+  },
+  "notificationPolicy": {
+    "label": "Notificações de chat",
+    "all": "Todas as mensagens",
+    "mentions": "Menções e mensagens diretas",
+    "help": "O modo Menções alerta para @[Your name], respostas às suas mensagens e mensagens diretas. O RRC usa @nickname e mantém sua configuração de alerta de sala. Use a campainha em uma conversa para silenciá-la, incluindo menções e DMs. As notificações sonoras devem estar ativadas. As mensagens ainda chegam no chat. Os alertas de emergência e operacionais do MECP mantêm suas próprias configurações.",
+    "saveFailed": "Não foi possível salvar as preferências de notificação. Tente novamente depois que a identidade da conversa estiver disponível e o armazenamento local puder ser gravado."
   }
 }

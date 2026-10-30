@@ -4626,6 +4626,10 @@
       "shareQr": "QR",
       "shareQrAria": "Afficher la chaîne QR MeshCore pour {{name}}",
       "privateChannel": "Canal privé (saisir la clé)",
+      "keepOpen": "Garder ouvert après l’ajout",
+      "slotsFull": "Tous les emplacements de canaux sont occupés. Supprimez un canal avant d’en ajouter un autre.",
+      "added": "{{name}} a été ajouté.",
+      "alreadyAdded": "{{name}} est déjà ajouté.",
       "privateKeyHint": "Saisissez la clé du canal partagé : exactement 32 caractères hexadécimaux (16 octets), pas tous des zéros.",
       "scopeLabel": "Envoyer la portée pour ce canal",
       "scopeEffective": "Périmètre d'envoi effectif : {{scope}}",
@@ -7762,5 +7766,12 @@
     "busy": "Lecture de chats à la radio…",
     "failed": "Impossible de lire les chats de la radio. Les chats existants ont été conservés. Reconnectez-vous et réessayez.",
     "done": "Chats synchronisés à partir de la radio."
+  },
+  "notificationPolicy": {
+    "label": "Notifications chat",
+    "all": "Tous les messages",
+    "mentions": "Mentions et messages directs",
+    "help": "Alertes en mode Mentions pour @[Votre nom], réponses à vos messages et messages directs. RRC utilise @nickname et conserve son paramètre d'alerte de salle. Utilisez la cloche dans une conversation pour la mettre en sourdine, y compris les mentions et les DM. Les notifications sonores doivent être activées. Les messages arrivent toujours dans le chat. Les alertes d'urgence et opérationnelles du MECP conservent leurs propres paramètres.",
+    "saveFailed": "Impossible d'enregistrer les préférences de notification. Réessayez une fois que l'identité de la conversation est disponible et que le stockage local est accessible en écriture."
   }
 }
