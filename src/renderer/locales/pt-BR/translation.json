@@ -6716,6 +6716,11 @@
       "routine": "ROTINA"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, ouvido pela última vez {{time}} UTC",
+    "atakMarkerLastKnown": "Posição: onde o remetente foi ouvido pela última vez, não do relatório",
+    "atakMarkerBeacon": "Farol de socorro ativo",
+    "atakMarkerAcks_one": "{{count}} reconhecimento ouvido",
+    "atakMarkerAcks_other": "{{count}} reconhecimentos ouvidos",
     "notificationTitle": "Alerta MECP",
     "exportLog": "Exportar registro MECP",
     "compose": {

@@ -1,12 +1,18 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { TakChatChannel, TakDirectPeer, TakDmProtocol } from '@/shared/tak-types';
+import type {
+  TakChatChannel,
+  TakDirectPeer,
+  TakDmProtocol,
+  TakIncidentMarker,
+} from '@/shared/tak-types';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { listTakConversationPeers, listTakDmProtocols } from '../lib/tak/takDirectMessages';
 import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
+import { takIncidentMarkers } from '../lib/tak/takIncidentMarkers';
 import { setTakMecpLocale } from '../lib/tak/takMecpText';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -17,6 +23,7 @@ import {
 } from '../lib/tak/takServedChannels';
 import type { IdentityId } from '../lib/types';
 import { useConnectionStore } from '../stores/connectionStore';
+import { useIncidentStore } from '../stores/incidentStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { setTakChannels, setTakRadio, type TakChannelInfo } from '../stores/takChannelStore';
@@ -71,6 +78,8 @@ const sendDirectMessaging = (value: unknown): Promise<void> =>
   window.electronAPI.tak.setDirectMessaging(value as TakDmProtocol[]);
 const sendDirectPeers = (value: unknown): Promise<void> =>
   window.electronAPI.tak.setDirectPeers(value as TakDirectPeer[]);
+const sendIncidentMarkers = (value: unknown): Promise<void> =>
+  window.electronAPI.tak.setIncidentMarkers(value as TakIncidentMarker[]);
 
 /** Each radio's identity and its runtime channel list, as App has them. */
 export interface TakChannelSources {
@@ -138,11 +147,35 @@ export function useTakInboundChat(sources: TakChannelSources): void {
 
   const sinkActive = useTakSinkStore((s) => s.active);
   const { t, i18n } = useTranslation();
-  // MECP reports reach TAK clients in the app's language; its pack loads on demand.
+  // MECP reports reach TAK clients in the app's language; its pack loads on demand, and the
+  // incident markers are written again once it has.
+  const [mecpLocaleLoads, setMecpLocaleLoads] = useState(0);
   useEffect(() => {
     if (!sinkActive) return;
-    void setTakMecpLocale(i18n.language, (key, opts) => t(key, opts));
+    let cancelled = false;
+    void setTakMecpLocale(i18n.language, (key, opts) => t(key, opts)).then(() => {
+      if (!cancelled) setMecpLocaleLoads((n) => n + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [sinkActive, i18n.language, t]);
+
+  // Open MECP emergencies with a position, as markers on TAK clients' maps.
+  const incidents = useIncidentStore((s) => s.incidents);
+  const incidentMarkersJson = useMemo(
+    // Only built while a sink is up: nothing is sent otherwise.
+    () => (sinkActive ? JSON.stringify(takIncidentMarkers(incidents)) : '[]'),
+    // The markers' words follow the app's language once its pack has loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mecpLocaleLoads only triggers a rebuild.
+    [sinkActive, incidents, mecpLocaleLoads],
+  );
+  useSendWhileSinkActive(
+    sinkActive,
+    incidentMarkersJson,
+    sendIncidentMarkers,
+    'setIncidentMarkers',
+  );
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
 
   // For a day after an upgrade, ATAK devices are told to drop the old GeoChat room contacts.

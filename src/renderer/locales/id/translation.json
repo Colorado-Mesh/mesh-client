@@ -6716,6 +6716,11 @@
       "routine": "Routine (Rutinitas)"
     },
     "incomingToast": "{{severity}} MECP dari {{sender}}",
+    "atakMarkerFrom": "Dari {{sender}}, terakhir terdengar {{time}} UTC",
+    "atakMarkerLastKnown": "Posisi: tempat pengirim terakhir kali didengar, bukan dari laporan",
+    "atakMarkerBeacon": "Distress beacon aktif",
+    "atakMarkerAcks_one": "{{count}} pengakuan didengar",
+    "atakMarkerAcks_other": "{{count}} pengakuan didengar",
     "notificationTitle": "Peringatan MECP",
     "exportLog": "Ekspor log MECP",
     "compose": {

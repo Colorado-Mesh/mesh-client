@@ -1,3 +1,4 @@
+import type { EmergencyIncident } from '../mecp/incidentTypes';
 import {
   getCachedMecpLanguage,
   type LanguageFile,
@@ -21,14 +22,22 @@ const ENGLISH: Record<string, string> = {
   'mecp.severity.safety': 'SAFETY',
   'mecp.severity.routine': 'ROUTINE',
   'mecp.atakDrill': 'DRILL',
+  'mecp.atakMarkerLastKnown': 'Position: where the sender was last heard, not from the report',
+  'mecp.atakMarkerBeacon': 'Distress beacon active',
 };
 
 const englishTranslate: TakMecpTranslate = (key, opts) => {
-  if (key === 'mecp.atakPeople') {
-    const count = Number(opts?.count);
-    return count === 1 ? '1 person' : `${count} people`;
+  const count = Number(opts?.count);
+  switch (key) {
+    case 'mecp.atakPeople':
+      return count === 1 ? '1 person' : `${count} people`;
+    case 'mecp.atakMarkerAcks':
+      return count === 1 ? '1 acknowledgement heard' : `${count} acknowledgements heard`;
+    case 'mecp.atakMarkerFrom':
+      return `From ${String(opts?.sender)}, last heard ${String(opts?.time)} UTC`;
+    default:
+      return ENGLISH[key] ?? key;
   }
-  return ENGLISH[key] ?? key;
 };
 
 /**
@@ -76,6 +85,16 @@ function withoutWord(text: string, drop: (word: string) => boolean): string {
   return words.join(' ');
 }
 
+/** `🆘 MAYDAY`, or `DRILL 🆘 MAYDAY` for a drill. */
+export function takMecpHeadline(
+  severity: 0 | 1 | 2 | 3,
+  drill: boolean,
+  t: TakMecpTranslate = appTranslate,
+): string {
+  const label = `${SEVERITY_SIGNS[severity]} ${t(severityLabelKey(severity))}`;
+  return drill ? `${t('mecp.atakDrill')} ${label}` : label;
+}
+
 /**
  * A report in words, on one line: the severity, what each code means, the people, the position,
  * and whatever free text is left, in quotes, e.g.
@@ -87,9 +106,7 @@ export function describeMecpForTak(
   lang: LanguageFile,
   t: TakMecpTranslate,
 ): string {
-  const severity = parsed.severity ?? 3;
-  const label = `${SEVERITY_SIGNS[severity]} ${t(severityLabelKey(severity))}`;
-  const head = parsed.isDrill ? `${t('mecp.atakDrill')} ${label}` : label;
+  const head = takMecpHeadline(parsed.severity ?? 3, parsed.isDrill, t);
   const { count, gps, eta } = parsed.extracted;
   const meanings = parsed.codes.map((code) => lang.codes[code] as string | undefined);
   const countInCode = count != null && meanings.some((m) => m?.includes(COUNT_PLACEHOLDER));
@@ -121,4 +138,40 @@ export function takMecpText(text: string): string | null {
   const parsed = tryParseMecp(text.trim());
   if (!parsed) return null;
   return `${describeMecpForTak(parsed, appPack, appTranslate)}\n${parsed.raw.trim()}`;
+}
+
+/** `2026-10-28 14:05`, in UTC; `?` for a time a Date cannot hold, as a restored record may. */
+function utcMinute(ms: number): string {
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return '?';
+  return date.toISOString().slice(0, 16).replace('T', ' ');
+}
+
+/**
+ * An open incident's marker text, in the app's language: the report in words, its code line,
+ * who sent it and when it was last heard, then where the position came from when it is not the
+ * report's own, a distress beacon, and the acknowledgements heard.
+ */
+export function takIncidentRemarks(incident: EmergencyIncident): string {
+  const t = appTranslate;
+  const raw = `MECP/${incident.severity}/${incident.codes.join(' ')}${
+    incident.freetext ? ` ${incident.freetext}` : ''
+  }`.trim();
+  const parsed = tryParseMecp(raw);
+  const lines = [
+    parsed
+      ? describeMecpForTak(parsed, appPack, t)
+      : takMecpHeadline(incident.severity, incident.isDrill, t),
+    raw,
+    t('mecp.atakMarkerFrom', {
+      sender: incident.senderName.trim() || incident.senderId,
+      time: utcMinute(incident.lastSeenAt),
+    }),
+  ];
+  if (incident.coordsSource === 'lastKnown') lines.push(t('mecp.atakMarkerLastKnown'));
+  if (incident.beaconActive) lines.push(t('mecp.atakMarkerBeacon'));
+  if (incident.ackCount > 0) {
+    lines.push(t('mecp.atakMarkerAcks', { count: incident.ackCount }));
+  }
+  return lines.join('\n');
 }

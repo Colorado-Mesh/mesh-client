@@ -7105,6 +7105,11 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP from {{sender}}",
+    "atakMarkerFrom": "From {{sender}}, last heard {{time}} UTC",
+    "atakMarkerLastKnown": "Position: where the sender was last heard, not from the report",
+    "atakMarkerBeacon": "Distress beacon active",
+    "atakMarkerAcks_one": "{{count}} acknowledgement heard",
+    "atakMarkerAcks_other": "{{count}} acknowledgements heard",
     "atakDrill": "DRILL",
     "atakPeople_one": "{{count}} person",
     "atakPeople_other": "{{count}} people",

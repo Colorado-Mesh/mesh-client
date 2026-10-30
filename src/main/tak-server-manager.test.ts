@@ -89,12 +89,14 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKInboundChat,
+  TakIncidentMarker,
 } from '../shared/tak-types';
 import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
 import { COT_FRAME_MAX_BYTES } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { channelContactUid, retiredRoomContactUid } from './tak/geochat-cot';
+import { INCIDENT_MARKER_STALE_MS } from './tak/incident-cot';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
@@ -1043,6 +1045,123 @@ describe('TakServerManager served channels', () => {
     (manager as unknown as ChatInternals)._handleClient(socket);
     socket.emit('data', Buffer.from(SELF('ANDROID-1', 'VIPER')));
     expect(written(socket).filter((l) => l.includes('type="b-t-f"'))).toEqual([]);
+  });
+});
+
+describe('TakServerManager incident markers', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const MARKER: TakIncidentMarker = {
+    id: 'mecp-abc',
+    callsign: '🆘 MAYDAY Alice',
+    remarks: '🆘 MAYDAY: Injury\nMECP/0/M01',
+    lat: 39.7,
+    lon: -105.1,
+    severity: 0,
+    drill: false,
+  };
+  const spots = (socket: tls.TLSSocket) =>
+    written(socket).filter((l) => l.includes('type="b-m-p-s-m"'));
+  const deletes = (socket: tls.TLSSocket) =>
+    written(socket).filter((l) => l.includes('type="t-x-d-d"'));
+
+  it('puts a new marker on every map, and only once while it is unchanged', () => {
+    const manager = chatManager();
+    const a = connect(manager, ['ANDROID-1', 'VIPER']);
+    const b = connect(manager, ['ANDROID-2', 'EAGLE']);
+    manager.setIncidentMarkers([MARKER]);
+    manager.setIncidentMarkers([MARKER]);
+    expect(spots(a)).toHaveLength(1);
+    expect(spots(b)).toHaveLength(1);
+    expect(spots(a)[0]).toContain('uid="mesh-client-mecp-abc"');
+  });
+
+  it('sends a marker again when it changes, and deletes one no longer open', () => {
+    const manager = chatManager();
+    const a = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.setIncidentMarkers([MARKER]);
+    manager.setIncidentMarkers([{ ...MARKER, remarks: `${MARKER.remarks}\n1 acknowledgement` }]);
+    expect(spots(a)).toHaveLength(2);
+    expect(spots(a)[1]).toContain('1 acknowledgement');
+    manager.setIncidentMarkers([]);
+    expect(deletes(a).some((l) => l.includes('uid="mesh-client-mecp-abc"'))).toBe(true);
+  });
+
+  it('shows the open markers to a client that connects later', () => {
+    const manager = chatManager();
+    manager.setIncidentMarkers([MARKER]);
+    const late = mockTlsSocket();
+    (manager as unknown as ChatInternals)._handleClient(late);
+    expect(spots(late)).toHaveLength(1);
+  });
+
+  /** The manager's own state, for the stop tests. */
+  interface StopInternals {
+    server: { close: () => void } | null;
+    remote: { stop: () => void; removeAllListeners: () => void; isConnected: () => boolean } | null;
+    incidentMarkers: Map<string, TakIncidentMarker>;
+    incidentMarkerTimer: unknown;
+  }
+  const stub = (manager: TakServerManager) => manager as unknown as StopInternals;
+  const remoteStub = () => ({
+    stop: vi.fn(),
+    removeAllListeners: vi.fn(),
+    isConnected: () => true,
+  });
+
+  it('forgets its markers when the server stops and no other sink is left', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    manager.setIncidentMarkers([MARKER]);
+    manager.stop();
+    expect(stub(manager).incidentMarkers.size).toBe(0);
+    expect(stub(manager).incidentMarkerTimer).toBeNull();
+  });
+
+  it('keeps them while the remote server is still up, and forgets them when it stops', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stop();
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+    manager.stopRemote();
+    expect(stub(manager).incidentMarkers.size).toBe(0);
+  });
+
+  it('keeps them when the remote server is restarted in place', () => {
+    const manager = chatManager();
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stopRemote(false);
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+  });
+
+  it('keeps them when only the remote server stops', () => {
+    const manager = chatManager();
+    stub(manager).server = { close: vi.fn() };
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stopRemote();
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+  });
+
+  it('refreshes open markers before they go stale, and stops once there are none', () => {
+    const manager = chatManager();
+    const a = connect(manager, ['ANDROID-1', 'VIPER']);
+    manager.setIncidentMarkers([MARKER]);
+    vi.advanceTimersByTime(INCIDENT_MARKER_STALE_MS / 3);
+    expect(spots(a)).toHaveLength(2);
+    manager.setIncidentMarkers([]);
+    vi.mocked(a.write).mockClear();
+    vi.advanceTimersByTime(INCIDENT_MARKER_STALE_MS);
+    expect(spots(a)).toEqual([]);
   });
 });
 

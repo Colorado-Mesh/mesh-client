@@ -349,6 +349,32 @@ export interface TAKDirectMessage {
 export const TAK_CHAT_ROOM_UID_PREFIX = 'MESHROOM-';
 /** Most channels the renderer may serve to TAK clients. */
 export const TAK_CHAT_CHANNELS_MAX = 64;
+
+/**
+ * An open MECP emergency with a position, for TAK clients' maps: a spot marker coloured by its
+ * severity (grey for a drill), from the Incident tab's open incidents.
+ */
+export interface TakIncidentMarker {
+  /** The incident's id (`mecp-…`); the marker's uid comes from it. */
+  id: string;
+  /** Marker name, e.g. `🆘 MAYDAY Alice`. */
+  callsign: string;
+  /** The report in words, its code line, and how things stand. */
+  remarks: string;
+  lat: number;
+  lon: number;
+  severity: 0 | 1 | 2 | 3;
+  drill: boolean;
+}
+
+/** Incident ids main takes for a marker's uid: what `incidentFingerprint` makes (`mecp-…`). */
+export const TAK_INCIDENT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/u;
+
+/** Most incident markers main takes; the renderer sends the most severe first. */
+export const TAK_INCIDENT_MARKERS_MAX = 50;
+/** Longest incident marker name and remarks main takes. */
+export const TAK_INCIDENT_CALLSIGN_MAX_LEN = 80;
+export const TAK_INCIDENT_REMARKS_MAX_LEN = 1024;
 /** Heard channel messages held while no TAK client is connected. */
 export const TAK_CHAT_HELD_MAX = 50;
 

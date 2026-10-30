@@ -6716,6 +6716,11 @@
       "routine": "通常"
     },
     "incomingToast": "{{severity}} {{sender}} からの MECP",
+    "atakMarkerFrom": "{{sender}}から、最後に聞いたのは{{time}} UTC",
+    "atakMarkerLastKnown": "ポジション：レポートからではなく、送信者が最後に聞かれた場所",
+    "atakMarkerBeacon": "救難ビーコン発動中",
+    "atakMarkerAcks_one": "{{count}}確認の音声が聞こえました",
+    "atakMarkerAcks_other": "{{count}}確認音声が聞こえました",
     "notificationTitle": "MECPアラート",
     "exportLog": "MECPログのエクスポート",
     "compose": {

@@ -6777,6 +6777,12 @@
       "routine": "Běžné"
     },
     "incomingToast": "{{severity}} MECP od {{sender}}",
+    "atakMarkerFrom": "Od {{sender}}, naposledy slyšeno {{time}} UTC",
+    "atakMarkerLastKnown": "Pozice: kde byl odesílatel naposledy vyslechnut, nikoli ze zprávy",
+    "atakMarkerBeacon": "Nouzový maják aktivní",
+    "atakMarkerAcks_one": "Slyšená potvrzení: {{count}}",
+    "atakMarkerAcks_few": "Slyšená potvrzení: {{count}}",
+    "atakMarkerAcks_other": "Slyšená potvrzení: {{count}}",
     "notificationTitle": "Upozornění MECP",
     "exportLog": "Exportovat protokol MECP",
     "compose": {

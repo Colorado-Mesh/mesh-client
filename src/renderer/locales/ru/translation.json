@@ -6822,6 +6822,13 @@
       "routine": "штатное"
     },
     "incomingToast": "{{severity}} MECP от {{sender}}",
+    "atakMarkerFrom": "От {{sender}}, последний раз слышно {{time}} UTC",
+    "atakMarkerLastKnown": "Должность: где отправитель был в последний раз услышан, а не из отчета",
+    "atakMarkerBeacon": "Аварийный маяк активен",
+    "atakMarkerAcks_one": "Получено подтверждений: {{count}}",
+    "atakMarkerAcks_few": "Получено подтверждений: {{count}}",
+    "atakMarkerAcks_many": "Получено подтверждений: {{count}}",
+    "atakMarkerAcks_other": "Получено подтверждений: {{count}}",
     "notificationTitle": "Предупреждение MECP",
     "exportLog": "Экспорт журнала MECP",
     "compose": {

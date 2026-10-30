@@ -6716,6 +6716,11 @@
       "routine": "RUTİN"
     },
     "incomingToast": "{{severity}} MECP, {{sender}}'den",
+    "atakMarkerFrom": "{{sender}} tarihinden itibaren en son {{time}} UTC tarihinde duyuldu",
+    "atakMarkerLastKnown": "Pozisyon: gönderenin rapordan değil, en son duyulduğu yer",
+    "atakMarkerBeacon": "İmdat lambası aktif",
+    "atakMarkerAcks_one": "{{count}} onay duyuldu",
+    "atakMarkerAcks_other": "{{count}} onaylar duyuldu",
     "notificationTitle": "MECP alarmı",
     "exportLog": "MECP günlüğünü dışa aktar",
     "compose": {

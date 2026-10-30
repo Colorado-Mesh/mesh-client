@@ -19,6 +19,7 @@ import type {
   TakDmStatusUpdate,
   TAKGeochatMessage,
   TAKInboundChat,
+  TakIncidentMarker,
   TakRelayExtras,
   TAKRemoteSettings,
   TAKRemoteStatus,
@@ -72,6 +73,11 @@ import {
   type GeochatRecipient,
   retiredRoomContactUid,
 } from './tak/geochat-cot';
+import {
+  buildIncidentMarkerCot,
+  INCIDENT_MARKER_STALE_MS,
+  incidentMarkerUid,
+} from './tak/incident-cot';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
@@ -268,6 +274,9 @@ export class TakServerManager extends EventEmitter {
    */
   private conversationPeers = new Map<string, ConversationPeer>();
   private chatRoomAnnounceTimer: ReturnType<typeof setInterval> | null = null;
+  /** Open MECP emergencies on TAK clients' maps, by marker uid. */
+  private incidentMarkers = new Map<string, TakIncidentMarker>();
+  private incidentMarkerTimer: ReturnType<typeof setInterval> | null = null;
   private styleSettings: TakStyleSettings;
 
   constructor() {
@@ -309,7 +318,9 @@ export class TakServerManager extends EventEmitter {
   async startRemote(settings: TAKRemoteSettings): Promise<void> {
     const credentials = await loadTakRemoteCredentials();
     saveTakRemoteSettings(settings);
-    this.stopRemote();
+    // A restart in place: the renderer may never see the sink drop, so it would not send the
+    // markers again.
+    this.stopRemote(false);
     this.remoteSettings = settings;
     const remote = new TakRemoteClient({
       host: settings.host.trim(),
@@ -344,13 +355,15 @@ export class TakServerManager extends EventEmitter {
     if (this.remote && this.remoteSettings) await this.startRemote(this.remoteSettings);
   }
 
-  stopRemote(): void {
+  /** Stop the remote relay; with no local server left, the incident markers go too. */
+  stopRemote(clearIncidentMarkers = true): void {
     const remote = this.remote;
     if (!remote) return;
     this.remote = null;
     remote.stop();
     remote.removeAllListeners();
     this.contacts.removeSource('remote');
+    if (clearIncidentMarkers && !this.server) this.clearIncidentMarkers();
   }
 
   getConnectedClients(): TAKClientInfo[] {
@@ -428,6 +441,7 @@ export class TakServerManager extends EventEmitter {
     this.server = null;
     this.contacts.removeSource('local');
     this.channelReplies.clear();
+    if (!this.remote) this.clearIncidentMarkers();
     this._status = { running: false, port: this.settings?.port ?? 8089, clientCount: 0 };
     this.emit('status', this.getStatus());
     console.debug('[TakServer] Stopped');
@@ -783,6 +797,56 @@ export class TakServerManager extends EventEmitter {
    * Re-announce channel and companion contacts well inside their stale time so they do not
    * expire in ATAK. Runs while there is any contact to announce.
    */
+  /**
+   * Replace the open MECP emergencies on TAK clients' maps. A new or changed one is sent to every
+   * local client, and one no longer open is deleted from their maps. The rest are sent again
+   * every few minutes, and to each client that connects. Not sent to the remote server.
+   */
+  setIncidentMarkers(markers: TakIncidentMarker[]): void {
+    const next = new Map(markers.map((m) => [incidentMarkerUid(m.id), m]));
+    const now = Date.now();
+    for (const uid of this.incidentMarkers.keys()) {
+      if (!next.has(uid)) this.writeToClients(cotDeleteEvent(uid, now));
+    }
+    for (const [uid, marker] of next) {
+      const prev = this.incidentMarkers.get(uid);
+      if (prev && JSON.stringify(prev) === JSON.stringify(marker)) continue;
+      this.writeToClients(buildIncidentMarkerCot(marker, now));
+    }
+    this.incidentMarkers = next;
+    this.scheduleIncidentMarkerRefresh();
+  }
+
+  /**
+   * Forget the incident markers once no sink is left. The renderer sends the current list again
+   * when a sink starts; while one is still up it keeps the list current, so it is kept.
+   */
+  private clearIncidentMarkers(): void {
+    this.incidentMarkers.clear();
+    if (this.incidentMarkerTimer) {
+      clearInterval(this.incidentMarkerTimer);
+      this.incidentMarkerTimer = null;
+    }
+  }
+
+  /** Refresh the incident markers inside their stale time while there are any. */
+  private scheduleIncidentMarkerRefresh(): void {
+    const needed = this.incidentMarkers.size > 0;
+    if (needed === (this.incidentMarkerTimer !== null)) return;
+    if (this.incidentMarkerTimer) {
+      clearInterval(this.incidentMarkerTimer);
+      this.incidentMarkerTimer = null;
+      return;
+    }
+    this.incidentMarkerTimer = setInterval(() => {
+      const now = Date.now();
+      for (const marker of this.incidentMarkers.values()) {
+        this.writeToClients(buildIncidentMarkerCot(marker, now));
+      }
+    }, INCIDENT_MARKER_STALE_MS / 3);
+    this.incidentMarkerTimer.unref();
+  }
+
   private scheduleChatRoomAnnouncements(): void {
     const needed =
       this.chatChannels.size > 0 || this.directContacts.size > 0 || this.conversationPeers.size > 0;
@@ -1365,6 +1429,9 @@ export class TakServerManager extends EventEmitter {
       this.writeToClient(id, client, cot);
     });
     const now = Date.now();
+    for (const marker of this.incidentMarkers.values()) {
+      this.writeToClient(id, client, buildIncidentMarkerCot(marker, now));
+    }
     for (const uid of this.retiredRoomUids) {
       if (!this.chatChannels.has(uid)) this.writeToClient(id, client, cotDeleteEvent(uid, now));
     }

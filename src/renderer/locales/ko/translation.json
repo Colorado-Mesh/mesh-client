@@ -6716,6 +6716,11 @@
       "routine": "루틴"
     },
     "incomingToast": "{{severity}} {{sender}}의 MECP",
+    "atakMarkerFrom": "{{sender}} 부터 마지막으로 들은 시간: {{time}} UTC",
+    "atakMarkerLastKnown": "위치: 보고서가 아닌 발신자가 마지막으로 들은 위치",
+    "atakMarkerBeacon": "조난 신호 활성",
+    "atakMarkerAcks_one": "{{count}} 수신 확인",
+    "atakMarkerAcks_other": "{{count}} 수신 확인",
     "notificationTitle": "MECP 경고",
     "exportLog": "MECP 로그 내보내기",
     "compose": {

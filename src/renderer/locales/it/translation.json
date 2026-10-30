@@ -6716,6 +6716,11 @@
       "routine": "ORDINARIA"
     },
     "incomingToast": "{{severity}} MeCP da {{sender}}",
+    "atakMarkerFrom": "Da {{sender}}, ultima udienza {{time}} UTC",
+    "atakMarkerLastKnown": "Posizione: dove il mittente è stato ascoltato l'ultima volta, non dal rapporto",
+    "atakMarkerBeacon": "Segnale di soccorso attivo",
+    "atakMarkerAcks_one": "{{count}} riscontro ricevuto",
+    "atakMarkerAcks_other": "{{count}} ringraziamenti ricevuti",
     "notificationTitle": "Allarme MeCP",
     "exportLog": "Esporta registro MeCP",
     "compose": {
