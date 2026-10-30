@@ -1039,6 +1039,7 @@ function AppContent() {
   const meshcoreRepairedMessages = useMemo(() => {
     const mapped = meshcoreChatMessagesForDisplay(
       messageRecordsToChatMessages(meshcoreStoreMessages),
+      { selfNodeId: meshcoreRuntime.selfNodeId },
     );
     if (!meshcoreNodesById) return mapped;
     const roomIds = meshcoreRoomServerIdsFromNodes(
