@@ -513,7 +513,14 @@
     "coiNo": "non=",
     "coiTimingFine": "fin (~5 µs)",
     "coiTimingCoarse": "grossier (~100 µs)",
-    "shareMyLocationOffStaticActive": "Le partage de localisation est désactivé — l'actualisation automatique du GPS de l'hôte et l'envoi maillé sont désactivés. Votre position enregistrée active (et le GPS radio lorsqu'il est disponible) sont toujours utilisés localement pour les filtres de carte et de distance."
+    "shareMyLocationOffStaticActive": "Le partage de localisation est désactivé — l'actualisation automatique du GPS de l'hôte et l'envoi maillé sont désactivés. Votre position enregistrée active (et le GPS radio lorsqu'il est disponible) sont toujours utilisés localement pour les filtres de carte et de distance.",
+    "preventSleep": "Garder l'ordinateur éveillé pendant la connexion",
+    "preventSleepAria": "Garder l'ordinateur éveillé pendant la connexion",
+    "preventSleepHint": "La liaison radio uniquement (par défaut) maintient le bloqueur pour les radios Bluetooth ou USB Meshtastic/MeshCore et pour Reticulum lorsqu'une interface BLE ou série RNode/KISS est activée. TCP/Wi-Fi compagnons, MQTT et Reticulum réseau seul se reconnectent après le réveil et n'en ont pas besoin. Toute connexion correspond au comportement permanent précédent. Ne laissez jamais le système en veille même avec une liaison radio. Sur Linux, l'inhibition d'Electron empêche également l'écran de dormir lorsque le bloqueur est maintenu enfoncé — choisissez Jamais si les moniteurs doivent être vides.",
+    "preventSleepOptionRf": "Liaison radio uniquement (Bluetooth ou USB)",
+    "preventSleepOptionAlways": "Toute connexion",
+    "preventSleepOptionOff": "Jamais",
+    "preventSleepSaveFailed": "Impossible d'enregistrer le paramètre de veille prolongée."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "Laissez les appareils ATAK envoyer un message à LXMF pairs. Un pair avec un poste peut être envoyé par message à partir de son marqueur ; celui sans poste apparaît à 0, 0 une fois que mesh-client a une conversation avec lui, de sorte que la liste de contacts ne se remplit pas avec tous les pairs entendus.",
     "channelCallsign": "Ajouter un indicatif d'appel",
     "channelCallsignFor": "Placez l'indicatif ATAK de l'expéditeur devant les messages envoyés à {{channel}}",
-    "channelCallsignHint": "Avec Add callsign off, ce qu'un appareil ATAK envoie s'éteint exactement comme il a été tapé. Désactivez-le pour un canal de bot : un bot recherche sa commande au début du message, il en manque donc une qui commence par un indicatif d'appel."
+    "channelCallsignHint": "Avec Add callsign off, ce qu'un appareil ATAK envoie s'éteint exactement comme il a été tapé. Désactivez-le pour un canal de bot : un bot recherche sa commande au début du message, il en manque donc une qui commence par un indicatif d'appel.",
+    "channelRepliesHint": "Pour répondre à quelqu'un d'ATAK, commencez par @ et le début de son nom : @silver are you on ? sort en tant que réponse de MeshCore @[Silver Eagle] are you on ?. @@ répond à la personne qui a pris la parole en dernier. Si le début du nom correspond à plusieurs personnes entendues sur la chaîne, rien n'est envoyé et le chat indique qui correspond."
   },
   "telemetryPanel": {
     "title": "Télémétrie",
@@ -6709,6 +6717,11 @@
       "routine": "ROUTINE"
     },
     "incomingToast": "{{severity}} MECP de {{sender}}",
+    "atakMarkerFrom": "De {{sender}}, dernière audition {{time}} UTC",
+    "atakMarkerLastKnown": "Position : là où l'expéditeur a été entendu pour la dernière fois, pas à partir du rapport",
+    "atakMarkerBeacon": "Balise de détresse active",
+    "atakMarkerAcks_one": "{{count}} accusé DE réception entendu",
+    "atakMarkerAcks_other": "{{count}} remerciements entendus",
     "notificationTitle": "Alerte MECP",
     "exportLog": "Exporter le journal MECP",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "Mise en sourdine des alertes d'urgence répétées de {{sender}}. Leurs rapports apparaissent toujours dans l'onglet Incident.",
       "throttledBlock": "Bloquer l’expéditeur",
       "floodToast": "De nombreuses stations envoient des rapports d'urgence à la fois. D'autres tonalités d'alerte sont brièvement mises en pause ; vérifiez l'onglet Incident."
-    }
+    },
+    "atakDrill": "PERÇAGE",
+    "atakPeople_one": "{{count}} personne",
+    "atakPeople_other": "{{count}} personnes"
   },
   "notificationSounds": {
     "title": "Tonalités de notification",

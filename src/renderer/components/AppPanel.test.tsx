@@ -763,6 +763,105 @@ describe('AppPanel: close to tray toggle', () => {
   });
 });
 
+describe('AppPanel: keep computer awake select', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+    vi.mocked(window.electronAPI.appSettings.set).mockReset();
+    vi.mocked(window.electronAPI.appSettings.set).mockResolvedValue({ changes: 1 });
+  });
+
+  it('defaults to radio link only and persists always when selected', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const select = await screen.findByRole('combobox', {
+      name: /keep computer awake while connected/i,
+    });
+    expect(select).toHaveValue('rf');
+    act(() => {
+      fireEvent.change(select, { target: { value: 'always' } });
+    });
+    expect(select).toHaveValue('always');
+    expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith(
+      'preventSleepWhileConnected',
+      'always',
+    );
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.preventSleepWhileConnected).toBe('always');
+  });
+
+  it('hydrates off from SQLite and falls back to rf for garbage', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      preventSleepWhileConnected: 'off',
+    });
+    const { unmount } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const select = await screen.findByRole('combobox', {
+      name: /keep computer awake while connected/i,
+    });
+    await waitFor(() => {
+      expect(select).toHaveValue('off');
+    });
+    unmount();
+
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      preventSleepWhileConnected: 'garbage',
+    });
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const select2 = await screen.findByRole('combobox', {
+      name: /keep computer awake while connected/i,
+    });
+    await waitFor(() => {
+      expect(select2).toHaveValue('rf');
+    });
+  });
+
+  it('rolls back the select and shows an error when the SQLite write fails', async () => {
+    vi.mocked(window.electronAPI.appSettings.set).mockRejectedValueOnce(new Error('db locked'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const select = await screen.findByRole('combobox', {
+      name: /keep computer awake while connected/i,
+    });
+    act(() => {
+      fireEvent.change(select, { target: { value: 'off' } });
+    });
+    await waitFor(() => {
+      expect(select).toHaveValue('rf');
+    });
+    expect(await screen.findByText('Could not save the keep-awake setting.')).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('[AppPanel] preventSleepWhileConnected persist'),
+    );
+    warn.mockRestore();
+  });
+});
+
 describe('AppPanel: RRC unread all room messages toggle', () => {
   const defaultProps = {
     nodeCount: 0,

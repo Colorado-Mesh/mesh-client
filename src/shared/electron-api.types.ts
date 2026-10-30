@@ -85,6 +85,7 @@ import type {
   TakDmStatusUpdate,
   TAKEnrollmentRequest,
   TAKInboundChat,
+  TakIncidentMarker,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1217,7 +1218,11 @@ export interface ElectronAPI {
   };
 
   // ─── Connection status ───────────────────────────────────────────────────────
-  notifyDeviceConnected: (source?: 'meshtastic' | 'meshcore') => void;
+  /** `connectionType` is the renderer's ConnectionType (ble/serial/tcp/http) when known. */
+  notifyDeviceConnected: (
+    source?: 'meshtastic' | 'meshcore',
+    connectionType?: string | null,
+  ) => void;
   notifyDeviceDisconnected: (source?: 'meshtastic' | 'meshcore') => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
@@ -1505,6 +1510,11 @@ export interface ElectronAPI {
      * with no marker; ignored while no sink has started.
      */
     setDirectPeers: (peers: TakDirectPeer[]) => Promise<void>;
+    /**
+     * Replace the open MECP emergencies shown as markers on TAK clients' maps; ignored while no
+     * sink has started.
+     */
+    setIncidentMarkers: (markers: TakIncidentMarker[]) => Promise<void>;
     /** How relayed nodes are styled: user unit filters over each node's advertised role. */
     getStyleSettings: () => Promise<TakStyleSettings>;
     /** Validate, save, and apply style settings; resolves with what was saved. */

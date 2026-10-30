@@ -151,6 +151,7 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
         'runtime-tests-use-loadRuntimeSource',
         'chat-export-incremental-cap',
         'axe-tests-hydrate-theme-colors',
+        'meshcore-cli-received-single-writer',
       ]),
     );
   });

@@ -521,7 +521,14 @@
     "coiNo": "no",
     "coiTimingFine": "jemný (~5 µs)",
     "coiTimingCoarse": "hrubá (~100 µs)",
-    "shareMyLocationOffStaticActive": "Sdílení polohy je vypnuto — automatické obnovení GPS hostitele a odesílání sítě jsou zakázány. Vaše aktivní uložená poloha (a rádiová GPS, pokud je k dispozici) se stále používá místně pro mapy a filtry vzdálenosti."
+    "shareMyLocationOffStaticActive": "Sdílení polohy je vypnuto — automatické obnovení GPS hostitele a odesílání sítě jsou zakázány. Vaše aktivní uložená poloha (a rádiová GPS, pokud je k dispozici) se stále používá místně pro mapy a filtry vzdálenosti.",
+    "preventSleep": "Udržujte počítač během připojení v bdělém stavu",
+    "preventSleepAria": "Udržujte počítač během připojení v bdělém stavu",
+    "preventSleepHint": "Pouze rádiové spojení (výchozí) obsahuje blokátor pro Bluetooth nebo USB __ Meshtastic/MeshCore a pro Reticulum, pokud je povoleno rozhraní BLE nebo sériové RNode/KISS. TCP/Wi-Fi společníci, MQTT a pouze síť Reticulum se po probuzení znovu připojí a nepotřebují to. Jakékoli spojení odpovídá předchozímu vždy zapnutému chování. Nikdy nenechá systém spát ani s rádiovým spojením. Na Linux elektronová inhibice také zastaví zobrazení před spaním, když je blokátor podržen — zvolte Nikdy, pokud monitory musí být prázdné.",
+    "preventSleepOptionRf": "Pouze rádiové spojení (Bluetooth nebo USB)",
+    "preventSleepOptionAlways": "Jakékoli spojení",
+    "preventSleepOptionOff": "Nikdy",
+    "preventSleepSaveFailed": "Nastavení udržování bdělosti se nepodařilo uložit."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -5901,7 +5908,8 @@
     "messagingIntroReticulum": "Nechte zařízení atak komunikovat LXMF vrstevníky. Protějšek s pozicí může být odeslán ze své značky; ten, kdo nemá žádnou pozici, se objeví na 0, 0, jakmile s ním mesh-client konverzuje, takže seznam kontaktů se nezaplní každým slyšeným protějškem.",
     "channelCallsign": "Přidat volací značku",
     "channelCallsignFor": "Umístěte volací značku atak odesílatele před zprávy odeslané na {{channel}}",
-    "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou."
+    "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou.",
+    "channelRepliesHint": "Pokud chceš odpovědět někomu z Ataku, začni na @ a začni jeho/její jméno: @silver jedeš? vyjde, zatímco MeshCore odpoví @[Silver Eagle] jede?. @@ odpovídá tomu, kdo mluvil naposledy. Pokud se začátek jména vejde do několika lidí slyšených na kanálu, nic není odesláno a chat říká, kdo se shodoval."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -6770,6 +6778,12 @@
       "routine": "Běžné"
     },
     "incomingToast": "{{severity}} MECP od {{sender}}",
+    "atakMarkerFrom": "Od {{sender}}, naposledy slyšeno {{time}} UTC",
+    "atakMarkerLastKnown": "Pozice: kde byl odesílatel naposledy vyslechnut, nikoli ze zprávy",
+    "atakMarkerBeacon": "Nouzový maják aktivní",
+    "atakMarkerAcks_one": "Slyšená potvrzení: {{count}}",
+    "atakMarkerAcks_few": "Slyšená potvrzení: {{count}}",
+    "atakMarkerAcks_other": "Slyšená potvrzení: {{count}}",
     "notificationTitle": "Upozornění MECP",
     "exportLog": "Exportovat protokol MECP",
     "compose": {
@@ -6833,7 +6847,11 @@
       "throttledToast": "Umlčení opakovaných nouzových výstrah od {{sender}}. Jejich hlášení se stále zobrazují na kartě Incident.",
       "throttledBlock": "Blokovat tohoto odesilatele",
       "floodToast": "Mnoho stanic odesílá nouzová hlášení najednou. Další výstražné tóny jsou krátce pozastaveny; zkontrolujte kartu Incident (Incident)."
-    }
+    },
+    "atakDrill": "DRILL (VRTÁK)",
+    "atakPeople_one": "{{count}} osoba",
+    "atakPeople_few": "{{count}} osoby",
+    "atakPeople_other": "{{count}} osob"
   },
   "notificationSounds": {
     "title": "Tóny oznámení",

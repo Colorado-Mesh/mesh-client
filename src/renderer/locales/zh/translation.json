@@ -513,7 +513,14 @@
     "coiNo": "否",
     "coiTimingFine": "精细（ ~ 5 µs ）",
     "coiTimingCoarse": "粗略（ ~ 100 µs ）",
-    "shareMyLocationOffStaticActive": "位置共享已关闭—主机GPS自动刷新和网格发送已禁用。您保存的有效位置（以及可用的无线电GPS ）仍会在本地用于地图和距离过滤器。"
+    "shareMyLocationOffStaticActive": "位置共享已关闭—主机GPS自动刷新和网格发送已禁用。您保存的有效位置（以及可用的无线电GPS ）仍会在本地用于地图和距离过滤器。",
+    "preventSleep": "连接时保持计算机唤醒",
+    "preventSleepAria": "连接时保持计算机唤醒",
+    "preventSleepHint": "仅当启用了BLE或串行RNode/KISS接口时，无线电链路（默认）会保持蓝牙或USB Meshtastic/MeshCore无线电和Reticulum的拦截器。TCP/Wi-Fi同伴、MQTT和仅网络连接的Reticulum在唤醒后重新连接，不需要。任何连接都与之前的始终在线行为相匹配。即使有无线电连接，也不要让系统休眠。在Linux ， Electron的抑制也会在屏蔽剂被保持时停止显示器睡眠—如果监视器必须保留空白，请选择Never （永不）。",
+    "preventSleepOptionRf": "仅限无线电链路（蓝牙或USB ）",
+    "preventSleepOptionAlways": "任何连接",
+    "preventSleepOptionOff": "从未",
+    "preventSleepSaveFailed": "无法保存保持唤醒设置。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -5856,7 +5863,8 @@
     "messagingIntroReticulum": "让ATAK设备向LXMF个同行发送消息。可以从其标记向具有位置的同行发送消息；一旦mesh-client与之进行对话，没有位置的同行将显示为0、0 ，因此联系人列表中不会填写每个听到的同行。",
     "channelCallsign": "添加呼号",
     "channelCallsignFor": "将发件人的ATAK呼号放在发送到{{channel}}的消息前面",
-    "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。"
+    "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。",
+    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。"
   },
   "telemetryPanel": {
     "title": "遥测",
@@ -6709,6 +6717,11 @@
       "routine": "常规"
     },
     "incomingToast": "{{severity}} MECP来自{{sender}}",
+    "atakMarkerFrom": "从{{sender}} ，最后一次听到{{time}} UTC",
+    "atakMarkerLastKnown": "位置：最后一次听到发件人的位置，而不是来自报告",
+    "atakMarkerBeacon": "遇险信标已激活",
+    "atakMarkerAcks_one": "听到{{count}}确认",
+    "atakMarkerAcks_other": "听到{{count}}确认",
     "notificationTitle": "MECP警报",
     "exportLog": "导出MECP日志",
     "compose": {
@@ -6772,7 +6785,10 @@
       "throttledToast": "将来自{{sender}}的重复紧急警报静音。他们的报告仍会显示在“事件”标签卡中。",
       "throttledBlock": "封鎖寄件人",
       "floodToast": "许多车站同时发送紧急报告。进一步的警报提示音将暂停；请检查事件选项卡。"
-    }
+    },
+    "atakDrill": "钻头",
+    "atakPeople_one": "{{count}}人",
+    "atakPeople_other": "{{count}}人"
   },
   "notificationSounds": {
     "title": "通知提示音",

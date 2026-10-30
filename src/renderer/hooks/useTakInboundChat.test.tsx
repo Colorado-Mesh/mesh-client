@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { computeChannelIdentityKey } from '@/shared/channelIdentityKey';
 import type { TakChatChannel } from '@/shared/tak-types';
 
+import type { EmergencyIncident } from '../lib/mecp/incidentTypes';
 import {
   clearReticulumHashRegistry,
   registerReticulumDestinationHash,
 } from '../lib/reticulum/destHash';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
+import { useIncidentStore } from '../stores/incidentStore';
 import { addMessage, useMessageStore } from '../stores/messageStore';
 import { getTakChannels, getTakRadio, useTakChannelStore } from '../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
@@ -21,6 +23,7 @@ import {
 
 /** The mocked IPC call the hook reports the served channels through. */
 const setChatChannels = () => vi.mocked(window.electronAPI.tak.setChatChannels);
+const setIncidentMarkers = () => vi.mocked(window.electronAPI.tak.setIncidentMarkers);
 const setDirectMessaging = () => vi.mocked(window.electronAPI.tak.setDirectMessaging);
 const setDirectPeers = () => vi.mocked(window.electronAPI.tak.setDirectPeers);
 
@@ -38,6 +41,7 @@ const OPS: TakChatChannel = {
   name: '#MC \u{1F512} Ops',
   send: true,
   remote: false,
+  protocol: 'meshcore',
 };
 
 describe('useTakInboundChat', () => {
@@ -297,6 +301,52 @@ describe('useTakInboundChat', () => {
     } finally {
       warn.mockRestore();
       vi.useRealTimers();
+    }
+  });
+  it('keeps main told the open MECP incidents with a position, while a sink is up', async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    setIncidentMarkers().mockClear();
+    useIncidentStore.setState({ incidents: { [incident.id]: incident } });
+    try {
+      mount();
+      expect(setIncidentMarkers()).not.toHaveBeenCalled();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0].map((m) => m.callsign)).toEqual([
+        '🆘 MAYDAY Alice',
+      ]);
+      act(() => {
+        useIncidentStore.setState({
+          incidents: { [incident.id]: { ...incident, status: 'resolved' } },
+        });
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0]).toEqual([]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
     }
   });
 });
