@@ -18,7 +18,7 @@ Local traffic is limited to what your client observes. It is not a complete view
 3. On MeshCore, select **Local radio** in **Traffic source**. Meshtastic uses local observations automatically, so it has no regional feed configuration.
 4. Leave **Map area** on **All traffic**, or choose **Current map area** to filter observations to the part of the world you are viewing.
 
-The initial view fits your known node positions, including your configured location when available. Without valid positions, it opens a world view. There is no Colorado-only region list or geographic restriction. Pan and zoom to any location; use **Fit traffic** to bring current packet locations into view, or known nodes if no packet has a location.
+The initial view fits your known node positions, including your configured location when available. A few nodes far from all the others, such as one reporting a placeholder position on another continent, are left out of that first view so the map frames your mesh; zoom out to see them. Without valid positions, it opens a world view. There is no Colorado-only region list or geographic restriction. Pan and zoom to any location; use **Fit traffic** to bring current packet locations into view, or known nodes if no packet has a location.
 
 ### Regional Beacon or CoreScope
 
@@ -53,6 +53,17 @@ Message text appears only when the client or regional feed provides decoded cont
 
 Animation shows observation order, not radio propagation speed. Missing positions and unknown hops leave gaps. Meshtastic draws a direct source-to-client link only for a known direct radio reception; multihop and MQTT packets do not invent intermediate hops. CoreScope links based on server identity estimates are marked as estimated.
 
+## Open the map in its own window
+
+Click **Open in new window**, the button after **Pause**, to move the live map into a separate window. Put it on a second monitor or in a corner of the screen while you use the rest of the app. The Map panel shows a notice in its place: **Show window** brings the window forward and **Move back here** closes it.
+
+- The window opens on the same protocol, map position, map style and traffic source. A regional feed you connected reconnects there, and the main window's connection ends, so only one window holds the session.
+- Packets your radio receives keep arriving while the main window shows another panel or protocol, or sits behind other windows.
+- Click a node on the map to open its details in the main window. If the main window shows the other protocol, it switches to the window's protocol first.
+- **Keep on top** keeps the window above other windows. **Return to main window** closes it and puts the map back in the Map panel where you left it.
+- MeshCore and Meshtastic can each have a window open at the same time. Each remembers its size, position and **Keep on top** setting.
+- Closing or reloading the main window closes these windows.
+
 ## Navigation and saved settings
 
 During the same app session, switching panels, switching protocols, or returning to **Overview** preserves each protocol's live view, filters, map position, floating feed state, and regional connection. Drawing stops while the live map is hidden.
@@ -63,7 +74,7 @@ Changing the source or explicitly disconnecting ends the regional session. Closi
 
 - Check that the selected source is receiving packets. Local mode needs observations arriving at your client; a regional source must show a live connection.
 - Switch **Map area** to **All traffic** and clear packet-type or transport-code filters. For a regional source, check its server region selection too.
-- Click **Fit traffic**. Your nodes or observers may be outside the current view.
+- Click **Fit traffic**. Your nodes or observers may be outside the current view, and a node far from all the others is left out of the first view.
 - Check **Packet feed**. Observations without known positions can appear there even when the map has no paths. Unknown locations are not guessed.
 - If a custom server will not connect, verify its URL, provider, and public API availability with the operator. A partial-directory notice means the node directory reached the client's limit, so some locations may be absent.
 

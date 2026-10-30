@@ -7,8 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Power-save policy + Reticulum local-radio scan; Linux CI measures ~737.5 KiB. */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 741 * 1024;
+/** Live traffic pop-out window handlers add ~6.2 KiB; main measures ~746.0 KiB (local macOS). */
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 748 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

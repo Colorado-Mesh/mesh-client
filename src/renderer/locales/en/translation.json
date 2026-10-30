@@ -7571,7 +7571,18 @@
       "all": "All traffic",
       "viewport": "Current map area"
     },
-    "fitTraffic": "Fit traffic"
+    "fitTraffic": "Fit traffic",
+    "window": {
+      "open": "Open in new window",
+      "title": "{{protocol}} live traffic",
+      "openElsewhere": "Live traffic is open in another window",
+      "openElsewhereHint": "It keeps updating there while you use the rest of the app.",
+      "show": "Show window",
+      "moveBack": "Move back here",
+      "keepOnTop": "Keep on top",
+      "return": "Return to main window",
+      "unavailable": "Open live traffic windows from the Map panel in Mesh Client."
+    }
   },
   "meshtasticExtraConfig": {
     "advancedHardware": "Advanced hardware",

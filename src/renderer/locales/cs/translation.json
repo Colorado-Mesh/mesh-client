@@ -7459,7 +7459,18 @@
       "all": "Veškerý provoz",
       "viewport": "Aktuální oblast mapy"
     },
-    "fitTraffic": "Přizpůsobit provozu"
+    "fitTraffic": "Přizpůsobit provozu",
+    "window": {
+      "open": "Otevřít v novém okně",
+      "title": "Živý provoz: {{protocol}}",
+      "openElsewhere": "Živý provoz je otevřený v jiném okně",
+      "openElsewhereHint": "Tam se dál aktualizuje, zatímco používáte zbytek aplikace.",
+      "show": "Zobrazit okno",
+      "moveBack": "Přesunout zpět sem",
+      "keepOnTop": "Vždy navrchu",
+      "return": "Vrátit do hlavního okna",
+      "unavailable": "Okna živého provozu otevřete z panelu Mapa v aplikaci Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Nastavení doprovodného zařízení",

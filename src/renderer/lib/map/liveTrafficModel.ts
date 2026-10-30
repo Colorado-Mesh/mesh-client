@@ -71,6 +71,12 @@ export interface LiveTrafficBounds {
   east: number;
 }
 
+/** The node fields traffic geometry reads; a pop-out window receives only these. */
+export type LiveTrafficNode = Pick<
+  MeshNode,
+  'long_name' | 'short_name' | 'latitude' | 'longitude' | 'public_key_hex'
+>;
+
 export interface LiveTrafficNodeIndex {
   points: ReadonlyMap<number, LiveTrafficPoint>;
   /** Sender identity is useful even when the contact has never shared a location. */
@@ -99,7 +105,7 @@ function locatedPoint(
 
 /** Build once per node/public-key snapshot, then resolve each captured hop in constant time. */
 export function buildLiveTrafficNodeIndex(
-  nodes: ReadonlyMap<number, MeshNode>,
+  nodes: ReadonlyMap<number, LiveTrafficNode>,
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>,
   receiver?: { nodeId: number | null; position: OurPosition | null },
 ): LiveTrafficNodeIndex {
@@ -447,6 +453,41 @@ export function liveTrafficFitCoordinates(points: readonly LiveTrafficPoint[]): 
   }
   const center = start + (360 - largestGap) / 2;
   return points.map((point) => [point.lat, liveTrafficLongitudeNear(point.lon, center)]);
+}
+
+const FIT_TRIM_MIN_POINTS = 20;
+const FIT_TRIM_KEEP_SHARE = 0.95;
+const FIT_TRIM_RADIUS_FACTOR = 3;
+const FIT_TRIM_MIN_RADIUS_DEGREES = 2;
+
+function median(sorted: readonly number[]): number {
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/**
+ * Leave out a few isolated far-away positions before framing a node directory. Regional
+ * directories often carry a handful of nodes with placeholder or stale positions on another
+ * continent (the Colorado Beacon directory has one near the North Pole), and fitting those shows
+ * half the planet instead of the mesh. A point is left out only when it is outside the nearest
+ * 95% of points and more than three times that radius from the median, and never closer than
+ * 2 degrees, so a widely spread mesh is framed whole.
+ */
+export function liveTrafficFitCorePoints(
+  points: readonly LiveTrafficPoint[],
+): readonly LiveTrafficPoint[] {
+  if (points.length < FIT_TRIM_MIN_POINTS) return points;
+  const coordinates = liveTrafficFitCoordinates(points);
+  const centerLat = median(coordinates.map(([lat]) => lat).sort((a, b) => a - b));
+  const centerLon = median(coordinates.map(([, lon]) => lon).sort((a, b) => a - b));
+  const lonScale = Math.cos((centerLat * Math.PI) / 180);
+  const distances = coordinates.map(([lat, lon]) =>
+    Math.hypot(lat - centerLat, (lon - centerLon) * lonScale),
+  );
+  const sorted = [...distances].sort((a, b) => a - b);
+  const keepRadius = sorted[Math.ceil(sorted.length * FIT_TRIM_KEEP_SHARE) - 1];
+  const limit = Math.max(keepRadius * FIT_TRIM_RADIUS_FACTOR, FIT_TRIM_MIN_RADIUS_DEGREES);
+  return points.filter((_, index) => distances[index] <= limit);
 }
 
 export function pointInLiveTrafficBounds(

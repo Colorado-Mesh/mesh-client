@@ -93,6 +93,7 @@ export default defineConfig({
       input: {
         index: path.resolve(import.meta.dirname, 'src/renderer/index.html'),
         migration: path.resolve(import.meta.dirname, 'src/renderer/migration.html'),
+        liveMap: path.resolve(import.meta.dirname, 'src/renderer/live-map.html'),
       },
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
       // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.

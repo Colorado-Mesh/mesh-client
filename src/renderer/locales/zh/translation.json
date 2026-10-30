@@ -7384,7 +7384,18 @@
       "all": "全部流量",
       "viewport": "当前地图区域"
     },
-    "fitTraffic": "缩放至流量范围"
+    "fitTraffic": "缩放至流量范围",
+    "window": {
+      "open": "在新窗口中打开",
+      "title": "{{protocol}} 实时流量",
+      "openElsewhere": "实时流量已在另一个窗口中打开",
+      "openElsewhereHint": "在您使用应用的其他部分时，它会在那里持续更新。",
+      "show": "显示窗口",
+      "moveBack": "移回此处",
+      "keepOnTop": "保持置顶",
+      "return": "返回主窗口",
+      "unavailable": "请从 Mesh Client 的“地图”面板打开实时流量窗口。"
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "配套设备设置",

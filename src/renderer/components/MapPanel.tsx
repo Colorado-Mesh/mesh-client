@@ -7,9 +7,7 @@ import L from 'leaflet';
 import { Download } from 'lucide-react-motion';
 import {
   Fragment,
-  lazy,
   memo,
-  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -54,6 +52,7 @@ import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStor
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { EnvironmentSensorLayer } from './map/environmentSensorLayer';
 import { ensureLoRaMapPanelStyles } from './map/leafletMapControls';
+import { LiveTrafficWindowSlot } from './map/LiveTrafficWindowSlot';
 import { MAP_CHIP_CLASS, MAP_CONTROL_CLASS } from './map/mapControlClasses';
 import { MapLayerRow } from './map/MapLayerControl';
 import { MeshMapShell } from './map/MeshMapShell';
@@ -509,6 +508,8 @@ interface Props {
   ) => Promise<void>;
   onDeleteWaypoint?: (id: number) => Promise<void>;
   onNodeClick?: (nodeId: number) => void;
+  /** Opens a node clicked in the live traffic pop-out window. */
+  onLiveWindowNodeClick?: (nodeId: number) => void;
   /** Opens the node that posted a weather forecast (may be on another protocol). */
   onForecastSenderClick?: (protocol: MeshProtocol, senderId: number) => void;
   protocol?: MeshProtocol;
@@ -517,8 +518,6 @@ interface Props {
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
 }
-
-const LiveTrafficPanel = lazy(() => import('./map/LiveTrafficPanel'));
 
 export default function MapPanel(props: Props) {
   const { t } = useTranslation();
@@ -560,18 +559,18 @@ export default function MapPanel(props: Props) {
       </div>
       <div className="min-h-0 flex-1">
         {(traffic || trafficVisited) && (
-          <Suspense fallback={<div className="text-muted p-4">{t('app.loadingApp')}</div>}>
-            <LiveTrafficPanel
-              active={active && traffic}
-              nodes={props.nodes}
-              myNodeNum={props.myNodeNum}
-              ourPosition={props.ourPosition}
-              meshcorePackets={props.meshcorePackets}
-              meshtasticPackets={props.meshtasticPackets}
-              pubKeyByNodeId={props.pubKeyByNodeId}
-              onNodeClick={props.onNodeClick}
-            />
-          </Suspense>
+          <LiveTrafficWindowSlot
+            active={active && traffic}
+            protocol={props.meshcorePackets !== undefined ? 'meshcore' : 'meshtastic'}
+            nodes={props.nodes}
+            myNodeNum={props.myNodeNum}
+            ourPosition={props.ourPosition}
+            meshcorePackets={props.meshcorePackets}
+            meshtasticPackets={props.meshtasticPackets}
+            pubKeyByNodeId={props.pubKeyByNodeId}
+            onNodeClick={props.onNodeClick}
+            onWindowNodeClick={props.onLiveWindowNodeClick}
+          />
         )}
         {active && !traffic && <OverviewMapPanel {...props} />}
       </div>

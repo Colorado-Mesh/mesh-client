@@ -212,6 +212,15 @@ export async function startMeshcoreRadio(selfId = 171) {
         });
     },
     getChannel: (index: number) => ({ name: channels[index], secret: secrets.get(index) }),
+    /** Push an RF packet the radio "heard" (companion push 0x88: SNR x4, RSSI, raw bytes). */
+    pushRxLog: (raw: Buffer, snr = 6, rssi = -80) => {
+      const signal = Buffer.alloc(2);
+      signal.writeInt8(Math.round(snr * 4), 0);
+      signal.writeInt8(rssi, 1);
+      const payload = Buffer.concat([Buffer.from([0x88]), signal, raw]);
+      const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
+      for (const socket of sockets) socket.write(Buffer.concat([header, payload]));
+    },
     close: async () => {
       for (const socket of sockets) socket.destroy();
       await new Promise<void>((resolve) =>

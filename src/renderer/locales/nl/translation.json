@@ -7384,7 +7384,18 @@
       "all": "Al het verkeer",
       "viewport": "Huidig kaartgebied"
     },
-    "fitTraffic": "Verkeer in beeld brengen"
+    "fitTraffic": "Verkeer in beeld brengen",
+    "window": {
+      "open": "Openen in nieuw venster",
+      "title": "Live verkeer: {{protocol}}",
+      "openElsewhere": "Live verkeer is geopend in een ander venster",
+      "openElsewhereHint": "Daar wordt het bijgewerkt terwijl je de rest van de app gebruikt.",
+      "show": "Venster tonen",
+      "moveBack": "Hierheen terugzetten",
+      "keepOnTop": "Altijd bovenop",
+      "return": "Terug naar hoofdvenster",
+      "unavailable": "Open vensters met live verkeer via het paneel Kaart in Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Instellingen van begeleidende apparaten",

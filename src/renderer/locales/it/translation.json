@@ -7384,7 +7384,18 @@
       "all": "Tutto il traffico",
       "viewport": "Area attuale della mappa"
     },
-    "fitTraffic": "Inquadra il traffico"
+    "fitTraffic": "Inquadra il traffico",
+    "window": {
+      "open": "Apri in una nuova finestra",
+      "title": "Traffico in tempo reale: {{protocol}}",
+      "openElsewhere": "Il traffico in tempo reale è aperto in un'altra finestra",
+      "openElsewhereHint": "Lì continua ad aggiornarsi mentre usi il resto dell'app.",
+      "show": "Mostra finestra",
+      "moveBack": "Riporta qui",
+      "keepOnTop": "Mantieni in primo piano",
+      "return": "Torna alla finestra principale",
+      "unavailable": "Apri le finestre del traffico in tempo reale dal pannello Mappa di Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Impostazioni del dispositivo Companion",
