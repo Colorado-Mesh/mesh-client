@@ -19,7 +19,8 @@ import {
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 
 import { useToast } from './Toast';
-import { INPUT_BOX_CLASS } from './ui/formClasses';
+import { INPUT_BOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
+import { Switch } from './ui/Switch';
 
 interface Props {
   channels: readonly { index: number; name: string; secret?: Uint8Array }[];
@@ -44,6 +45,12 @@ export default function MeshcoreChatChannelManager({
   const [privateChannel, setPrivateChannel] = useState(false);
   const [keyHex, setKeyHex] = useState('');
   const [saving, setSaving] = useState(false);
+  const [keepOpen, setKeepOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(
+    null,
+  );
+  const savingRef = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const normalizedName = privateChannel ? name.trim() : normalizeMeshcoreHashtagChannelName(name);
   const validName = privateChannel
@@ -59,25 +66,65 @@ export default function MeshcoreChatChannelManager({
     setName('');
     setKeyHex('');
     setPrivateChannel(false);
+    setKeepOpen(false);
+    setFeedback(null);
   }, []);
 
   useEffect(() => {
     if (!open) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
         event.stopPropagation();
-        if (!saving) closeDialog();
+        if (!savingRef.current) closeDialog();
+      }
+      if (event.key !== 'Tab') return;
+      const controls = [
+        ...(panelRef.current?.querySelectorAll<HTMLElement>(':is(button, input):not(:disabled)') ??
+          []),
+      ];
+      const first = controls[0];
+      const last = controls.at(-1);
+      // The panel itself (focused by clicking its heading or padding) counts as outside.
+      const active = document.activeElement;
+      const onControl = controls.some((control) => control === active);
+      if (controls.length === 0) {
+        event.preventDefault();
+        panelRef.current?.focus();
+      } else if (event.shiftKey && (active === first || !onControl)) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && (active === last || !onControl)) {
+        event.preventDefault();
+        first?.focus();
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
       window.removeEventListener('keydown', onKeyDown, true);
+      previous?.focus();
     };
-  }, [open, saving, closeDialog]);
+  }, [open, closeDialog]);
+
+  useEffect(() => {
+    if (open && !saving) inputRef.current?.focus();
+  }, [open, saving]);
+
+  function finishAdd(message: string): void {
+    if (keepOpen) {
+      setName('');
+      setKeyHex('');
+      setFeedback({ message, type: 'success' });
+      inputRef.current?.focus();
+    } else {
+      closeDialog();
+    }
+  }
 
   async function handleAdd(): Promise<void> {
-    if (!valid || saving || disabled) return;
+    if (!valid || savingRef.current || disabled) return;
 
     const existing = configuredChannels.find((channel) => {
       if (channel.name !== normalizedName) return false;
@@ -87,30 +134,40 @@ export default function MeshcoreChatChannelManager({
     });
     if (existing) {
       onSelectChannel(existing.index);
-      closeDialog();
+      const message = t('radioPanel.meshcoreChannel.alreadyAdded', { name: normalizedName });
+      if (!keepOpen) addToast(message, 'success');
+      finishAdd(message);
       return;
     }
 
     const index = findFirstFreeMeshcoreChannelIndex(channels);
     if (index == null) {
-      addToast(t('qrIngest.meshcoreChannelNoFreeIndex'), 'error');
+      const message = t('radioPanel.meshcoreChannel.slotsFull');
+      setFeedback({ message, type: 'error' });
+      addToast(message, 'error');
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
+    setFeedback(null);
     try {
       const secretHex = privateChannel
         ? normalizedKeyHex
         : await meshcoreDeriveChannelKeyHexFromName(normalizedName);
       await onSetChannel(index, normalizedName, hexToBytesExactOrThrow(secretHex, 16));
-      addToast(t('radioPanel.channelSavedStatus', { index }), 'success');
+      const message = t('radioPanel.meshcoreChannel.added', { name: normalizedName });
+      addToast(message, 'success');
       onSelectChannel(index);
-      closeDialog();
+      finishAdd(message);
     } catch (error) {
       const message = errLikeToLogString(error);
       console.warn('[MeshcoreChatChannelManager] add failed ' + message);
-      addToast(t('radioPanel.channelSaveFailed', { message }), 'error');
+      const feedbackMessage = t('radioPanel.channelSaveFailed', { message });
+      setFeedback({ message: feedbackMessage, type: 'error' });
+      addToast(feedbackMessage, 'error');
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -133,10 +190,13 @@ export default function MeshcoreChatChannelManager({
       {open ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
           <div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
+            aria-busy={saving}
             aria-modal="true"
             aria-labelledby="meshcore-chat-channel-title"
-            className="bg-secondary-dark rounded-modal shadow-level-3 border-ink-600 w-full max-w-md space-y-4 border p-4"
+            className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto border p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="meshcore-chat-channel-title" className="text-base font-semibold text-white">
@@ -156,7 +216,10 @@ export default function MeshcoreChatChannelManager({
             </div>
 
             {configuredChannels.length > 0 ? (
-              <div className="flex flex-wrap gap-2" aria-label={t('chatPanel.channels')}>
+              <div
+                className="flex max-h-32 flex-wrap gap-2 overflow-y-auto"
+                aria-label={t('chatPanel.channels')}
+              >
                 {configuredChannels.map((channel) => (
                   <span key={channel.index} className="inline-flex items-center gap-0.5">
                     <button
@@ -192,6 +255,15 @@ export default function MeshcoreChatChannelManager({
             ) : (
               <p className="text-muted text-xs">{t('radioPanel.noChannels')}</p>
             )}
+
+            {feedback ? (
+              <p
+                role={feedback.type === 'error' ? 'alert' : 'status'}
+                className={`${NOTICE_CLASS[feedback.type]} [overflow-wrap:anywhere]`}
+              >
+                {feedback.message}
+              </p>
+            ) : null}
 
             <form
               className="space-y-3"
@@ -272,6 +344,14 @@ export default function MeshcoreChatChannelManager({
               ) : (
                 <p className="text-muted text-xs">{t('radioPanel.meshcoreSha256KeyTitle')}</p>
               )}
+              <div className="border-ink-800 border-t pt-3">
+                <Switch
+                  checked={keepOpen}
+                  onChange={setKeepOpen}
+                  label={t('radioPanel.meshcoreChannel.keepOpen')}
+                  disabled={saving || disabled}
+                />
+              </div>
             </form>
           </div>
         </div>
