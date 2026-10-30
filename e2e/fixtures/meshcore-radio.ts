@@ -97,16 +97,6 @@ export async function startMeshcoreRadio(selfId = 171) {
             );
           break;
         }
-        case 26:
-          send(
-            Buffer.concat([
-              Buffer.from([0x85, 0]),
-              command.subarray(1, 7),
-              u32(Math.floor(Date.now() / 1000)),
-              Buffer.from([1, 7]),
-            ]),
-          );
-          break;
         case 32: {
           const save = () => {
             if (failChannelSave) {
@@ -128,6 +118,16 @@ export async function startMeshcoreRadio(selfId = 171) {
         }
         case 23:
           send(Buffer.from([15])); // Test radio does not export identity secrets.
+          break;
+        case 26:
+          send(
+            Buffer.concat([
+              Buffer.from([0x85, 0]),
+              command.subarray(1, 7),
+              u32(Math.floor(Date.now() / 1000)),
+              Buffer.from([1, 7]),
+            ]),
+          );
           break;
         case 10:
           send(Buffer.from([10]));
