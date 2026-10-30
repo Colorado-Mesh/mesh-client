@@ -7380,7 +7380,18 @@
       "all": "모든 트래픽",
       "viewport": "현재 지도 영역"
     },
-    "fitTraffic": "트래픽에 맞춰 보기"
+    "fitTraffic": "트래픽에 맞춰 보기",
+    "window": {
+      "open": "새 창에서 열기",
+      "title": "{{protocol}} 실시간 트래픽",
+      "openElsewhere": "실시간 트래픽이 다른 창에서 열려 있습니다",
+      "openElsewhereHint": "앱의 다른 화면을 사용하는 동안에도 그 창에서 계속 업데이트됩니다.",
+      "show": "창 표시",
+      "moveBack": "여기로 다시 가져오기",
+      "keepOnTop": "항상 위에 표시",
+      "return": "기본 창으로 돌아가기",
+      "unavailable": "Mesh Client의 지도 패널에서 실시간 트래픽 창을 여세요."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "도우미 장치 설정",

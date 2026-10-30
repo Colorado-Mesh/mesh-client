@@ -21,7 +21,16 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react-motion';
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CircleMarker,
@@ -45,7 +54,9 @@ import {
   type LiveTrafficBounds,
   type LiveTrafficEvent,
   liveTrafficFitCoordinates,
+  liveTrafficFitCorePoints,
   liveTrafficLongitudeNear,
+  type LiveTrafficNode,
   type LiveTrafficPoint,
   pointInLiveTrafficBounds,
 } from '@/renderer/lib/map/liveTrafficModel';
@@ -53,6 +64,7 @@ import { useFloatingMapWindow } from '@/renderer/lib/map/useFloatingMapWindow';
 import {
   DEFAULT_MAP_BASEMAP_ID,
   getMapOverlayColors,
+  isValidMapBasemapId,
   MAP_BASEMAPS,
   MAP_MAX_ZOOM,
   type MapBasemapId,
@@ -60,11 +72,11 @@ import {
 } from '@/renderer/lib/mapBasemapUtils';
 import type { RxPacketEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import type { MeshtasticRawPacketEntry } from '@/renderer/lib/rawPacketLogConstants';
-import type { MeshNode } from '@/renderer/lib/types';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import type { MapViewport } from '@/renderer/stores/mapViewportStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RegionalFeedProvider } from '@/shared/beacon';
+import type { LiveMapView } from '@/shared/liveMapWindow';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { Button, IconButton } from '../ui/Button';
@@ -88,13 +100,19 @@ const INITIAL_CENTER: [number, number] = [20, 0];
 
 export interface LiveTrafficPanelProps {
   active?: boolean;
-  nodes: Map<number, MeshNode>;
+  nodes: ReadonlyMap<number, LiveTrafficNode>;
   myNodeNum: number;
   meshcorePackets?: readonly RxPacketEntry[];
   meshtasticPackets?: readonly MeshtasticRawPacketEntry[];
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
   onNodeClick?: (id: number) => void;
   ourPosition?: OurPosition | null;
+  /** Position, style and source to start from when the map moves between windows. */
+  initialView?: LiveMapView | null;
+  /** Reports the current view so the other window can continue from it. */
+  onViewChange?: (view: LiveMapView) => void;
+  /** Window controls at the end of the toolbar: open in a new window, return, keep on top. */
+  windowActions?: ReactNode;
 }
 
 function packetCategory(kind: string): 'message' | 'advert' | 'telemetry' | 'routing' | 'other' {
@@ -162,7 +180,9 @@ function TrafficViewport({
     previousFit.current = fitKey;
     const explicitFocus = previousFocusRevision.current !== focusRevision;
     previousFocusRevision.current = focusRevision;
-    const fitPoints = explicitFocus && trafficPoints.length > 0 ? trafficPoints : points;
+    // Current traffic is framed exactly; a node directory leaves out isolated far-off positions.
+    const fitPoints =
+      explicitFocus && trafficPoints.length > 0 ? trafficPoints : liveTrafficFitCorePoints(points);
     if (
       (regionId === 'all' || (regionId === 'viewport' && explicitFocus)) &&
       fitPoints.length > 0
@@ -290,6 +310,9 @@ export default function LiveTrafficPanel({
   pubKeyByNodeId,
   onNodeClick,
   ourPosition,
+  initialView,
+  onViewChange,
+  windowActions,
 }: LiveTrafficPanelProps) {
   const { t } = useTranslation();
   const scopeListId = useId();
@@ -303,7 +326,10 @@ export default function LiveTrafficPanel({
   const use24Hour = useTimeFormatStore((state) => state.use24HourTime);
   const savedBasemap = useMapLayerStore((state) => state.basemapId);
   const meshtastic = meshtasticPackets !== undefined;
-  const [trafficSource, setTrafficSource] = useState<'local' | RegionalFeedProvider>('local');
+  // Regional feeds carry MeshCore observations only; Meshtastic always starts on its own radio.
+  const [trafficSource, setTrafficSource] = useState<'local' | RegionalFeedProvider>(() =>
+    meshtastic ? 'local' : (initialView?.trafficSource ?? 'local'),
+  );
   const regional = trafficSource !== 'local';
   const provider = trafficSource === 'corescope' ? 'corescope' : 'beacon';
   const beacon = useBeaconTraffic(!meshtastic && regional, provider, active);
@@ -324,10 +350,19 @@ export default function LiveTrafficPanel({
   const [kind, setKind] = useState('all');
   const [speed, setSpeed] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [savedViewport, setSavedViewport] = useState<MapViewport | null>(null);
+  const [savedViewport, setSavedViewport] = useState<MapViewport | null>(() =>
+    initialView ? { center: initialView.center, zoom: initialView.zoom } : null,
+  );
   const [viewport, setViewport] = useState<LiveTrafficBounds | null>(null);
   const [focusRevision, setFocusRevision] = useState(0);
-  const [basemapId, setBasemapId] = useState<MapBasemapId>(savedBasemap);
+  const [basemapId, setBasemapId] = useState<MapBasemapId>(() =>
+    initialView && isValidMapBasemapId(initialView.basemapId)
+      ? initialView.basemapId
+      : savedBasemap,
+  );
+  /** The regional session this view connected, handed to the other window when it moves. */
+  const [connectedFeed, setConnectedFeed] = useState<LiveMapView['feed']>(null);
+  const resumeFeed = useRef(meshtastic ? null : (initialView?.feed ?? null));
   const [frozenEvents, setFrozenEvents] = useState<readonly LiveTrafficEvent[]>([]);
   const [refreshTime, setRefreshTime] = useState(Date.now);
   useEffect(() => {
@@ -529,6 +564,7 @@ export default function LiveTrafficPanel({
     async (baseUrl: string, region?: string) => {
       const connected = await connectSource(baseUrl, region);
       if (connected) {
+        setConnectedFeed(region ? { baseUrl, region } : { baseUrl });
         setSavedViewport(null);
         closeSource();
         setRegionId('all');
@@ -541,6 +577,32 @@ export default function LiveTrafficPanel({
     },
     [connectSource, closeSource],
   );
+
+  // A session connected in the other window continues here without refitting the map.
+  useEffect(() => {
+    const feed = resumeFeed.current;
+    resumeFeed.current = null;
+    if (!feed || !regional) return;
+    void connectSource(feed.baseUrl, feed.region).then((connected) => {
+      if (connected) setConnectedFeed(feed);
+    });
+  }, [regional, connectSource]);
+
+  const feedActive =
+    beacon.status === 'live' || beacon.status === 'connecting' || beacon.status === 'reconnecting';
+  const handoffFeed = regional && feedActive ? connectedFeed : null;
+  const viewCenter = savedViewport?.center;
+  const viewZoom = savedViewport?.zoom;
+  useEffect(() => {
+    if (!onViewChange || !viewCenter || viewZoom === undefined) return;
+    onViewChange({
+      center: viewCenter,
+      zoom: viewZoom,
+      basemapId,
+      trafficSource,
+      feed: handoffFeed,
+    });
+  }, [onViewChange, viewCenter, viewZoom, basemapId, trafficSource, handoffFeed]);
 
   return (
     <section
@@ -649,6 +711,11 @@ export default function LiveTrafficPanel({
                     <BeaconConnectionControls
                       provider={provider}
                       feed={{ ...beacon, connect: connectBeacon }}
+                      initialRegion={
+                        initialView?.trafficSource === provider
+                          ? initialView.feed?.region
+                          : undefined
+                      }
                     />
                   </div>
                 </>
@@ -678,6 +745,7 @@ export default function LiveTrafficPanel({
           >
             {t(paused ? 'liveTraffic.resume' : 'liveTraffic.pause')}
           </Button>
+          {windowActions}
         </div>
       </header>
       {filtersOpen && (
@@ -877,6 +945,7 @@ export default function LiveTrafficPanel({
               )}
             </div>
           </div>
+          {/* The height cap keeps the zoom controls above the feed reachable in short windows. */}
           <aside
             ref={feedWindowRef}
             aria-label={t('liveTraffic.feed')}
@@ -890,7 +959,7 @@ export default function LiveTrafficPanel({
                   }
                 : undefined
             }
-            className={`border-ink-700 bg-deep-black/85 rounded-card shadow-level-2 absolute right-3 bottom-8 z-[600] flex max-h-[calc(100%-2rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden border ${feedOpen ? (feedExpanded ? 'h-[32rem] w-[26rem]' : 'h-[20rem] w-[20rem]') : 'w-[20rem]'}`}
+            className={`border-ink-700 bg-deep-black/85 rounded-card shadow-level-2 absolute right-3 bottom-8 z-[600] flex max-h-[calc(100%-9rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden border ${feedOpen ? (feedExpanded ? 'h-[32rem] w-[26rem]' : 'h-[20rem] w-[20rem]') : 'w-[20rem]'}`}
           >
             <div
               className={`flex shrink-0 items-center gap-2 px-3 py-2 ${feedOpen ? 'border-ink-700 border-b' : ''}`}
@@ -957,7 +1026,7 @@ export default function LiveTrafficPanel({
             </div>
             {feedOpen && (
               <>
-                <div className="min-h-20 flex-1 overflow-y-auto">
+                <div className="min-h-16 flex-1 overflow-y-auto">
                   {feed.length === 0 ? (
                     <p className="text-muted p-4 text-xs leading-relaxed">
                       {t(events.length ? 'liveTraffic.noFilterMatches' : 'liveTraffic.emptyFeed')}
@@ -1043,7 +1112,7 @@ export default function LiveTrafficPanel({
                   )}
                 </div>
                 {selected && (
-                  <div className="border-ink-700 bg-app-bg/90 max-h-[13rem] shrink-0 overflow-y-auto border-t px-4 py-3">
+                  <div className="border-ink-700 bg-app-bg/90 max-h-[50%] overflow-y-auto border-t px-4 py-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <h3 className="inline-flex items-center gap-2 text-sm font-medium">
                         <Route aria-hidden className="h-4 w-4" />

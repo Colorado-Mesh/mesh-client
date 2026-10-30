@@ -7380,7 +7380,18 @@
       "all": "Tout le trafic",
       "viewport": "Zone actuelle de la carte"
     },
-    "fitTraffic": "Cadrer le trafic"
+    "fitTraffic": "Cadrer le trafic",
+    "window": {
+      "open": "Ouvrir dans une nouvelle fenêtre",
+      "title": "Trafic en temps réel : {{protocol}}",
+      "openElsewhere": "Le trafic en temps réel est ouvert dans une autre fenêtre",
+      "openElsewhereHint": "Il continue de s'y mettre à jour pendant que vous utilisez le reste de l'application.",
+      "show": "Afficher la fenêtre",
+      "moveBack": "Ramener ici",
+      "keepOnTop": "Garder au premier plan",
+      "return": "Revenir à la fenêtre principale",
+      "unavailable": "Ouvrez les fenêtres de trafic en temps réel depuis le panneau Carte de Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Paramètres de l'appareil compagnon",

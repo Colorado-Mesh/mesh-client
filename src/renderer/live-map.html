@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Same policy as index.html: this page loads the same map tiles and regional feeds. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; script-src-elem 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' mesh-ai: ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* wss://* https://* https://*.tile.openstreetmap.org https://api.github.com https://github.com; img-src 'self' data: https: https://*.tile.openstreetmap.org mesh-tiles:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none';"
+    />
+    <title>Mesh Client</title>
+  </head>
+  <body class="bg-app-bg text-ink-100 overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="./liveMapWindow.tsx"></script>
+  </body>
+</html>

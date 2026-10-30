@@ -7506,7 +7506,18 @@
       "all": "Cały ruch",
       "viewport": "Bieżący obszar mapy"
     },
-    "fitTraffic": "Dopasuj widok do ruchu"
+    "fitTraffic": "Dopasuj widok do ruchu",
+    "window": {
+      "open": "Otwórz w nowym oknie",
+      "title": "Ruch na żywo: {{protocol}}",
+      "openElsewhere": "Ruch na żywo jest otwarty w innym oknie",
+      "openElsewhereHint": "Tam nadal się aktualizuje, gdy korzystasz z reszty aplikacji.",
+      "show": "Pokaż okno",
+      "moveBack": "Przenieś z powrotem tutaj",
+      "keepOnTop": "Zawsze na wierzchu",
+      "return": "Wróć do okna głównego",
+      "unavailable": "Okna ruchu na żywo otwórz z panelu Mapa w Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Ustawienia urządzenia towarzyszącego",

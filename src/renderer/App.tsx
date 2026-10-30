@@ -5258,6 +5258,15 @@ function AppContent() {
                                           )
                                             selectNodeFrom('map', senderId);
                                         }}
+                                        onLiveWindowNodeClick={(nodeId) => {
+                                          // The modal shows on any panel; the map pane would stay
+                                          // hidden until the Map tab was opened again.
+                                          if (
+                                            mapProtocol === protocol ||
+                                            meshcoreUiNodes.has(nodeId)
+                                          )
+                                            setSelectedNodeId(nodeId);
+                                        }}
                                         protocol={mapProtocol}
                                         useFahrenheit={useFahrenheit}
                                       />

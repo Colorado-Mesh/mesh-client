@@ -14,6 +14,8 @@ import {
   LIVE_TRAFFIC_MAX_AGE_MS,
   LIVE_TRAFFIC_MAX_PACKETS,
   liveTrafficFitCoordinates,
+  liveTrafficFitCorePoints,
+  type LiveTrafficPoint,
   pointInLiveTrafficBounds,
 } from './liveTrafficModel';
 
@@ -798,5 +800,64 @@ describe('traffic bounds, lifetime, and scope', () => {
       expect(pointInLiveTrafficBounds({ ...point, lon }, bounds)).toBe(true);
     }
     expect(pointInLiveTrafficBounds({ ...point, lat: 30 }, bounds)).toBe(false);
+  });
+});
+
+describe('liveTrafficFitCorePoints', () => {
+  function grid(
+    count: number,
+    [south, north]: [number, number],
+    [west, east]: [number, number],
+  ): LiveTrafficPoint[] {
+    const side = Math.ceil(Math.sqrt(count));
+    return Array.from({ length: count }, (_, i) => ({
+      nodeId: i + 1,
+      label: `Node ${i + 1}`,
+      lat: south + ((north - south) * Math.floor(i / side)) / (side - 1),
+      lon: west + ((east - west) * (i % side)) / (side - 1),
+    }));
+  }
+
+  // Positions far outside the Colorado Beacon directory on 2026-10-30, 4 of 630 located nodes.
+  const coloradoOutliers: LiveTrafficPoint[] = [
+    { nodeId: 9001, label: 'Tactical Satellite Link', lat: 84.921, lon: 12.916 },
+    { nodeId: 9002, label: 'Blitzin', lat: 43.439, lon: -71.788 },
+    { nodeId: 9003, label: 'Tactical Satellite O', lat: 40.651, lon: -74.056 },
+  ];
+
+  it('leaves out isolated far-away directory positions', () => {
+    const colorado = grid(626, [37.2, 40.68], [-108.59, -103.54]);
+    const kept = liveTrafficFitCorePoints([...colorado, ...coloradoOutliers]);
+    expect(kept).toEqual(expect.arrayContaining(colorado));
+    for (const outlier of coloradoOutliers) expect(kept).not.toContainEqual(outlier);
+  });
+
+  it('frames small directories whole', () => {
+    const points = [...grid(16, [39, 40], [-106, -105]), ...coloradoOutliers];
+    expect(liveTrafficFitCorePoints(points)).toBe(points);
+  });
+
+  it('keeps a mesh spread evenly across a continent', () => {
+    const europe = grid(100, [36, 60], [-9, 30]);
+    expect(liveTrafficFitCorePoints(europe)).toEqual(europe);
+  });
+
+  it('keeps nearby towns around a dense city mesh', () => {
+    const city = grid(60, [39.7, 39.75], [-105, -104.95]);
+    const towns = [
+      { nodeId: 801, label: 'Fort Collins', lat: 40.58, lon: -105.08 },
+      { nodeId: 802, label: 'Pueblo', lat: 38.25, lon: -104.6 },
+    ];
+    expect(liveTrafficFitCorePoints([...city, ...towns])).toEqual([...city, ...towns]);
+  });
+
+  it('measures distance across the antimeridian', () => {
+    const fiji = grid(40, [-18.5, -16], [177.5, 182]).map((point) => ({
+      ...point,
+      lon: point.lon > 180 ? point.lon - 360 : point.lon,
+    }));
+    const stray = { nodeId: 900, label: 'Stray', lat: 51.5, lon: -0.12 };
+    const kept = liveTrafficFitCorePoints([...fiji, stray]);
+    expect(kept).toEqual(fiji);
   });
 });

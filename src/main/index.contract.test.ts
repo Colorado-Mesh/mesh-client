@@ -98,6 +98,27 @@ describe('notification audio metadata CSP', () => {
   });
 });
 
+describe('live map pop-out page (source contract)', () => {
+  const csp = (file: string) =>
+    /http-equiv="Content-Security-Policy"\s+content="([^"]+)"/.exec(
+      readFileSync(join(__dirname, '../renderer', file), 'utf-8'),
+    )?.[1];
+
+  it('ships with the main renderer CSP and as a build entry', () => {
+    expect(csp('live-map.html')).toBeDefined();
+    expect(csp('live-map.html')).toBe(csp('index.html'));
+    const viteConfig = readFileSync(join(__dirname, '../../vite.config.mts'), 'utf-8');
+    expect(viteConfig).toContain("'src/renderer/live-map.html'");
+  });
+
+  it('registers the pop-out windows with the main window and the shared preload', () => {
+    const registration = INDEX_SOURCE.slice(INDEX_SOURCE.indexOf('registerLiveMapWindows({'));
+    expect(registration).toContain('getMainWindow: () => mainWindow');
+    expect(registration).toContain("preloadPath: path.join(__dirname, '../preload/index.js')");
+    expect(registration).toContain('allowDevServer: !app.isPackaged');
+  });
+});
+
 describe('IPC payload size limits (source contract)', () => {
   it('defines meshcore tcp-write, http:write, and gatt to-radio limits and uses them in handlers', () => {
     expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');

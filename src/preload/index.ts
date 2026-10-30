@@ -47,6 +47,13 @@ import type { FirmwareBackupSaveResult } from '../shared/firmwareBackup';
 import type { GeoResolvedPlace, GeoResolvePlaceRequest } from '../shared/geoPlace';
 import type { IncidentSnapshot } from '../shared/incidentTypes';
 import type {
+  LiveMapNodeSelection,
+  LiveMapProtocol,
+  LiveMapView,
+  LiveMapWindowInit,
+  LiveMapWindowState,
+} from '../shared/liveMapWindow';
+import type {
   NotificationSoundEvent,
   NotificationSoundImport,
   NotificationSoundRecord,
@@ -106,6 +113,51 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('beacon:update', handler);
       return () => ipcRenderer.removeListener('beacon:update', handler);
     },
+  },
+  liveMap: {
+    available: true,
+    open: (protocol: LiveMapProtocol, view: LiveMapView | null) =>
+      ipcRenderer.invoke('liveMap:open', protocol, view) as Promise<void>,
+    close: (protocol: LiveMapProtocol) =>
+      ipcRenderer.invoke('liveMap:close', protocol) as Promise<void>,
+    getOpen: () => ipcRenderer.invoke('liveMap:getOpen') as Promise<LiveMapProtocol[]>,
+    publish: (protocol: LiveMapProtocol, snapshot: unknown) => {
+      ipcRenderer.send('liveMap:publish', protocol, snapshot);
+    },
+    onState: (callback: (state: LiveMapWindowState) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: LiveMapWindowState): void => {
+        callback(state);
+      };
+      ipcRenderer.on('liveMap:state', handler);
+      return () => ipcRenderer.removeListener('liveMap:state', handler);
+    },
+    onNodeSelected: (callback: (selection: LiveMapNodeSelection) => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        selection: LiveMapNodeSelection,
+      ): void => {
+        callback(selection);
+      };
+      ipcRenderer.on('liveMap:nodeSelected', handler);
+      return () => ipcRenderer.removeListener('liveMap:nodeSelected', handler);
+    },
+    init: () => ipcRenderer.invoke('liveMap:init') as Promise<LiveMapWindowInit | null>,
+    onSnapshot: (callback: (snapshot: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, snapshot: unknown): void => {
+        callback(snapshot);
+      };
+      ipcRenderer.on('liveMap:snapshot', handler);
+      return () => ipcRenderer.removeListener('liveMap:snapshot', handler);
+    },
+    reportView: (view: LiveMapView) => {
+      ipcRenderer.send('liveMap:reportView', view);
+    },
+    selectNode: (nodeId: number) => {
+      ipcRenderer.send('liveMap:selectNode', nodeId);
+    },
+    setAlwaysOnTop: (value: boolean) =>
+      ipcRenderer.invoke('liveMap:setAlwaysOnTop', value) as Promise<boolean>,
+    dock: () => ipcRenderer.invoke('liveMap:dock') as Promise<void>,
   },
   ai: {
     getHistory: (query: AiHistoryQuery) => ipcRenderer.invoke('ai:getHistory', query),

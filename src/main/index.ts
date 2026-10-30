@@ -172,6 +172,7 @@ import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGeoIpcHandlers } from './ipc/geo-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerIncidentIpcHandlers } from './ipc/incident-handlers';
+import { registerLiveMapWindows } from './ipc/live-map-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
@@ -3982,6 +3983,14 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 
 registerGeoIpcHandlers();
 registerBeaconIpcHandlers();
+registerLiveMapWindows({
+  getMainWindow: () => mainWindow,
+  preloadPath: path.join(__dirname, '../preload/index.js'),
+  iconPath: getAppIconPath(),
+  statePath: path.join(app.getPath('userData'), 'live-map-window-state.json'),
+  allowDevServer: !app.isPackaged,
+  openExternal: openExternalHttpOrHttpsIfExternal,
+});
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
 const disposeAi = registerAiHandlers({

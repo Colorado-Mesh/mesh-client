@@ -7380,7 +7380,18 @@
       "all": "Tüm trafik",
       "viewport": "Geçerli harita alanı"
     },
-    "fitTraffic": "Trafiğe odaklan"
+    "fitTraffic": "Trafiğe odaklan",
+    "window": {
+      "open": "Yeni pencerede aç",
+      "title": "Canlı trafik: {{protocol}}",
+      "openElsewhere": "Canlı trafik başka bir pencerede açık",
+      "openElsewhereHint": "Uygulamanın geri kalanını kullanırken orada güncellenmeye devam eder.",
+      "show": "Pencereyi göster",
+      "moveBack": "Buraya geri taşı",
+      "keepOnTop": "Her zaman üstte",
+      "return": "Ana pencereye dön",
+      "unavailable": "Canlı trafik pencerelerini Mesh Client'taki Harita panelinden açın."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Refakatçi cihaz ayarları",

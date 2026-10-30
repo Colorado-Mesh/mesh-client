@@ -7380,7 +7380,18 @@
       "all": "Gesamter Verkehr",
       "viewport": "Aktueller Kartenausschnitt"
     },
-    "fitTraffic": "Verkehr einpassen"
+    "fitTraffic": "Verkehr einpassen",
+    "window": {
+      "open": "In neuem Fenster öffnen",
+      "title": "Live-Verkehr: {{protocol}}",
+      "openElsewhere": "Live-Verkehr ist in einem anderen Fenster geöffnet",
+      "openElsewhereHint": "Dort wird er weiter aktualisiert, während du den Rest der App nutzt.",
+      "show": "Fenster anzeigen",
+      "moveBack": "Hierher zurückholen",
+      "keepOnTop": "Immer im Vordergrund",
+      "return": "Zurück ins Hauptfenster",
+      "unavailable": "Öffne Live-Verkehrsfenster über den Bereich Karte in Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Companion-Geräteeinstellungen",

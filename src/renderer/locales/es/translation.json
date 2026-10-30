@@ -7380,7 +7380,18 @@
       "all": "Todo el tráfico",
       "viewport": "Área actual del mapa"
     },
-    "fitTraffic": "Ajustar al tráfico"
+    "fitTraffic": "Ajustar al tráfico",
+    "window": {
+      "open": "Abrir en una ventana nueva",
+      "title": "Tráfico en directo: {{protocol}}",
+      "openElsewhere": "El tráfico en directo está abierto en otra ventana",
+      "openElsewhereHint": "Allí se sigue actualizando mientras usas el resto de la aplicación.",
+      "show": "Mostrar ventana",
+      "moveBack": "Traer aquí",
+      "keepOnTop": "Mantener encima",
+      "return": "Volver a la ventana principal",
+      "unavailable": "Abre las ventanas de tráfico en directo desde el panel Mapa de Mesh Client."
+    }
   },
   "meshcoreCompanionCli": {
     "summary": "Configuración del dispositivo complementario",
