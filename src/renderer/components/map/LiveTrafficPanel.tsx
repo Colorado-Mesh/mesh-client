@@ -162,6 +162,10 @@ function TrafficViewport({
     initialViewport ? `${regionId}:${focusRevision}:${points.length > 0}` : null,
   );
   const previousFocusRevision = useRef(focusRevision);
+  const previousRegion = useRef(regionId);
+  // A view restored after navigation or handed over from another window stays put while nodes or
+  // a regional directory load, until the user asks for a fit or changes the area.
+  const keepRestoredView = useRef(initialViewport !== null);
   const reportBounds = useCallback(() => {
     const bounds = map.getBounds();
     const center = map.getCenter();
@@ -180,10 +184,13 @@ function TrafficViewport({
     previousFit.current = fitKey;
     const explicitFocus = previousFocusRevision.current !== focusRevision;
     previousFocusRevision.current = focusRevision;
+    if (explicitFocus || previousRegion.current !== regionId) keepRestoredView.current = false;
+    previousRegion.current = regionId;
     // Current traffic is framed exactly; a node directory leaves out isolated far-off positions.
     const fitPoints =
       explicitFocus && trafficPoints.length > 0 ? trafficPoints : liveTrafficFitCorePoints(points);
     if (
+      !keepRestoredView.current &&
       (regionId === 'all' || (regionId === 'viewport' && explicitFocus)) &&
       fitPoints.length > 0
     ) {

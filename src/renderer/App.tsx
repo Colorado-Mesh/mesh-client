@@ -5265,16 +5265,14 @@ function AppContent() {
                                         onLiveWindowNodeClick={(nodeId) => {
                                           // The modal shows on any panel; the map pane would stay
                                           // hidden until the Map tab was opened again.
-                                          if (
-                                            mapProtocol === protocol ||
-                                            meshcoreUiNodes.has(nodeId)
-                                          ) {
+                                          if (mapProtocol === protocol) {
                                             setSelectedNodeId(nodeId);
                                             return;
                                           }
-                                          // Details resolve against the active protocol's nodes, so
-                                          // switch to the window's protocol first. Selecting in the
-                                          // same transition commits both together.
+                                          // Details and their actions (Message opens this protocol's
+                                          // Chat) follow the active protocol, so switch to the window's
+                                          // protocol first. Selecting in the same transition commits
+                                          // both together.
                                           handleProtocolChange(mapProtocol);
                                           startProtocolTransition(() => {
                                             setSelectedNodeId(nodeId);

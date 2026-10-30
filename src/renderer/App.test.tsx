@@ -785,6 +785,14 @@ describe('map navigation sessions', () => {
   });
 
   it('opens a node clicked in a live map window, switching to that protocol when needed', async () => {
+    // The shared setup does not reset the node store; leave it as this test found it.
+    const nodesBefore = useNodeStore.getState();
+    onTestFinished(() => {
+      useNodeStore.setState(nodesBefore, true);
+    });
+    // A MeshCore contact the main window already knows, which resolves from either protocol.
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 0x33, longName: 'Peak Relay' });
     renderApp();
     openPanel(/^Map/);
     await screen.findByTestId('map-panel-meshtastic');
@@ -815,6 +823,22 @@ describe('map navigation sessions', () => {
       expect(lastNodeDetailModalProps.current).toMatchObject({
         protocol: 'meshtastic',
         node: expect.objectContaining({ node_id: 0x1234 }),
+      });
+    });
+
+    // And back: a MeshCore window click while Meshtastic is active switches to MeshCore, so the
+    // details and their Message action belong to the same protocol.
+    act(() => {
+      windowNodeClick('meshcore')(0x33);
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(lastNodeDetailModalProps.current).toMatchObject({
+        protocol: 'meshcore',
+        node: expect.objectContaining({ node_id: 0x33, long_name: 'Peak Relay' }),
       });
     });
   });

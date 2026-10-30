@@ -1087,6 +1087,36 @@ describe('LiveTrafficPanel moving between windows', () => {
     expect(feedRequest).toHaveBeenLastCalledWith(false, 'beacon', true);
   });
 
+  it('keeps a handed-over view while nodes arrive, until the user asks for a fit', async () => {
+    const localView = { ...handedOver, trafficSource: 'local' as const, feed: null };
+    const view = await renderPanel(
+      <LiveTrafficPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        meshcorePackets={[]}
+        initialView={localView}
+      />,
+    );
+    view.rerender(
+      <LiveTrafficPanel nodes={nodes} myNodeNum={1} meshcorePackets={[]} initialView={localView} />,
+    );
+    expect(map.fitBounds).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.fitTraffic' }));
+    expect(map.fitBounds).toHaveBeenCalledOnce();
+  });
+
+  it('frames all traffic again when the area is changed after a handed-over view', async () => {
+    const localView = { ...handedOver, trafficSource: 'local' as const, feed: null };
+    await renderPanel(
+      <LiveTrafficPanel nodes={nodes} myNodeNum={1} meshcorePackets={[]} initialView={localView} />,
+    );
+    const area = screen.getByRole('combobox', { name: 'liveTraffic.region' });
+    fireEvent.change(area, { target: { value: 'viewport' } });
+    expect(map.fitBounds).not.toHaveBeenCalled();
+    fireEvent.change(area, { target: { value: 'all' } });
+    expect(map.fitBounds).toHaveBeenCalledOnce();
+  });
+
   it('logs a handed-over session that fails to resume and does not hand it on', async () => {
     const warn = mockConsoleWarn();
     try {
