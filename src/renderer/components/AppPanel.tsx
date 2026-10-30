@@ -92,6 +92,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { AppAiSection } from './AppAiSection';
 import { AppSupportSection } from './AppSupportSection';
 import { AppTranslationSection } from './AppTranslationSection';
+import { ChatNotificationPolicySettings } from './ChatNotificationPolicySettings';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
@@ -2301,6 +2302,9 @@ export default function AppPanel({
           <label htmlFor="soundNotifications" className="text-ink-300 cursor-pointer text-sm">
             {t('appPanel.soundNotifications')}
           </label>
+        </div>
+        <div data-setting-anchor="app.notifications.mode">
+          <ChatNotificationPolicySettings />
         </div>
         <div data-setting-anchor="app.notifications.sounds">
           <NotificationSoundSettings />

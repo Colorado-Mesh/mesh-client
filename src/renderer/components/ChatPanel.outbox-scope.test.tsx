@@ -8,6 +8,8 @@ import {
 } from '@/renderer/lib/chatPanelProtocolStorage';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 
+import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
+import { useIdentityStore } from '../stores/identityStore';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -21,11 +23,6 @@ vi.mock('@/renderer/hooks/useChatOutbox', () => ({
     outboxArgs = args;
     return { rows: [], queue: vi.fn(), retry: vi.fn(), cancel: vi.fn() };
   },
-}));
-vi.mock('@/renderer/stores/identityStore', () => ({
-  useIdentityStore: (
-    selector: (state: { identities: Record<string, { signature: string }> }) => unknown,
-  ) => selector({ identities: { radio: { signature } } }),
 }));
 
 function panel() {
@@ -58,6 +55,19 @@ function panel() {
 describe('ChatPanel outbox channel scopes', () => {
   beforeEach(() => {
     localStorage.clear();
+    useIdentityStore.setState({
+      activeIdentityId: 'radio',
+      identities: {
+        radio: {
+          id: 'radio',
+          protocol: meshcoreProtocol,
+          signature,
+          transports: [],
+          createdAt: 1,
+          lastSeenAt: 1,
+        },
+      },
+    });
   });
 
   it.each([

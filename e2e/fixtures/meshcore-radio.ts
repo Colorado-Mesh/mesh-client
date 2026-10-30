@@ -1,7 +1,7 @@
 import { createServer, type Socket } from 'node:net';
 
 /** Local companion protocol fixture: real Electron TCP/SDK/DB path, no radio or RF. */
-export async function startMeshcoreRadio() {
+export async function startMeshcoreRadio(selfId = 171) {
   const sockets = new Set<Socket>();
   const commands: number[] = [];
   const channelCapacity = 40;
@@ -31,7 +31,7 @@ export async function startMeshcoreRadio() {
   };
   const self = Buffer.concat([
     Buffer.from([5, 1, 22, 22]),
-    publicKey(171),
+    publicKey(selfId),
     Buffer.alloc(12),
     u32(902000000),
     u32(250000),
@@ -123,6 +123,16 @@ export async function startMeshcoreRadio() {
         case 23:
           send(Buffer.from([15])); // Test radio does not export identity secrets.
           break;
+        case 26:
+          send(
+            Buffer.concat([
+              Buffer.from([0x85, 0]),
+              command.subarray(1, 7),
+              u32(Math.floor(Date.now() / 1000)),
+              Buffer.from([1, 7]),
+            ]),
+          );
+          break;
         case 10:
           send(Buffer.from([10]));
           break;
@@ -171,6 +181,15 @@ export async function startMeshcoreRadio() {
   return {
     port: address.port,
     commands,
+    receiveChannel: (channel: number, body: string, timestamp = Math.floor(Date.now() / 1000)) => {
+      const payload = Buffer.concat([
+        Buffer.from([8, channel, 0xff, 0]),
+        u32(timestamp),
+        Buffer.from(body),
+      ]);
+      const header = Buffer.from([0x3e, payload.length & 255, payload.length >> 8]);
+      for (const socket of sockets) socket.write(Buffer.concat([header, payload]));
+    },
     setChats: (nextChannels: string[], nextRooms: string[]) => {
       channels = [...nextChannels];
       secrets.clear();

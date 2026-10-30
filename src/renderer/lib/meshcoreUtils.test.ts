@@ -209,6 +209,9 @@ describe('meshcoreMinimalNodeFromAdvertEvent', () => {
     expect(r!.lastHeardSec).toBe(1_700_000_050);
     expect(r!.node.last_heard).toBe(1_700_000_050);
     expect(r!.node.hw_model).toBe('None');
+    expect(r!.node.public_key_hex).toBe(
+      Array.from(key32, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+    );
     expect(r!.contactType).toBe(0);
   });
 
@@ -786,6 +789,9 @@ describe('meshcoreContactToMeshNode', () => {
       outPathLen: 2,
     });
     expect(node.hops_away).toBe(2);
+    expect(node.public_key_hex).toBe(
+      Array.from(key32, (byte) => byte.toString(16).padStart(2, '0')).join(''),
+    );
   });
 
   it('infers hops from outPath when outPathLen is unset', () => {

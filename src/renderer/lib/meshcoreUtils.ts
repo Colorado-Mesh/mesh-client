@@ -1,6 +1,7 @@
 import { touch } from '@/shared/touch';
 
 import { isValidLatLon } from '../../shared/geoCoords';
+import { bytesToHex } from '../../shared/hexBytes';
 import {
   meshcorePubkeyPathPrefix,
   meshcoreTraceDataHashLayout,
@@ -500,6 +501,7 @@ export function meshcoreContactToMeshNode(contact: MeshCoreContact): MeshNode {
   const { lat, lon } = meshcoreScaledAdvLatLonToDeg(contact.advLat, contact.advLon);
   return {
     node_id: nodeId,
+    ...(contact.publicKey.length === 32 ? { public_key_hex: bytesToHex(contact.publicKey) } : {}),
     long_name: contact.advName || `Node-${nodeId.toString(16).toUpperCase()}`,
     short_name: '',
     hw_model: CONTACT_TYPE_LABELS[contact.type] ?? 'Unknown',
@@ -756,6 +758,7 @@ export function meshcoreMinimalNodeFromAdvertEvent(
     typeof opts.advName === 'string' && opts.advName.trim() ? opts.advName.trim() : '';
   const node: MeshNode = {
     node_id: nodeId,
+    public_key_hex: bytesToHex(publicKey),
     long_name: advNameTrim || `Node-${nodeId.toString(16).toUpperCase()}`,
     short_name: '',
     hw_model: CONTACT_TYPE_LABELS[contactType] ?? 'Unknown',
