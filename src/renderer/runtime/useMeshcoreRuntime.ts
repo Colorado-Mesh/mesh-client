@@ -8648,11 +8648,13 @@ export function useMeshcoreRuntime() {
   const resolvedMessages = useMemo(() => {
     if (!meshcoreIdentityId) return messages;
     if (!meshcoreMessagesFromStore) return messages;
+    const repairOpts = { selfNodeId: state.myNodeNum };
     const fromStore = meshcoreChatMessagesForDisplay(
       messageRecordsToChatMessages(Object.values(meshcoreMessagesFromStore)),
+      repairOpts,
     );
-    return fromStore.length > 0 ? fromStore : meshcoreChatMessagesForDisplay(messages);
-  }, [meshcoreIdentityId, messages, meshcoreMessagesFromStore]);
+    return fromStore.length > 0 ? fromStore : meshcoreChatMessagesForDisplay(messages, repairOpts);
+  }, [meshcoreIdentityId, messages, meshcoreMessagesFromStore, state.myNodeNum]);
   const resolvedNodes = useMemo(() => {
     if (!meshcoreIdentityId) return nodes;
     if (!meshcoreNodesFromStore) return nodes;

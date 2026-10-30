@@ -1604,8 +1604,11 @@ function ChatPanel({
   }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
 
   const displayMessages = useMemo(
-    () => (protocol === 'meshcore' ? meshcoreChatMessagesForDisplay(messages) : messages),
-    [messages, protocol],
+    () =>
+      protocol === 'meshcore'
+        ? meshcoreChatMessagesForDisplay(messages, { selfNodeId: myNodeNum })
+        : messages,
+    [messages, protocol, myNodeNum],
   );
 
   // Separate regular messages from reaction messages

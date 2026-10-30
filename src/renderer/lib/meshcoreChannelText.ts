@@ -316,15 +316,23 @@ export function meshcoreChannelRepairRawText(msg: ChatMessage): string {
   return `${msg.sender_name}: ${p}`;
 }
 
+export interface MeshcoreDisplayRepairOpts {
+  /** This radio's node number. Its own replies keep the parent picked in the composer. */
+  selfNodeId?: number | null;
+}
+
 /** Sort + repair MeshCore chat rows for UI hydration / historical backfill (not live ingest). */
-export function meshcoreChatMessagesForDisplay(messages: readonly ChatMessage[]): ChatMessage[] {
+export function meshcoreChatMessagesForDisplay(
+  messages: readonly ChatMessage[],
+  opts: MeshcoreDisplayRepairOpts = {},
+): ChatMessage[] {
   const sorted = [...messages].sort(
     (a, b) =>
       a.timestamp - b.timestamp ||
       (a.packetId ?? 0) - (b.packetId ?? 0) ||
       a.sender_id - b.sender_id,
   );
-  return repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(sorted));
+  return repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(sorted), opts);
 }
 
 /**
@@ -981,10 +989,23 @@ function meshcoreWireHadExplicitReplyKey(msg: ChatMessage): boolean {
   return /#\d{4,}\]/u.test(raw);
 }
 
-/** True when this row is a reply to someone else's message (not self-tapback / own outbound). */
+/** True when the reply target is a different name than the sender (not a reply to oneself). */
 function meshcoreIsIncomingBracketReply(msg: ChatMessage, targetName: string | undefined): boolean {
   if (!targetName?.trim()) return false;
   return !meshcoreBracketDisplayNamesMatch(targetName, msg.sender_name);
+}
+
+/**
+ * True for a row this radio sent. `radioNodeId` covers rows loaded before the radio reports its
+ * node number.
+ */
+function meshcoreIsOwnSentMessage(
+  msg: ChatMessage,
+  selfNodeId: number | null | undefined,
+): boolean {
+  if (msg.sender_id <= 0) return false;
+  if (selfNodeId != null && selfNodeId > 0 && msg.sender_id === selfNodeId) return true;
+  return msg.radioNodeId != null && msg.sender_id === msg.radioNodeId;
 }
 
 /**
@@ -993,7 +1014,11 @@ function meshcoreIsIncomingBracketReply(msg: ChatMessage, targetName: string | u
  * - Incoming `@[Name]` without `#key`: re-resolve latest target message once the full thread is loaded.
  * - Incoming keyed rows: keep a corroborated parent, but refresh stale seconds/ms keys for generic replies.
  */
-function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessage[]): ChatMessage {
+function refreshMeshcoreReplyParent(
+  msg: ChatMessage,
+  prior: readonly ChatMessage[],
+  selfNodeId?: number | null,
+): ChatMessage {
   if (msg.emoji != null && msg.replyId != null) return msg;
   if (msg.replyId == null && !msg.replyPreviewSender) return msg;
 
@@ -1010,7 +1035,10 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
     replyId != null ? findMeshcoreParentMessageForReply(prior, replyId, lookupOpts) : undefined;
 
   const targetName = meshcoreReplyTargetName(msg);
-  const incomingBracket = meshcoreIsIncomingBracketReply(msg, targetName);
+  // The composer recorded which message an own reply answers; only replies heard from others
+  // carry just a name and need re-resolving.
+  const ownSent = meshcoreIsOwnSentMessage(msg, selfNodeId);
+  const incomingBracket = !ownSent && meshcoreIsIncomingBracketReply(msg, targetName);
   const explicitWireKey = meshcoreWireHadExplicitReplyKey(msg);
 
   if (incomingBracket && targetName) {
@@ -1031,7 +1059,7 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
         parent = upgraded.parent;
       }
     }
-  } else if (!parent && targetName && !explicitWireKey) {
+  } else if (!ownSent && !parent && targetName && !explicitWireKey) {
     const upgraded = tryUpgradeMeshcoreReplyToLatestSameSender(
       msg,
       prior,
@@ -1071,7 +1099,10 @@ function refreshMeshcoreReplyParent(msg: ChatMessage, prior: readonly ChatMessag
   };
 }
 
-export function repairMeshcoreDisplayMessages(messages: readonly ChatMessage[]): ChatMessage[] {
+export function repairMeshcoreDisplayMessages(
+  messages: readonly ChatMessage[],
+  opts: MeshcoreDisplayRepairOpts = {},
+): ChatMessage[] {
   const prior: ChatMessage[] = [];
   const out: ChatMessage[] = [];
   for (const msg of messages) {
@@ -1146,7 +1177,7 @@ export function repairMeshcoreDisplayMessages(messages: readonly ChatMessage[]):
         );
       }
     }
-    next = refreshMeshcoreReplyParent(next, prior);
+    next = refreshMeshcoreReplyParent(next, prior, opts.selfNodeId);
     next = meshcorePromoteEmojiOnlyReplyToTapback(next);
     prior.push(next);
     out.push(next);
