@@ -2308,6 +2308,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pop-out-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pop-out window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resource-bounds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2570,6 +2581,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pop-out-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pop-out window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resource-bounds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2622,15 +2644,22 @@
 <p>CoreScope shares transmission <code>raw_hex</code> across observations. Each report's validated <code>path_json</code> supplies its own hop order. Server-resolved candidates must match those on-air prefixes and a located full key in the directory. When the server chooses among colliding prefixes, the route is labeled <strong>Server-estimated route</strong>; the client does not invent a nearest-node choice. Missing, unlocated, or mismatched candidates remain gaps. Reusing the shared raw packet path for every receiver would erase real branches and draw incorrect routes.</p>
 <p>CoreScope's <code>timestamp</code> and <code>first_seen</code> describe the transmission's first appearance, not necessarily this observer's receipt. Live retention uses local feed arrival time so later receiver reports can extend the same packet's graph; the original first-seen timestamp is retained as provenance. Timing is illustrative, including when a server batches reports.</p>
 <p>The animation follows <a href="https://github.com/Kpa-clawbot/CoreScope/blob/master/public/live.js">CoreScope's packet travel behavior</a>: a 660 ms linear hop, a growing line behind the packet, an outlined leading dot, an arrival pulse, and a short fade after arrival. Shared edges animate once; new branches follow their known predecessors. Normal playback reveals only traveled edges and removes completed trails. Selecting a packet shows its retained graph for inspection. The scheduler and renderer are implemented locally for the client's observation model and bounded canvas.</p>
+<p>The automatic fit over a node directory leaves out a few isolated positions (<code>liveTrafficFitCorePoints</code> in <code>liveTrafficModel.ts</code>): a point is dropped only when it is outside the nearest 95% of points, more than three times that radius from the median, and at least 2 degrees from it. Directories with fewer than 20 located points are framed whole, and <strong>Fit traffic</strong> frames current packets exactly. On the Colorado Beacon directory of 2026-10-30 the rule left out 3 of 630 located nodes (placeholder positions near the North Pole, in New Hampshire and in New York), which shrank the first view from 37 to 85°N and 109°W to 13°E down to 37 to 42°N and 109 to 96°W.</p>
 <p>Scroll zoom uses half-level steps and a lower wheel sensitivity; explicit plus/minus controls remain available. Map details and source configuration expand on demand. The panel and map shrink to their available container height, including at the app's 150% font setting, so expanded controls do not force the feed below the window.</p>
 <p>Current map area filtering, markers, and packet motion follow the visible wrapped world. Links across the dateline take the short route instead of drawing across the whole map. Automatic fitting and <strong>Fit traffic</strong> also use the smallest longitude arc so nearby nodes across the dateline stay together.</p>
 <p>Source settings preserve the chosen server region when closed, expose Disconnect or Cancel while a feed is active, and support Escape with focus returning to the settings button. Geographic <strong>Map area</strong> is independent of the server's <strong>Feed region</strong>. The fit button uses current traffic when available; incoming packets do not pan the map automatically. Existing <strong>Show on map</strong> actions return to Overview and use its normal focus controller.</p>
-<p>The transparent feed is movable by its grip or arrow keys (Shift increases the step). Expansion grows upward from its bottom anchor; collapse restores the compact bar there, including after temporary viewport clamping. Reset restores the default lower-right position. Pause freezes displayed events and inspection geometry and stops animation while new input remains bounded. Resuming does not replay paused traffic.</p>
+<p>The transparent feed is movable by its grip or arrow keys (Shift increases the step). Its height leaves room for the zoom controls above it, and packet details take at most half of the feed so the list keeps at least one row in a short window. Expansion grows upward from its bottom anchor; collapse restores the compact bar there, including after temporary viewport clamping. Reset restores the default lower-right position. Pause freezes displayed events and inspection geometry and stops animation while new input remains bounded. Resuming does not replay paused traffic.</p>
 <p>The dark map uses OpenStreetMap raster tiles with a neutral dark filter applied only to tile images. It requires no CARTO key. See <a href="../offline-maps/">offline maps</a> for tile-provider caching and download restrictions.</p>
+<h2 id="pop-out-window">Pop-out window<a class="headerlink" href="#pop-out-window" title="Permanent link">&para;</a></h2>
+<p><strong>Open in new window</strong> moves the live view into a second <code>BrowserWindow</code>, one per protocol, managed by <code>src/main/ipc/live-map-handlers.ts</code>. The page is a second renderer entry, <code>live-map.html</code> with <code>liveMapWindow.tsx</code> and the <code>LiveMapWindow</code> component, beside <code>index.html</code> on whichever origin the main window loaded: the <code>mesh-client://renderer</code> origin, the packaged <code>file://</code> fallback, or the Vite server in development. It uses the shared preload and the default session, so origin-based IPC checks, <code>localStorage</code> preferences and <code>mesh-tiles:</code> work unchanged, and it never writes preferences. Its CSP must match <code>index.html</code>; <code>index.contract.test.ts</code> asserts that.</p>
+<p>Radio state stays in the main window. While a pop-out is open, <code>useLiveMapWindow</code> (through <code>LiveTrafficWindowSlot</code> in the Map panel) publishes snapshots on <code>liveMap:publish</code>, and main forwards them as <code>liveMap:snapshot</code> only after the page has called <code>liveMap:init</code>. A snapshot (<code>liveMapSnapshot.ts</code>) holds the newest <code>LIVE_TRAFFIC_MAX_PACKETS</code> entries of that protocol's packet log, the five node fields traffic geometry reads (<code>LiveTrafficNode</code>), the sniffer public keys and the receiver position. Nodes and keys are sent only when they change or after the pop-out loads, at most four snapshots a second. Main relays instead of a <code>BroadcastChannel</code> because each <code>file://</code> page has its own opaque origin, so a channel would be silent in the fallback.</p>
+<p>Each window owns its regional feed session, since the <code>beacon:*</code> handlers key sessions by sender. The inline panel unmounts while the pop-out is open, so only one session runs. The view (<code>LiveMapView</code>: center, zoom, basemap, source and connected feed) moves with the map both ways: the open request carries it, the pop-out reports changes on <code>liveMap:reportView</code>, and the close event returns the last one. A feed connected in one window reconnects once in the other without refitting the map. A handed-over view, like one restored after navigation, also stays put while nodes or a regional directory load afterwards; automatic fitting resumes after <strong>Fit traffic</strong>, a new connection, or a <strong>Map area</strong> change.</p>
+<p>Only the main window may open, close, list or publish; only a pop-out may initialize, report a view, select a node, toggle keep-on-top or dock itself. A node click in the pop-out (<code>liveMap:selectNode</code>) focuses the main window and opens the node detail modal, which shows on any panel. Details resolve against the active protocol's nodes (MeshCore nodes resolve from either protocol), so a Meshtastic node clicked while MeshCore is active switches the main window to Meshtastic and selects the node in the same transition. Closing or reloading the main renderer closes the pop-outs. Bounds and keep-on-top persist per protocol in <code>live-map-window-state.json</code> in the user data folder and are ignored when off every display. Reticulum has no live traffic view, so it has no pop-out. The Electron end-to-end test <code>e2e/live-map-window.spec.ts</code> pushes a received ADVERT through the MeshCore fixture radio and checks that it reaches the pop-out.</p>
 <h2 id="resource-bounds">Resource bounds<a class="headerlink" href="#resource-bounds" title="Permanent link">&para;</a></h2>
 <ul>
 <li>One animation canvas, at most 64 admitted edge flights, drawing at most 60 times per second while motion is active, device pixel ratio capped at 1.5.</li>
 <li>Up to 128 displayed edges per selected graph, 400 memoized node markers selected from the viewport, 32 inspector location chips, and 25 feed rows. Truncated inspection lists indicate the remainder. Selected and active endpoints have marker priority. Completed animation trails fade out instead of leaving persistent recent graphs.</li>
+<li>A pop-out snapshot carries at most 200 packets and is published at most four times a second; node rows are sent only when the node map changes.</li>
 <li>At most 200 recent observer reports retained; live display expires reports after 60 seconds. This is not a guarantee of 200 distinct packets. Grouping retains the resolved observed and server-estimated edges in those reports, preserving route uncertainty; the canvas applies its own display bound.</li>
 <li>Regional renderer updates batch at most four times per second. Their publication timer stops while the map is inactive or the document is hidden; the single regional connection continues collecting only its bounded recent reports. Inactive maps unmount Leaflet, markers, the feed list and animation canvas while retaining the lightweight controller and source form. Returning restores the viewport and does not replay retained traffic. Animation stops while paused, hidden, idle, or reduced motion is enabled.</li>
 <li>Native requests have size/time limits, public-address validation, pinned DNS, no redirects or credentials, bounded WebSocket input, and reconnect backoff. Each snapshot attempt cancels sibling directory requests on failure. Unrelated CoreScope regions do not consume the selected region's forwarding allowance; global parsing limits still apply. Reconnect refreshes directories and, for Beacon, recent public messages; CoreScope fetches no message history. Observations missed during the gap are not replayed.</li>
@@ -2658,7 +2687,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 19:35:30 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 30, 2026 19:45:29 UTC">October 30, 2026</span>
   </span>
 
     

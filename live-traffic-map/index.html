@@ -815,6 +815,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-the-map-in-its-own-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open the map in its own window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#navigation-and-saved-settings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2654,6 +2665,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-the-map-in-its-own-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open the map in its own window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#navigation-and-saved-settings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2732,7 +2754,7 @@
 <li>On MeshCore, select <strong>Local radio</strong> in <strong>Traffic source</strong>. Meshtastic uses local observations automatically, so it has no regional feed configuration.</li>
 <li>Leave <strong>Map area</strong> on <strong>All traffic</strong>, or choose <strong>Current map area</strong> to filter observations to the part of the world you are viewing.</li>
 </ol>
-<p>The initial view fits your known node positions, including your configured location when available. Without valid positions, it opens a world view. There is no Colorado-only region list or geographic restriction. Pan and zoom to any location; use <strong>Fit traffic</strong> to bring current packet locations into view, or known nodes if no packet has a location.</p>
+<p>The initial view fits your known node positions, including your configured location when available. A few nodes far from all the others, such as one reporting a placeholder position on another continent, are left out of that first view so the map frames your mesh; zoom out to see them. Without valid positions, it opens a world view. There is no Colorado-only region list or geographic restriction. Pan and zoom to any location; use <strong>Fit traffic</strong> to bring current packet locations into view, or known nodes if no packet has a location.</p>
 <h3 id="regional-beacon-or-corescope">Regional Beacon or CoreScope<a class="headerlink" href="#regional-beacon-or-corescope" title="Permanent link">&para;</a></h3>
 <p>These sources carry <strong>MeshCore</strong> observations. You can use them without a connected local radio.</p>
 <ol>
@@ -2758,6 +2780,16 @@
 <p>Repeated observations of the same packet share one row. The reports count shows how many observations were grouped. Select a row to inspect its known locations, links, signal details, and message content when available. New reports can add branches to that packet's map path.</p>
 <p>Message text appears only when the client or regional feed provides decoded content. Encrypted or unavailable content stays labeled as such. Regional observations do not become messages in your normal chat history.</p>
 <p>Animation shows observation order, not radio propagation speed. Missing positions and unknown hops leave gaps. Meshtastic draws a direct source-to-client link only for a known direct radio reception; multihop and MQTT packets do not invent intermediate hops. CoreScope links based on server identity estimates are marked as estimated.</p>
+<h2 id="open-the-map-in-its-own-window">Open the map in its own window<a class="headerlink" href="#open-the-map-in-its-own-window" title="Permanent link">&para;</a></h2>
+<p>Click <strong>Open in new window</strong>, the button after <strong>Pause</strong>, to move the live map into a separate window. Put it on a second monitor or in a corner of the screen while you use the rest of the app. The Map panel shows a notice in its place: <strong>Show window</strong> brings the window forward and <strong>Move back here</strong> closes it.</p>
+<ul>
+<li>The window opens on the same protocol, map position, map style and traffic source. A regional feed you connected reconnects there, and the main window's connection ends, so only one window holds the session.</li>
+<li>Packets your radio receives keep arriving while the main window shows another panel or protocol, or sits behind other windows.</li>
+<li>Click a node on the map to open its details in the main window. If the main window shows the other protocol, it switches to the window's protocol first.</li>
+<li><strong>Keep on top</strong> keeps the window above other windows. <strong>Return to main window</strong> closes it and puts the map back in the Map panel where you left it.</li>
+<li>MeshCore and Meshtastic can each have a window open at the same time. Each remembers its size, position and <strong>Keep on top</strong> setting.</li>
+<li>Closing or reloading the main window closes these windows.</li>
+</ul>
 <h2 id="navigation-and-saved-settings">Navigation and saved settings<a class="headerlink" href="#navigation-and-saved-settings" title="Permanent link">&para;</a></h2>
 <p>During the same app session, switching panels, switching protocols, or returning to <strong>Overview</strong> preserves each protocol's live view, filters, map position, floating feed state, and regional connection. Drawing stops while the live map is hidden.</p>
 <p>Changing the source or explicitly disconnecting ends the regional session. Closing the app also ends it. Each provider's URL is saved, but you must click <strong>Connect</strong> again after restarting the app.</p>
@@ -2765,7 +2797,7 @@
 <ul>
 <li>Check that the selected source is receiving packets. Local mode needs observations arriving at your client; a regional source must show a live connection.</li>
 <li>Switch <strong>Map area</strong> to <strong>All traffic</strong> and clear packet-type or transport-code filters. For a regional source, check its server region selection too.</li>
-<li>Click <strong>Fit traffic</strong>. Your nodes or observers may be outside the current view.</li>
+<li>Click <strong>Fit traffic</strong>. Your nodes or observers may be outside the current view, and a node far from all the others is left out of the first view.</li>
 <li>Check <strong>Packet feed</strong>. Observations without known positions can appear there even when the map has no paths. Unknown locations are not guessed.</li>
 <li>If a custom server will not connect, verify its URL, provider, and public API availability with the operator. A partial-directory notice means the node directory reached the client's limit, so some locations may be absent.</li>
 </ul>
@@ -2790,7 +2822,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 11, 2026 19:35:30 UTC">October 11, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 30, 2026 19:45:29 UTC">October 30, 2026</span>
   </span>
 
     
