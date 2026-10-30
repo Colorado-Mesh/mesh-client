@@ -137,13 +137,21 @@ describe('always-on bundle workflow', () => {
           fs.mkdirSync(path.dirname(path.join(fixture, file)), { recursive: true });
           fs.writeFileSync(path.join(fixture, file), 'existing shard report');
         }
-        const [executable, ...args] = command.split(/\s+/);
-        const result = spawnSync(executable, args, {
-          cwd: fixture,
-          encoding: 'utf8',
-          timeout: 60_000,
-          env: { ...process.env, CI: 'true', VITEST_MODE: 'related', VITEST_PATHS_JSON: '[]' },
-        });
+        // Run vitest via node — not `pnpm exec`. A temp fixture with a stub
+        // package.json + symlinked root node_modules makes `pnpm exec` reconcile
+        // against empty deps (ERR_PNPM_IGNORED_BUILDS / Packages: -N). The workflow
+        // command string is still asserted above; this exercises the same vitest argv.
+        const vitestArgs = command.replace(/^pnpm exec /, '').split(/\s+/);
+        const result = spawnSync(
+          process.execPath,
+          [path.join(ROOT, 'node_modules/vitest/vitest.mjs'), ...vitestArgs.slice(1)],
+          {
+            cwd: fixture,
+            encoding: 'utf8',
+            timeout: 60_000,
+            env: { ...process.env, CI: 'true', VITEST_MODE: 'related', VITEST_PATHS_JSON: '[]' },
+          },
+        );
         const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
         expect(result.error, output).toBeUndefined();
         expect(result.status, output).toBe(status);
