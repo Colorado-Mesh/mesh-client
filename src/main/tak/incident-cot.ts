@@ -1,6 +1,7 @@
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
   TAK_INCIDENT_CALLSIGN_MAX_LEN,
+  TAK_INCIDENT_ID_RE,
   TAK_INCIDENT_MARKERS_MAX,
   TAK_INCIDENT_REMARKS_MAX_LEN,
   type TakIncidentMarker,
@@ -12,7 +13,6 @@ const SPOT_MARKER_TYPE = 'b-m-p-s-m';
 /** How long ATAK keeps a marker without a refresh; main refreshes well inside it. */
 export const INCIDENT_MARKER_STALE_MS = 30 * 60 * 1000;
 const UNKNOWN = '9999999.0';
-const INCIDENT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/u;
 const CONTROL_CHARS_RE = /[\p{Cc}]/u;
 /** Line breaks are kept in remarks; other control characters are not. */
 const REMARKS_CONTROL_RE = /[^\P{Cc}\n]/u;
@@ -59,7 +59,7 @@ export function parseTakIncidentMarkers(raw: unknown): TakIncidentMarker[] {
   for (const item of raw as unknown[]) {
     if (!item || typeof item !== 'object') throw bad('each marker must be an object');
     const m = item as Record<string, unknown>;
-    if (typeof m.id !== 'string' || !INCIDENT_ID_RE.test(m.id)) throw bad('bad incident id');
+    if (typeof m.id !== 'string' || !TAK_INCIDENT_ID_RE.test(m.id)) throw bad('bad incident id');
     const callsign = typeof m.callsign === 'string' ? m.callsign.trim() : '';
     if (
       !callsign ||

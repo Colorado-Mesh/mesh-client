@@ -164,10 +164,11 @@ export function useTakInboundChat(sources: TakChannelSources): void {
   // Open MECP emergencies with a position, as markers on TAK clients' maps.
   const incidents = useIncidentStore((s) => s.incidents);
   const incidentMarkersJson = useMemo(
-    () => JSON.stringify(takIncidentMarkers(incidents)),
+    // Only built while a sink is up: nothing is sent otherwise.
+    () => (sinkActive ? JSON.stringify(takIncidentMarkers(incidents)) : '[]'),
     // The markers' words follow the app's language once its pack has loaded.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mecpLocaleLoads only triggers a rebuild.
-    [incidents, mecpLocaleLoads],
+    [sinkActive, incidents, mecpLocaleLoads],
   );
   useSendWhileSinkActive(
     sinkActive,

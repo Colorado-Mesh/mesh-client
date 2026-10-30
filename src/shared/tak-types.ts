@@ -367,6 +367,9 @@ export interface TakIncidentMarker {
   drill: boolean;
 }
 
+/** Incident ids main takes for a marker's uid: what `incidentFingerprint` makes (`mecp-…`). */
+export const TAK_INCIDENT_ID_RE = /^[A-Za-z0-9_-]{1,64}$/u;
+
 /** Most incident markers main takes; the renderer sends the most severe first. */
 export const TAK_INCIDENT_MARKERS_MAX = 50;
 /** Longest incident marker name and remarks main takes. */

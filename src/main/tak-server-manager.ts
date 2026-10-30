@@ -318,7 +318,9 @@ export class TakServerManager extends EventEmitter {
   async startRemote(settings: TAKRemoteSettings): Promise<void> {
     const credentials = await loadTakRemoteCredentials();
     saveTakRemoteSettings(settings);
-    this.stopRemote();
+    // A restart in place: the renderer may never see the sink drop, so it would not send the
+    // markers again.
+    this.stopRemote(false);
     this.remoteSettings = settings;
     const remote = new TakRemoteClient({
       host: settings.host.trim(),
@@ -353,14 +355,15 @@ export class TakServerManager extends EventEmitter {
     if (this.remote && this.remoteSettings) await this.startRemote(this.remoteSettings);
   }
 
-  stopRemote(): void {
+  /** Stop the remote relay; with no local server left, the incident markers go too. */
+  stopRemote(clearIncidentMarkers = true): void {
     const remote = this.remote;
     if (!remote) return;
     this.remote = null;
     remote.stop();
     remote.removeAllListeners();
     this.contacts.removeSource('remote');
-    if (!this.server) this.clearIncidentMarkers();
+    if (clearIncidentMarkers && !this.server) this.clearIncidentMarkers();
   }
 
   getConnectedClients(): TAKClientInfo[] {

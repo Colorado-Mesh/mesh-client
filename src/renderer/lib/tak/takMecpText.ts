@@ -140,9 +140,11 @@ export function takMecpText(text: string): string | null {
   return `${describeMecpForTak(parsed, appPack, appTranslate)}\n${parsed.raw.trim()}`;
 }
 
-/** `2026-10-28 14:05`, in UTC. */
+/** `2026-10-28 14:05`, in UTC; `?` for a time a Date cannot hold, as a restored record may. */
 function utcMinute(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return '?';
+  return date.toISOString().slice(0, 16).replace('T', ' ');
 }
 
 /**

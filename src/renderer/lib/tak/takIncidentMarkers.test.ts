@@ -104,6 +104,19 @@ describe('takIncidentMarkers', () => {
     expect(marker.remarks).toContain('cold  here');
   });
 
+  it('leaves out an id main would refuse, so the others still go', () => {
+    expect(
+      takIncidentMarkers(byId(incident({ id: 'mecp/a' }), incident({ id: 'mecp-ok' }))).map(
+        (m) => m.id,
+      ),
+    ).toEqual(['mecp-ok']);
+  });
+
+  it('gives a time no Date can hold as ?, rather than failing', () => {
+    const [marker] = takIncidentMarkers(byId(incident({ lastSeenAt: 1e20 })));
+    expect(marker.remarks).toContain('From Alice, last heard ? UTC');
+  });
+
   it('says where the position came from, a beacon, and the acknowledgements heard', () => {
     const [marker] = takIncidentMarkers(
       byId(incident({ coordsSource: 'lastKnown', beaconActive: true, ackCount: 2 })),

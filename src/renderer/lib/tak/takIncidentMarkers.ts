@@ -1,6 +1,7 @@
 import { isValidLatLon } from '@/shared/geoCoords';
 import {
   TAK_INCIDENT_CALLSIGN_MAX_LEN,
+  TAK_INCIDENT_ID_RE,
   TAK_INCIDENT_MARKERS_MAX,
   TAK_INCIDENT_REMARKS_MAX_LEN,
   type TakIncidentMarker,
@@ -18,7 +19,12 @@ type PlacedIncident = EmergencyIncident & { lat: number; lon: number };
  * list for one bad position, so it is checked here.
  */
 function isPlaced(incident: EmergencyIncident): incident is PlacedIncident {
-  return incident.status !== 'resolved' && isValidLatLon(incident.lat, incident.lon);
+  return (
+    incident.status !== 'resolved' &&
+    isValidLatLon(incident.lat, incident.lon) &&
+    // An incident restored from storage may carry an id main would refuse with the rest.
+    TAK_INCIDENT_ID_RE.test(incident.id)
+  );
 }
 
 /** Control characters, which main refuses, and characters XML cannot hold (U+FFFE, U+FFFF, a lone surrogate). */

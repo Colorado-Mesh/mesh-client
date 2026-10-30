@@ -1135,6 +1135,14 @@ describe('TakServerManager incident markers', () => {
     expect(stub(manager).incidentMarkers.size).toBe(0);
   });
 
+  it('keeps them when the remote server is restarted in place', () => {
+    const manager = chatManager();
+    stub(manager).remote = remoteStub();
+    manager.setIncidentMarkers([MARKER]);
+    manager.stopRemote(false);
+    expect(stub(manager).incidentMarkers.size).toBe(1);
+  });
+
   it('keeps them when only the remote server stops', () => {
     const manager = chatManager();
     stub(manager).server = { close: vi.fn() };

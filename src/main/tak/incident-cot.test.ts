@@ -61,6 +61,7 @@ describe('parseTakIncidentMarkers', () => {
     ['too many markers', Array.from({ length: 51 }, (_, i) => ({ ...MAYDAY, id: `m${i}` }))],
     ['a marker that is not an object', ['x']],
     ['an id that could break the uid', [{ ...MAYDAY, id: 'a"b' }]],
+    ['an id with a slash', [{ ...MAYDAY, id: 'mecp/a' }]],
     ['an empty callsign', [{ ...MAYDAY, callsign: ' ' }]],
     ['a callsign with a line break', [{ ...MAYDAY, callsign: 'a\nb' }]],
     ['overlong remarks', [{ ...MAYDAY, remarks: 'x'.repeat(1025) }]],
