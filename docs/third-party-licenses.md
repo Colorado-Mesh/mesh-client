@@ -35,13 +35,13 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | mgrs                       | MIT                           | ^2.2.0          | 2.2.0             | git://github.com/proj4js/mgrs.git                                              |
 | motion                     | MIT                           | ^12.43.0        | 12.43.0           | git+https://github.com/motiondivision/motion.git                               |
 | mqtt                       | MIT                           | ^5.16.1         | 5.16.1            | git://github.com/mqttjs/MQTT.js.git                                            |
-| node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.0          | 1.4.0             | git+https://github.com/digitalbazaar/forge.git                                 |
+| node-forge                 | (BSD-3-Clause OR GPL-2.0)     | ^1.4.2          | 1.4.2             | git+https://github.com/digitalbazaar/forge.git                                 |
 | qrcode                     | MIT                           | ^1.5.4          | 1.5.4             | git://github.com/soldair/node-qrcode.git                                       |
 | react-i18next              | MIT                           | ^17.1.9         | 17.1.9            | git+https://github.com/i18next/react-i18next.git                               |
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.16        | 5.33.16           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.18        | 5.33.18           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.12.3         | 8.12.3            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.22.0            | git+https://github.com/websockets/ws.git                                       |
 
