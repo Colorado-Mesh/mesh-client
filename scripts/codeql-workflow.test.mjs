@@ -52,6 +52,10 @@ describe('CodeQL advanced workflow', () => {
     expect(script).toContain(
       "{ language: 'csharp', os: 'windows-latest', 'build-mode': 'autobuild' }",
     );
+    // Windows App SDK self-contained rejects AnyCPU; CodeQL autobuild needs a default RID.
+    expect(fs.readFileSync(path.join(root, 'native/ai/windows/MeshAi.csproj'), 'utf8')).toContain(
+      '<RuntimeIdentifier>win-x64</RuntimeIdentifier>',
+    );
     expect(script).toContain("language: 'swift'");
     expect(script).toContain("os: 'macos-latest'");
     expect(script).toContain("'build-mode': 'autobuild'");

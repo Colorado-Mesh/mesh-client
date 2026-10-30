@@ -49,11 +49,14 @@ C# must run on `windows-latest` with `build-mode: autobuild`. `native/ai/windows
 targets `net8.0-windows10.0.22621.0` and references `Microsoft.WindowsAppSDK`, so an Ubuntu
 analysis cannot restore WinRT / Windows App SDK reference assemblies. `build-mode: none` on
 Ubuntu leaves call-target and typed-expression metrics below CodeQL's quality thresholds (the
-"Low C# analysis quality" advisory). Default setup cannot fix this: it uses a repo-wide runner
-and only a per-language build mode, with no way to give C# its own Windows runner. That is one
-more reason the advanced workflow is the long-term configuration. Empty `AiLafToken` /
-`AiLafAttestation` assembly metadata during the CodeQL build is expected; extraction does not
-need those secrets (same as non-secret builds in `ai-helper.yaml`).
+"Low C# analysis quality" advisory). The project sets `<RuntimeIdentifier>win-x64</RuntimeIdentifier>`
+so `WindowsAppSDKSelfContained` builds under CodeQL autobuild (plain `dotnet build` without `-r`)
+are not AnyCPU; packaging still passes `-r win-x64` / `win-arm64` from
+`scripts/build-ai-helper.mjs`. Default setup cannot fix the Ubuntu quality issue: it uses a
+repo-wide runner and only a per-language build mode, with no way to give C# its own Windows
+runner. That is one more reason the advanced workflow is the long-term configuration. Empty
+`AiLafToken` / `AiLafAttestation` assembly metadata during the CodeQL build is expected;
+extraction does not need those secrets (same as non-secret builds in `ai-helper.yaml`).
 
 ## Swift (`native/ai/apple`)
 
