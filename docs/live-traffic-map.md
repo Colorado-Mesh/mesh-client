@@ -59,7 +59,7 @@ Click **Open in new window**, the button after **Pause**, to move the live map i
 
 - The window opens on the same protocol, map position, map style and traffic source. A regional feed you connected reconnects there, and the main window's connection ends, so only one window holds the session.
 - Packets your radio receives keep arriving while the main window shows another panel or protocol, or sits behind other windows.
-- Click a node on the map to open its details in the main window.
+- Click a node on the map to open its details in the main window. If the main window shows the other protocol, it switches to the window's protocol first.
 - **Keep on top** keeps the window above other windows. **Return to main window** closes it and puts the map back in the Map panel where you left it.
 - MeshCore and Meshtastic can each have a window open at the same time. Each remembers its size, position and **Keep on top** setting.
 - Closing or reloading the main window closes these windows.

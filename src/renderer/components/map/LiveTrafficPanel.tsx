@@ -583,9 +583,13 @@ export default function LiveTrafficPanel({
     const feed = resumeFeed.current;
     resumeFeed.current = null;
     if (!feed || !regional) return;
-    void connectSource(feed.baseUrl, feed.region).then((connected) => {
-      if (connected) setConnectedFeed(feed);
-    });
+    connectSource(feed.baseUrl, feed.region)
+      .then((connected) => {
+        if (connected) setConnectedFeed(feed);
+      })
+      .catch((cause: unknown) => {
+        console.warn('[live-map] regional feed did not resume', cause);
+      });
   }, [regional, connectSource]);
 
   const feedActive =

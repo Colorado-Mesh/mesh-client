@@ -783,6 +783,41 @@ describe('map navigation sessions', () => {
     expect(meshtasticMap).not.toBeInTheDocument();
     expect(meshcoreMap).not.toBeInTheDocument();
   });
+
+  it('opens a node clicked in a live map window, switching to that protocol when needed', async () => {
+    renderApp();
+    openPanel(/^Map/);
+    await screen.findByTestId('map-panel-meshtastic');
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to MeshCore' }));
+    openPanel(/^Map/);
+    await screen.findByTestId('map-panel-meshcore');
+    const windowNodeClick = (protocol: string) =>
+      mapPanelPropsByProtocol.get(protocol)?.onLiveWindowNodeClick as (nodeId: number) => void;
+
+    act(() => {
+      windowNodeClick('meshcore')(0x22);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current).toMatchObject({
+        protocol: 'meshcore',
+        node: expect.objectContaining({ node_id: 0x22 }),
+      });
+    });
+
+    act(() => {
+      windowNodeClick('meshtastic')(0x1234);
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(lastNodeDetailModalProps.current).toMatchObject({
+        protocol: 'meshtastic',
+        node: expect.objectContaining({ node_id: 0x1234 }),
+      });
+    });
+  });
 });
 
 describe('App shell layout', () => {

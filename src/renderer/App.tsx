@@ -5264,8 +5264,17 @@ function AppContent() {
                                           if (
                                             mapProtocol === protocol ||
                                             meshcoreUiNodes.has(nodeId)
-                                          )
+                                          ) {
                                             setSelectedNodeId(nodeId);
+                                            return;
+                                          }
+                                          // Details resolve against the active protocol's nodes, so
+                                          // switch to the window's protocol first. Selecting in the
+                                          // same transition commits both together.
+                                          handleProtocolChange(mapProtocol);
+                                          startProtocolTransition(() => {
+                                            setSelectedNodeId(nodeId);
+                                          });
                                         }}
                                         protocol={mapProtocol}
                                         useFahrenheit={useFahrenheit}

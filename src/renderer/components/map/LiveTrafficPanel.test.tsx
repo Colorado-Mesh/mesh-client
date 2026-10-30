@@ -9,6 +9,7 @@ import * as liveTrafficModel from '@/renderer/lib/map/liveTrafficModel';
 import type { RxPacketEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import type { MeshtasticRawPacketEntry } from '@/renderer/lib/rawPacketLogConstants';
 import type { MeshNode } from '@/renderer/lib/types';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@/shared/timeConstants';
 
 import type * as TrafficCanvasModule from './LiveTrafficCanvas';
@@ -1084,6 +1085,28 @@ describe('LiveTrafficPanel moving between windows', () => {
     );
     expect(beaconFeed.connect).not.toHaveBeenCalled();
     expect(feedRequest).toHaveBeenLastCalledWith(false, 'beacon', true);
+  });
+
+  it('logs a handed-over session that fails to resume and does not hand it on', async () => {
+    const warn = mockConsoleWarn();
+    try {
+      const failure = new Error('feed unavailable');
+      beaconFeed.connect.mockRejectedValueOnce(failure);
+      const onViewChange = vi.fn();
+      await renderPanel(
+        <LiveTrafficPanel
+          nodes={nodes}
+          myNodeNum={1}
+          meshcorePackets={[]}
+          initialView={handedOver}
+          onViewChange={onViewChange}
+        />,
+      );
+      expect(warn.spy).toHaveBeenCalledWith('[live-map] regional feed did not resume', failure);
+      expect(onViewChange).toHaveBeenLastCalledWith(expect.objectContaining({ feed: null }));
+    } finally {
+      warn.restore();
+    }
   });
 
   it('reports a session the user connects and stops handing it over once disconnected', async () => {

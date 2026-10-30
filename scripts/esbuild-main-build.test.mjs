@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Live traffic pop-out window handlers bring main to ~746.7 KiB (local macOS build). */
+/** Live traffic pop-out window handlers add ~6.2 KiB; main measures ~746.0 KiB (local macOS). */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 748 * 1024;
 
 function expectMainBundleSize(outfile) {
