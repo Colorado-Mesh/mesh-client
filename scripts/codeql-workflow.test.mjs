@@ -70,12 +70,30 @@ describe('CodeQL advanced workflow', () => {
     expect(init.with.queries).toBe('security-extended');
     expect(init.with['build-mode']).toBe('${{ matrix.build-mode }}');
     expect(init.with['dependency-caching']).toBe(true);
-    expect(load(init.with.config)).toEqual({ 'threat-models': ['remote'] });
+    expect(load(init.with.config)).toEqual({
+      'threat-models': ['remote'],
+      'paths-ignore': ['.rsstack'],
+    });
+    const clone = job.steps.find((step) => step.name === 'Clone Ratspeak stack');
+    expect(clone.if).toBe("matrix.language == 'rust'");
+    expect(clone.run).toBe('bash scripts/clone-ratspeak-stack.sh');
+    expect(job.steps.indexOf(clone)).toBeLessThan(job.steps.indexOf(init));
     expect(init.with['config-file']).toBeUndefined();
     const build = job.steps.find((step) => step.name === 'Build Swift helper');
     expect(build.if).toBe("matrix.language == 'swift' && needs.scope.outputs.swift == 'true'");
     expect(build.uses).toMatch(/^github\/codeql-action\/autobuild@[a-f0-9]{40}$/);
     expect(job.steps.filter((step) => step.uses?.includes('/autobuild@'))).toHaveLength(1);
+  });
+
+  it('clones every sidecar path dependency into the folder CodeQL ignores', () => {
+    const manifest = fs.readFileSync(path.join(root, 'reticulum-sidecar/Cargo.toml'), 'utf8');
+    const dependencyPaths = [...manifest.matchAll(/^path = "(\.\.\/[^"]+)"$/gm)].map(
+      (match) => match[1],
+    );
+    expect(dependencyPaths.length).toBeGreaterThan(0);
+    for (const dependencyPath of dependencyPaths) {
+      expect(dependencyPath.startsWith('../.rsstack/')).toBe(true);
+    }
   });
 
   it('limits only unchanged PR Swift inputs and fails closed on detector errors', () => {

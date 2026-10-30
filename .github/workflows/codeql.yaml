@@ -107,6 +107,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # The sidecar's Ratspeak crates are path dependencies under the gitignored .rsstack/.
+      # Without them Cargo cannot load the sidecar, and its serde_json and tracing macros
+      # fail to expand, so about a third of the sidecar files extract with errors.
+      - name: Clone Ratspeak stack
+        if: matrix.language == 'rust'
+        run: bash scripts/clone-ratspeak-stack.sh
+
       # github/codeql-action v4.39.1
       - name: Initialize CodeQL
         if: matrix.language != 'swift' || needs.scope.outputs.swift == 'true'
@@ -117,8 +124,11 @@ jobs:
           queries: security-extended
           dependency-caching: true
           # Deliberately do not load the legacy config that excludes a query.
+          # .rsstack/ holds the cloned upstream crates; they resolve the sidecar but are not ours to scan.
           config: |
             threat-models: [remote]
+            paths-ignore:
+              - .rsstack
 
       - name: Build Swift helper
         if: matrix.language == 'swift' && needs.scope.outputs.swift == 'true'
