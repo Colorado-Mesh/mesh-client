@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type {
@@ -197,6 +197,18 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     sendIncidentMarkers,
     'setIncidentMarkers',
   );
+  // Main forgets the markers when its sinks stop, but a server error can leave it reporting
+  // stopped with devices still connected. Clear the list then too, so their markers go and a
+  // MAYDAY alarm is cancelled rather than left sounding.
+  const wasSinkActive = useRef(sinkActive);
+  useEffect(() => {
+    if (wasSinkActive.current && !sinkActive) {
+      sendIncidentMarkers([]).catch((e: unknown) => {
+        console.warn('[TakInboundChat] setIncidentMarkers failed ' + errLikeToLogString(e));
+      });
+    }
+    wasSinkActive.current = sinkActive;
+  }, [sinkActive]);
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
 
   // For a day after an upgrade, ATAK devices are told to drop the old GeoChat room contacts.

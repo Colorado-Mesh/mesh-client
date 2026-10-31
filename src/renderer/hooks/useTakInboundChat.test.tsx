@@ -405,4 +405,49 @@ describe('useTakInboundChat', () => {
       useTakRelayPrefsStore.setState({ mecpAlarm: false });
     }
   });
+
+  it('tells main the list is empty when the sink stops, so a sounding alarm is cancelled', async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    useIncidentStore.setState({ incidents: { [incident.id]: incident } });
+    useTakRelayPrefsStore.setState({ mecpAlarm: true });
+    try {
+      mount();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm)).toEqual(['Alice']);
+      setIncidentMarkers().mockClear();
+      // A server error leaves main reporting stopped, possibly with devices still connected.
+      act(() => {
+        useTakSinkStore.setState({ active: false });
+      });
+      expect(setIncidentMarkers().mock.calls).toEqual([[[]]]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
+      useTakRelayPrefsStore.setState({ mecpAlarm: false });
+    }
+  });
 });
