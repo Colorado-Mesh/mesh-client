@@ -8,6 +8,7 @@ import {
   DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS,
   DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS,
   diagnosticRowsToRoutingMap,
+  filterRetiredRfDiagnosticRows,
   FOREIGN_LORA_RF_CONDITIONS,
   pruneDiagnosticRowsByAge,
   replaceRfRowsForNode,
@@ -429,6 +430,7 @@ function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number 
   if (droppedCount > 0) {
     console.warn(`[diagnosticsStore] dropped ${droppedCount} invalid diagnostic rows on load`);
   }
+  rows = filterRetiredRfDiagnosticRows(rows);
   if (rows.length === 0 && parsed.rows.length > 0) return null;
   const now = Date.now();
   rows = pruneDiagnosticRowsByAge(

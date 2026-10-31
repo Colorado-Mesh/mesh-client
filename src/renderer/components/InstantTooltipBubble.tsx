@@ -12,7 +12,16 @@ const TRANSFORM: Record<InstantTooltipPosition['placement'], string> = {
   right: 'translate(0, -50%)',
 };
 
-export function InstantTooltipBubble({ text, pos }: { text: string; pos: InstantTooltipPosition }) {
+export function InstantTooltipBubble({
+  text,
+  pos,
+  id,
+}: {
+  text: string;
+  pos: InstantTooltipPosition;
+  /** Optional id so a trigger can point aria-describedby at this bubble. */
+  id?: string;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
 
   // The bubble is as wide as its text, up to max-w-64, so a centred one is kept on screen only
@@ -27,6 +36,7 @@ export function InstantTooltipBubble({ text, pos }: { text: string; pos: Instant
   return (
     <span
       ref={ref}
+      id={id}
       role="tooltip"
       data-placement={pos.placement}
       style={{

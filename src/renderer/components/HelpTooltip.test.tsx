@@ -24,11 +24,11 @@ describe('HelpTooltip', () => {
     const user = userEvent.setup();
     render(<HelpTooltip text="Helpful explanation" />);
     const trigger = document.querySelector('.cursor-help')!;
-    expect(screen.queryByText('Helpful explanation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     await user.hover(trigger);
-    expect(screen.getByText('Helpful explanation')).toBeInTheDocument();
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful explanation');
     await user.unhover(trigger);
-    expect(screen.queryByText('Helpful explanation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('does not use a native title attribute (broken in Electron)', () => {
@@ -37,18 +37,33 @@ describe('HelpTooltip', () => {
     expect(helpEl?.getAttribute('title')).toBeNull();
   });
 
-  it('shows tooltip on focus and hides on blur', () => {
-    render(<HelpTooltip text="Keyboard help" />);
-    const trigger = document.querySelector('.cursor-help')!;
-    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
+  it('exposes tooltip text via aria-description when idle, aria-describedby when focused', () => {
+    render(<HelpTooltip text="Accessible help body" ariaLabel="About help" />);
+    const trigger = screen.getByLabelText('About help');
+    expect(trigger).toHaveAttribute('aria-description', 'Accessible help body');
+    expect(trigger).not.toHaveAttribute('aria-describedby');
     act(() => {
       fireEvent.focus(trigger);
     });
-    expect(screen.getByText('Keyboard help')).toBeInTheDocument();
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(trigger).not.toHaveAttribute('aria-description');
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Accessible help body');
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Accessible help body');
+  });
+
+  it('shows tooltip on focus and hides on blur', () => {
+    render(<HelpTooltip text="Keyboard help" />);
+    const trigger = document.querySelector('.cursor-help')!;
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.focus(trigger);
+    });
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Keyboard help');
     act(() => {
       fireEvent.blur(trigger);
     });
-    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('clamps tooltip left when trigger is near the right viewport edge', async () => {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
@@ -27,6 +27,7 @@ export function HelpTooltip({
 }) {
   const [pos, setPos] = useState<InstantTooltipPosition | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
+  const descriptionId = useId();
   const updatePosition = () => {
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
@@ -40,6 +41,10 @@ export function HelpTooltip({
         .filter(Boolean)
         .join(' ')}
       aria-label={ariaLabel}
+      // Prefer aria-describedby when the bubble is mounted (focus/hover); otherwise keep
+      // aria-description so the explanation stays available without a second DOM text node.
+      aria-describedby={pos ? descriptionId : undefined}
+      aria-description={pos ? undefined : text}
       tabIndex={nonFocusableWrapper ? undefined : 0}
       onMouseEnter={updatePosition}
       onMouseLeave={() => {
@@ -51,7 +56,11 @@ export function HelpTooltip({
       }}
     >
       {children ?? <span className="text-muted text-xs select-none">ⓘ</span>}
-      {pos && createPortal(<InstantTooltipBubble text={text} pos={pos} />, document.body)}
+      {pos &&
+        createPortal(
+          <InstantTooltipBubble id={descriptionId} text={text} pos={pos} />,
+          document.body,
+        )}
     </span>
   );
 }
