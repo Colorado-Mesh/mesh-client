@@ -47,6 +47,7 @@ import type {
   UpsertRemoteAddressRequest,
   UpsertRemoteInboundPolicyRequest,
 } from './remote-types';
+import type { RendererMemoryAutoSamplePayload } from './rendererMemoryAutoSample';
 import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
@@ -522,8 +523,14 @@ export interface ElectronAPI {
       bytes: number;
       source: 'user-agent' | 'renderer-process';
       sessionId?: string;
+      jsHeapBytes?: number;
+      totalJsHeapBytes?: number;
+      domNodes?: number;
     }) => Promise<void>;
-    /** Compact summary for Support bundles (no raw rows). */
+    /**
+     * Summary plus retention-bounded timestamped rows for Support / debug exports
+     * (GitHub and Developer).
+     */
     getRendererMemorySampleSummary: () => Promise<{
       count: number;
       firstAt: number | null;
@@ -531,7 +538,21 @@ export interface ElectronAPI {
       minBytes: number | null;
       maxBytes: number | null;
       spanMs: number | null;
+      samples: {
+        capturedAt: number;
+        bytes: number;
+        source: 'user-agent' | 'renderer-process';
+        appVersion: string | null;
+        sessionId: string | null;
+        jsHeapBytes: number | null;
+        totalJsHeapBytes: number | null;
+        domNodes: number | null;
+      }[];
     }>;
+    /** Main-owned 2h process working-set samples (already persisted in SQLite). */
+    onRendererMemoryAutoSample: (
+      callback: (sample: RendererMemoryAutoSamplePayload) => void,
+    ) => () => void;
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;

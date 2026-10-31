@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "無線リンクのみ（ BluetoothまたはUSB ）",
     "preventSleepOptionAlways": "任意の接続",
     "preventSleepOptionOff": "まったく行わない",
-    "preventSleepSaveFailed": "キープアウェイク設定を保存できませんでした。"
+    "preventSleepSaveFailed": "キープアウェイク設定を保存できませんでした。",
+    "memoryJsHeap": "JSヒープ： {{value}}",
+    "memoryDeltaWorkingSet": "ワーキングセットΔ ： {{value}}",
+    "memoryDeltaJsHeap": "JSヒープΔ ： {{value}}",
+    "memoryDomNodes": "DOMノード： {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

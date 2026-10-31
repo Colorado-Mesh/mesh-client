@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Apenas link de rádio (Bluetooth ou USB)",
     "preventSleepOptionAlways": "Qualquer conexão:",
     "preventSleepOptionOff": "Nunca",
-    "preventSleepSaveFailed": "Não foi possível salvar a configuração de manter acordado."
+    "preventSleepSaveFailed": "Não foi possível salvar a configuração de manter acordado.",
+    "memoryJsHeap": "JS heap: {{value}}",
+    "memoryDeltaWorkingSet": "Conjunto de trabalho Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
+    "memoryDomNodes": "Nós DOM: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Fechar janela",

@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Alleen radioverbinding (Bluetooth of USB)",
     "preventSleepOptionAlways": "Elke verbinding",
     "preventSleepOptionOff": "Nooit",
-    "preventSleepSaveFailed": "Kon de instelling voor wakker blijven niet opslaan."
+    "preventSleepSaveFailed": "Kon de instelling voor wakker blijven niet opslaan.",
+    "memoryJsHeap": "JS-heap: {{value}}",
+    "memoryDeltaWorkingSet": "Werkset Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
+    "memoryDomNodes": "DOM nodes: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

@@ -536,7 +536,13 @@
     "preventSleepOptionRf": "Лише радіоканал (Bluetooth або USB)",
     "preventSleepOptionAlways": "Будь-яке з'єднання",
     "preventSleepOptionOff": "Ніколи",
-    "preventSleepSaveFailed": "Не вдалося зберегти налаштування неспання."
+    "preventSleepSaveFailed": "Не вдалося зберегти налаштування неспання.",
+    "memoryJsHeap": "Купа JS: {{value}}",
+    "memoryDeltaWorkingSet": "Робочий набір Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS Heap Δ: {{value}}",
+    "memoryDomNodes": "Вузли DOM: {{count}}",
+    "memoryHistoryHeap": "купа {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

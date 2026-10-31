@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 53;
+export const CURRENT_SCHEMA_VERSION = 54;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -361,7 +361,10 @@ export const CANONICAL_TABLES_DDL = `
         bytes INTEGER NOT NULL,
         source TEXT NOT NULL CHECK(source IN ('user-agent','renderer-process')),
         app_version TEXT,
-        session_id TEXT
+        session_id TEXT,
+        js_heap_bytes INTEGER,
+        total_js_heap_bytes INTEGER,
+        dom_nodes INTEGER
       );
     `;
 
@@ -610,6 +613,11 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
   },
   chat_outbox: {
     priority: "TEXT NOT NULL DEFAULT 'normal'",
+  },
+  renderer_memory_samples: {
+    js_heap_bytes: 'INTEGER',
+    total_js_heap_bytes: 'INTEGER',
+    dom_nodes: 'INTEGER',
   },
 };
 

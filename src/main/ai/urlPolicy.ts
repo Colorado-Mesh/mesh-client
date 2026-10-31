@@ -1,18 +1,10 @@
-import { Address4, Address6 } from 'ip-address';
+import { isGlobalIpLiteral } from '../../shared/ipLiteral';
 
 export type EndpointClass = 'local' | 'remote';
 
 /** Host with brackets removed. Null when `host` is not an IP literal. */
 export function literalAddressIsGlobal(host: string): boolean | null {
-  const bare = host.replace(/^\[|\]$/g, '').toLowerCase();
-  if (Address4.isValid(bare)) return new Address4(bare).isGlobal();
-  if (Address6.isValid(bare)) {
-    const ip = new Address6(bare);
-    // IPv4-mapped addresses use the IPv4 global predicate.
-    if (ip.is4()) return ip.to4().isGlobal();
-    return ip.isGlobal();
-  }
-  return null;
+  return isGlobalIpLiteral(host);
 }
 
 export function classifyEndpoint(

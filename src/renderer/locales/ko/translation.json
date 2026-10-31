@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "라디오 링크만 (블루투스 또는 USB)",
     "preventSleepOptionAlways": "모든 연결",
     "preventSleepOptionOff": "절대",
-    "preventSleepSaveFailed": "킵 어웨이크 설정을 저장할 수 없습니다."
+    "preventSleepSaveFailed": "킵 어웨이크 설정을 저장할 수 없습니다.",
+    "memoryJsHeap": "JS HEAP: {{value}}",
+    "memoryDeltaWorkingSet": "작업 세트 Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS 힙 Δ: {{value}}",
+    "memoryDomNodes": "DOM 노드: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

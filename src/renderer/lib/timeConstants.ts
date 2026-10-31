@@ -4,6 +4,9 @@ import {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
+  RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS,
+  RENDERER_MEMORY_CHART_GAP_MS,
+  RENDERER_MEMORY_VISIBILITY_SETTLE_MS,
 } from '../../shared/timeConstants';
 
 export {
@@ -12,10 +15,10 @@ export {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
+  RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS,
+  RENDERER_MEMORY_CHART_GAP_MS,
+  RENDERER_MEMORY_VISIBILITY_SETTLE_MS,
 };
-
-/** Visible-window renderer memory sampling cadence, jittered by 20% either way. */
-export const COI_MEMORY_SAMPLE_INTERVAL_MS = 5 * MS_PER_MINUTE;
 
 /** Bounded wait for a COI analysis-worker reply before rejecting the pending request. */
 export const ANALYSIS_WORKER_REQUEST_TIMEOUT_MS = 60 * MS_PER_SECOND;

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { COI_MEMORY_MAX_SAMPLES, createCoiMemorySampler } from './coiMemorySampler';
-import { COI_MEMORY_SAMPLE_INTERVAL_MS } from './timeConstants';
+import {
+  COI_MEMORY_MAX_SAMPLES,
+  COI_MEMORY_MAX_VISIBILITY_SAMPLES,
+  createCoiMemorySampler,
+} from './coiMemorySampler';
+import { RENDERER_MEMORY_VISIBILITY_SETTLE_MS } from './timeConstants';
 import { withMockedConsoleWarn } from './vitestConsoleMock';
 
 function setup({
@@ -9,50 +13,91 @@ function setup({
   supported = true,
   processSupported = false,
   visible = true,
-  random = 0.5,
+  jsHeap,
+  domNodes,
+}: {
+  isolated?: boolean;
+  supported?: boolean;
+  processSupported?: boolean;
+  visible?: boolean;
+  jsHeap?: { used: number; total: number };
+  domNodes?: number;
 } = {}) {
   const measure = vi.fn<() => Promise<{ bytes: number }>>().mockResolvedValue({ bytes: 100 });
   const measureProcess = vi
     .fn<() => Promise<{ bytes: number }>>()
     .mockResolvedValue({ bytes: 1024 });
+  let onAuto:
+    ((sample: { at: number; bytes: number; source?: 'renderer-process' }) => void) | undefined;
   let onVisibility: (() => void) | undefined;
-  const unsubscribe = vi.fn();
+  const unsubscribeAuto = vi.fn();
+  const unsubscribeVisibility = vi.fn();
+  const pendingSettle = new Map<number, { fn: () => void; ms: number }>();
+  let nextSettleId = 1;
   const sampler = createCoiMemorySampler({
     isIsolated: () => isolated,
     getMeasure: () => (supported ? measure : undefined),
     getProcessMeasure: () => (processSupported ? measureProcess : undefined),
+    getJsHeap: jsHeap ? () => jsHeap : undefined,
+    getDomNodeCount: domNodes != null ? () => domNodes : undefined,
     isVisible: () => visible,
     onVisibilityChange: (listener) => {
       onVisibility = listener;
-      return unsubscribe;
+      return unsubscribeVisibility;
+    },
+    onAutoSample: (listener) => {
+      onAuto = listener;
+      return unsubscribeAuto;
     },
     now: () => Date.now(),
-    random: () => random,
+    scheduleSettle: (fn, ms) => {
+      const id = nextSettleId++;
+      pendingSettle.set(id, { fn, ms });
+      return id;
+    },
+    clearSettle: (id) => {
+      pendingSettle.delete(id as number);
+    },
   });
   return {
     sampler,
     measure,
     measureProcess,
-    unsubscribe,
+    unsubscribeAuto,
+    unsubscribeVisibility,
+    pendingSettle,
+    pushAuto: (sample: { at: number; bytes: number; source?: 'renderer-process' }) => {
+      onAuto?.(sample);
+    },
     setVisible: (value: boolean) => {
       visible = value;
       onVisibility?.();
     },
+    flushSettle: () => {
+      const entry = [...pendingSettle.entries()][0];
+      expect(entry).toBeDefined();
+      const [id, job] = entry as [number, { fn: () => void; ms: number }];
+      expect(job.ms).toBe(RENDERER_MEMORY_VISIBILITY_SETTLE_MS);
+      pendingSettle.delete(id);
+      job.fn();
+    },
   };
 }
 
-beforeEach(() => vi.useFakeTimers());
-afterEach(() => vi.useRealTimers());
-
 describe('COI renderer memory sampler', () => {
-  it.each([0, 1])('jitters the automatic interval with random value %s', async (random) => {
-    const { sampler, measure } = setup({ random });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not arm an automatic timer; main owns the 2h cadence', () => {
+    const { sampler, measure } = setup();
     const stop = sampler.start();
-    const expectedDelay = COI_MEMORY_SAMPLE_INTERVAL_MS * (0.8 + random * 0.4);
-    await vi.advanceTimersByTimeAsync(expectedDelay - 1);
+    expect(vi.getTimerCount()).toBe(0);
+    void vi.advanceTimersByTimeAsync(60_000);
     expect(measure).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
-    expect(measure).toHaveBeenCalledTimes(1);
     stop();
   });
 
@@ -61,17 +106,13 @@ describe('COI renderer memory sampler', () => {
     { isolated: true, supported: false, processSupported: false },
   ])('does not sample without a usable API: %j', async (availability) => {
     const { sampler, measure } = setup(availability);
-    const stop = sampler.start();
     expect(await sampler.sampleNow()).toBeNull();
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
     expect(measure).not.toHaveBeenCalled();
-    expect(vi.getTimerCount()).toBe(0);
     expect(sampler.getSnapshot()).toMatchObject({
       crossOriginIsolated: availability.isolated,
       supported: availability.supported || availability.processSupported,
       samples: [],
     });
-    stop();
   });
 
   it('samples process memory when not isolated but getAppMetrics is available', async () => {
@@ -90,16 +131,41 @@ describe('COI renderer memory sampler', () => {
     });
   });
 
+  it('attaches JS heap and DOM counts when available', async () => {
+    const { sampler } = setup({
+      processSupported: true,
+      supported: false,
+      jsHeap: { used: 50_000_000, total: 80_000_000 },
+      domNodes: 1234,
+    });
+    const sample = await sampler.sampleNow();
+    expect(sample).toMatchObject({
+      bytes: 1024,
+      source: 'renderer-process',
+      jsHeapBytes: 50_000_000,
+      totalJsHeapBytes: 80_000_000,
+      domNodes: 1234,
+    });
+  });
+
   it('keeps a bounded history of totals without retaining browser attribution', async () => {
-    const { sampler, measure } = setup();
+    let now = 1_000;
+    const measure = vi.fn<() => Promise<{ bytes: number }>>().mockResolvedValue({ bytes: 100 });
+    const sampler = createCoiMemorySampler({
+      isIsolated: () => true,
+      getMeasure: () => measure,
+      isVisible: () => true,
+      now: () => now,
+    });
     const listener = vi.fn();
     const unsubscribe = sampler.subscribe(listener);
     for (let index = 0; index < COI_MEMORY_MAX_SAMPLES + 3; index += 1) {
       measure.mockResolvedValueOnce({ bytes: index });
+      now += 1;
       await sampler.sampleNow();
     }
     expect(sampler.getSnapshot().samples).toHaveLength(COI_MEMORY_MAX_SAMPLES);
-    expect(sampler.getSnapshot().samples[0]).toEqual({ at: Date.now(), bytes: 3 });
+    expect(sampler.getSnapshot().samples[0]).toEqual({ at: 1_004, bytes: 3 });
     expect(sampler.getSnapshot().samples.at(-1)?.bytes).toBe(COI_MEMORY_MAX_SAMPLES + 2);
     expect(listener).toHaveBeenCalled();
     unsubscribe();
@@ -123,25 +189,131 @@ describe('COI renderer memory sampler', () => {
     expect(sampler.getSnapshot()).toMatchObject({ sampling: false, samples: [{ bytes: 42 }] });
   });
 
-  it('pauses while hidden, resumes at a fresh interval, and cleans up on stop', async () => {
-    const { sampler, measure, setVisible, unsubscribe } = setup();
+  it('ingests main auto-samples into the ring and enriches with live diagnostics', () => {
+    const { sampler, measure, measureProcess, pushAuto, unsubscribeAuto } = setup({
+      processSupported: true,
+      jsHeap: { used: 11, total: 22 },
+      domNodes: 9,
+    });
     const stop = sampler.start();
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS - 1);
+    pushAuto({ at: 100, bytes: 2_000_000, source: 'renderer-process' });
     expect(measure).not.toHaveBeenCalled();
-    setVisible(false);
-    expect(await sampler.sampleNow()).toBeNull();
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
-    expect(measure).not.toHaveBeenCalled();
-    setVisible(true);
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS);
-    expect(measure).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(1);
+    expect(measureProcess).not.toHaveBeenCalled();
+    expect(sampler.getSnapshot().samples).toEqual([
+      {
+        at: 100,
+        bytes: 2_000_000,
+        source: 'renderer-process',
+        jsHeapBytes: 11,
+        totalJsHeapBytes: 22,
+        domNodes: 9,
+      },
+    ]);
     stop();
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(unsubscribeAuto).toHaveBeenCalledTimes(1);
   });
 
-  it('does not publish or restart polling after a pending measurement is stopped', async () => {
+  it('samples immediately on show and again after the settle delay', async () => {
+    const { sampler, measureProcess, setVisible, flushSettle, pendingSettle } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    expect(await sampler.sampleNow()).toBeNull();
+    setVisible(true);
+    await vi.waitFor(() => {
+      expect(measureProcess).toHaveBeenCalledTimes(1);
+      expect(sampler.getSnapshot().sampling).toBe(false);
+    });
+    expect(pendingSettle.size).toBe(1);
+    flushSettle();
+    await vi.waitFor(() => {
+      expect(measureProcess).toHaveBeenCalledTimes(2);
+    });
+    stop();
+    expect(pendingSettle.size).toBe(0);
+  });
+
+  it('keeps main auto-samples when visibility cycles fill the ring', async () => {
+    const { sampler, measureProcess, setVisible, flushSettle, pushAuto } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    const autoCount = COI_MEMORY_MAX_SAMPLES - 2;
+    for (let i = 0; i < autoCount; i += 1) {
+      pushAuto({ at: 1_000 + i, bytes: 1_000_000 + i, source: 'renderer-process' });
+    }
+    expect(sampler.getSnapshot().samples).toHaveLength(autoCount);
+    for (let cycle = 0; cycle < COI_MEMORY_MAX_VISIBILITY_SAMPLES; cycle += 1) {
+      setVisible(true);
+      await vi.waitFor(() => {
+        expect(measureProcess).toHaveBeenCalled();
+        expect(sampler.getSnapshot().sampling).toBe(false);
+      });
+      flushSettle();
+      await vi.waitFor(() => {
+        expect(sampler.getSnapshot().sampling).toBe(false);
+      });
+      setVisible(false);
+      measureProcess.mockClear();
+    }
+    const samples = sampler.getSnapshot().samples;
+    expect(samples.some((sample) => sample.at === 1_000 && !sample.visibility)).toBe(true);
+    expect(samples.filter((sample) => sample.visibility).length).toBeLessThanOrEqual(
+      COI_MEMORY_MAX_VISIBILITY_SAMPLES,
+    );
+    expect(samples.length).toBeLessThanOrEqual(COI_MEMORY_MAX_SAMPLES);
+    stop();
+  });
+
+  it('still samples on show even when a main auto-sample arrived recently', async () => {
+    const { sampler, measureProcess, setVisible, pushAuto } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    pushAuto({ at: Date.now(), bytes: 2_000_000, source: 'renderer-process' });
+    setVisible(true);
+    await vi.waitFor(() => {
+      expect(measureProcess).toHaveBeenCalledTimes(1);
+    });
+    expect(sampler.getSnapshot().samples.at(-1)?.visibility).toBe(true);
+    stop();
+  });
+
+  it('cancels settle sampling when hidden again or stopped', async () => {
+    const { sampler, setVisible, pendingSettle, unsubscribeVisibility } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    setVisible(true);
+    await Promise.resolve();
+    expect(pendingSettle.size).toBe(1);
+    setVisible(false);
+    expect(pendingSettle.size).toBe(0);
+    setVisible(true);
+    await Promise.resolve();
+    expect(pendingSettle.size).toBe(1);
+    stop();
+    expect(pendingSettle.size).toBe(0);
+    expect(unsubscribeVisibility).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects invalid main auto-samples', () => {
+    const { sampler, pushAuto } = setup();
+    sampler.start();
+    pushAuto({ at: 1, bytes: 0, source: 'renderer-process' });
+    pushAuto({ at: NaN, bytes: 100, source: 'renderer-process' });
+    expect(sampler.getSnapshot().samples).toEqual([]);
+  });
+
+  it('does not publish after a pending measurement is stopped', async () => {
     const { sampler, measure } = setup();
     let complete!: (result: { bytes: number }) => void;
     measure.mockImplementationOnce(() => new Promise((resolve) => (complete = resolve)));
@@ -152,20 +324,18 @@ describe('COI renderer memory sampler', () => {
     complete({ bytes: 100 });
     expect(await pending).toBeNull();
     expect(sampler.getSnapshot()).toMatchObject({ sampling: false, samples: [] });
-    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('keeps one polling loop until the last owner stops', async () => {
-    const { sampler, measure } = setup();
+  it('keeps one auto-sample subscription until the last owner stops', () => {
+    const { sampler, unsubscribeAuto } = setup();
     const stopFirst = sampler.start();
     const stopSecond = sampler.start();
-    expect(vi.getTimerCount()).toBe(1);
+    expect(unsubscribeAuto).not.toHaveBeenCalled();
     stopFirst();
     stopFirst();
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS);
-    expect(measure).toHaveBeenCalledTimes(1);
+    expect(unsubscribeAuto).not.toHaveBeenCalled();
     stopSecond();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(unsubscribeAuto).toHaveBeenCalledTimes(1);
   });
 
   it('reports failures without losing prior samples and recovers on retry', async () => {
@@ -187,15 +357,13 @@ describe('COI renderer memory sampler', () => {
       supported: false,
       processSupported: true,
     });
-    const stop = sampler.start();
     expect(sampler.getSnapshot().supported).toBe(true);
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS);
+    await sampler.sampleNow();
     expect(measure).not.toHaveBeenCalled();
     expect(measureProcess).toHaveBeenCalledTimes(1);
     expect(sampler.getSnapshot().samples).toEqual([
       { at: Date.now(), bytes: 1024, source: 'renderer-process' },
     ]);
-    stop();
   });
 
   it('switches to process memory after SecurityError and starts a separate history', async () => {
@@ -225,17 +393,14 @@ describe('COI renderer memory sampler', () => {
     });
   });
 
-  it('gates process sampling while the window is hidden', async () => {
+  it('gates manual sampling while the window is hidden', async () => {
     const { sampler, measureProcess } = setup({
       visible: false,
       supported: false,
       processSupported: true,
     });
-    const stop = sampler.start();
     expect(await sampler.sampleNow()).toBeNull();
-    await vi.advanceTimersByTimeAsync(COI_MEMORY_SAMPLE_INTERVAL_MS * 2);
     expect(measureProcess).not.toHaveBeenCalled();
-    stop();
   });
 
   it('does not start a fallback measurement after the owner stops', async () => {
@@ -250,7 +415,6 @@ describe('COI renderer memory sampler', () => {
     expect(await pending).toBeNull();
     expect(measureProcess).not.toHaveBeenCalled();
     expect(sampler.getSnapshot().samples).toEqual([]);
-    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('reports unavailable native metrics and retries process sampling later', async () => {
