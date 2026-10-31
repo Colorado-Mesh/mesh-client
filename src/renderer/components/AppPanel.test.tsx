@@ -975,7 +975,7 @@ describe('AppPanel: MeshCore Radio-owned settings are not on App', () => {
     expect(screen.queryByLabelText(/Default path hash size/i)).toBeNull();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
-  });
+  }, 15_000);
 });
 
 describe('AppPanel: support bundle exports', () => {

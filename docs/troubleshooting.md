@@ -670,18 +670,18 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
 
 **Renderer memory:** App → Support shows the latest working-set estimate, optional JS heap /
-DOM counts, and deltas vs the previous sample. Use **Sample now** for an immediate reading;
-returning to a visible window also samples immediately and again after about **60 seconds**.
-The main process records renderer process working-set samples about every **two hours**
-whether or not the window is backgrounded; those rows are persisted in SQLite and included
-as `rendererMemoryDurable.samples` (plus a summary; heap/DOM when the renderer recorded them)
-in both GitHub and Developer support bundles and Copy Debug Snapshot. The live Support ring
-(`rendererMemory`) retains up to 24 session totals and draws a **time-scaled** sparkline that
-breaks across long gaps (so overnight occlusion is not a fake ramp). Interpreting deltas:
+DOM counts, and deltas vs the previous sample. Use **Sample now** for an immediate reading.
+The main process records one renderer process working-set sample shortly after start, then
+about every **two hours** whether or not the window is backgrounded; those rows are
+persisted in SQLite and included as `rendererMemoryDurable.samples` (plus a summary;
+heap/DOM when the renderer recorded them) in both GitHub and Developer support bundles and
+Copy Debug Snapshot. The live Support ring (`rendererMemory`) retains up to 24 session
+totals and draws a **time-scaled** sparkline that breaks across long gaps. Interpreting
+deltas:
 
 - Working set ↑ and JS heap ↑ together → likely retained JavaScript.
 - Working set ↑ while JS heap flat → non-JS (wasm, GPU/code cache, OS working-set high water).
-- Either ↓ after show/settle → often reclaim, not a leak.
+- Either ↓ after a long idle → often reclaim, not a leak.
 
 If isolation or the browser memory API is unavailable, the section explains why; on-demand
 browser estimates still need a visible window. Compare trends within a session or durable
