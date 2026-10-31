@@ -16,7 +16,10 @@ function openMemoryDb(): NodeSqliteDB {
       bytes INTEGER NOT NULL,
       source TEXT NOT NULL,
       app_version TEXT,
-      session_id TEXT
+      session_id TEXT,
+      js_heap_bytes INTEGER,
+      total_js_heap_bytes INTEGER,
+      dom_nodes INTEGER
     );
   `);
   return db;

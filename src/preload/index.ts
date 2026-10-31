@@ -330,6 +330,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       bytes: number;
       source: 'user-agent' | 'renderer-process';
       sessionId?: string;
+      jsHeapBytes?: number;
+      totalJsHeapBytes?: number;
+      domNodes?: number;
     }) => ipcRenderer.invoke('db:recordRendererMemorySample', sample),
     getRendererMemorySampleSummary: () => ipcRenderer.invoke('db:getRendererMemorySampleSummary'),
     onRendererMemoryAutoSample: (

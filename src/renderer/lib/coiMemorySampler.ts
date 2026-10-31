@@ -1,6 +1,7 @@
 import type { ElectronAPI } from '@/shared/electron-api.types';
 
 import { errLikeToLogString } from './errLikeToLogString';
+import { RENDERER_MEMORY_VISIBILITY_SETTLE_MS } from './timeConstants';
 
 export const COI_MEMORY_MAX_SAMPLES = 24;
 
@@ -8,6 +9,9 @@ export interface CoiMemorySample {
   at: number;
   bytes: number;
   source?: 'user-agent' | 'renderer-process';
+  jsHeapBytes?: number;
+  totalJsHeapBytes?: number;
+  domNodes?: number;
 }
 
 export interface CoiMemorySnapshot {
@@ -20,16 +24,25 @@ export interface CoiMemorySnapshot {
 
 interface MemoryPerformance extends Performance {
   measureUserAgentSpecificMemory?: () => Promise<{ bytes: number }>;
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+  };
 }
 
 interface MemorySamplerEnvironment {
   isIsolated: () => boolean;
   getMeasure: () => (() => Promise<{ bytes: number }>) | undefined;
   getProcessMeasure?: () => (() => Promise<{ bytes: number }>) | undefined;
+  getJsHeap?: () => { used: number; total: number } | undefined;
+  getDomNodeCount?: () => number;
   isVisible: () => boolean;
+  onVisibilityChange?: (listener: () => void) => () => void;
   /** Main-owned 2h process samples; do not re-persist (main already wrote SQLite). */
   onAutoSample?: (listener: (sample: CoiMemorySample) => void) => () => void;
   now: () => number;
+  scheduleSettle?: (fn: () => void, ms: number) => unknown;
+  clearSettle?: (id: unknown) => void;
 }
 
 /** Retain only totals: browser attribution may contain document or worker URLs. */
@@ -47,19 +60,53 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
   const listeners = new Set<() => void>();
   const owners = new Set<symbol>();
   let unsubscribeAuto: (() => void) | undefined;
+  let unsubscribeVisibility: (() => void) | undefined;
+  let settleTimer: unknown;
   let inFlight: Promise<CoiMemorySample | null> | null = null;
   let generation = 0;
+  const scheduleSettle = environment.scheduleSettle ?? ((fn, ms) => setTimeout(fn, ms));
+  const clearSettle =
+    environment.clearSettle ??
+    ((id) => {
+      clearTimeout(id as ReturnType<typeof setTimeout>);
+    });
 
   function update(next: Partial<CoiMemorySnapshot>) {
     snapshot = { ...snapshot, ...next };
     for (const listener of listeners) listener();
   }
 
-  /** Manual Sample now: UA needs a visible COI document; process works when visible too. */
+  function clearSettleTimer() {
+    if (settleTimer === undefined) return;
+    clearSettle(settleTimer);
+    settleTimer = undefined;
+  }
+
+  /** Manual Sample now / settle: UA needs a visible COI document; process works when visible too. */
   function canAttemptSample() {
     if (!environment.isVisible() || !supported()) return false;
     if (environment.isIsolated()) return true;
     return Boolean(environment.getProcessMeasure?.());
+  }
+
+  function attachDiagnostics(sample: CoiMemorySample): CoiMemorySample {
+    const heap = environment.getJsHeap?.();
+    const domNodes = environment.getDomNodeCount?.();
+    const next: CoiMemorySample = { ...sample };
+    if (
+      heap &&
+      Number.isFinite(heap.used) &&
+      heap.used >= 0 &&
+      Number.isFinite(heap.total) &&
+      heap.total >= 0
+    ) {
+      next.jsHeapBytes = heap.used;
+      next.totalJsHeapBytes = heap.total;
+    }
+    if (typeof domNodes === 'number' && Number.isFinite(domNodes) && domNodes >= 0) {
+      next.domNodes = Math.trunc(domNodes);
+    }
+    return next;
   }
 
   function appendSample(sample: CoiMemorySample) {
@@ -68,7 +115,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES), failed: false });
   }
 
-  /** Main auto-sample push — updates the Support ring only. */
+  /** Main auto-sample push — updates the Support ring only (enrich with live heap/DOM). */
   function ingestExternalSample(sample: CoiMemorySample): void {
     if (
       !Number.isFinite(sample.at) ||
@@ -78,11 +125,32 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     ) {
       return;
     }
-    appendSample({
-      at: sample.at,
-      bytes: sample.bytes,
-      source: sample.source ?? 'renderer-process',
-    });
+    appendSample(
+      attachDiagnostics({
+        at: sample.at,
+        bytes: sample.bytes,
+        source: sample.source ?? 'renderer-process',
+      }),
+    );
+  }
+
+  function armVisibilitySettle() {
+    clearSettleTimer();
+    const requestGeneration = generation;
+    settleTimer = scheduleSettle(() => {
+      settleTimer = undefined;
+      if (requestGeneration !== generation || !environment.isVisible()) return;
+      void sampleNow();
+    }, RENDERER_MEMORY_VISIBILITY_SETTLE_MS);
+  }
+
+  function onVisibilityChange() {
+    if (!environment.isVisible()) {
+      clearSettleTimer();
+      return;
+    }
+    void sampleNow();
+    armVisibilitySettle();
   }
 
   function sampleNow(): Promise<CoiMemorySample | null> {
@@ -135,7 +203,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         ) {
           throw new Error('Invalid renderer memory total');
         }
-        const sample = { at: environment.now(), ...result };
+        const sample = attachDiagnostics({ at: environment.now(), ...result });
         // Browser estimates and OS working sets have different scopes; start a new trend.
         appendSample(sample);
         persistRendererMemorySample(sample);
@@ -165,11 +233,15 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         supported: supported(),
       });
       unsubscribeAuto = environment.onAutoSample?.(ingestExternalSample);
+      unsubscribeVisibility = environment.onVisibilityChange?.(onVisibilityChange);
     }
     return () => {
       if (!owners.delete(owner) || owners.size > 0) return;
       unsubscribeAuto?.();
       unsubscribeAuto = undefined;
+      unsubscribeVisibility?.();
+      unsubscribeVisibility = undefined;
+      clearSettleTimer();
       generation += 1;
       inFlight = null;
       update({ sampling: false });
@@ -205,6 +277,9 @@ function persistRendererMemorySample(sample: CoiMemorySample): void {
     bytes: sample.bytes,
     source: sample.source ?? 'user-agent',
     sessionId: RENDERER_MEMORY_SESSION_ID,
+    jsHeapBytes: sample.jsHeapBytes,
+    totalJsHeapBytes: sample.totalJsHeapBytes,
+    domNodes: sample.domNodes,
   }).catch((error: unknown) => {
     console.warn('[coiMemorySampler] persist failed ' + errLikeToLogString(error));
   });
@@ -244,7 +319,22 @@ const sampler = createCoiMemorySampler({
       return { bytes: rendererProcessMemoryBytes };
     };
   },
+  getJsHeap: () => {
+    const memory = (performance as MemoryPerformance).memory;
+    if (!memory) return undefined;
+    return { used: memory.usedJSHeapSize, total: memory.totalJSHeapSize };
+  },
+  getDomNodeCount: () => {
+    if (typeof document === 'undefined') return 0;
+    return document.querySelectorAll('*').length;
+  },
   isVisible: () => !document.hidden,
+  onVisibilityChange: (listener) => {
+    document.addEventListener('visibilitychange', listener);
+    return () => {
+      document.removeEventListener('visibilitychange', listener);
+    };
+  },
   onAutoSample: subscribeMainAutoSamples,
   now: () => Date.now(),
 });

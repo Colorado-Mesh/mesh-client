@@ -669,15 +669,24 @@ If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching; include the `.ips` and exported log when reporting.
 - **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
 
-**Renderer memory:** App → Support shows the latest estimate and recent in-session samples.
-Use **Sample now** for an immediate reading. The main process also records renderer process
-working-set samples about every **two hours** whether or not the window is backgrounded;
-those rows are persisted in SQLite and included as `rendererMemoryDurable.samples` (plus a
-summary) in both GitHub and Developer support bundles and Copy Debug Snapshot. The live
-Support ring (`rendererMemory`) retains up to 24 session totals. If isolation or the browser
-memory API is unavailable, the section explains why; on-demand browser estimates still need a
-visible window. Compare trends within a session or durable export span, since browser estimates
-vary between app versions and do not measure the same allocations as `mainLiveness`.
+**Renderer memory:** App → Support shows the latest working-set estimate, optional JS heap /
+DOM counts, and deltas vs the previous sample. Use **Sample now** for an immediate reading;
+returning to a visible window also samples immediately and again after about **60 seconds**.
+The main process records renderer process working-set samples about every **two hours**
+whether or not the window is backgrounded; those rows are persisted in SQLite and included
+as `rendererMemoryDurable.samples` (plus a summary; heap/DOM when the renderer recorded them)
+in both GitHub and Developer support bundles and Copy Debug Snapshot. The live Support ring
+(`rendererMemory`) retains up to 24 session totals and draws a **time-scaled** sparkline that
+breaks across long gaps (so overnight occlusion is not a fake ramp). Interpreting deltas:
+
+- Working set ↑ and JS heap ↑ together → likely retained JavaScript.
+- Working set ↑ while JS heap flat → non-JS (wasm, GPU/code cache, OS working-set high water).
+- Either ↓ after show/settle → often reclaim, not a leak.
+
+If isolation or the browser memory API is unavailable, the section explains why; on-demand
+browser estimates still need a visible window. Compare trends within a session or durable
+export span; browser estimates vary between app versions and do not measure the same
+allocations as `mainLiveness`.
 
 After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.
 

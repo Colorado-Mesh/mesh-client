@@ -203,6 +203,9 @@ export interface DebugSnapshot {
       source: 'user-agent' | 'renderer-process';
       appVersion: string | null;
       sessionId: string | null;
+      jsHeapBytes: number | null;
+      totalJsHeapBytes: number | null;
+      domNodes: number | null;
     }[];
   } | null;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */

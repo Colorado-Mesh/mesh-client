@@ -4,6 +4,9 @@ import {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
+  RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS,
+  RENDERER_MEMORY_CHART_GAP_MS,
+  RENDERER_MEMORY_VISIBILITY_SETTLE_MS,
 } from '../../shared/timeConstants';
 
 export {
@@ -12,6 +15,9 @@ export {
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_SECOND,
+  RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS,
+  RENDERER_MEMORY_CHART_GAP_MS,
+  RENDERER_MEMORY_VISIBILITY_SETTLE_MS,
 };
 
 /** Bounded wait for a COI analysis-worker reply before rejecting the pending request. */

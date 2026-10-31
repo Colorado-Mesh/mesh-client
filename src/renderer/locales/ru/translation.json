@@ -536,7 +536,13 @@
     "preventSleepOptionRf": "Только радиоканал (Bluetooth или USB)",
     "preventSleepOptionAlways": "Любое соединение",
     "preventSleepOptionOff": "Никогда",
-    "preventSleepSaveFailed": "Не удалось сохранить параметр Keep-awake."
+    "preventSleepSaveFailed": "Не удалось сохранить параметр Keep-awake.",
+    "memoryJsHeap": "JS Heap: {{value}}",
+    "memoryDeltaWorkingSet": "Рабочий набор Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
+    "memoryDomNodes": "Узлы DOM: {{count}}",
+    "memoryHistoryHeap": "куча {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

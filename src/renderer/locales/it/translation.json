@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Solo collegamento radio (Bluetooth o USB)",
     "preventSleepOptionAlways": "Qualsiasi connessione",
     "preventSleepOptionOff": "Mai",
-    "preventSleepSaveFailed": "Impossibile salvare l'impostazione keep-awake."
+    "preventSleepSaveFailed": "Impossibile salvare l'impostazione keep-awake.",
+    "memoryJsHeap": "JS Heap: {{value}}",
+    "memoryDeltaWorkingSet": "Working set Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
+    "memoryDomNodes": "Nodi DOM: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

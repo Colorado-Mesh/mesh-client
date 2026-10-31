@@ -522,6 +522,9 @@ export interface ElectronAPI {
       bytes: number;
       source: 'user-agent' | 'renderer-process';
       sessionId?: string;
+      jsHeapBytes?: number;
+      totalJsHeapBytes?: number;
+      domNodes?: number;
     }) => Promise<void>;
     /**
      * Summary plus retention-bounded timestamped rows for Support / debug exports
@@ -540,6 +543,9 @@ export interface ElectronAPI {
         source: 'user-agent' | 'renderer-process';
         appVersion: string | null;
         sessionId: string | null;
+        jsHeapBytes: number | null;
+        totalJsHeapBytes: number | null;
+        domNodes: number | null;
       }[];
     }>;
     /** Main-owned 2h process working-set samples (already persisted in SQLite). */

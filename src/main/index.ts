@@ -815,6 +815,12 @@ function safeNonNegativeSafeInteger(value: unknown): number {
   return value;
 }
 
+/** Optional non-negative safe integer; `undefined` / `null` → null. */
+function optionalNonNegativeSafeInteger(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  return safeNonNegativeSafeInteger(value);
+}
+
 /** MeshCore chat channel index (-2 Rooms, -1 DMs, 0+ group channels). */
 function safeMeshcoreChannelIndex(value: unknown): number {
   const n = typeof value === 'number' ? value : Number(value);
@@ -4754,6 +4760,9 @@ ipcMain.handle(
       bytes?: unknown;
       source?: unknown;
       sessionId?: unknown;
+      jsHeapBytes?: unknown;
+      totalJsHeapBytes?: unknown;
+      domNodes?: unknown;
     },
   ) => {
     if (!validateIpcSender(event)) {
@@ -4778,6 +4787,9 @@ ipcMain.handle(
         source,
         app_version: app.getVersion(),
         session_id: sessionId,
+        js_heap_bytes: optionalNonNegativeSafeInteger(sample?.jsHeapBytes),
+        total_js_heap_bytes: optionalNonNegativeSafeInteger(sample?.totalJsHeapBytes),
+        dom_nodes: optionalNonNegativeSafeInteger(sample?.domNodes),
       });
     } catch (err) {
       finishDbIpcHandler('db:recordRendererMemorySample', err);

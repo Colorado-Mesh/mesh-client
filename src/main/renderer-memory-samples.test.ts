@@ -32,7 +32,10 @@ describe('renderer-memory-samples', () => {
         bytes INTEGER NOT NULL,
         source TEXT NOT NULL,
         app_version TEXT,
-        session_id TEXT
+        session_id TEXT,
+        js_heap_bytes INTEGER,
+        total_js_heap_bytes INTEGER,
+        dom_nodes INTEGER
       );
     `);
     return db;
@@ -54,6 +57,9 @@ describe('renderer-memory-samples', () => {
       source: 'user-agent',
       app_version: '1.0.0',
       session_id: 's1',
+      js_heap_bytes: 5,
+      total_js_heap_bytes: 8,
+      dom_nodes: 100,
     });
     expect(summarizeRendererMemorySamples(db)).toEqual({
       count: 2,
@@ -63,6 +69,28 @@ describe('renderer-memory-samples', () => {
       maxBytes: 30,
       spanMs: 1_000,
     });
+    expect(listRendererMemorySamples(db)).toEqual([
+      {
+        capturedAt: base,
+        bytes: 10,
+        source: 'user-agent',
+        appVersion: '1.0.0',
+        sessionId: 's1',
+        jsHeapBytes: null,
+        totalJsHeapBytes: null,
+        domNodes: null,
+      },
+      {
+        capturedAt: base + 1_000,
+        bytes: 30,
+        source: 'user-agent',
+        appVersion: '1.0.0',
+        sessionId: 's1',
+        jsHeapBytes: 5,
+        totalJsHeapBytes: 8,
+        domNodes: 100,
+      },
+    ]);
   });
 
   it('prunes by row count keeping newest', () => {
@@ -115,6 +143,9 @@ describe('renderer-memory-samples', () => {
         source: 'renderer-process',
         appVersion: '2.0.0',
         sessionId: 's',
+        jsHeapBytes: null,
+        totalJsHeapBytes: null,
+        domNodes: null,
       },
       {
         capturedAt: base + 3,
@@ -122,6 +153,9 @@ describe('renderer-memory-samples', () => {
         source: 'renderer-process',
         appVersion: '2.0.0',
         sessionId: 's',
+        jsHeapBytes: null,
+        totalJsHeapBytes: null,
+        domNodes: null,
       },
       {
         capturedAt: base + 4,
@@ -129,6 +163,9 @@ describe('renderer-memory-samples', () => {
         source: 'renderer-process',
         appVersion: '2.0.0',
         sessionId: 's',
+        jsHeapBytes: null,
+        totalJsHeapBytes: null,
+        domNodes: null,
       },
     ]);
     const exported = exportRendererMemorySamples(db);

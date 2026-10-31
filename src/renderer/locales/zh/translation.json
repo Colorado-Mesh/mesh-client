@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "仅限无线电链路（蓝牙或USB ）",
     "preventSleepOptionAlways": "任何连接",
     "preventSleepOptionOff": "从未",
-    "preventSleepSaveFailed": "无法保存保持唤醒设置。"
+    "preventSleepSaveFailed": "无法保存保持唤醒设置。",
+    "memoryJsHeap": "JS堆： {{value}}",
+    "memoryDeltaWorkingSet": "工作集Δ ： {{value}}",
+    "memoryDeltaJsHeap": "JS堆Δ: {{value}}",
+    "memoryDomNodes": "DOM节点： {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",

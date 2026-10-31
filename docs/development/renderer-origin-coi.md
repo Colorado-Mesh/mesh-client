@@ -153,20 +153,26 @@ has an allowlisted origin. The legacy encoder currently has no production import
 tests compile its exact source for a synthetic message and decode the result. Keep the
 single-thread path for unavailable isolation and force-file recovery.
 
-Renderer memory sampling has two paths. **Sample now** (and export pre-sample) may use
-`performance.measureUserAgentSpecificMemory` when the browser exposes it and isolation is
-active; otherwise it uses the renderer process working-set from
+Renderer memory sampling has two paths. **Sample now** (and export / visibility-settle
+samples) may use `performance.measureUserAgentSpecificMemory` when the browser exposes it
+and isolation is active; otherwise it uses the renderer process working-set from
 [`app.getAppMetrics()`](https://www.electronjs.org/docs/latest/api/app#appgetappmetrics).
-Electron may expose the browser API but reject it with `SecurityError`; then — and on
-force-file recovery without isolation — only the process metric is used. Separately, the
-**main process** records process working-set samples about every two hours
-(`RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS`) whether or not the window is backgrounded, writes
-them to SQLite `renderer_memory_samples` (retention capped), and pushes each sample to the
-renderer Support ring. Support bundles include the live ring as `rendererMemory` and the
-durable summary plus timestamped rows as `rendererMemoryDurable`. The UI and sample `source`
-explicitly identify physical process RAM, and histories reset if measurement scope changes.
-These measurements are useful for trends; the main process's Node heap figure measures a
-different allocation domain. No full heap profiler or automatic leak diagnosis is implied.
+Each renderer-taken sample also records optional `performance.memory` JS heap totals and a
+DOM node count when available. Electron may expose the browser API but reject it with
+`SecurityError`; then — and on force-file recovery without isolation — only the process
+metric is used for the primary total. Separately, the **main process** records process
+working-set samples about every two hours (`RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS`)
+whether or not the window is backgrounded, writes them to SQLite `renderer_memory_samples`
+(retention capped; nullable `js_heap_bytes` / `total_js_heap_bytes` / `dom_nodes`), and
+pushes each sample to the renderer Support ring (enriched with live heap/DOM on ingest).
+Becoming visible triggers an immediate sample plus a settle sample after
+`RENDERER_MEMORY_VISIBILITY_SETTLE_MS`. Support bundles include the live ring as
+`rendererMemory` and the durable summary plus timestamped rows as `rendererMemoryDurable`.
+The Support sparkline is time-scaled and breaks across `RENDERER_MEMORY_CHART_GAP_MS`. The
+UI and sample `source` explicitly identify physical process RAM, and histories reset if
+measurement scope changes. These measurements are useful for trends; the main process's
+Node heap figure measures a different allocation domain. No full heap profiler or automatic
+leak diagnosis is implied.
 
 Use `performance.now()` for elapsed renderer durations such as Catch up work and the Support
 `rendererTimings` ring. Keep `Date.now()` for persisted timestamps, message times, last-heard

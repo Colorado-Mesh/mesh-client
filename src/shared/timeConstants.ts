@@ -20,6 +20,12 @@ export const MS_PER_DAY = 24 * MS_PER_HOUR;
  */
 export const RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS = 2 * MS_PER_HOUR;
 
+/** Break Support sparkline segments when consecutive samples are farther apart than this. */
+export const RENDERER_MEMORY_CHART_GAP_MS = 2 * RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS;
+
+/** After the window becomes visible, take a second sample once this settle delay elapses. */
+export const RENDERER_MEMORY_VISIBILITY_SETTLE_MS = 60 * MS_PER_SECOND;
+
 /** Service announcements feed: fetch abort, first check after launch, and periodic re-check. */
 export const SERVICE_ANNOUNCEMENT_FETCH_TIMEOUT_MS = 10 * MS_PER_SECOND;
 export const SERVICE_ANNOUNCEMENT_STARTUP_DELAY_MS = 10 * MS_PER_SECOND;

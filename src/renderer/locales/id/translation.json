@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Tautan radio saja (Bluetooth atau USB)",
     "preventSleepOptionAlways": "Koneksi apa saja",
     "preventSleepOptionOff": "Tidak pernah",
-    "preventSleepSaveFailed": "Tidak dapat menyimpan pengaturan keep - wake."
+    "preventSleepSaveFailed": "Tidak dapat menyimpan pengaturan keep - wake.",
+    "memoryJsHeap": "Tumpukan JS: {{value}}",
+    "memoryDeltaWorkingSet": "Perangkat kerja Δ: {{value}}",
+    "memoryDeltaJsHeap": "Tumpukan JS Δ: {{value}}",
+    "memoryDomNodes": "Simpul DOM: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

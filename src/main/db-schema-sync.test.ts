@@ -98,7 +98,7 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
           )
           .get(),
       ).toEqual({ ok: 1 });
-      expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(51);
+      expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(54);
       expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
     } finally {
       db.close();
