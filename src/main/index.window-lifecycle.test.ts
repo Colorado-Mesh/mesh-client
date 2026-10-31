@@ -73,6 +73,8 @@ describe('renderer origin recovery loads', () => {
       checkRendererOriginStorageHealth: checkHealth,
       sanitizeLogMessage: (message: string) => message,
       console: { debug: vi.fn() },
+      // loadRenderer starts the main-owned sampler after a trusted app URL loads (#1358).
+      rendererMemoryAutoSampler: { start: vi.fn(), stop: vi.fn() },
     };
     const start = INDEX_SOURCE.indexOf('const loadRenderer = async (beforeLoad?');
     const end = INDEX_SOURCE.indexOf('  reloadMainRenderer = loadRenderer;', start);
@@ -117,6 +119,8 @@ describe('renderer origin recovery loads', () => {
         'crossOriginIsolated:',
         false,
       );
+      expect(harness.state.rendererMemoryAutoSampler.stop).toHaveBeenCalledTimes(1);
+      expect(harness.state.rendererMemoryAutoSampler.start).toHaveBeenCalledTimes(1);
     },
   );
 
@@ -138,6 +142,8 @@ describe('renderer origin recovery loads', () => {
         'crossOriginIsolated:',
         true,
       );
+      expect(harness.state.rendererMemoryAutoSampler.stop).toHaveBeenCalledTimes(1);
+      expect(harness.state.rendererMemoryAutoSampler.start).toHaveBeenCalledTimes(1);
     },
   );
 
