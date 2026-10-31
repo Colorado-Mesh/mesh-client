@@ -2902,20 +2902,19 @@ an empty <code>MessageEvent.origin</code> in Chromium; that path is accepted onl
 has an allowlisted origin. The legacy encoder currently has no production importer; artifact
 tests compile its exact source for a synthetic message and decode the result. Keep the
 single-thread path for unavailable isolation and force-file recovery.</p>
-<p>Renderer memory sampling has two paths. <strong>Sample now</strong> (and export / visibility-settle
-samples) may use <code>performance.measureUserAgentSpecificMemory</code> when the browser exposes it
-and isolation is active; otherwise it uses the renderer process working-set from
+<p>Renderer memory sampling has two paths. <strong>Sample now</strong> may use
+<code>performance.measureUserAgentSpecificMemory</code> when the browser exposes it and isolation is
+active; otherwise it uses the renderer process working-set from
 <a href="https://www.electronjs.org/docs/latest/api/app#appgetappmetrics"><code>app.getAppMetrics()</code></a>.
 Each renderer-taken sample also records optional <code>performance.memory</code> JS heap totals and a
 DOM node count when available. Electron may expose the browser API but reject it with
 <code>SecurityError</code>; then — and on force-file recovery without isolation — only the process
-metric is used for the primary total. Separately, the <strong>main process</strong> records process
-working-set samples about every two hours (<code>RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS</code>)
-whether or not the window is backgrounded, writes them to SQLite <code>renderer_memory_samples</code>
-(retention capped; nullable <code>js_heap_bytes</code> / <code>total_js_heap_bytes</code> / <code>dom_nodes</code>), and
-pushes each sample to the renderer Support ring (enriched with live heap/DOM on ingest).
-Becoming visible triggers an immediate sample plus a settle sample after
-<code>RENDERER_MEMORY_VISIBILITY_SETTLE_MS</code>. Support bundles include the live ring as
+metric is used for the primary total. Separately, the <strong>main process</strong> records one process
+working-set sample shortly after the trusted app URL loads, then about every two hours
+(<code>RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS</code>) whether or not the window is backgrounded,
+writes them to SQLite <code>renderer_memory_samples</code> (retention capped; nullable <code>js_heap_bytes</code>
+/ <code>total_js_heap_bytes</code> / <code>dom_nodes</code>), and pushes each sample to the renderer Support ring
+(enriched with live heap/DOM on ingest). Support bundles include the live ring as
 <code>rendererMemory</code> and the durable summary plus timestamped rows as <code>rendererMemoryDurable</code>.
 The Support sparkline is time-scaled and breaks across <code>RENDERER_MEMORY_CHART_GAP_MS</code>. The
 UI and sample <code>source</code> explicitly identify physical process RAM, and histories reset if
@@ -3014,7 +3013,7 @@ artifact hash and the result of each check; list any unavailable platform or dev
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 31, 2026 19:25:12 UTC">October 31, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 31, 2026 21:20:42 UTC">October 31, 2026</span>
   </span>
 
     
