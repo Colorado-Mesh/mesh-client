@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Trafic LoRa inconnu",
       "potentialMeshcoreRepeaterConflict": "Conflit potentiel de répéteur MeshCore",
       "elevatedNoiseFloor": "Plancher de bruit surélevé",
-      "excessiveFlooding": "Flooding excessif",
       "reticulumTrafficDetected": "Trafic Reticulum détecté",
       "highCompanionTxQueue": "File d'attente TX Companion élevée"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Interférence à large bande (électronique défectueuse, bruit de ligne électrique, etc.) élevant le plancher de bruit.",
       "fringeWeakCoverage": "Le nœud est trop éloigné ou mal connecté au reste du maillage.",
       "elevatedNoiseFloor": "Le plancher de bruit radio est de {{noiseFloor}} dBm — interférence élevée réduisant la portée effective.",
-      "excessiveFlooding": "{{percent}}% des transmissions sont acheminées par flood - le routage direct peut ne pas être établi avec les nœuds à proximité.",
       "highCompanionTxQueue": "La profondeur de la file d'attente sortante compagnon est de {{queueLen}}/256 — le trafic peut être retardé ou abandonné."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Identifier et supprimer la source d'interférence",
         "description": "Un plancher de bruit élevé réduit la portée et le SNR — vérifiez les composants électroniques à proximité, les blocs d'alimentation à découpage ou les moteurs."
-      },
-      "excessiveFlooding": {
-        "title": "Autoriser les itinéraires directs à établir",
-        "description": "Le taux d'flood est très élevé — attendez que le nœud accumule des contacts directs ou vérifiez la proximité du répéteur."
       },
       "highCompanionTxQueue": {
         "title": "Réduisez le trafic sortant ou vérifiez la liaison RF",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Statut",
       "updated": "{{ago}} mis à jour"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Part des envois de cette radio depuis le démarrage acheminés en Flood. Les messages de canal et les annonces Flood sont toujours en Flood ; un pourcentage élevé est normal pour les compagnons à fort trafic de canal.",
+    "floodSendPercentHintAria": "À propos du pourcentage d'envoi Flood"
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Frappes de foudre (1h)"
+    "seriesLightningStrikes": "Frappes de foudre (1h)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Part des envois de cette radio depuis le démarrage acheminés en Flood. Les messages de canal et les annonces Flood sont toujours en Flood ; un pourcentage élevé est normal pour les compagnons à fort trafic de canal.",
+    "statFloodPercentHintAria": "À propos du pourcentage d'envoi Flood"
   },
   "toasts": {
     "firmwareAvailable": "Mise à jour du micrologiciel disponible : v{{version}}",

@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Traffico LoRa sconosciuto",
       "potentialMeshcoreRepeaterConflict": "Potenziale conflitto del ripetitore MeshCore",
       "elevatedNoiseFloor": "Pavimento Rumoroso Elevato",
-      "excessiveFlooding": "Flooding eccessivo",
       "reticulumTrafficDetected": "Traffico Reticulum rilevato",
       "highCompanionTxQueue": "Coda TX High Companion"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Interferenze a banda larga (elettronica difettosa, rumore della linea elettrica, ecc.) che aumentano il rumore di fondo.",
       "fringeWeakCoverage": "Il nodo è troppo lontano o scarsamente connesso al resto della mesh.",
       "elevatedNoiseFloor": "Il rumore di fondo della radio è {{noiseFloor}} dBm — interferenza elevata che riduce la portata effettiva.",
-      "excessiveFlooding": "{{percent}}% delle trasmissioni sono instradate in flood — l'instradamento diretto potrebbe non essere stabilito con nodi vicini.",
       "highCompanionTxQueue": "La profondità della coda in uscita dell'accompagnatore è {{queueLen}}/256 — il traffico potrebbe subire ritardi o interruzioni."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Identificare e rimuovere la fonte di interferenza",
         "description": "Il rumore di fondo elevato riduce l'autonomia e l'SNR: controlla l'elettronica, gli alimentatori o i motori nelle vicinanze."
-      },
-      "excessiveFlooding": {
-        "title": "Consenti l'istituzione di percorsi diretti",
-        "description": "Il rapporto di flood è molto alto: attendere che il nodo accumuli contatti a percorso diretto o controllare la prossimità del ripetitore."
       },
       "highCompanionTxQueue": {
         "title": "Riduci il traffico in uscita o controlla il link RF",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Stato",
       "updated": "Aggiornato {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Quota degli invii di questa radio dall'avvio instradati in Flood. I messaggi di canale e gli annunci Flood sono sempre Flood, quindi una percentuale alta è normale per companion con molto traffico di canale.",
+    "floodSendPercentHintAria": "Informazioni sulla percentuale di invio Flood"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Attacchi lampo (1h)"
+    "seriesLightningStrikes": "Attacchi lampo (1h)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Quota degli invii di questa radio dall'avvio instradati in Flood. I messaggi di canale e gli annunci Flood sono sempre Flood, quindi una percentuale alta è normale per companion con molto traffico di canale.",
+    "statFloodPercentHintAria": "Informazioni sulla percentuale di invio Flood"
   },
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",

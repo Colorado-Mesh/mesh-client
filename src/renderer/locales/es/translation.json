@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Tráfico LoRa desconocido",
       "potentialMeshcoreRepeaterConflict": "Conflicto potencial del repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de ruido elevado",
-      "excessiveFlooding": "Flooding excesivo",
       "reticulumTrafficDetected": "Tráfico Reticulum detectado",
       "highCompanionTxQueue": "Cola de TX de acompañamiento alto"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Interferencia de banda ancha (electrónica defectuosa, ruido de la línea eléctrica, etc.) que eleva el nivel de ruido.",
       "fringeWeakCoverage": "El nodo está demasiado lejos o mal conectado con el resto de la malla.",
       "elevatedNoiseFloor": "El nivel mínimo de ruido de radio es {{noiseFloor}} dBm — interferencia elevada que reduce el alcance efectivo.",
-      "excessiveFlooding": "{{percent}}% de las transmisiones están enrutadas por flood: es posible que no se establezca un enrutamiento directo con los nodos cercanos.",
       "highCompanionTxQueue": "La profundidad de la cola de salida del acompañante es {{queueLen}}/256; es posible que el tráfico se retrase o se caiga."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Identificar y eliminar la fuente de interferencia",
         "description": "El ruido de fondo elevado reduce el rango y la SNR: compruebe si hay componentes electrónicos, fuentes de alimentación de conmutación o motores cercanos."
-      },
-      "excessiveFlooding": {
-        "title": "Permita que se establezcan rutas directas",
-        "description": "La relación Flood es muy alta: espere a que el nodo acumule contactos de trayectoria directa o compruebe la proximidad del repetidor."
       },
       "highCompanionTxQueue": {
         "title": "Reduce el tráfico saliente o comprueba el enlace de RF",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Estado",
       "updated": "Actualizado {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Porcentaje de los envíos de esta radio desde el arranque que se enrutaron por Flood. Los mensajes de canal y los anuncios Flood siempre usan Flood, por lo que un porcentaje alto es normal en compañeros con mucho tráfico de canal.",
+    "floodSendPercentHintAria": "Acerca del porcentaje de envío Flood"
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Rayos (1h)"
+    "seriesLightningStrikes": "Rayos (1h)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Porcentaje de los envíos de esta radio desde el arranque que se enrutaron por Flood. Los mensajes de canal y los anuncios Flood siempre usan Flood, por lo que un porcentaje alto es normal en compañeros con mucho tráfico de canal.",
+    "statFloodPercentHintAria": "Acerca del porcentaje de envío Flood"
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",

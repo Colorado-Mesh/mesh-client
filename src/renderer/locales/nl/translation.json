@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Onbekend LoRa-verkeer",
       "potentialMeshcoreRepeaterConflict": "Potentieel MeshCore Repeater-conflict",
       "elevatedNoiseFloor": "Verhoogde geluidsvloer",
-      "excessiveFlooding": "Overmatige flooding",
       "reticulumTrafficDetected": "Reticulum-verkeer gedetecteerd",
       "highCompanionTxQueue": "High Companion TX-wachtrij"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Breedbandinterferentie (defecte elektronica, ruis op het elektriciteitsnet, enz.) waardoor de ruisvloer hoger wordt.",
       "fringeWeakCoverage": "Het knooppunt is te ver weg of slecht verbonden met de rest van de mesh.",
       "elevatedNoiseFloor": "Radiogeluidsvloer is {{noiseFloor}} dBm — verhoogde interferentie die het effectieve bereik vermindert.",
-      "excessiveFlooding": "{{percent}}% van de transmissies wordt via een flood-router geleid. Het is mogelijk dat er geen directe routering is met knooppunten in de buurt.",
       "highCompanionTxQueue": "De uitgaande wachtrijdiepte van de begeleider is {{queueLen}}/256. Het verkeer kan vertraagd of vertraagd zijn."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Interferentiebron identificeren en verwijderen",
         "description": "Verhoogde ruisvloer vermindert bereik en SNR — controleer op elektronica in de buurt, schakelende voedingen of motoren."
-      },
-      "excessiveFlooding": {
-        "title": "Laat directe routes tot stand komen",
-        "description": "Flood-verhouding is zeer hoog — wacht tot het knooppunt directe padcontacten verzamelt of controleer de nabijheid van de repeater."
       },
       "highCompanionTxQueue": {
         "title": "Verminder uitgaand verkeer of controleer de RF-link",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Status",
       "updated": "Bijgewerkt {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Aandeel van de verzendingen van deze radio sinds het opstarten die via Flood zijn gerouteerd. Kanaalberichten en Flood-adverts zijn altijd Flood, dus een hoog percentage is normaal voor kanaalzware companions.",
+    "floodSendPercentHintAria": "Over het Flood-verzendpercentage"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Blikseminslag (1 uur)"
+    "seriesLightningStrikes": "Blikseminslag (1 uur)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Aandeel van de verzendingen van deze radio sinds het opstarten die via Flood zijn gerouteerd. Kanaalberichten en Flood-adverts zijn altijd Flood, dus een hoog percentage is normaal voor kanaalzware companions.",
+    "statFloodPercentHintAria": "Over het Flood-verzendpercentage"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",

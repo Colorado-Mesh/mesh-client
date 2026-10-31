@@ -930,7 +930,7 @@ function RFDiagnosticsSection({
     findings = diagnoseConnectedNode(node, {
       cuStats24h: cuStats24h ?? undefined,
     });
-    totalChecks = 10;
+    totalChecks = 9;
     // If no LocalStats and no channel_utilization, we have no data at all
     if (!hasLocalStatsData(node) && node.channel_utilization == null) {
       noTelemetry = true;

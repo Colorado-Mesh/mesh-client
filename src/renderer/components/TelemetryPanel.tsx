@@ -16,9 +16,11 @@ import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { downloadBlob } from '../lib/downloadBlob';
+import { meshcoreFloodSendPercent } from '../lib/meshcore/meshcoreFloodSendPercent';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { HelpTooltip } from './HelpTooltip';
 import RefreshButton from './RefreshButton';
 import SignalMeter from './SignalMeter';
 
@@ -755,6 +757,25 @@ export default function TelemetryPanel({
                   </div>
                   <div className="text-muted text-xs">{t('telemetryPanel.statDirect')}</div>
                 </div>
+                {(() => {
+                  const floodPct = meshcoreFloodSendPercent(
+                    meshcorePacketStats.nSentFlood,
+                    meshcorePacketStats.nSentDirect,
+                  );
+                  if (floodPct === null) return null;
+                  return (
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-cyan-600">{floodPct}%</div>
+                      <div className="text-muted inline-flex items-center justify-center gap-1 text-xs">
+                        <span>{t('telemetryPanel.statFloodPercent')}</span>
+                        <HelpTooltip
+                          text={t('telemetryPanel.statFloodPercentHint')}
+                          ariaLabel={t('telemetryPanel.statFloodPercentHintAria')}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
                     {meshcorePacketStats.nRecvFlood}

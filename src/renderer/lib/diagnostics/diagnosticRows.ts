@@ -20,6 +20,17 @@ export const FOREIGN_LORA_RF_CONDITIONS = new Set([
   'Potential MeshCore Repeater Conflict',
 ]);
 
+/**
+ * RF conditions removed from the engine but that may still appear in persisted snapshots.
+ * Drop on load so they no longer contribute to Diagnostics Attention.
+ */
+export const RETIRED_RF_CONDITIONS = new Set(['Excessive Flooding']);
+
+/** Remove RF rows for conditions the engine no longer emits. */
+export function filterRetiredRfDiagnosticRows(rows: DiagnosticRow[]): DiagnosticRow[] {
+  return rows.filter((r) => !(r.kind === 'rf' && RETIRED_RF_CONDITIONS.has(r.condition)));
+}
+
 /** Align with hop/CU history windows in diagnosticsStore. */
 export const DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS = 24 * MS_PER_HOUR;
 /** RF findings are telemetry snapshots — shorter TTL reduces stale Mesh Congestion etc. */

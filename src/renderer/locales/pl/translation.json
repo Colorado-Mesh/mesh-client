@@ -2018,7 +2018,6 @@
       "unknownLoraTraffic": "Nieznany ruch LoRa",
       "potentialMeshcoreRepeaterConflict": "Potencjalny konflikt wzmacniaków MeshCore",
       "elevatedNoiseFloor": "Podwyższona podłoga hałasu",
-      "excessiveFlooding": "Nadmierne floode",
       "reticulumTrafficDetected": "Wykryto ruch Reticulum",
       "highCompanionTxQueue": "Wysoka kolejka TX Companion"
     },
@@ -2034,7 +2033,6 @@
       "widebandNoiseFloor": "Zakłócenia szerokopasmowe (wadliwa elektronika, zakłócenia w linii energetycznej itp.) podnoszące poziom szumów.",
       "fringeWeakCoverage": "Węzeł jest zbyt daleko lub słabo połączony z resztą siatki.",
       "elevatedNoiseFloor": "Poziom szumów radiowych wynosi {{noiseFloor}} dBm — podwyższone zakłócenia zmniejszające skuteczny zasięg.",
-      "excessiveFlooding": "{{percent}}% transmisji jest kierowanych przez powódź — trasowanie bezpośrednie może nie zostać ustanowione z pobliskimi węzłami.",
       "highCompanionTxQueue": "Głębokość kolejki wychodzącej towarzyszącej wynosi {{queueLen}}/256 — ruch może być opóźniony lub porzucony."
     },
     "foreignLoraCause": {
@@ -2106,10 +2104,6 @@
       "elevatedNoiseFloor": {
         "title": "Zidentyfikuj i usuń źródło zakłóceń",
         "description": "Podłoga o podwyższonym poziomie hałasu zmniejsza zasięg i SNR — sprawdź pobliską elektronikę, zasilacze przełączające lub silniki."
-      },
-      "excessiveFlooding": {
-        "title": "Zezwalaj na bezpośrednie wyznaczanie tras",
-        "description": "Wskaźnik flood jest bardzo wysoki — poczekaj, aż węzeł zgromadzi styki ścieżki bezpośredniej lub sprawdź bliskość przemiennika."
       },
       "highCompanionTxQueue": {
         "title": "Zmniejsz ruch wychodzący lub sprawdź łącze RF",
@@ -3633,7 +3627,10 @@
     "nodeStatus": {
       "heading": "Status",
       "updated": "Zaktualizowano {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Udział wysyłek tej radia od uruchomienia routowanych przez Flood. Wiadomości kanałowe i reklamy Flood zawsze używają Flood, więc wysoki odsetek jest normalny przy intensywnym ruchu kanałowym.",
+    "floodSendPercentHintAria": "O procencie wysyłki Flood"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -6006,7 +6003,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Uderzenia pioruna (1h)"
+    "seriesLightningStrikes": "Uderzenia pioruna (1h)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Udział wysyłek tej radia od uruchomienia routowanych przez Flood. Wiadomości kanałowe i reklamy Flood zawsze używają Flood, więc wysoki odsetek jest normalny przy intensywnym ruchu kanałowym.",
+    "statFloodPercentHintAria": "O procencie wysyłki Flood"
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",

@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "不明な LoRa トラフィック",
       "potentialMeshcoreRepeaterConflict": "MeshCore リピーターの潜在的な競合",
       "elevatedNoiseFloor": "高所ノイズフロア",
-      "excessiveFlooding": "過度のフラッド",
       "reticulumTrafficDetected": "Reticulumトラフィックを検出",
       "highCompanionTxQueue": "ハイコンパニオンTXキュー"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "広帯域干渉 (電子機器の故障、電力線ノイズなど) によりノイズ フロアが上昇します。",
       "fringeWeakCoverage": "ノードが遠すぎるか、メッシュの残りの部分との接続が不十分です。",
       "elevatedNoiseFloor": "ラジオノイズフロアは{{noiseFloor}} dBm — 有効範囲を低下させる高レベルの干渉。",
-      "excessiveFlooding": "送信の{{percent}}%はフラッドルーティング — 近隣ノードとの直接ルーティングが確立されていない可能性があります。",
       "highCompanionTxQueue": "コンパニオンのアウトバウンドキューの深さは{{queueLen}}/256です。トラフィックが遅延またはドロップされる可能性があります。"
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "干渉源を特定して削除する",
         "description": "高ノイズフロアは、範囲とSNRを低減します。近くの電子機器、スイッチング電源、またはモーターを確認してください。"
-      },
-      "excessiveFlooding": {
-        "title": "直接ルートを確立できるようにする",
-        "description": "フラッド比率は非常に高く、ノードが直接経路の接触を蓄積するのを待つか、リピーターの近接性を確認します。"
       },
       "highCompanionTxQueue": {
         "title": "アウトバウンドトラフィックを減らすか、RFリンクを確認してください",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "状態",
       "updated": "{{ago}} を更新しました"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% フラッド",
+    "floodSendPercentHint": "起動以降、この無線の送信のうちフラッドルーティングされた割合。チャンネルメッセージとフラッド広告は常にフラッドのため、チャンネル利用が多いコンパニオンでは高い割合が普通です。",
+    "floodSendPercentHintAria": "フラッド送信率について"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2.5 (µ g/m ³)",
     "seriesCo2": "CO ₂ (ppm)",
-    "seriesLightningStrikes": "落雷（ 1時間）"
+    "seriesLightningStrikes": "落雷（ 1時間）",
+    "statFloodPercent": "フラッド %",
+    "statFloodPercentHint": "起動以降、この無線の送信のうちフラッドルーティングされた割合。チャンネルメッセージとフラッド広告は常にフラッドのため、チャンネル利用が多いコンパニオンでは高い割合が普通です。",
+    "statFloodPercentHintAria": "フラッド送信率について"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",

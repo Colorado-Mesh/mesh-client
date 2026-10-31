@@ -220,15 +220,6 @@ const RF_CONDITION_REMEDIES: Record<string, DiagnosticRemedy> = {
     titleKey: 'diagnosticsPanel.remedyRf.elevatedNoiseFloor.title',
     descriptionKey: 'diagnosticsPanel.remedyRf.elevatedNoiseFloor.description',
   },
-  'Excessive Flooding': {
-    title: 'Allow direct routes to establish',
-    description:
-      'Flood ratio is very high — wait for the node to accumulate direct-path contacts, or check repeater proximity.',
-    category: 'Configuration',
-    severity: 'warning',
-    titleKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.title',
-    descriptionKey: 'diagnosticsPanel.remedyRf.excessiveFlooding.description',
-  },
   'High Companion TX Queue': {
     title: 'Reduce outbound traffic or check the RF link',
     description:

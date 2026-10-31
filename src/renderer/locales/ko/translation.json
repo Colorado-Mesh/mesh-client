@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "알 수 없는 LoRa 트래픽",
       "potentialMeshcoreRepeaterConflict": "잠재적인 MeshCore 리피터 충돌",
       "elevatedNoiseFloor": "높은 소음층",
-      "excessiveFlooding": "과도한 플러드",
       "reticulumTrafficDetected": "Reticulum 트래픽 감지됨",
       "highCompanionTxQueue": "하이 컴패니언 TX 대기열"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "광대역 간섭(전자 장치 결함, 전력선 소음 등)으로 인해 노이즈 플로어가 높아집니다.",
       "fringeWeakCoverage": "노드가 너무 멀리 떨어져 있거나 메시의 나머지 부분과 제대로 연결되어 있지 않습니다.",
       "elevatedNoiseFloor": "무선 노이즈 플로어는 {{noiseFloor}} dBm — 유효 범위를 줄이는 높은 간섭.",
-      "excessiveFlooding": "{{percent}}%의 전송이 플러드 라우팅됩니다 — 근처 노드에서 직접 라우팅이 설정되지 않을 수 있습니다.",
       "highCompanionTxQueue": "동반자 아웃바운드 대기열 깊이는 {{queueLen}}/256입니다. 트래픽이 지연되거나 드롭될 수 있습니다."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "간섭원 식별 및 제거",
         "description": "노이즈 플로어가 높아지면 범위와 SNR이 줄어듭니다. 근처의 전자 장치, 스위칭 전원 공급 장치 또는 모터가 있는지 확인하십시오."
-      },
-      "excessiveFlooding": {
-        "title": "직행 경로를 설정하도록 허용",
-        "description": "플러드 비율이 매우 높습니다. 노드가 직접 경로 접촉을 축적하거나 리피터 근접성을 확인할 때까지 기다리십시오."
       },
       "highCompanionTxQueue": {
         "title": "아웃바운드 트래픽을 줄이거나 RF 링크를 확인하세요.",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "상태",
       "updated": "{{ago}} 업데이트됨"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% 플러드",
+    "floodSendPercentHint": "부팅 이후 이 라디오 송신 중 플러드 라우팅된 비율입니다. 채널 메시지와 플러드 광고는 항상 플러드이므로, 채널 트래픽이 많은 컴패니언에서는 높은 비율이 정상입니다.",
+    "floodSendPercentHintAria": "플러드 전송 비율 정보"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2.5 (µg/m ³)",
     "seriesCo2": "CO ₂ (ppm)",
-    "seriesLightningStrikes": "낙뢰 (1시간)"
+    "seriesLightningStrikes": "낙뢰 (1시간)",
+    "statFloodPercent": "플러드 %",
+    "statFloodPercentHint": "부팅 이후 이 라디오 송신 중 플러드 라우팅된 비율입니다. 채널 메시지와 플러드 광고는 항상 플러드이므로, 채널 트래픽이 많은 컴패니언에서는 높은 비율이 정상입니다.",
+    "statFloodPercentHintAria": "플러드 전송 비율 정보"
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",

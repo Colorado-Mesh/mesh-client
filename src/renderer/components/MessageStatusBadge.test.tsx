@@ -31,8 +31,10 @@ describe('MessageStatusBadge', () => {
           'messageStatusBadge.tooltipPrefixDevice: messageStatusBadge.noAckTooltipWifi',
         ),
       ).toBeTruthy();
-      expect(screen.getByText(/messageStatusBadge.transportWifi/)).toBeTruthy();
-      expect(screen.getByText(/messageStatusBadge.noAck/)).toBeTruthy();
+      // Prefer the visible badge — HelpTooltip sr-only description also contains "noAck*".
+      expect(
+        screen.getByText(/messageStatusBadge\.transportWifi\s+messageStatusBadge\.noAck/),
+      ).toBeTruthy();
     },
   );
 

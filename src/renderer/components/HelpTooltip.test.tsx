@@ -5,8 +5,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { HelpTooltip } from './HelpTooltip';
 
 describe('HelpTooltip', () => {
-  it('renders the ⓘ icon by default', () => {
+  it('renders the ⓘ icon by default as a button', () => {
     render(<HelpTooltip text="Help text" />);
+    expect(screen.getByRole('button', { name: 'Help text' })).toBeInTheDocument();
     expect(screen.getByText('ⓘ')).toBeInTheDocument();
   });
 
@@ -24,11 +25,11 @@ describe('HelpTooltip', () => {
     const user = userEvent.setup();
     render(<HelpTooltip text="Helpful explanation" />);
     const trigger = document.querySelector('.cursor-help')!;
-    expect(screen.queryByText('Helpful explanation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     await user.hover(trigger);
-    expect(screen.getByText('Helpful explanation')).toBeInTheDocument();
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful explanation');
     await user.unhover(trigger);
-    expect(screen.queryByText('Helpful explanation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('does not use a native title attribute (broken in Electron)', () => {
@@ -37,18 +38,52 @@ describe('HelpTooltip', () => {
     expect(helpEl?.getAttribute('title')).toBeNull();
   });
 
-  it('shows tooltip on focus and hides on blur', () => {
-    render(<HelpTooltip text="Keyboard help" />);
-    const trigger = document.querySelector('.cursor-help')!;
-    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
+  it('keeps aria-describedby on a stable hidden node from the initial render', () => {
+    render(<HelpTooltip text="Accessible help body" ariaLabel="About help" />);
+    const trigger = screen.getByRole('button', { name: 'About help' });
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const description = document.getElementById(describedBy!);
+    expect(description).toHaveClass('sr-only');
+    expect(description).toHaveTextContent('Accessible help body');
     act(() => {
       fireEvent.focus(trigger);
     });
-    expect(screen.getByText('Keyboard help')).toBeInTheDocument();
+    const bubble = screen.getByRole('tooltip');
+    expect(bubble).toHaveTextContent('Accessible help body');
+    expect(bubble.id).toBeTruthy();
+    expect(bubble.id).not.toBe(describedBy);
+    expect(trigger.getAttribute('aria-describedby')).toBe(describedBy);
+  });
+
+  it('forwards aria-describedby to the focusable child when nonFocusableWrapper', () => {
+    render(
+      <HelpTooltip text="Child description" nonFocusableWrapper>
+        <button type="button" aria-label="Sync">
+          Go
+        </button>
+      </HelpTooltip>,
+    );
+    const child = screen.getByRole('button', { name: 'Sync' });
+    const describedBy = child.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Child description');
+    const wrapper = child.parentElement;
+    expect(wrapper?.getAttribute('aria-describedby')).toBe(describedBy);
+  });
+
+  it('shows tooltip on focus and hides on blur', () => {
+    render(<HelpTooltip text="Keyboard help" />);
+    const trigger = document.querySelector('.cursor-help')!;
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.focus(trigger);
+    });
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Keyboard help');
     act(() => {
       fireEvent.blur(trigger);
     });
-    expect(screen.queryByText('Keyboard help')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('clamps tooltip left when trigger is near the right viewport edge', async () => {

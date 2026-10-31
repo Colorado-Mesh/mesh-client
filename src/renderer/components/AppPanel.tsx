@@ -917,7 +917,14 @@ export default function AppPanel({
 
       <SettingsCollapsible
         title={t('appPanel.protocolsSection')}
-        summaryExtra={<HelpTooltip text={t('appPanel.protocolsEnabledDesc')} />}
+        summaryExtra={
+          // Inside <summary>: must not be a nested focusable control (axe nested-interactive).
+          <HelpTooltip text={t('appPanel.protocolsEnabledDesc')} nonFocusableWrapper>
+            <span className="text-muted cursor-help text-xs select-none" aria-hidden="true">
+              ⓘ
+            </span>
+          </HelpTooltip>
+        }
       >
         <div data-setting-anchor="app.protocols.enabled" className="space-y-2">
           {REGISTERED_MESH_PROTOCOLS.map((proto) => {

@@ -196,7 +196,7 @@ describe('diagnoseConnectedNode — MeshCore stats', () => {
     expect(findings.some((f) => f.condition === 'Elevated Noise Floor')).toBe(false);
   });
 
-  it('flags Excessive Flooding when >90% flood and totalSent >= 20', () => {
+  it('does not flag a flood-heavy MeshCore companion (cumulative counters are traffic mix, not health)', () => {
     const node = baseNode({
       meshcore_local_stats: {
         batteryMilliVolts: 0,
@@ -209,31 +209,8 @@ describe('diagnoseConnectedNode — MeshCore stats', () => {
         rxAirSecs: 0,
         recv: 0,
         sent: 0,
-        nSentFlood: 19,
-        nSentDirect: 1,
-        nRecvFlood: 0,
-        nRecvDirect: 0,
-      },
-    });
-    const findings = diagnoseConnectedNode(node);
-    expect(findings.some((f) => f.condition === 'Excessive Flooding')).toBe(true);
-  });
-
-  it('does not flag Excessive Flooding when totalSent < 20', () => {
-    const node = baseNode({
-      meshcore_local_stats: {
-        batteryMilliVolts: 0,
-        uptimeSecs: 0,
-        queueLen: 0,
-        noiseFloor: -110,
-        lastRssi: 0,
-        lastSnr: 0,
-        txAirSecs: 0,
-        rxAirSecs: 0,
-        recv: 0,
-        sent: 0,
-        nSentFlood: 10,
-        nSentDirect: 0,
+        nSentFlood: 95,
+        nSentDirect: 5,
         nRecvFlood: 0,
         nRecvDirect: 0,
       },

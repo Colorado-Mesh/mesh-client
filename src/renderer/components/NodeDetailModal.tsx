@@ -32,6 +32,7 @@ import {
   getMeshcoreRadioMaxContacts,
   subscribeMeshcoreRadioMaxContacts,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
+import { meshcoreFloodSendPercent } from '../lib/meshcore/meshcoreFloodSendPercent';
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
@@ -1736,9 +1737,24 @@ export default function NodeDetailModal({
                 <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.currTxQueueLen}
                 </div>
-                <div className="text-muted">{t('nodeDetailModal.floodDirectSentLabel')}</div>
+                <div className="text-muted inline-flex items-center gap-1">
+                  <span>{t('nodeDetailModal.floodDirectSentLabel')}</span>
+                  <HelpTooltip
+                    text={t('nodeDetailModal.floodSendPercentHint')}
+                    ariaLabel={t('nodeDetailModal.floodSendPercentHintAria')}
+                  />
+                </div>
                 <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.nSentFlood} / {meshcoreRepeaterStatus.nSentDirect}
+                  {(() => {
+                    const floodPct = meshcoreFloodSendPercent(
+                      meshcoreRepeaterStatus.nSentFlood,
+                      meshcoreRepeaterStatus.nSentDirect,
+                    );
+                    return floodPct === null
+                      ? null
+                      : ` (${t('nodeDetailModal.floodSendPercentValue', { percent: floodPct })})`;
+                  })()}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.floodDirectRecvLabel')}</div>
                 <div className="text-ink-200 font-mono">
@@ -1819,9 +1835,24 @@ export default function NodeDetailModal({
                 {t('nodeDetailModal.packetsLocalHeading')}
               </h4>
               <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
-                <div className="text-muted">{t('nodeDetailModal.sentFloodDirectLabel')}</div>
+                <div className="text-muted inline-flex items-center gap-1">
+                  <span>{t('nodeDetailModal.sentFloodDirectLabel')}</span>
+                  <HelpTooltip
+                    text={t('nodeDetailModal.floodSendPercentHint')}
+                    ariaLabel={t('nodeDetailModal.floodSendPercentHintAria')}
+                  />
+                </div>
                 <div className="text-ink-200 font-mono">
                   {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
+                  {(() => {
+                    const floodPct = meshcoreFloodSendPercent(
+                      meshcoreLocalStats.nSentFlood,
+                      meshcoreLocalStats.nSentDirect,
+                    );
+                    return floodPct === null
+                      ? null
+                      : ` (${t('nodeDetailModal.floodSendPercentValue', { percent: floodPct })})`;
+                  })()}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.recvFloodDirectLabel')}</div>
                 <div className="text-ink-200 font-mono">

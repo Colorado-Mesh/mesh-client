@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Tráfego LoRa desconhecido",
       "potentialMeshcoreRepeaterConflict": "Potencial Conflito do Repetidor MeshCore",
       "elevatedNoiseFloor": "Piso de Ruído Elevado",
-      "excessiveFlooding": "Flood excessiva",
       "reticulumTrafficDetected": "Tráfego Reticulum detectado",
       "highCompanionTxQueue": "Fila High Companion TX"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Interferência de banda larga (eletrônica defeituosa, ruído de linha de energia, etc.) elevando o nível de ruído.",
       "fringeWeakCoverage": "O nó está muito longe ou mal conectado ao resto da malha.",
       "elevatedNoiseFloor": "O nível de ruído de rádio é {{noiseFloor}} dBm — interferência elevada reduzindo o alcance efetivo.",
-      "excessiveFlooding": "{{percent}}% das transmissões são roteadas por flood — o roteamento direto pode não ser estabelecido com nós próximos.",
       "highCompanionTxQueue": "A profundidade da fila de saída do acompanhante é {{queueLen}}/256 — o tráfego pode estar atrasado ou cair."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Identificar e remover a fonte de interferência",
         "description": "O piso de ruído elevado reduz o alcance e o SNR — verifique se há eletrônicos próximos, fontes de alimentação de comutação ou motores."
-      },
-      "excessiveFlooding": {
-        "title": "Permitir que rotas diretas sejam estabelecidas",
-        "description": "A taxa de flood é muito alta — aguarde o nó acumular contatos de caminho direto ou verifique a proximidade do repetidor."
       },
       "highCompanionTxQueue": {
         "title": "Reduza o tráfego de saída ou verifique o link de RF",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Status",
       "updated": "Atualizado {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Parte dos envios deste rádio desde a inicialização que foram roteados por Flood. Mensagens de canal e anúncios Flood sempre usam Flood, então uma porcentagem alta é normal para companions com muito tráfego de canal.",
+    "floodSendPercentHintAria": "Sobre a porcentagem de envio Flood"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Queda de Raios)"
+    "seriesLightningStrikes": "Queda de Raios)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Parte dos envios deste rádio desde a inicialização que foram roteados por Flood. Mensagens de canal e anúncios Flood sempre usam Flood, então uma porcentagem alta é normal para companions com muito tráfego de canal.",
+    "statFloodPercentHintAria": "Sobre a porcentagem de envio Flood"
   },
   "toasts": {
     "firmwareAvailable": "Atualização de firmware disponível: v{{version}}",

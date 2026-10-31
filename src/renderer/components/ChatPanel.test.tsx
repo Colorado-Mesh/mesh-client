@@ -646,7 +646,9 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByText(/TCP/)).toBeInTheDocument();
+    // Prefer the accessible name over getByText(/TCP/) — HelpTooltip keeps an sr-only
+    // description that also contains "TCP".
+    expect(screen.getByLabelText(/Sent via TCP/i)).toBeInTheDocument();
   });
 
   it('shows explicit multi-egress Reticulum outbound badge (RF+TCP)', () => {
@@ -674,7 +676,8 @@ describe('ChatPanel accessibility', () => {
         />
       </ToastProvider>,
     );
-    expect(screen.getByText(/RF\+TCP/)).toBeInTheDocument();
+    // Prefer accessible name — HelpTooltip sr-only description also mentions RF+TCP.
+    expect(screen.getByLabelText(/RF\+TCP/i)).toBeInTheDocument();
   });
 
   it('surfaces incoming DM conversations and renders them in DM view', async () => {

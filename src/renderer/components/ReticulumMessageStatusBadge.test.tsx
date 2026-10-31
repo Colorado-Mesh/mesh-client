@@ -55,7 +55,8 @@ describe('ReticulumMessageStatusBadge', () => {
       <ReticulumMessageStatusBadge status="acked" via="tcp" deliveryMethod="paper" />,
     );
     expect(screen.getByLabelText('chatPanel.reticulumSendPaperTooltip')).toBeTruthy();
-    expect(screen.getByText(/reticulumSendPaper/)).toBeTruthy();
+    // Prefer the visible badge label over the sr-only HelpTooltip description (same prefix).
+    expect(screen.getByText(/chatPanel\.reticulumSendPaper\s+✓/)).toBeTruthy();
   });
 
   it('keeps failure status in tooltip for failed paper messages', async () => {
