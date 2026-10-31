@@ -77,8 +77,8 @@ overrides:
   # undici-types stays on 7.x to match @types/node.
   # postcss: GHSA-fxqj-rqcc-2cmp — floor >=8.5.23.
   # ip-address: GHSA-mwp4-54f8-5fhr (mqtt → socks) plus GHSA-rxp7-6hxx-x8q5
-  # (Address6 zone-id quadratic match) and the link-preview global-address
-  # classification API — floor >=10.7.4.
+  # (Address6 zone-id quadratic match) — floor >=10.7.4 for the transitive
+  # socks consumer only; main SSRF/global checks use src/shared/ipLiteral.ts.
   # @xmldom/xmldom: GHSA-6gmq-8vp8-gcm6 (+ GHSA-4w3w-2rp5-g8jm /
   # GHSA-w2rr-34g9-rvrj / GHSA-93r5-fhx6-vmg9 / GHSA-8344-3jmq-59r6 /
   # GHSA-6h8r-xr42-gp59 / GHSA-27p8-2357-5qqv / GHSA-c7q8-3ch8-vqpv) —

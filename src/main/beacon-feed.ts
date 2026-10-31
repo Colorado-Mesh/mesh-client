@@ -2,7 +2,6 @@ import dns from 'node:dns/promises';
 import https from 'node:https';
 import type { LookupFunction } from 'node:net';
 
-import { Address4, Address6 } from 'ip-address';
 import WebSocket from 'ws';
 
 import {
@@ -14,6 +13,7 @@ import {
   type BeaconJsonObject,
   type RegionalFeedProvider,
 } from '../shared/beacon';
+import { isGlobalIpLiteral, isValidIpLiteral } from '../shared/ipLiteral';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import {
   coreScopeObserverRegions,
@@ -83,8 +83,7 @@ export function parseBeaconConnectRequest(value: unknown): BeaconConnectRequest 
     host.endsWith('.localhost') ||
     host.endsWith('.local') ||
     host.endsWith('.internal') ||
-    Address4.isValid(host) ||
-    Address6.isValid(host.replace(/^\[|\]$/g, ''))
+    isValidIpLiteral(host)
   ) {
     throw new Error('Regional maps require a public internet hostname.');
   }
@@ -114,9 +113,7 @@ async function resolvePublicAddress(hostname: string): Promise<BeaconAddress> {
         }, DNS_TIMEOUT_MS);
       }),
     ]);
-    const global = Address4.isValid(result.address)
-      ? new Address4(result.address).isGlobal()
-      : Address6.isValid(result.address) && new Address6(result.address).isGlobal();
+    const global = isGlobalIpLiteral(result.address) === true;
     if (!global || (result.family !== 4 && result.family !== 6)) {
       throw new Error('Regional maps require a public internet address.');
     }

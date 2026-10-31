@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Yalnızca radyo bağlantısı (Bluetooth veya USB)",
     "preventSleepOptionAlways": "Herhangi bir bağlantı",
     "preventSleepOptionOff": "Hiç",
-    "preventSleepSaveFailed": "Uyanık tutma ayarı kaydedilemedi."
+    "preventSleepSaveFailed": "Uyanık tutma ayarı kaydedilemedi.",
+    "memoryJsHeap": "JS heap: {{value}}",
+    "memoryDeltaWorkingSet": "Çalışma seti Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
+    "memoryDomNodes": "DOM düğümleri: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

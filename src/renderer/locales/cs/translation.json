@@ -528,7 +528,13 @@
     "preventSleepOptionRf": "Pouze rádiové spojení (Bluetooth nebo USB)",
     "preventSleepOptionAlways": "Jakékoli spojení",
     "preventSleepOptionOff": "Nikdy",
-    "preventSleepSaveFailed": "Nastavení udržování bdělosti se nepodařilo uložit."
+    "preventSleepSaveFailed": "Nastavení udržování bdělosti se nepodařilo uložit.",
+    "memoryJsHeap": "Hromada JS: {{value}}",
+    "memoryDeltaWorkingSet": "Pracovní sada Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS halda Δ: {{value}}",
+    "memoryDomNodes": "DOM uzly: {{count}}",
+    "memoryHistoryHeap": "halda {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

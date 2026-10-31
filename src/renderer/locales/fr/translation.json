@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Liaison radio uniquement (Bluetooth ou USB)",
     "preventSleepOptionAlways": "Toute connexion",
     "preventSleepOptionOff": "Jamais",
-    "preventSleepSaveFailed": "Impossible d'enregistrer le paramètre de veille prolongée."
+    "preventSleepSaveFailed": "Impossible d'enregistrer le paramètre de veille prolongée.",
+    "memoryJsHeap": "JS Heap : {{value}}",
+    "memoryDeltaWorkingSet": "Ensemble de travail Δ : {{value}}",
+    "memoryDeltaJsHeap": "JS tas Δ : {{value}}",
+    "memoryDomNodes": "Nœuds DOM : {{count}}",
+    "memoryHistoryHeap": "tas {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

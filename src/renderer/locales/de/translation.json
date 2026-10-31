@@ -520,7 +520,13 @@
     "preventSleepOptionRf": "Nur Funkverbindung (Bluetooth oder USB)",
     "preventSleepOptionAlways": "Any connection?",
     "preventSleepOptionOff": "Nie",
-    "preventSleepSaveFailed": "Die Wachhaltungseinstellung konnte nicht gespeichert werden."
+    "preventSleepSaveFailed": "Die Wachhaltungseinstellung konnte nicht gespeichert werden.",
+    "memoryJsHeap": "JS-Heap: {{value}}",
+    "memoryDeltaWorkingSet": "Arbeitssatz Δ: {{value}}",
+    "memoryDeltaJsHeap": "JS Heap Δ: {{value}}",
+    "memoryDomNodes": "DOM Knoten: {{count}}",
+    "memoryHistoryHeap": "heap {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

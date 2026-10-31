@@ -7,7 +7,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
-/** Live traffic pop-out window handlers add ~6.2 KiB; main measures ~746.0 KiB (local macOS). */
+/**
+ * Live traffic pop-out window handlers add ~6.2 KiB. Direct `ip-address` was removed in favor
+ * of `src/shared/ipLiteral.ts` (~33 KiB savings) so the 748 KiB cap stays intact.
+ */
 const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 748 * 1024;
 
 function expectMainBundleSize(outfile) {

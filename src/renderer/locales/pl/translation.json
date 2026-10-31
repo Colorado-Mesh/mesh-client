@@ -536,7 +536,13 @@
     "preventSleepOptionRf": "Tylko łącze radiowe (Bluetooth lub USB)",
     "preventSleepOptionAlways": "- Jakiś związek?",
     "preventSleepOptionOff": "Nigdy",
-    "preventSleepSaveFailed": "Nie można zapisać ustawienia podtrzymywania aktywności."
+    "preventSleepSaveFailed": "Nie można zapisać ustawienia podtrzymywania aktywności.",
+    "memoryJsHeap": "Sterta JS: {{value}}",
+    "memoryDeltaWorkingSet": "Zestaw roboczy Δ: {{value}}",
+    "memoryDeltaJsHeap": "Sterta JS Δ: {{value}}",
+    "memoryDomNodes": "Węzły DOM: {{count}}",
+    "memoryHistoryHeap": "hałda {{value}}",
+    "memoryHistoryDelta": "Δ {{value}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

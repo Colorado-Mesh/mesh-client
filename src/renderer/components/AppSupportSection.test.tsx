@@ -141,6 +141,51 @@ describe('App Support memory diagnostics', () => {
     expect(container.querySelector('polyline')).toHaveAttribute('points', '0,10 300,4');
   });
 
+  it('shows JS heap, deltas, and breaks the sparkline across long gaps', () => {
+    const hour = 3_600_000;
+    memory.snapshot = {
+      ...memory.snapshot,
+      samples: [
+        {
+          at: 0,
+          bytes: 100_000_000,
+          source: 'renderer-process',
+          jsHeapBytes: 40_000_000,
+          domNodes: 1000,
+        },
+        {
+          at: hour,
+          bytes: 120_000_000,
+          source: 'renderer-process',
+          jsHeapBytes: 45_000_000,
+          domNodes: 1100,
+        },
+        {
+          at: 10 * hour,
+          bytes: 200_000_000,
+          source: 'renderer-process',
+          jsHeapBytes: 50_000_000,
+        },
+        {
+          at: 11 * hour,
+          bytes: 180_000_000,
+          source: 'renderer-process',
+          jsHeapBytes: 48_000_000,
+          domNodes: 1050,
+        },
+      ],
+    };
+    const { container } = render(<AppSupportSection exporting={null} onExport={vi.fn()} />);
+    openMemoryDetails(container);
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Latest estimate: 180 MB');
+    expect(status).toHaveTextContent('JS heap: 48 MB');
+    expect(status).toHaveTextContent('Working set Δ: −20 MB');
+    expect(status).toHaveTextContent('JS heap Δ: −2 MB');
+    expect(status).toHaveTextContent('DOM nodes: 1050');
+    expect(container.querySelectorAll('polyline')).toHaveLength(2);
+  });
+
   it('keeps process sampling and its scope accessible', async () => {
     memory.snapshot = {
       ...memory.snapshot,

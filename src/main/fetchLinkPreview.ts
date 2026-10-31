@@ -1,11 +1,16 @@
 import dns from 'node:dns/promises';
 import type { LookupFunction } from 'node:net';
 
-import { Address4, Address6 } from 'ip-address';
 import { Agent, fetch as undiciFetch } from 'undici';
 
 import { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
 import { stripConnectHostBrackets } from '../shared/connectHost';
+import {
+  ipLiteralFamily,
+  isGlobalIpLiteral,
+  isValidIpLiteral,
+  isValidIpv6Literal,
+} from '../shared/ipLiteral';
 import {
   baseMimeFromContentType,
   bufferToRasterImageDataUrl,
@@ -137,10 +142,7 @@ async function lookupHostname(hostname: string): Promise<string> {
 
 /** Returns whether an IP address is globally reachable. */
 function isGlobalIpAddress(address: string): boolean {
-  const bare = stripConnectHostBrackets(address.trim());
-  if (Address4.isValid(bare)) return new Address4(bare).isGlobal();
-  if (Address6.isValid(bare)) return new Address6(bare).isGlobal();
-  return false;
+  return isGlobalIpLiteral(address) === true;
 }
 
 /** Single DNS resolution used for both block checks and pinned connect (avoids lookup TOCTOU). */
@@ -150,7 +152,7 @@ async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
     throw new Error('blocked hostname');
   }
 
-  if (Address6.isValid(bare)) {
+  if (isValidIpv6Literal(bare)) {
     if (!isGlobalIpAddress(bare)) throw new Error('blocked hostname');
     return bare;
   }
@@ -171,7 +173,7 @@ function defaultConnectPort(url: URL): number {
 
 /** Creates a socket lookup that always returns the validated address. */
 function pinnedLookup(address: string): LookupFunction {
-  const family = Address4.isValid(address) ? 4 : 6;
+  const family = ipLiteralFamily(address) === 4 ? 4 : 6;
   return (_hostname, options, callback) => {
     if (options.all) {
       callback(null, [{ address, family }]);
@@ -186,8 +188,7 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
   const url = new URL(urlString);
   const address = await resolvePinnedPreviewAddress(url.hostname);
   const hostname = stripConnectHostBrackets(url.hostname);
-  const servername =
-    Address4.isValid(hostname) || Address6.isValid(hostname) ? undefined : hostname;
+  const servername = isValidIpLiteral(hostname) ? undefined : hostname;
   const agent = new Agent({
     connect: {
       lookup: pinnedLookup(address),
