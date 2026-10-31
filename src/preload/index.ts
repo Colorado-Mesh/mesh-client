@@ -59,6 +59,10 @@ import type {
   NotificationSoundRecord,
 } from '../shared/notificationSounds';
 import type { OfflineMapBasemapId } from '../shared/offlineMaps/basemapRegistry';
+import {
+  RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL,
+  type RendererMemoryAutoSamplePayload,
+} from '../shared/rendererMemoryAutoSample';
 import type {
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
@@ -335,17 +339,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       domNodes?: number;
     }) => ipcRenderer.invoke('db:recordRendererMemorySample', sample),
     getRendererMemorySampleSummary: () => ipcRenderer.invoke('db:getRendererMemorySampleSummary'),
-    onRendererMemoryAutoSample: (
-      callback: (sample: { capturedAt: number; bytes: number; source: 'renderer-process' }) => void,
-    ) => {
+    onRendererMemoryAutoSample: (callback: (sample: RendererMemoryAutoSamplePayload) => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        sample: { capturedAt: number; bytes: number; source: 'renderer-process' },
+        sample: RendererMemoryAutoSamplePayload,
       ): void => {
         callback(sample);
       };
-      ipcRenderer.on('renderer-memory:auto-sample', handler);
-      return () => ipcRenderer.removeListener('renderer-memory:auto-sample', handler);
+      ipcRenderer.on(RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL, handler);
+      return () => ipcRenderer.removeListener(RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL, handler);
     },
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),

@@ -47,6 +47,7 @@ import type {
   UpsertRemoteAddressRequest,
   UpsertRemoteInboundPolicyRequest,
 } from './remote-types';
+import type { RendererMemoryAutoSamplePayload } from './rendererMemoryAutoSample';
 import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
@@ -550,7 +551,7 @@ export interface ElectronAPI {
     }>;
     /** Main-owned 2h process working-set samples (already persisted in SQLite). */
     onRendererMemoryAutoSample: (
-      callback: (sample: { capturedAt: number; bytes: number; source: 'renderer-process' }) => void,
+      callback: (sample: RendererMemoryAutoSamplePayload) => void,
     ) => () => void;
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;

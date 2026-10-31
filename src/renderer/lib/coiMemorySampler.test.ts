@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { COI_MEMORY_MAX_SAMPLES, createCoiMemorySampler } from './coiMemorySampler';
+import {
+  COI_MEMORY_MAX_SAMPLES,
+  COI_MEMORY_MAX_VISIBILITY_SAMPLES,
+  createCoiMemorySampler,
+} from './coiMemorySampler';
 import { RENDERER_MEMORY_VISIBILITY_SETTLE_MS } from './timeConstants';
 import { withMockedConsoleWarn } from './vitestConsoleMock';
 
@@ -229,6 +233,56 @@ describe('COI renderer memory sampler', () => {
     });
     stop();
     expect(pendingSettle.size).toBe(0);
+  });
+
+  it('keeps main auto-samples when visibility cycles fill the ring', async () => {
+    const { sampler, measureProcess, setVisible, flushSettle, pushAuto } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    const autoCount = COI_MEMORY_MAX_SAMPLES - 2;
+    for (let i = 0; i < autoCount; i += 1) {
+      pushAuto({ at: 1_000 + i, bytes: 1_000_000 + i, source: 'renderer-process' });
+    }
+    expect(sampler.getSnapshot().samples).toHaveLength(autoCount);
+    for (let cycle = 0; cycle < COI_MEMORY_MAX_VISIBILITY_SAMPLES; cycle += 1) {
+      setVisible(true);
+      await vi.waitFor(() => {
+        expect(measureProcess).toHaveBeenCalled();
+        expect(sampler.getSnapshot().sampling).toBe(false);
+      });
+      flushSettle();
+      await vi.waitFor(() => {
+        expect(sampler.getSnapshot().sampling).toBe(false);
+      });
+      setVisible(false);
+      measureProcess.mockClear();
+    }
+    const samples = sampler.getSnapshot().samples;
+    expect(samples.some((sample) => sample.at === 1_000 && !sample.visibility)).toBe(true);
+    expect(samples.filter((sample) => sample.visibility).length).toBeLessThanOrEqual(
+      COI_MEMORY_MAX_VISIBILITY_SAMPLES,
+    );
+    expect(samples.length).toBeLessThanOrEqual(COI_MEMORY_MAX_SAMPLES);
+    stop();
+  });
+
+  it('still samples on show even when a main auto-sample arrived recently', async () => {
+    const { sampler, measureProcess, setVisible, pushAuto } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    pushAuto({ at: Date.now(), bytes: 2_000_000, source: 'renderer-process' });
+    setVisible(true);
+    await vi.waitFor(() => {
+      expect(measureProcess).toHaveBeenCalledTimes(1);
+    });
+    expect(sampler.getSnapshot().samples.at(-1)?.visibility).toBe(true);
+    stop();
   });
 
   it('cancels settle sampling when hidden again or stopped', async () => {

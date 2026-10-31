@@ -1,21 +1,19 @@
 import type { BrowserWindow } from 'electron';
 
+import {
+  RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL,
+  type RendererMemoryAutoSamplePayload,
+} from '../shared/rendererMemoryAutoSample';
 import { RENDERER_MEMORY_AUTO_SAMPLE_INTERVAL_MS } from '../shared/timeConstants';
 import type { NodeSqliteDB } from './db-compat';
 import { insertRendererMemorySample } from './renderer-memory-samples';
 import { rendererProcessMemoryBytes } from './rendererProcessMemory';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
-export const RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL = 'renderer-memory:auto-sample';
+export { RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL, type RendererMemoryAutoSamplePayload };
 
 /** Delay before the first sample so the renderer can subscribe after load. */
 export const RENDERER_MEMORY_AUTO_SAMPLE_INITIAL_DELAY_MS = 5_000;
-
-export interface RendererMemoryAutoSamplePayload {
-  capturedAt: number;
-  bytes: number;
-  source: 'renderer-process';
-}
 
 export interface RendererMemoryAutoSamplerDeps {
   getWindow: () => BrowserWindow | null;

@@ -4,6 +4,8 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { RENDERER_MEMORY_VISIBILITY_SETTLE_MS } from './timeConstants';
 
 export const COI_MEMORY_MAX_SAMPLES = 24;
+/** Soft cap so repeated show/hide cycles cannot push out sparse 2h main auto-samples. */
+export const COI_MEMORY_MAX_VISIBILITY_SAMPLES = 6;
 
 export interface CoiMemorySample {
   at: number;
@@ -12,6 +14,8 @@ export interface CoiMemorySample {
   jsHeapBytes?: number;
   totalJsHeapBytes?: number;
   domNodes?: number;
+  /** Set for hidden→visible / settle samples (ring eviction prefers these). */
+  visibility?: true;
 }
 
 export interface CoiMemorySnapshot {
@@ -64,6 +68,8 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
   let settleTimer: unknown;
   let inFlight: Promise<CoiMemorySample | null> | null = null;
   let generation = 0;
+  /** Bumped on each hidden→visible so an older in-flight wait does not steal a newer show. */
+  let visibilityShowEpoch = 0;
   const scheduleSettle = environment.scheduleSettle ?? ((fn, ms) => setTimeout(fn, ms));
   const clearSettle =
     environment.clearSettle ??
@@ -109,10 +115,31 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     return next;
   }
 
-  function appendSample(sample: CoiMemorySample) {
+  function dropOldestVisibility(samples: readonly CoiMemorySample[]): CoiMemorySample[] {
+    const index = samples.findIndex((sample) => sample.visibility);
+    if (index < 0) return [...samples];
+    return samples.filter((_, i) => i !== index);
+  }
+
+  function appendSample(
+    sample: CoiMemorySample,
+    options?: { resetOnSourceChange?: boolean },
+  ): void {
+    const resetOnSourceChange = options?.resetOnSourceChange ?? true;
     const previous = snapshot.samples.at(-1);
-    const history = previous?.source === sample.source ? snapshot.samples : [];
-    update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES), failed: false });
+    let history =
+      resetOnSourceChange && previous && previous.source !== sample.source
+        ? []
+        : [...snapshot.samples];
+    history.push(sample);
+    while (history.filter((entry) => entry.visibility).length > COI_MEMORY_MAX_VISIBILITY_SAMPLES) {
+      history = dropOldestVisibility(history);
+    }
+    while (history.length > COI_MEMORY_MAX_SAMPLES) {
+      const withVisibility = history.some((entry) => entry.visibility);
+      history = withVisibility ? dropOldestVisibility(history) : history.slice(1);
+    }
+    update({ samples: history, failed: false });
   }
 
   /** Main auto-sample push — updates the Support ring only (enrich with live heap/DOM). */
@@ -140,7 +167,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     settleTimer = scheduleSettle(() => {
       settleTimer = undefined;
       if (requestGeneration !== generation || !environment.isVisible()) return;
-      void sampleNow();
+      void sampleNow({ visibility: true });
     }, RENDERER_MEMORY_VISIBILITY_SETTLE_MS);
   }
 
@@ -149,12 +176,23 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
       clearSettleTimer();
       return;
     }
-    void sampleNow();
+    // Always sample on show — never skip because a main auto-sample landed recently.
+    const epoch = ++visibilityShowEpoch;
+    void sampleNowForVisibility(epoch);
     armVisibilitySettle();
   }
 
-  function sampleNow(): Promise<CoiMemorySample | null> {
+  async function sampleNowForVisibility(epoch: number): Promise<void> {
+    if (inFlight) {
+      await inFlight;
+      if (epoch !== visibilityShowEpoch || !environment.isVisible()) return;
+    }
+    await sampleNow({ visibility: true });
+  }
+
+  function sampleNow(options?: { visibility?: boolean }): Promise<CoiMemorySample | null> {
     if (inFlight) return inFlight;
+    const fromVisibility = options?.visibility === true;
     const crossOriginIsolated = environment.isIsolated();
     update({ crossOriginIsolated, supported: supported() });
     if (!canAttemptSample()) {
@@ -163,13 +201,17 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     const requestGeneration = generation;
     update({ sampling: true, failed: false });
     const canSample = () => requestGeneration === generation && canAttemptSample();
+    // Prefer process metrics on visibility so samples share scope with main's 2h series.
+    const preferProcess = fromVisibility && Boolean(environment.getProcessMeasure?.());
     // Defer the call so a synchronous throw also follows the failure/cleanup path.
     inFlight = Promise.resolve()
       .then(async (): Promise<Omit<CoiMemorySample, 'at'> | null> => {
         if (!canSample()) return null;
         // Browser UA totals require isolation; skip them on force-file recovery.
         const measure =
-          crossOriginIsolated && !browserUnavailable ? environment.getMeasure() : undefined;
+          !preferProcess && crossOriginIsolated && !browserUnavailable
+            ? environment.getMeasure()
+            : undefined;
         if (measure) {
           try {
             return { bytes: (await measure()).bytes };
@@ -203,9 +245,13 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         ) {
           throw new Error('Invalid renderer memory total');
         }
-        const sample = attachDiagnostics({ at: environment.now(), ...result });
-        // Browser estimates and OS working sets have different scopes; start a new trend.
-        appendSample(sample);
+        const sample = attachDiagnostics({
+          at: environment.now(),
+          ...result,
+          ...(fromVisibility ? { visibility: true as const } : {}),
+        });
+        // Visibility must not wipe main auto-samples; manual/UA scope changes still reset.
+        appendSample(sample, { resetOnSourceChange: !fromVisibility });
         persistRendererMemorySample(sample);
         return sample;
       })
@@ -242,6 +288,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
       unsubscribeVisibility?.();
       unsubscribeVisibility = undefined;
       clearSettleTimer();
+      visibilityShowEpoch += 1;
       generation += 1;
       inFlight = null;
       update({ sampling: false });
