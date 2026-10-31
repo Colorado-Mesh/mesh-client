@@ -549,7 +549,7 @@ export interface ElectronAPI {
         domNodes: number | null;
       }[];
     }>;
-    /** Main-owned 2h process working-set samples (already persisted in SQLite). */
+    /** Main-owned start + 2h process working-set samples (already persisted in SQLite). */
     onRendererMemoryAutoSample: (
       callback: (sample: RendererMemoryAutoSamplePayload) => void,
     ) => () => void;

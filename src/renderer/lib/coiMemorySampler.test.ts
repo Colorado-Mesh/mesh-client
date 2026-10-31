@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  COI_MEMORY_MAX_SAMPLES,
-  COI_MEMORY_MAX_VISIBILITY_SAMPLES,
-  createCoiMemorySampler,
-} from './coiMemorySampler';
-import { RENDERER_MEMORY_VISIBILITY_SETTLE_MS } from './timeConstants';
+import { COI_MEMORY_MAX_SAMPLES, createCoiMemorySampler } from './coiMemorySampler';
 import { withMockedConsoleWarn } from './vitestConsoleMock';
 
 function setup({
@@ -29,11 +24,7 @@ function setup({
     .mockResolvedValue({ bytes: 1024 });
   let onAuto:
     ((sample: { at: number; bytes: number; source?: 'renderer-process' }) => void) | undefined;
-  let onVisibility: (() => void) | undefined;
   const unsubscribeAuto = vi.fn();
-  const unsubscribeVisibility = vi.fn();
-  const pendingSettle = new Map<number, { fn: () => void; ms: number }>();
-  let nextSettleId = 1;
   const sampler = createCoiMemorySampler({
     isIsolated: () => isolated,
     getMeasure: () => (supported ? measure : undefined),
@@ -41,45 +32,22 @@ function setup({
     getJsHeap: jsHeap ? () => jsHeap : undefined,
     getDomNodeCount: domNodes != null ? () => domNodes : undefined,
     isVisible: () => visible,
-    onVisibilityChange: (listener) => {
-      onVisibility = listener;
-      return unsubscribeVisibility;
-    },
     onAutoSample: (listener) => {
       onAuto = listener;
       return unsubscribeAuto;
     },
     now: () => Date.now(),
-    scheduleSettle: (fn, ms) => {
-      const id = nextSettleId++;
-      pendingSettle.set(id, { fn, ms });
-      return id;
-    },
-    clearSettle: (id) => {
-      pendingSettle.delete(id as number);
-    },
   });
   return {
     sampler,
     measure,
     measureProcess,
     unsubscribeAuto,
-    unsubscribeVisibility,
-    pendingSettle,
     pushAuto: (sample: { at: number; bytes: number; source?: 'renderer-process' }) => {
       onAuto?.(sample);
     },
     setVisible: (value: boolean) => {
       visible = value;
-      onVisibility?.();
-    },
-    flushSettle: () => {
-      const entry = [...pendingSettle.entries()][0];
-      expect(entry).toBeDefined();
-      const [id, job] = entry as [number, { fn: () => void; ms: number }];
-      expect(job.ms).toBe(RENDERER_MEMORY_VISIBILITY_SETTLE_MS);
-      pendingSettle.delete(id);
-      job.fn();
     },
   };
 }
@@ -92,12 +60,26 @@ describe('COI renderer memory sampler', () => {
     vi.useRealTimers();
   });
 
-  it('does not arm an automatic timer; main owns the 2h cadence', () => {
+  it('does not arm an automatic timer; main owns the start + 2h cadence', () => {
     const { sampler, measure } = setup();
     const stop = sampler.start();
     expect(vi.getTimerCount()).toBe(0);
     void vi.advanceTimersByTimeAsync(60_000);
     expect(measure).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('does not sample when becoming visible; only Sample now and main autos', async () => {
+    const { sampler, measureProcess, setVisible } = setup({
+      supported: false,
+      processSupported: true,
+      visible: false,
+    });
+    const stop = sampler.start();
+    setVisible(true);
+    await Promise.resolve();
+    expect(measureProcess).not.toHaveBeenCalled();
+    expect(sampler.getSnapshot().samples).toEqual([]);
     stop();
   });
 
@@ -211,98 +193,6 @@ describe('COI renderer memory sampler', () => {
     ]);
     stop();
     expect(unsubscribeAuto).toHaveBeenCalledTimes(1);
-  });
-
-  it('samples immediately on show and again after the settle delay', async () => {
-    const { sampler, measureProcess, setVisible, flushSettle, pendingSettle } = setup({
-      supported: false,
-      processSupported: true,
-      visible: false,
-    });
-    const stop = sampler.start();
-    expect(await sampler.sampleNow()).toBeNull();
-    setVisible(true);
-    await vi.waitFor(() => {
-      expect(measureProcess).toHaveBeenCalledTimes(1);
-      expect(sampler.getSnapshot().sampling).toBe(false);
-    });
-    expect(pendingSettle.size).toBe(1);
-    flushSettle();
-    await vi.waitFor(() => {
-      expect(measureProcess).toHaveBeenCalledTimes(2);
-    });
-    stop();
-    expect(pendingSettle.size).toBe(0);
-  });
-
-  it('keeps main auto-samples when visibility cycles fill the ring', async () => {
-    const { sampler, measureProcess, setVisible, flushSettle, pushAuto } = setup({
-      supported: false,
-      processSupported: true,
-      visible: false,
-    });
-    const stop = sampler.start();
-    const autoCount = COI_MEMORY_MAX_SAMPLES - 2;
-    for (let i = 0; i < autoCount; i += 1) {
-      pushAuto({ at: 1_000 + i, bytes: 1_000_000 + i, source: 'renderer-process' });
-    }
-    expect(sampler.getSnapshot().samples).toHaveLength(autoCount);
-    for (let cycle = 0; cycle < COI_MEMORY_MAX_VISIBILITY_SAMPLES; cycle += 1) {
-      setVisible(true);
-      await vi.waitFor(() => {
-        expect(measureProcess).toHaveBeenCalled();
-        expect(sampler.getSnapshot().sampling).toBe(false);
-      });
-      flushSettle();
-      await vi.waitFor(() => {
-        expect(sampler.getSnapshot().sampling).toBe(false);
-      });
-      setVisible(false);
-      measureProcess.mockClear();
-    }
-    const samples = sampler.getSnapshot().samples;
-    expect(samples.some((sample) => sample.at === 1_000 && !sample.visibility)).toBe(true);
-    expect(samples.filter((sample) => sample.visibility).length).toBeLessThanOrEqual(
-      COI_MEMORY_MAX_VISIBILITY_SAMPLES,
-    );
-    expect(samples.length).toBeLessThanOrEqual(COI_MEMORY_MAX_SAMPLES);
-    stop();
-  });
-
-  it('still samples on show even when a main auto-sample arrived recently', async () => {
-    const { sampler, measureProcess, setVisible, pushAuto } = setup({
-      supported: false,
-      processSupported: true,
-      visible: false,
-    });
-    const stop = sampler.start();
-    pushAuto({ at: Date.now(), bytes: 2_000_000, source: 'renderer-process' });
-    setVisible(true);
-    await vi.waitFor(() => {
-      expect(measureProcess).toHaveBeenCalledTimes(1);
-    });
-    expect(sampler.getSnapshot().samples.at(-1)?.visibility).toBe(true);
-    stop();
-  });
-
-  it('cancels settle sampling when hidden again or stopped', async () => {
-    const { sampler, setVisible, pendingSettle, unsubscribeVisibility } = setup({
-      supported: false,
-      processSupported: true,
-      visible: false,
-    });
-    const stop = sampler.start();
-    setVisible(true);
-    await Promise.resolve();
-    expect(pendingSettle.size).toBe(1);
-    setVisible(false);
-    expect(pendingSettle.size).toBe(0);
-    setVisible(true);
-    await Promise.resolve();
-    expect(pendingSettle.size).toBe(1);
-    stop();
-    expect(pendingSettle.size).toBe(0);
-    expect(unsubscribeVisibility).toHaveBeenCalledTimes(1);
   });
 
   it('rejects invalid main auto-samples', () => {

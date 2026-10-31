@@ -1992,10 +1992,9 @@ function createWindow() {
   });
 
   configureRendererSpellcheck(win.webContents.session);
-  win.webContents.once('did-finish-load', () => {
+  win.webContents.on('did-finish-load', () => {
     retryRendererSpellcheck(win.webContents.session);
     flushPendingOpenUrl();
-    rendererMemoryAutoSampler?.start();
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -2410,6 +2409,12 @@ function createWindow() {
       await win.loadURL(resolved.url);
     }
     if (win.isDestroyed()) return;
+    // One start baseline + 2h cadence after the trusted app URL (not about:blank repair loads).
+    const loadedUrl = win.webContents.getURL();
+    if (loadedUrl && loadedUrl !== 'about:blank' && !loadedUrl.startsWith('data:')) {
+      rendererMemoryAutoSampler?.stop();
+      rendererMemoryAutoSampler?.start();
+    }
     // Diagnostics must not delay startup or poison the promise awaited by data reset.
     void (async () => {
       let isolated: boolean | 'unknown' = 'unknown';

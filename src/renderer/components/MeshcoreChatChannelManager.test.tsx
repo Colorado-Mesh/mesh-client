@@ -412,8 +412,8 @@ describe('MeshcoreChatChannelManager', () => {
     });
     await waitFor(() => {
       expect(screen.getByLabelText('Name')).toHaveValue('');
+      expect(screen.getByLabelText('Name')).toHaveFocus();
     });
-    expect(screen.getByLabelText('Name')).toHaveFocus();
     expect(props.onSetChannel).toHaveBeenCalledTimes(1);
   });
 
