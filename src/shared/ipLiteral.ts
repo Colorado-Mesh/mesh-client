@@ -136,11 +136,14 @@ export function parseIpv6HextetsForLiteral(host: string): Ipv6Hextets | null {
   const lastColon = normalized.lastIndexOf(':');
   const after = normalized.slice(lastColon + 1);
   if (after.includes('.')) {
+    const prefix = normalized.slice(0, lastColon);
+    // Prefix may only use hex digits and colons (no other dotted-quad / junk).
+    if (!/^[0-9a-f:]*$/i.test(prefix)) return null;
     const octets = parseIpv4Octets(after);
     if (!octets) return null;
     embeddedV4Hextets = [(octets[0] << 8) | octets[1], (octets[2] << 8) | octets[3]];
     // Dotted-quad consumes two hextet slots; keep a single placeholder token for counting.
-    normalized = `${normalized.slice(0, lastColon)}:v4`;
+    normalized = `${prefix}:v4`;
   }
 
   const expandParts = (raw: string[]): string[] => {
@@ -162,7 +165,8 @@ export function parseIpv6HextetsForLiteral(host: string): Ipv6Hextets | null {
     const head = expandParts(split[0] ? split[0].split(':') : []);
     const tail = expandParts(split[1] ? split[1].split(':') : []);
     const missing = 8 - head.length - tail.length;
-    if (missing < 0) return null;
+    // `::` must compress at least one hextet group.
+    if (missing < 1) return null;
     parts = [...head, ...Array.from({ length: missing }, () => '0'), ...tail];
   } else {
     const expanded = expandParts(normalized.split(':'));

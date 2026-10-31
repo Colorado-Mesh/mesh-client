@@ -22,6 +22,13 @@ describe('parseIpv6HextetsForLiteral', () => {
       0x64, 0xff9b, 0, 0, 0, 0, 0x0808, 0x0808,
     ]);
   });
+
+  it('rejects malformed IPv6 forms', () => {
+    expect(parseIpv6HextetsForLiteral('notahex:8.8.8.8')).toBeNull();
+    expect(parseIpv6HextetsForLiteral('1:2:3:4:5:6:7::8')).toBeNull();
+    expect(parseIpv6HextetsForLiteral('1:2:3:4:5:6:7:8::')).toBeNull();
+    expect(parseIpv6HextetsForLiteral('::::1')).toBeNull();
+  });
 });
 
 describe('isValidIpLiteral', () => {
@@ -100,5 +107,35 @@ describe('isGlobalIpLiteral', () => {
     expect(isGlobalIpLiteral('example.com')).toBeNull();
     expect(isGlobalIpLiteral('localhost')).toBeNull();
     expect(isGlobalIpLiteral('')).toBeNull();
+  });
+
+  it.each([
+    // last in blocked range → non-global; first after → global
+    ['0.255.255.255', false],
+    ['1.0.0.0', true],
+    ['10.255.255.255', false],
+    ['11.0.0.0', true],
+    ['100.127.255.255', false],
+    ['100.128.0.0', true],
+    ['127.255.255.255', false],
+    ['128.0.0.0', true],
+    ['169.254.255.255', false],
+    ['169.255.0.0', true],
+    ['172.31.255.255', false],
+    ['172.32.0.0', true],
+    ['192.168.255.255', false],
+    ['192.169.0.0', true],
+    ['192.0.2.255', false],
+    ['192.0.3.0', true],
+    ['198.51.100.255', false],
+    ['198.51.101.0', true],
+    ['203.0.113.255', false],
+    ['203.0.114.0', true],
+    ['198.19.255.255', false],
+    ['198.20.0.0', true],
+    ['2001:db8:ffff:ffff:ffff:ffff:ffff:ffff', false],
+    ['2001:db9::', true],
+  ] as const)('range boundary %s → %s', (addr, expected) => {
+    expect(isGlobalIpLiteral(addr)).toBe(expected);
   });
 });
