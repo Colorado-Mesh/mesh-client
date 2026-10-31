@@ -102,4 +102,31 @@ describe('TelemetryPanel', () => {
       });
     }
   });
+
+  it('shows MeshCore flood send percent with raw flood/direct counts', () => {
+    render(
+      <TelemetryPanel
+        telemetry={[]}
+        signalTelemetry={[]}
+        environmentTelemetry={[]}
+        useFahrenheit={false}
+        onToggleFahrenheit={() => {}}
+        onRefresh={async () => {}}
+        isConnected
+        capabilities={MESHCORE_CAPABILITIES}
+        meshcorePacketStats={{
+          sent: 100,
+          recv: 50,
+          nSentFlood: 95,
+          nSentDirect: 5,
+          nRecvFlood: 40,
+          nRecvDirect: 10,
+        }}
+      />,
+    );
+    expect(screen.getByText('95')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('95%')).toBeInTheDocument();
+    expect(screen.getByLabelText(/About flood send percentage/i)).toBeInTheDocument();
+  });
 });

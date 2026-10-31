@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Lalu Lintas LoRa Tidak Diketahui",
       "potentialMeshcoreRepeaterConflict": "Potensi Konflik Pengulang MeshCore",
       "elevatedNoiseFloor": "Lantai Kebisingan Tinggi",
-      "excessiveFlooding": "Flood Berlebihan",
       "reticulumTrafficDetected": "Lalu lintas Reticulum terdeteksi",
       "highCompanionTxQueue": "Antrean TX Pendamping Tinggi"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Interferensi broadband (kerusakan elektronik, gangguan saluran listrik, dll.) meningkatkan tingkat kebisingan.",
       "fringeWeakCoverage": "Node terlalu jauh atau tidak terhubung dengan baik ke seluruh mesh.",
       "elevatedNoiseFloor": "Lantai kebisingan radio adalah {{noiseFloor}} dBm — gangguan tinggi yang mengurangi rentang efektif.",
-      "excessiveFlooding": "{{percent}}% transmisi dialiri flood — perutean langsung mungkin tidak dilakukan dengan node terdekat.",
       "highCompanionTxQueue": "Kedalaman antrean keluar pendamping adalah {{queueLen}}/256 — lalu lintas mungkin tertunda atau terputus."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Identifikasi dan hapus sumber interferensi",
         "description": "Lantai kebisingan yang ditinggikan mengurangi jangkauan dan SNR — periksa elektronik di dekatnya, mengganti catu daya, atau motor."
-      },
-      "excessiveFlooding": {
-        "title": "Izinkan rute langsung untuk ditetapkan",
-        "description": "Rasio flood sangat tinggi — tunggu hingga simpul menumpuk kontak jalur langsung, atau periksa kedekatan repeater."
       },
       "highCompanionTxQueue": {
         "title": "Kurangi lalu lintas keluar atau periksa tautan RF",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Status",
       "updated": "Diperbarui {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Bagian pengiriman radio ini sejak boot yang di-route Flood. Pesan saluran dan iklan Flood selalu Flood, jadi persentase tinggi normal untuk companion dengan banyak lalu lintas saluran.",
+    "floodSendPercentHintAria": "Tentang persentase pengiriman Flood"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2.5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Sambaran petir (1j)"
+    "seriesLightningStrikes": "Sambaran petir (1j)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Bagian pengiriman radio ini sejak boot yang di-route Flood. Pesan saluran dan iklan Flood selalu Flood, jadi persentase tinggi normal untuk companion dengan banyak lalu lintas saluran.",
+    "statFloodPercentHintAria": "Tentang persentase pengiriman Flood"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",

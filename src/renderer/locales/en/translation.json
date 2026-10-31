@@ -2050,7 +2050,6 @@
       "unknownLoraTraffic": "Unknown LoRa Traffic",
       "potentialMeshcoreRepeaterConflict": "Potential MeshCore Repeater Conflict",
       "elevatedNoiseFloor": "Elevated Noise Floor",
-      "excessiveFlooding": "Excessive Flooding",
       "highCompanionTxQueue": "High Companion TX Queue"
     },
     "rfCause": {
@@ -2065,7 +2064,6 @@
       "widebandNoiseFloor": "Broadband interference (faulty electronics, power-line noise, etc.) elevating the noise floor.",
       "fringeWeakCoverage": "Node is too far away or poorly connected to the rest of the mesh.",
       "elevatedNoiseFloor": "Radio noise floor is {{noiseFloor}} dBm — elevated interference reducing effective range.",
-      "excessiveFlooding": "{{percent}}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.",
       "highCompanionTxQueue": "Companion outbound queue depth is {{queueLen}}/256 — traffic may be delayed or dropped."
     },
     "foreignLoraCause": {
@@ -2137,10 +2135,6 @@
       "elevatedNoiseFloor": {
         "title": "Identify and remove interference source",
         "description": "Elevated noise floor reduces range and SNR — check for nearby electronics, switching power supplies, or motors."
-      },
-      "excessiveFlooding": {
-        "title": "Allow direct routes to establish",
-        "description": "Flood ratio is very high — wait for the node to accumulate direct-path contacts, or check repeater proximity."
       },
       "highCompanionTxQueue": {
         "title": "Reduce outbound traffic or check the RF link",
@@ -4024,6 +4018,9 @@
     },
     "packetsLocalHeading": "Packets (Local)",
     "sentFloodDirectLabel": "Sent (Flood / Direct)",
+    "floodSendPercentValue": "{{percent}}% flood",
+    "floodSendPercentHint": "Share of this radio's sends since boot that were flood-routed. Channel messages and flood adverts are always flood, so a high percentage is normal for channel-heavy companions.",
+    "floodSendPercentHintAria": "About flood send percentage",
     "recvFloodDirectLabel": "Recv (Flood / Direct)",
     "totalSentLabel": "Total Sent",
     "totalRecvLabel": "Total Recv",
@@ -6913,6 +6910,9 @@
     "statReceived": "Received",
     "statFlood": "Flood",
     "statDirect": "Direct",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Share of this radio's sends since boot that were flood-routed. Channel messages and flood adverts are always flood, so a high percentage is normal for channel-heavy companions.",
+    "statFloodPercentHintAria": "About flood send percentage",
     "footerBattery": "Battery: {{count}} pts",
     "footerSignal": "Signal: {{count}} pts",
     "footerEnv": "Env: {{count}} pts",

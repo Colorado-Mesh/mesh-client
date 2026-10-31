@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "未知的LoRa流量",
       "potentialMeshcoreRepeaterConflict": "潜在的MeshCore中继器冲突",
       "elevatedNoiseFloor": "高架噪音地板",
-      "excessiveFlooding": "泛洪泛滥",
       "reticulumTrafficDetected": "检测到 Reticulum 流量",
       "highCompanionTxQueue": "高伴侣TX队列"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "宽带干扰（电子设备故障、电源线噪声等）导致噪声底板升高。",
       "fringeWeakCoverage": "节点距离太远或与网格其余部分的连接不佳。",
       "elevatedNoiseFloor": "无线电噪声底板为{{noiseFloor}} dBm — 干扰升高，有效范围缩短。",
-      "excessiveFlooding": "{{percent}}%的传输是洪泛路由 — 可能未与附近节点建立直接路由。",
       "highCompanionTxQueue": "伴侣出站队列深度为{{queueLen}}/256 —流量可能会延迟或丢弃。"
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "识别并移除干扰源",
         "description": "噪音地板升高可降低范围和信噪比—检查附近的电子设备、开关电源或电机。"
-      },
-      "excessiveFlooding": {
-        "title": "允许建立直接路由",
-        "description": "泛洪比非常高—等待节点积累直接路径触点，或检查中继器接近度。"
       },
       "highCompanionTxQueue": {
         "title": "减少出站流量或检查射频链路",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "地位",
       "updated": "已更新 {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% 泛洪",
+    "floodSendPercentHint": "此无线电自启动以来以泛洪路由发送的占比。频道消息和泛洪广播始终使用泛洪，因此频道流量较重的同伴出现高比例是正常的。",
+    "floodSendPercentHintAria": "关于泛洪发送百分比"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2.5 (µg/m ³)",
     "seriesCo2": "CO ₂ (ppm)",
-    "seriesLightningStrikes": "雷击（ 1小时）"
+    "seriesLightningStrikes": "雷击（ 1小时）",
+    "statFloodPercent": "泛洪 %",
+    "statFloodPercentHint": "此无线电自启动以来以泛洪路由发送的占比。频道消息和泛洪广播始终使用泛洪，因此频道流量较重的同伴出现高比例是正常的。",
+    "statFloodPercentHintAria": "关于泛洪发送百分比"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",

@@ -165,13 +165,12 @@ These findings use telemetry observed from other nodes' radio stats.
 
 ### MeshCore-Only RF Findings (Connected Node)
 
-These findings use packet-stats data from a MeshCore device's Repeater Status response (`meshcore_local_stats`).
+These findings use packet-stats data from the connected MeshCore companion (`getStatsPackets`, `meshcore_local_stats`).
 
-| Finding                 | Trigger                                                                        | Severity        | Meaning                                                                                       |
-| ----------------------- | ------------------------------------------------------------------------------ | --------------- | --------------------------------------------------------------------------------------------- |
-| Elevated Noise Floor    | Radio noise floor > −95 dBm                                                    | Warning         | Elevated interference from nearby RF sources reducing effective range                         |
-| Excessive Flooding      | ≥ 20 total transmissions and > 90% are flood-routed (`nSentFlood / totalSent`) | Warning         | Direct routing has not been established with nearby nodes; all traffic falls back to flooding |
-| High Companion TX Queue | `meshcore_local_stats.queueLen > 200` (error if `> 250`)                       | Warning / Error | Companion outbound queue near the 256 cap; traffic may be delayed or dropped                  |
+| Finding                 | Trigger                                                  | Severity        | Meaning                                                                      |
+| ----------------------- | -------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------- |
+| Elevated Noise Floor    | Radio noise floor > −95 dBm                              | Warning         | Elevated interference from nearby RF sources reducing effective range        |
+| High Companion TX Queue | `meshcore_local_stats.queueLen > 200` (error if `> 250`) | Warning / Error | Companion outbound queue near the 256 cap; traffic may be delayed or dropped |
 
 ---
 

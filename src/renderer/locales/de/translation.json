@@ -1978,7 +1978,6 @@
       "unknownLoraTraffic": "Unbekannter LoRa-Verkehr",
       "potentialMeshcoreRepeaterConflict": "Potenzieller MeshCore-Repeater-Konflikt",
       "elevatedNoiseFloor": "Boden mit erhöhtem Geräuschpegel",
-      "excessiveFlooding": "Übermäßiges Flooding",
       "reticulumTrafficDetected": "Reticulum-Verkehr erkannt",
       "highCompanionTxQueue": "High Companion TX-Warteschlange"
     },
@@ -1994,7 +1993,6 @@
       "widebandNoiseFloor": "Breitbandige Störungen (fehlerhafte Elektronik, Stromleitungsgeräusche usw.), die den Geräuschpegel erhöhen.",
       "fringeWeakCoverage": "Der Knoten ist zu weit entfernt oder schlecht mit dem Rest des Netzes verbunden.",
       "elevatedNoiseFloor": "Der Funkgeräuschpegel beträgt {{noiseFloor}} dBm — erhöhte Interferenz reduziert die effektive Reichweite.",
-      "excessiveFlooding": "{{percent}}% der Übertragungen werden überflutet - ein direktes Routing mit Knoten in der Nähe ist möglicherweise nicht möglich.",
       "highCompanionTxQueue": "Die Tiefe der ausgehenden Warteschlange des Begleiters beträgt {{queueLen}}/256 — der Datenverkehr kann sich verzögern oder fallen gelassen werden."
     },
     "foreignLoraCause": {
@@ -2066,10 +2064,6 @@
       "elevatedNoiseFloor": {
         "title": "Störquelle identifizieren und entfernen",
         "description": "Erhöhter Geräuschpegel reduziert Reichweite und SNR — prüfen Sie, ob sich Elektronik, Schaltnetzteile oder Motoren in der Nähe befinden."
-      },
-      "excessiveFlooding": {
-        "title": "Ermöglichen Sie die Einrichtung direkter Routen",
-        "description": "Das Flood-Verhältnis ist sehr hoch — warten Sie, bis der Knoten Direktpfadkontakte akkumuliert hat, oder überprüfen Sie die Nähe des Repeaters."
       },
       "highCompanionTxQueue": {
         "title": "Reduzieren Sie den ausgehenden Datenverkehr oder überprüfen Sie die HF-Verbindung",
@@ -3573,7 +3567,10 @@
     "nodeStatus": {
       "heading": "Status",
       "updated": "Aktualisiert {{ago}}"
-    }
+    },
+    "floodSendPercentValue": "{{percent}}% Flood",
+    "floodSendPercentHint": "Anteil der Sendungen dieses Radios seit dem Boot, die per Flood geroutet wurden. Kanalnachrichten und Flood-Adverts sind immer Flood — ein hoher Prozentsatz ist für kanalstarke Begleiter normal.",
+    "floodSendPercentHintAria": "Über den Flood-Sendeanteil"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -5922,7 +5919,10 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2,5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Blitzeinschlag (1h)"
+    "seriesLightningStrikes": "Blitzeinschlag (1h)",
+    "statFloodPercent": "Flood %",
+    "statFloodPercentHint": "Anteil der Sendungen dieses Radios seit dem Boot, die per Flood geroutet wurden. Kanalnachrichten und Flood-Adverts sind immer Flood — ein hoher Prozentsatz ist für kanalstarke Begleiter normal.",
+    "statFloodPercentHintAria": "Über den Flood-Sendeanteil"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",

@@ -33,7 +33,6 @@ describe('getRecommendedActionForRfCondition', () => {
       'Wideband Noise Floor',
       'Fringe / Weak Coverage',
       'Elevated Noise Floor',
-      'Excessive Flooding',
       'High Companion TX Queue',
     ];
     for (const condition of known) {

@@ -185,7 +185,7 @@ export function diagnoseConnectedNode(
     });
   }
 
-  // MeshCore-only: Elevated Noise Floor and Excessive Flooding (from packet stats RPC)
+  // MeshCore-only: Elevated Noise Floor and High Companion TX Queue (from packet stats RPC)
   const meshcoreStats = node.meshcore_local_stats;
   if (meshcoreStats) {
     if (meshcoreStats.noiseFloor > -95) {
@@ -196,20 +196,6 @@ export function diagnoseConnectedNode(
         causeI18n: {
           key: 'diagnosticsPanel.rfCause.elevatedNoiseFloor',
           params: { noiseFloor: meshcoreStats.noiseFloor },
-        },
-      });
-    }
-
-    const totalSent = meshcoreStats.nSentFlood + meshcoreStats.nSentDirect;
-    if (totalSent >= 20 && meshcoreStats.nSentFlood / totalSent > 0.9) {
-      const floodPct = Math.round((meshcoreStats.nSentFlood / totalSent) * 100);
-      findings.push({
-        condition: 'Excessive Flooding',
-        cause: `${floodPct}% of transmissions are flood-routed — direct routing may not be established with nearby nodes.`,
-        severity: 'warning',
-        causeI18n: {
-          key: 'diagnosticsPanel.rfCause.excessiveFlooding',
-          params: { percent: floodPct },
         },
       });
     }
