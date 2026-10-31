@@ -5,8 +5,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { HelpTooltip } from './HelpTooltip';
 
 describe('HelpTooltip', () => {
-  it('renders the ⓘ icon by default', () => {
+  it('renders the ⓘ icon by default as a button', () => {
     render(<HelpTooltip text="Help text" />);
+    expect(screen.getByRole('button', { name: 'Help text' })).toBeInTheDocument();
     expect(screen.getByText('ⓘ')).toBeInTheDocument();
   });
 
@@ -37,19 +38,38 @@ describe('HelpTooltip', () => {
     expect(helpEl?.getAttribute('title')).toBeNull();
   });
 
-  it('exposes tooltip text via aria-description when idle, aria-describedby when focused', () => {
+  it('keeps aria-describedby on a stable hidden node from the initial render', () => {
     render(<HelpTooltip text="Accessible help body" ariaLabel="About help" />);
-    const trigger = screen.getByLabelText('About help');
-    expect(trigger).toHaveAttribute('aria-description', 'Accessible help body');
-    expect(trigger).not.toHaveAttribute('aria-describedby');
+    const trigger = screen.getByRole('button', { name: 'About help' });
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const description = document.getElementById(describedBy!);
+    expect(description).toHaveClass('sr-only');
+    expect(description).toHaveTextContent('Accessible help body');
     act(() => {
       fireEvent.focus(trigger);
     });
-    const describedBy = trigger.getAttribute('aria-describedby');
+    const bubble = screen.getByRole('tooltip');
+    expect(bubble).toHaveTextContent('Accessible help body');
+    expect(bubble.id).toBeTruthy();
+    expect(bubble.id).not.toBe(describedBy);
+    expect(trigger.getAttribute('aria-describedby')).toBe(describedBy);
+  });
+
+  it('forwards aria-describedby to the focusable child when nonFocusableWrapper', () => {
+    render(
+      <HelpTooltip text="Child description" nonFocusableWrapper>
+        <button type="button" aria-label="Sync">
+          Go
+        </button>
+      </HelpTooltip>,
+    );
+    const child = screen.getByRole('button', { name: 'Sync' });
+    const describedBy = child.getAttribute('aria-describedby');
     expect(describedBy).toBeTruthy();
-    expect(trigger).not.toHaveAttribute('aria-description');
-    expect(document.getElementById(describedBy!)).toHaveTextContent('Accessible help body');
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Accessible help body');
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Child description');
+    const wrapper = child.parentElement;
+    expect(wrapper?.getAttribute('aria-describedby')).toBe(describedBy);
   });
 
   it('shows tooltip on focus and hides on blur', () => {
