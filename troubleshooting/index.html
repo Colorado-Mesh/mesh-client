@@ -4823,7 +4823,12 @@
 <tr>
 <td><code>rendererMemory</code> (top-level)</td>
 <td>object</td>
-<td>Isolation/API availability and up to 24 timestamped renderer memory totals; separate from main-process memory</td>
+<td>Isolation/API availability and up to 24 in-session timestamped renderer memory totals</td>
+</tr>
+<tr>
+<td><code>rendererMemoryDurable</code> (top-level)</td>
+<td>object</td>
+<td>SQLite summary plus retention-bounded timestamped samples (2h auto + manual); both export modes</td>
 </tr>
 <tr>
 <td><code>meshcore.roomsUnreadEstimate</code></td>
@@ -5315,13 +5320,24 @@ LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to mig
 <li>If the app crashes, save <strong><code>~/Library/Logs/DiagnosticReports/Mesh-client-*.ips</code></strong> (macOS) before relaunching; include the <code>.ips</code> and exported log when reporting.</li>
 <li><strong>Reporting a crash or lockup:</strong> Prefer <strong>Export for Developer / GitHub before restart</strong> if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as <code>mesh-client.log.1</code> (also included in support bundles). Note app version, OS, uptime (<code>[main] long-session health</code> / snapshot <code>mainLiveness</code>), whether MeshCore BLE was connected, and any <code>[main] renderer heartbeat stalled</code> / <code>webContents unresponsive</code> lines.</li>
 </ul>
-<p><strong>Renderer memory:</strong> App → Support shows the latest browser estimate and recent samples. Use
-<strong>Sample now</strong>, or keep the window visible for automatic samples about every five minutes.
-The history retains 24 totals for the current session and is included as <code>rendererMemory</code> in
-support bundles and Copy Debug Snapshot. Sampling pauses while hidden. If isolation or the
-browser memory API is unavailable, the section explains why; file-origin recovery normally
-has no samples. Compare trends within a session, since browser estimates vary between app
-versions and do not measure the same allocations as <code>mainLiveness</code>.</p>
+<p><strong>Renderer memory:</strong> App → Support shows the latest working-set estimate, optional JS heap /
+DOM counts, and deltas vs the previous sample. Use <strong>Sample now</strong> for an immediate reading;
+returning to a visible window also samples immediately and again after about <strong>60 seconds</strong>.
+The main process records renderer process working-set samples about every <strong>two hours</strong>
+whether or not the window is backgrounded; those rows are persisted in SQLite and included
+as <code>rendererMemoryDurable.samples</code> (plus a summary; heap/DOM when the renderer recorded them)
+in both GitHub and Developer support bundles and Copy Debug Snapshot. The live Support ring
+(<code>rendererMemory</code>) retains up to 24 session totals and draws a <strong>time-scaled</strong> sparkline that
+breaks across long gaps (so overnight occlusion is not a fake ramp). Interpreting deltas:</p>
+<ul>
+<li>Working set ↑ and JS heap ↑ together → likely retained JavaScript.</li>
+<li>Working set ↑ while JS heap flat → non-JS (wasm, GPU/code cache, OS working-set high water).</li>
+<li>Either ↓ after show/settle → often reclaim, not a leak.</li>
+</ul>
+<p>If isolation or the browser memory API is unavailable, the section explains why; on-demand
+browser estimates still need a visible window. Compare trends within a session or durable
+export span; browser estimates vary between app versions and do not measure the same
+allocations as <code>mainLiveness</code>.</p>
 <p>After <strong>24 hours</strong> of uptime, the main process logs periodic <strong>long-session health</strong> lines (<code>[main] long-session health …</code>) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log <code>[main] renderer heartbeat stalled</code>. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.</p>
 <h3 id="app-shows-disconnected-but-device-is-still-on">App shows "disconnected" but device is still on<a class="headerlink" href="#app-shows-disconnected-but-device-is-still-on" title="Permanent link">&para;</a></h3>
 <ul>
@@ -5788,7 +5804,7 @@ versions and do not measure the same allocations as <code>mainLiveness</code>.</
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 29, 2026 01:24:18 UTC">October 29, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 31, 2026 19:25:12 UTC">October 31, 2026</span>
   </span>
 
     
