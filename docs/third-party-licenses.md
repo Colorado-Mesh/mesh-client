@@ -26,7 +26,6 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |
 | esptool-js                 | Apache-2.0                    | ^0.6.1          | 0.6.1             | git+https://github.com/espressif/esptool-js.git                                |
 | i18next                    | MIT                           | ^26.5.12        | 26.5.12           | git+https://github.com/i18next/i18next.git                                     |
-| ip-address                 | MIT                           | ^10.7.4         | 10.7.5            | git+https://github.com/beaugunderson/ip-address.git                            |
 | js-md5                     | MIT                           | ^0.8.3          | 0.8.3             | git+https://github.com/emn178/js-md5.git                                       |
 | jsqr                       | Apache-2.0                    | ^1.4.0          | 1.4.0             | git+https://github.com/cozmo/jsQR.git                                          |
 | jszip                      | (MIT OR GPL-3.0-or-later)     | ^3.10.2         | 3.10.2            | git+https://github.com/Stuk/jszip.git                                          |
