@@ -1,7 +1,6 @@
 import type { ElectronAPI } from '@/shared/electron-api.types';
 
 import { errLikeToLogString } from './errLikeToLogString';
-import { COI_MEMORY_SAMPLE_INTERVAL_MS } from './timeConstants';
 
 export const COI_MEMORY_MAX_SAMPLES = 24;
 
@@ -28,9 +27,9 @@ interface MemorySamplerEnvironment {
   getMeasure: () => (() => Promise<{ bytes: number }>) | undefined;
   getProcessMeasure?: () => (() => Promise<{ bytes: number }>) | undefined;
   isVisible: () => boolean;
-  onVisibilityChange: (listener: () => void) => () => void;
+  /** Main-owned 2h process samples; do not re-persist (main already wrote SQLite). */
+  onAutoSample?: (listener: (sample: CoiMemorySample) => void) => () => void;
   now: () => number;
-  random: () => number;
 }
 
 /** Retain only totals: browser attribution may contain document or worker URLs. */
@@ -47,8 +46,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
   };
   const listeners = new Set<() => void>();
   const owners = new Set<symbol>();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let unsubscribeVisibility: (() => void) | undefined;
+  let unsubscribeAuto: (() => void) | undefined;
   let inFlight: Promise<CoiMemorySample | null> | null = null;
   let generation = 0;
 
@@ -57,29 +55,34 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     for (const listener of listeners) listener();
   }
 
-  function clearTimer() {
-    if (timer !== undefined) clearTimeout(timer);
-    timer = undefined;
-  }
-
-  /** UA memory needs COI; process working-set works on force-file too. */
+  /** Manual Sample now: UA needs a visible COI document; process works when visible too. */
   function canAttemptSample() {
     if (!environment.isVisible() || !supported()) return false;
     if (environment.isIsolated()) return true;
     return Boolean(environment.getProcessMeasure?.());
   }
 
-  function schedule() {
-    clearTimer();
-    if (owners.size === 0 || !canAttemptSample() || inFlight) {
+  function appendSample(sample: CoiMemorySample) {
+    const previous = snapshot.samples.at(-1);
+    const history = previous?.source === sample.source ? snapshot.samples : [];
+    update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES), failed: false });
+  }
+
+  /** Main auto-sample push — updates the Support ring only. */
+  function ingestExternalSample(sample: CoiMemorySample): void {
+    if (
+      !Number.isFinite(sample.at) ||
+      !Number.isFinite(sample.bytes) ||
+      sample.bytes < 0 ||
+      (sample.source === 'renderer-process' && sample.bytes === 0)
+    ) {
       return;
     }
-    // Jitter prevents periodic app work from consistently biasing measurements.
-    const interval = COI_MEMORY_SAMPLE_INTERVAL_MS * (0.8 + environment.random() * 0.4);
-    timer = setTimeout(() => {
-      timer = undefined;
-      void sampleNow();
-    }, interval);
+    appendSample({
+      at: sample.at,
+      bytes: sample.bytes,
+      source: sample.source ?? 'renderer-process',
+    });
   }
 
   function sampleNow(): Promise<CoiMemorySample | null> {
@@ -89,7 +92,6 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
     if (!canAttemptSample()) {
       return Promise.resolve(null);
     }
-    clearTimer();
     const requestGeneration = generation;
     update({ sampling: true, failed: false });
     const canSample = () => requestGeneration === generation && canAttemptSample();
@@ -135,9 +137,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         }
         const sample = { at: environment.now(), ...result };
         // Browser estimates and OS working sets have different scopes; start a new trend.
-        const previous = snapshot.samples.at(-1);
-        const history = previous?.source === sample.source ? snapshot.samples : [];
-        update({ samples: [...history, sample].slice(-COI_MEMORY_MAX_SAMPLES) });
+        appendSample(sample);
         persistRendererMemorySample(sample);
         return sample;
       })
@@ -152,7 +152,6 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         if (requestGeneration !== generation) return;
         inFlight = null;
         update({ sampling: false });
-        schedule();
       });
     return inFlight;
   }
@@ -165,14 +164,12 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
         crossOriginIsolated: environment.isIsolated(),
         supported: supported(),
       });
-      unsubscribeVisibility = environment.onVisibilityChange(schedule);
-      schedule();
+      unsubscribeAuto = environment.onAutoSample?.(ingestExternalSample);
     }
     return () => {
       if (!owners.delete(owner) || owners.size > 0) return;
-      clearTimer();
-      unsubscribeVisibility?.();
-      unsubscribeVisibility = undefined;
+      unsubscribeAuto?.();
+      unsubscribeAuto = undefined;
       generation += 1;
       inFlight = null;
       update({ sampling: false });
@@ -182,6 +179,7 @@ export function createCoiMemorySampler(environment: MemorySamplerEnvironment) {
   return {
     start,
     sampleNow,
+    ingestExternalSample,
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
@@ -212,6 +210,20 @@ function persistRendererMemorySample(sample: CoiMemorySample): void {
   });
 }
 
+function subscribeMainAutoSamples(listener: (sample: CoiMemorySample) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const subscribe = (window as { electronAPI?: ElectronAPI }).electronAPI?.db
+    .onRendererMemoryAutoSample;
+  if (!subscribe) return () => {};
+  return subscribe((payload) => {
+    listener({
+      at: payload.capturedAt,
+      bytes: payload.bytes,
+      source: payload.source,
+    });
+  });
+}
+
 const sampler = createCoiMemorySampler({
   isIsolated: () => (typeof crossOriginIsolated === 'boolean' ? crossOriginIsolated : false),
   getMeasure: () => {
@@ -233,14 +245,8 @@ const sampler = createCoiMemorySampler({
     };
   },
   isVisible: () => !document.hidden,
-  onVisibilityChange: (listener) => {
-    document.addEventListener('visibilitychange', listener);
-    return () => {
-      document.removeEventListener('visibilitychange', listener);
-    };
-  },
+  onAutoSample: subscribeMainAutoSamples,
   now: () => Date.now(),
-  random: () => Math.random(),
 });
 
 export const startCoiMemorySampler = sampler.start;

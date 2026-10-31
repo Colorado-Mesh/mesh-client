@@ -523,7 +523,10 @@ export interface ElectronAPI {
       source: 'user-agent' | 'renderer-process';
       sessionId?: string;
     }) => Promise<void>;
-    /** Compact summary for Support bundles (no raw rows). */
+    /**
+     * Summary plus retention-bounded timestamped rows for Support / debug exports
+     * (GitHub and Developer).
+     */
     getRendererMemorySampleSummary: () => Promise<{
       count: number;
       firstAt: number | null;
@@ -531,7 +534,18 @@ export interface ElectronAPI {
       minBytes: number | null;
       maxBytes: number | null;
       spanMs: number | null;
+      samples: {
+        capturedAt: number;
+        bytes: number;
+        source: 'user-agent' | 'renderer-process';
+        appVersion: string | null;
+        sessionId: string | null;
+      }[];
     }>;
+    /** Main-owned 2h process working-set samples (already persisted in SQLite). */
+    onRendererMemoryAutoSample: (
+      callback: (sample: { capturedAt: number; bytes: number; source: 'renderer-process' }) => void,
+    ) => () => void;
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;

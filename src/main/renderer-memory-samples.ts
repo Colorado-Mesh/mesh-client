@@ -77,3 +77,55 @@ export function summarizeRendererMemorySamples(db: NodeSqliteDB): RendererMemory
     spanMs,
   };
 }
+
+export interface RendererMemorySampleListItem {
+  capturedAt: number;
+  bytes: number;
+  source: RendererMemorySampleSource;
+  appVersion: string | null;
+  sessionId: string | null;
+}
+
+/** Newest `limit` rows, returned oldest→newest for sparkline / export time series. */
+export function listRendererMemorySamples(
+  db: NodeSqliteDB,
+  options?: { limit?: number },
+): RendererMemorySampleListItem[] {
+  const rawLimit = options?.limit ?? RENDERER_MEMORY_SAMPLE_MAX_ROWS;
+  const limit = Math.min(
+    RENDERER_MEMORY_SAMPLE_MAX_ROWS,
+    Math.max(1, Number.isFinite(rawLimit) ? Math.trunc(rawLimit) : RENDERER_MEMORY_SAMPLE_MAX_ROWS),
+  );
+  const rows = db
+    .prepare(
+      `SELECT captured_at AS capturedAt,
+              bytes,
+              source,
+              app_version AS appVersion,
+              session_id AS sessionId
+       FROM renderer_memory_samples
+       ORDER BY captured_at DESC
+       LIMIT ?`,
+    )
+    .all(limit) as {
+    capturedAt: number;
+    bytes: number;
+    source: RendererMemorySampleSource;
+    appVersion: string | null;
+    sessionId: string | null;
+  }[];
+  rows.reverse();
+  return rows;
+}
+
+export interface RendererMemorySampleExport extends RendererMemorySampleSummary {
+  samples: RendererMemorySampleListItem[];
+}
+
+/** Summary plus retention-bounded rows for Support / debug exports. */
+export function exportRendererMemorySamples(db: NodeSqliteDB): RendererMemorySampleExport {
+  return {
+    ...summarizeRendererMemorySamples(db),
+    samples: listRendererMemorySamples(db),
+  };
+}

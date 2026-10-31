@@ -189,7 +189,7 @@ export interface DebugSnapshot {
   rendererMemory?: CoiMemorySnapshot;
   /** Bounded high-res duration samples (Support / developer export). */
   rendererTimings?: RendererTimingsSnapshot;
-  /** Durable memory sample summary (no raw rows). */
+  /** Durable memory sample summary plus retention-bounded timestamped rows. */
   rendererMemoryDurable?: {
     count: number;
     firstAt: number | null;
@@ -197,6 +197,13 @@ export interface DebugSnapshot {
     minBytes: number | null;
     maxBytes: number | null;
     spanMs: number | null;
+    samples: {
+      capturedAt: number;
+      bytes: number;
+      source: 'user-agent' | 'renderer-process';
+      appVersion: string | null;
+      sessionId: string | null;
+    }[];
   } | null;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
   meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];

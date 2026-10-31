@@ -332,6 +332,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
       sessionId?: string;
     }) => ipcRenderer.invoke('db:recordRendererMemorySample', sample),
     getRendererMemorySampleSummary: () => ipcRenderer.invoke('db:getRendererMemorySampleSummary'),
+    onRendererMemoryAutoSample: (
+      callback: (sample: { capturedAt: number; bytes: number; source: 'renderer-process' }) => void,
+    ) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        sample: { capturedAt: number; bytes: number; source: 'renderer-process' },
+      ): void => {
+        callback(sample);
+      };
+      ipcRenderer.on('renderer-memory:auto-sample', handler);
+      return () => ipcRenderer.removeListener('renderer-memory:auto-sample', handler);
+    },
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),

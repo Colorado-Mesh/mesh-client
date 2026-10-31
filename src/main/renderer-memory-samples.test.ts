@@ -6,7 +6,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { NodeSqliteDB } from './db-compat';
 import {
+  exportRendererMemorySamples,
   insertRendererMemorySample,
+  listRendererMemorySamples,
   pruneRendererMemorySamples,
   RENDERER_MEMORY_SAMPLE_MAX_ROWS,
   summarizeRendererMemorySamples,
@@ -92,5 +94,47 @@ describe('renderer-memory-samples', () => {
     pruneRendererMemorySamples(db, now);
     expect(summarizeRendererMemorySamples(db).count).toBe(1);
     expect(summarizeRendererMemorySamples(db).maxBytes).toBe(2);
+  });
+
+  it('lists newest rows oldest-first and includes them in export', () => {
+    openDb();
+    const base = Date.now();
+    for (let i = 0; i < 5; i += 1) {
+      insertRendererMemorySample(db, {
+        captured_at: base + i,
+        bytes: 100 + i,
+        source: 'renderer-process',
+        app_version: '2.0.0',
+        session_id: 's',
+      });
+    }
+    expect(listRendererMemorySamples(db, { limit: 3 })).toEqual([
+      {
+        capturedAt: base + 2,
+        bytes: 102,
+        source: 'renderer-process',
+        appVersion: '2.0.0',
+        sessionId: 's',
+      },
+      {
+        capturedAt: base + 3,
+        bytes: 103,
+        source: 'renderer-process',
+        appVersion: '2.0.0',
+        sessionId: 's',
+      },
+      {
+        capturedAt: base + 4,
+        bytes: 104,
+        source: 'renderer-process',
+        appVersion: '2.0.0',
+        sessionId: 's',
+      },
+    ]);
+    const exported = exportRendererMemorySamples(db);
+    expect(exported.count).toBe(5);
+    expect(exported.samples).toHaveLength(5);
+    expect(exported.samples[0]?.bytes).toBe(100);
+    expect(exported.samples.at(-1)?.bytes).toBe(104);
   });
 });

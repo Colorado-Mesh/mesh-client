@@ -124,6 +124,7 @@ import {
   getContactGroupMembers,
   getContactGroups,
   getDatabase,
+  getDatabaseIfOpen,
   getMeshcoreHopHistory,
   getMeshcorePathHistory,
   getMeshcoreTraceHistory,
@@ -225,10 +226,8 @@ import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
 import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { PermissionDecisionLogger } from './permissionDecisionLog';
 import { readFileUpTo } from './readFileUpTo';
-import {
-  insertRendererMemorySample,
-  summarizeRendererMemorySamples,
-} from './renderer-memory-samples';
+import { createRendererMemoryAutoSampler } from './renderer-memory-auto-sampler';
+import { exportRendererMemorySamples, insertRendererMemorySample } from './renderer-memory-samples';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import {
   isAllowedRendererDeviceOrigin,
@@ -540,6 +539,7 @@ function syncPowerSaveBlocker(): void {
 let mainWindow: BrowserWindow | null = null;
 let reloadMainRenderer: ((beforeLoad?: () => void) => Promise<void>) | null = null;
 let rendererLoadPromise: Promise<void> | null = null;
+let rendererMemoryAutoSampler: ReturnType<typeof createRendererMemoryAutoSampler> | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 let offlineTileCache: TileCache | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
@@ -1941,6 +1941,13 @@ function createWindow() {
     },
   });
   mainWindow = win;
+  rendererMemoryAutoSampler?.stop();
+  rendererMemoryAutoSampler = createRendererMemoryAutoSampler({
+    getWindow: () => mainWindow,
+    getDb: () => getDatabaseIfOpen(),
+    getAppMetrics: () => app.getAppMetrics(),
+    getAppVersion: () => app.getVersion(),
+  });
   let trustedRendererUrl = '';
 
   let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1982,6 +1989,7 @@ function createWindow() {
   win.webContents.once('did-finish-load', () => {
     retryRendererSpellcheck(win.webContents.session);
     flushPendingOpenUrl();
+    rendererMemoryAutoSampler?.start();
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -2427,6 +2435,8 @@ function createWindow() {
   });
 
   mainWindow.on('closed', () => {
+    rendererMemoryAutoSampler?.stop();
+    rendererMemoryAutoSampler = null;
     setMainWindow(null);
     mainWindow = null;
     reloadMainRenderer = null;
@@ -4789,9 +4799,10 @@ ipcMain.handle('db:getRendererMemorySampleSummary', (event) => {
         minBytes: null,
         maxBytes: null,
         spanMs: null,
+        samples: [],
       };
     }
-    return summarizeRendererMemorySamples(db);
+    return exportRendererMemorySamples(db);
   } catch (err) {
     finishDbIpcHandler('db:getRendererMemorySampleSummary', err);
   }
