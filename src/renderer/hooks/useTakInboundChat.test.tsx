@@ -445,9 +445,49 @@ describe('useTakInboundChat', () => {
         useTakSinkStore.setState({ active: false });
       });
       expect(setIncidentMarkers().mock.calls).toEqual([[[]]]);
+      // A sink starting again sends the list, without the alarm now the MAYDAY has been seen.
+      act(() => {
+        useIncidentStore.setState({
+          incidents: { [incident.id]: { ...incident, seenAt: incident.receivedAt + 1 } },
+        });
+        useTakSinkStore.setState({ active: true });
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm)).toEqual([undefined]);
     } finally {
       useIncidentStore.setState({ incidents: {} });
       useTakRelayPrefsStore.setState({ mecpAlarm: false });
+    }
+  });
+
+  it('retries the empty list until it lands while no sink is up', async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      useTakSinkStore.setState({ active: true });
+      mount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      setIncidentMarkers().mockClear();
+      setIncidentMarkers()
+        .mockRejectedValueOnce(new Error('rate limited'))
+        .mockResolvedValue(undefined);
+      await act(async () => {
+        useTakSinkStore.setState({ active: false });
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(setIncidentMarkers()).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(TAK_SEND_ROOMS_RETRY_MS);
+      });
+      expect(setIncidentMarkers().mock.calls).toEqual([[[]], [[]]]);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * TAK_SEND_ROOMS_RETRY_MS);
+      });
+      expect(setIncidentMarkers()).toHaveBeenCalledTimes(2);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
     }
   });
 });

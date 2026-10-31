@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type {
@@ -44,9 +44,10 @@ export const TAK_SEND_ROOMS_RETRY_MS = 5_000;
 export const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
 
 /**
- * Keep main told a setting while a sink is up: `value` (JSON) is sent whenever a sink starts or
- * it changes. A refused update (main's rate limit, say) would leave main with an old value, so it
- * is retried, waiting longer each time, until it lands or a newer value or unmount replaces it.
+ * Keep main told a setting while `sinkActive` (a sink is up, or whatever else says it must be
+ * sent): `value` (JSON) is sent whenever that turns true or the value changes. A refused update
+ * (main's rate limit, say) would leave main with an old value, so it is retried, waiting longer
+ * each time, until it lands or a newer value, `sinkActive` turning false, or unmount replaces it.
  */
 function useSendWhileSinkActive(
   sinkActive: boolean,
@@ -198,17 +199,18 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     'setIncidentMarkers',
   );
   // Main forgets the markers when its sinks stop, but a server error can leave it reporting
-  // stopped with devices still connected. Clear the list then too, so their markers go and a
-  // MAYDAY alarm is cancelled rather than left sounding.
-  const wasSinkActive = useRef(sinkActive);
-  useEffect(() => {
-    if (wasSinkActive.current && !sinkActive) {
-      sendIncidentMarkers([]).catch((e: unknown) => {
-        console.warn('[TakInboundChat] setIncidentMarkers failed ' + errLikeToLogString(e));
-      });
-    }
-    wasSinkActive.current = sinkActive;
-  }, [sinkActive]);
+  // stopped with devices still connected. So once a sink has been up, main is told the list is
+  // empty whenever none is, retried until it lands: their markers go and a MAYDAY alarm is
+  // cancelled rather than left sounding. A sink starting again sends the current list instead,
+  // without the alarms for incidents seen meanwhile, so main cancels those.
+  const [sinkWasActive, setSinkWasActive] = useState(sinkActive);
+  if (sinkActive && !sinkWasActive) setSinkWasActive(true);
+  useSendWhileSinkActive(
+    sinkWasActive && !sinkActive,
+    '[]',
+    sendIncidentMarkers,
+    'setIncidentMarkers',
+  );
   const relayPrefs = useTakRelayPrefsStore((s) => s.byIdentity);
 
   // For a day after an upgrade, ATAK devices are told to drop the old GeoChat room contacts.
