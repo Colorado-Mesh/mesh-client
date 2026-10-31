@@ -129,5 +129,6 @@ patchedDependencies:
   '@jsr/meshtastic__transport-web-serial@0.2.5': patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch
   '@liamcottle/meshcore.js@1.15.0': patches/@liamcottle__meshcore.js@1.15.0.patch
   debug@4.4.3: patches/debug@4.4.3.patch
+  eslint-plugin-jsx-a11y@6.10.2: patches/eslint-plugin-jsx-a11y@6.10.2.patch
   mqtt-packet@9.0.2: patches/mqtt-packet@9.0.2.patch
   readable-stream@4.8.0: patches/readable-stream@4.8.0.patch

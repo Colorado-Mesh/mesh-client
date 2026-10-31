@@ -38,6 +38,7 @@ patchedDependencies:
   '@jsr/meshtastic__transport-web-serial@0.2.5': 27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74
   '@liamcottle/meshcore.js@1.15.0': 685cdeaa61e9bf3e50770ce7db162376ed19f84013d62935955803b9d1235409
   debug@4.4.3: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
+  eslint-plugin-jsx-a11y@6.10.2: 1e53fa4a42efc218b8f74e71dee689328ecec20b77c05218eef386d18dd2b0b4
   mqtt-packet@9.0.2: 51b470ec02a7f614bed9fff2e850daed63a590b95bf34e7eb4d0a93084339c45
   readable-stream@4.8.0: cd0979e68a5d938adf6c8078486672df41d04446eb826e48efc82a04bd537a0e
 
@@ -243,7 +244,7 @@ importers:
         version: 2.32.0(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
       eslint-plugin-jsx-a11y:
         specifier: ^6.10.2
-        version: 6.10.2(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
+        version: 6.10.2(patch_hash=1e53fa4a42efc218b8f74e71dee689328ecec20b77c05218eef386d18dd2b0b4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       eslint-plugin-no-secrets:
         specifier: ^2.3.3
         version: 2.3.3(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
@@ -6557,7 +6558,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-jsx-a11y@6.10.2(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1)):
+  eslint-plugin-jsx-a11y@6.10.2(patch_hash=1e53fa4a42efc218b8f74e71dee689328ecec20b77c05218eef386d18dd2b0b4)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1)):
     dependencies:
       aria-query: 5.3.2
       array-includes: 3.2.0

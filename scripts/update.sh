@@ -938,6 +938,7 @@ WATCH_ENTRIES=(
   'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
   'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'
   'mqtt-packet|mqtt-packet|https://www.npmjs.com/package/mqtt-packet|Custom patch (reject oversized inbound MQTT packets before buffering)'
+  'eslint-plugin-jsx-a11y|eslint-plugin-jsx-a11y|https://www.npmjs.com/package/eslint-plugin-jsx-a11y|Custom patch (minimatch@11 named export compat for GHSA-g3hv-75wg-m249 floor)'
 )
 
 # --- Snapshot old versions ---
