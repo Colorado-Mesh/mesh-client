@@ -1,0 +1,51 @@
+diff --git a/lib/util/mayContainChildComponent.js b/lib/util/mayContainChildComponent.js
+index 9c12846d93a699b3870fcc682b70318d549a9b11..e1bb0df952c4856bad0ccfc4fc33a7c358c3d27a 100644
+--- a/lib/util/mayContainChildComponent.js
++++ b/lib/util/mayContainChildComponent.js
+@@ -5,8 +5,10 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports["default"] = mayContainChildComponent;
+ var _jsxAstUtils = require("jsx-ast-utils");
+-var _minimatch = _interopRequireDefault(require("minimatch"));
+-function _interopRequireDefault(e) { return e && e.__esModule ? e : { "default": e }; }
++// minimatch@9+ exports a namespace ({ minimatch }) instead of a callable default.
++// mesh-client floors minimatch to ^11 for GHSA-g3hv-75wg-m249; keep v3 callable too.
++var _minimatchNs = require("minimatch");
++var _minimatch = typeof _minimatchNs === "function" ? _minimatchNs : _minimatchNs.minimatch;
+ /**
+  * Returns true if it can positively determine that the element lacks an
+  * accessible label. If no determination is possible, it returns false. Treat
+@@ -35,7 +37,7 @@ function mayContainChildComponent(root, componentName) {
+           return true;
+         }
+         // Check for components with the provided name.
+-        if (childNode.type === 'JSXElement' && childNode.openingElement && (0, _minimatch["default"])(elementType(childNode.openingElement), componentName)) {
++        if (childNode.type === 'JSXElement' && childNode.openingElement && (0, _minimatch)(elementType(childNode.openingElement), componentName)) {
+           return true;
+         }
+         if (traverseChildren(childNode, depth + 1)) {
+diff --git a/lib/util/mayHaveAccessibleLabel.js b/lib/util/mayHaveAccessibleLabel.js
+index 07eb76610957454796da190d118f1b1061bbad20..545f6fa005dabfeaa27cbf34055e64e44d6d0106 100644
+--- a/lib/util/mayHaveAccessibleLabel.js
++++ b/lib/util/mayHaveAccessibleLabel.js
+@@ -6,7 +6,10 @@ Object.defineProperty(exports, "__esModule", {
+ exports["default"] = mayHaveAccessibleLabel;
+ var _arrayIncludes = _interopRequireDefault(require("array-includes"));
+ var _jsxAstUtils = require("jsx-ast-utils");
+-var _minimatch = _interopRequireDefault(require("minimatch"));
++// minimatch@9+ exports a namespace ({ minimatch }) instead of a callable default.
++// mesh-client floors minimatch to ^11 for GHSA-g3hv-75wg-m249; keep v3 callable too.
++var _minimatchNs = require("minimatch");
++var _minimatch = typeof _minimatchNs === "function" ? _minimatchNs : _minimatchNs.minimatch;
+ function _interopRequireDefault(e) { return e && e.__esModule ? e : { "default": e }; }
+ /**
+  * Returns true if a labelling element is found or if it cannot determine if
+@@ -72,7 +75,7 @@ function mayHaveAccessibleLabel(root) {
+       var name = getElementType(node.openingElement);
+       var isReactComponent = name.length > 0 && name[0] === name[0].toUpperCase();
+       if (isReactComponent && !controlComponents.some(function (control) {
+-        return (0, _minimatch["default"])(name, control);
++        return (0, _minimatch)(name, control);
+       })) {
+         return true;
+       }
