@@ -13,6 +13,23 @@ import type { FlashProgressCallback } from './types';
 /** Abort DFU when no packet progress (USB drop mid-transfer). */
 export const NRF52_DFU_STALL_TIMEOUT_MS = 60_000;
 
+/** CRC16-CCITT (init 0xffff) used by the Adafruit/Nordic legacy serial DFU init packet. */
+export function nrf52DfuCrc16(binaryData: Uint8Array, crc = 0xffff): number {
+  for (const b of binaryData) {
+    crc = ((crc >> 8) & 0x00ff) | ((crc << 8) & 0xff00);
+    crc ^= b;
+    crc ^= (crc & 0x00ff) >> 4;
+    crc ^= (crc << 8) << 4;
+    crc ^= ((crc & 0x00ff) << 4) << 1;
+  }
+  return crc & 0xffff;
+}
+
+export interface Nrf52FlashOptions {
+  /** Cancellation closes the serial port; rejects with `NRF52_DFU_CANCELLED`. */
+  signal?: AbortSignal;
+}
+
 export class Nrf52DfuFlasher {
   static readonly DFU_TOUCH_BAUD = 1200;
   static readonly SERIAL_PORT_OPEN_WAIT_TIME = 0.1;
@@ -34,6 +51,7 @@ export class Nrf52DfuFlasher {
   private sequenceNumber = 0;
   private sd_size = 0;
   private total_size = 0;
+  private signal: AbortSignal | undefined;
 
   constructor(private readonly serialPort: SerialPort) {}
 
@@ -53,7 +71,15 @@ export class Nrf52DfuFlasher {
     await sleepMillis(Nrf52DfuFlasher.TOUCH_RESET_WAIT_TIME * 1000);
   }
 
-  async flash(firmwareZipBlob: Blob, progressCallback?: FlashProgressCallback): Promise<void> {
+  async flash(
+    firmwareZipBlob: Blob,
+    progressCallback?: FlashProgressCallback,
+    options: Nrf52FlashOptions = {},
+  ): Promise<void> {
+    this.signal = options.signal;
+    if (this.signal?.aborted) {
+      throw new Error('NRF52_DFU_CANCELLED');
+    }
     const blobReader = new BlobReader(firmwareZipBlob);
     const zipReader = new ZipReader(blobReader);
     try {
@@ -132,14 +158,7 @@ export class Nrf52DfuFlasher {
 
   /** Exposed for unit tests. */
   calcCrc16(binaryData: Uint8Array, crc = 0xffff): number {
-    for (const b of binaryData) {
-      crc = ((crc >> 8) & 0x00ff) | ((crc << 8) & 0xff00);
-      crc ^= b;
-      crc ^= (crc & 0x00ff) >> 4;
-      crc ^= (crc << 8) << 4;
-      crc ^= ((crc & 0x00ff) << 4) << 1;
-    }
-    return crc & 0xffff;
+    return nrf52DfuCrc16(binaryData, crc);
   }
 
   /** Exposed for unit tests. */
@@ -241,11 +260,16 @@ export class Nrf52DfuFlasher {
 
     let lastProgressAt = Date.now();
     let stallInterval: ReturnType<typeof setInterval> | undefined;
+    const signal = this.signal;
+    let onAbort: (() => void) | undefined;
 
     try {
       await Promise.race([
         (async () => {
           for (let i = 0; i < packets.length; i++) {
+            if (signal?.aborted) {
+              throw new Error('NRF52_DFU_CANCELLED');
+            }
             await this.sendPacket(packets[i]);
             await sleepMillis(flashPageWriteTime * 1000);
             lastProgressAt = Date.now();
@@ -267,10 +291,21 @@ export class Nrf52DfuFlasher {
             }
           }, 2000);
         }),
+        new Promise<never>((_, reject) => {
+          if (!signal) return;
+          onAbort = () => {
+            void closeSerialPortIfOpen(this.serialPort);
+            reject(new Error('NRF52_DFU_CANCELLED'));
+          };
+          signal.addEventListener('abort', onAbort, { once: true });
+        }),
       ]);
     } finally {
       if (stallInterval) {
         clearInterval(stallInterval);
+      }
+      if (onAbort) {
+        signal?.removeEventListener('abort', onAbort);
       }
     }
   }

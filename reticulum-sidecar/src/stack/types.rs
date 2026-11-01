@@ -340,6 +340,21 @@ pub struct LxmfAudioRequest {
     pub data_base64: String,
 }
 
+/// One native LXMF `FIELD_FILE_ATTACHMENTS` entry (`[name, bytes]`). Not rncp.
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfFileAttachmentRequest {
+    pub file_name: String,
+    pub data_base64: String,
+}
+
+/// Native LXMF `FIELD_IMAGE` (`[format, bytes]`) — Ratspeak-style photo.
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfImageRequest {
+    /// `png` | `jpeg` | `jpg` | `webp` | `gif` (leading dot / case ignored).
+    pub format: String,
+    pub data_base64: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LxmfSendRequest {
     pub destination_hash: String,
@@ -354,6 +369,12 @@ pub struct LxmfSendRequest {
     /// Optional native LXMF audio field (Ogg/Opus voice memo).
     #[serde(default)]
     pub audio: Option<LxmfAudioRequest>,
+    /// Native LXMF file attachments (`FIELD_FILE_ATTACHMENTS`); size/count capped in sidecar.
+    #[serde(default)]
+    pub attachments: Vec<LxmfFileAttachmentRequest>,
+    /// Native LXMF image (`FIELD_IMAGE`, photo).
+    #[serde(default)]
+    pub image: Option<LxmfImageRequest>,
 }
 
 /// Create an encrypted `lxm://` paper URI (no network send).

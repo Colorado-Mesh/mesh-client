@@ -954,7 +954,34 @@
     "outboxStatusScheduledDue": "Planifié — en attente d'envoi",
     "outboxScheduledSendNow": "Envoyer maintenant",
     "outboxScheduledEditAria": "Modifier le message planifié",
-    "outboxScheduledSendNowAria": "Envoyer le message programmé maintenant"
+    "outboxScheduledSendNowAria": "Envoyer le message programmé maintenant",
+    "attachment": {
+      "attachAria": "Joindre un fichier ou une photo",
+      "attachFile": "Joindre un fichier…",
+      "attachPhoto": "Joindre une photo…",
+      "cancelAria": "Annuler l’envoi de {{name}}",
+      "cancelled": "Envoi de la pièce jointe annulé.",
+      "errors": {
+        "cacheFailed": "Impossible d’enregistrer la pièce jointe localement ; elle n’a pas été envoyée.",
+        "empty": "Ce fichier est vide.",
+        "photoDecodeFailed": "Impossible de traiter cette photo. Essayez une autre image.",
+        "photoTooLarge": "Cette photo est trop volumineuse pour être envoyée.",
+        "photoUnsupported": "Seules les photos PNG, JPEG, WebP et GIF peuvent être envoyées.",
+        "readFailed": "Impossible de lire le fichier sélectionné.",
+        "runtimeUnavailable": "Reticulum n’est pas prêt. Démarrez la pile et réessayez.",
+        "sendFailed": "Impossible d’envoyer la pièce jointe.",
+        "tooLarge": "Les pièces jointes sont limitées à {{limitKib}} Kio au total par message. Pour des fichiers plus volumineux, utilisez Remote rncp.",
+        "tooLargeForPropagation": "La pièce jointe est trop volumineuse pour un nœud de propagation — elle ne peut être livrée que directement tant que le pair est joignable.",
+        "tooMany": "Joignez au plus {{count}} fichiers par message."
+      },
+      "fileInputAria": "Choisir des fichiers à envoyer",
+      "menuAria": "Joindre au message LXMF",
+      "photoInputAria": "Choisir une photo à envoyer",
+      "progressAria": "Progression de l’envoi pour {{name}}",
+      "sending": "Envoi de {{name}}…",
+      "tooltip": "Envoyez des fichiers ou une photo dans ce message direct LXMF (pièce jointe native — pas rncp). Jusqu’à {{count}} fichiers, {{limitKib}} Kio au total. Les photos sont redimensionnées et les métadonnées supprimées.",
+      "transfersAria": "Pièces jointes en cours d’envoi"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "La lecture de la flash s'est arrêtée prématurément, aucune sauvegarde n'a donc été enregistrée. Reconnectez la carte et réessayez.",
       "esp32FlashSizeUnknown": "Impossible de détecter la taille de la flash, aucune sauvegarde n'a donc été effectuée. Sélectionnez le modèle exact de la carte et réessayez.",
       "esp32FlashTooLarge": "La flash de cette carte dépasse la limite de sauvegarde de 32 Mio, aucune sauvegarde n'a donc été effectuée.",
-      "esp32ReadVerifyFailed": "La lecture de la flash a échoué à la vérification de la somme de contrôle, aucune sauvegarde n'a donc été enregistrée. Reconnectez la carte et réessayez."
+      "esp32ReadVerifyFailed": "La lecture de la flash a échoué à la vérification de la somme de contrôle, aucune sauvegarde n'a donc été enregistrée. Reconnectez la carte et réessayez.",
+      "esp32ChipMismatch": "La puce connectée ne correspond pas à la carte. Rien écrit. Vérifiez carte et port USB.",
+      "flashCancelled": "Flash annulé.",
+      "imageExceedsFlash": "Image plus grande que la flash de l’appareil. Rien écrit."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Aucun port série USB trouvé.",
@@ -2633,7 +2663,8 @@
       "clear": "Effacer le cache de tuiles",
       "clearAria": "Effacer le cache de tuiles de carte hors ligne",
       "cleared": "Cache vidé.",
-      "viewCacheOnly": "Les tuiles affichées sont automatiquement mises en cache. Le téléchargement de régions est disponible avec USGS Topo ; OpenStreetMap ne permet pas le préchargement."
+      "viewCacheOnly": "Les tuiles affichées sont automatiquement mises en cache. Le téléchargement de régions est disponible avec USGS Topo ; OpenStreetMap ne permet pas le préchargement.",
+      "viewCacheOnlyCustom": "Les sources personnalisées ne mettent en cache que les tuiles vues ; pas de téléchargement régional. Importez MBTiles pour hors ligne."
     },
     "basemapUsgsTopo": "USGS Topo (États-Unis uniquement)",
     "layerIncidents": "Incidents d'urgence",
@@ -2646,7 +2677,63 @@
     "measureHint": "Cliquez sur la carte pour ajouter des points",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "Unités TAK",
-    "layerWeatherForecasts": "Prévisions météorologiques"
+    "layerWeatherForecasts": "Prévisions météorologiques",
+    "customSources": {
+      "addConfirm": "Ajouter la source",
+      "addConfirmAria": "Ajouter une source XYZ personnalisée",
+      "addXyz": "Ajouter une source XYZ…",
+      "addXyzAria": "Ajouter un serveur de tuiles XYZ",
+      "added": "Ajouté : {{name}}.",
+      "attributionLabel": "Attribution (obligatoire)",
+      "cancel": "Annuler",
+      "cancelAria": "Annuler l’ajout de source cartographique",
+      "clearCache": "Vider le cache",
+      "clearCacheAria": "Vider le cache des tuiles pour {{name}}",
+      "confirmMbtiles": "Je confirme être autorisé à utiliser ces données et que l’attribution est correcte.",
+      "confirmMbtilesAria": "Confirmer l’autorisation d’utiliser le paquet MBTiles",
+      "confirmXyz": "Je confirme être autorisé à utiliser ce serveur de tuiles et que l’attribution est correcte.",
+      "confirmXyzAria": "Confirmer l’autorisation du serveur de tuiles",
+      "confirmXyzHost": "Je confirme pouvoir utiliser les tuiles de {{host}} et que l’attribution est correcte. Tuiles chargées depuis cet hôte à l’affichage.",
+      "errors": {
+        "attribution": "Attribution obligatoire (200 caractères max.).",
+        "cancelled": "Annulé.",
+        "credentials": "Les URL avec identifiant ou mot de passe sont interdites.",
+        "empty": "Saisissez une URL de tuiles.",
+        "host": "L’hôte doit être un domaine public (pas d’IP, localhost ou réseau local).",
+        "invalid": "Ce n’est pas une URL de tuiles valide.",
+        "io": "Impossible de terminer l’action. Réessayez.",
+        "limit": "Trop de sources personnalisées. Supprimez-en une d’abord.",
+        "mbtiles_invalid": "Paquet MBTiles invalide.",
+        "mbtiles_too_large": "Fichier MBTiles trop volumineux (limite 2 Go).",
+        "mbtiles_vector": "MBTiles vectoriels non pris en charge ; PNG, JPEG ou WebP.",
+        "name": "Saisissez un nom (60 caractères max.).",
+        "not_confirmed": "Confirmez d’abord que vous pouvez utiliser cette source.",
+        "osm": "Les tuiles OpenStreetMap sont intégrées ; utilisez-les.",
+        "placeholders": "L’URL doit contenir {z}, {x} et {y} exactement une fois après l’hôte.",
+        "port": "Ports personnalisés interdits.",
+        "scheme": "Seules les URL https:// sont autorisées.",
+        "too_long": "URL trop longue.",
+        "unknown_inspect": "Le fichier sélectionné a expiré. Choisissez-le à nouveau.",
+        "zoom": "Le zoom doit être un entier de 0 à 22."
+      },
+      "heading": "Stockage et sources personnalisées",
+      "importConfirm": "Importer",
+      "importConfirmAria": "Importer le paquet MBTiles",
+      "importMbtiles": "Importer un paquet MBTiles…",
+      "importMbtilesAria": "Importer MBTiles pour usage hors ligne",
+      "imported": "Importé : {{name}}.",
+      "maxZoomLabel": "Zoom maximal du serveur (facultatif)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "Tuiles {{format}}, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Fichier copié dans le stockage de l’app.",
+      "nameLabel": "Nom",
+      "policyNote": "Les serveurs personnalisés ne sont contactés que pour les tuiles affichées. Pas de téléchargement en masse.",
+      "remove": "Supprimer",
+      "removeAria": "Supprimer la source cartographique {{name}}",
+      "storageAria": "Stockage cartographique par source",
+      "urlLabel": "URL de tuiles (https, avec {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · cache plafonné à {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",
@@ -8007,5 +8094,93 @@
     "interrupt": "Envoyer Ctrl+C",
     "interruptShort": "Ctrl+C",
     "clear": "Effacer"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Je confirme que l’appareil connecté en USB est un {{board}}, qu’il a un câble et une alimentation stables et que j’ai sauvegardé mes paramètres et clés.",
+    "aria": {
+      "acknowledge": "Confirmer la liste de contrôle du flash",
+      "board": "Carte à flasher",
+      "cancel": "Annuler le flash du micrologiciel",
+      "expectedSha": "Empreinte SHA-256 attendue",
+      "file": "Fichier de micrologiciel à flasher",
+      "flash": "Flasher le micrologiciel sur l’appareil"
+    },
+    "blockers": {
+      "boardMismatch": "La carte sélectionnée ne correspond pas à la radio connectée.",
+      "boardUnsupported": "La radio connectée n’est pas une carte prise en charge.",
+      "lowBattery": "La batterie est inférieure à {{percent}} % — chargez l’appareil ou branchez-le, puis réessayez.",
+      "noBoard": "Sélectionnez une carte.",
+      "noImage": "Sélectionnez un fichier de micrologiciel valide.",
+      "notAcknowledged": "Confirmez la liste de contrôle ci-dessous.",
+      "serialConnectionOpen": "Déconnectez la liaison série USB de la radio avant le flash — Mesh Client a besoin du port."
+    },
+    "boardLabel": "Carte",
+    "boardLocked": "Détecté depuis la radio connectée : {{board}}",
+    "boardManualHint": "La radio n’a pas été identifiée automatiquement. Choisissez votre carte manuellement.",
+    "boardPlaceholder": "Sélectionnez votre carte…",
+    "boardUnsupported": "La radio connectée indique « {{reported}} », qui n’est pas une cible de flash prise en charge. Le flash est désactivé.",
+    "cancel": "Annuler le flash",
+    "cancelled": "Flash annulé. L’appareil peut devoir être flashé à nouveau — voir la récupération ci-dessous.",
+    "cancelling": "Annulation…",
+    "checksum": {
+      "expectedHint": "Collez l’empreinte affichée à côté de l’actif sur la page de release. Une différence bloque le flash.",
+      "expectedLabel": "SHA-256 attendu (facultatif)",
+      "fileLabel": "SHA-256 du fichier",
+      "payloadLabel": "SHA-256 de l’image"
+    },
+    "enterDfuHint": "Les cartes nRF52 doivent être en bootloader (DFU) : Enter DFU mode ci-dessus, double appui sur reset ou bouton ci-dessous, puis Flash.",
+    "errors": {
+      "checksumInvalid": "Le SHA-256 attendu n’est pas une empreinte hex valide de 64 caractères.",
+      "checksumMismatch": "Le SHA-256 du fichier ne correspond pas à l’empreinte attendue. Ne flashez pas — retéléchargez.",
+      "dfuPackageInvalid": "Le paquet DFU nRF52 est invalide ou non pris en charge (DFU série legacy application seule avec checksum correspondant).",
+      "imageAmbiguous": "L’archive contient plusieurs images correspondantes. Extrayez le fichier exact et sélectionnez-le.",
+      "imageBoardMismatch": "Ce micrologiciel est pour une autre carte ({{detail}}). Choisissez la carte ou un autre fichier.",
+      "imageBoardMismatchGeneric": "Ce micrologiciel est pour une carte différente de celle sélectionnée.",
+      "imageChipMismatch": "L’image a été compilée pour une puce différente de la carte sélectionnée.",
+      "imageEmpty": "Le fichier de micrologiciel est vide.",
+      "imageHeaderInvalid": "Le fichier n’est pas une image ESP32 valide.",
+      "imageNameUnrecognized": "Ce nom de fichier n’est pas une image reconnue pour la carte sélectionnée.",
+      "imageNotCompanion": "Ce n’est pas un micrologiciel companion. Mesh Client ne flashe que des images companion.",
+      "imageNotFoundForBoard": "L’archive ne contient pas d’image pour la carte sélectionnée.",
+      "imageNotFullImage": "Ce n’est pas l’image complète que Mesh Client écrit (.factory.bin, -merged.bin ou DFU .zip).",
+      "imageTooLarge": "L’image dépasse la flash de la carte sélectionnée.",
+      "imageTooSmall": "Le fichier est trop petit pour une image full-flash.",
+      "readFailed": "Impossible de lire le fichier de micrologiciel."
+    },
+    "fileHint": {
+      "meshcore": "Choisissez companion-radio -merged.bin (ESP32) ou .zip (nRF52) pour votre carte dans les releases MeshCore.",
+      "meshtastic": "Choisissez le .zip des releases Meshtastic (firmware-esp32s3-….zip ou firmware-nrf52840-….zip) ou un .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Fichier du micrologiciel",
+    "flash": "Flasher le micrologiciel",
+    "flashing": "Flash… {{progress}} %",
+    "imageReady": "Prêt : {{name}} ({{size}})",
+    "imageVersion": "Version : {{version}}",
+    "recovery": {
+      "docs": "Plus : docs/troubleshooting.md, « Firmware flashing recovery ».",
+      "esp32": "ESP32 : le bootloader ROM ne peut pas être écrasé. Maintenez BOOT, appuyez sur RESET, relâchez BOOT et reflashez, ou flasher web du fabricant.",
+      "nrf52": "nRF52 : double appui sur RESET pour bootloader UF2 (lecteur apparaît), glissez le .uf2 de la carte ou réessayez ici.",
+      "title": "Si un flash échoue"
+    },
+    "releases": {
+      "meshcore": "Ouvrir les releases firmware MeshCore",
+      "meshtastic": "Ouvrir les releases firmware Meshtastic"
+    },
+    "successEsp32": "Micrologiciel écrit et vérifié. Redémarrage — attendez ~30 s puis reconnectez.",
+    "successNrf52": "Micrologiciel envoyé au bootloader. Redémarrage — attendez ~30 s puis reconnectez.",
+    "summary": "Installez ou mettez à jour le micrologiciel via USB. Seules les cartes listées ; le reste est refusé avant écriture.",
+    "supportedBoards": "Cartes prises en charge : {{boards}}",
+    "title": "Flasher le micrologiciel de l’appareil",
+    "validating": "Vérification du micrologiciel…",
+    "warnings": {
+      "batteryUnknown": "Niveau de batterie inconnu — chargez ou alimentez externement.",
+      "cable": "Câble USB données direct au PC (sans hub) ; ne débranchez pas pendant le flash.",
+      "connectionDrops": "La liaison radio sera coupée au redémarrage.",
+      "espBootloader": "Mesh Client remet la carte en bootloader ROM ESP32. Sinon BOOT, RESET, relâchez BOOT.",
+      "nrf52Bootloader": "nRF52 flashe via bootloader DFU série. Bootloader intact ; échec réessayable.",
+      "settingsReset": "Image full-flash peut effacer paramètres, canaux et clés. Exportez d’abord une sauvegarde.",
+      "unverifiedBoard": "Radio non identifiée — choix de carte non vérifié. Mauvaise carte peut rendre l’appareil inutilisable."
+    },
+    "warningsTitle": "Avant de flasher"
   }
 }

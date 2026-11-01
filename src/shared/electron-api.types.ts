@@ -22,7 +22,14 @@ import type { IncidentSnapshot } from './incidentTypes';
 import type { LiveMapWindowApi } from './liveMapWindow';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
-import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
+import type { MapSourceId, OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
+import type {
+  AddXyzSourceRequest,
+  CustomMapSourceInfo,
+  CustomMapSourceResult,
+  ImportMbtilesRequest,
+  MbtilesPickResult,
+} from './offlineMaps/customMapSources';
 import type {
   PathCapability,
   RemoteAddressBookRow,
@@ -1202,7 +1209,16 @@ export interface ElectronAPI {
       }[];
       sources: Record<string, { tileCount: number; diskBytes: number }>;
     }>;
-    clear: (source?: OfflineMapBasemapId | 'all') => Promise<{ ok: boolean }>;
+    clear: (source?: MapSourceId | 'all') => Promise<{ ok: boolean }>;
+    /** User-confirmed custom XYZ sources and imported MBTiles packages (main-process allowlist). */
+    custom: {
+      list: () => Promise<CustomMapSourceInfo[]>;
+      addXyz: (req: AddXyzSourceRequest) => Promise<CustomMapSourceResult>;
+      remove: (id: string) => Promise<{ ok: boolean }>;
+      /** Opens the OS file dialog in main; the renderer never supplies a path. */
+      pickMbtiles: () => Promise<MbtilesPickResult>;
+      importMbtiles: (req: ImportMbtilesRequest) => Promise<CustomMapSourceResult>;
+    };
     onProgress: (
       cb: (info: {
         jobId: string;

@@ -988,7 +988,34 @@
     "outboxScheduledEdit": "Редагувати",
     "outboxScheduledEditAria": "Редагувати заплановане повідомлення",
     "outboxScheduledSendNow": "Відправити зараз",
-    "outboxScheduledSendNowAria": "Надіслати заплановане повідомлення зараз"
+    "outboxScheduledSendNowAria": "Надіслати заплановане повідомлення зараз",
+    "attachment": {
+      "attachAria": "Додати файл або фото",
+      "attachFile": "Додати файл…",
+      "attachPhoto": "Додати фото…",
+      "cancelAria": "Скасувати надсилання {{name}}",
+      "cancelled": "Надсилання вкладення скасовано.",
+      "errors": {
+        "cacheFailed": "Не вдалося зберегти вкладення локально — воно не надіслано.",
+        "empty": "Цей файл порожній.",
+        "photoDecodeFailed": "Не вдалося обробити це фото. Спробуйте інше зображення.",
+        "photoTooLarge": "Це фото занадто велике для надсилання.",
+        "photoUnsupported": "Надсилати можна лише фото PNG, JPEG, WebP та GIF.",
+        "readFailed": "Не вдалося прочитати вибраний файл.",
+        "runtimeUnavailable": "Reticulum не готовий. Запустіть стек і спробуйте знову.",
+        "sendFailed": "Не вдалося надіслати вкладення.",
+        "tooLarge": "Вкладення обмежені {{limitKib}} KiB на повідомлення. Для більших файлів використовуйте Remote rncp.",
+        "tooLargeForPropagation": "Вкладення занадто велике для вузла propagation — доставляється лише напряму, поки peer доступний.",
+        "tooMany": "Додайте щонайбільше {{count}} файлів на повідомлення."
+      },
+      "fileInputAria": "Вибрати файли для надсилання",
+      "menuAria": "Додати до повідомлення LXMF",
+      "photoInputAria": "Вибрати фото для надсилання",
+      "progressAria": "Прогрес надсилання {{name}}",
+      "sending": "Надсилання {{name}}…",
+      "tooltip": "Надсилайте файли або фото в цьому прямому повідомленні LXMF (нативне вкладення — не rncp). До {{count}} файлів, загалом {{limitKib}} KiB. Фото змінюють розмір, метадані видаляються.",
+      "transfersAria": "Вкладення, що надсилаються"
+    }
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -2386,7 +2413,10 @@
       "esp32ReadIncomplete": "Зчитування флеш-пам'яті завершилося передчасно, тому резервну копію не збережено. Знову підключіть плату та повторіть спробу.",
       "esp32FlashSizeUnknown": "Не вдалося визначити розмір флеш-пам'яті, тому резервну копію не створено. Виберіть точну модель плати та повторіть спробу.",
       "esp32FlashTooLarge": "Флеш-пам'ять цієї плати перевищує ліміт резервної копії 32 МіБ, тому резервну копію не створено.",
-      "esp32ReadVerifyFailed": "Зчитані дані флеш-пам'яті не пройшли перевірку контрольної суми, тому резервну копію не збережено. Знову підключіть плату та повторіть спробу."
+      "esp32ReadVerifyFailed": "Зчитані дані флеш-пам'яті не пройшли перевірку контрольної суми, тому резервну копію не збережено. Знову підключіть плату та повторіть спробу.",
+      "esp32ChipMismatch": "Чип не відповідає платі. Нічого не записано. Перевірте плату та USB.",
+      "flashCancelled": "Прошивку скасовано.",
+      "imageExceedsFlash": "Образ більший за flash пристрою. Нічого не записано."
     },
     "selectSerialPort": "Виберіть послідовний порт",
     "noSerialPorts": "Послідовних портів USB не знайдено.",
@@ -2685,7 +2715,8 @@
       "clear": "Очистити кеш плитки",
       "clearAria": "Очистити кеш плитки офлайн-карти",
       "cleared": "Кеш плитки очищено.",
-      "viewCacheOnly": "Переглянуті фрагменти карти автоматично зберігаються в кеші. Завантаження регіонів доступне для USGS Topo; OpenStreetMap не дозволяє попереднє завантаження."
+      "viewCacheOnly": "Переглянуті фрагменти карти автоматично зберігаються в кеші. Завантаження регіонів доступне для USGS Topo; OpenStreetMap не дозволяє попереднє завантаження.",
+      "viewCacheOnlyCustom": "Користувацькі джерела кешують лише переглянуті тайли; масового завантаження регіону немає. Імпортуйте MBTiles."
     },
     "basemapUsgsTopo": "USGS TOPO (тільки США)",
     "layerIncidents": "Надзвичайні ситуації",
@@ -2698,7 +2729,63 @@
     "measureHint": "Натисніть карту, щоб додати бали",
     "measureTotal": "{{km}} км / {{mi}} миль",
     "layerTakContacts": "Одиниці TAK",
-    "layerWeatherForecasts": "Прогнози погоди"
+    "layerWeatherForecasts": "Прогнози погоди",
+    "customSources": {
+      "addConfirm": "Додати джерело",
+      "addConfirmAria": "Додати користувацьке XYZ‑джерело",
+      "addXyz": "Додати XYZ‑джерело…",
+      "addXyzAria": "Додати XYZ tile‑сервер",
+      "added": "Додано {{name}}.",
+      "attributionLabel": "Атрибуція (обов’язково)",
+      "cancel": "Скасувати",
+      "cancelAria": "Скасувати додавання джерела карти",
+      "clearCache": "Очистити кеш",
+      "clearCacheAria": "Очистити кеш тайлів для {{name}}",
+      "confirmMbtiles": "Підтверджую право використовувати ці дані та коректність атрибуції.",
+      "confirmMbtilesAria": "Підтвердити дозвіл на пакет MBTiles",
+      "confirmXyz": "Підтверджую право використовувати tile‑сервер і коректність атрибуції.",
+      "confirmXyzAria": "Підтвердити дозвіл на tile‑сервер",
+      "confirmXyzHost": "Підтверджую використання тайлів з {{host}}; атрибуція вірна. Завантаження під час перегляду.",
+      "errors": {
+        "attribution": "Атрибуція обов’язкова (до 200 символів).",
+        "cancelled": "Скасовано.",
+        "credentials": "URL з іменем або паролем заборонені.",
+        "empty": "Введіть URL тайлів.",
+        "host": "Хост — публічне доменне ім’я (без IP, localhost і LAN).",
+        "invalid": "Недійсний URL тайлів.",
+        "io": "Не вдалося виконати. Спробуйте знову.",
+        "limit": "Забагато джерел. Спочатку видаліть одне.",
+        "mbtiles_invalid": "Недійсний пакет MBTiles.",
+        "mbtiles_too_large": "Файл MBTiles занадто великий (ліміт 2 ГБ).",
+        "mbtiles_vector": "Векторні MBTiles не підтримуються; PNG, JPEG або WebP.",
+        "name": "Введіть назву (до 60 символів).",
+        "not_confirmed": "Спочатку підтвердіть право використовувати джерело.",
+        "osm": "Тайли OpenStreetMap вбудовані; використовуйте їх.",
+        "placeholders": "URL має містити {z}, {x} і {y} по одному разу після хоста.",
+        "port": "Користувацькі порти заборонені.",
+        "scheme": "Дозволені лише URL https://.",
+        "too_long": "URL занадто довгий.",
+        "unknown_inspect": "Термін дії файлу минув. Виберіть знову.",
+        "zoom": "Масштаб — ціле число 0–22."
+      },
+      "heading": "Сховище та користувацькі джерела",
+      "importConfirm": "Імпорт",
+      "importConfirmAria": "Імпортувати пакет MBTiles",
+      "importMbtiles": "Імпортувати пакет MBTiles…",
+      "importMbtilesAria": "Імпорт MBTiles для офлайн",
+      "imported": "Імпортовано {{name}}.",
+      "maxZoomLabel": "Найвищий zoom сервера (необов’язково)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "Тайли {{format}}, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Файл копіюється в сховище застосунку.",
+      "nameLabel": "Назва",
+      "policyNote": "Користувацькі сервери — лише для переглянутих тайлів. Без масового завантаження.",
+      "remove": "Видалити",
+      "removeAria": "Видалити джерело карти {{name}}",
+      "storageAria": "Сховище карти за джерелами",
+      "urlLabel": "URL тайлів (https, з {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · кеш до {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -8149,5 +8236,93 @@
     "interrupt": "Надіслати Ctrl+C",
     "interruptShort": "Ctrl+C",
     "clear": "Очистити"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Підтверджую, що пристрій підключено через USB — {{board}}, кабель і живлення стабільні, я зробив резервну копію налаштувань і ключів.",
+    "aria": {
+      "acknowledge": "Підтвердити контрольний список прошивки",
+      "board": "Плата для прошивки",
+      "cancel": "Скасувати прошивку",
+      "expectedSha": "Очікуваний дайджест SHA-256",
+      "file": "Файл прошивки для прошивки",
+      "flash": "Прошити firmware на пристрій"
+    },
+    "blockers": {
+      "boardMismatch": "Обрана плата не відповідає підключеному радіо.",
+      "boardUnsupported": "Підключене радіо не є підтримуваною платою.",
+      "lowBattery": "Батарея нижче {{percent}}% — зарядіть пристрій або підключіть живлення і спробуйте знову.",
+      "noBoard": "Оберіть плату.",
+      "noImage": "Виберіть дійсний файл прошивки.",
+      "notAcknowledged": "Підтвердіть контрольний список нижче.",
+      "serialConnectionOpen": "Перед прошивкою від’єднайте USB‑serial радіо — Mesh Client потребує порт."
+    },
+    "boardLabel": "Плата",
+    "boardLocked": "Визначено з підключеного радіо: {{board}}",
+    "boardManualHint": "Радіо не ідентифіковано автоматично. Оберіть плату вручну.",
+    "boardPlaceholder": "Оберіть плату…",
+    "boardUnsupported": "Підключене радіо повідомляє «{{reported}}» — непідтримувана ціль прошивки. Прошивку вимкнено.",
+    "cancel": "Скасувати прошивку",
+    "cancelled": "Прошивку скасовано. Можливо, доведеться прошити знову — див. відновлення нижче.",
+    "cancelling": "Скасування…",
+    "checksum": {
+      "expectedHint": "Вставте дайджест біля файлу на сторінці релізу. Невідповідність блокує прошивку.",
+      "expectedLabel": "Очікуваний SHA-256 (необов’язково)",
+      "fileLabel": "SHA-256 файлу",
+      "payloadLabel": "SHA-256 образу"
+    },
+    "enterDfuHint": "Плати nRF52 мають бути в bootloader (DFU): Enter DFU mode вище, подвійне натискання reset або кнопка нижче, потім Flash.",
+    "errors": {
+      "checksumInvalid": "Очікуваний SHA-256 — не дійсний 64-символьний hex-дайджест.",
+      "checksumMismatch": "SHA-256 файлу не збігається з очікуваним. Не прошивайте — завантажте знову.",
+      "dfuPackageInvalid": "Пакет nRF52 DFU недійсний або не підтримується (legacy serial DFU лише застосунок із збігом checksum).",
+      "imageAmbiguous": "В архіві кілька відповідних образів. Розпакуйте потрібний файл і виберіть.",
+      "imageBoardMismatch": "Ця прошивка для іншої плати ({{detail}}). Оберіть відповідну плату або інший файл.",
+      "imageBoardMismatchGeneric": "Прошивка для іншої плати, ніж обрана.",
+      "imageChipMismatch": "Образ зібрано для іншого чипа, ніж обрана плата.",
+      "imageEmpty": "Файл прошивки порожній.",
+      "imageHeaderInvalid": "Файл не є дійсним образом ESP32.",
+      "imageNameUnrecognized": "Це ім’я файлу не є відомим образом прошивки для обраної плати.",
+      "imageNotCompanion": "Це не companion-прошивка. Mesh Client прошиває лише companion-образи.",
+      "imageNotFoundForBoard": "В архіві немає образу прошивки для обраної плати.",
+      "imageNotFullImage": "Не повний образ, який записує Mesh Client (.factory.bin, -merged.bin або DFU .zip).",
+      "imageTooLarge": "Образ більший за flash обраної плати.",
+      "imageTooSmall": "Файл замалий для full-flash образу.",
+      "readFailed": "Не вдалося прочитати файл прошивки."
+    },
+    "fileHint": {
+      "meshcore": "Оберіть companion-radio -merged.bin (ESP32) або .zip (nRF52) для плати з релізів MeshCore.",
+      "meshtastic": "Оберіть .zip релізу Meshtastic (firmware-esp32s3-….zip або firmware-nrf52840-….zip) або окремий .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Файл прошивки",
+    "flash": "Прошити firmware",
+    "flashing": "Прошивка… {{progress}}%",
+    "imageReady": "Готово: {{name}} ({{size}})",
+    "imageVersion": "Версія: {{version}}",
+    "recovery": {
+      "docs": "Докладніше: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: ROM bootloader не перезаписується. BOOT, RESET, відпустіть BOOT і прошийте знову або web flasher.",
+      "nrf52": "nRF52: подвійний RESET для UF2 (з’явиться диск), перетягніть .uf2 або прошийте тут.",
+      "title": "Якщо прошивка не вдалася"
+    },
+    "releases": {
+      "meshcore": "Відкрити релізи firmware MeshCore",
+      "meshtastic": "Відкрити релізи firmware Meshtastic"
+    },
+    "successEsp32": "Прошивку записано й перевірено. Перезавантаження — зачекайте ~30 с і підключіться.",
+    "successNrf52": "Прошивку надіслано в bootloader. Перезавантаження — ~30 с і підключіться.",
+    "summary": "Встановлення/оновлення через USB. Лише перелічені плати; інше відхиляється до запису.",
+    "supportedBoards": "Підтримувані плати: {{boards}}",
+    "title": "Прошити firmware пристрою",
+    "validating": "Перевірка прошивки…",
+    "warnings": {
+      "batteryUnknown": "Рівень батареї невідомий — зарядіть або підключіть живлення.",
+      "cable": "USB‑кабель даних напряму до ПК (без hub); не від’єднуйте під час прошивки.",
+      "connectionDrops": "Зв’язок з радіо перерветься під час перезавантаження.",
+      "espBootloader": "Mesh Client скидає плату в ROM bootloader ESP32. Інакше BOOT, RESET, відпустіть BOOT.",
+      "nrf52Bootloader": "nRF52 прошивається через serial DFU bootloader. Bootloader не змінюється; можна повторити.",
+      "settingsReset": "Full-flash може стерти налаштування, канали та ключі. Спочатку експорт резервної копії.",
+      "unverifiedBoard": "Радіо не ідентифіковано — вибір плати не перевірено. Хибна плата може зламати пристрій."
+    },
+    "warningsTitle": "Перед прошивкою"
   }
 }

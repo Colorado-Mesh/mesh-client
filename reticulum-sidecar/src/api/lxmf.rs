@@ -19,6 +19,28 @@ pub async fn lxmf_send(
     }
 }
 
+/// Cancel a pending outbound LXMF message (e.g. a stalled attachment send).
+pub async fn lxmf_cancel_message(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_cancel_outbound(&hash).await {
+        Ok(payload) => Json(payload),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+/// Outbound transfer progress for a pending message (0.0..=1.0).
+pub async fn lxmf_message_progress(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_outbound_progress(&hash).await {
+        Ok(payload) => Json(payload),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 /// Normalize paper create transport errors to stable API codes for the renderer.
 pub(crate) fn map_paper_create_error(e: String) -> String {
     if e == "identity_unknown"

@@ -8,6 +8,8 @@ const { readFlashMock, readFlashIdMock, transportReadMock } = vi.hoisted(() => (
   transportReadMock: vi.fn<(timeout: number) => Promise<Uint8Array>>(),
 }));
 
+const chipState = vi.hoisted(() => ({ name: 'ESP32' }));
+
 const { writeFlashMock } = vi.hoisted(() => ({
   writeFlashMock: vi.fn(
     (opts: {
@@ -72,7 +74,7 @@ vi.mock('esptool-js', () => ({
   }),
   ESPLoader: vi.fn(function ESPLoader() {
     return {
-      chip: { CHIP_NAME: 'ESP32' },
+      chip: { CHIP_NAME: chipState.name },
       main: () => Promise.resolve(),
       writeFlash: writeFlashMock,
       readFlash: readFlashMock,
@@ -89,8 +91,9 @@ vi.mock('esptool-js', () => ({
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
 import { hexToBytesLenient } from '@/shared/hexBytes';
 
-import { flashEsp32Firmware, readEsp32Flash } from './esp32Flasher';
+import { flashEsp32Firmware, flashEsp32Images, readEsp32Flash } from './esp32Flasher';
 import { md5HexBytes } from './md5';
+import { prepareEsp32PortForFlash } from './prepareEsp32PortForFlash';
 
 /** readFlash returns `data`; the stub then sends the MD5 digest frame of what it streamed. */
 function mockStubRead(makeData: (size: number) => Uint8Array): void {
@@ -259,5 +262,91 @@ describe('readEsp32Flash', () => {
       'ESP32_READ_CANCELLED',
     );
     expect(readFlashMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('flashEsp32Images (device firmware path)', () => {
+  const image = { address: 0, data: new Uint8Array(0x30000).fill(1) };
+  const baseOptions = {
+    flashSize: 'keep' as const,
+    flashMode: 'keep' as const,
+    flashFreq: 'keep' as const,
+    skipRNodePrepare: true,
+  };
+
+  beforeEach(() => {
+    writeFlashMock.mockClear();
+    capturedWriteFlashOpts = null;
+    chipState.name = 'ESP32-S3';
+    readFlashIdMock.mockReset();
+    readFlashIdMock.mockResolvedValue(0x174020); // 8 MB JEDEC size byte (0x17)
+    vi.mocked(prepareEsp32PortForFlash).mockClear();
+    vi.mocked(closeSerialPortIfOpen).mockClear();
+  });
+
+  it('writes when the connected chip matches and skips the RNode probe', async () => {
+    await flashEsp32Images({} as SerialPort, [{ address: 0, data: new Uint8Array(4) }], {
+      ...baseOptions,
+      expectedChipName: 'ESP32-S3',
+    });
+    expect(writeFlashMock).toHaveBeenCalledOnce();
+    expect(prepareEsp32PortForFlash).not.toHaveBeenCalled();
+  });
+
+  it('refuses to write when the connected chip differs (nothing is sent)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    chipState.name = 'ESP32';
+    await expect(
+      flashEsp32Images({} as SerialPort, [image], { ...baseOptions, expectedChipName: 'ESP32-S3' }),
+    ).rejects.toThrow('ESP32_CHIP_MISMATCH');
+    expect(writeFlashMock).not.toHaveBeenCalled();
+    expect(closeSerialPortIfOpen).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('refuses an image that does not fit the detected flash', async () => {
+    readFlashIdMock.mockResolvedValue(0x164020); // 4 MB
+    await expect(
+      flashEsp32Images(
+        {} as SerialPort,
+        [{ address: 0, data: new Uint8Array(4 * 1024 * 1024 + 1) }],
+        { ...baseOptions, expectedChipName: 'ESP32-S3' },
+      ),
+    ).rejects.toThrow('ESP32_IMAGE_EXCEEDS_FLASH');
+    expect(writeFlashMock).not.toHaveBeenCalled();
+  });
+
+  it('passes through header-preserving flash params', async () => {
+    let captured: Record<string, unknown> = {};
+    writeFlashMock.mockImplementationOnce((opts) => {
+      captured = opts;
+      opts.reportProgress?.(0, 0x30000, 0x30000);
+      return Promise.resolve();
+    });
+    await flashEsp32Images({} as SerialPort, [image], baseOptions);
+    expect(captured).toMatchObject({ flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep' });
+  });
+
+  it('does nothing when already cancelled', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      flashEsp32Images({} as SerialPort, [image], { ...baseOptions, signal: controller.signal }),
+    ).rejects.toThrow('ESP32_FLASH_CANCELLED');
+    expect(writeFlashMock).not.toHaveBeenCalled();
+  });
+
+  it('closes the port and reports cancellation when aborted mid-write', async () => {
+    const controller = new AbortController();
+    writeFlashMock.mockImplementationOnce(() => {
+      queueMicrotask(() => {
+        controller.abort();
+      });
+      return new Promise<void>(() => {});
+    });
+    await expect(
+      flashEsp32Images({} as SerialPort, [image], { ...baseOptions, signal: controller.signal }),
+    ).rejects.toThrow('ESP32_FLASH_CANCELLED');
+    expect(closeSerialPortIfOpen).toHaveBeenCalled();
   });
 });

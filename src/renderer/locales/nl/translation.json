@@ -954,7 +954,34 @@
     "scheduleSendFailed": "Kan het geplande bericht niet opslaan. Probeer het opnieuw.",
     "outboxStatusScheduledDue": "Gepland — wachtend op verzending",
     "outboxScheduledSendNowAria": "Stuur nu een gepland bericht",
-    "outboxScheduledSendNow": "Verstuur nu"
+    "outboxScheduledSendNow": "Verstuur nu",
+    "attachment": {
+      "attachAria": "Bestand of foto bijvoegen",
+      "attachFile": "Bestand bijvoegen…",
+      "attachPhoto": "Foto bijvoegen…",
+      "cancelAria": "Verzenden van {{name}} annuleren",
+      "cancelled": "Verzenden van bijlage geannuleerd.",
+      "errors": {
+        "cacheFailed": "De bijlage kon niet lokaal worden opgeslagen en is niet verzonden.",
+        "empty": "Dat bestand is leeg.",
+        "photoDecodeFailed": "Die foto kon niet worden verwerkt. Probeer een andere afbeelding.",
+        "photoTooLarge": "Die foto is te groot om te verzenden.",
+        "photoUnsupported": "Alleen PNG-, JPEG-, WebP- en GIF-foto’s kunnen worden verzonden.",
+        "readFailed": "Het geselecteerde bestand kon niet worden gelezen.",
+        "runtimeUnavailable": "Reticulum is niet gereed. Start de stack en probeer opnieuw.",
+        "sendFailed": "De bijlage kon niet worden verzonden.",
+        "tooLarge": "Bijlagen zijn beperkt tot {{limitKib}} KiB totaal per bericht. Gebruik Remote rncp voor grotere bestanden.",
+        "tooLargeForPropagation": "De bijlage is te groot voor een propagation-knooppunt — alleen direct afleverbaar zolang de peer bereikbaar is.",
+        "tooMany": "Voeg maximaal {{count}} bestanden per bericht toe."
+      },
+      "fileInputAria": "Bestanden kiezen om te verzenden",
+      "menuAria": "Bijvoegen aan LXMF-bericht",
+      "photoInputAria": "Foto kiezen om te verzenden",
+      "progressAria": "Verzendvoortgang voor {{name}}",
+      "sending": "{{name}} wordt verzonden…",
+      "tooltip": "Bestanden of een foto in dit LXMF-directbericht verzenden (native bijlage — geen rncp). Tot {{count}} bestanden, {{limitKib}} KiB totaal. Foto’s worden verkleind en metadata verwijderd.",
+      "transfersAria": "Bijlagen worden verzonden"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "Het lezen van het flashgeheugen is vroegtijdig gestopt, dus er is geen back-up opgeslagen. Sluit het board opnieuw aan en probeer het opnieuw.",
       "esp32FlashSizeUnknown": "De flashgrootte kon niet worden vastgesteld, dus er is geen back-up gemaakt. Selecteer het exacte boardmodel en probeer het opnieuw.",
       "esp32FlashTooLarge": "Het flashgeheugen van dit board is groter dan de back-uplimiet van 32 MiB, dus er is geen back-up gemaakt.",
-      "esp32ReadVerifyFailed": "Het gelezen flashgeheugen kwam niet door de checksumcontrole, dus er is geen back-up opgeslagen. Sluit het board opnieuw aan en probeer het opnieuw."
+      "esp32ReadVerifyFailed": "Het gelezen flashgeheugen kwam niet door de checksumcontrole, dus er is geen back-up opgeslagen. Sluit het board opnieuw aan en probeer het opnieuw.",
+      "esp32ChipMismatch": "Chip komt niet overeen met board. Niets geschreven. Controleer board en USB.",
+      "flashCancelled": "Flash geannuleerd.",
+      "imageExceedsFlash": "Image groter dan flash van apparaat. Niets geschreven."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",
@@ -2633,7 +2663,8 @@
       "clear": "Tegelcache wissen",
       "clearAria": "Offline kaarttegelcache wissen",
       "cleared": "Cache gewist",
-      "viewCacheOnly": "Bekeken kaarttegels worden automatisch opgeslagen in de cache. Regiodownloads zijn beschikbaar met USGS Topo; OpenStreetMap staat vooraf downloaden niet toe."
+      "viewCacheOnly": "Bekeken kaarttegels worden automatisch opgeslagen in de cache. Regiodownloads zijn beschikbaar met USGS Topo; OpenStreetMap staat vooraf downloaden niet toe.",
+      "viewCacheOnlyCustom": "Aangepaste bronnen cachen alleen bekeken tegels; geen bulkregio-download. Importeer MBTiles voor offline."
     },
     "basemapUsgsTopo": "USGS Topo (alleen VS)",
     "layerIncidents": "Calamiteiten",
@@ -2646,7 +2677,63 @@
     "measureHint": "Klik op de kaart om punten toe te voegen",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "TAK UNITS",
-    "layerWeatherForecasts": "Weersvoorspellingen"
+    "layerWeatherForecasts": "Weersvoorspellingen",
+    "customSources": {
+      "addConfirm": "Bron toevoegen",
+      "addConfirmAria": "Aangepaste XYZ-bron toevoegen",
+      "addXyz": "Aangepaste XYZ-bron toevoegen…",
+      "addXyzAria": "Aangepaste XYZ-tileserver toevoegen",
+      "added": "Toegevoegd: {{name}}.",
+      "attributionLabel": "Attributie (verplicht)",
+      "cancel": "Annuleren",
+      "cancelAria": "Toevoegen aangepaste kaartbron annuleren",
+      "clearCache": "Cache wissen",
+      "clearCacheAria": "Gecachte tegels voor {{name}} wissen",
+      "confirmMbtiles": "Ik bevestig dat ik deze kaartdata mag gebruiken en de attributie klopt.",
+      "confirmMbtilesAria": "Toestemming MBTiles-pakket bevestigen",
+      "confirmXyz": "Ik bevestig dat ik deze tileserver mag gebruiken en de attributie klopt.",
+      "confirmXyzAria": "Toestemming tileserver bevestigen",
+      "confirmXyzHost": "Ik bevestig tegels van {{host}} te mogen gebruiken; attributie klopt. Tegels worden bij bekijken opgehaald.",
+      "errors": {
+        "attribution": "Attributie verplicht (max. 200 tekens).",
+        "cancelled": "Geannuleerd.",
+        "credentials": "URL’s met gebruikersnaam of wachtwoord zijn niet toegestaan.",
+        "empty": "Voer een tile-URL in.",
+        "host": "Host moet publieke domeinnaam zijn (geen IP, localhost of LAN).",
+        "invalid": "Geen geldige tile-URL.",
+        "io": "Actie kon niet worden voltooid. Probeer opnieuw.",
+        "limit": "Te veel aangepaste bronnen. Verwijder er eerst een.",
+        "mbtiles_invalid": "Geen geldig MBTiles-pakket.",
+        "mbtiles_too_large": "MBTiles-bestand te groot (limiet 2 GB).",
+        "mbtiles_vector": "Vector-MBTiles niet ondersteund; gebruik PNG, JPEG of WebP.",
+        "name": "Voer een naam in (max. 60 tekens).",
+        "not_confirmed": "Bevestig eerst dat u deze bron mag gebruiken.",
+        "osm": "OpenStreetMap-tegels zijn ingebouwd; gebruik die.",
+        "placeholders": "URL moet {z}, {x} en {y} elk één keer na de host bevatten.",
+        "port": "Aangepaste poorten niet toegestaan.",
+        "scheme": "Alleen https://-URL’s toegestaan.",
+        "too_long": "URL te lang.",
+        "unknown_inspect": "Geselecteerd bestand verlopen. Opnieuw kiezen.",
+        "zoom": "Zoom moet geheel getal 0–22 zijn."
+      },
+      "heading": "Opslag & aangepaste bronnen",
+      "importConfirm": "Importeren",
+      "importConfirmAria": "MBTiles-pakket importeren",
+      "importMbtiles": "MBTiles-pakket importeren…",
+      "importMbtilesAria": "MBTiles importeren voor offline gebruik",
+      "imported": "Geïmporteerd: {{name}}.",
+      "maxZoomLabel": "Hoogste zoom van server (optioneel)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}}-tegels, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Bestand gekopieerd naar app-opslag.",
+      "nameLabel": "Naam",
+      "policyNote": "Aangepaste servers worden alleen voor bekeken tegels benaderd. Nooit bulkdownload.",
+      "remove": "Verwijderen",
+      "removeAria": "Aangepaste kaartbron {{name}} verwijderen",
+      "storageAria": "Kaartopslag per bron",
+      "urlLabel": "Tile-URL (https, met {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · cache max. {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -8007,5 +8094,93 @@
     "gaps": "{{count}} uitvoerframes zijn tijdens het transport verloren gegaan. Het transcript kan onvolledig zijn.",
     "clear": "Duidelijk",
     "interruptShort": "Ctrl+C"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Ik bevestig dat het via USB verbonden apparaat een {{board}} is, een stabiele kabel en voeding heeft en dat ik instellingen en sleutels heb geback-upt.",
+    "aria": {
+      "acknowledge": "Flash-checklist bevestigen",
+      "board": "Te flashen board",
+      "cancel": "Firmware-flash annuleren",
+      "expectedSha": "Verwachte SHA-256-digest",
+      "file": "Te flashen firmwarebestand",
+      "flash": "Firmware naar apparaat flashen"
+    },
+    "blockers": {
+      "boardMismatch": "Het geselecteerde board komt niet overeen met de verbonden radio.",
+      "boardUnsupported": "De verbonden radio is geen ondersteund board.",
+      "lowBattery": "Batterij onder {{percent}}% — laad het apparaat op of sluit het aan en probeer opnieuw.",
+      "noBoard": "Selecteer een board.",
+      "noImage": "Selecteer een geldig firmwarebestand.",
+      "notAcknowledged": "Bevestig de checklist hieronder.",
+      "serialConnectionOpen": "Koppel de USB-seriële verbinding van de radio los vóór het flashen — Mesh Client heeft de poort nodig."
+    },
+    "boardLabel": "Board",
+    "boardLocked": "Gedetecteerd vanaf verbonden radio: {{board}}",
+    "boardManualHint": "De radio is niet automatisch herkend. Kies uw board handmatig.",
+    "boardPlaceholder": "Selecteer uw board…",
+    "boardUnsupported": "De verbonden radio meldt «{{reported}}», geen ondersteund flash-doel. Flashen is uitgeschakeld.",
+    "cancel": "Flash annuleren",
+    "cancelled": "Flash geannuleerd. Het apparaat moet mogelijk opnieuw worden geflasht — zie herstel hieronder.",
+    "cancelling": "Annuleren…",
+    "checksum": {
+      "expectedHint": "Plak de digest naast het bestand op de releasepagina. Afwijking blokkeert flashen.",
+      "expectedLabel": "Verwachte SHA-256 (optioneel)",
+      "fileLabel": "Bestand SHA-256",
+      "payloadLabel": "Image SHA-256"
+    },
+    "enterDfuHint": "nRF52-boards moeten eerst in bootloader (DFU) staan: Enter DFU mode hierboven, reset dubbel tikken of knop hieronder, daarna Flash.",
+    "errors": {
+      "checksumInvalid": "Verwachte SHA-256 is geen geldige hex-digest van 64 tekens.",
+      "checksumMismatch": "Bestand SHA-256 komt niet overeen met verwachte digest. Niet flashen — opnieuw downloaden.",
+      "dfuPackageInvalid": "Het nRF52 DFU-pakket is ongeldig of niet ondersteund (legacy serial DFU alleen applicatie met matching checksum).",
+      "imageAmbiguous": "Archief bevat meer dan één passende image. Pak het exacte bestand uit en selecteer het.",
+      "imageBoardMismatch": "Deze firmware is voor een ander board ({{detail}}). Kies passend board of ander bestand.",
+      "imageBoardMismatchGeneric": "Deze firmware is voor een ander board dan geselecteerd.",
+      "imageChipMismatch": "Image is gebouwd voor een andere chip dan het geselecteerde board.",
+      "imageEmpty": "Firmwarebestand is leeg.",
+      "imageHeaderInvalid": "Bestand is geen geldige ESP32-firmware-image.",
+      "imageNameUnrecognized": "Bestandsnaam is geen herkende firmware-image voor het geselecteerde board.",
+      "imageNotCompanion": "Dit is geen companion-radiofirmware. Mesh Client flasht alleen companion-images.",
+      "imageNotFoundForBoard": "Archief bevat geen firmware-image voor geselecteerd board.",
+      "imageNotFullImage": "Niet de full-flash image die Mesh Client schrijft (.factory.bin, -merged.bin of DFU .zip).",
+      "imageTooLarge": "Image is groter dan flash van geselecteerd board.",
+      "imageTooSmall": "Bestand te klein voor full-flash image.",
+      "readFailed": "Firmwarebestand kon niet worden gelezen."
+    },
+    "fileHint": {
+      "meshcore": "Kies companion-radio -merged.bin (ESP32) of .zip (nRF52) voor uw board uit MeshCore-releases.",
+      "meshtastic": "Kies release-.zip uit Meshtastic firmware-releases (firmware-esp32s3-….zip of firmware-nrf52840-….zip) of enkele .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Firmwarebestand",
+    "flash": "Firmware flashen",
+    "flashing": "Flashen… {{progress}}%",
+    "imageReady": "Gereed: {{name}} ({{size}})",
+    "imageVersion": "Versie: {{version}}",
+    "recovery": {
+      "docs": "Meer: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: ROM-bootloader kan niet overschreven worden. Houd BOOT, tik RESET, laat BOOT los en flash opnieuw, of vendor web flasher.",
+      "nrf52": "nRF52: reset dubbel tikken voor UF2-bootloader (schijf verschijnt), sleep .uf2 of flash hier opnieuw.",
+      "title": "Als flashen mislukt"
+    },
+    "releases": {
+      "meshcore": "MeshCore firmware-releases openen",
+      "meshtastic": "Meshtastic firmware-releases openen"
+    },
+    "successEsp32": "Firmware geschreven en geverifieerd. Herstart — wacht ~30 s en verbind opnieuw.",
+    "successNrf52": "Firmware naar bootloader gestuurd. Herstart — ~30 s wachten en opnieuw verbinden.",
+    "summary": "Firmware via USB installeren of bijwerken. Alleen boards hier; anders geweigerd vóór schrijven.",
+    "supportedBoards": "Ondersteunde boards: {{boards}}",
+    "title": "Apparaatfirmware flashen",
+    "validating": "Firmware controleren…",
+    "warnings": {
+      "batteryUnknown": "Batterijniveau onbekend — goed opladen of extern voeden.",
+      "cable": "Data-USB-kabel direct in computer (geen hub); niet loskoppelen tijdens flashen.",
+      "connectionDrops": "Radioverbinding valt weg bij herstart.",
+      "espBootloader": "Mesh Client zet board in ESP32 ROM-bootloader. Anders BOOT, RESET, BOOT los.",
+      "nrf52Bootloader": "nRF52 flasht via serial DFU-bootloader. Bootloader blijft; mislukte update opnieuw.",
+      "settingsReset": "Full-flash kan instellingen, kanalen en sleutels wissen. Eerst backup exporteren.",
+      "unverifiedBoard": "Radio niet herkend — boardkeuze ongecontroleerd. Verkeerd board kan apparaat unbootable maken."
+    },
+    "warningsTitle": "Vóór het flashen"
   }
 }

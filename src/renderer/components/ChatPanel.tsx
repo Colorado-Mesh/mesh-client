@@ -259,6 +259,7 @@ import { CatchUpButton } from './chat/CatchUpButton';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
+import { ReticulumAttachControl } from './chat/ReticulumAttachControl';
 import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
@@ -839,6 +840,7 @@ export interface ChatPanelProps {
   /** Reticulum: LXMF voice memo mic button in composer + playback line in chat. */
   hasReticulumVoiceMemo?: boolean;
   /** Reticulum: LXMF file / photo Attach control in the DM composer (not rncp). */
+  hasReticulumFileAttachments?: boolean;
   /** Called when the user presses the mic button (destination = active DM node). */
   onVoiceMemo?: (destination: number) => void;
   /** Reticulum: LRGP games Challenge control in the DM header. */
@@ -913,6 +915,7 @@ function ChatPanel({
   hasRncpTransfer = false,
   hasLxstVoice = false,
   hasReticulumVoiceMemo = false,
+  hasReticulumFileAttachments = false,
   onVoiceMemo,
   hasLrgpGames = false,
   hasLxmfPaper = false,
@@ -5153,6 +5156,19 @@ function ChatPanel({
           textareaRef={composerInputRef}
           actionSlot={
             <>
+              {protocol === 'reticulum' &&
+              hasReticulumFileAttachments &&
+              isDmMode &&
+              identityId != null &&
+              activeDmNode != null &&
+              !reticulumDmMissingLxmf ? (
+                <ReticulumAttachControl
+                  key={`dm-attach-${activeDmNode}`}
+                  identityId={identityId}
+                  destination={activeDmNode}
+                  disabled={composerDisabled}
+                />
+              ) : null}
               {mecpComposeEnabled ? (
                 <>
                   <ChatToolbarTooltipButton

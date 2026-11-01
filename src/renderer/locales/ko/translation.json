@@ -954,7 +954,34 @@
     "outboxStatusScheduledDue": "예약됨 - 전송 대기 중",
     "scheduleSendFailed": "예약된 메시지를 저장할 수 없습니다. 다시 시도해 보세요.",
     "outboxScheduledSendNowAria": "지금 예약된 메시지 보내기",
-    "outboxScheduledSendNow": "지금 보내기"
+    "outboxScheduledSendNow": "지금 보내기",
+    "attachment": {
+      "attachAria": "파일 또는 사진 첨부",
+      "attachFile": "파일 첨부…",
+      "attachPhoto": "사진 첨부…",
+      "cancelAria": "{{name}} 전송 취소",
+      "cancelled": "첨부 파일 전송이 취소되었습니다.",
+      "errors": {
+        "cacheFailed": "첨부 파일을 로컬에 저장할 수 없어 전송되지 않았습니다.",
+        "empty": "해당 파일이 비어 있습니다.",
+        "photoDecodeFailed": "해당 사진을 처리할 수 없습니다. 다른 이미지를 사용해 보세요.",
+        "photoTooLarge": "해당 사진이 너무 커서 전송할 수 없습니다.",
+        "photoUnsupported": "PNG, JPEG, WebP, GIF 사진만 보낼 수 있습니다.",
+        "readFailed": "선택한 파일을 읽을 수 없습니다.",
+        "runtimeUnavailable": "Reticulum이 준비되지 않았습니다. 스택을 시작한 뒤 다시 시도하세요.",
+        "sendFailed": "첨부 파일을 보낼 수 없습니다.",
+        "tooLarge": "첨부 파일은 메시지당 총 {{limitKib}} KiB까지입니다. 더 큰 파일은 Remote rncp를 사용하세요.",
+        "tooLargeForPropagation": "첨부 파일이 propagation 노드에 비해 너무 큽니다 — 피어에 연결 가능한 동안에만 직접 전달됩니다.",
+        "tooMany": "메시지당 최대 {{count}}개 파일만 첨부할 수 있습니다."
+      },
+      "fileInputAria": "보낼 파일 선택",
+      "menuAria": "LXMF 메시지에 첨부",
+      "photoInputAria": "보낼 사진 선택",
+      "progressAria": "{{name}} 전송 진행률",
+      "sending": "{{name}} 전송 중…",
+      "tooltip": "이 LXMF DM에서 파일 또는 사진을 보냅니다(네이티브 첨부 — rncp 아님). 최대 {{count}}개 파일, 총 {{limitKib}} KiB. 사진은 크기 조정되고 메타데이터가 제거됩니다.",
+      "transfersAria": "전송 중인 첨부"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "플래시 읽기가 일찍 종료되어 백업이 저장되지 않았습니다. 보드를 다시 연결하고 다시 시도하십시오.",
       "esp32FlashSizeUnknown": "플래시 크기를 감지할 수 없어 백업을 만들지 않았습니다. 정확한 보드 모델을 선택하고 다시 시도하세요.",
       "esp32FlashTooLarge": "이 보드의 플래시가 32 MiB 백업 한도보다 커서 백업을 만들지 않았습니다.",
-      "esp32ReadVerifyFailed": "플래시 읽기의 체크섬 검증에 실패하여 백업을 저장하지 않았습니다. 보드를 다시 연결하고 다시 시도하세요."
+      "esp32ReadVerifyFailed": "플래시 읽기의 체크섬 검증에 실패하여 백업을 저장하지 않았습니다. 보드를 다시 연결하고 다시 시도하세요.",
+      "esp32ChipMismatch": "연결된 칩이 보드와 일치하지 않습니다. 기록 없음. 보드와 USB 확인.",
+      "flashCancelled": "플래시 취소됨.",
+      "imageExceedsFlash": "이미지가 기기 flash보다 큼. 기록 없음."
     },
     "selectSerialPort": "직렬 포트 선택",
     "noSerialPorts": "USB 직렬 포트를 찾을 수 없습니다.",
@@ -2633,7 +2663,8 @@
       "clear": "타일 캐시 지우기",
       "clearAria": "오프라인 지도 타일 캐시 지우기",
       "cleared": "타일 캐시가 지워졌습니다.",
-      "viewCacheOnly": "표시한 지도 타일은 자동으로 캐시됩니다. 지역 다운로드는 USGS Topo에서 사용할 수 있습니다. OpenStreetMap은 미리 가져오기를 허용하지 않습니다."
+      "viewCacheOnly": "표시한 지도 타일은 자동으로 캐시됩니다. 지역 다운로드는 USGS Topo에서 사용할 수 있습니다. OpenStreetMap은 미리 가져오기를 허용하지 않습니다.",
+      "viewCacheOnlyCustom": "사용자 소스는 본 타일만 캐시됩니다. 지역 일괄 다운로드 불가. 오프라인은 MBTiles 가져오기."
     },
     "basemapUsgsTopo": "USGS TOPO (미국만 해당)",
     "layerIncidents": "긴급 사안",
@@ -2646,7 +2677,63 @@
     "measureHint": "포인트를 추가하려면 지도를 클릭하세요.",
     "measureTotal": "{{km}} km/{{mi}} mi",
     "layerTakContacts": "TAK 유닛",
-    "layerWeatherForecasts": "일기 예보"
+    "layerWeatherForecasts": "일기 예보",
+    "customSources": {
+      "addConfirm": "소스 추가",
+      "addConfirmAria": "사용자 XYZ 소스 추가",
+      "addXyz": "사용자 XYZ 소스 추가…",
+      "addXyzAria": "사용자 XYZ 타일 서버 추가",
+      "added": "{{name}}을(를) 추가했습니다.",
+      "attributionLabel": "저작권 표시(필수)",
+      "cancel": "취소",
+      "cancelAria": "사용자 지도 소스 추가 취소",
+      "clearCache": "캐시 지우기",
+      "clearCacheAria": "{{name}}의 캐시 타일 지우기",
+      "confirmMbtiles": "이 지도 데이터 사용이 허가되었고 저작권 표시가 맞음을 확인합니다.",
+      "confirmMbtilesAria": "MBTiles 패키지 사용 권한 확인",
+      "confirmXyz": "이 타일 서버 사용이 허가되었고 저작권 표시가 맞음을 확인합니다.",
+      "confirmXyzAria": "타일 서버 사용 권한 확인",
+      "confirmXyzHost": "{{host}} 타일 사용을 확인합니다. 표시 시 해당 호스트에서 가져옵니다.",
+      "errors": {
+        "attribution": "저작권 표시 필수(최대 200자).",
+        "cancelled": "취소됨.",
+        "credentials": "사용자명/비밀번호 URL은 허용되지 않습니다.",
+        "empty": "타일 URL을 입력하세요.",
+        "host": "호스트는 공개 도메인이어야 합니다(IP, localhost, LAN 이름 불가).",
+        "invalid": "유효한 타일 URL이 아닙니다.",
+        "io": "작업을 완료할 수 없습니다. 다시 시도하세요.",
+        "limit": "사용자 소스가 너무 많습니다. 하나 제거하세요.",
+        "mbtiles_invalid": "유효한 MBTiles 패키지가 아닙니다.",
+        "mbtiles_too_large": "MBTiles 파일이 너무 큼(2GB 한도).",
+        "mbtiles_vector": "벡터 MBTiles 미지원. PNG, JPEG, WebP 사용.",
+        "name": "이름 입력(최대 60자).",
+        "not_confirmed": "먼저 사용 권한을 확인하세요.",
+        "osm": "OpenStreetMap 타일은 기본 제공입니다. 그것을 사용하세요.",
+        "placeholders": "URL은 호스트 뒤에 {z}, {x}, {y}가 각각 한 번 있어야 합니다.",
+        "port": "사용자 지정 포트는 허용되지 않습니다.",
+        "scheme": "https:// URL만 허용됩니다.",
+        "too_long": "URL이 너무 깁니다.",
+        "unknown_inspect": "선택한 파일이 만료되었습니다. 다시 선택하세요.",
+        "zoom": "줌은 0~22 정수여야 합니다."
+      },
+      "heading": "저장소 및 사용자 소스",
+      "importConfirm": "가져오기",
+      "importConfirmAria": "MBTiles 패키지 가져오기",
+      "importMbtiles": "MBTiles 패키지 가져오기…",
+      "importMbtilesAria": "오프라인용 MBTiles 가져오기",
+      "imported": "{{name}}을(를) 가져왔습니다.",
+      "maxZoomLabel": "서버 최대 줌(선택)",
+      "mbtilesMeta": "MBTiles · 줌 {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}} 타일, 줌 {{minZoom}}–{{maxZoom}}, {{size}}. 파일이 앱 저장소에 복사됩니다.",
+      "nameLabel": "이름",
+      "policyNote": "사용자 서버는 본 타일에만 연결됩니다. 일괄 다운로드하지 않습니다.",
+      "remove": "제거",
+      "removeAria": "사용자 지도 소스 {{name}} 제거",
+      "storageAria": "소스별 지도 저장소",
+      "urlLabel": "타일 URL(https, {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · 캐시 상한 {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -8007,5 +8094,93 @@
     "clear": "분명한",
     "interrupt": "Ctrl+C 보내기",
     "inputAria": "원격 쉘 명령"
+  },
+  "deviceFirmware": {
+    "acknowledge": "USB로 연결된 기기가 {{board}}이며, 케이블과 전원이 안정적이고 설정과 키를 백업했음을 확인합니다.",
+    "aria": {
+      "acknowledge": "플래시 체크리스트 확인",
+      "board": "플래시할 보드",
+      "cancel": "펌웨어 플래시 취소",
+      "expectedSha": "예상 SHA-256 다이제스트",
+      "file": "플래시할 펌웨어 파일",
+      "flash": "기기에 펌웨어 플래시"
+    },
+    "blockers": {
+      "boardMismatch": "선택한 보드가 연결된 무선기와 일치하지 않습니다.",
+      "boardUnsupported": "연결된 무선기는 지원되는 보드가 아닙니다.",
+      "lowBattery": "배터리가 {{percent}}% 미만입니다 — 충전하거나 전원에 연결한 뒤 다시 시도하세요.",
+      "noBoard": "보드를 선택하세요.",
+      "noImage": "유효한 펌웨어 파일을 선택하세요.",
+      "notAcknowledged": "아래 체크리스트를 확인하세요.",
+      "serialConnectionOpen": "플래시 전에 무선기 USB 직렬 연결을 끊으세요 — Mesh Client가 포트가 필요합니다."
+    },
+    "boardLabel": "보드",
+    "boardLocked": "연결된 무선기에서 감지됨: {{board}}",
+    "boardManualHint": "무선기가 자동으로 식별되지 않았습니다. 보드를 수동으로 선택하세요.",
+    "boardPlaceholder": "보드 선택…",
+    "boardUnsupported": "연결된 무선기가 «{{reported}}»를 보고합니다. 지원되지 않는 대상이라 플래시가 비활성화됩니다.",
+    "cancel": "플래시 취소",
+    "cancelled": "플래시가 취소되었습니다. 다시 플래시해야 할 수 있습니다 — 아래 복구 단계를 참고하세요.",
+    "cancelling": "취소 중…",
+    "checksum": {
+      "expectedHint": "릴리스 페이지 자산 옆에 표시된 다이제스트를 붙여넣으세요. 불일치 시 플래시가 차단됩니다.",
+      "expectedLabel": "예상 SHA-256(선택)",
+      "fileLabel": "파일 SHA-256",
+      "payloadLabel": "이미지 SHA-256"
+    },
+    "enterDfuHint": "nRF52 보드는 먼저 bootloader(DFU) 모드여야 합니다. 위 Enter DFU mode, 리셋 더블 탭 또는 아래 버튼 후 Flash.",
+    "errors": {
+      "checksumInvalid": "예상 SHA-256이 유효한 64자 hex 다이제스트가 아닙니다.",
+      "checksumMismatch": "파일 SHA-256이 예상 다이제스트와 일치하지 않습니다. 플래시하지 마세요 — 다시 받으세요.",
+      "dfuPackageInvalid": "nRF52 DFU 패키지가 잘못되었거나 지원되지 않습니다(애플리케이션 전용 legacy serial DFU, checksum 일치 필요).",
+      "imageAmbiguous": "아카이브에 일치하는 이미지가 여러 개 있습니다. 원하는 파일을 풀어 선택하세요.",
+      "imageBoardMismatch": "이 펌웨어는 다른 보드용입니다 ({{detail}}). 맞는 보드나 다른 파일을 선택하세요.",
+      "imageBoardMismatchGeneric": "이 펌웨어는 선택한 보드와 다른 보드용입니다.",
+      "imageChipMismatch": "이미지가 선택한 보드와 다른 칩용으로 빌드되었습니다.",
+      "imageEmpty": "펌웨어 파일이 비어 있습니다.",
+      "imageHeaderInvalid": "유효한 ESP32 펌웨어 이미지가 아닙니다.",
+      "imageNameUnrecognized": "파일 이름이 선택한 보드용으로 알려진 펌웨어 이미지가 아닙니다.",
+      "imageNotCompanion": "companion 무선기 펌웨어가 아닙니다. Mesh Client는 companion 이미지만 플래시합니다.",
+      "imageNotFoundForBoard": "아카이브에 선택한 보드용 펌웨어 이미지가 없습니다.",
+      "imageNotFullImage": "Mesh Client가 쓰는 full-flash 이미지가 아닙니다(.factory.bin, -merged.bin 또는 DFU .zip).",
+      "imageTooLarge": "이미지가 선택한 보드 플래시보다 큽니다.",
+      "imageTooSmall": "full-flash 펌웨어 이미지로는 너무 작습니다.",
+      "readFailed": "펌웨어 파일을 읽을 수 없습니다."
+    },
+    "fileHint": {
+      "meshcore": "MeshCore 릴리스에서 보드용 companion-radio -merged.bin(ESP32) 또는 .zip(nRF52)을 선택하세요.",
+      "meshtastic": "Meshtastic 펌웨어 릴리스 .zip(firmware-esp32s3-….zip 또는 firmware-nrf52840-….zip) 또는 단일 .factory.bin / -ota.zip을 선택하세요."
+    },
+    "firmwareFile": "펌웨어 파일",
+    "flash": "펌웨어 플래시",
+    "flashing": "플래시 중… {{progress}}%",
+    "imageReady": "준비됨: {{name}} ({{size}})",
+    "imageVersion": "버전: {{version}}",
+    "recovery": {
+      "docs": "자세히: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: ROM bootloader는 덮어쓸 수 없습니다. BOOT 유지, RESET 탭, BOOT 놓고 다시 플래시하거나 제조사 웹 플래셔.",
+      "nrf52": "nRF52: RESET 두 번으로 UF2 bootloader(드라이브 표시), .uf2 드래그 또는 여기서 재플래시.",
+      "title": "플래시가 실패하면"
+    },
+    "releases": {
+      "meshcore": "MeshCore 펌웨어 릴리스 열기",
+      "meshtastic": "Meshtastic 펌웨어 릴리스 열기"
+    },
+    "successEsp32": "펌웨어 기록 및 검증 완료. 재부팅 중 — 약 30초 후 다시 연결.",
+    "successNrf52": "bootloader로 전송됨. 재부팅 — 약 30초 후 재연결.",
+    "summary": "USB로 펌웨어 설치/업데이트. 여기 나열된 보드만 지원, 그 외는 쓰기 전 거부.",
+    "supportedBoards": "지원 보드: {{boards}}",
+    "title": "기기 펌웨어 플래시",
+    "validating": "펌웨어 확인 중…",
+    "warnings": {
+      "batteryUnknown": "배터리 잔량 알 수 없음 — 충분히 충전하거나 외부 전원.",
+      "cable": "데이터 USB 케이블을 PC에 직접(허브 없이). 플래시 중 분리하지 마세요.",
+      "connectionDrops": "재부팅 중 무선 연결이 끊깁니다.",
+      "espBootloader": "Mesh Client가 ESP32 ROM bootloader로 자동 리셋. 안 되면 BOOT, RESET, BOOT 놓기.",
+      "nrf52Bootloader": "nRF52는 serial DFU bootloader 경유. bootloader는 그대로, 실패 시 재시도.",
+      "settingsReset": "full-flash는 설정·채널·키를 지울 수 있습니다. 먼저 백업하세요.",
+      "unverifiedBoard": "무선기 미식별 — 보드 선택 미검증. 잘못된 보드는 기기를 사용 불가로 만들 수 있음."
+    },
+    "warningsTitle": "플래시 전"
   }
 }

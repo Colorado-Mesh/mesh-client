@@ -172,6 +172,14 @@ pub fn router(
             axum::routing::delete(lxmf::lxmf_delete_message),
         )
         .route(
+            "/api/v1/lxmf/messages/{hash}/cancel",
+            post(lxmf::lxmf_cancel_message),
+        )
+        .route(
+            "/api/v1/lxmf/messages/{hash}/progress",
+            get(lxmf::lxmf_message_progress),
+        )
+        .route(
             "/api/v1/contacts",
             get(lxmf::list_contacts).delete(lxmf::clear_contacts),
         )

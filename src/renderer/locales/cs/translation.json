@@ -973,7 +973,34 @@
     "scheduleSendFailed": "Naplánovanou zprávu nelze uložit. Zkuste to znovu.",
     "outboxScheduledEditAria": "Upravit naplánovanou zprávu",
     "outboxScheduledSendNow": "Poslat nyní",
-    "outboxScheduledSendNowAria": "Odeslat naplánovanou zprávu nyní"
+    "outboxScheduledSendNowAria": "Odeslat naplánovanou zprávu nyní",
+    "attachment": {
+      "attachAria": "Připojit soubor nebo fotografii",
+      "attachFile": "Připojit soubor…",
+      "attachPhoto": "Připojit fotografii…",
+      "cancelAria": "Zrušit odesílání {{name}}",
+      "cancelled": "Odesílání přílohy zrušeno.",
+      "errors": {
+        "cacheFailed": "Přílohu se nepodařilo uložit lokálně, proto nebyla odeslána.",
+        "empty": "Tento soubor je prázdný.",
+        "photoDecodeFailed": "Tuto fotografii se nepodařilo zpracovat. Zkuste jiný obrázek.",
+        "photoTooLarge": "Tato fotografie je příliš velká na odeslání.",
+        "photoUnsupported": "Lze odesílat pouze fotografie PNG, JPEG, WebP a GIF.",
+        "readFailed": "Vybraný soubor se nepodařilo přečíst.",
+        "runtimeUnavailable": "Reticulum není připraven. Spusťte stack a zkuste to znovu.",
+        "sendFailed": "Přílohu se nepodařilo odeslat.",
+        "tooLarge": "Přílohy jsou omezeny na celkem {{limitKib}} KiB na zprávu. Pro větší soubory použijte Remote rncp.",
+        "tooLargeForPropagation": "Příloha je pro propagation uzel příliš velká — lze doručit pouze přímo, dokud je peer dosažitelný.",
+        "tooMany": "Připojte nejvýše {{count}} souborů na zprávu."
+      },
+      "fileInputAria": "Vybrat soubory k odeslání",
+      "menuAria": "Připojit ke zprávě LXMF",
+      "photoInputAria": "Vybrat fotografii k odeslání",
+      "progressAria": "Průběh odesílání pro {{name}}",
+      "sending": "Odesílání {{name}}…",
+      "tooltip": "Odesílejte soubory nebo fotografii v této přímé zprávě LXMF (nativní příloha — ne rncp). Až {{count}} souborů, celkem {{limitKib}} KiB. Fotografie se zmenší a odstraní se metadata.",
+      "transfersAria": "Odesílané přílohy"
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2363,7 +2390,10 @@
       "esp32ReadIncomplete": "Čtení flash paměti skončilo předčasně, takže nebyla uložena žádná záloha. Znovu připojte desku a zkuste to znovu.",
       "esp32FlashSizeUnknown": "Velikost flash paměti se nepodařilo zjistit, takže záloha nebyla vytvořena. Vyberte přesný model desky a zkuste to znovu.",
       "esp32FlashTooLarge": "Flash paměť této desky je větší než limit zálohy 32 MiB, takže záloha nebyla vytvořena.",
-      "esp32ReadVerifyFailed": "Čtení flash paměti neprošlo kontrolním součtem, takže nebyla uložena žádná záloha. Znovu připojte desku a zkuste to znovu."
+      "esp32ReadVerifyFailed": "Čtení flash paměti neprošlo kontrolním součtem, takže nebyla uložena žádná záloha. Znovu připojte desku a zkuste to znovu.",
+      "esp32ChipMismatch": "Připojený čip neodpovídá vybrané desce. Nic nebylo zapsáno. Zkontrolujte desku a USB port.",
+      "flashCancelled": "Flash zrušen.",
+      "imageExceedsFlash": "Obraz firmware je větší než flash čip připojeného zařízení. Nic nebylo zapsáno."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
@@ -2662,7 +2692,8 @@
       "clear": "Vymazat mezipaměť dlaždic",
       "clearAria": "Vymazat offline mezipaměť mapových dlaždic",
       "cleared": "Mezipaměť vymazána.",
-      "viewCacheOnly": "Zobrazené mapové dlaždice se automaticky ukládají do mezipaměti. Stahování oblastí je dostupné s USGS Topo; OpenStreetMap předběžné stahování nepovoluje."
+      "viewCacheOnly": "Zobrazené mapové dlaždice se automaticky ukládají do mezipaměti. Stahování oblastí je dostupné s USGS Topo; OpenStreetMap předběžné stahování nepovoluje.",
+      "viewCacheOnlyCustom": "Vlastní zdroje se ukládají jen pro zobrazené dlaždice; hromadné stažení regionu není k dispozici. Pro offline použijte import MBTiles."
     },
     "basemapUsgsTopo": "USGS Topo (pouze USA)",
     "layerIncidents": "Nouzové události",
@@ -2675,7 +2706,63 @@
     "measureHint": "Klikněte na mapu pro přidání bodů",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "Jednotky TAK",
-    "layerWeatherForecasts": "Předpověď počasí"
+    "layerWeatherForecasts": "Předpověď počasí",
+    "customSources": {
+      "addConfirm": "Přidat zdroj",
+      "addConfirmAria": "Přidat vlastní XYZ zdroj",
+      "addXyz": "Přidat vlastní XYZ zdroj…",
+      "addXyzAria": "Přidat vlastní XYZ tile server",
+      "added": "Přidáno {{name}}.",
+      "attributionLabel": "Atribuce (povinné)",
+      "cancel": "Zrušit",
+      "cancelAria": "Zrušit přidání vlastního zdroje mapy",
+      "clearCache": "Vymazat mezipaměť",
+      "clearCacheAria": "Vymazat cached dlaždice pro {{name}}",
+      "confirmMbtiles": "Potvrzuji, že smím používat tato mapová data a že atribuce výše je správná.",
+      "confirmMbtilesAria": "Potvrdit oprávnění použít balíček MBTiles",
+      "confirmXyz": "Potvrzuji, že smím používat tento tile server a že atribuce výše je správná.",
+      "confirmXyzAria": "Potvrdit oprávnění použít tile server",
+      "confirmXyzHost": "Potvrzuji, že smím používat dlaždice z {{host}} a že atribuce výše je správná. Dlaždice se stáhnou z tohoto hostitele při zobrazení.",
+      "errors": {
+        "attribution": "Atribuce je povinná (max. 200 znaků).",
+        "cancelled": "Zrušeno.",
+        "credentials": "URL s uživatelským jménem nebo heslem nejsou povoleny.",
+        "empty": "Zadejte URL dlaždice.",
+        "host": "Hostitel musí být veřejné doménové jméno (žádné IP, localhost ani lokální síť).",
+        "invalid": "To není platná URL dlaždice.",
+        "io": "Akci se nepodařilo dokončit. Zkuste znovu.",
+        "limit": "Příliš mnoho vlastních zdrojů. Nejdříve jeden odstraňte.",
+        "mbtiles_invalid": "Soubor není platný balíček MBTiles.",
+        "mbtiles_too_large": "Soubor MBTiles je příliš velký pro import (limit 2 GB).",
+        "mbtiles_vector": "Vektorové MBTiles nejsou podporovány; použijte PNG, JPEG nebo WebP.",
+        "name": "Zadejte název (max. 60 znaků).",
+        "not_confirmed": "Nejdříve potvrďte, že smíte tento zdroj používat.",
+        "osm": "Dlaždice OpenStreetMap jsou vestavěná podkladová mapa; použijte ji.",
+        "placeholders": "URL musí obsahovat {z}, {x} a {y} právě jednou každý, za hostitelem.",
+        "port": "Vlastní porty nejsou povoleny.",
+        "scheme": "Povoleny jsou pouze URL https://.",
+        "too_long": "URL je příliš dlouhá.",
+        "unknown_inspect": "Vybraný soubor vypršel. Vyberte ho znovu.",
+        "zoom": "Zoom musí být celé číslo od 0 do 22."
+      },
+      "heading": "Úložiště a vlastní zdroje",
+      "importConfirm": "Importovat",
+      "importConfirmAria": "Importovat balíček MBTiles",
+      "importMbtiles": "Importovat balíček MBTiles…",
+      "importMbtilesAria": "Importovat balíček MBTiles pro offline použití",
+      "imported": "Importováno {{name}}.",
+      "maxZoomLabel": "Nejvyšší zoom, který server poskytuje (volitelné)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}} dlaždice, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Soubor se zkopíruje do úložiště aplikace.",
+      "nameLabel": "Název",
+      "policyNote": "Vlastní servery se kontaktují jen pro zobrazené dlaždice. Nikdy se hromadně nestahují.",
+      "remove": "Odebrat",
+      "removeAria": "Odebrat vlastní zdroj mapy {{name}}",
+      "storageAria": "Úložiště mapy podle zdroje",
+      "urlLabel": "URL dlaždice (https, s {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · cache max. {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -8090,5 +8177,93 @@
     "clear": "Jasný",
     "outputTruncated": "Starší výstup byl vyřazen, aby byl přepis malý.",
     "interruptShort": "Ctrl+C"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Potvrzuji, že zařízení připojené přes USB je {{board}}, má stabilní kabel a napájení a zálohoval(a) jsem nastavení a klíče.",
+    "aria": {
+      "acknowledge": "Potvrdit kontrolní seznam flashování",
+      "board": "Deska k flashování",
+      "cancel": "Zrušit flashování firmware",
+      "expectedSha": "Očekovaný otisk SHA-256",
+      "file": "Soubor firmware k flashování",
+      "flash": "Flashovat firmware do zařízení"
+    },
+    "blockers": {
+      "boardMismatch": "Vybraná deska neodpovídá připojenému rádiu.",
+      "boardUnsupported": "Připojené rádio není podporovaná deska.",
+      "lowBattery": "Baterie je pod {{percent}} % — nabijte zařízení nebo ho připojte k napájení a zkuste znovu.",
+      "noBoard": "Vyberte desku.",
+      "noImage": "Vyberte platný soubor firmware.",
+      "notAcknowledged": "Potvrďte kontrolní seznam níže.",
+      "serialConnectionOpen": "Před flashováním odpojte sériové USB připojení rádia — Mesh Client potřebuje port."
+    },
+    "boardLabel": "Deska",
+    "boardLocked": "Zjištěno z připojeného rádia: {{board}}",
+    "boardManualHint": "Rádio nebylo automaticky identifikováno. Vyberte desku ručně.",
+    "boardPlaceholder": "Vyberte desku…",
+    "boardUnsupported": "Připojené rádio hlásí „{{reported}}“, což není podporovaný cíl flashování. Flashování je zakázáno.",
+    "cancel": "Zrušit flash",
+    "cancelled": "Flash zrušen. Zařízení může být potřeba flashovat znovu — viz kroky obnovy níže.",
+    "cancelling": "Rušení…",
+    "checksum": {
+      "expectedHint": "Vložte otisk uvedený u souboru na stránce vydání. Nesoulad blokuje flashování.",
+      "expectedLabel": "Očekávané SHA-256 (volitelné)",
+      "fileLabel": "SHA-256 souboru",
+      "payloadLabel": "SHA-256 obrazu"
+    },
+    "enterDfuHint": "Desky nRF52 musí být nejdříve v režimu bootloaderu (DFU): použijte Enter DFU mode výše, dvojitě klepněte na reset, nebo tlačítko níže, pak klikněte Flash.",
+    "errors": {
+      "checksumInvalid": "Očekávané SHA-256 není platný 64místný hex otisk.",
+      "checksumMismatch": "SHA-256 souboru neodpovídá očekávanému otisku. Neflashujte — stáhněte znovu.",
+      "dfuPackageInvalid": "Balíček nRF52 DFU je neplatný nebo nepodporovaný (vyžaduje legacy serial DFU pouze pro aplikaci s odpovídající kontrolní součet).",
+      "imageAmbiguous": "Archiv obsahuje více než jeden odpovídající obraz. Rozbalte přesný soubor a vyberte ho.",
+      "imageBoardMismatch": "Tento firmware je pro jinou desku ({{detail}}). Vyberte odpovídající desku nebo jiný soubor.",
+      "imageBoardMismatchGeneric": "Tento firmware je pro jinou desku než vybraná.",
+      "imageChipMismatch": "Obraz byl sestaven pro jiný čip než vybraná deska.",
+      "imageEmpty": "Soubor firmware je prázdný.",
+      "imageHeaderInvalid": "Soubor není platný obraz firmware ESP32.",
+      "imageNameUnrecognized": "Tento název souboru není rozpoznaný obraz firmware pro vybranou desku.",
+      "imageNotCompanion": "Toto není firmware companion rádia. Mesh Client flashuje pouze companion obrazy.",
+      "imageNotFoundForBoard": "Archiv neobsahuje obraz firmware pro vybranou desku.",
+      "imageNotFullImage": "Toto není úplný flash obraz, který Mesh Client zapisuje (použijte .factory.bin, -merged.bin nebo DFU .zip).",
+      "imageTooLarge": "Obraz je větší než flash vybrané desky.",
+      "imageTooSmall": "Soubor je příliš malý na úplný flash obraz firmware.",
+      "readFailed": "Soubor firmware se nepodařilo přečíst."
+    },
+    "fileHint": {
+      "meshcore": "Vyberte companion-radio -merged.bin (ESP32) nebo .zip (nRF52) pro vaši desku z vydání MeshCore.",
+      "meshtastic": "Vyberte release .zip z vydání firmware Meshtastic (firmware-esp32s3-….zip nebo firmware-nrf52840-….zip) nebo jednotlivý .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Soubor firmware",
+    "flash": "Flashovat firmware",
+    "flashing": "Flashování… {{progress}}%",
+    "imageReady": "Připraveno: {{name}} ({{size}})",
+    "imageVersion": "Verze: {{version}}",
+    "recovery": {
+      "docs": "Více: docs/troubleshooting.md, „Firmware flashing recovery“.",
+      "esp32": "ESP32: ROM bootloader nelze přepsat. Držte BOOT, klepněte RESET, pusťte BOOT a flashujte znovu, nebo použijte web flasher výrobce.",
+      "nrf52": "nRF52: dvojité klepnutí RESET pro UF2 bootloader (objeví se disk), přetáhněte .uf2 desky, nebo zkuste flash zde.",
+      "title": "Pokud flash selže"
+    },
+    "releases": {
+      "meshcore": "Otevřít vydání firmware MeshCore",
+      "meshtastic": "Otevřít vydání firmware Meshtastic"
+    },
+    "successEsp32": "Firmware zapsán a ověřen. Zařízení se restartuje — počkejte asi 30 sekund a znovu se připojte.",
+    "successNrf52": "Firmware odeslán do bootloaderu. Zařízení se restartuje — počkejte asi 30 sekund a znovu se připojte.",
+    "summary": "Instalujte nebo aktualizujte firmware přes USB. Podporované jsou jen desky uvedené zde; ostatní jsou odmítnuty před zápisem.",
+    "supportedBoards": "Podporované desky: {{boards}}",
+    "title": "Flashovat firmware zařízení",
+    "validating": "Kontrola firmware…",
+    "warnings": {
+      "batteryUnknown": "Úroveň baterie neznámá — ujistěte se, že je zařízení dobře nabité nebo externě napájené.",
+      "cable": "Použijte datový USB kabel přímo do počítače (bez hubu) a neodpojujte zařízení během flashování.",
+      "connectionDrops": "Spojení s rádiem se během restartu zařízení přeruší.",
+      "espBootloader": "Mesh Client automaticky resetuje desku do ESP32 ROM bootloaderu. Pokud ne, držte BOOT, klepněte RESET, pusťte BOOT a zkuste znovu.",
+      "nrf52Bootloader": "Desky nRF52 flashují přes sériový DFU bootloader. Samotný bootloader se nemění, neúspěšný update lze zopakovat.",
+      "settingsReset": "Úplný flash obraz může smazat nastavení, kanály a klíče. Nejdříve exportujte zálohu.",
+      "unverifiedBoard": "Rádio nebylo automaticky identifikováno — volba desky není ověřena. Špatná deska může zařízení znefunkčnit."
+    },
+    "warningsTitle": "Před flashováním"
   }
 }

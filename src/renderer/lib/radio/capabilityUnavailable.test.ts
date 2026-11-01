@@ -53,14 +53,9 @@ describe('getCapabilityUnavailableReason', () => {
     ).toBe('capabilityUnavailable.enterDfu.meshcore');
   });
 
-  // Device firmware flash lands in a follow-up PR; until then the flag is off for all protocols.
-  it('firmwareFlash is unavailable until flasher ships (Reticulum uses its own reason)', () => {
-    expect(
-      getCapabilityUnavailableReason(MESHTASTIC_CAPABILITIES, 'firmwareFlash')?.reasonKey,
-    ).toBe('capabilityUnavailable.firmwareFlash.default');
-    expect(getCapabilityUnavailableReason(MESHCORE_CAPABILITIES, 'firmwareFlash')?.reasonKey).toBe(
-      'capabilityUnavailable.firmwareFlash.default',
-    );
+  it('firmwareFlash is available for Meshtastic and MeshCore, unavailable for Reticulum', () => {
+    expect(getCapabilityUnavailableReason(MESHTASTIC_CAPABILITIES, 'firmwareFlash')).toBeNull();
+    expect(getCapabilityUnavailableReason(MESHCORE_CAPABILITIES, 'firmwareFlash')).toBeNull();
     expect(getCapabilityUnavailableReason(RETICULUM_CAPABILITIES, 'firmwareFlash')?.reasonKey).toBe(
       'capabilityUnavailable.firmwareFlash.reticulum',
     );

@@ -954,7 +954,34 @@
     "outboxScheduledEdit": "Edit",
     "outboxScheduledEditAria": "Edit scheduled message",
     "outboxScheduledSendNow": "Send now",
-    "outboxScheduledSendNowAria": "Send scheduled message now"
+    "outboxScheduledSendNowAria": "Send scheduled message now",
+    "attachment": {
+      "attachAria": "Lampirkan berkas atau foto",
+      "attachFile": "Lampirkan berkas…",
+      "attachPhoto": "Lampirkan foto…",
+      "cancelAria": "Batalkan pengiriman {{name}}",
+      "cancelled": "Pengiriman lampiran dibatalkan.",
+      "errors": {
+        "cacheFailed": "Lampiran tidak dapat disimpan secara lokal, jadi tidak dikirim.",
+        "empty": "Berkas itu kosong.",
+        "photoDecodeFailed": "Foto itu tidak dapat diproses. Coba gambar lain.",
+        "photoTooLarge": "Foto itu terlalu besar untuk dikirim.",
+        "photoUnsupported": "Hanya foto PNG, JPEG, WebP, dan GIF yang dapat dikirim.",
+        "readFailed": "Berkas yang dipilih tidak dapat dibaca.",
+        "runtimeUnavailable": "Reticulum belum siap. Jalankan stack dan coba lagi.",
+        "sendFailed": "Lampiran tidak dapat dikirim.",
+        "tooLarge": "Lampiran dibatasi total {{limitKib}} KiB per pesan. Untuk berkas lebih besar gunakan Remote rncp.",
+        "tooLargeForPropagation": "Lampiran terlalu besar untuk node propagasi — hanya dapat dikirim langsung selama peer dapat dijangkau.",
+        "tooMany": "Lampirkan paling banyak {{count}} berkas per pesan."
+      },
+      "fileInputAria": "Pilih berkas untuk dikirim",
+      "menuAria": "Lampirkan ke pesan LXMF",
+      "photoInputAria": "Pilih foto untuk dikirim",
+      "progressAria": "Kemajuan pengiriman untuk {{name}}",
+      "sending": "Mengirim {{name}}…",
+      "tooltip": "Kirim berkas atau foto dalam pesan langsung LXMF ini (lampiran asli — bukan rncp). Hingga {{count}} berkas, total {{limitKib}} KiB. Foto diubah ukuran dan metadata dihapus.",
+      "transfersAria": "Lampiran sedang dikirim"
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "Pembacaan flash berakhir lebih awal, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi.",
       "esp32FlashSizeUnknown": "Ukuran flash tidak dapat dideteksi, jadi tidak ada cadangan yang dibuat. Pilih model papan yang tepat dan coba lagi.",
       "esp32FlashTooLarge": "Flash papan ini lebih besar dari batas cadangan 32 MiB, jadi tidak ada cadangan yang dibuat.",
-      "esp32ReadVerifyFailed": "Pembacaan flash gagal dalam pemeriksaan checksum, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi."
+      "esp32ReadVerifyFailed": "Pembacaan flash gagal dalam pemeriksaan checksum, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi.",
+      "esp32ChipMismatch": "Chip terhubung tidak cocok dengan papan. Tidak ada yang ditulis. Periksa papan dan port USB.",
+      "flashCancelled": "Flash dibatalkan.",
+      "imageExceedsFlash": "Citra lebih besar dari flash perangkat. Tidak ada yang ditulis."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
@@ -2633,7 +2663,8 @@
       "clear": "Bersihkan singgahan ubin",
       "clearAria": "Bersihkan cache ubin peta offline",
       "cleared": "Cache ubin dikosongkan.",
-      "viewCacheOnly": "Ubin peta yang dilihat disimpan dalam cache secara otomatis. Unduhan wilayah tersedia pada USGS Topo; OpenStreetMap tidak mengizinkan pengunduhan terlebih dahulu."
+      "viewCacheOnly": "Ubin peta yang dilihat disimpan dalam cache secara otomatis. Unduhan wilayah tersedia pada USGS Topo; OpenStreetMap tidak mengizinkan pengunduhan terlebih dahulu.",
+      "viewCacheOnlyCustom": "Sumber kustom hanya cache tile yang dilihat; unduh region massal tidak tersedia. Impor MBTiles untuk offline."
     },
     "basemapUsgsTopo": "USGS Topo (khusus AS)",
     "layerIncidents": "Insiden darurat",
@@ -2646,7 +2677,63 @@
     "measureHint": "Klik peta untuk menambahkan poin",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "Unit TAK",
-    "layerWeatherForecasts": "Prakiraan cuaca"
+    "layerWeatherForecasts": "Prakiraan cuaca",
+    "customSources": {
+      "addConfirm": "Tambah sumber",
+      "addConfirmAria": "Tambah sumber XYZ kustom",
+      "addXyz": "Tambah sumber XYZ kustom…",
+      "addXyzAria": "Tambah server tile XYZ",
+      "added": "Ditambahkan {{name}}.",
+      "attributionLabel": "Atribusi (wajib)",
+      "cancel": "Batal",
+      "cancelAria": "Batalkan menambah sumber peta",
+      "clearCache": "Hapus cache",
+      "clearCacheAria": "Hapus tile cache untuk {{name}}",
+      "confirmMbtiles": "Saya konfirmasi boleh menggunakan data peta ini dan atribusi benar.",
+      "confirmMbtilesAria": "Konfirmasi izin paket MBTiles",
+      "confirmXyz": "Saya konfirmasi boleh menggunakan server tile ini dan atribusi benar.",
+      "confirmXyzAria": "Konfirmasi izin server tile",
+      "confirmXyzHost": "Saya konfirmasi boleh menggunakan tile dari {{host}} dan atribusi benar. Tile diambil saat ditampilkan.",
+      "errors": {
+        "attribution": "Atribusi wajib (maks. 200 karakter).",
+        "cancelled": "Dibatalkan.",
+        "credentials": "URL dengan nama pengguna atau kata sandi tidak diizinkan.",
+        "empty": "Masukkan URL tile.",
+        "host": "Host harus nama domain publik (bukan IP, localhost, atau jaringan lokal).",
+        "invalid": "Itu bukan URL tile valid.",
+        "io": "Tindakan tidak dapat diselesaikan. Coba lagi.",
+        "limit": "Terlalu banyak sumber kustom. Hapus satu dulu.",
+        "mbtiles_invalid": "Bukan paket MBTiles valid.",
+        "mbtiles_too_large": "Berkas MBTiles terlalu besar (batas 2 GB).",
+        "mbtiles_vector": "MBTiles vektor tidak didukung; gunakan PNG, JPEG, WebP.",
+        "name": "Masukkan nama (maks. 60 karakter).",
+        "not_confirmed": "Konfirmasi dulu bahwa Anda boleh menggunakan sumber ini.",
+        "osm": "Tile OpenStreetMap sudah bawaan; gunakan itu.",
+        "placeholders": "URL harus memuat {z}, {x}, {y} masing-masing sekali setelah host.",
+        "port": "Port kustom tidak diizinkan.",
+        "scheme": "Hanya URL https:// yang diizinkan.",
+        "too_long": "URL terlalu panjang.",
+        "unknown_inspect": "Berkas yang dipilih kedaluwarsa. Pilih lagi.",
+        "zoom": "Zoom harus bilangan bulat 0–22."
+      },
+      "heading": "Penyimpanan & sumber kustom",
+      "importConfirm": "Impor",
+      "importConfirmAria": "Impor paket MBTiles",
+      "importMbtiles": "Impor paket MBTiles…",
+      "importMbtilesAria": "Impor MBTiles untuk offline",
+      "imported": "Diimpor {{name}}.",
+      "maxZoomLabel": "Zoom tertinggi server (opsional)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "Tile {{format}}, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Berkas disalin ke penyimpanan app.",
+      "nameLabel": "Nama",
+      "policyNote": "Server kustom hanya dihubungi untuk tile yang Anda lihat. Tidak pernah unduh massal.",
+      "remove": "Hapus",
+      "removeAria": "Hapus sumber peta {{name}}",
+      "storageAria": "Penyimpanan peta per sumber",
+      "urlLabel": "URL tile (https, dengan {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · cache dibatasi {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -8007,5 +8094,93 @@
     "interrupt": "Kirim Ctrl+C",
     "interruptShort": "Ctrl+C",
     "clear": "Bersihkan"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Saya konfirmasi perangkat USB adalah {{board}}, kabel dan daya stabil, dan saya sudah mencadangkan pengaturan serta kunci.",
+    "aria": {
+      "acknowledge": "Konfirmasi daftar periksa flash",
+      "board": "Papan untuk flash",
+      "cancel": "Batalkan flash firmware",
+      "expectedSha": "Ringkasan SHA-256 yang diharapkan",
+      "file": "Berkas firmware untuk flash",
+      "flash": "Flash firmware ke perangkat"
+    },
+    "blockers": {
+      "boardMismatch": "Papan yang dipilih tidak cocok dengan radio yang terhubung.",
+      "boardUnsupported": "Radio yang terhubung bukan papan yang didukung.",
+      "lowBattery": "Baterai di bawah {{percent}}% — isi daya atau colokkan perangkat lalu coba lagi.",
+      "noBoard": "Pilih papan.",
+      "noImage": "Pilih berkas firmware yang valid.",
+      "notAcknowledged": "Konfirmasi daftar periksa di bawah.",
+      "serialConnectionOpen": "Putuskan koneksi serial USB radio sebelum flash — Mesh Client membutuhkan port."
+    },
+    "boardLabel": "Papan",
+    "boardLocked": "Terdeteksi dari radio terhubung: {{board}}",
+    "boardManualHint": "Radio tidak teridentifikasi otomatis. Pilih papan secara manual.",
+    "boardPlaceholder": "Pilih papan…",
+    "boardUnsupported": "Radio terhubung melaporkan «{{reported}}», bukan target flash yang didukung. Flash dinonaktifkan.",
+    "cancel": "Batalkan flash",
+    "cancelled": "Flash dibatalkan. Perangkat mungkin perlu di-flash lagi — lihat pemulihan di bawah.",
+    "cancelling": "Membatalkan…",
+    "checksum": {
+      "expectedHint": "Tempel ringkasan di samping aset di halaman rilis. Ketidakcocokan memblokir flash.",
+      "expectedLabel": "SHA-256 yang diharapkan (opsional)",
+      "fileLabel": "SHA-256 berkas",
+      "payloadLabel": "SHA-256 citra"
+    },
+    "enterDfuHint": "Papan nRF52 harus dalam bootloader (DFU) dulu: gunakan Enter DFU mode di atas, ketuk reset dua kali, atau tombol di bawah, lalu Flash.",
+    "errors": {
+      "checksumInvalid": "SHA-256 yang diharapkan bukan ringkasan hex 64 karakter yang valid.",
+      "checksumMismatch": "SHA-256 berkas tidak cocok dengan ringkasan yang diharapkan. Jangan flash — unduh lagi.",
+      "dfuPackageInvalid": "Paket DFU nRF52 tidak valid atau tidak didukung (DFU serial legacy hanya aplikasi dengan checksum cocok).",
+      "imageAmbiguous": "Arsip berisi lebih dari satu citra cocok. Ekstrak berkas yang tepat dan pilih.",
+      "imageBoardMismatch": "Firmware ini untuk papan lain ({{detail}}). Pilih papan yang cocok atau berkas lain.",
+      "imageBoardMismatchGeneric": "Firmware ini untuk papan berbeda dari yang dipilih.",
+      "imageChipMismatch": "Citra dibangun untuk chip berbeda dari papan terpilih.",
+      "imageEmpty": "Berkas firmware kosong.",
+      "imageHeaderInvalid": "Berkas bukan citra firmware ESP32 yang valid.",
+      "imageNameUnrecognized": "Nama berkas ini bukan citra firmware yang dikenali untuk papan terpilih.",
+      "imageNotCompanion": "Ini bukan firmware companion radio. Mesh Client hanya flash citra companion.",
+      "imageNotFoundForBoard": "Arsip tidak berisi citra firmware untuk papan terpilih.",
+      "imageNotFullImage": "Bukan citra full-flash yang ditulis Mesh Client (gunakan .factory.bin, -merged.bin atau DFU .zip).",
+      "imageTooLarge": "Citra lebih besar dari flash papan terpilih.",
+      "imageTooSmall": "Berkas terlalu kecil untuk citra full-flash.",
+      "readFailed": "Berkas firmware tidak dapat dibaca."
+    },
+    "fileHint": {
+      "meshcore": "Pilih companion-radio -merged.bin (ESP32) atau .zip (nRF52) untuk papan Anda dari rilis MeshCore.",
+      "meshtastic": "Pilih .zip rilis firmware Meshtastic (firmware-esp32s3-….zip atau firmware-nrf52840-….zip) atau .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Berkas firmware",
+    "flash": "Flash firmware",
+    "flashing": "Flashing… {{progress}}%",
+    "imageReady": "Siap: {{name}} ({{size}})",
+    "imageVersion": "Versi: {{version}}",
+    "recovery": {
+      "docs": "Lebih lanjut: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: bootloader ROM tidak bisa ditimpa. Tahan BOOT, ketuk RESET, lepas BOOT dan flash lagi, atau flasher web vendor.",
+      "nrf52": "nRF52: ketuk RESET dua kali untuk bootloader UF2 (drive muncul), seret .uf2 papan, atau coba flash di sini.",
+      "title": "Jika flash gagal"
+    },
+    "releases": {
+      "meshcore": "Buka rilis firmware MeshCore",
+      "meshtastic": "Buka rilis firmware Meshtastic"
+    },
+    "successEsp32": "Firmware ditulis dan diverifikasi. Perangkat reboot — tunggu ~30 detik lalu sambungkan lagi.",
+    "successNrf52": "Firmware dikirim ke bootloader. Reboot — tunggu ~30 detik lalu sambungkan.",
+    "summary": "Pasang atau perbarui firmware via USB. Hanya papan yang terdaftar; lainnya ditolak sebelum menulis.",
+    "supportedBoards": "Papan didukung: {{boards}}",
+    "title": "Flash firmware perangkat",
+    "validating": "Memeriksa firmware…",
+    "warnings": {
+      "batteryUnknown": "Level baterai tidak diketahui — pastikan terisi atau daya eksternal.",
+      "cable": "Kabel USB data langsung ke komputer (tanpa hub); jangan cabut saat flash.",
+      "connectionDrops": "Koneksi radio terputus saat reboot.",
+      "espBootloader": "Mesh Client mereset papan ke bootloader ROM ESP32. Jika tidak, tahan BOOT, RESET, lepas BOOT.",
+      "nrf52Bootloader": "nRF52 flash via bootloader DFU serial. Bootloader tidak diubah; gagal bisa diulang.",
+      "settingsReset": "Full-flash dapat menghapus pengaturan, saluran, kunci. Ekspor cadangan dulu.",
+      "unverifiedBoard": "Radio tidak teridentifikasi — pilihan papan belum diverifikasi. Papan salah bisa brick perangkat."
+    },
+    "warningsTitle": "Sebelum flash"
   }
 }

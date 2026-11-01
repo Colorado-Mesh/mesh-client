@@ -1,4 +1,13 @@
+import { type CustomMapSourceId, isCustomMapSourceId } from './customMapSources';
+
 export type OfflineMapBasemapId = 'osm' | 'dark' | 'usgs-topo';
+
+/** Any id the `mesh-tiles:` protocol and tile cache accept: built-in basemaps or custom sources. */
+export type MapSourceId = OfflineMapBasemapId | CustomMapSourceId;
+
+export function isMapSourceId(value: unknown): value is MapSourceId {
+  return isOfflineMapBasemapId(value) || isCustomMapSourceId(value);
+}
 
 export const OFFLINE_MAP_BASEMAP_IDS: readonly OfflineMapBasemapId[] = [
   'osm',
@@ -10,8 +19,11 @@ export function isOfflineMapBasemapId(value: unknown): value is OfflineMapBasema
   return value === 'osm' || value === 'dark' || value === 'usgs-topo';
 }
 
-/** OSM permits normal viewport caching, but prohibits region downloads and prefetching. */
-export function supportsOfflineMapDownload(basemapId: OfflineMapBasemapId): boolean {
+/**
+ * OSM permits normal viewport caching, but prohibits region downloads and prefetching. Custom XYZ
+ * sources are view-cache only (their providers' terms are unknown); use MBTiles for offline packages.
+ */
+export function supportsOfflineMapDownload(basemapId: MapSourceId): boolean {
   return basemapId === 'usgs-topo';
 }
 
