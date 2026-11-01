@@ -25,6 +25,7 @@ import {
   resetRemoteShellStore,
   useRemoteShellStore,
 } from '../../stores/remoteShellStore';
+import { connectionDriver } from '../drivers/ConnectionDriver';
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   chunkRemoteShellInput,
@@ -59,11 +60,7 @@ export function setRemoteShellSender(next: RemoteShellSendFn | null): void {
 }
 
 function defaultSender(): RemoteShellSendFn {
-  return async (identityId, dest, frame) => {
-    // Dynamic import avoids a lib → drivers import cycle at module load.
-    const { connectionDriver } = await import('../drivers/ConnectionDriver');
-    await createRemoteShellSender((id) => connectionDriver.getHandle(id))(identityId, dest, frame);
-  };
+  return createRemoteShellSender((id) => connectionDriver.getHandle(id));
 }
 
 function clearTimers(): void {
