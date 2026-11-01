@@ -3925,7 +3925,7 @@
       "destinationHash": "Destinazione",
       "copyHash": "Copia hash",
       "copied": "Copiato",
-      "stats": "{{pages}} pagine · {{files}} file · {{requests}} richieste",
+      "stats": "{{pages}} pagine · {{files}} file · {{requests}} richieste · {{visitors}} visitatori",
       "myPages": "Pagine locali",
       "failed": "Impossibile aggiornare il servizio Nomad.",
       "previewSite": "Apri nel browser",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Salva la lista di accesso per {{path}}",
       "restrictLoadError": "Impossibile caricare l'elenco di accesso.",
       "restrictSaveError": "Impossibile salvare l'elenco di accesso.",
-      "restrictRemoveError": "Impossibile rimuovere la restrizione di accesso."
+      "restrictRemoveError": "Impossibile rimuovere la restrizione di accesso.",
+      "allowExecutablePages": "Consenti pagine eseguibili",
+      "allowExecutablePagesHint": "Esegue +x pagine nella cartella controllata come script CGI con il PERCORSO host (timeout di 10 secondi). Abilitalo solo se ti fidi di ogni file in quella cartella. La modifica di questa impostazione durante l'elaborazione riavvia il nodo Nomad.",
+      "allowExecutablePagesUnsupported": "Le pagine eseguibili non sono supportate su Windows."
     },
     "sortLastHeard": "Ultimo sentito:",
     "sortHops": "Salti",

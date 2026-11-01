@@ -3995,7 +3995,7 @@
       "destinationHash": "Cel",
       "copyHash": "Kopiuj hash",
       "copied": "Skopiowano",
-      "stats": "{{pages}} stron · {{files}} plików · {{requests}} żądań",
+      "stats": "{{pages}} stron · {{files}} plików · {{requests}} żądań · {{visitors}} odwiedzających",
       "myPages": "Strony lokalne",
       "failed": "Nie można zaktualizować usługi Nomad.",
       "previewSite": "Otwórz w przeglądarce",
@@ -4082,7 +4082,10 @@
       "restrictSaveError": "Nie można zapisać listy kontroli dostępu.",
       "restrictRemoveError": "Nie można usunąć ograniczenia dostępu.",
       "restrictStatusOn_few": "Ograniczone do tożsamości {{count}}.",
-      "restrictStatusOn_many": "Ograniczone do tożsamości {{count}}."
+      "restrictStatusOn_many": "Ograniczone do tożsamości {{count}}.",
+      "allowExecutablePages": "Zezwalaj na strony wykonywalne",
+      "allowExecutablePagesHint": "Uruchamia +x stron w obserwowanym folderze jako skrypty CGI z hostem PATH (limit czasu 10 s). Włącz tylko wtedy, gdy ufasz każdemu plikowi w tym folderze. Zmiana tego podczas udostępniania powoduje ponowne uruchomienie węzła Nomad.",
+      "allowExecutablePagesUnsupported": "Strony wykonywalne nie są obsługiwane w Windows."
     },
     "sortLastHeard": "Ostatnio słyszane",
     "sortHops": "Skoki",

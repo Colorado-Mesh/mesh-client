@@ -198,10 +198,10 @@ pub fn build_path_failover_control_ops(
     prefer_ifaces: &[String],
 ) -> PathFailoverControlOps {
     let mut vias_to_drop: Vec<String> = blocked_vias.to_vec();
-    if let Some(via) = failed_via.map(str::trim).filter(|s| !s.is_empty()) {
-        if !vias_to_drop.iter().any(|b| b.eq_ignore_ascii_case(via)) {
-            vias_to_drop.push(via.to_string());
-        }
+    if let Some(via) = failed_via.map(str::trim).filter(|s| !s.is_empty())
+        && !vias_to_drop.iter().any(|b| b.eq_ignore_ascii_case(via))
+    {
+        vias_to_drop.push(via.to_string());
     }
     PathFailoverControlOps {
         dest,
@@ -252,15 +252,15 @@ pub fn record_path_failover_attempt(
     via: Option<&str>,
 ) {
     push_tried_iface(tried, iface);
-    if let Some(name) = iface.map(str::trim).filter(|s| !s.is_empty()) {
-        if !blocked_ifaces.iter().any(|b| b.eq_ignore_ascii_case(name)) {
-            blocked_ifaces.push(name.to_string());
-        }
+    if let Some(name) = iface.map(str::trim).filter(|s| !s.is_empty())
+        && !blocked_ifaces.iter().any(|b| b.eq_ignore_ascii_case(name))
+    {
+        blocked_ifaces.push(name.to_string());
     }
-    if let Some(v) = via.map(str::trim).filter(|s| !s.is_empty()) {
-        if !blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v)) {
-            blocked_vias.push(v.to_string());
-        }
+    if let Some(v) = via.map(str::trim).filter(|s| !s.is_empty())
+        && !blocked_vias.iter().any(|b| b.eq_ignore_ascii_case(v))
+    {
+        blocked_vias.push(v.to_string());
     }
 }
 

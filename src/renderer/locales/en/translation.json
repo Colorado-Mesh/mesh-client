@@ -4602,7 +4602,7 @@
       "destinationHash": "Destination",
       "copyHash": "Copy hash",
       "copied": "Copied",
-      "stats": "{{pages}} pages · {{files}} files · {{requests}} requests",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} requests · {{visitors}} visitors",
       "myPages": "Local pages",
       "noPages": "No pages yet. Add .mu files to the chosen folder (for example index.mu).",
       "failed": "Could not update Nomad serving.",
@@ -4672,7 +4672,10 @@
       "invalidPagePath": "That page path is not allowed.",
       "pageIoError": "Could not read or write the page on disk.",
       "pageNotUtf8": "That page is not valid UTF-8 text.",
-      "pageWriteFailed": "Could not write the page."
+      "pageWriteFailed": "Could not write the page.",
+      "allowExecutablePages": "Allow executable pages",
+      "allowExecutablePagesHint": "Runs +x pages in the watched folder as CGI scripts with your host PATH (10s timeout). Only enable if you trust every file in that folder. Changing this while serving restarts the Nomad node.",
+      "allowExecutablePagesUnsupported": "Executable pages are not supported on Windows."
     }
   },
   "packetDistribution": {

@@ -366,7 +366,7 @@
               git
               python3
               pkg-config
-              # Sidecar build (reticulum-sidecar, needs rust-version 1.85+).
+              # Sidecar build (reticulum-sidecar, needs rust-version 1.88+).
               rustc
               cargo
             ];
@@ -383,7 +383,7 @@
                 git
                 python3
                 pkg-config
-                # Sidecar build (reticulum-sidecar, needs rust-version 1.85+).
+                # Sidecar build (reticulum-sidecar, needs rust-version 1.88+).
                 rustc
                 cargo
                 alsa-lib

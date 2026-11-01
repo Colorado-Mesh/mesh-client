@@ -74,7 +74,7 @@ pub fn encode_base32_padded(bytes: &[u8]) -> String {
     if bits > 0 {
         out.push(BASE32_ALPHABET[((buffer << (5 - bits)) & 0x1f) as usize] as char);
     }
-    while !out.is_empty() && out.len() % 8 != 0 {
+    while !out.is_empty() && !out.len().is_multiple_of(8) {
         out.push('=');
     }
     out
@@ -93,17 +93,17 @@ pub fn decode_private_key_input(input: &str) -> Result<[u8; RNS_PRIVATE_KEY_LEN]
     }
 
     for engine in [STANDARD, URL_SAFE, URL_SAFE_NO_PAD] {
-        if let Ok(bytes) = engine.decode(trimmed.as_bytes()) {
-            if let Ok(key) = bytes_to_key(&bytes) {
-                return Ok(key);
-            }
+        if let Ok(bytes) = engine.decode(trimmed.as_bytes())
+            && let Ok(key) = bytes_to_key(&bytes)
+        {
+            return Ok(key);
         }
     }
 
-    if let Ok(bytes) = decode_base32_private_key(trimmed) {
-        if let Ok(key) = bytes_to_key(&bytes) {
-            return Ok(key);
-        }
+    if let Ok(bytes) = decode_base32_private_key(trimmed)
+        && let Ok(key) = bytes_to_key(&bytes)
+    {
+        return Ok(key);
     }
 
     Err(format!(

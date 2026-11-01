@@ -53,6 +53,8 @@ pub struct PersistedState {
     pub nomad_serving_display_name: Option<String>,
     /// Absolute path to an external Nomad content folder (site root or pages dir).
     pub nomad_serving_content_source: Option<String>,
+    /// Opt-in: serve Unix `+x` pages via CGI (default off).
+    pub nomad_serving_allow_executable_pages: bool,
     /// User preference: restart the inbound rncp listener when the live stack is up.
     pub rncp_listener_enabled: bool,
     /// Inbound rncp save directory; `None` falls back to `<storage>/rncp_inbox`.
@@ -74,12 +76,11 @@ impl PersistedState {
         let _ = fs::create_dir_all(config_dir);
         let _ = fs::create_dir_all(storage_dir);
         let path = storage_dir.join(STATE_FILE);
-        if path.exists() {
-            if let Ok(raw) = fs::read_to_string(&path) {
-                if let Ok(state) = serde_json::from_str::<PersistedState>(&raw) {
-                    return state;
-                }
-            }
+        if path.exists()
+            && let Ok(raw) = fs::read_to_string(&path)
+            && let Ok(state) = serde_json::from_str::<PersistedState>(&raw)
+        {
+            return state;
         }
         Self::default_empty()
     }
@@ -111,6 +112,7 @@ impl PersistedState {
             nomad_serving_enabled: false,
             nomad_serving_display_name: None,
             nomad_serving_content_source: None,
+            nomad_serving_allow_executable_pages: false,
             rncp_listener_enabled: false,
             rncp_listener_save_dir: None,
             rncp_listener_allow_fetch: false,
@@ -687,10 +689,10 @@ impl PersistedState {
                 .iter_mut()
                 .find(|p| p.destination_hash.eq_ignore_ascii_case(&hash))
             {
-                if peer.display_name.as_ref().is_none_or(String::is_empty) {
-                    if let Some(name) = contact.display_name.filter(|n| !n.is_empty()) {
-                        peer.display_name = Some(name);
-                    }
+                if peer.display_name.as_ref().is_none_or(String::is_empty)
+                    && let Some(name) = contact.display_name.filter(|n| !n.is_empty())
+                {
+                    peer.display_name = Some(name);
                 }
                 if peer.last_seen.is_none() {
                     peer.last_seen = contact.last_heard;
@@ -873,7 +875,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 29)?;
+        let mut s = serializer.serialize_struct("PersistedState", 30)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -905,6 +907,10 @@ impl serde::Serialize for PersistedState {
         s.serialize_field(
             "nomad_serving_content_source",
             &self.nomad_serving_content_source,
+        )?;
+        s.serialize_field(
+            "nomad_serving_allow_executable_pages",
+            &self.nomad_serving_allow_executable_pages,
         )?;
         s.serialize_field("rncp_listener_enabled", &self.rncp_listener_enabled)?;
         s.serialize_field("rncp_listener_save_dir", &self.rncp_listener_save_dir)?;
@@ -960,6 +966,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             #[serde(default)]
             nomad_serving_content_source: Option<String>,
             #[serde(default)]
+            nomad_serving_allow_executable_pages: bool,
+            #[serde(default)]
             rncp_listener_enabled: bool,
             #[serde(default)]
             rncp_listener_save_dir: Option<String>,
@@ -1005,10 +1013,10 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             propagation_auto_blacklist: {
                 let mut cleaned = Vec::new();
                 for raw_hash in raw.propagation_auto_blacklist {
-                    if let Ok(hash) = Self::normalize_propagation_auto_blacklist_hash(&raw_hash) {
-                        if !cleaned.iter().any(|h| h == &hash) {
-                            cleaned.push(hash);
-                        }
+                    if let Ok(hash) = Self::normalize_propagation_auto_blacklist_hash(&raw_hash)
+                        && !cleaned.iter().any(|h| h == &hash)
+                    {
+                        cleaned.push(hash);
                     }
                     if cleaned.len() >= Self::PROPAGATION_AUTO_BLACKLIST_CAP {
                         break;
@@ -1022,6 +1030,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_serving_enabled: raw.nomad_serving_enabled,
             nomad_serving_display_name: raw.nomad_serving_display_name,
             nomad_serving_content_source: raw.nomad_serving_content_source,
+            nomad_serving_allow_executable_pages: raw.nomad_serving_allow_executable_pages,
             rncp_listener_enabled: raw.rncp_listener_enabled,
             rncp_listener_save_dir: raw.rncp_listener_save_dir,
             rncp_listener_allow_fetch: raw.rncp_listener_allow_fetch,
@@ -1341,6 +1350,7 @@ mod tests {
         state.nomad_serving_enabled = true;
         state.nomad_serving_display_name = Some("Home".into());
         state.nomad_serving_content_source = Some("/tmp/nomad-page".into());
+        state.nomad_serving_allow_executable_pages = true;
         let json = serde_json::to_string(&state).expect("serialize");
         let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
         assert!(loaded.nomad_serving_enabled);
@@ -1349,6 +1359,7 @@ mod tests {
             loaded.nomad_serving_content_source.as_deref(),
             Some("/tmp/nomad-page")
         );
+        assert!(loaded.nomad_serving_allow_executable_pages);
 
         // Strip the new keys from a valid serialized document (older clients).
         let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
@@ -1356,11 +1367,13 @@ mod tests {
         obj.remove("nomad_serving_enabled");
         obj.remove("nomad_serving_display_name");
         obj.remove("nomad_serving_content_source");
+        obj.remove("nomad_serving_allow_executable_pages");
         let legacy_state: PersistedState =
             serde_json::from_value(value).expect("legacy without serving keys");
         assert!(!legacy_state.nomad_serving_enabled);
         assert!(legacy_state.nomad_serving_display_name.is_none());
         assert!(legacy_state.nomad_serving_content_source.is_none());
+        assert!(!legacy_state.nomad_serving_allow_executable_pages);
     }
 
     #[test]

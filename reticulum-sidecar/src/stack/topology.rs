@@ -59,20 +59,21 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
             edges.push(TopologyEdge { source, target });
         }
 
-        if let Some(via) = peer.via_hash.as_ref() {
-            if !via.is_empty() && !peer_by_hash.contains_key(via) {
-                let relay_hops = peer.hops.map(|h| h.saturating_sub(1));
-                peer_by_hash.entry(via.clone()).or_insert(PeerRow {
-                    destination_hash: via.clone(),
-                    display_name: None,
-                    hops: relay_hops,
-                    last_seen: peer.last_seen,
-                    interface: peer.interface.clone(),
-                    path_hash: None,
-                    via_hash: None,
-                    public_key: None,
-                });
-            }
+        if let Some(via) = peer.via_hash.as_ref()
+            && !via.is_empty()
+            && !peer_by_hash.contains_key(via)
+        {
+            let relay_hops = peer.hops.map(|h| h.saturating_sub(1));
+            peer_by_hash.entry(via.clone()).or_insert(PeerRow {
+                destination_hash: via.clone(),
+                display_name: None,
+                hops: relay_hops,
+                last_seen: peer.last_seen,
+                interface: peer.interface.clone(),
+                path_hash: None,
+                via_hash: None,
+                public_key: None,
+            });
         }
     }
 
@@ -242,10 +243,10 @@ pub fn resolve_contact_name_for_upsert(
     stored_name: Option<&str>,
     cache_name: Option<&str>,
 ) -> Option<String> {
-    if let Some(name) = stored_name.map(str::trim).filter(|n| !n.is_empty()) {
-        if !is_hash_prefix_alias(hash, name) {
-            return Some(name.to_string());
-        }
+    if let Some(name) = stored_name.map(str::trim).filter(|n| !n.is_empty())
+        && !is_hash_prefix_alias(hash, name)
+    {
+        return Some(name.to_string());
     }
     cache_name
         .map(str::trim)

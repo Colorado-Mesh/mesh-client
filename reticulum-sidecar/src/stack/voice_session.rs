@@ -76,10 +76,11 @@ const VOICE_AUDIO_BROADCAST_CAP: usize = 256;
 
 /// Insert or refresh a dest→identity mapping; evict an arbitrary entry when full.
 fn insert_dest_identity_bounded(cache: &mut HashMap<String, String>, dest: String, id: String) {
-    if cache.len() >= MAX_DEST_TO_IDENTITY_CACHE && !cache.contains_key(&dest) {
-        if let Some(evict) = cache.keys().next().cloned() {
-            cache.remove(&evict);
-        }
+    if cache.len() >= MAX_DEST_TO_IDENTITY_CACHE
+        && !cache.contains_key(&dest)
+        && let Some(evict) = cache.keys().next().cloned()
+    {
+        cache.remove(&evict);
     }
     cache.insert(dest, id);
 }
@@ -493,10 +494,10 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             {
                 let mut st = shared.state.write().await;
                 st.active_call = active.clone();
-                if let Some(c) = snap.active_call.as_ref() {
-                    if c.status == SignallingStatus::Established {
-                        mark_audit_established(&mut st);
-                    }
+                if let Some(c) = snap.active_call.as_ref()
+                    && c.status == SignallingStatus::Established
+                {
+                    mark_audit_established(&mut st);
                 }
             }
             emit(
@@ -842,7 +843,7 @@ pub fn decode_samples_b64(samples_b64: &str) -> Result<Vec<f32>, String> {
         return Err("samples_b64 length must be multiple of 4".into());
     }
     let mut samples = Vec::with_capacity(bytes.len() / 4);
-    for chunk in bytes.chunks_exact(4) {
+    for chunk in bytes.as_chunks::<4>().0 {
         samples.push(f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
     }
     Ok(samples)

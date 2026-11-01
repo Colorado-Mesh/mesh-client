@@ -103,10 +103,10 @@ pub async fn rncp_fetch(
     if let Some(err) = reject_oversize("remote_path", &body.remote_path, MAX_PATH_CHARS) {
         return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
     }
-    if let Some(save_path) = body.save_path.as_deref() {
-        if let Some(err) = reject_oversize("save_path", save_path, MAX_PATH_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
-        }
+    if let Some(save_path) = body.save_path.as_deref()
+        && let Some(err) = reject_oversize("save_path", save_path, MAX_PATH_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
     }
     let capability = if body.save_path.is_some() {
         let capability_body = serde_json::to_value(&body).expect("RNCP fetch body serializes");
@@ -183,15 +183,15 @@ pub async fn set_rncp_listener(
     headers: HeaderMap,
     Json(body): Json<RncpListenerBody>,
 ) -> Response {
-    if let Some(save_dir) = body.save_dir.as_deref() {
-        if let Some(err) = reject_oversize("save_dir", save_dir, MAX_PATH_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
-        }
+    if let Some(save_dir) = body.save_dir.as_deref()
+        && let Some(err) = reject_oversize("save_dir", save_dir, MAX_PATH_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
     }
-    if let Some(fetch_jail) = body.fetch_jail.as_deref() {
-        if let Some(err) = reject_oversize("fetch_jail", fetch_jail, MAX_PATH_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
-        }
+    if let Some(fetch_jail) = body.fetch_jail.as_deref()
+        && let Some(err) = reject_oversize("fetch_jail", fetch_jail, MAX_PATH_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err })).into_response();
     }
     if let Some(err) = reject_oversize_list_hashes("allowed", &body.allowed) {
         return Json(serde_json::json!({ "ok": false, "error": err })).into_response();

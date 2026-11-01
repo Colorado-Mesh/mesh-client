@@ -3925,7 +3925,7 @@
       "destinationHash": "Destination",
       "copyHash": "Copier le hash",
       "copied": "Copié",
-      "stats": "{{pages}} pages · {{files}} fichiers · {{requests}} requêtes",
+      "stats": "{{pages}} pages · {{files}} fichiers · {{requests}} requêtes · {{visitors}} visiteurs",
       "myPages": "Pages locales",
       "failed": "Impossible de mettre à jour le service Nomad.",
       "previewSite": "Ouvrir dans le navigateur",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Enregistrer la liste d'accès pour {{path}}",
       "restrictLoadError": "Impossible de charger la liste d'accès.",
       "restrictSaveError": "Impossible d'enregistrer la liste d'accès.",
-      "restrictRemoveError": "Impossible de supprimer la restriction d'accès."
+      "restrictRemoveError": "Impossible de supprimer la restriction d'accès.",
+      "allowExecutablePages": "Autoriser les pages exécutables",
+      "allowExecutablePagesHint": "Exécute +x pages dans le dossier surveillé en tant que scripts CGI avec votre PATH hôte (délai d'expiration de 10 s). Activez-le uniquement si vous faites confiance à tous les fichiers de ce dossier. Changer cela pendant le service redémarre le nœud Nomad.",
+      "allowExecutablePagesUnsupported": "Les pages exécutables ne sont pas prises en charge sur Windows."
     },
     "sortLastHeard": "Dernière écoute",
     "sortHops": "Sauts",

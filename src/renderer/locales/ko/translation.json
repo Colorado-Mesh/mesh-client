@@ -3925,7 +3925,7 @@
       "destinationHash": "대상",
       "copyHash": "해시 복사",
       "copied": "복사됨",
-      "stats": "{{pages}} 페이지 · {{files}} 파일 · {{requests}} 요청",
+      "stats": "{{pages}} 페이지 · {{files}} 파일 · {{requests}} 요청 · {{visitors}} 방문자",
       "myPages": "로컬 페이지",
       "failed": "Nomad 제공을 업데이트할 수 없습니다.",
       "previewSite": "브라우저에서 열기",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "{{path}} 에 대한 액세스 목록 저장",
       "restrictLoadError": "액세스 목록을 로드할 수 없습니다.",
       "restrictSaveError": "액세스 목록을 저장할 수 없습니다.",
-      "restrictRemoveError": "액세스 제한을 제거할 수 없습니다."
+      "restrictRemoveError": "액세스 제한을 제거할 수 없습니다.",
+      "allowExecutablePages": "실행 가능한 페이지 허용",
+      "allowExecutablePagesHint": "호스트 PATH(시간 초과 10초)를 사용하여 감시 폴더의 +x 페이지를 CGI 스크립트로 실행합니다. 해당 폴더의 모든 파일을 신뢰하는 경우에만 활성화하십시오. 제공하는 동안 이를 변경하면 Nomad 노드가 다시 시작됩니다.",
+      "allowExecutablePagesUnsupported": "Windows에서는 실행 가능 페이지가 지원되지 않습니다."
     },
     "sortLastHeard": "마지막으로 들은 시간",
     "sortHops": "홉",

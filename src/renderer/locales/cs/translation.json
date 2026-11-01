@@ -3963,7 +3963,7 @@
       "destinationHash": "Cíl",
       "copyHash": "Kopírovat hash",
       "copied": "Zkopírováno",
-      "stats": "{{pages}} stránek · {{files}} souborů · {{requests}} požadavků",
+      "stats": "{{pages}} stránek · {{files}} souborů · {{requests}} požadavků · {{visitors}} návštěvníků",
       "myPages": "Místní stránky",
       "failed": "Nelze aktualizovat službu Nomad.",
       "previewSite": "Otevřít v prohlížeči",
@@ -4049,7 +4049,10 @@
       "restrictLoadError": "Nelze načíst přístupový seznam.",
       "restrictSaveError": "Nelze uložit přístupový seznam.",
       "restrictRemoveError": "Omezení přístupu se nepodařilo odstranit.",
-      "restrictStatusOn_few": "Omezeno na {{count}} identit."
+      "restrictStatusOn_few": "Omezeno na {{count}} identit.",
+      "allowExecutablePages": "Povolit spustitelné stránky",
+      "allowExecutablePagesHint": "Spustí +x stránek ve sledované složce jako CGI skripty s vaší hostitelskou PATH (časový limit 10s). Povolte pouze v případě, že důvěřujete všem souborům v této složce. Pokud toto změníte během poskytování, restartuje se uzel Nomad.",
+      "allowExecutablePagesUnsupported": "Spustitelné stránky nejsou na Windows podporovány."
     },
     "sortLastHeard": "Poslední slyšení",
     "sortHops": "Skoky",

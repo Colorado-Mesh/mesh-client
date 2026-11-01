@@ -75,6 +75,8 @@ export interface NomadServeStats {
   file_hits: number;
   not_found_count: number;
   last_request_ms?: number | null;
+  /** Distinct identified visitors since the node started (capped upstream). */
+  visitors?: number;
 }
 
 export interface NomadServingStatus {
@@ -95,6 +97,8 @@ export interface NomadServingStatus {
   watcher_status?: string | null;
   /** Stable error code when enabled but not running, or watcher degraded. */
   last_error?: string | null;
+  /** Opt-in: serve Unix `+x` pages via CGI (default false). */
+  allow_executable_pages?: boolean;
 }
 
 export interface NomadServingPageEntry {

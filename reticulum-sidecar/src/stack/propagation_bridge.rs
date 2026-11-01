@@ -239,16 +239,16 @@ impl PropagationBridge {
     /// Wait until background messagestore load has finished; returns the stored terminal result.
     pub async fn wait_messagestore_loaded(&self) -> Result<(), String> {
         loop {
-            if let Ok(guard) = self.messagestore_result.lock() {
-                if let Some(result) = guard.as_ref() {
-                    return result.clone();
-                }
+            if let Ok(guard) = self.messagestore_result.lock()
+                && let Some(result) = guard.as_ref()
+            {
+                return result.clone();
             }
             let notified = self.messagestore_notify.notified();
-            if let Ok(guard) = self.messagestore_result.lock() {
-                if let Some(result) = guard.as_ref() {
-                    return result.clone();
-                }
+            if let Ok(guard) = self.messagestore_result.lock()
+                && let Some(result) = guard.as_ref()
+            {
+                return result.clone();
             }
             notified.await;
         }
@@ -408,10 +408,10 @@ impl PropagationBridge {
         if progress <= 0.0 {
             return;
         }
-        if let Ok(mut peak) = self.peak_progress.lock() {
-            if progress > *peak {
-                *peak = progress;
-            }
+        if let Ok(mut peak) = self.peak_progress.lock()
+            && progress > *peak
+        {
+            *peak = progress;
         }
     }
 
@@ -428,10 +428,10 @@ impl PropagationBridge {
         if peak >= 25.0 {
             return;
         }
-        if let Ok(mut slot) = self.last_establish_error.lock() {
-            if slot.is_none() {
-                *slot = Some("NoLinkProof");
-            }
+        if let Ok(mut slot) = self.last_establish_error.lock()
+            && slot.is_none()
+        {
+            *slot = Some("NoLinkProof");
         }
     }
 
@@ -558,18 +558,18 @@ impl PropagationBridge {
             return ClientDownloadPoll::Idle;
         }
         client.drain_events(known_identities);
-        if let Some(err) = client.last_establish_error() {
-            if let Ok(mut slot) = self.last_establish_error.lock() {
-                *slot = Some(err);
-            }
+        if let Some(err) = client.last_establish_error()
+            && let Ok(mut slot) = self.last_establish_error.lock()
+        {
+            *slot = Some(err);
         }
         client.tick();
         // LinkEstablishTimeout is stamped inside tick() on Closed(Timeout); copy
         // again so a same-poll Failed terminal still surfaces the sticky reason.
-        if let Some(err) = client.last_establish_error() {
-            if let Ok(mut slot) = self.last_establish_error.lock() {
-                *slot = Some(err);
-            }
+        if let Some(err) = client.last_establish_error()
+            && let Ok(mut slot) = self.last_establish_error.lock()
+        {
+            *slot = Some(err);
         }
         match client.state() {
             PropagationClientState::Idle => ClientDownloadPoll::Idle,
@@ -1011,10 +1011,10 @@ pub(crate) fn apply_peer_sync_terminal(
                 peer.sync_transfer_rate = rate;
             }
             peer.sync_complete();
-            if result.generation_exhausted {
-                if let Some(generation) = result.offer_generation {
-                    peer.mark_offer_generation_processed(generation);
-                }
+            if result.generation_exhausted
+                && let Some(generation) = result.offer_generation
+            {
+                peer.mark_offer_generation_processed(generation);
             }
         }
         PeerSyncTerminalState::Failed => {
@@ -1032,15 +1032,15 @@ fn persist_router_peer(
     let Some(peer) = router.peers.get(&peer_hash) else {
         return;
     };
-    if let Ok(node) = local_node.lock() {
-        if let Err(error) = node.save_peer(peer) {
-            tracing::warn!(
-                target: "propagation-sync",
-                peer = %hex::encode(peer_hash),
-                error = %error,
-                "failed to persist peer sync state"
-            );
-        }
+    if let Ok(node) = local_node.lock()
+        && let Err(error) = node.save_peer(peer)
+    {
+        tracing::warn!(
+            target: "propagation-sync",
+            peer = %hex::encode(peer_hash),
+            error = %error,
+            "failed to persist peer sync state"
+        );
     }
 }
 

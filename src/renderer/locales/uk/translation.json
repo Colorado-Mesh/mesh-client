@@ -3995,7 +3995,7 @@
       "destinationHash": "Призначення",
       "copyHash": "Копіювати хеш",
       "copied": "Скопійовано",
-      "stats": "{{pages}} сторінок · {{files}} файлів · {{requests}} запитів",
+      "stats": "{{pages}} сторінок · {{files}} файлів · {{requests}} запитів · {{visitors}} відвідувачів",
       "myPages": "Локальні сторінки",
       "failed": "Не вдалося оновити публікацію Nomad.",
       "previewSite": "Відкрити у переглядачі",
@@ -4082,7 +4082,10 @@
       "restrictSaveError": "Не вдалося зберегти список доступу.",
       "restrictRemoveError": "Не вдалося зняти обмеження доступу.",
       "restrictStatusOn_few": "Доступно лише для {{count}} ідентичностей.",
-      "restrictStatusOn_many": "Доступно лише для {{count}} ідентичностей."
+      "restrictStatusOn_many": "Доступно лише для {{count}} ідентичностей.",
+      "allowExecutablePages": "Дозволити виконувані сторінки",
+      "allowExecutablePagesHint": "Запускає +x сторінок у переглянутій папці як сценарії CGI з ШЛЯХОМ хосту (тайм-аут 10 с). Увімкніть, лише якщо ви довіряєте кожному файлу в цій папці. Зміна цього під час обслуговування перезапускає вузол Nomad.",
+      "allowExecutablePagesUnsupported": "Виконувані сторінки не підтримуються на Windows."
     },
     "sortLastHeard": "Останнє прослуховування",
     "sortHops": "Хопи",
