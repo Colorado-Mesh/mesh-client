@@ -954,7 +954,34 @@
     "outboxScheduledEdit": "Bearbeiten",
     "outboxScheduledEditAria": "Geplante Nachricht bearbeiten",
     "outboxScheduledSendNow": "Jetzt abschicken",
-    "outboxScheduledSendNowAria": "Jetzt geplante Nachricht senden"
+    "outboxScheduledSendNowAria": "Jetzt geplante Nachricht senden",
+    "attachment": {
+      "attachAria": "Datei oder Foto anhängen",
+      "attachFile": "Datei anhängen…",
+      "attachPhoto": "Foto anhängen…",
+      "cancelAria": "Senden von {{name}} abbrechen",
+      "cancelled": "Senden des Anhangs abgebrochen.",
+      "errors": {
+        "cacheFailed": "Der Anhang konnte lokal nicht gespeichert werden und wurde nicht gesendet.",
+        "empty": "Diese Datei ist leer.",
+        "photoDecodeFailed": "Dieses Foto konnte nicht verarbeitet werden. Versuchen Sie ein anderes Bild.",
+        "photoTooLarge": "Dieses Foto ist zum Senden zu groß.",
+        "photoUnsupported": "Es können nur PNG-, JPEG-, WebP- und GIF-Fotos gesendet werden.",
+        "readFailed": "Die ausgewählte Datei konnte nicht gelesen werden.",
+        "runtimeUnavailable": "Reticulum ist nicht bereit. Starten Sie den Stack und versuchen Sie es erneut.",
+        "sendFailed": "Der Anhang konnte nicht gesendet werden.",
+        "tooLarge": "Anhänge sind auf insgesamt {{limitKib}} KiB pro Nachricht begrenzt. Für größere Dateien nutzen Sie Remote rncp.",
+        "tooLargeForPropagation": "Der Anhang ist für einen Propagation-Knoten zu groß — er kann nur zugestellt werden, solange der Peer erreichbar ist.",
+        "tooMany": "Hängen Sie höchstens {{count}} Dateien pro Nachricht an."
+      },
+      "fileInputAria": "Dateien zum Senden auswählen",
+      "menuAria": "An LXMF-Nachricht anhängen",
+      "photoInputAria": "Foto zum Senden auswählen",
+      "progressAria": "Sendefortschritt für {{name}}",
+      "sending": "{{name}} wird gesendet…",
+      "tooltip": "Dateien oder ein Foto in dieser LXMF-Direktnachricht senden (nativer Anhang — nicht rncp). Bis zu {{count}} Dateien, insgesamt {{limitKib}} KiB. Fotos werden verkleinert und Metadaten entfernt.",
+      "transfersAria": "Anhänge werden gesendet"
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "Das Lesen des Flash-Speichers wurde vorzeitig beendet, daher wurde keine Sicherung gespeichert. Schließen Sie das Board erneut an und versuchen Sie es noch einmal.",
       "esp32FlashSizeUnknown": "Die Flash-Größe konnte nicht ermittelt werden, daher wurde keine Sicherung erstellt. Wählen Sie das genaue Board-Modell aus und versuchen Sie es erneut.",
       "esp32FlashTooLarge": "Der Flash-Speicher dieses Boards ist größer als das Sicherungslimit von 32 MiB, daher wurde keine Sicherung erstellt.",
-      "esp32ReadVerifyFailed": "Die Prüfsumme des gelesenen Flash-Speichers stimmt nicht, daher wurde keine Sicherung gespeichert. Schließen Sie das Board erneut an und versuchen Sie es noch einmal."
+      "esp32ReadVerifyFailed": "Die Prüfsumme des gelesenen Flash-Speichers stimmt nicht, daher wurde keine Sicherung gespeichert. Schließen Sie das Board erneut an und versuchen Sie es noch einmal.",
+      "esp32ChipMismatch": "Verbundener Chip passt nicht zum gewählten Board. Nichts geschrieben. Board und USB-Port prüfen.",
+      "flashCancelled": "Flash abgebrochen.",
+      "imageExceedsFlash": "Firmware-Image größer als Flash des Geräts. Nichts geschrieben."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",
@@ -2633,7 +2663,8 @@
       "clear": "Kachel-Cache leeren",
       "clearAria": "Offline-Kartenkachel-Cache leeren",
       "cleared": "Cache geleert.",
-      "viewCacheOnly": "Angezeigte Kartenkacheln werden automatisch zwischengespeichert. Regionale Downloads sind mit USGS Topo möglich; OpenStreetMap erlaubt kein Vorabladen."
+      "viewCacheOnly": "Angezeigte Kartenkacheln werden automatisch zwischengespeichert. Regionale Downloads sind mit USGS Topo möglich; OpenStreetMap erlaubt kein Vorabladen.",
+      "viewCacheOnlyCustom": "Benutzerdefinierte Quellen werden nur für angezeigte Kacheln gecacht; kein Regions-Download. MBTiles für Offline importieren."
     },
     "basemapUsgsTopo": "USGS Topo (nur USA)",
     "layerIncidents": "NOT-HALT Vorkommnisse",
@@ -2646,7 +2677,63 @@
     "measureHint": "Klicken Sie auf die Karte, um Punkte hinzuzufügen",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "TAK-Einheiten",
-    "layerWeatherForecasts": "Wetterprognosen"
+    "layerWeatherForecasts": "Wetterprognosen",
+    "customSources": {
+      "addConfirm": "Quelle hinzufügen",
+      "addConfirmAria": "Benutzerdefinierte XYZ-Quelle hinzufügen",
+      "addXyz": "Benutzerdefinierte XYZ-Quelle hinzufügen…",
+      "addXyzAria": "Benutzerdefinierten XYZ-Kachelserver hinzufügen",
+      "added": "Hinzugefügt: {{name}}.",
+      "attributionLabel": "Attribution (erforderlich)",
+      "cancel": "Abbrechen",
+      "cancelAria": "Hinzufügen benutzerdefinierte Kartenquelle abbrechen",
+      "clearCache": "Cache leeren",
+      "clearCacheAria": "Zwischengespeicherte Kacheln für {{name}} leeren",
+      "confirmMbtiles": "Ich bestätige, dass ich diese Kartendaten nutzen darf und die Attribution stimmt.",
+      "confirmMbtilesAria": "Berechtigung zur Nutzung des MBTiles-Pakets bestätigen",
+      "confirmXyz": "Ich bestätige, dass ich diesen Kachelserver nutzen darf und die Attribution stimmt.",
+      "confirmXyzAria": "Berechtigung für Kachelserver bestätigen",
+      "confirmXyzHost": "Ich bestätige, dass ich Kacheln von {{host}} nutzen darf und die Attribution stimmt. Kacheln werden beim Anzeigen von diesem Host geladen.",
+      "errors": {
+        "attribution": "Attribution ist erforderlich (bis 200 Zeichen).",
+        "cancelled": "Abgebrochen.",
+        "credentials": "URLs mit Benutzername oder Passwort sind nicht erlaubt.",
+        "empty": "Kachel-URL eingeben.",
+        "host": "Host muss öffentlicher Domainname sein (keine IP, localhost oder LAN-Namen).",
+        "invalid": "Das ist keine gültige Kachel-URL.",
+        "io": "Aktion konnte nicht abgeschlossen werden. Erneut versuchen.",
+        "limit": "Zu viele benutzerdefinierte Quellen. Entfernen Sie zuerst eine.",
+        "mbtiles_invalid": "Kein gültiges MBTiles-Paket.",
+        "mbtiles_too_large": "MBTiles-Datei zu groß zum Import (Limit 2 GB).",
+        "mbtiles_vector": "Vektor-MBTiles nicht unterstützt; PNG, JPEG oder WebP verwenden.",
+        "name": "Namen eingeben (bis 60 Zeichen).",
+        "not_confirmed": "Bestätigen Sie zuerst, dass Sie die Quelle nutzen dürfen.",
+        "osm": "OpenStreetMap-Kacheln sind als Basemap eingebaut; nutzen Sie diese.",
+        "placeholders": "URL muss {z}, {x} und {y} genau einmal nach dem Host enthalten.",
+        "port": "Benutzerdefinierte Ports sind nicht erlaubt.",
+        "scheme": "Nur https://-URLs erlaubt.",
+        "too_long": "URL ist zu lang.",
+        "unknown_inspect": "Ausgewählte Datei abgelaufen. Erneut wählen.",
+        "zoom": "Zoom muss ganze Zahl von 0 bis 22 sein."
+      },
+      "heading": "Speicher & benutzerdefinierte Quellen",
+      "importConfirm": "Importieren",
+      "importConfirmAria": "MBTiles-Paket importieren",
+      "importMbtiles": "MBTiles-Paket importieren…",
+      "importMbtilesAria": "MBTiles-Paket für Offline-Nutzung importieren",
+      "imported": "Importiert: {{name}}.",
+      "maxZoomLabel": "Höchster Zoom des Servers (optional)",
+      "mbtilesMeta": "MBTiles · Zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}}-Kacheln, Zoom {{minZoom}}–{{maxZoom}}, {{size}}. Datei wird in App-Speicher kopiert.",
+      "nameLabel": "Name",
+      "policyNote": "Benutzerdefinierte Server werden nur für angezeigte Kacheln kontaktiert. Kein Massen-Download.",
+      "remove": "Entfernen",
+      "removeAria": "Benutzerdefinierte Kartenquelle {{name}} entfernen",
+      "storageAria": "Karten-Speicher nach Quelle",
+      "urlLabel": "Kachel-URL (https, mit {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · Cache begrenzt auf {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -5716,8 +5803,6 @@
     "serverNameLabel": "Servername",
     "requireCert": "Client-Zertifikat erforderlich (mTLS)",
     "autoStart": "Automatischer Start beim Anwendungsstart",
-    "mecpAlarm": "ATAK-Notfallalarm bei MECP-MAYDAY auslösen",
-    "mecpAlarmHint": "Jeder in einem Kanal kann ein MAYDAY senden, daher ist der Alarm aus, bis Sie ihn einschalten. Er ertönt einmal für jedes MAYDAY mit Position, nie für eine Übung, einen blockierten Absender oder eine von der App stummgeschaltete Warnung, und wird aufgehoben, wenn der Vorfall gelöst oder sein Notsignal beendet wird.",
     "starting": "Beginnend mit …",
     "startServer": "Starten Sie den Server",
     "stopping": "Anhalten…",
@@ -5902,7 +5987,9 @@
     "channelCallsign": "Rufzeichen hinzufügen",
     "channelCallsignFor": "Setzen Sie das ATAK-Rufzeichen des Absenders vor Nachrichten, die an {{channel}} gesendet werden",
     "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt.",
-    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt."
+    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt.",
+    "mecpAlarm": "ATAK-Notfallalarm bei MECP-MAYDAY auslösen",
+    "mecpAlarmHint": "Jeder in einem Kanal kann ein MAYDAY senden, daher ist der Alarm aus, bis Sie ihn einschalten. Er ertönt einmal für jedes MAYDAY mit Position, nie für eine Übung, einen blockierten Absender oder eine von der App stummgeschaltete Warnung, und wird aufgehoben, wenn der Vorfall gelöst oder sein Notsignal beendet wird."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -8009,5 +8096,93 @@
     "interrupt": "Senden Strg+C",
     "interruptShort": "Strg + C",
     "clear": "Löschen"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Ich bestätige, dass das USB-verbundene Gerät ein {{board}} ist, es einen stabilen Kabelanschluss und Stromversorgung hat und ich Einstellungen und Schlüssel gesichert habe.",
+    "aria": {
+      "acknowledge": "Flash-Checkliste bestätigen",
+      "board": "Zu flashendes Board",
+      "cancel": "Firmware-Flash abbrechen",
+      "expectedSha": "Erwartete SHA-256-Prüfsumme",
+      "file": "Zu flashende Firmware-Datei",
+      "flash": "Firmware auf das Gerät flashen"
+    },
+    "blockers": {
+      "boardMismatch": "Das ausgewählte Board passt nicht zum verbundenen Funkgerät.",
+      "boardUnsupported": "Das verbundene Funkgerät ist kein unterstütztes Board.",
+      "lowBattery": "Akku unter {{percent}} % — Gerät laden oder ans Netzteil anschließen und erneut versuchen.",
+      "noBoard": "Board auswählen.",
+      "noImage": "Gültige Firmware-Datei auswählen.",
+      "notAcknowledged": "Bestätigen Sie die Checkliste unten.",
+      "serialConnectionOpen": "Trennen Sie die USB-Serial-Verbindung des Funkgeräts vor dem Flashen — Mesh Client benötigt den Port."
+    },
+    "boardLabel": "Board",
+    "boardLocked": "Vom verbundenen Funkgerät erkannt: {{board}}",
+    "boardManualHint": "Das Funkgerät wurde nicht automatisch erkannt. Wählen Sie Ihr Board manuell.",
+    "boardPlaceholder": "Board auswählen…",
+    "boardUnsupported": "Das verbundene Funkgerät meldet „{{reported}}“ — kein unterstütztes Flash-Ziel. Flashen ist deaktiviert.",
+    "cancel": "Flash abbrechen",
+    "cancelled": "Flash abgebrochen. Das Gerät muss möglicherweise erneut geflasht werden — siehe Wiederherstellung unten.",
+    "cancelling": "Wird abgebrochen…",
+    "checksum": {
+      "expectedHint": "Fügen Sie die Prüfsumme neben dem Asset auf der Release-Seite ein. Abweichung blockiert das Flashen.",
+      "expectedLabel": "Erwartete SHA-256 (optional)",
+      "fileLabel": "Datei SHA-256",
+      "payloadLabel": "Image SHA-256"
+    },
+    "enterDfuHint": "nRF52-Boards müssen zuerst im Bootloader (DFU) sein: Enter DFU mode oben, Reset doppelt tippen oder Schaltfläche unten, dann Flash.",
+    "errors": {
+      "checksumInvalid": "Die erwartete SHA-256 ist keine gültige 64-stellige Hex-Prüfsumme.",
+      "checksumMismatch": "Die Datei-SHA-256 stimmt nicht mit der erwarteten Prüfsumme überein. Nicht flashen — erneut herunterladen.",
+      "dfuPackageInvalid": "Das nRF52-DFU-Paket ist ungültig oder nicht unterstützt (legacy Serial-DFU nur Anwendung mit passender Prüfsumme).",
+      "imageAmbiguous": "Das Archiv enthält mehr als ein passendes Image. Entpacken Sie die gewünschte Datei und wählen Sie sie.",
+      "imageBoardMismatch": "Diese Firmware ist für ein anderes Board ({{detail}}). Passendes Board oder andere Datei wählen.",
+      "imageBoardMismatchGeneric": "Diese Firmware ist für ein anderes Board als das ausgewählte.",
+      "imageChipMismatch": "Das Image wurde für einen anderen Chip als das gewählte Board gebaut.",
+      "imageEmpty": "Die Firmware-Datei ist leer.",
+      "imageHeaderInvalid": "Die Datei ist kein gültiges ESP32-Firmware-Image.",
+      "imageNameUnrecognized": "Dieser Dateiname ist kein erkanntes Firmware-Image für das gewählte Board.",
+      "imageNotCompanion": "Das ist keine Companion-Radio-Firmware. Mesh Client flasht nur Companion-Images.",
+      "imageNotFoundForBoard": "Das Archiv enthält kein Firmware-Image für das gewählte Board.",
+      "imageNotFullImage": "Das ist nicht das Full-Flash-Image, das Mesh Client schreibt (.factory.bin, -merged.bin oder DFU .zip).",
+      "imageTooLarge": "Das Image ist größer als der Flash des gewählten Boards.",
+      "imageTooSmall": "Die Datei ist zu klein für ein Full-Flash-Firmware-Image.",
+      "readFailed": "Firmware-Datei konnte nicht gelesen werden."
+    },
+    "fileHint": {
+      "meshcore": "Wählen Sie companion-radio -merged.bin (ESP32) oder .zip (nRF52) für Ihr Board aus den MeshCore-Releases.",
+      "meshtastic": "Wählen Sie die Release-.zip aus Meshtastic-Firmware-Releases (firmware-esp32s3-….zip oder firmware-nrf52840-….zip) oder einzelne .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Firmware-Datei",
+    "flash": "Firmware flashen",
+    "flashing": "Flashen… {{progress}}%",
+    "imageReady": "Bereit: {{name}} ({{size}})",
+    "imageVersion": "Version: {{version}}",
+    "recovery": {
+      "docs": "Mehr: docs/troubleshooting.md, „Firmware flashing recovery“.",
+      "esp32": "ESP32: ROM-Bootloader kann nicht überschrieben werden. BOOT halten, RESET tippen, BOOT loslassen und erneut flashen oder Web-Flasher des Herstellers.",
+      "nrf52": "nRF52: RESET doppelt tippen für UF2-Bootloader (Laufwerk erscheint), .uf2 aufs Laufwerk ziehen oder hier erneut flashen.",
+      "title": "Wenn ein Flash fehlschlägt"
+    },
+    "releases": {
+      "meshcore": "MeshCore-Firmware-Releases öffnen",
+      "meshtastic": "Meshtastic-Firmware-Releases öffnen"
+    },
+    "successEsp32": "Firmware geschrieben und verifiziert. Gerät startet neu — ca. 30 Sekunden warten, dann erneut verbinden.",
+    "successNrf52": "Firmware an Bootloader gesendet. Gerät startet neu — ca. 30 Sekunden warten, dann verbinden.",
+    "summary": "Firmware per USB installieren oder aktualisieren. Nur gelistete Boards werden unterstützt; anderes wird vor dem Schreiben abgelehnt.",
+    "supportedBoards": "Unterstützte Boards: {{boards}}",
+    "title": "Geräte-Firmware flashen",
+    "validating": "Firmware wird geprüft…",
+    "warnings": {
+      "batteryUnknown": "Akkustand unbekannt — Gerät gut laden oder extern versorgen.",
+      "cable": "Daten-USB-Kabel direkt am Computer (ohne Hub); Gerät beim Flashen nicht trennen.",
+      "connectionDrops": "Funkverbindung bricht beim Neustart ab.",
+      "espBootloader": "Mesh Client setzt das Board automatisch in den ESP32-ROM-Bootloader. Sonst BOOT halten, RESET tippen, BOOT loslassen.",
+      "nrf52Bootloader": "nRF52 flasht über Serial-DFU-Bootloader. Bootloader unverändert; fehlgeschlagenes Update wiederholbar.",
+      "settingsReset": "Full-Flash kann Einstellungen, Kanäle und Schlüssel löschen. Zuerst Backup exportieren.",
+      "unverifiedBoard": "Funkgerät nicht erkannt — Boardwahl ungeprüft. Falsches Board kann Gerät unbootbar machen."
+    },
+    "warningsTitle": "Vor dem Flashen"
   }
 }

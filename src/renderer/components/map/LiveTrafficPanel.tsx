@@ -42,6 +42,7 @@ import {
 } from 'react-leaflet';
 
 import { useBeaconTraffic } from '@/renderer/hooks/useBeaconTraffic';
+import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import type { OurPosition } from '@/renderer/lib/gpsSource';
 import { groupLiveTrafficEvents, liveTrafficPointKey } from '@/renderer/lib/map/liveTrafficGroups';
@@ -62,7 +63,6 @@ import {
 } from '@/renderer/lib/map/liveTrafficModel';
 import { useFloatingMapWindow } from '@/renderer/lib/map/useFloatingMapWindow';
 import {
-  DEFAULT_MAP_BASEMAP_ID,
   getMapOverlayColors,
   isValidMapBasemapId,
   MAP_BASEMAPS,
@@ -72,6 +72,7 @@ import {
 } from '@/renderer/lib/mapBasemapUtils';
 import type { RxPacketEntry } from '@/renderer/lib/meshcore/meshcoreHookTypes';
 import type { MeshtasticRawPacketEntry } from '@/renderer/lib/rawPacketLogConstants';
+import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import type { MapViewport } from '@/renderer/stores/mapViewportStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
@@ -332,6 +333,7 @@ export default function LiveTrafficPanel({
   const floatingFeed = useFloatingMapWindow(mapFrameRef, feedWindowRef, active);
   const use24Hour = useTimeFormatStore((state) => state.use24HourTime);
   const savedBasemap = useMapLayerStore((state) => state.basemapId);
+  const customMapSources = useCustomMapSourcesStore((state) => state.sources);
   const meshtastic = meshtasticPackets !== undefined;
   // Regional feeds carry MeshCore observations only; Meshtastic always starts on its own radio.
   const [trafficSource, setTrafficSource] = useState<'local' | RegionalFeedProvider>(() =>
@@ -554,7 +556,7 @@ export default function LiveTrafficPanel({
     }
     return [...selectedPoints, ...activePoints, ...otherPoints].slice(0, MAX_MAP_MARKERS);
   }, [active, points, bounds, viewport, filteredEvents, selectedNodeIds, myNodeNum]);
-  const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
+  const basemap = useMapBasemap(basemapId);
   const localTiles = meshTilesAvailable();
   const previewTiles = import.meta.env.DEV && !localTiles;
   const tileUrl = localTiles ? basemap.url : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -829,6 +831,12 @@ export default function LiveTrafficPanel({
               <option value="dark">{t('liveTraffic.darkMap')}</option>
               <option value="osm">{t('liveTraffic.streetMap')}</option>
               {localTiles && <option value="usgs-topo">{t('liveTraffic.topographicMap')}</option>}
+              {localTiles &&
+                customMapSources?.map((source) => (
+                  <option key={source.id} value={source.id}>
+                    {source.name}
+                  </option>
+                ))}
             </select>
           </label>
         </div>

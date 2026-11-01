@@ -30,6 +30,7 @@ vi.mock('../log-service', async () => {
   return { sanitizeLogMessage: actual.sanitizeLogMessage };
 });
 
+import type { CustomMapSourcesService } from '../offline-maps/custom-sources-service';
 import type { TileCache } from '../offline-maps/tile-cache';
 import { registerOfflineMapsIpcHandlers } from './offline-maps-handlers';
 
@@ -113,5 +114,98 @@ describe('registerOfflineMapsIpcHandlers', () => {
         },
       ),
     ).toThrow(/Invalid estimate/);
+  });
+
+  it('rejects bulk download and estimate for custom source ids', () => {
+    const args = {
+      bounds: { north: 40.01, south: 40.0, east: -105.0, west: -105.01 },
+      minZoom: 14,
+      maxZoom: 14,
+      basemapId: 'xyz-0123456789ab',
+    };
+    expect(() => harness.handlers.get('offline-maps:download')!({}, args)).toThrow(
+      /Invalid download/,
+    );
+    expect(() => harness.handlers.get('offline-maps:estimate')!({}, args)).toThrow(
+      /Invalid estimate/,
+    );
+  });
+
+  it('allows clearing a custom source cache but not arbitrary ids', async () => {
+    await harness.handlers.get('offline-maps:clear')!({}, 'xyz-0123456789ab');
+    expect(cache.clearSource).toHaveBeenCalledWith('xyz-0123456789ab');
+    await expect(harness.handlers.get('offline-maps:clear')!({}, '../x')).rejects.toThrow(
+      /Invalid basemap id/,
+    );
+  });
+
+  describe('custom source channels', () => {
+    const service = {
+      list: vi.fn(() => Promise.resolve([])),
+      addXyz: vi.fn(() => Promise.resolve({ ok: false, code: 'host' })),
+      remove: vi.fn(() => Promise.resolve({ ok: true })),
+      pickMbtiles: vi.fn(() => Promise.resolve({ ok: false, code: 'cancelled' })),
+      importMbtiles: vi.fn(() => Promise.resolve({ ok: false, code: 'unknown_inspect' })),
+    };
+
+    beforeEach(() => {
+      harness.handlers.clear();
+      vi.clearAllMocks();
+      registerOfflineMapsIpcHandlers(
+        () => null,
+        () => cache,
+        () => service as unknown as CustomMapSourcesService,
+      );
+    });
+
+    it('guards every channel with assertIpcSender', async () => {
+      const event = {};
+      await harness.handlers.get('offline-maps:custom-list')!(event);
+      await harness.handlers.get('offline-maps:custom-pick-mbtiles')!(event);
+      await harness.handlers.get('offline-maps:custom-remove')!(event, 'xyz-0123456789ab');
+      expect(harness.assertIpcSender).toHaveBeenCalledWith(event, 'offline-maps:custom-list');
+      expect(harness.assertIpcSender).toHaveBeenCalledWith(
+        event,
+        'offline-maps:custom-pick-mbtiles',
+      );
+      expect(harness.assertIpcSender).toHaveBeenCalledWith(event, 'offline-maps:custom-remove');
+    });
+
+    it('forwards well-formed add/import requests and rejects malformed shapes', async () => {
+      const add = harness.handlers.get('offline-maps:custom-add-xyz')!;
+      const req = {
+        name: 'n',
+        urlTemplate: 'https://t.example.org/{z}/{x}/{y}',
+        attribution: 'a',
+        confirmed: true,
+      };
+      await add({}, req);
+      expect(service.addXyz).toHaveBeenCalledWith(req);
+      expect(() => add({}, { ...req, confirmed: 'yes' })).toThrow(/Invalid custom source/);
+      expect(() => add({}, null)).toThrow(/Invalid custom source/);
+
+      const imp = harness.handlers.get('offline-maps:custom-import-mbtiles')!;
+      // The renderer cannot smuggle a path: unknown keys (e.g. filePath) are dropped.
+      await imp(
+        {},
+        { inspectId: 'i', name: 'n', attribution: 'a', confirmed: true, filePath: '/etc/passwd' },
+      );
+      expect(service.importMbtiles).toHaveBeenCalledWith({
+        inspectId: 'i',
+        name: 'n',
+        attribution: 'a',
+        confirmed: true,
+      });
+      expect(() => imp({}, { inspectId: 1 })).toThrow(/Invalid MBTiles/);
+    });
+
+    it('throws when the custom-source service is unavailable', () => {
+      harness.handlers.clear();
+      registerOfflineMapsIpcHandlers(
+        () => null,
+        () => cache,
+      );
+      expect(() => harness.handlers.get('offline-maps:custom-list')!({})).toThrow(/not ready/);
+    });
   });
 });

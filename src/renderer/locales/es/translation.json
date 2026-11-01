@@ -954,7 +954,34 @@
     "outboxScheduledEdit": "Editar",
     "outboxScheduledEditAria": "Editar mensaje programado",
     "outboxScheduledSendNow": "Enviar ahora",
-    "outboxScheduledSendNowAria": "Enviar mensaje programado ahora"
+    "outboxScheduledSendNowAria": "Enviar mensaje programado ahora",
+    "attachment": {
+      "attachAria": "Adjuntar archivo o foto",
+      "attachFile": "Adjuntar archivo…",
+      "attachPhoto": "Adjuntar foto…",
+      "cancelAria": "Cancelar el envío de {{name}}",
+      "cancelled": "Envío del adjunto cancelado.",
+      "errors": {
+        "cacheFailed": "No se pudo guardar el adjunto localmente, así que no se envió.",
+        "empty": "Ese archivo está vacío.",
+        "photoDecodeFailed": "No se pudo procesar esa foto. Prueba otra imagen.",
+        "photoTooLarge": "Esa foto es demasiado grande para enviarla.",
+        "photoUnsupported": "Solo se pueden enviar fotos PNG, JPEG, WebP y GIF.",
+        "readFailed": "No se pudo leer el archivo seleccionado.",
+        "runtimeUnavailable": "Reticulum no está listo. Inicia la pila e inténtalo de nuevo.",
+        "sendFailed": "No se pudo enviar el adjunto.",
+        "tooLarge": "Los adjuntos están limitados a {{limitKib}} KiB en total por mensaje. Para archivos más grandes usa Remote rncp.",
+        "tooLargeForPropagation": "El adjunto es demasiado grande para un nodo de propagación; solo puede entregarse directamente mientras el par esté accesible.",
+        "tooMany": "Adjunta como máximo {{count}} archivos por mensaje."
+      },
+      "fileInputAria": "Elegir archivos para enviar",
+      "menuAria": "Adjuntar al mensaje LXMF",
+      "photoInputAria": "Elegir una foto para enviar",
+      "progressAria": "Progreso de envío de {{name}}",
+      "sending": "Enviando {{name}}…",
+      "tooltip": "Envía archivos o una foto en este mensaje directo LXMF (adjunto nativo — no rncp). Hasta {{count}} archivos, {{limitKib}} KiB en total. Las fotos se redimensionan y se eliminan metadatos.",
+      "transfersAria": "Adjuntos en envío"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "La lectura del flash terminó antes de tiempo, por lo que no se guardó ninguna copia de seguridad. Vuelva a conectar la placa e inténtelo de nuevo.",
       "esp32FlashSizeUnknown": "No se pudo detectar el tamaño del flash, por lo que no se hizo ninguna copia de seguridad. Seleccione el modelo exacto de la placa e inténtelo de nuevo.",
       "esp32FlashTooLarge": "El flash de esta placa supera el límite de copia de seguridad de 32 MiB, por lo que no se hizo ninguna copia de seguridad.",
-      "esp32ReadVerifyFailed": "La lectura del flash no superó la suma de verificación, por lo que no se guardó ninguna copia de seguridad. Vuelva a conectar la placa e inténtelo de nuevo."
+      "esp32ReadVerifyFailed": "La lectura del flash no superó la suma de verificación, por lo que no se guardó ninguna copia de seguridad. Vuelva a conectar la placa e inténtelo de nuevo.",
+      "esp32ChipMismatch": "El chip conectado no coincide con la placa. No se escribió nada. Revisa placa y puerto USB.",
+      "flashCancelled": "Flasheo cancelado.",
+      "imageExceedsFlash": "La imagen es mayor que la flash del dispositivo. No se escribió nada."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",
@@ -2633,7 +2663,8 @@
       "clear": "Borrar caché de mosaicos",
       "clearAria": "Borrar caché de mosaicos de mapas sin conexión",
       "cleared": "Carpeta del caché limpiada.",
-      "viewCacheOnly": "Las teselas visualizadas se guardan en caché automáticamente. Puedes descargar regiones con USGS Topo; OpenStreetMap no permite la descarga anticipada."
+      "viewCacheOnly": "Las teselas visualizadas se guardan en caché automáticamente. Puedes descargar regiones con USGS Topo; OpenStreetMap no permite la descarga anticipada.",
+      "viewCacheOnlyCustom": "Las fuentes personalizadas solo cachean teselas que ves; no hay descarga regional masiva. Importa MBTiles para offline."
     },
     "basemapUsgsTopo": "USGS topo (solo en EE. UU.)",
     "layerIncidents": "Incidentes de emergencia",
@@ -2646,7 +2677,63 @@
     "measureHint": "Haz clic en el mapa para añadir puntos",
     "measureTotal": "{{km}} km / {{mi}} mi",
     "layerTakContacts": "Unidades TAK",
-    "layerWeatherForecasts": "Previsiones del tiempo"
+    "layerWeatherForecasts": "Previsiones del tiempo",
+    "customSources": {
+      "addConfirm": "Añadir fuente",
+      "addConfirmAria": "Añadir fuente XYZ personalizada",
+      "addXyz": "Añadir fuente XYZ personalizada…",
+      "addXyzAria": "Añadir servidor de teselas XYZ",
+      "added": "Añadido {{name}}.",
+      "attributionLabel": "Atribución (obligatoria)",
+      "cancel": "Cancelar",
+      "cancelAria": "Cancelar añadir fuente de mapa",
+      "clearCache": "Borrar caché",
+      "clearCacheAria": "Borrar teselas en caché de {{name}}",
+      "confirmMbtiles": "Confirmo que puedo usar estos datos y que la atribución es correcta.",
+      "confirmMbtilesAria": "Confirmar permiso para MBTiles",
+      "confirmXyz": "Confirmo que puedo usar este servidor de teselas y la atribución es correcta.",
+      "confirmXyzAria": "Confirmar permiso del servidor de teselas",
+      "confirmXyzHost": "Confirmo que puedo usar teselas de {{host}} y la atribución es correcta. Se obtendrán al verlas.",
+      "errors": {
+        "attribution": "La atribución es obligatoria (hasta 200 caracteres).",
+        "cancelled": "Cancelado.",
+        "credentials": "No se permiten URL con usuario o contraseña.",
+        "empty": "Introduce una URL de teselas.",
+        "host": "El host debe ser un dominio público (sin IP, localhost ni red local).",
+        "invalid": "Esa no es una URL de teselas válida.",
+        "io": "No se pudo completar la acción. Inténtalo de nuevo.",
+        "limit": "Demasiadas fuentes personalizadas. Elimina una primero.",
+        "mbtiles_invalid": "No es un paquete MBTiles válido.",
+        "mbtiles_too_large": "Archivo MBTiles demasiado grande (límite 2 GB).",
+        "mbtiles_vector": "MBTiles vectoriales no compatibles; usa PNG, JPEG o WebP.",
+        "name": "Introduce un nombre (hasta 60 caracteres).",
+        "not_confirmed": "Confirma primero que puedes usar esta fuente.",
+        "osm": "Las teselas OpenStreetMap están integradas; úsalas.",
+        "placeholders": "La URL debe contener {z}, {x} e {y} exactamente una vez tras el host.",
+        "port": "Puertos personalizados no permitidos.",
+        "scheme": "Solo se permiten URL https://.",
+        "too_long": "La URL es demasiado larga.",
+        "unknown_inspect": "El archivo seleccionado expiró. Elígelo de nuevo.",
+        "zoom": "El zoom debe ser entero de 0 a 22."
+      },
+      "heading": "Almacenamiento y fuentes personalizadas",
+      "importConfirm": "Importar",
+      "importConfirmAria": "Importar paquete MBTiles",
+      "importMbtiles": "Importar paquete MBTiles…",
+      "importMbtilesAria": "Importar MBTiles para uso sin conexión",
+      "imported": "Importado {{name}}.",
+      "maxZoomLabel": "Zoom máximo del servidor (opcional)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "Teselas {{format}}, zoom {{minZoom}}–{{maxZoom}}, {{size}}. El archivo se copia al almacenamiento de la app.",
+      "nameLabel": "Nombre",
+      "policyNote": "Los servidores personalizados solo se contactan por teselas que ves. Nunca descarga masiva.",
+      "remove": "Eliminar",
+      "removeAria": "Eliminar fuente de mapa {{name}}",
+      "storageAria": "Almacenamiento de mapa por fuente",
+      "urlLabel": "URL de teselas (https, con {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · caché limitada a {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -5716,8 +5803,6 @@
     "serverNameLabel": "Nombre del servidor",
     "requireCert": "Requerir certificado de cliente (mTLS)",
     "autoStart": "Inicio automático al iniciar la aplicación",
-    "mecpAlarm": "Hacer sonar la alarma de emergencia de ATAK ante un MAYDAY MECP",
-    "mecpAlarmHint": "Cualquiera en un canal puede enviar un MAYDAY, así que la alarma está desactivada hasta que la active. Suena una vez por cada MAYDAY con posición, nunca por un simulacro, un remitente bloqueado o una alerta silenciada por la aplicación, y se cancela cuando el incidente se resuelve o se cancela su baliza.",
     "starting": "A partir de…",
     "startServer": "Iniciar servidor",
     "stopping": "Parada…",
@@ -5902,7 +5987,9 @@
     "channelCallsign": "Añadir indicativo de llamada",
     "channelCallsignFor": "Ponga el indicativo ATAK del remitente frente a los mensajes enviados a {{channel}}",
     "channelCallsignHint": "Con Add callsign OFF, lo que envía un dispositivo ATAK se apaga exactamente como se escribió. Desactivarlo para un canal de bot: un bot busca su comando al comienzo del mensaje, por lo que pierde uno que comienza con un indicativo de llamada.",
-    "channelRepliesHint": "Para responder a alguien de ATAK, comienza con @ y el comienzo de su nombre: @Silver estás en? sale como la respuesta de MeshCore @[Silver Eagle] estás en?. @@ responde a quien habló por última vez. Si el inicio del nombre se ajusta a varias personas escuchadas en el canal, no se envía nada y el chat dice quién coincidió."
+    "channelRepliesHint": "Para responder a alguien de ATAK, comienza con @ y el comienzo de su nombre: @Silver estás en? sale como la respuesta de MeshCore @[Silver Eagle] estás en?. @@ responde a quien habló por última vez. Si el inicio del nombre se ajusta a varias personas escuchadas en el canal, no se envía nada y el chat dice quién coincidió.",
+    "mecpAlarm": "Hacer sonar la alarma de emergencia de ATAK ante un MAYDAY MECP",
+    "mecpAlarmHint": "Cualquiera en un canal puede enviar un MAYDAY, así que la alarma está desactivada hasta que la active. Suena una vez por cada MAYDAY con posición, nunca por un simulacro, un remitente bloqueado o una alerta silenciada por la aplicación, y se cancela cuando el incidente se resuelve o se cancela su baliza."
   },
   "telemetryPanel": {
     "title": "Telemetría",
@@ -8009,5 +8096,93 @@
     "interrupt": "Enviar Ctrl+C",
     "interruptShort": "Control + C",
     "clear": "Borrar"
+  },
+  "deviceFirmware": {
+    "acknowledge": "Confirmo que el dispositivo conectado por USB es un {{board}}, tiene cable y alimentación estables y he hecho copia de seguridad de ajustes y claves.",
+    "aria": {
+      "acknowledge": "Confirmar lista de comprobación del flasheo",
+      "board": "Placa a flashear",
+      "cancel": "Cancelar el flasheo del firmware",
+      "expectedSha": "Resumen SHA-256 esperado",
+      "file": "Archivo de firmware a flashear",
+      "flash": "Flashear firmware en el dispositivo"
+    },
+    "blockers": {
+      "boardMismatch": "La placa seleccionada no coincide con la radio conectada.",
+      "boardUnsupported": "La radio conectada no es una placa compatible.",
+      "lowBattery": "La batería está por debajo del {{percent}} % — carga el dispositivo o conéctalo a la corriente e inténtalo de nuevo.",
+      "noBoard": "Selecciona una placa.",
+      "noImage": "Selecciona un archivo de firmware válido.",
+      "notAcknowledged": "Confirma la lista de comprobación abajo.",
+      "serialConnectionOpen": "Desconecta la conexión serie USB de la radio antes de flashear — Mesh Client necesita el puerto."
+    },
+    "boardLabel": "Placa",
+    "boardLocked": "Detectado desde la radio conectada: {{board}}",
+    "boardManualHint": "La radio no se identificó automáticamente. Elige la placa manualmente.",
+    "boardPlaceholder": "Selecciona tu placa…",
+    "boardUnsupported": "La radio conectada informa «{{reported}}», que no es un destino de flasheo compatible. El flasheo está deshabilitado.",
+    "cancel": "Cancelar flasheo",
+    "cancelled": "Flasheo cancelado. Puede que haya que flashear de nuevo — consulta los pasos de recuperación abajo.",
+    "cancelling": "Cancelando…",
+    "checksum": {
+      "expectedHint": "Pega el resumen que aparece junto al archivo en la página de la versión. Una discrepancia bloquea el flasheo.",
+      "expectedLabel": "SHA-256 esperado (opcional)",
+      "fileLabel": "SHA-256 del archivo",
+      "payloadLabel": "SHA-256 de la imagen"
+    },
+    "enterDfuHint": "Las placas nRF52 deben estar en bootloader (DFU): usa Enter DFU mode arriba, doble toque en reset o el botón abajo, luego Flash.",
+    "errors": {
+      "checksumInvalid": "El SHA-256 esperado no es un resumen hex de 64 caracteres válido.",
+      "checksumMismatch": "El SHA-256 del archivo no coincide con el resumen esperado. No flashees — descárgalo de nuevo.",
+      "dfuPackageInvalid": "El paquete DFU nRF52 no es válido o no es compatible (DFU serial legacy solo aplicación con checksum coincidente).",
+      "imageAmbiguous": "El archivo contiene más de una imagen coincidente. Extrae el archivo exacto y selecciónalo.",
+      "imageBoardMismatch": "Este firmware es para otra placa ({{detail}}). Elige la placa correcta u otro archivo.",
+      "imageBoardMismatchGeneric": "Este firmware es para una placa distinta a la seleccionada.",
+      "imageChipMismatch": "La imagen se compiló para un chip distinto al de la placa seleccionada.",
+      "imageEmpty": "El archivo de firmware está vacío.",
+      "imageHeaderInvalid": "El archivo no es una imagen de firmware ESP32 válida.",
+      "imageNameUnrecognized": "Este nombre de archivo no es una imagen de firmware reconocida para la placa seleccionada.",
+      "imageNotCompanion": "No es firmware de radio companion. Mesh Client solo flashea imágenes companion.",
+      "imageNotFoundForBoard": "El archivo no contiene imagen de firmware para la placa seleccionada.",
+      "imageNotFullImage": "No es la imagen de flasheo completa que escribe Mesh Client (usa .factory.bin, -merged.bin o DFU .zip).",
+      "imageTooLarge": "La imagen es más grande que la flash de la placa seleccionada.",
+      "imageTooSmall": "El archivo es demasiado pequeño para ser imagen full-flash.",
+      "readFailed": "No se pudo leer el archivo de firmware."
+    },
+    "fileHint": {
+      "meshcore": "Elige companion-radio -merged.bin (ESP32) o .zip (nRF52) para tu placa en los releases de MeshCore.",
+      "meshtastic": "Elige el .zip del release de firmware Meshtastic (firmware-esp32s3-….zip o firmware-nrf52840-….zip) o un .factory.bin / -ota.zip."
+    },
+    "firmwareFile": "Archivo de firmware",
+    "flash": "Flashear firmware",
+    "flashing": "Flasheando… {{progress}}%",
+    "imageReady": "Listo: {{name}} ({{size}})",
+    "imageVersion": "Versión: {{version}}",
+    "recovery": {
+      "docs": "Más: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: el bootloader ROM no se puede sobrescribir. Mantén BOOT, pulsa RESET, suelta BOOT y flashea de nuevo, o usa el flasher web del fabricante.",
+      "nrf52": "nRF52: doble toque en RESET para bootloader UF2 (aparece unidad), arrastra el .uf2 de la placa o reintenta aquí.",
+      "title": "Si falla el flasheo"
+    },
+    "releases": {
+      "meshcore": "Abrir releases de firmware MeshCore",
+      "meshtastic": "Abrir releases de firmware Meshtastic"
+    },
+    "successEsp32": "Firmware escrito y verificado. El dispositivo reinicia — espera unos 30 segundos y reconecta.",
+    "successNrf52": "Firmware enviado al bootloader. Reinicio — espera ~30 s y reconecta.",
+    "summary": "Instala o actualiza firmware por USB. Solo las placas listadas; lo demás se rechaza antes de escribir.",
+    "supportedBoards": "Placas compatibles: {{boards}}",
+    "title": "Flashear firmware del dispositivo",
+    "validating": "Comprobando firmware…",
+    "warnings": {
+      "batteryUnknown": "Nivel de batería desconocido — asegúrate de que esté cargado o alimentado externamente.",
+      "cable": "Cable USB de datos directo al equipo (sin hub) y no desconectes mientras flasheas.",
+      "connectionDrops": "La conexión con la radio se cortará al reiniciar.",
+      "espBootloader": "Mesh Client reinicia la placa al bootloader ROM ESP32. Si no, mantén BOOT, pulsa RESET, suelta BOOT.",
+      "nrf52Bootloader": "nRF52 flashea por bootloader DFU serial. El bootloader no se toca; reintenta si falla.",
+      "settingsReset": "Imagen full-flash puede borrar ajustes, canales y claves. Exporta backup primero.",
+      "unverifiedBoard": "Radio no identificada — elección de placa sin verificar. Placa incorrecta puede inutilizar el dispositivo."
+    },
+    "warningsTitle": "Antes de flashear"
   }
 }

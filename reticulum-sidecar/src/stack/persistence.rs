@@ -786,6 +786,9 @@ impl PersistedState {
         if !self.identity.configured {
             return Err("identity not configured".into());
         }
+        if !req.attachments.is_empty() || req.image.is_some() {
+            return Err("lxmf attachments require live rns-stack sidecar".into());
+        }
         let ts = Self::now_secs();
         // Contacts are manual-only; offline/mock send must not auto-add the recipient.
         let sent_via = resolve_outbound_sent_via(&self.interfaces);
@@ -1166,6 +1169,8 @@ mod tests {
                 reply_to_id: None,
                 reply_preview_text: None,
                 audio: None,
+                attachments: Vec::new(),
+                image: None,
             })
             .expect("send");
         assert_eq!(payload["to_hash"], dest);

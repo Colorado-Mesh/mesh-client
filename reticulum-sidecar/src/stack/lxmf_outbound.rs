@@ -345,6 +345,19 @@ impl LxmfOutboundDriver {
         self.propagation_sync_target
     }
 
+    /// Cancel an in-flight Direct link delivery for `hash` and drop per-message cascade
+    /// bookkeeping so a later retry starts clean. Returns whether a link-side delivery
+    /// (active or queued behind a reusable link) was cancelled.
+    pub fn cancel_message(&mut self, hash: &[u8; 32]) -> bool {
+        let cancelled = self.link_delivery.cancel_delivery_by_message_hash(*hash);
+        self.pn_cascade_tried.remove(hash);
+        self.pn_cascade_local.remove(hash);
+        self.pn_deposit_defer_counts.remove(hash);
+        self.direct_path_failovers.remove(hash);
+        self.pending_pn_targets.remove(hash);
+        cancelled
+    }
+
     /// True when a packed deposit / Direct session already holds a Link to `dest`.
     pub fn has_inflight_delivery_to(&self, dest: &[u8; 16]) -> bool {
         self.link_delivery.has_pending_to(dest)
@@ -2021,6 +2034,24 @@ fn emit_outbound_status_by_hash(
         None,
         status,
         delivery_method,
+        None,
+    );
+}
+
+/// Terminal `failed` status with `error: "cancelled"` after a user cancel (attachment send).
+pub fn emit_outbound_cancelled(event_tx: &broadcast::Sender<String>, message_hash: &str) {
+    emit_outbound_status_detailed_with_attempts(
+        event_tx,
+        Some(serde_json::Value::String(message_hash.into())),
+        None,
+        "failed",
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("cancelled"),
+        None,
         None,
     );
 }

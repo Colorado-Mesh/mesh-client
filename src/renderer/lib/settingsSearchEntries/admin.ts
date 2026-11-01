@@ -67,15 +67,30 @@ const adminEntries: readonly SettingSearchEntry[] = [
     keywords: ['factory reset', 'wipe', 'erase', 'defaults'],
     visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasFactoryReset,
   },
+  {
+    id: 'admin.firmware.flashDevice',
+    slot: 'Admin',
+    labelKey: 'deviceFirmware.title',
+    sectionKey: 'deviceFirmware.title',
+    keywords: ['firmware', 'flash', 'esp32', 'nrf52', 'dfu', 'ota'],
+    visible: (ctx) => hasAdminPanel(ctx) && ctx.capabilities.hasDeviceFirmwareFlash,
+  },
 ];
 
 const DIALOG = 'confirmation dialog copy for an indexed device command';
 
 export const adminSurface: SettingsSearchSurface = {
   entries: adminEntries,
-  files: [{ path: 'src/renderer/components/AdminPanel.tsx', sweepAllKeys: true }],
+  files: [
+    { path: 'src/renderer/components/AdminPanel.tsx', sweepAllKeys: true },
+    {
+      path: 'src/renderer/components/flasher/DeviceFirmwareFlashSection.tsx',
+      sweepAllKeys: true,
+    },
+  ],
   exempt: {
     'tabs.admin': 'panel heading; the launcher already lists the Admin panel',
+    'deviceFirmware.*': 'firmware flash UI copy; section title is indexed',
     'radioPanel.actionCompleted': 'success toast, not a control',
     'radioPanel.actionFailed': 'error toast, not a control',
     'radioPanel.connectToConfigure': 'disconnected banner, not a control',

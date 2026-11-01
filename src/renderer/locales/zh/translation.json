@@ -954,7 +954,34 @@
     "outboxStatusScheduledDue": "已安排—正在等待发送",
     "outboxScheduledEditAria": "编辑定时消息",
     "outboxScheduledSendNow": "现在发送",
-    "outboxScheduledSendNowAria": "立即发送定时消息"
+    "outboxScheduledSendNowAria": "立即发送定时消息",
+    "attachment": {
+      "attachAria": "附加文件或照片",
+      "attachFile": "附加文件…",
+      "attachPhoto": "附加照片…",
+      "cancelAria": "取消发送 {{name}}",
+      "cancelled": "附件发送已取消。",
+      "errors": {
+        "cacheFailed": "无法在本地存储附件，因此未发送。",
+        "empty": "该文件为空。",
+        "photoDecodeFailed": "无法处理该照片。请尝试其他图片。",
+        "photoTooLarge": "该照片太大，无法发送。",
+        "photoUnsupported": "只能发送 PNG、JPEG、WebP 和 GIF 照片。",
+        "readFailed": "无法读取所选文件。",
+        "runtimeUnavailable": "Reticulum 未就绪。请启动堆栈后重试。",
+        "sendFailed": "无法发送附件。",
+        "tooLarge": "每条消息的附件总大小限制为 {{limitKib}} KiB。更大文件请使用 Remote rncp。",
+        "tooLargeForPropagation": "附件对 propagation 节点来说过大 — 仅在对方可达时可直接送达。",
+        "tooMany": "每条消息最多附加 {{count}} 个文件。"
+      },
+      "fileInputAria": "选择要发送的文件",
+      "menuAria": "附加到 LXMF 消息",
+      "photoInputAria": "选择要发送的照片",
+      "progressAria": "{{name}} 的发送进度",
+      "sending": "正在发送 {{name}}…",
+      "tooltip": "在此 LXMF 私信中发送文件或照片（原生附件 — 非 rncp）。最多 {{count}} 个文件，共 {{limitKib}} KiB。照片会缩放并去除元数据。",
+      "transfersAria": "正在发送的附件"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "闪存读取提前结束，因此未保存备份。请重新连接开发板后重试。",
       "esp32FlashSizeUnknown": "无法检测闪存大小，因此未进行备份。请选择确切的开发板型号后重试。",
       "esp32FlashTooLarge": "此开发板的闪存超过 32 MiB 备份上限，因此未进行备份。",
-      "esp32ReadVerifyFailed": "闪存读取未通过校验和验证，因此未保存备份。请重新连接开发板后重试。"
+      "esp32ReadVerifyFailed": "闪存读取未通过校验和验证，因此未保存备份。请重新连接开发板后重试。",
+      "esp32ChipMismatch": "连接的芯片与所选板型不符。未写入任何数据。请检查板型和 USB 端口。",
+      "flashCancelled": "刷写已取消。",
+      "imageExceedsFlash": "固件镜像大于设备 flash。未写入任何数据。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",
@@ -2633,7 +2663,8 @@
       "clear": "清除磁贴缓存",
       "clearAria": "清除离线地图图块缓存",
       "cleared": "缓存已清除。",
-      "viewCacheOnly": "已查看的地图瓦片会自动缓存。USGS Topo 支持下载区域地图；OpenStreetMap 不允许预先下载。"
+      "viewCacheOnly": "已查看的地图瓦片会自动缓存。USGS Topo 支持下载区域地图；OpenStreetMap 不允许预先下载。",
+      "viewCacheOnlyCustom": "自定义源仅缓存您查看的瓦片；无法批量下载区域。离线请导入 MBTiles 包。"
     },
     "basemapUsgsTopo": "USGS Topo （仅限美国）",
     "layerIncidents": "紧急事件",
@@ -2646,7 +2677,63 @@
     "measureHint": "单击地图以添加点",
     "measureTotal": "{{km}}公里/{{mi}}英里",
     "layerTakContacts": "TAK单位",
-    "layerWeatherForecasts": "天气预报"
+    "layerWeatherForecasts": "天气预报",
+    "customSources": {
+      "addConfirm": "添加源",
+      "addConfirmAria": "添加自定义 XYZ 源",
+      "addXyz": "添加自定义 XYZ 源…",
+      "addXyzAria": "添加自定义 XYZ 瓦片服务器",
+      "added": "已添加 {{name}}。",
+      "attributionLabel": "署名（必填）",
+      "cancel": "取消",
+      "cancelAria": "取消添加自定义地图源",
+      "clearCache": "清除缓存",
+      "clearCacheAria": "清除 {{name}} 的缓存瓦片",
+      "confirmMbtiles": "我确认有权使用此地图数据且上方署名正确。",
+      "confirmMbtilesAria": "确认使用 MBTiles 包的权限",
+      "confirmXyz": "我确认有权使用此瓦片服务器且上方署名正确。",
+      "confirmXyzAria": "确认瓦片服务器使用权限",
+      "confirmXyzHost": "我确认可使用来自 {{host}} 的瓦片且署名正确。查看时从该主机获取。",
+      "errors": {
+        "attribution": "署名必填（最多 200 字符）。",
+        "cancelled": "已取消。",
+        "credentials": "不允许带用户名或密码的 URL。",
+        "empty": "请输入瓦片 URL。",
+        "host": "主机必须是公网域名（不可为 IP、localhost 或局域网名称）。",
+        "invalid": "不是有效的瓦片 URL。",
+        "io": "无法完成该操作。请重试。",
+        "limit": "自定义源过多。请先移除一个。",
+        "mbtiles_invalid": "不是有效的 MBTiles 包。",
+        "mbtiles_too_large": "MBTiles 文件过大（上限 2 GB）。",
+        "mbtiles_vector": "不支持矢量 MBTiles；请使用 PNG、JPEG 或 WebP。",
+        "name": "请输入名称（最多 60 字符）。",
+        "not_confirmed": "请先确认您有权使用此源。",
+        "osm": "OpenStreetMap 瓦片为内置底图；请使用该选项。",
+        "placeholders": "URL 在主机后必须各包含一次 {z}、{x} 和 {y}。",
+        "port": "不允许自定义端口。",
+        "scheme": "仅允许 https:// URL。",
+        "too_long": "URL 过长。",
+        "unknown_inspect": "所选文件已过期。请重新选择。",
+        "zoom": "缩放级别必须是 0 到 22 的整数。"
+      },
+      "heading": "存储与自定义源",
+      "importConfirm": "导入",
+      "importConfirmAria": "导入 MBTiles 包",
+      "importMbtiles": "导入 MBTiles 包…",
+      "importMbtilesAria": "导入 MBTiles 包以供离线使用",
+      "imported": "已导入 {{name}}。",
+      "maxZoomLabel": "服务器提供的最高缩放（可选）",
+      "mbtilesMeta": "MBTiles · 缩放 {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}} 瓦片，缩放 {{minZoom}}–{{maxZoom}}，{{size}}。文件将复制到应用存储。",
+      "nameLabel": "名称",
+      "policyNote": "自定义服务器仅在您查看瓦片时联系；不会批量下载。",
+      "remove": "移除",
+      "removeAria": "移除自定义地图源 {{name}}",
+      "storageAria": "按源的地图存储",
+      "urlLabel": "瓦片 URL（https，含 {z} {x} {y}）",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · 缓存上限 {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -5716,8 +5803,6 @@
     "serverNameLabel": "服务器名称",
     "requireCert": "需要客户端证书 (mTLS)",
     "autoStart": "应用程序启动时自动启动",
-    "mecpAlarm": "收到 MECP MAYDAY 时触发 ATAK 紧急警报",
-    "mecpAlarmHint": "频道上的任何人都能发送 MAYDAY，因此警报默认关闭，需您手动开启。每个带位置的 MAYDAY 只响一次，演练、已屏蔽的发送者或应用已静音的警报都不会触发；事件解决或其信标取消时，警报随之取消。",
     "starting": "开始…",
     "startServer": "启动服务器",
     "stopping": "停止…",
@@ -5902,7 +5987,9 @@
     "channelCallsign": "添加呼号",
     "channelCallsignFor": "将发件人的ATAK呼号放在发送到{{channel}}的消息前面",
     "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。",
-    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。"
+    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。",
+    "mecpAlarm": "收到 MECP MAYDAY 时触发 ATAK 紧急警报",
+    "mecpAlarmHint": "频道上的任何人都能发送 MAYDAY，因此警报默认关闭，需您手动开启。每个带位置的 MAYDAY 只响一次，演练、已屏蔽的发送者或应用已静音的警报都不会触发；事件解决或其信标取消时，警报随之取消。"
   },
   "telemetryPanel": {
     "title": "遥测",
@@ -8009,5 +8096,93 @@
     "interruptShort": "Ctrl+C",
     "interrupt": "发送Ctrl + C",
     "clear": "清空"
+  },
+  "deviceFirmware": {
+    "acknowledge": "我确认 USB 连接的设备是 {{board}}，线缆和供电稳定，且已备份设置和密钥。",
+    "aria": {
+      "acknowledge": "确认刷写检查清单",
+      "board": "要刷写的板型",
+      "cancel": "取消刷写固件",
+      "expectedSha": "预期的 SHA-256 摘要",
+      "file": "要刷写的固件文件",
+      "flash": "将固件刷写到设备"
+    },
+    "blockers": {
+      "boardMismatch": "所选板型与已连接的无线电不匹配。",
+      "boardUnsupported": "所连接的无线电不是受支持的板型。",
+      "lowBattery": "电池低于 {{percent}}% — 请充电或接通电源后重试。",
+      "noBoard": "请选择板型。",
+      "noImage": "请选择有效的固件文件。",
+      "notAcknowledged": "请确认下方检查清单。",
+      "serialConnectionOpen": "刷写前请断开无线电的 USB 串口连接 — Mesh Client 需要使用端口。"
+    },
+    "boardLabel": "板型",
+    "boardLocked": "从已连接无线电检测到：{{board}}",
+    "boardManualHint": "未能自动识别无线电。请手动选择板型。",
+    "boardPlaceholder": "选择板型…",
+    "boardUnsupported": "所连接的无线电报告「{{reported}}」，不是受支持的刷写目标。已禁用刷写。",
+    "cancel": "取消刷写",
+    "cancelled": "刷写已取消。设备可能需要再次刷写 — 请参阅下方恢复步骤。",
+    "cancelling": "正在取消…",
+    "checksum": {
+      "expectedHint": "粘贴发布页资源旁的摘要。不匹配将阻止刷写。",
+      "expectedLabel": "预期的 SHA-256（可选）",
+      "fileLabel": "文件 SHA-256",
+      "payloadLabel": "镜像 SHA-256"
+    },
+    "enterDfuHint": "nRF52 板须先进入 bootloader (DFU) 模式：使用上方 Enter DFU mode、双击 reset 或下方按钮，然后 Flash。",
+    "errors": {
+      "checksumInvalid": "预期的 SHA-256 不是有效的 64 字符 hex 摘要。",
+      "checksumMismatch": "文件 SHA-256 与预期摘要不符。请勿刷写 — 请重新下载。",
+      "dfuPackageInvalid": "nRF52 DFU 包无效或不支持（需仅应用程序的 legacy serial DFU 且 checksum 匹配）。",
+      "imageAmbiguous": "压缩包中有多个匹配镜像。请解压所需文件并选择。",
+      "imageBoardMismatch": "此固件适用于其他板型 ({{detail}})。请选择匹配的板型或其他文件。",
+      "imageBoardMismatchGeneric": "此固件适用于与所选不同的板型。",
+      "imageChipMismatch": "镜像针对的芯片与所选板型不符。",
+      "imageEmpty": "固件文件为空。",
+      "imageHeaderInvalid": "文件不是有效的 ESP32 固件镜像。",
+      "imageNameUnrecognized": "此文件名不是所选板型的已知固件镜像。",
+      "imageNotCompanion": "这不是 companion 无线电固件。Mesh Client 仅刷写 companion 镜像。",
+      "imageNotFoundForBoard": "压缩包中没有所选板型的固件镜像。",
+      "imageNotFullImage": "不是 Mesh Client 写入的完整刷写镜像（请使用 .factory.bin、-merged.bin 或 DFU .zip）。",
+      "imageTooLarge": "镜像大于所选板型的 flash 容量。",
+      "imageTooSmall": "文件太小，不能作为完整刷写镜像。",
+      "readFailed": "无法读取固件文件。"
+    },
+    "fileHint": {
+      "meshcore": "从 MeshCore 发布页选择板型的 companion-radio -merged.bin (ESP32) 或 .zip (nRF52)。",
+      "meshtastic": "从 Meshtastic 固件发布页选择 .zip（firmware-esp32s3-….zip 或 firmware-nrf52840-….zip）或单个 .factory.bin / -ota.zip。"
+    },
+    "firmwareFile": "固件文件",
+    "flash": "刷写固件",
+    "flashing": "正在刷写… {{progress}}%",
+    "imageReady": "就绪：{{name}} ({{size}})",
+    "imageVersion": "版本：{{version}}",
+    "recovery": {
+      "docs": "详见 docs/troubleshooting.md，“Firmware flashing recovery”。",
+      "esp32": "ESP32：ROM bootloader 无法覆盖。按住 BOOT、点 RESET、松开 BOOT 后重刷，或使用厂商 Web 刷写。",
+      "nrf52": "nRF52：双击 RESET 进入 UF2 bootloader（出现盘符），拖入 .uf2 或在此重试。",
+      "title": "如果刷写失败"
+    },
+    "releases": {
+      "meshcore": "打开 MeshCore 固件发布页",
+      "meshtastic": "打开 Meshtastic 固件发布页"
+    },
+    "successEsp32": "固件已写入并验证。设备正在重启 — 约 30 秒后重新连接。",
+    "successNrf52": "固件已发送到 bootloader。设备重启 — 约 30 秒后重新连接。",
+    "summary": "通过 USB 安装或更新固件。仅支持此处列出的板型；其他会在写入前拒绝。",
+    "supportedBoards": "支持的板型：{{boards}}",
+    "title": "刷写设备固件",
+    "validating": "正在检查固件…",
+    "warnings": {
+      "batteryUnknown": "电池电量未知 — 请确保充好电或使用外部供电。",
+      "cable": "使用直连电脑的数据 USB 线（勿用 hub），刷写时不要断开。",
+      "connectionDrops": "设备重启时无线电连接会断开。",
+      "espBootloader": "Mesh Client 会自动将板卡复位到 ESP32 ROM bootloader。若不能，请按住 BOOT、点 RESET、松开 BOOT。",
+      "nrf52Bootloader": "nRF52 通过 serial DFU bootloader 刷写。bootloader 本身不变，失败可重试。",
+      "settingsReset": "完整刷写镜像可能清除设置、信道和密钥。请先导出备份。",
+      "unverifiedBoard": "无线电未自动识别 — 板型选择未验证。错误板型可能导致无法启动。"
+    },
+    "warningsTitle": "刷写前"
   }
 }

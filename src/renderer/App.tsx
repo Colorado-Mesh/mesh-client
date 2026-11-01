@@ -316,6 +316,7 @@ import {
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
+import { buildDetectedFlashDevice } from './lib/flasher/deviceFirmwareBoards';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import {
   type GlobalMessageSearchHit,
@@ -4808,6 +4809,7 @@ function AppContent() {
                               hasRncpTransfer={capabilities.hasRncpTransfer}
                               hasLxstVoice={capabilities.hasLxstVoice}
                               hasReticulumVoiceMemo={capabilities.hasReticulumVoiceMemo}
+                              hasReticulumFileAttachments={capabilities.hasReticulumFileAttachments}
                               onVoiceMemo={
                                 capabilities.hasReticulumVoiceMemo && reticulumIdentityId
                                   ? (destination: number) => {
@@ -5800,6 +5802,13 @@ function AppContent() {
                                       ? meshtasticPanelActions.factoryResetConfig
                                       : undefined
                                   }
+                                  firmwareFlashDevice={buildDetectedFlashDevice(protocol, {
+                                    isConnected: isOperational,
+                                    state: activeConnectionView.state,
+                                    meshtasticHwModel: meshtasticUiNodes.get(
+                                      meshtasticConnectionView.state.myNodeNum,
+                                    )?.hw_model,
+                                  })}
                                 />
                               )}
                             </Suspense>

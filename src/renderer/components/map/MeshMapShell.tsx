@@ -3,12 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 
-import {
-  DEFAULT_MAP_BASEMAP_ID,
-  MAP_BASEMAPS,
-  MAP_MAX_ZOOM,
-  meshTilesAvailable,
-} from '@/renderer/lib/mapBasemapUtils';
+import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
+import { MAP_MAX_ZOOM, meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import type { MeshProtocol } from '@/shared/meshProtocol';
@@ -133,7 +129,7 @@ export function MeshMapShell({
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const showWeatherForecasts = useMapLayerStore((s) => s.showWeatherForecasts);
-  const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
+  const basemap = useMapBasemap(basemapId);
 
   useEffect(() => {
     ensureMapStyles();

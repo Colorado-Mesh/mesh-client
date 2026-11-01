@@ -1,11 +1,14 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { DetectedFlashDevice } from '@/renderer/lib/flasher/deviceFirmwareBoards';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import CapabilityUnavailableHint from './CapabilityUnavailableHint';
 import { ConfirmModal } from './ConfirmModal';
+import { DeviceFirmwareFlashSection } from './flasher/DeviceFirmwareFlashSection';
 import MeshtasticRemoteShellSection from './MeshtasticRemoteShellSection';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
@@ -33,6 +36,8 @@ interface Props {
   onRebootOta?: (delay: number) => Promise<void>;
   onEnterDfu?: () => Promise<void>;
   onFactoryResetConfig?: () => Promise<void>;
+  /** Radio identity for the USB firmware flasher (board detection, battery, connection type). */
+  firmwareFlashDevice?: DetectedFlashDevice;
 }
 
 export default function AdminPanel({
@@ -46,6 +51,7 @@ export default function AdminPanel({
   onRebootOta,
   onEnterDfu,
   onFactoryResetConfig,
+  firmwareFlashDevice,
 }: Props) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -227,6 +233,26 @@ export default function AdminPanel({
           </div>
         </div>
       </div>
+
+      {/* ═══ Firmware flash (local USB only) ═══ */}
+      {!isRemoteTarget && capabilities?.hasDeviceFirmwareFlash === false && (
+        <CapabilityUnavailableHint feature="firmwareFlash" capabilities={capabilities} />
+      )}
+      {!isRemoteTarget && capabilities?.hasDeviceFirmwareFlash === true && firmwareFlashDevice && (
+        <details
+          className="group rounded-lg border border-orange-900"
+          data-testid="admin-firmware-flash"
+          data-setting-anchor="admin.firmware.flashDevice"
+        >
+          <summary className="hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors">
+            <span>{t('deviceFirmware.title')}</span>
+            <DetailsChevron />
+          </summary>
+          <div className="px-4 pb-4">
+            <DeviceFirmwareFlashSection capabilities={capabilities} device={firmwareFlashDevice} />
+          </div>
+        </details>
+      )}
 
       {/* ═══ Remote shell (Meshtastic REMOTE_SHELL_APP; protocol exception, gated by capability) ═══ */}
       <MeshtasticRemoteShellSection

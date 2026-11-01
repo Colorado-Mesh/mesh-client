@@ -954,7 +954,34 @@
     "outboxScheduledSendNowAria": "スケジュールされたメッセージを今すぐ送信する",
     "outboxScheduledSendNow": "今すぐ送信",
     "scheduleSendErrorEmpty": "メッセージを空にすることはできません。",
-    "outboxStatusScheduled": "{{time}}に予定されています"
+    "outboxStatusScheduled": "{{time}}に予定されています",
+    "attachment": {
+      "attachAria": "ファイルまたは写真を添付",
+      "attachFile": "ファイルを添付…",
+      "attachPhoto": "写真を添付…",
+      "cancelAria": "{{name}} の送信をキャンセル",
+      "cancelled": "添付の送信をキャンセルしました。",
+      "errors": {
+        "cacheFailed": "添付をローカルに保存できなかったため、送信されませんでした。",
+        "empty": "そのファイルは空です。",
+        "photoDecodeFailed": "その写真を処理できませんでした。別の画像を試してください。",
+        "photoTooLarge": "その写真は送信には大きすぎます。",
+        "photoUnsupported": "送信できるのは PNG、JPEG、WebP、GIF の写真のみです。",
+        "readFailed": "選択したファイルを読み取れませんでした。",
+        "runtimeUnavailable": "Reticulum の準備ができていません。スタックを起動してから再試行してください。",
+        "sendFailed": "添付を送信できませんでした。",
+        "tooLarge": "添付はメッセージあたり合計 {{limitKib}} KiB までです。より大きなファイルは Remote rncp を使用してください。",
+        "tooLargeForPropagation": "添付は propagation ノードには大きすぎます — ピアに到達可能な間のみ直接配信できます。",
+        "tooMany": "1 メッセージに添付できるのは最大 {{count}} ファイルです。"
+      },
+      "fileInputAria": "送信するファイルを選択",
+      "menuAria": "LXMF メッセージに添付",
+      "photoInputAria": "送信する写真を選択",
+      "progressAria": "{{name}} の送信進捗",
+      "sending": "{{name}} を送信中…",
+      "tooltip": "この LXMF ダイレクトメッセージでファイルまたは写真を送信（ネイティブ添付 — rncp ではありません）。最大 {{count}} ファイル、合計 {{limitKib}} KiB。写真はリサイズされメタデータは削除されます。",
+      "transfersAria": "送信中の添付"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "フラッシュ読み取りが早期に終了したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。",
       "esp32FlashSizeUnknown": "フラッシュサイズを検出できなかったため、バックアップは作成されませんでした。正確なボードモデルを選択して、もう一度お試しください。",
       "esp32FlashTooLarge": "このボードのフラッシュは32 MiBのバックアップ上限を超えているため、バックアップは作成されませんでした。",
-      "esp32ReadVerifyFailed": "フラッシュ読み取りのチェックサム検証に失敗したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。"
+      "esp32ReadVerifyFailed": "フラッシュ読み取りのチェックサム検証に失敗したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。",
+      "esp32ChipMismatch": "接続チップが選択ボードと一致しません。書き込みなし。ボードと USB を確認。",
+      "flashCancelled": "フラッシュをキャンセルしました。",
+      "imageExceedsFlash": "イメージがデバイスの flash より大きい。書き込みなし。"
     },
     "selectSerialPort": "シリアルポートを選択",
     "noSerialPorts": "USBシリアルポートが見つかりません。",
@@ -2633,7 +2663,8 @@
       "clear": "タイルキャッシュをクリア",
       "clearAria": "オフラインマップタイルキャッシュをクリア",
       "cleared": "キャッシュはクリアされました。",
-      "viewCacheOnly": "表示した地図タイルは自動的にキャッシュされます。地域全体のダウンロードは USGS Topo で利用できます。OpenStreetMap では事前取得が許可されていません。"
+      "viewCacheOnly": "表示した地図タイルは自動的にキャッシュされます。地域全体のダウンロードは USGS Topo で利用できます。OpenStreetMap では事前取得が許可されていません。",
+      "viewCacheOnlyCustom": "カスタムソースは表示タイルのみキャッシュ。一括地域ダウンロード不可。オフラインは MBTiles をインポート。"
     },
     "basemapUsgsTopo": "USGS Topo （米国のみ）",
     "layerIncidents": "緊急事態",
@@ -2646,7 +2677,63 @@
     "measureHint": "マップをクリックしてポイントを追加します",
     "measureTotal": "{{km}} km/{{mi}} mi",
     "layerTakContacts": "TAKユニット",
-    "layerWeatherForecasts": "天気予報"
+    "layerWeatherForecasts": "天気予報",
+    "customSources": {
+      "addConfirm": "ソースを追加",
+      "addConfirmAria": "カスタム XYZ ソースを追加",
+      "addXyz": "カスタム XYZ ソースを追加…",
+      "addXyzAria": "カスタム XYZ タイルサーバーを追加",
+      "added": "追加しました: {{name}}。",
+      "attributionLabel": "帰属表示（必須）",
+      "cancel": "キャンセル",
+      "cancelAria": "カスタム地図ソースの追加をキャンセル",
+      "clearCache": "キャッシュを消去",
+      "clearCacheAria": "{{name}} のキャッシュタイルを消去",
+      "confirmMbtiles": "この地図データの使用が許可され、帰属が正しいことを確認します。",
+      "confirmMbtilesAria": "MBTiles パッケージ使用の許可を確認",
+      "confirmXyz": "このタイルサーバーの使用が許可され、帰属が正しいことを確認します。",
+      "confirmXyzAria": "タイルサーバー使用の許可を確認",
+      "confirmXyzHost": "{{host}} のタイル使用を確認。表示時にそのホストから取得されます。",
+      "errors": {
+        "attribution": "帰属表示は必須（200 文字まで）。",
+        "cancelled": "キャンセルしました。",
+        "credentials": "ユーザー名やパスワード付き URL は不可。",
+        "empty": "タイル URL を入力。",
+        "host": "ホストは公開ドメインである必要があります（IP、localhost、LAN 名不可）。",
+        "invalid": "有効なタイル URL ではありません。",
+        "io": "操作を完了できませんでした。再試行してください。",
+        "limit": "カスタムソースが多すぎます。先に削除してください。",
+        "mbtiles_invalid": "有効な MBTiles パッケージではありません。",
+        "mbtiles_too_large": "MBTiles が大きすぎます（上限 2 GB）。",
+        "mbtiles_vector": "ベクター MBTiles は非対応。PNG、JPEG、WebP を使用。",
+        "name": "名前を入力（60 文字まで）。",
+        "not_confirmed": "先に使用許可を確認してください。",
+        "osm": "OpenStreetMap タイルは組み込みです。それを使用してください。",
+        "placeholders": "URL はホストの後に {z}、{x}、{y} をそれぞれ1回含む必要があります。",
+        "port": "カスタムポートは不可。",
+        "scheme": "https:// URL のみ許可。",
+        "too_long": "URL が長すぎます。",
+        "unknown_inspect": "選択したファイルの期限切れ。再度選択。",
+        "zoom": "ズームは 0〜22 の整数。"
+      },
+      "heading": "ストレージとカスタムソース",
+      "importConfirm": "インポート",
+      "importConfirmAria": "MBTiles パッケージをインポート",
+      "importMbtiles": "MBTiles パッケージをインポート…",
+      "importMbtilesAria": "オフライン用 MBTiles をインポート",
+      "imported": "インポートしました: {{name}}。",
+      "maxZoomLabel": "サーバーが提供する最大ズーム（任意）",
+      "mbtilesMeta": "MBTiles · ズーム {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}} タイル、ズーム {{minZoom}}–{{maxZoom}}、{{size}}。ファイルはアプリ storage にコピー。",
+      "nameLabel": "名前",
+      "policyNote": "カスタムサーバーは表示したタイルの分だけ接続。一括ダウンロードはしません。",
+      "remove": "削除",
+      "removeAria": "カスタム地図ソース {{name}} を削除",
+      "storageAria": "ソース別の地図ストレージ",
+      "urlLabel": "タイル URL（https、{z} {x} {y}）",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · キャッシュ上限 {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -5716,8 +5803,6 @@
     "serverNameLabel": "サーバー名",
     "requireCert": "クライアント証明書 (mTLS) が必要です",
     "autoStart": "アプリケーション起動時に自動起動",
-    "mecpAlarm": "MECP の MAYDAY で ATAK の緊急アラームを鳴らす",
-    "mecpAlarmHint": "チャンネル上の誰でも MAYDAY を送信できるため、オンにするまでアラームはオフです。位置付きの MAYDAY ごとに一度鳴り、訓練、ブロックした送信者、アプリが消音した警報では鳴りません。インシデントが解決されるか、ビーコンが取り消されると解除されます。",
     "starting": "起動…",
     "startServer": "サーバーの起動",
     "stopping": "停止中…",
@@ -5902,7 +5987,9 @@
     "channelCallsign": "コールサインを追加",
     "channelCallsignFor": "送信者のATAKコールサインを{{channel}}に送信されたメッセージの前に置きます",
     "channelCallsignHint": "Addコールサインをオフにすると、ATAKデバイスが送信するものは、入力されたとおりに送信されます。ボットチャンネルの場合はオフにします。ボットはメッセージの先頭でコマンドを探し、コールサインで始まるコマンドを見逃します。",
-    "channelRepliesHint": "ATAKの担当者に返信するには、@で始まり、名前の先頭に「@ silver are you on ?」と入力します。@ MeshCore __の返信@[ Silver Eagle]が表示されます。@@は最後に発言した人に返信します。名前の先頭がチャンネルで聞いた複数の人に合っている場合、何も送信されず、チャットには誰が一致したかが表示されます。"
+    "channelRepliesHint": "ATAKの担当者に返信するには、@で始まり、名前の先頭に「@ silver are you on ?」と入力します。@ MeshCore __の返信@[ Silver Eagle]が表示されます。@@は最後に発言した人に返信します。名前の先頭がチャンネルで聞いた複数の人に合っている場合、何も送信されず、チャットには誰が一致したかが表示されます。",
+    "mecpAlarm": "MECP の MAYDAY で ATAK の緊急アラームを鳴らす",
+    "mecpAlarmHint": "チャンネル上の誰でも MAYDAY を送信できるため、オンにするまでアラームはオフです。位置付きの MAYDAY ごとに一度鳴り、訓練、ブロックした送信者、アプリが消音した警報では鳴りません。インシデントが解決されるか、ビーコンが取り消されると解除されます。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",
@@ -8009,5 +8096,93 @@
     "outputAria": "リモートシェル出力",
     "clear": "クリア",
     "interruptShort": "Ctrl+C"
+  },
+  "deviceFirmware": {
+    "acknowledge": "USB 接続のデバイスが {{board}} であること、ケーブルと電源が安定していること、設定と鍵をバックアップしたことを確認します。",
+    "aria": {
+      "acknowledge": "フラッシュ確認チェックリスト",
+      "board": "フラッシュするボード",
+      "cancel": "ファームウェアのフラッシュをキャンセル",
+      "expectedSha": "期待される SHA-256 ダイジェスト",
+      "file": "フラッシュするファームウェアファイル",
+      "flash": "デバイスにファームウェアをフラッシュ"
+    },
+    "blockers": {
+      "boardMismatch": "選択したボードが接続中の無線機と一致しません。",
+      "boardUnsupported": "接続中の無線機はサポート対象のボードではありません。",
+      "lowBattery": "バッテリーが {{percent}}% 未満です — 充電するか電源に接続してから再試行してください。",
+      "noBoard": "ボードを選択してください。",
+      "noImage": "有効なファームウェアファイルを選択してください。",
+      "notAcknowledged": "下のチェックリストを確認してください。",
+      "serialConnectionOpen": "フラッシュ前に無線機の USB シリアル接続を切断してください — Mesh Client がポートを使用します。"
+    },
+    "boardLabel": "ボード",
+    "boardLocked": "接続中の無線機から検出: {{board}}",
+    "boardManualHint": "無線機は自動識別されませんでした。ボードを手動で選んでください。",
+    "boardPlaceholder": "ボードを選択…",
+    "boardUnsupported": "接続中の無線機は「{{reported}}」を報告しています。サポート対象外のためフラッシュは無効です。",
+    "cancel": "フラッシュをキャンセル",
+    "cancelled": "フラッシュをキャンセルしました。再フラッシュが必要な場合があります — 下の復旧手順を参照。",
+    "cancelling": "キャンセル中…",
+    "checksum": {
+      "expectedHint": "リリースページのアセット横に表示されたダイジェストを貼り付けてください。不一致はフラッシュをブロックします。",
+      "expectedLabel": "期待される SHA-256（任意）",
+      "fileLabel": "ファイル SHA-256",
+      "payloadLabel": "イメージ SHA-256"
+    },
+    "enterDfuHint": "nRF52 ボードは先に bootloader (DFU) モードが必要です。上の Enter DFU mode、リセット二回押し、または下のボタン後 Flash。",
+    "errors": {
+      "checksumInvalid": "期待される SHA-256 が有効な 64 文字の hex ダイジェストではありません。",
+      "checksumMismatch": "ファイルの SHA-256 が期待値と一致しません。フラッシュしないで — 再ダウンロードしてください。",
+      "dfuPackageInvalid": "nRF52 DFU パッケージが無効または非対応です（アプリのみの legacy serial DFU で checksum 一致が必要）。",
+      "imageAmbiguous": "アーカイブに一致するイメージが複数あります。必要なファイルを展開して選択してください。",
+      "imageBoardMismatch": "このファームウェアは別ボード用です ({{detail}})。一致するボードか別ファイルを選んでください。",
+      "imageBoardMismatchGeneric": "このファームウェアは選択したボードと異なるボード用です。",
+      "imageChipMismatch": "イメージは選択ボードと異なるチップ向けにビルドされています。",
+      "imageEmpty": "ファームウェアファイルが空です。",
+      "imageHeaderInvalid": "有効な ESP32 ファームウェアイメージではありません。",
+      "imageNameUnrecognized": "このファイル名は選択ボード向けの既知ファームウェアイメージではありません。",
+      "imageNotCompanion": "companion 無線機ファームウェアではありません。Mesh Client は companion イメージのみフラッシュします。",
+      "imageNotFoundForBoard": "アーカイブに選択ボード向けファームウェアがありません。",
+      "imageNotFullImage": "Mesh Client が書き込む full-flash イメージではありません（.factory.bin、-merged.bin、DFU .zip を使用）。",
+      "imageTooLarge": "イメージが選択ボードのフラッシュ容量を超えています。",
+      "imageTooSmall": "full-flash ファームウェアイメージには小さすぎます。",
+      "readFailed": "ファームウェアファイルを読み取れませんでした。"
+    },
+    "fileHint": {
+      "meshcore": "MeshCore リリースからボード用 companion-radio -merged.bin (ESP32) または .zip (nRF52) を選んでください。",
+      "meshtastic": "Meshtastic ファームウェアリリースの .zip（firmware-esp32s3-….zip または firmware-nrf52840-….zip）または単体 .factory.bin / -ota.zip を選んでください。"
+    },
+    "firmwareFile": "ファームウェアファイル",
+    "flash": "ファームウェアをフラッシュ",
+    "flashing": "フラッシュ中… {{progress}}%",
+    "imageReady": "準備完了: {{name}} ({{size}})",
+    "imageVersion": "バージョン: {{version}}",
+    "recovery": {
+      "docs": "詳細: docs/troubleshooting.md、「Firmware flashing recovery」。",
+      "esp32": "ESP32: ROM bootloader は上書きできません。BOOT を押したまま RESET、離して再フラッシュ、またはベンダーの Web フラッシャー。",
+      "nrf52": "nRF52: RESET 二回で UF2 bootloader（ドライブ表示）、.uf2 をドラッグするかここで再フラッシュ。",
+      "title": "フラッシュが失敗した場合"
+    },
+    "releases": {
+      "meshcore": "MeshCore ファームウェアリリースを開く",
+      "meshtastic": "Meshtastic ファームウェアリリースを開く"
+    },
+    "successEsp32": "ファームウェアを書き込み検証しました。再起動中 — 約30秒待って再接続。",
+    "successNrf52": "bootloader に送信しました。再起動 — 約30秒後に再接続。",
+    "summary": "USB でファームウェアをインストール/更新。ここに記載のボードのみ対応。それ以外は書き込み前に拒否。",
+    "supportedBoards": "サポートボード: {{boards}}",
+    "title": "デバイスファームウェアをフラッシュ",
+    "validating": "ファームウェアを確認中…",
+    "warnings": {
+      "batteryUnknown": "バッテリー残量不明 — 十分に充電するか外部電源を。",
+      "cable": "データ対応 USB を PC 直結（ハブなし）。フラッシュ中は抜かないで。",
+      "connectionDrops": "再起動中は無線接続が切れます。",
+      "espBootloader": "Mesh Client は ESP32 ROM bootloader へ自動リセット。できない場合 BOOT、RESET、BOOT 離す。",
+      "nrf52Bootloader": "nRF52 は serial DFU bootloader 経由。bootloader 自体は変更されず、失敗時は再試行可。",
+      "settingsReset": "full-flash は設定・チャンネル・鍵を消す場合があります。先にバックアップを。",
+      "unverifiedBoard": "無線機未識別 — ボード選択未検証。誤ったボードは起動不能にする可能性。"
+    },
+    "warningsTitle": "フラッシュ前"
   }
 }

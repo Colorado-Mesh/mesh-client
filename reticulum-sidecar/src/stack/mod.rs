@@ -60,6 +60,8 @@ mod live;
 #[cfg(feature = "rns-stack")]
 mod live_tasks;
 #[cfg(feature = "rns-stack")]
+mod lxmf_attachments;
+#[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod lxmf_reception;
@@ -3162,6 +3164,11 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
             let res = live.send_lxmf(&req).await?;
+            // Preserve structured `{ ok: false, error }` from live (e.g. no_propagation_node,
+            // attachment_* / image_* validation) instead of wrapping as a success.
+            if res.get("ok") == Some(&serde_json::Value::Bool(false)) {
+                return Ok(res);
+            }
             let payload = res.get("message").cloned().unwrap_or(res.clone());
             if payload.get("text").is_some() {
                 self.emit_event("lxmf_message", payload.clone());
@@ -3189,6 +3196,32 @@ impl StackHandle {
             self.emit_event("lxmf_message", payload);
             Ok(res)
         }
+    }
+
+    /// Cancel a queued / in-flight outbound LXMF message (attachment send **Cancel**).
+    pub async fn lxmf_cancel_outbound(
+        &self,
+        message_hash: &str,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.cancel_outbound_message(message_hash).await;
+        }
+        let _ = message_hash;
+        Ok(serde_json::json!({ "ok": false, "error": "identity_not_configured" }))
+    }
+
+    /// Router outbound progress (0.0..=1.0) for a pending message; `null` when not pending.
+    pub async fn lxmf_outbound_progress(
+        &self,
+        message_hash: &str,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.outbound_message_progress(message_hash).await;
+        }
+        let _ = message_hash;
+        Ok(serde_json::json!({ "ok": false, "error": "identity_not_configured" }))
     }
 
     pub async fn lxmf_paper_create(

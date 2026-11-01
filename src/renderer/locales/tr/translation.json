@@ -954,7 +954,34 @@
     "outboxScheduledEditAria": "Planlanmış mesajı düzenle",
     "outboxStatusScheduledDue": "Planlandı — gönderilmeyi bekliyor",
     "outboxScheduledSendNowAria": "Planlanmış mesajı şimdi gönder",
-    "outboxScheduledSendNow": "Şimdi gönder"
+    "outboxScheduledSendNow": "Şimdi gönder",
+    "attachment": {
+      "attachAria": "Dosya veya fotoğraf ekle",
+      "attachFile": "Dosya ekle…",
+      "attachPhoto": "Fotoğraf ekle…",
+      "cancelAria": "{{name}} gönderimini iptal et",
+      "cancelled": "Ek gönderimi iptal edildi.",
+      "errors": {
+        "cacheFailed": "Ek yerel olarak kaydedilemedi; gönderilmedi.",
+        "empty": "Bu dosya boş.",
+        "photoDecodeFailed": "Bu fotoğraf işlenemedi. Başka bir görsel deneyin.",
+        "photoTooLarge": "Bu fotoğraf göndermek için çok büyük.",
+        "photoUnsupported": "Yalnızca PNG, JPEG, WebP ve GIF fotoğrafları gönderilebilir.",
+        "readFailed": "Seçilen dosya okunamadı.",
+        "runtimeUnavailable": "Reticulum hazır değil. Yığını başlatıp tekrar deneyin.",
+        "sendFailed": "Ek gönderilemedi.",
+        "tooLarge": "Ekler mesaj başına toplam {{limitKib}} KiB ile sınırlıdır. Daha büyük dosyalar için Remote rncp kullanın.",
+        "tooLargeForPropagation": "Ek, propagation düğümü için çok büyük — yalnızca eş erişilebilirken doğrudan iletilebilir.",
+        "tooMany": "Mesaj başına en fazla {{count}} dosya ekleyin."
+      },
+      "fileInputAria": "Gönderilecek dosyaları seç",
+      "menuAria": "LXMF mesajına ekle",
+      "photoInputAria": "Gönderilecek fotoğrafı seç",
+      "progressAria": "{{name}} gönderim ilerlemesi",
+      "sending": "{{name}} gönderiliyor…",
+      "tooltip": "Bu LXMF doğrudan mesajında dosya veya fotoğraf gönderin (yerel ek — rncp değil). En fazla {{count}} dosya, toplam {{limitKib}} KiB. Fotoğraflar yeniden boyutlandırılır ve meta veriler kaldırılır.",
+      "transfersAria": "Gönderilen ekler"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2334,7 +2361,10 @@
       "esp32ReadIncomplete": "Flash okuma erken bitti, bu nedenle yedek kaydedilmedi. Kartı yeniden bağlayın ve tekrar deneyin.",
       "esp32FlashSizeUnknown": "Flash boyutu algılanamadı, bu nedenle yedek alınmadı. Tam kart modelini seçin ve tekrar deneyin.",
       "esp32FlashTooLarge": "Bu kartın flash belleği 32 MiB yedekleme sınırından büyük, bu nedenle yedek alınmadı.",
-      "esp32ReadVerifyFailed": "Flash okuma sağlama toplamı doğrulamasından geçemedi, bu nedenle yedek kaydedilmedi. Kartı yeniden bağlayın ve tekrar deneyin."
+      "esp32ReadVerifyFailed": "Flash okuma sağlama toplamı doğrulamasından geçemedi, bu nedenle yedek kaydedilmedi. Kartı yeniden bağlayın ve tekrar deneyin.",
+      "esp32ChipMismatch": "Bağlı çip kartla eşleşmiyor. Yazılmadı. Kart ve USB’yi kontrol edin.",
+      "flashCancelled": "Flaş iptal edildi.",
+      "imageExceedsFlash": "İmaj cihaz flash’ından büyük. Yazılmadı."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
@@ -2633,7 +2663,8 @@
       "clear": "Döşeme önbelleğini temizle",
       "clearAria": "Çevrimdışı harita döşeme önbelleğini temizle",
       "cleared": "Ön bellek temizlendi.",
-      "viewCacheOnly": "Görüntülenen harita karoları otomatik olarak önbelleğe alınır. Bölge indirme USGS Topo ile kullanılabilir; OpenStreetMap önceden indirmeye izin vermez."
+      "viewCacheOnly": "Görüntülenen harita karoları otomatik olarak önbelleğe alınır. Bölge indirme USGS Topo ile kullanılabilir; OpenStreetMap önceden indirmeye izin vermez.",
+      "viewCacheOnlyCustom": "Özel kaynaklar yalnızca görüntülenen döşemeleri önbelleğe alır; toplu bölge indirme yok. Çevrimdışı için MBTiles içe aktarın."
     },
     "basemapUsgsTopo": "USGS Topo (yalnızca ABD)",
     "layerIncidents": "Acil durum olayları",
@@ -2646,7 +2677,63 @@
     "measureHint": "Puan eklemek için haritaya tıklayın",
     "measureTotal": "{{km}} km / {{mi}} mil",
     "layerTakContacts": "TAK ÜNİTELERİ",
-    "layerWeatherForecasts": "Hava durumu tahminleri"
+    "layerWeatherForecasts": "Hava durumu tahminleri",
+    "customSources": {
+      "addConfirm": "Kaynak ekle",
+      "addConfirmAria": "Özel XYZ kaynağı ekle",
+      "addXyz": "Özel XYZ kaynağı ekle…",
+      "addXyzAria": "Özel XYZ döşeme sunucusu ekle",
+      "added": "Eklendi: {{name}}.",
+      "attributionLabel": "Atıf (zorunlu)",
+      "cancel": "İptal",
+      "cancelAria": "Özel harita kaynağı eklemeyi iptal et",
+      "clearCache": "Önbelleği temizle",
+      "clearCacheAria": "{{name}} için önbellekteki döşemeleri temizle",
+      "confirmMbtiles": "Bu harita verisini kullanabildiğimi ve atfın doğru olduğunu onaylıyorum.",
+      "confirmMbtilesAria": "MBTiles paketi iznini onayla",
+      "confirmXyz": "Bu döşeme sunucusunu kullanabildiğimi ve atfın doğru olduğunu onaylıyorum.",
+      "confirmXyzAria": "Döşeme sunucusu iznini onayla",
+      "confirmXyzHost": "{{host}} döşemelerini kullanabildiğimi onaylıyorum; atıf doğru. Görüntülenince indirilir.",
+      "errors": {
+        "attribution": "Atıf zorunlu (en fazla 200 karakter).",
+        "cancelled": "İptal edildi.",
+        "credentials": "Kullanıcı adı/parola içeren URL’lere izin yok.",
+        "empty": "Döşeme URL’si girin.",
+        "host": "Ana bilgisayar genel alan adı olmalı (IP, localhost, LAN yok).",
+        "invalid": "Geçerli döşeme URL’si değil.",
+        "io": "İşlem tamamlanamadı. Tekrar deneyin.",
+        "limit": "Çok fazla özel kaynak. Önce birini kaldırın.",
+        "mbtiles_invalid": "Geçerli MBTiles paketi değil.",
+        "mbtiles_too_large": "MBTiles dosyası çok büyük (2 GB sınırı).",
+        "mbtiles_vector": "Vektör MBTiles desteklenmiyor; PNG, JPEG veya WebP.",
+        "name": "Ad girin (en fazla 60 karakter).",
+        "not_confirmed": "Önce bu kaynağı kullanabildiğinizi onaylayın.",
+        "osm": "OpenStreetMap döşemeleri yerleşik; onu kullanın.",
+        "placeholders": "URL, hosttan sonra {z}, {x} ve {y} içermeli (her biri bir kez).",
+        "port": "Özel portlara izin yok.",
+        "scheme": "Yalnızca https:// URL’leri.",
+        "too_long": "URL çok uzun.",
+        "unknown_inspect": "Seçilen dosyanın süresi doldu. Yeniden seçin.",
+        "zoom": "Zoom 0–22 arası tam sayı olmalı."
+      },
+      "heading": "Depolama ve özel kaynaklar",
+      "importConfirm": "İçe aktar",
+      "importConfirmAria": "MBTiles paketini içe aktar",
+      "importMbtiles": "MBTiles paketini içe aktar…",
+      "importMbtilesAria": "Çevrimdışı kullanım için MBTiles içe aktar",
+      "imported": "İçe aktarıldı: {{name}}.",
+      "maxZoomLabel": "Sunucunun sağladığı en yüksek zoom (isteğe bağlı)",
+      "mbtilesMeta": "MBTiles · zoom {{minZoom}}–{{maxZoom}}",
+      "mbtilesSummary": "{{format}} döşeme, zoom {{minZoom}}–{{maxZoom}}, {{size}}. Dosya uygulama depolamasına kopyalanır.",
+      "nameLabel": "Ad",
+      "policyNote": "Özel sunucular yalnızca görüntülediğiniz döşemeler için; toplu indirme yok.",
+      "remove": "Kaldır",
+      "removeAria": "Özel harita kaynağı {{name}} kaldır",
+      "storageAria": "Kaynağa göre harita depolaması",
+      "urlLabel": "Döşeme URL (https, {z} {x} {y})",
+      "urlPlaceholder": "https://tiles.example.org/{z}/{x}/{y}.png",
+      "xyzMeta": "XYZ · {{host}} · önbellek üst sınırı {{cap}}"
+    }
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -5716,8 +5803,6 @@
     "serverNameLabel": "Sunucu Adı",
     "requireCert": "İstemci sertifikası gerektir (mTLS)",
     "autoStart": "Uygulama başlatıldığında otomatik başlatma",
-    "mecpAlarm": "MECP MAYDAY için ATAK acil durum alarmını çaldır",
-    "mecpAlarmHint": "Kanaldaki herkes MAYDAY gönderebilir, bu yüzden siz açana kadar alarm kapalıdır. Konumu olan her MAYDAY için bir kez çalar; tatbikat, engellenen gönderen veya uygulamanın sessize aldığı uyarılar için asla çalmaz ve olay çözüldüğünde ya da işaretçisi iptal edildiğinde iptal edilir.",
     "starting": "Başlangıç…",
     "startServer": "Sunucuyu Başlat",
     "stopping": "Durduruluyor…",
@@ -5902,7 +5987,9 @@
     "channelCallsign": "Çağrı işareti ekle",
     "channelCallsignFor": "{{channel}} adresine gönderilen mesajların önüne gönderenin atak çağrı işaretini koyun",
     "channelCallsignHint": "Add çağrı işareti kapalıyken, bir atak cihazının gönderdiği şey tam olarak yazıldığı gibi gider. Bir bot kanalı için kapatın: bir bot, mesajın başlangıcında komutunu arar, bu nedenle çağrı işareti ile başlayan komutu kaçırır.",
-    "channelRepliesHint": "ATAK'tan birine yanıt vermek için @ ile başlayın ve adının başlangıcı: @silver are you on? MeshCore 'ın yanıtı olarak çıkar @[Silver Eagle] are you on?. @@, en son konuşan kişiye yanıt verir. Adın başlangıcı kanalda duyulan birkaç kişiye uyuyorsa, hiçbir şey gönderilmez ve sohbet kimin eşleştiğini söyler."
+    "channelRepliesHint": "ATAK'tan birine yanıt vermek için @ ile başlayın ve adının başlangıcı: @silver are you on? MeshCore 'ın yanıtı olarak çıkar @[Silver Eagle] are you on?. @@, en son konuşan kişiye yanıt verir. Adın başlangıcı kanalda duyulan birkaç kişiye uyuyorsa, hiçbir şey gönderilmez ve sohbet kimin eşleştiğini söyler.",
+    "mecpAlarm": "MECP MAYDAY için ATAK acil durum alarmını çaldır",
+    "mecpAlarmHint": "Kanaldaki herkes MAYDAY gönderebilir, bu yüzden siz açana kadar alarm kapalıdır. Konumu olan her MAYDAY için bir kez çalar; tatbikat, engellenen gönderen veya uygulamanın sessize aldığı uyarılar için asla çalmaz ve olay çözüldüğünde ya da işaretçisi iptal edildiğinde iptal edilir."
   },
   "telemetryPanel": {
     "title": "Telemetri",
@@ -8009,5 +8096,93 @@
     "interrupt": "Ctrl+C'yi gönder",
     "interruptShort": "Ctrl+C",
     "clear": "Temizlemek"
+  },
+  "deviceFirmware": {
+    "acknowledge": "USB ile bağlı cihazın {{board}} olduğunu, kablo ve gücün stabil olduğunu ve ayarlarımı ve anahtarlarımı yedeklediğimi onaylıyorum.",
+    "aria": {
+      "acknowledge": "Flash kontrol listesini onayla",
+      "board": "Flaşlanacak kart",
+      "cancel": "Firmware flaşını iptal et",
+      "expectedSha": "Beklenen SHA-256 özeti",
+      "file": "Flaşlanacak firmware dosyası",
+      "flash": "Cihaza firmware yükle"
+    },
+    "blockers": {
+      "boardMismatch": "Seçilen kart bağlı radyo ile eşleşmiyor.",
+      "boardUnsupported": "Bağlı radyo desteklenen bir kart değil.",
+      "lowBattery": "Pil {{percent}}% altında — cihazı şarj edin veya prize takıp tekrar deneyin.",
+      "noBoard": "Bir kart seçin.",
+      "noImage": "Geçerli bir firmware dosyası seçin.",
+      "notAcknowledged": "Aşağıdaki kontrol listesini onaylayın.",
+      "serialConnectionOpen": "Flaşlamadan önce radyonun USB seri bağlantısını kesin — Mesh Client porta ihtiyaç duyar."
+    },
+    "boardLabel": "Kart",
+    "boardLocked": "Bağlı radyodan algılandı: {{board}}",
+    "boardManualHint": "Radyo otomatik tanımlanmadı. Kartınızı elle seçin.",
+    "boardPlaceholder": "Kartınızı seçin…",
+    "boardUnsupported": "Bağlı radyo «{{reported}}» bildiriyor; desteklenmeyen hedef. Flaş devre dışı.",
+    "cancel": "Flaşı iptal et",
+    "cancelled": "Flaş iptal edildi. Cihazın yeniden flaşlanması gerekebilir — aşağıdaki kurtarmaya bakın.",
+    "cancelling": "İptal ediliyor…",
+    "checksum": {
+      "expectedHint": "Sürüm sayfasındaki özet değerini yapıştırın. Uyuşmazlık flaşı engeller.",
+      "expectedLabel": "Beklenen SHA-256 (isteğe bağlı)",
+      "fileLabel": "Dosya SHA-256",
+      "payloadLabel": "İmaj SHA-256"
+    },
+    "enterDfuHint": "nRF52 kartlar önce bootloader (DFU) modunda olmalı: yukarıdaki Enter DFU mode, reset çift dokunuş veya alttaki düğme, sonra Flash.",
+    "errors": {
+      "checksumInvalid": "Beklenen SHA-256 geçerli 64 karakterlik hex özet değil.",
+      "checksumMismatch": "Dosya SHA-256 beklenen özetle eşleşmiyor. Flaşlamayın — yeniden indirin.",
+      "dfuPackageInvalid": "nRF52 DFU paketi geçersiz veya desteklenmiyor (uygulama-only legacy serial DFU, eşleşen checksum gerekir).",
+      "imageAmbiguous": "Arşivde birden fazla eşleşen imaj var. Doğru dosyayı çıkarıp seçin.",
+      "imageBoardMismatch": "Bu firmware farklı kart içindir ({{detail}}). Uygun kart veya başka dosya seçin.",
+      "imageBoardMismatchGeneric": "Bu firmware seçilen karttan farklı kart içindir.",
+      "imageChipMismatch": "İmaj seçilen karttan farklı çip için derlenmiş.",
+      "imageEmpty": "Firmware dosyası boş.",
+      "imageHeaderInvalid": "Dosya geçerli ESP32 firmware imajı değil.",
+      "imageNameUnrecognized": "Dosya adı seçilen kart için tanınan firmware imajı değil.",
+      "imageNotCompanion": "Bu companion radyo firmware’i değil. Mesh Client yalnızca companion imajları yükler.",
+      "imageNotFoundForBoard": "Arşivde seçilen kart için firmware imajı yok.",
+      "imageNotFullImage": "Mesh Client’ın yazdığı full-flash imaj değil (.factory.bin, -merged.bin veya DFU .zip).",
+      "imageTooLarge": "İmaj seçilen kart flash’ından büyük.",
+      "imageTooSmall": "Dosya full-flash imajı için çok küçük.",
+      "readFailed": "Firmware dosyası okunamadı."
+    },
+    "fileHint": {
+      "meshcore": "MeshCore sürümlerinden kartınız için companion-radio -merged.bin (ESP32) veya .zip (nRF52) seçin.",
+      "meshtastic": "Meshtastic firmware sürümlerinden .zip (firmware-esp32s3-….zip veya firmware-nrf52840-….zip) veya tek .factory.bin / -ota.zip seçin."
+    },
+    "firmwareFile": "Firmware dosyası",
+    "flash": "Firmware yükle",
+    "flashing": "Flaşlanıyor… {{progress}}%",
+    "imageReady": "Hazır: {{name}} ({{size}})",
+    "imageVersion": "Sürüm: {{version}}",
+    "recovery": {
+      "docs": "Ayrıntı: docs/troubleshooting.md, «Firmware flashing recovery».",
+      "esp32": "ESP32: ROM bootloader üzerine yazılamaz. BOOT basılı RESET, bırakın ve tekrar flaşlayın veya web flasher.",
+      "nrf52": "nRF52: RESET çift dokunuş UF2 (sürücü görünür), .uf2 sürükleyin veya burada deneyin.",
+      "title": "Flaş başarısız olursa"
+    },
+    "releases": {
+      "meshcore": "MeshCore firmware sürümlerini aç",
+      "meshtastic": "Meshtastic firmware sürümlerini aç"
+    },
+    "successEsp32": "Firmware yazıldı ve doğrulandı. Yeniden başlıyor — ~30 sn bekleyip bağlanın.",
+    "successNrf52": "Firmware bootloader’a gönderildi. Yeniden başlıyor — ~30 sn bekleyin.",
+    "summary": "USB ile firmware kurun/güncelleyin. Yalnızca listelenen kartlar; diğerleri yazmadan reddedilir.",
+    "supportedBoards": "Desteklenen kartlar: {{boards}}",
+    "title": "Cihaz firmware’i yükle",
+    "validating": "Firmware denetleniyor…",
+    "warnings": {
+      "batteryUnknown": "Pil seviyesi bilinmiyor — şarj edin veya harici güç.",
+      "cable": "Veri USB kablosu doğrudan bilgisayara (hub yok); flaş sırasında çıkarmayın.",
+      "connectionDrops": "Yeniden başlatmada radyo bağlantısı kesilir.",
+      "espBootloader": "Mesh Client kartı ESP32 ROM bootloader’a sıfırlar. Olmazsa BOOT, RESET, bırakın.",
+      "nrf52Bootloader": "nRF52 serial DFU bootloader ile. Bootloader’a dokunulmaz; başarısız güncelleme tekrarlanır.",
+      "settingsReset": "Full-flash ayarları, kanalları ve anahtarları silebilir. Önce yedek alın.",
+      "unverifiedBoard": "Radyo tanımlanmadı — kart seçimi doğrulanmadı. Yanlış kart cihazı kullanılamaz yapabilir."
+    },
+    "warningsTitle": "Flaşlamadan önce"
   }
 }
