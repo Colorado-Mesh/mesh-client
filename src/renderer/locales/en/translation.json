@@ -6694,6 +6694,8 @@
     "serverNameLabel": "Server Name",
     "requireCert": "Require client certificate (mTLS)",
     "autoStart": "Auto-start on application launch",
+    "mecpAlarm": "Sound ATAK's emergency alarm for an MECP MAYDAY",
+    "mecpAlarmHint": "Anyone on a channel can send a MAYDAY, so the alarm is off unless you turn it on. It sounds once for each MAYDAY with a position, never for a drill, a blocked sender or an alert the app has silenced, and is cancelled when the incident is resolved or its beacon is cancelled.",
     "starting": "Starting…",
     "startServer": "Start Server",
     "stopping": "Stopping…",

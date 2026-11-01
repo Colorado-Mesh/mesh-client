@@ -5687,6 +5687,8 @@
     "serverNameLabel": "サーバー名",
     "requireCert": "クライアント証明書 (mTLS) が必要です",
     "autoStart": "アプリケーション起動時に自動起動",
+    "mecpAlarm": "MECP の MAYDAY で ATAK の緊急アラームを鳴らす",
+    "mecpAlarmHint": "チャンネル上の誰でも MAYDAY を送信できるため、オンにするまでアラームはオフです。位置付きの MAYDAY ごとに一度鳴り、訓練、ブロックした送信者、アプリが消音した警報では鳴りません。インシデントが解決されるか、ビーコンが取り消されると解除されます。",
     "starting": "起動…",
     "startServer": "サーバーの起動",
     "stopping": "停止中…",

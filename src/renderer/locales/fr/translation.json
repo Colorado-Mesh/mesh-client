@@ -5687,6 +5687,8 @@
     "serverNameLabel": "Nom du serveur",
     "requireCert": "Exiger un certificat client (mTLS)",
     "autoStart": "Démarrage automatique au lancement de l'application",
+    "mecpAlarm": "Déclencher l'alarme d'urgence ATAK pour un MAYDAY MECP",
+    "mecpAlarmHint": "N'importe qui sur un canal peut envoyer un MAYDAY : l'alarme reste donc désactivée tant que vous ne l'activez pas. Elle retentit une fois par MAYDAY avec position, jamais pour un exercice, un expéditeur bloqué ou une alerte que l'application a mise en sourdine, et est annulée quand l'incident est résolu ou que sa balise est annulée.",
     "starting": "Départ…",
     "startServer": "Démarrer le serveur",
     "stopping": "Arrêt…",

@@ -74,6 +74,7 @@ import {
   retiredRoomContactUid,
 } from './tak/geochat-cot';
 import {
+  buildIncidentAlarmCot,
   buildIncidentMarkerCot,
   INCIDENT_MARKER_STALE_MS,
   incidentMarkerUid,
@@ -277,6 +278,7 @@ export class TakServerManager extends EventEmitter {
   /** Open MECP emergencies on TAK clients' maps, by marker uid. */
   private incidentMarkers = new Map<string, TakIncidentMarker>();
   private incidentMarkerTimer: ReturnType<typeof setInterval> | null = null;
+
   private styleSettings: TakStyleSettings;
 
   constructor() {
@@ -805,13 +807,19 @@ export class TakServerManager extends EventEmitter {
   setIncidentMarkers(markers: TakIncidentMarker[]): void {
     const next = new Map(markers.map((m) => [incidentMarkerUid(m.id), m]));
     const now = Date.now();
-    for (const uid of this.incidentMarkers.keys()) {
+    for (const [uid, prev] of this.incidentMarkers) {
+      // ATAK's alarm for a MAYDAY is cancelled once its marker stops asking for it, or is gone.
+      if (prev.alarm && !next.get(uid)?.alarm) {
+        this.writeToClients(buildIncidentAlarmCot(prev, now, true));
+      }
       if (!next.has(uid)) this.writeToClients(cotDeleteEvent(uid, now));
     }
     for (const [uid, marker] of next) {
       const prev = this.incidentMarkers.get(uid);
-      if (prev && JSON.stringify(prev) === JSON.stringify(marker)) continue;
+      if (JSON.stringify(prev) === JSON.stringify(marker)) continue;
       this.writeToClients(buildIncidentMarkerCot(marker, now));
+      // Sounded once, when it starts asking: a device not connected then sees only the marker.
+      if (marker.alarm && !prev?.alarm) this.writeToClients(buildIncidentAlarmCot(marker, now));
     }
     this.incidentMarkers = next;
     this.scheduleIncidentMarkerRefresh();

@@ -1163,6 +1163,61 @@ describe('TakServerManager incident markers', () => {
     vi.advanceTimersByTime(INCIDENT_MARKER_STALE_MS);
     expect(spots(a)).toEqual([]);
   });
+
+  describe('emergency alarm', () => {
+    const ALARMED: TakIncidentMarker = { ...MARKER, alarm: 'Alice' };
+    const alarms = (socket: tls.TLSSocket) =>
+      written(socket).filter((l) => l.includes('type="b-a-o-tbl"'));
+    const cancels = (socket: tls.TLSSocket) =>
+      written(socket).filter((l) => l.includes('type="b-a-o-can"'));
+
+    it('sounds once on every map for a marker that asks, linked to its marker', () => {
+      const manager = chatManager();
+      const a = connect(manager, ['ANDROID-1', 'VIPER']);
+      const b = connect(manager, ['ANDROID-2', 'EAGLE']);
+      manager.setIncidentMarkers([MARKER]);
+      expect(alarms(a)).toEqual([]);
+      manager.setIncidentMarkers([ALARMED]);
+      manager.setIncidentMarkers([{ ...ALARMED, remarks: `${MARKER.remarks}\n1 acknowledgement` }]);
+      expect(alarms(a)).toHaveLength(1);
+      expect(alarms(b)).toHaveLength(1);
+      expect(alarms(a)[0]).toContain('uid="mesh-client-mecp-abc-alert"');
+      expect(alarms(a)[0]).toContain('<link uid="mesh-client-mecp-abc"');
+      expect(alarms(a)[0]).toContain('<contact callsign="Alice-Alert"/>');
+    });
+
+    it('cancels it when the marker stops asking or is gone, and only once', () => {
+      const manager = chatManager();
+      const a = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setIncidentMarkers([ALARMED, { ...ALARMED, id: 'mecp-other', alarm: 'Bob' }]);
+      manager.setIncidentMarkers([MARKER, { ...ALARMED, id: 'mecp-other', alarm: 'Bob' }]);
+      expect(cancels(a)).toHaveLength(1);
+      expect(cancels(a)[0]).toContain('uid="mesh-client-mecp-abc-alert"');
+      expect(cancels(a)[0]).toContain('<emergency cancel="true">Alice</emergency>');
+      manager.setIncidentMarkers([]);
+      manager.setIncidentMarkers([]);
+      expect(cancels(a)).toHaveLength(2);
+      expect(cancels(a)[1]).toContain('uid="mesh-client-mecp-other-alert"');
+    });
+
+    it('sounds again only once it has been cancelled', () => {
+      const manager = chatManager();
+      const a = connect(manager, ['ANDROID-1', 'VIPER']);
+      manager.setIncidentMarkers([ALARMED]);
+      manager.setIncidentMarkers([MARKER]);
+      manager.setIncidentMarkers([ALARMED]);
+      expect(alarms(a)).toHaveLength(2);
+    });
+
+    it('sounds only for the devices connected when it starts', () => {
+      const manager = chatManager();
+      manager.setIncidentMarkers([ALARMED]);
+      const late = mockTlsSocket();
+      (manager as unknown as ChatInternals)._handleClient(late);
+      expect(spots(late)).toHaveLength(1);
+      expect(alarms(late)).toEqual([]);
+    });
+  });
 });
 
 describe('TakServerManager chat from local clients', () => {

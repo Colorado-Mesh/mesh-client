@@ -5687,6 +5687,8 @@
     "serverNameLabel": "Sunucu Adı",
     "requireCert": "İstemci sertifikası gerektir (mTLS)",
     "autoStart": "Uygulama başlatıldığında otomatik başlatma",
+    "mecpAlarm": "MECP MAYDAY için ATAK acil durum alarmını çaldır",
+    "mecpAlarmHint": "Kanaldaki herkes MAYDAY gönderebilir, bu yüzden siz açana kadar alarm kapalıdır. Konumu olan her MAYDAY için bir kez çalar; tatbikat, engellenen gönderen veya uygulamanın sessize aldığı uyarılar için asla çalmaz ve olay çözüldüğünde ya da işaretçisi iptal edildiğinde iptal edilir.",
     "starting": "Başlangıç…",
     "startServer": "Sunucuyu Başlat",
     "stopping": "Durduruluyor…",
