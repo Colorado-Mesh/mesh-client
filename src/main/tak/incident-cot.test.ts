@@ -4,7 +4,6 @@ import type { TakIncidentMarker } from '../../shared/tak-types';
 import {
   buildIncidentAlarmCot,
   buildIncidentMarkerCot,
-  INCIDENT_ALARM_STALE_MS,
   INCIDENT_MARKER_STALE_MS,
   incidentMarkerArgb,
   incidentMarkerUid,
@@ -52,7 +51,7 @@ describe('emergency alarm', () => {
   it("is ATAK's own emergency alert, linked to the marker and named for the sender", () => {
     const cot = buildIncidentAlarmCot(ALARMED, NOW);
     expect(cot).toContain('uid="mesh-client-mecp-abc123-alert" type="b-a-o-tbl"');
-    expect(cot).toContain(`stale="${new Date(NOW + INCIDENT_ALARM_STALE_MS).toISOString()}"`);
+    expect(cot).toContain(`stale="${new Date(NOW + INCIDENT_MARKER_STALE_MS).toISOString()}"`);
     expect(cot).toContain('<point lat="39.739200" lon="-104.990300"');
     expect(cot).toContain('<link uid="mesh-client-mecp-abc123" type="b-m-p-s-m" relation="p-p"/>');
     expect(cot).toContain('<contact callsign="Alice &amp; co-Alert"/>');

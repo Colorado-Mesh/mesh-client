@@ -490,4 +490,55 @@ describe('useTakInboundChat', () => {
       vi.useRealTimers();
     }
   });
+
+  it("blocks the alarm by the sender's own protocol, not a relay's", async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    // First heard on MeshCore, then relayed onto Meshtastic.
+    const relayed: EmergencyIncident = { ...incident, protocolsSeen: ['meshcore', 'meshtastic'] };
+    const alarmNames = () => setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm);
+    useIncidentStore.setState({ incidents: { [incident.id]: relayed } });
+    useTakRelayPrefsStore.setState({ mecpAlarm: true });
+    try {
+      mount();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      // Someone else with the same id on Meshtastic is blocked: Alice still sounds.
+      act(() => {
+        useMecpBlockStore.getState().block('meshtastic', '1', 'Other');
+      });
+      expect(alarmNames()).toEqual(['Alice']);
+      act(() => {
+        useMecpBlockStore.getState().block('meshcore', '1', 'Alice');
+      });
+      expect(alarmNames()).toEqual([undefined]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
+      useMecpBlockStore.setState({ blocked: {} });
+      useTakRelayPrefsStore.setState({ mecpAlarm: false });
+    }
+  });
 });

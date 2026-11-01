@@ -181,9 +181,12 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     }
     const alarm: TakIncidentAlarm | undefined = mecpAlarm
       ? {
+          // The sender's id belongs to the protocol the report was first heard on; a relay on
+          // another protocol keeps it, and the same id there would be someone else.
           isBlocked: (incident) =>
-            incident.protocolsSeen.some((protocol) =>
-              Object.hasOwn(blockedSenders, mecpBlockKey(protocol, incident.senderId)),
+            Object.hasOwn(
+              blockedSenders,
+              mecpBlockKey(incident.protocolsSeen[0] ?? incident.protocol, incident.senderId),
             ),
         }
       : undefined;

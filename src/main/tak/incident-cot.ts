@@ -10,8 +10,6 @@ import { escapeXml } from '../../shared/xmlEscape';
 
 /** ATAK's spot marker, which takes a colour. */
 const SPOT_MARKER_TYPE = 'b-m-p-s-m';
-/** How long ATAK keeps an alarm nobody cancels; the same as MeshCore TAK Bridge. */
-export const INCIDENT_ALARM_STALE_MS = 60 * 60 * 1000;
 /** How long ATAK keeps a marker without a refresh; main refreshes well inside it. */
 export const INCIDENT_MARKER_STALE_MS = 30 * 60 * 1000;
 const UNKNOWN = '9999999.0';
@@ -74,14 +72,20 @@ export function buildIncidentAlarmCot(
 ): string {
   const name = escapeXml(marker.alarm ?? marker.callsign);
   const uid = incidentMarkerUid(marker.id);
+  // Left uncancelled (main gone), ATAK drops it when the marker would go stale.
   return (
-    eventHead(`${uid}-alert`, cancel ? 'b-a-o-can' : 'b-a-o-tbl', nowMs, INCIDENT_ALARM_STALE_MS) +
+    eventHead(
+      `${uid}-alert`,
+      'b-a-o-' + (cancel ? 'can' : 'tbl'),
+      nowMs,
+      INCIDENT_MARKER_STALE_MS,
+    ) +
     point(marker) +
-    (cancel
-      ? `<detail><emergency cancel="true">${name}</emergency></detail>`
-      : `<detail><link uid="${escapeXml(uid)}" type="${SPOT_MARKER_TYPE}" relation="p-p"/>` +
-        `<contact callsign="${name}-Alert"/><emergency type="911 Alert">${name}</emergency></detail>`) +
-    `</event>`
+    `<detail>${
+      cancel
+        ? ''
+        : `<link uid="${escapeXml(uid)}" type="${SPOT_MARKER_TYPE}" relation="p-p"/><contact callsign="${name}-Alert"/>`
+    }<emergency ${cancel ? 'cancel="true"' : 'type="911 Alert"'}>${name}</emergency></detail></event>`
   );
 }
 
