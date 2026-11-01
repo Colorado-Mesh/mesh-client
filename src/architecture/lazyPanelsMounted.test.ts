@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest';
  * lazy modules cannot be forgotten. Cross-file, so not a sourcePolicyRules regex.
  */
 const RENDERER_DIR = join(__dirname, '../renderer');
-const LAZY_FILES = ['lazyTabPanels.ts', 'lazyAppPanels.ts', 'lazyModals.ts'] as const;
+const LAZY_FILES = [
+  'lazyTabPanels.ts',
+  'lazyAppPanels.ts',
+  'lazyModals.ts',
+  'lazyShellOverlays.ts',
+] as const;
 const APP_SOURCE = readFileSync(join(RENDERER_DIR, 'App.tsx'), 'utf-8');
 
 describe('lazy panels and modals are mounted in App', () => {
@@ -28,7 +33,7 @@ describe('lazy panels and modals are mounted in App', () => {
       expect(found).toBe(true);
       if (!found) {
         throw new Error(
-          `Expected App.tsx to render <${name} /> (lazy export from lazyTabPanels / lazyAppPanels / lazyModals)`,
+          `Expected App.tsx to render <${name} /> (lazy export from lazyTabPanels / lazyAppPanels / lazyModals / lazyShellOverlays)`,
         );
       }
     }

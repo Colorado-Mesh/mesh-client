@@ -98,27 +98,49 @@ export default defineConfig({
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
       // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.
       // in the browser bundle which the renderer rejects at runtime.
+    },
+    // Vite 8 / Rolldown vendor groups (replaces rollup manual chunk hooks).
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/'))
-            return 'react';
-          if (
-            id.includes('node_modules/recharts') ||
-            id.includes('node_modules/d3-') ||
-            id.includes('node_modules/victory-')
-          )
-            return 'recharts';
-          if (
-            id.includes('node_modules/leaflet') ||
-            id.includes('node_modules/react-leaflet') ||
-            id.includes('node_modules/@react-leaflet')
-          )
-            return 'leaflet';
-          if (id.includes('node_modules/@meshtastic') || id.includes('node_modules/protobufjs'))
-            return 'meshtastic';
-          if (id.includes('node_modules/@liamcottle/meshcore')) return 'meshcore';
-          if (id.includes('node_modules/@michaelhart/meshcore-decoder')) return 'meshcore-decoder';
-          if (id.includes('node_modules/esptool-js')) return 'esptool-js';
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react-dom|react)([\\/]|$)/,
+              priority: 40,
+            },
+            {
+              name: 'recharts',
+              test: /node_modules[\\/](recharts|d3-|victory-)/,
+              priority: 30,
+            },
+            {
+              name: 'leaflet',
+              test: /node_modules[\\/](leaflet|react-leaflet|@react-leaflet)([\\/]|$)/,
+              priority: 30,
+            },
+            {
+              name: 'meshtastic',
+              test: /node_modules[\\/](@meshtastic|protobufjs)([\\/]|$)/,
+              priority: 30,
+            },
+            {
+              // Package id is `@liamcottle/meshcore.js` — match the package prefix, not a path end.
+              name: 'meshcore',
+              test: /node_modules[\\/]@liamcottle[\\/]meshcore/,
+              priority: 30,
+            },
+            {
+              name: 'meshcore-decoder',
+              test: /node_modules[\\/]@michaelhart[\\/]meshcore-decoder/,
+              priority: 30,
+            },
+            {
+              name: 'esptool-js',
+              test: /node_modules[\\/]esptool-js/,
+              priority: 30,
+            },
+          ],
         },
       },
     },

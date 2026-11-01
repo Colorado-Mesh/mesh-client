@@ -28,6 +28,23 @@ describe('vite build config', () => {
     expect(VITE_CONFIG).toMatch(/appChunkBudgetPlugin\(\)/);
   });
 
+  it('splits vendor libs with Rolldown codeSplitting groups', () => {
+    expect(VITE_CONFIG).toMatch(/rolldownOptions:\s*\{/);
+    expect(VITE_CONFIG).toMatch(/codeSplitting:\s*\{/);
+    expect(VITE_CONFIG).not.toMatch(/manualChunks/);
+    for (const name of [
+      'react',
+      'recharts',
+      'leaflet',
+      'meshtastic',
+      'meshcore',
+      'meshcore-decoder',
+      'esptool-js',
+    ]) {
+      expect(VITE_CONFIG).toContain(`name: '${name}'`);
+    }
+  });
+
   it('uses import.meta.dirname for native ESM configLoader compatibility', () => {
     expect(VITE_CONFIG).not.toMatch(/__dirname/);
     expect(VITE_CONFIG).toMatch(/import\.meta\.dirname/);

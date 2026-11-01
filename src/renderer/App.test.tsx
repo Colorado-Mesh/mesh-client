@@ -572,7 +572,26 @@ vi.mock('./lazyModals', () => ({
     lastNodeDetailModalProps.current = props;
     return null;
   },
+  ReticulumPeerDetailModal: () => null,
 }));
+
+vi.mock('./lazyShellOverlays', async () => {
+  const { AppAboutSection } = await import('./components/AppAboutSection');
+  const ConfigureNodeSelector = (await import('./components/ConfigureNodeSelector')).default;
+  const { PanelLauncher } = await import('./components/shell/PanelLauncher');
+  const StartupLocationPrompt = (await import('./components/StartupLocationPrompt')).default;
+  return {
+    AppAboutSection,
+    ConfigureNodeSelector,
+    GlobalMessageSearchDialog: () => null,
+    KeyVerificationDialog: () => null,
+    PanelLauncher,
+    RncpEnableRequestModal: () => null,
+    ReticulumVoiceOverlay: () => null,
+    StartupLocationPrompt,
+    UnifiedInboxDialog: () => null,
+  };
+});
 
 vi.mock('./lib/appSettingsStorage', () => ({
   getAppSettingsRaw: vi.fn().mockReturnValue(null),
