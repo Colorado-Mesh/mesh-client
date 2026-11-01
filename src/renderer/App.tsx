@@ -154,9 +154,11 @@ import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
 import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
+import { GlobalMessageSearchDialog } from './components/GlobalMessageSearchDialog';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import { UnseenEmergencyBanner } from './components/incident/UnseenEmergencyBanner';
+import { KeyVerificationDialog } from './components/KeyVerificationDialog';
 import LanguageSelector from './components/LanguageSelector';
 import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
@@ -177,6 +179,7 @@ import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
 import StartupLocationPrompt from './components/StartupLocationPrompt';
 import { ToastProvider, useToast } from './components/Toast';
+import { UnifiedInboxDialog } from './components/UnifiedInboxDialog';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
@@ -313,7 +316,13 @@ import {
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
+import { buildDetectedFlashDevice } from './lib/flasher/deviceFirmwareBoards';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
+import {
+  type GlobalMessageSearchHit,
+  isGlobalMessageSearchShortcut,
+  type PendingMessageFocus,
+} from './lib/globalMessageSearch';
 import { latchHiddenProtocolStop, releaseHiddenProtocolStop } from './lib/hiddenProtocolStop';
 import { loadLastConnection } from './lib/lastConnectionStorage';
 import type {
@@ -413,6 +422,7 @@ import type {
   MeshProtocol,
 } from './lib/types';
 import { REGISTERED_MESH_PROTOCOLS } from './lib/types';
+import { isUnifiedInboxShortcut } from './lib/unifiedInbox';
 import {
   ProtocolRuntimeProvider,
   type RuntimeMap,
@@ -672,6 +682,9 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
+  const [pendingMessageFocus, setPendingMessageFocus] = useState<PendingMessageFocus | null>(null);
+  const [globalMessageSearchOpen, setGlobalMessageSearchOpen] = useState(false);
+  const [unifiedInboxOpen, setUnifiedInboxOpen] = useState(false);
   const [pendingSettingAnchor, setPendingSettingAnchor] = useState<PendingSettingAnchor | null>(
     null,
   );
@@ -1845,6 +1858,21 @@ function AppContent() {
     ],
   );
 
+  /** Stable across App re-renders so search/inbox effects do not restart on unrelated updates. */
+  const ownNodeIdsByProtocol = useMemo(
+    () => ({
+      meshtastic: meshtasticOwnNodeIdSet,
+      meshcore: meshcoreOwnNodeIdSet,
+      reticulum: reticulumOwnNodeIdSet,
+    }),
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet],
+  );
+
+  const ownReticulumHashes = useMemo(() => {
+    const hash = reticulumIdentity?.lxmf_hash?.trim().toLowerCase();
+    return hash ? new Set<string>([hash]) : undefined;
+  }, [reticulumIdentity?.lxmf_hash]);
+
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
       useIncidentStore.getState().markSeen(incident.id);
@@ -2284,6 +2312,24 @@ function AppContent() {
     onPinnedShortcut: openPinnedPanel,
   });
   useChatMacroShortcuts();
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.repeat) return;
+      if (isUnifiedInboxShortcut(e, platform)) {
+        e.preventDefault();
+        setUnifiedInboxOpen((open) => !open);
+        return;
+      }
+      if (!isGlobalMessageSearchShortcut(e, platform)) return;
+      e.preventDefault();
+      setGlobalMessageSearchOpen((open) => !open);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [platform]);
 
   // Live wire_packet WS frames are disabled (they starved LXMF). Poll while Sniffer/Stats is open.
   useReticulumRawPacketPoll({
@@ -3362,6 +3408,39 @@ function AppContent() {
   const handleChannelTargetConsumed = useCallback(() => {
     setPendingChannelTarget(null);
   }, []);
+  const handleMessageFocusConsumed = useCallback(() => {
+    setPendingMessageFocus(null);
+  }, []);
+  const openGlobalMessageSearch = useCallback(() => {
+    setGlobalMessageSearchOpen(true);
+  }, []);
+  const handleGlobalMessageSearchHit = useCallback(
+    (hit: GlobalMessageSearchHit) => {
+      let dmPeer = hit.dmPeer;
+      if (hit.protocol === 'reticulum' && hit.reticulumPeerHash) {
+        try {
+          dmPeer = openReticulumDmFromHash(hit.reticulumPeerHash);
+        } catch (err) {
+          console.warn('[App] global search open Reticulum DM failed', err);
+          dmPeer = null;
+        }
+      }
+      openChatFromNotification({
+        kind: 'chat',
+        protocol: hit.protocol,
+        channel: hit.channel,
+        dmPeer,
+      });
+      setPendingMessageFocus({
+        timestamp: hit.timestamp,
+        packetId: hit.packetId,
+        reticulumMessageHash: hit.reticulumMessageHash,
+        dbId: hit.dbId,
+        highlightQuery: hit.payload.slice(0, 64),
+      });
+    },
+    [openChatFromNotification],
+  );
 
   const { refreshMessagesFromDb: refreshMeshtasticMessagesInStore } = meshtasticDbRefresh;
   const {
@@ -4402,11 +4481,7 @@ function AppContent() {
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         activeProtocol={protocol}
-        ownNodeIdsByProtocol={{
-          meshtastic: meshtasticOwnNodeIdSet,
-          meshcore: meshcoreOwnNodeIdSet,
-          reticulum: reticulumOwnNodeIdSet,
-        }}
+        ownNodeIdsByProtocol={ownNodeIdsByProtocol}
         messagesByProtocol={uiMessagesByProtocol}
         enabledProtocols={enabledProtocols}
       />
@@ -4735,6 +4810,9 @@ function AppContent() {
                               onDmTargetConsumed={handleDmTargetConsumed}
                               initialChannelTarget={pendingChannelTarget}
                               onChannelTargetConsumed={handleChannelTargetConsumed}
+                              initialMessageFocus={pendingMessageFocus}
+                              onMessageFocusConsumed={handleMessageFocusConsumed}
+                              onOpenGlobalMessageSearch={openGlobalMessageSearch}
                               isActive={activePanelIndex === 1}
                               protocol={protocol}
                               identityId={focusedIdentityId}
@@ -4742,6 +4820,7 @@ function AppContent() {
                               hasRncpTransfer={capabilities.hasRncpTransfer}
                               hasLxstVoice={capabilities.hasLxstVoice}
                               hasReticulumVoiceMemo={capabilities.hasReticulumVoiceMemo}
+                              hasReticulumFileAttachments={capabilities.hasReticulumFileAttachments}
                               onVoiceMemo={
                                 capabilities.hasReticulumVoiceMemo && reticulumIdentityId
                                   ? (destination: number) => {
@@ -5734,6 +5813,13 @@ function AppContent() {
                                       ? meshtasticPanelActions.factoryResetConfig
                                       : undefined
                                   }
+                                  firmwareFlashDevice={buildDetectedFlashDevice(protocol, {
+                                    isConnected: isOperational,
+                                    state: activeConnectionView.state,
+                                    meshtasticHwModel: meshtasticUiNodes.get(
+                                      meshtasticConnectionView.state.myNodeNum,
+                                    )?.hw_model,
+                                  })}
                                 />
                               )}
                             </Suspense>
@@ -6438,6 +6524,42 @@ function AppContent() {
       {nodeDetailModalOpen && renderNodeDetail('modal')}
 
       {peerDetailModalOpen && renderPeerDetail('modal')}
+
+      {/* Meshtastic-only: renders nothing unless a key-verification handshake is active. */}
+      <KeyVerificationDialog />
+
+      {globalMessageSearchOpen ? (
+        <GlobalMessageSearchDialog
+          open
+          onClose={() => {
+            setGlobalMessageSearchOpen(false);
+          }}
+          enabledProtocols={enabledProtocols}
+          reticulumIdentityId={reticulumIdentityId}
+          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+          ownReticulumHashes={ownReticulumHashes}
+          onSelectHit={handleGlobalMessageSearchHit}
+          onOpenInbox={() => {
+            setGlobalMessageSearchOpen(false);
+            setUnifiedInboxOpen(true);
+          }}
+        />
+      ) : null}
+
+      {unifiedInboxOpen ? (
+        <UnifiedInboxDialog
+          open
+          onClose={() => {
+            setUnifiedInboxOpen(false);
+          }}
+          enabledProtocols={enabledProtocols}
+          messagesByProtocol={uiMessagesByProtocol}
+          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+          ownReticulumHashes={ownReticulumHashes}
+          reticulumIdentityId={reticulumIdentityId}
+          onSelectItem={handleGlobalMessageSearchHit}
+        />
+      ) : null}
     </>
   );
 }

@@ -90,6 +90,28 @@ describe('nomadServingApi', () => {
     expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving', {
       enabled: true,
       display_name: 'Home',
+      allow_executable_pages: undefined,
+    });
+    expect(body.ok).toBe(true);
+  });
+
+  it('passes allowExecutablePages when set', async () => {
+    const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+    proxyPut.mockResolvedValueOnce({
+      ok: true,
+      serving: { enabled: true, running: true, allow_executable_pages: true },
+    });
+
+    const body = await setServing({
+      enabled: true,
+      displayName: 'Home',
+      allowExecutablePages: true,
+    });
+
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving', {
+      enabled: true,
+      display_name: 'Home',
+      allow_executable_pages: true,
     });
     expect(body.ok).toBe(true);
   });

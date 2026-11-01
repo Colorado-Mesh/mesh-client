@@ -18,3 +18,23 @@ export const SUPPORTED_LANGUAGES = [
 ] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LANGUAGES)[number]['code'];
+
+/**
+ * Language bases that use right-to-left script. Kept as plain tags (not
+ * SupportedLocale) so RTL document plumbing works before ar/he ship as
+ * selectable languages with translated bundles.
+ */
+export const RTL_LANGUAGE_BASES = ['ar', 'he'] as const;
+
+export type TextDirection = 'ltr' | 'rtl';
+
+/** Base language subtag of a BCP-47 tag (`ar-EG` → `ar`). */
+function baseLanguage(code: string): string {
+  return code.split(/[-_]/)[0]?.toLowerCase() ?? '';
+}
+
+export function getTextDirection(code: string | null | undefined): TextDirection {
+  if (!code) return 'ltr';
+  const base = baseLanguage(code);
+  return (RTL_LANGUAGE_BASES as readonly string[]).includes(base) ? 'rtl' : 'ltr';
+}

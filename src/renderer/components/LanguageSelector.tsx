@@ -130,7 +130,7 @@ export default function LanguageSelector() {
                   onClick={() => {
                     handleSelect(code);
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                  className={`w-full px-3 py-1.5 text-start text-xs transition-colors ${
                     i18n.language === code
                       ? 'text-brand-green bg-ink-800'
                       : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100'

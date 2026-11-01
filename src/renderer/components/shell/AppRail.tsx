@@ -88,7 +88,7 @@ export function AppRail({
         </span>
         {badge && (
           <span
-            className={`text-label absolute top-1 right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.25 font-mono leading-none font-medium text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
+            className={`text-label absolute end-1.5 top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.25 font-mono leading-none font-medium text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
           >
             {formatBadgeCount(badge.count)}
           </span>
@@ -104,7 +104,7 @@ export function AppRail({
     <nav
       aria-label={t('aria.applicationPanels')}
       data-tooltip-side="right"
-      className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-r pt-1.5 pb-3.5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2.5"
+      className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-e pt-1.5 pb-3.5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2.5"
     >
       {/* The scroller clips its overflow, so part of the top padding lives inside it: the protocol
           switcher's unread badge sits above the first button. */}

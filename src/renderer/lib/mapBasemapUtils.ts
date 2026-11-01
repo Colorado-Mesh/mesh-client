@@ -4,10 +4,16 @@ import {
   type OfflineMapBasemapId,
   USGS_TOPO_MAX_NATIVE_ZOOM,
 } from '@/shared/offlineMaps/basemapRegistry';
+import {
+  customAttributionToHtml,
+  type CustomMapSourceId,
+  type CustomMapSourceInfo,
+  isCustomMapSourceId,
+} from '@/shared/offlineMaps/customMapSources';
 
 import { isDevElectronApiStub } from './devElectronApiStub';
 
-export type MapBasemapId = OfflineMapBasemapId;
+export type MapBasemapId = OfflineMapBasemapId | CustomMapSourceId;
 
 export interface MapBasemapConfig {
   id: MapBasemapId;
@@ -20,7 +26,7 @@ export interface MapBasemapConfig {
   maxNativeZoom?: number;
 }
 
-export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
+export const MAP_BASEMAPS: Record<OfflineMapBasemapId, MapBasemapConfig> = {
   dark: {
     id: 'dark',
     url: MESH_TILES_URL_TEMPLATES.dark,
@@ -43,7 +49,7 @@ export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
   },
 };
 
-export const DEFAULT_MAP_BASEMAP_ID: MapBasemapId = 'osm';
+export const DEFAULT_MAP_BASEMAP_ID: OfflineMapBasemapId = 'osm';
 
 /**
  * Highest zoom for every map, set on the map itself. It equals Leaflet's TileLayer default (18),
@@ -61,7 +67,34 @@ export function meshTilesAvailable(): boolean {
 }
 
 export function isValidMapBasemapId(value: unknown): value is MapBasemapId {
-  return value === 'dark' || value === 'osm' || value === 'usgs-topo';
+  return value === 'dark' || value === 'osm' || value === 'usgs-topo' || isCustomMapSourceId(value);
+}
+
+/** Leaflet config for a user-confirmed custom source (attribution escaped: plain text → HTML). */
+export function buildCustomBasemapConfig(info: CustomMapSourceInfo): MapBasemapConfig {
+  return {
+    id: info.id,
+    url: `mesh-tiles://${info.id}/{z}/{x}/{y}.png`,
+    attribution: customAttributionToHtml(info.attribution),
+    isDark: false,
+    ...(info.maxNativeZoom != null ? { maxNativeZoom: info.maxNativeZoom } : {}),
+  };
+}
+
+/**
+ * Resolve any basemap id. Unknown custom ids (removed source) fall back to the default; while the
+ * custom list is still loading (`customSources === null`) the id is served without attribution text.
+ */
+export function resolveMapBasemap(
+  id: MapBasemapId,
+  customSources: readonly CustomMapSourceInfo[] | null,
+): MapBasemapConfig {
+  if (!isCustomMapSourceId(id)) return MAP_BASEMAPS[id];
+  if (customSources === null) {
+    return { id, url: `mesh-tiles://${id}/{z}/{x}/{y}.png`, attribution: '', isDark: false };
+  }
+  const info = customSources.find((s) => s.id === id);
+  return info ? buildCustomBasemapConfig(info) : MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
 }
 
 export interface MapOverlayColors {

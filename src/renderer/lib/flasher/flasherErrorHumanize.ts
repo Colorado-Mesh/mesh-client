@@ -28,6 +28,15 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'ESP32_FLASH_STALLED' || message === 'NRF52_DFU_STALLED') {
     return i18n.t('flasher.errors.esp32FlashStalled');
   }
+  if (message === 'ESP32_CHIP_MISMATCH') {
+    return i18n.t('flasher.errors.esp32ChipMismatch');
+  }
+  if (message === 'ESP32_IMAGE_EXCEEDS_FLASH') {
+    return i18n.t('flasher.errors.imageExceedsFlash');
+  }
+  if (message === 'ESP32_FLASH_CANCELLED' || message === 'NRF52_DFU_CANCELLED') {
+    return i18n.t('flasher.errors.flashCancelled');
+  }
   if (message === 'ESP32_READ_STALLED') {
     return i18n.t('flasher.errors.esp32ReadStalled');
   }

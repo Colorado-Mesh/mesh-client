@@ -3,13 +3,18 @@ import path from 'path';
 
 import {
   DARK_BASEMAP_CACHE_REVISION,
-  isOfflineMapBasemapId,
+  isMapSourceId,
+  type MapSourceId,
   type OfflineMapBasemapId,
 } from '@/shared/offlineMaps/basemapRegistry';
+import {
+  CUSTOM_SOURCE_CACHE_MAX_BYTES,
+  isCustomMapSourceId,
+} from '@/shared/offlineMaps/customMapSources';
 import { TILE_CACHE_MAX_BYTES } from '@/shared/offlineMaps/tileMath';
 
 export interface TileCacheCoords {
-  basemapId: OfflineMapBasemapId;
+  basemapId: MapSourceId;
   z: number;
   x: number;
   y: number;
@@ -57,7 +62,7 @@ export function parseTileCoords(
   xRaw: string,
   yRaw: string,
 ): TileCacheCoords | null {
-  if (!isOfflineMapBasemapId(basemapId)) return null;
+  if (!isMapSourceId(basemapId)) return null;
   if (!/^\d+$/.test(zRaw) || !/^\d+$/.test(xRaw)) return null;
   const retina = yRaw.endsWith('@2x');
   const yDigits = retina ? yRaw.slice(0, -3) : yRaw;
@@ -80,12 +85,14 @@ export class TileCache {
   private statsInitialized = false;
   private statsInit: Promise<void> | null = null;
   private evictionInFlight: Promise<void> | null = null;
+  private readonly sourceEvictionInFlight = new Map<string, Promise<void>>();
   private manifestChain: Promise<void> = Promise.resolve();
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly rootDir: string,
     private readonly maxBytes: number = TILE_CACHE_MAX_BYTES,
+    private readonly customSourceMaxBytes: number = CUSTOM_SOURCE_CACHE_MAX_BYTES,
   ) {}
 
   private manifestPath(): string {
@@ -273,6 +280,9 @@ export class TileCache {
       this.applySourceDelta(c.basemapId, 1, data.byteLength);
     }
     this.schedulePersistSourceStats();
+    if (isCustomMapSourceId(c.basemapId)) {
+      await this.evictCustomSourceIfNeeded(c.basemapId);
+    }
     await this.evictIfNeeded();
   }
 
@@ -292,7 +302,7 @@ export class TileCache {
     });
   }
 
-  async clearSource(basemapId: OfflineMapBasemapId): Promise<void> {
+  async clearSource(basemapId: MapSourceId): Promise<void> {
     await this.ensureStats();
     await fs.rm(path.join(this.rootDir, basemapId), { recursive: true, force: true });
     const removed = this.sourceStats.get(basemapId);
@@ -340,7 +350,7 @@ export class TileCache {
           continue;
         }
         if (st.isDirectory()) {
-          const nextId = basemapId ?? (isOfflineMapBasemapId(name) ? name : null);
+          const nextId = basemapId ?? (isMapSourceId(name) ? name : null);
           await walk(full, nextId);
         } else if (st.isFile() && name.endsWith('.png') && basemapId) {
           const cur = bySource.get(basemapId) ?? { tileCount: 0, diskBytes: 0 };
@@ -364,6 +374,65 @@ export class TileCache {
     }
   }
 
+  /**
+   * Per-source quota for custom XYZ sources: a single provider cannot crowd out the shared cache.
+   * Evicts that source's oldest tiles (by mtime) down to ~90% of the quota; single-flight per source.
+   */
+  private async evictCustomSourceIfNeeded(id: MapSourceId): Promise<void> {
+    const used = this.sourceStats.get(id)?.diskBytes ?? 0;
+    if (used <= this.customSourceMaxBytes) return;
+    let run = this.sourceEvictionInFlight.get(id);
+    if (!run) {
+      run = this.runCustomSourceEviction(id).finally(() => {
+        this.sourceEvictionInFlight.delete(id);
+      });
+      this.sourceEvictionInFlight.set(id, run);
+    }
+    await run;
+  }
+
+  private async runCustomSourceEviction(id: MapSourceId): Promise<void> {
+    const lowWater = Math.floor(this.customSourceMaxBytes * 0.9);
+    const entries: { file: string; mtimeMs: number; size: number }[] = [];
+    const walk = async (dir: string): Promise<void> => {
+      let names: string[];
+      try {
+        names = await fs.readdir(dir);
+      } catch {
+        // catch-no-log-ok
+        return;
+      }
+      for (const name of names) {
+        const full = path.join(dir, name);
+        let st;
+        try {
+          st = await fs.stat(full);
+        } catch {
+          // catch-no-log-ok race
+          continue;
+        }
+        if (st.isDirectory()) await walk(full);
+        else if (st.isFile() && name.endsWith('.png')) {
+          entries.push({ file: full, mtimeMs: st.mtimeMs, size: st.size });
+        }
+      }
+    };
+    await walk(path.join(this.rootDir, id));
+    entries.sort((a, b) => a.mtimeMs - b.mtimeMs);
+    let removed = 0;
+    for (const e of entries) {
+      if ((this.sourceStats.get(id)?.diskBytes ?? 0) <= lowWater) break;
+      try {
+        await fs.unlink(e.file);
+        this.applySourceDelta(id, -1, -e.size);
+        removed += 1;
+      } catch {
+        // catch-no-log-ok race
+      }
+    }
+    if (removed > 0) this.schedulePersistSourceStats();
+  }
+
   /** Evict oldest tiles down to ~90% of maxBytes (hysteresis / low-water mark). */
   private async runEviction(): Promise<void> {
     const lowWater = Math.floor(this.maxBytes * 0.9);
@@ -371,13 +440,13 @@ export class TileCache {
 
     interface Entry {
       file: string;
-      basemapId: OfflineMapBasemapId;
+      basemapId: MapSourceId;
       mtimeMs: number;
       size: number;
     }
     const entries: Entry[] = [];
 
-    const walk = async (dir: string, basemapId: OfflineMapBasemapId | null): Promise<void> => {
+    const walk = async (dir: string, basemapId: MapSourceId | null): Promise<void> => {
       let names: string[];
       try {
         names = await fs.readdir(dir);
@@ -396,7 +465,7 @@ export class TileCache {
           continue;
         }
         if (st.isDirectory()) {
-          const nextId = basemapId ?? (isOfflineMapBasemapId(name) ? name : null);
+          const nextId = basemapId ?? (isMapSourceId(name) ? name : null);
           if (nextId) await walk(full, nextId);
         } else if (st.isFile() && name.endsWith('.png') && basemapId) {
           entries.push({ file: full, basemapId, mtimeMs: st.mtimeMs, size: st.size });
@@ -423,6 +492,10 @@ export class TileCache {
   }
 }
 
-export function createTileCache(userDataPath: string, maxBytes?: number): TileCache {
-  return new TileCache(path.join(userDataPath, 'tile-cache'), maxBytes);
+export function createTileCache(
+  userDataPath: string,
+  maxBytes?: number,
+  customSourceMaxBytes?: number,
+): TileCache {
+  return new TileCache(path.join(userDataPath, 'tile-cache'), maxBytes, customSourceMaxBytes);
 }

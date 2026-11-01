@@ -18,6 +18,13 @@ const nomadNetworkEntries: readonly SettingSearchEntry[] = [
     keywords: ['node name', 'site name', 'host'],
   },
   {
+    id: 'nomadNetwork.serving.allowExecutablePages',
+    slot: 'NomadNetwork',
+    labelKey: 'nomadNetwork.serving.allowExecutablePages',
+    sectionKey: SERVING,
+    keywords: ['cgi', 'executable', 'script', 'shell', '+x'],
+  },
+  {
     id: 'nomadNetwork.serving.startStop',
     slot: 'NomadNetwork',
     labelKey: 'nomadNetwork.serving.enable',
@@ -43,6 +50,10 @@ export const nomadNetworkSurface: SettingsSearchSurface = {
     'nomadNetwork.serving.contentSourceNone': 'placeholder of the indexed content source',
     'nomadNetwork.serving.chooseFolder': 'button of the indexed content source row',
     'nomadNetwork.serving.folderHint': 'help text under the indexed content source',
+    'nomadNetwork.serving.allowExecutablePagesHint':
+      'help text under the indexed executable-pages switch',
+    'nomadNetwork.serving.allowExecutablePagesUnsupported':
+      'platform-disabled help text under the indexed executable-pages switch',
     'nomadNetwork.serving.disable': 'running-state label of the indexed enable button',
     'nomadNetwork.serving.sidecarRequired': 'stack-stopped notice, not a control',
     'nomadNetwork.serving.servingChip': 'status chip, not a control',

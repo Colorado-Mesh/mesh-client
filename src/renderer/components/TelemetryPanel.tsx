@@ -20,6 +20,7 @@ import { meshcoreFloodSendPercent } from '../lib/meshcore/meshcoreFloodSendPerce
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import CayenneTelemetrySection from './CayenneTelemetrySection';
 import { HelpTooltip } from './HelpTooltip';
 import RefreshButton from './RefreshButton';
 import SignalMeter from './SignalMeter';
@@ -806,6 +807,9 @@ export default function TelemetryPanel({
           </div>
         </>
       )}
+
+      {/* Cayenne LPP sensor charts (Meshtastic CAYENNE_APP; hidden when capability/data absent). */}
+      <CayenneTelemetrySection capabilities={capabilities} />
     </div>
   );
 }

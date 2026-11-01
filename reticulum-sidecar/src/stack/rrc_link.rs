@@ -390,10 +390,10 @@ async fn refresh_hub_path(
     let mut snapshot = None;
     if mode == RrcPathRefresh::DropAndRefresh {
         snapshot = query_path_route(transport_tx, dest_hash, PATH_LOOKUP_TIMEOUT).await;
-        if let Some(ref failed) = snapshot {
-            if should_apply_rrc_path_failover(failed, failover.rounds) {
-                apply_failed_route_failover(transport_tx, dest_hash, failed, failover).await;
-            }
+        if let Some(ref failed) = snapshot
+            && should_apply_rrc_path_failover(failed, failover.rounds)
+        {
+            apply_failed_route_failover(transport_tx, dest_hash, failed, failover).await;
         }
         // Explicit DropPath covers both cached and uncached identities. Clear
         // drop_existing_path so resolve_destination does not DropPath again on

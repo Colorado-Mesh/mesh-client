@@ -58,8 +58,9 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     const hook = readSrc('renderer/hooks/useChatOutbox.ts');
     expect(hook).toMatch(/export const EMERGENCY_OUTBOX_SOFT_CAP = \d+;/);
     expect(hook).toMatch(
-      /isAppManagedOutboxRow\(row\) \|\| now - row\.createdAt <= OUTBOX_MAX_AGE_MS/,
+      /isAppManagedOutboxRow\(row\) \|\| now - outboxRowAgeAnchorMs\(row\) <= OUTBOX_MAX_AGE_MS/,
     );
+    expect(hook).toMatch(/isAppManagedOutboxRow\(row\) \|\| row\.attemptCount < MAX_ATTEMPTS/);
     expect(hook).toMatch(/isAppManagedOutboxRow\(row\) \|\| nextAttemptCount < MAX_ATTEMPTS/);
   });
 
@@ -148,7 +149,7 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     const app = readSrc('renderer/App.tsx');
     expect(app.match(/useEmergencyOutboxDrain\(\{/g)).toHaveLength(1);
     expect(app).toMatch(/REGISTERED_MESH_PROTOCOLS\.map\(\(p\) => \(\{/);
-    expect(readSrc('renderer/hooks/useEmergencyOutboxDrain.ts')).toMatch(/isAppManagedOutboxRow/);
+    expect(readSrc('renderer/hooks/useEmergencyOutboxDrain.ts')).toMatch(/isAppDrainedOutboxRow/);
   });
 
   it('S12: startup and session prune pass incident-exempt node ids; main excludes them', () => {
@@ -178,7 +179,7 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(watcher).toMatch(/const blocked = isMecpSenderBlocked\(/);
     expect(watcher).toMatch(/if \(!blocked && !alerted\.has\(key\)\)/);
     expect(watcher).toMatch(/\.\.\.\(blocked \? \{ blocked: true \} : \{\}\)/);
-    expect(watcher).toMatch(/if \(!blocked && \(slice\.protocol === 'meshtastic'/);
+    expect(watcher).toMatch(/if \(!blocked\) \{\s*void executeMecpRebroadcast\(/);
     expect(readSrc('renderer/components/ChatPanel.tsx')).toMatch(/isMecpSenderBlocked\(protocol,/);
   });
 

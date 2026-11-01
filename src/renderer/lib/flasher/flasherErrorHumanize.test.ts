@@ -13,6 +13,9 @@ vi.mock('@/renderer/lib/i18n', () => ({
         'flasher.errors.esp32FlashStalled': 'Firmware transfer stalled with no progress.',
         'flasher.errors.provisionWipeRequired': 'EEPROM is locked with an invalid identity.',
         'flasher.errors.provisionVerifyFailed': 'device still reports an unprovisioned EEPROM',
+        'flasher.errors.esp32ChipMismatch': 'The connected chip does not match the selected board.',
+        'flasher.errors.imageExceedsFlash': 'Image is larger than the flash chip.',
+        'flasher.errors.flashCancelled': 'Flash cancelled.',
         'flasher.errors.generic': 'Operation failed: {{message}}',
         'flasher.errors.unknown': 'An unexpected error occurred.',
       };
@@ -71,5 +74,12 @@ describe('humanizeFlasherError', () => {
     expect(humanizeFlasherError(new Error('PROVISION_VERIFY_FAILED'))).toContain(
       'unprovisioned EEPROM',
     );
+  });
+
+  it('maps device-firmware flash safety errors', () => {
+    expect(humanizeFlasherError(new Error('ESP32_CHIP_MISMATCH'))).toContain('does not match');
+    expect(humanizeFlasherError(new Error('ESP32_IMAGE_EXCEEDS_FLASH'))).toContain('larger');
+    expect(humanizeFlasherError(new Error('ESP32_FLASH_CANCELLED'))).toBe('Flash cancelled.');
+    expect(humanizeFlasherError(new Error('NRF52_DFU_CANCELLED'))).toBe('Flash cancelled.');
   });
 });

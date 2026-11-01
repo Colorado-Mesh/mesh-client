@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
+import { useCustomMapSourcesStore } from '@/renderer/stores/customMapSourcesStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 
 import { SELECT_BOX_SM_CLASS } from '../ui/formClasses';
@@ -43,6 +44,7 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
   const setLayersPanelOpen = useMapLayerStore((s) => s.setLayersPanelOpen);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const setBasemapId = useMapLayerStore((s) => s.setBasemapId);
+  const customSources = useCustomMapSourcesStore((s) => s.sources);
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
@@ -80,6 +82,11 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
               <option value="dark">{t('mapPanel.basemapDark')}</option>
               <option value="osm">{t('mapPanel.basemapOsm')}</option>
               <option value="usgs-topo">{t('mapPanel.basemapUsgsTopo')}</option>
+              {customSources?.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">

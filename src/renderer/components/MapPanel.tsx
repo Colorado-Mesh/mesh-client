@@ -20,6 +20,7 @@ import { Circle, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { LocationFilter } from '../App';
+import { useMapBasemap } from '../hooks/useMapBasemap';
 import {
   formatCoordPair,
   latestPositionHistoryPoint,
@@ -34,7 +35,7 @@ import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import { homeCoordsForDistanceFilter } from '../lib/locationTrust';
-import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import { getMapOverlayColors } from '../lib/mapBasemapUtils';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
@@ -656,7 +657,7 @@ function OverviewMapPanel({
   const showSensors = useMapLayerStore((s) => s.showSensors);
   const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
   const showTakContacts = useMapLayerStore((s) => s.showTakContacts);
-  const basemap = MAP_BASEMAPS[basemapId];
+  const basemap = useMapBasemap(basemapId);
   const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
   const [showRouteWeights, setShowRouteWeights] = useState(false);

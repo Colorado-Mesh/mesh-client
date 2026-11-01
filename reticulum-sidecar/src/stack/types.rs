@@ -219,6 +219,9 @@ pub struct NomadServeStatsRow {
     pub file_hits: u64,
     pub not_found_count: u64,
     pub last_request_ms: Option<u64>,
+    /// Distinct identities that identified to this node since start (capped upstream).
+    #[serde(default)]
+    pub visitors: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -244,6 +247,9 @@ pub struct NomadServingStatus {
     /// Stable error code when enabled but not running, or watcher degraded.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
+    /// Opt-in: serve Unix `+x` pages via CGI (default false; unsupported on Windows).
+    #[serde(default)]
+    pub allow_executable_pages: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -340,6 +346,21 @@ pub struct LxmfAudioRequest {
     pub data_base64: String,
 }
 
+/// One native LXMF `FIELD_FILE_ATTACHMENTS` entry (`[name, bytes]`). Not rncp.
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfFileAttachmentRequest {
+    pub file_name: String,
+    pub data_base64: String,
+}
+
+/// Native LXMF `FIELD_IMAGE` (`[format, bytes]`) — Ratspeak-style photo.
+#[derive(Debug, Clone, Deserialize)]
+pub struct LxmfImageRequest {
+    /// `png` | `jpeg` | `jpg` | `webp` | `gif` (leading dot / case ignored).
+    pub format: String,
+    pub data_base64: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LxmfSendRequest {
     pub destination_hash: String,
@@ -354,6 +375,12 @@ pub struct LxmfSendRequest {
     /// Optional native LXMF audio field (Ogg/Opus voice memo).
     #[serde(default)]
     pub audio: Option<LxmfAudioRequest>,
+    /// Native LXMF file attachments (`FIELD_FILE_ATTACHMENTS`); size/count capped in sidecar.
+    #[serde(default)]
+    pub attachments: Vec<LxmfFileAttachmentRequest>,
+    /// Native LXMF image (`FIELD_IMAGE`, photo).
+    #[serde(default)]
+    pub image: Option<LxmfImageRequest>,
 }
 
 /// Create an encrypted `lxm://` paper URI (no network send).

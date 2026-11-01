@@ -220,12 +220,12 @@ pub fn resolve_effective_primary_local_serial_interface_id(
     interfaces: &[InterfaceRow],
     stored_id: Option<&str>,
 ) -> Option<String> {
-    if let Some(stored) = stored_id {
-        if let Some(row) = interfaces.iter().find(|row| row.id == stored) {
-            if row.enabled && is_locally_connected_serial_interface(row) {
-                return Some(stored.to_string());
-            }
-        }
+    if let Some(stored) = stored_id
+        && let Some(row) = interfaces.iter().find(|row| row.id == stored)
+        && row.enabled
+        && is_locally_connected_serial_interface(row)
+    {
+        return Some(stored.to_string());
     }
     pick_default_primary_local_serial_interface_id(interfaces)
 }

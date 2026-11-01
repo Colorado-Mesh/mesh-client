@@ -203,6 +203,19 @@ html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
   outline-color: var(--color-brand-green);
 }
 
+/* Global message search: flash the focused chat row after jump-to-hit. */
+[data-chat-message-flash] {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  animation: setting-anchor-flash 2.4s ease-out;
+  border-radius: var(--radius-card, 0.5rem);
+}
+
+html[data-reduce-motion='true'] [data-chat-message-flash] {
+  animation: none !important;
+  outline-color: var(--color-brand-green);
+}
+
 .mesh-basemap-dark .leaflet-tile {
   /* Apply only to OSM tile pixels: node markers, packet trails and controls keep their colors. */
   filter: grayscale(1) invert(1) brightness(0.82) contrast(0.9);

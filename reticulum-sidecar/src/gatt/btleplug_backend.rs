@@ -890,10 +890,10 @@ impl BleBackend for BtleplugBackend {
                     {
                         last = Some(rssi);
                     }
-                    if let Some(rssi) = last {
-                        if tx.send(BackendEvent::Rssi(rssi)).is_err() {
-                            break;
-                        }
+                    if let Some(rssi) = last
+                        && tx.send(BackendEvent::Rssi(rssi)).is_err()
+                    {
+                        break;
                     }
                 }
             };

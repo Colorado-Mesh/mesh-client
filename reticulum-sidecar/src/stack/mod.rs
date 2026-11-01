@@ -60,6 +60,8 @@ mod live;
 #[cfg(feature = "rns-stack")]
 mod live_tasks;
 #[cfg(feature = "rns-stack")]
+mod lxmf_attachments;
+#[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod lxmf_reception;
@@ -207,6 +209,9 @@ pub struct StackHandle {
     path_medium_op_lock: Mutex<()>,
     /// Serializes rnsd config file read-modify-write (stack settings, full config put/import).
     config_op_lock: Mutex<()>,
+    /// Serializes Nomad serving preference updates through stop/start so concurrent
+    /// PUTs cannot apply an older allow_executable / display_name after a newer one.
+    nomad_serving_op_lock: Mutex<()>,
     /// App-wide BLE GATT sessions (Meshtastic / MeshCore) + MAC registry.
     gatt: Arc<crate::gatt::GattManager>,
     #[cfg(feature = "rns-stack")]
@@ -229,10 +234,10 @@ impl StackHandle {
         storage_dir: PathBuf,
         event_tx: broadcast::Sender<String>,
     ) -> Self {
-        if !config::config_path(&config_dir).exists() {
-            if let Ok(content) = config::read_config(&config_dir) {
-                let _ = config::write_config(&config_dir, &content);
-            }
+        if !config::config_path(&config_dir).exists()
+            && let Ok(content) = config::read_config(&config_dir)
+        {
+            let _ = config::write_config(&config_dir, &content);
         }
 
         if let Err(e) = config::ensure_discover_interfaces_enabled(&config_dir) {
@@ -304,15 +309,15 @@ impl StackHandle {
             ) {
                 tracing::warn!("identity reconcile on bootstrap failed: {e}");
             }
-            if persisted.identity.configured {
-                if let Err(e) = identity_slots::sync_active_slot_from_working(
+            if persisted.identity.configured
+                && let Err(e) = identity_slots::sync_active_slot_from_working(
                     &config_dir,
                     persisted.identity.display_name.as_deref(),
                     Some(persisted.identity.identity_hash.as_str()),
                     Some(persisted.identity.lxmf_hash.as_str()),
-                ) {
-                    tracing::warn!("identity slot sync on bootstrap failed: {e}");
-                }
+                )
+            {
+                tracing::warn!("identity slot sync on bootstrap failed: {e}");
             }
         }
 
@@ -343,6 +348,7 @@ impl StackHandle {
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
             config_op_lock: Mutex::new(()),
+            nomad_serving_op_lock: Mutex::new(()),
             gatt,
             live: std::sync::RwLock::new(None),
             attach_live_lock: Mutex::new(()),
@@ -362,6 +368,7 @@ impl StackHandle {
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
             config_op_lock: Mutex::new(()),
+            nomad_serving_op_lock: Mutex::new(()),
             gatt,
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
@@ -665,16 +672,16 @@ impl StackHandle {
             &interfaces,
             stored.as_deref(),
         );
-        if let Some(effective_id) = effective {
-            if let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
+        if let Some(effective_id) = effective
+            && let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
                 &self.config_dir,
                 &effective_id,
-            ) {
-                tracing::warn!(
-                    interface_id = %effective_id,
-                    "primary local serial reorder failed: {e}"
-                );
-            }
+            )
+        {
+            tracing::warn!(
+                interface_id = %effective_id,
+                "primary local serial reorder failed: {e}"
+            );
         }
         Ok(())
     }
@@ -697,16 +704,16 @@ impl StackHandle {
             tracing::warn!("failed to save stack config after primary reconcile: {e}");
         }
         drop(inner);
-        if let Some(effective_id) = effective {
-            if let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
+        if let Some(effective_id) = effective
+            && let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
                 &self.config_dir,
                 &effective_id,
-            ) {
-                tracing::warn!(
-                    interface_id = %effective_id,
-                    "primary local serial reorder failed: {e}"
-                );
-            }
+            )
+        {
+            tracing::warn!(
+                interface_id = %effective_id,
+                "primary local serial reorder failed: {e}"
+            );
         }
     }
 
@@ -808,13 +815,12 @@ impl StackHandle {
                     return Some(hex::encode(id.get_public_key()));
                 }
             }
-            if let Some(live) = self.live_opt() {
-                if live
+            if let Some(live) = self.live_opt()
+                && live
                     .identity_hash_hex()
                     .eq_ignore_ascii_case(&status.identity_hash)
-                {
-                    return Some(live.identity_public_key_hex());
-                }
+            {
+                return Some(live.identity_public_key_hex());
             }
             None
         }
@@ -1061,12 +1067,11 @@ impl StackHandle {
         };
 
         #[cfg(feature = "rns-stack")]
-        if let Some(live) = self.live_opt() {
-            if let Ok(rows) = live.fetch_interfaces().await {
-                if !rows.is_empty() {
-                    return rows;
-                }
-            }
+        if let Some(live) = self.live_opt()
+            && let Ok(rows) = live.fetch_interfaces().await
+            && !rows.is_empty()
+        {
+            return rows;
         }
         config_rows
     }
@@ -1127,10 +1132,10 @@ impl StackHandle {
         let cleared = {
             let mut inner = self.inner.write().await;
             let cleared = clear_peer_routes_for_interface(&mut inner.peers, iface_name);
-            if !cleared.is_empty() {
-                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                    tracing::warn!("failed to persist peers after interface route purge: {e}");
-                }
+            if !cleared.is_empty()
+                && let Err(e) = inner.save(&self.config_dir, &self.storage_dir)
+            {
+                tracing::warn!("failed to persist peers after interface route purge: {e}");
             }
             cleared
         };
@@ -1410,11 +1415,11 @@ impl StackHandle {
             return Err(err);
         }
         #[cfg(feature = "rns-stack")]
-        if let Some(live) = self.live_opt() {
-            if let Err(e) = live.apply_path_medium_preference(preference).await {
-                self.rollback_path_medium_preference(snapshot).await;
-                return Err(e);
-            }
+        if let Some(live) = self.live_opt()
+            && let Err(e) = live.apply_path_medium_preference(preference).await
+        {
+            self.rollback_path_medium_preference(snapshot).await;
+            return Err(e);
         }
         self.emit_event(
             "path_medium_preference",
@@ -1454,11 +1459,11 @@ impl StackHandle {
             return Err(err);
         }
         #[cfg(feature = "rns-stack")]
-        if let Some(live) = self.live_opt() {
-            if let Err(e) = live.apply_peer_medium_pin(&canonical, pin).await {
-                self.rollback_peer_medium_pins(pin_snapshot).await;
-                return Err(e);
-            }
+        if let Some(live) = self.live_opt()
+            && let Err(e) = live.apply_peer_medium_pin(&canonical, pin).await
+        {
+            self.rollback_peer_medium_pins(pin_snapshot).await;
+            return Err(e);
         }
         self.emit_event("peers_updated", serde_json::json!({ "hash": canonical }));
         Ok(canonical)
@@ -1554,17 +1559,15 @@ impl StackHandle {
                 let mut hops = p.hops;
                 let mut path_interface: Option<String> = None;
                 #[cfg(feature = "rns-stack")]
-                if p.id != "local-prop" {
-                    if let Some(live) = self.live_opt() {
-                        if let Some(dest) = p.destination_hash.as_deref() {
-                            let (live_hops, live_iface) =
-                                live.live_path_fields_for_destination(dest);
-                            if hops.is_none() {
-                                hops = live_hops;
-                            }
-                            path_interface = live_iface;
-                        }
+                if p.id != "local-prop"
+                    && let Some(live) = self.live_opt()
+                    && let Some(dest) = p.destination_hash.as_deref()
+                {
+                    let (live_hops, live_iface) = live.live_path_fields_for_destination(dest);
+                    if hops.is_none() {
+                        hops = live_hops;
                     }
+                    path_interface = live_iface;
                 }
                 let mut row = serde_json::json!({
                     "id": p.id,
@@ -1575,45 +1578,40 @@ impl StackHandle {
                     "preferred": preferred,
                     "destination_hash": p.destination_hash,
                 });
-                if let Some(iface) = path_interface {
-                    if let Some(obj) = row.as_object_mut() {
-                        obj.insert("interface".into(), serde_json::Value::String(iface));
-                    }
+                if let Some(iface) = path_interface
+                    && let Some(obj) = row.as_object_mut()
+                {
+                    obj.insert("interface".into(), serde_json::Value::String(iface));
                 }
                 #[cfg(feature = "rns-stack")]
-                if p.id == "local-prop" {
-                    if let Some(stats) = &local_stats {
-                        if let Some(obj) = row.as_object_mut() {
-                            obj.insert(
-                                "message_count".into(),
-                                serde_json::Value::Number(stats.count.into()),
-                            );
-                            obj.insert(
-                                "storage_bytes".into(),
-                                serde_json::Value::Number(stats.bytes.into()),
-                            );
-                            // Keep the user's Host toggle (persisted). Serving is
-                            // reflected in `status` (`active` / `loading` / `idle`) —
-                            // overwriting enabled with serving hid local-prop from
-                            // Auto settle whenever the node was not yet announcing.
-                            obj.insert("enabled".into(), serde_json::Value::Bool(p.enabled));
-                            obj.insert(
-                                "status".into(),
-                                serde_json::Value::String(
-                                    local_propagation_status(
-                                        stats.serving,
-                                        stats.load_pending,
-                                        p.enabled,
-                                    )
-                                    .into(),
-                                ),
-                            );
-                            obj.insert(
-                                "destination_hash".into(),
-                                serde_json::Value::String(stats.hash.clone()),
-                            );
-                        }
-                    }
+                if p.id == "local-prop"
+                    && let Some(stats) = &local_stats
+                    && let Some(obj) = row.as_object_mut()
+                {
+                    obj.insert(
+                        "message_count".into(),
+                        serde_json::Value::Number(stats.count.into()),
+                    );
+                    obj.insert(
+                        "storage_bytes".into(),
+                        serde_json::Value::Number(stats.bytes.into()),
+                    );
+                    // Keep the user's Host toggle (persisted). Serving is
+                    // reflected in `status` (`active` / `loading` / `idle`) —
+                    // overwriting enabled with serving hid local-prop from
+                    // Auto settle whenever the node was not yet announcing.
+                    obj.insert("enabled".into(), serde_json::Value::Bool(p.enabled));
+                    obj.insert(
+                        "status".into(),
+                        serde_json::Value::String(
+                            local_propagation_status(stats.serving, stats.load_pending, p.enabled)
+                                .into(),
+                        ),
+                    );
+                    obj.insert(
+                        "destination_hash".into(),
+                        serde_json::Value::String(stats.hash.clone()),
+                    );
                 }
                 row
             })
@@ -1950,23 +1948,21 @@ impl StackHandle {
             }
         };
         #[cfg(feature = "rns-stack")]
-        if !skip_probe {
-            if let Some(live) = self.live_opt() {
-                live.probe_propagation_offer(&hash).await?;
-            }
+        if !skip_probe && let Some(live) = self.live_opt() {
+            live.probe_propagation_offer(&hash).await?;
         }
         let mut inner = self.inner.write().await;
         let mut row = inner.add_propagation_node(destination_hash, name)?;
-        if pub_hex.is_some() || id_hex.is_some() {
-            if let Some(node) = inner.propagation.iter_mut().find(|p| p.id == row.id) {
-                if pub_hex.is_some() {
-                    node.public_key = pub_hex.clone();
-                }
-                if id_hex.is_some() {
-                    node.identity_hash = id_hex.clone();
-                }
-                row = node.clone();
+        if (pub_hex.is_some() || id_hex.is_some())
+            && let Some(node) = inner.propagation.iter_mut().find(|p| p.id == row.id)
+        {
+            if pub_hex.is_some() {
+                node.public_key = pub_hex.clone();
             }
+            if id_hex.is_some() {
+                node.identity_hash = id_hex.clone();
+            }
+            row = node.clone();
         }
         inner.save(&self.config_dir, &self.storage_dir)?;
         drop(inner);
@@ -2000,10 +1996,10 @@ impl StackHandle {
             let snapshot = serde_json::to_value(&*inner).ok();
             inner.remove_propagation_node(id)?;
             if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                if let Some(snap) = snapshot {
-                    if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
-                        inner.restore_after_failed_save(restored);
-                    }
+                if let Some(snap) = snapshot
+                    && let Ok(restored) = serde_json::from_value::<PersistedState>(snap)
+                {
+                    inner.restore_after_failed_save(restored);
                 }
                 return Err(e);
             }
@@ -2027,10 +2023,10 @@ impl StackHandle {
         let snapshot = serde_json::to_value(&*inner).ok();
         inner.rename_propagation_node(id, name)?;
         if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-            if let Some(snap) = snapshot {
-                if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
-                    inner.restore_after_failed_save(restored);
-                }
+            if let Some(snap) = snapshot
+                && let Ok(restored) = serde_json::from_value::<PersistedState>(snap)
+            {
+                inner.restore_after_failed_save(restored);
             }
             return Err(e);
         }
@@ -2161,10 +2157,8 @@ impl StackHandle {
             }
         }
         #[cfg(feature = "rns-stack")]
-        if !identify {
-            if let Some(live) = self.live_opt() {
-                live.close_identified_nomad_link(Some(hash)).await;
-            }
+        if !identify && let Some(live) = self.live_opt() {
+            live.close_identified_nomad_link(Some(hash)).await;
         }
         Ok(())
     }
@@ -2180,15 +2174,15 @@ impl StackHandle {
                 .map(|n| n.destination_hash.clone())
                 .collect();
             let cleared = inner.clear_nomad_identify_all();
-            if cleared > 0 {
-                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                    for node in &mut inner.nomad_nodes {
-                        if identifying.contains(&node.destination_hash) {
-                            node.identify = true;
-                        }
+            if cleared > 0
+                && let Err(e) = inner.save(&self.config_dir, &self.storage_dir)
+            {
+                for node in &mut inner.nomad_nodes {
+                    if identifying.contains(&node.destination_hash) {
+                        node.identify = true;
                     }
-                    return Err(e);
                 }
+                return Err(e);
             }
             cleared
         };
@@ -2237,6 +2231,7 @@ impl StackHandle {
             } else {
                 None
             },
+            allow_executable_pages: inner.nomad_serving_allow_executable_pages,
         }
     }
 
@@ -2306,50 +2301,90 @@ impl StackHandle {
         &self,
         enabled: bool,
         display_name: Option<String>,
+        allow_executable_pages: Option<bool>,
     ) -> Result<NomadServingStatus, String> {
-        // Persist display-name preference immediately; persist `enabled` only after
-        // start/stop succeeds so a failed start cannot leave a sticky enabled=true.
-        {
-            let mut inner = self.inner.write().await;
-            if let Some(name) = display_name {
-                let trimmed = sanitize_nomad_display_name(&name)?;
-                if trimmed.is_empty() {
-                    inner.nomad_serving_display_name = None;
-                } else {
-                    inner.nomad_serving_display_name = Some(trimmed);
-                }
-                inner.save(&self.config_dir, &self.storage_dir)?;
-            }
-        }
+        let _op = self.nomad_serving_op_lock.lock().await;
+        let display_name_provided = display_name.is_some();
+        let sanitized_display = match display_name {
+            Some(name) => Some(sanitize_nomad_display_name(&name)?),
+            None => None,
+        };
 
         #[cfg(feature = "rns-stack")]
         {
+            // Reject before mutating prefs so a missing live stack leaves state untouched.
             let live = self.require_live()?;
-            if enabled {
-                let name = {
-                    let inner = self.inner.read().await;
-                    inner
-                        .nomad_serving_display_name
-                        .clone()
-                        .filter(|n| !n.trim().is_empty())
-                        .or_else(|| {
-                            inner
-                                .identity
-                                .display_name
-                                .clone()
-                                .filter(|n| !n.trim().is_empty() && n != "Self")
-                        })
-                        .unwrap_or_else(|| "Nomad node".into())
-                };
-                if live.nomad_server().is_running().await {
-                    live.nomad_server().set_display_name(&name).await;
-                    if let Err(e) = live.nomad_server().announce_now().await {
-                        tracing::warn!("nomad re-announce failed: {e}");
+
+            // Persist display-name / CGI prefs before stop/start; persist `enabled` only
+            // after start/stop succeeds so a failed start cannot leave sticky enabled=true.
+            let mut executable_changed = false;
+            {
+                let mut inner = self.inner.write().await;
+                let previous_display = inner.nomad_serving_display_name.clone();
+                let previous_allow = inner.nomad_serving_allow_executable_pages;
+                if let Some(trimmed) = sanitized_display {
+                    if trimmed.is_empty() {
+                        inner.nomad_serving_display_name = None;
+                    } else {
+                        inner.nomad_serving_display_name = Some(trimmed);
                     }
-                } else {
-                    live.start_nomad_serving(name).await?;
                 }
-                // Refresh local host row when already running (start path upserts on spawn).
+                if let Some(allow) = allow_executable_pages {
+                    executable_changed = previous_allow != allow;
+                    inner.nomad_serving_allow_executable_pages = allow;
+                }
+                if (display_name_provided || allow_executable_pages.is_some())
+                    && let Err(e) = inner.save(&self.config_dir, &self.storage_dir)
+                {
+                    if display_name_provided {
+                        inner.nomad_serving_display_name = previous_display;
+                    }
+                    if allow_executable_pages.is_some() {
+                        inner.nomad_serving_allow_executable_pages = previous_allow;
+                    }
+                    return Err(e);
+                }
+            }
+
+            if let Some(allow) = allow_executable_pages {
+                live.nomad_server().set_allow_executable_pages(allow).await;
+            }
+            let name = {
+                let inner = self.inner.read().await;
+                inner
+                    .nomad_serving_display_name
+                    .clone()
+                    .filter(|n| !n.trim().is_empty())
+                    .or_else(|| {
+                        inner
+                            .identity
+                            .display_name
+                            .clone()
+                            .filter(|n| !n.trim().is_empty() && n != "Self")
+                    })
+                    .unwrap_or_else(|| "Nomad node".into())
+            };
+            let running = live.nomad_server().is_running().await;
+            // CGI flag is fixed at NomadNode::spawn — restart when it changes while live.
+            if running && executable_changed {
+                live.stop_nomad_serving().await?;
+                if enabled {
+                    live.start_nomad_serving(name.clone()).await?;
+                }
+            } else if enabled && running {
+                live.nomad_server().set_display_name(&name).await;
+                if let Err(e) = live.nomad_server().announce_now().await {
+                    tracing::warn!("nomad re-announce failed: {e}");
+                }
+            } else if enabled {
+                live.start_nomad_serving(name).await?;
+            } else if running {
+                // If stop fails, skip persisting enabled=false — leave sticky true
+                // so restart can retry disable (mirrors enable-after-start-success).
+                live.stop_nomad_serving().await?;
+            }
+            if enabled {
+                // Refresh local host row when running (start path upserts on spawn).
                 let status = live.nomad_serving_status().await;
                 if let (Some(dest), Some(id_hash)) = (
                     status.destination_hash.as_ref(),
@@ -2366,10 +2401,6 @@ impl StackHandle {
                         tracing::warn!("nomad local host persist failed: {e}");
                     }
                 }
-            } else {
-                // If stop fails, skip persisting enabled=false — leave sticky true
-                // so restart can retry disable (mirrors enable-after-start-success).
-                live.stop_nomad_serving().await?;
             }
             {
                 let mut inner = self.inner.write().await;
@@ -2381,6 +2412,9 @@ impl StackHandle {
 
         #[cfg(not(feature = "rns-stack"))]
         {
+            let _ = allow_executable_pages;
+            let _ = sanitized_display;
+            let _ = display_name_provided;
             if enabled {
                 return Err(NOMAD_REQUIRES_STACK.into());
             }
@@ -3170,6 +3204,11 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
             let res = live.send_lxmf(&req).await?;
+            // Preserve structured `{ ok: false, error }` from live (e.g. no_propagation_node,
+            // attachment_* / image_* validation) instead of wrapping as a success.
+            if res.get("ok") == Some(&serde_json::Value::Bool(false)) {
+                return Ok(res);
+            }
             let payload = res.get("message").cloned().unwrap_or(res.clone());
             if payload.get("text").is_some() {
                 self.emit_event("lxmf_message", payload.clone());
@@ -3199,6 +3238,32 @@ impl StackHandle {
         }
     }
 
+    /// Cancel a queued / in-flight outbound LXMF message (attachment send **Cancel**).
+    pub async fn lxmf_cancel_outbound(
+        &self,
+        message_hash: &str,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.cancel_outbound_message(message_hash).await;
+        }
+        let _ = message_hash;
+        Ok(serde_json::json!({ "ok": false, "error": "identity_not_configured" }))
+    }
+
+    /// Router outbound progress (0.0..=1.0) for a pending message; `null` when not pending.
+    pub async fn lxmf_outbound_progress(
+        &self,
+        message_hash: &str,
+    ) -> Result<serde_json::Value, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return live.outbound_message_progress(message_hash).await;
+        }
+        let _ = message_hash;
+        Ok(serde_json::json!({ "ok": false, "error": "identity_not_configured" }))
+    }
+
     pub async fn lxmf_paper_create(
         &self,
         req: LxmfSendRequest,
@@ -3206,10 +3271,10 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
             let res = live.create_lxmf_paper(&req).await?;
-            if res.get("ok") == Some(&serde_json::Value::Bool(true)) {
-                if let Some(payload) = res.get("message").cloned() {
-                    self.emit_event("lxmf_message", payload);
-                }
+            if res.get("ok") == Some(&serde_json::Value::Bool(true))
+                && let Some(payload) = res.get("message").cloned()
+            {
+                self.emit_event("lxmf_message", payload);
             }
             return Ok(res);
         }
@@ -3768,12 +3833,12 @@ impl StackHandle {
                     Ok(())
                 }
                 Err(e) => {
-                    if let Some(bytes) = previous_working {
-                        if let Err(rb) = fs::write(&working_path, bytes) {
-                            tracing::error!(
-                                "switch_identity rollback working identity failed: {rb} (original: {e})"
-                            );
-                        }
+                    if let Some(bytes) = previous_working
+                        && let Err(rb) = fs::write(&working_path, bytes)
+                    {
+                        tracing::error!(
+                            "switch_identity rollback working identity failed: {rb} (original: {e})"
+                        );
                     }
                     {
                         let mut inner = self.inner.write().await;
@@ -3975,14 +4040,13 @@ fn clear_peer_routes_for_interface(peers: &mut [PeerRow], iface_name: &str) -> C
             continue;
         }
         let had_route = peer.via_hash.is_some() || peer.path_hash.is_some() || peer.hops.is_some();
-        if let Some(via) = peer.via_hash.take() {
-            if !out
+        if let Some(via) = peer.via_hash.take()
+            && !out
                 .dropped_vias
                 .iter()
                 .any(|v| v.eq_ignore_ascii_case(&via))
-            {
-                out.dropped_vias.push(via);
-            }
+        {
+            out.dropped_vias.push(via);
         }
         peer.path_hash = None;
         peer.hops = None;
@@ -4067,10 +4131,10 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
     let mut live_rows: Vec<PeerRow> = fetched
         .into_iter()
         .map(|mut peer| {
-            if peer.display_name.is_none() {
-                if let Some(name) = prev_names.get(&peer.destination_hash.to_lowercase()) {
-                    peer.display_name = Some(name.clone());
-                }
+            if peer.display_name.is_none()
+                && let Some(name) = prev_names.get(&peer.destination_hash.to_lowercase())
+            {
+                peer.display_name = Some(name.clone());
             }
             peer
         })

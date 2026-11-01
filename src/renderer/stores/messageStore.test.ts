@@ -1,14 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
+import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
 import {
   openHeardRepeatWindow,
   recordMeshcoreRfRx,
   resetHeardRepeatWindowsForTests,
 } from '../lib/meshcore/heardRepeatTracker';
+import * as meshtasticMessageLoadLimit from '../lib/meshtasticMessageLoadLimit';
+import type { Protocol } from '../lib/protocols/Protocol';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import { mockConsoleWarn } from '../lib/vitestConsoleMock';
+import { addIdentity, removeIdentity } from './identityStore';
 import {
   addMessage,
   mergeMessageRecordsFromDbForIdentity,
@@ -399,3 +403,143 @@ describe('messageStore events', () => {
     }
   });
 });
+
+describe('messageStore live trim', () => {
+  const TRIM_ID = 'identity-trim-mt';
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+    useRelayCoverageStore.setState({ coverage: {} });
+    resetHeardRepeatWindowsForTests();
+    vi.spyOn(meshtasticMessageLoadLimit, 'getMeshtasticMessageLoadLimit').mockReturnValue(3);
+    addIdentity({
+      id: TRIM_ID,
+      protocol: { type: 'meshtastic' } as unknown as Protocol,
+      signature: '',
+      transports: [],
+      createdAt: 0,
+      lastSeenAt: 0,
+    });
+  });
+
+  afterEach(() => {
+    removeIdentity(TRIM_ID);
+    vi.restoreAllMocks();
+  });
+
+  it('addMessage drops oldest rows past the Meshtastic load limit', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('old'), timestamp: 1 });
+    addMessage(TRIM_ID, { ...sampleRecord('mid'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('new'), timestamp: 3 });
+    addMessage(TRIM_ID, { ...sampleRecord('newest'), timestamp: 4 });
+
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(bucket).sort()).toEqual(['mid', 'new', 'newest']);
+    expect(bucket.old).toBeUndefined();
+  });
+
+  it('upsertMessage insert trims; update of an existing id does not', () => {
+    upsertMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 1 });
+    upsertMessage(TRIM_ID, { ...sampleRecord('b'), timestamp: 2 });
+    upsertMessage(TRIM_ID, { ...sampleRecord('c'), timestamp: 3 });
+    expect(Object.keys(useMessageStore.getState().messages[TRIM_ID] ?? {})).toHaveLength(3);
+
+    upsertMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 1, payload: 'edited' });
+    const afterUpdate = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(afterUpdate).sort()).toEqual(['a', 'b', 'c']);
+    expect(afterUpdate.a?.payload).toBe('edited');
+
+    upsertMessage(TRIM_ID, { ...sampleRecord('d'), timestamp: 4 });
+    const afterInsert = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(afterInsert).sort()).toEqual(['b', 'c', 'd']);
+  });
+
+  it('bulk upsertMessageRecordsForIdentity does not trim past the live cap', () => {
+    upsertMessageRecordsForIdentity(TRIM_ID, [
+      { ...sampleRecord('b1'), timestamp: 1 },
+      { ...sampleRecord('b2'), timestamp: 2 },
+      { ...sampleRecord('b3'), timestamp: 3 },
+      { ...sampleRecord('b4'), timestamp: 4 },
+    ]);
+    expect(Object.keys(useMessageStore.getState().messages[TRIM_ID] ?? {}).sort()).toEqual([
+      'b1',
+      'b2',
+      'b3',
+      'b4',
+    ]);
+  });
+
+  it('removes relay coverage for an evicted message id', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('old'), timestamp: 1 });
+    useRelayCoverageStore.getState().set(TRIM_ID, 'old', {
+      protocol: 'meshtastic',
+      mode: 'predicted',
+      predictedRelayHops: 1,
+    });
+    addMessage(TRIM_ID, { ...sampleRecord('mid'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('new'), timestamp: 3 });
+    addMessage(TRIM_ID, { ...sampleRecord('newest'), timestamp: 4 });
+
+    expect(useRelayCoverageStore.getState().coverageFor(TRIM_ID, 'old')).toBeUndefined();
+    expect(useMessageStore.getState().messages[TRIM_ID]?.old).toBeUndefined();
+  });
+
+  it('drops multiple oldest rows when the live cap shrinks mid-session', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 1 });
+    addMessage(TRIM_ID, { ...sampleRecord('b'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('c'), timestamp: 3 });
+    expect(Object.keys(useMessageStore.getState().messages[TRIM_ID] ?? {})).toHaveLength(3);
+
+    vi.mocked(meshtasticMessageLoadLimit.getMeshtasticMessageLoadLimit).mockReturnValue(1);
+    addMessage(TRIM_ID, { ...sampleRecord('d'), timestamp: 4 });
+
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(bucket)).toEqual(['d']);
+  });
+});
+
+describe.each(['meshcore', 'reticulum'] as const)(
+  'messageStore live trim hard cap (%s)',
+  (type) => {
+    const TRIM_ID = `identity-trim-${type}`;
+
+    beforeEach(() => {
+      useMessageStore.setState({ messages: {} });
+      useRelayCoverageStore.setState({ coverage: {} });
+      // Meshtastic load limit stays tiny so a mistaken branch would under-cap.
+      vi.spyOn(meshtasticMessageLoadLimit, 'getMeshtasticMessageLoadLimit').mockReturnValue(3);
+      addIdentity({
+        id: TRIM_ID,
+        protocol: { type } as unknown as Protocol,
+        signature: '',
+        transports: [],
+        createdAt: 0,
+        lastSeenAt: 0,
+      });
+    });
+
+    afterEach(() => {
+      removeIdentity(TRIM_ID);
+      vi.restoreAllMocks();
+    });
+
+    it(`retains ${MAX_IN_MEMORY_CHAT_MESSAGES} after live overflow past the hard cap`, () => {
+      const seeded: MessageRecord[] = [];
+      for (let i = 0; i < MAX_IN_MEMORY_CHAT_MESSAGES; i++) {
+        seeded.push({ ...sampleRecord(`m${i}`), timestamp: i + 1 });
+      }
+      // Bulk seed avoids O(n²) live inserts; one live add exercises the non-Meshtastic cap.
+      replaceMessageRecordsForIdentity(TRIM_ID, seeded);
+      addMessage(TRIM_ID, {
+        ...sampleRecord('overflow'),
+        timestamp: MAX_IN_MEMORY_CHAT_MESSAGES + 1,
+      });
+
+      const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+      expect(Object.keys(bucket)).toHaveLength(MAX_IN_MEMORY_CHAT_MESSAGES);
+      expect(bucket.m0).toBeUndefined();
+      expect(bucket.overflow).toBeDefined();
+      expect(meshtasticMessageLoadLimit.getMeshtasticMessageLoadLimit).not.toHaveBeenCalled();
+    });
+  },
+);

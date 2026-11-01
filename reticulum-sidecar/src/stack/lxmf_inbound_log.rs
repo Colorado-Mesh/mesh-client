@@ -34,14 +34,13 @@ impl LxmfInboundBuffer {
             .get("message_hash")
             .and_then(|v| v.as_str())
             .filter(|h| !h.is_empty())
-        {
-            if buf.iter().any(|row| {
+            && buf.iter().any(|row| {
                 row.get("message_hash")
                     .and_then(|v| v.as_str())
                     .is_some_and(|h| h.eq_ignore_ascii_case(hash))
-            }) {
-                return None;
-            }
+            })
+        {
+            return None;
         }
         let Ok(mut next) = self.next_seq.lock() else {
             return None;

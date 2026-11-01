@@ -329,6 +329,13 @@ export function createElectronAPIMock(): ElectronAPI {
         sources: {},
       }),
       clear: vi.fn().mockResolvedValue({ ok: true }),
+      custom: {
+        list: vi.fn().mockResolvedValue([]),
+        addXyz: vi.fn().mockResolvedValue({ ok: false, code: 'io' }),
+        remove: vi.fn().mockResolvedValue({ ok: true }),
+        pickMbtiles: vi.fn().mockResolvedValue({ ok: false, code: 'cancelled' }),
+        importMbtiles: vi.fn().mockResolvedValue({ ok: false, code: 'io' }),
+      },
       onProgress: vi.fn().mockReturnValue(() => {}),
       onDone: vi.fn().mockReturnValue(() => {}),
       onError: vi.fn().mockReturnValue(() => {}),

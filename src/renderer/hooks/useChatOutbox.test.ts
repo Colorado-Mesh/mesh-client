@@ -247,7 +247,7 @@ describe('useChatOutbox', () => {
       vi.mocked(mockOutbox.list).mockResolvedValue([{ ...entry, status: 'queued' }]);
       result.current.retry(4);
       await vi.advanceTimersByTimeAsync(0);
-      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined, 0);
       // Second send is paced behind the first — advance past the interval so no timer dangles.
       expect(sendFn).toHaveBeenCalledTimes(1);
       await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS);
@@ -993,12 +993,19 @@ describe('useChatOutbox', () => {
 
     it('skips normal rows older than 24h but still drains emergency rows past 24h', async () => {
       const old = Date.now() - OUTBOX_MAX_AGE_MS - 60_000;
-      const normal = makeEntry({ id: 100, protocol: 'meshcore', payload: 'stale', createdAt: old });
+      const normal = makeEntry({
+        id: 100,
+        protocol: 'meshcore',
+        payload: 'stale',
+        createdAt: old,
+        updatedAt: old,
+      });
       const emergency = makeEntry({
         id: 101,
         protocol: 'meshcore',
         payload: 'mayday',
         createdAt: old,
+        updatedAt: old,
         priority: 'emergency',
       });
       vi.mocked(mockOutbox.list).mockResolvedValue([normal, emergency]);

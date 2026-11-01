@@ -222,6 +222,8 @@ import {
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
+import { CustomMapSourceStore } from './offline-maps/custom-sources';
+import { CustomMapSourcesService } from './offline-maps/custom-sources-service';
 import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
 import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { PermissionDecisionLogger } from './permissionDecisionLog';
@@ -250,6 +252,7 @@ import {
   takeReticulumAttachmentImageRateToken,
 } from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
+import { writeReticulumAttachmentCacheFile } from './reticulum-attachment-store';
 import { reticulumConfigDirHasEnabledLocalRadio } from './reticulum-ble-rnode-config';
 import { reticulumUserConfigDir } from './reticulum-config-validate';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
@@ -542,6 +545,7 @@ let rendererLoadPromise: Promise<void> | null = null;
 let rendererMemoryAutoSampler: ReturnType<typeof createRendererMemoryAutoSampler> | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 let offlineTileCache: TileCache | null = null;
+let customMapSources: CustomMapSourcesService | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -2494,16 +2498,33 @@ function createWindow() {
 
   if (!offlineTileCache) {
     offlineTileCache = createTileCache(app.getPath('userData'));
+    // Custom XYZ / MBTiles live outside tile-cache/ so "Clear tile cache" never drops the allowlist.
+    customMapSources = new CustomMapSourcesService(
+      new CustomMapSourceStore(path.join(app.getPath('userData'), 'offline-maps')),
+      () => offlineTileCache,
+      async () => {
+        const opts: Electron.OpenDialogOptions = {
+          properties: ['openFile'],
+          filters: [{ name: 'MBTiles', extensions: ['mbtiles'] }],
+        };
+        const result = mainWindow
+          ? await dialog.showOpenDialog(mainWindow, opts)
+          : await dialog.showOpenDialog(opts);
+        return result.canceled ? null : (result.filePaths[0] ?? null);
+      },
+    );
     protocol.handle(
       'mesh-tiles',
       createMeshTilesProtocolHandler({
         cache: offlineTileCache,
         getAppVersion: () => app.getVersion(),
+        customSources: customMapSources,
       }),
     );
     registerOfflineMapsIpcHandlers(
       () => mainWindow,
       () => offlineTileCache,
+      () => customMapSources,
     );
   }
 }
@@ -4026,6 +4047,9 @@ const disposeAi = registerAiHandlers({
       .run(key, value);
   },
   getWebContents: () => mainWindow?.webContents,
+});
+app.on('before-quit', () => {
+  customMapSources?.dispose();
 });
 app.on('before-quit', disposeAi);
 const disposeTranslation = registerTranslationHandlers({
@@ -5708,10 +5732,13 @@ ipcMain.handle('chat:saveReticulumAttachment', async (event, opts: unknown) => {
       if (result.canceled || !result.filePath) return { success: false };
       targetPath = result.filePath;
     } else {
-      const dir = path.join(app.getPath('userData'), 'reticulum', 'attachments');
-      await fs.promises.mkdir(dir, { recursive: true });
-      const safeName = fileName.replace(/[^\w.-]+/g, '_').slice(0, 120) || 'attachment';
-      targetPath = path.join(dir, `${Date.now()}-${safeName}`);
+      // Safe-receive: sanitised name, risky extensions quarantined, mode 0600, no overwrite.
+      const written = await writeReticulumAttachmentCacheFile(
+        path.join(app.getPath('userData'), 'reticulum', 'attachments'),
+        fileName,
+        buf,
+      );
+      return { success: true, path: written.path };
     }
     await fs.promises.writeFile(targetPath, buf);
     return { success: true, path: targetPath };

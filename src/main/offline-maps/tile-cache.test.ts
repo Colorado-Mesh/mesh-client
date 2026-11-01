@@ -23,6 +23,28 @@ describe('tile-cache', () => {
     return createTileCache(root, maxBytes);
   }
 
+  it('accepts well-formed custom ids and applies a per-source quota with oldest-first eviction', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'mesh-tile-cache-'));
+    roots.push(root);
+    const cache = createTileCache(root, 1024 * 1024, 100);
+    expect(parseTileCoords('xyz-0123456789ab', '3', '1', '1')).toMatchObject({ z: 3 });
+    expect(parseTileCoords('xyz-0123456789ab/..', '3', '1', '1')).toBeNull();
+    const custom = 'xyz-0123456789ab' as const;
+    const tile = Buffer.alloc(40, 1);
+    for (let x = 0; x < 3; x += 1) {
+      await cache.putCachedTile({ basemapId: custom, z: 3, x, y: 0 }, tile);
+      await new Promise((r) => setTimeout(r, 15));
+    }
+    await cache.putCachedTile({ basemapId: 'osm', z: 3, x: 0, y: 0 }, tile);
+    // 3 × 40 = 120 B > 100 B quota → oldest custom tiles evicted down to ≤ 90 B; OSM untouched.
+    expect(await cache.getCachedTile({ basemapId: custom, z: 3, x: 0, y: 0 })).toBeNull();
+    expect(await cache.getCachedTile({ basemapId: custom, z: 3, x: 2, y: 0 })).not.toBeNull();
+    expect(await cache.getCachedTile({ basemapId: 'osm', z: 3, x: 0, y: 0 })).not.toBeNull();
+    await cache.clearSource(custom);
+    expect(await cache.getCachedTile({ basemapId: custom, z: 3, x: 2, y: 0 })).toBeNull();
+    expect((await cache.listCachedStats()).tileCount).toBe(1);
+  });
+
   it('rejects traversal and overflow coords', () => {
     expect(parseTileCoords('osm', '14', '1', '../2')).toBeNull();
     expect(parseTileCoords('osm', '-1', '0', '0')).toBeNull();

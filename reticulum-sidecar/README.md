@@ -4,7 +4,7 @@ Headless Reticulum/LXMF daemon spawned by mesh-client Electron main process.
 
 ## Prerequisites
 
-Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See [docs/development-environment.md](../docs/development-environment.md#reticulum-sidecar-optional).
+Install Rust (**1.88+**, edition 2024). Prefer [rustup](https://rustup.rs/). See [docs/development-environment.md](../docs/development-environment.md#reticulum-sidecar-optional).
 
 ## Build
 

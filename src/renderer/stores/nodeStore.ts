@@ -347,6 +347,25 @@ export function patchNodeFavorited(
   });
 }
 
+/** Mirror `NodeInfo.is_key_manually_verified` after a successful Meshtastic key verification. */
+export function patchNodeKeyManuallyVerified(
+  identityId: IdentityId,
+  nodeId: number,
+  keyManuallyVerified: boolean,
+): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId] ?? {};
+    const existing = byId[nodeId];
+    if (!existing) return s;
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: { ...byId, [nodeId]: mergeNode(existing, nodeId, { keyManuallyVerified }) },
+      },
+    };
+  });
+}
+
 /** Bump MeshCore `lastHeardAt` in the identity store (path-updated / RPC reachability). */
 export function patchMeshcoreNodeLastHeardAt(
   identityId: IdentityId,

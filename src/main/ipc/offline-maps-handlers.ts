@@ -1,10 +1,15 @@
 import { app, type BrowserWindow, ipcMain, net } from 'electron';
 
 import type { OfflineMapBasemapId } from '@/shared/offlineMaps/basemapRegistry';
-import { isOfflineMapBasemapId } from '@/shared/offlineMaps/basemapRegistry';
+import { isMapSourceId, isOfflineMapBasemapId } from '@/shared/offlineMaps/basemapRegistry';
+import type {
+  AddXyzSourceRequest,
+  ImportMbtilesRequest,
+} from '@/shared/offlineMaps/customMapSources';
 import type { LatLonBounds } from '@/shared/offlineMaps/tileMath';
 
 import { sanitizeLogMessage } from '../log-service';
+import type { CustomMapSourcesService } from '../offline-maps/custom-sources-service';
 import { OfflineMapsDownloader } from '../offline-maps/downloader';
 import type { TileCache } from '../offline-maps/tile-cache';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -53,11 +58,45 @@ function parseDownloadArgs(raw: unknown): {
   };
 }
 
+function asRecord(raw: unknown): Record<string, unknown> | null {
+  return typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : null;
+}
+
+/** Shape-only parse; semantic validation (URL policy, text limits) happens in the main-process store. */
+function parseAddXyzArgs(raw: unknown): AddXyzSourceRequest | null {
+  const o = asRecord(raw);
+  if (!o) return null;
+  if (typeof o.name !== 'string' || typeof o.urlTemplate !== 'string') return null;
+  if (typeof o.attribution !== 'string' || typeof o.confirmed !== 'boolean') return null;
+  if (o.maxNativeZoom != null && typeof o.maxNativeZoom !== 'number') return null;
+  return {
+    name: o.name,
+    urlTemplate: o.urlTemplate,
+    attribution: o.attribution,
+    confirmed: o.confirmed,
+    ...(typeof o.maxNativeZoom === 'number' ? { maxNativeZoom: o.maxNativeZoom } : {}),
+  };
+}
+
+function parseImportMbtilesArgs(raw: unknown): ImportMbtilesRequest | null {
+  const o = asRecord(raw);
+  if (!o) return null;
+  if (typeof o.inspectId !== 'string' || typeof o.name !== 'string') return null;
+  if (typeof o.attribution !== 'string' || typeof o.confirmed !== 'boolean') return null;
+  return {
+    inspectId: o.inspectId,
+    name: o.name,
+    attribution: o.attribution,
+    confirmed: o.confirmed,
+  };
+}
+
 let downloader: OfflineMapsDownloader | null = null;
 
 export function registerOfflineMapsIpcHandlers(
   getMainWindow: () => BrowserWindow | null,
   getCache: () => TileCache | null,
+  getCustomSources: () => CustomMapSourcesService | null = () => null,
 ): void {
   const send = (channel: string, payload: unknown) => {
     const win = getMainWindow();
@@ -139,8 +178,44 @@ export function registerOfflineMapsIpcHandlers(
       await cache.clearCache();
       return { ok: true };
     }
-    if (!isOfflineMapBasemapId(source)) throw new Error('Invalid basemap id');
+    if (!isMapSourceId(source)) throw new Error('Invalid basemap id');
     await cache.clearSource(source);
     return { ok: true };
+  });
+
+  const requireCustom = (): CustomMapSourcesService => {
+    const svc = getCustomSources();
+    if (!svc) throw new Error('Custom map sources not ready');
+    return svc;
+  };
+
+  ipcMain.handle('offline-maps:custom-list', (event) => {
+    assertIpcSender(event, 'offline-maps:custom-list');
+    return requireCustom().list();
+  });
+
+  ipcMain.handle('offline-maps:custom-add-xyz', (event, raw: unknown) => {
+    assertIpcSender(event, 'offline-maps:custom-add-xyz');
+    const args = parseAddXyzArgs(raw);
+    if (!args) throw new Error('Invalid custom source request');
+    return requireCustom().addXyz(args);
+  });
+
+  ipcMain.handle('offline-maps:custom-remove', (event, id: unknown) => {
+    assertIpcSender(event, 'offline-maps:custom-remove');
+    if (typeof id !== 'string') throw new Error('Invalid source id');
+    return requireCustom().remove(id);
+  });
+
+  ipcMain.handle('offline-maps:custom-pick-mbtiles', (event) => {
+    assertIpcSender(event, 'offline-maps:custom-pick-mbtiles');
+    return requireCustom().pickMbtiles();
+  });
+
+  ipcMain.handle('offline-maps:custom-import-mbtiles', (event, raw: unknown) => {
+    assertIpcSender(event, 'offline-maps:custom-import-mbtiles');
+    const args = parseImportMbtilesArgs(raw);
+    if (!args) throw new Error('Invalid MBTiles import request');
+    return requireCustom().importMbtiles(args);
   });
 }

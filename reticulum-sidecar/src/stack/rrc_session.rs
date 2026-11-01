@@ -586,14 +586,14 @@ struct ConnectJob {
 }
 
 fn cancel_connect_job(job: &mut Option<ConnectJob>) {
-    if let Some(prev) = job.take() {
-        if let Some(reply) = prev.reply {
-            let _ = reply.send(Err("cancelled".into()));
-        }
-        // Dropping `fut` aborts establish_session. If a link was already open,
-        // dropping RrcLinkHandle closes the LinkSession (cmd channel drop → close).
-        // Mid-handshake cleanup is owned by LinkSession / link_endpoint guards.
+    if let Some(prev) = job.take()
+        && let Some(reply) = prev.reply
+    {
+        let _ = reply.send(Err("cancelled".into()));
     }
+    // Dropping `fut` aborts establish_session. If a link was already open,
+    // dropping RrcLinkHandle closes the LinkSession (cmd channel drop → close).
+    // Mid-handshake cleanup is owned by LinkSession / link_endpoint guards.
 }
 
 #[allow(clippy::too_many_arguments)] // connect job bundles transport + session state for one spawn site
@@ -986,8 +986,7 @@ async fn session_loop(
                     Some(RrcLinkEvent::Data(bytes)) => {
                         if let Some(reply) =
                             handle_inbound(&inner, &event_tx, &hex, &bytes).await
-                        {
-                            if let Some(handle) = link.as_ref() {
+                            && let Some(handle) = link.as_ref() {
                                 match encode_envelope(&reply) {
                                     Ok(out) => {
                                         if let Err(e) = handle.send(out).await {
@@ -999,7 +998,6 @@ async fn session_loop(
                                     }
                                 }
                             }
-                        }
                         // True self-PARTED while room still desired (e.g. multi-link
                         // edge case) — re-JOIN without emitting rrc.room.parted.
                         let rejoins = {
@@ -1046,8 +1044,8 @@ async fn session_loop(
                                 "will_reconnect": should_reconnect,
                             }),
                         );
-                        if should_reconnect {
-                            if let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
+                        if should_reconnect
+                            && let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
                                 reconnect_intent.clone()
                             {
                                 let nickname =
@@ -1079,7 +1077,6 @@ async fn session_loop(
                                     None,
                                 ));
                             }
-                        }
                     }
                     None => {
                         // Event channel ended without Closed (task drop / channel close).
@@ -1107,8 +1104,8 @@ async fn session_loop(
                                 "will_reconnect": should_reconnect,
                             }),
                         );
-                        if should_reconnect {
-                            if let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
+                        if should_reconnect
+                            && let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
                                 reconnect_intent.clone()
                             {
                                 let nickname =
@@ -1140,7 +1137,6 @@ async fn session_loop(
                                     None,
                                 ));
                             }
-                        }
                     }
                 }
             }
@@ -1377,10 +1373,10 @@ async fn send_envelope(
     };
     if let Some(ref b) = body {
         let max = inner.lock().await.limits.max_msg_body_bytes;
-        if let Some(max) = max {
-            if b.len() as u64 > max {
-                return Err(format!("message exceeds hub limit ({max} bytes)"));
-            }
+        if let Some(max) = max
+            && b.len() as u64 > max
+        {
+            return Err(format!("message exceeds hub limit ({max} bytes)"));
         }
     }
     let env = {
@@ -1705,16 +1701,16 @@ async fn dispatch_resource_payload(
         );
         return;
     };
-    if let Some(expected) = meta.sha256 {
-        if expected != digest {
-            warn!(
-                "rrc resource sha256 mismatch hub={} kind={} size={}",
-                hub_dest_hash,
-                meta.kind,
-                data.len()
-            );
-            return;
-        }
+    if let Some(expected) = meta.sha256
+        && expected != digest
+    {
+        warn!(
+            "rrc resource sha256 mismatch hub={} kind={} size={}",
+            hub_dest_hash,
+            meta.kind,
+            data.len()
+        );
+        return;
     }
     if meta.kind == "blob" {
         debug!(

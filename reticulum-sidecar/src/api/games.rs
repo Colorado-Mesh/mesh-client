@@ -76,10 +76,10 @@ pub async fn games_action(
     if let Some(err) = reject_oversize("command", &body.command, MAX_DEST_HASH_CHARS) {
         return oversize_rejection(&err);
     }
-    if let Some(session_id) = body.session_id.as_deref() {
-        if let Some(err) = reject_oversize_session_id(session_id) {
-            return oversize_rejection(&err);
-        }
+    if let Some(session_id) = body.session_id.as_deref()
+        && let Some(err) = reject_oversize_session_id(session_id)
+    {
+        return oversize_rejection(&err);
     }
     tracing::debug!(
         target: "games",

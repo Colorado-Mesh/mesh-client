@@ -1,10 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { DetectedFlashDevice } from '@/renderer/lib/flasher/deviceFirmwareBoards';
+import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
+import CapabilityUnavailableHint from './CapabilityUnavailableHint';
 import { ConfirmModal } from './ConfirmModal';
+import { DeviceFirmwareFlashSection } from './flasher/DeviceFirmwareFlashSection';
+import MeshtasticRemoteShellSection from './MeshtasticRemoteShellSection';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 
@@ -31,6 +36,8 @@ interface Props {
   onRebootOta?: (delay: number) => Promise<void>;
   onEnterDfu?: () => Promise<void>;
   onFactoryResetConfig?: () => Promise<void>;
+  /** Radio identity for the USB firmware flasher (board detection, battery, connection type). */
+  firmwareFlashDevice?: DetectedFlashDevice;
 }
 
 export default function AdminPanel({
@@ -44,6 +51,7 @@ export default function AdminPanel({
   onRebootOta,
   onEnterDfu,
   onFactoryResetConfig,
+  firmwareFlashDevice,
 }: Props) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -111,6 +119,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={localOnlyCommandsDisabled || !onEnterDfu}
+                aria-describedby={!onEnterDfu ? 'admin-unavailable-enterDfu' : undefined}
                 data-setting-anchor="admin.deviceCommands.enterDfu"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
@@ -151,6 +160,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={localOnlyCommandsDisabled || !onRebootOta}
+                aria-describedby={!onRebootOta ? 'admin-unavailable-rebootOta' : undefined}
                 data-setting-anchor="admin.deviceCommands.rebootOta"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
@@ -200,15 +210,74 @@ export default function AdminPanel({
               </button>
             )}
           </div>
+          {/* "Why unavailable?" notes for actions this protocol/firmware does not expose. */}
+          <div className="space-y-1" data-testid="admin-unavailable-hints">
+            <CapabilityUnavailableHint feature="nodeDbReset" capabilities={capabilities} />
+            <CapabilityUnavailableHint feature="shutdown" capabilities={capabilities} />
+            {!isRemoteTarget && (
+              <>
+                <CapabilityUnavailableHint
+                  id="admin-unavailable-enterDfu"
+                  feature="enterDfu"
+                  capabilities={capabilities}
+                  handlerMissing={!onEnterDfu}
+                />
+                <CapabilityUnavailableHint
+                  id="admin-unavailable-rebootOta"
+                  feature="rebootOta"
+                  capabilities={capabilities}
+                  handlerMissing={!onRebootOta}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* ═══ Firmware flash (local USB only) ═══ */}
+      {!isRemoteTarget && capabilities?.hasDeviceFirmwareFlash === false && (
+        <CapabilityUnavailableHint feature="firmwareFlash" capabilities={capabilities} />
+      )}
+      {!isRemoteTarget && capabilities?.hasDeviceFirmwareFlash === true && firmwareFlashDevice && (
+        <details
+          className="group rounded-lg border border-orange-900"
+          data-testid="admin-firmware-flash"
+          data-setting-anchor="admin.firmware.flashDevice"
+        >
+          <summary className="hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors">
+            <span>{t('deviceFirmware.title')}</span>
+            <DetailsChevron />
+          </summary>
+          <div className="px-4 pb-4">
+            <DeviceFirmwareFlashSection capabilities={capabilities} device={firmwareFlashDevice} />
+          </div>
+        </details>
+      )}
+
+      {/* ═══ Remote shell (Meshtastic REMOTE_SHELL_APP; protocol exception, gated by capability) ═══ */}
+      <MeshtasticRemoteShellSection
+        capabilities={capabilities}
+        isConnected={isConnected}
+        targetNodeNum={isRemoteTarget ? configTarget.nodeNum : null}
+      />
+
       {/* ═══ Danger Zone ═══ */}
+      {capabilities?.hasFactoryReset === false && (
+        <CapabilityUnavailableHint feature="factoryReset" capabilities={capabilities} />
+      )}
       {capabilities?.hasFactoryReset !== false && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-red-400">{t('radioPanel.dangerZone')}</h3>
           <div className="space-y-2 rounded-lg border border-red-900 p-4">
             <p className="text-xs text-red-400/80">{t('radioPanel.dangerZonePermanent')}</p>
+            {!isRemoteTarget && (
+              <CapabilityUnavailableHint
+                id="admin-unavailable-factoryResetConfig"
+                feature="factoryResetConfig"
+                capabilities={capabilities}
+                handlerMissing={!onFactoryResetConfig}
+              />
+            )}
             {!isRemoteTarget && (
               <button
                 type="button"
@@ -223,6 +292,9 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={!isConnected || !onFactoryResetConfig}
+                aria-describedby={
+                  !onFactoryResetConfig ? 'admin-unavailable-factoryResetConfig' : undefined
+                }
                 data-setting-anchor="admin.dangerZone.factoryResetConfig"
                 className={buttonClassName('danger', 'md')}
               >
