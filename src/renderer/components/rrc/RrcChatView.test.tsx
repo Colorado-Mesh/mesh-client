@@ -1525,6 +1525,46 @@ describe('RrcChatView reactions', () => {
     expect(container.querySelector('emoji-picker')).toBeNull();
   });
 
+  it('gives the Linux picker the full line width and scrolls it into view', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 0;
+    });
+    const rect = vi
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockImplementation(function rectFor(this: Element) {
+        if (this.getAttribute('data-testid') === 'rrc-message-stream') {
+          return DOMRect.fromRect({ x: 0, y: 100, width: 400, height: 300 });
+        }
+        if (this.tagName === 'EMOJI-PICKER') {
+          return DOMRect.fromRect({ x: 0, y: 350, width: 320, height: 300 });
+        }
+        return DOMRect.fromRect({ x: 0, y: 0, width: 0, height: 0 });
+      });
+    try {
+      render(
+        <RrcChatView
+          {...baseProps}
+          onReact={vi.fn().mockResolvedValue(undefined)}
+          messages={[target]}
+        />,
+      );
+      const stream = screen.getByTestId('rrc-message-stream');
+      Object.defineProperty(stream, 'scrollTop', { value: 0, writable: true, configurable: true });
+      await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
+
+      const wrapper = screen.getByTestId('rrc-inline-reaction-picker');
+      expect(wrapper).toHaveClass('col-span-full');
+      expect(wrapper.parentElement?.className).toContain('grid');
+      // The picker (350 to 650) runs past the view (100 to 400), so the list scrolls by 250.
+      expect(stream.scrollTop).toBe(250);
+    } finally {
+      frame.mockRestore();
+      rect.mockRestore();
+    }
+  });
+
   it('has no axe violations with reaction chips', async () => {
     const { container } = render(
       <RrcChatView

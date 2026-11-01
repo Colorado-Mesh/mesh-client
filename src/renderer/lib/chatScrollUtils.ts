@@ -107,6 +107,17 @@ export function scrollElementWithinContainer(
   container.scrollTo({ top: Math.max(0, targetTop), behavior });
 }
 
+/** Scroll `container` the least distance that shows `element`, or its top when it is taller. */
+export function revealElementWithinContainer(container: HTMLElement, element: HTMLElement): void {
+  const box = container.getBoundingClientRect();
+  const target = element.getBoundingClientRect();
+  if (target.top < box.top) {
+    container.scrollTop += target.top - box.top;
+  } else if (target.bottom > box.bottom) {
+    container.scrollTop += Math.min(target.bottom - box.bottom, target.top - box.top);
+  }
+}
+
 type ScrollMeasureInstance = Pick<
   Virtualizer<HTMLDivElement, Element>,
   'indexFromElement' | 'scrollDirection' | 'measurementsCache' | 'itemSizeCache' | 'options'

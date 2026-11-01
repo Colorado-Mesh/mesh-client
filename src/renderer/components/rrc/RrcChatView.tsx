@@ -37,6 +37,7 @@ import {
   createStableChatMeasureElement,
   getDistFromChatBottom,
   resetVirtualRowSizes,
+  revealElementWithinContainer,
   scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
@@ -589,6 +590,22 @@ export function RrcChatView({
       composerTextareaRef.current?.focus();
     },
   });
+  const { inlinePickerRef } = reactionPicker;
+  // The line's row grows when the inline picker mounts, and the list keeps its bottom in place,
+  // which can push the picker out of view. Show it once the virtualizer has measured the row.
+  const revealInlinePicker = useCallback(
+    (el: HTMLElement | null) => {
+      inlinePickerRef(el);
+      if (!el) return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = scrollContainerRef.current;
+          if (container && el.isConnected) revealElementWithinContainer(container, el);
+        });
+      });
+    },
+    [inlinePickerRef],
+  );
 
   const isOwnRrcLine = (msg: RrcChatMessage): boolean =>
     localIdentityHash && msg.sender_hash
@@ -993,15 +1010,6 @@ export function RrcChatView({
             }}
           />
           {reactionRows.length > 0 && renderReactionChips(msg, reactionRows)}
-          {reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id && (
-            <div className="mt-1 font-sans">
-              <emoji-picker
-                ref={reactionPicker.inlinePickerRef}
-                data-source={BUNDLED_EMOJI_DATA_SOURCE}
-                style={{ width: '320px' }}
-              />
-            </div>
-          )}
         </div>
         <div className="flex items-center self-start leading-none">
           <span
@@ -1071,6 +1079,16 @@ export function RrcChatView({
             </button>
           )}
         </div>
+        {reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id && (
+          // Full row width: on tablets and phones the body column is narrower than the picker.
+          <div data-testid="rrc-inline-reaction-picker" className="col-span-full mt-1 font-sans">
+            <emoji-picker
+              ref={revealInlinePicker}
+              data-source={BUNDLED_EMOJI_DATA_SOURCE}
+              style={{ width: '320px', maxWidth: '100%' }}
+            />
+          </div>
+        )}
       </div>
     );
     return { lineClass, inner };
