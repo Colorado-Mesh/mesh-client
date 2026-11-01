@@ -3677,8 +3677,8 @@ default destination and listener disable do not carry a local path and therefore
 <tr>
 <td>PUT</td>
 <td><code>/api/v1/nomadnetwork/serving</code></td>
-<td><code>{ enabled, display_name? }</code></td>
-<td><code>{ ok, serving }</code></td>
+<td><code>{ enabled, display_name?, allow_executable_pages? }</code></td>
+<td><code>{ ok, serving }</code> — optional CGI opt-in; changing it while running restarts the Nomad node</td>
 </tr>
 <tr>
 <td>PUT</td>
@@ -3749,7 +3749,7 @@ default destination and listener disable do not carry a local path and therefore
 </tbody>
 </table>
 <p><code>identify</code> defaults to <strong>false</strong>: Nomad Links are anonymous unless the caller passes <code>identify=true</code>, which sends <code>LINKIDENTIFY</code> on a new Link. The sidecar keys its cached Nomad Link on destination <strong>and</strong> identify, so a change never reuses a Link with the other identification. The renderer sends the flag from the node's persisted <code>identify</code> field (<code>NomadNodeRow.identify</code> in <code>GET /nodes</code> rows). The <code>nomadnetwork.node</code> WS event carries <code>identity_hash</code> but not the flag.</p>
-<p>Auto-restore order when the live stack comes up: load <code>nomad_serving_content_source</code> → if <code>nomad_serving_enabled</code> and a content source is set, start hosting → start FS watcher on <code>pages/</code> (and <code>files/</code> when that directory exists). If enabled without a content source, set <code>last_error=content_source_required</code> and do not start. Other failures keep <code>enabled=true</code> with <code>running=false</code> and <code>last_error</code> set; logs use the <code>[nomad-serving]</code> tag.</p>
+<p>Auto-restore order when the live stack comes up: load <code>nomad_serving_content_source</code> → apply <code>nomad_serving_allow_executable_pages</code> (default off) → if <code>nomad_serving_enabled</code> and a content source is set, start hosting → start FS watcher on <code>pages/</code> (and <code>files/</code> when that directory exists). If enabled without a content source, set <code>last_error=content_source_required</code> and do not start. Other failures keep <code>enabled=true</code> with <code>running=false</code> and <code>last_error</code> set; logs use the <code>[nomad-serving]</code> tag.</p>
 <h3 id="rrc-reticulum-relay-chat">RRC (Reticulum Relay Chat)<a class="headerlink" href="#rrc-reticulum-relay-chat" title="Permanent link">&para;</a></h3>
 <p>Multi-hub sessions are keyed by lowercase 32-hex <code>hub_dest_hash</code>. Soft cap: <strong>8</strong> simultaneous hubs. Nick / room / body lengths are capped at the API boundary.</p>
 <table>
@@ -4294,7 +4294,7 @@ default destination and listener disable do not carry a local path and therefore
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 1, 2026 18:27:58 UTC">November 1, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 1, 2026 19:58:49 UTC">November 1, 2026</span>
   </span>
 
     
