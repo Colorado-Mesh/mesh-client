@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -1373,4 +1373,142 @@ it('does not turn nameless sender hashes into mention targets', () => {
     />,
   );
   expect(screen.queryByRole('button', { name: 'rrc.replyToUser' })).not.toBeInTheDocument();
+});
+
+describe('RrcChatView reactions', () => {
+  const SELF = 'aa'.repeat(16);
+  const target = makeMsg({ id: '1111111111111111', body: 'ship it?', nickname: 'alice' });
+  const reactionFrom = (nickname: string, sender: string, id: string, emoji = '👍') =>
+    makeMsg({ id, body: emoji, nickname, sender_hash: sender, react_to: target.id });
+
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    vi.mocked(window.electronAPI.showEmojiPanel).mockClear().mockResolvedValue(undefined);
+  });
+
+  it('shows reactions as chips under the target, not as transcript lines', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        localIdentityHash={SELF}
+        messages={[
+          target,
+          reactionFrom('bob', 'cc'.repeat(16), '2222222222222222'),
+          reactionFrom('me', SELF, '3333333333333333'),
+        ]}
+      />,
+    );
+    expect(screen.getAllByTestId('rrc-line-nick')).toHaveLength(1);
+    const chips = within(screen.getByTestId('rrc-reactions')).getAllByRole('img');
+    expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
+      'chatPanel.reactionOtherAria',
+      'chatPanel.reactionYouAria',
+    ]);
+    expect(chips[0]).toHaveTextContent('bob👍');
+    // Your own chip under someone else's line drops the label, as in Chat.
+    expect(chips[1]).toHaveTextContent(/^👍$/);
+  });
+
+  it('offers React only on lines a reaction can reference', () => {
+    const { rerender } = render(
+      <RrcChatView
+        {...baseProps}
+        messages={[target, makeMsg({ id: 'hub-1', kind: 'notice', body: 'topic set' })]}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'chatPanel.addReaction' })).toBeNull();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        onReact={vi.fn().mockResolvedValue(undefined)}
+        messages={[target, makeMsg({ id: '4444444444444444', kind: 'notice', body: 'topic set' })]}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'chatPanel.addReaction' })).toHaveLength(1);
+  });
+
+  it('disables React when the hub session cannot send', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        canSend={false}
+        onReact={vi.fn().mockResolvedValue(undefined)}
+        messages={[target]}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'chatPanel.addReaction' })).toBeDisabled();
+  });
+
+  it.each(['darwin', 'win32'] as const)(
+    'opens the OS emoji panel on %s and sends the picked emoji',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const { container } = render(
+        <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
+      expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
+      expect(container.querySelector('emoji-picker')).toBeNull();
+
+      const capture = container.querySelector<HTMLInputElement>('input[aria-hidden="true"]')!;
+      expect(capture).toHaveFocus();
+      fireEvent.input(capture, { target: { value: '🎉' } });
+      expect(onReact).toHaveBeenCalledWith(target, '🎉');
+      expect(screen.getByRole('textbox')).toHaveFocus();
+    },
+  );
+
+  it('ignores text typed into the capture input and hands focus back', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
+    const capture = container.querySelector<HTMLInputElement>('input[aria-hidden="true"]')!;
+    fireEvent.keyDown(capture, { key: 'a' });
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    fireEvent.input(capture, { target: { value: '🎉' } });
+    expect(onReact).not.toHaveBeenCalled();
+  });
+
+  it('shows the inline picker on Linux and toggles it closed', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
+    );
+    const react = screen.getByRole('button', { name: 'chatPanel.addReaction' });
+    await userEvent.click(react);
+    expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    expect(container.querySelector('input[aria-hidden="true"]')).toBeNull();
+
+    const picker = container.querySelector('emoji-picker')!;
+    act(() => {
+      picker.dispatchEvent(
+        new CustomEvent('emoji-click', { detail: { emoji: { unicode: '🔥' } } }),
+      );
+    });
+    expect(onReact).toHaveBeenCalledWith(target, '🔥');
+    expect(container.querySelector('emoji-picker')).toBeNull();
+
+    await userEvent.click(react);
+    expect(container.querySelector('emoji-picker')).not.toBeNull();
+    await userEvent.click(react);
+    expect(container.querySelector('emoji-picker')).toBeNull();
+  });
+
+  it('has no axe violations with reaction chips', async () => {
+    const { container } = render(
+      <RrcChatView
+        {...baseProps}
+        onReact={vi.fn().mockResolvedValue(undefined)}
+        messages={[target, reactionFrom('bob', 'cc'.repeat(16), '2222222222222222')]}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

@@ -540,6 +540,8 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     kind: 'TEXT NOT NULL',
     body: 'TEXT NOT NULL',
     timestamp: 'INTEGER NOT NULL',
+    react_to: 'TEXT',
+    react_op: 'INTEGER',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',

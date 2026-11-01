@@ -56,6 +56,13 @@ export interface RrcChatMessage {
   timestamp: number;
   /** Present on direct NOTICE (K_DST) whispers. */
   dst_hash?: string | null;
+  /**
+   * rrc-extensions.md `K_REACT_TO`: wire `id` of the message this line reacts to.
+   * The body is then the emoji, and the line renders as a chip, not a transcript row.
+   */
+  react_to?: string | null;
+  /** `K_REACT_OP`: 1 retracts the sender's reaction; absent or 0 applies it. */
+  react_op?: number | null;
 }
 
 export interface RrcHubCapabilities {
@@ -125,6 +132,17 @@ export interface RrcSendRequest {
    * Requires hub CAP_DIRECT_NOTICE.
    */
   dst_hash?: string;
+  /** Wire `id` (16 hex) this line reacts to; `body` must be one emoji. */
+  react_to?: string;
+  /** 1 retracts the reaction named by `react_to`. */
+  react_op?: 0 | 1;
+}
+
+/** `/rrc/send` reply; `id` is the sent envelope's `K_ID` (16 hex). */
+export interface RrcSendResponse {
+  ok: boolean;
+  error?: string;
+  id?: string;
 }
 
 export interface RrcSetNicknameRequest {

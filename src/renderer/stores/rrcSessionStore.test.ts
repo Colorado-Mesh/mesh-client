@@ -866,6 +866,21 @@ describe('rrcSessionStore', () => {
     ).toHaveLength(1);
   });
 
+  it('keeps consecutive DM reactions with the same emoji', () => {
+    const store = useRrcSessionStore.getState();
+    const peer = 'dd'.repeat(16);
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.openDm({ identity_hash: peer, nickname: 'Alice' });
+    const reaction = { room: `@${peer}`, kind: 'notice' as const, body: '👍', timestamp: 1 };
+    store.addMessage({ ...reaction, id: '1111111111111111', react_to: 'aa'.repeat(8) });
+    store.addMessage({ ...reaction, id: '2222222222222222', react_to: 'bb'.repeat(8) });
+    expect(
+      useRrcSessionStore
+        .getState()
+        .messages.get(useRrcSessionStore.getState().roomMessageKey(`@${peer}`)!),
+    ).toHaveLength(2);
+  });
+
   it('refocuses and stashes unread when the focused hub is removed', () => {
     const store = useRrcSessionStore.getState();
     const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';

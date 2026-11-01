@@ -98,6 +98,20 @@ describe('resolveRrcAlertType', () => {
   const system = { body: '@nv0n', room: '#lobby', kind: 'system' as const };
   const error = { body: 'fail', room: '#lobby', kind: 'error' as const };
 
+  it.each(['all', 'mentions'] as const)('never alerts on a reaction in %s mode', (notifyMode) => {
+    const reactTo = '1111111111111111';
+    for (const msg of [plain, mention, dstHash, peerDm]) {
+      expect(
+        resolveRrcAlertType({
+          msg: { ...msg, body: '👍', react_to: reactTo },
+          nickname: 'nv0n',
+          notifyMode,
+          muted: false,
+        }),
+      ).toBeNull();
+    }
+  });
+
   it.each(['all', 'mentions'] as const)('classifies DMs as dm in %s mode', (notifyMode) => {
     expect(resolveRrcAlertType({ msg: whisper, nickname: 'nv0n', notifyMode, muted: false })).toBe(
       'dm',

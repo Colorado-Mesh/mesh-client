@@ -254,21 +254,23 @@ Auto-restore order when the live stack comes up: load `nomad_serving_content_sou
 
 Multi-hub sessions are keyed by lowercase 32-hex `hub_dest_hash`. Soft cap: **8** simultaneous hubs. Nick / room / body lengths are capped at the API boundary.
 
-| Method | Path                        | Body / notes                                                       | Response                          |
-| ------ | --------------------------- | ------------------------------------------------------------------ | --------------------------------- |
-| GET    | `/api/v1/rrc/hubs`          |                                                                    | `{ hubs: RrcHubInfo[] }`          |
-| POST   | `/api/v1/rrc/hubs`          | `{ dest_hash, label?, favorited? }`                                | `{ ok, hub? }`                    |
-| POST   | `/api/v1/rrc/hubs/favorite` | `{ dest_hash, favorited }` — `dest_hash` must be exact 32 hex      | `{ ok }`                          |
-| POST   | `/api/v1/rrc/connect`       | `{ dest_hash, nickname? }`                                         | `{ ok }` / `{ ok: false, error }` |
-| POST   | `/api/v1/rrc/disconnect`    | `{ dest_hash? }` — omit/empty tears down every hub                 | `{ ok }`                          |
-| GET    | `/api/v1/rrc/status`        |                                                                    | `{ sessions: [], identity_hash }` |
-| POST   | `/api/v1/rrc/join`          | `{ hub_dest_hash, room, key? }`                                    | `{ ok }`                          |
-| POST   | `/api/v1/rrc/part`          | `{ hub_dest_hash, room }`                                          | `{ ok }`                          |
-| POST   | `/api/v1/rrc/send`          | `{ hub_dest_hash, room?, body, type?, dst_hash? }`                 | `{ ok }`                          |
-| POST   | `/api/v1/rrc/nick`          | `{ nickname, hub_dest_hash? }` — omit hub applies to every session | `{ ok }`                          |
-| GET    | `/api/v1/rrc/rooms`         | `?hub_dest_hash=` optional                                         | `{ rooms: [] }`                   |
+| Method | Path                        | Body / notes                                                             | Response                                  |
+| ------ | --------------------------- | ------------------------------------------------------------------------ | ----------------------------------------- |
+| GET    | `/api/v1/rrc/hubs`          |                                                                          | `{ hubs: RrcHubInfo[] }`                  |
+| POST   | `/api/v1/rrc/hubs`          | `{ dest_hash, label?, favorited? }`                                      | `{ ok, hub? }`                            |
+| POST   | `/api/v1/rrc/hubs/favorite` | `{ dest_hash, favorited }` — `dest_hash` must be exact 32 hex            | `{ ok }`                                  |
+| POST   | `/api/v1/rrc/connect`       | `{ dest_hash, nickname? }`                                               | `{ ok }` / `{ ok: false, error }`         |
+| POST   | `/api/v1/rrc/disconnect`    | `{ dest_hash? }` — omit/empty tears down every hub                       | `{ ok }`                                  |
+| GET    | `/api/v1/rrc/status`        |                                                                          | `{ sessions: [], identity_hash }`         |
+| POST   | `/api/v1/rrc/join`          | `{ hub_dest_hash, room, key? }`                                          | `{ ok }`                                  |
+| POST   | `/api/v1/rrc/part`          | `{ hub_dest_hash, room }`                                                | `{ ok }`                                  |
+| POST   | `/api/v1/rrc/send`          | `{ hub_dest_hash, room?, body, type?, dst_hash?, react_to?, react_op? }` | `{ ok, id }` (`id` = sent `K_ID`, 16 hex) |
+| POST   | `/api/v1/rrc/nick`          | `{ nickname, hub_dest_hash? }` — omit hub applies to every session       | `{ ok }`                                  |
+| GET    | `/api/v1/rrc/rooms`         | `?hub_dest_hash=` optional                                               | `{ rooms: [] }`                           |
 
 Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`, `setFavorite`, `connect`, `disconnect`, `getStatus`, `join`, `part`, `send`, `setNickname`, `getRooms`).
+
+**Reactions** follow the RRC extension keys in [rrc-extensions.md](https://github.com/thatSFguy/reticulum-relay-chat/blob/master/docs/rrc-extensions.md) v1: `K_REACT_TO` (65, the 8-byte `K_ID` reacted to) and `K_REACT_OP` (66, sent only as `1` to retract). On `/rrc/send`, `react_to` is that target as 16 hex characters and `body` is the emoji (at most 64 bytes). A room reaction must use `type: "msg"`. In a DM tab the same keys ride the direct NOTICE (`dst_hash` set), which is a mesh-client addition: the extension document only defines them on MSG. `react_op` without `react_to`, or any value other than 0 or 1, is refused. Inbound `rrc.message` payloads add `react_to` (hex) and `react_op` on MSG and direct NOTICE lines and leave both null on ACTION and hub NOTICE lines. A `K_REPLY_TO` (64) on the same envelope drops the reaction, as the extension requires. rrcd forwards every envelope key unchanged on MSG and direct NOTICE fan-out; a hub that rebuilds envelopes and drops unknown keys turns a reaction into a plain emoji line.
 
 ### Remote — rnsh (shell) and rncp (file transfer)
 

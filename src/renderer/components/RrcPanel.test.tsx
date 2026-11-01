@@ -463,6 +463,35 @@ describe('RrcPanel', () => {
     });
   });
 
+  describe('DM wire ids', () => {
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+
+    it('stores an outbound DM line under the id the sidecar sent', async () => {
+      const user = userEvent.setup();
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.setCapabilities({ direct_notice: true });
+      store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA);
+      store.setActiveRoom(`@${peerHash}`);
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({
+        ok: true,
+        id: '4444444444444444',
+      });
+
+      render(<RrcPanel isActive />);
+      const composer = screen.getByRole('textbox', { name: /Reply to Alice/i });
+      await user.type(composer, 'hello');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+
+      await waitFor(() => {
+        const key = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`) ?? '';
+        expect(useRrcSessionStore.getState().messages.get(key)).toContainEqual(
+          expect.objectContaining({ id: '4444444444444444', body: 'hello' }),
+        );
+      });
+    });
+  });
+
   it('keeps separate DM tabs when whispering two peers', async () => {
     const user = userEvent.setup();
     const aliceHash = 'dddddddddddddddddddddddddddddddd';

@@ -36,6 +36,20 @@ pub mod cap {
     pub const DIRECT_NOTICE: u64 = 2;
 }
 
+/// Envelope extension keys from `rrc-extensions.md` v1 (thatSFguy/reticulum-relay-chat).
+/// rrcd forwards every envelope key on MSG/NOTICE fan-out; extension-aware hubs relay 64+.
+pub mod ext_key {
+    /// `K_REPLY_TO`: not sent by mesh-client; its presence voids `K_REACT_TO` (spec §2).
+    pub const REPLY_TO: u64 = 64;
+    /// `K_REACT_TO`: 8-byte `K_ID` of the message reacted to; the body is the emoji.
+    pub const REACT_TO: u64 = 65;
+    /// `K_REACT_OP`: 0 applies (default, omitted on send), 1 retracts.
+    pub const REACT_OP: u64 = 66;
+}
+
+pub const REACT_OP_APPLY: u8 = 0;
+pub const REACT_OP_RETRACT: u8 = 1;
+
 #[derive(Debug, Error)]
 pub enum RrcCodecError {
     #[error("cbor encode failed: {0}")]
@@ -60,6 +74,10 @@ pub struct RrcEnvelope {
     pub nickname: Option<String>,
     /// rrcd extension: K_DST = 8 — direct NOTICE destination identity.
     pub dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
+    /// Extension `K_REACT_TO`: the message this one reacts to.
+    pub react_to: Option<[u8; RRC_MSG_ID_LEN]>,
+    /// Extension `K_REACT_OP`, only meaningful with `react_to`.
+    pub react_op: Option<u8>,
 }
 
 impl RrcEnvelope {
@@ -82,11 +100,20 @@ impl RrcEnvelope {
             body,
             nickname,
             dst_identity: None,
+            react_to: None,
+            react_op: None,
         }
     }
 
     pub fn with_dst(mut self, dst: [u8; RRC_IDENTITY_HASH_LEN]) -> Self {
         self.dst_identity = Some(dst);
+        self
+    }
+
+    /// Mark this envelope as a reaction to `target`; a retraction also carries `K_REACT_OP = 1`.
+    pub fn with_reaction(mut self, target: [u8; RRC_MSG_ID_LEN], retract: bool) -> Self {
+        self.react_to = Some(target);
+        self.react_op = retract.then_some(REACT_OP_RETRACT);
         self
     }
 }
@@ -119,6 +146,19 @@ pub fn encode_envelope(env: &RrcEnvelope) -> Result<Vec<u8>, RrcCodecError> {
     }
     if let Some(dst) = &env.dst_identity {
         map.push((Value::Integer(8.into()), Value::Bytes(dst.to_vec())));
+    }
+    // Extension keys go after every core key, which is also canonical CBOR order for 65/66.
+    if let Some(target) = &env.react_to {
+        map.push((
+            Value::Integer(ext_key::REACT_TO.into()),
+            Value::Bytes(target.to_vec()),
+        ));
+        if let Some(op) = env.react_op {
+            map.push((
+                Value::Integer(ext_key::REACT_OP.into()),
+                Value::Integer(op.into()),
+            ));
+        }
     }
     let mut out = Vec::new();
     ciborium::into_writer(&Value::Map(map), &mut out)
@@ -156,6 +196,27 @@ pub fn decode_envelope(bytes: &[u8]) -> Result<RrcEnvelope, RrcCodecError> {
         }
         _ => None,
     });
+    // A reply anchor wins over a reaction anchor (rrc-extensions.md §2).
+    let react_to = if fields.contains_key(&ext_key::REPLY_TO) {
+        None
+    } else {
+        fields.get(&ext_key::REACT_TO).and_then(|v| match v {
+            Value::Bytes(b) if b.len() == RRC_MSG_ID_LEN => {
+                let mut arr = [0u8; RRC_MSG_ID_LEN];
+                arr.copy_from_slice(b);
+                Some(arr)
+            }
+            _ => None,
+        })
+    };
+    // Unknown op values fall back to apply, as reticulum-mobile-app reads them.
+    let react_op = react_to.and_then(|_| {
+        fields
+            .get(&ext_key::REACT_OP)
+            .and_then(as_u64)
+            .and_then(|op| u8::try_from(op).ok())
+            .filter(|op| *op == REACT_OP_APPLY || *op == REACT_OP_RETRACT)
+    });
 
     Ok(RrcEnvelope {
         version,
@@ -167,6 +228,8 @@ pub fn decode_envelope(bytes: &[u8]) -> Result<RrcEnvelope, RrcCodecError> {
         body,
         nickname,
         dst_identity,
+        react_to,
+        react_op,
     })
 }
 
@@ -646,5 +709,168 @@ mod tests {
         assert_eq!(meta.kind, "notice");
         assert_eq!(meta.size, 12);
         assert!(meta.sha256.is_some());
+    }
+
+    const VECTOR_SENDER: &str = "6b621001912fd0bd5d6a33ae183fc56b";
+    const VECTOR_TARGET: &str = "a41b9c33d2e05f18";
+
+    /// rrc-extensions.md §7 reaction vector as a CBOR map, keys in canonical order.
+    fn reaction_vector(msg_id: &str, timestamp: u64, retract: bool) -> Vec<u8> {
+        let mut map = vec![
+            (Value::Integer(0.into()), Value::Integer(1.into())),
+            (Value::Integer(1.into()), Value::Integer(20.into())),
+            (
+                Value::Integer(2.into()),
+                Value::Bytes(hex::decode(msg_id).unwrap()),
+            ),
+            (Value::Integer(3.into()), Value::Integer(timestamp.into())),
+            (
+                Value::Integer(4.into()),
+                Value::Bytes(hex::decode(VECTOR_SENDER).unwrap()),
+            ),
+            (Value::Integer(5.into()), Value::Text("lobby".into())),
+            (Value::Integer(6.into()), Value::Text("👍".into())),
+            (Value::Integer(7.into()), Value::Text("Walden".into())),
+            (
+                Value::Integer(65.into()),
+                Value::Bytes(hex::decode(VECTOR_TARGET).unwrap()),
+            ),
+        ];
+        if retract {
+            map.push((Value::Integer(66.into()), Value::Integer(1.into())));
+        }
+        let mut bytes = Vec::new();
+        ciborium::into_writer(&Value::Map(map), &mut bytes).unwrap();
+        bytes
+    }
+
+    fn vector_envelope(msg_id: &str, timestamp: u64) -> RrcEnvelope {
+        let mut env = RrcEnvelope::new(
+            msg_type::MSG,
+            hex::decode(VECTOR_SENDER).unwrap().try_into().unwrap(),
+            Some("lobby".into()),
+            Some(text_body("👍")),
+            Some("Walden".into()),
+        );
+        env.msg_id = hex::decode(msg_id).unwrap().try_into().unwrap();
+        env.timestamp = timestamp;
+        env
+    }
+
+    fn vector_target() -> [u8; RRC_MSG_ID_LEN] {
+        hex::decode(VECTOR_TARGET).unwrap().try_into().unwrap()
+    }
+
+    #[test]
+    fn reaction_encodes_like_the_extension_spec_vector() {
+        let env = vector_envelope("1112131415161718", 1_787_923_201_000)
+            .with_reaction(vector_target(), false);
+        assert_eq!(
+            encode_envelope(&env).unwrap(),
+            reaction_vector("1112131415161718", 1_787_923_201_000, false)
+        );
+    }
+
+    #[test]
+    fn retraction_encodes_like_the_extension_spec_vector() {
+        let env = vector_envelope("2122232425262728", 1_787_923_202_000)
+            .with_reaction(vector_target(), true);
+        assert_eq!(
+            encode_envelope(&env).unwrap(),
+            reaction_vector("2122232425262728", 1_787_923_202_000, true)
+        );
+    }
+
+    #[test]
+    fn decodes_reaction_and_retraction_vectors() {
+        let apply = decode_envelope(&reaction_vector(
+            "1112131415161718",
+            1_787_923_201_000,
+            false,
+        ))
+        .unwrap();
+        assert_eq!(apply.react_to, Some(vector_target()));
+        assert_eq!(apply.react_op, None);
+        assert_eq!(body_as_text(apply.body.as_ref()).as_deref(), Some("👍"));
+
+        let retract = decode_envelope(&reaction_vector(
+            "2122232425262728",
+            1_787_923_202_000,
+            true,
+        ))
+        .unwrap();
+        assert_eq!(retract.react_to, Some(vector_target()));
+        assert_eq!(retract.react_op, Some(REACT_OP_RETRACT));
+    }
+
+    fn envelope_with_extensions(ext: Vec<(u64, Value)>) -> RrcEnvelope {
+        let mut map = vec![
+            (Value::Integer(0.into()), Value::Integer(1.into())),
+            (Value::Integer(1.into()), Value::Integer(20.into())),
+            (Value::Integer(2.into()), Value::Bytes(vec![1; 8])),
+            (Value::Integer(3.into()), Value::Integer(1.into())),
+            (Value::Integer(4.into()), Value::Bytes(vec![2; 16])),
+            (Value::Integer(6.into()), Value::Text("👍".into())),
+        ];
+        for (k, v) in ext {
+            map.push((Value::Integer(k.into()), v));
+        }
+        let mut bytes = Vec::new();
+        ciborium::into_writer(&Value::Map(map), &mut bytes).unwrap();
+        decode_envelope(&bytes).unwrap()
+    }
+
+    #[test]
+    fn reply_anchor_voids_a_reaction_anchor() {
+        let env = envelope_with_extensions(vec![
+            (ext_key::REPLY_TO, Value::Bytes(vec![3; 8])),
+            (ext_key::REACT_TO, Value::Bytes(vec![4; 8])),
+        ]);
+        assert_eq!(env.react_to, None);
+        assert_eq!(env.react_op, None);
+    }
+
+    #[test]
+    fn malformed_reaction_fields_are_ignored() {
+        let short = envelope_with_extensions(vec![(ext_key::REACT_TO, Value::Bytes(vec![4; 7]))]);
+        assert_eq!(short.react_to, None);
+
+        let text = envelope_with_extensions(vec![(
+            ext_key::REACT_TO,
+            Value::Text("0404040404040404".into()),
+        )]);
+        assert_eq!(text.react_to, None);
+
+        let unknown_op = envelope_with_extensions(vec![
+            (ext_key::REACT_TO, Value::Bytes(vec![4; 8])),
+            (ext_key::REACT_OP, Value::Integer(7.into())),
+        ]);
+        assert_eq!(unknown_op.react_to, Some([4; 8]));
+        assert_eq!(unknown_op.react_op, None);
+
+        let op_without_target =
+            envelope_with_extensions(vec![(ext_key::REACT_OP, Value::Integer(1.into()))]);
+        assert_eq!(op_without_target.react_op, None);
+    }
+
+    #[test]
+    fn plain_message_carries_no_extension_keys() {
+        let env = RrcEnvelope::new(
+            msg_type::MSG,
+            [0x9cu8; 16],
+            Some("lobby".into()),
+            Some(text_body("hello")),
+            None,
+        );
+        let Value::Map(entries) =
+            ciborium::from_reader::<Value, _>(Cursor::new(encode_envelope(&env).unwrap())).unwrap()
+        else {
+            panic!("expected map");
+        };
+        assert!(
+            entries
+                .iter()
+                .all(|(k, _)| integer_key(k).is_some_and(|key| key < 64))
+        );
     }
 }

@@ -102,7 +102,7 @@ export function classifyRrcNotificationType(
 export type RrcNotifyMode = 'all' | 'mentions';
 
 export interface ResolveRrcAlertTypeArgs {
-  msg: Pick<RrcChatMessage, 'body' | 'room' | 'dst_hash' | 'kind'>;
+  msg: Pick<RrcChatMessage, 'body' | 'room' | 'dst_hash' | 'kind' | 'react_to'>;
   nickname: string;
   notifyMode: RrcNotifyMode;
   muted: boolean;
@@ -112,9 +112,10 @@ export interface ResolveRrcAlertTypeArgs {
  * Shared badge + sound gate. Mute and IRC-style mention mode drop channel traffic;
  * non-direct hub notice/system/error never alert (even with @nick). Direct NOTICE
  * whispers stay eligible. Room `msg`/`action` @nick stay `dm` in both modes.
+ * Reactions never alert, as Chat tapbacks do not.
  */
 export function resolveRrcAlertType(args: ResolveRrcAlertTypeArgs): ChatNotificationType | null {
-  if (args.muted) return null;
+  if (args.muted || args.msg.react_to) return null;
   if (args.msg.kind !== 'msg' && args.msg.kind !== 'action' && !isRrcDirectMessage(args.msg)) {
     return null;
   }

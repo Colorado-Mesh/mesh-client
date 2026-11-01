@@ -294,6 +294,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       kind: string;
       body: string;
       timestamp: number;
+      react_to?: string | null;
+      react_op?: number | null;
     }) => ipcRenderer.invoke('db:insertRrcMessage', message),
     listRrcNicks: (hubHash: string, limit?: number) =>
       ipcRenderer.invoke('db:listRrcNicks', hubHash, limit),
@@ -1652,6 +1654,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         body: string;
         type?: string;
         dst_hash?: string;
+        react_to?: string;
+        react_op?: 0 | 1;
       }) =>
         unwrapReticulumProxy(ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts)),
       setNickname: (opts: { nickname: string; hub_dest_hash?: string }) =>

@@ -5,7 +5,7 @@ use axum::extract::{Query, State};
 use serde::Deserialize;
 
 use crate::api::validate::reject_oversize;
-use crate::stack::StackHandle;
+use crate::stack::{RrcReactionRequest, StackHandle};
 
 #[derive(Debug, Deserialize)]
 pub struct RrcUpsertHubBody {
@@ -48,6 +48,10 @@ pub struct RrcSendBody {
     pub msg_type: Option<String>,
     /// When set, send rrcd direct NOTICE (K_DST); room must be omitted.
     pub dst_hash: Option<String>,
+    /// `K_ID` (16 hex) this line reacts to; `body` is then the emoji.
+    pub react_to: Option<String>,
+    /// `K_REACT_OP`: 0 applies (default), 1 retracts.
+    pub react_op: Option<u8>,
 }
 
 /// `hub_dest_hash: None` sets the nickname on every tracked hub session.
@@ -165,6 +169,19 @@ pub async fn rrc_send(
             return Json(serde_json::json!({ "ok": false, "error": err }));
         }
     }
+    let reaction = match (body.react_to.as_deref(), body.react_op) {
+        (None, None) => None,
+        (None, Some(_)) => {
+            return Json(serde_json::json!({ "ok": false, "error": "react_op requires react_to" }));
+        }
+        (Some(_), Some(op)) if op > 1 => {
+            return Json(serde_json::json!({ "ok": false, "error": "react_op must be 0 or 1" }));
+        }
+        (Some(target), op) => Some(RrcReactionRequest {
+            target_hex: target.to_string(),
+            retract: op == Some(1),
+        }),
+    };
     Json(
         stack
             .rrc_send(
@@ -173,6 +190,7 @@ pub async fn rrc_send(
                 &body.body,
                 body.msg_type.as_deref(),
                 body.dst_hash.as_deref(),
+                reaction.as_ref(),
             )
             .await,
     )

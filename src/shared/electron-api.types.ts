@@ -69,6 +69,7 @@ import type {
   RrcMultiSessionSnapshot,
   RrcPartRequest,
   RrcSendRequest,
+  RrcSendResponse,
   RrcSessionSnapshot,
   RrcSetNicknameRequest,
   RrcUpsertHubRequest,
@@ -461,6 +462,8 @@ export interface ElectronAPI {
         kind: string;
         body: string;
         timestamp: number;
+        react_to?: string | null;
+        react_op?: number | null;
       }[]
     >;
     insertRrcMessage: (message: {
@@ -472,6 +475,9 @@ export interface ElectronAPI {
       kind: string;
       body: string;
       timestamp: number;
+      /** rrc-extensions.md `K_REACT_TO` target id (16 hex). */
+      react_to?: string | null;
+      react_op?: number | null;
     }) => Promise<{ changes: number }>;
     /**
      * Nick cache for one hub. Survives transcript clears / retention pruning, so
@@ -1617,7 +1623,7 @@ export interface ElectronAPI {
       getStatus: () => Promise<RrcMultiSessionSnapshot>;
       join: (opts: RrcJoinRequest) => Promise<{ ok: boolean; error?: string }>;
       part: (opts: RrcPartRequest) => Promise<{ ok: boolean; error?: string }>;
-      send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
+      send: (opts: RrcSendRequest) => Promise<RrcSendResponse>;
       setNickname: (opts: RrcSetNicknameRequest) => Promise<{ ok: boolean; error?: string }>;
       getRooms: (hubDestHash?: string) => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
     };

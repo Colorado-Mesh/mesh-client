@@ -102,7 +102,7 @@ import {
   selectRrcFocusedHubNicks,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
-import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
+import type { RrcChatMessage, RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
 import { useConversationMutes } from '../hooks/useConversationMutes';
@@ -1197,7 +1197,8 @@ export default function RrcPanel({
             return;
           }
           addMessage({
-            id: `whisper-out-${Date.now()}`,
+            // The wire id lets the peer's reactions find this line; the hub sends no echo.
+            id: res.id ?? `whisper-out-${Date.now()}`,
             room: activeRoom,
             kind: 'msg',
             body: parsed.body,
@@ -1254,6 +1255,74 @@ export default function RrcPanel({
       scheduleWhoReplyWatchdog,
       sendHubCommand,
       setNickname,
+      setRrcSendError,
+      status,
+      t,
+    ],
+  );
+
+  /**
+   * rrc-extensions.md reaction: an ordinary MSG whose body is the emoji, plus `react_to`.
+   * Room reactions come back through the hub echo; a DM reaction has no echo, so add it here.
+   */
+  const handleReact = useCallback(
+    async (target: RrcChatMessage, glyph: string) => {
+      if (status !== 'active' || !hubDestHash || !activeRoom) {
+        setRrcSendError(t('chatPanel.reactionFailed'));
+        return;
+      }
+      const dmHash = parseRrcDmRoomKey(activeRoom);
+      if (dmHash && !capabilities.direct_notice) {
+        setRrcSendError(t('rrc.directNoticeUnsupported'));
+        return;
+      }
+      try {
+        const res = await rrcSendBounded(
+          dmHash
+            ? {
+                hub_dest_hash: hubDestHash,
+                body: glyph,
+                type: 'notice',
+                dst_hash: dmHash,
+                react_to: target.id,
+              }
+            : {
+                hub_dest_hash: hubDestHash,
+                room: activeRoom,
+                body: glyph,
+                type: 'msg',
+                react_to: target.id,
+              },
+        );
+        if (!res.ok) {
+          setRrcSendError(res.error ?? t('chatPanel.reactionFailed'));
+          return;
+        }
+        if (dmHash && res.id) {
+          addMessage({
+            id: res.id,
+            room: activeRoom,
+            kind: 'msg',
+            body: glyph,
+            nickname: nickname || null,
+            sender_hash: localIdentityHash,
+            timestamp: Date.now(),
+            dst_hash: dmHash,
+            react_to: target.id,
+          });
+        }
+      } catch (e) {
+        console.warn('[RrcPanel] react ' + errLikeToLogString(e));
+        setRrcSendError(formatRrcErrorMessage(errLikeToLogString(e), t));
+      }
+    },
+    [
+      activeRoom,
+      addMessage,
+      capabilities.direct_notice,
+      hubDestHash,
+      localIdentityHash,
+      nickname,
       setRrcSendError,
       status,
       t,
@@ -1666,6 +1735,7 @@ export default function RrcPanel({
             await handleSend(fullText);
             return true;
           }}
+          onReact={handleReact}
         />
       </div>
     </>

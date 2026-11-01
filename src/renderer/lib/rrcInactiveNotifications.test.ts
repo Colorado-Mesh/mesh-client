@@ -23,6 +23,28 @@ describe('resolveInactiveRrcNotification', () => {
     expect(result?.message.id).toBe('2');
     expect(result?.room).toBe('#ops');
   });
+
+  it('skips reaction lines', () => {
+    const result = resolveInactiveRrcNotification({
+      nickname: 'nv0n',
+      hubDestHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      mutedViews: new Set<string>(),
+      notifGloballyMuted: false,
+      localIdentityHash: null,
+      notifyMode: 'all',
+      newMessages: [
+        {
+          id: '1',
+          room: '#lobby',
+          kind: 'msg',
+          body: '👍',
+          timestamp: 1,
+          react_to: 'ab'.repeat(8),
+        },
+      ],
+    });
+    expect(result).toBeNull();
+  });
 });
 
 describe('resolveInactiveRrcNotificationType', () => {

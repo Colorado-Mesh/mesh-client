@@ -63,7 +63,8 @@ export function querySummaryHistory(
     if (!q.hubHash || !q.room || !/^[a-f0-9]{32}$/i.test(q.hubHash))
       throw new Error('Invalid AI room');
     table = 'rrc_messages';
-    where.push('hub_hash = ?', 'room = ?', "kind IN ('msg', 'action')");
+    // Reaction lines (rrc-extensions.md K_REACT_TO) are emoji, not conversation.
+    where.push('hub_hash = ?', 'room = ?', "kind IN ('msg', 'action')", 'react_to IS NULL');
     args.push(q.hubHash.toLowerCase(), q.room.trim().toLowerCase().replace(/^#+/, ''));
     body = 'body';
     sender = "COALESCE(nickname, sender_hash, '')";

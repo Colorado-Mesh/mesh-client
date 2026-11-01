@@ -1254,6 +1254,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
           timestamp?: number;
           hub_dest_hash?: string | null;
           dst_hash?: string | null;
+          react_to?: string | null;
+          react_op?: number | null;
         };
         if (typeof p.body === 'string') {
           const hubDestHash = p.hub_dest_hash ?? undefined;
@@ -1400,12 +1402,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
               nickname: p.nickname,
               timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
               dst_hash: p.dst_hash,
+              ...(typeof p.react_to === 'string' ? { react_to: p.react_to } : {}),
+              ...(typeof p.react_op === 'number' ? { react_op: p.react_op } : {}),
             },
             {
               bumpUnread:
                 Boolean(view.hub) &&
                 resolveRrcAlertType({
-                  msg: { body: p.body, room, kind, dst_hash: p.dst_hash },
+                  msg: { body: p.body, room, kind, dst_hash: p.dst_hash, react_to: p.react_to },
                   nickname: session.nickname,
                   notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
                   muted: isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
