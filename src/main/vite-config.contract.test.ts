@@ -1,9 +1,11 @@
 // @vitest-environment node
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { build } from 'vite';
 import { describe, expect, it } from 'vitest';
 
-const VITE_CONFIG = readFileSync(join(__dirname, '../../vite.config.mts'), 'utf-8');
+const ROOT = join(__dirname, '../..');
+const VITE_CONFIG = readFileSync(join(ROOT, 'vite.config.mts'), 'utf-8');
 
 describe('vite build config', () => {
   it('ships a separate inert migration page with relative asset URLs', () => {
@@ -14,6 +16,21 @@ describe('vite build config', () => {
     expect(page).not.toMatch(/<script|<iframe|<link|http-equiv/i);
     expect(page).toMatch(/<body>\s*<\/body>/);
   });
+
+  it('declares multipage HTML entries on rolldownOptions.input', () => {
+    expect(VITE_CONFIG).toMatch(
+      /rolldownOptions:\s*\{[\s\S]*?input:\s*\{[\s\S]*?index\.html[\s\S]*?migration\.html[\s\S]*?live-map\.html/,
+    );
+    expect(VITE_CONFIG).not.toMatch(/rollupOptions:\s*\{[\s\S]*?input:/);
+  });
+
+  it('emits index.html, migration.html, and live-map.html into dist/renderer', async () => {
+    await build({ configFile: join(ROOT, 'vite.config.mts'), logLevel: 'error' });
+    const out = join(ROOT, 'dist/renderer');
+    expect(existsSync(join(out, 'index.html'))).toBe(true);
+    expect(existsSync(join(out, 'migration.html'))).toBe(true);
+    expect(existsSync(join(out, 'live-map.html'))).toBe(true);
+  }, 120_000);
 
   it('disables source maps for production bundles', () => {
     expect(VITE_CONFIG).toMatch(/build:\s*\{/);

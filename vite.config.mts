@@ -89,18 +89,15 @@ export default defineConfig({
     // Advisory for non-App chunks. The App entry fails the build above 1000 kB
     // (appChunkBudgetPlugin). Electron renderer; not a public web cold-load budget.
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    // Vite 8: multipage HTML entries belong on rolldownOptions.input (rollupOptions.input
+    // is ignored once rolldownOptions is set). Stubs for Node built-ins stay in resolve.alias —
+    // do not list them as externals (bare `import "stream"` etc. break in the renderer).
+    rolldownOptions: {
       input: {
         index: path.resolve(import.meta.dirname, 'src/renderer/index.html'),
         migration: path.resolve(import.meta.dirname, 'src/renderer/migration.html'),
         liveMap: path.resolve(import.meta.dirname, 'src/renderer/live-map.html'),
       },
-      // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.
-      // Do NOT list them as externals — Rollup would emit bare `import "stream"` etc.
-      // in the browser bundle which the renderer rejects at runtime.
-    },
-    // Vite 8 / Rolldown vendor groups (replaces rollup manual chunk hooks).
-    rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
