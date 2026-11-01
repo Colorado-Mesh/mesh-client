@@ -3551,12 +3551,11 @@ describe('ChatPanel tapback reaction picker', () => {
     },
   );
 
+  // aria-hidden comes off while a reaction is pending, so find the capture input by tabindex.
   function reactionHiddenInput(): HTMLInputElement {
-    const input = document.querySelector<HTMLInputElement>(
-      'input[aria-hidden="true"][tabindex="-1"]',
-    );
-    expect(input).not.toBeNull();
-    return input!;
+    const inputs = document.querySelectorAll<HTMLInputElement>('input[tabindex="-1"]');
+    expect(inputs).toHaveLength(1);
+    return inputs[0];
   }
 
   function composeTextarea(): HTMLTextAreaElement {
@@ -3626,6 +3625,50 @@ describe('ChatPanel tapback reaction picker', () => {
         expect(document.querySelector('emoji-picker')).toBeInTheDocument();
       });
       expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
+
+  // A focused aria-hidden element is still exposed by Chromium, unnamed; expose it by name instead.
+  it.each(
+    (['darwin', 'win32'] as const).flatMap((platform) =>
+      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+        platform,
+        protocol,
+      })),
+    ),
+  )(
+    'names the capture input only while a reaction is pending ($platform, $protocol)',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let exposedWhenPanelOpened: HTMLElement | null = null;
+      vi.mocked(window.electronAPI.showEmojiPanel).mockImplementation(() => {
+        exposedWhenPanelOpened = screen.queryByRole('textbox', { name: 'Add reaction' });
+        return Promise.resolve();
+      });
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      expect(screen.queryByRole('textbox', { name: 'Add reaction' })).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Add reaction' }).focus();
+      await user.keyboard('{Enter}');
+      expect(exposedWhenPanelOpened).not.toBeNull();
+      expect(exposedWhenPanelOpened).toBe(document.activeElement);
+      const hidden = reactionHiddenInput();
+      hidden.value = '👍';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+      });
+      expect(screen.queryByRole('textbox', { name: 'Add reaction' })).not.toBeInTheDocument();
     },
   );
 

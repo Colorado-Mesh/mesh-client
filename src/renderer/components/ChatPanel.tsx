@@ -1317,6 +1317,7 @@ function ChatPanel({
     if (el) {
       el.value = '';
       el.blur();
+      el.setAttribute('aria-hidden', 'true');
     }
     if (opts?.refocusComposer) {
       composerInputRef.current?.focus();
@@ -4602,8 +4603,12 @@ function ChatPanel({
                                           };
                                           reactionCapturePendingRef.current = true;
                                           // The OS panel types into whatever has focus, and keyboard or
-                                          // assistive-tech presses arrive without a mousedown.
-                                          reactionHiddenInputRef.current?.focus();
+                                          // assistive-tech presses arrive without a mousedown. A focused
+                                          // element must not be aria-hidden, so expose it by name until
+                                          // clearReactionCapture hides it again.
+                                          const captureInput = reactionHiddenInputRef.current;
+                                          captureInput?.removeAttribute('aria-hidden');
+                                          captureInput?.focus();
                                           void window.electronAPI
                                             .showEmojiPanel()
                                             .catch((e: unknown) => {
@@ -4781,10 +4786,12 @@ function ChatPanel({
         )}
       </div>
 
-      {/* Hidden input: macOS/Windows native emoji panel inserts here for tapback reactions */}
+      {/* Hidden input: macOS/Windows native emoji panel inserts here for tapback reactions.
+          aria-hidden only while idle; the React button removes it before focusing the input. */}
       <input
         ref={reactionHiddenInputRef}
         aria-hidden="true"
+        aria-label={t('chatPanel.addReaction')}
         tabIndex={-1}
         readOnly={false}
         onBlur={() => {
