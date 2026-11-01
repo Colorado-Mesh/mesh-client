@@ -72,12 +72,13 @@ describe('custom map sources', () => {
         ],
       });
       const info = await inspectMbtilesFile(file);
+      // Zoom range comes from the tiles table (both rows are z=2), not metadata min/max.
       expect(info).toMatchObject({
         name: 'Trail',
         attribution: 'Trail maps',
         format: 'png',
-        minZoom: 0,
-        maxZoom: 5,
+        minZoom: 2,
+        maxZoom: 2,
       });
       const pool = new MbtilesReaderPool(() => file);
       expect(pool.getTile('mbtiles-000000000001', 2, 1, 0)?.equals(PNG)).toBe(true);
@@ -185,6 +186,28 @@ describe('custom map sources', () => {
       writeFileSync(path.join(root, 'custom-sources.json'), '{nope');
       expect(await new CustomMapSourceStore(root).list()).toEqual([]);
     });
+
+    it('rethrows non-ENOENT catalog read errors without wiping persisted sources', async () => {
+      const store = new CustomMapSourceStore(root);
+      const added = await store.addXyz({
+        name: 'Keep',
+        urlTemplate: 'https://tiles.example.org/{z}/{x}/{y}.png',
+        attribution: 'A',
+        confirmed: true,
+      });
+      expect(added.ok).toBe(true);
+      const file = path.join(root, 'custom-sources.json');
+      const saved = readFileSync(file, 'utf8');
+      // Replace the JSON file with a directory so readFile fails with EISDIR, not ENOENT.
+      const { unlinkSync, mkdirSync, rmSync: rmDir } = await import('fs');
+      unlinkSync(file);
+      mkdirSync(file);
+      await expect(new CustomMapSourceStore(root).list()).rejects.toThrow();
+      rmDir(file, { recursive: true, force: true });
+      writeFileSync(file, saved);
+      // Failure must not have persisted an empty list over the existing catalog.
+      expect(await new CustomMapSourceStore(root).list()).toHaveLength(1);
+    });
   });
 
   describe('CustomMapSourcesService', () => {
@@ -209,7 +232,13 @@ describe('custom map sources', () => {
 
     it('imports an MBTiles package only via picker token + confirmation, then serves and removes it', async () => {
       const src = path.join(root, 'in.mbtiles');
-      writeMbtiles(src, { metadata: { name: 'Pkg', maxzoom: '4' } });
+      writeMbtiles(src, {
+        metadata: { name: 'Pkg', maxzoom: '4' },
+        tiles: [
+          { z: 1, x: 0, tmsY: 1, data: PNG },
+          { z: 4, x: 0, tmsY: 0, data: PNG },
+        ],
+      });
       const { svc, store } = makeService(() => Promise.resolve(src));
 
       const pick = await svc.pickMbtiles();
@@ -235,6 +264,7 @@ describe('custom map sources', () => {
       const done = await svc.importMbtiles({ ...base, confirmed: true });
       expect(done.ok).toBe(true);
       if (!done.ok) return;
+      // maxNativeZoom comes from MAX(zoom_level) in the tiles table (1..4).
       expect(done.source).toMatchObject({ kind: 'mbtiles', maxNativeZoom: 4 });
       expect(done.source.fileBytes).toBeGreaterThan(0);
       // token is single-use

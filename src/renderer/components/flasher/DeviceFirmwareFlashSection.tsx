@@ -17,6 +17,7 @@ import {
 } from '@/renderer/lib/flasher/deviceFirmwareBoards';
 import { runDeviceFirmwareFlash } from '@/renderer/lib/flasher/deviceFirmwareFlash';
 import {
+  DeviceFirmwareError,
   type DeviceFirmwareErrorCode,
   type DeviceFirmwarePlan,
   isDeviceFirmwareError,
@@ -40,6 +41,7 @@ import {
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
+import { FIRMWARE_BACKUP_MAX_BYTES } from '@/shared/firmwareBackup';
 
 import CapabilityUnavailableHint from '../CapabilityUnavailableHint';
 import { DfuModeTrigger } from './DfuModeTrigger';
@@ -167,6 +169,10 @@ export function DeviceFirmwareFlashSection({
     void (async () => {
       let state: PlanResult['state'];
       try {
+        // Reject before reading into memory — zip/bin assets should never exceed the backup cap.
+        if (file.size > FIRMWARE_BACKUP_MAX_BYTES) {
+          throw new DeviceFirmwareError('IMAGE_TOO_LARGE');
+        }
         const bytes = new Uint8Array(await file.arrayBuffer());
         const plan = await planDeviceFirmware({ name: file.name, bytes }, selectedBoard, {
           expectedSha256: expectedSha,

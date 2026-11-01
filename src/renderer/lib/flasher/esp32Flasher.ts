@@ -170,6 +170,19 @@ function esp32ImagesEndBytes(images: readonly Esp32FlashImage[]): number {
   return images.reduce((max, image) => Math.max(max, image.address + image.data.byteLength), 0);
 }
 
+/** Disconnect the esptool Transport first; fall back to closing the SerialPort if needed. */
+async function disconnectEsp32Transport(
+  transport: Transport,
+  serialPort: SerialPort,
+): Promise<void> {
+  try {
+    await transport.disconnect();
+  } catch {
+    // catch-no-log-ok port may already be closed
+  }
+  await closeSerialPortIfOpen(serialPort);
+}
+
 /**
  * Write already-extracted images at explicit flash addresses (shared by the RNode zip flow and
  * Meshtastic / MeshCore device firmware). Progress, MD5 verify, stall watchdog, and the
@@ -210,7 +223,7 @@ export async function flashEsp32Images(
       chipName,
       expectedChipName,
     });
-    await closeSerialPortIfOpen(serialPort);
+    await disconnectEsp32Transport(transport, serialPort);
     throw new Error('ESP32_CHIP_MISMATCH');
   }
   if (expectedChipName) {
@@ -221,13 +234,13 @@ export async function flashEsp32Images(
     if (detected) {
       const detectedBytes = esploader.flashSizeBytes(detected as FlashSizeValues);
       if (Number.isFinite(detectedBytes) && esp32ImagesEndBytes(filesToFlash) > detectedBytes) {
-        await closeSerialPortIfOpen(serialPort);
+        await disconnectEsp32Transport(transport, serialPort);
         throw new Error('ESP32_IMAGE_EXCEEDS_FLASH');
       }
     }
   }
   if (signal?.aborted) {
-    await closeSerialPortIfOpen(serialPort);
+    await disconnectEsp32Transport(transport, serialPort);
     throw new Error('ESP32_FLASH_CANCELLED');
   }
 
@@ -259,17 +272,29 @@ export async function flashEsp32Images(
             return;
           }
           if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
-            console.warn('[esp32Flasher] writeFlash stalled — closing serial port');
-            void closeSerialPortIfOpen(serialPort);
-            reject(new Error('ESP32_FLASH_STALLED'));
+            console.warn('[esp32Flasher] writeFlash stalled — disconnecting');
+            void disconnectEsp32Transport(transport, serialPort).then(
+              () => {
+                reject(new Error('ESP32_FLASH_STALLED'));
+              },
+              () => {
+                reject(new Error('ESP32_FLASH_STALLED'));
+              },
+            );
           }
         }, 2000);
       }),
       new Promise<never>((_, reject) => {
         if (!signal) return;
         onAbort = () => {
-          void closeSerialPortIfOpen(serialPort);
-          reject(new Error('ESP32_FLASH_CANCELLED'));
+          void disconnectEsp32Transport(transport, serialPort).then(
+            () => {
+              reject(new Error('ESP32_FLASH_CANCELLED'));
+            },
+            () => {
+              reject(new Error('ESP32_FLASH_CANCELLED'));
+            },
+          );
         };
         signal.addEventListener('abort', onAbort, { once: true });
       }),
@@ -293,12 +318,7 @@ export async function flashEsp32Images(
   await transport.setDTR(true);
   await sleepMillis(1500);
 
-  try {
-    await transport.disconnect();
-  } catch {
-    // catch-no-log-ok port may already be closed
-  }
-  await closeSerialPortIfOpen(serialPort);
+  await disconnectEsp32Transport(transport, serialPort);
 }
 
 export interface Esp32FlashReadOptions {

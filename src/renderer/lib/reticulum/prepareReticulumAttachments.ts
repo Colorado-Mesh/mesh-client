@@ -113,8 +113,9 @@ export async function prepareReticulumPhotoAttachment(file: File): Promise<Prepa
   if (file.size > RETICULUM_PHOTO_SOURCE_MAX_BYTES) {
     return { ok: false, error: 'image_too_large' };
   }
+  // Empty MIME bypasses the type gate so magic-byte sniffing can still accept the photo.
   const declared = reticulumImageWireFormatFromMime(file.type);
-  if (!declared && !file.type.toLowerCase().startsWith('image/')) {
+  if (file.type && !declared && !file.type.toLowerCase().startsWith('image/')) {
     return { ok: false, error: 'photo_unsupported' };
   }
   let raw: Uint8Array;

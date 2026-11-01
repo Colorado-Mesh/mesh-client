@@ -41,7 +41,10 @@ describe('CustomMapSourcesSection', () => {
     render(<CustomMapSourcesSection />);
     expect(await screen.findByText(/Example topo · 1\.0 MB/)).toBeInTheDocument();
     expect(screen.getByText(/OpenStreetMap \(light\) · 2\.0 KB/)).toBeInTheDocument();
-    expect(screen.getByText(/tiles\.example\.org/)).toBeInTheDocument();
+    // Avoid bare hostname regexes (CodeQL); assert the host appears in the XYZ summary line.
+    expect(
+      screen.getByText('XYZ · tiles.example.org · cache capped at 256.0 MB'),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Clear cached tiles for Example topo' }));
     expect(window.electronAPI.offlineMaps.clear).toHaveBeenCalledWith('xyz-0123456789ab');

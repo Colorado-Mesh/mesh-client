@@ -291,7 +291,13 @@ function safeEntryName(name: unknown): name is string {
 export async function validateNrf52DfuPackage(
   entries: readonly FirmwareFileEntry[],
 ): Promise<void> {
-  const byName = new Map(entries.map((entry) => [entry.name, entry]));
+  const byName = new Map<string, FirmwareFileEntry>();
+  for (const entry of entries) {
+    if (byName.has(entry.name)) {
+      throw new DeviceFirmwareError('DFU_PACKAGE_INVALID', 'duplicate-entry');
+    }
+    byName.set(entry.name, entry);
+  }
   const manifestEntry = byName.get('manifest.json');
   if (!manifestEntry) throw new DeviceFirmwareError('DFU_PACKAGE_INVALID', 'manifest.json');
 

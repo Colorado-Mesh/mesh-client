@@ -6328,7 +6328,15 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
 
     if attachments.is_empty() {
         if let Ok(Some((format, bytes))) = msg.image_attachment() {
-            let ext = format.trim().trim_start_matches('.').to_lowercase();
+            // Peer-controlled format string — keep only ASCII alnum and cap the extension length.
+            let ext: String = format
+                .trim()
+                .trim_start_matches('.')
+                .to_lowercase()
+                .chars()
+                .filter(char::is_ascii_alphanumeric)
+                .take(8)
+                .collect();
             let file_name = if ext.is_empty() {
                 "image.bin".to_string()
             } else {
@@ -8781,6 +8789,21 @@ mod audio_field_tests {
             .expect("set");
         let json = attachment_json_from_message(&msg).expect("json");
         assert_eq!(json["file_name"], "x_1__evil.exe");
+    }
+
+    #[test]
+    fn inbound_image_json_sanitizes_hostile_format_extension() {
+        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_image_field("../evil.exe!!!!", b"\x89PNG".as_slice())
+            .expect("set image");
+        let json = attachment_json_from_message(&msg).expect("json");
+        assert_eq!(json["file_name"], "image.evilexe");
+        let mut empty = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        empty
+            .set_image_field("!!!", b"\x89PNG".as_slice())
+            .expect("set image");
+        let empty_json = attachment_json_from_message(&empty).expect("json");
+        assert_eq!(empty_json["file_name"], "image.bin");
     }
 
     #[test]

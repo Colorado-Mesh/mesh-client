@@ -242,6 +242,18 @@ describe('mesh-tiles protocol', () => {
       );
       const b = setup({ fetchImpl: big });
       expect((await b.handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/1.png`))).status).toBe(404);
+
+      // Oversized body without a trustworthy Content-Length — chunked reader must abort.
+      const oversize = Buffer.alloc(3 * 1024 * 1024, 0x89);
+      const stream = vi.fn().mockResolvedValue(
+        new Response(oversize, {
+          status: 200,
+          headers: { 'content-type': 'image/png' },
+        }),
+      );
+      const c = setup({ fetchImpl: stream });
+      expect((await c.handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/1.png`))).status).toBe(404);
+      expect(await c.cache.getCachedTile({ basemapId: XYZ_ID, z: 3, x: 1, y: 1 })).toBeNull();
     });
 
     it('serves MBTiles tiles from the package and never goes online on a miss', async () => {

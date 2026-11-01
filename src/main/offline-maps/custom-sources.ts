@@ -94,10 +94,17 @@ export class CustomMapSourceStore {
     let raw: string;
     try {
       raw = await fs.readFile(this.filePath(), 'utf8');
-    } catch {
-      // catch-no-log-ok missing file → empty list
-      this.records = [];
-      return;
+    } catch (e: unknown) {
+      const code =
+        e && typeof e === 'object' && 'code' in e ? (e as { code?: unknown }).code : undefined;
+      if (code === 'ENOENT') {
+        // catch-no-log-ok missing file → empty list (first run)
+        this.records = [];
+        return;
+      }
+      // Leave this.records unset so ensureLoaded can retry; do not persist an empty list over a
+      // transient read failure (EACCES / EIO) that would wipe existing sources on the next save.
+      throw e;
     }
     try {
       const parsed = JSON.parse(raw) as Partial<CustomSourcesFile>;

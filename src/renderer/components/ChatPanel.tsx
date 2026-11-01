@@ -5166,7 +5166,7 @@ function ChatPanel({
                   key={`dm-attach-${activeDmNode}`}
                   identityId={identityId}
                   destination={activeDmNode}
-                  disabled={composerDisabled}
+                  disabled={composerDisabled || !isConnected || !reticulumStackLive}
                 />
               ) : null}
               {mecpComposeEnabled ? (

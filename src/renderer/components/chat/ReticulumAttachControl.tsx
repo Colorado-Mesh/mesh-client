@@ -1,5 +1,5 @@
 import { ImagePlus, Paperclip, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -21,6 +21,7 @@ import {
 
 import { HelpTooltip } from '../HelpTooltip';
 import { useToast } from '../Toast';
+import { Menu } from '../ui/Menu';
 
 const BUTTON_CLASS =
   'flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-secondary-dark bg-sidebar-active-bg px-2.5 text-xs font-semibold text-muted transition-colors hover:text-ink-200 disabled:opacity-50';
@@ -74,29 +75,13 @@ export function ReticulumAttachControl({
   const { addToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const attachButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const transfers = useReticulumAttachmentSendStore((s) => s.transfers);
   const active = transfers.filter(
     (tr) => tr.identityId === identityId && tr.destination >>> 0 === destination >>> 0,
   );
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [menuOpen]);
 
   const toastFailure = useCallback(
     (reason: AttachmentFailure) => {
@@ -131,6 +116,9 @@ export function ReticulumAttachControl({
           prepared: prepared.prepared,
           onFailure: toastFailure,
         });
+      } catch (e: unknown) {
+        console.warn('[ReticulumAttachControl] prepare/send failed:', e);
+        toastFailure('send_failed');
       } finally {
         setPreparing(false);
       }
@@ -145,8 +133,12 @@ export function ReticulumAttachControl({
     void handlePicked(picked, kind);
   };
 
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
+
   return (
-    <div ref={rootRef} className="relative inline-flex shrink-0" data-testid="reticulum-attach">
+    <div className="relative inline-flex shrink-0" data-testid="reticulum-attach">
       <input
         ref={fileInputRef}
         type="file"
@@ -174,6 +166,7 @@ export function ReticulumAttachControl({
         nonFocusableWrapper
       >
         <button
+          ref={attachButtonRef}
           type="button"
           aria-label={t('chatPanel.attachment.attachAria')}
           aria-haspopup="menu"
@@ -187,38 +180,32 @@ export function ReticulumAttachControl({
           <Paperclip aria-hidden className="h-4 w-4" size={16} />
         </button>
       </HelpTooltip>
-      {menuOpen ? (
-        <div
-          role="menu"
-          aria-label={t('chatPanel.attachment.menuAria')}
-          className="border-secondary-dark bg-ink-900 shadow-level-3 absolute bottom-full left-0 z-20 mb-2 flex w-48 flex-col rounded-lg border p-1"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="text-ink-200 hover:bg-ink-800 flex items-center gap-2 rounded px-2 py-1.5 text-left text-sm"
-            onClick={() => {
-              setMenuOpen(false);
+      <Menu
+        open={menuOpen}
+        onClose={closeMenu}
+        anchorRef={attachButtonRef}
+        aria-label={t('chatPanel.attachment.menuAria')}
+        align="start"
+        width={192}
+        entries={[
+          {
+            id: 'attach-file',
+            label: t('chatPanel.attachment.attachFile'),
+            icon: <Paperclip aria-hidden className="h-4 w-4" size={16} />,
+            onSelect: () => {
               fileInputRef.current?.click();
-            }}
-          >
-            <Paperclip aria-hidden className="h-4 w-4" size={16} />
-            {t('chatPanel.attachment.attachFile')}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="text-ink-200 hover:bg-ink-800 flex items-center gap-2 rounded px-2 py-1.5 text-left text-sm"
-            onClick={() => {
-              setMenuOpen(false);
+            },
+          },
+          {
+            id: 'attach-photo',
+            label: t('chatPanel.attachment.attachPhoto'),
+            icon: <ImagePlus aria-hidden className="h-4 w-4" size={16} />,
+            onSelect: () => {
               photoInputRef.current?.click();
-            }}
-          >
-            <ImagePlus aria-hidden className="h-4 w-4" size={16} />
-            {t('chatPanel.attachment.attachPhoto')}
-          </button>
-        </div>
-      ) : null}
+            },
+          },
+        ]}
+      />
       {active.length > 0 ? (
         <ul
           aria-label={t('chatPanel.attachment.transfersAria')}

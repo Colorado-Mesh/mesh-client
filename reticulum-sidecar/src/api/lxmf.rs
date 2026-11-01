@@ -14,6 +14,9 @@ pub async fn lxmf_send(
     Json(body): Json<LxmfSendRequest>,
 ) -> Json<serde_json::Value> {
     match stack.lxmf_send(body).await {
+        // StackHandle already stamps `{ ok: true, message }` on success and returns
+        // `{ ok: false, error }` payloads unchanged — do not re-wrap failures as success.
+        Ok(payload) if payload.get("ok").is_some() => Json(payload),
         Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

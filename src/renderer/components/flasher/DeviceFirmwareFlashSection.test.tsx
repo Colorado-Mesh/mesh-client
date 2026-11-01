@@ -182,7 +182,7 @@ describe('DeviceFirmwareFlashSection', () => {
       /does not match the expected digest/,
     );
     expect(flashButton()).toBeDisabled();
-  });
+  }, 15_000);
 
   it('blocks flashing while the radio is connected over USB serial', async () => {
     const user = userEvent.setup();

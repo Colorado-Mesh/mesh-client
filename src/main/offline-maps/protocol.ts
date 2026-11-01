@@ -24,6 +24,48 @@ import { sanitizeLogMessage } from '../log-service';
 import type { CustomMapSourceRecord } from './custom-sources';
 import { parseTileCoords, type TileCache } from './tile-cache';
 
+/**
+ * Read a fetch Response body in chunks, cancelling as soon as the cumulative size exceeds
+ * `maxBytes`. Returns `null` for empty, oversized, or unreadable bodies (no silent truncate).
+ */
+async function readBoundedResponseBody(
+  response: Response,
+  maxBytes: number,
+): Promise<Buffer | null> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    const buf = Buffer.from(await response.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > maxBytes) return null;
+    return buf;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done || !value) break;
+      total += value.length;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {
+          // catch-no-log-ok stream may already be closed
+        });
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    // catch-no-log-ok aborted / truncated body → treat as miss
+    try {
+      await reader.cancel();
+    } catch {
+      // catch-no-log-ok already closed
+    }
+    return null;
+  }
+  if (total === 0) return null;
+  return Buffer.concat(chunks, total);
+}
+
 /** What the protocol needs from the custom-source allowlist (implemented by the store + pool). */
 export interface CustomTileSources {
   get: (id: string) => Promise<CustomMapSourceRecord | null>;
@@ -187,8 +229,8 @@ export function createMeshTilesProtocolHandler(
       if (!res.ok) return emptyResponse(404);
       const declared = Number(res.headers.get('content-length') ?? '0');
       if (declared > CUSTOM_TILE_MAX_BYTES) return emptyResponse(404);
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.byteLength === 0 || buf.byteLength > CUSTOM_TILE_MAX_BYTES) return emptyResponse(404);
+      const buf = await readBoundedResponseBody(res, CUSTOM_TILE_MAX_BYTES);
+      if (!buf) return emptyResponse(404);
       // Only real raster images are cached or served (never HTML/JSON error bodies).
       const mime = sniffRasterTileMime(buf);
       if (!mime) return emptyResponse(404);

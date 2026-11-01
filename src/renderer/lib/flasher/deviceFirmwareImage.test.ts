@@ -424,6 +424,12 @@ describe('validateNrf52DfuPackage', () => {
     );
   });
 
+  it('refuses duplicate zip entry names before they can overwrite', async () => {
+    const dfu = makeDfuEntries();
+    const entries = [...dfu.entries, fileEntry('app.bin', new Uint8Array([0xff]))];
+    expect(await codeOf(validateNrf52DfuPackage(entries))).toBe('DFU_PACKAGE_INVALID');
+  });
+
   it('refuses a truncated init packet', async () => {
     const dfu = makeDfuEntries();
     const entries = [...dfu.entries.slice(0, 2), fileEntry('app.dat', new Uint8Array(6))];

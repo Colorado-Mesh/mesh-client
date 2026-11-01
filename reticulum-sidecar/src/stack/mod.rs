@@ -3164,6 +3164,11 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
             let res = live.send_lxmf(&req).await?;
+            // Preserve structured `{ ok: false, error }` from live (e.g. no_propagation_node,
+            // attachment_* / image_* validation) instead of wrapping as a success.
+            if res.get("ok") == Some(&serde_json::Value::Bool(false)) {
+                return Ok(res);
+            }
             let payload = res.get("message").cloned().unwrap_or(res.clone());
             if payload.get("text").is_some() {
                 self.emit_event("lxmf_message", payload.clone());

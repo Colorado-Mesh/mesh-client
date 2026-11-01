@@ -77,6 +77,13 @@ describe('prepareReticulumPhotoAttachment (no canvas in jsdom → verified pass-
       error: 'image_too_large',
     });
   });
+
+  it('sniffs magic bytes when MIME is empty', async () => {
+    const res = await prepareReticulumPhotoAttachment(file('shot.png', PNG, ''));
+    expect(res.ok).toBe(true);
+    if (!res.ok || res.prepared.kind !== 'photo') throw new Error('expected photo');
+    expect(res.prepared.photo.format).toBe('png');
+  });
 });
 
 describe('bytesToBase64', () => {

@@ -47,6 +47,7 @@ describe('ReticulumAttachControl', () => {
     expect(
       screen.getByRole('menuitem', { name: /chatPanel.attachment.attachPhoto/ }),
     ).toBeDefined();
+    // Shared Menu portals to document.body (region landmark noise); axe the in-tree control.
     expect(await axe(view.container)).toHaveNoViolations();
   });
 
@@ -108,6 +109,19 @@ describe('ReticulumAttachControl', () => {
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('chatPanel.reticulumNoPropagationNode', 'error');
     });
+  });
+
+  it('toasts send_failed when prepare/send throws unexpectedly', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    sendMock.mockRejectedValueOnce(new Error('boom'));
+    renderControl();
+    fireEvent.change(screen.getByTestId('reticulum-attach-file-input'), {
+      target: { files: [new File(['x'], 'a.txt')] },
+    });
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('chatPanel.attachment.errors.sendFailed', 'error');
+    });
+    warn.mockRestore();
   });
 
   it('shows progress for this DM only and cancels via the store id', async () => {

@@ -5804,10 +5804,7 @@ function AppContent() {
                                   }
                                   firmwareFlashDevice={buildDetectedFlashDevice(protocol, {
                                     isConnected: isOperational,
-                                    state:
-                                      protocol === 'meshtastic'
-                                        ? meshtasticConnectionView.state
-                                        : meshcoreConnectionView.state,
+                                    state: activeConnectionView.state,
                                     meshtasticHwModel: meshtasticUiNodes.get(
                                       meshtasticConnectionView.state.myNodeNum,
                                     )?.hw_model,

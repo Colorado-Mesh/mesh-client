@@ -43,6 +43,14 @@ function parseZoom(raw: string | null): number | null {
   return isValidCustomMaxNativeZoom(n) ? n : null;
 }
 
+function zoomFromSql(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return isValidCustomMaxNativeZoom(value) ? value : null;
+  }
+  if (typeof value === 'string') return parseZoom(value);
+  return null;
+}
+
 function formatFromMime(mime: string): 'png' | 'jpg' | 'webp' {
   if (mime === 'image/jpeg') return 'jpg';
   return mime === 'image/webp' ? 'webp' : 'png';
@@ -54,26 +62,25 @@ function formatFromMime(mime: string): 'png' | 'jpg' | 'webp' {
  * whose magic bytes are PNG/JPEG/WebP.
  */
 export async function inspectMbtilesFile(filePath: string): Promise<MbtilesInspection> {
-  let fileBytes: number;
-  try {
-    const st = await fs.stat(filePath);
-    if (!st.isFile()) throw new MbtilesError('mbtiles_invalid', 'Not a file');
-    fileBytes = st.size;
-  } catch (e: unknown) {
-    if (e instanceof MbtilesError) throw e;
-    throw new MbtilesError('io', 'Cannot read file');
-  }
-  if (fileBytes > MBTILES_MAX_BYTES) {
-    throw new MbtilesError('mbtiles_too_large', 'File exceeds MBTiles import limit');
-  }
+  // Open first, then fstat the handle — avoids a TOCTOU race between a separate stat() and open().
   const handle = await fs.open(filePath, 'r').catch(() => null);
   if (!handle) throw new MbtilesError('io', 'Cannot open file');
+  let fileBytes: number;
   try {
+    const st = await handle.stat();
+    if (!st.isFile()) throw new MbtilesError('mbtiles_invalid', 'Not a file');
+    fileBytes = st.size;
+    if (fileBytes > MBTILES_MAX_BYTES) {
+      throw new MbtilesError('mbtiles_too_large', 'File exceeds MBTiles import limit');
+    }
     const head = Buffer.alloc(SQLITE_MAGIC.length);
     await handle.read(head, 0, head.length, 0);
     if (!head.equals(SQLITE_MAGIC)) {
       throw new MbtilesError('mbtiles_invalid', 'Not a SQLite database');
     }
+  } catch (e: unknown) {
+    if (e instanceof MbtilesError) throw e;
+    throw new MbtilesError('io', 'Cannot read file');
   } finally {
     await handle.close();
   }
@@ -102,8 +109,11 @@ export async function inspectMbtilesFile(filePath: string): Promise<MbtilesInspe
     }
     const mime = sniffRasterTileMime(sample.tile_data);
     if (!mime) throw new MbtilesError('mbtiles_vector', 'Tiles are not PNG/JPEG/WebP');
-    const minZoom = parseZoom(metaValue(db, 'minzoom')) ?? 0;
-    const maxZoom = parseZoom(metaValue(db, 'maxzoom')) ?? 18;
+    const tileZooms = db
+      .prepare('SELECT MIN(zoom_level) AS min_z, MAX(zoom_level) AS max_z FROM tiles')
+      .get() as { min_z?: unknown; max_z?: unknown } | undefined;
+    const minZoom = zoomFromSql(tileZooms?.min_z) ?? parseZoom(metaValue(db, 'minzoom')) ?? 0;
+    const maxZoom = zoomFromSql(tileZooms?.max_z) ?? parseZoom(metaValue(db, 'maxzoom')) ?? 18;
     return {
       name: metaValue(db, 'name'),
       attribution: metaValue(db, 'attribution'),
