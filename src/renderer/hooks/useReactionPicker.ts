@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { emojiUnicodeFromEvent } from '@/renderer/lib/emojiPickerEvent';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -22,7 +23,9 @@ export interface UseReactionPickerOptions<T> {
 
 export interface ReactionPickerHiddenInputProps {
   ref: RefObject<HTMLInputElement | null>;
+  /** Set while idle; `open` removes it before focusing the input and `close` puts it back. */
   'aria-hidden': true;
+  'aria-label': string;
   tabIndex: -1;
   style: CSSProperties;
   onInput: (event: ReactInputEvent<HTMLInputElement>) => void;
@@ -59,6 +62,7 @@ export function useReactionPicker<T>({
   onPick,
   restoreFocus,
 }: UseReactionPickerOptions<T>): ReactionPicker<T> {
+  const { t } = useTranslation();
   // OS-specific: only Linux lacks a system emoji panel that Electron can open.
   const [inline] = useState(() => window.electronAPI.getPlatform() === 'linux');
   const [inlineTarget, setInlineTarget] = useState<T | null>(null);
@@ -80,6 +84,7 @@ export function useReactionPicker<T>({
     if (el) {
       el.value = '';
       el.blur();
+      el.setAttribute('aria-hidden', 'true');
     }
     if (opts?.restoreFocus) restoreFocusRef.current?.();
   }, []);
@@ -104,8 +109,11 @@ export function useReactionPicker<T>({
         setInlineTarget(target);
         return;
       }
-      // Focus first so a keyboard-opened panel types into the capture input too.
-      hiddenInputRef.current?.focus();
+      // Focus first so a keyboard-opened panel types into the capture input too. A focused
+      // element must not be aria-hidden, so the input is exposed by name until close().
+      const el = hiddenInputRef.current;
+      el?.removeAttribute('aria-hidden');
+      el?.focus();
       void window.electronAPI.showEmojiPanel().catch((e: unknown) => {
         console.debug('[useReactionPicker] showEmojiPanel failed ' + errLikeToLogString(e));
       });
@@ -191,6 +199,7 @@ export function useReactionPicker<T>({
     hiddenInputProps: {
       ref: hiddenInputRef,
       'aria-hidden': true,
+      'aria-label': t('chatPanel.addReaction'),
       tabIndex: -1,
       style: HIDDEN_INPUT_STYLE,
       onInput,

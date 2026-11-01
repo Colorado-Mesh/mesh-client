@@ -68,9 +68,10 @@ function roomMessages(room: string): RrcChatMessage[] {
 async function pickReaction(emoji: string) {
   const user = userEvent.setup();
   await user.click(await screen.findByRole('button', { name: 'Add reaction' }));
-  const capture = document.querySelector<HTMLInputElement>('input[aria-hidden="true"]');
-  expect(capture).not.toBeNull();
-  fireEvent.input(capture!, { target: { value: emoji } });
+  const capture = screen.getByRole('textbox', { name: 'Add reaction' });
+  expect(capture).toHaveFocus();
+  fireEvent.input(capture, { target: { value: emoji } });
+  expect(capture).toHaveAttribute('aria-hidden', 'true');
 }
 
 describe('RrcPanel reactions', () => {

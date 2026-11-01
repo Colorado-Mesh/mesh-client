@@ -1473,14 +1473,21 @@ describe('RrcChatView reactions', () => {
       const { container } = render(
         <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
       );
+      const capture = container.querySelector<HTMLInputElement>(
+        'input[aria-label="chatPanel.addReaction"]',
+      )!;
+      expect(capture).toHaveAttribute('aria-hidden', 'true');
+
       await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
       expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
       expect(container.querySelector('emoji-picker')).toBeNull();
-
-      const capture = container.querySelector<HTMLInputElement>('input[aria-hidden="true"]')!;
+      // Focused while the panel is open, so it is exposed to assistive tech by name.
+      expect(screen.getByRole('textbox', { name: 'chatPanel.addReaction' })).toBe(capture);
       expect(capture).toHaveFocus();
+
       fireEvent.input(capture, { target: { value: '🎉' } });
       expect(onReact).toHaveBeenCalledWith(target, '🎉');
+      expect(capture).toHaveAttribute('aria-hidden', 'true');
       expect(screen.getByRole('textbox')).toHaveFocus();
     },
   );
@@ -1488,15 +1495,49 @@ describe('RrcChatView reactions', () => {
   it('ignores text typed into the capture input and hands focus back', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     const onReact = vi.fn().mockResolvedValue(undefined);
-    const { container } = render(
-      <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
-    );
+    render(<RrcChatView {...baseProps} onReact={onReact} messages={[target]} />);
     await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
-    const capture = container.querySelector<HTMLInputElement>('input[aria-hidden="true"]')!;
+    const capture = screen.getByRole('textbox', { name: 'chatPanel.addReaction' });
     fireEvent.keyDown(capture, { key: 'a' });
     expect(screen.getByRole('textbox')).toHaveFocus();
     fireEvent.input(capture, { target: { value: '🎉' } });
     expect(onReact).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Escape', (capture: HTMLElement) => fireEvent.keyDown(capture, { key: 'Escape' })],
+    ['a typed letter', (capture: HTMLElement) => fireEvent.keyDown(capture, { key: 'a' })],
+    ['blur', (capture: HTMLElement) => fireEvent.blur(capture)],
+    ['the panel closing', () => fireEvent.focus(window)],
+  ])('hides the capture input again after %s', async (_label, end) => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
+    const onReact = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <RrcChatView {...baseProps} onReact={onReact} messages={[target]} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
+    const capture = screen.getByRole('textbox', { name: 'chatPanel.addReaction' });
+
+    end(capture);
+    expect(capture).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('textbox', { name: 'chatPanel.addReaction' })).toBeNull();
+    expect(onReact).not.toHaveBeenCalled();
+    expect(container.querySelectorAll('input[aria-label="chatPanel.addReaction"]')).toHaveLength(1);
+  });
+
+  it('has no axe violations while the OS emoji panel is open', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    const { container } = render(
+      <RrcChatView
+        {...baseProps}
+        onReact={vi.fn().mockResolvedValue(undefined)}
+        messages={[target]}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'chatPanel.addReaction' }));
+    expect(screen.getByRole('textbox', { name: 'chatPanel.addReaction' })).toHaveFocus();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows the inline picker on Linux and toggles it closed', async () => {
@@ -1508,7 +1549,7 @@ describe('RrcChatView reactions', () => {
     const react = screen.getByRole('button', { name: 'chatPanel.addReaction' });
     await userEvent.click(react);
     expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
-    expect(container.querySelector('input[aria-hidden="true"]')).toBeNull();
+    expect(container.querySelector('input[aria-label="chatPanel.addReaction"]')).toBeNull();
 
     const picker = container.querySelector('emoji-picker')!;
     act(() => {
