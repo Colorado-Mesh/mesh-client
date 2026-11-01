@@ -166,6 +166,9 @@ describe("takIncidentMarkers and ATAK's emergency alarm", () => {
   it('sounds for an unseen MAYDAY with a position, named for the sender', () => {
     expect(alarms(byId(incident()))).toEqual({ 'mecp-abc': 'Alice' });
     expect(alarms(byId(incident({ senderName: ' ' })))).toEqual({ 'mecp-abc': '12345' });
+    // One character longer than an alarm name can be: named by the incident instead.
+    const overlong = `a${'\u0301'.repeat(100)}`;
+    expect(alarms(byId(incident({ senderName: overlong })))).toEqual({ 'mecp-abc': 'mecp-abc' });
   });
 
   it('never sounds unless the user turned it on', () => {

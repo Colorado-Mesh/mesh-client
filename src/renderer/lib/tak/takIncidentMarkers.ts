@@ -120,10 +120,9 @@ export function takIncidentMarkers(
         drill: incident.isDrill,
         ...(alarm && soundsAlarm(incident, alarm)
           ? {
-              alarm: capTakText(
-                printable(name).trim() || incident.id,
-                TAK_INCIDENT_CALLSIGN_MAX_LEN,
-              ),
+              // A name that is one overlong character caps to nothing, which main refuses.
+              alarm:
+                capTakText(printable(name).trim(), TAK_INCIDENT_CALLSIGN_MAX_LEN) || incident.id,
             }
           : {}),
       };
