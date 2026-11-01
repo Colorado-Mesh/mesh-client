@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
+import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
 import {
   openHeardRepeatWindow,
   recordMeshcoreRfRx,
@@ -496,3 +497,49 @@ describe('messageStore live trim', () => {
     expect(Object.keys(bucket)).toEqual(['d']);
   });
 });
+
+describe.each(['meshcore', 'reticulum'] as const)(
+  'messageStore live trim hard cap (%s)',
+  (type) => {
+    const TRIM_ID = `identity-trim-${type}`;
+
+    beforeEach(() => {
+      useMessageStore.setState({ messages: {} });
+      useRelayCoverageStore.setState({ coverage: {} });
+      // Meshtastic load limit stays tiny so a mistaken branch would under-cap.
+      vi.spyOn(meshtasticMessageLoadLimit, 'getMeshtasticMessageLoadLimit').mockReturnValue(3);
+      addIdentity({
+        id: TRIM_ID,
+        protocol: { type } as unknown as Protocol,
+        signature: '',
+        transports: [],
+        createdAt: 0,
+        lastSeenAt: 0,
+      });
+    });
+
+    afterEach(() => {
+      removeIdentity(TRIM_ID);
+      vi.restoreAllMocks();
+    });
+
+    it(`retains ${MAX_IN_MEMORY_CHAT_MESSAGES} after live overflow past the hard cap`, () => {
+      const seeded: MessageRecord[] = [];
+      for (let i = 0; i < MAX_IN_MEMORY_CHAT_MESSAGES; i++) {
+        seeded.push({ ...sampleRecord(`m${i}`), timestamp: i + 1 });
+      }
+      // Bulk seed avoids O(n²) live inserts; one live add exercises the non-Meshtastic cap.
+      replaceMessageRecordsForIdentity(TRIM_ID, seeded);
+      addMessage(TRIM_ID, {
+        ...sampleRecord('overflow'),
+        timestamp: MAX_IN_MEMORY_CHAT_MESSAGES + 1,
+      });
+
+      const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+      expect(Object.keys(bucket)).toHaveLength(MAX_IN_MEMORY_CHAT_MESSAGES);
+      expect(bucket.m0).toBeUndefined();
+      expect(bucket.overflow).toBeDefined();
+      expect(meshtasticMessageLoadLimit.getMeshtasticMessageLoadLimit).not.toHaveBeenCalled();
+    });
+  },
+);
