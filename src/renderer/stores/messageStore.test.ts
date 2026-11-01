@@ -482,4 +482,17 @@ describe('messageStore live trim', () => {
     expect(useRelayCoverageStore.getState().coverageFor(TRIM_ID, 'old')).toBeUndefined();
     expect(useMessageStore.getState().messages[TRIM_ID]?.old).toBeUndefined();
   });
+
+  it('drops multiple oldest rows when the live cap shrinks mid-session', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 1 });
+    addMessage(TRIM_ID, { ...sampleRecord('b'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('c'), timestamp: 3 });
+    expect(Object.keys(useMessageStore.getState().messages[TRIM_ID] ?? {})).toHaveLength(3);
+
+    vi.mocked(meshtasticMessageLoadLimit.getMeshtasticMessageLoadLimit).mockReturnValue(1);
+    addMessage(TRIM_ID, { ...sampleRecord('d'), timestamp: 4 });
+
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(Object.keys(bucket)).toEqual(['d']);
+  });
 });

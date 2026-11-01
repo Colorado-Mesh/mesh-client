@@ -255,6 +255,20 @@ function trimIdentityBucketToNewest(
 ): { next: Record<string, MessageRecord>; evictedIds: string[] } {
   const size = Object.keys(byIdentity).length;
   if (size <= cap) return { next: byIdentity, evictedIds: [] };
+
+  // Routine live insert is one over the cap: scan once and omit the oldest id.
+  if (size === cap + 1) {
+    let oldest: MessageRecord | null = null;
+    for (const message of Object.values(byIdentity)) {
+      if (oldest == null || compareMessageRecordsForTrim(message, oldest) < 0) {
+        oldest = message;
+      }
+    }
+    if (oldest == null) return { next: byIdentity, evictedIds: [] };
+    return { next: omitRecordKey(byIdentity, oldest.id), evictedIds: [oldest.id] };
+  }
+
+  // Cap lowered or bulk overshoot: full newest-N rebuild.
   const sorted = Object.values(byIdentity).sort(compareMessageRecordsForTrim);
   const dropCount = size - cap;
   const evictedIds = sorted.slice(0, dropCount).map((m) => m.id);
