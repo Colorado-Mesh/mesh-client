@@ -9,7 +9,7 @@ export const MAP_CONTROL_CLASS =
 
 /** Panel that opens under a map control (layers, basemap, offline maps). */
 export const MAP_OVERLAY_PANEL_CLASS =
-  'bg-deep-black/95 w-56 space-y-3 rounded-card border border-ink-700 p-3 text-ink-200 shadow-level-3 backdrop-blur-sm';
+  'bg-deep-black/95 max-h-[min(70vh,calc(100dvh-8rem))] w-56 space-y-3 overflow-y-auto overscroll-contain rounded-card border border-ink-700 p-3 text-ink-200 shadow-level-3 backdrop-blur-sm';
 
 /** Read-only chip over a map (status legend, counts). */
 export const MAP_CHIP_CLASS =
