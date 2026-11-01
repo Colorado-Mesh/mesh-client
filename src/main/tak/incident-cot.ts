@@ -72,7 +72,8 @@ export function buildIncidentAlarmCot(
 ): string {
   const name = escapeXml(marker.alarm ?? marker.callsign);
   const uid = incidentMarkerUid(marker.id);
-  // Left uncancelled (main gone), ATAK drops it when the marker would go stale.
+  // Sent once and never refreshed, so if no cancel reaches it (main stopped, say) ATAK drops it
+  // INCIDENT_MARKER_STALE_MS after it was sent.
   return (
     eventHead(
       `${uid}-alert`,
