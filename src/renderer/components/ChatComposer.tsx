@@ -2,6 +2,7 @@
 import 'emoji-picker-element';
 
 import {
+  CalendarClock,
   ChevronDown,
   ChevronUp,
   CornerUpLeft,
@@ -80,9 +81,11 @@ import { isMeshcoreSendTooFast, recordMeshcoreSend } from '../lib/meshcoreSendRa
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickComplete';
+import { toScheduledEntry } from '../lib/scheduledSend';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
 import { ChatMacroBar } from './chat/ChatMacroBar';
 import { EditMacrosDialog } from './chat/EditMacrosDialog';
+import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, {
   buildMentionCandidates,
@@ -251,6 +254,11 @@ export interface ChatComposerProps {
   composeSeed?: { text: string; token: number } | null;
   /** F1–F12 macro bar and shortcuts (default on). */
   showMacros?: boolean;
+  /**
+   * Show a "Schedule send" button that queues the draft in the durable outbox for a later time
+   * (requires `queueOutbox`). Default off; ChatPanel enables it for channels and DMs.
+   */
+  allowScheduledSend?: boolean;
 }
 
 export function ChatComposer({
@@ -293,6 +301,7 @@ export function ChatComposer({
   mentionAdapter,
   composeSeed,
   showMacros = true,
+  allowScheduledSend = false,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -864,6 +873,65 @@ export function ChatComposer({
     finishSendCadence,
     suppressLimits,
   ]);
+
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+
+  /**
+   * Queue the current draft for `scheduledAt` via the durable outbox (survives restart; the
+   * shared drain sends it once due and a link is available). Resolves false on failure so the
+   * dialog stays open and the draft is kept.
+   */
+  const handleScheduleSend = useCallback(
+    async (scheduledAt: number): Promise<boolean> => {
+      if (!queueOutboxProp || !input.trim() || inputChunks === null) return false;
+      const draftSnapshot = input;
+      const texts = inputChunks.length === 0 ? [input.trim()] : inputChunks;
+      const groupId = texts.length > 1 ? crypto.randomUUID() : null;
+      try {
+        for (let i = 0; i < texts.length; i++) {
+          await queueOutboxProp(
+            toScheduledEntry(
+              {
+                protocol,
+                viewKey,
+                channel: outboxChannel,
+                toNode: outboxDestination ?? null,
+                payload: texts[i],
+                replyId: i === 0 && typeof replyKey === 'number' ? replyKey : null,
+                status: 'queued',
+                error: null,
+                nextRetryAt: null,
+                groupId,
+                groupIndex: groupId ? i : null,
+                groupTotal: groupId ? texts.length : null,
+              },
+              scheduledAt,
+            ),
+          );
+        }
+      } catch (err) {
+        console.warn('[ChatComposer] schedule send failed ' + errLikeToLogString(err));
+        return false;
+      }
+      clearSentDraft(draftSnapshot);
+      setMentionQuery(null);
+      onReplyClear?.();
+      setScheduleDialogOpen(false);
+      return true;
+    },
+    [
+      clearSentDraft,
+      input,
+      inputChunks,
+      onReplyClear,
+      outboxChannel,
+      outboxDestination,
+      protocol,
+      queueOutboxProp,
+      replyKey,
+      viewKey,
+    ],
+  );
 
   const macroComposerId = useId();
   const [macroDialogFocus, setMacroDialogFocus] = useState<number | null>(null);
@@ -1575,6 +1643,30 @@ export function ChatComposer({
             </button>
           </HelpTooltip>
         )}
+        {allowScheduledSend && queueOutboxProp ? (
+          <HelpTooltip text={t('chatPanel.scheduleSendHint')}>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                setScheduleDialogOpen(true);
+              }}
+              disabled={
+                disabled ||
+                sending ||
+                !input.trim() ||
+                inputChunks === null ||
+                (!isConnected && !allowOutbox)
+              }
+              aria-label={t('chatPanel.scheduleSend')}
+              className={emojiButtonClass}
+            >
+              <CalendarClock aria-hidden className="h-4 w-4" trigger={iconTrigger} size={16} />
+            </button>
+          </HelpTooltip>
+        ) : null}
         {actionSlot}
         {showFloodScopeOverride ? (
           <div ref={floodScopeSplitRef} className="inline-flex min-w-0 items-stretch">
@@ -1891,6 +1983,16 @@ export function ChatComposer({
           useWireByteCount={useWireByteCount}
           initialFocusIndex={macroDialogFocus}
           onClose={closeMacroDialog}
+        />
+      )}
+      {scheduleDialogOpen && (
+        <ScheduledSendDialog
+          mode="create"
+          text={input.trim()}
+          onConfirm={({ scheduledAt }) => handleScheduleSend(scheduledAt)}
+          onCancel={() => {
+            setScheduleDialogOpen(false);
+          }}
         />
       )}
 

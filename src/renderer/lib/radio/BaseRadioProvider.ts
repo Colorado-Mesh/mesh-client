@@ -93,6 +93,22 @@ export interface ProtocolCapabilities {
   hasPaxCounter: boolean;
   /** Whether nodes broadcast a free-text status (Meshtastic NODE_STATUS_APP) */
   hasNodeStatusMessage: boolean;
+  /**
+   * Whether manual PKC key verification (Meshtastic KEY_VERIFICATION_APP) is available.
+   * Protocol exception: Meshtastic firmware feature only; MeshCore/Reticulum have no
+   * equivalent handshake.
+   */
+  hasKeyVerification: boolean;
+  /**
+   * Whether Cayenne LPP sensor payloads (Meshtastic CAYENNE_APP) are decoded and charted.
+   * Protocol exception: Meshtastic firmware port only.
+   */
+  hasCayenneTelemetry: boolean;
+  /**
+   * Whether the remote shell UI (Meshtastic REMOTE_SHELL_APP PTY session) is available.
+   * Protocol exception: Meshtastic firmware port only; Reticulum has its own rnsh panel.
+   */
+  hasRemoteShell: boolean;
   /** Whether Audio packets are available */
   hasAudio: boolean;
   /** Whether Detection Sensor packets are available */
@@ -156,6 +172,11 @@ export interface ProtocolCapabilities {
   hasReticulumNetworkPanel: boolean;
   /** Reticulum: RNode firmware flasher on Admin tab (ReticulumAdminPanel) */
   hasRNodeFlasher: boolean;
+  /**
+   * Admin tab: flash Meshtastic / MeshCore device firmware over USB (narrow board matrix in
+   * `lib/flasher/deviceFirmwareBoards.ts`). Reticulum uses the RNode flasher instead.
+   */
+  hasDeviceFirmwareFlash: boolean;
   /** Reticulum: dedicated Peers list panel on tab 2 */
   hasReticulumPeersList: boolean;
   /** Reticulum: ping panel on Diagnostics tab */
@@ -181,6 +202,8 @@ export interface ProtocolCapabilities {
   hasLxstVoice: boolean;
   /** Reticulum: LXMF voice memo recording + playback in DM composer / chat */
   hasReticulumVoiceMemo: boolean;
+  /** Reticulum: LXMF file / photo attachments (FIELD_FILE_ATTACHMENTS / FIELD_IMAGE) in DM composer (not rncp) */
+  hasReticulumFileAttachments: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
   /** Whether Cancel/disconnect should stop GATT BLE scanning (Meshtastic/MeshCore). */
@@ -230,6 +253,9 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasRangeTest: true,
   hasPaxCounter: true,
   hasNodeStatusMessage: true,
+  hasKeyVerification: true,
+  hasCayenneTelemetry: true,
+  hasRemoteShell: true,
   hasAudio: true,
   hasDetectionSensor: true,
   hasStoreForward: true,
@@ -257,6 +283,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
   hasRNodeFlasher: false,
+  hasDeviceFirmwareFlash: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
   hasReticulumTopologyPanel: false,
@@ -270,6 +297,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasReticulumVoiceMemo: false,
+  hasReticulumFileAttachments: false,
   hasLrgpGames: false,
   hasGattBleScanning: true,
   hasLxmfPaper: false,
@@ -315,6 +343,9 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasRangeTest: false,
   hasPaxCounter: false,
   hasNodeStatusMessage: false,
+  hasKeyVerification: false,
+  hasCayenneTelemetry: false,
+  hasRemoteShell: false,
   hasAudio: false,
   hasDetectionSensor: false,
   hasStoreForward: false,
@@ -342,6 +373,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
   hasRNodeFlasher: false,
+  hasDeviceFirmwareFlash: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
   hasReticulumTopologyPanel: false,
@@ -355,6 +387,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: false,
   hasLxstVoice: false,
   hasReticulumVoiceMemo: false,
+  hasReticulumFileAttachments: false,
   hasLrgpGames: false,
   hasGattBleScanning: true,
   hasLxmfPaper: false,
@@ -399,6 +432,9 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasRangeTest: false,
   hasPaxCounter: false,
   hasNodeStatusMessage: false,
+  hasKeyVerification: false,
+  hasCayenneTelemetry: false,
+  hasRemoteShell: false,
   hasAudio: false,
   hasDetectionSensor: false,
   hasStoreForward: false,
@@ -426,6 +462,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
   hasRNodeFlasher: true,
+  hasDeviceFirmwareFlash: false,
   hasReticulumPeersList: true,
   hasReticulumNativeDiagnostics: true,
   hasReticulumTopologyPanel: true,
@@ -439,6 +476,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasRncpTransfer: true,
   hasLxstVoice: true,
   hasReticulumVoiceMemo: true,
+  hasReticulumFileAttachments: false,
   hasLrgpGames: true,
   hasGattBleScanning: false,
   hasLxmfPaper: true,

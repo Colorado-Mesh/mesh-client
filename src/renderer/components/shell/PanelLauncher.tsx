@@ -105,7 +105,7 @@ type LauncherRowTarget =
   LauncherTabTarget | LauncherChannelTarget | LauncherContactTarget | LauncherSettingTarget;
 
 function launcherRowClass(isActive: boolean, fullWidth: boolean): string {
-  return `hover:bg-sidebar-active-bg text-body text-ink-200 flex h-9 min-w-0 items-center gap-2.5 rounded-md px-2 text-left ${LAUNCHER_ROW_FOCUS} ${
+  return `hover:bg-sidebar-active-bg text-body text-ink-200 flex h-9 min-w-0 items-center gap-2.5 rounded-md px-2 text-start ${LAUNCHER_ROW_FOCUS} ${
     fullWidth ? 'w-full' : 'flex-1'
   }${isActive ? ' bg-sidebar-active-bg' : ''}`;
 }
@@ -604,7 +604,7 @@ export function PanelLauncher({
             <Kbd>{formatShortcut('P', platform)}</Kbd>
             {t('shell.launcher.hintPin')}
           </span>
-          <span className="ml-auto font-mono">
+          <span className="ms-auto font-mono">
             {t('shell.launcher.panelCount', { count: panelCount })}
           </span>
         </div>
