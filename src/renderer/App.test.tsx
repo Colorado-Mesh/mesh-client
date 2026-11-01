@@ -572,7 +572,27 @@ vi.mock('./lazyModals', () => ({
     lastNodeDetailModalProps.current = props;
     return null;
   },
+  ReticulumPeerDetailModal: () => null,
 }));
+
+vi.mock('./lazyShellOverlays', async () => {
+  const { AppAboutSection } = await import('./components/AppAboutSection');
+  const ConfigureNodeSelector = (await import('./components/ConfigureNodeSelector')).default;
+  const { PanelLauncher } = await import('./components/shell/PanelLauncher');
+  const StartupLocationPrompt = (await import('./components/StartupLocationPrompt')).default;
+  const noop = () => null;
+  return {
+    loadAppAboutSection: () => Promise.resolve({ default: AppAboutSection }),
+    loadConfigureNodeSelector: () => Promise.resolve({ default: ConfigureNodeSelector }),
+    loadGlobalMessageSearchDialog: () => Promise.resolve({ default: noop }),
+    loadKeyVerificationDialog: () => Promise.resolve({ default: noop }),
+    loadPanelLauncher: () => Promise.resolve({ default: PanelLauncher }),
+    loadRncpEnableRequestModal: () => Promise.resolve({ default: noop }),
+    loadReticulumVoiceOverlay: () => Promise.resolve({ default: noop }),
+    loadStartupLocationPrompt: () => Promise.resolve({ default: StartupLocationPrompt }),
+    loadUnifiedInboxDialog: () => Promise.resolve({ default: noop }),
+  };
+});
 
 vi.mock('./lib/appSettingsStorage', () => ({
   getAppSettingsRaw: vi.fn().mockReturnValue(null),
@@ -1099,36 +1119,43 @@ describe('App shell layout', () => {
     expect(screen.getByRole('tab', { name: 'Sniffer' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  async function findLauncherDialog(): Promise<HTMLElement> {
+    return screen.findByRole('dialog', { name: 'All panels' });
+  }
+
   it.each([
     ['linux', { ctrlKey: true }],
     ['win32', { ctrlKey: true }],
     ['darwin', { metaKey: true }],
-  ] as const)('opens the launcher and pinned panels from the keyboard on %s', (platform, mod) => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-    onTestFinished(() => {
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    });
-    writeLauncherPins(['Chat', 'Nodes', 'Map', 'Connection']);
-    renderApp();
+  ] as const)(
+    'opens the launcher and pinned panels from the keyboard on %s',
+    async (platform, mod) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      onTestFinished(() => {
+        vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      });
+      writeLauncherPins(['Chat', 'Nodes', 'Map', 'Connection']);
+      renderApp();
 
-    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ...mod });
-    const dialog = screen.getByRole('dialog', { name: 'All panels' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Diagnostics' }));
-    expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
-    expect(screen.getByRole('tab', { name: 'Diagnostics' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+      fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ...mod });
+      const dialog = await findLauncherDialog();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Diagnostics' }));
+      expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+      expect(screen.getByRole('tab', { name: 'Diagnostics' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
 
-    // Fourth pin: Connection.
-    fireEvent.keyDown(window, { key: '4', code: 'Digit4', ...mod });
-    expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-  });
+      // Fourth pin: Connection.
+      fireEvent.keyDown(window, { key: '4', code: 'Digit4', ...mod });
+      expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    },
+  );
 
-  it('searches the contacts that were there when the launcher opened', () => {
+  it('searches the contacts that were there when the launcher opened', async () => {
     // The shared setup does not reset the node store; leave it as this test found it.
     const nodesBefore = useNodeStore.getState();
     onTestFinished(() => {
@@ -1137,9 +1164,9 @@ describe('App shell layout', () => {
     ensureOfflineProtocolIdentities();
     upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x1111, longName: 'Ridge Fox' });
     renderApp();
-    const openLauncher = () => {
+    const openLauncher = async () => {
       fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
-      const dialog = screen.getByRole('dialog', { name: 'All panels' });
+      const dialog = await findLauncherDialog();
       fireEvent.change(
         within(dialog).getByRole('textbox', {
           name: 'Search panels, contacts, channels and settings',
@@ -1149,7 +1176,7 @@ describe('App shell layout', () => {
       return dialog;
     };
 
-    let dialog = openLauncher();
+    let dialog = await openLauncher();
     expect(within(dialog).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
     // A node heard while the launcher is open does not reshuffle the list under the cursor.
     act(() => {
@@ -1158,13 +1185,13 @@ describe('App shell layout', () => {
     expect(within(dialog).queryByRole('button', { name: /Ridge Owl/ })).toBeNull();
 
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
-    dialog = openLauncher();
+    dialog = await openLauncher();
     expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 
   async function openSettingFromLauncher(query: string, rowName: string): Promise<void> {
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
-    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    const dialog = await findLauncherDialog();
     fireEvent.change(
       within(dialog).getByRole('textbox', {
         name: 'Search panels, contacts, channels and settings',
@@ -2640,14 +2667,14 @@ describe('App phone layout (bottom bar)', () => {
     );
   });
 
-  it('opens the launcher as a sheet with the protocol switcher from More', () => {
+  it('opens the launcher as a sheet with the protocol switcher from More', async () => {
     stubPhoneWindow();
     useDeviceMock.mockReturnValue(createDeviceMock());
     renderApp();
     const more = within(appRail()).getByRole('button', { name: 'More' });
     expect(more).toHaveAttribute('aria-haspopup', 'dialog');
     fireEvent.click(more);
-    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    const sheet = await screen.findByRole('dialog', { name: 'All panels' });
     expect(more).toHaveAttribute('aria-expanded', 'true');
     expect(
       within(sheet).getByRole('radiogroup', { name: 'Protocol switcher' }),
@@ -2662,7 +2689,7 @@ describe('App phone layout (bottom bar)', () => {
     );
   });
 
-  it('rebuilds sheet contacts when the protocol changes inside it', () => {
+  it('rebuilds sheet contacts when the protocol changes inside it', async () => {
     const nodesBefore = useNodeStore.getState();
     onTestFinished(() => {
       useNodeStore.setState(nodesBefore, true);
@@ -2674,7 +2701,7 @@ describe('App phone layout (bottom bar)', () => {
     upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 0x2222, longName: 'Ridge Relay' });
     renderApp();
     fireEvent.click(within(appRail()).getByRole('button', { name: 'More' }));
-    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    const sheet = await screen.findByRole('dialog', { name: 'All panels' });
     const search = () =>
       within(sheet).getByRole('textbox', {
         name: 'Search panels, contacts, channels and settings',
