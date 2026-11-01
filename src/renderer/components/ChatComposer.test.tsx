@@ -487,6 +487,69 @@ describe('ChatComposer', () => {
     expect(screen.getByRole('textbox')).toHaveValue('😀');
   });
 
+  // Keyboard and assistive-tech activation fire click with no mousedown first.
+  describe.each(['darwin', 'win32'] as const)(
+    'Emoji pressed from the keyboard on %s',
+    (platform) => {
+      it.each([
+        ['{Enter}', 'meshtastic'],
+        ['{Enter}', 'meshcore'],
+        ['{Enter}', 'reticulum'],
+        ['[Space]', 'meshtastic'],
+        ['[Space]', 'meshcore'],
+        ['[Space]', 'reticulum'],
+      ] as const)(
+        'focuses the composer before the OS panel opens (%s, %s)',
+        async (key, protocol) => {
+          vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+          let focusedWhenPanelOpened: Element | null = null;
+          vi.mocked(window.electronAPI.showEmojiPanel)
+            .mockClear()
+            .mockImplementation(() => {
+              focusedWhenPanelOpened = document.activeElement;
+              return Promise.resolve();
+            });
+          const user = userEvent.setup();
+          render(
+            <ChatComposer
+              protocol={protocol}
+              viewKey="ch:0"
+              isConnected
+              allowOutbox={false}
+              onSendChunk={vi.fn()}
+            />,
+          );
+          screen.getByRole('button', { name: 'Emoji' }).focus();
+          await user.keyboard(key);
+          expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
+          expect(focusedWhenPanelOpened).toBe(screen.getByRole('textbox'));
+        },
+      );
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'opens the inline emoji-picker when Emoji is pressed with Enter on Linux (%s)',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      vi.mocked(window.electronAPI.showEmojiPanel).mockClear();
+      const user = userEvent.setup();
+      render(
+        <ChatComposer
+          protocol={protocol}
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn()}
+        />,
+      );
+      screen.getByRole('button', { name: 'Emoji' }).focus();
+      await user.keyboard('{Enter}');
+      expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
+
   it('hides character counter below 80% threshold', () => {
     render(
       <ChatComposer
