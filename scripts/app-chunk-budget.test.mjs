@@ -1,10 +1,15 @@
 // @vitest-environment node
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   APP_ENTRY_CHUNK_BUDGET_KB,
   appChunkBudgetPlugin,
   appEntryChunkBudgetError,
+  appEntryChunkBudgetErrorFromOutDir,
   isAppEntryChunk,
 } from './app-chunk-budget.mjs';
 
@@ -75,21 +80,42 @@ describe('appEntryChunkBudgetError', () => {
   });
 });
 
-describe('appChunkBudgetPlugin', () => {
-  it('calls this.error only when the budget is exceeded', () => {
-    const plugin = appChunkBudgetPlugin();
-    const ok = { error: vi.fn() };
-    plugin.generateBundle.call(ok, {}, { 'assets/App-abc.js': chunk('ok') });
-    expect(ok.error).not.toHaveBeenCalled();
+describe('appEntryChunkBudgetErrorFromOutDir', () => {
+  it('measures on-disk size so it matches the Vite chunk size reporter', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'app-chunk-budget-'));
+    mkdirSync(path.join(dir, 'assets'));
+    const rel = 'assets/App-abc.js';
+    const over = 'x'.repeat(APP_ENTRY_CHUNK_BUDGET_KB * 1000 + 1);
+    writeFileSync(path.join(dir, rel), over);
+    const message = appEntryChunkBudgetErrorFromOutDir(
+      { [rel]: { type: 'chunk', name: 'App', facadeModuleId: APP } },
+      dir,
+    );
+    expect(message).toMatch(/assets\/App-abc\.js/);
+    expect(message).toMatch(/over the 1000 kB budget/);
+  });
+});
 
+describe('appChunkBudgetPlugin', () => {
+  it('calls this.error from writeBundle when the on-disk App chunk exceeds the budget', () => {
+    const plugin = appChunkBudgetPlugin();
+    const dir = mkdtempSync(path.join(tmpdir(), 'app-chunk-budget-plugin-'));
+    mkdirSync(path.join(dir, 'assets'));
+    const rel = 'assets/App-abc.js';
+    writeFileSync(path.join(dir, rel), 'x'.repeat(APP_ENTRY_CHUNK_BUDGET_KB * 1000 + 1));
+
+    plugin.configResolved({ build: { outDir: dir } });
     const bad = { error: vi.fn() };
-    plugin.generateBundle.call(
+    plugin.writeBundle.call(
       bad,
       {},
-      {
-        'assets/App-abc.js': chunk('x'.repeat(APP_ENTRY_CHUNK_BUDGET_KB * 1000 + 1)),
-      },
+      { [rel]: { type: 'chunk', name: 'App', facadeModuleId: APP } },
     );
     expect(bad.error).toHaveBeenCalledOnce();
+
+    writeFileSync(path.join(dir, rel), 'tiny');
+    const ok = { error: vi.fn() };
+    plugin.writeBundle.call(ok, {}, { [rel]: { type: 'chunk', name: 'App', facadeModuleId: APP } });
+    expect(ok.error).not.toHaveBeenCalled();
   });
 });

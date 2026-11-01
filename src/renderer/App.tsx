@@ -148,38 +148,30 @@ import {
 import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
-import { AppAboutSection } from './components/AppAboutSection';
 import { RadioChatSyncButton } from './components/chat/RadioChatSyncButton';
-import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
 import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
-import { GlobalMessageSearchDialog } from './components/GlobalMessageSearchDialog';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import { UnseenEmergencyBanner } from './components/incident/UnseenEmergencyBanner';
-import { KeyVerificationDialog } from './components/KeyVerificationDialog';
 import LanguageSelector from './components/LanguageSelector';
 import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
-import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
-import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOverlay';
 import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDetailErrorBoundary';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBufferingHeaderIndicator';
+import { RetryableLazy } from './components/RetryableLazy';
 import { ServiceAnnouncementStrip } from './components/ServiceAnnouncementStrip';
 import { AppRail } from './components/shell/AppRail';
 import { BottomNav } from './components/shell/BottomNav';
-import { PanelLauncher } from './components/shell/PanelLauncher';
 import { QuitButton } from './components/shell/QuitButton';
 import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
-import StartupLocationPrompt from './components/StartupLocationPrompt';
 import { ToastProvider, useToast } from './components/Toast';
-import { UnifiedInboxDialog } from './components/UnifiedInboxDialog';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
@@ -226,6 +218,17 @@ import { useUnseenEmergencyAlerts } from './hooks/useUnseenEmergencyAlerts';
 import { useWeatherForecastIngest } from './hooks/useWeatherForecastIngest';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
+import {
+  loadAppAboutSection,
+  loadConfigureNodeSelector,
+  loadGlobalMessageSearchDialog,
+  loadKeyVerificationDialog,
+  loadPanelLauncher,
+  loadReticulumVoiceOverlay,
+  loadRncpEnableRequestModal,
+  loadStartupLocationPrompt,
+  loadUnifiedInboxDialog,
+} from './lazyShellOverlays';
 import {
   AdminPanel,
   AppPanel,
@@ -527,14 +530,47 @@ function PanelSkeleton() {
   );
 }
 
-function DialogLazyFallback() {
+function DialogLazyFallback({ onDismiss }: { onDismiss?: () => void }) {
   const { t } = useTranslation();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    rootRef.current?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!onDismiss) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onDismiss();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      // Loading shell has a single focusable root — keep Tab inside it.
+      e.preventDefault();
+      rootRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onDismiss]);
+
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black/40"
+      ref={rootRef}
+      className="fixed inset-0 flex items-center justify-center bg-black/40 outline-none"
       style={{ zIndex: Z_NODE_DETAIL_MODAL }}
-      role="status"
+      role={onDismiss ? 'dialog' : 'status'}
+      aria-modal={onDismiss ? true : undefined}
       aria-busy="true"
+      aria-label={onDismiss ? t('app.loadingDialog') : undefined}
+      tabIndex={-1}
     >
       <span className="sr-only">{t('app.loadingDialog')}</span>
       <div className="bg-ink-600 h-10 w-10 animate-pulse rounded-full" aria-hidden />
@@ -574,8 +610,12 @@ export default function App() {
     <ProtocolRuntimeProvider value={runtimeMap}>
       <ToastProvider>
         <AppContent />
-        <RncpEnableRequestModal />
-        <ReticulumVoiceOverlay />
+        <RetryableLazy loader={loadRncpEnableRequestModal} fallback={null} errorVariant="strip">
+          {(RncpEnableRequestModal) => <RncpEnableRequestModal />}
+        </RetryableLazy>
+        <RetryableLazy loader={loadReticulumVoiceOverlay} fallback={null} errorVariant="strip">
+          {(ReticulumVoiceOverlay) => <ReticulumVoiceOverlay />}
+        </RetryableLazy>
       </ToastProvider>
     </ProtocolRuntimeProvider>
   );
@@ -2830,35 +2870,39 @@ function AppContent() {
   const configureNodeSelector =
     capabilities.hasRemoteAdmin && hasLocalMeshtasticRadio ? (
       <div className="mb-4">
-        <ConfigureNodeSelector
-          nodes={nodesForUi}
-          myNodeNum={meshtasticConnectionView.state.myNodeNum}
-          configureTargetNodeNum={meshtasticRuntime.configureTargetNodeNum}
-          onConfigureTargetChange={meshtasticPanelActions.setConfigureTargetNodeNum}
-          remoteAdminStatus={meshtasticRuntime.remoteAdminStatus}
-          remoteAdminError={meshtasticRuntime.remoteAdminError}
-          remoteAdminSessionStatus={
-            meshtasticRuntime.configureTargetNodeNum != null
-              ? meshtasticPanelActions.getRemoteAdminSessionStatus(
-                  meshtasticRuntime.configureTargetNodeNum,
-                )
-              : 'none'
-          }
-          isLocalRadioConnected={hasLocalMeshtasticRadio}
-          getNodeName={meshtasticPanelActions.getNodeName}
-          onRefresh={
-            meshtasticRuntime.configureTargetNodeNum != null
-              ? () =>
-                  meshtasticPanelActions.refreshRemoteConfigSnapshot(
-                    meshtasticRuntime.configureTargetNodeNum!,
-                    'radio',
-                    {
-                      force: true,
-                    },
-                  )
-              : undefined
-          }
-        />
+        <RetryableLazy loader={loadConfigureNodeSelector} fallback={null} errorVariant="strip">
+          {(ConfigureNodeSelector) => (
+            <ConfigureNodeSelector
+              nodes={nodesForUi}
+              myNodeNum={meshtasticConnectionView.state.myNodeNum}
+              configureTargetNodeNum={meshtasticRuntime.configureTargetNodeNum}
+              onConfigureTargetChange={meshtasticPanelActions.setConfigureTargetNodeNum}
+              remoteAdminStatus={meshtasticRuntime.remoteAdminStatus}
+              remoteAdminError={meshtasticRuntime.remoteAdminError}
+              remoteAdminSessionStatus={
+                meshtasticRuntime.configureTargetNodeNum != null
+                  ? meshtasticPanelActions.getRemoteAdminSessionStatus(
+                      meshtasticRuntime.configureTargetNodeNum,
+                    )
+                  : 'none'
+              }
+              isLocalRadioConnected={hasLocalMeshtasticRadio}
+              getNodeName={meshtasticPanelActions.getNodeName}
+              onRefresh={
+                meshtasticRuntime.configureTargetNodeNum != null
+                  ? () =>
+                      meshtasticPanelActions.refreshRemoteConfigSnapshot(
+                        meshtasticRuntime.configureTargetNodeNum!,
+                        'radio',
+                        {
+                          force: true,
+                        },
+                      )
+                  : undefined
+              }
+            />
+          )}
+        </RetryableLazy>
       </div>
     ) : null;
 
@@ -4609,11 +4653,19 @@ function AppContent() {
                     </button>
                   </div>
                 )}
-              <StartupLocationPrompt
-                ourPosition={activeOurPosition}
-                enabled={capabilities.hasHopCount}
-                onLocationChanged={refreshActiveOurPosition}
-              />
+              <RetryableLazy
+                loader={loadStartupLocationPrompt}
+                fallback={null}
+                errorVariant="strip"
+              >
+                {(StartupLocationPrompt) => (
+                  <StartupLocationPrompt
+                    ourPosition={activeOurPosition}
+                    enabled={capabilities.hasHopCount}
+                    onLocationChanged={refreshActiveOurPosition}
+                  />
+                )}
+              </RetryableLazy>
 
               {/* Main Viewport - scrollable panel area */}
               <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -6070,7 +6122,13 @@ function AppContent() {
                                     reticulumRuntime.state.status !== 'disconnected'
                                   }
                                 />
-                                <AppAboutSection />
+                                <RetryableLazy
+                                  loader={loadAppAboutSection}
+                                  fallback={null}
+                                  errorVariant="strip"
+                                >
+                                  {(AppAboutSection) => <AppAboutSection />}
+                                </RetryableLazy>
                               </div>
                             </Suspense>
                           </ErrorBoundary>
@@ -6443,45 +6501,60 @@ function AppContent() {
       </div>
 
       {launcherOpen && (
-        <PanelLauncher
-          sections={navSections}
-          badgeCounts={navBadgeCounts}
-          pins={launcherPins}
-          platform={platform}
-          onTogglePin={handleToggleLauncherPin}
-          onOpenTab={openTabFromLauncher}
-          onClose={closeLauncher}
-          variant={shellCompact ? 'sheet' : 'dialog'}
-          channels={tabSlotIds.includes('Chat') ? launcherChannels : undefined}
-          contacts={tabSlotIds.includes('Nodes') ? launcherContacts : undefined}
-          contactsLabel={displayTabLabels[tabSlotIds.indexOf('Nodes')]}
-          onOpenChannel={(index) => {
-            setPendingChannelTarget(index);
-            openTabFromLauncher(tabSlotIds.indexOf('Chat'));
-          }}
-          onOpenContact={(id) => {
-            openTabFromLauncher(tabSlotIds.indexOf('Nodes'));
-            if (capabilities.hasReticulumPeersList) selectPeerFrom('list', id);
-            else selectNodeFrom('list', Number(id));
-          }}
-          settings={launcherSnapshot.settings}
-          onOpenSetting={openSettingFromLauncher}
-          header={
-            shellCompact && enabledProtocols.length > 1 ? (
-              <ProtocolSwitcher
-                orientation="horizontal"
-                protocol={switcherProtocol}
-                protocols={enabledProtocols}
-                unreadByProtocol={protocolSwitcherUnreadByProtocol}
-                onProtocolChange={handleProtocolChange}
-              />
-            ) : undefined
-          }
-        />
+        <RetryableLazy
+          loader={loadPanelLauncher}
+          fallback={<DialogLazyFallback onDismiss={closeLauncher} />}
+        >
+          {(PanelLauncher) => (
+            <PanelLauncher
+              sections={navSections}
+              badgeCounts={navBadgeCounts}
+              pins={launcherPins}
+              platform={platform}
+              onTogglePin={handleToggleLauncherPin}
+              onOpenTab={openTabFromLauncher}
+              onClose={closeLauncher}
+              variant={shellCompact ? 'sheet' : 'dialog'}
+              channels={tabSlotIds.includes('Chat') ? launcherChannels : undefined}
+              contacts={tabSlotIds.includes('Nodes') ? launcherContacts : undefined}
+              contactsLabel={displayTabLabels[tabSlotIds.indexOf('Nodes')]}
+              onOpenChannel={(index) => {
+                setPendingChannelTarget(index);
+                openTabFromLauncher(tabSlotIds.indexOf('Chat'));
+              }}
+              onOpenContact={(id) => {
+                openTabFromLauncher(tabSlotIds.indexOf('Nodes'));
+                if (capabilities.hasReticulumPeersList) selectPeerFrom('list', id);
+                else selectNodeFrom('list', Number(id));
+              }}
+              settings={launcherSnapshot.settings}
+              onOpenSetting={openSettingFromLauncher}
+              header={
+                shellCompact && enabledProtocols.length > 1 ? (
+                  <ProtocolSwitcher
+                    orientation="horizontal"
+                    protocol={switcherProtocol}
+                    protocols={enabledProtocols}
+                    unreadByProtocol={protocolSwitcherUnreadByProtocol}
+                    onProtocolChange={handleProtocolChange}
+                  />
+                ) : undefined
+              }
+            />
+          )}
+        </RetryableLazy>
       )}
 
       {logPanelVisible && (
-        <Suspense fallback={<DialogLazyFallback />}>
+        <Suspense
+          fallback={
+            <DialogLazyFallback
+              onDismiss={() => {
+                setLogPanelVisible(false);
+              }}
+            />
+          }
+        >
           <LogPanel
             protocol={protocol}
             deviceLogs={selectByProtocol(deviceLogsByProtocol, protocol)}
@@ -6500,7 +6573,15 @@ function AppContent() {
 
       {/* Contact Groups Modal */}
       {showGroupsModal && capabilities.hasUserManagedContactGroups && (
-        <Suspense fallback={<DialogLazyFallback />}>
+        <Suspense
+          fallback={
+            <DialogLazyFallback
+              onDismiss={() => {
+                setShowGroupsModal(false);
+              }}
+            />
+          }
+        >
           <ContactGroupsModal
             groups={contactGroups.groups}
             contacts={nodesForUi}
@@ -6526,39 +6607,67 @@ function AppContent() {
       {peerDetailModalOpen && renderPeerDetail('modal')}
 
       {/* Meshtastic-only: renders nothing unless a key-verification handshake is active. */}
-      <KeyVerificationDialog />
+      <RetryableLazy loader={loadKeyVerificationDialog} fallback={null} errorVariant="strip">
+        {(KeyVerificationDialog) => <KeyVerificationDialog />}
+      </RetryableLazy>
 
       {globalMessageSearchOpen ? (
-        <GlobalMessageSearchDialog
-          open
-          onClose={() => {
-            setGlobalMessageSearchOpen(false);
-          }}
-          enabledProtocols={enabledProtocols}
-          reticulumIdentityId={reticulumIdentityId}
-          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
-          ownReticulumHashes={ownReticulumHashes}
-          onSelectHit={handleGlobalMessageSearchHit}
-          onOpenInbox={() => {
-            setGlobalMessageSearchOpen(false);
-            setUnifiedInboxOpen(true);
-          }}
-        />
+        <RetryableLazy
+          loader={loadGlobalMessageSearchDialog}
+          fallback={
+            <DialogLazyFallback
+              onDismiss={() => {
+                setGlobalMessageSearchOpen(false);
+              }}
+            />
+          }
+        >
+          {(GlobalMessageSearchDialog) => (
+            <GlobalMessageSearchDialog
+              open
+              onClose={() => {
+                setGlobalMessageSearchOpen(false);
+              }}
+              enabledProtocols={enabledProtocols}
+              reticulumIdentityId={reticulumIdentityId}
+              ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+              ownReticulumHashes={ownReticulumHashes}
+              onSelectHit={handleGlobalMessageSearchHit}
+              onOpenInbox={() => {
+                setGlobalMessageSearchOpen(false);
+                setUnifiedInboxOpen(true);
+              }}
+            />
+          )}
+        </RetryableLazy>
       ) : null}
 
       {unifiedInboxOpen ? (
-        <UnifiedInboxDialog
-          open
-          onClose={() => {
-            setUnifiedInboxOpen(false);
-          }}
-          enabledProtocols={enabledProtocols}
-          messagesByProtocol={uiMessagesByProtocol}
-          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
-          ownReticulumHashes={ownReticulumHashes}
-          reticulumIdentityId={reticulumIdentityId}
-          onSelectItem={handleGlobalMessageSearchHit}
-        />
+        <RetryableLazy
+          loader={loadUnifiedInboxDialog}
+          fallback={
+            <DialogLazyFallback
+              onDismiss={() => {
+                setUnifiedInboxOpen(false);
+              }}
+            />
+          }
+        >
+          {(UnifiedInboxDialog) => (
+            <UnifiedInboxDialog
+              open
+              onClose={() => {
+                setUnifiedInboxOpen(false);
+              }}
+              enabledProtocols={enabledProtocols}
+              messagesByProtocol={uiMessagesByProtocol}
+              ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+              ownReticulumHashes={ownReticulumHashes}
+              reticulumIdentityId={reticulumIdentityId}
+              onSelectItem={handleGlobalMessageSearchHit}
+            />
+          )}
+        </RetryableLazy>
       ) : null}
     </>
   );
