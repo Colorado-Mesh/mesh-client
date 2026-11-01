@@ -48,9 +48,32 @@ describe('scheduledSend', () => {
     expect(isScheduledOutboxRow(row({ priority: 'emergency' }))).toBe(false);
   });
 
-  it('ages scheduled rows from their send time, others from creation', () => {
+  it('ages scheduled rows from their send time, others from max(createdAt, updatedAt)', () => {
     expect(outboxRowAgeAnchorMs(row())).toBe(2_000_000);
-    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1 }))).toBe(1_000_000);
+    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1, updatedAt: 1_500_000 }))).toBe(1_500_000);
+    // Manual retry of an old scheduled row: nextRetryAt cleared / attempt bumped; use updatedAt.
+    expect(
+      outboxRowAgeAnchorMs(
+        row({
+          createdAt: 1_000_000,
+          updatedAt: 9_000_000,
+          nextRetryAt: null,
+          attemptCount: 0,
+        }),
+      ),
+    ).toBe(9_000_000);
+    // One failed attempt: still age from the later of create/update, not the old schedule time.
+    expect(
+      outboxRowAgeAnchorMs(
+        row({
+          status: 'failed',
+          attemptCount: 1,
+          createdAt: 1_000_000,
+          updatedAt: 3_000_000,
+          nextRetryAt: 2_000_000,
+        }),
+      ),
+    ).toBe(3_000_000);
   });
 
   it('validates the schedule window', () => {

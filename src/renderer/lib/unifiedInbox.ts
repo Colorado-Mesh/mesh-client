@@ -89,12 +89,43 @@ export function buildUnifiedInboxItems(opts: BuildUnifiedInboxOptions): UnifiedI
   return items.slice(0, limit);
 }
 
+export interface InboxJumpTargetOwnIds {
+  ownNodeIds?: ReadonlySet<number>;
+  ownReticulumHashes?: ReadonlySet<string>;
+}
+
 /**
  * Adapt an inbox row to the global-search hit shape so App can reuse
  * `handleGlobalMessageSearchHit` (openChatFromNotification + pending message focus).
+ * Inbox rows are normally inbound (sender = peer); own-id checks keep outbound-shaped
+ * rows pointing at the counterparty when present.
  */
-export function inboxItemToJumpTarget(item: UnifiedInboxItem): GlobalMessageSearchHit {
+export function inboxItemToJumpTarget(
+  item: UnifiedInboxItem,
+  own?: InboxJumpTargetOwnIds,
+): GlobalMessageSearchHit {
   const { message: m, protocol } = item;
+  if (protocol === 'reticulum') {
+    const senderHash = m.reticulum_sender_hash?.toLowerCase() ?? null;
+    const toHash = m.reticulum_destination_hash?.toLowerCase() ?? null;
+    const fromIsOwn = senderHash != null && own?.ownReticulumHashes?.has(senderHash) === true;
+    return {
+      protocol,
+      dbId: m.id ?? null,
+      timestamp: m.timestamp,
+      senderId: m.sender_id,
+      senderName: m.sender_name,
+      payload: m.payload,
+      channel: null,
+      dmPeer: null,
+      reticulumPeerHash: (fromIsOwn ? toHash : senderHash) ?? toHash,
+      reticulumSenderHash: senderHash,
+      reticulumMessageHash: m.reticulum_message_hash?.toLowerCase() ?? null,
+      packetId: m.packetId ?? null,
+    };
+  }
+  const fromIsOwn = own?.ownNodeIds?.has(m.sender_id >>> 0) === true;
+  const dmPeer = !item.isDirectMessage ? null : fromIsOwn ? (m.to ?? null) : m.sender_id;
   return {
     protocol,
     dbId: m.id ?? null,
@@ -103,9 +134,8 @@ export function inboxItemToJumpTarget(item: UnifiedInboxItem): GlobalMessageSear
     senderName: m.sender_name,
     payload: m.payload,
     channel: item.isDirectMessage ? null : m.channel,
-    dmPeer: protocol === 'reticulum' ? null : item.isDirectMessage ? m.sender_id : null,
-    reticulumPeerHash:
-      protocol === 'reticulum' ? (m.reticulum_sender_hash?.toLowerCase() ?? null) : null,
+    dmPeer,
+    reticulumPeerHash: null,
     reticulumMessageHash: m.reticulum_message_hash?.toLowerCase() ?? null,
     packetId: m.packetId ?? null,
   };

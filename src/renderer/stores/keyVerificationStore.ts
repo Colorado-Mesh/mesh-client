@@ -154,7 +154,14 @@ export function applyKeyVerificationClientNotification(
     case 'keyVerificationFinal': {
       const state = useKeyVerificationStore.getState();
       const current = state.session;
-      const reusable = current?.identityId === identityId;
+      // Reuse only an in-flight handshake for this identity with a matching/unset nonce.
+      // A done/rejected/error session for node A must not pin remoteNodeNum when B informs.
+      const reusable =
+        current?.identityId === identityId &&
+        current.phase !== 'done' &&
+        current.phase !== 'rejected' &&
+        current.phase !== 'error' &&
+        (current.nonce === 0n || current.nonce === nonce);
       const remoteNodeNum =
         (reusable ? current.remoteNodeNum : null) ??
         state.nonceToNode.get(nonce) ??

@@ -223,4 +223,37 @@ describe('keyVerificationStore', () => {
     for (let i = 1; i <= 40; i++) recordKeyVerificationPacket(ID, { from: i, nonce: BigInt(i) });
     expect(useKeyVerificationStore.getState().nonceToNode.size).toBeLessThanOrEqual(16);
   });
+
+  it('does not reuse a done session remoteNodeNum for a new Inform for another node', () => {
+    const nodeA = 0xaa01;
+    const nodeB = 0xbb02;
+    seedNode(nodeA, 'Node A');
+    seedNode(nodeB, 'Node B');
+    useKeyVerificationStore.setState({
+      session: {
+        identityId: ID,
+        phase: 'done',
+        nonce: 11n,
+        remoteNodeNum: nodeA,
+        remoteLongname: 'Node A',
+        isSender: true,
+      },
+      nonceToNode: new Map([[22n, nodeB]]),
+    });
+
+    applyKeyVerificationClientNotification(ID, {
+      payloadVariant: {
+        case: 'keyVerificationNumberInform',
+        value: { nonce: 22n, remoteLongname: 'Node B', securityNumber: 777 },
+      },
+    });
+
+    expect(useKeyVerificationStore.getState().session).toMatchObject({
+      phase: 'showNumber',
+      nonce: 22n,
+      remoteNodeNum: nodeB,
+      remoteLongname: 'Node B',
+      securityNumber: 777,
+    });
+  });
 });

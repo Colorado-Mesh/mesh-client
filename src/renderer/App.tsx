@@ -1858,6 +1858,21 @@ function AppContent() {
     ],
   );
 
+  /** Stable across App re-renders so search/inbox effects do not restart on unrelated updates. */
+  const ownNodeIdsByProtocol = useMemo(
+    () => ({
+      meshtastic: meshtasticOwnNodeIdSet,
+      meshcore: meshcoreOwnNodeIdSet,
+      reticulum: reticulumOwnNodeIdSet,
+    }),
+    [meshtasticOwnNodeIdSet, meshcoreOwnNodeIdSet, reticulumOwnNodeIdSet],
+  );
+
+  const ownReticulumHashes = useMemo(() => {
+    const hash = reticulumIdentity?.lxmf_hash?.trim().toLowerCase();
+    return hash ? new Set<string>([hash]) : undefined;
+  }, [reticulumIdentity?.lxmf_hash]);
+
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
       useIncidentStore.getState().markSeen(incident.id);
@@ -4466,11 +4481,7 @@ function AppContent() {
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         activeProtocol={protocol}
-        ownNodeIdsByProtocol={{
-          meshtastic: meshtasticOwnNodeIdSet,
-          meshcore: meshcoreOwnNodeIdSet,
-          reticulum: reticulumOwnNodeIdSet,
-        }}
+        ownNodeIdsByProtocol={ownNodeIdsByProtocol}
         messagesByProtocol={uiMessagesByProtocol}
         enabledProtocols={enabledProtocols}
       />
@@ -6525,11 +6536,8 @@ function AppContent() {
           }}
           enabledProtocols={enabledProtocols}
           reticulumIdentityId={reticulumIdentityId}
-          ownNodeIdsByProtocol={{
-            meshtastic: meshtasticOwnNodeIdSet,
-            meshcore: meshcoreOwnNodeIdSet,
-            reticulum: reticulumOwnNodeIdSet,
-          }}
+          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+          ownReticulumHashes={ownReticulumHashes}
           onSelectHit={handleGlobalMessageSearchHit}
           onOpenInbox={() => {
             setGlobalMessageSearchOpen(false);
@@ -6546,11 +6554,8 @@ function AppContent() {
           }}
           enabledProtocols={enabledProtocols}
           messagesByProtocol={uiMessagesByProtocol}
-          ownNodeIdsByProtocol={{
-            meshtastic: meshtasticOwnNodeIdSet,
-            meshcore: meshcoreOwnNodeIdSet,
-            reticulum: reticulumOwnNodeIdSet,
-          }}
+          ownNodeIdsByProtocol={ownNodeIdsByProtocol}
+          ownReticulumHashes={ownReticulumHashes}
           reticulumIdentityId={reticulumIdentityId}
           onSelectItem={handleGlobalMessageSearchHit}
         />

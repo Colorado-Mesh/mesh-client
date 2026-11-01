@@ -131,8 +131,44 @@ describe('inboxItemToJumpTarget', () => {
       channel: null,
       dmPeer: null,
       reticulumPeerHash: 'abcd',
+      reticulumSenderHash: 'abcd',
       reticulumMessageHash: 'ef01',
     });
+  });
+
+  it('resolves outbound-shaped DM peers via own-id checks', () => {
+    const own = new Set([99]);
+    const outboundLoRa = inboxItemToJumpTarget(
+      {
+        key: 'meshtastic:1',
+        protocol: 'meshtastic',
+        starId: '1',
+        viewKey: 'dm:12',
+        isDirectMessage: true,
+        message: msg({ id: 1, sender_id: 99, to: 12, timestamp: 1 }),
+      },
+      { ownNodeIds: own },
+    );
+    expect(outboundLoRa.dmPeer).toBe(12);
+
+    const outboundRet = inboxItemToJumpTarget(
+      {
+        key: 'reticulum:2',
+        protocol: 'reticulum',
+        starId: '2',
+        viewKey: 'dm:x',
+        isDirectMessage: true,
+        message: msg({
+          id: 2,
+          timestamp: 2,
+          reticulum_sender_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          reticulum_destination_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        }),
+      },
+      { ownReticulumHashes: new Set(['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']) },
+    );
+    expect(outboundRet.reticulumPeerHash).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+    expect(outboundRet.reticulumSenderHash).toBe('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
   });
 });
 

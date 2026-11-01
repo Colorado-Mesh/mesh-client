@@ -29,6 +29,7 @@ export interface UnifiedInboxDialogProps {
   enabledProtocols: readonly MeshProtocol[];
   messagesByProtocol: Readonly<Record<MeshProtocol, readonly ChatMessage[]>>;
   ownNodeIdsByProtocol?: Partial<Record<MeshProtocol, ReadonlySet<number>>>;
+  ownReticulumHashes?: ReadonlySet<string>;
   reticulumIdentityId?: string | null;
   /** Same handler as global search hits: opens the source conversation and focuses the message. */
   onSelectItem: (hit: GlobalMessageSearchHit) => void;
@@ -65,6 +66,7 @@ function UnifiedInboxDialogBody({
   enabledProtocols,
   messagesByProtocol,
   ownNodeIdsByProtocol,
+  ownReticulumHashes,
   reticulumIdentityId,
   onSelectItem,
 }: Omit<UnifiedInboxDialogProps, 'open'>) {
@@ -225,7 +227,17 @@ function UnifiedInboxDialogBody({
   };
 
   const openItem = (item: UnifiedInboxItem) => {
-    onSelectItem(inboxItemToJumpTarget(item));
+    const ownNodeIds = new Set<number>();
+    for (const ids of Object.values(ownNodeIdsByProtocol ?? {})) {
+      if (!ids) continue;
+      for (const id of ids) ownNodeIds.add(id >>> 0);
+    }
+    onSelectItem(
+      inboxItemToJumpTarget(item, {
+        ownNodeIds: ownNodeIds.size > 0 ? ownNodeIds : undefined,
+        ownReticulumHashes,
+      }),
+    );
     onClose();
   };
 
