@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { draftsStorageKey, loadDraftsInitial } from '@/renderer/lib/chatPanelProtocolStorage';
-import { resetHeldSendErrorsForTests } from '@/renderer/lib/heldSendErrors';
+import { resetLateSendOutcomesForTests } from '@/renderer/lib/lateSendOutcomes';
 import { peekPendingRrcLinkJoin, setPendingRrcLinkJoin } from '@/renderer/lib/openRrcHubFromLink';
 import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
 import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
@@ -100,7 +100,7 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockResolvedValue({ changes: 1 });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
     localStorage.removeItem(draftsStorageKey('reticulum'));
-    resetHeldSendErrorsForTests();
+    resetLateSendOutcomesForTests();
     clearRrcOpenDms(hubA);
     clearRrcOpenDms(hubB);
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);

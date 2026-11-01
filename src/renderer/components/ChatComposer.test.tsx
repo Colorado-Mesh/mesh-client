@@ -14,7 +14,7 @@ import {
   saveDraft,
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
-import { resetHeldSendErrorsForTests } from '@/renderer/lib/heldSendErrors';
+import { resetLateSendOutcomesForTests } from '@/renderer/lib/lateSendOutcomes';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
@@ -100,7 +100,7 @@ describe('ChatComposer', () => {
     localStorage.clear();
     resetMeshtasticTextSendPacingForTests();
     resetMeshcoreSendRateForTests();
-    resetHeldSendErrorsForTests();
+    resetLateSendOutcomesForTests();
   });
 
   it('has no axe violations when connected', async () => {
@@ -689,6 +689,134 @@ describe('ChatComposer', () => {
       await Promise.resolve();
     });
     expect(screen.getByRole('alert')).toHaveTextContent('peer unreachable');
+  });
+
+  it('keeps the reason of a send that failed in another view while the user types there', async () => {
+    let failIntercept: (err: Error) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            failIntercept = reject;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { rerender } = render(<ChatComposer {...props} viewKey="rrc:hub:#typed-away" />);
+    await user.type(screen.getByRole('textbox'), '/msg peer hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#ops" />);
+    await act(async () => {
+      failIntercept(new Error('peer unreachable'));
+      await Promise.resolve();
+    });
+    await user.type(screen.getByRole('textbox'), 'meanwhile');
+
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#typed-away" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('peer unreachable');
+    expect(screen.getByRole('textbox')).toHaveValue('/msg peer hello');
+  });
+
+  it('keeps the reason of a send that failed in another view while the user sends there', async () => {
+    const failures: ((err: Error) => void)[] = [];
+    const props = {
+      protocol: 'reticulum' as const,
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            failures.push(reject);
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { rerender } = render(<ChatComposer {...props} viewKey="rrc:hub:#sent-away" />);
+    await user.type(screen.getByRole('textbox'), '/msg peer hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#ops" />);
+    await act(async () => {
+      failures[0](new Error('peer unreachable'));
+      await Promise.resolve();
+    });
+    // A second send from the other view clears that view's error as it starts.
+    await user.type(screen.getByRole('textbox'), '/me waves');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    expect(failures).toHaveLength(2);
+
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#sent-away" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('peer unreachable');
+  });
+
+  it('clears the sent text in a composer reopened on the view before the send finishes', async () => {
+    let finishIntercept: (handled: boolean) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      viewKey: 'rrc:hub:#reopened-ok',
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishIntercept = resolve;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { unmount } = render(<ChatComposer {...props} />);
+    await user.type(screen.getByRole('textbox'), '/me waves');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    // Back to list, then the room is opened again while the send is still in flight.
+    unmount();
+    render(<ChatComposer {...props} />);
+    expect(screen.getByRole('textbox')).toHaveValue('/me waves');
+
+    await act(async () => {
+      finishIntercept(true);
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(loadDraftsInitial('reticulum')['rrc:hub:#reopened-ok']).toBeUndefined();
+  });
+
+  it('keeps an edit made in the reopened composer when the earlier send finishes', async () => {
+    let finishIntercept: (handled: boolean) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      viewKey: 'rrc:hub:#reopened-edit',
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishIntercept = resolve;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { unmount } = render(<ChatComposer {...props} />);
+    await user.type(screen.getByRole('textbox'), '/me waves');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    unmount();
+    render(<ChatComposer {...props} />);
+    await user.type(screen.getByRole('textbox'), ' again');
+
+    await act(async () => {
+      finishIntercept(true);
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('textbox')).toHaveValue('/me waves again');
   });
 
   it('keeps a newer origin draft when a send finishes after a view switch', async () => {

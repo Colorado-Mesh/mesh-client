@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  announceLateSend,
   holdSendError,
-  resetHeldSendErrorsForTests,
-  subscribeHeldSendErrors,
+  resetLateSendOutcomesForTests,
+  subscribeLateSendOutcomes,
   takeHeldSendError,
-} from './heldSendErrors';
+} from './lateSendOutcomes';
 
-describe('heldSendErrors', () => {
+describe('lateSendOutcomes', () => {
   beforeEach(() => {
-    resetHeldSendErrorsForTests();
+    resetLateSendOutcomesForTests();
   });
 
   it('returns nothing for a view with no held reason', () => {
@@ -32,15 +33,32 @@ describe('heldSendErrors', () => {
     expect(takeHeldSendError('meshtastic', 'ch:1')).toBe('second');
   });
 
-  it('tells subscribers when a reason is held, until they unsubscribe', () => {
+  it('tells subscribers which view failed or sent, until they unsubscribe', () => {
     const listener = vi.fn();
-    const unsubscribe = subscribeHeldSendErrors(listener);
+    const unsubscribe = subscribeLateSendOutcomes(listener);
 
     holdSendError('meshcore', 'ch:2', 'radio busy');
-    expect(listener).toHaveBeenCalledTimes(1);
+    announceLateSend('reticulum', 'rrc:hub:#general', '/me waves');
+    expect(listener).toHaveBeenNthCalledWith(1, {
+      kind: 'failed',
+      protocol: 'meshcore',
+      viewKey: 'ch:2',
+    });
+    expect(listener).toHaveBeenNthCalledWith(2, {
+      kind: 'sent',
+      protocol: 'reticulum',
+      viewKey: 'rrc:hub:#general',
+      text: '/me waves',
+    });
 
     unsubscribe();
     holdSendError('meshcore', 'ch:2', 'radio busy');
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it('holds nothing for an announced send', () => {
+    announceLateSend('meshtastic', 'ch:3', 'hello');
+
+    expect(takeHeldSendError('meshtastic', 'ch:3')).toBeUndefined();
   });
 });
