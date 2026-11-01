@@ -16,6 +16,7 @@ import {
   tryParseMecp,
 } from '@/renderer/lib/mecp/mecpMessages';
 import {
+  describeMecpTargetChannel,
   executeMecpRebroadcast,
   MECP_REBROADCAST_SETTINGS_KEY,
   parseMecpRebroadcastRules,
@@ -283,7 +284,8 @@ async function processNewMessages(
     inFlight.delete(key);
     seen.add(key);
 
-    if (!blocked && (slice.protocol === 'meshtastic' || slice.protocol === 'meshcore')) {
+    // Meshtastic, MeshCore and Reticulum (LXMF) can all be rebroadcast sources.
+    if (!blocked) {
       void executeMecpRebroadcast(
         {
           protocol: slice.protocol,
@@ -296,6 +298,7 @@ async function processNewMessages(
           viaStoreForward: msg.viaStoreForward,
           senderLabel: msg.senderName ?? String(msg.from),
           sourceChannelName: resolveMecpSourceChannelName(slice.protocol, msg.channelIndex),
+          reticulumSenderHash: msg.reticulumSenderHash,
         },
         loadRules(),
         async (target, payload) => {
@@ -313,7 +316,7 @@ async function processNewMessages(
               decoded,
               direction: 'rebroadcast',
               toProtocol: target.protocol,
-              toChannel: target.channelIndex,
+              toChannel: describeMecpTargetChannel(target),
               bidirectional: target.bidirectional,
               messageId: msg.id,
             });

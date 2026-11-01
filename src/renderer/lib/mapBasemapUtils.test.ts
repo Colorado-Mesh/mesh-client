@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMapOverlayColors, isValidMapBasemapId, MAP_BASEMAPS } from './mapBasemapUtils';
+import type { CustomMapSourceInfo } from '@/shared/offlineMaps/customMapSources';
+
+import {
+  DEFAULT_MAP_BASEMAP_ID,
+  getMapOverlayColors,
+  isValidMapBasemapId,
+  MAP_BASEMAPS,
+  resolveMapBasemap,
+} from './mapBasemapUtils';
 
 describe('mapBasemapUtils', () => {
   it('uses darker greens on light basemap for contrast', () => {
@@ -39,5 +47,43 @@ describe('mapBasemapUtils', () => {
   it('defaults to light osm basemap', async () => {
     const { DEFAULT_MAP_BASEMAP_ID } = await import('./mapBasemapUtils');
     expect(DEFAULT_MAP_BASEMAP_ID).toBe('osm');
+  });
+});
+
+const custom: CustomMapSourceInfo = {
+  id: 'xyz-0123456789ab',
+  kind: 'xyz',
+  name: 'Mine',
+  attribution: '© <b>Me</b> & co',
+  addedAt: 1,
+  host: 'tiles.example.org',
+  maxNativeZoom: 17,
+};
+
+describe('custom basemaps', () => {
+  it('accepts built-in ids and generated custom ids only', () => {
+    expect(isValidMapBasemapId('osm')).toBe(true);
+    expect(isValidMapBasemapId('xyz-0123456789ab')).toBe(true);
+    expect(isValidMapBasemapId('mbtiles-0123456789ab')).toBe(true);
+    expect(isValidMapBasemapId('xyz-../etc')).toBe(false);
+    expect(isValidMapBasemapId('esri')).toBe(false);
+  });
+
+  it('resolves a custom source to a mesh-tiles URL with escaped attribution', () => {
+    const cfg = resolveMapBasemap(custom.id, [custom]);
+    expect(cfg.url).toBe('mesh-tiles://xyz-0123456789ab/{z}/{x}/{y}.png');
+    expect(cfg.attribution).toBe('© &lt;b&gt;Me&lt;/b&gt; &amp; co');
+    expect(cfg.maxNativeZoom).toBe(17);
+  });
+
+  it('falls back to the default for removed sources and keeps built-ins stable', () => {
+    expect(resolveMapBasemap(custom.id, [])).toBe(MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID]);
+    expect(resolveMapBasemap('usgs-topo', null)).toBe(MAP_BASEMAPS['usgs-topo']);
+  });
+
+  it('serves the custom URL (without attribution) while the list is still loading', () => {
+    const cfg = resolveMapBasemap(custom.id, null);
+    expect(cfg.url).toContain(custom.id);
+    expect(cfg.attribution).toBe('');
   });
 });

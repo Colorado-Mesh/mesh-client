@@ -51,6 +51,9 @@ use super::config;
 use super::games_session::GamesSessionManager;
 use super::live_tasks::LiveTasks;
 use super::local_rnode_primary;
+use super::lxmf_attachments::{
+    OutboundMedia, decode_outbound_attachments, sanitize_attachment_file_name,
+};
 use super::lxmf_delivery::{
     LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, spawn_lxmf_outbound_backchannel,
@@ -767,7 +770,7 @@ impl LiveBridge {
             state.lxmf_ready = true;
         }
 
-        let (nomad_enabled, nomad_name, nomad_content_source) = {
+        let (nomad_enabled, nomad_name, nomad_content_source, nomad_allow_executable) = {
             let state = inner.read().await;
             let name = state
                 .nomad_serving_display_name
@@ -785,11 +788,16 @@ impl LiveBridge {
                 state.nomad_serving_enabled,
                 name,
                 state.nomad_serving_content_source.clone(),
+                state.nomad_serving_allow_executable_pages,
             )
         };
         // Accepted local-state trust: resume the folders selected in an earlier
         // session. Requiring a picker on every restart breaks unattended hosting.
         // Fresh renderer path changes retain their picker/capability checks.
+        bridge
+            .nomad_server
+            .set_allow_executable_pages(nomad_allow_executable)
+            .await;
         match &nomad_content_source {
             Some(path) => {
                 bridge
@@ -809,11 +817,12 @@ impl LiveBridge {
             None => {}
         }
 
-        if nomad_enabled && nomad_content_source.is_some() {
-            if let Err(error) = bridge.start_nomad_serving(nomad_name).await {
-                tracing::warn!("[nomad-serving] failed to restore Nomad serving: {error}");
-                bridge.nomad_server.set_last_error(Some(error)).await;
-            }
+        if nomad_enabled
+            && nomad_content_source.is_some()
+            && let Err(error) = bridge.start_nomad_serving(nomad_name).await
+        {
+            tracing::warn!("[nomad-serving] failed to restore Nomad serving: {error}");
+            bridge.nomad_server.set_last_error(Some(error)).await;
         }
 
         // Restore the inbound rncp listener the user enabled in a previous
@@ -889,13 +898,13 @@ impl LiveBridge {
             let state = inner.read().await;
             (state.path_medium_preference, state.peer_medium_pins.clone())
         };
-        if path_preference != PathMediumPreferenceSetting::default() {
-            if let Err(e) = bridge.apply_path_medium_preference(path_preference).await {
-                tracing::warn!(
-                    "[path-medium] failed to restore preference {}: {e}",
-                    path_preference.as_str()
-                );
-            }
+        if path_preference != PathMediumPreferenceSetting::default()
+            && let Err(e) = bridge.apply_path_medium_preference(path_preference).await
+        {
+            tracing::warn!(
+                "[path-medium] failed to restore preference {}: {e}",
+                path_preference.as_str()
+            );
         }
         if !peer_pins.is_empty() {
             for (hash, pin) in peer_pins.iter() {
@@ -1175,11 +1184,11 @@ impl LiveBridge {
         let read_path_cache = || -> (Option<u8>, Option<String>) {
             let mut hops = None;
             let mut iface = None;
-            if let Ok(cache) = self.path_peer_cache.lock() {
-                if let Some(peer) = cache.iter().find(|p| p.destination_hash == key) {
-                    hops = peer.hops;
-                    iface = peer.interface.clone().filter(|n| !n.is_empty());
-                }
+            if let Ok(cache) = self.path_peer_cache.lock()
+                && let Some(peer) = cache.iter().find(|p| p.destination_hash == key)
+            {
+                hops = peer.hops;
+                iface = peer.interface.clone().filter(|n| !n.is_empty());
             }
             if iface.is_none() {
                 iface = self.path_interface_for_hash(&key);
@@ -1786,15 +1795,15 @@ impl LiveBridge {
     ) -> Result<(LinkSessionHandle, bool), LinkSessionError> {
         {
             let slot = self.nomad_link_session.lock().await;
-            if let Some(cached) = slot.as_ref() {
-                if nomad_link_cache_should_reuse(
+            if let Some(cached) = slot.as_ref()
+                && nomad_link_cache_should_reuse(
                     &cached.dest,
                     cached.identify,
                     &dest_hash,
                     identify,
-                ) {
-                    return Ok((cached.handle.clone(), true));
-                }
+                )
+            {
+                return Ok((cached.handle.clone(), true));
             }
         }
         self.close_nomad_link_session().await;
@@ -1942,19 +1951,18 @@ impl LiveBridge {
         // Drop every known-bad next hop (not only the currently active slot —
         // after a timeout the table may flip to another iface sharing an older via).
         for via_hex in &failover_ops.vias_to_drop {
-            if let Ok(next_hop) = parse_hash16(via_hex) {
-                if self
+            if let Ok(next_hop) = parse_hash16(via_hex)
+                && self
                     .query_control_timed(TransportQuery::DropAllVia { next_hop })
                     .await
                     .is_none()
-                {
-                    tracing::debug!(
-                        target: "nomad",
-                        dest = %hash_hex,
-                        via = %via_hex,
-                        "path failover: DropAllVia timed out or failed"
-                    );
-                }
+            {
+                tracing::debug!(
+                    target: "nomad",
+                    dest = %hash_hex,
+                    via = %via_hex,
+                    "path failover: DropAllVia timed out or failed"
+                );
             }
         }
         if let Ok(mut driver) = self.outbound.lock() {
@@ -3588,12 +3596,11 @@ impl LiveBridge {
                     // Only clear the sync latch when we still own this peer — a newer
                     // user Sync may have claimed the target after cancel_client_download.
                     let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
-                        if let Ok(mut driver) = outbound_for_clear.lock() {
-                            if driver.propagation_sync_target() == Some(peer_hash) {
+                        if let Ok(mut driver) = outbound_for_clear.lock()
+                            && driver.propagation_sync_target() == Some(peer_hash) {
                                 driver.clear_propagation_identity_pins();
                                 driver.set_propagation_sync_target(None);
                             }
-                        }
                     });
                     // Dedicated cancel; user Sync cancel_propagation_sync still
                     // cancel_client_download()s so this poll loop exits on Idle/Failed.
@@ -3674,19 +3681,17 @@ impl LiveBridge {
                     evt = callback_rx.recv() => {
                         let Some(evt) = evt else { break; };
                         let dest_hex = hex::encode(evt.destination_hash);
-                        if let Some(pub_key) = evt.public_key {
-                            if let Ok(mut driver) = outbound.lock() {
+                        if let Some(pub_key) = evt.public_key
+                            && let Ok(mut driver) = outbound.lock() {
                                 driver.register_identity_key(&dest_hex, pub_key);
                             }
-                        }
                         // Named announces update the display-name cache for peer labels only —
                         // do not upsert LXMF contacts (contacts are messaged / explicitly saved).
                         let display_name = parse_announce_display_name(evt.app_data.as_deref());
-                        if let Some(ref name) = display_name {
-                            if let Ok(mut cache) = display_name_cache.lock() {
+                        if let Some(ref name) = display_name
+                            && let Ok(mut cache) = display_name_cache.lock() {
                                 insert_display_name_bounded(&mut cache, dest_hex.clone(), name.clone());
                             }
-                        }
                         if coalescer.is_empty() {
                             window_start = Some(tokio::time::Instant::now());
                         }
@@ -4060,21 +4065,22 @@ impl LiveBridge {
         reply_to: Option<[u8; 32]>,
         reply_quote: Option<&str>,
     ) -> Result<(LxMessage, String), String> {
-        self.prepare_signed_outbound_lxmf_with_audio(
+        self.prepare_signed_outbound_lxmf_with_media(
             dest,
             title,
             content,
             method,
             reply_to,
             reply_quote,
-            None,
+            &OutboundMedia::default(),
         )
     }
 
-    /// Like [`prepare_signed_outbound_lxmf`], optionally stamping native
-    /// `FIELD_AUDIO` (voice memo) before `sign()` so it is covered by the hash.
-    #[allow(clippy::too_many_arguments)] // mirrors prepare_signed_outbound_lxmf + optional audio bytes
-    fn prepare_signed_outbound_lxmf_with_audio(
+    /// Like [`prepare_signed_outbound_lxmf`], optionally stamping native media fields
+    /// (`FIELD_AUDIO` voice memo, `FIELD_IMAGE`, `FIELD_FILE_ATTACHMENTS`) before `sign()`
+    /// so they are covered by the message hash.
+    #[allow(clippy::too_many_arguments)] // mirrors prepare_signed_outbound_lxmf + media bundle
+    fn prepare_signed_outbound_lxmf_with_media(
         &self,
         dest: [u8; 16],
         title: &str,
@@ -4082,7 +4088,7 @@ impl LiveBridge {
         method: DeliveryMethod,
         reply_to: Option<[u8; 32]>,
         reply_quote: Option<&str>,
-        audio: Option<&[u8]>,
+        media: &OutboundMedia,
     ) -> Result<(LxMessage, String), String> {
         let mut msg = LxMessage::new(
             dest,
@@ -4092,7 +4098,7 @@ impl LiveBridge {
             method,
         );
         apply_reply_fields(&mut msg, reply_to, reply_quote);
-        if let Some(bytes) = audio {
+        if let Some(bytes) = media.audio.as_deref() {
             if bytes.len() > MAX_LXMF_AUDIO_FIELD_BYTES {
                 return Err(format!(
                     "audio_too_large: {} > {}",
@@ -4102,6 +4108,19 @@ impl LiveBridge {
             }
             msg.set_audio_field(AM_OPUS_OGG, bytes)
                 .map_err(|e| format!("lxmf set_audio_field: {e:?}"))?;
+        }
+        if let Some((format, bytes)) = media.image.as_ref() {
+            msg.set_image_field(format, bytes)
+                .map_err(|e| format!("lxmf set_image_field: {e:?}"))?;
+        }
+        if !media.files.is_empty() {
+            let refs: Vec<(&str, &[u8])> = media
+                .files
+                .iter()
+                .map(|(name, bytes)| (name.as_str(), bytes.as_slice()))
+                .collect();
+            msg.set_file_attachments_field(&refs)
+                .map_err(|e| format!("lxmf set_file_attachments_field: {e:?}"))?;
         }
         let signing_key = self
             .identity
@@ -4248,10 +4267,10 @@ impl LiveBridge {
         let send_result = {
             let mut router = self.router.lock().await;
             let res = router.try_send(msg);
-            if res.is_ok() {
-                if let Ok(mut driver) = self.outbound.lock() {
-                    driver.process_tick(&mut router, &self.event_tx);
-                }
+            if res.is_ok()
+                && let Ok(mut driver) = self.outbound.lock()
+            {
+                driver.process_tick(&mut router, &self.event_tx);
             }
             res
         };
@@ -4564,17 +4583,18 @@ impl LiveBridge {
                 self.cancel_propagation_sync().await;
                 return Ok(());
             }
-            if !self.propagation.sync_active() && progress <= 0.0 {
-                if let Some(ok) = self.propagation.last_finished_ok() {
-                    self.cancel_propagation_sync().await;
-                    return if ok {
-                        Ok(())
-                    } else if self.propagation.last_offer_error() == Some("Unknown") {
-                        Err("PROPAGATION_OFFER_UNSUPPORTED".into())
-                    } else {
-                        Err("PROPAGATION_OFFER_PROBE_FAILED".into())
-                    };
-                }
+            if !self.propagation.sync_active()
+                && progress <= 0.0
+                && let Some(ok) = self.propagation.last_finished_ok()
+            {
+                self.cancel_propagation_sync().await;
+                return if ok {
+                    Ok(())
+                } else if self.propagation.last_offer_error() == Some("Unknown") {
+                    Err("PROPAGATION_OFFER_UNSUPPORTED".into())
+                } else {
+                    Err("PROPAGATION_OFFER_PROBE_FAILED".into())
+                };
             }
         }
     }
@@ -5136,17 +5156,16 @@ impl LiveBridge {
     /// fresher than [`PATH_PEER_CACHE_TTL`], return that snapshot (avoids a second
     /// GetPathTable on every automatic poll).
     pub async fn fetch_peers(&self, force: bool) -> Result<Vec<PeerRow>, String> {
-        if !force {
-            if let (Ok(cache), Ok(at)) = (
+        if !force
+            && let (Ok(cache), Ok(at)) = (
                 self.path_peer_cache.lock(),
                 self.path_peer_cache_fetched_at.lock(),
-            ) {
-                if let Some(fetched_at) = *at {
-                    if fetched_at.elapsed() < PATH_PEER_CACHE_TTL && !cache.is_empty() {
-                        return Ok(cache.clone());
-                    }
-                }
-            }
+            )
+            && let Some(fetched_at) = *at
+            && fetched_at.elapsed() < PATH_PEER_CACHE_TTL
+            && !cache.is_empty()
+        {
+            return Ok(cache.clone());
         }
         let resp = self.query_control_timed(TransportQuery::GetPathTable).await;
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
@@ -5497,21 +5516,30 @@ impl LiveBridge {
             .as_deref()
             .map(str::trim)
             .filter(|q| !q.is_empty());
-        let audio_bytes = decode_lxmf_audio_request(req.audio.as_ref())?;
-        let content = if req.text.trim().is_empty() && audio_bytes.is_some() {
+        let mut media = decode_outbound_attachments(req)?;
+        media.audio = decode_lxmf_audio_request(req.audio.as_ref())?;
+        let content = if req.text.trim().is_empty() && media.audio.is_some() {
             "[voice:0]".to_string()
+        } else if req.text.trim().is_empty() {
+            outbound_attachment_marker_text(&media).unwrap_or_else(|| req.text.clone())
         } else {
             req.text.clone()
         };
-        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf_with_audio(
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf_with_media(
             dest,
             "",
             &content,
             delivery_method,
             reply_to,
             reply_quote,
-            audio_bytes.as_deref(),
+            &media,
         )?;
+        // Echo metadata only (no bytes): the renderer already holds the outbound file.
+        let attachment_echo = if media.has_files_or_image() {
+            attachment_json_from_message(&msg).map(strip_attachment_echo_bytes)
+        } else {
+            None
+        };
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
@@ -5540,18 +5568,23 @@ impl LiveBridge {
             "delivery_status": "sending",
             "message_hash": message_hash_hex.clone(),
         });
-        if let Some(quote) = reply_quote {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert(
-                    "reply_preview_text".into(),
-                    serde_json::Value::String(quote.to_string()),
-                );
-            }
+        if let Some(quote) = reply_quote
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert(
+                "reply_preview_text".into(),
+                serde_json::Value::String(quote.to_string()),
+            );
         }
-        if let Some(ref bytes) = audio_bytes {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert("audio".into(), audio_json_from_bytes(AM_OPUS_OGG, bytes));
-            }
+        if let Some(ref bytes) = media.audio
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert("audio".into(), audio_json_from_bytes(AM_OPUS_OGG, bytes));
+        }
+        if let Some(attachment) = attachment_echo
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert("attachment".into(), attachment);
         }
 
         if let Ok(mut driver) = self.outbound.lock() {
@@ -5575,6 +5608,53 @@ impl LiveBridge {
             "sent_via": egress_via,
             "delivery_status": "queued",
             "message": payload
+        }))
+    }
+
+    /// Cancel a pending outbound LXMF message (router queue and/or Direct link session) and
+    /// emit terminal `lxmf_outbound_status` `failed` / `error: "cancelled"`.
+    ///
+    /// Returns `{ ok: true, cancelled: false }` when the message already left the router
+    /// (delivered / failed) so the renderer can reconcile without a false error.
+    pub async fn cancel_outbound_message(
+        &self,
+        message_hash_hex: &str,
+    ) -> Result<serde_json::Value, String> {
+        let hash = parse_hash32(message_hash_hex)?;
+        let router_cancelled = {
+            let mut router = self.router.lock().await;
+            router.cancel_outbound(&hash)
+        };
+        let link_cancelled = self
+            .outbound
+            .lock()
+            .map(|mut d| d.cancel_message(&hash))
+            .unwrap_or(false);
+        let cancelled = router_cancelled || link_cancelled;
+        if cancelled {
+            lxmf_outbound::emit_outbound_cancelled(&self.event_tx, &hex::encode(hash));
+        }
+        Ok(serde_json::json!({
+            "ok": true,
+            "cancelled": cancelled,
+            "message_hash": hex::encode(hash),
+        }))
+    }
+
+    /// Router outbound progress for `message_hash_hex` (`progress: null` when not pending).
+    pub async fn outbound_message_progress(
+        &self,
+        message_hash_hex: &str,
+    ) -> Result<serde_json::Value, String> {
+        let hash = parse_hash32(message_hash_hex)?;
+        let progress = {
+            let router = self.router.lock().await;
+            router.get_outbound_progress(&hash)
+        };
+        Ok(serde_json::json!({
+            "ok": true,
+            "message_hash": hex::encode(hash),
+            "progress": progress,
         }))
     }
 
@@ -5681,13 +5761,13 @@ impl LiveBridge {
             "delivery_status": "delivered",
             "message_hash": message_hash_hex.clone(),
         });
-        if let Some(quote) = reply_quote {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert(
-                    "reply_preview_text".into(),
-                    serde_json::Value::String(quote.to_string()),
-                );
-            }
+        if let Some(quote) = reply_quote
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert(
+                "reply_preview_text".into(),
+                serde_json::Value::String(quote.to_string()),
+            );
         }
 
         Ok(serde_json::json!({
@@ -5953,47 +6033,47 @@ pub(super) fn lxmf_payload_from_message(
             DeliveryMethod::Paper => "paper",
         },
     });
-    if let Some(via) = received_via {
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert("received_via".into(), serde_json::Value::String(via.into()));
-        }
+    if let Some(via) = received_via
+        && let Some(obj) = payload.as_object_mut()
+    {
+        obj.insert("received_via".into(), serde_json::Value::String(via.into()));
     }
-    if let Some(via) = sent_via {
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert("sent_via".into(), serde_json::Value::String(via.into()));
-        }
+    if let Some(via) = sent_via
+        && let Some(obj) = payload.as_object_mut()
+    {
+        obj.insert("sent_via".into(), serde_json::Value::String(via.into()));
     }
-    if let Some(attachment) = attachment_json_from_message(msg) {
-        if let Some(obj) = payload.as_object_mut() {
-            if let Some(text) = attachment
-                .get("file_name")
-                .and_then(|n| n.as_str())
-                .zip(attachment.get("mime_type").and_then(|m| m.as_str()))
-            {
-                obj.insert(
-                    "text".into(),
-                    serde_json::Value::String(format!("[file:{}:{}]", text.0, text.1)),
-                );
-            }
-            obj.insert("attachment".into(), attachment);
+    if let Some(attachment) = attachment_json_from_message(msg)
+        && let Some(obj) = payload.as_object_mut()
+    {
+        if let Some(text) = attachment
+            .get("file_name")
+            .and_then(|n| n.as_str())
+            .zip(attachment.get("mime_type").and_then(|m| m.as_str()))
+        {
+            obj.insert(
+                "text".into(),
+                serde_json::Value::String(format!("[file:{}:{}]", text.0, text.1)),
+            );
         }
+        obj.insert("attachment".into(), attachment);
     }
-    if let Some(audio) = audio_json_from_message(msg) {
-        if let Some(obj) = payload.as_object_mut() {
-            let text_empty = obj
-                .get("text")
-                .and_then(|t| t.as_str())
-                .is_none_or(|t| t.trim().is_empty());
-            if text_empty {
-                obj.insert("text".into(), serde_json::Value::String("[voice:0]".into()));
-            }
-            obj.insert("audio".into(), audio);
+    if let Some(audio) = audio_json_from_message(msg)
+        && let Some(obj) = payload.as_object_mut()
+    {
+        let text_empty = obj
+            .get("text")
+            .and_then(|t| t.as_str())
+            .is_none_or(|t| t.trim().is_empty());
+        if text_empty {
+            obj.insert("text".into(), serde_json::Value::String("[voice:0]".into()));
         }
+        obj.insert("audio".into(), audio);
     }
-    if let Some(icon) = icon_appearance_json_from_message(msg) {
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert("icon_appearance".into(), icon);
-        }
+    if let Some(icon) = icon_appearance_json_from_message(msg)
+        && let Some(obj) = payload.as_object_mut()
+    {
+        obj.insert("icon_appearance".into(), icon);
     }
     // A structured reaction (0x40) wins over a reply (0x30) for tapback classification:
     // renderer ingest keys off `reaction_target`, so we must not also emit `reply_to_hash`
@@ -6012,24 +6092,22 @@ pub(super) fn lxmf_payload_from_message(
                 .and_then(|t| t.as_str())
                 .map(|t| t.trim().is_empty())
                 .unwrap_or(true);
-            if text_empty {
-                if let Some(emoji) = reaction.emoji {
-                    obj.insert("text".into(), serde_json::Value::String(emoji));
-                }
+            if text_empty && let Some(emoji) = reaction.emoji {
+                obj.insert("text".into(), serde_json::Value::String(emoji));
             }
         }
-    } else if let Some(reply) = reply_fields_from_message(msg) {
-        if let Some(obj) = payload.as_object_mut() {
+    } else if let Some(reply) = reply_fields_from_message(msg)
+        && let Some(obj) = payload.as_object_mut()
+    {
+        obj.insert(
+            "reply_to_hash".into(),
+            serde_json::Value::String(reply.reply_to_hash),
+        );
+        if let Some(quote) = reply.reply_preview_text {
             obj.insert(
-                "reply_to_hash".into(),
-                serde_json::Value::String(reply.reply_to_hash),
+                "reply_preview_text".into(),
+                serde_json::Value::String(quote),
             );
-            if let Some(quote) = reply.reply_preview_text {
-                obj.insert(
-                    "reply_preview_text".into(),
-                    serde_json::Value::String(quote),
-                );
-            }
         }
     }
     payload
@@ -6235,7 +6313,9 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
     let mut attachments: Vec<serde_json::Value> = Vec::new();
 
     if let Ok(files) = msg.file_attachments() {
-        for (file_name, bytes) in files {
+        for (raw_name, bytes) in files {
+            // Safe-receive: wire names are peer-controlled (paths, `[file:…]` delimiters, bidi).
+            let file_name = sanitize_attachment_file_name(&raw_name);
             let mime_type = mime_from_file_name(&file_name);
             attachments.push(serde_json::json!({
                 "file_name": file_name,
@@ -6246,22 +6326,30 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
         }
     }
 
-    if attachments.is_empty() {
-        if let Ok(Some((format, bytes))) = msg.image_attachment() {
-            let ext = format.trim().trim_start_matches('.').to_lowercase();
-            let file_name = if ext.is_empty() {
-                "image.bin".to_string()
-            } else {
-                format!("image.{ext}")
-            };
-            let mime_type = mime_from_file_name(&file_name);
-            attachments.push(serde_json::json!({
-                "file_name": file_name,
-                "mime_type": mime_type,
-                "size_bytes": bytes.len(),
-                "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
-            }));
-        }
+    if attachments.is_empty()
+        && let Ok(Some((format, bytes))) = msg.image_attachment()
+    {
+        // Peer-controlled format string — keep only ASCII alnum and cap the extension length.
+        let ext: String = format
+            .trim()
+            .trim_start_matches('.')
+            .to_lowercase()
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .take(8)
+            .collect();
+        let file_name = if ext.is_empty() {
+            "image.bin".to_string()
+        } else {
+            format!("image.{ext}")
+        };
+        let mime_type = mime_from_file_name(&file_name);
+        attachments.push(serde_json::json!({
+            "file_name": file_name,
+            "mime_type": mime_type,
+            "size_bytes": bytes.len(),
+            "data_base64": base64::engine::general_purpose::STANDARD.encode(bytes),
+        }));
     }
 
     let first = attachments.first()?.clone();
@@ -6270,6 +6358,37 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
         obj.insert("attachments".into(), serde_json::Value::Array(attachments));
     }
     Some(out)
+}
+
+/// Drop `data_base64` from an attachment echo (top-level + `attachments[]`).
+fn strip_attachment_echo_bytes(mut attachment: serde_json::Value) -> serde_json::Value {
+    fn strip(obj: &mut serde_json::Map<String, serde_json::Value>) {
+        obj.remove("data_base64");
+    }
+    if let Some(obj) = attachment.as_object_mut() {
+        strip(obj);
+        if let Some(list) = obj.get_mut("attachments").and_then(|v| v.as_array_mut()) {
+            for item in list {
+                if let Some(o) = item.as_object_mut() {
+                    strip(o);
+                }
+            }
+        }
+    }
+    attachment
+}
+
+/// `[file:name:mime]` marker for an attachment-only outbound message (same shape the
+/// inbound path synthesises, so chat renders both through `ReticulumAttachmentLine`).
+fn outbound_attachment_marker_text(media: &OutboundMedia) -> Option<String> {
+    let name = if let Some((name, _)) = media.files.first() {
+        name.clone()
+    } else {
+        let (format, _) = media.image.as_ref()?;
+        format!("image.{format}")
+    };
+    let mime = mime_from_file_name(&name);
+    Some(format!("[file:{name}:{mime}]"))
 }
 
 fn audio_json_from_bytes(mode: u8, bytes: &[u8]) -> serde_json::Value {
@@ -6332,10 +6451,10 @@ fn parse_rrc_hub_announce_name(app_data: Option<&[u8]>) -> Option<String> {
     if bytes.is_empty() {
         return None;
     }
-    if let Ok(value) = ciborium::from_reader::<ciborium::Value, _>(std::io::Cursor::new(bytes)) {
-        if let Some(name) = rrc_hub_name_from_cbor(&value) {
-            return sanitize_rrc_hub_display_name(&name);
-        }
+    if let Ok(value) = ciborium::from_reader::<ciborium::Value, _>(std::io::Cursor::new(bytes))
+        && let Some(name) = rrc_hub_name_from_cbor(&value)
+    {
+        return sanitize_rrc_hub_display_name(&name);
     }
     // Fallback for non-rrcd hubs that use LXMF/Nomad-style announce payloads.
     parse_announce_display_name(app_data).and_then(|n| sanitize_rrc_hub_display_name(&n))
@@ -6442,10 +6561,10 @@ fn display_name_from_json_value(value: &serde_json::Value) -> Option<String> {
 fn display_name_from_msgpack_map(map: &[(rmpv::Value, rmpv::Value)]) -> Option<String> {
     for key in ["server_name", "name", "display_name", "title"] {
         for (k, v) in map {
-            if k.as_str() == Some(key) {
-                if let Some(name) = nomad_name_from_msgpack_value(v) {
-                    return Some(name);
-                }
+            if k.as_str() == Some(key)
+                && let Some(name) = nomad_name_from_msgpack_value(v)
+            {
+                return Some(name);
             }
         }
     }
@@ -6856,10 +6975,11 @@ const PATH_PEER_CACHE_TTL: Duration = Duration::from_secs(2);
 
 /// Insert or refresh a destination label; evict an arbitrary oldest-ish entry when full.
 fn insert_display_name_bounded(cache: &mut HashMap<String, String>, hash: String, name: String) {
-    if cache.len() >= MAX_DISPLAY_NAME_CACHE && !cache.contains_key(&hash) {
-        if let Some(evict) = cache.keys().next().cloned() {
-            cache.remove(&evict);
-        }
+    if cache.len() >= MAX_DISPLAY_NAME_CACHE
+        && !cache.contains_key(&hash)
+        && let Some(evict) = cache.keys().next().cloned()
+    {
+        cache.remove(&evict);
     }
     cache.insert(hash, name);
 }
@@ -7576,12 +7696,12 @@ fn next_host_periodic_get_target(
     rr: &mut usize,
 ) -> Option<[u8; 16]> {
     let identity_known = |hash: &[u8; 16]| driver.identity_known_for(&hex::encode(hash));
-    if let Some(pref) = preferred {
-        if let Some(peer) = router.peers.get(&pref) {
-            if peer.alive && identity_known(&pref) {
-                return Some(pref);
-            }
-        }
+    if let Some(pref) = preferred
+        && let Some(peer) = router.peers.get(&pref)
+        && peer.alive
+        && identity_known(&pref)
+    {
+        return Some(pref);
     }
     let mut candidates: Vec<[u8; 16]> = router
         .peers
@@ -8617,6 +8737,88 @@ mod audio_field_tests {
         };
         let err = decode_lxmf_audio_request(Some(&req)).expect_err("oversize");
         assert!(err.starts_with("audio_too_large"), "{err}");
+    }
+
+    #[test]
+    fn outbound_attachment_marker_text_uses_first_file_or_image() {
+        let mut media = OutboundMedia::default();
+        assert!(outbound_attachment_marker_text(&media).is_none());
+        media.image = Some(("jpeg".into(), vec![0xff, 0xd8, 0xff]));
+        assert_eq!(
+            outbound_attachment_marker_text(&media).as_deref(),
+            Some("[file:image.jpeg:image/jpeg]")
+        );
+        media.files.push(("notes.txt".into(), b"hi".to_vec()));
+        assert_eq!(
+            outbound_attachment_marker_text(&media).as_deref(),
+            Some("[file:notes.txt:application/octet-stream]")
+        );
+    }
+
+    #[test]
+    fn file_attachments_round_trip_through_attachment_json_and_strip_bytes() {
+        use rns_identity::identity::Identity;
+        let identity = Identity::new();
+        let signing = identity.get_signing_key().expect("signing key");
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            identity.hash,
+            "",
+            "[file:a.png:image/png]",
+            DeliveryMethod::Direct,
+        );
+        msg.set_file_attachments_field(&[("a.png", b"\x89PNG-one".as_slice()), ("b.txt", b"two")])
+            .expect("set files");
+        msg.sign(&signing).expect("sign");
+        let packed = msg.pack().expect("pack");
+        let inbound = LxMessage::unpack(&packed).expect("unpack");
+        let json = attachment_json_from_message(&inbound).expect("attachment json");
+        assert_eq!(json["file_name"], "a.png");
+        assert_eq!(json["mime_type"], "image/png");
+        assert_eq!(json["attachments"].as_array().map(Vec::len), Some(2));
+        assert!(json["data_base64"].is_string());
+        let stripped = strip_attachment_echo_bytes(json);
+        assert!(stripped.get("data_base64").is_none());
+        assert!(stripped["attachments"][1].get("data_base64").is_none());
+        assert_eq!(stripped["attachments"][1]["file_name"], "b.txt");
+    }
+
+    #[test]
+    fn inbound_attachment_json_sanitizes_hostile_file_names() {
+        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_file_attachments_field(&[("../../x[1]:evil.exe", b"MZ".as_slice())])
+            .expect("set");
+        let json = attachment_json_from_message(&msg).expect("json");
+        assert_eq!(json["file_name"], "x_1__evil.exe");
+    }
+
+    #[test]
+    fn inbound_image_json_sanitizes_hostile_format_extension() {
+        let mut msg = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        msg.set_image_field("../evil.exe!!!!", b"\x89PNG".as_slice())
+            .expect("set image");
+        let json = attachment_json_from_message(&msg).expect("json");
+        assert_eq!(json["file_name"], "image.evilexe");
+        let mut empty = LxMessage::new([0u8; 16], [0u8; 16], "", "", DeliveryMethod::Direct);
+        empty
+            .set_image_field("!!!", b"\x89PNG".as_slice())
+            .expect("set image");
+        let empty_json = attachment_json_from_message(&empty).expect("json");
+        assert_eq!(empty_json["file_name"], "image.bin");
+    }
+
+    #[test]
+    fn attachment_field_changes_message_hash_after_sign() {
+        use rns_identity::identity::Identity;
+        let identity = Identity::new();
+        let signing = identity.get_signing_key().expect("signing key");
+        let mut without = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
+        without.sign(&signing).expect("sign");
+        let mut with = LxMessage::new([0u8; 16], identity.hash, "", "x", DeliveryMethod::Direct);
+        with.set_file_attachments_field(&[("a.txt", b"hi".as_slice())])
+            .expect("set");
+        with.sign(&signing).expect("sign");
+        assert_ne!(without.hash, with.hash);
     }
 
     #[test]

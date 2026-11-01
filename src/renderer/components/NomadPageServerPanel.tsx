@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isValidMicronPageName } from '@/renderer/lib/nomad/micronPageName';
@@ -21,6 +21,7 @@ import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-t
 import MicronPageEditor from './MicronPageEditor';
 import NomadPageAccessDialog from './NomadPageAccessDialog';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
+import { Switch } from './ui/Switch';
 
 /** Starter body for a brand-new page so the preview is not blank. */
 const NEW_PAGE_TEMPLATE = '>New page\n\nEdit this text.\n';
@@ -176,7 +177,28 @@ export default function NomadPageServerPanel({
 
   const setServing = async (enabled: boolean) => {
     await runServingAction(async () => {
-      const body = await setServingApi({ enabled, displayName });
+      const body = await setServingApi({
+        enabled,
+        displayName,
+        allowExecutablePages: status?.allow_executable_pages ?? false,
+      });
+      if (body.ok) {
+        displayNameDirtyRef.current = false;
+        if (body.serving?.display_name != null) {
+          setDisplayName(body.serving.display_name);
+        }
+      }
+      return body;
+    }, 'nomadNetwork.serving.failed');
+  };
+
+  const setAllowExecutablePages = async (allow: boolean) => {
+    await runServingAction(async () => {
+      const body = await setServingApi({
+        enabled: status?.enabled ?? status?.running === true,
+        displayName,
+        allowExecutablePages: allow,
+      });
       if (body.ok) {
         displayNameDirtyRef.current = false;
         if (body.serving?.display_name != null) {
@@ -276,6 +298,7 @@ export default function NomadPageServerPanel({
 
   const serving = status?.running === true;
   const stats = status?.stats;
+  const executablePagesSupported = useMemo(() => window.electronAPI.getPlatform() !== 'win32', []);
   const canPreview =
     serving && Boolean(status?.destination_hash) && typeof onPreviewHostedSite === 'function';
   const hasContentSource = Boolean(status?.content_source?.trim());
@@ -355,6 +378,22 @@ export default function NomadPageServerPanel({
         />
       </label>
 
+      <div data-setting-anchor="nomadNetwork.serving.allowExecutablePages">
+        <Switch
+          checked={Boolean(status?.allow_executable_pages)}
+          disabled={busy || !sidecarRunning || !executablePagesSupported}
+          onChange={(next) => {
+            void setAllowExecutablePages(next);
+          }}
+          label={t('nomadNetwork.serving.allowExecutablePages')}
+          description={
+            executablePagesSupported
+              ? t('nomadNetwork.serving.allowExecutablePagesHint')
+              : t('nomadNetwork.serving.allowExecutablePagesUnsupported')
+          }
+        />
+      </div>
+
       <div data-setting-anchor="nomadNetwork.serving.startStop" className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -417,6 +456,7 @@ export default function NomadPageServerPanel({
             pages: status?.page_count ?? 0,
             files: status?.file_count ?? 0,
             requests: stats.request_count,
+            visitors: stats.visitors ?? 0,
           })}
         </p>
       ) : null}

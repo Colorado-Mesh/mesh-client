@@ -14,10 +14,10 @@ pub fn nomad_file_name_from_path(path: &str) -> String {
 /// Prefer Resource metadata `{"name": <path bytes>}` when present (NomadNet
 /// `serve_file` / `ReplyFile`), else fall back to the request path basename.
 pub fn nomad_file_name_from_metadata_or_path(metadata: Option<&[u8]>, path: &str) -> String {
-    if let Some(meta) = metadata {
-        if let Some(name) = file_name_from_resource_metadata(meta) {
-            return name;
-        }
+    if let Some(meta) = metadata
+        && let Some(name) = file_name_from_resource_metadata(meta)
+    {
+        return name;
     }
     nomad_file_name_from_path(path)
 }

@@ -4,8 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
-import { supportsOfflineMapDownload } from '@/shared/offlineMaps/basemapRegistry';
+import {
+  isOfflineMapBasemapId,
+  supportsOfflineMapDownload,
+} from '@/shared/offlineMaps/basemapRegistry';
+import { isCustomMapSourceId } from '@/shared/offlineMaps/customMapSources';
 import { OFFLINE_MAP_MAX_ZOOM } from '@/shared/offlineMaps/tileMath';
+
+import { CustomMapSourcesSection, formatBytes } from './CustomMapSourcesSection';
 
 const AUTO_CACHE_KEY = 'mesh-client:offlineMapsAutoCache';
 
@@ -24,12 +30,6 @@ function writeAutoCache(on: boolean): void {
   } catch {
     // catch-no-log-ok
   }
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /** Approximate geographic bounds for a center+zoom (Web Mercator viewport). */
@@ -80,7 +80,10 @@ export function OfflineMapsSection() {
     progressRef.current = progress;
   }, [progress]);
 
-  const downloadSupported = supportsOfflineMapDownload(basemapId);
+  // Custom XYZ / MBTiles sources never reach the bulk downloader (view-cache / package only).
+  const downloadBasemapId =
+    isOfflineMapBasemapId(basemapId) && supportsOfflineMapDownload(basemapId) ? basemapId : null;
+  const downloadSupported = downloadBasemapId !== null;
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -126,7 +129,7 @@ export function OfflineMapsSection() {
   }, [refreshStatus, t]);
 
   useEffect(() => {
-    if (!downloadSupported || !autoCache || !viewport) return;
+    if (downloadBasemapId === null || !autoCache || !viewport) return;
     if (progressRef.current != null) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const z = Math.floor(viewport.zoom);
@@ -146,7 +149,7 @@ export function OfflineMapsSection() {
             bounds,
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
-            basemapId,
+            basemapId: downloadBasemapId,
           });
           if (!est.withinCaps || est.tileCount > 500) return;
           lastAutoCacheKeyRef.current = key;
@@ -154,7 +157,7 @@ export function OfflineMapsSection() {
             bounds,
             minZoom: z,
             maxZoom: Math.min(OFFLINE_MAP_MAX_ZOOM, z + 1),
-            basemapId,
+            basemapId: downloadBasemapId,
           });
         } catch (e: unknown) {
           console.debug('[OfflineMaps] auto-cache skipped ' + errLikeToLogString(e));
@@ -164,10 +167,10 @@ export function OfflineMapsSection() {
     return () => {
       clearTimeout(timer);
     };
-  }, [autoCache, viewport, basemapId, downloadSupported]);
+  }, [autoCache, viewport, basemapId, downloadBasemapId]);
 
   const startEstimate = async () => {
-    if (!downloadSupported) return;
+    if (downloadBasemapId === null) return;
     setEstimating(true);
     setConfirm(null);
     setStatusLine(null);
@@ -184,7 +187,7 @@ export function OfflineMapsSection() {
         bounds,
         minZoom,
         maxZoom,
-        basemapId,
+        basemapId: downloadBasemapId,
       });
       if (!est.withinCaps) {
         setStatusLine(t('mapPanel.offlineMaps.tooLarge'));
@@ -206,13 +209,13 @@ export function OfflineMapsSection() {
   };
 
   const confirmDownload = async () => {
-    if (!confirm || !downloadSupported) return;
+    if (!confirm || downloadBasemapId === null) return;
     try {
       const { jobId } = await window.electronAPI.offlineMaps.download({
         bounds: confirm.bounds,
         minZoom: confirm.minZoom,
         maxZoom: confirm.maxZoom,
-        basemapId,
+        basemapId: downloadBasemapId,
       });
       setProgress({ jobId, completed: 0, total: confirm.tileCount, failed: 0, paused: false });
       setConfirm(null);
@@ -261,7 +264,11 @@ export function OfflineMapsSection() {
         {t('mapPanel.offlineMaps.autoCache')}
       </label>
       {!downloadSupported ? (
-        <p className="text-2xs text-ink-400">{t('mapPanel.offlineMaps.viewCacheOnly')}</p>
+        <p className="text-2xs text-ink-400">
+          {isCustomMapSourceId(basemapId)
+            ? t('mapPanel.offlineMaps.viewCacheOnlyCustom')
+            : t('mapPanel.offlineMaps.viewCacheOnly')}
+        </p>
       ) : null}
       <button
         type="button"
@@ -350,6 +357,7 @@ export function OfflineMapsSection() {
         {t('mapPanel.offlineMaps.clear')}
       </button>
       {statusLine ? <p className="text-2xs text-ink-400">{statusLine}</p> : null}
+      <CustomMapSourcesSection />
     </div>
   );
 }

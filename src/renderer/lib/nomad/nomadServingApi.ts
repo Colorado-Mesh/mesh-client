@@ -49,6 +49,7 @@ export async function getServingStatus(): Promise<NomadServingApiResponse> {
 export async function setServing(opts: {
   enabled: boolean;
   displayName?: string;
+  allowExecutablePages?: boolean;
 }): Promise<NomadServingApiResponse> {
   if (!(await isReticulumSidecarRunning())) {
     return { ok: false, error: 'sidecar_not_running' };
@@ -57,6 +58,7 @@ export async function setServing(opts: {
     const body = (await window.electronAPI.reticulum.proxyPut('/api/v1/nomadnetwork/serving', {
       enabled: opts.enabled,
       display_name: opts.displayName?.trim() || undefined,
+      allow_executable_pages: opts.allowExecutablePages,
     })) as { ok?: boolean; serving?: NomadServingStatus; error?: string };
     if (body.ok === false) {
       return { ok: false, error: body.error ?? 'serving_update_failed', serving: body.serving };

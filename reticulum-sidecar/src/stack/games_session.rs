@@ -404,10 +404,10 @@ impl GamesSessionManager {
         if let Ok(mut map) = self.msg_to_session.lock() {
             map.retain(|_, (sid, _)| sid != session_id);
         }
-        if let Some(outbound) = &self.outbound_store {
-            if let Err(e) = outbound.delete(session_id, &self.identity_id) {
-                tracing::warn!(target: "games", "failed to delete outbound row: {e}");
-            }
+        if let Some(outbound) = &self.outbound_store
+            && let Err(e) = outbound.delete(session_id, &self.identity_id)
+        {
+            tracing::warn!(target: "games", "failed to delete outbound row: {e}");
         }
         Ok(())
     }
@@ -808,16 +808,16 @@ impl GamesSessionManager {
         ) {
             tracing::warn!(target: "games", "lrgp rollback_outgoing failed: {e}");
         }
-        if let Some(outbound) = &self.outbound_store {
-            if let Err(e) = outbound.set_delivery_state(
+        if let Some(outbound) = &self.outbound_store
+            && let Err(e) = outbound.set_delivery_state(
                 &action.session_id,
                 &self.identity_id,
                 "failed",
                 None,
                 Some(&action.app_id),
-            ) {
-                tracing::warn!(target: "games", "failed to set delivery_state=failed: {e}");
-            }
+            )
+        {
+            tracing::warn!(target: "games", "failed to set delivery_state=failed: {e}");
         }
         let err = error.unwrap_or("send_failed");
         self.emit_action_result(&action.app_id, &action.session_id, false, Some(err));
@@ -854,8 +854,8 @@ impl GamesSessionManager {
                 return;
             }
         };
-        if let Some(outbound) = &self.outbound_store {
-            if let Err(e) = outbound.set_delivery_state(
+        if let Some(outbound) = &self.outbound_store
+            && let Err(e) = outbound.set_delivery_state(
                 &session_id,
                 &self.identity_id,
                 mapped,
@@ -865,9 +865,9 @@ impl GamesSessionManager {
                 } else {
                     Some(app_id.as_str())
                 },
-            ) {
-                tracing::warn!(target: "games", "failed to update delivery_state: {e}");
-            }
+            )
+        {
+            tracing::warn!(target: "games", "failed to update delivery_state: {e}");
         }
         let app = if app_id.is_empty() { "ttt" } else { &app_id };
         self.emit_update(app, &session_id, "outbound");
@@ -943,10 +943,10 @@ impl GamesSessionManager {
     ) {
         let mut payload =
             serde_json::json!({ "app_id": app_id, "session_id": session_id, "ok": ok });
-        if let Some(err) = error {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert("error".into(), serde_json::json!(err));
-            }
+        if let Some(err) = error
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert("error".into(), serde_json::json!(err));
         }
         self.emit("games.action_result", &payload);
     }

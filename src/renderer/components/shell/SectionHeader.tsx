@@ -53,7 +53,7 @@ export function SectionHeader({
   };
 
   return (
-    <header className="bg-app-bg border-ink-800 flex h-13 shrink-0 items-center gap-4 border-b pr-4 pl-6">
+    <header className="bg-app-bg border-ink-800 flex h-13 shrink-0 items-center gap-4 border-b ps-6 pe-4">
       <h1 className="sr-only">{t('app.title')}</h1>
       {/* A single-panel section has no tablist; the title labels its panel instead. */}
       <h2
@@ -105,7 +105,7 @@ export function SectionHeader({
           })}
         </div>
       )}
-      <div className="ml-auto flex shrink-0 items-center gap-1">{actions}</div>
+      <div className="ms-auto flex shrink-0 items-center gap-1">{actions}</div>
     </header>
   );
 }

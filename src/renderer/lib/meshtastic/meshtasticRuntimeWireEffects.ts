@@ -11,6 +11,10 @@ import { setConnection } from '../../stores/connectionStore';
 import { setMeshtasticConfigSlice } from '../../stores/deviceStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
+import {
+  applyKeyVerificationClientNotification,
+  type KeyVerificationClientNotification,
+} from '../../stores/keyVerificationStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { persistDbWrite } from '../dbPersistRetry';
 import { connectionDriver } from '../drivers/ConnectionDriver';
@@ -19,6 +23,7 @@ import type { OurPosition } from '../gpsSource';
 import { getIdentityNode } from '../identityStoreReads';
 import { attachMeshtasticIngest, type MeshtasticIngestSession } from '../ingest/meshtasticIngest';
 import { attachMeshtasticProtocolIngress, meshtasticTransportParams } from '../meshIdentityBridge';
+import { writeToRadioWithoutQueue } from '../meshtasticBacklogUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
 import type { MeshtasticRemoteAdminClient } from '../meshtasticRemoteAdmin';
 import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
@@ -50,6 +55,10 @@ import {
   cancelMeshtasticGetMetadataAfterConfigure,
   scheduleMeshtasticGetMetadataAfterConfigure,
 } from './meshtasticGetMetadataAfterConfigure';
+import {
+  buildKeyVerificationAdminToRadioBytes,
+  registerMeshtasticKeyVerificationSender,
+} from './meshtasticKeyVerification';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import { recordMeshtasticLockdownStatus } from './meshtasticLockdown';
 import type {
@@ -61,6 +70,7 @@ import type {
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 import { attachMeshtasticNodeSideEffects } from './meshtasticNodeSideEffects';
+import { registerMeshtasticNonChatWirePacketId } from './meshtasticOutboundCoordination';
 import type { MeshtasticPostConfigureSilenceTracker } from './meshtasticPostConfigureSilence';
 import { attachMeshtasticRawPacketSideEffects } from './meshtasticRawPacketSideEffects';
 import { MESHTASTIC_REGION_PRESETS_SLICE_KEY } from './meshtasticRegionPresets';
@@ -883,12 +893,34 @@ export function attachMeshtasticRuntimeWireEffects(
     if (variant?.case === 'clientNotification') {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       const message = variant.value?.message;
+      const identityId = meshtasticIdentityIdRef.current;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+      const notification: KeyVerificationClientNotification | undefined = variant.value;
+      if (identityId && applyKeyVerificationClientNotification(identityId, notification)) {
+        // Key-verification progress is surfaced by KeyVerificationDialog, not as a config error.
+        return;
+      }
       if (typeof message === 'string' && message.trim()) {
         recordMeshtasticClientNotification(message);
       }
     }
   });
   unsubscribesRef.current.push(unsubFromRadio);
+
+  // Local-radio admin sender for the manual key-verification flow (KeyVerificationAdmin).
+  unsubscribesRef.current.push(
+    registerMeshtasticKeyVerificationSender(async (request) => {
+      const device = deviceRef.current;
+      const myNodeNum = myNodeNumRef.current;
+      if (!device || !myNodeNum) throw new Error('No Meshtastic radio for key verification');
+      const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
+      registerMeshtasticNonChatWirePacketId(packetId);
+      await writeToRadioWithoutQueue(
+        device,
+        buildKeyVerificationAdminToRadioBytes({ myNodeNum, packetId, request }),
+      );
+    }),
+  );
 
   // Traceroute correlation → meshtasticTraceSideEffects (trace_route DomainEvent).
 

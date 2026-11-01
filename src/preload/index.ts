@@ -58,7 +58,11 @@ import type {
   NotificationSoundImport,
   NotificationSoundRecord,
 } from '../shared/notificationSounds';
-import type { OfflineMapBasemapId } from '../shared/offlineMaps/basemapRegistry';
+import type { MapSourceId, OfflineMapBasemapId } from '../shared/offlineMaps/basemapRegistry';
+import type {
+  AddXyzSourceRequest,
+  ImportMbtilesRequest,
+} from '../shared/offlineMaps/customMapSources';
 import {
   RENDERER_MEMORY_AUTO_SAMPLE_CHANNEL,
   type RendererMemoryAutoSamplePayload,
@@ -1173,8 +1177,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }) => ipcRenderer.invoke('offline-maps:download', req),
     cancel: (jobId: string) => ipcRenderer.invoke('offline-maps:cancel', jobId),
     status: () => ipcRenderer.invoke('offline-maps:status'),
-    clear: (source?: OfflineMapBasemapId | 'all') =>
-      ipcRenderer.invoke('offline-maps:clear', source),
+    clear: (source?: MapSourceId | 'all') => ipcRenderer.invoke('offline-maps:clear', source),
+    custom: {
+      list: () => ipcRenderer.invoke('offline-maps:custom-list'),
+      addXyz: (req: AddXyzSourceRequest) => ipcRenderer.invoke('offline-maps:custom-add-xyz', req),
+      remove: (id: string) => ipcRenderer.invoke('offline-maps:custom-remove', id),
+      pickMbtiles: () => ipcRenderer.invoke('offline-maps:custom-pick-mbtiles'),
+      importMbtiles: (req: ImportMbtilesRequest) =>
+        ipcRenderer.invoke('offline-maps:custom-import-mbtiles', req),
+    },
     onProgress: (
       cb: (info: {
         jobId: string;

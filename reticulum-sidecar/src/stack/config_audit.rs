@@ -137,22 +137,21 @@ pub fn audit_config(
         ));
     }
 
-    if stack_running {
-        if let Some(auto) = live_interfaces
+    if stack_running
+        && let Some(auto) = live_interfaces
             .iter()
             .find(|i| i.iface_type == "auto" || i.name == "Default Interface")
-        {
-            if auto.enabled && auto.status != "up" {
-                issues.push(issue(
-                    "auto_interface_down",
-                    "warning",
-                    Some(auto.id.clone()),
-                    Some(auto.name.clone()),
-                    format!("AutoInterface \"{}\" is enabled but down", auto.name),
-                    Some("restart_stack"),
-                ));
-            }
-        }
+        && auto.enabled
+        && auto.status != "up"
+    {
+        issues.push(issue(
+            "auto_interface_down",
+            "warning",
+            Some(auto.id.clone()),
+            Some(auto.name.clone()),
+            format!("AutoInterface \"{}\" is enabled but down", auto.name),
+            Some("restart_stack"),
+        ));
     }
 
     let shared_live = live_interfaces
@@ -217,20 +216,19 @@ pub fn audit_config(
     for r in &enabled_rnodes {
         if let Some(profile) =
             match_params_to_profile(r.frequency, r.bandwidth, r.spreading_factor, r.coding_rate)
+            && profile.tier == "fallback"
         {
-            if profile.tier == "fallback" {
-                issues.push(issue(
-                    "rf_using_fallback",
-                    "info",
-                    Some(r.id.clone()),
-                    Some(r.name.clone()),
-                    format!(
-                        "RNode \"{}\" uses global fallback profile {}",
-                        r.name, profile.id
-                    ),
-                    Some("edit"),
-                ));
-            }
+            issues.push(issue(
+                "rf_using_fallback",
+                "info",
+                Some(r.id.clone()),
+                Some(r.name.clone()),
+                format!(
+                    "RNode \"{}\" uses global fallback profile {}",
+                    r.name, profile.id
+                ),
+                Some("edit"),
+            ));
         }
     }
 

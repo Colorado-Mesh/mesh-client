@@ -8,14 +8,11 @@ import { Marker, Popup, useMap } from 'react-leaflet';
 import { incidentMarkersFrom } from '@/renderer/components/map/emcommMapLayers';
 import { MAP_CHIP_CLASS } from '@/renderer/components/map/mapControlClasses';
 import { MeshMapShell } from '@/renderer/components/map/MeshMapShell';
+import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
-import {
-  DEFAULT_MAP_BASEMAP_ID,
-  getMapOverlayColors,
-  MAP_BASEMAPS,
-} from '@/renderer/lib/mapBasemapUtils';
+import { getMapOverlayColors } from '@/renderer/lib/mapBasemapUtils';
 import {
   joinRmapDiscoveryWithPeers,
   matchesRmapInterfaceFilter,
@@ -94,7 +91,7 @@ export default function ReticulumMapPanel({
   const { addToast } = useToast();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const basemapId = useMapLayerStore((s) => s.basemapId);
-  const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
+  const basemap = useMapBasemap(basemapId);
   const overlayColors = getMapOverlayColors(basemap.isDark);
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const incidents = useIncidentStore((s) => s.incidents);

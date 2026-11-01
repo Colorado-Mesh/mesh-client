@@ -2,6 +2,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import {
+  MESHCORE_CAPABILITIES,
+  MESHTASTIC_CAPABILITIES,
+} from '@/renderer/lib/radio/BaseRadioProvider';
+
 import AdminPanel from './AdminPanel';
 import { ToastProvider } from './Toast';
 
@@ -124,6 +129,90 @@ describe('AdminPanel', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Failed: reboot failed')).toBeInTheDocument();
+    });
+  });
+
+  it('explains unavailable MeshCore admin actions', () => {
+    renderAdmin({ capabilities: MESHCORE_CAPABILITIES });
+
+    const notes = screen
+      .getAllByRole('note')
+      .map((n) => n.getAttribute('data-capability-unavailable'));
+    expect(notes).toEqual(
+      expect.arrayContaining(['nodeDbReset', 'shutdown', 'enterDfu', 'rebootOta', 'factoryReset']),
+    );
+    expect(screen.queryByRole('button', { name: /shutdown/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /reboot to ota/i })).toHaveAttribute(
+      'aria-describedby',
+      'admin-unavailable-rebootOta',
+    );
+  });
+
+  it('shows no unavailable notes for fully-capable Meshtastic with handlers wired', () => {
+    renderAdmin({
+      capabilities: MESHTASTIC_CAPABILITIES,
+      onRebootOta: vi.fn().mockResolvedValue(undefined),
+      onEnterDfu: vi.fn().mockResolvedValue(undefined),
+      onFactoryResetConfig: vi.fn().mockResolvedValue(undefined),
+    });
+
+    expect(screen.queryAllByRole('note')).toHaveLength(0);
+  });
+  describe('device firmware flasher', () => {
+    const mtDevice = {
+      protocol: 'meshtastic' as const,
+      isConnected: true,
+      connectionType: 'ble',
+      meshtasticHwModel: '43',
+    };
+
+    it('renders the collapsible flasher for local Meshtastic and MeshCore targets', () => {
+      renderAdmin({ capabilities: MESHTASTIC_CAPABILITIES, firmwareFlashDevice: mtDevice });
+      const details = screen.getByTestId('admin-firmware-flash');
+      expect(details.tagName).toBe('DETAILS');
+      expect(screen.getByLabelText('Board to flash')).toHaveValue('meshtastic:heltec-v3');
+    });
+
+    it('supports MeshCore through the same section', () => {
+      renderAdmin({
+        capabilities: MESHCORE_CAPABILITIES,
+        firmwareFlashDevice: {
+          protocol: 'meshcore',
+          isConnected: true,
+          connectionType: 'ble',
+          meshcoreManufacturerModel: 'RAK 4631',
+        },
+      });
+      expect(screen.getByLabelText('Board to flash')).toHaveValue('meshcore:rak4631');
+    });
+
+    it('hides the flasher for remote admin targets (USB only)', () => {
+      renderAdmin({
+        capabilities: MESHTASTIC_CAPABILITIES,
+        firmwareFlashDevice: mtDevice,
+        configTarget: {
+          mode: 'remote',
+          nodeNum: 1,
+          isReady: true,
+          isLoading: false,
+        },
+      });
+      expect(screen.queryByTestId('admin-firmware-flash')).toBeNull();
+    });
+
+    it('explains why flashing is unavailable when the capability is off', () => {
+      renderAdmin({
+        capabilities: {
+          ...MESHTASTIC_CAPABILITIES,
+          hasDeviceFirmwareFlash: false,
+        },
+      });
+      expect(screen.queryByTestId('admin-firmware-flash')).toBeNull();
+      expect(
+        screen
+          .getAllByRole('note')
+          .some((n) => n.getAttribute('data-capability-unavailable') === 'firmwareFlash'),
+      ).toBe(true);
     });
   });
 });

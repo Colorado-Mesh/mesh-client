@@ -104,10 +104,10 @@ pub async fn rrc_connect(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcConnectBody>,
 ) -> Json<serde_json::Value> {
-    if let Some(nick) = body.nickname.as_deref() {
-        if let Some(err) = reject_oversize("nickname", nick, MAX_NICK_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err }));
-        }
+    if let Some(nick) = body.nickname.as_deref()
+        && let Some(err) = reject_oversize("nickname", nick, MAX_NICK_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
     }
     Json(stack.rrc_connect(&body.dest_hash, body.nickname).await)
 }
@@ -131,10 +131,10 @@ pub async fn rrc_join(
     if let Some(err) = reject_oversize("room", &body.room, MAX_ROOM_CHARS) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
-    if let Some(key) = body.key.as_deref() {
-        if let Some(err) = reject_oversize("room key", key, MAX_ROOM_KEY_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err }));
-        }
+    if let Some(key) = body.key.as_deref()
+        && let Some(err) = reject_oversize("room key", key, MAX_ROOM_KEY_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
     }
     Json(
         stack
@@ -160,10 +160,10 @@ pub async fn rrc_send(
     if let Some(err) = reject_oversize("body", &body.body, MAX_BODY_CHARS) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
-    if let Some(room) = body.room.as_deref() {
-        if let Some(err) = reject_oversize("room", room, MAX_ROOM_CHARS) {
-            return Json(serde_json::json!({ "ok": false, "error": err }));
-        }
+    if let Some(room) = body.room.as_deref()
+        && let Some(err) = reject_oversize("room", room, MAX_ROOM_CHARS)
+    {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
     }
     Json(
         stack

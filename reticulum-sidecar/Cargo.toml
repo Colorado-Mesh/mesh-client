@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Headless Reticulum/LXMF daemon for mesh-client"
 license = "AGPL-3.0-or-later"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [[bin]]
 name = "mesh-client-reticulum"

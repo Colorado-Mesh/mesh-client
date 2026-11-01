@@ -86,6 +86,14 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'gamesPanel.status.', leafKeys: true },
   { prefix: 'gamesPanel.filters.', leafKeys: true },
   { prefix: 'gamesPanel.chess.pieceNames.', leafKeys: true },
+  // Composed in getCapabilityUnavailableReason() then passed to t(key).
+  {
+    prefix: 'capabilityUnavailable.',
+    leafKeys: true,
+    alwaysActive: true,
+  },
+  { prefix: 'remoteShell.phase.', leafKeys: true },
+  { prefix: 'telemetryPanel.cayenne.kind.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

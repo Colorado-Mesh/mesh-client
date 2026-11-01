@@ -14,7 +14,32 @@ pub async fn lxmf_send(
     Json(body): Json<LxmfSendRequest>,
 ) -> Json<serde_json::Value> {
     match stack.lxmf_send(body).await {
+        // StackHandle already stamps `{ ok: true, message }` on success and returns
+        // `{ ok: false, error }` payloads unchanged — do not re-wrap failures as success.
+        Ok(payload) if payload.get("ok").is_some() => Json(payload),
         Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+/// Cancel a pending outbound LXMF message (e.g. a stalled attachment send).
+pub async fn lxmf_cancel_message(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_cancel_outbound(&hash).await {
+        Ok(payload) => Json(payload),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+/// Outbound transfer progress for a pending message (0.0..=1.0).
+pub async fn lxmf_message_progress(
+    State(stack): State<Arc<StackHandle>>,
+    Path(hash): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.lxmf_outbound_progress(&hash).await {
+        Ok(payload) => Json(payload),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

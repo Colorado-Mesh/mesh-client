@@ -289,12 +289,12 @@ pub fn parse_resource_envelope_body(body: Option<&Value>) -> Option<RrcResourceE
             Some(1) => kind = as_text(v).map(str::to_string),
             Some(2) => size = as_u64(v),
             Some(3) => {
-                if let Value::Bytes(b) = v {
-                    if b.len() == 32 {
-                        let mut arr = [0u8; 32];
-                        arr.copy_from_slice(b);
-                        sha256 = Some(arr);
-                    }
+                if let Value::Bytes(b) = v
+                    && b.len() == 32
+                {
+                    let mut arr = [0u8; 32];
+                    arr.copy_from_slice(b);
+                    sha256 = Some(arr);
                 }
             }
             Some(4) => encoding = as_text(v).map(str::to_string),
@@ -402,10 +402,11 @@ fn parse_identity_hash_value(item: &Value) -> Option<(String, Option<String>)> {
                             if b.len() == RRC_IDENTITY_HASH_LEN {
                                 hash = Some(hex::encode(b));
                             }
-                        } else if let Some(t) = as_text(v) {
-                            if t.len() == 32 && t.chars().all(|c| c.is_ascii_hexdigit()) {
-                                hash = Some(t.to_lowercase());
-                            }
+                        } else if let Some(t) = as_text(v)
+                            && t.len() == 32
+                            && t.chars().all(|c| c.is_ascii_hexdigit())
+                        {
+                            hash = Some(t.to_lowercase());
                         }
                     }
                     Some(1) => nick = as_text(v).map(str::to_string),

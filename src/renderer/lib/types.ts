@@ -384,6 +384,8 @@ export interface ChatMessage {
   sender_id: number;
   /** Reticulum LXMF destination hash when `sender_id` is a synthetic node id mapping. */
   reticulum_sender_hash?: string;
+  /** Reticulum LXMF destination (to) hash when known — used to resolve outbound DM peers. */
+  reticulum_destination_hash?: string;
   /** Stable LXMF message hash for ratspeak.chat.v2 threaded replies. */
   reticulum_message_hash?: string;
   /** Reticulum reply target message hash (hex). */

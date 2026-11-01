@@ -14,13 +14,17 @@ import { LORA_BLOCKLIST_SCOPE_ID } from '../lib/loraBlocklist';
 import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { setMeshcoreRepeaterCredential } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
+import { registerMeshtasticKeyVerificationSender } from '../lib/meshtastic/meshtasticKeyVerification';
 import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
+  OFFLINE_MESHTASTIC_IDENTITY_ID,
 } from '../lib/offlineProtocolIdentities';
 import type { MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
+import { setConnection } from '../stores/connectionStore';
+import { resetKeyVerificationStore, useKeyVerificationStore } from '../stores/keyVerificationStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import NodeDetailModal from './NodeDetailModal';
@@ -1054,5 +1058,85 @@ describe('NodeDetailModal LoRa node block', () => {
     );
     expect(await screen.findByRole('button', { name: 'Unblock' })).toBeInTheDocument();
     expect(useBlockStore.getState().isBlocked(String(mockNode.node_id), 'meshtastic')).toBe(true);
+  });
+});
+
+describe('NodeDetailModal key verification', () => {
+  const peerKey = 'ab'.repeat(32);
+
+  function renderVerify(opts: {
+    firmware?: string;
+    radioConnected?: boolean;
+    node?: Partial<MeshNode>;
+    protocol?: 'meshtastic' | 'meshcore';
+  }) {
+    const identityId = OFFLINE_MESHTASTIC_IDENTITY_ID;
+    setConnection(identityId, { firmwareVersion: opts.firmware });
+    return render(
+      <NodeDetailModal
+        node={{ ...mockNode, public_key_hex: peerKey, ...opts.node }}
+        protocol={opts.protocol ?? 'meshtastic'}
+        onClose={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        radioConnected={opts.radioConnected ?? true}
+        homeNode={null}
+      />,
+    );
+  }
+
+  beforeEach(() => {
+    ensureOfflineProtocolIdentities();
+    resetKeyVerificationStore();
+    useNodeStore.setState({ nodes: {} });
+  });
+
+  it('shows an unsupported-firmware notice on firmware older than 2.7', () => {
+    renderVerify({ firmware: '2.6.11.abc1234' });
+    expect(screen.getByText(/needs Meshtastic firmware 2\.7 or newer/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verify key…' })).toBeNull();
+  });
+
+  it('starts verification on supported firmware', async () => {
+    const sender = vi.fn().mockResolvedValue(undefined);
+    const unregister = registerMeshtasticKeyVerificationSender(sender);
+    const user = userEvent.setup();
+    renderVerify({ firmware: '2.7.15.abc1234' });
+    await user.click(screen.getByRole('button', { name: 'Verify key…' }));
+    expect(sender).toHaveBeenCalledWith({ type: 'initiate', remoteNodeNum: mockNode.node_id });
+    expect(useKeyVerificationStore.getState().session).toMatchObject({
+      phase: 'initiating',
+      remoteNodeNum: mockNode.node_id,
+    });
+    unregister();
+  });
+
+  it('explains the trust model', () => {
+    renderVerify({ firmware: '2.7.0' });
+    expect(screen.getByText('How key trust works')).toBeInTheDocument();
+    expect(screen.getByText(/compared a security number/)).toBeInTheDocument();
+    expect(screen.getByText(/checked a signature from this node/)).toBeInTheDocument();
+  });
+
+  it('asks for a public key when the node has none', () => {
+    renderVerify({ firmware: '2.7.0', node: { public_key_hex: undefined } });
+    expect(screen.getByText(/has not shared a public key yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verify key…' })).toBeNull();
+  });
+
+  it('disables verification for an already-verified node', () => {
+    renderVerify({ firmware: '2.7.0', node: { key_manually_verified: true } });
+    expect(screen.getByRole('button', { name: 'Verify key…' })).toBeDisabled();
+  });
+
+  it('hides the section for non-Meshtastic protocols', () => {
+    renderVerify({ firmware: '2.7.0', protocol: 'meshcore' });
+    expect(screen.queryByText('Verify public key')).toBeNull();
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = renderVerify({ firmware: '2.7.0' });
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

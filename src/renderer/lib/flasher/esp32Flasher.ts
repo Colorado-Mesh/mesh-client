@@ -1,6 +1,6 @@
 import type { FileEntry } from '@zip.js/zip.js';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
-import type { FlashSizeValues } from 'esptool-js';
+import type { FlashFreqValues, FlashModeValues, FlashSizeValues } from 'esptool-js';
 import { ESPLoader, Transport } from 'esptool-js';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
@@ -19,6 +19,8 @@ const ESP32_SYNC_TIMEOUT_MS = 45_000;
 const ESP32_SYNC_MAX_ATTEMPTS = 3;
 /** Abort writeFlash when no bytes progress (USB drop mid-transfer). */
 const ESP32_FLASH_STALL_TIMEOUT_MS = 60_000;
+/** Bound transport.disconnect so a stuck serial write cannot block cancel/stall cleanup. */
+const ESP32_DISCONNECT_TIMEOUT_MS = 3_000;
 /** Reject instant "success" when almost no firmware bytes were written. */
 const MIN_FLASH_BYTES_WRITTEN = 8192;
 
@@ -73,8 +75,14 @@ async function runEsp32MainWithTimeout(
 async function connectEsp32Bootloader(
   serialPort: SerialPort,
   progressCallback?: FlashProgressCallback,
+  options: { skipRNodePrepare?: boolean } = {},
 ): Promise<{ esploader: ESPLoader; transport: Transport }> {
-  await prepareEsp32PortForFlash(serialPort);
+  if (options.skipRNodePrepare) {
+    // Meshtastic / MeshCore boards are not RNodes — do not send KISS probes to them.
+    await closeSerialPortIfOpen(serialPort);
+  } else {
+    await prepareEsp32PortForFlash(serialPort);
+  }
 
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= ESP32_SYNC_MAX_ATTEMPTS; attempt++) {
@@ -124,78 +132,10 @@ export async function flashEsp32Firmware(
       filesToFlash.push({ address: parseFlashAddress(address), data });
     }
 
-    const totalFirmwareBytes = filesToFlash.reduce((sum, file) => sum + file.data.byteLength, 0);
-    let maxBytesWritten = 0;
-
-    const { esploader, transport } = await connectEsp32Bootloader(serialPort, progressCallback);
-
-    const chipName =
-      (esploader as { chip?: { CHIP_NAME?: string } }).chip?.CHIP_NAME ??
-      (esploader as { chipName?: string }).chipName ??
-      '';
-    if (!chipName) {
-      throw new Error('ESP32_SYNC_FAILED');
-    }
-
-    let lastProgressAt = Date.now();
-    let hasSeenProgress = false;
-    let stallInterval: ReturnType<typeof setInterval> | undefined;
-
-    try {
-      await Promise.race([
-        esploader.writeFlash({
-          fileArray: filesToFlash,
-          flashSize: flashConfig.flash_size,
-          flashMode: 'dio',
-          flashFreq: '80m',
-          eraseAll: false,
-          compress: true,
-          calculateMD5Hash: (image: Uint8Array) => md5HexBytes(image),
-          reportProgress: (_fileIndex: number, written: number, total: number) => {
-            hasSeenProgress = true;
-            lastProgressAt = Date.now();
-            maxBytesWritten = Math.max(maxBytesWritten, written);
-            progressCallback?.(Math.floor((written / total) * 100));
-          },
-        }),
-        new Promise<never>((_, reject) => {
-          stallInterval = setInterval(() => {
-            if (!hasSeenProgress) {
-              return;
-            }
-            if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
-              console.warn('[esp32Flasher] writeFlash stalled — closing serial port');
-              void closeSerialPortIfOpen(serialPort);
-              reject(new Error('ESP32_FLASH_STALLED'));
-            }
-          }, 2000);
-        }),
-      ]);
-    } finally {
-      if (stallInterval) {
-        clearInterval(stallInterval);
-      }
-    }
-
-    if (
-      totalFirmwareBytes >= MIN_FLASH_BYTES_WRITTEN &&
-      maxBytesWritten < MIN_FLASH_BYTES_WRITTEN
-    ) {
-      throw new Error('FLASH_TRANSFER_TOO_SMALL');
-    }
-
-    // Meshchat parity: DTR pulse reboot after writeFlash, then close port cleanly.
-    await transport.setDTR(false);
-    await sleepMillis(100);
-    await transport.setDTR(true);
-    await sleepMillis(1500);
-
-    try {
-      await transport.disconnect();
-    } catch {
-      // catch-no-log-ok port may already be closed
-    }
-    await closeSerialPortIfOpen(serialPort);
+    await flashEsp32Images(serialPort, filesToFlash, {
+      flashSize: flashConfig.flash_size,
+      progressCallback,
+    });
   } finally {
     try {
       await zipReader.close();
@@ -203,6 +143,185 @@ export async function flashEsp32Firmware(
       // catch-no-log-ok zip may already be closed after successful flash
     }
   }
+}
+
+export interface Esp32FlashImage {
+  address: number;
+  data: Uint8Array;
+}
+
+export interface Esp32FlashImagesOptions {
+  flashSize: FlashSizeValues;
+  /** Defaults to `dio` (RNode catalog behavior). Use `keep` to preserve the image header. */
+  flashMode?: FlashModeValues;
+  /** Defaults to `80m` (RNode catalog behavior). Use `keep` to preserve the image header. */
+  flashFreq?: FlashFreqValues;
+  progressCallback?: FlashProgressCallback;
+  /** Cancellation closes the serial port; rejects with `ESP32_FLASH_CANCELLED`. */
+  signal?: AbortSignal;
+  /**
+   * Fail closed: when set, the connected chip must report exactly this `CHIP_NAME`
+   * (e.g. `ESP32-S3`) before any byte is written; otherwise `ESP32_CHIP_MISMATCH`.
+   */
+  expectedChipName?: string;
+  /** Skip the RNode reset probe (non-RNode firmware such as Meshtastic / MeshCore). */
+  skipRNodePrepare?: boolean;
+}
+
+function esp32ImagesEndBytes(images: readonly Esp32FlashImage[]): number {
+  return images.reduce((max, image) => Math.max(max, image.address + image.data.byteLength), 0);
+}
+
+/** Disconnect the esptool Transport first; fall back to closing the SerialPort if needed. */
+async function disconnectEsp32Transport(
+  transport: Transport,
+  serialPort: SerialPort,
+): Promise<void> {
+  try {
+    // Do not await disconnect forever — a mid-write hang would block abort/stall cleanup.
+    await Promise.race([transport.disconnect(), sleepMillis(ESP32_DISCONNECT_TIMEOUT_MS)]);
+  } catch {
+    // catch-no-log-ok port may already be closed
+  }
+  await closeSerialPortIfOpen(serialPort);
+}
+
+/**
+ * Write already-extracted images at explicit flash addresses (shared by the RNode zip flow and
+ * Meshtastic / MeshCore device firmware). Progress, MD5 verify, stall watchdog, and the
+ * min-bytes sanity check are identical for every caller.
+ */
+export async function flashEsp32Images(
+  serialPort: SerialPort,
+  filesToFlash: readonly Esp32FlashImage[],
+  options: Esp32FlashImagesOptions,
+): Promise<void> {
+  const {
+    flashSize,
+    flashMode = 'dio',
+    flashFreq = '80m',
+    progressCallback,
+    signal,
+    expectedChipName,
+    skipRNodePrepare,
+  } = options;
+  if (signal?.aborted) throw new Error('ESP32_FLASH_CANCELLED');
+
+  const totalFirmwareBytes = filesToFlash.reduce((sum, file) => sum + file.data.byteLength, 0);
+  let maxBytesWritten = 0;
+
+  const { esploader, transport } = await connectEsp32Bootloader(serialPort, progressCallback, {
+    skipRNodePrepare,
+  });
+
+  const chipName =
+    (esploader as { chip?: { CHIP_NAME?: string } }).chip?.CHIP_NAME ??
+    (esploader as { chipName?: string }).chipName ??
+    '';
+  if (!chipName) {
+    throw new Error('ESP32_SYNC_FAILED');
+  }
+  if (expectedChipName && chipName !== expectedChipName) {
+    console.warn('[esp32Flasher] chip mismatch — refusing to write', {
+      chipName,
+      expectedChipName,
+    });
+    await disconnectEsp32Transport(transport, serialPort);
+    throw new Error('ESP32_CHIP_MISMATCH');
+  }
+  if (expectedChipName) {
+    // Never write an image that cannot fit the detected flash (JEDEC size byte); unknown sizes
+    // fall back to the catalog bound the caller already validated.
+    const sizeId = ((await esploader.readFlashId()) >> 16) & 0xff;
+    const detected = (esploader.DETECTED_FLASH_SIZES as Record<number, string | undefined>)[sizeId];
+    if (detected) {
+      const detectedBytes = esploader.flashSizeBytes(detected as FlashSizeValues);
+      if (Number.isFinite(detectedBytes) && esp32ImagesEndBytes(filesToFlash) > detectedBytes) {
+        await disconnectEsp32Transport(transport, serialPort);
+        throw new Error('ESP32_IMAGE_EXCEEDS_FLASH');
+      }
+    }
+  }
+  if (signal?.aborted) {
+    await disconnectEsp32Transport(transport, serialPort);
+    throw new Error('ESP32_FLASH_CANCELLED');
+  }
+
+  let lastProgressAt = Date.now();
+  let hasSeenProgress = false;
+  let stallInterval: ReturnType<typeof setInterval> | undefined;
+  let onAbort: (() => void) | undefined;
+
+  try {
+    await Promise.race([
+      esploader.writeFlash({
+        fileArray: filesToFlash.map((file) => ({ address: file.address, data: file.data })),
+        flashSize,
+        flashMode,
+        flashFreq,
+        eraseAll: false,
+        compress: true,
+        calculateMD5Hash: (image: Uint8Array) => md5HexBytes(image),
+        reportProgress: (_fileIndex: number, written: number, total: number) => {
+          hasSeenProgress = true;
+          lastProgressAt = Date.now();
+          maxBytesWritten = Math.max(maxBytesWritten, written);
+          progressCallback?.(Math.floor((written / total) * 100));
+        },
+      }),
+      new Promise<never>((_, reject) => {
+        stallInterval = setInterval(() => {
+          if (!hasSeenProgress) {
+            return;
+          }
+          if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
+            console.warn('[esp32Flasher] writeFlash stalled — disconnecting');
+            void disconnectEsp32Transport(transport, serialPort).then(
+              () => {
+                reject(new Error('ESP32_FLASH_STALLED'));
+              },
+              () => {
+                reject(new Error('ESP32_FLASH_STALLED'));
+              },
+            );
+          }
+        }, 2000);
+      }),
+      new Promise<never>((_, reject) => {
+        if (!signal) return;
+        onAbort = () => {
+          void disconnectEsp32Transport(transport, serialPort).then(
+            () => {
+              reject(new Error('ESP32_FLASH_CANCELLED'));
+            },
+            () => {
+              reject(new Error('ESP32_FLASH_CANCELLED'));
+            },
+          );
+        };
+        signal.addEventListener('abort', onAbort, { once: true });
+      }),
+    ]);
+  } finally {
+    if (stallInterval) {
+      clearInterval(stallInterval);
+    }
+    if (onAbort) {
+      signal?.removeEventListener('abort', onAbort);
+    }
+  }
+
+  if (totalFirmwareBytes >= MIN_FLASH_BYTES_WRITTEN && maxBytesWritten < MIN_FLASH_BYTES_WRITTEN) {
+    throw new Error('FLASH_TRANSFER_TOO_SMALL');
+  }
+
+  // Meshchat parity: DTR pulse reboot after writeFlash, then close port cleanly.
+  await transport.setDTR(false);
+  await sleepMillis(100);
+  await transport.setDTR(true);
+  await sleepMillis(1500);
+
+  await disconnectEsp32Transport(transport, serialPort);
 }
 
 export interface Esp32FlashReadOptions {

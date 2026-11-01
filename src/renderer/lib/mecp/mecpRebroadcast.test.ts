@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { MECP_REGEX } from './mecpMessages';
 import {
   clearMecpRebroadcastFingerprintsForTests,
+  describeMecpTargetChannel,
   executeMecpRebroadcast,
   formatMecpRebroadcastNotice,
   type MecpRebroadcastRule,
@@ -221,5 +222,184 @@ describe('mecpRebroadcast', () => {
         },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('mecpRebroadcast → Reticulum', () => {
+  const HUB = 'a'.repeat(32);
+  const PEER = 'b'.repeat(32);
+  const rrcRule: MecpRebroadcastRule = {
+    id: 'rns-rrc',
+    enabled: true,
+    bidirectional: false,
+    endpointA: { protocol: 'meshtastic', channelIndex: 1 },
+    endpointB: { protocol: 'reticulum', kind: 'rrc', hubDestHash: HUB, room: '#emcomm' },
+  };
+  const lxmfSourceRule: MecpRebroadcastRule = {
+    id: 'rns-lxmf',
+    enabled: true,
+    bidirectional: false,
+    endpointA: { protocol: 'reticulum', kind: 'lxmf', destinationHash: PEER },
+    endpointB: { protocol: 'meshcore', channelIndex: 2 },
+  };
+  const candidate = {
+    payload: 'MECP/0/M01',
+    receivedVia: 'rf',
+    isOwn: false,
+    isDrill: false,
+  } as const;
+
+  beforeEach(() => {
+    clearMecpRebroadcastFingerprintsForTests();
+  });
+
+  it('forwards a Meshtastic channel to an RRC room target', () => {
+    const [t] = resolveMecpRebroadcastTargets(
+      { ...candidate, protocol: 'meshtastic', channelIndex: 1 },
+      [rrcRule],
+    );
+    expect(t.protocol).toBe('reticulum');
+    expect(t.reticulum).toEqual(rrcRule.endpointB);
+    expect(describeMecpTargetChannel(t)).toBe(`${HUB.slice(0, 8)}/#emcomm`);
+  });
+
+  it('forwards inbound Reticulum LXMF from a matching peer to LoRa', () => {
+    const targets = resolveMecpRebroadcastTargets(
+      {
+        ...candidate,
+        protocol: 'reticulum',
+        channelIndex: 0,
+        reticulumSenderHash: PEER.toUpperCase(),
+      },
+      [lxmfSourceRule],
+    );
+    expect(targets).toHaveLength(1);
+    expect(targets[0]).toMatchObject({
+      protocol: 'meshcore',
+      channelIndex: 2,
+      fromProtocol: 'reticulum',
+    });
+  });
+
+  it('does not match a different Reticulum sender, and wildcard matches any peer', () => {
+    const other = {
+      ...candidate,
+      protocol: 'reticulum',
+      channelIndex: 0,
+      reticulumSenderHash: 'c'.repeat(32),
+    } as const;
+    expect(resolveMecpRebroadcastTargets(other, [lxmfSourceRule])).toEqual([]);
+    const wildcard: MecpRebroadcastRule = {
+      ...lxmfSourceRule,
+      endpointA: { protocol: 'reticulum', kind: 'lxmf', destinationHash: '*' },
+    };
+    expect(resolveMecpRebroadcastTargets(other, [wildcard])).toHaveLength(1);
+  });
+
+  it('never targets a wildcard peer or bounces back to the sending peer', () => {
+    const toWildcard: MecpRebroadcastRule = {
+      ...baseRule,
+      endpointB: { protocol: 'reticulum', kind: 'lxmf', destinationHash: '*' },
+    };
+    expect(
+      resolveMecpRebroadcastTargets({ ...candidate, protocol: 'meshtastic', channelIndex: 0 }, [
+        toWildcard,
+      ]),
+    ).toEqual([]);
+
+    const bounce: MecpRebroadcastRule = {
+      id: 'b',
+      enabled: true,
+      bidirectional: true,
+      endpointA: { protocol: 'reticulum', kind: 'lxmf', destinationHash: '*' },
+      endpointB: { protocol: 'reticulum', kind: 'lxmf', destinationHash: PEER },
+    };
+    expect(
+      resolveMecpRebroadcastTargets(
+        { ...candidate, protocol: 'reticulum', channelIndex: 0, reticulumSenderHash: PEER },
+        [bounce],
+      ),
+    ).toEqual([]);
+  });
+
+  it('RRC endpoints are destination-only (do not match inbound Reticulum)', () => {
+    const rule: MecpRebroadcastRule = { ...rrcRule, bidirectional: true };
+    expect(
+      resolveMecpRebroadcastTargets(
+        { ...candidate, protocol: 'reticulum', channelIndex: 0, reticulumSenderHash: PEER },
+        [rule],
+      ),
+    ).toEqual([]);
+  });
+
+  it('fingerprints per RRC room so two rooms each get one copy', () => {
+    const room2: MecpRebroadcastRule = {
+      ...rrcRule,
+      id: 'r2',
+      endpointB: { protocol: 'reticulum', kind: 'rrc', hubDestHash: HUB, room: '#other' },
+    };
+    const first = resolveMecpRebroadcastTargets(
+      { ...candidate, protocol: 'meshtastic', channelIndex: 1 },
+      [rrcRule, room2],
+    );
+    expect(first).toHaveLength(2);
+    expect(
+      resolveMecpRebroadcastTargets({ ...candidate, protocol: 'meshtastic', channelIndex: 1 }, [
+        rrcRule,
+      ]),
+    ).toEqual([]);
+  });
+
+  it('executeMecpRebroadcast sends payload then a Reticulum-labelled notice', async () => {
+    const sends: string[] = [];
+    await executeMecpRebroadcast(
+      {
+        ...candidate,
+        protocol: 'reticulum',
+        channelIndex: 0,
+        reticulumSenderHash: PEER,
+        senderLabel: 'Ada',
+        sourceChannelName: 'LXMF',
+      },
+      [lxmfSourceRule],
+      (_t, p) => {
+        sends.push(p);
+        return Promise.resolve();
+      },
+    );
+    expect(sends).toEqual(['MECP/0/M01', 'MECP from Ada via Reticulum (LXMF)']);
+  });
+
+  it('parses and validates Reticulum endpoints', () => {
+    const parsed = parseMecpRebroadcastRules([
+      {
+        ...rrcRule,
+        endpointB: { ...rrcRule.endpointB, hubDestHash: HUB.toUpperCase(), room: ' #emcomm ' },
+      },
+      { ...lxmfSourceRule, id: 'ok-lxmf' },
+      {
+        ...lxmfSourceRule,
+        id: 'bad-hash',
+        endpointA: { protocol: 'reticulum', kind: 'lxmf', destinationHash: 'zz' },
+      },
+      {
+        ...rrcRule,
+        id: 'bad-hub',
+        endpointB: { protocol: 'reticulum', kind: 'rrc', hubDestHash: 'abc', room: 'x' },
+      },
+      {
+        ...rrcRule,
+        id: 'no-room',
+        endpointB: { protocol: 'reticulum', kind: 'rrc', hubDestHash: HUB, room: ' ' },
+      },
+      { ...rrcRule, id: 'bad-kind', endpointB: { protocol: 'reticulum', kind: 'nope' } },
+    ]);
+    expect(parsed.map((r) => r.id)).toEqual(['rns-rrc', 'ok-lxmf']);
+    expect(parsed[0]?.endpointB).toEqual({
+      protocol: 'reticulum',
+      kind: 'rrc',
+      hubDestHash: HUB,
+      room: '#emcomm',
+    });
   });
 });

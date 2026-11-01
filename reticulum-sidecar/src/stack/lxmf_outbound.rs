@@ -97,10 +97,10 @@ impl PathRequestGate {
         if self.fail_count.get(&dest).copied().unwrap_or(0) >= PATH_REQUEST_MAX_ATTEMPTS {
             return PathRequestDecision::MaxAttempts;
         }
-        if let Some(until) = self.backoff_until.get(&dest) {
-            if now < *until {
-                return PathRequestDecision::Backoff;
-            }
+        if let Some(until) = self.backoff_until.get(&dest)
+            && now < *until
+        {
+            return PathRequestDecision::Backoff;
         }
         PathRequestDecision::Send
     }
@@ -343,6 +343,19 @@ impl LxmfOutboundDriver {
     /// Remote PN currently reserved for user Sync / deposit (blocks host peer-sync).
     pub fn propagation_sync_target(&self) -> Option<[u8; 16]> {
         self.propagation_sync_target
+    }
+
+    /// Cancel an in-flight Direct link delivery for `hash` and drop per-message cascade
+    /// bookkeeping so a later retry starts clean. Returns whether a link-side delivery
+    /// (active or queued behind a reusable link) was cancelled.
+    pub fn cancel_message(&mut self, hash: &[u8; 32]) -> bool {
+        let cancelled = self.link_delivery.cancel_delivery_by_message_hash(*hash);
+        self.pn_cascade_tried.remove(hash);
+        self.pn_cascade_local.remove(hash);
+        self.pn_deposit_defer_counts.remove(hash);
+        self.direct_path_failovers.remove(hash);
+        self.pending_pn_targets.remove(hash);
+        cancelled
     }
 
     /// True when a packed deposit / Direct session already holds a Link to `dest`.
@@ -1400,12 +1413,11 @@ impl LxmfOutboundDriver {
     /// Rewrite `DeliverPropagated.prop_hash` from the per-message cascade target map.
     fn apply_pending_pn_targets(&self, actions: &mut [OutboundAction]) {
         for action in actions.iter_mut() {
-            if let OutboundAction::DeliverPropagated { message, prop_hash } = action {
-                if let Some(hash) = message.hash.or(message.message_id) {
-                    if let Some(target) = self.pending_pn_targets.get(&hash) {
-                        *prop_hash = *target;
-                    }
-                }
+            if let OutboundAction::DeliverPropagated { message, prop_hash } = action
+                && let Some(hash) = message.hash.or(message.message_id)
+                && let Some(target) = self.pending_pn_targets.get(&hash)
+            {
+                *prop_hash = *target;
             }
         }
     }
@@ -1609,10 +1621,10 @@ impl LxmfOutboundDriver {
                     "LXMF delivery Rejected"
                 );
                 // Peer/PN rejected — advance cascade (next remote or local-prop).
-                if message.method == DeliveryMethod::Propagated {
-                    if let (Some(hash), Some(pn)) = (msg_hash, rejected_pn) {
-                        self.mark_pn_tried(hash, pn);
-                    }
+                if message.method == DeliveryMethod::Propagated
+                    && let (Some(hash), Some(pn)) = (msg_hash, rejected_pn)
+                {
+                    self.mark_pn_tried(hash, pn);
                 }
                 match self.try_advance_pn_cascade(router, event_tx, message) {
                     Ok(()) => {}
@@ -1682,14 +1694,13 @@ impl LxmfOutboundDriver {
             let state = self.direct_path_failovers.entry(msg_hash).or_default();
             if should_retry_direct_path_failover(state.rounds) {
                 push_tried_iface(&mut state.tried_interfaces, iface.as_deref());
-                if let Some(via_hex) = via.clone() {
-                    if !state
+                if let Some(via_hex) = via.clone()
+                    && !state
                         .blocked_vias
                         .iter()
                         .any(|b| b.eq_ignore_ascii_case(&via_hex))
-                    {
-                        state.blocked_vias.push(via_hex);
-                    }
+                {
+                    state.blocked_vias.push(via_hex);
                 }
                 state.rounds = state.rounds.saturating_add(1);
                 Ok((
@@ -1787,18 +1798,18 @@ impl LxmfOutboundDriver {
         if let Some(hash) = msg_hash {
             self.pending_pn_targets.insert(hash, prop_hash);
         }
-        if self.enqueue_or_fail(router, event_tx, message) {
-            if let Some(hash) = msg_hash {
-                // Keep chat UI in sending/propagated while PN rediscovery proceeds.
-                emit_outbound_status_with_via(
-                    event_tx,
-                    Some(serde_json::Value::String(hex::encode(hash))),
-                    None,
-                    "sending",
-                    Some(self.cascade_wire_delivery_method(hash)),
-                    Some(hex::encode(prop_hash)),
-                );
-            }
+        if self.enqueue_or_fail(router, event_tx, message)
+            && let Some(hash) = msg_hash
+        {
+            // Keep chat UI in sending/propagated while PN rediscovery proceeds.
+            emit_outbound_status_with_via(
+                event_tx,
+                Some(serde_json::Value::String(hex::encode(hash))),
+                None,
+                "sending",
+                Some(self.cascade_wire_delivery_method(hash)),
+                Some(hex::encode(prop_hash)),
+            );
         }
     }
 }
@@ -2021,6 +2032,24 @@ fn emit_outbound_status_by_hash(
         None,
         status,
         delivery_method,
+        None,
+    );
+}
+
+/// Terminal `failed` status with `error: "cancelled"` after a user cancel (attachment send).
+pub fn emit_outbound_cancelled(event_tx: &broadcast::Sender<String>, message_hash: &str) {
+    emit_outbound_status_detailed_with_attempts(
+        event_tx,
+        Some(serde_json::Value::String(message_hash.into())),
+        None,
+        "failed",
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("cancelled"),
+        None,
         None,
     );
 }

@@ -20,14 +20,14 @@ impl GattRegistry {
 
     pub fn assert_can_connect(&self, address: &str, profile: GattProfile) -> Result<(), GattError> {
         let key = normalize_address(address)?;
-        if let Some(owner) = self.owners.get(&key) {
-            if *owner != profile {
-                return Err(GattError::new(
-                    GattErrorCode::MacConflict,
-                    format!("peripheral {key} owned by {owner}"),
-                )
-                .with_owner(owner.as_str()));
-            }
+        if let Some(owner) = self.owners.get(&key)
+            && *owner != profile
+        {
+            return Err(GattError::new(
+                GattErrorCode::MacConflict,
+                format!("peripheral {key} owned by {owner}"),
+            )
+            .with_owner(owner.as_str()));
         }
         Ok(())
     }
