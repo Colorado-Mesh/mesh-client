@@ -11,6 +11,7 @@ import {
 } from '../lib/reticulum/destHash';
 import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useIncidentStore } from '../stores/incidentStore';
+import { useMecpBlockStore } from '../stores/mecpBlockStore';
 import { addMessage, useMessageStore } from '../stores/messageStore';
 import { getTakChannels, getTakRadio, useTakChannelStore } from '../stores/takChannelStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
@@ -347,6 +348,197 @@ describe('useTakInboundChat', () => {
       expect(setIncidentMarkers().mock.lastCall?.[0]).toEqual([]);
     } finally {
       useIncidentStore.setState({ incidents: {} });
+    }
+  });
+
+  it("asks main to sound ATAK's alarm for a MAYDAY once turned on, never for a blocked sender", async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    const alarmNames = () => setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm);
+    useIncidentStore.setState({ incidents: { [incident.id]: incident } });
+    try {
+      mount();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      expect(alarmNames()).toEqual([undefined]);
+      act(() => {
+        useTakRelayPrefsStore.getState().setMecpAlarm(true);
+      });
+      expect(alarmNames()).toEqual(['Alice']);
+      // Seen in the app, it goes on sounding.
+      act(() => {
+        useIncidentStore.setState({
+          incidents: { [incident.id]: { ...incident, seenAt: incident.receivedAt + 1 } },
+        });
+      });
+      expect(alarmNames()).toEqual(['Alice']);
+      act(() => {
+        useMecpBlockStore.getState().block('meshcore', '1', 'Alice');
+      });
+      expect(alarmNames()).toEqual([undefined]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
+      useMecpBlockStore.setState({ blocked: {} });
+      useTakRelayPrefsStore.setState({ mecpAlarm: false });
+    }
+  });
+
+  it('tells main the list is empty when the sink stops, so a sounding alarm is cancelled', async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    useIncidentStore.setState({ incidents: { [incident.id]: incident } });
+    useTakRelayPrefsStore.setState({ mecpAlarm: true });
+    try {
+      mount();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm)).toEqual(['Alice']);
+      setIncidentMarkers().mockClear();
+      // A server error leaves main reporting stopped, possibly with devices still connected.
+      act(() => {
+        useTakSinkStore.setState({ active: false });
+      });
+      expect(setIncidentMarkers().mock.calls).toEqual([[[]]]);
+      // A sink starting again sends the list, without the alarm now the MAYDAY has been seen.
+      act(() => {
+        useIncidentStore.setState({
+          incidents: { [incident.id]: { ...incident, seenAt: incident.receivedAt + 1 } },
+        });
+        useTakSinkStore.setState({ active: true });
+      });
+      expect(setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm)).toEqual([undefined]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
+      useTakRelayPrefsStore.setState({ mecpAlarm: false });
+    }
+  });
+
+  it('retries the empty list until it lands while no sink is up', async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      useTakSinkStore.setState({ active: true });
+      mount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      setIncidentMarkers().mockClear();
+      setIncidentMarkers()
+        .mockRejectedValueOnce(new Error('rate limited'))
+        .mockResolvedValue(undefined);
+      await act(async () => {
+        useTakSinkStore.setState({ active: false });
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(setIncidentMarkers()).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(TAK_SEND_ROOMS_RETRY_MS);
+      });
+      expect(setIncidentMarkers().mock.calls).toEqual([[[]], [[]]]);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10 * TAK_SEND_ROOMS_RETRY_MS);
+      });
+      expect(setIncidentMarkers()).toHaveBeenCalledTimes(2);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it("blocks the alarm by the sender's own protocol, not a relay's", async () => {
+    const incident: EmergencyIncident = {
+      id: 'mecp-abc',
+      protocol: 'meshcore',
+      protocolsSeen: ['meshcore'],
+      severity: 0,
+      codes: ['M01'],
+      freetext: '',
+      senderId: '1',
+      senderName: 'Alice',
+      channel: '0',
+      receivedAt: 1_800_000_000_000,
+      lastSeenAt: 1_800_000_000_000,
+      lat: 39.7,
+      lon: -105.1,
+      coordsSource: 'message',
+      messageIds: [],
+      ackCount: 0,
+      ackPeerIds: [],
+      beaconActive: false,
+      beaconAcked: false,
+      isDrill: false,
+      status: 'open',
+    };
+    // First heard on MeshCore, then relayed onto Meshtastic.
+    const relayed: EmergencyIncident = { ...incident, protocolsSeen: ['meshcore', 'meshtastic'] };
+    const alarmNames = () => setIncidentMarkers().mock.lastCall?.[0].map((m) => m.alarm);
+    useIncidentStore.setState({ incidents: { [incident.id]: relayed } });
+    useTakRelayPrefsStore.setState({ mecpAlarm: true });
+    try {
+      mount();
+      await act(async () => {
+        useTakSinkStore.setState({ active: true });
+        await Promise.resolve();
+      });
+      // Someone else with the same id on Meshtastic is blocked: Alice still sounds.
+      act(() => {
+        useMecpBlockStore.getState().block('meshtastic', '1', 'Other');
+      });
+      expect(alarmNames()).toEqual(['Alice']);
+      act(() => {
+        useMecpBlockStore.getState().block('meshcore', '1', 'Alice');
+      });
+      expect(alarmNames()).toEqual([undefined]);
+    } finally {
+      useIncidentStore.setState({ incidents: {} });
+      useMecpBlockStore.setState({ blocked: {} });
+      useTakRelayPrefsStore.setState({ mecpAlarm: false });
     }
   });
 });

@@ -5987,7 +5987,9 @@
     "channelCallsign": "添加呼号",
     "channelCallsignFor": "将发件人的ATAK呼号放在发送到{{channel}}的消息前面",
     "channelCallsignHint": "关闭添加呼叫签名后， ATAK设备发送的内容将完全按照键入的内容发出。关闭机器人通道：机器人在消息开头查找其命令，因此会错过以呼号开头的命令。",
-    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。"
+    "channelRepliesHint": "要回复来自ATAK的人员，请以@开头，并以他们的名字开头： @ silver are you on? goes out as MeshCore 's reply @ [Silver Eagle] are you on?. @ @ replies to who speak last.如果名称的开头适合在频道上听到的几个人，则不会发送任何内容，聊天中会显示谁匹配。",
+    "mecpAlarm": "收到 MECP MAYDAY 时触发 ATAK 紧急警报",
+    "mecpAlarmHint": "频道上的任何人都能发送 MAYDAY，因此警报默认关闭，需您手动开启。每个带位置的 MAYDAY 只响一次，演练、已屏蔽的发送者或应用已静音的警报都不会触发；事件解决或其信标取消时，警报随之取消。"
   },
   "telemetryPanel": {
     "title": "遥测",

@@ -6032,7 +6032,9 @@
     "channelCallsign": "Přidat volací značku",
     "channelCallsignFor": "Umístěte volací značku atak odesílatele před zprávy odeslané na {{channel}}",
     "channelCallsignHint": "Při vypnutí funkce Přidat volací značku, to, co zařízení atak odešle, zhasne přesně tak, jak bylo napsáno. Vypněte jej pro kanál robota: robot hledá svůj příkaz na začátku zprávy, takže vynechá ten, který začíná volací značkou.",
-    "channelRepliesHint": "Pokud chceš odpovědět někomu z Ataku, začni na @ a začni jeho/její jméno: @silver jedeš? vyjde, zatímco MeshCore odpoví @[Silver Eagle] jede?. @@ odpovídá tomu, kdo mluvil naposledy. Pokud se začátek jména vejde do několika lidí slyšených na kanálu, nic není odesláno a chat říká, kdo se shodoval."
+    "channelRepliesHint": "Pokud chceš odpovědět někomu z Ataku, začni na @ a začni jeho/její jméno: @silver jedeš? vyjde, zatímco MeshCore odpoví @[Silver Eagle] jede?. @@ odpovídá tomu, kdo mluvil naposledy. Pokud se začátek jména vejde do několika lidí slyšených na kanálu, nic není odesláno a chat říká, kdo se shodoval.",
+    "mecpAlarm": "Spustit nouzový alarm ATAK pro MECP MAYDAY",
+    "mecpAlarmHint": "MAYDAY může poslat kdokoli v kanálu, proto je alarm vypnutý, dokud ho nezapnete. Zazní jednou pro každý MAYDAY s polohou, nikdy pro cvičení, blokovaného odesílatele ani upozornění, které aplikace ztlumila, a zruší se, když je incident vyřešen nebo je zrušen jeho maják."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

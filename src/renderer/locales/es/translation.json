@@ -5987,7 +5987,9 @@
     "channelCallsign": "Añadir indicativo de llamada",
     "channelCallsignFor": "Ponga el indicativo ATAK del remitente frente a los mensajes enviados a {{channel}}",
     "channelCallsignHint": "Con Add callsign OFF, lo que envía un dispositivo ATAK se apaga exactamente como se escribió. Desactivarlo para un canal de bot: un bot busca su comando al comienzo del mensaje, por lo que pierde uno que comienza con un indicativo de llamada.",
-    "channelRepliesHint": "Para responder a alguien de ATAK, comienza con @ y el comienzo de su nombre: @Silver estás en? sale como la respuesta de MeshCore @[Silver Eagle] estás en?. @@ responde a quien habló por última vez. Si el inicio del nombre se ajusta a varias personas escuchadas en el canal, no se envía nada y el chat dice quién coincidió."
+    "channelRepliesHint": "Para responder a alguien de ATAK, comienza con @ y el comienzo de su nombre: @Silver estás en? sale como la respuesta de MeshCore @[Silver Eagle] estás en?. @@ responde a quien habló por última vez. Si el inicio del nombre se ajusta a varias personas escuchadas en el canal, no se envía nada y el chat dice quién coincidió.",
+    "mecpAlarm": "Hacer sonar la alarma de emergencia de ATAK ante un MAYDAY MECP",
+    "mecpAlarmHint": "Cualquiera en un canal puede enviar un MAYDAY, así que la alarma está desactivada hasta que la active. Suena una vez por cada MAYDAY con posición, nunca por un simulacro, un remitente bloqueado o una alerta silenciada por la aplicación, y se cancela cuando el incidente se resuelve o se cancela su baliza."
   },
   "telemetryPanel": {
     "title": "Telemetría",

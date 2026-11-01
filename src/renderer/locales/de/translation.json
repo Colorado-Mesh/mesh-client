@@ -5987,7 +5987,9 @@
     "channelCallsign": "Rufzeichen hinzufügen",
     "channelCallsignFor": "Setzen Sie das ATAK-Rufzeichen des Absenders vor Nachrichten, die an {{channel}} gesendet werden",
     "channelCallsignHint": "Mit Add callsign off wird das, was ein ATAK-Gerät sendet, genau so ausgegeben, wie es eingegeben wurde. Schalten Sie es für einen Bot-Kanal aus: Ein Bot sucht zu Beginn der Nachricht nach seinem Befehl, sodass er einen verpasst, der mit einem Rufzeichen beginnt.",
-    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt."
+    "channelRepliesHint": "Um jemandem von ATAK zu antworten, beginnen Sie mit @ und dem Anfang seines Namens: @silver bist du dabei? Geht als Antwort von MeshCore aus @[Silver Eagle] bist du dabei?. @@ antwortet demjenigen, der zuletzt gesprochen hat. Wenn der Anfang des Namens auf mehrere Personen passt, die auf dem Kanal gehört wurden, wird nichts gesendet und der Chat sagt, wer übereinstimmt.",
+    "mecpAlarm": "ATAK-Notfallalarm bei MECP-MAYDAY auslösen",
+    "mecpAlarmHint": "Jeder in einem Kanal kann ein MAYDAY senden, daher ist der Alarm aus, bis Sie ihn einschalten. Er ertönt einmal für jedes MAYDAY mit Position, nie für eine Übung, einen blockierten Absender oder eine von der App stummgeschaltete Warnung, und wird aufgehoben, wenn der Vorfall gelöst oder sein Notsignal beendet wird."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

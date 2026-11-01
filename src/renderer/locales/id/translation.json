@@ -5987,7 +5987,9 @@
     "channelCallsign": "Tambahkan callsign",
     "channelCallsignFor": "Letakkan tanda panggil atak pengirim di depan pesan yang dikirim ke {{channel}}",
     "channelCallsignHint": "Dengan Add callsign off, apa yang dikirim perangkat atak keluar persis seperti yang diketik. Matikan untuk saluran bot: bot mencari perintahnya di awal pesan, sehingga melewatkan perintah yang dimulai dengan tanda panggil.",
-    "channelRepliesHint": "Untuk membalas seseorang dari atak, mulailah dengan @ dan awal nama mereka: @silver are you on? keluar sebagai balasan MeshCore @[ Silver Eagle] are you on?. @@ membalas kepada siapa pun yang berbicara terakhir. Jika awal nama cocok dengan beberapa orang yang didengar di saluran, tidak ada yang dikirim dan obrolan mengatakan siapa yang cocok."
+    "channelRepliesHint": "Untuk membalas seseorang dari atak, mulailah dengan @ dan awal nama mereka: @silver are you on? keluar sebagai balasan MeshCore @[ Silver Eagle] are you on?. @@ membalas kepada siapa pun yang berbicara terakhir. Jika awal nama cocok dengan beberapa orang yang didengar di saluran, tidak ada yang dikirim dan obrolan mengatakan siapa yang cocok.",
+    "mecpAlarm": "Bunyikan alarm darurat ATAK untuk MAYDAY MECP",
+    "mecpAlarmHint": "Siapa pun di kanal dapat mengirim MAYDAY, jadi alarm mati kecuali Anda menyalakannya. Alarm berbunyi sekali untuk setiap MAYDAY yang memiliki posisi, tidak pernah untuk latihan, pengirim yang diblokir, atau peringatan yang dibisukan aplikasi, dan dibatalkan saat insiden diselesaikan atau suar daruratnya dibatalkan."
   },
   "telemetryPanel": {
     "title": "Telemetri",

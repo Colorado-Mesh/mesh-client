@@ -12,7 +12,11 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { listTakConversationPeers, listTakDmProtocols } from '../lib/tak/takDirectMessages';
 import { startTakDmStatus } from '../lib/tak/takDmStatus';
 import { enqueueTakChatRelay } from '../lib/tak/takInboundChat';
-import { takIncidentMarkers } from '../lib/tak/takIncidentMarkers';
+import {
+  resetTakIncidentAlarms,
+  type TakIncidentAlarm,
+  takIncidentMarkers,
+} from '../lib/tak/takIncidentMarkers';
 import { setTakMecpLocale } from '../lib/tak/takMecpText';
 import { sendTakTextOnMesh } from '../lib/tak/takMeshSend';
 import {
@@ -24,6 +28,7 @@ import {
 import type { IdentityId } from '../lib/types';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useIncidentStore } from '../stores/incidentStore';
+import { mecpBlockKey, useMecpBlockStore } from '../stores/mecpBlockStore';
 import { useMessageStore } from '../stores/messageStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { setTakChannels, setTakRadio, type TakChannelInfo } from '../stores/takChannelStore';
@@ -39,9 +44,10 @@ export const TAK_SEND_ROOMS_RETRY_MS = 5_000;
 export const TAK_SEND_ROOMS_RETRY_MAX_MS = 60_000;
 
 /**
- * Keep main told a setting while a sink is up: `value` (JSON) is sent whenever a sink starts or
- * it changes. A refused update (main's rate limit, say) would leave main with an old value, so it
- * is retried, waiting longer each time, until it lands or a newer value or unmount replaces it.
+ * Keep main told a setting while `sinkActive` (a sink is up, or whatever else says it must be
+ * sent): `value` (JSON) is sent whenever that turns true or the value changes. A refused update
+ * (main's rate limit, say) would leave main with an old value, so it is retried, waiting longer
+ * each time, until it lands or a newer value, `sinkActive` turning false, or unmount replaces it.
  */
 function useSendWhileSinkActive(
   sinkActive: boolean,
@@ -161,18 +167,50 @@ export function useTakInboundChat(sources: TakChannelSources): void {
     };
   }, [sinkActive, i18n.language, t]);
 
-  // Open MECP emergencies with a position, as markers on TAK clients' maps.
+  // Open MECP emergencies with a position, as markers on TAK clients' maps; a MAYDAY's marker
+  // also sounds ATAK's emergency alarm when the user has turned it on.
   const incidents = useIncidentStore((s) => s.incidents);
-  const incidentMarkersJson = useMemo(
+  const mecpAlarm = useTakRelayPrefsStore((s) => s.mecpAlarm);
+  const blockedSenders = useMecpBlockStore((s) => s.blocked);
+  const incidentMarkers = useMemo(() => {
     // Only built while a sink is up: nothing is sent otherwise.
-    () => (sinkActive ? JSON.stringify(takIncidentMarkers(incidents)) : '[]'),
+    if (!sinkActive) {
+      // Main forgets the alarms with the sink; a MAYDAY still unseen sounds again with the next.
+      resetTakIncidentAlarms();
+      return [];
+    }
+    const alarm: TakIncidentAlarm | undefined = mecpAlarm
+      ? {
+          // The sender's id belongs to the protocol the report was first heard on; a relay on
+          // another protocol keeps it, and the same id there would be someone else.
+          isBlocked: (incident) =>
+            Object.hasOwn(
+              blockedSenders,
+              mecpBlockKey(incident.protocolsSeen[0] ?? incident.protocol, incident.senderId),
+            ),
+        }
+      : undefined;
+    return takIncidentMarkers(incidents, alarm);
     // The markers' words follow the app's language once its pack has loaded.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mecpLocaleLoads only triggers a rebuild.
-    [sinkActive, incidents, mecpLocaleLoads],
-  );
+  }, [sinkActive, incidents, mecpLocaleLoads, mecpAlarm, blockedSenders]);
+  const incidentMarkersJson = useMemo(() => JSON.stringify(incidentMarkers), [incidentMarkers]);
   useSendWhileSinkActive(
     sinkActive,
     incidentMarkersJson,
+    sendIncidentMarkers,
+    'setIncidentMarkers',
+  );
+  // Main forgets the markers when its sinks stop, but a server error can leave it reporting
+  // stopped with devices still connected. So once a sink has been up, main is told the list is
+  // empty whenever none is, retried until it lands: their markers go and a MAYDAY alarm is
+  // cancelled rather than left sounding. A sink starting again sends the current list instead,
+  // without the alarms for incidents seen meanwhile, so main cancels those.
+  const [sinkWasActive, setSinkWasActive] = useState(sinkActive);
+  if (sinkActive && !sinkWasActive) setSinkWasActive(true);
+  useSendWhileSinkActive(
+    sinkWasActive && !sinkActive,
+    '[]',
     sendIncidentMarkers,
     'setIncidentMarkers',
   );

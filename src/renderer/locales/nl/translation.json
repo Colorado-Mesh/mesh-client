@@ -5987,7 +5987,9 @@
     "channelCallsign": "Oproepen toevoegen",
     "channelCallsignFor": "Zet het ATAK-oproepteken van de afzender voor berichten die naar {{channel}} worden verzonden",
     "channelCallsignHint": "Met Add callsign off gaat wat een ATAK-apparaat verzendt precies uit zoals getypt. Schakel het uit voor een botkanaal: een bot zoekt zijn opdracht aan het begin van het bericht, dus mist hij er een die begint met een roepnaam.",
-    "channelRepliesHint": "Om te reageren op iemand van ATAK, begin je met @ en het begin van hun naam: @Silver are you on? gaat uit als MeshCore's reply @[Silver Eagle] are you on?. @@ replies to who spoke last. Als het begin van de naam past bij meerdere mensen die op het kanaal worden gehoord, wordt er niets verzonden en wordt in de chat vermeld wie heeft gematcht."
+    "channelRepliesHint": "Om te reageren op iemand van ATAK, begin je met @ en het begin van hun naam: @Silver are you on? gaat uit als MeshCore's reply @[Silver Eagle] are you on?. @@ replies to who spoke last. Als het begin van de naam past bij meerdere mensen die op het kanaal worden gehoord, wordt er niets verzonden en wordt in de chat vermeld wie heeft gematcht.",
+    "mecpAlarm": "ATAK-noodalarm laten klinken bij een MECP-MAYDAY",
+    "mecpAlarmHint": "Iedereen op een kanaal kan een MAYDAY sturen, dus het alarm staat uit tot u het aanzet. Het klinkt één keer per MAYDAY met een positie, nooit voor een oefening, een geblokkeerde afzender of een waarschuwing die de app heeft gedempt, en wordt geannuleerd als het incident is opgelost of het baken is ingetrokken."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

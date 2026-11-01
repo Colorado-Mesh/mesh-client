@@ -7118,7 +7118,9 @@
     "channelRelayNoChannelsMeshtastic": "Connect a Meshtastic radio to list its channels.",
     "channelRelayUnnamed": "Channel {{n}}",
     "directMessages": "Direct messages",
-    "directMessagesHint": "Let ATAK devices message this radio's companions. Each companion this radio can message gets a chat option in ATAK, and a message to it goes out from this radio, prefixed with the sender's callsign. ATAK marks it delivered when the companion acknowledges it, or shows a note if it is still unacknowledged after the automatic resends. Its replies go to the ATAK device that last wrote to it, or to every device when none has. A companion with no position appears at 0, 0 for a day after a message."
+    "directMessagesHint": "Let ATAK devices message this radio's companions. Each companion this radio can message gets a chat option in ATAK, and a message to it goes out from this radio, prefixed with the sender's callsign. ATAK marks it delivered when the companion acknowledges it, or shows a note if it is still unacknowledged after the automatic resends. Its replies go to the ATAK device that last wrote to it, or to every device when none has. A companion with no position appears at 0, 0 for a day after a message.",
+    "mecpAlarm": "Sound ATAK's emergency alarm for an MECP MAYDAY",
+    "mecpAlarmHint": "Anyone on a channel can send a MAYDAY, so the alarm is off unless you turn it on. It sounds once for each MAYDAY with a position, never for a drill, a blocked sender or an alert the app has silenced, and is cancelled when the incident is resolved or its beacon is cancelled."
   },
   "telemetryPanel": {
     "title": "Telemetry",

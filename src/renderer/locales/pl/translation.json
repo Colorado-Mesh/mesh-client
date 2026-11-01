@@ -6071,7 +6071,9 @@
     "channelCallsign": "Dodaj nazwę użytkownika",
     "channelCallsignFor": "Umieść znak ak nadawcy przed wiadomościami wysłanymi do {{channel}}",
     "channelCallsignHint": "Gdy funkcja Add callign jest wyłączona, to, co wysyła urządzenie atak, jest wysyłane dokładnie tak, jak zostało wpisane. Wyłącz go dla kanału bota: bot szuka swojego polecenia na początku wiadomości, aby przegapić takie, które zaczyna się od znaku wywoławczego.",
-    "channelRepliesHint": "Aby odpowiedzieć komuś z atak, zacznij od @ i rozpocznij od jego imienia: @Silver are you on? wychodzi jako odpowiedź MeshCore @[Silver Eagle] jesteś włączony?. @@ odpowiada temu, kto mówił ostatni. Jeśli początek nazwy pasuje do kilku osób usłyszanych na kanale, nic nie zostanie wysłane, a na czacie pojawi się informacja, kto pasuje."
+    "channelRepliesHint": "Aby odpowiedzieć komuś z atak, zacznij od @ i rozpocznij od jego imienia: @Silver are you on? wychodzi jako odpowiedź MeshCore @[Silver Eagle] jesteś włączony?. @@ odpowiada temu, kto mówił ostatni. Jeśli początek nazwy pasuje do kilku osób usłyszanych na kanale, nic nie zostanie wysłane, a na czacie pojawi się informacja, kto pasuje.",
+    "mecpAlarm": "Włączaj sygnał alarmowy ATAK przy MECP MAYDAY",
+    "mecpAlarmHint": "Każdy na kanale może wysłać MAYDAY, więc alarm jest wyłączony, dopóki go nie włączysz. Rozlega się raz dla każdego MAYDAY z pozycją, nigdy dla ćwiczeń, zablokowanego nadawcy ani alertu wyciszonego przez aplikację, i jest anulowany, gdy incydent zostanie rozwiązany lub jego radiolatarnia zostanie odwołana."
   },
   "telemetryPanel": {
     "title": "Telemetria",
