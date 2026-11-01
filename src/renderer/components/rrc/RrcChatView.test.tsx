@@ -200,6 +200,31 @@ describe.each(['linux', 'darwin', 'win32'] as const)('RRC unread markers on %s',
     expect(mockScrollToIndex).toHaveBeenCalledWith(1, { align: 'center', behavior: 'smooth' });
   });
 
+  it('re-measures rows already on screen when the unread divider moves', () => {
+    const messages = [makeMsg({ id: 'old', body: 'Read already', timestamp: 100 })];
+    const { rerender } = render(<RrcChatView {...baseProps} messages={messages} />);
+    const firstRow = screen.getByText('Read already').closest('[data-index="0"]');
+    expect(firstRow).not.toBeNull();
+    mockMeasure.mockClear();
+    mockMeasureElement.mockClear();
+
+    rerender(
+      <RrcChatView
+        {...baseProps}
+        unreadWatermark={100}
+        messages={[...messages, makeMsg({ id: 'new', body: 'Incoming', timestamp: 101 })]}
+      />,
+    );
+
+    expect(mockMeasure).toHaveBeenCalledTimes(1);
+    // The first row stays mounted, so only the reset reports its real height again.
+    const firstRowCall = mockMeasureElement.mock.calls.findIndex(([row]) => row === firstRow);
+    expect(firstRowCall).toBeGreaterThanOrEqual(0);
+    expect(mockMeasureElement.mock.invocationCallOrder[firstRowCall]).toBeGreaterThan(
+      mockMeasure.mock.invocationCallOrder[0],
+    );
+  });
+
   it('marks an incoming whisper and isolates openings for the same room on another hub', () => {
     const messages = [
       makeMsg({ id: 'whisper', body: 'Private update', kind: 'notice', timestamp: 101 }),

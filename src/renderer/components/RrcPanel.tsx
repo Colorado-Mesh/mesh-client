@@ -1101,7 +1101,7 @@ export default function RrcPanel({
               { focus: true },
             );
             addMessage({
-              id: `whisper-out-${Date.now()}`,
+              id: res.id ?? `whisper-out-${Date.now()}`,
               room: dmRoom,
               kind: 'msg',
               body: parsed.text,
@@ -1380,7 +1380,8 @@ export default function RrcPanel({
     () =>
       aiEnabled
         ? activeMessages
-            .filter((m) => m.kind === 'msg' || m.kind === 'action')
+            // A reaction is an emoji MSG pointing at another line, not conversation.
+            .filter((m) => (m.kind === 'msg' || m.kind === 'action') && !m.react_to)
             .map((m) => ({
               at: m.timestamp,
               sender: (m.nickname ?? m.sender_hash ?? '').slice(0, 120),

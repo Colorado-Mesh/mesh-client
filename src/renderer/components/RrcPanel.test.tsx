@@ -490,6 +490,34 @@ describe('RrcPanel', () => {
         );
       });
     });
+
+    it('stores a /msg line under the id the sidecar sent', async () => {
+      const user = userEvent.setup();
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.setCapabilities({ direct_notice: true });
+      store.roomJoined('#general', [{ identity_hash: peerHash, nickname: 'Alice' }]);
+      store.setActiveRoom('#general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({
+        ok: true,
+        id: '5555555555555555',
+      });
+
+      render(<RrcPanel isActive />);
+      const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+      await user.clear(composer);
+      await user.type(composer, '/msg Alice hi there');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+
+      await waitFor(() => {
+        const key = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`) ?? '';
+        const stored = useRrcSessionStore
+          .getState()
+          .messages.get(key)
+          ?.find((m) => m.id === '5555555555555555');
+        expect(stored?.body).toBe('hi there');
+      });
+    });
   });
 
   it('keeps separate DM tabs when whispering two peers', async () => {

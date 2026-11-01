@@ -36,6 +36,7 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
+  resetVirtualRowSizes,
   scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
@@ -786,7 +787,7 @@ export function RrcChatView({
   useLayoutEffect(() => {
     if (measuredUnreadIndexRef.current !== unreadStartIndex) {
       measuredUnreadIndexRef.current = unreadStartIndex;
-      messageVirtualizerRef.current.measure();
+      resetVirtualRowSizes(messageVirtualizerRef.current, scrollContainerRef.current);
     }
     if (!isActive || !historyReady || !pendingOpeningScrollRef.current) return;
     const key = `${hubDestHash}::${activeRoom}::${unreadWatermark}`;

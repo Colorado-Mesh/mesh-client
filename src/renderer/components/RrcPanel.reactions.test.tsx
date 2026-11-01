@@ -8,6 +8,7 @@ import { clearRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import { resetRrcNickCacheHydrationForTests } from '@/renderer/lib/rrcNickCacheHydrate';
 import { clearRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 import { resetRrcRoomHistoryForTests } from '@/renderer/lib/rrcRoomHistory';
+import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   resetRrcRememberedRoomForTests,
@@ -99,6 +100,46 @@ describe('RrcPanel reactions', () => {
   afterEach(() => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     vi.restoreAllMocks();
+  });
+
+  it('leaves reactions out of the Catch up transcript', async () => {
+    useAiSummaryStore.getState().setStatus({
+      ...(await window.electronAPI.ai.getStatus()),
+      enabled: true,
+      engine: 'local',
+      model: 'test',
+      baseUrl: 'http://127.0.0.1:1234',
+    });
+    vi.mocked(window.electronAPI.ai.summarize).mockClear();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#general', [{ identity_hash: peerHash, nickname: 'Alice' }]);
+    store.setActiveRoom('#general');
+    seedLine('#general');
+    seedLine('#general', {
+      id: '2222222222222222',
+      body: '👍',
+      nickname: 'Bob',
+      sender_hash: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      timestamp: 2,
+      react_to: targetId,
+    });
+    try {
+      render(<RrcPanel isActive />);
+      fireEvent.change(screen.getByRole('combobox', { name: 'Summary range' }), {
+        target: { value: 'loaded' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Catch up' }));
+      await waitFor(() => {
+        expect(window.electronAPI.ai.summarize).toHaveBeenCalledOnce();
+      });
+      expect(vi.mocked(window.electronAPI.ai.summarize).mock.calls[0][0].messages).toEqual([
+        { at: 1, sender: 'Alice', body: 'ship it?' },
+      ]);
+    } finally {
+      disposeAiSummaries();
+      useAiSummaryStore.setState({ status: null });
+    }
   });
 
   it('sends a room reaction as msg with react_to and leaves the line to the hub echo', async () => {

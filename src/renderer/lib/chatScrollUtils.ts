@@ -153,6 +153,29 @@ export function createStableChatMeasureElement(
   };
 }
 
+/**
+ * Drop cached row sizes, then measure the rows already on screen. `measure()` alone leaves
+ * mounted rows at their estimates until they resize, so a taller row (reaction chips, a wrapped
+ * line) would overlap the next one.
+ */
+export function resetVirtualRowSizes(
+  virtualizer: {
+    measure: () => void;
+    getVirtualItems: () => unknown;
+    measureElement: (row: Element) => void;
+  },
+  container: HTMLElement | null,
+): void {
+  virtualizer.measure();
+  if (!container) return;
+  // measure() clears the cache but not the layout built from it, and a row measured against
+  // that old layout reads as unchanged. Rebuild the layout from estimates first.
+  virtualizer.getVirtualItems();
+  container.querySelectorAll('[data-index]').forEach((row) => {
+    virtualizer.measureElement(row);
+  });
+}
+
 /** Re-measure a virtualized chat row after async content (e.g. link preview) changes height. */
 export function scheduleVirtualRowRemeasure(
   measureElement: (node: Element) => void,
