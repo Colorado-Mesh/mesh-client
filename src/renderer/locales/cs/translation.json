@@ -5731,6 +5731,8 @@
     "serverNameLabel": "Název serveru",
     "requireCert": "Vyžadovat klientský certifikát (mTLS)",
     "autoStart": "Automatické spuštění při spuštění aplikace",
+    "mecpAlarm": "Spustit nouzový alarm ATAK pro MECP MAYDAY",
+    "mecpAlarmHint": "MAYDAY může poslat kdokoli v kanálu, proto je alarm vypnutý, dokud ho nezapnete. Zazní jednou pro každý MAYDAY s polohou, nikdy pro cvičení, blokovaného odesílatele ani upozornění, které aplikace ztlumila, a zruší se, když je incident vyřešen nebo je zrušen jeho maják.",
     "starting": "Spouštění…",
     "startServer": "Spusťte server",
     "stopping": "Zastavení…",

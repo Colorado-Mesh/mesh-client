@@ -365,6 +365,12 @@ export interface TakIncidentMarker {
   lon: number;
   severity: 0 | 1 | 2 | 3;
   drill: boolean;
+  /**
+   * Set to sound ATAK's emergency alarm for this incident, once: the name the alarm shows (the
+   * sender's). Only for a MAYDAY that is not a drill, and only when the user has turned the alarm
+   * on. Leaving it off later cancels the alarm.
+   */
+  alarm?: string;
 }
 
 /** Incident ids main takes for a marker's uid: what `incidentFingerprint` makes (`mecp-…`). */

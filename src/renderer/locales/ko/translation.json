@@ -5687,6 +5687,8 @@
     "serverNameLabel": "서버 이름",
     "requireCert": "클라이언트 인증서 필요(mTLS)",
     "autoStart": "애플리케이션 실행 시 자동 시작",
+    "mecpAlarm": "MECP MAYDAY에 ATAK 비상 경보 울리기",
+    "mecpAlarmHint": "채널의 누구나 MAYDAY를 보낼 수 있으므로 직접 켜기 전까지 경보는 꺼져 있습니다. 위치가 있는 MAYDAY마다 한 번 울리며, 훈련, 차단된 발신자, 앱이 무음 처리한 경보에는 울리지 않습니다. 사고가 해결되거나 비콘이 취소되면 경보가 취소됩니다.",
     "starting": "시작 중…",
     "startServer": "서버 시작",
     "stopping": "멎는…",

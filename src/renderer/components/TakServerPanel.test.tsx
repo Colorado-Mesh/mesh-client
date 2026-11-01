@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { setTakChannels, useTakChannelStore } from '../stores/takChannelStore';
+import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { setTakSinkActive } from '../stores/takSinkStore';
 import TakServerPanel from './TakServerPanel';
 
@@ -110,6 +111,25 @@ describe('TakServerPanel', () => {
     await act(async () => {});
     await user.click(screen.getByRole('button', { name: /regenerate certificates/i }));
     expect(window.electronAPI.tak.regenerateCertificates).toHaveBeenCalled();
+  });
+
+  it("turns ATAK's MAYDAY alarm on and off, off by default, while the server runs", async () => {
+    vi.mocked(window.electronAPI.tak.getStatus).mockResolvedValue({
+      running: true,
+      port: 8089,
+      clientCount: 0,
+    });
+    const user = userEvent.setup();
+    render(<TakServerPanel />);
+    await act(async () => {});
+    const box = screen.getByRole('checkbox', { name: /emergency alarm for an MECP MAYDAY/i });
+    expect(box).not.toBeChecked();
+    expect(box).toBeEnabled();
+    expect(box).toHaveAccessibleDescription(/anyone on a channel can send a MAYDAY/i);
+    await user.click(box);
+    expect(useTakRelayPrefsStore.getState().mecpAlarm).toBe(true);
+    await user.click(box);
+    expect(useTakRelayPrefsStore.getState().mecpAlarm).toBe(false);
   });
 
   it('shows client count in status bar when running', async () => {

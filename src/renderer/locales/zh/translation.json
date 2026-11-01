@@ -5687,6 +5687,8 @@
     "serverNameLabel": "服务器名称",
     "requireCert": "需要客户端证书 (mTLS)",
     "autoStart": "应用程序启动时自动启动",
+    "mecpAlarm": "收到 MECP MAYDAY 时触发 ATAK 紧急警报",
+    "mecpAlarmHint": "频道上的任何人都能发送 MAYDAY，因此警报默认关闭，需您手动开启。每个带位置的 MAYDAY 只响一次，演练、已屏蔽的发送者或应用已静音的警报都不会触发；事件解决或其信标取消时，警报随之取消。",
     "starting": "开始…",
     "startServer": "启动服务器",
     "stopping": "停止…",

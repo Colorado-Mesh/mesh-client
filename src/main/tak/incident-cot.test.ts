@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { TakIncidentMarker } from '../../shared/tak-types';
 import {
+  buildIncidentAlarmCot,
   buildIncidentMarkerCot,
   INCIDENT_MARKER_STALE_MS,
   incidentMarkerArgb,
@@ -44,6 +45,26 @@ describe('buildIncidentMarkerCot', () => {
   });
 });
 
+describe('emergency alarm', () => {
+  const ALARMED: TakIncidentMarker = { ...MAYDAY, alarm: 'Alice & co' };
+
+  it("is ATAK's own emergency alert, linked to the marker and named for the sender", () => {
+    const cot = buildIncidentAlarmCot(ALARMED, NOW);
+    expect(cot).toContain('uid="mesh-client-mecp-abc123-alert" type="b-a-o-tbl"');
+    expect(cot).toContain(`stale="${new Date(NOW + INCIDENT_MARKER_STALE_MS).toISOString()}"`);
+    expect(cot).toContain('<point lat="39.739200" lon="-104.990300"');
+    expect(cot).toContain('<link uid="mesh-client-mecp-abc123" type="b-m-p-s-m" relation="p-p"/>');
+    expect(cot).toContain('<contact callsign="Alice &amp; co-Alert"/>');
+    expect(cot).toContain('<emergency type="911 Alert">Alice &amp; co</emergency>');
+  });
+
+  it('is cancelled as ATAK cancels its own', () => {
+    const cot = buildIncidentAlarmCot(ALARMED, NOW, true);
+    expect(cot).toContain('uid="mesh-client-mecp-abc123-alert" type="b-a-o-can"');
+    expect(cot).toContain('<emergency cancel="true">Alice &amp; co</emergency>');
+  });
+});
+
 describe('parseTakIncidentMarkers', () => {
   it('keeps valid markers, the last one for a repeated id', () => {
     expect(
@@ -54,6 +75,12 @@ describe('parseTakIncidentMarkers', () => {
       ]),
     ).toEqual([MAYDAY, { ...MAYDAY, id: 'mecp-other', severity: 3, drill: true }]);
     expect(parseTakIncidentMarkers([])).toEqual([]);
+  });
+
+  it("keeps a MAYDAY's alarm name, trimmed", () => {
+    expect(parseTakIncidentMarkers([{ ...MAYDAY, alarm: ' Alice ' }])).toEqual([
+      { ...MAYDAY, alarm: 'Alice' },
+    ]);
   });
 
   it.each([
@@ -70,7 +97,13 @@ describe('parseTakIncidentMarkers', () => {
     ['a position that is not a number', [{ ...MAYDAY, lon: '1' }]],
     ['a severity out of range', [{ ...MAYDAY, severity: 4 }]],
     ['a drill flag that is not boolean', [{ ...MAYDAY, drill: 'no' }]],
+    ['an empty alarm name', [{ ...MAYDAY, alarm: ' ' }]],
+    ['an alarm name that is not text', [{ ...MAYDAY, alarm: true }]],
+    ['an alarm name with a line break', [{ ...MAYDAY, alarm: 'a\nb' }]],
+    ['an overlong alarm name', [{ ...MAYDAY, alarm: 'x'.repeat(81) }]],
+    ['an alarm for an URGENT report', [{ ...MAYDAY, severity: 1, alarm: 'Alice' }]],
+    ['an alarm for a drill', [{ ...MAYDAY, drill: true, alarm: 'Alice' }]],
   ])('rejects %s', (_label, raw) => {
-    expect(() => parseTakIncidentMarkers(raw)).toThrow(/^tak:setIncidentMarkers: /);
+    expect(() => parseTakIncidentMarkers(raw)).toThrow(/^tak:setIncidentMarkers: bad \w+$/u);
   });
 });

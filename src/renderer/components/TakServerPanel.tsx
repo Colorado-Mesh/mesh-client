@@ -11,6 +11,7 @@ import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
 import type { IdentityId } from '../lib/types';
+import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import TakChannelRelaySection, {
   TakDirectMessagesSection,
   TakDirectMessagesToggle,
@@ -98,6 +99,9 @@ export default function TakServerPanel({
   const [localRequireCert, setLocalRequireCert] = useState(settings.requireClientCert);
   const [localAutoStart, setLocalAutoStart] = useState(settings.autoStart);
   const [packageGenerated, setPackageGenerated] = useState(false);
+  // Applies at once, running or not: main sounds or cancels ATAK's alarm as it changes.
+  const mecpAlarm = useTakRelayPrefsStore((s) => s.mecpAlarm);
+  const setMecpAlarm = useTakRelayPrefsStore((s) => s.setMecpAlarm);
 
   /** Decode only the newest packet per node; the buffer holds up to 100 per sender. */
   const latestTakSummaries = useMemo(() => {
@@ -251,6 +255,27 @@ export default function TakServerPanel({
             <label htmlFor={`${id}-autostart`} className="text-ink-300 cursor-pointer text-sm">
               {t('takServerPanel.autoStart')}
             </label>
+          </div>
+
+          <div data-setting-anchor="tak.server.mecpAlarm">
+            <div className="flex items-center gap-2">
+              <input
+                id={`${id}-mecp-alarm`}
+                type="checkbox"
+                checked={mecpAlarm}
+                onChange={(e) => {
+                  setMecpAlarm(e.target.checked);
+                }}
+                aria-describedby={`${id}-mecp-alarm-hint`}
+                className="accent-brand-green"
+              />
+              <label htmlFor={`${id}-mecp-alarm`} className="text-ink-300 cursor-pointer text-sm">
+                {t('takServerPanel.mecpAlarm')}
+              </label>
+            </div>
+            <p id={`${id}-mecp-alarm-hint`} className="text-muted mt-1 text-xs">
+              {t('takServerPanel.mecpAlarmHint')}
+            </p>
           </div>
         </div>
 
