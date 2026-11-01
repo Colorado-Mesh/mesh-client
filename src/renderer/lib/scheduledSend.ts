@@ -41,7 +41,10 @@ export function isScheduledOutboxRow(
 export function outboxRowAgeAnchorMs(
   row: Pick<OutboxEntry, 'status' | 'attemptCount' | 'nextRetryAt' | 'priority' | 'createdAt'>,
 ): number {
-  return isScheduledOutboxRow(row) && row.nextRetryAt != null ? row.nextRetryAt : row.createdAt;
+  if (isScheduledOutboxRow(row) && row.nextRetryAt != null) return row.nextRetryAt;
+  // Use create time only — `updatedAt` moves on automatic status churn and must not renew the cap.
+  // Manual retry resets attemptCount and re-queues; see {@link useChatOutbox} `retry`.
+  return row.createdAt;
 }
 
 /** Turn a regular queue entry into a scheduled one. */

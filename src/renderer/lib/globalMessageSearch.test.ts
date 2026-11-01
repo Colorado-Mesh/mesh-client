@@ -34,7 +34,25 @@ describe('normalize*SearchRow', () => {
       to_node: 99,
     });
     expect(dm.channel).toBeNull();
-    expect(dm.dmPeer).toBe(99);
+    expect(dm.dmPeer).toBe(10);
+  });
+
+  it('uses to_node as Meshtastic DM peer only for own outbound rows', () => {
+    const own = new Set([10]);
+    const outbound = normalizeMeshtasticSearchRow(
+      { id: 2, sender_id: 10, payload: 'dm', channel: 0, timestamp: 101, to_node: 99 },
+      own,
+    );
+    expect(outbound.dmPeer).toBe(99);
+
+    const inbound = normalizeMeshtasticSearchRow(
+      { id: 3, sender_id: 55, payload: 'hi', channel: 0, timestamp: 102, to_node: 10 },
+      own,
+    );
+    expect(inbound.dmPeer).toBe(55);
+    expect(
+      filterGlobalMessageSearchHits([inbound], { protocol: 'all', conversation: 'dm:55' }),
+    ).toEqual([inbound]);
   });
 
   it('maps MeshCore channel_idx -1 as DM', () => {
@@ -48,7 +66,23 @@ describe('normalize*SearchRow', () => {
     });
     expect(hit.protocol).toBe('meshcore');
     expect(hit.channel).toBeNull();
-    expect(hit.dmPeer).toBe(42);
+    expect(hit.dmPeer).toBe(1);
+  });
+
+  it('uses to_node as MeshCore DM peer only for own outbound rows', () => {
+    const own = new Set([1]);
+    expect(
+      normalizeMeshcoreSearchRow(
+        { id: 3, sender_id: 1, payload: 'x', channel_idx: -1, timestamp: 1, to_node: 42 },
+        own,
+      ).dmPeer,
+    ).toBe(42);
+    expect(
+      normalizeMeshcoreSearchRow(
+        { id: 4, sender_id: 42, payload: 'y', channel_idx: -1, timestamp: 2, to_node: 1 },
+        own,
+      ).dmPeer,
+    ).toBe(42);
   });
 
   it('maps Reticulum hashes', () => {
@@ -63,7 +97,31 @@ describe('normalize*SearchRow', () => {
     });
     expect(hit.protocol).toBe('reticulum');
     expect(hit.reticulumPeerHash).toBe('aabbccddeeff00112233445566778899');
+    expect(hit.reticulumSenderHash).toBe('aabbccddeeff00112233445566778899');
     expect(hit.reticulumMessageHash).toBe('deadbeef');
+  });
+
+  it('uses to_hash as Reticulum peer only for own outbound rows', () => {
+    const own = new Set(['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']);
+    const outbound = normalizeReticulumSearchRow(
+      {
+        id: 5,
+        sender_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        payload: 'out',
+        timestamp: 1,
+      },
+      own,
+    );
+    expect(outbound.reticulumPeerHash).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+    expect(outbound.reticulumSenderHash).toBe('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    expect(
+      filterGlobalMessageSearchHits([outbound], {
+        protocol: 'reticulum',
+        direction: 'outbound',
+        ownReticulumHashes: own,
+      }),
+    ).toEqual([outbound]);
   });
 });
 
@@ -112,9 +170,47 @@ describe('filterGlobalMessageSearchHits', () => {
       filterGlobalMessageSearchHits(hits, {
         protocol: 'all',
         direction: 'outbound',
-        ownNodeIds: new Set([1]),
+        ownNodeIdsByProtocol: { meshtastic: new Set([1]) },
       }),
     ).toEqual([hits[0]]);
+  });
+
+  it('does not let MeshCore own-ids classify Meshtastic direction', () => {
+    expect(
+      filterGlobalMessageSearchHits(hits, {
+        protocol: 'meshtastic',
+        direction: 'outbound',
+        ownNodeIdsByProtocol: {
+          meshtastic: new Set([99]),
+          meshcore: new Set([1]),
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('matches Reticulum sender queries on wire from-hash, not destination peer', () => {
+    const outbound = normalizeReticulumSearchRow(
+      {
+        id: 9,
+        sender_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        payload: 'out',
+        timestamp: 1,
+      },
+      new Set(['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']),
+    );
+    expect(
+      filterGlobalMessageSearchHits([outbound], {
+        protocol: 'reticulum',
+        senderQuery: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      }),
+    ).toEqual([outbound]);
+    expect(
+      filterGlobalMessageSearchHits([outbound], {
+        protocol: 'reticulum',
+        senderQuery: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      }),
+    ).toEqual([]);
   });
 });
 

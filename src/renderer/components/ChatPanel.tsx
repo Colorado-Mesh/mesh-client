@@ -1946,26 +1946,61 @@ function ChatPanel({
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
 
-  // Global search hit: scroll + flash once the conversation's messages are in view.
+  // Global search hit: apply highlight filter first, then scroll/flash against filtered rows.
   useEffect(() => {
     if (initialMessageFocus == null || !isActive) return;
+    const highlight = initialMessageFocus.highlightQuery?.trim() ?? '';
+    if (highlight && (!showSearch || searchQuery !== highlight)) {
+      setShowSearch(true);
+      setSearchQuery(highlight);
+      return;
+    }
     const index = findMessageIndexForFocus(filteredMessages, initialMessageFocus);
     if (index < 0) return;
     isPinnedToBottomRef.current = false;
     messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
     setMessageFocusFlashIndex(index);
-    if (initialMessageFocus.highlightQuery?.trim()) {
-      setShowSearch(true);
-      setSearchQuery(initialMessageFocus.highlightQuery.trim());
-    }
     onMessageFocusConsumed?.();
+  }, [
+    filteredMessages,
+    initialMessageFocus,
+    isActive,
+    onMessageFocusConsumed,
+    searchQuery,
+    showSearch,
+  ]);
+
+  // Keep the flash timer independent of focus consumption so clearing focus does not cancel it.
+  useEffect(() => {
+    if (messageFocusFlashIndex == null) return;
     const clearFlash = window.setTimeout(() => {
       setMessageFocusFlashIndex(null);
     }, 2400);
     return () => {
       window.clearTimeout(clearFlash);
     };
-  }, [filteredMessages, initialMessageFocus, isActive, onMessageFocusConsumed]);
+  }, [messageFocusFlashIndex]);
+
+  // Drop a stale focus that never matched (e.g. message filtered out / not yet loaded).
+  useEffect(() => {
+    if (initialMessageFocus == null || !isActive) return;
+    const highlight = initialMessageFocus.highlightQuery?.trim() ?? '';
+    if (highlight && (!showSearch || searchQuery !== highlight)) return;
+    if (findMessageIndexForFocus(filteredMessages, initialMessageFocus) >= 0) return;
+    const fallback = window.setTimeout(() => {
+      onMessageFocusConsumed?.();
+    }, 3000);
+    return () => {
+      window.clearTimeout(fallback);
+    };
+  }, [
+    filteredMessages,
+    initialMessageFocus,
+    isActive,
+    onMessageFocusConsumed,
+    searchQuery,
+    showSearch,
+  ]);
 
   const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
     scheduleVirtualRowRemeasure(

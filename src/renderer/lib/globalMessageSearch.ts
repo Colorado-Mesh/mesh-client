@@ -17,8 +17,11 @@ export interface GlobalMessageSearchFilters {
   /** Inclusive end (ms). */
   toTs?: number;
   direction?: GlobalMessageSearchDirection;
-  /** Own node ids used for direction filtering (LoRa numeric ids). */
-  ownNodeIds?: ReadonlySet<number>;
+  /**
+   * Own LoRa node ids keyed by protocol. Meshtastic and MeshCore must stay separate so an id
+   * owned on one protocol cannot skew DM peer / direction classification on the other.
+   */
+  ownNodeIdsByProtocol?: Partial<Record<'meshtastic' | 'meshcore', ReadonlySet<number>>>;
   /** Own Reticulum destination hashes (lowercase hex) for direction filtering. */
   ownReticulumHashes?: ReadonlySet<string>;
 }
@@ -35,8 +38,10 @@ export interface GlobalMessageSearchHit {
   channel: number | null;
   /** LoRa DM peer node id, or Reticulum synthetic node id after open. */
   dmPeer: number | null;
-  /** Reticulum peer destination hash when applicable. */
+  /** Reticulum conversation peer hash (counterparty), not necessarily the wire sender. */
   reticulumPeerHash: string | null;
+  /** Reticulum `sender_id` / from-hash for direction filtering (preserved separately from peer). */
+  reticulumSenderHash?: string | null;
   /** LXMF message hash for scroll targeting. */
   reticulumMessageHash: string | null;
   packetId: number | null;
@@ -92,47 +97,69 @@ function asString(value: unknown): string {
   return '';
 }
 
-export function normalizeMeshtasticSearchRow(row: MeshtasticSearchRow): GlobalMessageSearchHit {
+/** DM counterparty: `to` only when we sent the row; otherwise the sender is the peer. */
+export function resolveLoRaDmPeer(
+  senderId: number | null,
+  toNode: number | null,
+  ownNodeIds?: ReadonlySet<number>,
+): number | null {
+  if (senderId != null && ownNodeIds?.has(senderId >>> 0)) return toNode;
+  return senderId;
+}
+
+export function normalizeMeshtasticSearchRow(
+  row: MeshtasticSearchRow,
+  ownNodeIds?: ReadonlySet<number>,
+): GlobalMessageSearchHit {
   const to = asNumber(row.to_node ?? row.to);
+  const senderId = asNumber(row.sender_id);
   const channel = asNumber(row.channel) ?? 0;
   const isDm = to != null && to !== 0xffffffff && to !== 0;
   return {
     protocol: 'meshtastic',
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
-    senderId: asNumber(row.sender_id),
+    senderId,
     senderName: asString(row.sender_name) || 'Unknown',
     payload: asString(row.payload),
     channel: isDm ? null : channel,
-    dmPeer: isDm ? to : null,
+    dmPeer: isDm ? resolveLoRaDmPeer(senderId, to, ownNodeIds) : null,
     reticulumPeerHash: null,
     reticulumMessageHash: null,
     packetId: asNumber(row.packetId ?? row.packet_id),
   };
 }
 
-export function normalizeMeshcoreSearchRow(row: MeshcoreSearchRow): GlobalMessageSearchHit {
+export function normalizeMeshcoreSearchRow(
+  row: MeshcoreSearchRow,
+  ownNodeIds?: ReadonlySet<number>,
+): GlobalMessageSearchHit {
   const channelIdx = asNumber(row.channel_idx) ?? 0;
   const to = asNumber(row.to_node);
+  const senderId = asNumber(row.sender_id);
   const isDm = channelIdx === -1;
   return {
     protocol: 'meshcore',
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
-    senderId: asNumber(row.sender_id),
+    senderId,
     senderName: asString(row.sender_name) || 'Unknown',
     payload: asString(row.payload),
     channel: isDm ? null : channelIdx,
-    dmPeer: isDm ? to : null,
+    dmPeer: isDm ? resolveLoRaDmPeer(senderId, to, ownNodeIds) : null,
     reticulumPeerHash: null,
     reticulumMessageHash: null,
     packetId: null,
   };
 }
 
-export function normalizeReticulumSearchRow(row: ReticulumSearchRow): GlobalMessageSearchHit {
+export function normalizeReticulumSearchRow(
+  row: ReticulumSearchRow,
+  ownReticulumHashes?: ReadonlySet<string>,
+): GlobalMessageSearchHit {
   const senderHash = asString(row.sender_id).toLowerCase() || null;
   const toHash = asString(row.to_hash).toLowerCase() || null;
+  const fromIsOwn = senderHash != null && ownReticulumHashes?.has(senderHash) === true;
   return {
     protocol: 'reticulum',
     dbId: asNumber(row.id),
@@ -142,7 +169,8 @@ export function normalizeReticulumSearchRow(row: ReticulumSearchRow): GlobalMess
     payload: asString(row.payload),
     channel: null,
     dmPeer: null,
-    reticulumPeerHash: senderHash ?? toHash,
+    reticulumPeerHash: (fromIsOwn ? toHash : senderHash) ?? toHash,
+    reticulumSenderHash: senderHash,
     reticulumMessageHash: asString(row.message_hash).toLowerCase() || null,
     packetId: null,
   };
@@ -153,7 +181,8 @@ function matchesSender(hit: GlobalMessageSearchHit, senderQuery: string | undefi
   if (!q) return true;
   if (hit.senderName.toLowerCase().includes(q)) return true;
   if (hit.senderId != null && String(hit.senderId).includes(q)) return true;
-  if (hit.reticulumPeerHash?.includes(q)) return true;
+  // Wire from-hash (not conversation peer — outbound peer is the destination).
+  if (hit.reticulumSenderHash?.includes(q)) return true;
   return false;
 }
 
@@ -181,16 +210,18 @@ function matchesDirection(
   if (direction === 'all') return true;
   if (hit.protocol === 'reticulum') {
     const own = filters.ownReticulumHashes;
-    if (!own || own.size === 0) return true;
-    const sender = hit.reticulumPeerHash;
-    // Inbound: sender is not us. Outbound: sender is us (row sender_id is the from hash).
-    // Search rows use sender_id as from; for outbound we may only have to_hash as peer.
+    // Without own hashes we cannot classify — exclude from directional results.
+    if (!own || own.size === 0) return false;
+    // Direction uses the wire from-hash, not the conversation peer (which is to_hash when we sent).
+    const sender = hit.reticulumSenderHash ?? hit.reticulumPeerHash;
     const fromIsOwn = sender != null && own.has(sender);
     if (direction === 'outbound') return fromIsOwn;
     return !fromIsOwn;
   }
-  const own = filters.ownNodeIds;
-  if (!own || own.size === 0) return true;
+  // Remaining protocols are LoRa (meshtastic | meshcore); use that protocol's own set only.
+  const own = filters.ownNodeIdsByProtocol?.[hit.protocol];
+  // Protocol-scoped own set only — missing/empty means we cannot classify this hit.
+  if (!own || own.size === 0) return false;
   const fromOwn = hit.senderId != null && own.has(hit.senderId >>> 0);
   if (direction === 'outbound') return fromOwn;
   return !fromOwn;
@@ -243,24 +274,33 @@ export async function runGlobalMessageSearch(opts: {
 
   const tasks: Promise<GlobalMessageSearchHit[]>[] = [];
   if (want('meshtastic')) {
+    const own = opts.filters.ownNodeIdsByProtocol?.meshtastic;
     tasks.push(
       opts.api
         .searchMessages(q, limit)
-        .then((rows) => (rows as MeshtasticSearchRow[]).map(normalizeMeshtasticSearchRow)),
+        .then((rows) =>
+          (rows as MeshtasticSearchRow[]).map((row) => normalizeMeshtasticSearchRow(row, own)),
+        ),
     );
   }
   if (want('meshcore')) {
+    const own = opts.filters.ownNodeIdsByProtocol?.meshcore;
     tasks.push(
       opts.api
         .searchMeshcoreMessages(q, limit)
-        .then((rows) => (rows as MeshcoreSearchRow[]).map(normalizeMeshcoreSearchRow)),
+        .then((rows) =>
+          (rows as MeshcoreSearchRow[]).map((row) => normalizeMeshcoreSearchRow(row, own)),
+        ),
     );
   }
   if (want('reticulum') && opts.reticulumIdentityId) {
+    const ownHashes = opts.filters.ownReticulumHashes;
     tasks.push(
       opts.api
         .searchReticulumMessages(opts.reticulumIdentityId, q, limit)
-        .then((rows) => (rows as ReticulumSearchRow[]).map(normalizeReticulumSearchRow)),
+        .then((rows) =>
+          (rows as ReticulumSearchRow[]).map((row) => normalizeReticulumSearchRow(row, ownHashes)),
+        ),
     );
   }
 

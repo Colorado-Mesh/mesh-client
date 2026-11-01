@@ -48,9 +48,32 @@ describe('scheduledSend', () => {
     expect(isScheduledOutboxRow(row({ priority: 'emergency' }))).toBe(false);
   });
 
-  it('ages scheduled rows from their send time, others from creation', () => {
+  it('ages scheduled rows from their send time, others from createdAt only', () => {
     expect(outboxRowAgeAnchorMs(row())).toBe(2_000_000);
-    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1 }))).toBe(1_000_000);
+    // Automatic status churn must not renew the age anchor via updatedAt.
+    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1, updatedAt: 9_000_000 }))).toBe(1_000_000);
+    expect(
+      outboxRowAgeAnchorMs(
+        row({
+          createdAt: 1_000_000,
+          updatedAt: 9_000_000,
+          nextRetryAt: null,
+          attemptCount: 0,
+        }),
+      ),
+    ).toBe(1_000_000);
+    // Failed with a retry backoff still uses nextRetryAt only while the row is scheduled.
+    expect(
+      outboxRowAgeAnchorMs(
+        row({
+          status: 'failed',
+          attemptCount: 1,
+          createdAt: 1_000_000,
+          updatedAt: 3_000_000,
+          nextRetryAt: 2_000_000,
+        }),
+      ),
+    ).toBe(1_000_000);
   });
 
   it('validates the schedule window', () => {

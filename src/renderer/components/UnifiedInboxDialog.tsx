@@ -29,6 +29,7 @@ export interface UnifiedInboxDialogProps {
   enabledProtocols: readonly MeshProtocol[];
   messagesByProtocol: Readonly<Record<MeshProtocol, readonly ChatMessage[]>>;
   ownNodeIdsByProtocol?: Partial<Record<MeshProtocol, ReadonlySet<number>>>;
+  ownReticulumHashes?: ReadonlySet<string>;
   reticulumIdentityId?: string | null;
   /** Same handler as global search hits: opens the source conversation and focuses the message. */
   onSelectItem: (hit: GlobalMessageSearchHit) => void;
@@ -65,6 +66,7 @@ function UnifiedInboxDialogBody({
   enabledProtocols,
   messagesByProtocol,
   ownNodeIdsByProtocol,
+  ownReticulumHashes,
   reticulumIdentityId,
   onSelectItem,
 }: Omit<UnifiedInboxDialogProps, 'open'>) {
@@ -225,7 +227,14 @@ function UnifiedInboxDialogBody({
   };
 
   const openItem = (item: UnifiedInboxItem) => {
-    onSelectItem(inboxItemToJumpTarget(item));
+    // Protocol-scoped only — a Meshtastic own-id must not influence a MeshCore jump target.
+    const ownForProtocol = ownNodeIdsByProtocol?.[item.protocol];
+    onSelectItem(
+      inboxItemToJumpTarget(item, {
+        ownNodeIds: ownForProtocol && ownForProtocol.size > 0 ? ownForProtocol : undefined,
+        ownReticulumHashes,
+      }),
+    );
     onClose();
   };
 

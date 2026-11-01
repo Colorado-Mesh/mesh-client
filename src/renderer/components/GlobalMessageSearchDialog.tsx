@@ -1,5 +1,5 @@
 import { Inbox, Search, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -96,16 +96,6 @@ export function GlobalMessageSearchDialog({
     };
   }, [open, onClose]);
 
-  const ownNodeIds = useMemo(() => {
-    const set = new Set<number>();
-    for (const p of enabledProtocols) {
-      const ids = ownNodeIdsByProtocol?.[p];
-      if (!ids) continue;
-      for (const id of ids) set.add(id >>> 0);
-    }
-    return set;
-  }, [enabledProtocols, ownNodeIdsByProtocol]);
-
   const runSearch = useCallback(
     async (nextQuery: string) => {
       const q = nextQuery.trim();
@@ -131,7 +121,10 @@ export function GlobalMessageSearchDialog({
             protocol,
             senderQuery,
             direction,
-            ownNodeIds,
+            ownNodeIdsByProtocol: {
+              meshtastic: ownNodeIdsByProtocol?.meshtastic,
+              meshcore: ownNodeIdsByProtocol?.meshcore,
+            },
             ownReticulumHashes,
           },
           api: {
@@ -158,7 +151,7 @@ export function GlobalMessageSearchDialog({
     [
       direction,
       enabledProtocols,
-      ownNodeIds,
+      ownNodeIdsByProtocol,
       ownReticulumHashes,
       protocol,
       reticulumIdentityId,
