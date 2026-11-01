@@ -134,9 +134,10 @@ describe('NomadPageServerPanel', () => {
     });
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
+      expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
       expect(
         screen.getByRole('switch', { name: 'nomadNetwork.serving.allowExecutablePages' }),
-      ).toBeInTheDocument();
+      ).toBeEnabled();
     });
     await user.click(
       screen.getByRole('switch', { name: 'nomadNetwork.serving.allowExecutablePages' }),

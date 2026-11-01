@@ -209,6 +209,9 @@ pub struct StackHandle {
     path_medium_op_lock: Mutex<()>,
     /// Serializes rnsd config file read-modify-write (stack settings, full config put/import).
     config_op_lock: Mutex<()>,
+    /// Serializes Nomad serving preference updates through stop/start so concurrent
+    /// PUTs cannot apply an older allow_executable / display_name after a newer one.
+    nomad_serving_op_lock: Mutex<()>,
     /// App-wide BLE GATT sessions (Meshtastic / MeshCore) + MAC registry.
     gatt: Arc<crate::gatt::GattManager>,
     #[cfg(feature = "rns-stack")]
@@ -345,6 +348,7 @@ impl StackHandle {
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
             config_op_lock: Mutex::new(()),
+            nomad_serving_op_lock: Mutex::new(()),
             gatt,
             live: std::sync::RwLock::new(None),
             attach_live_lock: Mutex::new(()),
@@ -364,6 +368,7 @@ impl StackHandle {
             identity_op_lock: Mutex::new(()),
             path_medium_op_lock: Mutex::new(()),
             config_op_lock: Mutex::new(()),
+            nomad_serving_op_lock: Mutex::new(()),
             gatt,
             #[cfg(test)]
             test_path_medium_apply_error: Mutex::new(None),
@@ -2298,32 +2303,49 @@ impl StackHandle {
         display_name: Option<String>,
         allow_executable_pages: Option<bool>,
     ) -> Result<NomadServingStatus, String> {
-        // Persist display-name / CGI prefs immediately; persist `enabled` only after
-        // start/stop succeeds so a failed start cannot leave a sticky enabled=true.
-        let mut executable_changed = false;
+        let _op = self.nomad_serving_op_lock.lock().await;
         let display_name_provided = display_name.is_some();
-        {
-            let mut inner = self.inner.write().await;
-            if let Some(name) = display_name {
-                let trimmed = sanitize_nomad_display_name(&name)?;
-                if trimmed.is_empty() {
-                    inner.nomad_serving_display_name = None;
-                } else {
-                    inner.nomad_serving_display_name = Some(trimmed);
-                }
-            }
-            if let Some(allow) = allow_executable_pages {
-                executable_changed = inner.nomad_serving_allow_executable_pages != allow;
-                inner.nomad_serving_allow_executable_pages = allow;
-            }
-            if display_name_provided || allow_executable_pages.is_some() {
-                inner.save(&self.config_dir, &self.storage_dir)?;
-            }
-        }
+        let sanitized_display = match display_name {
+            Some(name) => Some(sanitize_nomad_display_name(&name)?),
+            None => None,
+        };
 
         #[cfg(feature = "rns-stack")]
         {
+            // Reject before mutating prefs so a missing live stack leaves state untouched.
             let live = self.require_live()?;
+
+            // Persist display-name / CGI prefs before stop/start; persist `enabled` only
+            // after start/stop succeeds so a failed start cannot leave sticky enabled=true.
+            let mut executable_changed = false;
+            {
+                let mut inner = self.inner.write().await;
+                let previous_display = inner.nomad_serving_display_name.clone();
+                let previous_allow = inner.nomad_serving_allow_executable_pages;
+                if let Some(trimmed) = sanitized_display {
+                    if trimmed.is_empty() {
+                        inner.nomad_serving_display_name = None;
+                    } else {
+                        inner.nomad_serving_display_name = Some(trimmed);
+                    }
+                }
+                if let Some(allow) = allow_executable_pages {
+                    executable_changed = previous_allow != allow;
+                    inner.nomad_serving_allow_executable_pages = allow;
+                }
+                if (display_name_provided || allow_executable_pages.is_some())
+                    && let Err(e) = inner.save(&self.config_dir, &self.storage_dir)
+                {
+                    if display_name_provided {
+                        inner.nomad_serving_display_name = previous_display;
+                    }
+                    if allow_executable_pages.is_some() {
+                        inner.nomad_serving_allow_executable_pages = previous_allow;
+                    }
+                    return Err(e);
+                }
+            }
+
             if let Some(allow) = allow_executable_pages {
                 live.nomad_server().set_allow_executable_pages(allow).await;
             }
@@ -2390,7 +2412,9 @@ impl StackHandle {
 
         #[cfg(not(feature = "rns-stack"))]
         {
-            let _ = executable_changed;
+            let _ = allow_executable_pages;
+            let _ = sanitized_display;
+            let _ = display_name_provided;
             if enabled {
                 return Err(NOMAD_REQUIRES_STACK.into());
             }
