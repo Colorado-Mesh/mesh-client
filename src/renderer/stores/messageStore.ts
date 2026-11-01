@@ -3,10 +3,12 @@ import { create } from 'zustand';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
+import { MAX_IN_MEMORY_CHAT_MESSAGES } from '../lib/chatInMemoryBuffer';
 import {
   clearHeardRepeatWindowIfMessage,
   renameHeardRepeatWindowMessageId,
 } from '../lib/meshcore/heardRepeatTracker';
+import { getMeshtasticMessageLoadLimit } from '../lib/meshtasticMessageLoadLimit';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
 import { getIdentity } from './identityStore';
@@ -226,9 +228,71 @@ function carryChannelIdentity(existing: MessageRecord, incoming: MessageRecord):
   };
 }
 
+/**
+ * Live insert cap: Meshtastic matches the SQLite load setting (hard-capped at
+ * MAX_IN_MEMORY_CHAT_MESSAGES); other protocols use the hard in-memory ceiling.
+ */
+function resolveLiveMessageCap(identityId: IdentityId): number {
+  const protocol = getIdentity(identityId)?.protocol.type;
+  if (protocol === 'meshtastic') {
+    return Math.min(getMeshtasticMessageLoadLimit(), MAX_IN_MEMORY_CHAT_MESSAGES);
+  }
+  return MAX_IN_MEMORY_CHAT_MESSAGES;
+}
+
+function compareMessageRecordsForTrim(a: MessageRecord, b: MessageRecord): number {
+  if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+  const aOrder = a.localOrder ?? 0;
+  const bOrder = b.localOrder ?? 0;
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  return a.id.localeCompare(b.id);
+}
+
+/** Keep newest `cap` rows; return the trimmed bucket and ids that were dropped. */
+function trimIdentityBucketToNewest(
+  byIdentity: Record<string, MessageRecord>,
+  cap: number,
+): { next: Record<string, MessageRecord>; evictedIds: string[] } {
+  const size = Object.keys(byIdentity).length;
+  if (size <= cap) return { next: byIdentity, evictedIds: [] };
+
+  // Routine live insert is one over the cap: scan once and omit the oldest id.
+  if (size === cap + 1) {
+    let oldest: MessageRecord | null = null;
+    for (const message of Object.values(byIdentity)) {
+      if (oldest == null || compareMessageRecordsForTrim(message, oldest) < 0) {
+        oldest = message;
+      }
+    }
+    if (oldest == null) return { next: byIdentity, evictedIds: [] };
+    return { next: omitRecordKey(byIdentity, oldest.id), evictedIds: [oldest.id] };
+  }
+
+  // Cap lowered or bulk overshoot: full newest-N rebuild.
+  const sorted = Object.values(byIdentity).sort(compareMessageRecordsForTrim);
+  const dropCount = size - cap;
+  const evictedIds = sorted.slice(0, dropCount).map((m) => m.id);
+  const next: Record<string, MessageRecord> = {};
+  for (let i = dropCount; i < sorted.length; i++) {
+    const m = sorted[i];
+    next[m.id] = m;
+  }
+  return { next, evictedIds };
+}
+
+function cleanupEvictedLiveMessages(identityId: IdentityId, evictedIds: string[]): void {
+  if (evictedIds.length === 0) return;
+  const relay = useRelayCoverageStore.getState();
+  for (const id of evictedIds) {
+    relay.remove(identityId, id);
+    clearHeardRepeatWindowIfMessage(identityId, id);
+  }
+}
+
 /** Insert or replace the full record when fields differ (no merge). Use upsertMessage for partial updates. */
 export function addMessage(identityId: IdentityId, incoming: MessageRecord): void {
   let inserted = null as MessageRecord | null;
+  let evictedIds: string[] = [];
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[incoming.id];
@@ -238,9 +302,16 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
     if (existing === message || (existing && messageRecordFieldsEqual(existing, message))) {
       return s;
     }
-    if (!existing) inserted = message;
-    return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: message });
+    const grown = { ...byIdentity, [message.id]: message };
+    if (!existing) {
+      inserted = message;
+      const trimmed = trimIdentityBucketToNewest(grown, resolveLiveMessageCap(identityId));
+      evictedIds = trimmed.evictedIds;
+      return mergeIdentityMessages(s, identityId, trimmed.next);
+    }
+    return mergeIdentityMessages(s, identityId, grown);
   });
+  cleanupEvictedLiveMessages(identityId, evictedIds);
   if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
 }
 
@@ -251,6 +322,7 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
  */
 export function upsertMessage(identityId: IdentityId, message: MessageRecord): void {
   let inserted = null as MessageRecord | null;
+  let evictedIds: string[] = [];
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
@@ -264,9 +336,16 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
       return s;
     }
-    if (!existing) inserted = merged;
-    return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: merged });
+    const grown = { ...byIdentity, [message.id]: merged };
+    if (!existing) {
+      inserted = merged;
+      const trimmed = trimIdentityBucketToNewest(grown, resolveLiveMessageCap(identityId));
+      evictedIds = trimmed.evictedIds;
+      return mergeIdentityMessages(s, identityId, trimmed.next);
+    }
+    return mergeIdentityMessages(s, identityId, grown);
   });
+  cleanupEvictedLiveMessages(identityId, evictedIds);
   if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
 }
 
