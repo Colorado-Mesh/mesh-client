@@ -527,6 +527,50 @@ describe('RrcPanel', () => {
     expect(screen.getAllByText('notice rejected by hub')).toHaveLength(1);
   });
 
+  it('shows why a /msg failed when the user switched rooms while it was sending', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', []);
+    store.roomJoined('#lobby', []);
+    store.setActiveRoom('#general');
+    let finishSend: (res: { ok: boolean; error?: string }) => void = () => {};
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSend = resolve;
+        }),
+    );
+
+    render(<RrcPanel isActive />);
+
+    await user.type(
+      screen.getByRole('textbox', { name: /Message or \/command/i }),
+      `/msg ${peerHash} hello`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.send).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'notice', dst_hash: peerHash }),
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Open room #lobby' }));
+    await act(async () => {
+      finishSend({ ok: false, error: 'notice rejected by hub' });
+      await Promise.resolve();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Open room #general' }));
+    expect(screen.getByRole('textbox', { name: /Message or \/command/i })).toHaveValue(
+      `/msg ${peerHash} hello`,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('notice rejected by hub');
+  });
+
   it('keeps the /msg text in the room composer when the target cannot be resolved', async () => {
     const user = userEvent.setup();
     const store = useRrcSessionStore.getState();

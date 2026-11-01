@@ -341,6 +341,8 @@ export function ChatComposer({
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
+    /** The send failed after the user left `viewKey`: keep the reason until they are back there. */
+    showOnReturn?: boolean;
   } | null>(null);
   const [showComposePicker, setShowComposePicker] = useState(false);
   const [showGifModal, setShowGifModal] = useState(false);
@@ -365,6 +367,13 @@ export function ChatComposer({
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const closeFloodScopeMenu = useCallback(() => {
     setFloodScopeMenuOpen(false);
@@ -568,7 +577,10 @@ export function ChatComposer({
     if (inputValueRef.current !== nextDraft) setInput(nextDraft);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft and mention UI on tab switch
     setMentionQuery(null);
-    setChatActionError(null);
+    setChatActionError((prev) => {
+      if (!prev?.showOnReturn) return null;
+      return prev.viewKey === viewKey ? { ...prev, showOnReturn: false } : prev;
+    });
     clearMentionCycle();
     // Clear any lingering fast-send advisory when switching chat views.
     if (meshcoreFastSendWarnTimerRef.current) {
@@ -622,10 +634,11 @@ export function ChatComposer({
 
   const clearSentDraft = useCallback(
     (draftSnapshot: string) => {
-      // `viewKey` is the view the send started in. If the composer has switched views since (an
-      // RRC /msg opens its DM before resolving), the switch already saved the sent text as that
-      // view's draft, so clear the stored copy and leave the new view's input alone.
-      if (prevViewKeyRef.current !== viewKey) {
+      // `viewKey` is the view the send started in. If the composer has left it since (an RRC /msg
+      // opens its DM before resolving; the compact layout unmounts the composer on Back to list),
+      // the switch or unmount already saved the sent text as that view's draft, so clear the
+      // stored copy and leave any new view's input alone.
+      if (!mountedRef.current || prevViewKeyRef.current !== viewKey) {
         if (loadDraftsInitial(protocol)[viewKey] === draftSnapshot) clearDraft(protocol, viewKey);
         return;
       }
@@ -715,6 +728,7 @@ export function ChatComposer({
             passthroughUnknown: true,
           }),
           viewKey,
+          showOnReturn: prevViewKeyRef.current !== viewKey,
         });
         return;
       } finally {
@@ -844,6 +858,7 @@ export function ChatComposer({
       setChatActionError({
         message: errMsg,
         viewKey,
+        showOnReturn: prevViewKeyRef.current !== viewKey,
       });
     } finally {
       setSending(false);
