@@ -247,7 +247,7 @@ describe('useChatOutbox', () => {
       vi.mocked(mockOutbox.list).mockResolvedValue([{ ...entry, status: 'queued' }]);
       result.current.retry(4);
       await vi.advanceTimersByTimeAsync(0);
-      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(4, 'queued', undefined, undefined, 0);
       // Second send is paced behind the first — advance past the interval so no timer dangles.
       expect(sendFn).toHaveBeenCalledTimes(1);
       await vi.advanceTimersByTimeAsync(MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS);

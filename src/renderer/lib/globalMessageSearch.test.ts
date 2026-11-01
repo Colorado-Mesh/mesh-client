@@ -170,9 +170,47 @@ describe('filterGlobalMessageSearchHits', () => {
       filterGlobalMessageSearchHits(hits, {
         protocol: 'all',
         direction: 'outbound',
-        ownNodeIds: new Set([1]),
+        ownNodeIdsByProtocol: { meshtastic: new Set([1]) },
       }),
     ).toEqual([hits[0]]);
+  });
+
+  it('does not let MeshCore own-ids classify Meshtastic direction', () => {
+    expect(
+      filterGlobalMessageSearchHits(hits, {
+        protocol: 'meshtastic',
+        direction: 'outbound',
+        ownNodeIdsByProtocol: {
+          meshtastic: new Set([99]),
+          meshcore: new Set([1]),
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('matches Reticulum sender queries on wire from-hash, not destination peer', () => {
+    const outbound = normalizeReticulumSearchRow(
+      {
+        id: 9,
+        sender_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        to_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        payload: 'out',
+        timestamp: 1,
+      },
+      new Set(['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']),
+    );
+    expect(
+      filterGlobalMessageSearchHits([outbound], {
+        protocol: 'reticulum',
+        senderQuery: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      }),
+    ).toEqual([outbound]);
+    expect(
+      filterGlobalMessageSearchHits([outbound], {
+        protocol: 'reticulum',
+        senderQuery: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      }),
+    ).toEqual([]);
   });
 });
 

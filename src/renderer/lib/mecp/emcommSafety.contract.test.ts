@@ -60,6 +60,7 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(hook).toMatch(
       /isAppManagedOutboxRow\(row\) \|\| now - outboxRowAgeAnchorMs\(row\) <= OUTBOX_MAX_AGE_MS/,
     );
+    expect(hook).toMatch(/isAppManagedOutboxRow\(row\) \|\| row\.attemptCount < MAX_ATTEMPTS/);
     expect(hook).toMatch(/isAppManagedOutboxRow\(row\) \|\| nextAttemptCount < MAX_ATTEMPTS/);
   });
 

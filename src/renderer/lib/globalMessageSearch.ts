@@ -17,8 +17,11 @@ export interface GlobalMessageSearchFilters {
   /** Inclusive end (ms). */
   toTs?: number;
   direction?: GlobalMessageSearchDirection;
-  /** Own node ids used for direction filtering (LoRa numeric ids). */
-  ownNodeIds?: ReadonlySet<number>;
+  /**
+   * Own LoRa node ids keyed by protocol. Meshtastic and MeshCore must stay separate so an id
+   * owned on one protocol cannot skew DM peer / direction classification on the other.
+   */
+  ownNodeIdsByProtocol?: Partial<Record<'meshtastic' | 'meshcore', ReadonlySet<number>>>;
   /** Own Reticulum destination hashes (lowercase hex) for direction filtering. */
   ownReticulumHashes?: ReadonlySet<string>;
 }
@@ -178,7 +181,8 @@ function matchesSender(hit: GlobalMessageSearchHit, senderQuery: string | undefi
   if (!q) return true;
   if (hit.senderName.toLowerCase().includes(q)) return true;
   if (hit.senderId != null && String(hit.senderId).includes(q)) return true;
-  if (hit.reticulumPeerHash?.includes(q)) return true;
+  // Wire from-hash (not conversation peer — outbound peer is the destination).
+  if (hit.reticulumSenderHash?.includes(q)) return true;
   return false;
 }
 
@@ -206,15 +210,18 @@ function matchesDirection(
   if (direction === 'all') return true;
   if (hit.protocol === 'reticulum') {
     const own = filters.ownReticulumHashes;
-    if (!own || own.size === 0) return true;
+    // Without own hashes we cannot classify — exclude from directional results.
+    if (!own || own.size === 0) return false;
     // Direction uses the wire from-hash, not the conversation peer (which is to_hash when we sent).
     const sender = hit.reticulumSenderHash ?? hit.reticulumPeerHash;
     const fromIsOwn = sender != null && own.has(sender);
     if (direction === 'outbound') return fromIsOwn;
     return !fromIsOwn;
   }
-  const own = filters.ownNodeIds;
-  if (!own || own.size === 0) return true;
+  // Remaining protocols are LoRa (meshtastic | meshcore); use that protocol's own set only.
+  const own = filters.ownNodeIdsByProtocol?.[hit.protocol];
+  // Protocol-scoped own set only — missing/empty means we cannot classify this hit.
+  if (!own || own.size === 0) return false;
   const fromOwn = hit.senderId != null && own.has(hit.senderId >>> 0);
   if (direction === 'outbound') return fromOwn;
   return !fromOwn;
@@ -267,7 +274,7 @@ export async function runGlobalMessageSearch(opts: {
 
   const tasks: Promise<GlobalMessageSearchHit[]>[] = [];
   if (want('meshtastic')) {
-    const own = opts.filters.ownNodeIds;
+    const own = opts.filters.ownNodeIdsByProtocol?.meshtastic;
     tasks.push(
       opts.api
         .searchMessages(q, limit)
@@ -277,7 +284,7 @@ export async function runGlobalMessageSearch(opts: {
     );
   }
   if (want('meshcore')) {
-    const own = opts.filters.ownNodeIds;
+    const own = opts.filters.ownNodeIdsByProtocol?.meshcore;
     tasks.push(
       opts.api
         .searchMeshcoreMessages(q, limit)

@@ -227,14 +227,11 @@ function UnifiedInboxDialogBody({
   };
 
   const openItem = (item: UnifiedInboxItem) => {
-    const ownNodeIds = new Set<number>();
-    for (const ids of Object.values(ownNodeIdsByProtocol ?? {})) {
-      if (!ids) continue;
-      for (const id of ids) ownNodeIds.add(id >>> 0);
-    }
+    // Protocol-scoped only — a Meshtastic own-id must not influence a MeshCore jump target.
+    const ownForProtocol = ownNodeIdsByProtocol?.[item.protocol];
     onSelectItem(
       inboxItemToJumpTarget(item, {
-        ownNodeIds: ownNodeIds.size > 0 ? ownNodeIds : undefined,
+        ownNodeIds: ownForProtocol && ownForProtocol.size > 0 ? ownForProtocol : undefined,
         ownReticulumHashes,
       }),
     );

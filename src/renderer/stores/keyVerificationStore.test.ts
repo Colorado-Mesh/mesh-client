@@ -241,10 +241,11 @@ describe('keyVerificationStore', () => {
       nonceToNode: new Map([[22n, nodeB]]),
     });
 
+    // Longname must not match Node B — resolution goes through nonceToNode only.
     applyKeyVerificationClientNotification(ID, {
       payloadVariant: {
         case: 'keyVerificationNumberInform',
-        value: { nonce: 22n, remoteLongname: 'Node B', securityNumber: 777 },
+        value: { nonce: 22n, remoteLongname: 'Unmatched Inform', securityNumber: 777 },
       },
     });
 
@@ -252,7 +253,7 @@ describe('keyVerificationStore', () => {
       phase: 'showNumber',
       nonce: 22n,
       remoteNodeNum: nodeB,
-      remoteLongname: 'Node B',
+      remoteLongname: 'Unmatched Inform',
       securityNumber: 777,
     });
   });

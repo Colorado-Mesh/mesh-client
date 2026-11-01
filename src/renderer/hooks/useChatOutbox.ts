@@ -150,7 +150,9 @@ function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
   return (
     (row.status === 'queued' || row.status === 'failed') &&
     (row.nextRetryAt == null || row.nextRetryAt <= now) &&
-    (isAppManagedOutboxRow(row) || now - outboxRowAgeAnchorMs(row) <= OUTBOX_MAX_AGE_MS)
+    (isAppManagedOutboxRow(row) || now - outboxRowAgeAnchorMs(row) <= OUTBOX_MAX_AGE_MS) &&
+    // Exhausted normal rows stay out of automatic drain; manual retry resets attemptCount to 0.
+    (isAppManagedOutboxRow(row) || row.attemptCount < MAX_ATTEMPTS)
   );
 }
 
@@ -683,11 +685,11 @@ export function useChatOutbox({
 
   const retry = useCallback(
     (id: number) => {
-      // Reset status to queued with no retry delay, then drain
+      // Reset status + attempt budget so an exhausted row can enter automatic drain again.
       void window.electronAPI.chat.outbox
-        .updateStatus(id, 'queued', undefined, undefined)
+        .updateStatus(id, 'queued', undefined, undefined, 0)
         .then(() => {
-          updateRow(id, { status: 'queued', error: null, nextRetryAt: null });
+          updateRow(id, { status: 'queued', error: null, nextRetryAt: null, attemptCount: 0 });
           return drainOnce();
         })
         .catch((err: unknown) => {

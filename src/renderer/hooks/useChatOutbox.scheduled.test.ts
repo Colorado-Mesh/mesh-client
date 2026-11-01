@@ -292,7 +292,7 @@ describe('scheduled send via durable outbox', () => {
       await waitFor(() => {
         expect(sendFn).toHaveBeenCalledTimes(1);
       });
-      expect(outbox.updateStatus).toHaveBeenCalledWith(60, 'queued', undefined, undefined);
+      expect(outbox.updateStatus).toHaveBeenCalledWith(60, 'queued', undefined, undefined, 0);
     });
   });
 });

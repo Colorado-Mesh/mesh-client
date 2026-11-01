@@ -48,10 +48,10 @@ describe('scheduledSend', () => {
     expect(isScheduledOutboxRow(row({ priority: 'emergency' }))).toBe(false);
   });
 
-  it('ages scheduled rows from their send time, others from max(createdAt, updatedAt)', () => {
+  it('ages scheduled rows from their send time, others from createdAt only', () => {
     expect(outboxRowAgeAnchorMs(row())).toBe(2_000_000);
-    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1, updatedAt: 1_500_000 }))).toBe(1_500_000);
-    // Manual retry of an old scheduled row: nextRetryAt cleared / attempt bumped; use updatedAt.
+    // Automatic status churn must not renew the age anchor via updatedAt.
+    expect(outboxRowAgeAnchorMs(row({ attemptCount: 1, updatedAt: 9_000_000 }))).toBe(1_000_000);
     expect(
       outboxRowAgeAnchorMs(
         row({
@@ -61,8 +61,8 @@ describe('scheduledSend', () => {
           attemptCount: 0,
         }),
       ),
-    ).toBe(9_000_000);
-    // One failed attempt: still age from the later of create/update, not the old schedule time.
+    ).toBe(1_000_000);
+    // Failed with a retry backoff still uses nextRetryAt only while the row is scheduled.
     expect(
       outboxRowAgeAnchorMs(
         row({
@@ -73,7 +73,7 @@ describe('scheduledSend', () => {
           nextRetryAt: 2_000_000,
         }),
       ),
-    ).toBe(3_000_000);
+    ).toBe(1_000_000);
   });
 
   it('validates the schedule window', () => {

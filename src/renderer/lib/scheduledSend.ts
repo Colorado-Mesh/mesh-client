@@ -39,15 +39,12 @@ export function isScheduledOutboxRow(
 
 /** Wall-clock anchor for the outbox 24h drain age cap (scheduled rows age from their send time). */
 export function outboxRowAgeAnchorMs(
-  row: Pick<
-    OutboxEntry,
-    'status' | 'attemptCount' | 'nextRetryAt' | 'priority' | 'createdAt' | 'updatedAt'
-  >,
+  row: Pick<OutboxEntry, 'status' | 'attemptCount' | 'nextRetryAt' | 'priority' | 'createdAt'>,
 ): number {
   if (isScheduledOutboxRow(row) && row.nextRetryAt != null) return row.nextRetryAt;
-  // After a manual retry / failed attempt the row is no longer "scheduled"; age from the later
-  // of create vs last update so an old scheduledAt does not immediately hit the 24h drain cap.
-  return Math.max(row.createdAt, row.updatedAt);
+  // Use create time only — `updatedAt` moves on automatic status churn and must not renew the cap.
+  // Manual retry resets attemptCount and re-queues; see {@link useChatOutbox} `retry`.
+  return row.createdAt;
 }
 
 /** Turn a regular queue entry into a scheduled one. */
