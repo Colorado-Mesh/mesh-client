@@ -110,6 +110,25 @@ describe('custom map sources', () => {
         code: 'io',
       });
     });
+
+    it('rejects oversized per-tile blobs on inspect and serve', async () => {
+      const { CUSTOM_TILE_MAX_BYTES } = await import('@/shared/offlineMaps/customMapSources');
+      const huge = Buffer.alloc(CUSTOM_TILE_MAX_BYTES + 1, 0x89);
+      const inspectFile = path.join(root, 'huge-tile.mbtiles');
+      writeMbtiles(inspectFile, { tiles: [{ z: 0, x: 0, tmsY: 0, data: huge }] });
+      await expect(inspectMbtilesFile(inspectFile)).rejects.toMatchObject({
+        code: 'mbtiles_invalid',
+      });
+
+      const serveFile = path.join(root, 'serve-huge.mbtiles');
+      writeMbtiles(serveFile, { tiles: [{ z: 1, x: 0, tmsY: 0, data: huge }] });
+      const pool = new MbtilesReaderPool(() => serveFile);
+      // z=1, xyz y=1 → TMS row 0 (matches inserted tmsY)
+      expect(() => pool.getTile('mbtiles-000000000001', 1, 0, 1)).toThrow(
+        expect.objectContaining({ code: 'mbtiles_invalid' }),
+      );
+      pool.closeAll();
+    });
   });
 
   describe('CustomMapSourceStore', () => {

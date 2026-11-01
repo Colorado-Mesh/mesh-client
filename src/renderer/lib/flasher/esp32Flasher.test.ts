@@ -112,6 +112,15 @@ describe('esp32Flasher stall timeout contract', () => {
     expect(source.default).toContain('60_000');
     expect(source.default).toContain('hasSeenProgress');
   });
+
+  it('bounds transport.disconnect before falling back to closeSerialPortIfOpen', async () => {
+    const source = await import('./esp32Flasher?raw');
+    expect(source.default).toContain('ESP32_DISCONNECT_TIMEOUT_MS');
+    expect(source.default).toContain('3_000');
+    expect(source.default).toMatch(
+      /Promise\.race\(\[\s*transport\.disconnect\(\),\s*sleepMillis\(ESP32_DISCONNECT_TIMEOUT_MS\)/,
+    );
+  });
 });
 
 describe('flashEsp32Firmware Uint8Array flash path', () => {

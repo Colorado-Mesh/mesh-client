@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 
 import {
+  CUSTOM_TILE_MAX_BYTES,
   isValidCustomMaxNativeZoom,
   MBTILES_MAX_BYTES,
   sniffRasterTileMime,
@@ -19,6 +20,13 @@ export class MbtilesError extends Error {
   ) {
     super(message);
     this.name = 'MbtilesError';
+  }
+}
+
+/** Reject a single `tile_data` blob that is empty or larger than a custom XYZ tile. */
+function assertTileDataWithinCap(data: Uint8Array): void {
+  if (data.byteLength === 0 || data.byteLength > CUSTOM_TILE_MAX_BYTES) {
+    throw new MbtilesError('mbtiles_invalid', 'Tile exceeds per-tile size limit');
   }
 }
 
@@ -107,6 +115,7 @@ export async function inspectMbtilesFile(filePath: string): Promise<MbtilesInspe
     if (!(sample?.tile_data instanceof Uint8Array)) {
       throw new MbtilesError('mbtiles_invalid', 'No tiles');
     }
+    assertTileDataWithinCap(sample.tile_data);
     const mime = sniffRasterTileMime(sample.tile_data);
     if (!mime) throw new MbtilesError('mbtiles_vector', 'Tiles are not PNG/JPEG/WebP');
     const tileZooms = db
@@ -153,7 +162,9 @@ export class MbtilesReaderPool {
         'SELECT tile_data FROM tiles WHERE zoom_level = ? AND tile_column = ? AND tile_row = ?',
       )
       .get(z, x, tmsRow) as { tile_data?: unknown } | undefined;
-    return row?.tile_data instanceof Uint8Array ? Buffer.from(row.tile_data) : null;
+    if (!(row?.tile_data instanceof Uint8Array)) return null;
+    assertTileDataWithinCap(row.tile_data);
+    return Buffer.from(row.tile_data);
   }
 
   close(id: string): void {

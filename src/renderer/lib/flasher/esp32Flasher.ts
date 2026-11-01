@@ -19,6 +19,8 @@ const ESP32_SYNC_TIMEOUT_MS = 45_000;
 const ESP32_SYNC_MAX_ATTEMPTS = 3;
 /** Abort writeFlash when no bytes progress (USB drop mid-transfer). */
 const ESP32_FLASH_STALL_TIMEOUT_MS = 60_000;
+/** Bound transport.disconnect so a stuck serial write cannot block cancel/stall cleanup. */
+const ESP32_DISCONNECT_TIMEOUT_MS = 3_000;
 /** Reject instant "success" when almost no firmware bytes were written. */
 const MIN_FLASH_BYTES_WRITTEN = 8192;
 
@@ -176,7 +178,8 @@ async function disconnectEsp32Transport(
   serialPort: SerialPort,
 ): Promise<void> {
   try {
-    await transport.disconnect();
+    // Do not await disconnect forever — a mid-write hang would block abort/stall cleanup.
+    await Promise.race([transport.disconnect(), sleepMillis(ESP32_DISCONNECT_TIMEOUT_MS)]);
   } catch {
     // catch-no-log-ok port may already be closed
   }

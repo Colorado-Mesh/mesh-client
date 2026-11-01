@@ -39,12 +39,13 @@ describe('CustomMapSourcesSection', () => {
   it('lists per-source storage with clear and remove actions', async () => {
     const user = userEvent.setup();
     render(<CustomMapSourcesSection />);
-    expect(await screen.findByText(/Example topo · 1\.0 MB/)).toBeInTheDocument();
+    // Name/size and xyzMeta are separate nodes — assert via the source row, not one combined string.
+    const row = (await screen.findByText(/Example topo/)).closest('li');
+    expect(row).not.toBeNull();
+    expect(row).toHaveTextContent(/1\.0 MB/);
+    expect(row).toHaveTextContent('tiles.example.org');
+    expect(row).toHaveTextContent(/cache capped at 256\.0 MB/);
     expect(screen.getByText(/OpenStreetMap \(light\) · 2\.0 KB/)).toBeInTheDocument();
-    // Avoid bare hostname regexes (CodeQL); assert the host appears in the XYZ summary line.
-    expect(
-      screen.getByText('XYZ · tiles.example.org · cache capped at 256.0 MB'),
-    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Clear cached tiles for Example topo' }));
     expect(window.electronAPI.offlineMaps.clear).toHaveBeenCalledWith('xyz-0123456789ab');
