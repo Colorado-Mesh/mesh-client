@@ -9,6 +9,7 @@ import {
   draftsStorageKey,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   floodScopeOverridesStorageKey,
+  loadDraftsInitial,
   loadFloodScopeOverridesInitial,
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
@@ -445,6 +446,74 @@ describe('ChatComposer', () => {
     );
     expect(screen.getByRole('textbox')).toHaveValue('');
   });
+
+  it('clears the sent text from the origin view when an intercepted send switches views', async () => {
+    localStorage.setItem(
+      draftsStorageKey('reticulum'),
+      JSON.stringify({ 'rrc:hub:@peer': 'reply in progress' }),
+    );
+    let finishIntercept: (handled: boolean) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishIntercept = resolve;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { rerender } = render(<ChatComposer {...props} viewKey="rrc:hub:#general" />);
+    await user.type(screen.getByRole('textbox'), '/msg peer hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    // The send handler opens the DM view before it resolves (RRC /msg).
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:@peer" />);
+    await act(async () => {
+      finishIntercept(true);
+      await Promise.resolve();
+    });
+
+    expect(loadDraftsInitial('reticulum')['rrc:hub:#general']).toBeUndefined();
+    expect(screen.getByRole('textbox')).toHaveValue('reply in progress');
+  });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'clears the sent text from the origin view when a %s send finishes after a view switch',
+    async (protocol) => {
+      let finishSend: () => void = () => {};
+      const props = {
+        protocol,
+        isConnected: true,
+        allowOutbox: false,
+        onSendChunk: vi.fn(
+          () =>
+            new Promise<void>((resolve) => {
+              finishSend = resolve;
+            }),
+        ),
+      };
+      const user = userEvent.setup();
+      const { rerender } = render(<ChatComposer {...props} viewKey="ch:1" />);
+      await user.type(screen.getByRole('textbox'), 'hello mesh');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+      await waitFor(() => {
+        expect(props.onSendChunk).toHaveBeenCalled();
+      });
+
+      rerender(<ChatComposer {...props} viewKey="ch:2" />);
+      await act(async () => {
+        finishSend();
+        await Promise.resolve();
+      });
+
+      expect(loadDraftsInitial(protocol)['ch:1']).toBeUndefined();
+      expect(screen.getByRole('textbox')).toHaveValue('');
+    },
+  );
 
   it('shows emoji-picker on Linux when emoji button is clicked', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');

@@ -613,6 +613,13 @@ export function ChatComposer({
 
   const clearSentDraft = useCallback(
     (draftSnapshot: string) => {
+      // `viewKey` is the view the send started in. If the composer has switched views since (an
+      // RRC /msg opens its DM before resolving), the switch already saved the sent text as that
+      // view's draft, so clear the stored copy and leave the new view's input alone.
+      if (prevViewKeyRef.current !== viewKey) {
+        if (loadDraftsInitial(protocol)[viewKey] === draftSnapshot) clearDraft(protocol, viewKey);
+        return;
+      }
       setInput((prev) => {
         if (prev === draftSnapshot) {
           clearDraft(protocol, viewKey);

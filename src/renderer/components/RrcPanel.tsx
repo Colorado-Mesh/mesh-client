@@ -162,6 +162,11 @@ function rrcSendBounded(args: RrcSendArgs): Promise<RrcSendResult> {
   return withReticulumIpcSendDeadline(window.electronAPI.reticulum.rrc.send(args));
 }
 
+/** A `/msg` that did not send. handleSend rethrows it so ChatComposer keeps the text and shows why. */
+class RrcMsgNotSentError extends Error {
+  override readonly name = 'RrcMsgNotSentError';
+}
+
 export interface RrcPanelProps {
   isActive: boolean;
   /** Keep RRC per-message copy visible (same App Appearance setting as Chat). */
@@ -1057,20 +1062,18 @@ export default function RrcPanel({
             return;
           }
           if (parsed.command === 'msg') {
+            // Every exit that does not send throws, so the user can fix the target or retry.
             if (status !== 'active' || !hubDestHash) {
-              useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
-              return;
+              throw new RrcMsgNotSentError(t('rrc.sendFailed'));
             }
             if (!capabilities.direct_notice) {
-              useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
-              return;
+              throw new RrcMsgNotSentError(t('rrc.directNoticeUnsupported'));
             }
             const members = activeRoomInfo?.members ?? [];
             const allMembers = [...members, ...[...rooms.values()].flatMap((r) => r.members ?? [])];
             const resolved = resolveRrcMsgTarget(parsed.target, allMembers);
             if (resolved?.identity_hash.length !== 32) {
-              useRrcSessionStore.getState().setError(t('rrc.slash.msgTargetNotFound'));
-              return;
+              throw new RrcMsgNotSentError(t('rrc.slash.msgTargetNotFound'));
             }
             const bodyLim = computeRrcByteLimitStatus(
               parsed.text,
@@ -1081,15 +1084,23 @@ export default function RrcPanel({
                 t('rrc.byteLimit.overMax', { limit: bodyLim.limit }),
               );
             }
-            const res = await rrcSendBounded({
-              hub_dest_hash: hubDestHash,
-              body: parsed.text,
-              type: 'notice',
-              dst_hash: resolved.identity_hash,
-            });
+            let res: RrcSendResult;
+            try {
+              res = await rrcSendBounded({
+                hub_dest_hash: hubDestHash,
+                body: parsed.text,
+                type: 'notice',
+                dst_hash: resolved.identity_hash,
+              });
+            } catch (e) {
+              console.warn('[RrcPanel] /msg send ' + errLikeToLogString(e));
+              throw new RrcMsgNotSentError(formatRrcErrorMessage(errLikeToLogString(e), t));
+            }
             if (!res.ok) {
-              setRrcSendError(res.error ?? t('rrc.sendFailed'));
-              return;
+              const error = res.error ?? t('rrc.sendFailed');
+              // Sidecar already rejected the send: demote Connected before the next click.
+              if (isRrcDeadSessionSendError(error)) void reconcileRrcHubAfterDeadSend(hubDestHash);
+              throw new RrcMsgNotSentError(formatRrcErrorMessage(error, t));
             }
             const dmRoom = rrcDmRoomKey(resolved.identity_hash);
             openDm(
@@ -1228,7 +1239,7 @@ export default function RrcPanel({
         }
       } catch (e) {
         // Keep the draft: ChatComposer only clears after onInterceptSend resolves.
-        if (e instanceof RrcComposerPreflightError) throw e;
+        if (e instanceof RrcComposerPreflightError || e instanceof RrcMsgNotSentError) throw e;
         console.warn('[RrcPanel] send ' + errLikeToLogString(e));
         useRrcSessionStore.getState().setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }

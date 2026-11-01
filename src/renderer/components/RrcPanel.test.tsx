@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { draftsStorageKey, loadDraftsInitial } from '@/renderer/lib/chatPanelProtocolStorage';
 import { peekPendingRrcLinkJoin, setPendingRrcLinkJoin } from '@/renderer/lib/openRrcHubFromLink';
 import * as pathReady from '@/renderer/lib/reticulum/reticulumRrcPathReady';
 import * as transportReady from '@/renderer/lib/reticulum/reticulumRrcTransportReady';
@@ -97,6 +98,7 @@ describe('RrcPanel', () => {
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockClear();
     vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockResolvedValue({ changes: 1 });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
+    localStorage.removeItem(draftsStorageKey('reticulum'));
     clearRrcOpenDms(hubA);
     clearRrcOpenDms(hubB);
     vi.mocked(window.electronAPI.db.listRrcMessages).mockResolvedValue([]);
@@ -461,6 +463,93 @@ describe('RrcPanel', () => {
         dst_hash: peerHash,
       });
     });
+  });
+
+  it('clears the room composer after a successful /msg opens the DM', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', []);
+    store.setActiveRoom('#general');
+
+    render(<RrcPanel isActive />);
+
+    await user.type(
+      screen.getByRole('textbox', { name: /Message or \/command/i }),
+      `/msg ${peerHash} hello`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(useRrcSessionStore.getState().activeRoom).toBe(`@${peerHash}`);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Open room #general' }));
+    expect(screen.getByRole('textbox', { name: /Message or \/command/i })).toHaveValue('');
+    expect(loadDraftsInitial('reticulum')[`rrc:${hubA}:#general`]).toBeUndefined();
+  });
+
+  it('keeps the /msg text in the room composer when the hub refuses the notice', async () => {
+    const user = userEvent.setup();
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', []);
+    store.setActiveRoom('#general');
+    vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({
+      ok: false,
+      error: 'notice rejected by hub',
+    });
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.type(composer, `/msg ${peerHash} hello`);
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.send).toHaveBeenCalledWith({
+        hub_dest_hash: hubA,
+        body: 'hello',
+        type: 'notice',
+        dst_hash: peerHash,
+      });
+    });
+    expect(useRrcSessionStore.getState().activeRoom).toBe('#general');
+    expect(useRrcSessionStore.getState().rooms.has(`@${peerHash}`)).toBe(false);
+    await waitFor(() => {
+      expect(composer).toHaveValue(`/msg ${peerHash} hello`);
+    });
+    // Shown once, under the composer, not again in the panel banner.
+    expect(screen.getByRole('alert')).toHaveTextContent('notice rejected by hub');
+    expect(screen.getAllByText('notice rejected by hub')).toHaveLength(1);
+  });
+
+  it('keeps the /msg text in the room composer when the target cannot be resolved', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.setCapabilities({ direct_notice: true });
+    store.roomJoined('#general', []);
+    store.setActiveRoom('#general');
+
+    render(<RrcPanel isActive />);
+
+    const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+    await user.type(composer, '/msg Nobody hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not resolve /msg target to a full identity hash.',
+      );
+    });
+    expect(composer).toHaveValue('/msg Nobody hello');
+    expect(window.electronAPI.reticulum.rrc.send).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'notice' }),
+    );
   });
 
   it('keeps separate DM tabs when whispering two peers', async () => {
