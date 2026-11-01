@@ -2461,8 +2461,11 @@ function ChatPanel({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        const reactionPickerWasOpen = reactionCapturePendingRef.current;
         setPickerOpenFor(null);
         clearReactionCaptureRef.current({ refocusComposer: true });
+        // Dismissing the reaction picker must not also leave the DM or close search.
+        if (reactionPickerWasOpen) return;
         if (replyTo) {
           setReplyTo(null);
         } else if (filterSender != null) {

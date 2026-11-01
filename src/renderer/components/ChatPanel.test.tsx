@@ -3629,6 +3629,46 @@ describe('ChatPanel tapback reaction picker', () => {
     },
   );
 
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+        platform,
+        protocol,
+      })),
+    ),
+  )(
+    'keeps the DM open when Escape dismisses the reaction picker ($platform, $protocol)',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            initialDmTarget={2}
+            messages={[{ ...baseMessage, to: 1, packetId: 42, payload: 'direct hello' }]}
+          />
+        </ToastProvider>,
+      );
+      expect(await screen.findByText('direct hello')).toBeInTheDocument();
+      screen.getByRole('button', { name: 'Add reaction' }).focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard('{Escape}');
+      expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
+      // The DM composer has its own placeholder, so find it as the only textarea.
+      expect(document.activeElement).toBe(document.querySelector('textarea'));
+      expect(screen.getByText('direct hello')).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      await waitFor(() => {
+        expect(screen.queryByText('direct hello')).not.toBeInTheDocument();
+      });
+      expect(onReact).not.toHaveBeenCalled();
+    },
+  );
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'clears replyTo when React is clicked (%s)',
     async (platform) => {
