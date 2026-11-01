@@ -57,6 +57,7 @@ import {
   meshcoreContactTypeFromHwModel,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
+import { meshtasticFirmwareSupportsKeyVerification } from '../lib/meshtastic/meshtasticKeyVerification';
 import {
   bytesToHex,
   computeRangeTestLossRate,
@@ -76,8 +77,10 @@ import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { useIsBotSender } from '../stores/botSendersStore';
+import { useConnectionStore } from '../stores/connectionStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { initiateKeyVerification } from '../stores/keyVerificationStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
@@ -516,7 +519,15 @@ export default function NodeDetailModal({
     nodeStaleThresholdMs,
     nodeOfflineThresholdMs,
     protocol: activeProtocol,
+    hasKeyVerification,
   } = useRadioProvider(protocol ?? 'meshtastic');
+  const meshtasticIdentityId =
+    protocol === 'meshtastic' ? getIdentityIdForProtocol('meshtastic') : null;
+  const meshtasticFirmwareVersion = useConnectionStore((s) =>
+    meshtasticIdentityId ? (s.connections[meshtasticIdentityId]?.firmwareVersion ?? null) : null,
+  );
+  const keyVerificationFirmwareOk =
+    meshtasticFirmwareSupportsKeyVerification(meshtasticFirmwareVersion);
   const isMeshcoreProtocol = activeProtocol === 'meshcore';
   const nodeIsBot = useIsBotSender(activeProtocol, node?.node_id);
 
@@ -2212,6 +2223,50 @@ export default function NodeDetailModal({
                 )}
               </div>
             )}
+
+          {protocol === 'meshtastic' && hasKeyVerification && !isOurNode && (
+            <div className="border-ink-700 mt-4 space-y-2 rounded-lg border px-3 py-2 text-sm">
+              <p className="text-ink-200 text-xs font-medium">
+                {t('keyVerification.sectionTitle')}
+              </p>
+              {radioConnected && !keyVerificationFirmwareOk ? (
+                <p className={NOTICE_CLASS.warn} role="status">
+                  {t('keyVerification.unsupportedFirmware')}
+                </p>
+              ) : node.public_key_hex?.length !== 64 ? (
+                <p className={NOTICE_CLASS.info}>{t('keyVerification.noPublicKey')}</p>
+              ) : (
+                <Button
+                  size="sm"
+                  disabled={
+                    !radioConnected ||
+                    !keyVerificationFirmwareOk ||
+                    !meshtasticIdentityId ||
+                    node.key_manually_verified === true
+                  }
+                  aria-label={t('keyVerification.verifyButton')}
+                  onClick={() => {
+                    if (!meshtasticIdentityId) return;
+                    void initiateKeyVerification(
+                      meshtasticIdentityId,
+                      node.node_id,
+                      node.long_name || node.short_name || hexId,
+                    );
+                  }}
+                >
+                  {t('keyVerification.verifyButton')}
+                </Button>
+              )}
+              <details className="text-muted text-xs">
+                <summary className="cursor-pointer">{t('keyVerification.trustModelTitle')}</summary>
+                <div className="mt-1 space-y-1">
+                  <p>{t('keyVerification.trustModelManual')}</p>
+                  <p>{t('keyVerification.trustModelXeddsa')}</p>
+                  <p>{t('keyVerification.trustModelAdvice')}</p>
+                </div>
+              </details>
+            </div>
+          )}
 
           {protocol === 'meshtastic' && onSaveRemoteAdminKey && !isOurNode && (
             <div className="mt-4 space-y-2 rounded-lg border border-indigo-700/40 bg-indigo-900/20 px-3 py-2 text-sm text-indigo-100">

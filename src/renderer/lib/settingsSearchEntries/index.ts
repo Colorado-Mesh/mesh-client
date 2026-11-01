@@ -10,6 +10,7 @@ import { batch3Surfaces } from './batch3';
 import { batch4Surfaces } from './batch4';
 import { batch5Surfaces } from './batch5';
 import { chatSurface } from './chat';
+import { meshtasticModulesSurface } from './meshtasticModules';
 
 export const SETTINGS_SEARCH_SURFACES: readonly SettingsSearchSurface[] = [
   appSurface,
@@ -19,6 +20,7 @@ export const SETTINGS_SEARCH_SURFACES: readonly SettingsSearchSurface[] = [
   ...batch3Surfaces,
   ...batch4Surfaces,
   ...batch5Surfaces,
+  meshtasticModulesSurface,
 ];
 
 export const SETTING_SEARCH_ENTRIES: readonly SettingSearchEntry[] =

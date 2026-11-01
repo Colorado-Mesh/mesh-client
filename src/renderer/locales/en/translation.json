@@ -6,6 +6,37 @@
     "help": "Mentions mode alerts for @[Your name], replies to your messages and direct messages. RRC uses @nickname and keeps its room alert setting. Use the bell in a conversation to mute it, including mentions and DMs. Sound notifications must be enabled. Messages still arrive in chat. MECP emergency and operational alerts keep their own settings.",
     "saveFailed": "Could not save notification preferences. Try again after the conversation identity is available and local storage is writable."
   },
+  "capabilityUnavailable": {
+    "factoryReset": {
+      "default": "Factory reset is not available for this protocol.",
+      "meshcore": "Factory reset is not available for MeshCore: the companion firmware does not expose it over the radio link.",
+      "reticulum": "Factory reset is not available here: Reticulum uses its own Administration tab to reset stack data."
+    },
+    "factoryResetConfig": {
+      "default": "Reset config only is not available for this protocol or firmware.",
+      "meshcore": "Reset config only is not available for MeshCore: the companion firmware does not expose it."
+    },
+    "nodeDbReset": {
+      "default": "Reset NodeDB is not available for this protocol.",
+      "meshcore": "Reset NodeDB is not available for MeshCore: contacts are managed on the Contacts list instead."
+    },
+    "shutdown": {
+      "default": "Shutdown is not available for this protocol.",
+      "meshcore": "Shutdown is not available for MeshCore: the companion firmware has no remote shutdown command."
+    },
+    "rebootOta": {
+      "default": "Reboot into OTA mode is not available for this protocol or firmware.",
+      "meshcore": "Reboot into OTA mode is not available for MeshCore: update firmware with the vendor flasher instead."
+    },
+    "enterDfu": {
+      "default": "Enter DFU mode is not available for this protocol or firmware.",
+      "meshcore": "Enter DFU mode is not available for MeshCore: use the device's hardware bootloader button or vendor flasher."
+    },
+    "firmwareFlash": {
+      "default": "Firmware flashing from Mesh Client is not available for this protocol.",
+      "reticulum": "Firmware flashing is not available here: Reticulum uses the RNode flasher on this tab instead."
+    }
+  },
   "adminPanel": {
     "reticulumFactoryReset": {
       "title": "Factory reset",
@@ -592,6 +623,67 @@
     "footerOsKeys": "Your OS may keep some F-keys",
     "footerAutoSave": "Saves automatically"
   },
+  "globalMessageSearch": {
+    "title": "Search all messages",
+    "placeholder": "Search messages across protocols…",
+    "hint": "Type to search saved chat history for every enabled protocol.",
+    "searching": "Searching…",
+    "noResults": "No messages match.",
+    "failed": "Search failed. Try again.",
+    "unavailable": "Message search is unavailable in this environment.",
+    "results": "Search results",
+    "protocol": "Protocol",
+    "protocolAll": "All protocols",
+    "direction": "Direction",
+    "directionAll": "All",
+    "directionInbound": "Received",
+    "directionOutbound": "Sent",
+    "sender": "Sender",
+    "senderPlaceholder": "Name or id",
+    "channel": "Channel {{index}}",
+    "directMessage": "Direct message",
+    "openFromChat": "Search all conversations",
+    "meshtastic": "Meshtastic",
+    "meshcore": "MeshCore",
+    "reticulum": "Reticulum"
+  },
+  "unifiedInbox": {
+    "title": "Unified inbox",
+    "open": "Open unified inbox",
+    "results": "Inbox messages",
+    "empty": "No received messages to show.",
+    "protocol": "Protocol",
+    "protocolAll": "All protocols",
+    "filter": "Filter",
+    "filterPlaceholder": "Text or sender",
+    "selectAll": "Select all messages",
+    "selectedCount_one": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected",
+    "selectMessage": "Select message from {{sender}}",
+    "openConversation": "Open conversation with {{sender}}",
+    "channel": "Channel {{index}}",
+    "directMessage": "Direct message",
+    "copy": "Copy",
+    "copied_one": "Copied {{count}} message.",
+    "copied_other": "Copied {{count}} messages.",
+    "copyFailed": "Couldn't copy to the clipboard.",
+    "export": "Export",
+    "exportFailed": "Couldn't export messages.",
+    "star": "Star",
+    "starred_one": "Starred {{count}} message.",
+    "starred_other": "Starred {{count}} messages.",
+    "alreadyStarred": "Those messages are already starred.",
+    "deleteLocal": "Delete locally",
+    "deleteConfirm_one": "Remove {{count}} message from this inbox? Meshtastic and MeshCore chat history is kept.",
+    "deleteConfirm_other": "Remove {{count}} messages from this inbox? Meshtastic and MeshCore chat history is kept.",
+    "deleteConfirmAction": "Delete",
+    "deleted_one": "Removed {{count}} message.",
+    "deleted_other": "Removed {{count}} messages.",
+    "deleteFailed": "Couldn't save the change. Nothing was removed.",
+    "meshtastic": "Meshtastic",
+    "meshcore": "MeshCore",
+    "reticulum": "Reticulum"
+  },
   "chatPanel": {
     "channelMenuAria": "Options for {{name}}",
     "removeChannel": "Remove channel",
@@ -859,6 +951,35 @@
     "srNewMessages_one": "{{count}} new message",
     "srNewMessages_other": "{{count}} new messages",
     "muteConversation": "Mute this conversation",
+    "pinConversation": "Pin this conversation",
+    "unpinConversation": "Unpin this conversation",
+    "pinConversationFailed": "Could not save pin. Storage may be full or disabled.",
+    "archiveConversation": "Archive this conversation",
+    "unarchiveConversation": "Unarchive this conversation",
+    "archiveConversationFailed": "Could not save archive. Storage may be full or disabled.",
+    "showArchivedConversations": "Show archived conversations ({{count}})",
+    "hideArchivedConversations": "Hide archived conversations",
+    "scheduleSend": "Schedule send",
+    "scheduleSendTitle": "Schedule message",
+    "scheduleSendEditTitle": "Edit scheduled message",
+    "scheduleSendMessageLabel": "Message",
+    "scheduleSendWhen": "Send at",
+    "scheduleSendPreset15m": "In 15 minutes",
+    "scheduleSendPreset1h": "In 1 hour",
+    "scheduleSendPresetTomorrow": "Tomorrow 9:00",
+    "scheduleSendHint": "Scheduled messages are saved on this device and sent when the time arrives and the radio is connected. The app must be running.",
+    "scheduleSendConfirm": "Schedule",
+    "scheduleSendSave": "Save",
+    "scheduleSendErrorPast": "Pick a time in the future.",
+    "scheduleSendErrorFar": "Pick a time within the next 30 days.",
+    "scheduleSendErrorEmpty": "Message cannot be empty.",
+    "scheduleSendFailed": "Could not save the scheduled message. Try again.",
+    "outboxStatusScheduled": "Scheduled for {{time}}",
+    "outboxStatusScheduledDue": "Scheduled — waiting to send",
+    "outboxScheduledEdit": "Edit",
+    "outboxScheduledEditAria": "Edit scheduled message",
+    "outboxScheduledSendNow": "Send now",
+    "outboxScheduledSendNowAria": "Send scheduled message now",
     "unmuteConversation": "Unmute this conversation",
     "starMessage": "Star message",
     "unstarMessage": "Unstar message",
@@ -3835,6 +3956,38 @@
       "severityWarning": "warning",
       "severityInfo": "info",
       "failed": "Config check failed: {{message}}"
+    }
+  },
+  "keyVerification": {
+    "sectionTitle": "Verify public key",
+    "verifyButton": "Verify key…",
+    "unsupportedFirmware": "Key verification needs Meshtastic firmware 2.7 or newer. Update this radio's firmware to verify keys.",
+    "noPublicKey": "This node has not shared a public key yet, so there is nothing to verify.",
+    "trustModelTitle": "How key trust works",
+    "trustModelManual": "Key verified: you and the other operator compared a security number and matching characters, out of band, using this radio's key-verification handshake.",
+    "trustModelXeddsa": "XEdDSA signed: the radio cryptographically checked a signature from this node. That proves the packets came from the holder of the key, but not who that person is.",
+    "trustModelAdvice": "Only Key verified means a person confirmed the key. Verify in person or over a channel you already trust.",
+    "dialog": {
+      "titleWithNode": "Verify key: {{name}}",
+      "unknownNode": "another node",
+      "close": "Close",
+      "cancel": "Cancel verification",
+      "initiatingHint": "Contacting {{name}}… Keep both radios in range.",
+      "showNumberHint": "{{name}} is verifying your key. Read this security number to them over a separate channel (voice or in person). Do not send it over the mesh.",
+      "securityNumberLabel": "Security number",
+      "enterNumberHint": "Ask {{name}} for the security number shown on their radio, then enter it here.",
+      "enterNumberLabel": "Security number from {{name}}",
+      "enterNumberPlaceholder": "123 456",
+      "invalidNumber": "Enter the six-digit security number (1 to 999999).",
+      "submitNumber": "Continue",
+      "awaitingFinalHint": "Waiting for {{name}}'s radio to answer…",
+      "compareHint": "Both radios must show the same characters. Compare them with {{name}} over a separate channel. Only confirm if they match exactly.",
+      "verificationCharactersLabel": "Verification characters",
+      "confirmMatch": "They match",
+      "confirmMismatch": "They do not match",
+      "doneHint": "{{name}}'s key is now marked as manually verified on your radio.",
+      "rejectedHint": "Verification cancelled. {{name}}'s key was not marked verified. If the characters differed, treat this node's key as untrusted.",
+      "sendFailed": "Could not reach the radio. Check the connection and try again."
     }
   },
   "nodeDetailModal": {
@@ -6929,7 +7082,35 @@
     "axisCo2": "ppm",
     "seriesPm25": "PM2.5 (µg/m³)",
     "seriesCo2": "CO₂ (ppm)",
-    "seriesLightningStrikes": "Lightning strikes (1h)"
+    "seriesLightningStrikes": "Lightning strikes (1h)",
+    "cayenne": {
+      "title": "Cayenne LPP sensors",
+      "node": "Sensor node",
+      "hint": "Decoded from Cayenne Low Power Payload packets (CAYENNE_APP) sent by sensor nodes. Session history only; it is not saved.",
+      "chartAria": "{{kind}} chart, {{count}} readings",
+      "kind": {
+        "digitalInput": "Digital input",
+        "digitalOutput": "Digital output",
+        "analogInput": "Analog input",
+        "analogOutput": "Analog output",
+        "illuminance": "Illuminance",
+        "presence": "Presence",
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "accelerometer": "Accelerometer",
+        "barometer": "Barometric pressure",
+        "gyrometer": "Gyrometer",
+        "gps": "GPS position",
+        "percentage": "Percentage",
+        "concentration": "Concentration",
+        "power": "Power",
+        "distance": "Distance",
+        "energy": "Energy",
+        "direction": "Direction",
+        "unixTime": "Timestamp",
+        "switch": "Switch"
+      }
+    }
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",
@@ -7193,7 +7374,17 @@
       "endpointA": "Listen / source (A)",
       "endpointB": "Forward / destination (B)",
       "protocol": "Protocol",
-      "channelIndex": "Channel index"
+      "channelIndex": "Channel index",
+      "reticulumKind": "Reticulum target type",
+      "reticulumKindLxmf": "LXMF peer",
+      "reticulumKindRrc": "RRC room",
+      "reticulumPeerHash": "Reticulum peer destination hash",
+      "reticulumPeerPlaceholder": "32-char hash, or * for any peer (source only)",
+      "reticulumHubHash": "RRC hub destination hash",
+      "reticulumHubPlaceholder": "Hub destination hash (32 hex)",
+      "reticulumRoom": "RRC room name",
+      "reticulumRoomPlaceholder": "Room name",
+      "hintReticulum": "Reticulum targets are an LXMF peer or an RRC hub room and need the Reticulum stack running. An LXMF source matches inbound messages from that peer."
     }
   },
   "notificationSounds": {
@@ -7779,5 +7970,42 @@
     "busy": "Reading chats from radio…",
     "failed": "Could not read chats from the radio. Existing chats were kept. Reconnect and try again.",
     "done": "Chats synced from radio."
+  },
+  "remoteShell": {
+    "title": "Remote shell (Meshtastic)",
+    "warningTitle": "Security warning: remote command-line access",
+    "warningAccess": "A remote shell runs commands on another node's firmware. Treat it like administrator access and only use it on nodes you own.",
+    "warningChannel": "Frames travel over the mesh. Anyone who holds the channel key (or a compromised relay) may be able to read what you type and what the node prints.",
+    "warningSecrets": "Do not type passwords, keys or other secrets. The transcript stays in memory only and is discarded when you disconnect or close the app.",
+    "warningAirtime": "Every keystroke and reply uses LoRa airtime. Expect delays, dropped frames and gaps in the output.",
+    "warningAuthorized": "The target firmware must have remote shell enabled and must authorize this radio. Idle sessions close automatically after 10 minutes.",
+    "acknowledge": "I understand the risks and I am authorized to access this node",
+    "node": "Target node",
+    "nodePlaceholder": "!a1b2c3d4 or node number",
+    "connect": "Open shell",
+    "disconnect": "Close shell",
+    "phase": {
+      "idle": "Not connected.",
+      "opening": "Opening a shell on {{node}}. Waiting for the node to answer.",
+      "open": "Shell open on {{node}}.",
+      "closed": "Shell closed.",
+      "error": "Shell failed."
+    },
+    "errors": {
+      "openTimeout": "The node did not answer in time. Check that it is in range and has remote shell enabled.",
+      "idleTimeout": "The shell was closed after 10 minutes without activity.",
+      "sendFailed": "Could not send to the radio",
+      "remoteError": "The node reported an error",
+      "noRadio": "No connected Meshtastic radio, or the node number is invalid."
+    },
+    "gaps": "{{count}} output frames were lost in transit. The transcript may be incomplete.",
+    "outputTruncated": "Older output was discarded to keep the transcript small.",
+    "outputAria": "Remote shell output",
+    "inputPlaceholder": "Command",
+    "inputAria": "Remote shell command",
+    "send": "Send",
+    "interrupt": "Send Ctrl+C",
+    "interruptShort": "Ctrl+C",
+    "clear": "Clear"
   }
 }

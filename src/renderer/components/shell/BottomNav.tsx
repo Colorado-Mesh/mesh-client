@@ -135,7 +135,7 @@ function BottomNavItem({
       <span className="text-label max-w-full truncate px-1 leading-none font-medium">{label}</span>
       {badge && (
         <span
-          className={`text-label absolute top-1 left-1/2 ml-2 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.25 font-mono leading-none font-medium text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
+          className={`text-label absolute start-1/2 top-1 ms-2 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.25 font-mono leading-none font-medium text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
         >
           {formatBadgeCount(badge.count)}
         </span>

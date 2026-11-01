@@ -2,6 +2,10 @@ import { create, toBinary } from '@bufbuild/protobuf';
 import { Mesh } from '@meshtastic/protobufs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  resetKeyVerificationStore,
+  useKeyVerificationStore,
+} from '../../stores/keyVerificationStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { encodeMeshBeacon } from './meshBeaconCodec';
 import type { HeardMeshBeacon, NodeStatusEntry } from './meshtasticModuleEvents';
@@ -35,6 +39,43 @@ function makeDeps(): MeshtasticModulePortSideEffectsDeps {
 describe('attachMeshtasticModulePortSideEffects', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    resetKeyVerificationStore();
+  });
+
+  it('binds KEY_VERIFICATION_APP nonces to the sending node', () => {
+    const detach = attachMeshtasticModulePortSideEffects('id-1', makeDeps());
+    const KeyVerificationSchema = (
+      Mesh as unknown as { KeyVerificationSchema: Parameters<typeof create>[0] }
+    ).KeyVerificationSchema;
+    const data = toBinary(KeyVerificationSchema, create(KeyVerificationSchema, { nonce: 321n }));
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_module_port',
+        payload: { portLabel: 'keyVerification', from: 0x77, data, timestamp: 1 },
+      },
+      'id-1',
+    );
+    expect(useKeyVerificationStore.getState().nonceToNode.get(321n)).toBe(0x77);
+    detach();
+  });
+
+  it('ignores malformed KEY_VERIFICATION_APP payloads', () => {
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const detach = attachMeshtasticModulePortSideEffects('id-1', makeDeps());
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_module_port',
+        payload: {
+          portLabel: 'keyVerification',
+          from: 0x77,
+          data: new Uint8Array([0xff, 0xff, 0xff]),
+          timestamp: 1,
+        },
+      },
+      'id-1',
+    );
+    expect(useKeyVerificationStore.getState().nonceToNode.size).toBe(0);
+    detach();
   });
 
   it('appends audio module payloads into the per-node map', () => {

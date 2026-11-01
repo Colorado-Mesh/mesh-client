@@ -5,6 +5,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import {
   Archive,
+  ArchiveRestore,
   ArrowDown,
   Bell,
   BellOff,
@@ -18,6 +19,8 @@ import {
   ListFilter,
   Mail,
   PARENT_HOVER_ATTR,
+  Pin,
+  PinOff,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -152,6 +155,7 @@ import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
 import { useConversationMutes } from '../hooks/useConversationMutes';
+import { useConversationPins } from '../hooks/useConversationPins';
 import { useNowMs } from '../hooks/useNowMs';
 import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
@@ -198,7 +202,9 @@ import {
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import { canBindConversationMute } from '../lib/conversationMuteStorage';
+import { filterArchived, orderPinnedFirst } from '../lib/conversationPinStorage';
 import { sendEmergencyText } from '../lib/emergencySend';
+import { findMessageIndexForFocus, type PendingMessageFocus } from '../lib/globalMessageSearch';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import { isMecpAlertThrottled } from '../lib/mecp/mecpAlertThrottle';
 import {
@@ -232,11 +238,13 @@ import {
   findReticulumParentMessageForReply,
   truncateReplyPreviewText,
 } from '../lib/replyPreview';
+import { isScheduledOutboxRow } from '../lib/scheduledSend';
 import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
+import { STARRED_EXTERNAL_EVENT, type StarredExternalDetail } from '../lib/unifiedInboxActions';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useBotSendersStore } from '../stores/botSendersStore';
@@ -251,6 +259,7 @@ import { CatchUpButton } from './chat/CatchUpButton';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatOrderButton } from './chat/ChatOrderButton';
 import { ChatSummaryCard } from './chat/ChatSummaryCard';
+import { ScheduledSendDialog } from './chat/ScheduledSendDialog';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
@@ -408,18 +417,32 @@ function OutboxBubble({
   row,
   onRetry,
   onCancel,
+  onEditScheduled,
 }: {
   row: OutboxEntry;
   onRetry: (id: number) => void;
   onCancel: (id: number) => void;
+  /** Open the scheduled-send editor for a not-yet-attempted scheduled row. */
+  onEditScheduled?: (row: OutboxEntry) => void;
 }) {
   const { t } = useTranslation();
   const awaitingAck = useOutboxRowAwaitingAck(row.id);
+  const isScheduled = isScheduledOutboxRow(row);
   const backingOff =
-    (row.status === 'queued' || row.status === 'failed') && row.nextRetryAt != null;
+    !isScheduled && (row.status === 'queued' || row.status === 'failed') && row.nextRetryAt != null;
   const nowMs = useNowMs(backingOff, 1000);
+  const scheduledNowMs = useNowMs(isScheduled, 15_000);
+  const scheduledLabel =
+    isScheduled && row.nextRetryAt != null
+      ? scheduledNowMs > 0 && row.nextRetryAt <= scheduledNowMs
+        ? t('chatPanel.outboxStatusScheduledDue')
+        : t('chatPanel.outboxStatusScheduled', {
+            time: new Date(row.nextRetryAt).toLocaleString(),
+          })
+      : null;
   const statusLabel =
-    row.status === 'sending' && awaitingAck
+    scheduledLabel ??
+    (row.status === 'sending' && awaitingAck
       ? t('chatPanel.outboxStatusAwaitingAck')
       : row.status === 'queued'
         ? t('chatPanel.outboxStatusQueued')
@@ -427,7 +450,7 @@ function OutboxBubble({
           ? t('chatPanel.outboxStatusSending')
           : row.status === 'blocked'
             ? t('chatPanel.outboxStatusBlocked')
-            : t('chatPanel.outboxStatusFailed');
+            : t('chatPanel.outboxStatusFailed'));
   const statusColor =
     row.status === 'queued'
       ? 'text-muted'
@@ -474,6 +497,30 @@ function OutboxBubble({
             <span className="text-muted max-w-35 truncate" title={displayError}>
               — {displayError}
             </span>
+          )}
+          {isScheduled && (
+            <>
+              <button
+                type="button"
+                aria-label={t('chatPanel.outboxScheduledEditAria')}
+                onClick={() => {
+                  onEditScheduled?.(row);
+                }}
+                className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
+              >
+                {t('chatPanel.outboxScheduledEdit')}
+              </button>
+              <button
+                type="button"
+                aria-label={t('chatPanel.outboxScheduledSendNowAria')}
+                onClick={() => {
+                  onRetry(row.id);
+                }}
+                className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
+              >
+                {t('chatPanel.outboxScheduledSendNow')}
+              </button>
+            </>
           )}
           {(row.status === 'failed' || row.status === 'blocked') && (
             <button
@@ -748,6 +795,11 @@ export interface ChatPanelProps {
   /** Open this channel (launcher, notifications), then call `onChannelTargetConsumed`. */
   initialChannelTarget?: number | null;
   onChannelTargetConsumed?: () => void;
+  /** Global search (or similar): scroll to and flash a message after the conversation opens. */
+  initialMessageFocus?: PendingMessageFocus | null;
+  onMessageFocusConsumed?: () => void;
+  /** Open the cross-conversation FTS dialog (Ctrl/Cmd+Shift+F). */
+  onOpenGlobalMessageSearch?: () => void;
   isActive?: boolean;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
@@ -786,6 +838,7 @@ export interface ChatPanelProps {
   hasLxstVoice?: boolean;
   /** Reticulum: LXMF voice memo mic button in composer + playback line in chat. */
   hasReticulumVoiceMemo?: boolean;
+  /** Reticulum: LXMF file / photo Attach control in the DM composer (not rncp). */
   /** Called when the user presses the mic button (destination = active DM node). */
   onVoiceMemo?: (destination: number) => void;
   /** Reticulum: LRGP games Challenge control in the DM header. */
@@ -835,6 +888,9 @@ function ChatPanel({
   onDmTargetConsumed,
   initialChannelTarget,
   onChannelTargetConsumed,
+  initialMessageFocus,
+  onMessageFocusConsumed,
+  onOpenGlobalMessageSearch,
   isActive = true,
   protocol = 'meshtastic',
   identityId = null,
@@ -1361,6 +1417,10 @@ function ChatPanel({
   // Feature: per-conversation mute
   const [mutedViews, setMutedViews] = useConversationMutes(protocol);
 
+  // Feature: per-conversation pin / archive (separate from message starring)
+  const conversationPins = useConversationPins(protocol, identityId);
+  const [showArchivedConversations, setShowArchivedConversations] = useState(false);
+
   // Feature: message starring
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred(protocol));
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
@@ -1602,6 +1662,8 @@ function ChatPanel({
     setViewMode('channels');
     onChannelTargetConsumed?.();
   }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
+
+  const [messageFocusFlashIndex, setMessageFocusFlashIndex] = useState<number | null>(null);
 
   const displayMessages = useMemo(
     () =>
@@ -1881,6 +1943,27 @@ function ChatPanel({
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
 
+  // Global search hit: scroll + flash once the conversation's messages are in view.
+  useEffect(() => {
+    if (initialMessageFocus == null || !isActive) return;
+    const index = findMessageIndexForFocus(filteredMessages, initialMessageFocus);
+    if (index < 0) return;
+    isPinnedToBottomRef.current = false;
+    messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
+    setMessageFocusFlashIndex(index);
+    if (initialMessageFocus.highlightQuery?.trim()) {
+      setShowSearch(true);
+      setSearchQuery(initialMessageFocus.highlightQuery.trim());
+    }
+    onMessageFocusConsumed?.();
+    const clearFlash = window.setTimeout(() => {
+      setMessageFocusFlashIndex(null);
+    }, 2400);
+    return () => {
+      window.clearTimeout(clearFlash);
+    };
+  }, [filteredMessages, initialMessageFocus, isActive, onMessageFocusConsumed]);
+
   const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
     scheduleVirtualRowRemeasure(
       (node) => {
@@ -2027,11 +2110,14 @@ function ChatPanel({
     queue: queueOutbox,
     retry: retryOutbox,
     cancel: cancelOutbox,
+    editScheduled: editScheduledOutbox,
   } = useChatOutbox({
     protocol,
     isSendAvailable: outboxSendAvailable,
     sendFn: outboxSendFn,
   });
+
+  const [editingScheduledRow, setEditingScheduledRow] = useState<OutboxEntry | null>(null);
 
   const viewOutboxRows = useMemo(
     () => outboxRows.filter((r): r is OutboxEntry => r?.viewKey === viewKey),
@@ -2090,6 +2176,20 @@ function ChatPanel({
   useEffect(() => {
     saveStarred(protocol, starred);
   }, [protocol, starred]);
+
+  // Unified inbox stars messages straight into localStorage; reload so this panel's persist
+  // effect does not overwrite them.
+  useEffect(() => {
+    const onExternalStar = (e: Event) => {
+      if ((e as CustomEvent<StarredExternalDetail>).detail?.protocol === protocol) {
+        setStarred(loadStarred(protocol));
+      }
+    };
+    window.addEventListener(STARRED_EXTERNAL_EVENT, onExternalStar);
+    return () => {
+      window.removeEventListener(STARRED_EXTERNAL_EVENT, onExternalStar);
+    };
+  }, [protocol]);
 
   // Sound notification: regular channel/DM tones for other views; MECP always (incl. open view).
   useEffect(() => {
@@ -3033,9 +3133,33 @@ function ChatPanel({
   const channelOrder = useChatOrder(`${protocol}:${myNodeNum}:channels`, channelOrderItems);
   const dmOrderItems = visibleDmTabs.map((id) => ({ id: String(id), name: getDmLabel(id) }));
   const dmOrder = useChatOrder(`${protocol}:${myNodeNum}:dms`, dmOrderItems);
-  const orderedDmTabs = dmOrder.ids.map(Number);
+  const orderedDmTabs = filterArchived(
+    orderPinnedFirst(dmOrder.ids.map(Number), (id) => `dm:${id}`, conversationPins.pinnedOrder),
+    (id) => `dm:${id}`,
+    conversationPins.archivedOrder,
+    {
+      showArchived: showArchivedConversations,
+      keep: (key) =>
+        (viewMode === 'dm' && key === `dm:${activeDmNode}`) ||
+        (dmUnreadCounts.get(Number(key.slice(3))) ?? 0) > 0,
+    },
+  );
   const channelByIndex = new Map(channels.map((ch) => [ch.index, ch]));
-  const orderedChannels = channelOrder.ids.flatMap((id) => channelByIndex.get(Number(id)) ?? []);
+  const orderedChannels = filterArchived(
+    orderPinnedFirst(
+      channelOrder.ids.flatMap((id) => channelByIndex.get(Number(id)) ?? []),
+      (ch) => `ch:${ch.index}`,
+      conversationPins.pinnedOrder,
+    ),
+    (ch) => `ch:${ch.index}`,
+    conversationPins.archivedOrder,
+    {
+      showArchived: showArchivedConversations,
+      keep: (key) =>
+        (channelViewActive && key === `ch:${channel}`) ||
+        (unreadCounts.get(Number(key.slice(3))) ?? 0) > 0,
+    },
+  );
 
   /** Reticulum wraps its DM pills in Row 1; LoRa protocols keep the separate DM strip. */
   const dmTabPills = (
@@ -3113,6 +3237,23 @@ function ChatPanel({
                   >
                     {getDmLabel(nodeNum)}
                   </span>
+                  {conversationPins.pinned.has(`dm:${nodeNum}`) && (
+                    <Pin
+                      aria-hidden
+                      className="text-brand-green h-3 w-3 shrink-0"
+                      trigger={parentIconTrigger}
+                      size={12}
+                      data-testid="conversation-pinned-indicator"
+                    />
+                  )}
+                  {conversationPins.archived.has(`dm:${nodeNum}`) && (
+                    <Archive
+                      aria-hidden
+                      className="text-muted h-3 w-3 shrink-0"
+                      trigger={parentIconTrigger}
+                      size={12}
+                    />
+                  )}
                   {botSenders.has(nodeNum) && <BotBadge />}
                   {dmOnlyChat && showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
                   {dmOnlyChat && showDmUnreadBadge && dmMecpSeverity !== undefined && (
@@ -3248,6 +3389,23 @@ function ChatPanel({
                       <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
                         {ch.name}
                       </span>
+                      {conversationPins.pinned.has(`ch:${ch.index}`) && (
+                        <Pin
+                          aria-hidden
+                          className="text-brand-green h-3 w-3 shrink-0"
+                          trigger={parentIconTrigger}
+                          size={12}
+                          data-testid="conversation-pinned-indicator"
+                        />
+                      )}
+                      {conversationPins.archived.has(`ch:${ch.index}`) && (
+                        <Archive
+                          aria-hidden
+                          className="text-muted h-3 w-3 shrink-0"
+                          trigger={parentIconTrigger}
+                          size={12}
+                        />
+                      )}
                       {unread > 0 && <ChipUnreadBadge count={unread} />}
                       {chMecpSeverity !== undefined && <MecpUnreadIcon severity={chMecpSeverity} />}
                     </button>
@@ -3436,6 +3594,113 @@ function ChatPanel({
           >
             <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
           </ChatToolbarTooltipButton>
+
+          {onOpenGlobalMessageSearch ? (
+            <ChatToolbarTooltipButton
+              tooltip={t('globalMessageSearch.openFromChat')}
+              aria-label={t('globalMessageSearch.openFromChat')}
+              onClick={() => {
+                onOpenGlobalMessageSearch();
+              }}
+            >
+              <ListFilter aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
+          ) : null}
+
+          {(viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null)) && (
+            <>
+              <ChatToolbarTooltipButton
+                tooltip={
+                  conversationPins.pinned.has(viewKey)
+                    ? t('chatPanel.unpinConversation')
+                    : t('chatPanel.pinConversation')
+                }
+                aria-pressed={conversationPins.pinned.has(viewKey)}
+                aria-label={
+                  conversationPins.pinned.has(viewKey)
+                    ? t('chatPanel.unpinConversation')
+                    : t('chatPanel.pinConversation')
+                }
+                className={chatToolbarButtonClass(
+                  conversationPins.pinned.has(viewKey) ? 'active' : 'idle',
+                )}
+                onClick={() => {
+                  if (!conversationPins.togglePin(viewKey)) {
+                    setChatActionError({ message: t('chatPanel.pinConversationFailed'), viewKey });
+                  }
+                }}
+              >
+                {conversationPins.pinned.has(viewKey) ? (
+                  <PinOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                ) : (
+                  <Pin aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                )}
+              </ChatToolbarTooltipButton>
+              <ChatToolbarTooltipButton
+                tooltip={
+                  conversationPins.archived.has(viewKey)
+                    ? t('chatPanel.unarchiveConversation')
+                    : t('chatPanel.archiveConversation')
+                }
+                aria-pressed={conversationPins.archived.has(viewKey)}
+                aria-label={
+                  conversationPins.archived.has(viewKey)
+                    ? t('chatPanel.unarchiveConversation')
+                    : t('chatPanel.archiveConversation')
+                }
+                className={chatToolbarButtonClass(
+                  conversationPins.archived.has(viewKey) ? 'active' : 'idle',
+                )}
+                onClick={() => {
+                  if (!conversationPins.toggleArchive(viewKey)) {
+                    setChatActionError({
+                      message: t('chatPanel.archiveConversationFailed'),
+                      viewKey,
+                    });
+                  }
+                }}
+              >
+                {conversationPins.archived.has(viewKey) ? (
+                  <ArchiveRestore
+                    aria-hidden
+                    className="h-4 w-4"
+                    trigger={parentIconTrigger}
+                    size={16}
+                  />
+                ) : (
+                  <Archive aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                )}
+              </ChatToolbarTooltipButton>
+            </>
+          )}
+          {conversationPins.archived.size > 0 && (
+            <ChatToolbarTooltipButton
+              tooltip={
+                showArchivedConversations
+                  ? t('chatPanel.hideArchivedConversations')
+                  : t('chatPanel.showArchivedConversations', {
+                      count: conversationPins.archived.size,
+                    })
+              }
+              aria-pressed={showArchivedConversations}
+              aria-label={
+                showArchivedConversations
+                  ? t('chatPanel.hideArchivedConversations')
+                  : t('chatPanel.showArchivedConversations', {
+                      count: conversationPins.archived.size,
+                    })
+              }
+              className={chatToolbarButtonClass(showArchivedConversations ? 'active' : 'idle')}
+              onClick={() => {
+                setShowArchivedConversations((v) => !v);
+              }}
+            >
+              <Archive aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              <span className="text-2xs tabular-nums" aria-hidden="true">
+                {conversationPins.archived.size}
+              </span>
+            </ChatToolbarTooltipButton>
+          )}
 
           {viewMode !== 'starred' && (
             <ChatToolbarTooltipButton
@@ -4023,6 +4288,7 @@ function ChatPanel({
                         className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                         data-chat-message-key={messageRowKey}
                         data-chat-day-key={getChatDayKey(msg.timestamp)}
+                        {...(messageFocusFlashIndex === i ? { 'data-chat-message-flash': '' } : {})}
                       >
                         {/* Bubble row */}
                         <div
@@ -4756,7 +5022,15 @@ function ChatPanel({
             </div>
           )}
           {viewOutboxRows.map((row) => (
-            <OutboxBubble key={row.id} row={row} onRetry={retryOutbox} onCancel={cancelOutbox} />
+            <OutboxBubble
+              key={row.id}
+              row={row}
+              onRetry={retryOutbox}
+              onCancel={cancelOutbox}
+              onEditScheduled={(r) => {
+                setEditingScheduledRow(r);
+              }}
+            />
           ))}
           <div ref={messagesEndRef} />
         </div>
@@ -4857,6 +5131,7 @@ function ChatPanel({
           outboxChannel={channel}
           outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
           queueOutbox={queueOutbox}
+          allowScheduledSend
           onSendChunk={handleSendChunk}
           payloadLimit={composerPayloadLimit}
           lxmfReplyHashReplies={lxmfReplyHashReplies}
@@ -4877,39 +5152,41 @@ function ChatPanel({
           }}
           textareaRef={composerInputRef}
           actionSlot={
-            mecpComposeEnabled ? (
-              <>
-                <ChatToolbarTooltipButton
-                  tooltip={t('mecp.compose.openRequest')}
-                  aria-label={t('mecp.compose.openRequest')}
-                  className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
-                  onClick={() => {
-                    setMecpComposeMode('request');
-                    setMecpComposeSession((n) => n + 1);
-                    setMecpComposeOpen(true);
-                  }}
-                >
-                  <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-                </ChatToolbarTooltipButton>
-                <ChatToolbarTooltipButton
-                  tooltip={t('mecp.compose.openResponse')}
-                  aria-label={t('mecp.compose.openResponse')}
-                  className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-blue-600/70 bg-blue-950/50 px-2.5 text-blue-300 transition-colors hover:bg-blue-900/60 hover:text-blue-200 disabled:opacity-50"
-                  onClick={() => {
-                    setMecpComposeMode('response');
-                    setMecpComposeSession((n) => n + 1);
-                    setMecpComposeOpen(true);
-                  }}
-                >
-                  <ShieldCheck
-                    aria-hidden
-                    className="h-4 w-4"
-                    trigger={parentIconTrigger}
-                    size={16}
-                  />
-                </ChatToolbarTooltipButton>
-              </>
-            ) : undefined
+            <>
+              {mecpComposeEnabled ? (
+                <>
+                  <ChatToolbarTooltipButton
+                    tooltip={t('mecp.compose.openRequest')}
+                    aria-label={t('mecp.compose.openRequest')}
+                    className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
+                    onClick={() => {
+                      setMecpComposeMode('request');
+                      setMecpComposeSession((n) => n + 1);
+                      setMecpComposeOpen(true);
+                    }}
+                  >
+                    <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                  </ChatToolbarTooltipButton>
+                  <ChatToolbarTooltipButton
+                    tooltip={t('mecp.compose.openResponse')}
+                    aria-label={t('mecp.compose.openResponse')}
+                    className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-blue-600/70 bg-blue-950/50 px-2.5 text-blue-300 transition-colors hover:bg-blue-900/60 hover:text-blue-200 disabled:opacity-50"
+                    onClick={() => {
+                      setMecpComposeMode('response');
+                      setMecpComposeSession((n) => n + 1);
+                      setMecpComposeOpen(true);
+                    }}
+                  >
+                    <ShieldCheck
+                      aria-hidden
+                      className="h-4 w-4"
+                      trigger={parentIconTrigger}
+                      size={16}
+                    />
+                  </ChatToolbarTooltipButton>
+                </>
+              ) : undefined}
+            </>
           }
           onVoiceMemo={
             protocol === 'reticulum' &&
@@ -4925,6 +5202,26 @@ function ChatPanel({
           }
         />
       ) : null}
+
+      {editingScheduledRow != null && (
+        <ScheduledSendDialog
+          mode="edit"
+          text={editingScheduledRow.payload}
+          initialAt={editingScheduledRow.nextRetryAt ?? undefined}
+          textEditable={editingScheduledRow.groupId == null}
+          onConfirm={async ({ text, scheduledAt }) => {
+            const ok = await editScheduledOutbox(editingScheduledRow.id, {
+              payload: text,
+              scheduledAt,
+            });
+            if (ok) setEditingScheduledRow(null);
+            return ok;
+          }}
+          onCancel={() => {
+            setEditingScheduledRow(null);
+          }}
+        />
+      )}
 
       {chatActionError?.viewKey === viewKey && (
         <div role="alert" className="mt-2 px-1 text-sm text-red-400">

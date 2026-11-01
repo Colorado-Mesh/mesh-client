@@ -35,6 +35,12 @@ import {
   resolveReticulumIdentityId,
   RETICULUM_RECEIPT_TIMEOUT_MS,
 } from '../lib/reticulumOutboundReceipt';
+import {
+  isScheduledOutboxRow,
+  outboxRowAgeAnchorMs,
+  scheduledGroupRows,
+  validateScheduledAt,
+} from '../lib/scheduledSend';
 import { useIncidentStore } from '../stores/incidentStore';
 
 export type { OutboxEntry };
@@ -73,6 +79,14 @@ export function isAppManagedOutboxRow(row: Pick<OutboxEntry, 'priority' | 'viewK
   return isEmergencyOutboxPriority(row) || isIncidentAckOutboxRow(row);
 }
 
+/**
+ * Rows the App-level drain may send without ChatPanel mounted: App-managed rows plus scheduled
+ * sends, so a scheduled message still fires if the user is on another tab.
+ */
+export function isAppDrainedOutboxRow(row: OutboxEntry): boolean {
+  return isAppManagedOutboxRow(row) || isScheduledOutboxRow(row);
+}
+
 /** True when an outbox payload is an MECP severity-0 (MAYDAY) report. */
 export function isMaydayEmergencyOutboxPayload(payload: string): boolean {
   return MECP_MAYDAY_PAYLOAD_RE.test(payload);
@@ -85,8 +99,8 @@ function emergencyPayloadSeverity(payload: string): number {
 }
 
 /**
- * Earliest future `nextRetryAt` among App-managed (`emergency` or incident-ACK) `queued` /
- * `failed` rows, or null when none are waiting on backoff.
+ * Earliest future `nextRetryAt` among App-drained (`emergency`, incident-ACK, or scheduled-send)
+ * `queued` / `failed` rows, or null when none are waiting on backoff.
  */
 export function earliestEmergencyRetryAt(
   rows: readonly OutboxEntry[],
@@ -94,7 +108,7 @@ export function earliestEmergencyRetryAt(
 ): number | null {
   let earliest: number | null = null;
   for (const r of rows) {
-    if (!isAppManagedOutboxRow(r)) continue;
+    if (!isAppDrainedOutboxRow(r)) continue;
     if (r.status !== 'queued' && r.status !== 'failed') continue;
     if (r.nextRetryAt == null || r.nextRetryAt <= now) continue;
     if (earliest == null || r.nextRetryAt < earliest) earliest = r.nextRetryAt;
@@ -136,7 +150,7 @@ function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
   return (
     (row.status === 'queued' || row.status === 'failed') &&
     (row.nextRetryAt == null || row.nextRetryAt <= now) &&
-    (isAppManagedOutboxRow(row) || now - row.createdAt <= OUTBOX_MAX_AGE_MS)
+    (isAppManagedOutboxRow(row) || now - outboxRowAgeAnchorMs(row) <= OUTBOX_MAX_AGE_MS)
   );
 }
 
@@ -492,11 +506,21 @@ export interface UseChatOutboxOptions {
   sendFn: ChatOutboxSendFn;
 }
 
+export interface ScheduledSendPatch {
+  payload?: string;
+  scheduledAt?: number;
+}
+
 export interface UseChatOutbox {
   rows: OutboxEntry[];
   queue: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
   retry: (id: number) => void;
   cancel: (id: number) => void;
+  /**
+   * Change a scheduled send's time and/or text (multi-part rows: time only). Resolves false when
+   * the row is no longer scheduled, the time is invalid, or persistence failed (row unchanged).
+   */
+  editScheduled: (id: number, patch: ScheduledSendPatch) => Promise<boolean>;
   drainNow: () => Promise<void>;
 }
 
@@ -689,5 +713,86 @@ export function useChatOutbox({
     [removeRow],
   );
 
-  return { rows, queue, retry, cancel, drainNow: drainOnce };
+  const editScheduled = useCallback(
+    async (id: number, patch: ScheduledSendPatch): Promise<boolean> => {
+      const current = rowsRef.current;
+      const row = current.find((r) => r.id === id);
+      if (row == null || !isScheduledOutboxRow(row)) return false;
+      const scheduledAt = patch.scheduledAt ?? row.nextRetryAt;
+      if (scheduledAt == null || validateScheduledAt(scheduledAt) !== 'ok') return false;
+      const payload = patch.payload?.trim();
+      const textChanged = payload != null && payload !== row.payload;
+      if (textChanged && (payload.length === 0 || row.groupId != null)) return false;
+      try {
+        if (textChanged) {
+          // Failure point: add-then-remove so a failed add never loses the message. If the old row
+          // cannot be removed we drop the new one, leaving the original untouched.
+          const added = await window.electronAPI.chat.outbox.add({
+            protocol: row.protocol,
+            viewKey: row.viewKey,
+            channel: row.channel,
+            toNode: row.toNode,
+            payload,
+            replyId: row.replyId,
+            status: 'queued',
+            error: null,
+            nextRetryAt: scheduledAt,
+            groupId: null,
+            groupIndex: null,
+            groupTotal: null,
+          });
+          try {
+            abortOutboxRowSend(id);
+            await window.electronAPI.chat.outbox.remove(id);
+          } catch (removeErr: unknown) {
+            await window.electronAPI.chat.outbox.remove(added.id).catch((e: unknown) => {
+              console.warn('[useChatOutbox] rollback of edited scheduled row failed', e);
+            });
+            throw removeErr;
+          }
+          const next = [...current.filter((r) => r.id !== id), added];
+          setRows(next);
+          scheduleRetryTimer(next);
+          return true;
+        }
+        const targets = scheduledGroupRows(current, row).filter(isScheduledOutboxRow);
+        const done: number[] = [];
+        try {
+          for (const target of targets) {
+            await window.electronAPI.chat.outbox.updateStatus(
+              target.id,
+              'queued',
+              undefined,
+              scheduledAt,
+            );
+            done.push(target.id);
+          }
+        } catch (persistErr: unknown) {
+          // Partial multi-part failure: restore the rows already moved so the group stays aligned.
+          await Promise.all(
+            done.map((doneId) =>
+              window.electronAPI.chat.outbox
+                .updateStatus(doneId, 'queued', undefined, row.nextRetryAt ?? undefined)
+                .catch((e: unknown) => {
+                  console.warn('[useChatOutbox] reschedule rollback failed', doneId, e);
+                }),
+            ),
+          );
+          throw persistErr;
+        }
+        const next = current.map((r) =>
+          done.includes(r.id) ? { ...r, nextRetryAt: scheduledAt } : r,
+        );
+        setRows(next);
+        scheduleRetryTimer(next);
+        return true;
+      } catch (err: unknown) {
+        console.warn('[useChatOutbox] editScheduled failed', id, err);
+        return false;
+      }
+    },
+    [scheduleRetryTimer],
+  );
+
+  return { rows, queue, retry, cancel, editScheduled, drainNow: drainOnce };
 }
