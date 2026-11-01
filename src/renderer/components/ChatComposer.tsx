@@ -66,6 +66,7 @@ import {
   saveDraft,
   saveFloodScopeOverride,
 } from '../lib/chatPanelProtocolStorage';
+import { holdSendError, subscribeHeldSendErrors, takeHeldSendError } from '../lib/heldSendErrors';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   isValidMeshcoreFloodScopeHashtag,
@@ -572,12 +573,14 @@ export function ChatComposer({
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
     const nextDraft = drafts[viewKey] ?? '';
+    const heldSendError = takeHeldSendError(protocol, viewKey);
     // Avoid a queued no-op restore overriding a reply seed applied by the next render.
 
     if (inputValueRef.current !== nextDraft) setInput(nextDraft);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft and mention UI on tab switch
     setMentionQuery(null);
     setChatActionError((prev) => {
+      if (heldSendError !== undefined) return { message: heldSendError, viewKey };
       if (!prev?.showOnReturn) return null;
       return prev.viewKey === viewKey ? { ...prev, showOnReturn: false } : prev;
     });
@@ -589,6 +592,16 @@ export function ChatComposer({
     }
     setMeshcoreFastSendWarn(false);
   }, [viewKey, protocol, showFloodScopeOverride, clearMentionCycle]);
+
+  // A send from a composer that has since unmounted can fail while this one shows its view.
+  useEffect(
+    () =>
+      subscribeHeldSendErrors(() => {
+        const message = takeHeldSendError(protocol, viewKey);
+        if (message !== undefined) setChatActionError({ message, viewKey });
+      }),
+    [protocol, viewKey],
+  );
 
   // Apply nicklist `/msg` seeds without an effect (avoids set-state-in-effect).
   const [appliedComposeSeedToken, setAppliedComposeSeedToken] = useState<number | null>(null);
@@ -722,14 +735,19 @@ export function ChatComposer({
       } catch (err) {
         console.error('[ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
         const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
-        setChatActionError({
-          message: translateChatSendError(t, err, {
-            fallbackKey,
-            passthroughUnknown: true,
-          }),
-          viewKey,
-          showOnReturn: prevViewKeyRef.current !== viewKey,
+        const message = translateChatSendError(t, err, {
+          fallbackKey,
+          passthroughUnknown: true,
         });
+        if (mountedRef.current) {
+          setChatActionError({
+            message,
+            viewKey,
+            showOnReturn: prevViewKeyRef.current !== viewKey,
+          });
+        } else {
+          holdSendError(protocol, viewKey, message);
+        }
         return;
       } finally {
         setSending(false);
@@ -855,11 +873,15 @@ export function ChatComposer({
         onSendSuccess?.();
         return;
       }
-      setChatActionError({
-        message: errMsg,
-        viewKey,
-        showOnReturn: prevViewKeyRef.current !== viewKey,
-      });
+      if (mountedRef.current) {
+        setChatActionError({
+          message: errMsg,
+          viewKey,
+          showOnReturn: prevViewKeyRef.current !== viewKey,
+        });
+      } else {
+        holdSendError(protocol, viewKey, errMsg);
+      }
     } finally {
       setSending(false);
     }

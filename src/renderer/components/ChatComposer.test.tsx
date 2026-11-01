@@ -14,6 +14,7 @@ import {
   saveDraft,
   saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { resetHeldSendErrorsForTests } from '@/renderer/lib/heldSendErrors';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
@@ -99,6 +100,7 @@ describe('ChatComposer', () => {
     localStorage.clear();
     resetMeshtasticTextSendPacingForTests();
     resetMeshcoreSendRateForTests();
+    resetHeldSendErrorsForTests();
   });
 
   it('has no axe violations when connected', async () => {
@@ -583,6 +585,111 @@ describe('ChatComposer', () => {
       expect(loadDraftsInitial(protocol)['ch:1']).toBeUndefined();
     },
   );
+
+  it('shows the reason when an intercepted send fails after the composer unmounts', async () => {
+    let failIntercept: (err: Error) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            failIntercept = reject;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { unmount } = render(<ChatComposer {...props} viewKey="rrc:hub:#late-fail" />);
+    await user.type(screen.getByRole('textbox'), '/msg peer hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    // Compact layout: Back to list unmounts the composer while the send is in flight.
+    unmount();
+    await act(async () => {
+      failIntercept(new Error('peer unreachable'));
+      await Promise.resolve();
+    });
+
+    const { rerender } = render(<ChatComposer {...props} viewKey="rrc:hub:#late-fail" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('peer unreachable');
+    expect(screen.getByRole('textbox')).toHaveValue('/msg peer hello');
+
+    // Shown once: leaving the view and coming back clears it.
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#ops" />);
+    rerender(<ChatComposer {...props} viewKey="rrc:hub:#late-fail" />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'shows the reason when a %s send fails after the composer unmounts',
+    async (protocol) => {
+      let failSend: (err: Error) => void = () => {};
+      const props = {
+        protocol,
+        isConnected: true,
+        allowOutbox: false,
+        onSendChunk: vi.fn(
+          () =>
+            new Promise<void>((_resolve, reject) => {
+              failSend = reject;
+            }),
+        ),
+      };
+      const user = userEvent.setup();
+      const { unmount } = render(<ChatComposer {...props} viewKey="ch:5" />);
+      await user.type(screen.getByRole('textbox'), 'hello mesh');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+      await waitFor(() => {
+        expect(props.onSendChunk).toHaveBeenCalled();
+      });
+
+      unmount();
+      await act(async () => {
+        failSend(new Error('radio busy'));
+        await Promise.resolve();
+      });
+
+      // A composer on another view does not show it; the view the send came from does.
+      const { rerender } = render(<ChatComposer {...props} viewKey="ch:6" />);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      rerender(<ChatComposer {...props} viewKey="ch:5" />);
+      expect(screen.getByRole('alert')).toHaveTextContent('Send failed');
+      expect(screen.getByRole('textbox')).toHaveValue('hello mesh');
+    },
+  );
+
+  it('shows the reason in a composer already open on the view when the send fails', async () => {
+    let failIntercept: (err: Error) => void = () => {};
+    const props = {
+      protocol: 'reticulum' as const,
+      isConnected: true,
+      allowOutbox: false,
+      onSendChunk: vi.fn(),
+      onInterceptSend: vi.fn(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            failIntercept = reject;
+          }),
+      ),
+    };
+    const user = userEvent.setup();
+    const { unmount } = render(<ChatComposer {...props} viewKey="rrc:hub:#reopened" />);
+    await user.type(screen.getByRole('textbox'), '/msg peer hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    // Back to list, then the room is opened again before the send gives up.
+    unmount();
+    render(<ChatComposer {...props} viewKey="rrc:hub:#reopened" />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    await act(async () => {
+      failIntercept(new Error('peer unreachable'));
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('peer unreachable');
+  });
 
   it('keeps a newer origin draft when a send finishes after a view switch', async () => {
     let finishIntercept: (handled: boolean) => void = () => {};
