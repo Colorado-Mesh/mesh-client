@@ -109,6 +109,16 @@ describe('MeshMapShell', () => {
     expect(screen.queryByTestId('weather-layer')).not.toBeInTheDocument();
   });
 
+  it('keeps the layers panel scrollable so custom XYZ controls stay reachable', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'mapPanel.layerControlsAria' }));
+    const addXyz = screen.getByRole('button', { name: 'mapPanel.customSources.addXyzAria' });
+    expect(addXyz).toBeInTheDocument();
+    const panel = addXyz.closest('.overflow-y-auto');
+    expect(panel).not.toBeNull();
+    expect(panel!.className).toMatch(/max-h-/);
+  });
+
   it('renders global overlays according to the layer store', () => {
     const { rerender } = renderShell();
     expect(screen.getByTestId('incident-layer')).toBeInTheDocument();
