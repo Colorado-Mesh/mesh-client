@@ -152,6 +152,9 @@ pub async fn get_nomad_serving(State(stack): State<Arc<StackHandle>>) -> Json<se
 pub struct NomadServingPutBody {
     pub enabled: bool,
     pub display_name: Option<String>,
+    /// When set, updates the CGI opt-in preference (default remains off).
+    #[serde(default)]
+    pub allow_executable_pages: Option<bool>,
 }
 
 pub async fn put_nomad_serving(
@@ -159,7 +162,7 @@ pub async fn put_nomad_serving(
     Json(body): Json<NomadServingPutBody>,
 ) -> Json<serde_json::Value> {
     match stack
-        .set_nomad_serving(body.enabled, body.display_name)
+        .set_nomad_serving(body.enabled, body.display_name, body.allow_executable_pages)
         .await
     {
         Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })),

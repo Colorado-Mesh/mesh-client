@@ -219,6 +219,9 @@ pub struct NomadServeStatsRow {
     pub file_hits: u64,
     pub not_found_count: u64,
     pub last_request_ms: Option<u64>,
+    /// Distinct identities that identified to this node since start (capped upstream).
+    #[serde(default)]
+    pub visitors: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -244,6 +247,9 @@ pub struct NomadServingStatus {
     /// Stable error code when enabled but not running, or watcher degraded.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
+    /// Opt-in: serve Unix `+x` pages via CGI (default false; unsupported on Windows).
+    #[serde(default)]
+    pub allow_executable_pages: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

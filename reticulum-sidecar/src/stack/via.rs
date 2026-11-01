@@ -128,16 +128,13 @@ pub fn resolve_outbound_sent_via_with_primary(
     interfaces: &[InterfaceRow],
     primary_local_serial_id: Option<&str>,
 ) -> &'static str {
-    if let Some(primary_id) = primary_local_serial_id {
-        if let Some(iface) = interfaces.iter().find(|i| i.id == primary_id && i.enabled) {
-            let via = classify_interface_row(
-                &iface.iface_type,
-                &iface.name,
-                iface.serial_port.as_deref(),
-            );
-            if via == "rf" || via == "ble" {
-                return via;
-            }
+    if let Some(primary_id) = primary_local_serial_id
+        && let Some(iface) = interfaces.iter().find(|i| i.id == primary_id && i.enabled)
+    {
+        let via =
+            classify_interface_row(&iface.iface_type, &iface.name, iface.serial_port.as_deref());
+        if via == "rf" || via == "ble" {
+            return via;
         }
     }
 

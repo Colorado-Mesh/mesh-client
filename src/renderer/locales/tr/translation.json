@@ -3925,7 +3925,7 @@
       "destinationHash": "Hedef",
       "copyHash": "Hash'i kopyala",
       "copied": "Kopyalandı",
-      "stats": "{{pages}} sayfa · {{files}} dosya · {{requests}} istek",
+      "stats": "{{pages}} sayfa · {{files}} dosya · {{requests}} istek · {{visitors}} ziyaretçi",
       "myPages": "Yerel sayfalar",
       "failed": "Nomad sunumu güncellenemedi.",
       "previewSite": "Tarayıcıda aç",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Erişim listesini {{path}} için kaydet",
       "restrictLoadError": "Erişim listesi yüklenemedi.",
       "restrictSaveError": "Erişim listesi kaydedilemedi.",
-      "restrictRemoveError": "Erişim kısıtlaması kaldırılamadı."
+      "restrictRemoveError": "Erişim kısıtlaması kaldırılamadı.",
+      "allowExecutablePages": "Yürütülebilir sayfalara izin ver",
+      "allowExecutablePagesHint": "Ana makinenizin PATH'i (10 saniye zaman aşımı) ile izlenen klasördeki +x sayfaları CGI komut dosyaları olarak çalıştırır. Yalnızca o klasördeki her dosyaya güveniyorsanız etkinleştirin. Sunum sırasında bunu değiştirmek Nomad düğümünü yeniden başlatır.",
+      "allowExecutablePagesUnsupported": "Yürütülebilir sayfalar Windows üzerinde desteklenmez."
     },
     "sortLastHeard": "Son Duyma",
     "sortHops": "Hop",

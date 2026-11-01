@@ -218,7 +218,7 @@ fn decode_f32_le_base64(samples_b64: &str) -> Result<Vec<f32>, String> {
         return Err("samples_b64_misaligned".into());
     }
     let mut samples = Vec::with_capacity(bytes.len() / 4);
-    for chunk in bytes.chunks_exact(4) {
+    for chunk in bytes.as_chunks::<4>().0 {
         samples.push(f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
     }
     Ok(samples)

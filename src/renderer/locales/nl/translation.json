@@ -3925,7 +3925,7 @@
       "destinationHash": "Bestemming",
       "copyHash": "Hash kopiëren",
       "copied": "Gekopieerd",
-      "stats": "{{pages}} pagina's · {{files}} bestanden · {{requests}} verzoeken",
+      "stats": "{{pages}} pagina's · {{files}} bestanden · {{requests}} verzoeken · {{visitors}} bezoekers",
       "myPages": "Lokale pagina's",
       "failed": "Kan Nomad-hosting niet bijwerken.",
       "previewSite": "Openen in browser",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Bewaar de toegangslijst voor {{path}}",
       "restrictLoadError": "Kon de toegangslijst niet laden.",
       "restrictSaveError": "Kon de toegangslijst niet opslaan.",
-      "restrictRemoveError": "Kon de toegangsbeperking niet verwijderen."
+      "restrictRemoveError": "Kon de toegangsbeperking niet verwijderen.",
+      "allowExecutablePages": "Uitvoerbare pagina's toestaan",
+      "allowExecutablePagesHint": "Voert +x pagina's uit in de bewaakte map als CGI-scripts met uw host-PATH (time-out van 10 seconden). Schakel dit alleen in als u elk bestand in die map vertrouwt. Als u dit wijzigt tijdens het serveren, wordt het knooppunt Nomad opnieuw gestart.",
+      "allowExecutablePagesUnsupported": "Uitvoerbare pagina's worden niet ondersteund op Windows."
     },
     "sortLastHeard": "Laatst gehoord",
     "sortHops": "Hop",

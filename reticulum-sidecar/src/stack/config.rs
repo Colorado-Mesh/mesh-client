@@ -173,10 +173,10 @@ fn resolve_interface_mode(
     raw: Option<&str>,
     apply_default: bool,
 ) -> Result<Option<String>, String> {
-    if let Some(raw) = raw {
-        if let Some(normalized) = normalize_interface_mode(raw)? {
-            return Ok(Some(normalized));
-        }
+    if let Some(raw) = raw
+        && let Some(normalized) = normalize_interface_mode(raw)?
+    {
+        return Ok(Some(normalized));
     }
     if apply_default {
         return Ok(default_mode_for_iface_type(iface_type).map(str::to_string));
@@ -493,13 +493,13 @@ fn merge_configs(existing: &mut ParsedConfig, incoming: &ParsedConfig) {
 fn collect_unsupported_warnings(parsed: &ParsedConfig) -> Vec<String> {
     let mut warnings = Vec::new();
     for block in &parsed.interfaces {
-        if let Some(t) = block.get("type") {
-            if !is_supported_config_type(t) {
-                warnings.push(format!(
-                    "interface \"{}\" has unsupported type \"{t}\" (kept in config)",
-                    block.name
-                ));
-            }
+        if let Some(t) = block.get("type")
+            && !is_supported_config_type(t)
+        {
+            warnings.push(format!(
+                "interface \"{}\" has unsupported type \"{t}\" (kept in config)",
+                block.name
+            ));
         }
     }
     warnings
@@ -782,20 +782,21 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         }
     }
 
-    if row.iface_type == "i2p" {
-        if let Some(host) = &row.host {
-            block.set("peers", host);
-        }
+    if row.iface_type == "i2p"
+        && let Some(host) = &row.host
+    {
+        block.set("peers", host);
     }
 
     if row.iface_type == "rnode" {
         write_rnode_radio_fields(&mut block, row);
     }
 
-    if iface_type_uses_serial_port(&row.iface_type) && row.iface_type != "rnode" {
-        if let Some(port) = &row.serial_port {
-            block.set("port", port);
-        }
+    if iface_type_uses_serial_port(&row.iface_type)
+        && row.iface_type != "rnode"
+        && let Some(port) = &row.serial_port
+    {
+        block.set("port", port);
     }
 
     if row.iface_type == "backbone" {
@@ -813,10 +814,10 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
                 }
             }
         }
-    } else if iface_type_uses_numeric_port(&row.iface_type) {
-        if let Some(port) = row.port {
-            block.set("port", &port.to_string());
-        }
+    } else if iface_type_uses_numeric_port(&row.iface_type)
+        && let Some(port) = row.port
+    {
+        block.set("port", &port.to_string());
     }
 
     // Generic catalog fields, in declaration order. Covers bound fields the
@@ -859,22 +860,22 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
 
     write_discovery_fields(&mut block, row);
 
-    if let Some(v) = &row.network_name {
-        if !v.trim().is_empty() {
-            block.set("network_name", v);
-        }
+    if let Some(v) = &row.network_name
+        && !v.trim().is_empty()
+    {
+        block.set("network_name", v);
     }
-    if let Some(v) = &row.passphrase {
-        if !v.trim().is_empty() {
-            block.set("passphrase", v);
-        }
+    if let Some(v) = &row.passphrase
+        && !v.trim().is_empty()
+    {
+        block.set("passphrase", v);
     }
 
     // Flow control is RF-only; never emit it for TCP/UDP/I2P/Auto blocks.
-    if iface_type_supports_flow_control(&row.iface_type) {
-        if let Some(v) = row.flow_control {
-            block.set("flow_control", &bool_to_ini(v));
-        }
+    if iface_type_supports_flow_control(&row.iface_type)
+        && let Some(v) = row.flow_control
+    {
+        block.set("flow_control", &bool_to_ini(v));
     }
     if let Some(v) = row.ignore_config_warnings {
         block.set("ignore_config_warnings", &bool_to_ini(v));
@@ -1010,22 +1011,22 @@ fn validate_catalog_fields(row: &InterfaceRow) -> Result<(), String> {
             let parsed: i64 = value
                 .parse()
                 .map_err(|_| format!("{} must be a number", field.key))?;
-            if let Some(min) = field.min {
-                if parsed < min {
-                    return Err(format!("{} is below minimum {min}", field.key));
-                }
+            if let Some(min) = field.min
+                && parsed < min
+            {
+                return Err(format!("{} is below minimum {min}", field.key));
             }
-            if let Some(max) = field.max {
-                if parsed > max {
-                    return Err(format!("{} is above maximum {max}", field.key));
-                }
+            if let Some(max) = field.max
+                && parsed > max
+            {
+                return Err(format!("{} is above maximum {max}", field.key));
             }
         }
 
-        if let Some(max_length) = field.max_length {
-            if value.chars().count() > max_length {
-                return Err(format!("{} exceeds {max_length} characters", field.key));
-            }
+        if let Some(max_length) = field.max_length
+            && value.chars().count() > max_length
+        {
+            return Err(format!("{} exceeds {max_length} characters", field.key));
         }
 
         if field.kind == "select" && !field.options.is_empty() && !field.options.contains(&value) {
@@ -1136,10 +1137,10 @@ fn apply_discovery_patch(
         row.connectable = patch.connectable;
     }
     if patch.reachable_on.is_some() {
-        if let Some(ref value) = patch.reachable_on {
-            if !value.trim().is_empty() {
-                validate_reachable_on(value)?;
-            }
+        if let Some(ref value) = patch.reachable_on
+            && !value.trim().is_empty()
+        {
+            validate_reachable_on(value)?;
         }
         row.reachable_on = patch.reachable_on.clone();
     }
@@ -1174,10 +1175,10 @@ fn apply_discovery_patch(
         row.extra_config
             .insert("discovery_coding_rate".into(), cr.to_string());
     }
-    if row.discoverable == Some(true) {
-        if let (Some(lat), Some(lon)) = (row.latitude, row.longitude) {
-            validate_lat_lon(lat, lon)?;
-        }
+    if row.discoverable == Some(true)
+        && let (Some(lat), Some(lon)) = (row.latitude, row.longitude)
+    {
+        validate_lat_lon(lat, lon)?;
     }
     reconcile_ignore_config_warnings(row);
     Ok(())
@@ -1414,10 +1415,10 @@ pub fn update_interface_in_config(
                 validate_ini_scalar("host", trimmed)?;
             }
         }
-        if row.iface_type == "i2p" {
-            if let Some(ref host) = patch.host {
-                validate_i2p_peers(host)?;
-            }
+        if row.iface_type == "i2p"
+            && let Some(ref host) = patch.host
+        {
+            validate_i2p_peers(host)?;
         }
         row.host = patch.host.clone();
     }

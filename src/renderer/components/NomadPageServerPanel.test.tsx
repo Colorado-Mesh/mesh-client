@@ -12,7 +12,7 @@ import { axe } from 'vitest-axe';
 const translate = (key: string, opts?: Record<string, string | number>) => {
   if (opts && 'path' in opts) return `${key}:${String(opts.path)}`;
   if (opts && 'pages' in opts) {
-    return `${key}:${String(opts.pages)}/${String(opts.files)}/${String(opts.requests)}`;
+    return `${key}:${String(opts.pages)}/${String(opts.files)}/${String(opts.requests)}/${String(opts.visitors ?? 0)}`;
   }
   return key;
 };
@@ -56,12 +56,14 @@ const servingStatus = {
     file_hits: 0,
     not_found_count: 0,
     last_request_ms: null,
+    visitors: 1,
   },
   content_root: '/tmp/nomadnetwork',
   content_source: '/tmp/nomad-page',
   content_layout: 'site_root',
   watcher_status: 'ok',
   last_error: null,
+  allow_executable_pages: false,
 };
 
 describe('NomadPageServerPanel', () => {
@@ -78,6 +80,7 @@ describe('NomadPageServerPanel', () => {
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
+        getPlatform: vi.fn().mockReturnValue('linux'),
         reticulum: {
           onStatus: onReticulumStatus,
           proxyGet,
@@ -116,6 +119,48 @@ describe('NomadPageServerPanel', () => {
     expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
     expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
     expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
+    expect(screen.getByText('nomadNetwork.serving.stats:1/0/2/1')).toBeInTheDocument();
+    const executableSwitch = screen.getByRole('switch', {
+      name: 'nomadNetwork.serving.allowExecutablePages',
+    });
+    expect(executableSwitch).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('toggles allow executable pages via serving PUT', async () => {
+    const user = userEvent.setup();
+    proxyPut.mockResolvedValueOnce({
+      ok: true,
+      serving: { ...servingStatus, allow_executable_pages: true },
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('switch', { name: 'nomadNetwork.serving.allowExecutablePages' }),
+      ).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole('switch', { name: 'nomadNetwork.serving.allowExecutablePages' }),
+    );
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving', {
+        enabled: true,
+        display_name: 'Home',
+        allow_executable_pages: true,
+      });
+    });
+  });
+
+  it('disables executable pages switch on Windows', async () => {
+    (window.electronAPI.getPlatform as ReturnType<typeof vi.fn>).mockReturnValue('win32');
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('switch', { name: 'nomadNetwork.serving.allowExecutablePages' }),
+      ).toBeDisabled();
+    });
+    expect(
+      screen.getByText('nomadNetwork.serving.allowExecutablePagesUnsupported'),
+    ).toBeInTheDocument();
   });
 
   it('exposes page authoring controls but no upload or local-files list UI', async () => {

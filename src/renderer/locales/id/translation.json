@@ -3925,7 +3925,7 @@
       "destinationHash": "Tujuan",
       "copyHash": "Salin hash",
       "copied": "Disalin",
-      "stats": "{{pages}} halaman · {{files}} berkas · {{requests}} permintaan",
+      "stats": "{{pages}} halaman · {{files}} berkas · {{requests}} permintaan · {{visitors}} pengunjung",
       "myPages": "Halaman lokal",
       "failed": "Tidak dapat memperbarui layanan Nomad.",
       "previewSite": "Buka di Peramban",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Simpan daftar akses untuk {{path}}",
       "restrictLoadError": "Tidak dapat memuat daftar akses.",
       "restrictSaveError": "Tidak dapat menyimpan daftar akses.",
-      "restrictRemoveError": "Tidak dapat menghapus pembatasan akses."
+      "restrictRemoveError": "Tidak dapat menghapus pembatasan akses.",
+      "allowExecutablePages": "Izinkan halaman yang dapat dieksekusi",
+      "allowExecutablePagesHint": "Menjalankan +x halaman di folder yang diawasi sebagai skrip CGI dengan PATH host Anda (batas waktu 10 detik). Hanya aktifkan jika Anda memercayai setiap file di folder itu. Mengubah ini saat melayani akan memulai ulang node Nomad.",
+      "allowExecutablePagesUnsupported": "Halaman yang dapat dieksekusi tidak didukung di Windows."
     },
     "sortLastHeard": "Terakhir Didengar",
     "sortHops": "Hop",

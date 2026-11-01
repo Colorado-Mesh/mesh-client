@@ -3925,7 +3925,7 @@
       "destinationHash": "宛先",
       "copyHash": "ハッシュをコピー",
       "copied": "コピーしました",
-      "stats": "{{pages}} ページ · {{files}} ファイル · {{requests}} リクエスト",
+      "stats": "{{pages}} ページ · {{files}} ファイル · {{requests}} リクエスト · {{visitors}} 訪問者",
       "myPages": "ローカルページ",
       "failed": "Nomad の配信を更新できませんでした。",
       "previewSite": "ブラウザーで開く",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "{{path}}のアクセスリストを保存する",
       "restrictLoadError": "アクセスリストを読み込めませんでした。",
       "restrictSaveError": "アクセスリストを保存できませんでした。",
-      "restrictRemoveError": "アクセス制限を削除できませんでした。"
+      "restrictRemoveError": "アクセス制限を削除できませんでした。",
+      "allowExecutablePages": "実行可能ページを許可する",
+      "allowExecutablePagesHint": "監視フォルダー内の +x ページをホスト PATH を使用して CGI スクリプトとして実行します (10 秒のタイムアウト)。そのフォルダー内のすべてのファイルを信頼する場合にのみ有効にします。サービス提供中にこれを変更すると、Nomad ノードが再起動されます。",
+      "allowExecutablePagesUnsupported": "実行可能ページは Windows ではサポートされていません。"
     },
     "sortLastHeard": "最後に聞いた",
     "sortHops": "ホップ",

@@ -3925,7 +3925,7 @@
       "destinationHash": "Ziel",
       "copyHash": "Hash kopieren",
       "copied": "Kopiert",
-      "stats": "{{pages}} Seiten · {{files}} Dateien · {{requests}} Anfragen",
+      "stats": "{{pages}} Seiten · {{files}} Dateien · {{requests}} Anfragen · {{visitors}} Besucher",
       "myPages": "Lokale Seiten",
       "failed": "Nomad-Bereitstellung konnte nicht aktualisiert werden.",
       "previewSite": "In Browser öffnen",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Speichern Sie die Zugangsliste für {{path}}",
       "restrictLoadError": "Die Zugriffsliste konnte nicht geladen werden.",
       "restrictSaveError": "Die Zugriffsliste konnte nicht gespeichert werden.",
-      "restrictRemoveError": "Die Zugriffsbeschränkung konnte nicht aufgehoben werden."
+      "restrictRemoveError": "Die Zugriffsbeschränkung konnte nicht aufgehoben werden.",
+      "allowExecutablePages": "Ausführbare Seiten zulassen",
+      "allowExecutablePagesHint": "Führt +x Seiten im überwachten Ordner als CGI-Skripte mit Ihrem Host-PATH aus (Zeitüberschreitung von 10 Sekunden). Aktivieren Sie diese Option nur, wenn Sie jeder Datei in diesem Ordner vertrauen. Wenn Sie dies während der Bereitstellung ändern, wird der Knoten Nomad neu gestartet.",
+      "allowExecutablePagesUnsupported": "Ausführbare Seiten werden auf Windows nicht unterstützt."
     },
     "sortLastHeard": "Zuletzt gehört:",
     "sortHops": "Hops",

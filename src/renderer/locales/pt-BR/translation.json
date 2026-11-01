@@ -3925,7 +3925,7 @@
       "destinationHash": "Destino",
       "copyHash": "Copiar hash",
       "copied": "Copiado",
-      "stats": "{{pages}} páginas · {{files}} arquivos · {{requests}} solicitações",
+      "stats": "{{pages}} páginas · {{files}} arquivos · {{requests}} solicitações · {{visitors}} visitantes",
       "myPages": "Páginas locais",
       "failed": "Não foi possível atualizar o serviço Nomad.",
       "previewSite": "Abra no Navegador",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "Salve a lista de acesso para {{path}}",
       "restrictLoadError": "Não foi possível carregar a lista de acesso.",
       "restrictSaveError": "Não foi possível salvar a lista de acesso.",
-      "restrictRemoveError": "Não foi possível remover a restrição de acesso."
+      "restrictRemoveError": "Não foi possível remover a restrição de acesso.",
+      "allowExecutablePages": "Permitir páginas executáveis",
+      "allowExecutablePagesHint": "Executa páginas +x na pasta monitorada como scripts CGI com seu host PATH (tempo limite de 10s). Ative apenas se você confiar em todos os arquivos dessa pasta. Alterar isso durante o serviço reinicia o nó Nomad.",
+      "allowExecutablePagesUnsupported": "Páginas executáveis ​​não são suportadas em Windows."
     },
     "sortLastHeard": "Último Ouvido",
     "sortHops": "Saltos",

@@ -75,6 +75,8 @@ pub struct NomadServerHandle {
     lifecycle: Mutex<()>,
     inner: Mutex<Option<NomadNode>>,
     content_source: Mutex<Option<ContentSourceSelection>>,
+    /// Opt-in CGI for `+x` pages (applied at next `NomadNode::spawn`).
+    allow_executable_pages: Mutex<bool>,
     last_error: Mutex<Option<String>>,
     watcher_status: Mutex<String>,
     watcher: Mutex<Option<WatcherState>>,
@@ -106,6 +108,7 @@ impl NomadServerHandle {
             lifecycle: Mutex::new(()),
             inner: Mutex::new(None),
             content_source: Mutex::new(None),
+            allow_executable_pages: Mutex::new(false),
             last_error: Mutex::new(None),
             watcher_status: Mutex::new("ok".into()),
             watcher: Mutex::new(None),
@@ -120,6 +123,41 @@ impl NomadServerHandle {
 
     pub async fn is_running(&self) -> bool {
         self.inner.lock().await.is_some()
+    }
+
+    pub async fn allow_executable_pages(&self) -> bool {
+        *self.allow_executable_pages.lock().await
+    }
+
+    /// Update the CGI opt-in flag used on the next spawn. Does not restart a
+    /// running node — callers that need the new config applied immediately
+    /// should stop + start (see `StackHandle::set_nomad_serving`).
+    pub async fn set_allow_executable_pages(&self, allow: bool) {
+        *self.allow_executable_pages.lock().await = allow;
+    }
+
+    fn node_config(display_name: String, allow_executable_pages: bool) -> NomadNodeConfig {
+        // When CGI is on, inherit host PATH so `#!/usr/bin/env …` / Homebrew works
+        // (NomadNet parity). When off, `None` keeps nomad-core's sanitized PATH.
+        let script_path = if allow_executable_pages {
+            Some(std::env::var("PATH").unwrap_or_else(|_| "/usr/bin:/bin".into()))
+        } else {
+            None
+        };
+        NomadNodeConfig {
+            display_name,
+            announce_interval: Some(Duration::from_secs(DEFAULT_ANNOUNCE_INTERVAL_SECS)),
+            announce_at_start: true,
+            allow_executable_pages,
+            script_path,
+            // Match nomad-core `CGI_TIMEOUT` (not re-exported from the crate root).
+            script_timeout: Duration::from_secs(10),
+            // Host conversion cache for /media (NomadNet 1.4.3+); memory-only
+            // until we expose an embedder-owned disk root + clear API.
+            media_cache: MediaCacheConfig::memory_only(),
+            media_conversion_quality: DEFAULT_CONVERSION_QUALITY,
+            media_conversion_max_dimension: DEFAULT_CONVERSION_MAX_DIMENSION,
+        }
     }
 
     /// Configure the required external content source path (watched folder).
@@ -232,9 +270,12 @@ impl NomadServerHandle {
     }
 
     pub async fn status(&self, enabled_pref: bool, display_name_pref: &str) -> NomadServingStatus {
+        let allow_executable_pages = self.allow_executable_pages().await;
         let guard = self.inner.lock().await;
         if let Some(node) = guard.as_ref() {
-            return self.status_from_node(node, true).await;
+            return self
+                .status_from_node(node, true, allow_executable_pages)
+                .await;
         }
         drop(guard);
         let (page_count, file_count, content_meta) = self.content_counts_offline().await;
@@ -261,6 +302,7 @@ impl NomadServerHandle {
                 content_layout: Some(layout_label(meta.layout).into()),
                 watcher_status: Some(watcher_status),
                 last_error,
+                allow_executable_pages,
             },
             None => NomadServingStatus {
                 enabled: enabled_pref,
@@ -276,6 +318,7 @@ impl NomadServerHandle {
                 content_layout: None,
                 watcher_status: Some(watcher_status),
                 last_error,
+                allow_executable_pages,
             },
         }
     }
@@ -328,21 +371,12 @@ impl NomadServerHandle {
             .ensure_default_index(&display_name)
             .map_err(|e| e.to_string())?;
 
+        let allow_executable_pages = self.allow_executable_pages().await;
         let node = NomadNode::spawn(
             transport_tx,
             identity,
             store,
-            NomadNodeConfig {
-                display_name: display_name.clone(),
-                announce_interval: Some(Duration::from_secs(DEFAULT_ANNOUNCE_INTERVAL_SECS)),
-                announce_at_start: true,
-                allow_executable_pages: false,
-                // Host conversion cache for /media (NomadNet 1.4.3+); memory-only
-                // until we expose an embedder-owned disk root + clear API.
-                media_cache: MediaCacheConfig::memory_only(),
-                media_conversion_quality: DEFAULT_CONVERSION_QUALITY,
-                media_conversion_max_dimension: DEFAULT_CONVERSION_MAX_DIMENSION,
-            },
+            Self::node_config(display_name.clone(), allow_executable_pages),
         )
         .await
         .map_err(|e| {
@@ -355,7 +389,9 @@ impl NomadServerHandle {
             node.shutdown().await;
             return Err("nomad serving already running".into());
         }
-        let status = self.status_from_resolved_node(&node, true, &resolved).await;
+        let status = self
+            .status_from_resolved_node(&node, true, &resolved, allow_executable_pages)
+            .await;
         *guard = Some(node);
         drop(guard);
 
@@ -595,10 +631,15 @@ impl NomadServerHandle {
             .await
     }
 
-    async fn status_from_node(&self, node: &NomadNode, enabled: bool) -> NomadServingStatus {
+    async fn status_from_node(
+        &self,
+        node: &NomadNode,
+        enabled: bool,
+        allow_executable_pages: bool,
+    ) -> NomadServingStatus {
         if let Ok(resolved) = self.resolve_roots().await {
             return self
-                .status_from_resolved_node(node, enabled, &resolved)
+                .status_from_resolved_node(node, enabled, &resolved, allow_executable_pages)
                 .await;
         }
         let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
@@ -625,6 +666,7 @@ impl NomadServerHandle {
             content_layout: None,
             watcher_status: Some(watcher_status),
             last_error,
+            allow_executable_pages,
         }
     }
 
@@ -633,6 +675,7 @@ impl NomadServerHandle {
         node: &NomadNode,
         enabled: bool,
         resolved: &ResolvedNomadContentRoots,
+        allow_executable_pages: bool,
     ) -> NomadServingStatus {
         let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
         let file_count = node.store().list_files().map(|f| f.len()).unwrap_or(0);
@@ -657,6 +700,7 @@ impl NomadServerHandle {
             content_layout: Some(layout_label(resolved.layout).into()),
             watcher_status: Some(watcher_status),
             last_error,
+            allow_executable_pages,
         }
     }
 
@@ -770,13 +814,12 @@ impl NomadServerHandle {
             return;
         }
         let mut degraded = false;
-        if let Some(ref files) = files_dir {
-            if files.exists() {
-                if let Err(e) = watcher.watch(files, RecursiveMode::Recursive) {
-                    tracing::warn!("[nomad-serving] watcher init failed on files: {e}");
-                    degraded = true;
-                }
-            }
+        if let Some(ref files) = files_dir
+            && files.exists()
+            && let Err(e) = watcher.watch(files, RecursiveMode::Recursive)
+        {
+            tracing::warn!("[nomad-serving] watcher init failed on files: {e}");
+            degraded = true;
         }
         // Keep degraded when pages watch succeeded but files watch failed — do not
         // overwrite with "ok" (UI relies on watcher_status for Reload from disk).
@@ -885,6 +928,30 @@ fn stats_row(stats: &nomad_core::NomadServeStats) -> NomadServeStatsRow {
         file_hits: stats.file_hits,
         not_found_count: stats.not_found_count,
         last_request_ms: stats.last_request_ms,
+        visitors: stats.visitors,
+    }
+}
+
+#[cfg(test)]
+mod stats_row_tests {
+    use super::stats_row;
+
+    #[test]
+    fn stats_row_copies_visitors() {
+        let stats = nomad_core::NomadServeStats {
+            request_count: 3,
+            page_hits: 2,
+            file_hits: 1,
+            media_hits: 0,
+            not_found_count: 0,
+            last_request_ms: Some(1),
+            visitors: 7,
+        };
+        let row = stats_row(&stats);
+        assert_eq!(row.visitors, 7);
+        assert_eq!(row.request_count, 3);
+        assert_eq!(row.page_hits, 2);
+        assert_eq!(row.file_hits, 1);
     }
 }
 

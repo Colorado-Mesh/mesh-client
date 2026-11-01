@@ -473,10 +473,10 @@ fn spawn_propagation_validation(
             "processed inbound propagation Resource"
         );
 
-        if accepted > 0 {
-            if let Some(ref on_accepted) = on_inbound_accepted {
-                on_accepted();
-            }
+        if accepted > 0
+            && let Some(ref on_accepted) = on_inbound_accepted
+        {
+            on_accepted();
         }
 
         if claim.should_close_link() {

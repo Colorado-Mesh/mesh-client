@@ -3925,7 +3925,7 @@
       "destinationHash": "目标",
       "copyHash": "复制哈希",
       "copied": "已复制",
-      "stats": "{{pages}} 页面 · {{files}} 文件 · {{requests}} 请求",
+      "stats": "{{pages}} 页面 · {{files}} 文件 · {{requests}} 请求 · {{visitors}} 访客",
       "myPages": "本地页面",
       "failed": "无法更新 Nomad 服务。",
       "previewSite": "在浏览器中打开",
@@ -4010,7 +4010,10 @@
       "restrictSaveAria": "保存{{path}}的访问列表",
       "restrictLoadError": "无法加载访问列表。",
       "restrictSaveError": "无法保存访问列表。",
-      "restrictRemoveError": "无法删除访问限制。"
+      "restrictRemoveError": "无法删除访问限制。",
+      "allowExecutablePages": "允许可执行页面",
+      "allowExecutablePagesHint": "使用您的主机 PATH（10 秒超时）将监视文件夹中的 +x 个页面作为 CGI 脚本运行。仅当您信任该文件夹中的每个文件时才启用。在服务时更改此设置会重新启动 Nomad 节点。",
+      "allowExecutablePagesUnsupported": "Windows 不支持可执行页面。"
     },
     "sortLastHeard": "上次听到",
     "sortHops": "跳数",
