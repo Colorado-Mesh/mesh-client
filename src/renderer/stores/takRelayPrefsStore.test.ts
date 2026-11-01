@@ -94,10 +94,12 @@ describe('takRelayPrefsStore', () => {
 
   it("keeps ATAK's MAYDAY alarm off unless turned on, for every radio", async () => {
     expect(useTakRelayPrefsStore.getState().mecpAlarm).toBe(false);
+    const saved = () => localStorage.getItem('mesh-client:takRelayPrefs') ?? '';
     useTakRelayPrefsStore.getState().setMecpAlarm(true);
-    expect(
-      JSON.parse(localStorage.getItem('mesh-client:takRelayPrefs') ?? '{}').state.mecpAlarm,
-    ).toBe(true);
+    expect(JSON.parse(saved()).state.mecpAlarm).toBe(true);
+    // Off is saved by leaving it out, exactly as main's empty record after a reset.
+    useTakRelayPrefsStore.getState().setMecpAlarm(false);
+    expect(saved()).toBe('{"state":{"byIdentity":{},"retiredRooms":null},"version":3}');
     await rehydrate({ byIdentity: {}, mecpAlarm: 'yes' }, 3);
     expect(useTakRelayPrefsStore.getState().mecpAlarm).toBe(false);
     await rehydrate({ byIdentity: {}, mecpAlarm: true }, 3);

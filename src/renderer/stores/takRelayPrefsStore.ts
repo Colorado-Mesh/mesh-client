@@ -11,7 +11,7 @@ import type { IdentityId } from '../lib/types';
 const takRelayPersistence = createDurableRendererSetting(
   'mesh-client:takRelayPrefs',
   DURABLE_RENDERER_STORAGE_KEYS.takRelayPrefs,
-  JSON.stringify({ state: { byIdentity: {}, retiredRooms: null, mecpAlarm: false }, version: 3 }),
+  JSON.stringify({ state: { byIdentity: {}, retiredRooms: null }, version: 3 }),
   // A first edit creates a full default row; replay only the fields the user changed.
   (path) =>
     path.length === 3 && path[0] === 'state' && path[1] === 'byIdentity' ? EMPTY_PREFS : undefined,
@@ -287,6 +287,22 @@ interface TakRelayPrefsState {
   setDirectMessages: (identityId: IdentityId, enabled: boolean) => void;
 }
 
+/**
+ * What is saved. The MAYDAY alarm only when on: off reads the same as settings saved before it
+ * existed, so the off state saves exactly as main's empty record after a reset.
+ */
+function persistedState(s: TakRelayPrefsState): {
+  byIdentity: Record<IdentityId, TakRelayIdentityPrefs>;
+  retiredRooms: TakRetiredRooms | null;
+  mecpAlarm?: true;
+} {
+  return {
+    byIdentity: s.byIdentity,
+    retiredRooms: s.retiredRooms,
+    ...(s.mecpAlarm ? { mecpAlarm: true as const } : {}),
+  };
+}
+
 export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
   persist(
     (set) => {
@@ -372,11 +388,7 @@ export const useTakRelayPrefsStore = create<TakRelayPrefsState>()(
       storage: createJSONStorage(() => takRelayPersistence.storage),
       skipHydration: true,
       version: 3,
-      partialize: (s) => ({
-        byIdentity: s.byIdentity,
-        retiredRooms: s.retiredRooms,
-        mecpAlarm: s.mecpAlarm,
-      }),
+      partialize: (s) => persistedState(s),
       // sanitizeStore reads every earlier shape, so the stored state passes through to merge.
       migrate: (persisted) => persisted,
       merge: (persisted, current) => {
@@ -403,9 +415,8 @@ takRelayPersistence.hydrateLocal(() => {
 export async function hydrateTakRelayPrefs(settings: Record<string, string>): Promise<void> {
   await takRelayPersistence.hydrate(settings, () => {
     void useTakRelayPrefsStore.persist.rehydrate();
-    const { byIdentity, retiredRooms, mecpAlarm } = useTakRelayPrefsStore.getState();
     takRelayPersistence.write(
-      JSON.stringify({ state: { byIdentity, retiredRooms, mecpAlarm }, version: 3 }),
+      JSON.stringify({ state: persistedState(useTakRelayPrefsStore.getState()), version: 3 }),
     );
   });
 }
