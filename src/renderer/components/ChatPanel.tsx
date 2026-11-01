@@ -4575,8 +4575,6 @@ function ChatPanel({
                                       onMouseDown={(e) => {
                                         if (mqttOriginReactionUnsupported) return;
                                         e.preventDefault();
-                                        if (!chatPanelIsLinux())
-                                          reactionHiddenInputRef.current?.focus();
                                       }}
                                       onClick={() => {
                                         if (mqttOriginReactionUnsupported) return;
@@ -4600,6 +4598,9 @@ function ChatPanel({
                                             channel: msg.channel,
                                           };
                                           reactionCapturePendingRef.current = true;
+                                          // The OS panel types into whatever has focus, and keyboard or
+                                          // assistive-tech presses arrive without a mousedown.
+                                          reactionHiddenInputRef.current?.focus();
                                           void window.electronAPI
                                             .showEmojiPanel()
                                             .catch((e: unknown) => {
@@ -4733,6 +4734,7 @@ function ChatPanel({
                                       ? `r-${r.id}`
                                       : `r-${r.sender_id}-${r.emoji}-${rIdx}`
                                   }
+                                  role="img"
                                   className="bg-deep-black border-ink-800 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
                                   title={titleText}
                                   aria-label={ariaLabel}
