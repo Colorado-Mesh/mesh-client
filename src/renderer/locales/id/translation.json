@@ -5687,6 +5687,8 @@
     "serverNameLabel": "Nama Server",
     "requireCert": "Memerlukan sertifikat klien (mTLS)",
     "autoStart": "Mulai otomatis saat peluncuran aplikasi",
+    "mecpAlarm": "Bunyikan alarm darurat ATAK untuk MAYDAY MECP",
+    "mecpAlarmHint": "Siapa pun di kanal dapat mengirim MAYDAY, jadi alarm mati kecuali Anda menyalakannya. Alarm berbunyi sekali untuk setiap MAYDAY yang memiliki posisi, tidak pernah untuk latihan, pengirim yang diblokir, atau peringatan yang dibisukan aplikasi, dan dibatalkan saat insiden diselesaikan atau suar daruratnya dibatalkan.",
     "starting": "Mulai…",
     "startServer": "Mulai Server",
     "stopping": "Henti…",

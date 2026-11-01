@@ -34,6 +34,13 @@ const takEntries: readonly SettingSearchEntry[] = [
     keywords: ['tak', 'startup', 'launch'],
   },
   {
+    id: 'tak.server.mecpAlarm',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.mecpAlarm',
+    sectionKey: SERVER,
+    keywords: ['atak', 'mecp', 'mayday', 'emergency', 'alarm', 'alert', '911'],
+  },
+  {
     id: 'tak.server.startStop',
     slot: 'TAK',
     labelKey: 'takServerPanel.startServer',

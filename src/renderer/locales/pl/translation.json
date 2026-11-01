@@ -5769,6 +5769,8 @@
     "serverNameLabel": "Nazwa serwera",
     "requireCert": "Wymagaj certyfikatu klienta (mTLS)",
     "autoStart": "Automatyczne uruchamianie po uruchomieniu aplikacji",
+    "mecpAlarm": "Włączaj sygnał alarmowy ATAK przy MECP MAYDAY",
+    "mecpAlarmHint": "Każdy na kanale może wysłać MAYDAY, więc alarm jest wyłączony, dopóki go nie włączysz. Rozlega się raz dla każdego MAYDAY z pozycją, nigdy dla ćwiczeń, zablokowanego nadawcy ani alertu wyciszonego przez aplikację, i jest anulowany, gdy incydent zostanie rozwiązany lub jego radiolatarnia zostanie odwołana.",
     "starting": "Startowy…",
     "startServer": "Uruchom serwer",
     "stopping": "Zatrzymanie…",
