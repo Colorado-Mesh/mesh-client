@@ -10,27 +10,35 @@ This page records the decision so contributors do not re-propose app-level DB en
 
 **In scope:** someone steals the laptop (or other device) that runs Mesh Client.
 
-| Device state                                                       | What actually protects data               | What app-level DB encryption adds                                                                                         |
-| ------------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Powered off / locked with FileVault, BitLocker, or LUKS            | OS full-disk encryption                   | Almost nothing — the disk is already unreadable                                                                           |
-| Unlocked / logged-in session stolen                                | The OS login already grants access        | Transparent OS-keychain (`safeStorage`) crypto unlocks with the same session, so DB ciphertext decrypts for the thief too |
-| Passphrase-gated app crypto (only model that helps unlocked theft) | User must unlock Mesh Client every launch | High UX cost and permanent brick risk for low private-data value                                                          |
+| Device state                                                       | What actually protects data                                                                                     | What app-level DB encryption adds                                                                                         |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Powered off with FileVault, BitLocker, or LUKS enabled             | OS full-disk encryption protects data **at rest** (volume locked until OS unlock)                               | Almost nothing — the disk image is already unreadable without the OS credential                                           |
+| Running device with a locked session (screen lock)                 | Screen lock gates interactive access to the already-running OS session; FDE does not re-lock an unlocked volume | Little — after the user unlocks the session, transparent `safeStorage` follows that OS login like any other app secret    |
+| Unlocked / logged-in session stolen                                | The OS login already grants access                                                                              | Transparent OS-keychain (`safeStorage`) crypto unlocks with the same session, so DB ciphertext decrypts for the thief too |
+| Passphrase-gated app crypto (only model that helps unlocked theft) | User must unlock Mesh Client every launch                                                                       | High UX cost and permanent brick risk for low private-data value                                                          |
 
-**Correct control for this threat:** enable OS full-disk encryption and a screen lock. Mesh Client must not imply that an in-app DB toggle replaces FileVault, BitLocker, or LUKS.
+**Correct control for this threat:** enable OS full-disk encryption **and** a screen lock — they solve different cases (cold disk vs running session). Mesh Client must not imply that an in-app DB toggle replaces either.
 
 ## Sensitivity of on-disk data
 
 **Already protected separately (keep doing this):**
 
-- MeshCore / Meshtastic private-key backups, MQTT material, and room/repeater passwords via `safeStorage` → SQLite `secure_secrets` (ciphertext only; see [Key backup and cryptography](key-backup-and-crypto.md))
+- MeshCore / Meshtastic private-key backups, MQTT material, and room/repeater passwords via `safeStorage` → SQLite `secure_secrets` when strong OS key storage is available (see [Key backup and cryptography](key-backup-and-crypto.md)). That path stores **ciphertext in SQLite**, not plaintext passwords — with important exceptions below.
 - Reticulum identity files and the optional identity vault under `reticulum/` (sidecar-owned; not covered by a hypothetical DB toggle)
+
+**Credential exceptions (not “ciphertext only”):**
+
+- When OS key storage is unavailable, remembered room/repeater passwords (and related secrets on the same path) may keep a local `mesh-client:credentialCompatibility:…` copy — an accepted local-disclosure fallback until durable encryption succeeds ([Key backup and cryptography](key-backup-and-crypto.md), [`secureSecretStorage.ts`](../src/renderer/lib/secureSecretStorage.ts)).
+- Legacy preference / app-settings records may still hold **inline** credentials until migration retires them; preparation strips those fields from the canonical map but leaves sources intact for recovery ([Renderer storage](development/renderer-storage.md)).
+
+Those residuals can appear in browser storage and, for any still-inline legacy fields, in SQLite. Treat developer DB exports as **plaintext diagnostic snapshots** that may include chat history and any of the above leftovers — not as a guarantee that every secret is keychain-wrapped.
 
 **Lower / situational (plain SQLite and related files by design):**
 
 - Channel chat and a small number of DMs
 - Node lists, path/GPS history, emergency incident text
 - MECP received audit log
-- Intentional private copies in **Export for Developer** and **Export Database**
+- Intentional private copies in **Export for Developer** and **Export Database** (ordinary SQLite; share only on a private channel)
 
 Most mesh traffic is not highly private. A few DMs do not justify a second crypto subsystem with key-loss failure modes.
 
