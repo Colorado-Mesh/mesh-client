@@ -66,7 +66,7 @@ After you choose a file the section shows **Checking firmware…**, then **Ready
 - **File SHA-256**, the hash of the file you chose. Compare it with the digest shown next to the asset on the release page.
 - **Image SHA-256** — for ESP32, the hash of the full-flash image bytes that will be written; for nRF52, the hash of the **DFU ZIP package** (not the extracted application binary alone).
 
-Paste the digest from the release page into **Expected SHA-256 (optional)**. A mismatch against either checksum blocks flashing.
+Paste the digest from the release page into **Expected SHA-256 (optional)**. Flashing is blocked only when that digest matches neither **File SHA-256** nor **Image SHA-256**.
 
 If the file is not acceptable, the section shows one of these:
 
