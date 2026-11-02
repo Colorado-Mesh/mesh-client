@@ -106,6 +106,13 @@ nav:
   - Release notes:
       - Catch up (unreleased): release-notes/ai-catch-up.md
   - User Guide:
+      - Chat and messaging: chat.md
+      - Maps and offline maps: maps.md
+      - TAK gateway: tak.md
+      - Firmware and device maintenance: firmware.md
+      - Meshtastic guide: meshtastic.md
+      - MeshCore guide: meshcore.md
+      - Settings and shortcuts: settings.md
       - Live Traffic Map: live-traffic-map.md
       - Reticulum Setup Guide: reticulum-setup-guide.md
       - Reticulum: reticulum.md
@@ -149,12 +156,14 @@ nav:
           - AI summaries: development/ai-summarization.md
           - Connection panel: development/connection-panel.md
           - Meshtastic: development/meshtastic.md
+          - Firmware flash: development/firmware-flash.md
           - MQTT: development/mqtt.md
           - MeshCore Repeaters: development/meshcore-repeaters.md
           - MeshCore Rooms: development/meshcore-rooms.md
           - MeshCore companion CLI: development/meshcore-companion-cli.md
           - EMCOMM: development/emcomm.md
           - MECP: development/mecp.md
+          - TAK gateway: development/tak.md
           - Offline maps: development/offline-maps.md
           - Live packet map: development/live-packet-map.md
           - Settings search: development/settings-search.md

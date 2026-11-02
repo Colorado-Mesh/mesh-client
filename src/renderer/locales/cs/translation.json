@@ -1150,7 +1150,8 @@
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Zjištěno jako robot ze svých automatických odpovědí",
-    "retry": "Zkusit znovu"
+    "retry": "Zkusit znovu",
+    "docsLink": "Dokumentace"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",

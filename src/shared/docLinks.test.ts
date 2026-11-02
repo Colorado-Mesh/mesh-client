@@ -1,7 +1,15 @@
 // @vitest-environment node
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
-import { dirname, join } from 'path';
+import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 
@@ -9,11 +17,30 @@ import {
   docsSitePageToRepoPath,
   extractDocLinkTargets,
   findBrokenDocLinks,
+  GENERATED_SITE_PAGES,
   githubHeadingSlug,
   markdownHeadingAnchors,
 } from './docLinks';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+function collectMarkdownFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const ent of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...collectMarkdownFiles(full));
+    else if (ent.name.endsWith('.md')) out.push(full);
+  }
+  return out;
+}
+
+function mkdocsNavMarkdownTargets(mkdocsYaml: string): string[] {
+  const navStart = mkdocsYaml.indexOf('\nnav:');
+  if (navStart < 0) return [];
+  const navBlock = mkdocsYaml.slice(navStart);
+  const matches = [...navBlock.matchAll(/:\s*([A-Za-z0-9_./-]+\.md)\s*$/gm)];
+  return matches.flatMap((m) => (m[1] ? [m[1]] : []));
+}
 
 describe('extractDocLinkTargets', () => {
   it('extracts GitHub blob, docs-site, and relative docs/*.md links in source order', () => {
@@ -85,5 +112,59 @@ describe('findBrokenDocLinks', () => {
   it('all mesh-client documentation links resolve to existing repo files', () => {
     const broken = findBrokenDocLinks(repoRoot);
     expect(broken).toEqual([]);
+  });
+});
+
+describe('mkdocs nav completeness', () => {
+  it('keeps committed docs pages and nav entries in sync', () => {
+    const mkdocsYaml = readFileSync(join(repoRoot, 'mkdocs.yml'), 'utf8');
+    const navTargets = mkdocsNavMarkdownTargets(mkdocsYaml);
+    expect(navTargets.length).toBeGreaterThan(0);
+
+    const generatedBasenames = new Set([...GENERATED_SITE_PAGES].map((p) => `${p}.md`));
+    for (const target of navTargets) {
+      if (generatedBasenames.has(target.split('/').pop() ?? '')) continue;
+      const abs = join(repoRoot, 'docs', target);
+      expect(existsSync(abs), `nav entry has no file: ${target}`).toBe(true);
+    }
+
+    const onDisk = collectMarkdownFiles(join(repoRoot, 'docs'))
+      .map((abs) => relative(join(repoRoot, 'docs'), abs).replaceAll('\\', '/'))
+      .filter((rel) => !generatedBasenames.has(rel.split('/').pop() ?? ''));
+
+    const navSet = new Set(navTargets);
+    for (const rel of onDisk) {
+      expect(navSet.has(rel), `missing from nav: ${rel}`).toBe(true);
+    }
+  });
+});
+
+describe('new page discoverability', () => {
+  it('links each new guide from README.md or docs/index.md', () => {
+    const discoverabilitySources = [
+      readFileSync(join(repoRoot, 'README.md'), 'utf8'),
+      readFileSync(join(repoRoot, 'docs/index.md'), 'utf8'),
+    ].join('\n');
+    const required = [
+      'chat',
+      'maps',
+      'tak',
+      'firmware',
+      'meshtastic',
+      'meshcore',
+      'settings',
+      'development/firmware-flash',
+      'development/tak',
+    ];
+    for (const page of required) {
+      const patterns = [
+        `docs/${page}.md`,
+        `(${page}.md`,
+        `](${page}.md`,
+        `](${page.split('/').pop()}.md`,
+      ];
+      const found = patterns.some((p) => discoverabilitySources.includes(p));
+      expect(found, `page not linked from README or docs/index.md: ${page}`).toBe(true);
+    }
   });
 });

@@ -1128,7 +1128,8 @@
     "botBadge": "Robô",
     "botBadgeLabel": "Robô",
     "botBadgeTooltip": "Detectado como um bot em suas respostas automatizadas",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "docsLink": "Documentos"
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",

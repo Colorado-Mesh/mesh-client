@@ -88,6 +88,8 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 
 ## Reports in ATAK
 
+Full TAK server setup, data packages, and relay configuration are in [TAK gateway](tak.md). This section covers only how MECP reports and Incident markers appear in ATAK once TAK is running.
+
 When the TAK server is running and a channel is served to ATAK (or direct messages are on for the radio), an MECP report heard there reaches ATAK in words, in the app's language, with its code line kept below it, the same way MeshCore TAK Bridge shows one:
 
 ```

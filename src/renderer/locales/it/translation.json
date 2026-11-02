@@ -1128,7 +1128,8 @@
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Rilevato come bot dalle sue risposte automatiche",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "docsLink": "Documenti"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",

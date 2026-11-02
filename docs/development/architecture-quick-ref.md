@@ -74,4 +74,12 @@ Developer reference: where to look first by area. Moved out of [`ARCHITECTURE.md
 
 ## Offline maps
 
-- Privileged `mesh-tiles:` protocol + disk LRU under userData `tile-cache/` (`src/main/offline-maps/`); region download IPC; renderer **Layers → Offline maps**. Basemap allowlist includes OSM, Carto Dark, USGS Topo. See [offline-maps.md](offline-maps.md).
+- Privileged `mesh-tiles:` protocol + disk LRU under userData `tile-cache/` (`src/main/offline-maps/`); region download IPC; renderer **Layers → Offline maps**. Basemap allowlist includes OSM, Dark OpenStreetMap (local CSS filter on OSM tiles), USGS Topo; user-confirmed custom XYZ/MBTiles sources are a separate path. See [offline-maps.md](offline-maps.md).
+
+## Device firmware flash
+
+- USB Meshtastic/MeshCore flasher (Admin tab, Web Serial). See [firmware-flash.md](firmware-flash.md).
+
+## TAK gateway
+
+- Local CoT TLS server, remote TAK relay, ATAK/WinTAK/iTAK bridge. See [tak.md](tak.md).

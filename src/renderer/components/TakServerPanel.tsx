@@ -6,6 +6,7 @@ import { decodeTakPacket, type TakPacketSummary } from '@/renderer/lib/meshtasti
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { MS_PER_MINUTE } from '@/renderer/lib/timeConstants';
+import { TAK_DOCS_URL } from '@/shared/docsSite';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import type { TAKSettings } from '@/shared/tak-types';
 
@@ -155,7 +156,17 @@ export default function TakServerPanel({
 
   return (
     <div className="w-full space-y-6 p-4">
-      <h2 className="text-ink-200 text-xl font-semibold">{t('takServerPanel.title')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-ink-200 text-xl font-semibold">{t('takServerPanel.title')}</h2>
+        <a
+          href={TAK_DOCS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="text-muted hover:text-brand-green text-xs transition-colors"
+        >
+          {t('common.docsLink')}
+        </a>
+      </div>
       <p className="text-ink-400 text-sm">{t('takServerPanel.description')}</p>
 
       {/* Status */}

@@ -1128,7 +1128,8 @@
     "botBadge": "ボット",
     "botBadgeLabel": "ボット",
     "botBadgeTooltip": "自動返信からボットとして検出される",
-    "retry": "再試行"
+    "retry": "再試行",
+    "docsLink": "ドックス"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",

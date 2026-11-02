@@ -96,6 +96,17 @@ describe('DeviceFirmwareFlashSection', () => {
     ).toBeInTheDocument();
   });
 
+  it('links the Docs affordance to the firmware guide', () => {
+    render(
+      <DeviceFirmwareFlashSection capabilities={MESHTASTIC_CAPABILITIES} device={mtDevice()} />,
+    );
+    const docsLink = screen.getByRole('link', { name: /docs/i });
+    expect(docsLink).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/firmware/',
+    );
+  });
+
   it('locks the board to the connected radio and starts with flashing blocked', () => {
     render(
       <DeviceFirmwareFlashSection capabilities={MESHTASTIC_CAPABILITIES} device={mtDevice()} />,
