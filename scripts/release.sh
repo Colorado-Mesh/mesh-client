@@ -647,9 +647,10 @@ if ! pnpm run lint:md; then
   exit 1
 fi
 
-# Lint code
+# Lint code — match ci.yaml: two workers + eslint.ci.config.mjs. format:check already
+# covered Prettier for ts/tsx/js/jsx; unbounded workers OOM type-aware lint on GHA (~4GB).
 echo "Running ESLint..."
-if ! pnpm run lint; then
+if ! pnpm run lint --concurrency 2 --config eslint.ci.config.mjs; then
   print_error "ESLint check failed."
   exit 1
 fi

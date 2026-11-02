@@ -51,6 +51,14 @@ describe('release.sh full-suite gate', () => {
     expect(script).toMatch(/^\s*if ! pnpm run test:run; then\s*$/m);
   });
 
+  it('runs ESLint with CI concurrency and eslint.ci.config.mjs (avoids OOM)', () => {
+    // format:check already ran; same invocation as ci.yaml lint job.
+    expect(script).toMatch(
+      /^\s*if ! pnpm run lint --concurrency 2 --config eslint\.ci\.config\.mjs; then\s*$/m,
+    );
+    expect(script).not.toMatch(/^\s*if ! pnpm run lint; then\s*$/m);
+  });
+
   it('never invokes staged/related/changed Vitest bypasses', () => {
     expect(script).not.toMatch(/pnpm run test:staged/);
     expect(script).not.toMatch(/pnpm run test:changed/);

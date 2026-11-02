@@ -65,7 +65,7 @@ Local `scripts/release.sh` remains for emergencies when Actions is unavailable. 
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
 3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
 4. Auto-detects **patch / minor / major** via [`detectReleaseBump.mjs`](../scripts/detectReleaseBump.mjs) (scoped Conventional Commits such as `feat(rrc):` count as **minor**) since the last tag (or accept an explicit bump — see below)
-5. Runs **pre-flight validation** (`check:environment`, release CLI health, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:flatpak-offline-pnpm`**, **`check:i18n`**, lockfile re-dedupe stability (not `pnpm dedupe --check` — that breaks hoisted `node_modules/.bin`), audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
+5. Runs **pre-flight validation** (`check:environment`, release CLI health, format, lint via `pnpm run lint --concurrency 2 --config eslint.ci.config.mjs` (same as `ci.yaml`; Prettier already covered by `format:check`), typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:flatpak-offline-pnpm`**, **`check:i18n`**, lockfile re-dedupe stability (not `pnpm dedupe --check` — that breaks hoisted `node_modules/.bin`), audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
 6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
 7. Bumps `package.json` via `pnpm version`
 8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
@@ -177,7 +177,7 @@ If you need to run checks outside `release.sh`:
 ```bash
 pnpm run format:check
 pnpm run lint:md
-pnpm run lint
+pnpm run lint --concurrency 2 --config eslint.ci.config.mjs
 pnpm run typecheck
 pnpm run check:i18n
 pnpm run test:run
