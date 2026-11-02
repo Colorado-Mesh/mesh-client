@@ -18,7 +18,12 @@ import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import { removeRendererStorageItem, setRendererStorageItem } from '@/renderer/lib/rendererStorage';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
-import { troubleshootingDocsUrl } from '@/shared/docsSite';
+import {
+  LETSMESH_MQTT_AUTH_DOCS_URL,
+  MESHCORE_DOCS_URL,
+  MESHTASTIC_DOCS_URL,
+  troubleshootingDocsUrl,
+} from '@/shared/docsSite';
 import {
   clampMqttMaxRetries,
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -185,6 +190,7 @@ import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
 import { Button } from './ui/Button';
 import { CopyField } from './ui/CopyField';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import {
   CHECKBOX_CLASS,
   chipClass,
@@ -2170,22 +2176,34 @@ export default function ConnectionPanel({
       });
   };
 
+  const mqttAuthDocsLink =
+    protocol === 'meshcore' ? (
+      <DocsSiteLink
+        href={LETSMESH_MQTT_AUTH_DOCS_URL}
+        labelKey="connectionPanel.mqttAuthDocsLink"
+        className="hover:text-bright-green text-muted text-xs transition-colors"
+      />
+    ) : null;
+
   const mqttSection =
     mqttStatus === 'connected' ? (
       <Panel
         title={t('connectionPanel.mqttConnection')}
         actions={
-          <Button
-            data-setting-anchor="connection.mqtt.disconnect"
-            variant="danger"
-            size="sm"
-            icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
-            onClick={() => {
-              disconnectMqtt('panel');
-            }}
-          >
-            {t('connectionPanel.disconnectMqtt')}
-          </Button>
+          <>
+            {mqttAuthDocsLink}
+            <Button
+              data-setting-anchor="connection.mqtt.disconnect"
+              variant="danger"
+              size="sm"
+              icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
+              onClick={() => {
+                disconnectMqtt('panel');
+              }}
+            >
+              {t('connectionPanel.disconnectMqtt')}
+            </Button>
+          </>
         }
       >
         <div className="space-y-5">
@@ -2270,7 +2288,7 @@ export default function ConnectionPanel({
         </div>
       </Panel>
     ) : (
-      <Panel title={t('connectionPanel.mqttConnection')}>
+      <Panel title={t('connectionPanel.mqttConnection')} actions={mqttAuthDocsLink}>
         <div className="max-w-3xl space-y-4">
           {mqttError && (
             <div role="alert" className={NOTICE_CLASS.error}>
@@ -3017,15 +3035,21 @@ export default function ConnectionPanel({
     />
   );
 
+  const docsLinkClass = 'hover:text-bright-green text-muted text-xs transition-colors';
+  const protocolGuideUrl = protocol === 'meshcore' ? MESHCORE_DOCS_URL : MESHTASTIC_DOCS_URL;
   const docsLink = (
-    <a
-      href={troubleshootingDocsUrl(protocol)}
-      target="_blank"
-      rel="noreferrer"
-      className="hover:text-bright-green text-muted text-xs transition-colors"
-    >
-      {t('diagnosticsPanel.docsLink')}
-    </a>
+    <>
+      <DocsSiteLink
+        href={troubleshootingDocsUrl(protocol)}
+        labelKey="diagnosticsPanel.docsLink"
+        className={docsLinkClass}
+      />
+      <DocsSiteLink
+        href={protocolGuideUrl}
+        labelKey="connectionPanel.protocolGuideLink"
+        className={docsLinkClass}
+      />
+    </>
   );
 
   if (connectingProgressView) {

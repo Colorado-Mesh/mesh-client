@@ -1929,7 +1929,9 @@
     "stageEnterPinWindows": "Wprowadź KOD PIN widoczny w radiu, aby sparować je z systemem Windows",
     "stagePairingWindows": "Parowanie z Windows…",
     "meshtasticSilentAfterConfigure": "Podłączony do radia, ale po skonfigurowaniu przestał wysyłać ruch siatki. Automatyczne ponowne łączenie. Jeśli to się powtarza, sprawdź połączenie sieciowe radia lub uruchom je ponownie.",
-    "mqttPacketTooLarge": "Broker wysłał pakiet MQTT większy niż limit bezpieczeństwa {{limit}} bajtów; automatyczne ponowne łączenie jest wyłączone."
+    "mqttPacketTooLarge": "Broker wysłał pakiet MQTT większy niż limit bezpieczeństwa {{limit}} bajtów; automatyczne ponowne łączenie jest wyłączone.",
+    "protocolGuideLink": "Przewodnik po protokołach ↗",
+    "mqttAuthDocsLink": "MQTT autoryzacja ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -2852,7 +2854,7 @@
       "radioContactTableFull": "Lista kontaktów Twojego radia jest pełna, więc nie można dodać tego węzła do logowania. Usuń nieużywane kontakty, a następnie spróbuj ponownie."
     },
     "mqttHints": {
-      "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
+      "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT względem brokera. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
       "network": "Sprawdź sieć, DNS, zaporę sieciową i VPN.",
       "connackTimeout": "Jeśli nie widzisz wcześniej wiersza „błąd klienta”, uzgadnianie TLS/WebSocket może się zawieszać (spróbuj innej sieci; aplikacja preferuje protokół IPv4 dla WSS).",
       "subscribeFailed": "Broker może odmówić subskrypcji symboli wieloznacznych w tym temacie; wiadomości mogą nadal przychodzić, jeśli broker na to pozwala.",
@@ -5756,7 +5758,9 @@
     "loginAndSyncHeading": "Logowanie i synchronizacja",
     "enableAutoLogin": "Włącz automatyczne logowanie",
     "enableAutoLoginAria": "Zaloguj się do tego pokoju automatycznie po podłączeniu radia",
-    "autoLoginSaveFailed": "Nie można zapisać ustawienia automatycznego logowania. Twoje poprzednie ustawienie pozostaje niezmienione."
+    "autoLoginSaveFailed": "Nie można zapisać ustawienia automatycznego logowania. Twoje poprzednie ustawienie pozostaje niezmienione.",
+    "leaveRoomConfirmTitle": "Opuścić ten pokój?",
+    "leaveRoomConfirmMessage": "Wylogujesz się z tego serwera pokoju przez radio. Możesz zalogować się ponownie później za pomocą gościa lub zapisanego hasła."
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",

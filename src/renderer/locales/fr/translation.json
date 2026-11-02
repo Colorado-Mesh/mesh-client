@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Saisissez le CODE PIN affiché sur votre radio pour l'associer à Windows",
     "stagePairingWindows": "Jumelage avec Windows…",
     "meshtasticSilentAfterConfigure": "Connecté à la radio, mais il a cessé d'envoyer du trafic maillé après la configuration. Se reconnecter automatiquement. Si cela continue, vérifiez la connexion réseau de la radio ou redémarrez-la.",
-    "mqttPacketTooLarge": "Le courtier a envoyé un paquet MQTT plus grand que la limite de sécurité de {{limit}} octets ; la reconnexion automatique est désactivée."
+    "mqttPacketTooLarge": "Le courtier a envoyé un paquet MQTT plus grand que la limite de sécurité de {{limit}} octets ; la reconnexion automatique est désactivée.",
+    "protocolGuideLink": "Guide du protocole ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "La liste de contacts de votre radio est pleine, ce nœud n'a donc pas pu être ajouté pour la connexion. Supprimez les contacts inutilisés, puis réessayez."
     },
     "mqttHints": {
-      "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
+      "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
       "network": "Vérifiez le réseau, le DNS, le pare-feu et le VPN.",
       "connackTimeout": "Si vous ne voyez aucune ligne « erreur client » antérieure, la négociation TLS/WebSocket est peut-être en panne (essayez un autre réseau ; l'application préfère IPv4 pour WSS).",
       "subscribeFailed": "Le courtier peut refuser l'abonnement générique sur ce sujet ; les messages peuvent toujours arriver si le courtier le permet.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Connexion et synchronisation",
     "enableAutoLogin": "Activer la connexion automatique",
     "enableAutoLoginAria": "Connectez-vous automatiquement à cette pièce lorsque la radio se connecte",
-    "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés."
+    "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés.",
+    "leaveRoomConfirmTitle": "Quitter cette salle ?",
+    "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

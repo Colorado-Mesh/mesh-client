@@ -106,6 +106,7 @@ import { clampReadWatermarkMs, effectiveMessageTimestampMs } from '@/renderer/li
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
+import { MESHCORE_ROOMS_DOCS_URL } from '@/shared/docsSite';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import { touch } from '@/shared/touch';
 
@@ -135,6 +136,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { useToast } from './Toast';
 import { Button, IconButton } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import {
   CHECKBOX_CLASS,
   FIELD_LABEL_CLASS,
@@ -326,6 +328,7 @@ export default function RoomsPanel({
   );
   const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
   const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
+  const [leaveRoomConfirmOpen, setLeaveRoomConfirmOpen] = useState(false);
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const consumedInitialRoomRef = useRef<number | null>(null);
@@ -1343,6 +1346,12 @@ export default function RoomsPanel({
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId == null || !isConnected) return;
+    setLeaveRoomConfirmOpen(true);
+  }, [isConnected, selectedRoomId]);
+
+  const confirmLeaveRoom = useCallback(() => {
+    if (selectedRoomId == null || !isConnected) return;
+    setLeaveRoomConfirmOpen(false);
     startRoomLeave(selectedRoomId, () => onLeaveRoom(selectedRoomId));
   }, [isConnected, onLeaveRoom, selectedRoomId, startRoomLeave]);
 
@@ -1591,6 +1600,7 @@ export default function RoomsPanel({
           {t('roomsPanel.title')}{' '}
           <span className="text-muted font-normal tabular-nums">({roomServers.length})</span>
         </h2>
+        <DocsSiteLink href={MESHCORE_ROOMS_DOCS_URL} />
         <ChatOrderButton items={roomOrderItems} ids={roomOrder.ids} onSave={roomOrder.save} />
         {onSyncRadioChats && (
           <RadioChatSyncButton onSync={onSyncRadioChats} disabled={!isConnected} />
@@ -2693,6 +2703,19 @@ export default function RoomsPanel({
           }}
           onCancel={() => {
             setForgetConfirmNodeId(null);
+          }}
+        />
+      )}
+      {leaveRoomConfirmOpen && (
+        <ConfirmModal
+          title={t('roomsPanel.leaveRoomConfirmTitle')}
+          message={t('roomsPanel.leaveRoomConfirmMessage')}
+          confirmLabel={t('roomsPanel.leaveRoom')}
+          danger
+          confirmDisabled={!isConnected || selectedRoomLeaveLoading}
+          onConfirm={confirmLeaveRoom}
+          onCancel={() => {
+            setLeaveRoomConfirmOpen(false);
           }}
         />
       )}

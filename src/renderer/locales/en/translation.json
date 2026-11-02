@@ -1389,6 +1389,8 @@
     "connectMqtt": "Connect",
     "cancelMqttConnect": "Cancel",
     "radioConnection": "Radio Connection",
+    "protocolGuideLink": "Protocol guide ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗",
     "reticulumStackTitle": "Reticulum stack",
     "reticulumStackHint": "Start the local Reticulum/LXMF sidecar before creating an identity on the Network tab.",
     "reticulumStartStack": "Start stack",
@@ -3166,7 +3168,7 @@
       "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
-      "notAuthorized": "Verify v1_ username, token signature, and JWT audience vs broker; see docs/letsmesh-mqtt-auth.md. Use Custom to paste an operator-issued token if needed.",
+      "notAuthorized": "Verify v1_ username, token signature, and JWT audience vs broker. Use Custom to paste an operator-issued token if needed.",
       "network": "Check network, DNS, firewall, and VPN.",
       "connackTimeout": "If you see no prior “client error” line, the TLS/WebSocket handshake may be stalling (try another network; the app prefers IPv4 for WSS).",
       "subscribeFailed": "The broker may deny wildcard subscribe on this topic; messages may still arrive if the broker allows it.",
@@ -6550,6 +6552,8 @@
     "postFailed": "Failed to post to room",
     "posting": "Posting…",
     "leaveRoom": "Leave room",
+    "leaveRoomConfirmTitle": "Leave this room?",
+    "leaveRoomConfirmMessage": "You will log out of this room server on the radio. You can log in again later with the guest or saved password.",
     "leavingRoom": "Leaving…",
     "leaveRoomInProgress": "Leaving room…",
     "leaveRoomHint": "Waiting for your radio to confirm logout. This can take a few seconds over the mesh.",

@@ -140,6 +140,7 @@ import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { getLiveChannelKey } from '@/renderer/stores/liveChannelKeyStore';
+import { CHAT_DOCS_URL } from '@/shared/docsSite';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import {
@@ -294,6 +295,7 @@ import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 import { Button } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { chipClass, INPUT_CLASS } from './ui/formClasses';
 import { Menu } from './ui/Menu';
 import { ScrollStrip } from './ui/ScrollStrip';
@@ -3546,272 +3548,285 @@ function ChatPanel({
           )}
         </div>
 
-        <div
-          role="group"
-          aria-label={t('chatPanel.toolbarLabel')}
-          className="border-secondary-dark bg-deep-black flex max-w-full shrink-0 flex-wrap items-center justify-end gap-0.5 justify-self-end rounded-lg border p-0.5"
-        >
-          <div role="group" aria-label={t('chatPanel.dms')} className="flex shrink-0">
-            <ChatOrderButton
-              items={dmOrderItems}
-              ids={dmOrder.ids}
-              onSave={dmOrder.save}
-              title={`${t('chatOrder.title')}: ${t('chatPanel.dms')}`}
-            />
-          </div>
-          <CatchUpButton summary={summary} />
-          <ChatToolbarTooltipButton
-            tooltip={t('chatPanel.jumpToDate')}
-            aria-pressed={showDatePicker}
-            aria-label={t('chatPanel.jumpToDate')}
-            className={chatToolbarButtonClass(showDatePicker ? 'active' : 'idle')}
-            onClick={() => {
-              setShowDatePicker((v) => !v);
-            }}
+        <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 justify-self-end">
+          <DocsSiteLink href={CHAT_DOCS_URL} />
+          <div
+            role="group"
+            aria-label={t('chatPanel.toolbarLabel')}
+            className="border-secondary-dark bg-deep-black flex max-w-full shrink-0 flex-wrap items-center justify-end gap-0.5 rounded-lg border p-0.5"
           >
-            <Calendar aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-          </ChatToolbarTooltipButton>
+            <div role="group" aria-label={t('chatPanel.dms')} className="flex shrink-0">
+              <ChatOrderButton
+                items={dmOrderItems}
+                ids={dmOrder.ids}
+                onSave={dmOrder.save}
+                title={`${t('chatOrder.title')}: ${t('chatPanel.dms')}`}
+              />
+            </div>
+            <CatchUpButton summary={summary} />
+            <ChatToolbarTooltipButton
+              tooltip={t('chatPanel.jumpToDate')}
+              aria-pressed={showDatePicker}
+              aria-label={t('chatPanel.jumpToDate')}
+              className={chatToolbarButtonClass(showDatePicker ? 'active' : 'idle')}
+              onClick={() => {
+                setShowDatePicker((v) => !v);
+              }}
+            >
+              <Calendar aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
 
-          {protocol === 'meshtastic' &&
-            isConnected &&
-            !isMqttOnly &&
-            onFetchStoreForwardHistory && (
-              <ChatToolbarTooltipButton
-                tooltip={t('chatPanel.fetchStoreForwardHistoryHint')}
-                aria-label={t('chatPanel.fetchStoreForwardHistory')}
-                onClick={() => {
-                  void (async () => {
-                    setChatActionError(null);
-                    const result = await onFetchStoreForwardHistory();
-                    if (!result.ok) {
-                      setChatActionError({
-                        message: t(`chatPanel.fetchStoreForwardHistoryError.${result.code}`),
-                        viewKey,
-                      });
-                      return;
+            {protocol === 'meshtastic' &&
+              isConnected &&
+              !isMqttOnly &&
+              onFetchStoreForwardHistory && (
+                <ChatToolbarTooltipButton
+                  tooltip={t('chatPanel.fetchStoreForwardHistoryHint')}
+                  aria-label={t('chatPanel.fetchStoreForwardHistory')}
+                  onClick={() => {
+                    void (async () => {
+                      setChatActionError(null);
+                      const result = await onFetchStoreForwardHistory();
+                      if (!result.ok) {
+                        setChatActionError({
+                          message: t(`chatPanel.fetchStoreForwardHistoryError.${result.code}`),
+                          viewKey,
+                        });
+                        return;
+                      }
+                      addToast(t('chatPanel.fetchStoreForwardHistorySent'), 'success');
+                    })();
+                  }}
+                >
+                  <Clock aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                </ChatToolbarTooltipButton>
+              )}
+
+            <ChatToolbarTooltipButton
+              tooltip={t('chatPanel.exportChat')}
+              aria-label={t('chatPanel.exportChat')}
+              onClick={() => {
+                void (async () => {
+                  try {
+                    const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
+                      timestamp: m.timestamp,
+                      sender_name: m.sender_name,
+                      payload: m.payload,
+                      channel: m.channel,
+                      to: m.to,
+                    }));
+                    const result = await window.electronAPI.chat.export(msgs);
+                    if (!result.success) {
+                      setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
                     }
-                    addToast(t('chatPanel.fetchStoreForwardHistorySent'), 'success');
-                  })();
+                  } catch (e: unknown) {
+                    console.warn('[ChatPanel] export failed ' + errLikeToLogString(e));
+                    setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
+                  }
+                })();
+              }}
+            >
+              <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
+
+            <ChatToolbarTooltipButton
+              tooltip={t('chatPanel.searchMessages')}
+              aria-pressed={showSearch}
+              aria-label={t('chatPanel.searchMessages')}
+              className={chatToolbarButtonClass(showSearch ? 'active' : 'idle')}
+              onClick={() => {
+                toggleSearch();
+              }}
+            >
+              <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
+
+            {onOpenGlobalMessageSearch ? (
+              <ChatToolbarTooltipButton
+                tooltip={t('globalMessageSearch.openFromChat')}
+                aria-label={t('globalMessageSearch.openFromChat')}
+                onClick={() => {
+                  onOpenGlobalMessageSearch();
                 }}
               >
-                <Clock aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                <ListFilter aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              </ChatToolbarTooltipButton>
+            ) : null}
+
+            {(viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null)) && (
+              <>
+                <ChatToolbarTooltipButton
+                  tooltip={
+                    conversationPins.pinned.has(viewKey)
+                      ? t('chatPanel.unpinConversation')
+                      : t('chatPanel.pinConversation')
+                  }
+                  aria-pressed={conversationPins.pinned.has(viewKey)}
+                  aria-label={
+                    conversationPins.pinned.has(viewKey)
+                      ? t('chatPanel.unpinConversation')
+                      : t('chatPanel.pinConversation')
+                  }
+                  className={chatToolbarButtonClass(
+                    conversationPins.pinned.has(viewKey) ? 'active' : 'idle',
+                  )}
+                  onClick={() => {
+                    if (!conversationPins.togglePin(viewKey)) {
+                      setChatActionError({
+                        message: t('chatPanel.pinConversationFailed'),
+                        viewKey,
+                      });
+                    }
+                  }}
+                >
+                  {conversationPins.pinned.has(viewKey) ? (
+                    <PinOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                  ) : (
+                    <Pin aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                  )}
+                </ChatToolbarTooltipButton>
+                <ChatToolbarTooltipButton
+                  tooltip={
+                    conversationPins.archived.has(viewKey)
+                      ? t('chatPanel.unarchiveConversation')
+                      : t('chatPanel.archiveConversation')
+                  }
+                  aria-pressed={conversationPins.archived.has(viewKey)}
+                  aria-label={
+                    conversationPins.archived.has(viewKey)
+                      ? t('chatPanel.unarchiveConversation')
+                      : t('chatPanel.archiveConversation')
+                  }
+                  className={chatToolbarButtonClass(
+                    conversationPins.archived.has(viewKey) ? 'active' : 'idle',
+                  )}
+                  onClick={() => {
+                    if (!conversationPins.toggleArchive(viewKey)) {
+                      setChatActionError({
+                        message: t('chatPanel.archiveConversationFailed'),
+                        viewKey,
+                      });
+                    }
+                  }}
+                >
+                  {conversationPins.archived.has(viewKey) ? (
+                    <ArchiveRestore
+                      aria-hidden
+                      className="h-4 w-4"
+                      trigger={parentIconTrigger}
+                      size={16}
+                    />
+                  ) : (
+                    <Archive
+                      aria-hidden
+                      className="h-4 w-4"
+                      trigger={parentIconTrigger}
+                      size={16}
+                    />
+                  )}
+                </ChatToolbarTooltipButton>
+              </>
+            )}
+            {conversationPins.archived.size > 0 && (
+              <ChatToolbarTooltipButton
+                tooltip={
+                  showArchivedConversations
+                    ? t('chatPanel.hideArchivedConversations')
+                    : t('chatPanel.showArchivedConversations', {
+                        count: conversationPins.archived.size,
+                      })
+                }
+                aria-pressed={showArchivedConversations}
+                aria-label={
+                  showArchivedConversations
+                    ? t('chatPanel.hideArchivedConversations')
+                    : t('chatPanel.showArchivedConversations', {
+                        count: conversationPins.archived.size,
+                      })
+                }
+                className={chatToolbarButtonClass(showArchivedConversations ? 'active' : 'idle')}
+                onClick={() => {
+                  setShowArchivedConversations((v) => !v);
+                }}
+              >
+                <Archive aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                <span className="text-2xs tabular-nums" aria-hidden="true">
+                  {conversationPins.archived.size}
+                </span>
               </ChatToolbarTooltipButton>
             )}
 
-          <ChatToolbarTooltipButton
-            tooltip={t('chatPanel.exportChat')}
-            aria-label={t('chatPanel.exportChat')}
-            onClick={() => {
-              void (async () => {
-                try {
-                  const msgs: ChatExportMessage[] = filteredMessages.map((m) => ({
-                    timestamp: m.timestamp,
-                    sender_name: m.sender_name,
-                    payload: m.payload,
-                    channel: m.channel,
-                    to: m.to,
-                  }));
-                  const result = await window.electronAPI.chat.export(msgs);
-                  if (!result.success) {
-                    setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
-                  }
-                } catch (e: unknown) {
-                  console.warn('[ChatPanel] export failed ' + errLikeToLogString(e));
-                  setChatActionError({ message: t('chatPanel.exportChatFailed'), viewKey });
-                }
-              })();
-            }}
-          >
-            <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-          </ChatToolbarTooltipButton>
-
-          <ChatToolbarTooltipButton
-            tooltip={t('chatPanel.searchMessages')}
-            aria-pressed={showSearch}
-            aria-label={t('chatPanel.searchMessages')}
-            className={chatToolbarButtonClass(showSearch ? 'active' : 'idle')}
-            onClick={() => {
-              toggleSearch();
-            }}
-          >
-            <Search aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-          </ChatToolbarTooltipButton>
-
-          {onOpenGlobalMessageSearch ? (
-            <ChatToolbarTooltipButton
-              tooltip={t('globalMessageSearch.openFromChat')}
-              aria-label={t('globalMessageSearch.openFromChat')}
-              onClick={() => {
-                onOpenGlobalMessageSearch();
-              }}
-            >
-              <ListFilter aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-            </ChatToolbarTooltipButton>
-          ) : null}
-
-          {(viewMode === 'channels' || (viewMode === 'dm' && activeDmNode != null)) && (
-            <>
+            {viewMode !== 'starred' && (
               <ChatToolbarTooltipButton
                 tooltip={
-                  conversationPins.pinned.has(viewKey)
-                    ? t('chatPanel.unpinConversation')
-                    : t('chatPanel.pinConversation')
+                  mutedViews.has(viewKey)
+                    ? t('chatPanel.unmuteConversation')
+                    : t('chatPanel.muteConversation')
                 }
-                aria-pressed={conversationPins.pinned.has(viewKey)}
+                aria-pressed={mutedViews.has(viewKey)}
                 aria-label={
-                  conversationPins.pinned.has(viewKey)
-                    ? t('chatPanel.unpinConversation')
-                    : t('chatPanel.pinConversation')
+                  mutedViews.has(viewKey)
+                    ? t('chatPanel.unmuteConversation')
+                    : t('chatPanel.muteConversation')
                 }
-                className={chatToolbarButtonClass(
-                  conversationPins.pinned.has(viewKey) ? 'active' : 'idle',
-                )}
+                className={chatToolbarButtonClass(mutedViews.has(viewKey) ? 'warn' : 'idle')}
                 onClick={() => {
-                  if (!conversationPins.togglePin(viewKey)) {
-                    setChatActionError({ message: t('chatPanel.pinConversationFailed'), viewKey });
-                  }
+                  toggleMuteView(viewKey);
                 }}
               >
-                {conversationPins.pinned.has(viewKey) ? (
-                  <PinOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                {mutedViews.has(viewKey) ? (
+                  <BellOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
                 ) : (
-                  <Pin aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                  <Bell aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
                 )}
               </ChatToolbarTooltipButton>
+            )}
+
+            {!dmOnlyChat && (
               <ChatToolbarTooltipButton
-                tooltip={
-                  conversationPins.archived.has(viewKey)
-                    ? t('chatPanel.unarchiveConversation')
-                    : t('chatPanel.archiveConversation')
-                }
-                aria-pressed={conversationPins.archived.has(viewKey)}
-                aria-label={
-                  conversationPins.archived.has(viewKey)
-                    ? t('chatPanel.unarchiveConversation')
-                    : t('chatPanel.archiveConversation')
-                }
+                tooltip={t('weatherFilter.viewTooltip')}
+                aria-pressed={viewMode === 'weather'}
+                aria-label={t('weatherFilter.viewAria', { posts: channelWeatherCount })}
                 className={chatToolbarButtonClass(
-                  conversationPins.archived.has(viewKey) ? 'active' : 'idle',
+                  viewMode === 'weather' ? 'active' : 'idle',
+                  channelWeatherCount > 0,
                 )}
                 onClick={() => {
-                  if (!conversationPins.toggleArchive(viewKey)) {
-                    setChatActionError({
-                      message: t('chatPanel.archiveConversationFailed'),
-                      viewKey,
-                    });
-                  }
+                  setViewMode((v) => (v === 'weather' ? 'channels' : 'weather'));
                 }}
               >
-                {conversationPins.archived.has(viewKey) ? (
-                  <ArchiveRestore
-                    aria-hidden
-                    className="h-4 w-4"
-                    trigger={parentIconTrigger}
-                    size={16}
-                  />
-                ) : (
-                  <Archive aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-                )}
+                <CloudSun aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+                {channelWeatherCount > 0 ? (
+                  <span
+                    className="text-2xs tabular-nums"
+                    data-testid="weather-count-chip"
+                    aria-hidden="true"
+                  >
+                    {channelWeatherCount}
+                  </span>
+                ) : null}
               </ChatToolbarTooltipButton>
-            </>
-          )}
-          {conversationPins.archived.size > 0 && (
+            )}
+
             <ChatToolbarTooltipButton
-              tooltip={
-                showArchivedConversations
-                  ? t('chatPanel.hideArchivedConversations')
-                  : t('chatPanel.showArchivedConversations', {
-                      count: conversationPins.archived.size,
-                    })
-              }
-              aria-pressed={showArchivedConversations}
-              aria-label={
-                showArchivedConversations
-                  ? t('chatPanel.hideArchivedConversations')
-                  : t('chatPanel.showArchivedConversations', {
-                      count: conversationPins.archived.size,
-                    })
-              }
-              className={chatToolbarButtonClass(showArchivedConversations ? 'active' : 'idle')}
+              tooltip={t('chatPanel.starredMessages')}
+              aria-pressed={viewMode === 'starred'}
+              aria-label={t('chatPanel.starredMessages')}
+              className={chatToolbarButtonClass(viewMode === 'starred' ? 'starred' : 'idle')}
               onClick={() => {
-                setShowArchivedConversations((v) => !v);
+                setViewMode((v) =>
+                  v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred',
+                );
               }}
             >
-              <Archive aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              <span className="text-2xs tabular-nums" aria-hidden="true">
-                {conversationPins.archived.size}
-              </span>
+              <Star
+                aria-hidden
+                className={`h-4 w-4 ${viewMode === 'starred' ? 'fill-current' : ''}`}
+                trigger={parentIconTrigger}
+                size={16}
+              />
             </ChatToolbarTooltipButton>
-          )}
-
-          {viewMode !== 'starred' && (
-            <ChatToolbarTooltipButton
-              tooltip={
-                mutedViews.has(viewKey)
-                  ? t('chatPanel.unmuteConversation')
-                  : t('chatPanel.muteConversation')
-              }
-              aria-pressed={mutedViews.has(viewKey)}
-              aria-label={
-                mutedViews.has(viewKey)
-                  ? t('chatPanel.unmuteConversation')
-                  : t('chatPanel.muteConversation')
-              }
-              className={chatToolbarButtonClass(mutedViews.has(viewKey) ? 'warn' : 'idle')}
-              onClick={() => {
-                toggleMuteView(viewKey);
-              }}
-            >
-              {mutedViews.has(viewKey) ? (
-                <BellOff aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              ) : (
-                <Bell aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              )}
-            </ChatToolbarTooltipButton>
-          )}
-
-          {!dmOnlyChat && (
-            <ChatToolbarTooltipButton
-              tooltip={t('weatherFilter.viewTooltip')}
-              aria-pressed={viewMode === 'weather'}
-              aria-label={t('weatherFilter.viewAria', { posts: channelWeatherCount })}
-              className={chatToolbarButtonClass(
-                viewMode === 'weather' ? 'active' : 'idle',
-                channelWeatherCount > 0,
-              )}
-              onClick={() => {
-                setViewMode((v) => (v === 'weather' ? 'channels' : 'weather'));
-              }}
-            >
-              <CloudSun aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              {channelWeatherCount > 0 ? (
-                <span
-                  className="text-2xs tabular-nums"
-                  data-testid="weather-count-chip"
-                  aria-hidden="true"
-                >
-                  {channelWeatherCount}
-                </span>
-              ) : null}
-            </ChatToolbarTooltipButton>
-          )}
-
-          <ChatToolbarTooltipButton
-            tooltip={t('chatPanel.starredMessages')}
-            aria-pressed={viewMode === 'starred'}
-            aria-label={t('chatPanel.starredMessages')}
-            className={chatToolbarButtonClass(viewMode === 'starred' ? 'starred' : 'idle')}
-            onClick={() => {
-              setViewMode((v) => (v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred'));
-            }}
-          >
-            <Star
-              aria-hidden
-              className={`h-4 w-4 ${viewMode === 'starred' ? 'fill-current' : ''}`}
-              trigger={parentIconTrigger}
-              size={16}
-            />
-          </ChatToolbarTooltipButton>
+          </div>
         </div>
       </div>
 

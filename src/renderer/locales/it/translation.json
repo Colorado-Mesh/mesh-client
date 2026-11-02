@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Inserisci il PIN visualizzato sulla radio per associarlo a Windows",
     "stagePairingWindows": "Accoppiamento con Windows...",
     "meshtasticSilentAfterConfigure": "Connesso alla radio, ma ha smesso di inviare traffico mesh dopo la configurazione. Riconnettersi automaticamente. Se questo continua ad accadere, controllare la connessione di rete della radio o riavviarla.",
-    "mqttPacketTooLarge": "Il broker ha inviato un pacchetto MQTT più grande del limite di sicurezza di {{limit}} byte; la riconnessione automatica è disattivata."
+    "mqttPacketTooLarge": "Il broker ha inviato un pacchetto MQTT più grande del limite di sicurezza di {{limit}} byte; la riconnessione automatica è disattivata.",
+    "protocolGuideLink": "Guida al protocollo ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "L'elenco dei contatti della tua radio è pieno, quindi non è stato possibile aggiungere questo nodo per l'accesso. Rimuovi i contatti inutilizzati, quindi riprova."
     },
     "mqttHints": {
-      "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
+      "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
       "network": "Controlla rete, DNS, firewall e VPN.",
       "connackTimeout": "Se non vedi la riga \"errore client\" precedente, l'handshake TLS/WebSocket potrebbe essere in fase di stallo (prova un'altra rete; l'app preferisce IPv4 per WSS).",
       "subscribeFailed": "Il broker può negare l'iscrizione con caratteri jolly su questo argomento; i messaggi potrebbero comunque arrivare se il broker lo consente.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Accesso e sincronizzazione",
     "enableAutoLogin": "Abilita accesso automatico",
     "enableAutoLoginAria": "Accedi automaticamente a questa stanza quando la radio si connette",
-    "autoLoginSaveFailed": "Impossibile salvare l'impostazione di accesso automatico. L'impostazione precedente è invariata."
+    "autoLoginSaveFailed": "Impossibile salvare l'impostazione di accesso automatico. L'impostazione precedente è invariata.",
+    "leaveRoomConfirmTitle": "Uscire da questa sala?",
+    "leaveRoomConfirmMessage": "Esci da questo server della stanza alla radio. Puoi accedere di nuovo in seguito con l'ospite o la password salvata."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",

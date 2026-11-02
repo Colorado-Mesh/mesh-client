@@ -30,4 +30,8 @@ export const TAK_DOCS_URL = docsSitePageUrl('tak');
 export const FIRMWARE_DOCS_URL = docsSitePageUrl('firmware');
 export const MESHTASTIC_DOCS_URL = docsSitePageUrl('meshtastic');
 export const MESHCORE_DOCS_URL = docsSitePageUrl('meshcore');
+/** MeshCore Rooms (BBS) section of the MeshCore user guide. */
+export const MESHCORE_ROOMS_DOCS_URL = docsSitePageUrl('meshcore', 'rooms-bbs');
 export const SETTINGS_DOCS_URL = docsSitePageUrl('settings');
+/** LetsMesh MQTT JWT / v1_ username auth (Engineering docs). */
+export const LETSMESH_MQTT_AUTH_DOCS_URL = docsSitePageUrl('letsmesh-mqtt-auth');

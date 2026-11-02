@@ -154,6 +154,14 @@ describe('ReticulumMapPanel', () => {
     expect(link).toHaveAttribute('href', 'https://rmap.world/');
   });
 
+  it('links Docs to the maps guide', () => {
+    render(<ReticulumMapPanel stackConfigured={false} />);
+    expect(screen.getByRole('link', { name: 'common.docsLink' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/maps/',
+    );
+  });
+
   it('renders the shared layers panel with global layer toggles', () => {
     useMapLayerStore.setState({ layersPanelOpen: false, showMgrsGrid: false });
     render(<ReticulumMapPanel stackConfigured={false} />);

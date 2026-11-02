@@ -170,6 +170,22 @@ describe('MapPanel accessibility', () => {
     },
   );
 
+  it('links Docs to the maps guide when live traffic modes are available', () => {
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        protocol="meshtastic"
+        meshtasticPackets={[]}
+      />,
+    );
+    expect(screen.getByRole('link', { name: /docs/i })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/maps/',
+    );
+  });
+
   it.each(['meshcore', 'meshtastic'] as const)(
     'restores %s traffic mode after leaving the map without keeping its map DOM alive',
     async (protocol) => {

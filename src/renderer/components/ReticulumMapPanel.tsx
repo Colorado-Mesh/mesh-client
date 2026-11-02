@@ -8,6 +8,7 @@ import { Marker, Popup, useMap } from 'react-leaflet';
 import { incidentMarkersFrom } from '@/renderer/components/map/emcommMapLayers';
 import { MAP_CHIP_CLASS } from '@/renderer/components/map/mapControlClasses';
 import { MeshMapShell } from '@/renderer/components/map/MeshMapShell';
+import { DocsSiteLink } from '@/renderer/components/ui/DocsSiteLink';
 import { useMapBasemap } from '@/renderer/hooks/useMapBasemap';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
@@ -35,6 +36,7 @@ import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
+import { MAPS_DOCS_URL } from '@/shared/docsSite';
 
 import { useToast } from './Toast';
 
@@ -297,6 +299,7 @@ export default function ReticulumMapPanel({
           <p className="text-ink-400 text-xs">{t('reticulumMap.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <DocsSiteLink href={MAPS_DOCS_URL} />
           <a
             href={RMAP_GLOBAL_MAP_URL}
             target="_blank"

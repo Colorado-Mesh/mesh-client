@@ -117,6 +117,10 @@ describe('ReticulumStackPanel', () => {
 
     expect(status.previousElementSibling).toHaveClass('bg-ink-600');
     expect(startButton).toHaveClass('bg-brand-green', 'text-app-bg');
+    expect(screen.getByRole('link', { name: 'diagnosticsPanel.docsLink' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/troubleshooting-reticulum/',
+    );
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });

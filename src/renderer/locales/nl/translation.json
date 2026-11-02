@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Voer de PINCODE in die op uw radio wordt weergegeven om deze met Windows te koppelen",
     "stagePairingWindows": "Koppelen met Windows...",
     "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op.",
-    "mqttPacketTooLarge": "De broker stuurde een MQTT-pakket groter dan de veiligheidsgrens van {{limit}} bytes; automatisch opnieuw verbinden is uitgeschakeld."
+    "mqttPacketTooLarge": "De broker stuurde een MQTT-pakket groter dan de veiligheidsgrens van {{limit}} bytes; automatisch opnieuw verbinden is uitgeschakeld.",
+    "protocolGuideLink": "Protocolgids ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "De lijst met contactpersonen van uw radio is vol, dus dit knooppunt kon niet worden toegevoegd om in te loggen. Verwijder ongebruikte contacten en probeer het opnieuw."
     },
     "mqttHints": {
-      "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
+      "notAuthorized": "Controleer v1_-gebruikersnaam, tokenhandtekening en JWT-doelgroep ten opzichte van de broker. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
       "network": "Controleer netwerk, DNS, firewall en VPN.",
       "connackTimeout": "Als u geen eerdere regel 'clientfout' ziet, loopt de TLS/WebSocket-handshake mogelijk vast (probeer een ander netwerk; de app geeft de voorkeur aan IPv4 voor WSS).",
       "subscribeFailed": "De makelaar kan een wildcard-abonnement op dit onderwerp weigeren; berichten kunnen nog steeds binnenkomen als de makelaar dit toestaat.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Inloggen en synchroniseren",
     "enableAutoLogin": "Automatisch aanmelden activeren",
     "enableAutoLoginAria": "Automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt",
-    "autoLoginSaveFailed": "Kon de instelling voor automatisch inloggen niet opslaan. Uw vorige instelling is ongewijzigd."
+    "autoLoginSaveFailed": "Kon de instelling voor automatisch inloggen niet opslaan. Uw vorige instelling is ongewijzigd.",
+    "leaveRoomConfirmTitle": "Deze ruimte verlaten?",
+    "leaveRoomConfirmMessage": "U logt uit bij deze roomserver op de radio. Je kunt later opnieuw inloggen met de gast of het opgeslagen wachtwoord."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

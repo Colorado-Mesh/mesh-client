@@ -11,8 +11,10 @@ import {
   DOCS_SITE_URL,
   docsSitePageUrl,
   FIRMWARE_DOCS_URL,
+  LETSMESH_MQTT_AUTH_DOCS_URL,
   MAPS_DOCS_URL,
   MESHCORE_DOCS_URL,
+  MESHCORE_ROOMS_DOCS_URL,
   MESHTASTIC_DOCS_URL,
   SETTINGS_DOCS_URL,
   TAK_DOCS_URL,
@@ -31,6 +33,7 @@ const NEW_USER_GUIDE_URLS: readonly (readonly [string, string])[] = [
   ['meshtastic', MESHTASTIC_DOCS_URL],
   ['meshcore', MESHCORE_DOCS_URL],
   ['settings', SETTINGS_DOCS_URL],
+  ['letsmesh-mqtt-auth', LETSMESH_MQTT_AUTH_DOCS_URL],
 ];
 
 describe('docsSitePageUrl', () => {
@@ -43,6 +46,8 @@ describe('docsSitePageUrl', () => {
       'https://colorado-mesh.github.io/mesh-client/troubleshooting/#reporting-bugs',
     );
     expect(DIAGNOSTICS_DOCS_URL).toBe(docsSitePageUrl('diagnostics'));
+    expect(MESHCORE_ROOMS_DOCS_URL).toBe(docsSitePageUrl('meshcore', 'rooms-bbs'));
+    expect(LETSMESH_MQTT_AUTH_DOCS_URL).toBe(docsSitePageUrl('letsmesh-mqtt-auth'));
   });
 
   it.each(NEW_USER_GUIDE_URLS)('%s docs URL maps to an existing page file', (page, url) => {

@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { Circle, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
+import { MAPS_DOCS_URL } from '@/shared/docsSite';
+
 import type { LocationFilter } from '../App';
 import { useMapBasemap } from '../hooks/useMapBasemap';
 import {
@@ -60,6 +62,7 @@ import { MeshMapShell } from './map/MeshMapShell';
 import { TakContactsLayer } from './map/takContactsLayer';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
@@ -538,25 +541,28 @@ export default function MapPanel(props: Props) {
   );
   const supportsTraffic =
     props.meshcorePackets !== undefined || props.meshtasticPackets !== undefined;
-  if (!supportsTraffic) return active ? <OverviewMapPanel {...props} /> : null;
+  if (!supportsTraffic) return active ? <OverviewMapPanel {...props} showMapsDocs /> : null;
   return (
     <div hidden={!active} className={active ? 'flex h-full min-h-0 flex-col gap-2' : 'hidden'}>
-      <div className="flex shrink-0 gap-1" role="group" aria-label={t('liveTraffic.mapModes')}>
-        {[false, true].map((isTraffic) => (
-          <button
-            key={String(isTraffic)}
-            type="button"
-            aria-label={t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
-            aria-pressed={traffic === isTraffic}
-            onClick={() => {
-              setTraffic(isTraffic);
-              if (isTraffic) setTrafficVisited(true);
-            }}
-            className={`rounded-control text-label px-3 py-1.5 font-medium ${traffic === isTraffic ? 'bg-brand-green text-app-bg' : 'bg-deep-black text-ink-300 hover:bg-ink-800'}`}
-          >
-            {t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
-          </button>
-        ))}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1" role="group" aria-label={t('liveTraffic.mapModes')}>
+          {[false, true].map((isTraffic) => (
+            <button
+              key={String(isTraffic)}
+              type="button"
+              aria-label={t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
+              aria-pressed={traffic === isTraffic}
+              onClick={() => {
+                setTraffic(isTraffic);
+                if (isTraffic) setTrafficVisited(true);
+              }}
+              className={`rounded-control text-label px-3 py-1.5 font-medium ${traffic === isTraffic ? 'bg-brand-green text-app-bg' : 'bg-deep-black text-ink-300 hover:bg-ink-800'}`}
+            >
+              {t(isTraffic ? 'liveTraffic.title' : 'liveTraffic.mapOverview')}
+            </button>
+          ))}
+        </div>
+        <DocsSiteLink href={MAPS_DOCS_URL} />
       </div>
       <div className="min-h-0 flex-1">
         {(traffic || trafficVisited) && (
@@ -573,7 +579,7 @@ export default function MapPanel(props: Props) {
             onWindowNodeClick={props.onLiveWindowNodeClick}
           />
         )}
-        {active && !traffic && <OverviewMapPanel {...props} />}
+        {active && !traffic && <OverviewMapPanel {...props} showMapsDocs={false} />}
       </div>
     </div>
   );
@@ -591,7 +597,8 @@ function OverviewMapPanel({
   onForecastSenderClick,
   protocol = 'meshtastic',
   useFahrenheit = false,
-}: Props) {
+  showMapsDocs = true,
+}: Props & { showMapsDocs?: boolean }) {
   const { t } = useTranslation();
   const toNodeRenderSignature = useCallback((node: MeshNode): string => {
     return [
@@ -1077,16 +1084,19 @@ function OverviewMapPanel({
         </div>
       }
       controlsAfter={
-        <button
-          type="button"
-          onClick={() => void handleExportGpx()}
-          disabled={gpxExporting}
-          aria-label={t('gpxExport.buttonAria')}
-          className={MAP_CONTROL_CLASS}
-        >
-          <Download aria-hidden className="h-3.5 w-3.5" />
-          {t('gpxExport.button')}
-        </button>
+        <>
+          {showMapsDocs ? <DocsSiteLink href={MAPS_DOCS_URL} /> : null}
+          <button
+            type="button"
+            onClick={() => void handleExportGpx()}
+            disabled={gpxExporting}
+            aria-label={t('gpxExport.buttonAria')}
+            className={MAP_CONTROL_CLASS}
+          >
+            <Download aria-hidden className="h-3.5 w-3.5" />
+            {t('gpxExport.button')}
+          </button>
+        </>
       }
       layerRows={
         <LoRaMapLayerRows

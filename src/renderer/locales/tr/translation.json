@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Windows ile eşleştirmek için radyonuzda gösterilen PIN KODUNU GİRİN",
     "stagePairingWindows": "Windows ile eşleştiriliyor…",
     "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın.",
-    "mqttPacketTooLarge": "Aracı, {{limit}} baytlık güvenlik sınırından büyük bir MQTT paketi gönderdi; otomatik yeniden bağlanma devre dışı."
+    "mqttPacketTooLarge": "Aracı, {{limit}} baytlık güvenlik sınırından büyük bir MQTT paketi gönderdi; otomatik yeniden bağlanma devre dışı.",
+    "protocolGuideLink": "Protokol rehberi ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "Radyonun kişi listesi dolu, bu nedenle bu karo giriş için eklenemedi. Kullanılmayan kişileri kaldırın, ardından tekrar deneyin."
     },
     "mqttHints": {
-      "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
+      "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesini broker'a göre doğrulayın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
       "network": "Ağı, DNS'yi, güvenlik duvarını ve VPN'yi kontrol edin.",
       "connackTimeout": "Önceden bir \"istemci hatası\" satırı görmüyorsanız TLS/WebSocket anlaşması duruyor olabilir (başka bir ağ deneyin; uygulama, WSS için IPv4'ü tercih ediyor).",
       "subscribeFailed": "Broker bu konuda joker karakter aboneliğini reddedebilir; aracı izin verirse mesajlar yine de gelebilir.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Oturum açma ve eşitleme",
     "enableAutoLogin": "Otomatik girişi etkinleştir",
     "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın",
-    "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi."
+    "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi.",
+    "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
+    "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

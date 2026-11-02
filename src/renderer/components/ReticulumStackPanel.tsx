@@ -26,6 +26,7 @@ import { resolveReticulumSelfHeaderLabel } from '@/renderer/lib/reticulum/reticu
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
+import { troubleshootingDocsUrl } from '@/shared/docsSite';
 import {
   RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS,
   type ReticulumSidecarEvent,
@@ -46,6 +47,7 @@ import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
 import { ReticulumSharedInstanceConflictBanner } from './ReticulumSharedInstanceConflictBanner';
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 import { Button } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { CHECKBOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
 import { Panel } from './ui/Panel';
 
@@ -353,45 +355,52 @@ export function ReticulumStackPanel({
         anchorId="connection.reticulumStack.startStop"
         title={t('connectionPanel.reticulumStackTitle')}
         actions={
-          sidecarUiRunning ? (
-            <Button
-              variant="danger"
-              size="sm"
-              icon={<Square aria-hidden className={ICON_MD} size={16} />}
-              aria-label={t('connectionPanel.reticulumStopStack')}
-              disabled={connecting}
-              onClick={() => {
-                notifyManualStackStop();
-                void (async () => {
-                  await onStopStack();
-                  await refreshSidecarStatus();
-                })().catch((e: unknown) => {
-                  console.warn(
-                    '[ReticulumStackPanel] stop stack failed ' +
-                      (e instanceof Error ? e.message : String(e)),
-                  );
-                });
-              }}
-            >
-              {t('connectionPanel.reticulumStopStack')}
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<Play aria-hidden className={ICON_MD} size={16} />}
-              aria-label={t('connectionPanel.reticulumStartStack')}
-              disabled={connecting}
-              onClick={() => {
-                notifyManualStackStart();
-                void onStartStack();
-              }}
-            >
-              {connecting
-                ? t('connectionPanel.connecting')
-                : t('connectionPanel.reticulumStartStack')}
-            </Button>
-          )
+          <>
+            <DocsSiteLink
+              href={troubleshootingDocsUrl('reticulum')}
+              labelKey="diagnosticsPanel.docsLink"
+              className="hover:text-bright-green text-muted text-xs transition-colors"
+            />
+            {sidecarUiRunning ? (
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Square aria-hidden className={ICON_MD} size={16} />}
+                aria-label={t('connectionPanel.reticulumStopStack')}
+                disabled={connecting}
+                onClick={() => {
+                  notifyManualStackStop();
+                  void (async () => {
+                    await onStopStack();
+                    await refreshSidecarStatus();
+                  })().catch((e: unknown) => {
+                    console.warn(
+                      '[ReticulumStackPanel] stop stack failed ' +
+                        (e instanceof Error ? e.message : String(e)),
+                    );
+                  });
+                }}
+              >
+                {t('connectionPanel.reticulumStopStack')}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Play aria-hidden className={ICON_MD} size={16} />}
+                aria-label={t('connectionPanel.reticulumStartStack')}
+                disabled={connecting}
+                onClick={() => {
+                  notifyManualStackStart();
+                  void onStartStack();
+                }}
+              >
+                {connecting
+                  ? t('connectionPanel.connecting')
+                  : t('connectionPanel.reticulumStartStack')}
+              </Button>
+            )}
+          </>
         }
       >
         <div className="space-y-4">

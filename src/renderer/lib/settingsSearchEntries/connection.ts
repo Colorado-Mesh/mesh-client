@@ -304,6 +304,5 @@ export const connectionSurface: SettingsSearchSurface = {
     'mqttProfiles.noneSelected': 'option label of the indexed saved-profile select',
     'mqttProfiles.optionLabel': 'option label of the indexed network preset select',
     'mqttProfiles.reconnectNeeded': 'status text after switching profiles',
-    'diagnosticsPanel.docsLink': 'external troubleshooting docs link',
   },
 };
