@@ -111,6 +111,7 @@ nav:
       - Reticulum: reticulum.md
       - EMCOMM (MECP & Incident Command): emcomm.md
       - Key Backup & Crypto: key-backup-and-crypto.md
+      - Database Encryption Decision: database-encryption-decision.md
       - Meshtastic Telemetry: meshtastic-telemetry-local-client.md
       - Notification Sounds: notification-sounds.md
       - Localization: localization.md

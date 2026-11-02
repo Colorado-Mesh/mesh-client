@@ -9,7 +9,7 @@ Choose storage according to the cost of losing the data. Zustand owns reactive U
 | SQLite `app_settings`, with a localStorage fast path | Settings and small keyed blobs that must survive browser storage clearing or renderer origin changes | Locale, last-read watermarks, MECP blocked senders, TAK relay preferences, MQTT client ids |
 | Dedicated SQLite tables                              | Growing domain records, retention, queries and incident history                                      | Messages, nodes, path history, emergency incidents and resolution tombstones               |
 
-SQLite is main-owned. Renderer code uses typed `electronAPI.db` methods; it never opens a database or constructs SQL. Put shared contracts and pure storage parsers in `src/shared/`, rather than importing renderer modules into main.
+SQLite is main-owned. Renderer code uses typed `electronAPI.db` methods; it never opens a database or constructs SQL. Put shared contracts and pure storage parsers in `src/shared/`, rather than importing renderer modules into main. The main database file is plaintext by design; credentials that need crypto use `safeStorage` instead of whole-DB encryption — see [Database at-rest encryption decision](../database-encryption-decision.md).
 
 ## Startup and writes
 

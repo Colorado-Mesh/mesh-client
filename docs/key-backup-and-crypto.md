@@ -4,7 +4,7 @@ Mesh-Client stores **different kinds of keys in different places**. Meshtastic a
 
 **Per-node archives are created only when you click Backup Keys** on that protocol’s Security tab. Opening Security, connecting a radio, or importing Radio JSON updates the MeshCore **MQTT active cache** only — it does **not** create a per-node backup.
 
-See also [Meshtastic vs MeshCore feature parity](meshcore-meshtastic-parity.md) and the README **Security** section.
+See also [Meshtastic vs MeshCore feature parity](meshcore-meshtastic-parity.md), the README **Security** section, and [Database at-rest encryption decision](database-encryption-decision.md) (why `mesh-client.db` stays plaintext while credentials use `safeStorage`).
 
 ## What a backup contains (both protocols)
 
