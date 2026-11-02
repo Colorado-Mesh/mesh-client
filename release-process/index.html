@@ -3355,7 +3355,7 @@
 <li>Runs <strong><code>pnpm update</code></strong> and <strong><code>pnpm dedupe</code></strong> (updates lockfile before the bump)</li>
 <li>Syncs <strong><code>org.coloradomesh.MeshClient.yml</code></strong> Electron vendored archives to match <code>package.json</code> (<code>node scripts/sync-flatpak-electron.mjs</code>)</li>
 <li>Auto-detects <strong>patch / minor / major</strong> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/detectReleaseBump.mjs"><code>detectReleaseBump.mjs</code></a> (scoped Conventional Commits such as <code>feat(rrc):</code> count as <strong>minor</strong>) since the last tag (or accept an explicit bump — see below)</li>
-<li>Runs <strong>pre-flight validation</strong> (<code>check:environment</code>, release CLI health, format, lint, typecheck, <strong>all</strong> <code>check:*</code> scanners including path-gated pre-commit ones, <strong><code>check:flatpak</code></strong>, <strong><code>check:flatpak-offline-pnpm</code></strong>, <strong><code>check:i18n</code></strong>, lockfile re-dedupe stability (not <code>pnpm dedupe --check</code> — that breaks hoisted <code>node_modules/.bin</code>), audit, <strong>required</strong> actionlint + yamllint, <strong>full</strong> Vitest via <code>pnpm run test:run</code>, Reticulum sidecar <code>cargo test</code>)</li>
+<li>Runs <strong>pre-flight validation</strong> (<code>check:environment</code>, release CLI health, format, lint via <code>pnpm run lint --concurrency 2 --config eslint.ci.config.mjs</code> (same as <code>ci.yaml</code>; Prettier already covered by <code>format:check</code>), typecheck, <strong>all</strong> <code>check:*</code> scanners including path-gated pre-commit ones, <strong><code>check:flatpak</code></strong>, <strong><code>check:flatpak-offline-pnpm</code></strong>, <strong><code>check:i18n</code></strong>, lockfile re-dedupe stability (not <code>pnpm dedupe --check</code> — that breaks hoisted <code>node_modules/.bin</code>), audit, <strong>required</strong> actionlint + yamllint, <strong>full</strong> Vitest via <code>pnpm run test:run</code>, Reticulum sidecar <code>cargo test</code>)</li>
 <li>Prints <strong>copy-paste release notes</strong> grouped by feat/fix/other/breaking</li>
 <li>Bumps <code>package.json</code> via <code>pnpm version</code></li>
 <li>Prepends a <code>&lt;release&gt;</code> entry to <code>flatpak/org.coloradomesh.MeshClient.metainfo.xml</code></li>
@@ -3466,7 +3466,7 @@ approval of the next unsigned Windows release.</p>
 <p>If you need to run checks outside <code>release.sh</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>format:check
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint:md
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint<span class="w"> </span>--concurrency<span class="w"> </span><span class="m">2</span><span class="w"> </span>--config<span class="w"> </span>eslint.ci.config.mjs
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>typecheck
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:i18n
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:run
@@ -3691,7 +3691,7 @@ approval of the next unsigned Windows release.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 25, 2026 13:26:40 UTC">October 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 04:03:18 UTC">November 2, 2026</span>
   </span>
 
     
