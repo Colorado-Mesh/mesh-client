@@ -442,7 +442,7 @@ Open **Monitor → Stats** (all three protocols). The panel charts packet distri
 - **Overall distribution** — share of traffic by category for the selected time window.
 - **By device** — which nodes contribute the most observed packets.
 - **By type** — packet / port type breakdown when the protocol exposes it.
-- **Source filter** — **All**, **RF only**, or **MQTT only** (LoRa protocols; Reticulum uses its sidecar packet feed).
+- **Source filter** — **All**, **RF only**, or **MQTT only** (**Meshtastic only**; MeshCore does not expose this filter; Reticulum uses its sidecar packet feed).
 - **Time range** — last hour, last 24 hours, or all stored data for the panel.
 - **Empty state** — shown when no packets match the filter; rows without a sender id are grouped so the chart still totals correctly.
 
@@ -456,7 +456,7 @@ Open **Monitor → Sniffer** (UI label for the raw packet log panel; all three p
 
 - Live (or polled) raw frames for the active protocol with pause/clear controls.
 - Typical fields: time, type/port, peer or path summary, transport badges where applicable, expandable hex.
-- Buffer is capped (ring buffer; see README / Raw Packet Log notes — on the order of a few thousand entries per protocol).
+- Buffer caps: Meshtastic and MeshCore keep up to **2,500** entries per protocol (`MAX_RAW_PACKET_LOG_ENTRIES`); the Reticulum renderer store keeps **500** (`RETICULUM_PACKET_RING_CAPACITY`) and trims older entries.
 - **Privacy:** payloads may include message text or other user content — treat exports and screenshots carefully.
 - Prefer **Diagnostics** for actionable routing findings; prefer **Sniffer** when you need wire-level confirmation of what the radio or sidecar saw.
 

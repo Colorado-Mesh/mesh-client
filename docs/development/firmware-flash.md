@@ -72,7 +72,7 @@ Add a board only after its factory image layout, chip id, and bootloader entry a
 - **Image rules (`deviceFirmwareImage.ts`).**
   - Meshtastic ESP32: `firmware-<slug>-<version>.factory.bin`. Meshtastic nRF52: `firmware-<slug>-<version>.zip`, with an optional `-ota` suffix.
   - MeshCore: `<prefix>_companion_radio_…`, `-merged.bin` for ESP32 and `.zip` for nRF52. Non-companion MeshCore assets are refused (`IMAGE_NOT_COMPANION`).
-  - Zips are read with zip.js (CRC32 verified while reading). An archive that has more than one match is `IMAGE_AMBIGUOUS`.
+  - Zips are read with zip.js (`readZipEntries`). Entry CRC-32 verification is **not** enabled in the reader; integrity beyond filename/header checks relies on optional expected SHA-256 and, for nRF52 DFU packages, the init-packet CRC16 check against the application bytes. An archive that has more than one match is `IMAGE_AMBIGUOUS`.
   - ESP32: the extended image header must start with the ESP magic (`0xE9`) and carry the board's `chip_id` (`ESP_IMAGE_CHIP_ID`: `esp32` 0x0000, `esp32s3` 0x0009), the image must not exceed `flashBytes`, and it must reach `MIN_ESP32_FULL_IMAGE_BYTES` (0x20000). Classic ESP32 images carry the bootloader at 0x1000, S3 at 0x0. Full images are written at address 0.
   - nRF52: legacy serial-DFU package, application-only manifest, safe entry names (no absolute path or `..`), no duplicate entries, and the init packet's CRC16 must equal the firmware CRC16 (`nrf52DfuCrc16`).
   - `fileSha256` and `payloadSha256` are both computed. An optional expected digest must be a 64-character hex string and is compared with the file hash (`CHECKSUM_INVALID`, `CHECKSUM_MISMATCH`).

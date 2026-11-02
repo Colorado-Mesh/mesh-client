@@ -270,7 +270,7 @@ Operator guide: [MeshCore guide](docs/meshcore.md). MeshCore runs simultaneously
 
 - Contact list with advert-based positions, contact types (Chat, Repeater, Room, Sensor), and GPS coordinates persisted to SQLite; contacts seed from DB on reconnect as a fallback cache
 - **Favorite / pin**: persisted per contact in SQLite (`meshcore_contacts.favorited`)
-- **Contact groups**: protocol-neutral; create and manage groups from the **Contacts** tab toolbar (Meshtastic: **Nodes** tab); Meshtastic has built-in groups (**GPS**, **RF+MQTT**); filter the list by group; **Room** contacts excluded from user groups by default
+- **Contact groups**: protocol-neutral; create and manage groups from the **Contacts** tab toolbar (Meshtastic: **Nodes** tab); Meshtastic has built-in filters (**GPS**, **RF+MQTT**, **Router**); filter the list by group; **Room** contacts excluded from user groups by default
 - **Import Contacts**: **Network → Contacts**: bulk **JSON nickname import** to pre-fill contact names (not on the Repeaters panel)
 - **Refresh Contacts**: pull the full contact list from the device on demand
 - **Show Public Keys**: toggle to display full public keys under contact names

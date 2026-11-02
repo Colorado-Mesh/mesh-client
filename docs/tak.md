@@ -141,7 +141,7 @@ Use **Remote TAK Server** to stream node positions from every protocol to an Ope
 
 **Verification on (default).** The server certificate must chain to the imported CA, or to the system trust store when no CA is imported, and must name the server address.
 
-**Name mismatch opt-out.** This accepts a certificate issued for another name, as ATAK does. It needs verification on and an imported CA.
+**Name mismatch opt-out.** This accepts a certificate issued for another name, as ATAK does. It needs verification on and an imported CA. After a successful enrollment, Mesh Client may turn this option on when a CA is available (chain verification stays on, but the server name is not checked). Clear it if you require name verification.
 
 **Verification off.** Certificate failures do not stop the connection, so anyone who can intercept it receives the relayed positions, and the relay does not connect at launch.
 

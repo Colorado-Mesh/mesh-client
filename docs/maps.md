@@ -63,7 +63,7 @@ Rules enforced before save:
 
 - **HTTPS only** — no `http://`, no credentials in the URL, no custom ports, no IP literals or private/local hostnames.
 - OpenStreetMap hosts are rejected — use the built-in basemap instead.
-- The confirmed host is what the main process fetches; the renderer only ever sees a source id (`mesh-tiles:`), never the raw template with API keys.
+- Tile requests use only a source id (`mesh-tiles:`). Public source metadata may include the confirmed host, but never the raw URL template (so credentials cannot leak to the renderer).
 
 Custom XYZ sources cache **only tiles you view**. Bulk region download and **Auto-cache** are not available for them — import an MBTiles package when you need a large offline area from a custom map.
 

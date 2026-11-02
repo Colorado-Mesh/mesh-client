@@ -183,7 +183,7 @@ Schedule a message to go out later instead of now.
 
 Rules:
 
-- The time must be in the future (at least a few seconds out) and within the next 30 days.
+- The time must be at least 5 seconds in the future and within the next 30 days.
 - Scheduled messages are stored on this computer and survive a restart. **The app must be running** at the scheduled time; nothing is sent from a closed app.
 - At the time, the message sends only if a radio or stack is connected and ready. If it is not, the message waits and tries again once sending is possible (the outbox's normal 24-hour limit counts from the scheduled time).
 - Scheduling works from the Chat composer only (not Rooms or RRC). It works from any tab, so you do not need to keep Chat open.

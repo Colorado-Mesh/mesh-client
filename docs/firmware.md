@@ -18,7 +18,7 @@ For problems, see [Troubleshooting](troubleshooting.md). For code, see [Device f
 
 Rules that apply to every flash:
 
-- **Only the boards above.** A board that is not listed is refused before any data is written. The list is small on purpose.
+- **Only the boards above.** When Mesh Client detects the connected radio, an unlisted board is refused before any data is written. If detection fails, you pick a listed board manually — confirm it matches your hardware. The flasher then checks chip family (and ESP image chip id), so an unlisted board that shares the same chip family could still be written with the selected image. The list is small on purpose.
 - **Full images only.** ESP32 boards need the full-flash image (`.factory.bin` or `-merged.bin`). nRF52 boards need the application-only DFU `.zip`.
 - **MeshCore companion firmware only.** Repeater, room server, and other MeshCore images are refused.
 - **Local USB only.** The section is not available for a remote **Configure node** target, and it is not available on Reticulum.
@@ -64,9 +64,9 @@ Use the **Firmware file** picker and select a `.zip` or `.bin` from the release 
 After you choose a file the section shows **Checking firmware…**, then **Ready: <file> (<size>)**, the parsed **Version**, and two checksums:
 
 - **File SHA-256**, the hash of the file you chose. Compare it with the digest shown next to the asset on the release page.
-- **Image SHA-256**, the hash of the exact bytes that will be written.
+- **Image SHA-256** — for ESP32, the hash of the full-flash image bytes that will be written; for nRF52, the hash of the **DFU ZIP package** (not the extracted application binary alone).
 
-Paste the digest from the release page into **Expected SHA-256 (optional)**. A mismatch blocks flashing.
+Paste the digest from the release page into **Expected SHA-256 (optional)**. A mismatch against either checksum blocks flashing.
 
 If the file is not acceptable, the section shows one of these:
 
@@ -108,7 +108,7 @@ The **Flash firmware** button stays disabled while any blocker is listed under t
 
 The battery check runs only when the radio is connected and reports its level.
 
-**Confirmation checklist.** Tick **I confirm the USB-connected device is a <board>, it has a stable cable and power, and I have backed up my settings and keys.** The tick is tied to the chosen board and the validated image. Changing either one clears it.
+**Confirmation checklist.** Tick **I confirm the USB-connected device is a <board>, it has a stable cable and power, and I have backed up my settings and keys.** The tick is remembered for the pair of board id and image fingerprint. Changing the board or image unchecks it for the new combination, but returning to a previously acknowledged pair can check the box again.
 
 ---
 

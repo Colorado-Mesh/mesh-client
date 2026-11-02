@@ -194,7 +194,7 @@ function isZipBytes(bytes: Uint8Array): boolean {
   return bytes[0] === 0x50 && bytes[1] === 0x4b && (bytes[2] === 0x03 || bytes[2] === 0x05);
 }
 
-/** Read every file entry of a zip with zip.js (CRC32 is verified while reading). */
+/** Read every file entry of a zip with zip.js (entry CRC-32 checks are not enabled). */
 export const readZipEntries: ReadZipEntries = async (bytes) => {
   const reader = new ZipReader(new Uint8ArrayReader(bytes));
   const entries = await reader.getEntries();

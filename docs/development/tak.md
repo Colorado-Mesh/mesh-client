@@ -105,12 +105,12 @@ Exposed on `electronAPI.tak` in `src/preload/index.ts`, typed in `src/shared/ele
 ## Security invariants
 
 - **IPC.** Every `tak:*` handler calls `assertIpcSender`, validates its payload (`validateTakSettings`, `validateTakRemoteSettings`, the `parseTak*` helpers), and logs failures through `sanitizeLogMessage`. Never expose `ipcRenderer`. Credential channels return a summary (`TAKRemoteCredentialSummary`), never key material.
-- **Secrets.** Private keys and passwords stay in main. Passwords are not logged or persisted, and `remoteEnroll` receives them once.
+- **Secrets.** Private keys stay in main and are never returned over IPC. Enrollment passwords are held in renderer state (`TakRemoteRelaySection`) only long enough to call `remoteEnroll` / import, are not persisted, and are not logged.
 - **No RF from main.** See the source-policy rule above.
 - **Temp files.** Any new test that writes to disk uses `mkdtempSync` under `os.tmpdir()` (`check:insecure-temp-files`).
 - **Protocol parity.** The panel, node feed, and DM sections cover Meshtastic, MeshCore, and Reticulum. Gate protocol-specific sections (tracker channels, ATAK plugin packets) with `ProtocolCapabilities` (`hasTakTrackerChannels`, `hasAtakPlugin`), never with `protocol ===` checks.
 - **i18n.** All user text lives under `takServerPanel.*` and `takContacts.*`. Remote error codes map to `takServerPanel.remoteErrors.*` through `takRemoteUserError.ts`.
-- **Failure behaviour.** Writes that must not corrupt state (certificates, credentials, settings, the data package) are atomic. A failed package write throws and removes its temp file. A failed reveal in the file manager is logged and non-fatal. Handlers log and rethrow so the hook can show the error.
+- **Failure behaviour.** Credential, settings, and data-package writes that must not corrupt state use temp-file + rename (or equivalent) patterns; a failed package write throws and removes its temp file. **Certificate regeneration is not atomic:** `regenerateCerts` deletes existing files in the certs directory before generating replacements, so a failure mid-generation can leave the local server without a usable bundle until you regenerate again. A failed reveal in the file manager is logged and non-fatal. Handlers log and rethrow so the hook can show the error.
 
 ## Tests
 
