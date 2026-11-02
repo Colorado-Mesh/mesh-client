@@ -141,16 +141,16 @@ Open a DM from **Nodes** (node detail → **Message**) or from a channel message
 
 **Network → Nodes** (heading **Node Database**) lists every node the radio has heard.
 
-| Feature             | Details                                                                                                                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Columns             | Health, Favorite, ID, Long Name, Short, Last Heard, Type, Role, Hops, MQTT, Lat/Lon, MGRS, Signal, SNR, Battery, Voltage, Ch.Util, Air Tx, Alt, Redund.                                 |
-| **Last heard**      | Any live RF packet (position, telemetry, traceroute, text), not only chat.                                                                                                              |
-| **Signal bars**     | Direct (0-hop) RF neighbors only; multi-hop and MQTT-only paths omit bars.                                                                                                              |
-| **Favorites**       | Star a row (**Add to favorites** / **Remove from favorites**) to pin it. Persisted in the app database.                                                                                 |
-| **Distance filter** | Enable in **App → Appearance**. The list then hides nodes beyond the chosen distance; a banner shows how many are hidden. Without a GPS fix, all nodes show.                            |
-| **Status filter**   | Filter by **Online**, **Stale**, or **Offline**.                                                                                                                                        |
-| **Contact groups**  | **Manage groups** creates groups and members; the group filter limits the list. Meshtastic also has built-in **GPS** and **RF+MQTT** groups. Custom groups are shared by all protocols. |
-| **Export**          | **Export JSON** (topology) or **Export CSV** of the node list.                                                                                                                          |
+| Feature             | Details                                                                                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Columns             | Health, Favorite, ID, Long Name, Short, Last Heard, Type, Role, Hops, MQTT, Lat/Lon, MGRS, Signal, SNR, Battery, Voltage, Ch.Util, Air Tx, Alt, Redund.                                               |
+| **Last heard**      | Any live RF packet (position, telemetry, traceroute, text), not only chat.                                                                                                                            |
+| **Signal bars**     | Direct (0-hop) RF neighbors only; multi-hop and MQTT-only paths omit bars.                                                                                                                            |
+| **Favorites**       | Star a row (**Add to favorites** / **Remove from favorites**) to pin it. Persisted in the app database.                                                                                               |
+| **Distance filter** | Enable in **App → Appearance**. The list then hides nodes beyond the chosen distance; a banner shows how many are hidden. Without a GPS fix, all nodes show.                                          |
+| **Status filter**   | Filter by **Online**, **Stale**, or **Offline**.                                                                                                                                                      |
+| **Contact groups**  | **Manage groups** creates groups and members; the group filter limits the list. Meshtastic also has built-in **GPS**, **RF+MQTT**, and **Router** filters. Custom groups are shared by all protocols. |
+| **Export**          | **Export JSON** (topology) or **Export CSV** of the node list.                                                                                                                                        |
 
 ### Node health
 
