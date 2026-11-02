@@ -25,6 +25,7 @@ export function persistRrcMessage(hubHash: string, msg: RrcChatMessage): void {
       kind: msg.kind,
       body: msg.body,
       timestamp: msg.timestamp,
+      ...(msg.react_to ? { react_to: msg.react_to, react_op: msg.react_op ?? null } : {}),
     })
     .catch((e: unknown) => {
       console.warn('[rrcMessagePersist] insert failed ' + errLikeToLogString(e));

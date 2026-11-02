@@ -107,6 +107,17 @@ export function scrollElementWithinContainer(
   container.scrollTo({ top: Math.max(0, targetTop), behavior });
 }
 
+/** Scroll `container` the least distance that shows `element`, or its top when it is taller. */
+export function revealElementWithinContainer(container: HTMLElement, element: HTMLElement): void {
+  const box = container.getBoundingClientRect();
+  const target = element.getBoundingClientRect();
+  if (target.top < box.top) {
+    container.scrollTop += target.top - box.top;
+  } else if (target.bottom > box.bottom) {
+    container.scrollTop += Math.min(target.bottom - box.bottom, target.top - box.top);
+  }
+}
+
 type ScrollMeasureInstance = Pick<
   Virtualizer<HTMLDivElement, Element>,
   'indexFromElement' | 'scrollDirection' | 'measurementsCache' | 'itemSizeCache' | 'options'
@@ -151,6 +162,29 @@ export function createStableChatMeasureElement(
 
     return domSize;
   };
+}
+
+/**
+ * Drop cached row sizes, then measure the rows already on screen. `measure()` alone leaves
+ * mounted rows at their estimates until they resize, so a taller row (reaction chips, a wrapped
+ * line) would overlap the next one.
+ */
+export function resetVirtualRowSizes(
+  virtualizer: {
+    measure: () => void;
+    getVirtualItems: () => unknown;
+    measureElement: (row: Element) => void;
+  },
+  container: HTMLElement | null,
+): void {
+  virtualizer.measure();
+  if (!container) return;
+  // measure() clears the cache but not the layout built from it, and a row measured against
+  // that old layout reads as unchanged. Rebuild the layout from estimates first.
+  virtualizer.getVirtualItems();
+  container.querySelectorAll('[data-index]').forEach((row) => {
+    virtualizer.measureElement(row);
+  });
 }
 
 /** Re-measure a virtualized chat row after async content (e.g. link preview) changes height. */

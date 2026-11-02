@@ -38,7 +38,11 @@ interface ValidatedRrcInsert {
   timestamp: number;
   senderHash: string | null;
   nickname: string | null;
+  reactTo: string | null;
+  reactOp: number | null;
 }
+
+const REACT_TO_RE = /^[0-9a-f]{16}$/;
 
 /** Validate and normalize an inbound `db:insertRrcMessage` payload (throws on invalid fields). */
 function validateRrcInsertMessage(message: unknown): ValidatedRrcInsert {
@@ -74,7 +78,31 @@ function validateRrcInsertMessage(message: unknown): ValidatedRrcInsert {
     typeof m.nickname === 'string' && m.nickname.trim()
       ? m.nickname.trim().slice(0, MAX_NICK_LEN)
       : null;
-  return { hub, room, messageId, kind, body, timestamp, senderHash, nickname };
+  let reactTo: string | null = null;
+  if (m.react_to != null) {
+    const value = typeof m.react_to === 'string' ? m.react_to.trim().toLowerCase() : '';
+    if (!REACT_TO_RE.test(value)) throw new Error('db:insertRrcMessage: react_to invalid');
+    reactTo = value;
+  }
+  let reactOp: number | null = null;
+  if (m.react_op != null) {
+    if (m.react_op !== 0 && m.react_op !== 1) {
+      throw new Error('db:insertRrcMessage: react_op invalid');
+    }
+    reactOp = reactTo ? m.react_op : null;
+  }
+  return {
+    hub,
+    room,
+    messageId,
+    kind,
+    body,
+    timestamp,
+    senderHash,
+    nickname,
+    reactTo,
+    reactOp,
+  };
 }
 
 export interface RrcDbIpcDeps {
@@ -93,7 +121,8 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
       if (!db) return [];
       const rows = db
         .prepareOnce(
-          `SELECT message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp
+          `SELECT message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp,
+                  react_to, react_op
              FROM rrc_messages
              WHERE hub_hash = ? AND room = ?
              ORDER BY timestamp DESC, id DESC
@@ -116,8 +145,9 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
       const result = db
         .prepareOnce(
           `INSERT OR IGNORE INTO rrc_messages
-            (message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            (message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp,
+             react_to, react_op)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           v.messageId,
@@ -128,6 +158,8 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
           v.kind,
           v.body,
           Math.floor(v.timestamp),
+          v.reactTo,
+          v.reactOp,
         );
       return { changes: Number(result.changes) };
     } catch (err) {

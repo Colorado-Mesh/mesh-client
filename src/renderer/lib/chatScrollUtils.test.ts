@@ -1,3 +1,4 @@
+import { Virtualizer } from '@tanstack/react-virtual';
 import type { RefObject } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -13,6 +14,8 @@ import {
   findMessageIndexByReticulumHash,
   getChatDayKey,
   getChatMessageVirtualizerKey,
+  resetVirtualRowSizes,
+  revealElementWithinContainer,
   roomPostRowKey,
   roomPostVirtualizerKey,
   scrollElementWithinContainer,
@@ -402,6 +405,121 @@ describe('estimateChatRowHeight', () => {
         unreadDividerExtra: CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX,
       }),
     ).toBe(96 + CHAT_UNREAD_DIVIDER_ESTIMATE_EXTRA_PX);
+  });
+});
+
+describe('resetVirtualRowSizes', () => {
+  it('clears cached sizes, then measures every mounted row', () => {
+    const container = document.createElement('div');
+    const rows = [0, 1].map((index) => {
+      const row = document.createElement('div');
+      row.dataset.index = String(index);
+      container.appendChild(row);
+      return row;
+    });
+    container.appendChild(document.createElement('div'));
+    const calls: string[] = [];
+    const virtualizer = {
+      measure: vi.fn(() => calls.push('measure')),
+      getVirtualItems: vi.fn(() => {
+        calls.push('layout');
+        return [];
+      }),
+      measureElement: vi.fn((row: Element | null) =>
+        calls.push(`row ${(row as HTMLElement).dataset.index}`),
+      ),
+    };
+
+    resetVirtualRowSizes(virtualizer, container);
+
+    expect(calls).toEqual(['measure', 'layout', 'row 0', 'row 1']);
+    expect(virtualizer.measureElement.mock.calls.map(([row]) => row)).toEqual(rows);
+  });
+
+  it('still clears cached sizes when the container is not mounted', () => {
+    const virtualizer = { measure: vi.fn(), getVirtualItems: vi.fn(), measureElement: vi.fn() };
+
+    resetVirtualRowSizes(virtualizer, null);
+
+    expect(virtualizer.measure).toHaveBeenCalledOnce();
+    expect(virtualizer.measureElement).not.toHaveBeenCalled();
+  });
+
+  it('keeps the real height of a mounted row taller than its estimate', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const heights = [18, 42, 18];
+    const rows = heights.map((height, index) => {
+      const row = document.createElement('div');
+      row.dataset.index = String(index);
+      Object.defineProperty(row, 'offsetHeight', { value: height, configurable: true });
+      container.appendChild(row);
+      return row;
+    });
+    const virtualizer = new Virtualizer<HTMLDivElement, Element>({
+      count: heights.length,
+      getScrollElement: () => null,
+      estimateSize: () => 22,
+      scrollToFn: () => {},
+      observeElementRect: () => {},
+      observeElementOffset: () => {},
+      measureElement: (row) => (row as HTMLElement).offsetHeight,
+    });
+    // A render builds the layout before any row reports its size.
+    virtualizer.getVirtualItems();
+    rows.forEach((row) => {
+      virtualizer.measureElement(row);
+    });
+    expect(virtualizer.getTotalSize()).toBe(78);
+
+    resetVirtualRowSizes(virtualizer, container);
+
+    expect(virtualizer.getTotalSize()).toBe(78);
+    container.remove();
+  });
+});
+
+describe('revealElementWithinContainer', () => {
+  function setup(target: { top: number; bottom: number }) {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    container.appendChild(element);
+    Object.defineProperty(container, 'scrollTop', {
+      value: 500,
+      writable: true,
+      configurable: true,
+    });
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: 100, width: 300, height: 300 }),
+    );
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: target.top, width: 300, height: target.bottom - target.top }),
+    );
+    return container;
+  }
+
+  it('scrolls up to an element whose top is above the view', () => {
+    const container = setup({ top: 40, bottom: 240 });
+    revealElementWithinContainer(container, container.firstElementChild as HTMLElement);
+    expect(container.scrollTop).toBe(440);
+  });
+
+  it('scrolls down just far enough to show an element below the view', () => {
+    const container = setup({ top: 300, bottom: 450 });
+    revealElementWithinContainer(container, container.firstElementChild as HTMLElement);
+    expect(container.scrollTop).toBe(550);
+  });
+
+  it('keeps the top in view when the element is taller than the view', () => {
+    const container = setup({ top: 250, bottom: 700 });
+    revealElementWithinContainer(container, container.firstElementChild as HTMLElement);
+    expect(container.scrollTop).toBe(650);
+  });
+
+  it('leaves an element that is already in view alone', () => {
+    const container = setup({ top: 150, bottom: 350 });
+    revealElementWithinContainer(container, container.firstElementChild as HTMLElement);
+    expect(container.scrollTop).toBe(500);
   });
 });
 

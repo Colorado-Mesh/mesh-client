@@ -68,6 +68,22 @@ describe('rrc-db-handlers validation', () => {
       }),
     ).toThrow('kind invalid');
   });
+
+  it('db:insertRrcMessage rejects a malformed reaction target or op', () => {
+    const handler = handlers.get('db:insertRrcMessage');
+    const base = {
+      message_id: 'r1',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: '👍',
+      timestamp: Date.now(),
+    };
+    expect(() => handler?.(event, { ...base, react_to: 'not-hex' })).toThrow('react_to invalid');
+    expect(() => handler?.(event, { ...base, react_to: '11'.repeat(8), react_op: 2 })).toThrow(
+      'react_op invalid',
+    );
+  });
 });
 
 describe('rrc-db-handlers with real DB', () => {
@@ -145,6 +161,49 @@ describe('rrc-db-handlers with real DB', () => {
     expect(insert(event, payload)).toEqual({ changes: 1 });
     expect(insert(event, payload)).toEqual({ changes: 0 });
     expect(list(event, HUB, 'lobby')).toHaveLength(1);
+  });
+
+  it('round-trips reaction target and op, lowercasing the target', () => {
+    const insert = handlers.get('db:insertRrcMessage')!;
+    const list = handlers.get('db:listRrcMessages')!;
+    const now = Date.now();
+    insert(event, {
+      message_id: 'chat',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: 'ship it?',
+      timestamp: now,
+    });
+    insert(event, {
+      message_id: 'apply',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: '👍',
+      timestamp: now + 1,
+      react_to: 'A41B9C33D2E05F18',
+    });
+    insert(event, {
+      message_id: 'retract',
+      hub_hash: HUB,
+      room: 'lobby',
+      kind: 'msg',
+      body: '👍',
+      timestamp: now + 2,
+      react_to: 'a41b9c33d2e05f18',
+      react_op: 1,
+    });
+    const rows = list(event, HUB, 'lobby') as {
+      message_id: string;
+      react_to: string | null;
+      react_op: number | null;
+    }[];
+    expect(rows.map((r) => [r.message_id, r.react_to, r.react_op])).toEqual([
+      ['chat', null, null],
+      ['apply', 'a41b9c33d2e05f18', null],
+      ['retract', 'a41b9c33d2e05f18', 1],
+    ]);
   });
 
   it('deleteByRoom removes only that room', () => {

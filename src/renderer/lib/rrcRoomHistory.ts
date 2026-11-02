@@ -57,6 +57,9 @@ export async function hydrateRrcRoomMessages(
         sender_hash: row.sender_hash ?? null,
         nickname: row.nickname ?? null,
         timestamp: Number.isFinite(row.timestamp) ? row.timestamp : 0,
+        ...(typeof row.react_to === 'string'
+          ? { react_to: row.react_to, react_op: row.react_op ?? null }
+          : {}),
       });
     }
     if (mapped.length > 0) {

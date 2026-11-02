@@ -467,6 +467,63 @@ describe('RrcPanel', () => {
     });
   });
 
+  describe('DM wire ids', () => {
+    const peerHash = 'dddddddddddddddddddddddddddddddd';
+
+    it('stores an outbound DM line under the id the sidecar sent', async () => {
+      const user = userEvent.setup();
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.setCapabilities({ direct_notice: true });
+      store.openDm({ identity_hash: peerHash, nickname: 'Alice' }, hubA);
+      store.setActiveRoom(`@${peerHash}`);
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({
+        ok: true,
+        id: '4444444444444444',
+      });
+
+      render(<RrcPanel isActive />);
+      const composer = screen.getByRole('textbox', { name: /Reply to Alice/i });
+      await user.type(composer, 'hello');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+
+      await waitFor(() => {
+        const key = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`) ?? '';
+        expect(useRrcSessionStore.getState().messages.get(key)).toContainEqual(
+          expect.objectContaining({ id: '4444444444444444', body: 'hello' }),
+        );
+      });
+    });
+
+    it('stores a /msg line under the id the sidecar sent', async () => {
+      const user = userEvent.setup();
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.setCapabilities({ direct_notice: true });
+      store.roomJoined('#general', [{ identity_hash: peerHash, nickname: 'Alice' }]);
+      store.setActiveRoom('#general');
+      vi.mocked(window.electronAPI.reticulum.rrc.send).mockResolvedValue({
+        ok: true,
+        id: '5555555555555555',
+      });
+
+      render(<RrcPanel isActive />);
+      const composer = screen.getByRole('textbox', { name: /Message or \/command/i });
+      await user.clear(composer);
+      await user.type(composer, '/msg Alice hi there');
+      await user.click(screen.getByRole('button', { name: 'Send' }));
+
+      await waitFor(() => {
+        const key = useRrcSessionStore.getState().roomMessageKey(`@${peerHash}`) ?? '';
+        const stored = useRrcSessionStore
+          .getState()
+          .messages.get(key)
+          ?.find((m) => m.id === '5555555555555555');
+        expect(stored?.body).toBe('hi there');
+      });
+    });
+  });
+
   it('clears the room composer after a successful /msg opens the DM', async () => {
     const user = userEvent.setup();
     const peerHash = 'dddddddddddddddddddddddddddddddd';

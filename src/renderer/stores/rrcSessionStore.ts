@@ -1234,7 +1234,9 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         return {};
       }
       // Hub often re-acks the same join-info / status NOTICE; keep one line.
+      // DM reactions are NOTICEs too, and the same emoji on two lines is two reactions.
       if (
+        !msg.react_to &&
         (msg.kind === 'notice' || msg.kind === 'system') &&
         existing.length > 0 &&
         existing[existing.length - 1]?.kind === msg.kind &&

@@ -43,6 +43,7 @@ use rns_transport::messages::{
 };
 use tokio::sync::{RwLock, broadcast};
 
+use super::RrcReactionRequest;
 use super::StackHandle;
 use super::announce_ws_coalesce::{
     AnnounceWsCoalescer, AnnounceWsRow, build_announce_received_frame, resolve_announce_aspect,
@@ -2799,14 +2800,22 @@ impl LiveBridge {
         body: &str,
         kind: &str,
         dst_hash: Option<&str>,
+        reaction: Option<&RrcReactionRequest>,
     ) -> serde_json::Value {
         let room = room.map(|r| r.trim().to_string()).filter(|r| !r.is_empty());
         match self
             .rrc_session
-            .send_chat(hub_dest_hash, room, body.to_string(), kind, dst_hash)
+            .send_chat(
+                hub_dest_hash,
+                room,
+                body.to_string(),
+                kind,
+                dst_hash,
+                reaction,
+            )
             .await
         {
-            Ok(()) => serde_json::json!({ "ok": true }),
+            Ok(id) => serde_json::json!({ "ok": true, "id": id }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
     }

@@ -398,6 +398,14 @@ pub struct LxmfReactionRequest {
     pub emoji: String,
 }
 
+/// Outbound RRC reaction marker (rrc-extensions.md v1 `K_REACT_TO` / `K_REACT_OP`).
+#[derive(Debug, Clone)]
+pub struct RrcReactionRequest {
+    /// `K_ID` of the target message, 16 hex characters.
+    pub target_hex: String,
+    pub retract: bool,
+}
+
 #[cfg(test)]
 mod tx_queue_serde_tests {
     use super::InterfaceRow;

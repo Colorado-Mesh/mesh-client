@@ -111,7 +111,7 @@ use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow,
     LxmfPaperCreateRequest, LxmfPaperIngestRequest, LxmfReactionRequest, LxmfSendRequest,
-    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, RrcReactionRequest, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -2720,14 +2720,22 @@ impl StackHandle {
         body: &str,
         kind: Option<&str>,
         dst_hash: Option<&str>,
+        reaction: Option<&RrcReactionRequest>,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
             return live
-                .rrc_send(hub_dest_hash, room, body, kind.unwrap_or("msg"), dst_hash)
+                .rrc_send(
+                    hub_dest_hash,
+                    room,
+                    body,
+                    kind.unwrap_or("msg"),
+                    dst_hash,
+                    reaction,
+                )
                 .await;
         }
-        let _ = (hub_dest_hash, room, body, kind, dst_hash);
+        let _ = (hub_dest_hash, room, body, kind, dst_hash, reaction);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 

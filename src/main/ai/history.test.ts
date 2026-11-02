@@ -171,6 +171,9 @@ describe('AI history conversation boundaries', () => {
       db.prepareOnce(
         'INSERT INTO rrc_messages (message_id,hub_hash,room,kind,body,timestamp) VALUES (?, ?, ?, ?, ?, 100)',
       ).run(body, hub, room, kind, body);
+    db.prepareOnce(
+      'INSERT INTO rrc_messages (message_id,hub_hash,room,kind,body,timestamp,react_to) VALUES (?, ?, ?, ?, ?, 100, ?)',
+    ).run('reaction', hub, 'lobby', 'msg', '👍', '1111111111111111');
     expect(
       querySummaryHistory(db, {
         protocol: 'reticulum',

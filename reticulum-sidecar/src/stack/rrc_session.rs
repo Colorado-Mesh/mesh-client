@@ -20,11 +20,12 @@ use sha2::{Digest, Sha256};
 use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use tracing::{debug, warn};
 
+use super::RrcReactionRequest;
 use super::path_failover::MAX_VIA_FAILOVERS;
 use super::rrc_codec::{
-    RRC_IDENTITY_HASH_LEN, RrcEnvelope, RrcResourceEnvelopeMeta, RrcWelcomeCapabilities,
-    RrcWelcomeLimits, apply_advisory_nick, body_as_text, decode_envelope, encode_envelope,
-    hello_body, msg_type, parse_joined_members, parse_resource_envelope_body,
+    RRC_IDENTITY_HASH_LEN, RRC_MSG_ID_LEN, RrcEnvelope, RrcResourceEnvelopeMeta,
+    RrcWelcomeCapabilities, RrcWelcomeLimits, apply_advisory_nick, body_as_text, decode_envelope,
+    encode_envelope, hello_body, msg_type, parse_joined_members, parse_resource_envelope_body,
     parse_welcome_capabilities, parse_welcome_hub_name, parse_welcome_hub_version,
     parse_welcome_limits, text_body,
 };
@@ -203,8 +204,25 @@ enum SessionCommand {
         msg_type: u8,
         /// When set, send NOTICE with K_DST and omit K_ROOM (rrcd direct NOTICE).
         dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
-        reply: oneshot::Sender<Result<(), String>>,
+        /// Reaction target `K_ID` and whether this retracts it.
+        reaction: Option<([u8; RRC_MSG_ID_LEN], bool)>,
+        /// Ok carries the sent envelope's `K_ID` as hex.
+        reply: oneshot::Sender<Result<String, String>>,
     },
+}
+
+/// One grapheme can still be many bytes (ZWJ families, flag tags); this only bounds abuse.
+const MAX_RRC_REACTION_BODY_BYTES: usize = 64;
+
+fn parse_reaction_target(hex_str: &str) -> Result<[u8; RRC_MSG_ID_LEN], String> {
+    let clean = hex_str.trim().to_lowercase();
+    if clean.len() != RRC_MSG_ID_LEN * 2 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("react_to must be 16 hex characters".into());
+    }
+    let bytes = hex::decode(&clean).map_err(|e| e.to_string())?;
+    let mut arr = [0u8; RRC_MSG_ID_LEN];
+    arr.copy_from_slice(&bytes);
+    Ok(arr)
 }
 
 impl RrcSessionManager {
@@ -422,6 +440,7 @@ impl RrcSessionManager {
         }
     }
 
+    /// Sends one chat line and returns its `K_ID` as hex.
     pub async fn send_chat(
         &self,
         hub_dest_hash: &str,
@@ -429,7 +448,8 @@ impl RrcSessionManager {
         body: String,
         kind: &str,
         dst_hash_hex: Option<&str>,
-    ) -> Result<(), String> {
+        reaction: Option<&RrcReactionRequest>,
+    ) -> Result<String, String> {
         let handle = self.require_handle(hub_dest_hash).await?;
         let dst_identity = if let Some(hex_str) = dst_hash_hex {
             let clean = hex_str.trim().to_lowercase();
@@ -452,6 +472,19 @@ impl RrcSessionManager {
                 _ => msg_type::MSG,
             }
         };
+        let reaction = match reaction {
+            Some(req) => {
+                // Room reactions ride MSG (spec §2); a direct NOTICE carries them in DMs.
+                if msg_type != msg_type::MSG && dst_identity.is_none() {
+                    return Err("reactions must be sent as msg".into());
+                }
+                if body.trim().is_empty() || body.len() > MAX_RRC_REACTION_BODY_BYTES {
+                    return Err("reaction body must be one emoji".into());
+                }
+                Some((parse_reaction_target(&req.target_hex)?, req.retract))
+            }
+            None => None,
+        };
         let (reply, rx) = oneshot::channel();
         handle
             .cmd_tx
@@ -460,6 +493,7 @@ impl RrcSessionManager {
                 body,
                 msg_type,
                 dst_identity,
+                reaction,
                 reply,
             })
             .await
@@ -776,6 +810,7 @@ async fn session_loop(
                         body,
                         msg_type,
                         dst_identity,
+                        reaction,
                         reply,
                     } => {
                         let result = send_envelope(
@@ -785,6 +820,7 @@ async fn session_loop(
                             msg_type,
                             Some(body),
                             dst_identity,
+                            reaction,
                         )
                         .await;
                         let _ = reply.send(result);
@@ -1297,9 +1333,12 @@ async fn send_room_control(
     msg_type_val: u8,
     body: Option<String>,
 ) -> Result<(), String> {
-    send_envelope(link, inner, room, msg_type_val, body, None).await
+    send_envelope(link, inner, room, msg_type_val, body, None, None)
+        .await
+        .map(|_| ())
 }
 
+/// Encodes and sends one envelope; Ok carries its `K_ID` as hex.
 async fn send_envelope(
     link: &mut Option<RrcLinkHandle>,
     inner: &Arc<Mutex<RrcSessionInner>>,
@@ -1307,7 +1346,8 @@ async fn send_envelope(
     msg_type_val: u8,
     body: Option<String>,
     dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
-) -> Result<(), String> {
+    reaction: Option<([u8; RRC_MSG_ID_LEN], bool)>,
+) -> Result<String, String> {
     let Some(handle) = link.as_ref() else {
         return Err("not connected to an RRC hub".into());
     };
@@ -1351,10 +1391,24 @@ async fn send_envelope(
         if let Some(dst) = dst_identity {
             envelope = envelope.with_dst(dst);
         }
+        if let Some((target, retract)) = reaction {
+            envelope = envelope.with_reaction(target, retract);
+        }
         envelope
     };
     let bytes = encode_envelope(&env).map_err(|e| e.to_string())?;
-    handle.send(bytes).await.map_err(|e| e.to_string())
+    handle.send(bytes).await.map_err(|e| e.to_string())?;
+    Ok(hex::encode(env.msg_id))
+}
+
+/// Reaction target for chat lines that may carry one: room MSG (spec) and direct NOTICE (DMs).
+/// ACTION and hub NOTICE lines stay plain text even when a key 65 arrives.
+fn inbound_reaction_target(env: &RrcEnvelope) -> Option<[u8; RRC_MSG_ID_LEN]> {
+    match env.msg_type {
+        msg_type::MSG => env.react_to,
+        msg_type::NOTICE if env.dst_identity.is_some() => env.react_to,
+        _ => None,
+    }
 }
 
 /// Handles an inbound RRC envelope. Returns a reply envelope when the peer
@@ -1471,6 +1525,7 @@ async fn handle_inbound(
             let room = env.room_name.clone().unwrap_or_default();
             let body = body_as_text(env.body.as_ref()).unwrap_or_default();
             let dst_hash = env.dst_identity.map(hex::encode);
+            let react_to = inbound_reaction_target(&env);
             emit(
                 event_tx,
                 "rrc.message",
@@ -1484,6 +1539,8 @@ async fn handle_inbound(
                     "timestamp": env.timestamp,
                     "hub_dest_hash": hub_dest_hash,
                     "dst_hash": dst_hash,
+                    "react_to": react_to.map(hex::encode),
+                    "react_op": react_to.and(env.react_op),
                 }),
             );
             None
@@ -1803,6 +1860,73 @@ mod tests {
     #[test]
     fn normalize_room_trims_and_lowercases() {
         assert_eq!(normalize_room("  #General "), "#general");
+    }
+
+    /// Feed one envelope through `handle_inbound` and return the emitted `rrc.message` payload.
+    async fn inbound_message_payload(env: RrcEnvelope) -> serde_json::Value {
+        let inner = Arc::new(Mutex::new(RrcSessionInner::new([0u8; 16])));
+        let (event_tx, mut event_rx) = broadcast::channel(4);
+        let bytes = encode_envelope(&env).unwrap();
+        handle_inbound(&inner, &event_tx, "hubhash", &bytes).await;
+        let frame: serde_json::Value =
+            serde_json::from_str(&event_rx.recv().await.unwrap()).unwrap();
+        assert_eq!(frame["type"], "rrc.message");
+        frame["payload"].clone()
+    }
+
+    fn reaction_envelope(msg_type_val: u8) -> RrcEnvelope {
+        RrcEnvelope::new(
+            msg_type_val,
+            [0x22; 16],
+            Some("lobby".into()),
+            Some(text_body("👍")),
+            Some("walden".into()),
+        )
+        .with_reaction([0xa4; 8], false)
+    }
+
+    #[tokio::test]
+    async fn room_msg_reaction_reaches_the_renderer() {
+        let payload = inbound_message_payload(reaction_envelope(msg_type::MSG)).await;
+        assert_eq!(payload["react_to"], "a4a4a4a4a4a4a4a4");
+        assert!(payload["react_op"].is_null());
+        assert_eq!(payload["body"], "👍");
+    }
+
+    #[tokio::test]
+    async fn retraction_carries_the_op() {
+        let mut env = reaction_envelope(msg_type::MSG);
+        env.react_op = Some(super::super::rrc_codec::REACT_OP_RETRACT);
+        let payload = inbound_message_payload(env).await;
+        assert_eq!(payload["react_op"], 1);
+    }
+
+    #[tokio::test]
+    async fn direct_notice_reaction_reaches_the_renderer() {
+        let mut env = reaction_envelope(msg_type::NOTICE).with_dst([0x33; 16]);
+        env.room_name = None;
+        let payload = inbound_message_payload(env).await;
+        assert_eq!(payload["react_to"], "a4a4a4a4a4a4a4a4");
+        assert_eq!(payload["dst_hash"], "33".repeat(16));
+    }
+
+    #[tokio::test]
+    async fn action_and_room_notice_keep_reaction_keys_out() {
+        for msg_type_val in [msg_type::ACTION, msg_type::NOTICE] {
+            let payload = inbound_message_payload(reaction_envelope(msg_type_val)).await;
+            assert!(payload["react_to"].is_null(), "type {msg_type_val}");
+            assert!(payload["react_op"].is_null(), "type {msg_type_val}");
+        }
+    }
+
+    #[test]
+    fn reaction_target_must_be_sixteen_hex_chars() {
+        assert_eq!(
+            parse_reaction_target(" A4A4A4A4A4A4A4A4 ").unwrap(),
+            [0xa4; 8]
+        );
+        assert!(parse_reaction_target("a4a4").is_err());
+        assert!(parse_reaction_target("zzzzzzzzzzzzzzzz").is_err());
     }
 
     #[test]

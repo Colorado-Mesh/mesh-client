@@ -1,6 +1,15 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as RoomsPanel */
+import 'emoji-picker-element';
+
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ChevronRight, Copy, PARENT_HOVER_ATTR, Reply } from 'lucide-react-motion';
+import {
+  ArrowDown,
+  ChevronRight,
+  Copy,
+  PARENT_HOVER_ATTR,
+  Reply,
+  Smile,
+} from 'lucide-react-motion';
 import {
   type ReactNode,
   useCallback,
@@ -17,7 +26,9 @@ import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMes
 import { ChatComposer } from '@/renderer/components/ChatComposer';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcFormattedBody } from '@/renderer/components/rrc/RrcFormattedBody';
+import { useReactionPicker } from '@/renderer/hooks/useReactionPicker';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
+import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { isSafeChatUrl } from '@/renderer/lib/chatMentionSegments';
 import {
   CHAT_SCROLL_END_THRESHOLD,
@@ -25,6 +36,8 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
+  resetVirtualRowSizes,
+  revealElementWithinContainer,
   scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
@@ -34,6 +47,7 @@ import {
   findReticulumChatLinks,
   type ReticulumChatLink,
 } from '@/renderer/lib/nomad/reticulumLinkText';
+import { emojiDisplayLabel } from '@/renderer/lib/reactions';
 import { resolveRrcMsgBodyLimit, rrcComposerBypassesSplit } from '@/renderer/lib/rrcHubLimits';
 import {
   bodyMentionsRrcNick,
@@ -55,6 +69,12 @@ import {
   type RrcNoticeGroup,
   toggleRrcNoticeGroupExpansion,
 } from '@/renderer/lib/rrcNoticeGrouping';
+import {
+  canReactToRrcMessage,
+  partitionRrcReactions,
+  type RrcReactionRow,
+  rrcReactionsFor,
+} from '@/renderer/lib/rrcReactions';
 import { rrcReplyMention } from '@/renderer/lib/rrcReplyMention';
 import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { rrcRoomMatchKey } from '@/renderer/lib/rrcRoomName';
@@ -377,6 +397,8 @@ export interface RrcChatViewProps {
   onInterceptSend: (text: string) => Promise<boolean>;
   /** Seed composer from nicklist `/msg` clicks. */
   composeSeed?: { text: string; token: number } | null;
+  /** Send an emoji reaction to `target`; the React control is hidden without it. */
+  onReact?: (target: RrcChatMessage, glyph: string) => Promise<void>;
 }
 
 export function RrcChatView({
@@ -403,6 +425,7 @@ export function RrcChatView({
   onInterceptSend,
   composeSeed = null,
   localIdentityHash = null,
+  onReact,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
@@ -469,7 +492,11 @@ export function RrcChatView({
     [],
   );
 
-  const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
+  const reactionPartition = useMemo(() => partitionRrcReactions(messages), [messages]);
+  const visibleMessages = useMemo(
+    () => reactionPartition.lines.filter(shouldDisplayRrcChatMessage),
+    [reactionPartition],
+  );
   const displayRows = useMemo(
     () => groupRrcNoticeRows(visibleMessages, hubDestHash),
     [visibleMessages, hubDestHash],
@@ -553,6 +580,77 @@ export function RrcChatView({
       textarea?.focus();
       textarea?.setSelectionRange(text.length, text.length);
     });
+  };
+
+  const reactionPicker = useReactionPicker<RrcChatMessage>({
+    onPick: (glyph, target) => {
+      void onReact?.(target, glyph);
+    },
+    restoreFocus: () => {
+      composerTextareaRef.current?.focus();
+    },
+  });
+  const { inlinePickerRef } = reactionPicker;
+  // The line's row grows when the inline picker mounts, and the list keeps its bottom in place,
+  // which can push the picker out of view. Show it once the virtualizer has measured the row.
+  const revealInlinePicker = useCallback(
+    (el: HTMLElement | null) => {
+      inlinePickerRef(el);
+      if (!el) return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = scrollContainerRef.current;
+          if (container && el.isConnected) revealElementWithinContainer(container, el);
+        });
+      });
+    },
+    [inlinePickerRef],
+  );
+
+  const isOwnRrcLine = (msg: RrcChatMessage): boolean =>
+    localIdentityHash && msg.sender_hash
+      ? rrcIdentityHashesMatch(msg.sender_hash, localIdentityHash)
+      : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase());
+
+  const renderReactionChips = (msg: RrcChatMessage, rows: readonly RrcReactionRow[]) => {
+    const lineIsOwn = isOwnRrcLine(msg);
+    return (
+      <div data-testid="rrc-reactions" className="mt-0.5 flex max-w-full flex-row flex-wrap gap-1">
+        {rows.map((r) => {
+          const reactionIsOwn = localIdentityHash
+            ? rrcIdentityHashesMatch(r.senderHash, localIdentityHash)
+            : Boolean(nickname && r.nickname?.toLowerCase() === nickname.toLowerCase());
+          // Same rule as Chat: your own chip under someone else's line shows only the emoji.
+          const hideReactorLabel = !lineIsOwn && reactionIsOwn;
+          const reactorLabel = r.nickname || formatHash(r.senderHash);
+          const reactionName = emojiDisplayLabel(r.emoji.codePointAt(0), r.emoji);
+          return (
+            <span
+              key={r.id}
+              role="img"
+              className="bg-deep-black border-ink-800 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
+              title={
+                reactionIsOwn
+                  ? t('chatPanel.reactionYouTitle', { name: reactionName })
+                  : `${reactorLabel}: ${reactionName}`
+              }
+              aria-label={
+                reactionIsOwn
+                  ? t('chatPanel.reactionYouAria', { name: reactionName })
+                  : t('chatPanel.reactionOtherAria', { reactor: reactorLabel, name: reactionName })
+              }
+            >
+              {!hideReactorLabel && (
+                <span className="text-2xs text-ink-400 max-w-[5.5rem] truncate">
+                  {reactorLabel}
+                </span>
+              )}
+              <span className="shrink-0">{r.emoji}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
@@ -706,7 +804,7 @@ export function RrcChatView({
   useLayoutEffect(() => {
     if (measuredUnreadIndexRef.current !== unreadStartIndex) {
       measuredUnreadIndexRef.current = unreadStartIndex;
-      messageVirtualizerRef.current.measure();
+      resetVirtualRowSizes(messageVirtualizerRef.current, scrollContainerRef.current);
     }
     if (!isActive || !historyReady || !pendingOpeningScrollRef.current) return;
     const key = `${hubDestHash}::${activeRoom}::${unreadWatermark}`;
@@ -830,6 +928,7 @@ export function RrcChatView({
   ): { lineClass: string; inner: ReactNode } => {
     const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
     const time = formatLineTime(msg);
+    const reactionRows = rrcReactionsFor(reactionPartition, msg);
     const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
     // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
     const selfNick = nickname.trim();
@@ -904,14 +1003,13 @@ export function RrcChatView({
               isActive &&
               !whisperEcho &&
               (msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
-              !(localIdentityHash && msg.sender_hash
-                ? rrcIdentityHashesMatch(msg.sender_hash, localIdentityHash)
-                : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase()))
+              !isOwnRrcLine(msg)
             }
             onContentResize={() => {
               scheduleMessageRowRemeasure(rowIndex);
             }}
           />
+          {reactionRows.length > 0 && renderReactionChips(msg, reactionRows)}
         </div>
         <div className="flex items-center self-start leading-none">
           <span
@@ -961,7 +1059,36 @@ export function RrcChatView({
                 <Reply aria-hidden size={11} />
               </button>
             )}
+          {onReact && canReactToRrcMessage(msg) && (
+            <button
+              type="button"
+              {...{ [PARENT_HOVER_ATTR]: '' }}
+              className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
+              aria-label={t('chatPanel.addReaction')}
+              title={t('chatPanel.reactButton')}
+              disabled={!canSend || isMuted || !activeRoom}
+              onClick={() => {
+                if (reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id) {
+                  reactionPicker.close({ restoreFocus: true });
+                } else {
+                  reactionPicker.open(msg);
+                }
+              }}
+            >
+              <Smile aria-hidden size={11} />
+            </button>
+          )}
         </div>
+        {reactionPicker.inline && reactionPicker.inlineTarget?.id === msg.id && (
+          // Full row width: on tablets and phones the body column is narrower than the picker.
+          <div data-testid="rrc-inline-reaction-picker" className="col-span-full mt-1 font-sans">
+            <emoji-picker
+              ref={revealInlinePicker}
+              data-source={BUNDLED_EMOJI_DATA_SOURCE}
+              style={{ width: '320px', maxWidth: '100%' }}
+            />
+          </div>
+        )}
       </div>
     );
     return { lineClass, inner };
@@ -1087,6 +1214,8 @@ export function RrcChatView({
           </button>
         )}
       </div>
+      {/* OS-specific: the macOS/Windows emoji panel types the chosen reaction into this input. */}
+      {onReact && !reactionPicker.inline && <input {...reactionPicker.hiddenInputProps} />}
       <div className="border-ink-800 border-t p-2 font-sans">
         <ChatComposer
           protocol="reticulum"
