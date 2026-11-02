@@ -328,7 +328,8 @@ export default function RoomsPanel({
   );
   const [savedPasswordsOpen, setSavedPasswordsOpen] = useState(false);
   const [forgetConfirmNodeId, setForgetConfirmNodeId] = useState<number | null>(null);
-  const [leaveRoomConfirmOpen, setLeaveRoomConfirmOpen] = useState(false);
+  /** Room id captured when Leave is clicked; null when the confirm dialog is closed. */
+  const [leaveConfirmRoomId, setLeaveConfirmRoomId] = useState<number | null>(null);
   const loginAttemptGenRef = useRef<Map<number, number>>(new Map());
   const leaveAttemptGenRef = useRef<Map<number, number>>(new Map());
   const consumedInitialRoomRef = useRef<number | null>(null);
@@ -1346,14 +1347,23 @@ export default function RoomsPanel({
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId == null || !isConnected) return;
-    setLeaveRoomConfirmOpen(true);
+    setLeaveConfirmRoomId(selectedRoomId);
   }, [isConnected, selectedRoomId]);
 
+  const cancelLeaveRoomConfirm = useCallback(() => {
+    setLeaveConfirmRoomId(null);
+  }, []);
+
   const confirmLeaveRoom = useCallback(() => {
-    if (selectedRoomId == null || !isConnected) return;
-    setLeaveRoomConfirmOpen(false);
-    startRoomLeave(selectedRoomId, () => onLeaveRoom(selectedRoomId));
-  }, [isConnected, onLeaveRoom, selectedRoomId, startRoomLeave]);
+    if (leaveConfirmRoomId == null || !isConnected) return;
+    const nodeId = leaveConfirmRoomId;
+    setLeaveConfirmRoomId(null);
+    startRoomLeave(nodeId, () => onLeaveRoom(nodeId));
+  }, [isConnected, leaveConfirmRoomId, onLeaveRoom, startRoomLeave]);
+
+  useEffect(() => {
+    setLeaveConfirmRoomId(null);
+  }, [selectedRoomId, isActive]);
 
   const handleOpenRepeaterOps = useCallback(() => {
     if (selectedRoomId == null || !onOpenRepeaterOps) return;
@@ -2706,17 +2716,15 @@ export default function RoomsPanel({
           }}
         />
       )}
-      {leaveRoomConfirmOpen && (
+      {leaveConfirmRoomId != null && (
         <ConfirmModal
           title={t('roomsPanel.leaveRoomConfirmTitle')}
           message={t('roomsPanel.leaveRoomConfirmMessage')}
           confirmLabel={t('roomsPanel.leaveRoom')}
           danger
-          confirmDisabled={!isConnected || selectedRoomLeaveLoading}
+          confirmDisabled={!isConnected || leaveLoadingRoomIds.has(leaveConfirmRoomId)}
           onConfirm={confirmLeaveRoom}
-          onCancel={() => {
-            setLeaveRoomConfirmOpen(false);
-          }}
+          onCancel={cancelLeaveRoomConfirm}
         />
       )}
       <ConversationLayout
