@@ -1636,12 +1636,14 @@ export function ChatComposer({
             type="button"
             onMouseDown={(e) => {
               e.preventDefault();
-              if (!isLinux) inputRef.current?.focus();
             }}
             onClick={() => {
               if (isLinux) {
                 setShowComposePicker((prev) => !prev);
               } else {
+                // The OS panel types into whatever has focus, and keyboard or
+                // assistive-tech presses arrive without a mousedown.
+                inputRef.current?.focus();
                 void window.electronAPI.showEmojiPanel().catch((e: unknown) => {
                   console.debug('[ChatComposer] showEmojiPanel failed ' + errLikeToLogString(e));
                 });

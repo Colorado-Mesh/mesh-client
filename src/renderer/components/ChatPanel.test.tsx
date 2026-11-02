@@ -2013,6 +2013,58 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.getByLabelText(/Your reaction: Love/i)).toBeInTheDocument();
   });
 
+  // aria-label on a role-less span is not exposed; screen readers read only the emoji.
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'exposes each reaction chip by name as an image (%s)',
+    async (protocol) => {
+      const t0 = Date.now() - 10_000;
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            protocol={protocol}
+            myNodeNum={99}
+            messages={[
+              {
+                sender_id: 2,
+                sender_name: 'Alice',
+                payload: 'hi',
+                channel: 0,
+                timestamp: t0,
+                packetId: 100,
+                status: 'acked',
+              },
+              {
+                sender_id: 3,
+                sender_name: 'Bob',
+                payload: '👍',
+                channel: 0,
+                timestamp: t0 + 1000,
+                emoji: 0x1f44d,
+                replyId: 100,
+                status: 'acked',
+              },
+              {
+                sender_id: 99,
+                sender_name: 'Me',
+                payload: '❤️',
+                channel: 0,
+                timestamp: t0 + 2000,
+                emoji: 0x2764,
+                replyId: 100,
+                status: 'acked',
+              },
+            ]}
+          />
+        </ToastProvider>,
+      );
+      const other = screen.getByRole('img', { name: 'Bob reacted with Like' });
+      expect(screen.getByRole('img', { name: 'Your reaction: Love' })).toBeInTheDocument();
+      hydrateAxeThemeColors(container);
+      expect(await axe(other.parentElement!)).toHaveNoViolations();
+    },
+  );
+
   it('renders US flag tapback from full payload when stored scalar is first regional indicator only', () => {
     const US_FLAG = '\u{1F1FA}\u{1F1F8}';
     const t0 = Date.now() - 10_000;
@@ -3499,17 +3551,166 @@ describe('ChatPanel tapback reaction picker', () => {
     },
   );
 
+  // aria-hidden comes off while a reaction is pending, so find the capture input by tabindex.
   function reactionHiddenInput(): HTMLInputElement {
-    const input = document.querySelector<HTMLInputElement>(
-      'input[aria-hidden="true"][tabindex="-1"]',
-    );
-    expect(input).not.toBeNull();
-    return input!;
+    const inputs = document.querySelectorAll<HTMLInputElement>('input[tabindex="-1"]');
+    expect(inputs).toHaveLength(1);
+    return inputs[0];
   }
 
   function composeTextarea(): HTMLTextAreaElement {
     return screen.getByPlaceholderText('Enter message here');
   }
+
+  // Keyboard and assistive-tech activation fire click with no mousedown first.
+  describe.each(['darwin', 'win32'] as const)(
+    'React pressed from the keyboard on %s',
+    (platform) => {
+      it.each([
+        ['{Enter}', 'meshtastic'],
+        ['{Enter}', 'meshcore'],
+        ['{Enter}', 'reticulum'],
+        ['[Space]', 'meshtastic'],
+        ['[Space]', 'meshcore'],
+        ['[Space]', 'reticulum'],
+      ] as const)(
+        'focuses the capture input before the OS panel opens (%s, %s)',
+        async (key, protocol) => {
+          vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+          let focusedWhenPanelOpened: Element | null = null;
+          vi.mocked(window.electronAPI.showEmojiPanel).mockImplementation(() => {
+            focusedWhenPanelOpened = document.activeElement;
+            return Promise.resolve();
+          });
+          const onReact = vi.fn().mockResolvedValue(undefined);
+          const user = userEvent.setup();
+          render(
+            <ToastProvider>
+              <ChatPanel
+                {...defaultProps}
+                protocol={protocol}
+                onReact={onReact}
+                messages={[{ ...baseMessage, packetId: 42 }]}
+              />
+            </ToastProvider>,
+          );
+          screen.getByRole('button', { name: 'Add reaction' }).focus();
+          await user.keyboard(key);
+          expect(window.electronAPI.showEmojiPanel).toHaveBeenCalledOnce();
+          const hidden = reactionHiddenInput();
+          expect(focusedWhenPanelOpened).toBe(hidden);
+          hidden.value = '👍';
+          fireEvent.input(hidden);
+          await waitFor(() => {
+            expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+          });
+        },
+      );
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'opens the inline emoji-picker when React is pressed with Enter on Linux (%s)',
+    async (protocol) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel {...defaultProps} protocol={protocol} />
+        </ToastProvider>,
+      );
+      screen.getByRole('button', { name: 'Add reaction' }).focus();
+      await user.keyboard('{Enter}');
+      await waitFor(() => {
+        expect(document.querySelector('emoji-picker')).toBeInTheDocument();
+      });
+      expect(window.electronAPI.showEmojiPanel).not.toHaveBeenCalled();
+    },
+  );
+
+  // A focused aria-hidden element is still exposed by Chromium, unnamed; expose it by name instead.
+  it.each(
+    (['darwin', 'win32'] as const).flatMap((platform) =>
+      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+        platform,
+        protocol,
+      })),
+    ),
+  )(
+    'names the capture input only while a reaction is pending ($platform, $protocol)',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let exposedWhenPanelOpened: HTMLElement | null = null;
+      vi.mocked(window.electronAPI.showEmojiPanel).mockImplementation(() => {
+        exposedWhenPanelOpened = screen.queryByRole('textbox', { name: 'Add reaction' });
+        return Promise.resolve();
+      });
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            messages={[{ ...baseMessage, packetId: 42 }]}
+          />
+        </ToastProvider>,
+      );
+      expect(screen.queryByRole('textbox', { name: 'Add reaction' })).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Add reaction' }).focus();
+      await user.keyboard('{Enter}');
+      expect(exposedWhenPanelOpened).not.toBeNull();
+      expect(exposedWhenPanelOpened).toBe(document.activeElement);
+      const hidden = reactionHiddenInput();
+      hidden.value = '👍';
+      fireEvent.input(hidden);
+      await waitFor(() => {
+        expect(onReact).toHaveBeenCalledWith('👍', 42, 0);
+      });
+      expect(screen.queryByRole('textbox', { name: 'Add reaction' })).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      (['meshtastic', 'meshcore', 'reticulum'] as const).map((protocol) => ({
+        platform,
+        protocol,
+      })),
+    ),
+  )(
+    'keeps the DM open when Escape dismisses the reaction picker ($platform, $protocol)',
+    async ({ platform, protocol }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const onReact = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...defaultProps}
+            protocol={protocol}
+            onReact={onReact}
+            initialDmTarget={2}
+            messages={[{ ...baseMessage, to: 1, packetId: 42, payload: 'direct hello' }]}
+          />
+        </ToastProvider>,
+      );
+      expect(await screen.findByText('direct hello')).toBeInTheDocument();
+      screen.getByRole('button', { name: 'Add reaction' }).focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard('{Escape}');
+      expect(document.querySelector('emoji-picker')).not.toBeInTheDocument();
+      // The DM composer has its own placeholder, so find it as the only textarea.
+      expect(document.activeElement).toBe(document.querySelector('textarea'));
+      expect(screen.getByText('direct hello')).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      await waitFor(() => {
+        expect(screen.queryByText('direct hello')).not.toBeInTheDocument();
+      });
+      expect(onReact).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(['linux', 'darwin', 'win32'] as const)(
     'clears replyTo when React is clicked (%s)',
