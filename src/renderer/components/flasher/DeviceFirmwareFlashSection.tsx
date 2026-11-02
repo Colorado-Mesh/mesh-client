@@ -41,6 +41,7 @@ import {
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
+import { FIRMWARE_DOCS_URL } from '@/shared/docsSite';
 import { FIRMWARE_BACKUP_MAX_BYTES } from '@/shared/firmwareBackup';
 
 import CapabilityUnavailableHint from '../CapabilityUnavailableHint';
@@ -338,7 +339,17 @@ export function DeviceFirmwareFlashSection({
 
   return (
     <div className="space-y-3" data-testid="device-firmware-flash">
-      <p className="text-ink-300 text-xs">{t('deviceFirmware.summary')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="text-ink-300 text-xs">{t('deviceFirmware.summary')}</p>
+        <a
+          href={FIRMWARE_DOCS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="text-muted hover:text-brand-green shrink-0 text-xs transition-colors"
+        >
+          {t('common.docsLink')}
+        </a>
+      </div>
       <p className="text-ink-400 text-xs">
         {t('deviceFirmware.supportedBoards', { boards: boardNames })}
       </p>

@@ -1128,7 +1128,8 @@
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Otomatik yanıtlarından bot olduğu algılandı",
-    "retry": "Tekrar dene"
+    "retry": "Tekrar dene",
+    "docsLink": "Belgeler"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",

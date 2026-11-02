@@ -121,3 +121,23 @@ describe('generated pages', () => {
     }
   });
 });
+
+describe('README features catalogue links', () => {
+  it('gives every features ### subsection at least one docs/*.md link', () => {
+    const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+    const start = readme.indexOf('<!-- docs-site:features:start -->');
+    const end = readme.indexOf('<!-- docs-site:features:end -->');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const block = readme.slice(start, end);
+    const sections = block.split(/^### /m).slice(1);
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      const heading = section.split('\n', 1)[0]?.trim() ?? '(unknown)';
+      expect(
+        /\]\(docs\/[^)]+\.md/.test(section),
+        `features subsection missing docs link: ${heading}`,
+      ).toBe(true);
+    }
+  });
+});

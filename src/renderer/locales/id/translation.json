@@ -1128,7 +1128,8 @@
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Terdeteksi sebagai bot dari balasan otomatisnya",
-    "retry": "Coba lagi"
+    "retry": "Coba lagi",
+    "docsLink": "dokumen"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",

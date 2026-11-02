@@ -435,7 +435,34 @@ SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the **
 
 ---
 
-## 16. Reticulum interface config diagnostics
+## 16. Stats panel (packet distribution)
+
+Open **Monitor → Stats** (all three protocols). The panel charts packet distribution for the active protocol.
+
+- **Overall distribution** — share of traffic by category for the selected time window.
+- **By device** — which nodes contribute the most observed packets.
+- **By type** — packet / port type breakdown when the protocol exposes it.
+- **Source filter** — **All**, **RF only**, or **MQTT only** (**Meshtastic only**; MeshCore does not expose this filter; Reticulum uses its sidecar packet feed).
+- **Time range** — last hour, last 24 hours, or all stored data for the panel.
+- **Empty state** — shown when no packets match the filter; rows without a sender id are grouped so the chart still totals correctly.
+
+Reticulum Stats/Sniffer packet data is polled while those tabs are open (not a continuous live WebSocket feed for every packet type). Use Stats for high-level mix; use Diagnostics for routing anomalies and remediation.
+
+---
+
+## 17. Sniffer (raw packet log)
+
+Open **Monitor → Sniffer** (UI label for the raw packet log panel; all three protocols).
+
+- Live (or polled) raw frames for the active protocol with pause/clear controls.
+- Typical fields: time, type/port, peer or path summary, transport badges where applicable, expandable hex.
+- Buffer caps: Meshtastic and MeshCore keep up to **2,500** entries per protocol (`MAX_RAW_PACKET_LOG_ENTRIES`); the Reticulum renderer store keeps **500** (`RETICULUM_PACKET_RING_CAPACITY`) and trims older entries.
+- **Privacy:** payloads may include message text or other user content — treat exports and screenshots carefully.
+- Prefer **Diagnostics** for actionable routing findings; prefer **Sniffer** when you need wire-level confirmation of what the radio or sidecar saw.
+
+---
+
+## 18. Reticulum interface config diagnostics
 
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
@@ -476,7 +503,7 @@ Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`re
 
 ---
 
-## 17. Key Source Files
+## 19. Key Source Files
 
 For contributors who want to modify or extend the diagnostics system:
 
@@ -504,13 +531,13 @@ For contributors who want to modify or extend the diagnostics system:
 
 ---
 
-## 18. Technical Reference
+## 20. Technical Reference
 
 This section documents the exact protocol and hardware mechanisms behind each diagnostic finding. Thresholds are quoted directly from the source code.
 
 ---
 
-### 18.1 RF Findings: Connected Node
+### 20.1 RF Findings: Connected Node
 
 #### Utilization vs. TX
 
@@ -610,7 +637,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 ---
 
-### 18.2 RF Findings: Remote Nodes
+### 20.2 RF Findings: Remote Nodes
 
 SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snrMeaningfulForNodeDiagnostics` returns `true`; which requires that the remote node is a 0-hop direct RF neighbor, ensuring the SNR value reflects the actual link to your node rather than a multi-hop path.
 
@@ -648,7 +675,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 ---
 
-### 18.3 Routing Anomalies
+### 20.3 Routing Anomalies
 
 #### hop_goblin (`RoutingDiagnosticEngine.detectHopGoblin()`)
 
@@ -692,7 +719,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 ---
 
-### 18.4 Foreign LoRa Detection
+### 20.4 Foreign LoRa Detection
 
 #### Packet classification
 
@@ -742,7 +769,7 @@ A module-level `RollingRateCounter(60_000)` counts MeshCore-class packets in the
 
 ---
 
-### 18.5 Packet Redundancy
+### 20.5 Packet Redundancy
 
 #### Data model
 

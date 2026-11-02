@@ -83,6 +83,8 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 
 ### Meshtastic Features
 
+Operator guide: [Meshtastic guide](docs/meshtastic.md).
+
 **Radio & Channel Configuration**
 
 - Edit channels: name, PSK, and role; 36 current region presets plus UNSET and deprecated UA_868, and 15 current modem presets plus deprecated LONG_SLOW and VERY_LONG_SLOW. On firmware 2.8+, the modem preset list follows the radio's per-region preset map (allowed presets, region default, licensed-only bands)
@@ -119,6 +121,15 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **DM / device key backup / restore:** **Backup Keys** stores the connected **local** radio’s **public and private keys** in a **per-node** SQLite archive encrypted with Electron `safeStorage` (requires OS-backed key storage). Meshtastic indexes by `nodeNum`; MeshCore by `nodeId`. Backing up a second radio does **not** overwrite the first. **Restore Keys** applies the archive for the connected node; **Restore from backup…** picks any archived entry (factory reset / node id change). Hidden for remote configure targets. See [Key backup and cryptography](docs/key-backup-and-crypto.md) (includes **backing up before moving Meshtastic nodes to MeshCore**).
 - **PKC remote node administration** (Meshtastic, firmware 2.5+): **Configure node** selector on Radio, Modules, Security, and Administration tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
 
+**Advanced tools** (Meshtastic only — see [Meshtastic guide](docs/meshtastic.md#advanced-tools))
+
+- **Key verification** (firmware 2.7+): compare a security number; mark trust manually or via XEdDSA when the peer supports it
+- **Remote shell** (`REMOTE_SHELL_APP`): risk acknowledgement required; airtime and lost-output caveats apply
+- **XMODEM** upload/download on the local USB/serial radio only
+- **Firmware lockdown** status and auth when the device reports lockdown support
+- **Mesh Beacon**: configure the module, review heard offers, and join an offered channel
+- **Cayenne LPP charts** on the Telemetry tab when Cayenne packets are decoded (Meshtastic only)
+
 **Network Diagnostics**
 
 - **Protocol-scoped rows**: The shared Diagnostics tab filters findings to the **active protocol** — Meshtastic/MeshCore show LoRa routing + RF rows only (including MeshCore **High Companion TX Queue**); Reticulum shows `reticulum/*` interface/path/LXMF rows only (sidecar health, propagation sync stuck/failing, interface-down alerts no longer bleed onto LoRa tabs). Map halos, node-list badges, and node detail routing sections use the same filter.
@@ -146,19 +157,10 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 
 **TAK Server (CoT Gateway)**
 
-- **TAK** tab (Network rail section, after Remote) on Meshtastic, MeshCore, and Reticulum: broadcast node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
-- Feeds every protocol at once, whichever tab is open: Meshtastic and MeshCore nodes heard within their protocol's online window, Reticulum RMAP-discovered interfaces with coordinates, and your own Reticulum position when a static GPS position is set. Positions are re-sent every 5 minutes so markers do not go stale in ATAK
-- Enables **ATAK, WinTAK, and iTAK clients** to see mesh nodes on their tactical maps
-- **Remote TAK server relay**: stream the same positions to an OpenTAKServer, FreeTAKServer, or TAK Server over mutual TLS, or over plain TCP (unencrypted, and not saved for launch auto-connect). Import the server truststore and your client certificate as `.p12` or PEM files, or enroll with a username and password on the server's enrollment port (usually 8446); the private key stays in the main process. With verification on (the default), the server certificate must chain to the imported CA, or to the system trust store when no CA is imported, and must name the server address. An opt-out accepts a certificate issued for another name, as ATAK does; it needs verification on and an imported CA. With verification off, certificate failures do not stop the connection, so anyone who can intercept it receives the relayed positions, and the relay does not connect at launch. The relay reconnects on its own after a drop. Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected")
-- **Certificate management**: self-signed CA + server + client certificates via node-forge (server cert includes DNS + LAN IP in Subject Alternative Name so EUDs can verify TLS); regenerate anytime from the TAK tab
-- **Data package generator**: export ATAK-compatible (truststore.p12, client.p12, connection.pref) for direct import on TAK devices — connect host is your LAN IP and must match the server cert SAN; re-generate the package after certificate regeneration or a LAN IP change
-- **Channels as ATAK contacts**: under **MeshCore messaging in ATAK** and **Meshtastic messaging in ATAK**, choose Off, All channels, or Selected channels. Each served channel becomes a contact on every connected ATAK device, named with its protocol (`#MC Public`, `#MC ops` for a hashtag channel, `#MT 🔒 Ops` for a private one) unless you type your own in its **ATAK name** field, and what the channel hears arrives from that contact. A reply says whom it answers (`@Alice copy that`) and a reaction what it reacts to (`👍 to Alice: "meet at the trailhead…"`), on both protocols. Tick **ATAK can send** for a channel and a message to its contact is transmitted on that channel from this radio, prefixed with the sender's callsign (`[VIPER] on scene`), and shows in Chat like any other; on a MeshCore channel, start with `@` and the start of a name to reply in MeshCore's form (`@silver are you on?` goes out as `@[Silver Eagle] [VIPER] are you on?`, the callsign after the reply so MeshCore apps still see it), or `@@` to reply to whoever spoke last, the same as MeshCore TAK Bridge; if the start of the name fits several people heard on the channel, nothing is sent and the chat says who matched; left off, the channel is receive only. Tick **Remote server** to also stream the channel, read only, to the remote TAK server. Sending is off by default, cut to fit one mesh message, and limited to 10 messages a minute per device. Up to 50 messages heard while no ATAK device is connected are held for the first one to connect. Settings from earlier versions carry over: a channel that had a GeoChat room is served, keeps its send setting and its room name (as its ATAK name), and streams to the remote server. Channel settings are kept per channel, not per slot, so a channel moving into another's slot never inherits its settings, and ATAK devices are told to drop the old room contacts.
-- **MECP in ATAK**: an MECP report heard on a served channel or in a direct message reaches ATAK in words, in the app's language, with its code line below (`🆘 MAYDAY: Injury · 2 people · 48.6520, 20.1305`), as MeshCore TAK Bridge shows one. Each open incident with a position is also a spot marker on ATAK's map, coloured by severity (grey for drills), removed when the incident is resolved. Optionally (off by default) a MAYDAY with a position also sets off ATAK's emergency alarm, cancelled when it is resolved; see [EMCOMM: Reports in ATAK](docs/emcomm.md#reports-in-atak).
-- **Direct messages with companions**: tick **Direct messages** under a radio's messaging section and every companion that radio can message (a MeshCore companion in its contacts, any Meshtastic node, a Reticulum LXMF peer whose delivery address is known) can be messaged from its marker in ATAK. Reticulum has its own **Reticulum messaging in ATAK** section for this; an LXMF peer with no position appears at 0, 0 only once mesh-client has a conversation with it, so ATAK's contact list does not fill with every peer heard. The message goes out from this radio as a direct message, prefixed with the sender's callsign, and shows in Chat like any other. ATAK marks it delivered when the companion acknowledges it; if it still isn't acknowledged after mesh-client's automatic resends, a "Not confirmed" note says so (for MeshCore, with a reminder that a flood advert from each radio usually fixes a DM that keeps failing). A companion's replies go to the ATAK device that last wrote to it, or to every connected device when none has, and are held for that device while it is away. A companion with no marker on the map appears at 0, 0 for a day after a message. Direct messages are never sent to the remote TAK server, and a message ATAK cannot deliver (direct messages off, or not a companion this radio can reach) gets a note in its conversation saying why.
-- **Unit filters**: under **Relayed unit styles**, restyle relayed nodes by name, node type (companions and clients, repeaters and routers, room servers, sensors, trackers), protocol, or a combination, choosing the TAK unit type, team color, and team role. A filter with no name pattern applies to every node of its type or protocol; the first enabled filter that matches wins
-- **Repeater and room server icons**: under **Relayed unit styles**, give repeaters (MeshCore repeaters, Meshtastic routers, Reticulum interfaces) and room servers each an icon from an ATAK icon set, as a path (`<set UID>/<group>/<file>`) or from the GeoOps WildFire presets that MeshCore TAK Bridge offers (Repeater, Repeater Mobile Relay, Ranger Station and others). The icon follows the node type, so a filter can change a room server's team and role and it keeps its icon. Leave a field empty for the standard symbol. Each TAK device needs the same icon set installed; a device without it draws the standard symbol
-- Auto-start option (off by default); status-bar indicator when running
-- **ATAK Plugin Messages** (Meshtastic): incoming ATAK plugin packets from mesh nodes are displayed in the TAK tab with sender node and packet counts
+- **TAK** tab (Network rail section) on Meshtastic, MeshCore, and Reticulum: local CoT TLS gateway (port 8089) so ATAK / WinTAK / iTAK clients can see mesh nodes on their maps
+- Feeds all three protocols at once (node online windows, RMAP interfaces, optional own Reticulum position); positions refresh every 5 minutes
+- Certificates, ATAK data package, remote TAK server relay (mTLS or plain TCP), channel and DM messaging in ATAK, unit filters/icons, and Meshtastic ATAK plugin messages — full operator guide: [TAK gateway](docs/tak.md)
+- **MECP in ATAK**: served-channel / DM reports and incident spot markers; optional MAYDAY alarm — see [TAK messaging](docs/tak.md#messaging-in-atak) and [EMCOMM: Reports in ATAK](docs/emcomm.md#reports-in-atak)
 
 ---
 
@@ -171,14 +173,15 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: update status in the status bar; system tray unread badge when the window is backgrounded
-- **Launcher settings search**: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it
+- **Launcher settings search**: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it — see [Settings and shortcuts](docs/settings.md)
+- **Stats** (packet distribution) and **Sniffer** (raw packet log) in the Monitor section on all three protocols — see [Diagnostics: Stats](docs/diagnostics.md#16-stats-panel-packet-distribution) and [Diagnostics: Sniffer](docs/diagnostics.md#17-sniffer-raw-packet-log)
 - **Enable / disable protocols** (App → Protocols): turn off protocols you don't use. A disabled protocol is hidden from the switcher, disconnected, and skipped by auto-connect, autostart, and sleep/wake recovery; with one protocol left, the switcher is hidden
-- **Firmware update toast**: **Don't remind me** silences the toast for that release (per protocol); it returns when a newer release ships
+- **Firmware update toast**: **Don't remind me** silences the toast for that release (per protocol); it returns when a newer release ships — see [Firmware guide](docs/firmware.md#firmware-update-toast)
 - **Developer announcements**: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See [`docs/service-announcements.md`](docs/service-announcements.md)
 
 ### Shared RF features (Meshtastic & MeshCore)
 
-These sections apply to the two LoRa companion-radio stacks. Reticulum uses the sidecar model documented under [Reticulum Features](#reticulum-features) below.
+These sections apply to the two LoRa companion-radio stacks. See [Chat](docs/chat.md), [Maps](docs/maps.md), [TAK](docs/tak.md), and [Firmware](docs/firmware.md). Reticulum uses the sidecar model documented under [Reticulum Features](#reticulum-features) below.
 
 **Connectivity**
 
@@ -214,6 +217,11 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Timestamp tooltip**: hover the short time label for full date and time
 - **@mention autocomplete**: type `@` to open a node-name picker; Tab or Enter to insert; arrow keys to navigate
 - **Export chat**: save the current channel or DM history as a `.txt` file via Save dialog
+- **Global message search**: `Ctrl/Cmd+Shift+F` searches stored messages across enabled protocols and opens the conversation at the hit — see [Chat: Finding messages](docs/chat.md#finding-messages)
+- **Unified inbox**: `Ctrl/Cmd+Shift+U` lists recent received messages across enabled protocols with protocol/text filters; copy, export, star, or delete locally — see [Chat: Unified inbox](docs/chat.md#unified-inbox)
+- **Scheduled send**: presets (15 minutes, 1 hour, tomorrow 09:00) or a custom time; stored on this device and sent only while the app is running and the radio can send (MeshCore MQTT-only waits for RF) — see [Chat: Scheduled send](docs/chat.md#scheduled-send)
+- **Conversation pin / archive**: pin conversations to the front of the chip list; archive to hide them — separate from message starring — see [Chat: Channels and conversations](docs/chat.md#channels-and-conversations)
+- **Conversation search**: toolbar search filters the open conversation (Escape clears); use with jump-to-date for local navigation — see [Chat guide](docs/chat.md)
 
 **Node Management**
 
@@ -236,7 +244,8 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 **Map & Position**
 
 - Interactive map with node positions and your current location (device GPS → saved location → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Dark (OpenStreetMap)** (styled locally) and **USGS Topo** (US only)
-- **Offline maps**: basemap tiles are served through the privileged **`mesh-tiles:`** protocol and cached under app **userData** `tile-cache/` (~1 GiB LRU; viewed tiles cache automatically while online). With **USGS Topo** selected, use **Layers → Offline maps → Download current view** to pre-fetch a region (estimate + confirm; single-job size capped so downloads are not immediately evicted), or enable **Auto-cache**. OpenStreetMap permits ordinary viewed-tile caching, but not region downloads or prefetching. **Clear tile cache** is available for all basemaps. Uncached areas are blank offline; markers and trails still render from local/SQLite state — see [Troubleshooting — Map offline](docs/troubleshooting.md#map-tab-without-internet-offline--no-wan)
+- **Offline maps**: basemap tiles are served through the privileged **`mesh-tiles:`** protocol and cached under app **userData** `tile-cache/` (~1 GiB LRU; viewed tiles cache automatically while online). With **USGS Topo** selected, use **Layers → Offline maps → Download current view** to pre-fetch a region (estimate + confirm; single-job size capped so downloads are not immediately evicted), or enable **Auto-cache**. OpenStreetMap permits ordinary viewed-tile caching, but not region downloads or prefetching. **Clear tile cache** is available for all basemaps. Uncached areas are blank offline; markers and trails still render from local/SQLite state — see [Maps guide](docs/maps.md) and [Troubleshooting — Map offline](docs/troubleshooting.md#map-tab-without-internet-offline--no-wan)
+- **Custom map sources**: add a validated, user-confirmed XYZ tile URL (HTTPS public hosts only; caches tiles you view, up to 16 sources / 256 MiB per XYZ source) or import an MBTiles package for offline use; custom sources do not support USGS-style region download — see [Maps: Custom map sources](docs/maps.md#custom-map-sources)
 - **Saved locations** (App tab, Diagnostics, or a startup strip): when the radio has no GPS, save named places this computer is used from (Home, EOC). Each launch asks "Still at …?" unless the location is marked "doesn't move". Coordinates can be pasted as decimal, degrees/minutes/seconds with N/S/E/W, MGRS, or a Google / Apple / OpenStreetMap share link. Only this session's radio GPS fix counts as device GPS; MeshCore advert coordinates do not
 - **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open **incidents**, **MGRS grid**, **Sensors**, **Weather forecasts**, and **TAK units** from ATAK clients and the remote TAK server); basemap preference persists in SQLite and localStorage
 - **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
@@ -253,7 +262,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. **Meshtastic** shows **17** panels (including **Administration**, **Security**, **TAK**, **Incident** next to **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **18** panels (**TAK**, and **Incident** next to **App**; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **17** panels (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **TAK**, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+Operator guide: [MeshCore guide](docs/meshcore.md). MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher at the top of the rail to bring MeshCore into view; the other sessions stay connected in the background. Panels are grouped into rail sections (Chat, Network, Map, Monitor, Device, then Incident and App) and every panel is also in the Ctrl/Cmd+K launcher. **Meshtastic** shows **17** panels (including **Administration**, **Security**, **TAK**, **Incident** next to **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **18** panels (**TAK**, and **Incident** next to **App**; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **17** panels (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **TAK**, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: status-bar badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -261,7 +270,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 - Contact list with advert-based positions, contact types (Chat, Repeater, Room, Sensor), and GPS coordinates persisted to SQLite; contacts seed from DB on reconnect as a fallback cache
 - **Favorite / pin**: persisted per contact in SQLite (`meshcore_contacts.favorited`)
-- **Contact groups**: protocol-neutral; create and manage groups from the **Contacts** tab toolbar (Meshtastic: **Nodes** tab); Meshtastic has built-in groups (**GPS**, **RF+MQTT**); filter the list by group; **Room** contacts excluded from user groups by default
+- **Contact groups**: protocol-neutral; create and manage groups from the **Contacts** tab toolbar (Meshtastic: **Nodes** tab); Meshtastic has built-in filters (**GPS**, **RF+MQTT**, **Router**); filter the list by group; **Room** contacts excluded from user groups by default
 - **Import Contacts**: **Network → Contacts**: bulk **JSON nickname import** to pre-fill contact names (not on the Repeaters panel)
 - **Refresh Contacts**: pull the full contact list from the device on demand
 - **Show Public Keys**: toggle to display full public keys under contact names
@@ -320,6 +329,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 **Device Control**
 
 - **Administration** tab: **Reboot** when connected (Meshtastic also gets shutdown, factory reset, NodeDB reset, reboot-to-OTA, and enter DFU on the same tab)
+- **Device firmware flash** (Meshtastic and MeshCore): USB flash with board detection, image/board/version/checksum validation, explicit acknowledgement, preflight blockers, ESP32 and nRF52 DFU, and a backup reminder — see [Firmware and device maintenance](docs/firmware.md). Reticulum RNode flashing is separate under Admin — see [Reticulum Admin (RNode flasher)](docs/reticulum.md#admin-rnode-flasher)
 - **MeshCore power off** is available in **Radio → Companion device settings → Power** on companion protocol 14+ (firmware 1.18+). Meshtastic-style factory reset, NodeDB reset, reboot-to-OTA, and DFU actions are not exposed for MeshCore
 
 **Transport Notes**
@@ -361,7 +371,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 **Messaging (Chat + encrypted paper + RRC)**
 
-- **Chat tab:** **DM-only** LXMF text, reactions, and Ogg/Opus voice memos (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** under `reticulum/attachments/` display inline)
+- **Chat tab:** **DM-only** LXMF text, reactions, Ogg/Opus voice memos, and **native outbound attachments** (up to 4 files totalling ~240 KiB, or one PNG/JPEG/WebP/GIF photo within the LXMF field limit; larger peer files use Remote rncp). Inbound attachment labels and **cached raster images** under `reticulum/attachments/` display inline. See [Chat guide](docs/chat.md) and [Reticulum Chat (LXMF)](docs/reticulum.md#chat-lxmf).
 - **Encrypted paper (Ratspeak / LXMF paper):** Chat DM **Share as paper** encrypts offline to a QR / `lxm://` URI with **no network send** (Completes immediately, **Paper** delivery badge); **Scan paper** (Chat or Network **Scan / import**) decrypts into the local inbox when the identity matches. OS `lxm://` paper deep links ingest without a confirm prompt; contact / MeshCore imports still confirm
 - **LXST voice Call** on DM headers and Peers rows — live telephony over rsLXST (not an LXMF voice-note clip)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs); @mentions badge Chat + the Reticulum rail switcher

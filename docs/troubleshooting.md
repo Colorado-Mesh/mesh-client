@@ -767,7 +767,7 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 ## Meshtastic
 
-Battery, voltage, or uptime for your own node looks wrong or never updates? See [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md).
+Full guide: [Meshtastic](meshtastic.md). Battery, voltage, or uptime for your own node looks wrong or never updates? See [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md).
 
 ### Meshtastic Modules tab: “waiting for settings”
 
@@ -816,7 +816,7 @@ When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts m
 
 ## MeshCore
 
-MeshCore-specific problems moved to [MeshCore troubleshooting](troubleshooting-meshcore.md):
+Full guide: [MeshCore](meshcore.md). MeshCore-specific problems moved to [MeshCore troubleshooting](troubleshooting-meshcore.md):
 
 - [MeshCore TCP connect stuck or reconnect loop on OpenHop](troubleshooting-meshcore.md#meshcore-tcp-connect-stuck-or-reconnect-loop-on-openhop)
 - [MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused](troubleshooting-meshcore.md#meshcore-tcp--pymc-initial-connect-msgwaiting-drain-slow-or-paused)
@@ -887,7 +887,7 @@ Reticulum-specific problems moved to [Reticulum troubleshooting](troubleshooting
 
 ## TAK (CoT gateway)
 
-The **TAK** tab runs a local CoT server and a remote relay to an OpenTAKServer, FreeTAKServer, or TAK Server. The relay uses TLS or plain TCP; plain TCP is unencrypted and is not saved for launch auto-connect. TAK Servers that use logins issue a client certificate from a username and password on the enrollment port (usually 8446). Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected").
+Full guide: [TAK gateway](tak.md). The **TAK** tab runs a local CoT server and a remote relay to an OpenTAKServer, FreeTAKServer, or TAK Server. The relay uses TLS or plain TCP; plain TCP is unencrypted and is not saved for launch auto-connect. TAK Servers that use logins issue a client certificate from a username and password on the enrollment port (usually 8446). Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected").
 
 ### EUD reports “TLS certificate invalid” / cannot connect with a mesh-client data package
 
@@ -919,6 +919,8 @@ openssl pkcs12 -export -nokeys -in ca.pem -out truststore.p12 -caname mesh-clien
 ```
 
 ## Chat, nodes, and notifications
+
+Full guide: [Chat](chat.md).
 
 ### Unread messages but no app-icon badge
 
@@ -1133,13 +1135,15 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
+See [Maps and offline maps](maps.md).
+
 **Basemap tiles:** The map background uses **OpenStreetMap** by default, with a **Dark (OpenStreetMap)** option styled locally without an API key. Use **Layers** under the status counts to switch basemaps and toggle overlays. Tiles are served through the privileged **`mesh-tiles:`** protocol and viewed tiles are cached automatically under the app **userData** `tile-cache/` directory (~1 GiB LRU). OpenStreetMap permits normal viewport caching but prohibits prefetching, so region downloads and **Auto-cache** are available only with **USGS Topo** selected. For USGS, **Download current view** estimates and confirms a region; downloads pause on a dropped connection and resume after ~60s stable online. **Clear tile cache** frees disk. **Without internet, uncached areas look blank**; cached tiles and local mesh overlays still render. Older CARTO dark tiles are kept on disk but are not displayed by the new dark source; view an area online once to cache its replacement. Developer reference: [`docs/development/offline-maps.md`](development/offline-maps.md).
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
 **Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
-**USGS Topo blank offline:** **USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](development/offline-maps.md).
+**USGS Topo blank offline:** **USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Built-in basemaps still use fixed allowlisted hosts only; to add your own tiles, use a user-confirmed custom XYZ source or import an MBTiles package (Map → Offline maps → Custom sources). See [Maps and offline maps](maps.md#custom-map-sources) and [offline-maps.md](development/offline-maps.md).
 
 ### Verifying offline behavior (manual QA)
 

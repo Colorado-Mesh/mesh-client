@@ -1128,7 +1128,8 @@
     "botBadge": "Bot",
     "botBadgeLabel": "Bot",
     "botBadgeTooltip": "Gedetecteerd als een bot uit de geautomatiseerde antwoorden",
-    "retry": "Opnieuw proberen"
+    "retry": "Opnieuw proberen",
+    "docsLink": "Documentatie"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",

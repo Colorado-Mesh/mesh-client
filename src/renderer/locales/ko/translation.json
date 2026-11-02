@@ -1128,7 +1128,8 @@
     "botBadge": "봇",
     "botBadgeLabel": "봇",
     "botBadgeTooltip": "자동 응답에서 봇으로 감지됨",
-    "retry": "다시 시도"
+    "retry": "다시 시도",
+    "docsLink": "프리미엄 지원"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",

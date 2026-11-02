@@ -1166,7 +1166,8 @@
     "botBadge": "Nerw",
     "botBadgeLabel": "Nerw",
     "botBadgeTooltip": "Wykryty jako bot na podstawie automatycznych odpowiedzi",
-    "retry": "Jeszcze raz"
+    "retry": "Jeszcze raz",
+    "docsLink": "Docs"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",

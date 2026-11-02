@@ -1128,7 +1128,8 @@
     "botBadge": "机器人",
     "botBadgeLabel": "机器人",
     "botBadgeTooltip": "从其自动回复中检测为机器人",
-    "retry": "再次挑战"
+    "retry": "再次挑战",
+    "docsLink": "文件"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
