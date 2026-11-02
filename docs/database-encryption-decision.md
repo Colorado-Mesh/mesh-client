@@ -31,14 +31,15 @@ This page records the decision so contributors do not re-propose app-level DB en
 - When OS key storage is unavailable, remembered room/repeater passwords (and related secrets on the same path) may keep a local `mesh-client:credentialCompatibility:…` copy — an accepted local-disclosure fallback until durable encryption succeeds ([Key backup and cryptography](key-backup-and-crypto.md), [`secureSecretStorage.ts`](../src/renderer/lib/secureSecretStorage.ts)).
 - Legacy preference / app-settings records may still hold **inline** credentials until migration retires them; preparation strips those fields from the canonical map but leaves sources intact for recovery ([Renderer storage](development/renderer-storage.md)).
 
-Those residuals can appear in browser storage and, for any still-inline legacy fields, in SQLite. Treat developer DB exports as **plaintext diagnostic snapshots** that may include chat history and any of the above leftovers — not as a guarantee that every secret is keychain-wrapped.
+Compatibility copies live in **browser storage** (`localStorage`), not in the SQLite file. A `mesh-client.db` snapshot may still include chat history, `secure_secrets` ciphertext, and any **still-inline** legacy credential fields left in SQLite — it does **not** include `credentialCompatibility:` browser-storage copies. That is not a guarantee every secret on the machine is keychain-wrapped.
 
 **Lower / situational (plain SQLite and related files by design):**
 
 - Channel chat and a small number of DMs
 - Node lists, path/GPS history, emergency incident text
 - MECP received audit log
-- Intentional private copies in **Export for Developer** and **Export Database** (ordinary SQLite; share only on a private channel)
+- **Export Database** (`db:export`): ordinary plaintext SQLite backup of `mesh-client.db` only
+- **Export for Developer**: a ZIP that includes that same DB snapshot **plus** app/MECP logs and selected Reticulum artifacts (`reticulum/config`, stack JSON with mnemonic redacted, etc.) — share only on a **private channel** when a maintainer asks ([Troubleshooting](troubleshooting.md))
 
 Most mesh traffic is not highly private. A few DMs do not justify a second crypto subsystem with key-loss failure modes.
 
