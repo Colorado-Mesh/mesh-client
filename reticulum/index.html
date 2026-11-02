@@ -3848,6 +3848,7 @@
 <li><strong>Involuntary PART:</strong> hub/self <code>PARTED</code> while the room is still desired queues a silent re-JOIN; UI banner uses neutral <code>rrc.moderation.hubParted</code> (not kick/ban wording). Member-fanout <code>PARTED</code> (another peer left) updates the nicklist only — must not be treated as self-leave.</li>
 <li>Unread badges and inactive-tab sounds for any new room <code>msg</code>/<code>action</code> by default (also badges the <strong>Reticulum rail switcher</strong> with LXMF Chat). <strong>App → Notifications → RRC unread for all room messages</strong> (default on) couples badge + beep; off is IRC-style DMs + <code>@nick</code> only. Hub notices/<code>/who</code>/JOINED do not alert. Muted views use the shared Chat mute storage keyed as <code>rrc:&lt;hub&gt;:&lt;room&gt;</code>.</li>
 <li>The selected room suppresses unread badges only while the app window is visible and focused. New messages still count as unread when that window is hidden, minimized, or behind another app. Returning to the room clears its unread count once the message view catches up to the bottom.</li>
+<li><strong>Reactions:</strong> the React button on a room or DM line opens the system emoji picker (an inline picker on Linux), the same control Chat uses. The reaction goes out as an ordinary message whose text is the emoji, tagged with the target's message id under the <a href="https://github.com/thatSFguy/reticulum-relay-chat/blob/master/docs/rrc-extensions.md">RRC extension keys</a> also used by reticulum-mobile-app. Reactions show as chips under the line they target, never alert or count as unread, persist with the room history, and are dropped when the target line is not loaded. A client without the extension shows the emoji as a short line from the reactor. Retractions from other clients remove the chip; mesh-client does not send retractions yet.</li>
 <li>Sidecar modules: <code>rrc_codec</code>, <code>rrc_link</code>, <code>rrc_session</code>, <code>rrc_defaults</code>; REST under <code>/api/v1/rrc/*</code> (see <a href="../reticulum-sidecar-ipc/">sidecar IPC</a>).</li>
 <li>History: persist via <code>rrcMessagePersist.ts</code>; hydrate/clear via <code>rrcRoomHistory.ts</code> (UI load cap <strong>500</strong>/room; SQLite retention default <strong>10,000</strong>).</li>
 </ul>
@@ -4199,7 +4200,7 @@ page creates a new controller even when the page source is byte-for-byte identic
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 1, 2026 19:58:49 UTC">November 1, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 02:02:44 UTC">November 2, 2026</span>
   </span>
 
     

@@ -3813,8 +3813,8 @@ default destination and listener disable do not carry a local path and therefore
 <tr>
 <td>POST</td>
 <td><code>/api/v1/rrc/send</code></td>
-<td><code>{ hub_dest_hash, room?, body, type?, dst_hash? }</code></td>
-<td><code>{ ok }</code></td>
+<td><code>{ hub_dest_hash, room?, body, type?, dst_hash?, react_to?, react_op? }</code></td>
+<td><code>{ ok, id }</code> (<code>id</code> = sent <code>K_ID</code>, 16 hex)</td>
 </tr>
 <tr>
 <td>POST</td>
@@ -3831,6 +3831,7 @@ default destination and listener disable do not carry a local path and therefore
 </tbody>
 </table>
 <p>Typed renderer wrappers: <code>electronAPI.reticulum.rrc.*</code> (<code>listHubs</code>, <code>upsertHub</code>, <code>setFavorite</code>, <code>connect</code>, <code>disconnect</code>, <code>getStatus</code>, <code>join</code>, <code>part</code>, <code>send</code>, <code>setNickname</code>, <code>getRooms</code>).</p>
+<p><strong>Reactions</strong> follow the RRC extension keys in <a href="https://github.com/thatSFguy/reticulum-relay-chat/blob/master/docs/rrc-extensions.md">rrc-extensions.md</a> v1: <code>K_REACT_TO</code> (65, the 8-byte <code>K_ID</code> reacted to) and <code>K_REACT_OP</code> (66, sent only as <code>1</code> to retract). On <code>/rrc/send</code>, <code>react_to</code> is that target as 16 hex characters and <code>body</code> is the emoji (at most 64 bytes). A room reaction must use <code>type: "msg"</code>. In a DM tab the same keys ride the direct NOTICE (<code>dst_hash</code> set), which is a mesh-client addition: the extension document only defines them on MSG. <code>react_op</code> without <code>react_to</code>, or any value other than 0 or 1, is refused. Inbound <code>rrc.message</code> payloads add <code>react_to</code> (hex) and <code>react_op</code> on MSG and direct NOTICE lines and leave both null on ACTION and hub NOTICE lines. A <code>K_REPLY_TO</code> (64) on the same envelope drops the reaction, as the extension requires. rrcd forwards every envelope key unchanged on MSG and direct NOTICE fan-out; a hub that rebuilds envelopes and drops unknown keys turns a reaction into a plain emoji line.</p>
 <h3 id="remote--rnsh-shell-and-rncp-file-transfer">Remote — rnsh (shell) and rncp (file transfer)<a class="headerlink" href="#remote--rnsh-shell-and-rncp-file-transfer" title="Permanent link">&para;</a></h3>
 <p>Stock Reticulum utility clients hosted by the sidecar. Paths are filesystem paths only (never file bytes in JSON). Electron gates <code>rncp.send</code> / <code>rncp.fetch</code> / <code>rncp.listener</code> mutations behind picker-allowlisted IPC (<code>electronAPI.reticulum.rncp.*</code>) and the sidecar independently requires body/path/session-bound capabilities for mutations that carry local paths.</p>
 <table>
@@ -4294,7 +4295,7 @@ default destination and listener disable do not carry a local path and therefore
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 1, 2026 19:58:49 UTC">November 1, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 02:02:44 UTC">November 2, 2026</span>
   </span>
 
     
