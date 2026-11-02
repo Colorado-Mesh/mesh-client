@@ -66,6 +66,12 @@ import {
   saveDraft,
   saveFloodScopeOverride,
 } from '../lib/chatPanelProtocolStorage';
+import {
+  announceLateSend,
+  holdSendError,
+  subscribeLateSendOutcomes,
+  takeHeldSendError,
+} from '../lib/lateSendOutcomes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   isValidMeshcoreFloodScopeHashtag,
@@ -365,6 +371,13 @@ export function ChatComposer({
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const closeFloodScopeMenu = useCallback(() => {
     setFloodScopeMenuOpen(false);
@@ -563,12 +576,13 @@ export function ChatComposer({
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
     const nextDraft = drafts[viewKey] ?? '';
+    const heldSendError = takeHeldSendError(protocol, viewKey);
     // Avoid a queued no-op restore overriding a reply seed applied by the next render.
 
     if (inputValueRef.current !== nextDraft) setInput(nextDraft);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft and mention UI on tab switch
     setMentionQuery(null);
-    setChatActionError(null);
+    setChatActionError(heldSendError !== undefined ? { message: heldSendError, viewKey } : null);
     clearMentionCycle();
     // Clear any lingering fast-send advisory when switching chat views.
     if (meshcoreFastSendWarnTimerRef.current) {
@@ -577,6 +591,22 @@ export function ChatComposer({
     }
     setMeshcoreFastSendWarn(false);
   }, [viewKey, protocol, showFloodScopeOverride, clearMentionCycle]);
+
+  // A send from a composer that has since unmounted can finish while this one shows its view.
+  useEffect(
+    () =>
+      subscribeLateSendOutcomes((outcome) => {
+        if (outcome.protocol !== protocol || outcome.viewKey !== viewKey) return;
+        if (outcome.kind === 'sent') {
+          // Drop the sent text this composer restored from the draft, unless it was edited since.
+          setInput((prev) => (prev === outcome.text ? '' : prev));
+          return;
+        }
+        const message = takeHeldSendError(protocol, viewKey);
+        if (message !== undefined) setChatActionError({ message, viewKey });
+      }),
+    [protocol, viewKey],
+  );
 
   // Apply nicklist `/msg` seeds without an effect (avoids set-state-in-effect).
   const [appliedComposeSeedToken, setAppliedComposeSeedToken] = useState<number | null>(null);
@@ -622,6 +652,15 @@ export function ChatComposer({
 
   const clearSentDraft = useCallback(
     (draftSnapshot: string) => {
+      // `viewKey` is the view the send started in. If the composer has left it since (an RRC /msg
+      // opens its DM before resolving; the compact layout unmounts the composer on Back to list),
+      // the switch or unmount already saved the sent text as that view's draft, so clear the
+      // stored copy and tell any composer now showing that view, which may have loaded it.
+      if (!mountedRef.current || prevViewKeyRef.current !== viewKey) {
+        if (loadDraftsInitial(protocol)[viewKey] === draftSnapshot) clearDraft(protocol, viewKey);
+        announceLateSend(protocol, viewKey, draftSnapshot);
+        return;
+      }
       setInput((prev) => {
         if (prev === draftSnapshot) {
           clearDraft(protocol, viewKey);
@@ -702,13 +741,16 @@ export function ChatComposer({
       } catch (err) {
         console.error('[ChatComposer] Intercept send failed: ' + errLikeToLogString(err));
         const fallbackKey = variant === 'room' ? 'roomsPanel.postFailed' : 'chatPanel.sendFailed';
-        setChatActionError({
-          message: translateChatSendError(t, err, {
-            fallbackKey,
-            passthroughUnknown: true,
-          }),
-          viewKey,
+        const message = translateChatSendError(t, err, {
+          fallbackKey,
+          passthroughUnknown: true,
         });
+        // A view the user has left keeps the reason until a composer shows it again.
+        if (mountedRef.current && prevViewKeyRef.current === viewKey) {
+          setChatActionError({ message, viewKey });
+        } else {
+          holdSendError(protocol, viewKey, message);
+        }
         return;
       } finally {
         setSending(false);
@@ -834,10 +876,11 @@ export function ChatComposer({
         onSendSuccess?.();
         return;
       }
-      setChatActionError({
-        message: errMsg,
-        viewKey,
-      });
+      if (mountedRef.current && prevViewKeyRef.current === viewKey) {
+        setChatActionError({ message: errMsg, viewKey });
+      } else {
+        holdSendError(protocol, viewKey, errMsg);
+      }
     } finally {
       setSending(false);
     }
