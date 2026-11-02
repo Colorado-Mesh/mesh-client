@@ -312,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../live-traffic-map/" class="md-tabs__link">
+        <a href="../chat/" class="md-tabs__link">
           
   
   
@@ -639,6 +639,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -683,6 +697,202 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2857,6 +3067,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3198,6 +3412,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/mqtt/" class="md-nav__link">
         
   
@@ -3346,6 +3588,34 @@
     
   
     MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
   
 
     
@@ -5424,7 +5694,7 @@ allocations as <code>mainLiveness</code>.</p>
 <li>Check the Log panel for "Published RF packet" entries to confirm packets are being sent</li>
 </ul>
 <h2 id="meshtastic">Meshtastic<a class="headerlink" href="#meshtastic" title="Permanent link">&para;</a></h2>
-<p>Battery, voltage, or uptime for your own node looks wrong or never updates? See <a href="../meshtastic-telemetry-local-client/">Meshtastic: mesh vs local client telemetry</a>.</p>
+<p>Full guide: <a href="../meshtastic/">Meshtastic</a>. Battery, voltage, or uptime for your own node looks wrong or never updates? See <a href="../meshtastic-telemetry-local-client/">Meshtastic: mesh vs local client telemetry</a>.</p>
 <h3 id="meshtastic-modules-tab-waiting-for-settings">Meshtastic Modules tab: “waiting for settings”<a class="headerlink" href="#meshtastic-modules-tab-waiting-for-settings" title="Permanent link">&para;</a></h3>
 <p>If a module section stays on <strong>Waiting for … settings from the device</strong> with Apply disabled:</p>
 <ul>
@@ -5462,7 +5732,7 @@ allocations as <code>mainLiveness</code>.</p>
 <h3 id="meshtastic-sdk-routing-failures-mark-chat-rows-failed">Meshtastic SDK routing failures mark chat rows failed<a class="headerlink" href="#meshtastic-sdk-routing-failures-mark-chat-rows-failed" title="Permanent link">&para;</a></h3>
 <p>When the Meshtastic SDK logs a routing / queue failure, mesh-client intercepts matched <code>console.error</code> / <code>console.warn</code> lines via <code>meshtasticSdkRoutingErrorConsoleHook.ts</code>, logs them at <code>console.debug</code>, and applies <code>applyMeshtasticOutboundRoutingErrorFromLog</code> (or <code>FromRejection</code>) so the outbound Chat row shows <strong>Failed</strong>. Unmatched queue rejections may still appear as <code>[meshtasticSdkRoutingErrorLog]</code>.</p>
 <h2 id="meshcore">MeshCore<a class="headerlink" href="#meshcore" title="Permanent link">&para;</a></h2>
-<p>MeshCore-specific problems moved to <a href="../troubleshooting-meshcore/">MeshCore troubleshooting</a>:</p>
+<p>Full guide: <a href="../meshcore/">MeshCore</a>. MeshCore-specific problems moved to <a href="../troubleshooting-meshcore/">MeshCore troubleshooting</a>:</p>
 <ul>
 <li><a href="../troubleshooting-meshcore/#meshcore-tcp-connect-stuck-or-reconnect-loop-on-openhop">MeshCore TCP connect stuck or reconnect loop on OpenHop</a></li>
 <li><a href="../troubleshooting-meshcore/#meshcore-tcp--pymc-initial-connect-msgwaiting-drain-slow-or-paused">MeshCore TCP / pyMC: initial connect MsgWaiting drain slow or paused</a></li>
@@ -5531,7 +5801,7 @@ allocations as <code>mainLiveness</code>.</p>
 <li><a href="../troubleshooting-reticulum/#reticulum-lxst-voice-call-fails-or-is-silent">Reticulum LXST voice call fails or is silent</a></li>
 </ul>
 <h2 id="tak-cot-gateway">TAK (CoT gateway)<a class="headerlink" href="#tak-cot-gateway" title="Permanent link">&para;</a></h2>
-<p>The <strong>TAK</strong> tab runs a local CoT server and a remote relay to an OpenTAKServer, FreeTAKServer, or TAK Server. The relay uses TLS or plain TCP; plain TCP is unencrypted and is not saved for launch auto-connect. TAK Servers that use logins issue a client certificate from a username and password on the enrollment port (usually 8446). Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected").</p>
+<p>Full guide: <a href="../tak/">TAK gateway</a>. The <strong>TAK</strong> tab runs a local CoT server and a remote relay to an OpenTAKServer, FreeTAKServer, or TAK Server. The relay uses TLS or plain TCP; plain TCP is unencrypted and is not saved for launch auto-connect. TAK Servers that use logins issue a client certificate from a username and password on the enrollment port (usually 8446). Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected").</p>
 <h3 id="eud-reports-tls-certificate-invalid--cannot-connect-with-a-mesh-client-data-package">EUD reports “TLS certificate invalid” / cannot connect with a mesh-client data package<a class="headerlink" href="#eud-reports-tls-certificate-invalid--cannot-connect-with-a-mesh-client-data-package" title="Permanent link">&para;</a></h3>
 <p><strong>Cause</strong>: The data package’s <code>connection.pref</code> dials your LAN IP over TLS. Older mesh-client builds issued a server certificate with only CN=<code>serverName</code> (e.g. <code>mesh-client</code>) and no Subject Alternative Name, so strict EUDs (iTAK, WinTAK, newer ATAK) reject the certificate.</p>
 <p><strong>Fix</strong>:</p>
@@ -5554,6 +5824,7 @@ allocations as <code>mainLiveness</code>.</p>
 <a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span>-passout<span class="w"> </span>pass:atakatak<span class="w"> </span>-certpbe<span class="w"> </span>PBE-SHA1-3DES<span class="w"> </span>-macalg<span class="w"> </span>sha1
 </code></pre></div>
 <h2 id="chat-nodes-and-notifications">Chat, nodes, and notifications<a class="headerlink" href="#chat-nodes-and-notifications" title="Permanent link">&para;</a></h2>
+<p>Full guide: <a href="../chat/">Chat</a>.</p>
 <h3 id="unread-messages-but-no-app-icon-badge">Unread messages but no app-icon badge<a class="headerlink" href="#unread-messages-but-no-app-icon-badge" title="Permanent link">&para;</a></h3>
 <p>On <strong>macOS</strong>, allow notifications for Mesh Client and enable <strong>Badge application icon</strong> in <strong>System Settings → Notifications → Mesh Client</strong>. The app initializes macOS notification authorization when unread messages exist and reapplies the current badge when its window regains focus. Reading the remaining unread messages clears the badge. macOS notification settings still control whether the badge is visible; the app does not override a denied permission.</p>
 <p>On <strong>Windows</strong>, unread messages use a red taskbar overlay. On <strong>Linux</strong>, launcher counts depend on desktop support for the LauncherEntry D-Bus API. Tray indicators remain separate from the app-icon badge.</p>
@@ -5711,10 +5982,11 @@ allocations as <code>mainLiveness</code>.</p>
 <p><strong>Cause</strong>: Signal strength is only available for <strong>direct (0-hop) RF</strong> neighbors. Multi-hop and MQTT-heard nodes have no client-side signal strength.</p>
 <p><strong>Fix</strong>: Not a bug; use SNR/last heard and routing diagnostics instead for those paths.</p>
 <h3 id="map-tab-without-internet-offline--no-wan">Map tab without internet (offline / no WAN)<a class="headerlink" href="#map-tab-without-internet-offline--no-wan" title="Permanent link">&para;</a></h3>
+<p>See <a href="../maps/">Maps and offline maps</a>.</p>
 <p><strong>Basemap tiles:</strong> The map background uses <strong>OpenStreetMap</strong> by default, with a <strong>Dark (OpenStreetMap)</strong> option styled locally without an API key. Use <strong>Layers</strong> under the status counts to switch basemaps and toggle overlays. Tiles are served through the privileged <strong><code>mesh-tiles:</code></strong> protocol and viewed tiles are cached automatically under the app <strong>userData</strong> <code>tile-cache/</code> directory (~1 GiB LRU). OpenStreetMap permits normal viewport caching but prohibits prefetching, so region downloads and <strong>Auto-cache</strong> are available only with <strong>USGS Topo</strong> selected. For USGS, <strong>Download current view</strong> estimates and confirms a region; downloads pause on a dropped connection and resume after ~60s stable online. <strong>Clear tile cache</strong> frees disk. <strong>Without internet, uncached areas look blank</strong>; cached tiles and local mesh overlays still render. Older CARTO dark tiles are kept on disk but are not displayed by the new dark source; view an area online once to cache its replacement. Developer reference: <a href="../development/offline-maps/"><code>docs/development/offline-maps.md</code></a>.</p>
 <p><strong>Overlays:</strong> <strong>Node markers, polylines, position trails, and other vector layers</strong> are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still <strong>render on top of a missing or partial basemap</strong>.</p>
 <p><strong>Your position offline:</strong> Use <strong>device GPS</strong> when available, <strong>Fixed Position</strong> on the <strong>Radio</strong> tab, or <strong>static coordinates</strong> in app/GPS settings. The IP-geolocation fallback returns immediately with code <code>OFFLINE</code> when there is no WAN. See <strong>GPS "Location unavailable" or stuck on the map</strong> above. Positions heard over the mesh do not require internet.</p>
-<p><strong>USGS Topo blank offline:</strong> <strong>USGS Topo</strong> covers the <strong>United States only</strong> — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (<code>basemap.nationalmap.gov</code>); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before <strong>Download current view</strong>). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See <a href="../development/offline-maps/">offline-maps.md</a>.</p>
+<p><strong>USGS Topo blank offline:</strong> <strong>USGS Topo</strong> covers the <strong>United States only</strong> — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (<code>basemap.nationalmap.gov</code>); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before <strong>Download current view</strong>). Above zoom 16 tiles are overzoomed and look soft. Built-in basemaps still use fixed allowlisted hosts only; to add your own tiles, use a user-confirmed custom XYZ source or import an MBTiles package (Map → Offline maps → Custom sources). See <a href="../maps/#custom-map-sources">Maps and offline maps</a> and <a href="../development/offline-maps/">offline-maps.md</a>.</p>
 <h3 id="verifying-offline-behavior-manual-qa">Verifying offline behavior (manual QA)<a class="headerlink" href="#verifying-offline-behavior-manual-qa" title="Permanent link">&para;</a></h3>
 <p>With <strong>Wi‑Fi off</strong> or <strong>airplane mode</strong> on, using a <strong>packaged</strong> build if possible:</p>
 <ol>
@@ -5834,7 +6106,7 @@ allocations as <code>mainLiveness</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 19:17:35 UTC">November 2, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
   </span>
 
     

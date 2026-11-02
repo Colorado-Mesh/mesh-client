@@ -312,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="live-traffic-map/" class="md-tabs__link">
+        <a href="chat/" class="md-tabs__link">
           
   
   
@@ -819,6 +819,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -863,6 +877,202 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1889,6 +2099,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2230,6 +2444,34 @@
   
   
     <li class="md-nav__item">
+      <a href="development/firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="development/mqtt/" class="md-nav__link">
         
   
@@ -2378,6 +2620,34 @@
     
   
     MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="development/tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
   
 
     
@@ -2846,12 +3116,12 @@
 <div class="card protocol-meshtastic">
 <h3 id="meshtastic">Meshtastic<a class="headerlink" href="#meshtastic" title="Permanent link">&para;</a></h3>
 <p>Connect a Meshtastic radio over BLE, USB serial, HTTP, or TCP, or join over MQTT. Channels, DMs, remote admin, telemetry, Store &amp; Forward, and routing diagnostics.</p>
-<p><a href="features/#meshtastic-features">Meshtastic features</a> · <a href="troubleshooting/">Troubleshooting</a></p>
+<p><a href="meshtastic/">Meshtastic guide</a> · <a href="features/#meshtastic-features">Features</a> · <a href="troubleshooting/">Troubleshooting</a></p>
 </div>
 <div class="card protocol-meshcore">
 <h3 id="meshcore">MeshCore<a class="headerlink" href="#meshcore" title="Permanent link">&para;</a></h3>
 <p>Companion radios over BLE, USB serial, or TCP. Contacts, channels, Rooms (BBS), repeater admin (status, neighbors, trace, CLI), and MQTT chat ingest.</p>
-<p><a href="features/#meshcore-features">MeshCore features</a> · <a href="troubleshooting-meshcore/">Troubleshooting</a></p>
+<p><a href="meshcore/">MeshCore guide</a> · <a href="features/#meshcore-features">Features</a> · <a href="troubleshooting-meshcore/">Troubleshooting</a></p>
 </div>
 <div class="card protocol-reticulum">
 <h3 id="reticulum">Reticulum<a class="headerlink" href="#reticulum" title="Permanent link">&para;</a></h3>
@@ -2863,9 +3133,12 @@
 <ul>
 <li><strong>Persistent history:</strong> every message, node, and contact is stored in a local SQLite database, so nothing disappears when you reconnect.</li>
 <li><strong>Routing diagnostics:</strong> spot problem relays, hidden terminals, noisy channels, and unstable paths. See <a href="diagnostics/">Diagnostics</a>.</li>
-<li><strong>Maps that work offline:</strong> download map regions ahead of time for field use. See <a href="troubleshooting/#map-tab-without-internet-offline--no-wan">Troubleshooting: Map tab without internet</a>.</li>
+<li><strong>Chat and messaging:</strong> channels, DMs, search, unified inbox, scheduled send, and pin/archive. See the <a href="chat/">Chat guide</a>.</li>
+<li><strong>Maps that work offline:</strong> basemaps, custom XYZ/MBTiles sources, and region download for field use. See the <a href="maps/">Maps guide</a> and <a href="troubleshooting/#map-tab-without-internet-offline--no-wan">Troubleshooting: Map tab without internet</a>.</li>
 <li><strong>Live packet traffic:</strong> watch local Meshtastic or MeshCore traffic, or connect to a regional MeshCore feed anywhere in the world. See the <a href="live-traffic-map/">Live traffic map guide</a>.</li>
-<li><strong>Emergency communications:</strong> MECP emergency reports, Incident Command, and TAK (Cursor-on-Target) on all three protocols. See the <a href="emcomm/">EMCOMM guide</a>.</li>
+<li><strong>Emergency communications:</strong> MECP emergency reports, Incident Command, and TAK (Cursor-on-Target) on all three protocols. See the <a href="emcomm/">EMCOMM guide</a> and <a href="tak/">TAK gateway</a>.</li>
+<li><strong>Firmware and device maintenance:</strong> USB flash for Meshtastic and MeshCore radios. See the <a href="firmware/">Firmware guide</a>.</li>
+<li><strong>Settings and shortcuts:</strong> launcher, settings search, and keyboard shortcuts. See <a href="settings/">Settings and shortcuts</a>.</li>
 <li><strong>Your language:</strong> the interface is available in 16 languages and works fully offline. See <a href="localization/">Localization</a>.</li>
 </ul>
 <div class="grid">
@@ -2880,6 +3153,8 @@
 </div>
 <h2 id="get-help">Get help<a class="headerlink" href="#get-help" title="Permanent link">&para;</a></h2>
 <ul>
+<li><strong>Using the app:</strong> <a href="chat/">Chat</a> · <a href="maps/">Maps</a> · <a href="settings/">Settings</a> · <a href="firmware/">Firmware</a> · <a href="tak/">TAK</a> · <a href="meshtastic/">Meshtastic</a> · <a href="meshcore/">MeshCore</a></li>
+<li><strong>Contributor notes:</strong> <a href="development/firmware-flash/">Firmware flash</a> · <a href="development/tak/">TAK gateway</a> · <a href="development/">Subsystem index</a></li>
 <li><strong>Something not working?</strong> Start with <a href="troubleshooting/">Troubleshooting</a>, or the <a href="troubleshooting-meshcore/">MeshCore</a> and <a href="troubleshooting-reticulum/">Reticulum</a> pages.</li>
 <li><strong>Reporting a bug:</strong> use <strong>App → Export for GitHub</strong> and attach the file. See <a href="troubleshooting/#reporting-bugs-export-for-github-app-tab">Reporting bugs</a>.</li>
 <li><strong>Unfamiliar term?</strong> Check the <a href="glossary/">Glossary</a>.</li>
@@ -2914,7 +3189,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 14, 2026 18:43:13 UTC">October 14, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
   </span>
 
     

@@ -9,6 +9,10 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/chat/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://colorado-mesh.github.io/mesh-client/ci-cd/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
@@ -38,6 +42,10 @@
     </url>
     <url>
          <loc>https://colorado-mesh.github.io/mesh-client/features/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/firmware/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
@@ -73,11 +81,23 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/maps/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://colorado-mesh.github.io/mesh-client/meshcore-meshtastic-parity/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/meshcore/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://colorado-mesh.github.io/mesh-client/meshtastic-telemetry-local-client/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/meshtastic/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
@@ -117,7 +137,15 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/settings/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://colorado-mesh.github.io/mesh-client/style-guide/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/tak/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
@@ -169,6 +197,10 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/development/firmware-flash/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://colorado-mesh.github.io/mesh-client/development/live-packet-map/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
@@ -214,6 +246,10 @@
     </url>
     <url>
          <loc>https://colorado-mesh.github.io/mesh-client/development/settings-search/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://colorado-mesh.github.io/mesh-client/development/tak/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>

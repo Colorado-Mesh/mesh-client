@@ -1,0 +1,4156 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+      
+      
+      
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/meshtastic/">
+      
+      
+        <link rel="prev" href="../firmware/">
+      
+      
+        <link rel="next" href="../meshcore/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Meshtastic guide - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#meshtastic-in-mesh-client" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Meshtastic guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../release-notes/ai-catch-up/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Release notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../chat/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../troubleshooting/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-notes/ai-catch-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catch up (unreleased)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connect
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usb-serial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB serial
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifihttp-and-wifitcp-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi/HTTP and WiFi/TCP (fast)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#link-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Link troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hashtag-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hashtag channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel URLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node detail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#store--forward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store &amp; Forward
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xmodem-file-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        XMODEM file transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firmware-lockdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firmware lockdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mesh-beacon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mesh Beacon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cayenne-lpp-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cayenne LPP charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Admin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-a-remote-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure a remote node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../live-traffic-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Traffic Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database-encryption-decision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Encryption Decision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-announcements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Announcements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Games Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_14" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../development/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsystem reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_14" id="__nav_7_14_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Subsystem reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/architecture-quick-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture quick reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/common-issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-origin-coi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer origin and recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ble-serial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BLE and serial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ai-summarization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI summaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/connection-panel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection panel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/mqtt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MQTT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-repeaters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Repeaters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-rooms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Rooms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-companion-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore companion CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/mecp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/offline-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/live-packet-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live packet map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/settings-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-licenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-party licenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connect
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usb-serial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        USB serial
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifihttp-and-wifitcp-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi/HTTP and WiFi/TCP (fast)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#link-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Link troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hashtag-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hashtag channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-urls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel URLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct messages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#node-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node detail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#store--forward" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store &amp; Forward
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xmodem-file-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        XMODEM file transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firmware-lockdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firmware lockdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mesh-beacon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mesh Beacon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cayenne-lpp-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cayenne LPP charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Admin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-a-remote-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure a remote node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/meshtastic.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="meshtastic-in-mesh-client">Meshtastic in mesh-client<a class="headerlink" href="#meshtastic-in-mesh-client" title="Permanent link">&para;</a></h1>
+<p>Meshtastic is one of three protocols in mesh-client (green <strong>MT</strong> on the rail protocol switcher), alongside MeshCore and Reticulum. All three stay connected at the same time, so you can switch tabs without dropping a radio. This guide is the operator view of the Meshtastic tab set: how to connect a radio, set up channels, message other nodes, manage the node list, configure modules, and use the advanced tools under <strong>Radio</strong>, <strong>Modules</strong>, <strong>Administration</strong>, and <strong>Telemetry</strong>.</p>
+<p>Panels are grouped into rail sections: <strong>Chat</strong>, <strong>Network</strong>, <strong>Map</strong>, <strong>Monitor</strong>, <strong>Device</strong>, then <strong>Incident</strong> and <strong>App</strong>. Every panel is also in the Ctrl/Cmd+K launcher, which can search individual settings as well. Meshtastic uses <strong>Nodes</strong> (where MeshCore uses <strong>Contacts</strong>), <strong>Modules</strong> (where MeshCore uses <strong>Repeaters</strong>), and has <strong>Security</strong> and <strong>Administration</strong> tabs with Meshtastic-specific content.</p>
+<p>Related docs: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md#meshtastic-features">README — Meshtastic Features</a>, <a href="../development/meshtastic/">Developer notes: Meshtastic</a>, <a href="../diagnostics/">Diagnostics reference</a>, <a href="../troubleshooting/#meshtastic">Troubleshooting — Meshtastic</a>, <a href="../meshcore/">MeshCore</a>, <a href="../reticulum/">Reticulum</a>, <a href="../meshcore-meshtastic-parity/">Meshtastic vs MeshCore parity</a>.</p>
+<hr />
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Select <strong>MT</strong> (Meshtastic, green) on the rail.</li>
+<li><strong>Device → Connection</strong>: pick <strong>Bluetooth</strong>, <strong>USB Serial</strong>, <strong>WiFi/HTTP</strong>, or <strong>WiFi/TCP (fast)</strong>, then <strong>Connect</strong>.</li>
+<li>Wait for the radio to finish loading its configuration. <strong>Apply</strong> buttons on Radio, Modules, and Security stay disabled until each config slice has been read from the device, so defaults cannot overwrite live settings.</li>
+<li><strong>Chat</strong> shows your channels and direct messages. <strong>Nodes</strong> lists everything the radio has heard.</li>
+<li>Open <strong>Device → Radio</strong> to review region, modem preset, and channels before you transmit on a new mesh.</li>
+</ol>
+<p>Optional: turn on <strong>Auto-connect on application start</strong> on the Connection tab so the same radio (or saved address) reconnects on launch.</p>
+<hr />
+<h2 id="connect">Connect<a class="headerlink" href="#connect" title="Permanent link">&para;</a></h2>
+<p>The <strong>Connection Type</strong> selector on <strong>Device → Connection</strong> chooses how mesh-client talks to the radio.</p>
+<table>
+<thead>
+<tr>
+<th>Connection type</th>
+<th>Label in the app</th>
+<th>What you need</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bluetooth LE</td>
+<td><strong>Bluetooth</strong></td>
+<td>Bluetooth enabled on the radio and computer. Click <strong>Connect</strong> to scan; a device picker lists nearby radios.</td>
+</tr>
+<tr>
+<td>USB serial</td>
+<td><strong>USB Serial</strong></td>
+<td>USB data cable. Click <strong>Connect</strong> and choose from <strong>Select Serial Port</strong>.</td>
+</tr>
+<tr>
+<td>WiFi (REST)</td>
+<td><strong>WiFi/HTTP</strong></td>
+<td>IP address or hostname of a WiFi-enabled node. One packet per request.</td>
+</tr>
+<tr>
+<td>WiFi (streaming)</td>
+<td><strong>WiFi/TCP (fast)</strong></td>
+<td>Hostname or IP of a WiFi-enabled node with TCP enabled. Default port <strong>4403</strong>; much faster NodeDB sync on big nets.</td>
+</tr>
+<tr>
+<td>MQTT only</td>
+<td><strong>MQTT Connection</strong></td>
+<td>A broker URL, topic, and optional credentials. No radio required for receive-only use.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bluetooth">Bluetooth<a class="headerlink" href="#bluetooth" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bluetooth uses the sidecar GATT stack on all platforms. Startup auto-reconnect can run without a user gesture.</li>
+<li>On macOS, a radio that shows as "AdaDFU" should be paired first in System Settings → Bluetooth to reveal its Meshtastic name.</li>
+<li>On Windows the app checks pairing and pairs the radio itself when needed, prefilling the Meshtastic PIN (<code>123456</code>). On Linux an unpaired radio asks for a PIN; use <code>123456</code> for Meshtastic. If pairing is stuck, use <strong>Remove &amp; Re-pair Device</strong>.</li>
+<li>A radio can be owned by only one protocol at a time. If it is already connected to MeshCore or Reticulum, disconnect it there first.</li>
+</ul>
+<h3 id="usb-serial">USB serial<a class="headerlink" href="#usb-serial" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Saved port signatures let mesh-client reconnect to the same physical device after re-enumeration.</li>
+<li>On Linux, add your user to the <code>dialout</code> group if you see access denied. On Windows, install the CH340, CP210x, or FTDI driver that matches your board.</li>
+</ul>
+<h3 id="wifihttp-and-wifitcp-fast">WiFi/HTTP and WiFi/TCP (fast)<a class="headerlink" href="#wifihttp-and-wifitcp-fast" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Enter the address as <code>hostname</code>, <code>192.168.1.x</code>, or <code>[fd00::1]</code>. For <strong>WiFi/TCP (fast)</strong> the port defaults to <strong>4403</strong> when omitted, for example <code>meshtastic.local:4403</code>.</li>
+<li>If <code>meshtastic.local</code> is unreliable, use the device IP address; desktop mDNS can be flaky. On Windows, <code>.local</code> names need Bonjour.</li>
+<li>Remembered addresses auto-connect on launch and support quick reconnect after drops.</li>
+</ul>
+<h3 id="mqtt">MQTT<a class="headerlink" href="#mqtt" title="Permanent link">&para;</a></h3>
+<p>The <strong>MQTT Connection</strong> card on the Connection tab receives mesh traffic from a broker.</p>
+<ul>
+<li><strong>Channel PSKs</strong>: one key per line, <code>ChannelName=base64</code> or <code>ChannelName@index=base64</code> when your local slot differs from the topic name. Keys must decode to 16 bytes (AES-128) or 32 bytes (AES-256). The default LongFast key is always tried; keys from the Radio tab sync automatically when a radio is connected.</li>
+<li><strong>Enable TLS (mqtts / wss)</strong> for private brokers, with an optional <strong>Allow insecure TLS</strong> for self-signed certificates.</li>
+<li><strong>Saved profile</strong> lets you name and switch broker settings. Switching to a profile with a different broker waits until you disconnect and reconnect MQTT.</li>
+<li>Each message shows a transport badge: <strong>RF</strong>, <strong>MQTT</strong>, or <strong>both</strong>. When the same message arrives by both within about 10 minutes, one bubble is kept.</li>
+<li>MQTT-only sessions cannot administer remote nodes (PKC remote admin needs a connected local radio).</li>
+</ul>
+<p>See <a href="../development/mqtt/">Developer notes: MQTT</a> and <a href="../troubleshooting/#mqtt">Troubleshooting — MQTT</a>.</p>
+<h3 id="link-troubleshooting">Link troubleshooting<a class="headerlink" href="#link-troubleshooting" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Where to look</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bluetooth connect fails, pairing loops, wake problems</td>
+<td><a href="../troubleshooting/#bluetooth-ble">Troubleshooting — Bluetooth (BLE)</a>, <a href="../development/ble-serial/">BLE and serial notes</a></td>
+</tr>
+<tr>
+<td>Serial port missing, access denied, port already open</td>
+<td><a href="../troubleshooting/#usb-serial">Troubleshooting — USB serial</a></td>
+</tr>
+<tr>
+<td>HTTP/TCP fails, slow link, <code>.local</code> name not found</td>
+<td><a href="../troubleshooting/#wi-fi-http-and-tcp">Troubleshooting — Wi-Fi, HTTP, and TCP</a></td>
+</tr>
+<tr>
+<td>Broker refused, decrypt fails</td>
+<td><a href="../troubleshooting/#mqtt">Troubleshooting — MQTT</a></td>
+</tr>
+<tr>
+<td>Anything else on Meshtastic</td>
+<td><a href="../troubleshooting/#meshtastic">Troubleshooting — Meshtastic</a></td>
+</tr>
+</tbody>
+</table>
+<p>Use <strong>Log → Analyze</strong> on connection problems; it recognizes common transport failures.</p>
+<hr />
+<h2 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h2>
+<p>Channels live on <strong>Device → Radio</strong> under <strong>Channels</strong>. Select a channel to edit it, then use <strong>Save Channel</strong> (or <strong>Reset to defaults</strong>).</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>Channel name.</td>
+</tr>
+<tr>
+<td><strong>Role</strong></td>
+<td><strong>Primary</strong>, <strong>Secondary</strong>, or <strong>Disabled</strong>.</td>
+</tr>
+<tr>
+<td><strong>Key Size</strong></td>
+<td><strong>None (no encryption)</strong>, <strong>Simple (default Meshtastic key)</strong>, <strong>AES-128</strong>, or <strong>AES-256</strong>.</td>
+</tr>
+<tr>
+<td><strong>Encryption Key</strong></td>
+<td>Base64 key (<strong>Encryption Key (base64)</strong>). <strong>Regenerate</strong> generates a random key.</td>
+</tr>
+<tr>
+<td><strong>MQTT Uplink</strong></td>
+<td>Forward packets received on this channel to the MQTT broker (RF to MQTT), using the channel's real name and PSK.</td>
+</tr>
+<tr>
+<td><strong>MQTT Downlink</strong></td>
+<td>Subscribe to the broker and re-broadcast packets. Follows the radio's MQTT proxy settings.</td>
+</tr>
+<tr>
+<td><strong>Position precision</strong></td>
+<td>How precisely your location is shared on this channel (0 means no location).</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>Simple</strong> option uses the default public key shared by all default-configuration devices, so it is not private. All nodes on a channel must use the same key.</p>
+<p>Also on the Radio tab: region and modem preset, device role, and the <strong>Display</strong>, <strong>Bluetooth</strong>, and <strong>Power</strong> sections. On firmware 2.8+, the modem preset list follows the radio's per-region preset map.</p>
+<h3 id="hashtag-channels">Hashtag channels<a class="headerlink" href="#hashtag-channels" title="Permanent link">&para;</a></h3>
+<p>Deriving a channel key from a <code>#name</code> is a <strong>MeshCore</strong> feature (see <a href="../meshcore/#channels">MeshCore channels</a>). On Meshtastic, create or edit a channel on the Radio tab and paste or generate the base64 key, or import a channel URL.</p>
+<h3 id="channel-urls">Channel URLs<a class="headerlink" href="#channel-urls" title="Permanent link">&para;</a></h3>
+<p><strong>Share / import channel URL</strong> on the Radio tab uses the same ChannelSet format as the Android and web clients.</p>
+<p><strong>Export</strong>: choose <strong>Include secondary channels</strong> if wanted, then <strong>Generate link</strong>. You get a <strong>Web link (Android QR)</strong> (<code>https://meshtastic.org/e/#…</code>), a <strong>meshtastic:// link</strong>, and a QR code, each with a copy button.</p>
+<p><strong>Import</strong>: paste into <strong>Paste channel URL</strong>, review <strong>Channels in link</strong>, then choose a mode:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Replace channels</strong></td>
+<td>Replaces your channel configuration and LoRa settings on the connected radio.</td>
+</tr>
+<tr>
+<td><strong>Add channels</strong></td>
+<td>Adds new channels; existing channels with the same name are skipped. <strong>Also apply LoRa settings from link</strong> is optional.</td>
+</tr>
+</tbody>
+</table>
+<p>Click <strong>Apply to radio</strong> and confirm. Channel URL import and export is Meshtastic-only.</p>
+<p>To stop using a channel on Meshtastic, set its <strong>Role</strong> to <strong>Disabled</strong> (or <strong>Reset to defaults</strong>) on the Radio tab and save. The Chat-side <strong>Remove channel</strong> menu is a MeshCore feature.</p>
+<hr />
+<h2 id="direct-messages">Direct messages<a class="headerlink" href="#direct-messages" title="Permanent link">&para;</a></h2>
+<p>Open a DM from <strong>Nodes</strong> (node detail → <strong>Message</strong>) or from a channel message sender. DMs need the peer's public key; a node with a key is labelled "Has public key - can send DMs" in node detail, and a keyless row is shown as chat-only.</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Queued</strong></td>
+<td>Composed while disconnected; sent when the radio connects (durable outbox survives restart).</td>
+</tr>
+<tr>
+<td><strong>Sending…</strong></td>
+<td>Handed to the radio.</td>
+</tr>
+<tr>
+<td><strong>Delivered</strong></td>
+<td>A delivery ACK came back.</td>
+</tr>
+<tr>
+<td><strong>no ACK</strong> / <strong>Failed</strong></td>
+<td>No acknowledgement arrived. The message may still have been sent; no other node in range may have answered.</td>
+</tr>
+<tr>
+<td><strong>Blocked</strong></td>
+<td>No encryption key available for the peer.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Automatic resend</strong>: a failed message is resent up to 3 times (after 15 seconds, 1 minute, then 3 minutes). The bubble shows a <strong>Retrying (n/max)</strong> countdown with <strong>Cancel retry</strong>.</li>
+<li><strong>Resend message</strong> stays available on the bubble afterwards for a manual resend.</li>
+<li>A DM tab can be closed with <strong>Close DM tab</strong>. The DM info header shows the peer's battery, last heard, and SNR.</li>
+<li>Long messages are split into <code>[N/T]</code> chunks (at most 9) automatically. This is Meshtastic and Reticulum behavior; MeshCore is single-packet.</li>
+<li>Reactions, replies, starring, link previews, export, drafts, and the F1–F12 macro bar are shared with the other protocols; see <a href="../development/chat/">Developer notes: Chat</a> and <a href="../chat/">Chat guide</a>.</li>
+</ul>
+<hr />
+<h2 id="nodes">Nodes<a class="headerlink" href="#nodes" title="Permanent link">&para;</a></h2>
+<p><strong>Network → Nodes</strong> (heading <strong>Node Database</strong>) lists every node the radio has heard.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Columns</td>
+<td>Health, Favorite, ID, Long Name, Short, Last Heard, Type, Role, Hops, MQTT, Lat/Lon, MGRS, Signal, SNR, Battery, Voltage, Ch.Util, Air Tx, Alt, Redund.</td>
+</tr>
+<tr>
+<td><strong>Last heard</strong></td>
+<td>Any live RF packet (position, telemetry, traceroute, text), not only chat.</td>
+</tr>
+<tr>
+<td><strong>Signal bars</strong></td>
+<td>Direct (0-hop) RF neighbors only; multi-hop and MQTT-only paths omit bars.</td>
+</tr>
+<tr>
+<td><strong>Favorites</strong></td>
+<td>Star a row (<strong>Add to favorites</strong> / <strong>Remove from favorites</strong>) to pin it. Persisted in the app database.</td>
+</tr>
+<tr>
+<td><strong>Distance filter</strong></td>
+<td>Enable in <strong>App → Appearance</strong>. The list then hides nodes beyond the chosen distance; a banner shows how many are hidden. Without a GPS fix, all nodes show.</td>
+</tr>
+<tr>
+<td><strong>Status filter</strong></td>
+<td>Filter by <strong>Online</strong>, <strong>Stale</strong>, or <strong>Offline</strong>.</td>
+</tr>
+<tr>
+<td><strong>Contact groups</strong></td>
+<td><strong>Manage groups</strong> creates groups and members; the group filter limits the list. Meshtastic also has built-in <strong>GPS</strong>, <strong>RF+MQTT</strong>, and <strong>Router</strong> filters. Custom groups are shared by all protocols.</td>
+</tr>
+<tr>
+<td><strong>Export</strong></td>
+<td><strong>Export JSON</strong> (topology) or <strong>Export CSV</strong> of the node list.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="node-health">Node health<a class="headerlink" href="#node-health" title="Permanent link">&para;</a></h3>
+<p>Each row shows a 0 to 100 <strong>Node health</strong> badge: signal 40 points, recency 30, load 20, battery 10. Green, yellow, and red coloring comes with a tooltip showing the breakdown. A separate <strong>Redund.</strong> column shows a redundancy score from the last 20 packets and a <code>+N</code> echo count.</p>
+<h3 id="node-detail">Node detail<a class="headerlink" href="#node-detail" title="Permanent link">&para;</a></h3>
+<p>Click a row to open node detail.</p>
+<ul>
+<li><strong>Message</strong>, <strong>Show on map</strong>, <strong>Trace Route</strong> (per-hop display), <strong>Request Position</strong>, <strong>Delete Node</strong>.</li>
+<li><strong>Neighbors</strong>, <strong>Map Report</strong>, <strong>Pax Counter</strong>, <strong>Detection Sensor</strong>, <strong>Range Test</strong>, channel utilization, packet redundancy, and a collapsible <strong>Path History</strong> when data exists.</li>
+<li><strong>Notes</strong>: private free-text notes about the node (not transmitted), saved in SQLite.</li>
+<li><strong>Watch</strong>: turns on an OS desktop notification when the node goes online or offline. The button reads <strong>Watching</strong> while on.</li>
+<li><strong>MQTT Ignore</strong>: excludes the node's MQTT data from diagnostics.</li>
+<li><strong>Remote admin key</strong> and <strong>Configure node remotely</strong> (see <a href="#admin">Admin</a>).</li>
+<li><strong>Verify key…</strong> (see <a href="#key-verification">Key verification</a>).</li>
+</ul>
+<hr />
+<h2 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h2>
+<p>The <strong>Modules</strong> tab (Device section) edits firmware module configuration. Section order follows what the radio exposes and is not strictly alphabetical. Each section stays on <strong>Waiting for … settings from the device</strong> with <strong>Apply</strong> disabled until its slice has been read; if a module key never appears, the connected firmware does not expose it.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Sections</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Telemetry and sensors</td>
+<td><strong>Telemetry Module</strong> (device, environment, air quality intervals), <strong>Detection Sensor Module</strong>, <strong>Pax Counter Module</strong>, <strong>Range Test Module</strong></td>
+</tr>
+<tr>
+<td>Messaging and alerts</td>
+<td><strong>Canned Messages</strong>, <strong>External Notification Module</strong>, <strong>RTTTL Ringtone</strong>, <strong>Audio module</strong> (when exposed by firmware), <strong>Status Message Module</strong></td>
+</tr>
+<tr>
+<td>Networking and relay</td>
+<td><strong>MQTT Relay (Device-Side)</strong>, <strong>Map Report</strong>, <strong>Serial Module</strong>, <strong>IP Tunnel</strong> (status only), <strong>Traffic Management Module</strong>, <strong>TAK Module</strong></td>
+</tr>
+<tr>
+<td>Mesh behavior</td>
+<td><strong>Neighbor Info Module</strong>, <strong>Store &amp; Forward Module</strong>, <strong>Mesh Beacon Module</strong></td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td><strong>Remote Hardware</strong> (GPIO pins plus a live status stream when enabled), <strong>Ambient Lighting Module</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Module status displays show packet counts and last-received timestamps for Range Test, Serial, Store &amp; Forward, Remote Hardware, and IP Tunnel when the module is enabled. A <strong>Debug modules</strong> section holds less common options. A notice at the top of Radio, Modules, and Security reminds you that changes persist to the device and may require a reboot.</p>
+<p>Developer detail: <a href="../development/meshtastic/">Meshtastic config apply and modules</a>.</p>
+<hr />
+<h2 id="store--forward">Store &amp; Forward<a class="headerlink" href="#store--forward" title="Permanent link">&para;</a></h2>
+<p>When a Store &amp; Forward router is on the mesh, mesh-client can replay recent chat history it missed. After the radio finishes configuring, the client may request history on the first primary-router heartbeat, within capped message and time windows with a cooldown and an offline gate; this auto-fetch can be turned off in App settings.</p>
+<ul>
+<li><strong>Catch up from Store &amp; Forward</strong> in Chat fetches manually.</li>
+<li>Replayed text carries a <strong>Store &amp; Forward</strong> badge ("Replayed from Store &amp; Forward").</li>
+<li>If no router has been heard, wait for a heartbeat or check the <strong>Store &amp; Forward Module</strong> section on the Modules tab.</li>
+</ul>
+<p>Limits, cooldowns, and the history profile setting are in <a href="../development/meshtastic/">Developer notes: Meshtastic</a>.</p>
+<hr />
+<h2 id="advanced-tools">Advanced tools<a class="headerlink" href="#advanced-tools" title="Permanent link">&para;</a></h2>
+<h3 id="key-verification">Key verification<a class="headerlink" href="#key-verification" title="Permanent link">&para;</a></h3>
+<p>Key verification lets two operators confirm each other's public keys out of band. It requires <strong>Meshtastic firmware 2.7 or newer</strong>; on older firmware node detail shows an unsupported-firmware notice.</p>
+<ol>
+<li>Open <strong>node detail</strong> for a node that has shared its public key and click <strong>Verify key…</strong>.</li>
+<li>The <strong>Verify key</strong> dialog walks through the firmware handshake. One side is shown a <strong>Security number</strong>; read it to the other operator over a separate channel (voice or in person), never over the mesh. The other side types it in and clicks <strong>Continue</strong>.</li>
+<li>Both radios then show <strong>Verification characters</strong>. Compare them over the same separate channel and click <strong>They match</strong> only if they are identical, or <strong>They do not match</strong> otherwise.</li>
+</ol>
+<p>If you confirm, the node shows a <strong>Key verified</strong> badge. Esc or <strong>Cancel verification</strong> abandons the handshake.</p>
+<table>
+<thead>
+<tr>
+<th>Badge</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Key verified</strong></td>
+<td>Manual: you and the other operator compared the security number and matching characters using the radio's handshake.</td>
+</tr>
+<tr>
+<td><strong>XEdDSA signed</strong></td>
+<td>The radio cryptographically checked a signature from this node. This proves the packets came from the holder of the key, but not who that person is.</td>
+</tr>
+</tbody>
+</table>
+<p>Only <strong>Key verified</strong> means a person confirmed the key. Details are in <strong>How key trust works</strong> in node detail; see also <a href="../key-backup-and-crypto/">Key backup and cryptography</a>.</p>
+<h3 id="remote-shell">Remote shell<a class="headerlink" href="#remote-shell" title="Permanent link">&para;</a></h3>
+<p><strong>Device → Administration → Remote shell (Meshtastic)</strong> opens a command-line session on another node's firmware. The section appears when the radio's provider supports it and is collapsed by default.</p>
+<ul>
+<li>Read the <strong>Security warning: remote command-line access</strong> first. A remote shell is administrator access: use it only on nodes you own, do not type secrets, and expect LoRa airtime for every keystroke and reply, with delays and dropped frames.</li>
+<li>Tick <strong>I understand the risks and I am authorized to access this node</strong>. The <strong>Open shell</strong> button stays disabled until you do and a valid <strong>Target node</strong> is entered (<code>!a1b2c3d4</code> or a node number). When <strong>Configure node</strong> targets a remote node, that node fills in.</li>
+<li>The target firmware must have remote shell enabled and must authorize this radio. Idle sessions close automatically after 10 minutes.</li>
+<li>Use <strong>Send</strong>, <strong>Send Ctrl+C</strong>, <strong>Clear</strong>, and <strong>Close shell</strong>. The transcript stays in memory only and is discarded when you disconnect or close the app; leaving the Administration tab closes the session.</li>
+<li>Lost output frames are reported in the panel, and older output is dropped to keep the transcript small.</li>
+</ul>
+<p>Reticulum has its own separate <strong>Remote</strong> tab (rnsh); this one is Meshtastic only.</p>
+<h3 id="xmodem-file-transfer">XMODEM file transfer<a class="headerlink" href="#xmodem-file-transfer" title="Permanent link">&para;</a></h3>
+<p><strong>Device → Radio → XMODEM file transfer</strong> transfers files to and from the connected radio's firmware. It is <strong>local radio only</strong>: the section is hidden while <strong>Configure node</strong> targets a remote node, and the buttons are disabled while disconnected.</p>
+<ol>
+<li>Enter <strong>Remote filename</strong> (for example <code>config.txt</code>; invalid characters are rejected).</li>
+<li><strong>Upload file…</strong> sends a file from your computer; <strong>Download file</strong> saves the radio's file to your computer.</li>
+</ol>
+<h3 id="firmware-lockdown">Firmware lockdown<a class="headerlink" href="#firmware-lockdown" title="Permanent link">&para;</a></h3>
+<p><strong>Device → Radio → Firmware Lockdown</strong> shows lockdown status reported by the firmware. A locked radio rejects configuration changes until it is unlocked with its passphrase. Radios without lockdown support never report a status, and the section shows <strong>Not reported by this radio</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Field or control</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State</strong></td>
+<td><strong>Needs provisioning</strong>, <strong>Locked</strong>, <strong>Unlocked</strong>, <strong>Unlock failed</strong>, <strong>Disabled</strong>, or <strong>Unspecified</strong>.</td>
+</tr>
+<tr>
+<td><strong>Reason</strong>, <strong>Reboots remaining</strong>, <strong>Unlocked until</strong>, <strong>Retry backoff</strong></td>
+<td>Shown when the firmware reports them.</td>
+</tr>
+<tr>
+<td><strong>Passphrase</strong> with <strong>Provision</strong> / <strong>Unlock</strong></td>
+<td>Set the passphrase on a new radio, or unlock a locked one.</td>
+</tr>
+<tr>
+<td><strong>Lock now</strong></td>
+<td>Lock the radio immediately.</td>
+</tr>
+<tr>
+<td><strong>Disable lockdown</strong></td>
+<td>Turn lockdown off.</td>
+</tr>
+</tbody>
+</table>
+<p>Buttons stay disabled until a passphrase is entered and the radio is connected.</p>
+<h3 id="mesh-beacon">Mesh Beacon<a class="headerlink" href="#mesh-beacon" title="Permanent link">&para;</a></h3>
+<p>The <strong>Mesh Beacon Module</strong> section on the Modules tab lets a node advertise itself and, optionally, a channel and radio settings that listeners can choose to join. It appears when the connected firmware exposes the module.</p>
+<p><strong>Configure</strong></p>
+<ul>
+<li><strong>Broadcast beacons</strong> sends a beacon periodically. <strong>Broadcast interval</strong> has a minimum of 3600 seconds (1 hour).</li>
+<li><strong>Beacon message</strong> is sent with every copy (byte counter shown), so keep it short. <strong>Legacy text split</strong> also sends the text as a separate message for older firmware, using more airtime.</li>
+<li><strong>Mesh offer</strong>: <strong>Offered channel</strong> copies a channel name and key into the beacon (anyone who hears it can join), and <strong>Offered region</strong>, <strong>Offered modem preset</strong>, and <strong>Offered frequency slot</strong> advertise radio settings. Leave them on <strong>None</strong> / <strong>Not advertised</strong> to offer nothing.</li>
+<li><strong>Broadcast targets</strong> sends one beacon copy per target, switching the radio between each target's region, modem preset, channel, and frequency slot. With no targets, one beacon is sent on the current settings over the primary channel.</li>
+<li><strong>Listen for beacons</strong> receives beacons from other nodes. Beacon text goes to the inbox; nothing is applied automatically.</li>
+</ul>
+<p><strong>Heard beacons</strong></p>
+<p>Heard beacons list under <strong>Heard beacons</strong> with the offered channel, region, preset, and slot.</p>
+<ul>
+<li><strong>Join channel</strong> adds the offered channel to the first free secondary slot (never the primary) after you confirm; it is blocked with <strong>No free channel slot to join this channel.</strong> when slots are full, and noted when the channel is already on the radio.</li>
+<li><strong>Use radio settings</strong> applies the offered region, modem preset, or slot after you confirm. The radio reboots and may lose contact with your current mesh, and a region mismatch is called out rather than changed silently.</li>
+<li>Joining is only available for the connected radio, not for a remote <strong>Configure node</strong> target.</li>
+</ul>
+<h3 id="cayenne-lpp-charts">Cayenne LPP charts<a class="headerlink" href="#cayenne-lpp-charts" title="Permanent link">&para;</a></h3>
+<p><strong>Device → Telemetry → Cayenne LPP sensors</strong> charts Cayenne Low Power Payload packets (CAYENNE_APP) sent by sensor nodes. This is <strong>Meshtastic only</strong>: it is gated by the Meshtastic-only <code>hasCayenneTelemetry</code> capability and does not apply to MeshCore or Reticulum.</p>
+<ul>
+<li>Pick a <strong>Sensor node</strong>, then read one chart per decoded kind: temperature, humidity, barometric pressure, illuminance, GPS position, analog and digital inputs and outputs, accelerometer, gyrometer, power, energy, distance, and more.</li>
+<li>This is session history only; it is not saved.</li>
+<li>Node detail also shows <strong>Sensor telemetry (LPP)</strong> when LPP data exists.</li>
+</ul>
+<hr />
+<h2 id="admin">Admin<a class="headerlink" href="#admin" title="Permanent link">&para;</a></h2>
+<p>The <strong>Administration</strong> tab (Device section) holds device commands for the connected radio. They take effect immediately and show a confirmation first.</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reboot</strong></td>
+<td>Reboots the radio.</td>
+</tr>
+<tr>
+<td><strong>Shutdown</strong></td>
+<td>Powers off; you must switch the radio back on physically.</td>
+</tr>
+<tr>
+<td><strong>Reset NodeDB</strong></td>
+<td>Clears the radio's node database; it rediscovers nodes over time. Remote targets get a preserve-favorites option.</td>
+</tr>
+<tr>
+<td><strong>Reboot to OTA</strong></td>
+<td>Reboots into over-the-air update mode. Local radio only.</td>
+</tr>
+<tr>
+<td><strong>Enter DFU Mode</strong></td>
+<td>Reboots into Device Firmware Update mode. Local radio only.</td>
+</tr>
+<tr>
+<td><strong>Factory Reset Config Only</strong></td>
+<td><strong>Danger Zone.</strong> Resets configuration but preserves the node database. Local radio only.</td>
+</tr>
+<tr>
+<td><strong>Factory Reset Device</strong></td>
+<td><strong>Danger Zone.</strong> Erases all settings, channels, and stored data permanently.</td>
+</tr>
+</tbody>
+</table>
+<p>OTA and DFU are disabled when <strong>Configure node</strong> targets a remote node. <strong>Flash device firmware</strong> (USB, supported boards only) also appears here for a local radio; it needs the radio's USB serial connection closed and has its own checklist. See the <a href="../firmware/">firmware guide</a>.</p>
+<h3 id="configure-a-remote-node">Configure a remote node<a class="headerlink" href="#configure-a-remote-node" title="Permanent link">&para;</a></h3>
+<p>PKC remote administration (firmware 2.5+) lets you edit another node's settings through your connected local radio.</p>
+<ol>
+<li>Save the remote node's admin public key in node detail (<strong>Admin key</strong>, base64, <code>base64:…</code>, or 64-character hex), or use the NodeDB key when it is present.</li>
+<li>Choose the node with <strong>Configure node</strong> on Radio, Modules, Security, or Administration, or click <strong>Configure node remotely</strong> in node detail.</li>
+<li>Use <strong>Copy</strong> next to your public key on <strong>Security</strong> for the one-time trust setup on the remote node.</li>
+</ol>
+<p>A connected local radio is required; MQTT-only sessions cannot administer remote nodes. See <a href="../troubleshooting/#meshtastic">Troubleshooting — Meshtastic</a>.</p>
+<h3 id="security-tab">Security tab<a class="headerlink" href="#security-tab" title="Permanent link">&para;</a></h3>
+<p><strong>Device → Security</strong> manages keys on the local radio: DM keys with <strong>Regenerate Keys</strong>, <strong>Admin Keys</strong> with <strong>Apply Admin Keys</strong>, <strong>Administration Settings</strong> (managed device, serial console, debug log API, legacy admin channel), and <strong>Key Backup / Restore</strong>. <strong>Backup Keys</strong> stores the connected radio's public and private keys per node in an encrypted local archive; <strong>Restore Keys</strong> and <strong>Restore from backup…</strong> apply them. Backing up one radio never overwrites another's archive. See <a href="../key-backup-and-crypto/">Key backup and cryptography</a>.</p>
+<hr />
+<h2 id="diagnostics">Diagnostics<a class="headerlink" href="#diagnostics" title="Permanent link">&para;</a></h2>
+<p>The shared <strong>Monitor → Diagnostics</strong> tab shows LoRa routing and RF findings for Meshtastic: network health (<strong>Healthy</strong>, <strong>Attention</strong>, <strong>Degraded</strong>), routing anomalies such as hop goblins, channel utilization history, and foreign-LoRa overhear tables. Distance-based checks use a trusted position only (this session's radio GPS fix or a location you confirmed). See the <a href="../diagnostics/">Diagnostics reference</a>.</p>
+<p>Also under Monitor: <strong>Stats</strong> and <strong>Sniffer</strong> (packet log), and <strong>RF</strong> and <strong>Graph</strong> for LoRa-only views.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p>Start with <a href="../troubleshooting/#meshtastic">Troubleshooting — Meshtastic</a>. Common entries:</p>
+<ul>
+<li>Modules tab stuck on "waiting for settings"</li>
+<li><strong>Configure node remotely</strong> does nothing or is disabled</li>
+<li>Remote admin channel settings fail to load</li>
+<li>MQTT decrypts on other clients but not mesh-client</li>
+<li>Battery or uptime for your own node looks wrong: <a href="../meshtastic-telemetry-local-client/">Meshtastic: mesh vs local client telemetry</a></li>
+</ul>
+<p>For connection layers, use the <a href="#link-troubleshooting">link troubleshooting</a> table above. Attach the log with <strong>App → Export for GitHub</strong> when reporting a bug.</p>
+<hr />
+<h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../chat/">Chat guide</a> and <a href="../development/chat/">Developer notes: Chat</a></li>
+<li><a href="../maps/">Maps guide</a> and <a href="../development/offline-maps/">Offline maps</a></li>
+<li><a href="../tak/">TAK guide</a> (TAK tab and CoT gateway)</li>
+<li><a href="../firmware/">Firmware guide</a></li>
+<li><a href="../meshtastic-telemetry-local-client/">Meshtastic: mesh vs local client telemetry</a></li>
+<li><a href="../key-backup-and-crypto/">Key backup and cryptography</a></li>
+<li><a href="../development/meshtastic/">Developer notes: Meshtastic</a></li>
+<li><a href="../emcomm/">EMCOMM: MECP and Incident Command</a></li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

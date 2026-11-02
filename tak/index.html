@@ -1,0 +1,3918 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+      
+      
+      
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/tak/">
+      
+      
+        <link rel="prev" href="../maps/">
+      
+      
+        <link rel="next" href="../firmware/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>TAK gateway - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tak-gateway-cot" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TAK gateway
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../release-notes/ai-catch-up/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Release notes
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../chat/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../troubleshooting/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Release notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-notes/ai-catch-up/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catch up (unreleased)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-tak-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What TAK does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-tak-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local TAK server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atak-data-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK data package
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-atak-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What ATAK sees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-tak-server-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote TAK server relay
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Remote TAK server relay">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#certificates-for-the-remote-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificates for the remote server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#messaging-in-atak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messaging in ATAK
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Messaging in ATAK">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channels-as-contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels as contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-channel-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-channel options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mecp-in-atak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MECP in ATAK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-messages-with-companions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct messages with companions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit-filters-and-icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit filters and icons
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit filters and icons">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repeater-and-room-server-icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeater and room server icons
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atak-plugin-messages-meshtastic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK plugin messages (Meshtastic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related links
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../live-traffic-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Traffic Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database-encryption-decision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Encryption Decision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-announcements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Announcements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Games Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_14" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../development/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subsystem reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_14" id="__nav_7_14_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Subsystem reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/architecture-quick-ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture quick reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/common-issues/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/renderer-origin-coi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Renderer origin and recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ble-serial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BLE and serial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ai-summarization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI summaries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/connection-panel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection panel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/mqtt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MQTT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-repeaters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Repeaters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-rooms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Rooms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/meshcore-companion-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore companion CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/mecp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/offline-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/live-packet-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live packet map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/settings-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-licenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-party licenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-tak-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What TAK does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before you start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-tak-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local TAK server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atak-data-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK data package
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-atak-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What ATAK sees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-tak-server-relay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote TAK server relay
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Remote TAK server relay">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#certificates-for-the-remote-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificates for the remote server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#messaging-in-atak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messaging in ATAK
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Messaging in ATAK">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channels-as-contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels as contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-channel-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-channel options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mecp-in-atak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MECP in ATAK
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#direct-messages-with-companions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct messages with companions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit-filters-and-icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit filters and icons
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit filters and icons">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repeater-and-room-server-icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeater and room server icons
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#atak-plugin-messages-meshtastic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK plugin messages (Meshtastic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-links" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related links
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/tak.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="tak-gateway-cot">TAK gateway (CoT)<a class="headerlink" href="#tak-gateway-cot" title="Permanent link">&para;</a></h1>
+<p>The <strong>TAK</strong> tab turns mesh-client into a Cursor on Target (CoT) gateway. It shows mesh nodes on the tactical maps of ATAK, WinTAK, and iTAK, and can pass chat between those apps and your radios. It works on Meshtastic, MeshCore, and Reticulum, and it can also relay the same positions to a remote OpenTAKServer, FreeTAKServer, or TAK Server.</p>
+<p>This guide is for operators. For problems, see <a href="../troubleshooting/#tak-cot-gateway">Troubleshooting — TAK (CoT gateway)</a>. For code, see <a href="../development/tak/">TAK gateway (developer map)</a>.</p>
+<hr />
+<h2 id="what-tak-does">What TAK does<a class="headerlink" href="#what-tak-does" title="Permanent link">&para;</a></h2>
+<p>The <strong>TAK</strong> tab sits in the <strong>Network</strong> rail section, after <strong>Remote</strong>. It is available on Meshtastic, MeshCore, and Reticulum, and it feeds every protocol at once, whichever tab is open.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Local TAK server</strong></td>
+<td>Broadcasts node positions as CoT XML events over TLS TCP (default port 8089) so ATAK, WinTAK, and iTAK clients see mesh nodes on their maps</td>
+</tr>
+<tr>
+<td><strong>Remote TAK server relay</strong></td>
+<td>Streams the same positions to an OpenTAKServer, FreeTAKServer, or TAK Server over mutual TLS, or over plain TCP</td>
+</tr>
+<tr>
+<td><strong>Certificates</strong></td>
+<td>Self-signed CA, server, and client certificates, made and kept by the app</td>
+</tr>
+<tr>
+<td><strong>ATAK data package</strong></td>
+<td>An importable bundle with the truststore, client certificate, and connection settings</td>
+</tr>
+<tr>
+<td><strong>Channels as ATAK contacts</strong></td>
+<td>Serves chosen MeshCore and Meshtastic channels to ATAK as chat contacts</td>
+</tr>
+<tr>
+<td><strong>Direct messages</strong></td>
+<td>Lets ATAK message a radio's companions from their markers</td>
+</tr>
+<tr>
+<td><strong>MECP in ATAK</strong></td>
+<td>Shows emergency reports as text and as map markers</td>
+</tr>
+<tr>
+<td><strong>Unit filters and icons</strong></td>
+<td>Restyle relayed nodes and give repeaters and room servers their own icons</td>
+</tr>
+<tr>
+<td><strong>ATAK plugin messages</strong></td>
+<td>Lists ATAK plugin packets heard from Meshtastic nodes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is relayed.</strong> Positions come from:</p>
+<ul>
+<li>Meshtastic and MeshCore nodes heard within their protocol's online window.</li>
+<li>Reticulum RMAP-discovered interfaces that have coordinates.</li>
+<li>Your own Reticulum position, when a static GPS position is set.</li>
+</ul>
+<p>Positions are re-sent every 5 minutes so markers do not go stale in ATAK.</p>
+<p><strong>Status.</strong> The panel shows <strong>Running</strong> or <strong>Stopped</strong> with the port and the number of connected clients, and lists each connected client with its callsign or address and how long it has been connected. The status bar shows one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected"). Like the device and MQTT indicators, it pulses red after an unexpected disconnect, and a manual stop stays gray.</p>
+<p><strong>Auto-start.</strong> <strong>Auto-start on application launch</strong> is off by default. When it is on, the local server starts with the app.</p>
+<hr />
+<h2 id="before-you-start">Before you start<a class="headerlink" href="#before-you-start" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>LAN IP.</strong> ATAK connects to your computer's LAN address. The data package uses that address as its connect host, and it must match the address in the server certificate. The app picks the address for you and skips virtual and VPN adapters (Docker bridges, <code>veth</code>, <code>tun</code>, <code>tap</code>, WireGuard, Tailscale, ZeroTier, and similar). If your computer has several network adapters, check that the address in the generated package is the one your devices can reach.</li>
+<li><strong>Same network.</strong> The phone, tablet, or PC running ATAK must be on the same LAN as the desktop running mesh-client.</li>
+<li><strong>Ports.</strong></li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>8089</strong></td>
+<td>Default TLS port of the local server and of most remote TAK servers. The local server accepts any port from <strong>1024</strong> to <strong>65535</strong></td>
+</tr>
+<tr>
+<td><strong>8446</strong></td>
+<td>Usual enrollment port on a remote TAK Server that issues certificates for a username and password</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li><strong>Firewall.</strong> Allow inbound TCP on the local server's port (default 8089) so devices can reach it.</li>
+<li><strong>Subject Alternative Name (SAN).</strong> The server certificate includes your server name and your LAN IP as SAN entries. Strict clients (iTAK, WinTAK, and newer ATAK) reject a certificate whose names do not match the address they dialed. If your LAN IP changes, regenerate the certificate if needed, then generate a new data package.</li>
+</ol>
+<hr />
+<h2 id="local-tak-server">Local TAK server<a class="headerlink" href="#local-tak-server" title="Permanent link">&para;</a></h2>
+<p>Open the <strong>TAK</strong> tab and use <strong>Server Settings</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Port (1024–65535)</strong></td>
+<td>8089</td>
+<td>Cannot be changed while the server is running</td>
+</tr>
+<tr>
+<td><strong>Server Name</strong></td>
+<td><code>mesh-client</code></td>
+<td>Baked into the server certificate. Cannot be changed while the server is running</td>
+</tr>
+<tr>
+<td><strong>Require client certificate (mTLS)</strong></td>
+<td>On</td>
+<td>Clients must present the client certificate from the data package. Cannot be changed while the server is running</td>
+</tr>
+<tr>
+<td><strong>Auto-start on application launch</strong></td>
+<td>Off</td>
+<td>Starts the server when the app opens</td>
+</tr>
+<tr>
+<td><strong>Sound ATAK's emergency alarm for an MECP MAYDAY</strong></td>
+<td>Off</td>
+<td>See <a href="#messaging-in-atak">Messaging in ATAK</a> and <a href="../emcomm/#reports-in-atak">EMCOMM: Reports in ATAK</a>. Takes effect at once, running or not</td>
+</tr>
+</tbody>
+</table>
+<p>Press <strong>Start Server</strong> to start and <strong>Stop Server</strong> to stop. <strong>Start Server</strong> stays disabled until the port is valid and the server name is not empty.</p>
+<p><strong>Connected Clients</strong> lists every ATAK device that has connected. Inbound CoT from local clients shows as contacts on the map, labelled as coming from a local ATAK client.</p>
+<hr />
+<h2 id="certificates">Certificates<a class="headerlink" href="#certificates" title="Permanent link">&para;</a></h2>
+<p>Under <strong>Certificates</strong>, mesh-client makes a self-signed CA plus server and client certificates (with node-forge) on first start and stores them in the app data directory. The server certificate includes DNS and your LAN IP in its Subject Alternative Name, so devices can verify TLS.</p>
+<p>Press <strong>Regenerate Certificates</strong> to make a new set at any time. This invalidates existing ATAK data packages: you must generate a new package and re-import it on every device.</p>
+<p>Regenerate certificates, then generate a new package, when:</p>
+<ul>
+<li>Your LAN IP changed.</li>
+<li>You changed the server name.</li>
+<li>A device reports the certificate as invalid and you have updated mesh-client.</li>
+</ul>
+<hr />
+<h2 id="atak-data-package">ATAK data package<a class="headerlink" href="#atak-data-package" title="Permanent link">&para;</a></h2>
+<p>Under <strong>ATAK Data Package</strong>, press <strong>Generate &amp; Reveal</strong>. The server must be running first. The app writes a <code>.zip</code> and reveals it in Finder or Explorer (<strong>Package saved — check Finder/Explorer</strong>).</p>
+<p>The package contains:</p>
+<ul>
+<li><code>certs/truststore.p12</code>, the CA as a password-protected PKCS#12 truststore that ATAK, iTAK, and WinTAK can load.</li>
+<li><code>certs/client.p12</code>, your client certificate and key.</li>
+<li><code>connection.pref</code>, the connection definition. Its connect string is your LAN IP and port with TLS (<code>&lt;LAN IP&gt;:&lt;port&gt;:ssl</code>).</li>
+<li>A <code>MANIFEST/manifest.xml</code> that asks ATAK to import the package.</li>
+</ul>
+<p>The PKCS#12 files use the password <code>atakatak</code>.</p>
+<p><strong>Importing.</strong> Copy the zip to the device and import it in ATAK, WinTAK, or iTAK. Remove any earlier mesh-client connection or package first.</p>
+<p><strong>Re-generate the package</strong> after certificate regeneration or a LAN IP change. The connect host must match the server certificate SAN.</p>
+<hr />
+<h2 id="what-atak-sees">What ATAK sees<a class="headerlink" href="#what-atak-sees" title="Permanent link">&para;</a></h2>
+<p>Once connected, ATAK shows each relayed node as a marker. Markers are drawn from the role the node advertises:</p>
+<ul>
+<li>Repeaters and routers as installations.</li>
+<li>Sensors as sensors.</li>
+<li>Everyone else as a team member.</li>
+</ul>
+<p>You can change this under <a href="#unit-filters-and-icons">Unit filters and icons</a>.</p>
+<p>Beyond markers, ATAK also receives:</p>
+<ul>
+<li><strong>Channel contacts</strong> and <strong>direct message</strong> contacts (see below).</li>
+<li><strong>MECP incidents</strong> as spot markers (see <a href="#messaging-in-atak">Messaging in ATAK</a>).</li>
+</ul>
+<p>Inbound CoT from your local ATAK clients and from the remote TAK server appears in mesh-client as contacts on the map. A contact's detail reads <strong>From a local ATAK client</strong> or <strong>From the remote TAK server</strong>.</p>
+<hr />
+<h2 id="remote-tak-server-relay">Remote TAK server relay<a class="headerlink" href="#remote-tak-server-relay" title="Permanent link">&para;</a></h2>
+<p>Use <strong>Remote TAK Server</strong> to stream node positions from every protocol to an OpenTAKServer, FreeTAKServer, or TAK Server, over TLS or plain TCP. It works with or without the local server.</p>
+<h3 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Server address</strong></td>
+<td>Hostname or IP address</td>
+</tr>
+<tr>
+<td><strong>Port</strong></td>
+<td>1–65535. Default 8089</td>
+</tr>
+<tr>
+<td><strong>Use TLS (recommended)</strong></td>
+<td>Mutual TLS. Turn it off to use plain TCP</td>
+</tr>
+<tr>
+<td><strong>Verify the server certificate (recommended)</strong></td>
+<td>On by default</td>
+</tr>
+<tr>
+<td><strong>Accept a certificate issued for a different name (imported CA only, as ATAK does)</strong></td>
+<td>Opt-out for servers set up that way. Needs verification on and an imported CA</td>
+</tr>
+<tr>
+<td><strong>Connect on application launch</strong></td>
+<td>Reconnects at app start. Not available on plain TCP or with verification off</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Plain TCP</strong> is unencrypted: anyone on the network path can read the relayed positions. Certificates are not used, and connecting at launch stays off.</p>
+<p><strong>Verification on (default).</strong> The server certificate must chain to the imported CA, or to the system trust store when no CA is imported, and must name the server address.</p>
+<p><strong>Name mismatch opt-out.</strong> This accepts a certificate issued for another name, as ATAK does. It needs verification on and an imported CA. After a successful enrollment, Mesh Client may turn this option on when a CA is available (chain verification stays on, but the server name is not checked). Clear it if you require name verification.</p>
+<p><strong>Verification off.</strong> Certificate failures do not stop the connection, so anyone who can intercept it receives the relayed positions, and the relay does not connect at launch.</p>
+<p><strong>Reconnect.</strong> The relay reconnects on its own after a drop. A manual <strong>Disconnect</strong> does not reconnect.</p>
+<h3 id="certificates-for-the-remote-server">Certificates for the remote server<a class="headerlink" href="#certificates-for-the-remote-server" title="Permanent link">&para;</a></h3>
+<p>Use one of these two ways to give the relay its credentials.</p>
+<p><strong>Import files.</strong> Choose <strong>Import Certificates</strong> and pick a <code>.p12</code> file or PEM files:</p>
+<ul>
+<li>A TAK data package carries a truststore and a client <code>.p12</code>, usually with the password <code>atakatak</code>.</li>
+<li>Enter the <strong>Certificate password</strong> before you import.</li>
+<li><strong>Remove Certificates</strong> deletes what you imported.</li>
+</ul>
+<p>The panel summarizes what is stored: the trusted CA, and the client certificate with its subject and expiry. With no CA imported, the server is checked against the system trust store.</p>
+<p><strong>Enroll with a username and password.</strong> TAK Servers that use logins issue a client certificate on their enrollment port (usually 8446), as ATAK does. Enter the server address first, then <strong>Username</strong>, <strong>Password</strong>, and <strong>Enrollment port</strong>, and press <strong>Get Certificate</strong>.</p>
+<ul>
+<li>The password is sent once and not saved.</li>
+<li>The private key stays in the main process.</li>
+<li>Enrollment needs server certificate verification on. For a self-signed server, import its CA first.</li>
+</ul>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The relay carries positions, plus any channel you tick <strong>Remote server</strong> for (read only).</li>
+<li>Direct messages, MECP spot markers, and ATAK's emergency alarm are never sent to the remote server.</li>
+</ul>
+<hr />
+<h2 id="messaging-in-atak">Messaging in ATAK<a class="headerlink" href="#messaging-in-atak" title="Permanent link">&para;</a></h2>
+<p>Under <strong>MeshCore messaging in ATAK</strong> and <strong>Meshtastic messaging in ATAK</strong>, set <strong>Channels in ATAK</strong> to <strong>Off</strong>, <strong>All channels</strong>, or <strong>Selected channels</strong>. Connect a radio first to list its channels.</p>
+<h3 id="channels-as-contacts">Channels as contacts<a class="headerlink" href="#channels-as-contacts" title="Permanent link">&para;</a></h3>
+<p>Each served channel becomes a contact on every connected ATAK device, and what the channel hears arrives from that contact. For Meshtastic this includes traffic heard over MQTT.</p>
+<p><strong>Names.</strong> A contact is named with its protocol:</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#MC Public</code></td>
+<td>MeshCore channel</td>
+</tr>
+<tr>
+<td><code>#MC ops</code></td>
+<td>MeshCore hashtag channel</td>
+</tr>
+<tr>
+<td><code>#MT 🔒 Ops</code></td>
+<td>Meshtastic private channel</td>
+</tr>
+</tbody>
+</table>
+<p>Type your own name in a channel's <strong>ATAK name</strong> field to replace the default.</p>
+<p><strong>Replies and reactions.</strong> A reply says whom it answers (<code>@Alice copy that</code>) and a reaction what it reacts to (<code>👍 to Alice: "meet at the trailhead…"</code>), on both protocols.</p>
+<h3 id="per-channel-options">Per-channel options<a class="headerlink" href="#per-channel-options" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>In ATAK</strong></td>
+<td>Serves the channel</td>
+</tr>
+<tr>
+<td><strong>ATAK name</strong></td>
+<td>Contact name in ATAK</td>
+</tr>
+<tr>
+<td><strong>ATAK can send</strong></td>
+<td>Lets a message to the contact be transmitted on that channel from this radio. Off means the channel is receive only</td>
+</tr>
+<tr>
+<td><strong>Add callsign</strong></td>
+<td>Prefixes the sender's callsign to the message. Turn it off for a bot channel, because a bot looks for its command at the start of the message and misses one that starts with a callsign</td>
+</tr>
+<tr>
+<td><strong>Remote server</strong></td>
+<td>Also streams the channel, read only, to the remote TAK server</td>
+</tr>
+<tr>
+<td><strong>Tracker fixes</strong></td>
+<td>Turns MeshCore tracker position messages (<code>!MT1</code>) into map markers (shown where the radio supports tracker channels)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sending.</strong> With <strong>ATAK can send</strong> on, a message to the contact is prefixed with the sender's callsign (<code>[VIPER] on scene</code>) and shows in Chat like any other. Sending is:</p>
+<ul>
+<li>Off by default.</li>
+<li>Cut to fit one mesh message.</li>
+<li>Limited to 10 messages a minute per device.</li>
+</ul>
+<p><strong>MeshCore replies.</strong> On a MeshCore channel, start with <code>@</code> and the start of a name to reply in MeshCore's form. <code>@silver are you on?</code> goes out as <code>@[Silver Eagle] [VIPER] are you on?</code>, with the callsign after the reply so MeshCore apps still see it. Start with <code>@@</code> to reply to whoever spoke last, the same as MeshCore TAK Bridge. If the start of the name fits several people heard on the channel, nothing is sent and the chat says who matched.</p>
+<p><strong>Held messages.</strong> Up to 50 messages heard while no ATAK device is connected are held for the first one to connect (for a day), and only that one.</p>
+<p><strong>Settings from earlier versions</strong> carry over. A channel that had a GeoChat room is served, keeps its send setting and its room name (as its ATAK name), and streams to the remote server.</p>
+<p><strong>Per channel, not per slot.</strong> Channel settings are kept per channel, so a channel moving into another's slot never inherits its settings, and ATAK devices are told to drop the old room contacts.</p>
+<h3 id="mecp-in-atak">MECP in ATAK<a class="headerlink" href="#mecp-in-atak" title="Permanent link">&para;</a></h3>
+<p>An MECP report heard on a served channel or in a direct message reaches ATAK in words, in the app's language, with its code line below (<code>🆘 MAYDAY: Injury · 2 people · 48.6520, 20.1305</code>), as MeshCore TAK Bridge shows one.</p>
+<p>Each open incident with a position is also a spot marker on ATAK's map, coloured by severity (grey for drills), and removed when the incident is resolved.</p>
+<p><strong>Emergency alarm.</strong> The option <strong>Sound ATAK's emergency alarm for an MECP MAYDAY</strong> is off by default. When on, a MAYDAY with a position also sets off ATAK's emergency alarm, cancelled when it is resolved. Anyone on a channel can send a MAYDAY, so the alarm only sounds for a MAYDAY with a position, never for a drill, a blocked sender, or an alert the app has silenced.</p>
+<p>Full details: <a href="../emcomm/#reports-in-atak">EMCOMM: Reports in ATAK</a>.</p>
+<hr />
+<h2 id="direct-messages-with-companions">Direct messages with companions<a class="headerlink" href="#direct-messages-with-companions" title="Permanent link">&para;</a></h2>
+<p>Tick <strong>Direct messages</strong> under a radio's messaging section. Every companion that radio can message can then be messaged from its marker in ATAK:</p>
+<ul>
+<li>A MeshCore companion in its contacts.</li>
+<li>Any Meshtastic node.</li>
+<li>A Reticulum LXMF peer whose delivery address is known.</li>
+</ul>
+<p>Reticulum has its own <strong>Reticulum messaging in ATAK</strong> section for this. An LXMF peer with no position appears at 0, 0 only once mesh-client has a conversation with it, so ATAK's contact list does not fill with every peer heard.</p>
+<p><strong>Sending.</strong> The message goes out from this radio as a direct message, prefixed with the sender's callsign, and shows in Chat like any other.</p>
+<p><strong>Delivery.</strong> ATAK marks the message delivered when the companion acknowledges it. If it still is not acknowledged after mesh-client's automatic resends, a "Not confirmed" note says so. For MeshCore, the note includes a reminder that a flood advert from each radio usually fixes a DM that keeps failing.</p>
+<p><strong>Replies.</strong> A companion's replies go to the ATAK device that last wrote to it, or to every connected device when none has. They are held for that device while it is away.</p>
+<p><strong>No marker.</strong> A companion with no marker on the map appears at 0, 0 for a day after a message.</p>
+<p><strong>Limits.</strong></p>
+<ul>
+<li>Direct messages are never sent to the remote TAK server.</li>
+<li>A message ATAK cannot deliver (direct messages off, or not a companion this radio can reach) gets a note in its conversation saying why.</li>
+</ul>
+<hr />
+<h2 id="unit-filters-and-icons">Unit filters and icons<a class="headerlink" href="#unit-filters-and-icons" title="Permanent link">&para;</a></h2>
+<p>Under <strong>Relayed unit styles</strong>, restyle how relayed nodes look in ATAK.</p>
+<h3 id="unit-filters">Unit filters<a class="headerlink" href="#unit-filters" title="Permanent link">&para;</a></h3>
+<p>Use <strong>Add filter</strong> to restyle nodes by name, node type, protocol, or a combination. Each filter has:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Choices</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Enable filter</strong></td>
+<td>On or off</td>
+</tr>
+<tr>
+<td><strong>Node type</strong></td>
+<td>Any node type, <strong>Companions and clients</strong>, <strong>Repeaters and routers</strong>, <strong>Room servers</strong>, <strong>Sensors</strong>, <strong>Trackers</strong></td>
+</tr>
+<tr>
+<td><strong>Protocol</strong></td>
+<td>Any protocol, or one protocol</td>
+</tr>
+<tr>
+<td><strong>Match type</strong></td>
+<td><strong>Name is</strong>, <strong>Name starts with</strong>, <strong>Name ends with</strong>, <strong>Name contains</strong></td>
+</tr>
+<tr>
+<td><strong>Name patterns</strong></td>
+<td>Any name, or comma-separated (for example <code>EMS-, Medic</code>)</td>
+</tr>
+<tr>
+<td><strong>Unit type</strong></td>
+<td><strong>Team member</strong>, <strong>Infantry</strong>, <strong>Reconnaissance</strong>, <strong>Medical</strong>, <strong>Ground vehicle</strong>, <strong>Installation</strong>, <strong>Sensor</strong>, <strong>Aircraft</strong></td>
+</tr>
+<tr>
+<td><strong>Team color</strong></td>
+<td>A team, or <strong>No team</strong></td>
+</tr>
+<tr>
+<td><strong>Team role</strong></td>
+<td>A role, or <strong>No role</strong></td>
+</tr>
+<tr>
+<td><strong>Custom color</strong></td>
+<td>A custom marker color</td>
+</tr>
+<tr>
+<td><strong>Remove the match from the callsign</strong></td>
+<td>Strips the matched text from the callsign</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rules.</strong></p>
+<ul>
+<li>A filter with no name pattern applies to every node of its type or protocol.</li>
+<li>The first enabled filter that matches wins.</li>
+<li><strong>Relay nodes that no filter matches</strong> controls whether unmatched nodes are relayed at all. When it is off, they are not relayed.</li>
+</ul>
+<p>Use <strong>Test a node name</strong>, <strong>Node type to test</strong>, and <strong>Protocol to test</strong> to see which filter applies. Press <strong>Save styles</strong> to apply (<strong>Saved and applied</strong>).</p>
+<h3 id="repeater-and-room-server-icons">Repeater and room server icons<a class="headerlink" href="#repeater-and-room-server-icons" title="Permanent link">&para;</a></h3>
+<p>Give repeaters (MeshCore repeaters, Meshtastic routers, Reticulum interfaces) and room servers each an icon from an ATAK icon set:</p>
+<ul>
+<li><strong>Icon for repeaters and routers</strong> and <strong>Icon for room servers</strong> take a path in the form <code>&lt;set UID&gt;/&lt;group&gt;/&lt;file&gt;</code>.</li>
+<li><strong>GeoOps icon for repeaters and routers</strong> and <strong>GeoOps icon for room servers</strong> pick from the GeoOps WildFire presets that MeshCore TAK Bridge offers (Repeater, Repeater Mobile Relay, Ranger Station, and others).</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>The icon follows the node type, so a filter can change a room server's team and role and it keeps its icon.</li>
+<li>Both fields are optional. Leave a field empty for the standard symbol.</li>
+<li>Each TAK device needs the same icon set installed. A device without it draws the standard symbol.</li>
+</ul>
+<hr />
+<h2 id="atak-plugin-messages-meshtastic">ATAK plugin messages (Meshtastic)<a class="headerlink" href="#atak-plugin-messages-meshtastic" title="Permanent link">&para;</a></h2>
+<p>On Meshtastic, incoming ATAK plugin packets from mesh nodes are listed under <strong>ATAK Plugin Messages</strong>, with the sender node, the packet count, and when the newest packet arrived.</p>
+<p>For the newest packet from each node the panel summarizes what it can decode: callsign, CoT type, team, position, battery, temperature, or chat text. A payload it cannot decode reads <strong>Payload not recognized as a TAK packet</strong>. When nothing has arrived, the section reads <strong>No ATAK plugin messages received from mesh.</strong></p>
+<p>This section appears only where the radio supports the ATAK plugin.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p>Common symptoms and fixes are in <a href="../troubleshooting/#tak-cot-gateway">Troubleshooting — TAK (CoT gateway)</a>:</p>
+<ul>
+<li>An EUD reports "TLS certificate invalid" or cannot connect with a mesh-client data package.</li>
+<li>ATAK reports "remote host's certificate not trusted; check truststore".</li>
+</ul>
+<p>Quick checks first:</p>
+<ol>
+<li>The server is running and the device is on the same LAN.</li>
+<li>The firewall allows inbound TCP on the server port (default 8089).</li>
+<li>You generated the data package after the last certificate regeneration or LAN IP change, and removed the old one before importing.</li>
+<li>For the remote relay, read <strong>Last error</strong> in the panel. Typical causes are an untrusted CA, a wrong name, a missing client certificate, or a server that is not using TLS.</li>
+</ol>
+<hr />
+<h2 id="security-notes">Security notes<a class="headerlink" href="#security-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Keys stay in the main process.</strong> Certificate and key handling, TLS, and enrollment run in the app's main process. The renderer never receives a private key.</li>
+<li><strong>Remote credentials.</strong> The imported client key is encrypted with the operating system's secure storage (Keychain, DPAPI, libsecret) when it is available. Otherwise it is stored in a file readable only by your user.</li>
+<li><strong>Enrollment password.</strong> Sent once and never saved.</li>
+<li><strong>Package password.</strong> The data package's PKCS#12 files use the well-known password <code>atakatak</code>, as TAK data packages do. Treat the zip as a secret, because it holds the client key.</li>
+<li><strong>mTLS.</strong> Leave <strong>Require client certificate (mTLS)</strong> on unless you understand the exposure. Without it, any device that can reach the port can receive relayed positions.</li>
+<li><strong>Plain TCP and verification off.</strong> Both expose relayed positions to anyone who can intercept the connection. Neither connects at launch.</li>
+<li><strong>Name mismatch opt-out.</strong> Only with verification on and an imported CA, as ATAK does.</li>
+<li><strong>Regenerating certificates</strong> invalidates old packages, which is the way to cut off a lost device.</li>
+<li><strong>Sending is off by default.</strong> <strong>ATAK can send</strong>, <strong>Direct messages</strong>, and ATAK's emergency alarm each need to be turned on, and sending is capped at 10 messages a minute per device.</li>
+</ul>
+<hr />
+<h2 id="related-links">Related links<a class="headerlink" href="#related-links" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../emcomm/#reports-in-atak">EMCOMM: Reports in ATAK</a> — MECP text, spot markers, and the emergency alarm</li>
+<li><a href="../troubleshooting/#tak-cot-gateway">Troubleshooting — TAK (CoT gateway)</a></li>
+<li><a href="../features/">Features</a> — TAK Server (CoT Gateway) summary</li>
+<li><a href="../development/tak/">TAK gateway (developer map)</a></li>
+<li><a href="../reticulum/">Reticulum</a> — LXMF peers that ATAK can message</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

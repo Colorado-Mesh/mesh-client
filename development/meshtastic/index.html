@@ -16,7 +16,7 @@
         <link rel="prev" href="../connection-panel/">
       
       
-        <link rel="next" href="../mqtt/">
+        <link rel="next" href="../firmware-flash/">
       
       
         
@@ -312,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../live-traffic-map/" class="md-tabs__link">
+        <a href="../../chat/" class="md-tabs__link">
           
   
   
@@ -639,6 +639,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -683,6 +697,202 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1716,6 +1926,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2070,6 +2284,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../mqtt/" class="md-nav__link">
         
   
@@ -2218,6 +2460,34 @@
     
   
     MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
   
 
     
@@ -2529,6 +2799,10 @@
 <ul>
 <li><strong>Config apply (Radio / Modules / Security):</strong> Firmware <code>setConfig</code> / <code>setModuleConfig</code> replace full protobuf structs. UI must merge cached device slices with form edits via <code>meshtasticConfigApply.ts</code> (<code>mergeMeshtasticConfigApplyValue</code>, <code>buildMeshtasticModuleApplyValue</code>); slices live in <code>deviceStore.meshtasticConfigSlices</code> and <code>moduleConfigs</code> (PacketRouter + runtime lifecycle wire effects). Module-specific validation: <code>meshtasticMqttModuleApply.ts</code>, <code>meshtasticSerialModuleApply.ts</code>. Apply failures surface <code>clientNotification</code> text within 8s (<code>meshtasticClientNotification.ts</code> → <code>formatMeshtasticModuleApplyError</code>); inline status via <code>ConfigApplyNotice.tsx</code>. Forms re-sync after reboot via <code>useSyncFormFromConfig</code>.</li>
 <li><strong>Administration tab:</strong> <code>AdminPanel.tsx</code> — device commands and Danger Zone (reboot, shutdown, factory reset, NodeDB reset, OTA/DFU); shared <code>ConfirmModal.tsx</code> with Radio/Modules destructive flows. Local-only OTA/DFU disabled when <strong>Configure node</strong> targets a remote node.</li>
+<li><strong>Key verification:</strong> <code>lib/meshtastic/meshtasticKeyVerification.ts</code> + <code>stores/keyVerificationStore.ts</code>; UI <code>KeyVerificationDialog.tsx</code> (lazy from App). Firmware 2.7+ handshake; node-detail <strong>Verify key…</strong> / <strong>Key verified</strong> badge. Operator guide: <a href="../../meshtastic/#key-verification"><code>meshtastic.md</code> — Key verification</a>.</li>
+<li><strong>Remote shell:</strong> <code>lib/meshtastic/remoteShell.ts</code> / <code>remoteShellSession.ts</code> + <code>stores/remoteShellStore.ts</code>; Administration <strong>Remote shell (Meshtastic)</strong> (not Reticulum rnsh). Idle close ~10 min; transcript in-memory only. Operator guide: <a href="../../meshtastic/#remote-shell"><code>meshtastic.md</code> — Remote shell</a>.</li>
+<li><strong>XMODEM:</strong> <code>lib/meshtastic/meshtasticXmodemTransfer.ts</code> (+ <code>xmodemFilename</code> helpers); Radio <strong>XMODEM file transfer</strong> — local USB/serial only (hidden for remote <strong>Configure node</strong>). Operator guide: <a href="../../meshtastic/#xmodem-file-transfer"><code>meshtastic.md</code> — XMODEM</a>.</li>
+<li><strong>Firmware lockdown:</strong> <code>lib/meshtastic/meshtasticLockdown.ts</code>; Radio <strong>Firmware Lockdown</strong> (provision / unlock / lock / disable). Operator guide: <a href="../../meshtastic/#firmware-lockdown"><code>meshtastic.md</code> — Firmware lockdown</a>.</li>
 <li><strong>Remote admin module snapshot:</strong> <code>meshtasticRemoteAdminModuleFetches.ts</code> — canonical list/count of <code>ModuleConfig</code> reads during remote snapshot (<code>REMOTE_ADMIN_MODULE_CONFIG_FETCHES</code>).</li>
 <li><strong>Channel URLs:</strong> <code>src/shared/meshtasticUrlEncoder.ts</code> (parse/generate), <code>src/shared/meshtasticChannelApply.ts</code> (replace vs add-only apply); Radio panel UI; Meshtastic-only.</li>
 <li><strong>S&amp;F chat history:</strong> <code>src/renderer/lib/meshtasticBacklogUtils.ts</code> — <code>CLIENT_HISTORY</code> on primary router heartbeat after RF configure (auto: 50-msg cap, 120 min window cap, 15 min per-server cooldown, 5 min offline gate; <code>storeForwardAutoFetchHistory</code> opt-out; <code>storeForwardHistoryProfile: 'conservative' | 'aggressive'</code> in <code>defaultAppSettings.ts</code> tunes offline gate / cooldown / cap aggressiveness; manual catch-up in Chat). Protobuf decode for replayed text, <code>via_store_forward</code> on messages; do not await SDK queue for history (async replay).</li>
@@ -2539,7 +2813,7 @@
 <li><strong>Firmware 2.7 / 2.8 parity (#1148):</strong> LoRa <strong>Apply</strong> is gated until the <code>lora</code> slice hydrates. Long names are capped at <strong>24 UTF-8 bytes</strong> (<code>src/shared/meshtasticLongNameLimits.ts</code>). Firmware 2.8 <code>FromRadio.region_presets</code> is decoded by <code>lib/meshtastic/meshtasticRegionPresets.ts</code> into <code>meshtasticConfigSlices.regionPresets</code> (allowed presets, default, licensed-only per region; missing map = unrestricted; cleared on disconnect); Radio panel filters modem presets with it. Bandwidth is sent as the wire code. <strong>Node renumbering:</strong> when a node with a known public key appears under a new number, <code>lib/meshtastic/meshtasticNodeRenumber.ts</code> + main <code>meshtasticNodeRenumber.ts</code> migrate messages and remote-admin keys only if the new number equals <code>crc32(public key)</code> (<code>src/shared/meshtasticNodeNumFromPublicKey.ts</code>) and the destination row has no different key. Own-node number history is keyed by the radio's public key and restored from SQLite at startup.</li>
 <li><strong>Firmware 2.8 inbound decode (#1146):</strong> <code>patches/@jsr__meshtastic__core@2.6.6.patch</code> ignores new 2.8 ports (node status, port 36) and <code>regionPresets</code> frames, warns once on unknown ones, and guards each decoded frame so one bad packet cannot end the <code>fromDevice</code> stream; any pipe failure triggers an immediate reconnect.</li>
 <li><strong>Mesh Beacon module (2.8):</strong> <code>ModuleConfig.MeshBeaconConfig</code> lives in <code>moduleConfigs.meshBeacon</code> and is edited in <code>MeshBeaconModuleSection.tsx</code> (flags bitfield, 60-byte message, interval ≥ 3600 s, channel/region/preset/slot offer, up to 8 <code>broadcastTargets</code>); helpers in <code>lib/meshtastic/meshBeaconConfig.ts</code>. <code>MESH_BEACON_APP</code> (port 37) payloads are decoded by <code>meshBeaconCodec.ts</code> (schema rebuilt from the upstream descriptor because the package does not export it) into <code>meshtasticRuntime.meshBeacons</code>. <code>MeshBeaconHeardList.tsx</code> offers <strong>Join channel</strong> (first free secondary slot, never the primary) and <strong>Use radio settings</strong> (<code>meshBeaconJoin.ts</code> <code>planMeshBeaconLora</code>: never changes an already-set region). Join is hidden for remote <strong>Configure node</strong> targets.</li>
-<li><strong>Status Message module (2.8):</strong> <code>moduleConfigs.statusmessage.nodeStatus</code> is edited in ModulePanel; inbound <code>NODE_STATUS_APP</code> (port 36) fills <code>meshtasticRuntime.nodeStatuses</code>, shown in NodeDetailModal when <code>hasNodeStatusMessage</code>. Other 2.8 ports without a published payload schema (paging, S&amp;F++, LoRaWAN bridge, Reticulum tunnel, Cayenne, LoRa OTA, group alarm) are label-only entries in <code>UNTYPED_MODULE_PORTS</code>.</li>
+<li><strong>Status Message module (2.8):</strong> <code>moduleConfigs.statusmessage.nodeStatus</code> is edited in ModulePanel; inbound <code>NODE_STATUS_APP</code> (port 36) fills <code>meshtasticRuntime.nodeStatuses</code>, shown in NodeDetailModal when <code>hasNodeStatusMessage</code>. Other 2.8 ports without a published payload schema (paging, S&amp;F++, LoRaWAN bridge, Reticulum tunnel, LoRa OTA, group alarm) are label-only entries in <code>UNTYPED_MODULE_PORTS</code>. <strong>Cayenne</strong> remains in that untyped port set for chat labeling, but inbound Cayenne LPP is decoded into <code>cayenneTelemetryStore</code> and charted on the Telemetry tab via <code>CayenneTelemetrySection</code> (<code>hasCayenneTelemetry</code>, Meshtastic only).</li>
 <li><strong>Declarative extra config fields:</strong> Less common Radio / Security / Module fields (buzzer mode, position flags, GPS / I2S / INA pins, static IPv4, rsyslog, ignore list, FEM LNA, packet signature policy, Audio module, detection trigger, Pax thresholds, health telemetry, range-test clear-on-reboot) are specs in <code>lib/meshtastic/meshtasticExtraConfigFields.ts</code>, held by <code>useMeshtasticExtraConfigFields</code> and rendered by <code>MeshtasticExtraConfigField.tsx</code>. Each section spreads the hook's <code>result.overrides</code> into its apply payload; a parse failure (bad IPv4, out-of-range number, bad node id) blocks the apply. IPv4 is a little-endian fixed32 (first octet in the low byte); nested keys such as <code>ipv4Config.ip</code> merge into a copy of the device sub-message. Position applies write <code>positionBroadcastSmartEnabled</code> (the proto field), and map reports carry <code>mapReportSettings.shouldReportLocation</code>.</li>
 <li><strong>ALERT_APP (port 11):</strong> Decoded as UTF-8 text like <code>TEXT_MESSAGE_APP</code> in <code>MeshtasticProtocol</code> and MQTT (<code>mqtt-manager.ts</code>) so MECP / critical alerts reach chat + <code>useMecpAlertWatcher</code>. See <a href="../mecp/"><code>mecp.md</code></a>.</li>
 </ul>
@@ -2563,7 +2837,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 15, 2026 20:31:17 UTC">October 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
   </span>
 
     

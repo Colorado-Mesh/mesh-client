@@ -312,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../live-traffic-map/" class="md-tabs__link">
+        <a href="../../chat/" class="md-tabs__link">
           
   
   
@@ -639,6 +639,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -683,6 +697,202 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1716,6 +1926,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1954,6 +2168,28 @@
     <span class="md-ellipsis">
       
         Offline maps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#device-firmware-flash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Device firmware flash
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tak-gateway" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TAK gateway
       
     </span>
   </a>
@@ -2228,6 +2464,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../mqtt/" class="md-nav__link">
         
   
@@ -2376,6 +2640,34 @@
     
   
     MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
   
 
     
@@ -2786,6 +3078,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#device-firmware-flash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Device firmware flash
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tak-gateway" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TAK gateway
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2882,7 +3196,15 @@
 </ul>
 <h2 id="offline-maps">Offline maps<a class="headerlink" href="#offline-maps" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Privileged <code>mesh-tiles:</code> protocol + disk LRU under userData <code>tile-cache/</code> (<code>src/main/offline-maps/</code>); region download IPC; renderer <strong>Layers → Offline maps</strong>. Basemap allowlist includes OSM, Carto Dark, USGS Topo. See <a href="../offline-maps/">offline-maps.md</a>.</li>
+<li>Privileged <code>mesh-tiles:</code> protocol + disk LRU under userData <code>tile-cache/</code> (<code>src/main/offline-maps/</code>); region download IPC; renderer <strong>Layers → Offline maps</strong>. Basemap allowlist includes OSM, Dark OpenStreetMap (local CSS filter on OSM tiles), USGS Topo; user-confirmed custom XYZ/MBTiles sources are a separate path. See <a href="../offline-maps/">offline-maps.md</a>.</li>
+</ul>
+<h2 id="device-firmware-flash">Device firmware flash<a class="headerlink" href="#device-firmware-flash" title="Permanent link">&para;</a></h2>
+<ul>
+<li>USB Meshtastic/MeshCore flasher (Admin tab, Web Serial). See <a href="../firmware-flash/">firmware-flash.md</a>.</li>
+</ul>
+<h2 id="tak-gateway">TAK gateway<a class="headerlink" href="#tak-gateway" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Local CoT TLS server, remote TAK relay, ATAK/WinTAK/iTAK bridge. See <a href="../tak/">tak.md</a>.</li>
 </ul>
 
 
@@ -2904,7 +3226,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 2, 2026 22:11:06 UTC">November 2, 2026</span>
   </span>
 
     

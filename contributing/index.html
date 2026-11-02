@@ -312,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../live-traffic-map/" class="md-tabs__link">
+        <a href="../chat/" class="md-tabs__link">
           
   
   
@@ -639,6 +639,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -683,6 +697,202 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../chat/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat and messaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maps and offline maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware and device maintenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings and shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1816,6 +2026,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2160,6 +2374,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../development/firmware-flash/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware flash
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../development/mqtt/" class="md-nav__link">
         
   
@@ -2308,6 +2550,34 @@
     
   
     MECP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/tak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TAK gateway
   
 
     
@@ -2730,7 +3000,7 @@
 <h2 id="pr-process">PR process<a class="headerlink" href="#pr-process" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Describe your changes and what you tested</li>
-<li>Update docs if needed</li>
+<li>Update docs if needed. <strong>New user-facing pages</strong> need all three: a README feature bullet (when the change is user-visible), a section or link in the matching top-level user guide under <code>docs/</code>, and a <code>mkdocs.yml</code> nav entry (plus <code>src/shared/docsSite.ts</code> when in-app doc links apply). Prefer editing an existing guide over adding a new top-level page. Developer notes go under <code>docs/development/</code> and a matching row in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md#8-subsystem-quick-reference"><code>AGENTS.md</code> §8</a> / <a href="../development/"><code>docs/development/index.md</code></a>.</li>
 <li>Run the checks you need before review — at minimum the <a href="../development-environment/#4-test-harness-setup-and-local-quality-checks">local quality checks</a> and what the <a href="../development-environment/#6-git-hooks-and-pre-commit-behavior">pre-commit hook</a> runs</li>
 <li>Keep PR scope tight</li>
 <li>A maintainer will review</li>
