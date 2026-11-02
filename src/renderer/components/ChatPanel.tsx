@@ -1376,6 +1376,7 @@ function ChatPanel({
     if (el) {
       el.value = '';
       el.blur();
+      el.setAttribute('aria-hidden', 'true');
     }
     if (opts?.refocusComposer) {
       composerInputRef.current?.focus();
@@ -2599,8 +2600,11 @@ function ChatPanel({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        const reactionPickerWasOpen = reactionCapturePendingRef.current;
         setPickerOpenFor(null);
         clearReactionCaptureRef.current({ refocusComposer: true });
+        // Dismissing the reaction picker must not also leave the DM or close search.
+        if (reactionPickerWasOpen) return;
         if (replyTo) {
           setReplyTo(null);
         } else if (filterSender != null) {
@@ -4879,8 +4883,6 @@ function ChatPanel({
                                       onMouseDown={(e) => {
                                         if (mqttOriginReactionUnsupported) return;
                                         e.preventDefault();
-                                        if (!chatPanelIsLinux())
-                                          reactionHiddenInputRef.current?.focus();
                                       }}
                                       onClick={() => {
                                         if (mqttOriginReactionUnsupported) return;
@@ -4904,6 +4906,13 @@ function ChatPanel({
                                             channel: msg.channel,
                                           };
                                           reactionCapturePendingRef.current = true;
+                                          // The OS panel types into whatever has focus, and keyboard or
+                                          // assistive-tech presses arrive without a mousedown. A focused
+                                          // element must not be aria-hidden, so expose it by name until
+                                          // clearReactionCapture hides it again.
+                                          const captureInput = reactionHiddenInputRef.current;
+                                          captureInput?.removeAttribute('aria-hidden');
+                                          captureInput?.focus();
                                           void window.electronAPI
                                             .showEmojiPanel()
                                             .catch((e: unknown) => {
@@ -5037,6 +5046,7 @@ function ChatPanel({
                                       ? `r-${r.id}`
                                       : `r-${r.sender_id}-${r.emoji}-${rIdx}`
                                   }
+                                  role="img"
                                   className="bg-deep-black border-ink-800 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
                                   title={titleText}
                                   aria-label={ariaLabel}
@@ -5088,10 +5098,12 @@ function ChatPanel({
         )}
       </div>
 
-      {/* Hidden input: macOS/Windows native emoji panel inserts here for tapback reactions */}
+      {/* Hidden input: macOS/Windows native emoji panel inserts here for tapback reactions.
+          aria-hidden only while idle; the React button removes it before focusing the input. */}
       <input
         ref={reactionHiddenInputRef}
         aria-hidden="true"
+        aria-label={t('chatPanel.addReaction')}
         tabIndex={-1}
         readOnly={false}
         onBlur={() => {
