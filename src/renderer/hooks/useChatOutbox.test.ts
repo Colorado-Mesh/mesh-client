@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -21,12 +21,15 @@ import type { OutboxEntry } from '@/shared/electron-api.types';
 
 import {
   applyIncidentAckAfterOutboxSend,
+  drainChatOutboxOnce,
   earliestEmergencyRetryAt,
   EMERGENCY_OUTBOX_SOFT_CAP,
   isEmergencyOutboxPriority,
   isMaydayEmergencyOutboxPayload,
   MAX_ATTEMPTS,
   OUTBOX_MAX_AGE_MS,
+  outboxRowMatchesConnectedIdentity,
+  outboxRowVisibleForConversation,
   useChatOutbox,
 } from './useChatOutbox';
 
@@ -77,8 +80,86 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
   };
 }
 
+describe('outbox identity', () => {
+  it('drains legacy rows on any radio and scoped rows only for that identity', () => {
+    const legacy = makeEntry();
+    const mine = makeEntry({ id: 2, identityId: 'id-a' });
+    const other = makeEntry({ id: 3, identityId: 'id-b' });
+    expect(outboxRowMatchesConnectedIdentity(legacy, 'id-a')).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(legacy, null)).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(mine, 'id-a')).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(mine, 'id-b')).toBe(false);
+    expect(outboxRowMatchesConnectedIdentity(other, null)).toBe(false);
+    expect(outboxRowMatchesConnectedIdentity(other, undefined)).toBe(true);
+  });
+
+  it('keeps an identity-scoped row visible when the radio is down', () => {
+    const mine = makeEntry({ identityId: 'id-a' });
+    const other = makeEntry({ id: 2, identityId: 'id-b' });
+    expect(outboxRowVisibleForConversation(mine, 'ch:0', 'id-a')).toBe(true);
+    expect(outboxRowVisibleForConversation(mine, 'ch:0', null)).toBe(false);
+    expect(outboxRowVisibleForConversation(other, 'ch:0', 'id-a')).toBe(false);
+    expect(outboxRowVisibleForConversation(makeEntry(), 'ch:0', null)).toBe(true);
+    expect(outboxRowVisibleForConversation(mine, 'dm:1', 'id-a')).toBe(false);
+  });
+
+  it('stops a drain when the connected identity changes before the next send', async () => {
+    resetChatOutboxDrainLocksForTests();
+    let identity: string | null = 'id-a';
+    vi.mocked(window.electronAPI.chat.outbox.list).mockResolvedValue([
+      makeEntry({ id: 1, identityId: 'id-a', payload: 'one' }),
+      makeEntry({ id: 2, identityId: 'id-a', payload: 'two' }),
+    ]);
+    vi.mocked(window.electronAPI.chat.outbox.updateStatus).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.chat.outbox.remove).mockResolvedValue(undefined);
+    const sendFn = vi.fn((text: string) => {
+      if (text === 'one') identity = 'id-b';
+      return Promise.resolve('ok');
+    });
+    await drainChatOutboxOnce({
+      protocol: 'meshcore',
+      sendFn,
+      isSendAvailable: () => true,
+      getConnectedIdentityId: () => identity,
+    });
+    expect(sendFn).toHaveBeenCalledTimes(1);
+    expect(sendFn.mock.calls[0]?.[0]).toBe('one');
+  });
+});
+
 describe('useChatOutbox', () => {
   const mockOutbox = window.electronAPI.chat.outbox;
+
+  it('keeps a legacy null identity when a scheduled message is edited', async () => {
+    const at = Date.now() + 60_000;
+    vi.mocked(mockOutbox.list).mockResolvedValue([
+      makeEntry({ id: 21, nextRetryAt: at, payload: 'old', identityId: null }),
+    ]);
+    const sendFn = vi.fn().mockResolvedValue(undefined);
+    const hook = renderHook(() =>
+      useChatOutbox({
+        protocol: 'meshtastic',
+        identityId: 'id-a',
+        isSendAvailable: false,
+        sendFn,
+      }),
+    );
+    await waitFor(() => {
+      expect(hook.result.current.rows).toHaveLength(1);
+    });
+    vi.mocked(mockOutbox.add).mockImplementation((entry) =>
+      Promise.resolve(makeEntry({ ...(entry as Partial<OutboxEntry>), id: 22 })),
+    );
+    let ok = false;
+    await act(async () => {
+      ok = await hook.result.current.editScheduled(21, {
+        payload: 'new',
+        scheduledAt: at + 60_000,
+      });
+    });
+    expect(ok).toBe(true);
+    expect(mockOutbox.add).toHaveBeenCalledWith(expect.objectContaining({ identityId: null }));
+  });
 
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();

@@ -352,7 +352,8 @@ export const CANONICAL_TABLES_DDL = `
         group_id TEXT,
         group_index INTEGER,
         group_total INTEGER,
-        priority TEXT NOT NULL DEFAULT 'normal'
+        priority TEXT NOT NULL DEFAULT 'normal',
+        identity_id TEXT
       );
 
       CREATE TABLE IF NOT EXISTS renderer_memory_samples (
@@ -615,6 +616,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
   },
   chat_outbox: {
     priority: "TEXT NOT NULL DEFAULT 'normal'",
+    identity_id: 'TEXT',
   },
   renderer_memory_samples: {
     js_heap_bytes: 'INTEGER',

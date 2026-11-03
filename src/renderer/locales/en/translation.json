@@ -639,6 +639,7 @@
     "directionInbound": "Received",
     "directionOutbound": "Sent",
     "sender": "Sender",
+    "unknownSender": "Unknown",
     "senderPlaceholder": "Name or id",
     "channel": "Channel {{index}}",
     "directMessage": "Direct message",
@@ -4125,7 +4126,8 @@
       "confirmMismatch": "They do not match",
       "doneHint": "{{name}}'s key is now marked as manually verified on your radio.",
       "rejectedHint": "Verification cancelled. {{name}}'s key was not marked verified. If the characters differed, treat this node's key as untrusted.",
-      "sendFailed": "Could not reach the radio. Check the connection and try again."
+      "sendFailed": "Could not reach the radio. Check the connection and try again.",
+      "missingNode": "This station is not identified yet. Wait until it is, then confirm."
     }
   },
   "nodeDetailModal": {

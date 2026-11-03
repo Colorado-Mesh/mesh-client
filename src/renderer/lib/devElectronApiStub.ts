@@ -42,6 +42,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onNodeSelected: noopUnsub,
       init: async () => null,
       onSnapshot: noopUnsub,
+      onApplyView: noopUnsub,
       reportView: noop,
       selectNode: noop,
       setAlwaysOnTop: async () => false,

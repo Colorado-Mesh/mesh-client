@@ -1,0 +1,7 @@
+[[rnode-multi]]
+type = RNodeMultiInterface
+enabled = On
+port = /dev/ttyUSB0 # local radio
+
+[logging]
+enabled = No

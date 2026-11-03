@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -42,5 +44,43 @@ describe('reticulumConfigDirHasEnabledLocalRadio', () => {
     expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'tcp-rnode'))).toBe(
       false,
     );
+  });
+
+  it('detects RNodeMultiInterface with enabled=On, inline comments, and a trailing section', () => {
+    expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'rnode-multi'))).toBe(
+      true,
+    );
+    expect(
+      reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'trailing-section')),
+    ).toBe(true);
+  });
+
+  it('reads interface_enabled with the same precedence as the sidecar', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'rnode-iface-enabled-'));
+    writeFileSync(
+      path.join(dir, 'config'),
+      [
+        '[[rnode]]',
+        'type = RNodeMultiInterface',
+        'interface_enabled = On',
+        'port = /dev/ttyUSB0',
+        '',
+      ].join('\n'),
+    );
+    expect(reticulumConfigDirHasEnabledLocalRadio(dir)).toBe(true);
+
+    const disabled = mkdtempSync(path.join(tmpdir(), 'rnode-iface-enabled-'));
+    writeFileSync(
+      path.join(disabled, 'config'),
+      [
+        '[[rnode]]',
+        'type = RNodeInterface',
+        'interface_enabled = Yes',
+        'enabled = No',
+        'port = /dev/ttyUSB1',
+        '',
+      ].join('\n'),
+    );
+    expect(reticulumConfigDirHasEnabledLocalRadio(disabled)).toBe(false);
   });
 });

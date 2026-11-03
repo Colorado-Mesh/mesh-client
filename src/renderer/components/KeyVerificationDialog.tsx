@@ -78,6 +78,7 @@ export function KeyVerificationDialog() {
           key={String(session.nonce)}
           name={name}
           invalid={session.errorCode === 'invalid_number'}
+          missingNode={session.errorCode === 'missing_node'}
           inputId={`${titleId}-number`}
         />
       );
@@ -93,6 +94,11 @@ export function KeyVerificationDialog() {
       body = (
         <>
           <p className="text-muted text-sm">{t('keyVerification.dialog.compareHint', { name })}</p>
+          {session.errorCode === 'missing_node' ? (
+            <p role="alert" className={NOTICE_CLASS.error}>
+              {t('keyVerification.dialog.missingNode')}
+            </p>
+          ) : null}
           <div className="space-y-1 text-center">
             <p className="text-muted text-xs">
               {t('keyVerification.dialog.verificationCharactersLabel')}
@@ -194,10 +200,12 @@ export function KeyVerificationDialog() {
 function EnterNumberForm({
   name,
   invalid,
+  missingNode,
   inputId,
 }: {
   name: string;
   invalid: boolean;
+  missingNode: boolean;
   inputId: string;
 }) {
   const { t } = useTranslation();
@@ -234,6 +242,11 @@ function EnterNumberForm({
         aria-label={t('keyVerification.dialog.enterNumberLabel', { name })}
         className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
       />
+      {missingNode ? (
+        <p role="alert" className={NOTICE_CLASS.error}>
+          {t('keyVerification.dialog.missingNode')}
+        </p>
+      ) : null}
       {invalid && (
         <p role="alert" className={NOTICE_CLASS.error}>
           {t('keyVerification.dialog.invalidNumber')}

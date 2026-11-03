@@ -167,13 +167,13 @@ export function useProtocolRfAutoConnect({
     const isAutoConnectAbortError = (error: unknown): boolean =>
       error instanceof DOMException && error.name === 'AbortError';
 
-    const runBleAutoConnect = async (bleId: string) => {
+    const runBleAutoConnect = async (bleId: string): Promise<boolean> => {
       if (protocol === 'meshcore' && meshcoreTargetsSharedMeshtasticBlePeripheral(bleId)) {
         console.debug(
           `[useProtocolRfAutoConnect] meshcore BLE auto-connect skipped — same peripheral as Meshtastic (${bleId})`,
         );
         onAutoConnectCancelled();
-        return;
+        return false;
       }
 
       if (isRendererGattBlePlatform()) {
@@ -184,7 +184,7 @@ export function useProtocolRfAutoConnect({
           `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after coexistence wait`,
         );
         onAutoConnectCancelled();
-        return;
+        return false;
       }
 
       if (isNobleBleDualRadioSecondary(protocol)) {
@@ -194,7 +194,7 @@ export function useProtocolRfAutoConnect({
             `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after primary settle`,
           );
           onAutoConnectCancelled();
-          return;
+          return false;
         }
         const primary = getNobleBleDualRadioPrimaryProtocol();
         if (primary === 'meshtastic' || primary === 'meshcore') {
@@ -206,7 +206,7 @@ export function useProtocolRfAutoConnect({
             `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after protocol settle`,
           );
           onAutoConnectCancelled();
-          return;
+          return false;
         }
       }
 
@@ -215,7 +215,7 @@ export function useProtocolRfAutoConnect({
           `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled before connect`,
         );
         onAutoConnectCancelled();
-        return;
+        return false;
       }
 
       const matchIds = [bleId, lastConnection.bleMac].filter(
@@ -244,7 +244,15 @@ export function useProtocolRfAutoConnect({
         },
         { matchIds },
       );
+      if (isCancelled()) {
+        console.debug(
+          `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after connect`,
+        );
+        onAutoConnectCancelled();
+        return false;
+      }
       clearAutoConnectTimeout();
+      return true;
     };
 
     const onSerialAutoConnectFailed = (error: unknown) => {
@@ -257,9 +265,10 @@ export function useProtocolRfAutoConnect({
           `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE GATT scan: ${errLikeToLogString(error)}`,
         );
         runBleAutoConnect(lastBleId)
-          .then(() => {
-            // Promote to BLE only after fallback succeeds so a failed attempt keeps
-            // the remembered serial selection for the next cold start.
+          .then((finished) => {
+            // Promote to BLE only after reconnectBleWithScan finishes. Cancel and
+            // shared-peripheral skips resolve without connecting and must keep serial.
+            if (!finished) return;
             saveLastConnection(protocol, {
               type: 'ble',
               bleDeviceId: lastBleId,
@@ -322,7 +331,8 @@ export function useProtocolRfAutoConnect({
 
       if (lastConnection.type === 'ble' && lastBleId) {
         runBleAutoConnect(lastBleId)
-          .then(() => {
+          .then((finished) => {
+            if (!finished) return;
             clearAutoConnectTimeout();
             notifyPrimaryAutoConnectSettledIfNeeded(protocol);
           })

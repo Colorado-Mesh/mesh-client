@@ -8037,6 +8037,7 @@
     "directionInbound": "Ontvangen",
     "directionOutbound": "Verstuurd",
     "sender": "Afzender",
+    "unknownSender": "Onbekend",
     "senderPlaceholder": "Naam of identiteitsbewijs",
     "failed": "Zoeken mislukt. Probeer het opnieuw.",
     "protocolAll": "Alle protocollen",
@@ -8113,7 +8114,8 @@
       "doneHint": "De sleutel van {{name}} is nu gemarkeerd als handmatig geverifieerd op uw radio.",
       "sendFailed": "Kon de radio niet bereiken. Controleer de verbinding en probeer het opnieuw.",
       "confirmMismatch": "Ze komen niet overeen",
-      "rejectedHint": "Verificatie geannuleerd. De sleutel van {{name}} is niet gemarkeerd als geverifieerd. Als de tekens verschillen, behandel de sleutel van dit knooppunt dan als niet-vertrouwd."
+      "rejectedHint": "Verificatie geannuleerd. De sleutel van {{name}} is niet gemarkeerd als geverifieerd. Als de tekens verschillen, behandel de sleutel van dit knooppunt dan als niet-vertrouwd.",
+      "missingNode": "Dit station is nog niet herkend. Wacht tot dat zo is en bevestig dan."
     }
   },
   "remoteShell": {
