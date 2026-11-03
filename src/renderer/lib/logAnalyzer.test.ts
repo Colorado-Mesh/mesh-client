@@ -98,8 +98,8 @@ describe('analyzeLogs', () => {
 
   it('detects MQTT issues', () => {
     const entries: LogEntry[] = [
-      makeEntry('MQTT Network error (will reconnect)'),
-      makeEntry('Subscribe failed'),
+      makeEntry('MQTT Network error (will reconnect)', 'warn'),
+      makeEntry('Subscribe failed', 'warn'),
       makeEntry('normal log'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
@@ -514,9 +514,9 @@ describe('analyzeLogs', () => {
 
   it('sorts categories by severity then count', () => {
     const entries: LogEntry[] = [
-      makeEntry('MQTT Network error'),
-      makeEntry('MQTT Network error'),
-      makeEntry('auth failed'),
+      makeEntry('MQTT Network error', 'warn'),
+      makeEntry('MQTT Network error', 'warn'),
+      makeEntry('auth failed', 'error'),
     ];
     const result = analyzeLogs(entries, 'meshtastic');
     expect(result.categories[0].id).toBe('auth-decrypt');

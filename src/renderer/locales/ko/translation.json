@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "원격 TAK 릴레이 문제",
         "recommendation": "원격 TAK 릴레이가 연결되지 않거나 연결이 끊어졌습니다. 서버 주소와 포트를 확인하고 가져온 CA 및 클라이언트 인증서가 해당 서버에 속해 있는지 확인하십시오."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT 패킷 크기 제한",
+        "recommendation": "브로커가 앱 안전 제한보다 큰 패킷을 전송했으므로 자동 MQTT RECONNECT가 비활성화되었습니다. 브로커를 수정하거나 변경한 다음 연결에서 수동으로 MQTT 을 (를) 다시 연결합니다."
+      },
+      "transport-loss": {
+        "label": "라디오 링크 분실",
+        "recommendation": "라디오에 대한 일련 번호 또는 BLE 링크가 떨어졌습니다. USB 케이블 또는 블루투스 범위를 확인하고 포트를 사용하여 다른 앱을 닫은 다음 다시 연결하십시오."
+      },
+      "rf-auto-connect": {
+        "label": "시작 자동 연결 실패",
+        "recommendation": "시동 시 자동 라디오 연결 시간이 초과되었거나 실패했습니다. 저장된 전송 및 장치를 사용할 수 있는지 확인한 다음 연결에서 수동으로 연결하십시오."
+      },
+      "power-save-blocker": {
+        "label": "Stay-awake 정책 실패",
+        "recommendation": "앱이 OS 절전 차단기를 시작하거나 중지할 수 없습니다. 절전 모드로 인해 라디오 연결이 끊어질 수 있습니다. OS 전원 설정을 확인하고 필요한 경우 기상 후 다시 연결하십시오."
+      },
+      "tak-chat": {
+        "label": "TAK 채팅 또는 DM 브리지 실패",
+        "recommendation": "TAK 채팅, 지오챗 또는 직접 메시지 브리지 전송에 실패했습니다. TAK 서버가 실행 중이고, 메시 라디오가 연결되어 있으며, 채널 또는 DM 릴레이 설정이 의도한 경로와 일치하는지 확인합니다."
+      },
+      "mecp": {
+        "label": "MECP 긴급 메시지 문제",
+        "recommendation": "MECP 전송, 언어 팩 또는 로컬 감사 로그 쓰기에 실패했습니다. 무선 연결 및 MECP 설정을 확인하십시오. 공공 지원 번들은 MECP 감사 세부 정보를 생략합니다. 증거는 로그 패널 또는 현지 mecp-received.log를 사용하십시오."
+      },
+      "offline-maps": {
+        "label": "오프라인 지도 다운로드 또는 가져오기 실패",
+        "recommendation": "오프라인 지도 지역 다운로드, MBTiles 가져오기 또는 사용자 지정 원본 정리에 실패했습니다. 사용 가능한 디스크 공간, 타일 소스 URL 또는 MBTiles 경로 및 → 오프라인 영역 매핑을 확인합니다."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore COMPANION 또는 REMOTE CLI 실패",
+        "recommendation": "MeshCore 컴패니언 CLI 또는 원격 CLI 작업에 실패했습니다. 컴패니언 펌웨어가 v 1.18 이상이고, 라디오가 연결되어 있으며, 노드에서 원격 CLI가 허용되는지 확인하십시오."
+      },
+      "ai-summary": {
+        "label": "AI 캐치업 또는 모델 다운로드 문제",
+        "recommendation": "AI 모델 다운로드 또는 캐치업 시작 상태가 실패했습니다. 모델 팩에 대한 네트워크 액세스를 확인하고 앱 → AI/캐치업이 활성화되었는지 확인한 다음 설정이 완료된 후 다시 시도하십시오."
+      },
+      "live-map": {
+        "label": "실시간 교통 지도 창 문제",
+        "recommendation": "실시간 교통 지도 팝아웃 또는 지역 피드에 실패했습니다. 지도에서 팝아웃을 다시 열고, 다중 창 권한을 확인하고, 네트워크가 복구된 후 지역 피드를 다시 시도하세요."
+      },
+      "coi-memory": {
+        "label": "메모리 추세 샘플링 실패",
+        "recommendation": "렌더러 메모리 추세 샘플링은 샘플을 측정하거나 지속할 수 없습니다. 앱 → 지원 COI 기능 상태, 사용 가능한 디스크 공간 및 앱 데이터 폴더가 쓰기 가능한지 확인합니다."
+      },
+      "gps": {
+        "label": "IP 위치 조회 실패",
+        "recommendation": "IP 기반 위치 폴백에 실패했습니다. 인터넷 연결성을 확인하십시오. 무선 GPS 및 수동으로 설정된 정적 위치는 이 IP 조회와 별개입니다."
       }
     },
     "recommendationGroups": {

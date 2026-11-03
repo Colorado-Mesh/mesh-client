@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Masalah Relai TAK Jarak Jauh",
         "recommendation": "Relai TAK jarak jauh tidak dapat tersambung atau kehilangan koneksinya. Periksa alamat dan port server, dan bahwa sertifikat CA dan klien yang diimpor milik server tersebut."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT batas ukuran paket",
+        "recommendation": "Broker mengirim paket yang lebih besar dari batas keamanan aplikasi, sehingga koneksi ulang MQTT otomatis dinonaktifkan. Perbaiki atau ganti broker, lalu sambungkan kembali MQTT secara manual dari Koneksi."
+      },
+      "transport-loss": {
+        "label": "Tautan radio hilang",
+        "recommendation": "Tautan serial atau BLE ke radio terputus. Periksa kabel USB atau rentang Bluetooth, tutup aplikasi lain menggunakan port, lalu sambungkan kembali."
+      },
+      "rf-auto-connect": {
+        "label": "Sambungan otomatis startup gagal",
+        "recommendation": "Sambungan radio otomatis saat startup habis waktu atau gagal. Pastikan transportasi dan perangkat yang disimpan tersedia, lalu hubungkan secara manual dari Koneksi."
+      },
+      "power-save-blocker": {
+        "label": "Kebijakan Tetap sadar gagal",
+        "recommendation": "Aplikasi tidak dapat memulai atau menghentikan pemblokir hemat daya OS. Tidur dapat memutus sambungan radio; periksa pengaturan daya OS dan sambungkan kembali setelah bangun jika diperlukan."
+      },
+      "tak-chat": {
+        "label": "TAK chat atau jembatan DM gagal",
+        "recommendation": "Pengiriman TAK chat, geochat, atau jembatan pesan langsung gagal. Konfirmasikan bahwa server TAK sedang berjalan, radio jala terhubung, dan pengaturan relai saluran atau DM sesuai dengan jalur yang diinginkan."
+      },
+      "mecp": {
+        "label": "Masalah pesan darurat MECP",
+        "recommendation": "Pengiriman MECP, paket bahasa, atau penulisan log audit lokal gagal. Periksa koneksi radio dan pengaturan MECP. Bundel dukungan publik menghilangkan detail audit MECP — gunakan panel Log atau mecp-received.log lokal untuk bukti."
+      },
+      "offline-maps": {
+        "label": "Gagal mengunduh atau mengimpor peta offline",
+        "recommendation": "Pengunduhan wilayah peta offline, impor MBTiles, atau pembersihan sumber kustom gagal. Periksa ruang disk kosong, URL sumber ubin atau jalur MBTiles, dan wilayah Peta → Offline."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore pendamping atau CLI jarak jauh gagal",
+        "recommendation": "Tindakan CLI pendamping MeshCore atau CLI jarak jauh gagal. Pastikan firmware pendamping v1.18 atau yang lebih baru, radio terhubung, dan CLI jarak jauh diperbolehkan pada node."
+      },
+      "ai-summary": {
+        "label": "Masalah AI catch - up atau pengunduhan model",
+        "recommendation": "Status download atau catch - up startup model AI gagal. Periksa akses jaringan untuk paket model, konfirmasikan App → AI / catch - up diaktifkan, dan coba lagi setelah penyiapan selesai."
+      },
+      "live-map": {
+        "label": "Masalah jendela peta lalu lintas langsung",
+        "recommendation": "Pop - out peta lalu lintas langsung atau umpan regional gagal. Buka kembali pop - out dari Peta, periksa izin multi - jendela, dan coba lagi umpan regional setelah jaringan pulih."
+      },
+      "coi-memory": {
+        "label": "Pengambilan sampel tren memori gagal",
+        "recommendation": "Pengambilan sampel tren memori perender tidak dapat mengukur atau mempertahankan sampel. Periksa status kemampuan COI → Dukungan Aplikasi, ruang disk kosong, dan apakah folder data aplikasi dapat ditulis."
+      },
+      "gps": {
+        "label": "Pencarian lokasi IP gagal",
+        "recommendation": "Penurunan lokasi berbasis IP gagal. Periksa jangkauan internet; GPS radio dan lokasi statis yang ditetapkan secara manual terpisah dari pencarian IP ini."
       }
     },
     "recommendationGroups": {

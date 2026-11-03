@@ -72,6 +72,11 @@ const fixtures: { category: string; protocol: MeshProtocol; message: string }[] 
     message: '[ReticulumSidecar] voice ws bridge unavailable: socket closed',
   },
   {
+    category: 'reticulum-sidecar',
+    protocol: 'reticulum',
+    message: '[useReticulumRuntime] power resume reconnect failed Error: timeout',
+  },
+  {
     category: 'reticulum-delivery',
     protocol: 'reticulum',
     message:
@@ -126,6 +131,189 @@ const fixtures: { category: string; protocol: MeshProtocol; message: string }[] 
     protocol: 'meshcore',
     message: '[esp32Flasher] writeFlash stalled — closing serial port',
   },
+  {
+    category: 'mqtt-packet-limit',
+    protocol: 'meshtastic',
+    message:
+      '[Meshtastic MQTT] Broker sent an MQTT packet larger than the 1048576-byte safety limit; automatic reconnect is disabled.',
+  },
+  {
+    category: 'mqtt-packet-limit',
+    protocol: 'meshcore',
+    message:
+      '[MeshCore MQTT] Broker sent an MQTT packet larger than the 1048576-byte safety limit; automatic reconnect is disabled.',
+  },
+  {
+    category: 'mqtt',
+    protocol: 'meshcore',
+    message: '[MeshCore MQTT] connection watchdog: no packets received, forcing reconnect',
+  },
+  {
+    category: 'mqtt',
+    protocol: 'meshcore',
+    message: '[MeshCore MQTT] power resume token refresh timed out — reconnecting',
+  },
+  {
+    category: 'mqtt',
+    protocol: 'meshtastic',
+    message: '[Meshtastic MQTT] Invalid publish PSK; falling back to channel map or default key',
+  },
+  {
+    category: 'transport-loss',
+    protocol: 'meshtastic',
+    message: '[meshtasticTransportLoss] serial link lost (disconnect event)',
+  },
+  {
+    category: 'transport-loss',
+    protocol: 'meshtastic',
+    message: '[meshtasticTransportLoss] ble link lost (read-pipe-failure): pipe closed',
+  },
+  {
+    category: 'transport-loss',
+    protocol: 'meshcore',
+    message: '[meshcoreSerialTransportLoss] serial link lost (serial-disconnect)',
+  },
+  {
+    category: 'rf-auto-connect',
+    protocol: 'meshtastic',
+    message: '[useProtocolRfAutoConnect] meshtastic auto-connect timed out after 30s',
+  },
+  {
+    category: 'rf-auto-connect',
+    protocol: 'meshtastic',
+    message:
+      '[useProtocolRfAutoConnect] serial auto-connect failed for meshtastic; falling back to BLE GATT scan: Error: busy',
+  },
+  {
+    category: 'rf-auto-connect',
+    protocol: 'meshcore',
+    message: '[useProtocolRfAutoConnect] meshcore ble auto-connect failed: Error: timeout',
+  },
+  {
+    category: 'power-save-blocker',
+    protocol: 'meshtastic',
+    message: '[main] powerSaveBlocker start failed: Error: not allowed',
+  },
+  {
+    category: 'power-save-blocker',
+    protocol: 'meshcore',
+    message: '[main] powerSaveBlocker stop failed: Error: unknown id',
+  },
+  {
+    category: 'bluetooth-pairing',
+    protocol: 'meshtastic',
+    message: '[IPC] bluetooth-connect failed: Device not available',
+  },
+  {
+    category: 'tak-chat',
+    protocol: 'meshtastic',
+    message: '[TakDirectMessages] pushDirectMessage failed Error: offline',
+  },
+  {
+    category: 'tak-chat',
+    protocol: 'meshcore',
+    message: '[TakInboundChat] mesh send failed Error: not connected',
+  },
+  {
+    category: 'tak-chat',
+    protocol: 'reticulum',
+    message: '[TakGeochat] pushChatMessage failed Error: relay down',
+  },
+  {
+    category: 'mecp',
+    protocol: 'meshtastic',
+    message: '[mecp-rebroadcast] send failed Error: radio busy',
+  },
+  {
+    category: 'mecp',
+    protocol: 'meshtastic',
+    message: '[mecp-received-log] append failed Error: ENOSPC',
+  },
+  {
+    category: 'mecp',
+    protocol: 'meshcore',
+    message: '[mecp] failed to load language en',
+  },
+  {
+    category: 'mecp',
+    protocol: 'meshtastic',
+    message: '[MecpComposeModal] send failed radio disconnected',
+  },
+  {
+    category: 'offline-maps',
+    protocol: 'meshtastic',
+    message: '[offline-maps] download start failed: network error',
+  },
+  {
+    category: 'offline-maps',
+    protocol: 'meshcore',
+    message: '[offline-maps] job failed: disk full',
+  },
+  {
+    category: 'offline-maps',
+    protocol: 'reticulum',
+    message: '[offline-maps] mbtiles import failed: corrupt file',
+  },
+  {
+    category: 'offline-maps',
+    protocol: 'meshtastic',
+    message: '[offline-maps] custom-sources.json unreadable; starting empty: ENOENT',
+  },
+  {
+    category: 'meshcore-cli',
+    protocol: 'meshcore',
+    message: '[MeshcoreCompanionCliSection] console command failed Error: timeout',
+  },
+  {
+    category: 'meshcore-cli',
+    protocol: 'meshcore',
+    message: '[MeshcoreRemoteCliSection] write remote CLI flag failed Error: not on radio',
+  },
+  {
+    category: 'ai-summary',
+    protocol: 'meshtastic',
+    message: '[ai] Download failed: ENETUNREACH',
+  },
+  {
+    category: 'ai-summary',
+    protocol: 'meshcore',
+    message: '[ai] Startup status unavailable; setup remains available for saved opt-in.',
+  },
+  {
+    category: 'live-map',
+    protocol: 'meshtastic',
+    message: '[live-map] pop-out failed to open Error: blocked',
+  },
+  {
+    category: 'live-map',
+    protocol: 'meshcore',
+    message: '[live-map] regional feed did not resume',
+  },
+  {
+    category: 'live-map',
+    protocol: 'reticulum',
+    message: '[live-map] pop-out is unavailable for this renderer origin',
+  },
+  {
+    category: 'coi-memory',
+    protocol: 'meshtastic',
+    message: '[coiMemorySampler] persist failed Error: database locked',
+  },
+  {
+    category: 'coi-memory',
+    protocol: 'meshcore',
+    message: '[renderer-memory-auto-sampler] persist failed Error: ENOSPC',
+  },
+  {
+    category: 'gps',
+    protocol: 'meshtastic',
+    message: '[gps] ip fix failed: msg="timeout"',
+  },
+  {
+    category: 'gps',
+    protocol: 'reticulum',
+    message: '[gps] inetChecksite preflight failed: ENETUNREACH',
+  },
 ];
 
 describe('current production log messages', () => {
@@ -155,6 +343,23 @@ describe('current production log messages', () => {
     expect(categories).toEqual([
       expect.objectContaining({ id: 'unclassified', count: 1, entries: [warning] }),
     ]);
+  });
+
+  it.each([
+    '[main] bleCoexistence:acquireScan failed: busy',
+    '[Reticulum] bleCoexistence acquireScan failed: Error: held',
+    '[IPC] mqtt:getCachedNodes failed: database locked',
+    '[useProtocolRfAutoConnect] meshtastic BLE auto-connect cancelled after coexistence wait',
+    '[useProtocolRfAutoConnect] meshcore BLE auto-connect skipped — same peripheral as Meshtastic (aa:bb)',
+    '[offline-maps] dropped invalid custom source record',
+  ])('leaves noise unclassified rather than misdiagnosing: %s', (message) => {
+    const warning = entry(message);
+    const result = analyzeLogs([warning], 'meshtastic');
+    expect(result.categories.map((finding) => finding.id)).toEqual(['unclassified']);
+    expect(result.categories.find((finding) => finding.id === 'ble-connection')).toBeUndefined();
+    expect(result.categories.find((finding) => finding.id === 'mqtt')).toBeUndefined();
+    expect(result.categories.find((finding) => finding.id === 'rf-auto-connect')).toBeUndefined();
+    expect(result.categories.find((finding) => finding.id === 'offline-maps')).toBeUndefined();
   });
 
   it('does not suggest LoRa channel keys for Reticulum decryption failures', () => {

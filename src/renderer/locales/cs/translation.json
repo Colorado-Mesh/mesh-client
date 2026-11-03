@@ -2616,6 +2616,54 @@
       "tak-remote": {
         "label": "Problémy se vzdáleným relé TAK",
         "recommendation": "Vzdálené relé TAK se nemohlo připojit nebo ztratilo spojení. Zkontrolujte adresu a port serveru a zda importovaná certifikační autorita a klientský certifikát patří k tomuto serveru."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT limit velikosti paketu",
+        "recommendation": "Zprostředkovatel poslal paket větší, než je bezpečnostní limit aplikace, takže automatické MQTT opětovné připojení je zakázáno. Oprav nebo změň makléře a pak znovu připoj MQTT ručně z Připojení."
+      },
+      "transport-loss": {
+        "label": "Ztráta rádiového spojení",
+        "recommendation": "Sériový nebo BLE odkaz na rádio vypadl. Zkontrolujte kabel USB nebo dosah Bluetooth, zavřete ostatní aplikace pomocí portu a znovu se připojte."
+      },
+      "rf-auto-connect": {
+        "label": "Spuštění automatického připojení se nezdařilo",
+        "recommendation": "Automatické rádiové připojení při spuštění vypršelo nebo selhalo. Potvrďte, že je uložená přeprava a zařízení k dispozici, a poté se ručně připojte z Připojení."
+      },
+      "power-save-blocker": {
+        "label": "Zůstat vzhůru se nepodařilo",
+        "recommendation": "Aplikaci se nepodařilo spustit nebo zastavit blokátor úspory energie operačního systému. Spánek může odpojit rádia; zkontrolujte nastavení napájení operačního systému a v případě potřeby se po probuzení znovu připojte."
+      },
+      "tak-chat": {
+        "label": "TAK chat nebo DM bridge selhaly",
+        "recommendation": "Odeslání TAK chatu, geochatu nebo přímé zprávy se nezdařilo. Potvrďte, že je server TAK spuštěn, síťové rádio je připojeno a nastavení kanálu nebo DM relé odpovídá zamýšlené cestě."
+      },
+      "mecp": {
+        "label": "Problémy se zasíláním nouzových zpráv MECP",
+        "recommendation": "Odeslání MECP, jazykový balíček nebo místní zápis do protokolu auditu se nezdařilo. Zkontrolujte rádiové připojení a nastavení MECP. Veřejné podpůrné balíčky vynechávají podrobnosti auditu MECP — pro důkaz použijte panel Log nebo místní mecp-received.log."
+      },
+      "offline-maps": {
+        "label": "Stažení nebo import offline mapy se nezdařil",
+        "recommendation": "Stažení offline mapové oblasti, import MBTiles nebo vlastní vyčištění zdroje se nezdařilo. Zkontrolujte volné místo na disku, zdrojovou adresu URL dlaždice nebo cestu MBTiles a oblast Map → Offline."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore společník nebo vzdálené rozhraní CLI selhalo",
+        "recommendation": "Akce MeshCore společníka CLI nebo vzdálená akce CLI se nezdařila. Potvrďte, že doprovodný firmware je v1.18 nebo novější, rádio je připojeno a na uzlu je povoleno vzdálené rozhraní CLI."
+      },
+      "ai-summary": {
+        "label": "Problémy s doháněním AI nebo stahováním modelu",
+        "recommendation": "Stažení modelu umělé inteligence nebo stav spuštění dohánění se nezdařilo. Zkontrolujte přístup k síti pro modelový balíček, potvrďte, že je povolena → AI / catch-up aplikace, a po dokončení nastavení to zkuste znovu."
+      },
+      "live-map": {
+        "label": "Problémy s oknem mapy provozu v reálném čase",
+        "recommendation": "Vyskakovací okno mapy živého provozu nebo regionální kanál selhaly. Znovu otevřete vyskakovací okno z mapy, zkontrolujte oprávnění pro více oken a po obnovení sítě zkuste regionální kanál znovu."
+      },
+      "coi-memory": {
+        "label": "Vzorkování paměťového trendu sel",
+        "recommendation": "Vzorkování trendů paměti vykreslovače nemohlo měřit nebo přetrvávat vzorek. Zkontrolujte stav COI → podpory aplikace, volné místo na disku a zda je složka dat aplikace zapisovatelná."
+      },
+      "gps": {
+        "label": "Vyhledání polohy IP se nezdařilo",
+        "recommendation": "Záložní umístění založené na protokolu IP se nezdařilo. Zkontrolujte dostupnost internetu; radio GPS a ručně nastavené statické umístění jsou od tohoto vyhledávání IP odděleny."
       }
     },
     "recommendationGroups": {

@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Uzaktan TAK Röle Sorunları",
         "recommendation": "Uzaktan TAK rölesi bağlanamadı veya bağlantısını kaybetti. Sunucu adresini ve bağlantı noktasını ve içe aktarılan CA ve istemci sertifikasının o sunucuya ait olup olmadığını kontrol edin."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT paket boyutu sınırı",
+        "recommendation": "Aracı, uygulama güvenlik sınırından daha büyük bir paket gönderdi, bu nedenle otomatik MQTT yeniden bağlanma devre dışı bırakıldı. Aracıyı düzeltin veya değiştirin, ardından Bağlantı'dan MQTT'i manuel olarak yeniden bağlayın."
+      },
+      "transport-loss": {
+        "label": "Radyo bağlantısı kayboldu",
+        "recommendation": "Radyonun seri veya BLE bağlantısı düştü. USB kablosunu veya Bluetooth aralığını kontrol edin, bağlantı noktasını kullanarak diğer uygulamaları kapatın ve ardından yeniden bağlanın."
+      },
+      "rf-auto-connect": {
+        "label": "Otomatik başlatma bağlantısı başarısız oldu",
+        "recommendation": "Başlangıçta otomatik radyo bağlantısı zaman aşımına uğradı veya başarısız oldu. Kaydedilen taşıma ve cihazın kullanılabilir olduğunu onaylayın, ardından Bağlantı'dan manuel olarak bağlanın."
+      },
+      "power-save-blocker": {
+        "label": "Uyanık kalma politikası başarısız oldu",
+        "recommendation": "Uygulama, işletim sistemi güç tasarrufu engelleyicisini başlatamadı veya durduramadı. Uyku, radyoların bağlantısını kesebilir; işletim sistemi güç ayarlarını kontrol edin ve gerekirse uyandıktan sonra yeniden bağlanın."
+      },
+      "tak-chat": {
+        "label": "TAK sohbet veya DM köprüsü başarısız oldu",
+        "recommendation": "TAK sohbet, geochat veya doğrudan mesaj köprüsü gönderimi başarısız oldu. TAK sunucusunun çalıştığını, mesh radyonun bağlı olduğunu ve kanal veya DM röle ayarlarının istenen yolla eşleştiğini onaylayın."
+      },
+      "mecp": {
+        "label": "MECP acil durum mesajlaşma sorunları",
+        "recommendation": "Bir MECP gönderme, dil paketi veya yerel denetim günlüğü yazma başarısız oldu. Radyo bağlantısını ve MECP ayarlarını kontrol edin. Kamu destek paketleri MECP denetim ayrıntılarını atlar — kanıt için Günlük panelini veya yerel mecp-received.log'u kullanın."
+      },
+      "offline-maps": {
+        "label": "Çevrimdışı harita indirilemedi veya içe aktarılamadı",
+        "recommendation": "Çevrimdışı harita bölgesi indirme, MBTiles içe aktarma veya özel kaynak temizleme başarısız oldu. Boş disk alanını, döşeme kaynağı URL'sini veya MBTiles yolunu ve Harita → Çevrimdışı bölgelerini kontrol edin."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore tamamlayıcı veya uzak CLI başarısız oldu",
+        "recommendation": "MeshCore tamamlayıcı CLI veya uzak CLI eylemi başarısız oldu. Tamamlayıcı ürün yazılımının v1.18 veya daha yeni olduğunu, radyonun bağlı olduğunu ve düğümde uzak CLI'ye izin verildiğini doğrulayın."
+      },
+      "ai-summary": {
+        "label": "Yapay zeka yetiştirme veya model indirme sorunları",
+        "recommendation": "Yapay zeka modeli indirme veya yakalama başlatma durumu başarısız oldu. Model paketi için ağ erişimini kontrol edin, App → AI / catch - up'ın etkinleştirildiğini onaylayın ve kurulum bittikten sonra tekrar deneyin."
+      },
+      "live-map": {
+        "label": "Canlı trafik haritası penceresi sorunları",
+        "recommendation": "Canlı trafik haritası açılır veya bölgesel yayın başarısız oldu. Açılır pencereyi Harita'dan yeniden açın, çoklu pencere izinlerini kontrol edin ve ağ kurtarıldıktan sonra bölgesel yayını yeniden deneyin."
+      },
+      "coi-memory": {
+        "label": "Bellek eğilim örneklemesi başarısız oldu",
+        "recommendation": "Renderer bellek eğilim örneklemesi bir örneği ölçemez veya devam ettiremez. Uygulama → Desteği COI yetenek durumunu, boş disk alanını ve uygulama veri klasörünün yazılabilir olduğunu kontrol edin."
+      },
+      "gps": {
+        "label": "IP konumu araması başarısız oldu",
+        "recommendation": "IP tabanlı konum yedeklemesi başarısız oldu. İnternet erişilebilirliğini kontrol edin; radyo GPS ve manuel olarak ayarlanmış statik konum bu IP aramasından ayrıdır."
       }
     },
     "recommendationGroups": {

@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Problèmes de relais TAK à distance",
         "recommendation": "Le relais TAK distant n'a pas pu se connecter ou a perdu sa connexion. Vérifiez l'adresse et le port du serveur, et que l'autorité de certification importée et le certificat client appartiennent à ce serveur."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT limite DE taille DE paquet",
+        "recommendation": "Le courtier a envoyé un paquet plus grand que la limite de sécurité de l'application, de sorte que la reconnexion automatique MQTT est désactivée. Corrigez ou changez le courtier, puis reconnectez-vous manuellement MQTT à partir de Connexion."
+      },
+      "transport-loss": {
+        "label": "liaison radioélectrique",
+        "recommendation": "Le lien série ou BLE vers la radio a été supprimé. Vérifiez le câble USB ou la portée Bluetooth, fermez les autres applications à l'aide du port, puis reconnectez-vous."
+      },
+      "rf-auto-connect": {
+        "label": "Échec de la connexion automatique au démarrage",
+        "recommendation": "La connexion radio automatique au démarrage a expiré ou a échoué. Confirmez que le transport et l'appareil enregistrés sont disponibles, puis connectez-vous manuellement à partir de la connexion."
+      },
+      "power-save-blocker": {
+        "label": "Échec de la politique de veille prolongée",
+        "recommendation": "L'application n'a pas pu démarrer ou arrêter le bloqueur d'économie d'énergie du système d'exploitation. Le mode veille peut déconnecter les radios ; vérifiez les paramètres d'alimentation du système d'exploitation et reconnectez-vous après le réveil si nécessaire."
+      },
+      "tak-chat": {
+        "label": "TAK chat ou pont DM a échoué",
+        "recommendation": "Échec de l'envoi d'un chat, d'un géochat ou d'un pont de message direct TAK. Vérifiez que le serveur TAK est en cours d'exécution, que la radio maillée est connectée et que les paramètres du canal ou du relais DM correspondent au chemin prévu."
+      },
+      "mecp": {
+        "label": "Problèmes de messagerie d'urgence MECP",
+        "recommendation": "Un envoi MECP, un module linguistique ou une écriture de journal d'audit local a échoué. Vérifiez la connexion radio et les paramètres MECP. Les ensembles de soutien public omettent les détails de l'audit du MECP — utilisez le panneau Journal ou le fichier MECP-received.log local pour les preuves."
+      },
+      "offline-maps": {
+        "label": "Échec du téléchargement ou de l'importation hors ligne de la carte",
+        "recommendation": "Un téléchargement de région de carte hors ligne, une importation de MBTiles ou un nettoyage de source personnalisé a échoué. Vérifiez l'espace disque libre, l'URL source de la tuile ou le chemin MBTiles et les régions → hors ligne de la carte."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore compagnon ou CLI distante a échoué",
+        "recommendation": "Une action CLI compagnon MeshCore ou CLI distante a échoué. Confirmez que le micrologiciel compagnon est v1.18 ou plus récent, que la radio est connectée et que la CLI à distance est autorisée sur le nœud."
+      },
+      "ai-summary": {
+        "label": "Problèmes de rattrapage d'IA ou de téléchargement de modèles",
+        "recommendation": "Échec du téléchargement du modèle d'IA ou de l'état de démarrage du rattrapage. Vérifiez l'accès au réseau pour le pack de modèles, confirmez que → l'application AI / rattrapage est activée et réessayez une fois la configuration terminée."
+      },
+      "live-map": {
+        "label": "Problèmes de fenêtre de carte de trafic en direct",
+        "recommendation": "Échec de la pop-out de la carte de trafic en direct ou du flux régional. Rouvrez la fenêtre contextuelle de Map, vérifiez les autorisations multi-fenêtres et réessayez le flux régional une fois le réseau rétabli."
+      },
+      "coi-memory": {
+        "label": "Échec de l'échantillonnage de la tendance de la",
+        "recommendation": "L'échantillonnage des tendances de la mémoire du rendu n'a pas pu mesurer ou persister un échantillon. Vérifiez l'état de la capacité COI du → support de l'application, l'espace disque libre et que le dossier de données de l'application est accessible en écriture."
+      },
+      "gps": {
+        "label": "Échec de la recherche de l'emplacement IP",
+        "recommendation": "Le repli de l'emplacement basé sur IP a échoué. Vérifiez l'accessibilité d'Internet ; le GPS radio et un emplacement statique défini manuellement sont distincts de cette recherche IP."
       }
     },
     "recommendationGroups": {

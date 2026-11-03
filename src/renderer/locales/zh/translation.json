@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "远程TAK继电器问题",
         "recommendation": "远程TAK继电器无法连接或失去连接。检查服务器地址和端口，导入的CA和客户端证书是否属于该服务器。"
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT数据包大小限制",
+        "recommendation": "代理发送的数据包大于应用安全限制，因此自动MQTT重新连接被禁用。修复或更改代理，然后从Connection手动重新连接MQTT。"
+      },
+      "transport-loss": {
+        "label": "无线电链路",
+        "recommendation": "无线电的串行或BLE链接已丢弃。检查USB电缆或蓝牙范围，使用端口关闭其他应用程序，然后重新连接。"
+      },
+      "rf-auto-connect": {
+        "label": "启动自动连接失败",
+        "recommendation": "启动时自动无线电连接超时或失败。确认已保存的运输和设备可用，然后从Connection手动连接。"
+      },
+      "power-save-blocker": {
+        "label": "唤醒政策失败",
+        "recommendation": "应用无法启动或停止操作系统节能拦截器。睡眠可能会断开收音机的连接；检查操作系统电源设置，并在需要时在唤醒后重新连接。"
+      },
+      "tak-chat": {
+        "label": "TAK聊天或DM桥接失败",
+        "recommendation": "TAK聊天、地理聊天或直接消息桥发送失败。确认TAK服务器正在运行，网状无线电已连接，通道或DM中继设置与预期路径匹配。"
+      },
+      "mecp": {
+        "label": "MECP紧急消息传递问题",
+        "recommendation": "MECP发送、语言包或本地审核日志写入失败。检查无线电连接和MECP设置。公共支持捆绑包省略MECP审计详细信息—使用日志面板或本地mecp-received.log作为证据。"
+      },
+      "offline-maps": {
+        "label": "离线地图下载或导入失败",
+        "recommendation": "离线地图区域下载、MBTiles导入或自定义源清理失败。检查可用磁盘空间、磁贴源URL或MBTiles路径以及映射→离线区域。"
+      },
+      "meshcore-cli": {
+        "label": "MeshCore同伴或远程CLI失败",
+        "recommendation": "MeshCore伴侣CLI或远程CLI操作失败。确认配套固件为v 1.18或更高版本，无线电已连接，并且节点上允许远程CLI。"
+      },
+      "ai-summary": {
+        "label": "AI追赶或模型下载问题",
+        "recommendation": "AI模型下载或追赶启动状态失败。检查模型包的网络访问权限，确认应用程序→AI/追赶已启用，并在设置完成后重试。"
+      },
+      "live-map": {
+        "label": "实时交通地图窗口问题",
+        "recommendation": "实时交通地图弹出或区域供稿失败。从地图中重新打开弹出窗口，检查多窗口权限，并在网络恢复后重试区域Feed。"
+      },
+      "coi-memory": {
+        "label": "内存趋势采样失败",
+        "recommendation": "渲染器内存趋势采样无法测量或保留样本。检查应用→支持COI功能状态、可用磁盘空间以及应用数据文件夹是否可写。"
+      },
+      "gps": {
+        "label": "IP位置查找失败",
+        "recommendation": "基于IP的位置回退失败。检查互联网可达性；无线电GPS和手动设置的静态位置与此IP查找分开。"
       }
     },
     "recommendationGroups": {

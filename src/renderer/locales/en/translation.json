@@ -2744,9 +2744,57 @@
         "label": "MQTT Issues",
         "recommendation": "MQTT connection issues. Verify broker URL, credentials, and network connectivity."
       },
+      "mqtt-packet-limit": {
+        "label": "MQTT packet size limit",
+        "recommendation": "The broker sent a packet larger than the app safety limit, so automatic MQTT reconnect is disabled. Fix or change the broker, then reconnect MQTT manually from Connection."
+      },
       "mqtt-retries-exhausted": {
         "label": "MQTT Reconnect Limit",
         "recommendation": "MQTT gave up after max reconnects. Confirm the broker is reachable, credentials and port are correct, and firewalls allow outbound traffic."
+      },
+      "transport-loss": {
+        "label": "Radio link lost",
+        "recommendation": "The serial or BLE link to the radio dropped. Check the USB cable or Bluetooth range, close other apps using the port, then reconnect."
+      },
+      "rf-auto-connect": {
+        "label": "Startup auto-connect failed",
+        "recommendation": "Automatic radio connect at startup timed out or failed. Confirm the saved transport and device are available, then connect manually from Connection."
+      },
+      "power-save-blocker": {
+        "label": "Stay-awake policy failed",
+        "recommendation": "The app could not start or stop the OS power-save blocker. Sleep may disconnect radios; check OS power settings and reconnect after wake if needed."
+      },
+      "tak-chat": {
+        "label": "TAK chat or DM bridge failed",
+        "recommendation": "A TAK chat, geochat, or direct-message bridge send failed. Confirm the TAK server is running, the mesh radio is connected, and channel or DM relay settings match the intended path."
+      },
+      "mecp": {
+        "label": "MECP emergency messaging issues",
+        "recommendation": "An MECP send, language pack, or local audit-log write failed. Check the radio connection and MECP settings. Public support bundles omit MECP audit details — use the Log panel or local mecp-received.log for evidence."
+      },
+      "offline-maps": {
+        "label": "Offline map download or import failed",
+        "recommendation": "An offline map region download, MBTiles import, or custom source cleanup failed. Check free disk space, the tile source URL or MBTiles path, and Map → Offline regions."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore companion or remote CLI failed",
+        "recommendation": "A MeshCore companion CLI or remote CLI action failed. Confirm companion firmware is v1.18 or newer, the radio is connected, and remote CLI is allowed on the node."
+      },
+      "ai-summary": {
+        "label": "AI catch-up or model download issues",
+        "recommendation": "AI model download or catch-up startup status failed. Check network access for the model pack, confirm App → AI / catch-up is enabled, and retry after setup finishes."
+      },
+      "live-map": {
+        "label": "Live traffic map window issues",
+        "recommendation": "The live traffic map pop-out or regional feed failed. Reopen the pop-out from Map, check multi-window permissions, and retry the regional feed after the network recovers."
+      },
+      "coi-memory": {
+        "label": "Memory trend sampling failed",
+        "recommendation": "Renderer memory trend sampling could not measure or persist a sample. Check App → Support COI capability status, free disk space, and that the app data folder is writable."
+      },
+      "gps": {
+        "label": "IP location lookup failed",
+        "recommendation": "The IP-based location fallback failed. Check internet reachability; radio GPS and a manually set static location are separate from this IP lookup."
       },
       "watchdog": {
         "label": "Watchdog Triggers",
@@ -2806,7 +2854,7 @@
       },
       "bluetooth-pairing": {
         "label": "Bluetooth Pairing Issues",
-        "recommendation": "Bluetooth pairing or unpair failed, or the PIN prompt timed out. Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings."
+        "recommendation": "Bluetooth pairing, connect, or unpair failed, or the PIN prompt timed out. Open the app when pairing, enter the PIN promptly, check the MAC address and Bluetooth permissions, or remove and re-pair from OS Bluetooth settings."
       },
       "store-forward": {
         "label": "Store & Forward History Issues",

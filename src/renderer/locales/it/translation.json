@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Problemi di relè TAK REMOTO",
         "recommendation": "Il relè TAK remoto non è riuscito a connettersi o ha perso la connessione. Controllare l'indirizzo e la porta del server e che la CA importata e il certificato client appartengano a quel server."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT limite DI dimensione del pacchetto",
+        "recommendation": "Il broker ha inviato un pacchetto più grande del limite di sicurezza dell'app, quindi la riconnessione automatica MQTT è disabilitata. Correggi o cambia il broker, quindi ricollega MQTT manualmente da Connection."
+      },
+      "transport-loss": {
+        "label": "cavo hertziano",
+        "recommendation": "Il link seriale o BLE alla radio è caduto. Controlla il cavo USB o la portata Bluetooth, chiudi le altre app che utilizzano la porta, quindi riconnettiti."
+      },
+      "rf-auto-connect": {
+        "label": "Connessione automatica all'avvio non riuscita",
+        "recommendation": "Timeout o guasto della connessione radio automatica all'avvio. Verificare che il trasporto e il dispositivo salvati siano disponibili, quindi connettersi manualmente da Connessione."
+      },
+      "power-save-blocker": {
+        "label": "Politica dello stato di veglia non riuscita",
+        "recommendation": "L'app non è riuscita ad avviare o arrestare il blocco del risparmio energetico del sistema operativo. La sospensione può disconnettere le radio; controllare le impostazioni di alimentazione del sistema operativo e ricollegarsi dopo la riattivazione, se necessario."
+      },
+      "tak-chat": {
+        "label": "TAK chat o bridge DM non riusciti",
+        "recommendation": "Invio di chat, geochat o bridge di messaggi diretti TAK non riuscito. Verificare che il server TAK sia in esecuzione, che la radio mesh sia connessa e che le impostazioni del canale o del relè DM corrispondano al percorso previsto."
+      },
+      "mecp": {
+        "label": "Problemi di messaggistica di emergenza MeCP",
+        "recommendation": "Invio MeCP, Language Pack o scrittura del registro di controllo locale non riusciti. Controllare la connessione radio e le impostazioni MeCP. I pacchetti di supporto pubblico omettono i dettagli dell'audit MeCP: utilizzare il pannello Log o il file mecp-received.log locale per le prove."
+      },
+      "offline-maps": {
+        "label": "Download o importazione della mappa offline non riusciti",
+        "recommendation": "Il download di una regione mappa offline, l'importazione di MBTiles o la pulizia dell'origine personalizzata non sono riusciti. Controlla lo spazio libero su disco, l'URL di origine della tessera o il percorso MBTiles e mappa le regioni → offline."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore CLI companion o remota non riuscita",
+        "recommendation": "Un'azione CLI complementare o remota di MeshCore non è riuscita. Verificare che il firmware complementare sia v1.18 o più recente, che la radio sia collegata e che la CLI remota sia consentita sul nodo."
+      },
+      "ai-summary": {
+        "label": "Problemi di recupero AI o download del modello",
+        "recommendation": "Download del modello di intelligenza artificiale o stato di avvio del recupero non riuscito. Controllare l'accesso alla rete per il pacchetto di modelli, confermare che → l'App AI / catch-up sia abilitata e riprovare al termine della configurazione."
+      },
+      "live-map": {
+        "label": "Problemi relativi alla finestra della mappa del traffico in",
+        "recommendation": "Il pop-out della mappa del traffico in tempo reale o il feed regionale non è riuscito. Riapri il pop-out dalla mappa, controlla le autorizzazioni multi-finestra e riprova il feed regionale dopo il ripristino della rete."
+      },
+      "coi-memory": {
+        "label": "Campionamento dell'andamento della memoria non riuscito",
+        "recommendation": "Il campionamento dell'andamento della memoria del riproduttore non ha potuto misurare o persistere un campione. Controlla lo stato della funzionalità coi di App → Support, lo spazio libero su disco e che la cartella dei dati dell'app sia scrivibile."
+      },
+      "gps": {
+        "label": "Ricerca della posizione IP non riuscita",
+        "recommendation": "Fallimento del fallback della posizione basato su IP non riuscito. Controlla la raggiungibilità di Internet; il radio GPS e una posizione statica impostata manualmente sono separati da questa ricerca IP."
       }
     },
     "recommendationGroups": {
