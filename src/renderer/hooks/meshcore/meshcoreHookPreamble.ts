@@ -1178,6 +1178,7 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
   }
   return meshcoreChatMessagesForDisplay(
     meshcoreReconcileRoomSenderIds(meshcoreReconcileChannelSenderIds(mapped)),
+    { selfNodeId: loadPersistedMeshcoreSelfNodeId() },
   );
 }
 

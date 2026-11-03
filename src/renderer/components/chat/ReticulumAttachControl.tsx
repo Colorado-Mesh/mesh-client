@@ -14,10 +14,7 @@ import {
 } from '@/renderer/lib/reticulum/sendReticulumAttachments';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useReticulumAttachmentSendStore } from '@/renderer/stores/reticulumAttachmentSendStore';
-import {
-  RETICULUM_ATTACHMENT_MAX_FILES,
-  RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES,
-} from '@/shared/reticulum-attachment-types';
+import { RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES } from '@/shared/reticulum-attachment-types';
 
 import { HelpTooltip } from '../HelpTooltip';
 import { useToast } from '../Toast';
@@ -89,7 +86,7 @@ export function ReticulumAttachControl({
       addToast(
         t(key, {
           limitKib: Math.round(RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES / 1024),
-          count: RETICULUM_ATTACHMENT_MAX_FILES,
+          count: 1,
         }),
         reason === 'too_large_for_propagation' ? 'info' : 'error',
       );
@@ -142,7 +139,6 @@ export function ReticulumAttachControl({
       <input
         ref={fileInputRef}
         type="file"
-        multiple
         hidden
         data-testid="reticulum-attach-file-input"
         aria-label={t('chatPanel.attachment.fileInputAria')}
@@ -160,7 +156,7 @@ export function ReticulumAttachControl({
       <HelpTooltip
         text={t('chatPanel.attachment.tooltip', {
           limitKib: Math.round(RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES / 1024),
-          count: RETICULUM_ATTACHMENT_MAX_FILES,
+          count: 1,
         })}
         className="shrink-0"
         nonFocusableWrapper

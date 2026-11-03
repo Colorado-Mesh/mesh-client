@@ -6,6 +6,8 @@
  * and only `{z}/{x}/{y}` are substituted at fetch time — a renderer can never supply a host.
  */
 
+import { isGlobalIpLiteral } from '../ipLiteral';
+
 export type CustomMapSourceKind = 'xyz' | 'mbtiles';
 
 /** `xyz-<12 hex>` / `mbtiles-<12 hex>`; valid as a URL hostname and safe as a directory name. */
@@ -165,31 +167,14 @@ function isOsmHost(host: string): boolean {
   return host === 'openstreetmap.org' || host.endsWith('.openstreetmap.org');
 }
 
-/** True for loopback / private / link-local / multicast / unspecified IPv4 and IPv6 addresses. */
+/**
+ * True when `address` is an IP literal that is not globally reachable.
+ * Hostnames return false (they are rejected by the XYZ template rules, not here).
+ * NAT64 `64:ff9b::/96`, IPv4-mapped forms, and benchmarking ranges follow
+ * {@link isGlobalIpLiteral}.
+ */
 export function isPrivateOrLocalAddress(address: string): boolean {
-  const ip = address.toLowerCase();
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(ip);
-  if (mapped?.[1]) return isPrivateOrLocalAddress(mapped[1]);
-  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
-  if (v4) {
-    const a = Number(v4[1]);
-    const b = Number(v4[2]);
-    if (a === 0 || a === 10 || a === 127 || a >= 224) return true;
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
-    if (a === 169 && b === 254) return true;
-    if (a === 172 && b >= 16 && b <= 31) return true;
-    if (a === 192 && b === 168) return true;
-    if (a === 192 && b === 0) return true;
-    return false;
-  }
-  if (ip.includes(':')) {
-    if (ip === '::' || ip === '::1') return true;
-    if (/^f[cd]/.test(ip)) return true; // fc00::/7 unique local
-    if (/^fe[89ab]/.test(ip)) return true; // fe80::/10 link-local
-    if (ip.startsWith('ff')) return true; // multicast
-    return false;
-  }
-  return false;
+  return isGlobalIpLiteral(address) === false;
 }
 
 // ── XYZ URL template validation ──────────────────────────────────────────────

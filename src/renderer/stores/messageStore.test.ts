@@ -543,3 +543,48 @@ describe.each(['meshcore', 'reticulum'] as const)(
     });
   },
 );
+
+describe('messageStore live trim keeps sending rows', () => {
+  const TRIM_ID = 'identity-trim-sending';
+
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+    vi.spyOn(meshtasticMessageLoadLimit, 'getMeshtasticMessageLoadLimit').mockReturnValue(2);
+    addIdentity({
+      id: TRIM_ID,
+      protocol: { type: 'meshtastic' } as unknown as Protocol,
+      signature: '',
+      transports: [],
+      createdAt: 0,
+      lastSeenAt: 0,
+    });
+  });
+
+  afterEach(() => {
+    removeIdentity(TRIM_ID);
+    vi.restoreAllMocks();
+  });
+
+  it('does not evict a sending row when a newer message arrives', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('old'), timestamp: 1, status: 'sending' });
+    addMessage(TRIM_ID, { ...sampleRecord('mid'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('new'), timestamp: 3 });
+    const bucket = useMessageStore.getState().messages[TRIM_ID] ?? {};
+    expect(bucket.old?.status).toBe('sending');
+    expect(bucket.new).toBeDefined();
+    expect(bucket.mid).toBeUndefined();
+  });
+
+  it('emits added only when the inserted id remains', () => {
+    addMessage(TRIM_ID, { ...sampleRecord('a'), timestamp: 2 });
+    addMessage(TRIM_ID, { ...sampleRecord('b'), timestamp: 3 });
+    const events: MessageStoreEvent[] = [];
+    const unsubscribe = subscribeMessageStoreEvents((event) => {
+      events.push(event);
+    });
+    addMessage(TRIM_ID, { ...sampleRecord('ancient'), timestamp: 1 });
+    unsubscribe();
+    expect(useMessageStore.getState().messages[TRIM_ID]?.ancient).toBeUndefined();
+    expect(events.filter((event) => event.type === 'added')).toEqual([]);
+  });
+});

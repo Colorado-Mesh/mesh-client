@@ -1030,7 +1030,9 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_serving_enabled: raw.nomad_serving_enabled,
             nomad_serving_display_name: raw.nomad_serving_display_name,
             nomad_serving_content_source: raw.nomad_serving_content_source,
-            nomad_serving_allow_executable_pages: raw.nomad_serving_allow_executable_pages,
+            nomad_serving_allow_executable_pages: super::restored_nomad_allow_executable_pages(
+                raw.nomad_serving_allow_executable_pages,
+            ),
             rncp_listener_enabled: raw.rncp_listener_enabled,
             rncp_listener_save_dir: raw.rncp_listener_save_dir,
             rncp_listener_allow_fetch: raw.rncp_listener_allow_fetch,
@@ -1359,6 +1361,10 @@ mod tests {
             loaded.nomad_serving_content_source.as_deref(),
             Some("/tmp/nomad-page")
         );
+        // Windows restore forces the CGI flag off even if the saved document says true.
+        #[cfg(windows)]
+        assert!(!loaded.nomad_serving_allow_executable_pages);
+        #[cfg(not(windows))]
         assert!(loaded.nomad_serving_allow_executable_pages);
 
         // Strip the new keys from a valid serialized document (older clients).

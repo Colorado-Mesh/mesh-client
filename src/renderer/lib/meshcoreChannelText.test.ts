@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   mapMeshcoreDbRowsToChatMessages,
@@ -28,6 +28,7 @@ import {
   resolveMeshcoreOutboundWireText,
   sanitizeMeshcoreWireName,
 } from './meshcoreChannelText';
+import { MESHCORE_LAST_SELF_NODE_LS_KEY } from './meshcoreLastSelfNodeId';
 import { computeMeshcoreOpenReactionHash } from './meshcoreOpenReaction';
 import {
   MESHCORE_UNKNOWN_SENDER_STUB_ID,
@@ -1493,6 +1494,71 @@ describe('meshcoreReplyBodyReferencesParent', () => {
 });
 
 describe('mapMeshcoreDbRowsToChatMessages reply repair', () => {
+  it('keeps an own reply when the DB row has no radio_node_id', () => {
+    const memory = new Map<string, string>([[MESHCORE_LAST_SELF_NODE_LS_KEY, '100']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memory.set(key, value);
+      },
+      removeItem: (key: string) => {
+        memory.delete(key);
+      },
+    });
+    try {
+      const row = (
+        partial: Partial<MeshcoreMessageDbRow> & Pick<MeshcoreMessageDbRow, 'id' | 'payload'>,
+      ): MeshcoreMessageDbRow => ({
+        sender_id: 100,
+        sender_name: 'Me',
+        channel_idx: 0,
+        timestamp: partial.id,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+        received_via: 'rf',
+        radio_node_id: null,
+        ...partial,
+      });
+      const mapped = mapMeshcoreDbRowsToChatMessages([
+        row({ id: 1, payload: 'Test good, 4 hops', timestamp: 1_000, sender_name: 'Me' }),
+        row({
+          id: 2,
+          sender_id: 300,
+          sender_name: 'Signal Bot',
+          payload: ', ack: SNR 9.0 dB, 7 hops',
+          timestamp: 2_000,
+          reply_id: 1_000,
+          reply_preview_text: 'Test good, 4 hops',
+          reply_preview_sender: 'Me',
+        }),
+        row({
+          id: 3,
+          sender_id: 300,
+          sender_name: 'Signal Bot',
+          payload: ', ack: SNR 12.0 dB, 4 hops',
+          timestamp: 3_000,
+          reply_id: 1_500,
+        }),
+        row({
+          id: 4,
+          payload: 'Thank you',
+          timestamp: 4_000,
+          reply_id: 2_000,
+          radio_node_id: null,
+        }),
+      ]);
+      const thanks = mapped.find((m) => m.payload === 'Thank you');
+      expect(thanks?.radioNodeId).toBeUndefined();
+      expect(thanks?.replyId).toBe(2_000);
+      expect(thanks?.replyPreviewSender).toBe('Signal Bot');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('repairs Wherewolf reply to b from DB rows (live ingest stale reply_id)', () => {
     const rows = [
       {

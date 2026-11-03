@@ -2519,17 +2519,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
       touch(channel);
-      if (!identityId) return;
+      if (!identityId) throw new Error('chatPanel.reactionFailed');
       const storeMessages = Object.values(useMessageStore.getState().messages[identityId] ?? {});
       const targetMsg = storeMessages.find(
         (m) => m.timestamp === replyId || m.reticulumMessageHash === String(replyId),
       );
-      if (!targetMsg?.reticulumMessageHash) return;
+      if (!targetMsg?.reticulumMessageHash) throw new Error('chatPanel.reactionFailed');
       const peerHash =
         targetMsg.from === selfNodeId
           ? resolveReticulumDestinationHash(targetMsg.to)
           : targetMsg.reticulumSenderHash;
-      if (!peerHash) return;
+      if (!peerHash) throw new Error('chatPanel.reactionFailed');
       const res = (await withReticulumIpcSendDeadline(
         window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/reaction', {
           destination_hash: peerHash,

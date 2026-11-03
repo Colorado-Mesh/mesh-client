@@ -8172,6 +8172,7 @@
     "directionOutbound": "Wysłano",
     "protocolAll": "Wszystkie protokoły",
     "directMessage": "Bezpośrednia wiadomość",
+    "unknownSender": "Nieznany",
     "senderPlaceholder": "Imię lub identyfikator",
     "channel": "Kanał {{index}}",
     "meshtastic": "Meshtastic",
@@ -8251,6 +8252,7 @@
       "confirmMatch": "Pasują",
       "verificationCharactersLabel": "Znaki weryfikacyjne",
       "sendFailed": "Nie udało się połączyć z radiem. Sprawdź połączenie i spróbuj ponownie.",
+      "missingNode": "Ta stacja nie jest jeszcze rozpoznana. Poczekaj, aż będzie, i potwierdź.",
       "doneHint": "Klucz {{name}} jest teraz oznaczony w radiu jako zweryfikowany ręcznie.",
       "rejectedHint": "Weryfikacja anulowana. Klucz {{name}} nie został oznaczony jako zweryfikowany. Jeżeli znaki się różnią, traktuj klucz tego węzła jako niezaufany."
     },

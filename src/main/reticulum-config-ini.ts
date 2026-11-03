@@ -1,8 +1,9 @@
 /** Shared Reticulum config.ini field parsers for interface block scanners. */
 
+/** Sidecar `parse_bool`: yes/true/on/1 are enabled. */
 export function parseReticulumIniEnabledValue(raw: string): boolean {
   const v = raw.trim().toLowerCase();
-  return v === 'yes' || v === 'true' || v === '1';
+  return v === 'yes' || v === 'true' || v === 'on' || v === '1';
 }
 
 export function parseReticulumIniInterfaceField(

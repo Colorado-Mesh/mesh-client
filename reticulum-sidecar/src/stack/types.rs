@@ -398,12 +398,48 @@ pub struct LxmfReactionRequest {
     pub emoji: String,
 }
 
+/// Reject empty or oversized reaction emoji, and a target hash that is not 32 bytes.
+/// Checked before the message is signed so a bad tapback never becomes a content-only DM.
+pub fn validate_lxmf_reaction_request(req: &LxmfReactionRequest) -> Result<(), String> {
+    if req.emoji.is_empty() || req.emoji.len() > 64 {
+        return Err("reaction emoji must be 1..=64 bytes".into());
+    }
+    let hash = req.target_hash.trim();
+    if hash.len() != 64 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("target_hash must be a 32-byte hex hash".into());
+    }
+    Ok(())
+}
+
 /// Outbound RRC reaction marker (rrc-extensions.md v1 `K_REACT_TO` / `K_REACT_OP`).
 #[derive(Debug, Clone)]
 pub struct RrcReactionRequest {
     /// `K_ID` of the target message, 16 hex characters.
     pub target_hex: String,
     pub retract: bool,
+}
+
+#[cfg(test)]
+mod lxmf_reaction_validation_tests {
+    use super::{LxmfReactionRequest, validate_lxmf_reaction_request};
+
+    fn req(emoji: &str, target_hash: &str) -> LxmfReactionRequest {
+        LxmfReactionRequest {
+            destination_hash: "ab".repeat(16),
+            target_hash: target_hash.into(),
+            emoji: emoji.into(),
+        }
+    }
+
+    #[test]
+    fn rejects_empty_and_overlong_emoji_and_a_bad_target_hash() {
+        let ok_hash = "cd".repeat(32);
+        assert!(validate_lxmf_reaction_request(&req("👍", &ok_hash)).is_ok());
+        assert!(validate_lxmf_reaction_request(&req("", &ok_hash)).is_err());
+        assert!(validate_lxmf_reaction_request(&req(&"a".repeat(65), &ok_hash)).is_err());
+        assert!(validate_lxmf_reaction_request(&req("👍", "not-a-hash")).is_err());
+        assert!(validate_lxmf_reaction_request(&req("👍", &"ab".repeat(16))).is_err());
+    }
 }
 
 #[cfg(test)]

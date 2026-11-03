@@ -15,6 +15,7 @@ const { panel } = vi.hoisted(() => ({ panel: vi.fn() }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: '3rdParty', init: () => undefined },
 }));
 vi.mock('./LiveTrafficPanel', () => ({
   default: (props: LiveTrafficPanelProps & { windowActions?: ReactNode }) => {
@@ -132,12 +133,15 @@ describe('LiveTrafficWindowSlot', () => {
   it('replaces the inline map with a notice while the window is open', async () => {
     await renderSlot(slot());
     await screen.findByTestId('live-panel');
+    act(() => {
+      latestPanel().onViewChange?.(view);
+    });
     await sendState({ open: true });
     expect(screen.queryByTestId('live-panel')).toBeNull();
     expect(screen.getByText('liveTraffic.window.openElsewhere')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.window.show' }));
-    expect(api.open).toHaveBeenCalledWith('meshcore', null);
+    expect(api.open).toHaveBeenLastCalledWith('meshcore', null);
     fireEvent.click(screen.getByRole('button', { name: 'liveTraffic.window.moveBack' }));
     expect(api.close).toHaveBeenCalledWith('meshcore');
   });

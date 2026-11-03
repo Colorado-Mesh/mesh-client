@@ -112,10 +112,71 @@ pub use types::{
     AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow,
     LxmfPaperCreateRequest, LxmfPaperIngestRequest, LxmfReactionRequest, LxmfSendRequest,
     NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, RrcReactionRequest, StackIdentity,
+    validate_lxmf_reaction_request,
 };
 
 #[cfg(not(feature = "rns-stack"))]
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
+
+/// Windows cannot host Nomad CGI. Reject `true`.
+#[cfg(windows)]
+pub(crate) fn normalize_nomad_allow_executable_pages(
+    allow: Option<bool>,
+) -> Result<Option<bool>, String> {
+    if allow == Some(true) {
+        return Err("nomad executable pages are not supported on Windows".into());
+    }
+    Ok(allow)
+}
+
+/// Non-Windows builds keep the requested CGI flag.
+#[cfg(not(windows))]
+#[allow(clippy::unnecessary_wraps)] // Same Result signature as the Windows reject path.
+pub(crate) fn normalize_nomad_allow_executable_pages(
+    allow: Option<bool>,
+) -> Result<Option<bool>, String> {
+    Ok(allow)
+}
+
+/// Persisted `allow_executable_pages` applied when the stack restores Nomad serving.
+pub(crate) fn restored_nomad_allow_executable_pages(stored: bool) -> bool {
+    #[cfg(windows)]
+    {
+        let _ = stored;
+        false
+    }
+    #[cfg(not(windows))]
+    {
+        stored
+    }
+}
+
+#[cfg(test)]
+mod nomad_executable_pages_tests {
+    use super::{normalize_nomad_allow_executable_pages, restored_nomad_allow_executable_pages};
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_rejects_executable_pages_and_forces_restore_off() {
+        assert!(normalize_nomad_allow_executable_pages(Some(true)).is_err());
+        assert_eq!(
+            normalize_nomad_allow_executable_pages(Some(false)).unwrap(),
+            Some(false)
+        );
+        assert!(!restored_nomad_allow_executable_pages(true));
+        assert!(!restored_nomad_allow_executable_pages(false));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn non_windows_keeps_executable_pages() {
+        assert_eq!(
+            normalize_nomad_allow_executable_pages(Some(true)).unwrap(),
+            Some(true)
+        );
+        assert!(restored_nomad_allow_executable_pages(true));
+    }
+}
 const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
 
 /// Live view of the local propagation node for the `local-prop` list row.
@@ -2303,6 +2364,8 @@ impl StackHandle {
         display_name: Option<String>,
         allow_executable_pages: Option<bool>,
     ) -> Result<NomadServingStatus, String> {
+        let allow_executable_pages =
+            normalize_nomad_allow_executable_pages(allow_executable_pages)?;
         let _op = self.nomad_serving_op_lock.lock().await;
         let display_name_provided = display_name.is_some();
         let sanitized_display = match display_name {

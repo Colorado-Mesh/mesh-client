@@ -105,6 +105,7 @@ import {
   assertChatExportMessageSizes,
   formatChatExportLinesWithTotalCap,
 } from './chatExportFormat';
+import { outboxIdentityIdForInsert } from './chatOutboxIdentity';
 import { showCrashReportDialog } from './crash-report-dialog';
 import {
   addContactToGroup,
@@ -5853,6 +5854,11 @@ ipcMain.handle('meshtastic:xmodemSaveDownload', async (event, filename: unknown,
   if (!(data instanceof Uint8Array) || data.length === 0) {
     throw new Error('meshtastic:xmodemSaveDownload: data must be non-empty Uint8Array');
   }
+  if (data.byteLength > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES) {
+    throw new Error(
+      `File too large (max ${MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES / (1024 * 1024)} MB)`,
+    );
+  }
   if (!mainWindow) return { success: false };
   try {
     const result = await dialog.showSaveDialog(mainWindow, {
@@ -5918,8 +5924,8 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
         `INSERT INTO chat_outbox
         (protocol, view_key, channel, to_node, payload, reply_id, status, error,
          attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total,
-         priority)
-       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)`,
+         priority, identity_id)
+       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?)`,
       )
       .run(
         e.protocol,
@@ -5937,6 +5943,7 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
         e.groupIndex ?? null,
         e.groupTotal ?? null,
         e.priority === 'emergency' ? 'emergency' : 'normal',
+        outboxIdentityIdForInsert(e.identityId),
       );
     const row = db
       .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
@@ -6025,6 +6032,8 @@ function rowToOutboxEntry(row: Record<string, unknown>) {
     groupIndex: (row.group_index as number | null) ?? null,
     groupTotal: (row.group_total as number | null) ?? null,
     priority: (row.priority as string) === 'emergency' ? 'emergency' : 'normal',
+    identityId:
+      typeof row.identity_id === 'string' && row.identity_id.length > 0 ? row.identity_id : null,
   };
 }
 

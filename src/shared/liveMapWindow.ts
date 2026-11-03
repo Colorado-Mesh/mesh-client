@@ -56,6 +56,8 @@ export interface LiveMapWindowApi {
   // Pop-out window
   init: () => Promise<LiveMapWindowInit | null>;
   onSnapshot: (callback: (snapshot: unknown) => void) => () => void;
+  /** Main asked an already-open pop-out to move to a new view. */
+  onApplyView?: (callback: (view: LiveMapView) => void) => () => void;
   reportView: (view: LiveMapView) => void;
   selectNode: (nodeId: number) => void;
   setAlwaysOnTop: (value: boolean) => Promise<boolean>;
