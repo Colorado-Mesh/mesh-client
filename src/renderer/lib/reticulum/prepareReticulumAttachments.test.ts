@@ -34,6 +34,12 @@ describe('prepareReticulumFileAttachments', () => {
       ok: false,
       error: 'attachment_empty',
     });
+    expect(await prepareReticulumFileAttachments([file('a.txt', 'a'), file('b.txt', 'b')])).toEqual(
+      {
+        ok: false,
+        error: 'attachment_count_exceeded',
+      },
+    );
     const many = Array.from({ length: RETICULUM_ATTACHMENT_MAX_FILES + 1 }, (_, i) =>
       file(`f${i}.txt`, 'x'),
     );

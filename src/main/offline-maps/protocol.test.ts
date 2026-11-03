@@ -4,6 +4,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import * as pinnedPublicConnect from '../pinnedPublicConnect';
 import type { CustomMapSourceRecord } from './custom-sources';
 import { createMeshTilesProtocolHandler, parseMeshTilesRequestUrl } from './protocol';
 import { createTileCache } from './tile-cache';
@@ -212,6 +213,42 @@ describe('mesh-tiles protocol', () => {
       const fetchImpl = vi.fn();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const { handler } = setup({ fetchImpl, addresses: ['10.0.0.8'] });
+      const res = await handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/1.png`));
+      expect(res.status).toBe(404);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    });
+
+    it('pins the connect to the same addresses the DNS check accepted', async () => {
+      const fetchImpl = vi.fn(() => Promise.resolve(new Response(PNG, { status: 200 })));
+      const pin = vi.spyOn(pinnedPublicConnect, 'createPinnedPublicAgent');
+      const { handler, resolveHost } = setup({
+        fetchImpl,
+        addresses: ['93.184.216.34', '8.8.8.8'],
+      });
+      const res = await handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/4.png`));
+      expect(res.status).toBe(200);
+      expect(resolveHost).toHaveBeenCalledTimes(1);
+      expect(pin).toHaveBeenCalledTimes(1);
+      const pinnedCalls = pin.mock.calls as unknown as [URL, string][];
+      expect(pinnedCalls[0]?.[1]).toBe('93.184.216.34');
+      const agent = pin.mock.results[0]?.value;
+      const fetchCalls = fetchImpl.mock.calls as unknown as [string, { dispatcher?: unknown }][];
+      expect(fetchCalls[0]?.[1]).toMatchObject({ dispatcher: agent });
+      // No host-check cache: a later tile resolves again and pins that lookup.
+      await handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/5.png`));
+      expect(resolveHost).toHaveBeenCalledTimes(2);
+      expect(pin).toHaveBeenCalledTimes(2);
+      expect(pinnedCalls[1]?.[1]).toBe('93.184.216.34');
+      pin.mockRestore();
+    });
+
+    it('refuses a host when any resolved address is not global', async () => {
+      const fetchImpl = vi.fn();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { handler } = setup({
+        fetchImpl,
+        addresses: ['93.184.216.34', '64:ff9b::7f00:1'],
+      });
       const res = await handler(new Request(`mesh-tiles://${XYZ_ID}/3/1/1.png`));
       expect(res.status).toBe(404);
       expect(fetchImpl).not.toHaveBeenCalled();

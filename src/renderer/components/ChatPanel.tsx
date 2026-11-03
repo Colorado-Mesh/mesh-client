@@ -205,7 +205,11 @@ import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import { canBindConversationMute } from '../lib/conversationMuteStorage';
 import { filterArchived, orderPinnedFirst } from '../lib/conversationPinStorage';
 import { sendEmergencyText } from '../lib/emergencySend';
-import { findMessageIndexForFocus, type PendingMessageFocus } from '../lib/globalMessageSearch';
+import {
+  findMessageIndexForFocus,
+  type PendingMessageFocus,
+  withFocusRowLoaded,
+} from '../lib/globalMessageSearch';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import { isMecpAlertThrottled } from '../lib/mecp/mecpAlertThrottle';
 import {
@@ -1670,13 +1674,19 @@ function ChatPanel({
   }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
 
   const [messageFocusFlashIndex, setMessageFocusFlashIndex] = useState<number | null>(null);
+  const focusFilterReleasedRef = useRef(false);
+
+  const messagesWithFocus = useMemo(
+    () => withFocusRowLoaded(messages, initialMessageFocus),
+    [initialMessageFocus, messages],
+  );
 
   const displayMessages = useMemo(
     () =>
       protocol === 'meshcore'
-        ? meshcoreChatMessagesForDisplay(messages, { selfNodeId: myNodeNum })
-        : messages,
-    [messages, protocol, myNodeNum],
+        ? meshcoreChatMessagesForDisplay(messagesWithFocus, { selfNodeId: myNodeNum })
+        : messagesWithFocus,
+    [messagesWithFocus, protocol, myNodeNum],
   );
 
   // Separate regular messages from reaction messages
@@ -1949,17 +1959,33 @@ function ChatPanel({
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
 
-  // Global search hit: apply highlight filter first, then scroll/flash against filtered rows.
+  // Global search hit: apply the dialog query, load a missing row, then scroll/flash.
+  useEffect(() => {
+    focusFilterReleasedRef.current = false;
+  }, [initialMessageFocus]);
+
   useEffect(() => {
     if (initialMessageFocus == null || !isActive) return;
     const highlight = initialMessageFocus.highlightQuery?.trim() ?? '';
-    if (highlight && (!showSearch || searchQuery !== highlight)) {
+    if (
+      highlight &&
+      !focusFilterReleasedRef.current &&
+      (!showSearch || searchQuery !== highlight)
+    ) {
       setShowSearch(true);
       setSearchQuery(highlight);
       return;
     }
     const index = findMessageIndexForFocus(filteredMessages, initialMessageFocus);
-    if (index < 0) return;
+    if (index < 0) {
+      // The query hid the hit. Drop the filter so the loaded row can be shown.
+      if (findMessageIndexForFocus(viewMessages, initialMessageFocus) >= 0 && searchQuery.trim()) {
+        focusFilterReleasedRef.current = true;
+        setSearchQuery('');
+        setShowSearch(false);
+      }
+      return;
+    }
     isPinnedToBottomRef.current = false;
     messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
     setMessageFocusFlashIndex(index);
@@ -1971,6 +1997,7 @@ function ChatPanel({
     onMessageFocusConsumed,
     searchQuery,
     showSearch,
+    viewMessages,
   ]);
 
   // Keep the flash timer independent of focus consumption so clearing focus does not cancel it.
@@ -2154,6 +2181,7 @@ function ChatPanel({
     editScheduled: editScheduledOutbox,
   } = useChatOutbox({
     protocol,
+    identityId: identityId ?? null,
     isSendAvailable: outboxSendAvailable,
     sendFn: outboxSendFn,
   });
@@ -2161,8 +2189,13 @@ function ChatPanel({
   const [editingScheduledRow, setEditingScheduledRow] = useState<OutboxEntry | null>(null);
 
   const viewOutboxRows = useMemo(
-    () => outboxRows.filter((r): r is OutboxEntry => r?.viewKey === viewKey),
-    [outboxRows, viewKey],
+    () =>
+      outboxRows.filter((r): r is OutboxEntry => {
+        if (r?.viewKey !== viewKey) return false;
+        if (r.identityId == null || r.identityId === '') return true;
+        return isConnected && identityId != null && r.identityId === identityId;
+      }),
+    [identityId, isConnected, outboxRows, viewKey],
   );
 
   const markCurrentViewRead = useCallback(() => {
@@ -4881,77 +4914,80 @@ function ChatPanel({
                                       />
                                     </button>
                                   )}
-                                {/* React — Meshtastic MQTT-origin parents cannot receive tapbacks (#341). */}
-                                {(() => {
-                                  const mqttOriginReactionUnsupported =
-                                    protocol === 'meshtastic' && msg.receivedVia === 'mqtt';
-                                  const reactLabel = mqttOriginReactionUnsupported
-                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
-                                    : t('chatPanel.addReaction');
-                                  const reactTitle = mqttOriginReactionUnsupported
-                                    ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
-                                    : t('chatPanel.reactButton');
-                                  return (
-                                    <button
-                                      type="button"
-                                      disabled={mqttOriginReactionUnsupported}
-                                      onMouseDown={(e) => {
-                                        if (mqttOriginReactionUnsupported) return;
-                                        e.preventDefault();
-                                      }}
-                                      onClick={() => {
-                                        if (mqttOriginReactionUnsupported) return;
-                                        setReplyTo(null);
-                                        const id = msg.packetId ?? msg.timestamp;
-                                        if (chatPanelIsLinux()) {
-                                          if (showPicker) {
-                                            clearReactionCapture({ refocusComposer: true });
-                                            setPickerOpenFor(null);
-                                          } else {
-                                            reactionPickerTarget.current = {
-                                              id,
-                                              channel: msg.channel,
-                                            };
-                                            reactionCapturePendingRef.current = true;
-                                            setPickerOpenFor(id);
-                                          }
-                                        } else {
-                                          reactionPickerTarget.current = {
-                                            id,
-                                            channel: msg.channel,
-                                          };
-                                          reactionCapturePendingRef.current = true;
-                                          // The OS panel types into whatever has focus, and keyboard or
-                                          // assistive-tech presses arrive without a mousedown. A focused
-                                          // element must not be aria-hidden, so expose it by name until
-                                          // clearReactionCapture hides it again.
-                                          const captureInput = reactionHiddenInputRef.current;
-                                          captureInput?.removeAttribute('aria-hidden');
-                                          captureInput?.focus();
-                                          void window.electronAPI
-                                            .showEmojiPanel()
-                                            .catch((e: unknown) => {
-                                              console.debug(
-                                                '[ChatPanel] showEmojiPanel failed ' +
-                                                  errLikeToLogString(e),
-                                              );
-                                            });
-                                        }
-                                      }}
-                                      {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action text-muted rounded p-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
-                                      aria-label={reactLabel}
-                                      title={reactTitle}
-                                    >
-                                      <Smile
-                                        aria-hidden
-                                        className="h-3.5 w-3.5"
-                                        trigger={parentIconTrigger}
-                                        size={14}
-                                      />
-                                    </button>
-                                  );
-                                })()}
+                                {/* React — Meshtastic MQTT-origin parents cannot receive tapbacks (#341).
+                                    LXMF reactions need a message hash, same as threaded reply. */}
+                                {lxmfReplyHashReplies && !msg.reticulum_message_hash
+                                  ? null
+                                  : (() => {
+                                      const mqttOriginReactionUnsupported =
+                                        protocol === 'meshtastic' && msg.receivedVia === 'mqtt';
+                                      const reactLabel = mqttOriginReactionUnsupported
+                                        ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                        : t('chatPanel.addReaction');
+                                      const reactTitle = mqttOriginReactionUnsupported
+                                        ? t('chatPanel.sendErrors.mqttOriginReactionUnsupported')
+                                        : t('chatPanel.reactButton');
+                                      return (
+                                        <button
+                                          type="button"
+                                          disabled={mqttOriginReactionUnsupported}
+                                          onMouseDown={(e) => {
+                                            if (mqttOriginReactionUnsupported) return;
+                                            e.preventDefault();
+                                          }}
+                                          onClick={() => {
+                                            if (mqttOriginReactionUnsupported) return;
+                                            setReplyTo(null);
+                                            const id = msg.packetId ?? msg.timestamp;
+                                            if (chatPanelIsLinux()) {
+                                              if (showPicker) {
+                                                clearReactionCapture({ refocusComposer: true });
+                                                setPickerOpenFor(null);
+                                              } else {
+                                                reactionPickerTarget.current = {
+                                                  id,
+                                                  channel: msg.channel,
+                                                };
+                                                reactionCapturePendingRef.current = true;
+                                                setPickerOpenFor(id);
+                                              }
+                                            } else {
+                                              reactionPickerTarget.current = {
+                                                id,
+                                                channel: msg.channel,
+                                              };
+                                              reactionCapturePendingRef.current = true;
+                                              // The OS panel types into whatever has focus, and keyboard or
+                                              // assistive-tech presses arrive without a mousedown. A focused
+                                              // element must not be aria-hidden, so expose it by name until
+                                              // clearReactionCapture hides it again.
+                                              const captureInput = reactionHiddenInputRef.current;
+                                              captureInput?.removeAttribute('aria-hidden');
+                                              captureInput?.focus();
+                                              void window.electronAPI
+                                                .showEmojiPanel()
+                                                .catch((e: unknown) => {
+                                                  console.debug(
+                                                    '[ChatPanel] showEmojiPanel failed ' +
+                                                      errLikeToLogString(e),
+                                                  );
+                                                });
+                                            }
+                                          }}
+                                          {...{ [PARENT_HOVER_ATTR]: '' }}
+                                          className="message-action text-muted rounded p-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                                          aria-label={reactLabel}
+                                          title={reactTitle}
+                                        >
+                                          <Smile
+                                            aria-hidden
+                                            className="h-3.5 w-3.5"
+                                            trigger={parentIconTrigger}
+                                            size={14}
+                                          />
+                                        </button>
+                                      );
+                                    })()}
                                 {/* Quick DM */}
                                 {!isOwn &&
                                   !(

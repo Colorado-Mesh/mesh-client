@@ -1,5 +1,4 @@
 import {
-  RETICULUM_ATTACHMENT_MAX_FILES,
   RETICULUM_ATTACHMENT_MAX_TOTAL_BYTES,
   RETICULUM_IMAGE_MAX_BYTES,
   RETICULUM_PHOTO_SOURCE_MAX_BYTES,
@@ -74,9 +73,8 @@ export async function prepareReticulumFileAttachments(
   files: readonly File[],
 ): Promise<PrepareResult> {
   if (files.length === 0) return { ok: false, error: 'no_files' };
-  if (files.length > RETICULUM_ATTACHMENT_MAX_FILES) {
-    return { ok: false, error: 'attachment_count_exceeded' };
-  }
+  // Send and the sender bubble keep only the first file, so a multi-select would drop the rest.
+  if (files.length > 1) return { ok: false, error: 'attachment_count_exceeded' };
   let total = 0;
   for (const f of files) {
     if (f.size === 0) return { ok: false, error: 'attachment_empty' };

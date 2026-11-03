@@ -93,6 +93,11 @@ export function KeyVerificationDialog() {
       body = (
         <>
           <p className="text-muted text-sm">{t('keyVerification.dialog.compareHint', { name })}</p>
+          {session.errorCode === 'missing_node' ? (
+            <p role="alert" className={NOTICE_CLASS.error}>
+              {t('keyVerification.dialog.missingNode')}
+            </p>
+          ) : null}
           <div className="space-y-1 text-center">
             <p className="text-muted text-xs">
               {t('keyVerification.dialog.verificationCharactersLabel')}

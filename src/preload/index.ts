@@ -157,6 +157,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('liveMap:snapshot', handler);
       return () => ipcRenderer.removeListener('liveMap:snapshot', handler);
     },
+    onApplyView: (callback: (view: LiveMapView) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, view: LiveMapView): void => {
+        callback(view);
+      };
+      ipcRenderer.on('liveMap:applyView', handler);
+      return () => ipcRenderer.removeListener('liveMap:applyView', handler);
+    },
     reportView: (view: LiveMapView) => {
       ipcRenderer.send('liveMap:reportView', view);
     },

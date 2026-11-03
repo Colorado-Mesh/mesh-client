@@ -15,6 +15,7 @@ const { panel } = vi.hoisted(() => ({ panel: vi.fn() }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: '3rdParty', init: () => undefined },
 }));
 vi.mock('./LiveTrafficPanel', () => ({
   default: (props: LiveTrafficPanelProps & { windowActions?: ReactNode }) => {

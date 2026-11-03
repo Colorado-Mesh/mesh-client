@@ -1,5 +1,7 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
 
+import type { ChatMessage } from './types';
+
 /** Cap per protocol so a single query stays responsive. */
 export const GLOBAL_MESSAGE_SEARCH_LIMIT = 50;
 
@@ -120,7 +122,7 @@ export function normalizeMeshtasticSearchRow(
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
     senderId,
-    senderName: asString(row.sender_name) || 'Unknown',
+    senderName: asString(row.sender_name),
     payload: asString(row.payload),
     channel: isDm ? null : channel,
     dmPeer: isDm ? resolveLoRaDmPeer(senderId, to, ownNodeIds) : null,
@@ -143,7 +145,7 @@ export function normalizeMeshcoreSearchRow(
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
     senderId,
-    senderName: asString(row.sender_name) || 'Unknown',
+    senderName: asString(row.sender_name),
     payload: asString(row.payload),
     channel: isDm ? null : channelIdx,
     dmPeer: isDm ? resolveLoRaDmPeer(senderId, to, ownNodeIds) : null,
@@ -165,7 +167,7 @@ export function normalizeReticulumSearchRow(
     dbId: asNumber(row.id),
     timestamp: asNumber(row.timestamp) ?? 0,
     senderId: null,
-    senderName: asString(row.sender_name) || 'Unknown',
+    senderName: asString(row.sender_name),
     payload: asString(row.payload),
     channel: null,
     dmPeer: null,
@@ -317,8 +319,44 @@ export interface PendingMessageFocus {
   packetId?: number | null;
   reticulumMessageHash?: string | null;
   dbId?: number | null;
-  /** Highlight query for in-bubble mark tags. */
+  /** Highlight query for in-bubble mark tags. The dialog query, never a payload prefix. */
   highlightQuery?: string;
+  /** Row to insert when the open thread does not already contain the hit. */
+  focusRow?: ChatMessage;
+}
+
+/** Build a chat row from a search/inbox hit so the open thread can show it. */
+export function chatMessageFromSearchHit(hit: GlobalMessageSearchHit): ChatMessage {
+  const dm = hit.channel == null;
+  const inbound = hit.dmPeer != null && hit.senderId != null && hit.senderId === hit.dmPeer;
+  return {
+    id: hit.dbId ?? undefined,
+    storeId: hit.reticulumMessageHash ?? undefined,
+    sender_id: hit.senderId ?? hit.dmPeer ?? 0,
+    sender_name: hit.senderName,
+    payload: hit.payload,
+    channel: dm ? (hit.protocol === 'meshcore' ? -1 : 0) : (hit.channel ?? 0),
+    to: dm && !inbound ? (hit.dmPeer ?? undefined) : undefined,
+    timestamp: hit.timestamp,
+    packetId: hit.packetId ?? undefined,
+    reticulum_message_hash: hit.reticulumMessageHash ?? undefined,
+    reticulum_sender_hash: hit.reticulumSenderHash ?? undefined,
+    status: 'acked',
+  };
+}
+
+/** Prepend nothing: append the focus row only when the thread does not already contain it. */
+export function withFocusRowLoaded<
+  T extends {
+    id?: number;
+    timestamp: number;
+    packetId?: number;
+    reticulum_message_hash?: string;
+  },
+>(messages: readonly T[], focus: PendingMessageFocus | null | undefined): readonly T[] {
+  if (!focus?.focusRow) return messages;
+  if (findMessageIndexForFocus(messages, focus) >= 0) return messages;
+  return [...messages, focus.focusRow as unknown as T];
 }
 
 export function findMessageIndexForFocus(

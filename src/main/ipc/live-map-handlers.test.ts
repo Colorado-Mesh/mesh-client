@@ -213,6 +213,18 @@ describe('opening a pop-out', () => {
     expect(popOut.focus).toHaveBeenCalled();
   });
 
+  it('applies a new view onto an already-open pop-out once it is ready', async () => {
+    const popOut = await openPopOut('meshcore', view);
+    await invoke('liveMap:init')({ sender: popOut.webContents });
+    const next: LiveMapView = { ...view, center: [40.1, -104.2], zoom: 11 };
+    await invoke('liveMap:open')({ sender: main.webContents }, 'meshcore', next);
+    expect(FakeWindow.created.filter((window) => window !== main)).toEqual([popOut]);
+    expect(popOut.webContents.send).toHaveBeenCalledWith('liveMap:applyView', next);
+    expect(await invoke('liveMap:init')({ sender: popOut.webContents })).toMatchObject({
+      view: next,
+    });
+  });
+
   it('keeps one window per protocol', async () => {
     const meshcore = await openPopOut('meshcore');
     const meshtastic = await openPopOut('meshtastic');

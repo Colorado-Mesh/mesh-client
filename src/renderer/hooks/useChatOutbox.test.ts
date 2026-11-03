@@ -27,6 +27,7 @@ import {
   isMaydayEmergencyOutboxPayload,
   MAX_ATTEMPTS,
   OUTBOX_MAX_AGE_MS,
+  outboxRowMatchesConnectedIdentity,
   useChatOutbox,
 } from './useChatOutbox';
 
@@ -76,6 +77,20 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
     ...overrides,
   };
 }
+
+describe('outbox identity', () => {
+  it('drains legacy rows on any radio and scoped rows only for that identity', () => {
+    const legacy = makeEntry();
+    const mine = makeEntry({ id: 2, identityId: 'id-a' });
+    const other = makeEntry({ id: 3, identityId: 'id-b' });
+    expect(outboxRowMatchesConnectedIdentity(legacy, 'id-a')).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(legacy, null)).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(mine, 'id-a')).toBe(true);
+    expect(outboxRowMatchesConnectedIdentity(mine, 'id-b')).toBe(false);
+    expect(outboxRowMatchesConnectedIdentity(other, null)).toBe(false);
+    expect(outboxRowMatchesConnectedIdentity(other, undefined)).toBe(true);
+  });
+});
 
 describe('useChatOutbox', () => {
   const mockOutbox = window.electronAPI.chat.outbox;

@@ -13,18 +13,18 @@ export function loadPersistedMeshcoreSelfNodeId(): number {
       const n = Number.parseInt(direct, 10);
       if (Number.isFinite(n) && n > 0) return n >>> 0;
     }
+    const settings = parseStoredJson<Record<string, unknown>>(
+      getAppSettingsRaw(),
+      'meshcoreLastSelfNodeId read',
+    );
+    const raw = settings?.[SETTING_KEY];
+    if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw >>> 0;
+    if (typeof raw === 'string' && raw.trim()) {
+      const n = Number.parseInt(raw, 10);
+      if (Number.isFinite(n) && n > 0) return n >>> 0;
+    }
   } catch {
     // catch-no-log-ok localStorage unavailable
-  }
-  const settings = parseStoredJson<Record<string, unknown>>(
-    getAppSettingsRaw(),
-    'meshcoreLastSelfNodeId read',
-  );
-  const raw = settings?.[SETTING_KEY];
-  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw >>> 0;
-  if (typeof raw === 'string' && raw.trim()) {
-    const n = Number.parseInt(raw, 10);
-    if (Number.isFinite(n) && n > 0) return n >>> 0;
   }
   return 0;
 }

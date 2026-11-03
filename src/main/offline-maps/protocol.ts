@@ -1,6 +1,8 @@
 import { lookup } from 'dns/promises';
 import { net } from 'electron';
+import { fetch as undiciFetch } from 'undici';
 
+import { isGlobalIpLiteral } from '@/shared/ipLiteral';
 import {
   buildRemoteTileUrl,
   isMapSourceId,
@@ -13,14 +15,13 @@ import {
   CUSTOM_TILE_MAX_BYTES,
   customMapSourceKind,
   isCustomMapSourceId,
-  isPrivateOrLocalAddress,
   sniffRasterTileMime,
   validateXyzTemplate,
 } from '@/shared/offlineMaps/customMapSources';
 import { OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS } from '@/shared/offlineMaps/tileMath';
-import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { sanitizeLogMessage } from '../log-service';
+import { createPinnedPublicAgent } from '../pinnedPublicConnect';
 import type { CustomMapSourceRecord } from './custom-sources';
 import { parseTileCoords, type TileCache } from './tile-cache';
 
@@ -76,13 +77,15 @@ export interface MeshTilesProtocolDeps {
   cache: TileCache;
   getAppVersion: () => string;
   isOnline?: () => boolean;
-  fetchImpl?: typeof net.fetch;
+  /**
+   * Fetch used for built-in basemaps and, when set, custom XYZ tiles (tests).
+   * Production custom tiles use undici with a pinned lookup instead.
+   */
+  fetchImpl?: (input: string, init?: RequestInit & { dispatcher?: unknown }) => Promise<Response>;
   customSources?: CustomTileSources;
   /** Resolve a hostname to addresses (test seam); default `dns.lookup(all)`. */
   resolveHost?: (host: string) => Promise<string[]>;
 }
-
-const HOST_CHECK_TTL_MS = MS_PER_MINUTE;
 
 async function defaultResolveHost(host: string): Promise<string[]> {
   const records = await lookup(host, { all: true });
@@ -151,23 +154,26 @@ export function createMeshTilesProtocolHandler(
 ): (request: Request) => Promise<Response> {
   const isOnline = deps.isOnline ?? (() => net.isOnline());
   const fetchImpl = deps.fetchImpl ?? net.fetch.bind(net);
+  const customFetch =
+    deps.fetchImpl ?? (undiciFetch as unknown as NonNullable<MeshTilesProtocolDeps['fetchImpl']>);
   const resolveHost = deps.resolveHost ?? defaultResolveHost;
-  const hostChecks = new Map<string, { ok: boolean; expires: number }>();
 
-  /** Reject hosts that resolve to loopback/private ranges (DNS rebinding / SSRF hardening). */
-  const isPublicHost = async (host: string): Promise<boolean> => {
-    const cached = hostChecks.get(host);
-    if (cached && cached.expires > Date.now()) return cached.ok;
-    let ok: boolean;
+  /**
+   * Resolve once and require every address to be a global IP literal.
+   * Returns the address the connect must pin to, or null when the host is blocked.
+   */
+  const resolvePinnedPublicAddress = async (host: string): Promise<string | null> => {
+    let addresses: string[];
     try {
-      const addresses = await resolveHost(host);
-      ok = addresses.length > 0 && addresses.every((a) => !isPrivateOrLocalAddress(a));
+      addresses = await resolveHost(host);
     } catch {
       // catch-no-log-ok unresolvable host → treated as not public (blank tile)
-      ok = false;
+      return null;
     }
-    hostChecks.set(host, { ok, expires: Date.now() + HOST_CHECK_TTL_MS });
-    return ok;
+    if (addresses.length === 0 || !addresses.every((a) => isGlobalIpLiteral(a) === true)) {
+      return null;
+    }
+    return addresses[0] ?? null;
   };
 
   const handleCustom = async (
@@ -208,7 +214,8 @@ export function createMeshTilesProtocolHandler(
     // Re-validate the persisted template on every fetch (defense in depth against a tampered store).
     const v = validateXyzTemplate(record.urlTemplate);
     if (!v.ok || v.host !== record.host) return emptyResponse(404);
-    if (!(await isPublicHost(v.host))) {
+    const pinnedAddress = await resolvePinnedPublicAddress(v.host);
+    if (!pinnedAddress) {
       console.warn(
         '[mesh-tiles] custom host blocked (non-public address):',
         sanitizeLogMessage(v.host),
@@ -216,16 +223,16 @@ export function createMeshTilesProtocolHandler(
       return emptyResponse(404);
     }
 
+    const tileUrl = buildCustomRemoteTileUrl(v.template, coords.z, coords.x, coords.y);
+    const agent = createPinnedPublicAgent(new URL(tileUrl), pinnedAddress);
     try {
-      const res = await fetchImpl(
-        buildCustomRemoteTileUrl(v.template, coords.z, coords.x, coords.y),
-        {
-          headers: { 'User-Agent': meshTilesUserAgent(deps.getAppVersion()) },
-          // A redirect could point at an unvalidated host; custom sources must answer directly.
-          redirect: 'error',
-          signal: AbortSignal.timeout(OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS),
-        },
-      );
+      const res = await customFetch(tileUrl, {
+        dispatcher: agent,
+        headers: { 'User-Agent': meshTilesUserAgent(deps.getAppVersion()) },
+        // A redirect could point at an unvalidated host; custom sources must answer directly.
+        redirect: 'error',
+        signal: AbortSignal.timeout(OFFLINE_MAP_TILE_FETCH_TIMEOUT_MS),
+      });
       if (!res.ok) return emptyResponse(404);
       const declared = Number(res.headers.get('content-length') ?? '0');
       if (declared > CUSTOM_TILE_MAX_BYTES) return emptyResponse(404);
@@ -249,6 +256,10 @@ export function createMeshTilesProtocolHandler(
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
       return emptyResponse(404);
+    } finally {
+      await agent.close().catch(() => {
+        // catch-no-log-ok agent may already be closed after abort
+      });
     }
   };
 

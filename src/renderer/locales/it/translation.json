@@ -8039,6 +8039,7 @@
     "protocolAll": "Tutti i protocolli",
     "directionOutbound": "Inviato",
     "sender": "Mittente",
+    "unknownSender": "Sconosciuto",
     "senderPlaceholder": "Nome o ID",
     "channel": "Canale {{index}}",
     "directMessage": "Messaggio diretto",
@@ -8109,6 +8110,7 @@
       "confirmMatch": "Corrispondono",
       "confirmMismatch": "Non corrispondono",
       "sendFailed": "Impossibile raggiungere la radio. Controlla la connessione e riprova.",
+      "missingNode": "Questa stazione non è ancora identificata. Attendi che lo sia, poi conferma.",
       "doneHint": "La chiave di {{name}} è ora contrassegnata come verificata manualmente sulla tua radio.",
       "rejectedHint": "Verifica annullata. La chiave di {{name}} non è stata contrassegnata come verificata. Se i caratteri differivano, considera la chiave di questo nodo come non attendibile."
     },

@@ -275,6 +275,11 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
       if (existing.window.isMinimized()) existing.window.restore();
       existing.window.show();
       existing.window.focus();
+      const parsed = parseLiveMapView(view);
+      existing.view = parsed;
+      if (existing.ready && parsed) {
+        existing.window.webContents.send('liveMap:applyView', parsed);
+      }
       return;
     }
     watchMainWindow(main);

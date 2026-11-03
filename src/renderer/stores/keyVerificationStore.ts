@@ -35,7 +35,7 @@ export type KeyVerificationPhase =
   | 'rejected'
   | 'error';
 
-export type KeyVerificationErrorCode = 'send_failed' | 'invalid_number';
+export type KeyVerificationErrorCode = 'send_failed' | 'invalid_number' | 'missing_node';
 
 export interface KeyVerificationSession {
   identityId: IdentityId;
@@ -66,6 +66,10 @@ export const useKeyVerificationStore = create<KeyVerificationState>()(() => ({
   session: null,
   nonceToNode: new Map(),
 }));
+
+function hasRealRemoteNode(remoteNodeNum: number | null | undefined): remoteNodeNum is number {
+  return remoteNodeNum != null && remoteNodeNum > 0;
+}
 
 function patchSession(patch: Partial<KeyVerificationSession>): void {
   useKeyVerificationStore.setState((s) =>
@@ -240,10 +244,14 @@ export async function submitKeyVerificationSecurityNumber(input: string): Promis
     patchSession({ errorCode: 'invalid_number' });
     return;
   }
+  if (!hasRealRemoteNode(session.remoteNodeNum)) {
+    patchSession({ errorCode: 'missing_node' });
+    return;
+  }
   patchSession({ phase: 'awaitingFinal', errorCode: undefined });
   await sendOrFail({
     type: 'provideSecurityNumber',
-    remoteNodeNum: session.remoteNodeNum ?? 0,
+    remoteNodeNum: session.remoteNodeNum,
     nonce: session.nonce,
     securityNumber,
   });
@@ -257,9 +265,13 @@ export async function submitKeyVerificationSecurityNumber(input: string): Promis
 export async function confirmKeyVerification(matches: boolean): Promise<void> {
   const session = useKeyVerificationStore.getState().session;
   if (session?.phase !== 'compare') return;
+  if (!hasRealRemoteNode(session.remoteNodeNum)) {
+    patchSession({ phase: 'compare', errorCode: 'missing_node' });
+    return;
+  }
   const ok = await sendOrFail({
     type: matches ? 'doVerify' : 'doNotVerify',
-    remoteNodeNum: session.remoteNodeNum ?? 0,
+    remoteNodeNum: session.remoteNodeNum,
     nonce: session.nonce,
   });
   if (!ok) return;
@@ -282,9 +294,10 @@ export function cancelKeyVerification(): void {
   useKeyVerificationStore.setState({ session: null });
   if (!session || session.phase === 'done' || session.phase === 'rejected') return;
   if (session.phase === 'error') return;
+  if (!hasRealRemoteNode(session.remoteNodeNum)) return;
   void sendMeshtasticKeyVerificationAdmin({
     type: 'doNotVerify',
-    remoteNodeNum: session.remoteNodeNum ?? 0,
+    remoteNodeNum: session.remoteNodeNum,
     nonce: session.nonce,
   }).catch((err: unknown) => {
     console.debug('[keyVerificationStore] cancel send failed ' + errLikeToLogString(err));

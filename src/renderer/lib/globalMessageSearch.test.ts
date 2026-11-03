@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { GlobalMessageSearchHit } from './globalMessageSearch';
 import {
+  chatMessageFromSearchHit,
   filterGlobalMessageSearchHits,
   findMessageIndexForFocus,
   isGlobalMessageSearchShortcut,
@@ -9,6 +10,7 @@ import {
   normalizeMeshtasticSearchRow,
   normalizeReticulumSearchRow,
   runGlobalMessageSearch,
+  withFocusRowLoaded,
 } from './globalMessageSearch';
 
 describe('normalize*SearchRow', () => {
@@ -122,6 +124,40 @@ describe('normalize*SearchRow', () => {
         ownReticulumHashes: own,
       }),
     ).toEqual([outbound]);
+  });
+});
+
+describe('search hit focus', () => {
+  it('leaves a missing sender name empty', () => {
+    expect(normalizeMeshtasticSearchRow({ id: 1, payload: 'hi', timestamp: 1 }).senderName).toBe(
+      '',
+    );
+  });
+
+  it('loads a missing hit into the open thread and keeps an existing row', () => {
+    const hit: GlobalMessageSearchHit = {
+      protocol: 'meshtastic',
+      dbId: 9,
+      timestamp: 50,
+      senderId: 3,
+      senderName: 'Ada',
+      payload: 'stored payload that is longer than the dialog query',
+      channel: 1,
+      dmPeer: null,
+      reticulumPeerHash: null,
+      reticulumMessageHash: null,
+      packetId: 77,
+    };
+    const row = chatMessageFromSearchHit(hit);
+    const focus = {
+      timestamp: hit.timestamp,
+      dbId: hit.dbId,
+      packetId: hit.packetId,
+      focusRow: row,
+    };
+    expect(withFocusRowLoaded([], focus)).toEqual([row]);
+    expect(withFocusRowLoaded([row], focus)).toEqual([row]);
+    expect(findMessageIndexForFocus(withFocusRowLoaded([], focus), focus)).toBe(0);
   });
 });
 

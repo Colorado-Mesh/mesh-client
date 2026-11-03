@@ -261,6 +261,14 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
     expect(body).toContain("err.message === 'File too large'");
     expect(body).not.toContain('fs.promises.readFile(filePath)');
   });
+
+  it('meshtastic:xmodemSaveDownload rejects payloads over the upload cap', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:xmodemSaveDownload'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 900);
+    expect(body).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+    expect(body).toContain('data.byteLength > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+  });
 });
 
 // ─── H4: bluetoothctl stop-scan / get-info hang guards ──────────────

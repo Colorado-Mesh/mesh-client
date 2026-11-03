@@ -60,6 +60,7 @@ describe('GlobalMessageSearchDialog', () => {
         payload: 'hello mesh search',
         channel: 0,
       }),
+      'hello',
     );
     expect(onClose).toHaveBeenCalled();
   });

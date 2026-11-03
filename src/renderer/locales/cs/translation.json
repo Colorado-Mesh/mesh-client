@@ -8118,6 +8118,7 @@
     "channel": "Kanál {{index}}",
     "directionInbound": "Přijato",
     "directionOutbound": "Odesláno",
+    "unknownSender": "Neznámý",
     "senderPlaceholder": "Jméno nebo id",
     "meshcore": "MeshCore",
     "meshtastic": "Meshtastic",
@@ -8196,7 +8197,8 @@
       "confirmMismatch": "Neshodují se",
       "doneHint": "Klíč {{name}} je nyní na vašem rádiu označen jako ručně ověřený.",
       "rejectedHint": "Ověření zrušeno. Klíč {{name}} nebyl označen jako ověřený. Pokud se znaky liší, zacházejte s klíčem tohoto uzlu jako s nedůvěryhodným.",
-      "sendFailed": "Nepodařilo se dosáhnout rádia. Zkontrolujte připojení a zkuste to znovu."
+      "sendFailed": "Nepodařilo se dosáhnout rádia. Zkontrolujte připojení a zkuste to znovu.",
+      "missingNode": "Tato stanice ještě není rozpoznána. Počkejte, až bude, a pak potvrďte."
     }
   },
   "remoteShell": {

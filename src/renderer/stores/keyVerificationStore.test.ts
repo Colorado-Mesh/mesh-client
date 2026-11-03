@@ -201,6 +201,27 @@ describe('keyVerificationStore', () => {
     expect(useNodeStore.getState().nodes[ID][REMOTE].keyManuallyVerified).toBe(false);
   });
 
+  it('stays on compare and does not send node 0', async () => {
+    useKeyVerificationStore.setState({
+      session: {
+        identityId: ID,
+        phase: 'compare',
+        nonce: 4n,
+        remoteNodeNum: 0,
+        remoteLongname: 'Zero',
+        verificationCharacters: 'AB',
+      },
+      nonceToNode: new Map(),
+    });
+    await confirmKeyVerification(true);
+    expect(sender).not.toHaveBeenCalled();
+    expect(useKeyVerificationStore.getState().session).toMatchObject({
+      phase: 'compare',
+      errorCode: 'missing_node',
+      remoteNodeNum: 0,
+    });
+  });
+
   it('cancel clears the session and tells the radio DO_NOT_VERIFY', async () => {
     await initiateKeyVerification(ID, REMOTE, 'Remote Op');
     sender.mockClear();

@@ -1,5 +1,5 @@
 import { Layers } from 'lucide-react-motion';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
@@ -45,6 +45,10 @@ export function MapLayerControl({ extraRows }: { extraRows?: ReactNode }) {
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const setBasemapId = useMapLayerStore((s) => s.setBasemapId);
   const customSources = useCustomMapSourcesStore((s) => s.sources);
+  const ensureCustomSources = useCustomMapSourcesStore((s) => s.ensureLoaded);
+  useEffect(() => {
+    if (layersPanelOpen && customSources === null) void ensureCustomSources();
+  }, [customSources, ensureCustomSources, layersPanelOpen]);
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);

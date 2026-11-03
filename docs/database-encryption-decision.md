@@ -38,6 +38,7 @@ Compatibility copies live in **browser storage** (`localStorage`), not in the SQ
 - Channel chat and a small number of DMs
 - Node lists, path/GPS history, emergency incident text
 - MECP received audit log
+- LXMF attachment files under `userData/reticulum/attachments` (and `attachments/quarantine` for risky names), written by `src/main/reticulum-attachment-store.ts` — plaintext files beside the database, not rows inside it
 - **Export Database** (`db:export`): ordinary plaintext SQLite backup of `mesh-client.db` only
 - **Export for Developer**: a ZIP that includes that same DB snapshot **plus** app/MECP logs and selected Reticulum artifacts (`reticulum/config`, stack JSON with mnemonic redacted, etc.) — share only on a **private channel** when a maintainer asks ([Troubleshooting](troubleshooting.md))
 

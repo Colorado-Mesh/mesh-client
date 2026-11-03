@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import { useAutoResend } from '@/renderer/hooks/useAutoResend';
-import type { ChatOutboxSendFn } from '@/renderer/hooks/useChatOutbox';
+import { type ChatOutboxSendFn, withOutboxIdentity } from '@/renderer/hooks/useChatOutbox';
 import {
   isChatOutboxSendAvailable,
   useEmergencyOutboxDrain,
@@ -322,6 +322,7 @@ import {
 import { buildDetectedFlashDevice } from './lib/flasher/deviceFirmwareBoards';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import {
+  chatMessageFromSearchHit,
   type GlobalMessageSearchHit,
   isGlobalMessageSearchShortcut,
   type PendingMessageFocus,
@@ -1868,8 +1869,9 @@ function AppContent() {
         protocol: p,
         isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, p),
         sendFn: selectByProtocol(outboxSendFnByProtocol, p),
+        connectedIdentityId: selectByProtocol(identityIdByProtocol, p) ?? null,
       })),
-    [chatSendAvailableByProtocol, outboxSendFnByProtocol],
+    [chatSendAvailableByProtocol, identityIdByProtocol, outboxSendFnByProtocol],
   );
   useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
   const autoResendSendByProtocol = useMemo(
@@ -1931,7 +1933,12 @@ function AppContent() {
           isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, route.protocol),
           sendFn: selectByProtocol(outboxSendFnByProtocol, route.protocol),
           queueOutbox: async (entry) => {
-            const row = await window.electronAPI.chat.outbox.add(entry);
+            const row = await window.electronAPI.chat.outbox.add(
+              withOutboxIdentity(
+                entry,
+                selectByProtocol(identityIdByProtocol, route.protocol) ?? null,
+              ),
+            );
             requestChatOutboxDrain(route.protocol);
             return row;
           },
@@ -1967,6 +1974,7 @@ function AppContent() {
       protocol,
       capabilitiesByProtocol,
       chatSendAvailableByProtocol,
+      identityIdByProtocol,
       outboxSendFnByProtocol,
       addToast,
       t,
@@ -1981,7 +1989,16 @@ function AppContent() {
         {
           isSendAvailable: (p) => selectByProtocol(chatSendAvailableByProtocol, p),
           sendFn: (p) => selectByProtocol(outboxSendFnByProtocol, p),
-          queueOutbox: (entry) => window.electronAPI.chat.outbox.add(entry),
+          queueOutbox: (entry) => {
+            const protocolName = entry.protocol;
+            const identityId =
+              protocolName === 'meshtastic' ||
+              protocolName === 'meshcore' ||
+              protocolName === 'reticulum'
+                ? (selectByProtocol(identityIdByProtocol, protocolName) ?? null)
+                : null;
+            return window.electronAPI.chat.outbox.add(withOutboxIdentity(entry, identityId));
+          },
         },
         (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
       )
@@ -2007,6 +2024,7 @@ function AppContent() {
     [
       incidentOwnSenderIds,
       chatSendAvailableByProtocol,
+      identityIdByProtocol,
       outboxSendFnByProtocol,
       capabilitiesByProtocol,
       addToast,
@@ -3459,7 +3477,7 @@ function AppContent() {
     setGlobalMessageSearchOpen(true);
   }, []);
   const handleGlobalMessageSearchHit = useCallback(
-    (hit: GlobalMessageSearchHit) => {
+    (hit: GlobalMessageSearchHit, query?: string) => {
       let dmPeer = hit.dmPeer;
       if (hit.protocol === 'reticulum' && hit.reticulumPeerHash) {
         try {
@@ -3475,12 +3493,15 @@ function AppContent() {
         channel: hit.channel,
         dmPeer,
       });
+      const opened = dmPeer === hit.dmPeer ? hit : { ...hit, dmPeer };
+      const highlight = query?.trim() ?? '';
       setPendingMessageFocus({
         timestamp: hit.timestamp,
         packetId: hit.packetId,
         reticulumMessageHash: hit.reticulumMessageHash,
         dbId: hit.dbId,
-        highlightQuery: hit.payload.slice(0, 64),
+        ...(highlight ? { highlightQuery: highlight } : {}),
+        focusRow: chatMessageFromSearchHit(opened),
       });
     },
     [openChatFromNotification],

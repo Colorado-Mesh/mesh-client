@@ -336,6 +336,12 @@ export interface OutboxEntry {
   groupTotal: number | null;
   /** `'emergency'` rows skip the 24h drain age cap and retry indefinitely (EMCOMM WS2). */
   priority: OutboxPriority;
+  /**
+   * Identity that queued the row. Null on legacy rows: those still drain with whichever
+   * radio for `protocol` is connected. A set id drains and shows only while that identity
+   * is the connected one.
+   */
+  identityId?: string | null;
 }
 
 export type OutboxPriority = 'normal' | 'emergency';

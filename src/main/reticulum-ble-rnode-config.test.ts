@@ -43,4 +43,13 @@ describe('reticulumConfigDirHasEnabledLocalRadio', () => {
       false,
     );
   });
+
+  it('detects RNodeMultiInterface with enabled=On, inline comments, and a trailing section', () => {
+    expect(reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'rnode-multi'))).toBe(
+      true,
+    );
+    expect(
+      reticulumConfigDirHasEnabledLocalRadio(path.join(FIXTURE_ROOT, 'trailing-section')),
+    ).toBe(true);
+  });
 });

@@ -87,6 +87,29 @@ export function isAppDrainedOutboxRow(row: OutboxEntry): boolean {
   return isAppManagedOutboxRow(row) || isScheduledOutboxRow(row);
 }
 
+/**
+ * Null/omitted `identityId` is a legacy row and still drains.
+ * A set id drains only while that identity is the connected one.
+ * `connectedIdentityId === undefined` skips the check (callers that have not opted in).
+ */
+export function outboxRowMatchesConnectedIdentity(
+  row: Pick<OutboxEntry, 'identityId'>,
+  connectedIdentityId: string | null | undefined,
+): boolean {
+  if (connectedIdentityId === undefined) return true;
+  if (row.identityId == null || row.identityId === '') return true;
+  return connectedIdentityId != null && row.identityId === connectedIdentityId;
+}
+
+export function withOutboxIdentity(
+  entry: OutboxEntryInput,
+  identityId: string | null | undefined,
+): OutboxEntryInput {
+  if (entry.identityId != null && entry.identityId !== '') return entry;
+  if (identityId == null || identityId === '') return entry;
+  return { ...entry, identityId };
+}
+
 /** True when an outbox payload is an MECP severity-0 (MAYDAY) report. */
 export function isMaydayEmergencyOutboxPayload(payload: string): boolean {
   return MECP_MAYDAY_PAYLOAD_RE.test(payload);
@@ -424,6 +447,11 @@ export interface DrainChatOutboxOnceOptions {
   reticulumReceiptTimeoutMs?: number;
   /** Restrict which eligible rows are sent (App-level drain passes emergency + ACK rows). */
   rowFilter?: (row: OutboxEntry) => boolean;
+  /**
+   * Identity whose radio is connected. Undefined keeps legacy drain (every row).
+   * Null drains only legacy rows. A string drains those plus that identity's rows.
+   */
+  connectedIdentityId?: string | null;
   onRowsListed?: (rows: OutboxEntry[]) => void;
   updateRow?: OutboxRowPatchFn;
   removeRow?: (id: number) => void;
@@ -448,6 +476,7 @@ export function drainChatOutboxOnce({
   isSendAvailable,
   reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   rowFilter,
+  connectedIdentityId,
   onRowsListed,
   updateRow,
   removeRow,
@@ -467,7 +496,12 @@ export function drainChatOutboxOnce({
     };
     const now = Date.now();
     const eligible = current
-      .filter((r) => isEligibleForDrain(r, now) && (rowFilter == null || rowFilter(r)))
+      .filter(
+        (r) =>
+          isEligibleForDrain(r, now) &&
+          outboxRowMatchesConnectedIdentity(r, connectedIdentityId) &&
+          (rowFilter == null || rowFilter(r)),
+      )
       .sort(compareDrainOrder);
     let attempted = 0;
     for (const row of eligible) {
@@ -502,6 +536,11 @@ export function drainChatOutboxOnce({
 
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
+  /**
+   * Active identity for this chat. When set (including null), drain and the queue stamp
+   * are identity-scoped. Omit to keep the legacy "whichever radio is up" drain.
+   */
+  identityId?: string | null;
   isSendAvailable: boolean;
   /** Test override for deterministic timeout coverage. */
   reticulumReceiptTimeoutMs?: number;
@@ -528,6 +567,7 @@ export interface UseChatOutbox {
 
 export function useChatOutbox({
   protocol,
+  identityId,
   isSendAvailable,
   reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   sendFn,
@@ -536,13 +576,15 @@ export function useChatOutbox({
   const rowsRef = useRef<OutboxEntry[]>(rows);
   const drainingRef = useRef(false);
   const isSendAvailableRef = useRef(isSendAvailable);
+  const identityIdRef = useRef(identityId);
   const sendFnRef = useRef(sendFn);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drainOnceRef = useRef<() => Promise<void>>(() => Promise.resolve());
   useEffect(() => {
     isSendAvailableRef.current = isSendAvailable;
+    identityIdRef.current = identityId;
     sendFnRef.current = sendFn;
-  }, [isSendAvailable, sendFn]);
+  }, [identityId, isSendAvailable, sendFn]);
   useEffect(() => {
     rowsRef.current = rows;
   }, [rows]);
@@ -624,6 +666,7 @@ export function useChatOutbox({
         sendFn: (text, channel, destination, replyId) =>
           sendFnRef.current(text, channel, destination, replyId),
         isSendAvailable: () => isSendAvailableRef.current,
+        connectedIdentityId: identityIdRef.current,
         reticulumReceiptTimeoutMs,
         onRowsListed: setRows,
         updateRow,
@@ -654,9 +697,9 @@ export function useChatOutbox({
       // Fire-and-forget drain; setState happens asynchronously inside drainOnce.
       void drainOnce();
     }
-    // drainOnce intentionally omitted: only trigger on availability/protocol change
+    // drainOnce intentionally omitted: only trigger on availability/protocol/identity change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSendAvailable, protocol]);
+  }, [identityId, isSendAvailable, protocol]);
 
   // Allow runtimes to trigger drain on peer announce / path update
   useEffect(() => {
@@ -667,7 +710,9 @@ export function useChatOutbox({
 
   const queue = useCallback(
     async (entry: OutboxEntryInput): Promise<OutboxEntry> => {
-      const newRow = await window.electronAPI.chat.outbox.add(entry);
+      const newRow = await window.electronAPI.chat.outbox.add(
+        withOutboxIdentity(entry, identityIdRef.current),
+      );
       setRows((prev) => [...prev, newRow]);
       if (isEmergencyOutboxPriority(newRow)) {
         await enforceEmergencyOutboxSoftCap(newRow, updateRow);
@@ -729,20 +774,26 @@ export function useChatOutbox({
         if (textChanged) {
           // Failure point: add-then-remove so a failed add never loses the message. If the old row
           // cannot be removed we drop the new one, leaving the original untouched.
-          const added = await window.electronAPI.chat.outbox.add({
-            protocol: row.protocol,
-            viewKey: row.viewKey,
-            channel: row.channel,
-            toNode: row.toNode,
-            payload,
-            replyId: row.replyId,
-            status: 'queued',
-            error: null,
-            nextRetryAt: scheduledAt,
-            groupId: null,
-            groupIndex: null,
-            groupTotal: null,
-          });
+          const added = await window.electronAPI.chat.outbox.add(
+            withOutboxIdentity(
+              {
+                protocol: row.protocol,
+                viewKey: row.viewKey,
+                channel: row.channel,
+                toNode: row.toNode,
+                payload,
+                replyId: row.replyId,
+                status: 'queued',
+                error: null,
+                nextRetryAt: scheduledAt,
+                groupId: null,
+                groupIndex: null,
+                groupTotal: null,
+                identityId: row.identityId,
+              },
+              identityIdRef.current,
+            ),
+          );
           try {
             abortOutboxRowSend(id);
             await window.electronAPI.chat.outbox.remove(id);

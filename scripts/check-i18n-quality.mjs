@@ -3118,6 +3118,53 @@ function checkRoomsGuestPasswordAndNlMeshIssues(ctx) {
 }
 
 /**
+ * Contiguous mention examples in English (`@silver`, `@[Silver Eagle]`, `@@`).
+ * Prose such as "@ and" is ignored.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function contiguousMentionTokens(text) {
+  const tokens = new Set();
+  for (const match of text.matchAll(/@\[[^\]\s][^\]]*\]/g)) tokens.add(match[0]);
+  if (text.includes('@@')) tokens.add('@@');
+  for (const match of text.matchAll(/(^|[^@\w])@([A-Za-z][\w-]*)/g)) {
+    tokens.add(`@${match[2]}`);
+  }
+  return [...tokens];
+}
+
+/**
+ * True when `val` contains a spaced form of a contiguous English mention token.
+ * @param {string} token
+ * @param {string} val
+ */
+function mentionTokenBroken(token, val) {
+  if (val.includes(token)) return false;
+  if (token.startsWith('@[')) {
+    const inner = token.slice(2, -1);
+    return val.includes(`@[ ${inner}`) || val.includes(`@ [${inner}`);
+  }
+  if (token.startsWith('@@')) return /@\s+@/.test(val);
+  return val.includes(`@ ${token.slice(1)}`);
+}
+
+/**
+ * Flag a translation that breaks a contiguous mention token, even when English
+ * also contains prose "@ and".
+ * @param {string} enVal
+ * @param {string} val
+ */
+function mentionSyntaxBroken(enVal, val) {
+  if (!/@\S/.test(enVal)) return false;
+  const enHasLooseAt = /@\s|@\[\s/.test(enVal);
+  if (!enHasLooseAt && /@\s|@\[\s/.test(val)) return true;
+  for (const token of contiguousMentionTokens(enVal)) {
+    if (mentionTokenBroken(token, val)) return true;
+  }
+  return false;
+}
+
+/**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
@@ -3150,7 +3197,9 @@ function checkMqttWifiAndScriptIssues(ctx) {
   }
 
   // Users type mentions as shown; the parsers never match "@ [Name]", "@[ Name]" or "@ nick".
-  if (locale !== 'en' && /@\S/.test(enVal) && !/@\s|@\[\s/.test(enVal) && /@\s|@\[\s/.test(val)) {
+  // English prose such as "@ and" must not skip the check for contiguous tokens
+  // the same string also demonstrates (@silver, @[Silver Eagle], @@).
+  if (locale !== 'en' && mentionSyntaxBroken(enVal, val)) {
     issues.push(
       'keep mention syntax contiguous: "@[Name]" and "@nickname", no space after "@" or "["',
     );
