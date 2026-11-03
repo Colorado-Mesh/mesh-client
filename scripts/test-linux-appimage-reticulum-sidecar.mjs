@@ -44,6 +44,20 @@ export const EM_X86_64 = 62;
 export const EM_AARCH64 = 183;
 
 const SQUASHFS_MAGIC = Buffer.from('hsqs');
+/** Squashfs major version we ship inside AppImages (v4). */
+const SQUASHFS_MAJOR_VERSION = 4;
+
+/**
+ * True when `offset` points at a squashfs v4 superblock (rejects ELF false-positive `hsqs`).
+ * @param {string} filePath
+ * @param {number} offset
+ */
+export function isSquashfsV4Superblock(filePath, offset) {
+  if (!Number.isFinite(offset) || offset < 0) return false;
+  const buf = readBytes(filePath, offset, 30);
+  if (buf.length < 30 || !buf.subarray(0, 4).equals(SQUASHFS_MAGIC)) return false;
+  return buf.readUInt16LE(28) === SQUASHFS_MAJOR_VERSION;
+}
 
 /** @param {Buffer} header At least 20 bytes from the start of an ELF file. */
 export function readElfMachineFromHeader(header) {
@@ -101,11 +115,8 @@ export function findSquashfsOffset(appImagePath) {
   const type2Header = readBytes(appImagePath, 0, 16);
   if (type2Header.length >= 16) {
     const offset = Number(type2Header.readBigUInt64LE(8));
-    if (offset > 0) {
-      const magic = readBytes(appImagePath, offset, SQUASHFS_MAGIC.length);
-      if (magic.equals(SQUASHFS_MAGIC)) {
-        return offset;
-      }
+    if (offset > 0 && isSquashfsV4Superblock(appImagePath, offset)) {
+      return offset;
     }
   }
 
@@ -122,9 +133,15 @@ export function findSquashfsOffset(appImagePath) {
       const chunk = Buffer.alloc(toRead);
       readSync(fd, chunk, 0, toRead, pos);
       const searchBuf = Buffer.concat([prevTail, chunk]);
-      const idx = searchBuf.indexOf(SQUASHFS_MAGIC);
-      if (idx !== -1) {
-        return pos - prevTail.length + idx;
+      let searchFrom = 0;
+      while (searchFrom < searchBuf.length) {
+        const idx = searchBuf.indexOf(SQUASHFS_MAGIC, searchFrom);
+        if (idx === -1) break;
+        const fileOffset = pos - prevTail.length + idx;
+        if (isSquashfsV4Superblock(appImagePath, fileOffset)) {
+          return fileOffset;
+        }
+        searchFrom = idx + 1;
       }
       prevTail = chunk.subarray(Math.max(0, chunk.length - overlap));
       pos += toRead;
@@ -133,6 +150,108 @@ export function findSquashfsOffset(appImagePath) {
     closeSync(fd);
   }
   return null;
+}
+
+/**
+ * Read `version` from the root `package.json` inside an Electron `app.asar`
+ * without a full extract (pickle header + file table).
+ * @param {string} asarPath
+ * @returns {string}
+ */
+export function readAsarRootPackageVersion(asarPath) {
+  const fd = openSync(asarPath, 'r');
+  try {
+    const sizeBuf = Buffer.alloc(8);
+    if (readSync(fd, sizeBuf, 0, 8, 0) !== 8) {
+      throw new Error(`Unable to read asar header size: ${asarPath}`);
+    }
+    const headerSize = sizeBuf.readUInt32LE(4);
+    if (headerSize <= 0) {
+      throw new Error(`Invalid asar header size ${headerSize}: ${asarPath}`);
+    }
+    const headerBuf = Buffer.alloc(headerSize);
+    if (readSync(fd, headerBuf, 0, headerSize, 8) !== headerSize) {
+      throw new Error(`Unable to read asar header: ${asarPath}`);
+    }
+    const strLen = headerBuf.readUInt32LE(4);
+    if (strLen <= 0 || 8 + strLen > headerBuf.length) {
+      throw new Error(`Invalid asar header string length ${strLen}: ${asarPath}`);
+    }
+    const header = JSON.parse(headerBuf.subarray(8, 8 + strLen).toString('utf8'));
+    const pkgNode = header?.files?.['package.json'];
+    if (
+      !pkgNode ||
+      typeof pkgNode !== 'object' ||
+      typeof pkgNode.size !== 'number' ||
+      pkgNode.size <= 0 ||
+      pkgNode.offset === undefined
+    ) {
+      throw new Error(`asar is missing root package.json: ${asarPath}`);
+    }
+    const dataOffset = 8 + headerSize + Number(pkgNode.offset);
+    const data = Buffer.alloc(pkgNode.size);
+    if (readSync(fd, data, 0, pkgNode.size, dataOffset) !== pkgNode.size) {
+      throw new Error(`Unable to read asar package.json: ${asarPath}`);
+    }
+    const version = JSON.parse(data.toString('utf8')).version;
+    if (typeof version !== 'string' || version.length === 0) {
+      throw new Error(`asar package.json has no version: ${asarPath}`);
+    }
+    return version;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * `X-AppImage-Version` from the AppImage `.desktop` entry (electron-builder).
+ * @param {string} desktopPath
+ * @returns {string | null}
+ */
+export function readDesktopAppImageVersion(desktopPath) {
+  const text = readFileSync(desktopPath, 'utf8');
+  const match = /^X-AppImage-Version=(.+)$/m.exec(text);
+  if (!match) return null;
+  const value = match[1].trim();
+  return value.length > 0 ? value : null;
+}
+
+/**
+ * Assert the extracted AppImage embeds `expectedVersion` in both the asar and desktop entry.
+ * Catches a mislabeled artifact where the filename says X.Y.Z but About would still show the prior release.
+ * @param {string} payloadRoot squashfs-root from AppImage extract
+ * @param {string} expectedVersion
+ * @param {string} label
+ */
+export function assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, label) {
+  const asarPath = path.join(payloadRoot, 'resources', 'app.asar');
+  if (!existsSync(asarPath)) {
+    fail(`${label}: missing resources/app.asar under ${payloadRoot}`);
+  }
+  let asarVersion;
+  try {
+    asarVersion = readAsarRootPackageVersion(asarPath);
+  } catch (e) {
+    fail(
+      `${label}: could not read asar package.json version: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+  if (asarVersion !== expectedVersion) {
+    fail(
+      `${label}: app.asar package.json version is ${asarVersion}, expected ${expectedVersion} (About would show the wrong release)`,
+    );
+  }
+
+  const desktopName = readdirSync(payloadRoot).find((n) => n.endsWith('.desktop'));
+  if (!desktopName) {
+    fail(`${label}: missing .desktop entry under ${payloadRoot}`);
+  }
+  const desktopVersion = readDesktopAppImageVersion(path.join(payloadRoot, desktopName));
+  if (desktopVersion !== expectedVersion) {
+    fail(
+      `${label}: X-AppImage-Version is ${desktopVersion ?? '(missing)'}, expected ${expectedVersion}`,
+    );
+  }
 }
 
 /**
@@ -196,8 +315,8 @@ function extractAppImage(appImagePath, extractDir) {
   return payloadRoot;
 }
 
-/** @param {'x64' | 'arm64'} arch @param {string} appImagePath */
-function assertSidecarInAppImage(arch, appImagePath) {
+/** @param {'x64' | 'arm64'} arch @param {string} appImagePath @param {string} expectedVersion */
+function assertSidecarInAppImage(arch, appImagePath, expectedVersion) {
   const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-appimage-${arch}-`));
   try {
     const payloadRoot = extractAppImage(appImagePath, extractDir);
@@ -207,11 +326,12 @@ function assertSidecarInAppImage(arch, appImagePath) {
       bundleRoot: payloadRoot,
       fail,
     });
+    assertAppImageEmbeddedVersion(payloadRoot, expectedVersion, `${arch} AppImage`);
   } finally {
     rmSync(extractDir, { recursive: true, force: true });
   }
   console.debug(
-    `[test-linux-appimage-reticulum-sidecar] OK — sidecar present in ${path.basename(appImagePath)}`,
+    `[test-linux-appimage-reticulum-sidecar] OK — sidecar + embedded version ${expectedVersion} in ${path.basename(appImagePath)}`,
   );
 }
 
@@ -243,6 +363,8 @@ function main() {
     );
   }
 
+  const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
+
   for (const [arch, name] of [
     ['x64', x64Images[0]],
     ['arm64', arm64Images[0]],
@@ -252,12 +374,11 @@ function main() {
     if (size < 50 * 1024 * 1024) {
       fail(`AppImage too small (${size} bytes): ${appImagePath}`);
     }
-    assertSidecarInAppImage(arch, appImagePath);
+    assertSidecarInAppImage(arch, appImagePath, version);
   }
 
-  const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
   console.debug(
-    `[test-linux-appimage-reticulum-sidecar] OK — x64+arm64 AppImages bundle Reticulum sidecar (v${version})`,
+    `[test-linux-appimage-reticulum-sidecar] OK — x64+arm64 AppImages bundle Reticulum sidecar and embed v${version}`,
   );
 }
 

@@ -11,6 +11,7 @@ import {
 } from '@/shared/githubReleaseVersion';
 import { isNetworkClassFailure } from '@/shared/networkFailure';
 
+import { remapAppImageLauncherEnv } from './appImageLauncherEnv';
 import { getDatabase } from './database';
 import { sanitizeLogMessage } from './log-service';
 import { assertIpcSender } from './validate-ipc-sender';
@@ -169,6 +170,15 @@ function registerGithubReleaseApiHandlers(send: SendFn, uiReportsPackaged: boole
 }
 
 function registerElectronUpdaterHandlers(send: SendFn): boolean {
+  // Must run before electron-updater reads $APPIMAGE (AppImageLauncher FUSE mount).
+  const appImageRemap = remapAppImageLauncherEnv();
+  if (appImageRemap.remapped) {
+    console.debug(
+      '[updater] AppImageLauncher: remapped APPIMAGE',
+      sanitizeLogMessage(`${appImageRemap.from ?? '(unset)'} → ${appImageRemap.to ?? ''}`),
+    );
+  }
+
   let updater: AppUpdater;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

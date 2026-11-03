@@ -152,6 +152,21 @@ under the [local data directory](#reporting-bugs-export-for-github-app-tab), and
 USB serial may ask you to choose the port again because browser grants belong to an origin.
 LoRa Bluetooth uses the native sidecar and has no browser Bluetooth grant to migrate.
 
+### Linux AppImage: About still shows the previous version after downloading a newer AppImage
+
+**Symptom**: You download `Mesh-client-X.Y.Z.AppImage` from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases), run it, and **Help → About** still shows the older version (for example `6.5.0` after downloading `6.6.0`).
+
+**Cause**: The published AppImage embeds the version from `package.json` (About uses Electron `app.getVersion()`). A filename that says `X.Y.Z` with About showing an older release usually means the process that actually started is still an older integrated copy — commonly **[AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher)** (or a leftover desktop entry under `~/Applications` / `~/.local/share/applications`) intercepting the new file and launching the previously integrated binary. In-app updates can hit the same trap when `$APPIMAGE` points at AppImageLauncher’s FUSE mount instead of the real file.
+
+**What to do**
+
+1. Fully quit Mesh-client (check the system tray / no leftover process).
+2. Confirm the file you downloaded matches the release checksum in `latest-linux.yml` / `latest-linux-arm64.yml` on the same release tag.
+3. If AppImageLauncher (or similar) is installed: remove the old Mesh-client integration, or move/delete the older AppImage under `~/Applications`, then run the new AppImage once and re-integrate if you want a launcher entry.
+4. Or run the new file directly from a terminal (`chmod +x` then `./Mesh-client-X.Y.Z.AppImage`) and check About again.
+
+Official release packaging smoke extracts each AppImage and asserts the embedded `app.asar` / `X-AppImage-Version` match `package.json`, so a mislabeled GitHub asset would fail CI.
+
 ### Linux packaged app: `Cannot find module 'readable-stream'`
 
 **Symptom**: On Linux, the installed or AppImage build shows a main-process error when loading MQTT (`bl` → `mqtt-packet` → `mqtt` require stack).
