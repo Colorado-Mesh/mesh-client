@@ -3141,8 +3141,8 @@ function contiguousMentionTokens(text) {
 function mentionTokenBroken(token, val) {
   if (val.includes(token)) return false;
   if (token.startsWith('@[')) {
-    const inner = token.slice(2, -1);
-    return val.includes(`@[ ${inner}`) || val.includes(`@ [${inner}`);
+    // A translated name (`@[ Elang Perak]`) is still broken. Do not require the English inner text.
+    return /@\s+\[/.test(val) || /@\[\s/.test(val);
   }
   if (token.startsWith('@@')) return /@\s+@/.test(val);
   return val.includes(`@ ${token.slice(1)}`);

@@ -3502,6 +3502,7 @@ function AppContent() {
         dbId: hit.dbId,
         ...(highlight ? { highlightQuery: highlight } : {}),
         focusRow: chatMessageFromSearchHit(opened),
+        protocol: hit.protocol,
       });
     },
     [openChatFromNotification],

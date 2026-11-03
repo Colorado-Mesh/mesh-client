@@ -265,13 +265,19 @@ export async function submitKeyVerificationSecurityNumber(input: string): Promis
 export async function confirmKeyVerification(matches: boolean): Promise<void> {
   const session = useKeyVerificationStore.getState().session;
   if (session?.phase !== 'compare') return;
-  if (!hasRealRemoteNode(session.remoteNodeNum)) {
-    patchSession({ phase: 'compare', errorCode: 'missing_node' });
-    return;
+  let remoteNodeNum = session.remoteNodeNum;
+  if (!hasRealRemoteNode(remoteNodeNum)) {
+    const resolved = resolveNodeByLongname(session.identityId, session.remoteLongname);
+    if (!hasRealRemoteNode(resolved)) {
+      patchSession({ phase: 'compare', errorCode: 'missing_node' });
+      return;
+    }
+    remoteNodeNum = resolved;
+    patchSession({ remoteNodeNum, errorCode: undefined });
   }
   const ok = await sendOrFail({
     type: matches ? 'doVerify' : 'doNotVerify',
-    remoteNodeNum: session.remoteNodeNum,
+    remoteNodeNum,
     nonce: session.nonce,
   });
   if (!ok) return;
@@ -279,9 +285,8 @@ export async function confirmKeyVerification(matches: boolean): Promise<void> {
     patchSession({ phase: 'rejected' });
     return;
   }
-  const remote = session.remoteNodeNum;
-  if (remote != null && getIdentityNode(session.identityId, remote)) {
-    patchNodeKeyManuallyVerified(session.identityId, remote, true);
+  if (getIdentityNode(session.identityId, remoteNodeNum)) {
+    patchNodeKeyManuallyVerified(session.identityId, remoteNodeNum, true);
   } else {
     console.debug('[keyVerificationStore] verified node not resolved; badge updates on next sync');
   }

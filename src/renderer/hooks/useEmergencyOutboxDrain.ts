@@ -122,8 +122,8 @@ export function useEmergencyOutboxDrain({
           },
           isSendAvailable: () =>
             drainsRef.current.find((d) => d.protocol === protocol)?.isSendAvailable === true,
-          connectedIdentityId: drainsRef.current.find((d) => d.protocol === protocol)
-            ?.connectedIdentityId,
+          getConnectedIdentityId: () =>
+            drainsRef.current.find((d) => d.protocol === protocol)?.connectedIdentityId,
           rowFilter: isAppDrainedOutboxRow,
           ...(reticulumReceiptTimeoutMs != null ? { reticulumReceiptTimeoutMs } : {}),
         });

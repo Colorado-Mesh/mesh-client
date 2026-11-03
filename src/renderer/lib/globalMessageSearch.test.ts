@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { GlobalMessageSearchHit } from './globalMessageSearch';
 import {
   chatMessageFromSearchHit,
   filterGlobalMessageSearchHits,
   findMessageIndexForFocus,
+  type GlobalMessageSearchHit,
   isGlobalMessageSearchShortcut,
   normalizeMeshcoreSearchRow,
   normalizeMeshtasticSearchRow,
@@ -12,6 +12,7 @@ import {
   runGlobalMessageSearch,
   withFocusRowLoaded,
 } from './globalMessageSearch';
+import { reticulumHashToNodeId } from './reticulum/destHash';
 
 describe('normalize*SearchRow', () => {
   it('maps Meshtastic channel vs DM', () => {
@@ -52,6 +53,7 @@ describe('normalize*SearchRow', () => {
       own,
     );
     expect(inbound.dmPeer).toBe(55);
+    expect(inbound.toNode).toBe(10);
     expect(
       filterGlobalMessageSearchHits([inbound], { protocol: 'all', conversation: 'dm:55' }),
     ).toEqual([inbound]);
@@ -158,6 +160,70 @@ describe('search hit focus', () => {
     expect(withFocusRowLoaded([], focus)).toEqual([row]);
     expect(withFocusRowLoaded([row], focus)).toEqual([row]);
     expect(findMessageIndexForFocus(withFocusRowLoaded([], focus), focus)).toBe(0);
+  });
+
+  it('keeps the wire sender on an outbound Reticulum row and the recipient on an inbound DM', () => {
+    const ownHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const peerHash = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const peerId = reticulumHashToNodeId(peerHash);
+    const outbound = chatMessageFromSearchHit({
+      protocol: 'reticulum',
+      dbId: 4,
+      timestamp: 9,
+      senderId: null,
+      senderName: 'Me',
+      payload: 'out',
+      channel: null,
+      dmPeer: peerId,
+      reticulumPeerHash: peerHash,
+      reticulumSenderHash: ownHash,
+      reticulumMessageHash: 'deadbeef',
+      packetId: null,
+    });
+    expect(outbound.sender_id).toBe(reticulumHashToNodeId(ownHash));
+    expect(outbound.to).toBe(peerId);
+
+    const inbound = chatMessageFromSearchHit({
+      protocol: 'meshtastic',
+      dbId: 3,
+      timestamp: 8,
+      senderId: 55,
+      senderName: 'Ada',
+      payload: 'in',
+      channel: null,
+      dmPeer: 55,
+      toNode: 10,
+      reticulumPeerHash: null,
+      reticulumMessageHash: null,
+      packetId: 4,
+    });
+    expect(inbound.sender_id).toBe(55);
+    expect(inbound.to).toBe(10);
+  });
+
+  it('does not treat another row with the same timestamp as the selected id', () => {
+    const other = { id: 1, timestamp: 50, packetId: 1 };
+    expect(findMessageIndexForFocus([other], { timestamp: 50, dbId: 9, packetId: 77 })).toBe(-1);
+    const focus = {
+      timestamp: 50,
+      dbId: 9,
+      packetId: 77,
+      focusRow: chatMessageFromSearchHit({
+        protocol: 'meshtastic',
+        dbId: 9,
+        timestamp: 50,
+        senderId: 3,
+        senderName: 'Ada',
+        payload: 'stored',
+        channel: 1,
+        dmPeer: null,
+        reticulumPeerHash: null,
+        reticulumMessageHash: null,
+        packetId: 77,
+      }),
+    };
+    expect(withFocusRowLoaded([other], focus)).toHaveLength(2);
+    expect(findMessageIndexForFocus([other], { timestamp: 50 })).toBe(0);
   });
 });
 

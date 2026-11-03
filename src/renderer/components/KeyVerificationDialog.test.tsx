@@ -75,6 +75,21 @@ describe('KeyVerificationDialog', () => {
     });
   });
 
+  it('shows why Continue failed when the station is not identified yet', () => {
+    useKeyVerificationStore.setState({
+      session: {
+        identityId: ID,
+        phase: 'enterNumber',
+        nonce: 3n,
+        remoteNodeNum: null,
+        remoteLongname: 'Bob',
+        errorCode: 'missing_node',
+      },
+    });
+    render(<KeyVerificationDialog />);
+    expect(screen.getByRole('alert')).toHaveTextContent('not identified yet');
+  });
+
   it('compare step: confirm sends DO_VERIFY and shows success', async () => {
     const user = userEvent.setup();
     render(<KeyVerificationDialog />);

@@ -36,10 +36,12 @@ export function LiveTrafficWindowSlot({
   const rememberView = useCallback((next: LiveMapView) => {
     view.current = next;
   }, []);
-  const { popOut } = liveWindow;
+  const { popOut, open } = liveWindow;
   const openWindow = useCallback(() => {
-    popOut(view.current);
-  }, [popOut]);
+    // Show on an already-open window only focuses it. The remembered view is the last
+    // docked position, which is older than the map the user has been moving.
+    popOut(open ? null : view.current);
+  }, [open, popOut]);
 
   if (liveWindow.open) {
     if (!active) return null;

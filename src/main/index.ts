@@ -105,6 +105,7 @@ import {
   assertChatExportMessageSizes,
   formatChatExportLinesWithTotalCap,
 } from './chatExportFormat';
+import { outboxIdentityIdForInsert } from './chatOutboxIdentity';
 import { showCrashReportDialog } from './crash-report-dialog';
 import {
   addContactToGroup,
@@ -5942,9 +5943,7 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
         e.groupIndex ?? null,
         e.groupTotal ?? null,
         e.priority === 'emergency' ? 'emergency' : 'normal',
-        typeof e.identityId === 'string' && e.identityId.length > 0 && e.identityId.length <= 128
-          ? e.identityId
-          : null,
+        outboxIdentityIdForInsert(e.identityId),
       );
     const row = db
       .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')

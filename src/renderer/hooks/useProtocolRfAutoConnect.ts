@@ -244,6 +244,13 @@ export function useProtocolRfAutoConnect({
         },
         { matchIds },
       );
+      if (isCancelled()) {
+        console.debug(
+          `[useProtocolRfAutoConnect] ${protocol} BLE auto-connect cancelled after connect`,
+        );
+        onAutoConnectCancelled();
+        return false;
+      }
       clearAutoConnectTimeout();
       return true;
     };

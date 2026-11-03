@@ -265,9 +265,20 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
   it('meshtastic:xmodemSaveDownload rejects payloads over the upload cap', () => {
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:xmodemSaveDownload'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 900);
-    expect(body).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
-    expect(body).toContain('data.byteLength > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1600);
+    const sizeIdx = body.indexOf('data.byteLength > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+    const dialogIdx = body.indexOf('dialog.showSaveDialog');
+    expect(sizeIdx).toBeGreaterThan(-1);
+    expect(dialogIdx).toBeGreaterThan(sizeIdx);
+    expect(body.slice(sizeIdx, dialogIdx)).toContain('throw new Error(');
+  });
+
+  it('chat:outbox:add rejects an invalid identity id instead of storing it as legacy', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('chat:outbox:add'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1800);
+    expect(body).toContain('outboxIdentityIdForInsert(e.identityId)');
+    expect(body).not.toContain('e.identityId.length <= 128');
   });
 });
 

@@ -154,7 +154,11 @@ import { touch } from '@/shared/touch';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
-import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
+import {
+  isEmergencyOutboxPriority,
+  outboxRowVisibleForConversation,
+  useChatOutbox,
+} from '../hooks/useChatOutbox';
 import { useConversationMutes } from '../hooks/useConversationMutes';
 import { useConversationPins } from '../hooks/useConversationPins';
 import { useNowMs } from '../hooks/useNowMs';
@@ -1675,11 +1679,27 @@ function ChatPanel({
 
   const [messageFocusFlashIndex, setMessageFocusFlashIndex] = useState<number | null>(null);
   const focusFilterReleasedRef = useRef(false);
-
-  const messagesWithFocus = useMemo(
-    () => withFocusRowLoaded(messages, initialMessageFocus),
-    [initialMessageFocus, messages],
+  const [keptFocus, setKeptFocus] = useState<{ protocol: MeshProtocol; row: ChatMessage } | null>(
+    null,
   );
+  const incomingFocusRow =
+    initialMessageFocus?.protocol === protocol ? (initialMessageFocus.focusRow ?? null) : null;
+  if (incomingFocusRow && incomingFocusRow !== keptFocus?.row) {
+    setKeptFocus({ protocol, row: incomingFocusRow });
+  }
+  const keptFocusRow = keptFocus?.protocol === protocol ? keptFocus.row : null;
+
+  const messagesWithFocus = useMemo(() => {
+    const withPending = withFocusRowLoaded(messages, initialMessageFocus);
+    if (!keptFocusRow) return withPending;
+    return withFocusRowLoaded(withPending, {
+      timestamp: keptFocusRow.timestamp,
+      packetId: keptFocusRow.packetId ?? null,
+      reticulumMessageHash: keptFocusRow.reticulum_message_hash ?? null,
+      dbId: keptFocusRow.id ?? null,
+      focusRow: keptFocusRow,
+    });
+  }, [initialMessageFocus, keptFocusRow, messages]);
 
   const displayMessages = useMemo(
     () =>
@@ -1978,11 +1998,19 @@ function ChatPanel({
     }
     const index = findMessageIndexForFocus(filteredMessages, initialMessageFocus);
     if (index < 0) {
-      // The query hid the hit. Drop the filter so the loaded row can be shown.
-      if (findMessageIndexForFocus(viewMessages, initialMessageFocus) >= 0 && searchQuery.trim()) {
+      // A search query or sender filter can hide a hit that is already in this conversation.
+      const hiddenBySearch = searchQuery.trim() !== '';
+      const hiddenBySender = filterSender != null;
+      if (
+        (hiddenBySearch || hiddenBySender) &&
+        findMessageIndexForFocus(viewMessages, initialMessageFocus) >= 0
+      ) {
         focusFilterReleasedRef.current = true;
-        setSearchQuery('');
-        setShowSearch(false);
+        if (hiddenBySearch) {
+          setSearchQuery('');
+          setShowSearch(false);
+        }
+        if (hiddenBySender) setFilterSender(null);
       }
       return;
     }
@@ -1995,6 +2023,7 @@ function ChatPanel({
     initialMessageFocus,
     isActive,
     onMessageFocusConsumed,
+    filterSender,
     searchQuery,
     showSearch,
     viewMessages,
@@ -2189,13 +2218,8 @@ function ChatPanel({
   const [editingScheduledRow, setEditingScheduledRow] = useState<OutboxEntry | null>(null);
 
   const viewOutboxRows = useMemo(
-    () =>
-      outboxRows.filter((r): r is OutboxEntry => {
-        if (r?.viewKey !== viewKey) return false;
-        if (r.identityId == null || r.identityId === '') return true;
-        return isConnected && identityId != null && r.identityId === identityId;
-      }),
-    [identityId, isConnected, outboxRows, viewKey],
+    () => outboxRows.filter((r) => outboxRowVisibleForConversation(r, viewKey, identityId)),
+    [identityId, outboxRows, viewKey],
   );
 
   const markCurrentViewRead = useCallback(() => {

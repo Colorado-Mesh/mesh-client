@@ -101,6 +101,17 @@ export function outboxRowMatchesConnectedIdentity(
   return connectedIdentityId != null && row.identityId === connectedIdentityId;
 }
 
+/** Rows shown for one conversation. Identity match does not require the radio to be up. */
+export function outboxRowVisibleForConversation(
+  row: OutboxEntry | null | undefined,
+  viewKey: string,
+  identityId: string | null | undefined,
+): row is OutboxEntry {
+  if (row?.viewKey !== viewKey) return false;
+  if (row.identityId == null || row.identityId === '') return true;
+  return identityId != null && row.identityId === identityId;
+}
+
 export function withOutboxIdentity(
   entry: OutboxEntryInput,
   identityId: string | null | undefined,
@@ -452,6 +463,11 @@ export interface DrainChatOutboxOnceOptions {
    * Null drains only legacy rows. A string drains those plus that identity's rows.
    */
   connectedIdentityId?: string | null;
+  /**
+   * Read immediately before each send. An identity change during a long drain must stop
+   * the rest of the pass instead of using the id captured when the eligible list was built.
+   */
+  getConnectedIdentityId?: () => string | null | undefined;
   onRowsListed?: (rows: OutboxEntry[]) => void;
   updateRow?: OutboxRowPatchFn;
   removeRow?: (id: number) => void;
@@ -477,6 +493,7 @@ export function drainChatOutboxOnce({
   reticulumReceiptTimeoutMs = RETICULUM_RECEIPT_TIMEOUT_MS,
   rowFilter,
   connectedIdentityId,
+  getConnectedIdentityId,
   onRowsListed,
   updateRow,
   removeRow,
@@ -495,17 +512,20 @@ export function drainChatOutboxOnce({
       removeRow?.(id);
     };
     const now = Date.now();
+    const identityNow = () =>
+      getConnectedIdentityId ? getConnectedIdentityId() : connectedIdentityId;
     const eligible = current
       .filter(
         (r) =>
           isEligibleForDrain(r, now) &&
-          outboxRowMatchesConnectedIdentity(r, connectedIdentityId) &&
+          outboxRowMatchesConnectedIdentity(r, identityNow()) &&
           (rowFilter == null || rowFilter(r)),
       )
       .sort(compareDrainOrder);
     let attempted = 0;
     for (const row of eligible) {
       if (!isSendAvailable()) break;
+      if (!outboxRowMatchesConnectedIdentity(row, identityNow())) break;
       attempted += 1;
       // Upgrade path: do not TX legacy MeshCore multi-split rows queued before single-packet.
       if (isLegacySinglePacketMultipartOutboxRow(row)) {
@@ -666,7 +686,7 @@ export function useChatOutbox({
         sendFn: (text, channel, destination, replyId) =>
           sendFnRef.current(text, channel, destination, replyId),
         isSendAvailable: () => isSendAvailableRef.current,
-        connectedIdentityId: identityIdRef.current,
+        getConnectedIdentityId: () => identityIdRef.current,
         reticulumReceiptTimeoutMs,
         onRowsListed: setRows,
         updateRow,
@@ -774,26 +794,22 @@ export function useChatOutbox({
         if (textChanged) {
           // Failure point: add-then-remove so a failed add never loses the message. If the old row
           // cannot be removed we drop the new one, leaving the original untouched.
-          const added = await window.electronAPI.chat.outbox.add(
-            withOutboxIdentity(
-              {
-                protocol: row.protocol,
-                viewKey: row.viewKey,
-                channel: row.channel,
-                toNode: row.toNode,
-                payload,
-                replyId: row.replyId,
-                status: 'queued',
-                error: null,
-                nextRetryAt: scheduledAt,
-                groupId: null,
-                groupIndex: null,
-                groupTotal: null,
-                identityId: row.identityId,
-              },
-              identityIdRef.current,
-            ),
-          );
+          const added = await window.electronAPI.chat.outbox.add({
+            protocol: row.protocol,
+            viewKey: row.viewKey,
+            channel: row.channel,
+            toNode: row.toNode,
+            payload,
+            replyId: row.replyId,
+            status: 'queued',
+            error: null,
+            nextRetryAt: scheduledAt,
+            groupId: null,
+            groupIndex: null,
+            groupTotal: null,
+            // Keep a legacy null. Stamping the current identity would change which radio sends it.
+            identityId: row.identityId ?? null,
+          });
           try {
             abortOutboxRowSend(id);
             await window.electronAPI.chat.outbox.remove(id);

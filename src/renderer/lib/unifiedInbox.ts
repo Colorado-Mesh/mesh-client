@@ -135,6 +135,7 @@ export function inboxItemToJumpTarget(
     payload: m.payload,
     channel: item.isDirectMessage ? null : m.channel,
     dmPeer,
+    toNode: item.isDirectMessage ? (m.to ?? null) : null,
     reticulumPeerHash: null,
     reticulumMessageHash: m.reticulum_message_hash?.toLowerCase() ?? null,
     packetId: m.packetId ?? null,

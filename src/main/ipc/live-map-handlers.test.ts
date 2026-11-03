@@ -213,6 +213,18 @@ describe('opening a pop-out', () => {
     expect(popOut.focus).toHaveBeenCalled();
   });
 
+  it('does not replace the pop-out view when a later open only focuses it', async () => {
+    const popOut = await openPopOut('meshcore', view);
+    await invoke('liveMap:init')({ sender: popOut.webContents });
+    popOut.webContents.send.mockClear();
+    await invoke('liveMap:open')({ sender: main.webContents }, 'meshcore', null);
+    expect(popOut.focus).toHaveBeenCalled();
+    expect(popOut.webContents.send).not.toHaveBeenCalled();
+    expect(await invoke('liveMap:init')({ sender: popOut.webContents })).toMatchObject({
+      view,
+    });
+  });
+
   it('applies a new view onto an already-open pop-out once it is ready', async () => {
     const popOut = await openPopOut('meshcore', view);
     await invoke('liveMap:init')({ sender: popOut.webContents });

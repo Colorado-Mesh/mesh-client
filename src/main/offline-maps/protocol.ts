@@ -257,8 +257,8 @@ export function createMeshTilesProtocolHandler(
       );
       return emptyResponse(404);
     } finally {
-      await agent.close().catch(() => {
-        // catch-no-log-ok agent may already be closed after abort
+      await agent.destroy().catch(() => {
+        // catch-no-log-ok agent may already be destroyed after abort
       });
     }
   };

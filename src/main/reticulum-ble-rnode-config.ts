@@ -23,6 +23,8 @@ const RNODE_TYPES = new Set(['rnodeinterface', 'rnode', 'rnodemultiinterface']);
 interface InterfaceBlockFields {
   ifaceType: string | null;
   enabled: boolean | null;
+  /** Set once `enabled` is seen so it wins over a later `interface_enabled` (sidecar order). */
+  enabledKeySeen: boolean;
   port: string | null;
 }
 
@@ -72,11 +74,16 @@ function scanConfigContent(
   content: string,
   predicate: (fields: InterfaceBlockFields) => boolean,
 ): boolean {
-  let current: InterfaceBlockFields = { ifaceType: null, enabled: null, port: null };
+  let current: InterfaceBlockFields = {
+    ifaceType: null,
+    enabled: null,
+    enabledKeySeen: false,
+    port: null,
+  };
 
   const flush = (): boolean => {
     const hit = predicate(current);
-    current = { ifaceType: null, enabled: null, port: null };
+    current = { ifaceType: null, enabled: null, enabledKeySeen: false, port: null };
     return hit;
   };
 
@@ -92,7 +99,13 @@ function scanConfigContent(
     const parsed = parseReticulumIniInterfaceField(line);
     if (!parsed) continue;
     if (parsed.key === 'type') current.ifaceType = parsed.value;
-    if (parsed.key === 'enabled') current.enabled = parseReticulumIniEnabledValue(parsed.value);
+    // Sidecar: `enabled` if present, otherwise `interface_enabled`.
+    if (parsed.key === 'enabled') {
+      current.enabled = parseReticulumIniEnabledValue(parsed.value);
+      current.enabledKeySeen = true;
+    } else if (parsed.key === 'interface_enabled' && !current.enabledKeySeen) {
+      current.enabled = parseReticulumIniEnabledValue(parsed.value);
+    }
     if (parsed.key === 'port') current.port = parsed.value;
   }
   return flush();
