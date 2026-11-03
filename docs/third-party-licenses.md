@@ -39,7 +39,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-i18next              | MIT                           | ^17.1.11        | 17.1.11           | git+https://github.com/i18next/react-i18next.git                               |
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.8.0          | 4.8.0             | git+https://github.com/nodejs/readable-stream.git                              |
-| semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
+| semver                     | ISC                           | ^7.8.6          | 7.8.6             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.19        | 5.33.19           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.12.3         | 8.12.3            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.22.1            | git+https://github.com/websockets/ws.git                                       |
@@ -56,7 +56,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @jsr/meshtastic__transport-web-serial | n/a             | ^0.2.5          | 0.2.5             | n/a                                                                                  |
 | @michaelhart/meshcore-decoder         | MIT             | ^0.3.0          | 0.3.0             | git+https://github.com/michaelhart/meshcore-decoder.git                              |
 | @playwright/test                      | Apache-2.0      | ^1.64.1         | 1.64.1            | git+https://github.com/microsoft/playwright.git                                      |
-| @tailwindcss/vite                     | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
+| @tailwindcss/vite                     | MIT             | ^4.3.4          | 4.3.4             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | @tanstack/react-virtual               | MIT             | ^3.14.25        | 3.14.25           | git+https://github.com/TanStack/virtual.git                                          |
 | @testing-library/jest-dom             | MIT             | ^7.0.1          | 7.0.1             | git+https://github.com/testing-library/jest-dom.git                                  |
 | @testing-library/react                | MIT             | ^16.3.3         | 16.3.3            | git+https://github.com/testing-library/react-testing-library.git                     |
@@ -101,7 +101,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet                         | Hippocratic-2.1 | ^5.0.0          | 5.0.0             | git+https://github.com/PaulLeCam/react-leaflet.git                                   |
 | recharts                              | MIT             | ^3.10.1         | 3.10.1            | git+https://github.com/recharts/recharts.git                                         |
 | sort-package-json                     | MIT             | ^3.7.1          | 3.7.1             | git+ssh://git@github.com/keithamus/sort-package-json.git                             |
-| tailwindcss                           | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
+| tailwindcss                           | MIT             | ^4.3.4          | 4.3.4             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |
 | typescript-eslint                     | MIT             | ^8.72.1         | 8.72.1            | https://github.com/typescript-eslint/typescript-eslint.git                           |
 | vite                                  | MIT             | ^8.3.5          | 8.3.5             | git+https://github.com/vitejs/vite.git                                               |
