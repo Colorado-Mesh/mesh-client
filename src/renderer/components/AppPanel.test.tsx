@@ -96,6 +96,28 @@ describe('AppPanel GPS refresh with Share off', () => {
   });
 });
 
+describe('AppPanel docs link', () => {
+  it('links Docs to the settings guide', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel
+          protocol="meshtastic"
+          nodeCount={0}
+          messageCount={0}
+          channels={[]}
+          myNodeNum={null}
+          onLocationFilterChange={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('App Settings');
+    expect(screen.getByRole('link', { name: /docs/i })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/settings/',
+    );
+  });
+});
+
 describe('AppPanel migrated settings preservation', () => {
   it('shows a saved manual GPS interval instead of replacing zero with the hourly default', async () => {
     localStorage.setItem('mesh-client:gpsSettings', JSON.stringify({ refreshInterval: 0 }));

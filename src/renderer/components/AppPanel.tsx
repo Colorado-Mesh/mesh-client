@@ -14,6 +14,7 @@ import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
 import { autoUpdateDownloadEnabledFromStored } from '@/shared/autoUpdateDownload';
 import { closeToTrayEnabledFromStored } from '@/shared/closeToTray';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
+import { SETTINGS_DOCS_URL } from '@/shared/docsSite';
 import { powerSaveModeFromStored } from '@/shared/powerSavePolicy';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
@@ -100,6 +101,7 @@ import SavedLocationsSection from './SavedLocationsSection';
 import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
 import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
@@ -913,7 +915,10 @@ export default function AppPanel({
 
   return (
     <div className="w-full space-y-6">
-      <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
+        <DocsSiteLink href={SETTINGS_DOCS_URL} />
+      </div>
 
       <SettingsCollapsible
         title={t('appPanel.protocolsSection')}

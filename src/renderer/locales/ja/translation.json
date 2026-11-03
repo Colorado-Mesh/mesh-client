@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "ラジオに表示されている暗証番号を入力して、Windowsとペアリングします",
     "stagePairingWindows": "Windowsとペアリングしています…",
     "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。",
-    "mqttPacketTooLarge": "ブローカーが安全上限の {{limit}} バイトを超える MQTT パケットを送信したため、自動再接続は無効です。"
+    "mqttPacketTooLarge": "ブローカーが安全上限の {{limit}} バイトを超える MQTT パケットを送信したため、自動再接続は無効です。",
+    "protocolGuideLink": "プロトコルガイド ↗",
+    "mqttAuthDocsLink": "MQTT AUTH ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "ラジオの連絡先リストがいっぱいなので、このノードをログイン用に追加できませんでした。未使用の連絡先を削除してから、もう一度お試しください。"
     },
     "mqttHints": {
-      "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
+      "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスをブローカーに対して検証します。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
       "network": "ネットワーク、DNS、ファイアウォール、VPN を確認してください。",
       "connackTimeout": "前に「クライアント エラー」行が表示されない場合は、TLS/WebSocket ハンドシェイクが停止している可能性があります (別のネットワークを試してください。アプリは WSS に IPv4 を優先します)。",
       "subscribeFailed": "ブローカーは、このトピックに対するワイルドカード サブスクライブを拒否する場合があります。ブローカーが許可している場合、メッセージは引き続き到着する可能性があります。",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "ログインと同期",
     "enableAutoLogin": "自動ログインを有効にする",
     "enableAutoLoginAria": "ラジオ接続時にこのルームへ自動的にログイン",
-    "autoLoginSaveFailed": "自動ログイン設定を保存できませんでした。以前の設定は変更されていません。"
+    "autoLoginSaveFailed": "自動ログイン設定を保存できませんでした。以前の設定は変更されていません。",
+    "leaveRoomConfirmTitle": "このルームを出ますか？",
+    "leaveRoomConfirmMessage": "ラジオでこのルームサーバーからログアウトします。後でゲストまたは保存したパスワードを使用して再度ログインすることができます。"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",

@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Introduzca el PIN que se muestra en su radio para emparejarlo con Windows",
     "stagePairingWindows": "Emparejando con Windows...",
     "meshtasticSilentAfterConfigure": "Se conectó a la radio, pero dejó de enviar tráfico de malla después de la configuración. Reconexión automática. Si esto sigue ocurriendo, compruebe la conexión de red de la radio o reiníciela.",
-    "mqttPacketTooLarge": "El bróker envió un paquete MQTT mayor que el límite de seguridad de {{limit}} bytes; la reconexión automática está desactivada."
+    "mqttPacketTooLarge": "El bróker envió un paquete MQTT mayor que el límite de seguridad de {{limit}} bytes; la reconexión automática está desactivada.",
+    "protocolGuideLink": "Guía de protocolo ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "La lista de contactos de su radio está llena, por lo que no se ha podido añadir este nodo para iniciar sesión. Elimina los contactos no utilizados e inténtalo de nuevo."
     },
     "mqttHints": {
-      "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
+      "notAuthorized": "Verifique el nombre de usuario v1_, la firma del token y la audiencia JWT frente al broker. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
       "network": "Verifique la red, DNS, firewall y VPN.",
       "connackTimeout": "Si no ve ninguna línea anterior de \"error del cliente\", es posible que el protocolo de enlace TLS/WebSocket se esté deteniendo (pruebe con otra red; la aplicación prefiere IPv4 para WSS).",
       "subscribeFailed": "El corredor puede denegar la suscripción comodín sobre este tema; Es posible que aún lleguen mensajes si el corredor lo permite.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Inicio de sesión y sincronización",
     "enableAutoLogin": "Habilitar el inicio de sesión automático",
     "enableAutoLoginAria": "Inicie sesión en esta sala automáticamente cuando se conecte la radio",
-    "autoLoginSaveFailed": "No se ha podido guardar la configuración de inicio de sesión automático. Su configuración anterior no ha cambiado."
+    "autoLoginSaveFailed": "No se ha podido guardar la configuración de inicio de sesión automático. Su configuración anterior no ha cambiado.",
+    "leaveRoomConfirmTitle": "¿Salir de esta sala?",
+    "leaveRoomConfirmMessage": "Cerrará sesión en el servidor de esta sala en la radio. Puedes iniciar sesión de nuevo más tarde con el invitado o la contraseña guardada."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",

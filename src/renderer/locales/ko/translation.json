@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "라디오에 표시된 PIN을 입력하여 Windows와 페어링합니다.",
     "stagePairingWindows": "Windows와 페어링 중...",
     "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오.",
-    "mqttPacketTooLarge": "브로커가 안전 한도 {{limit}}바이트보다 큰 MQTT 패킷을 보내 자동 재연결이 꺼졌습니다."
+    "mqttPacketTooLarge": "브로커가 안전 한도 {{limit}}바이트보다 큰 MQTT 패킷을 보내 자동 재연결이 꺼졌습니다.",
+    "protocolGuideLink": "임상시험계획서 가이드 ↗",
+    "mqttAuthDocsLink": "MQTT AUTH ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "라디오의 연락처 목록이 가득 찼으므로 이 노드를 로그인에 추가할 수 없습니다. 사용하지 않는 연락처를 삭제한 다음 다시 시도하세요."
     },
     "mqttHints": {
-      "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
+      "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상을 브로커와 비교해 확인하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
       "network": "네트워크, DNS, 방화벽, VPN을 확인하세요.",
       "connackTimeout": "이전의 \"클라이언트 오류\" 줄이 표시되지 않으면 TLS/WebSocket 핸드셰이크가 중단된 것일 수 있습니다(다른 네트워크를 사용해 보십시오. 앱은 WSS에 대해 IPv4를 선호합니다).",
       "subscribeFailed": "브로커는 이 주제에 대한 와일드카드 구독을 거부할 수 있습니다. 브로커가 허용하는 경우 메시지가 계속 도착할 수 있습니다.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "로그인 및 동기화",
     "enableAutoLogin": "자동 로그인 사용",
     "enableAutoLoginAria": "라디오가 연결되면 이 룸에 자동으로 로그인",
-    "autoLoginSaveFailed": "자동 로그인 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않았습니다."
+    "autoLoginSaveFailed": "자동 로그인 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않았습니다.",
+    "leaveRoomConfirmTitle": "이 방에서 나가시겠어요?",
+    "leaveRoomConfirmMessage": "라디오에서 이 룸 서버에서 로그아웃합니다. 나중에 게스트 또는 저장된 비밀번호로 다시 로그인할 수 있습니다."
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

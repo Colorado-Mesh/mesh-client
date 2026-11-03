@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Insira o PIN mostrado no seu rádio para emparelhá-lo com o Windows",
     "stagePairingWindows": "Emparelhando com o Windows...",
     "meshtasticSilentAfterConfigure": "Conectado ao rádio, mas parou de enviar tráfego de malha após a configuração. Reconectando automaticamente. Se isso continuar acontecendo, verifique a conexão de rede do rádio ou reinicie-a.",
-    "mqttPacketTooLarge": "O broker enviou um pacote MQTT maior que o limite de segurança de {{limit}} bytes; a reconexão automática está desativada."
+    "mqttPacketTooLarge": "O broker enviou um pacote MQTT maior que o limite de segurança de {{limit}} bytes; a reconexão automática está desativada.",
+    "protocolGuideLink": "Guia de protocolo ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "A lista de contatos do seu rádio está cheia, portanto, este nó não pôde ser adicionado para login. Remova os contatos não utilizados e tente novamente."
     },
     "mqttHints": {
-      "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
+      "notAuthorized": "Verifique o nome de usuário v1_, a assinatura do token e o público JWT em relação ao broker. Use Personalizado para colar um token emitido pelo operador, se necessário.",
       "network": "Verifique rede, DNS, firewall e VPN.",
       "connackTimeout": "Se você não vir nenhuma linha anterior de “erro do cliente”, o handshake TLS/WebSocket pode estar paralisado (tente outra rede; o aplicativo prefere IPv4 para WSS).",
       "subscribeFailed": "O corretor pode negar assinatura curinga neste tópico; as mensagens ainda podem chegar se o corretor permitir.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Login e sincronização",
     "enableAutoLogin": "Habilitar login automático",
     "enableAutoLoginAria": "Faça login nesta sala automaticamente quando o rádio se conectar",
-    "autoLoginSaveFailed": "Não foi possível salvar a configuração de login automático. Sua configuração anterior permanece inalterada."
+    "autoLoginSaveFailed": "Não foi possível salvar a configuração de login automático. Sua configuração anterior permanece inalterada.",
+    "leaveRoomConfirmTitle": "Sair desta sala?",
+    "leaveRoomConfirmMessage": "Você sairá deste servidor de sala pelo rádio. Você pode fazer login novamente mais tarde com o convidado ou a senha salva."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",

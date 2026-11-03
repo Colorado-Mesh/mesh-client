@@ -1913,7 +1913,9 @@
     "stageEnterPinWindows": "Pro spárování s Windows zadejte PIN zobrazený v rádiu",
     "stagePairingWindows": "Párování s Windows...",
     "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte.",
-    "mqttPacketTooLarge": "Broker odeslal paket MQTT větší než bezpečnostní limit {{limit}} bajtů; automatické opětovné připojení je vypnuto."
+    "mqttPacketTooLarge": "Broker odeslal paket MQTT větší než bezpečnostní limit {{limit}} bajtů; automatické opětovné připojení je vypnuto.",
+    "protocolGuideLink": "Průvodce protokolem ↗",
+    "mqttAuthDocsLink": "MQTT Auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2829,7 +2831,7 @@
       "radioContactTableFull": "Seznam kontaktů vašeho rádia je plný, takže tento uzel nelze přidat pro přihlášení. Odeberte nepoužité kontakty a zkuste to znovu."
     },
     "mqttHints": {
-      "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
+      "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vůči brokeru. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
       "network": "Zkontrolujte síť, DNS, firewall a VPN.",
       "connackTimeout": "Pokud nevidíte žádný předchozí řádek „chyba klienta“, může se stát, že se navázání spojení TLS/WebSocket zasekává (zkuste jinou síť; aplikace preferuje IPv4 pro WSS).",
       "subscribeFailed": "Makléř může odmítnout odběr zástupných znaků na toto téma; zprávy mohou stále docházet, pokud to broker dovolí.",
@@ -5718,7 +5720,9 @@
     "loginAndSyncHeading": "Přihlášení a synchronizace",
     "enableAutoLogin": "Povolit automatické přihlášení",
     "enableAutoLoginAria": "Přihlaste se do této místnosti automaticky, jakmile se rádio připojí",
-    "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo."
+    "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo.",
+    "leaveRoomConfirmTitle": "Opustit tuto místnost?",
+    "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

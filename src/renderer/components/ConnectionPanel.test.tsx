@@ -1016,16 +1016,46 @@ describe('ConnectionPanel status i18n and pulse', () => {
       'href',
       'https://colorado-mesh.github.io/mesh-client/troubleshooting/',
     );
+    expect(screen.getByRole('link', { name: 'Protocol guide ↗' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/meshtastic/',
+    );
     expect(screen.queryByText('configured')).not.toBeInTheDocument();
     expect(screen.queryByText('ble')).not.toBeInTheDocument();
   });
 
   it.each([
-    ['meshtastic', 'https://colorado-mesh.github.io/mesh-client/troubleshooting/'],
-    ['meshcore', 'https://colorado-mesh.github.io/mesh-client/troubleshooting-meshcore/'],
-  ] as const)('links %s Docs to its troubleshooting page on the docs site', (protocol, href) => {
-    renderWithFirmware(undefined, undefined, protocol);
-    expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute('href', href);
+    [
+      'meshtastic',
+      'https://colorado-mesh.github.io/mesh-client/troubleshooting/',
+      'https://colorado-mesh.github.io/mesh-client/meshtastic/',
+    ],
+    [
+      'meshcore',
+      'https://colorado-mesh.github.io/mesh-client/troubleshooting-meshcore/',
+      'https://colorado-mesh.github.io/mesh-client/meshcore/',
+    ],
+  ] as const)(
+    'links %s Docs to troubleshooting and protocol guide on the docs site',
+    (protocol, troubleshootingHref, guideHref) => {
+      renderWithFirmware(undefined, undefined, protocol);
+      expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute(
+        'href',
+        troubleshootingHref,
+      );
+      expect(screen.getByRole('link', { name: 'Protocol guide ↗' })).toHaveAttribute(
+        'href',
+        guideHref,
+      );
+    },
+  );
+
+  it('links MeshCore MQTT auth Docs on the MQTT panel', () => {
+    renderWithFirmware(undefined, undefined, 'meshcore');
+    expect(screen.getByRole('link', { name: 'MQTT auth ↗' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/letsmesh-mqtt-auth/',
+    );
   });
 
   it('pulses the reconnecting radio status dot, not the status text', () => {

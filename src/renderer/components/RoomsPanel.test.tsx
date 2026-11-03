@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -659,6 +659,12 @@ describe('RoomsPanel', () => {
     });
 
     fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'roomsPanel.leaveRoom',
+      }),
+    );
     expect(screen.getByText('roomsPanel.leaveRoomInProgress')).toBeInTheDocument();
     expect(screen.getByLabelText('roomsPanel.leavingRoom')).toBeDisabled();
 
@@ -688,9 +694,113 @@ describe('RoomsPanel', () => {
     });
 
     fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'roomsPanel.leaveRoom',
+      }),
+    );
     await waitFor(() => {
       expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
     });
+  });
+
+  it('does not leave when leave confirmation is cancelled', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100e, 'Stay Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const onLeaveRoom = vi.fn().mockResolvedValue(undefined);
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: room.node_id,
+      onLeaveRoom,
+    });
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'common.cancel' }),
+    );
+    expect(onLeaveRoom).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('dismisses leave confirmation when the selected room changes', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1010, 'Room A');
+    const roomB = makeRoom(0x1011, 'Room B');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    meshcoreApplyRoomSession(roomA.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    meshcoreApplyRoomSession(roomB.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const onLeaveRoom = vi.fn().mockResolvedValue(undefined);
+
+    renderRoomsPanel(nodes, {
+      initialRoomTarget: roomA.node_id,
+      onLeaveRoom,
+      isActive: true,
+    });
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Room B/i }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onLeaveRoom).not.toHaveBeenCalled();
+  });
+
+  it('dismisses leave confirmation when the panel becomes inactive', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x1012, 'Inactive Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const onLeaveRoom = vi.fn().mockResolvedValue(undefined);
+    const props = {
+      nodes,
+      messages: [] as ComponentProps<typeof RoomsPanel>['messages'],
+      myNodeNum: 1,
+      isConnected: true,
+      isActive: true,
+      initialRoomTarget: room.node_id,
+      onLoginRoom: vi.fn().mockResolvedValue(undefined),
+      onCancelRoomLogin: vi.fn(),
+      onLeaveRoom,
+      onSendRoomPost: vi.fn(),
+      onSendRoomAdminCli: vi.fn(),
+    };
+    const view = render(<RoomsPanel {...props} />);
+
+    fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    view.rerender(<RoomsPanel {...props} isActive={false} />);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onLeaveRoom).not.toHaveBeenCalled();
+  });
+
+  it('links Rooms Docs to the MeshCore rooms section', () => {
+    meshcoreClearAllRoomSessions();
+    const room = makeRoom(0x100f, 'Docs Room');
+    renderRoomsPanel(new Map([[room.node_id, room]]));
+    expect(screen.getByRole('link', { name: 'common.docsLink' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/meshcore/#rooms-bbs',
+    );
   });
 
   it('shows leave error and keeps composer when onLeaveRoom fails', async () => {
@@ -710,6 +820,11 @@ describe('RoomsPanel', () => {
     });
 
     fireEvent.click(screen.getByLabelText('roomsPanel.leaveRoom'));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'roomsPanel.leaveRoom',
+      }),
+    );
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Room logout timed out');
     });

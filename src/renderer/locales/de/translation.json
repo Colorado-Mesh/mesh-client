@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Geben Sie die auf Ihrem Radio angezeigte PIN ein, um sie mit Windows zu koppeln",
     "stagePairingWindows": "Wird mit Windows gekoppelt...",
     "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu.",
-    "mqttPacketTooLarge": "Der Broker hat ein MQTT-Paket gesendet, das größer als das Sicherheitslimit von {{limit}} Byte ist; die automatische Wiederverbindung ist deaktiviert."
+    "mqttPacketTooLarge": "Der Broker hat ein MQTT-Paket gesendet, das größer als das Sicherheitslimit von {{limit}} Byte ist; die automatische Wiederverbindung ist deaktiviert.",
+    "protocolGuideLink": "Protokollfuhrer:",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "Die Kontaktliste Ihres Radios ist voll, daher konnte dieser Knoten nicht für die Anmeldung hinzugefügt werden. Entfernen Sie nicht verwendete Kontakte und versuchen Sie es erneut."
     },
     "mqttHints": {
-      "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
+      "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe gegenüber dem Broker. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Betreiber ausgestelltes Token einzufügen.",
       "network": "Überprüfen Sie Netzwerk, DNS, Firewall und VPN.",
       "connackTimeout": "Wenn Sie keine vorherige „Client-Fehler“-Zeile sehen, verzögert sich möglicherweise der TLS/WebSocket-Handshake (versuchen Sie es mit einem anderen Netzwerk; die App bevorzugt IPv4 für WSS).",
       "subscribeFailed": "Der Broker kann das Wildcard-Abonnement zu diesem Thema verweigern. Es können weiterhin Nachrichten eingehen, wenn der Broker dies zulässt.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Anmeldung und Synchronisierung",
     "enableAutoLogin": "Auto-Login aktivieren",
     "enableAutoLoginAria": "Melden Sie sich automatisch in diesem Raum an, wenn das Radio eine Verbindung herstellt",
-    "autoLoginSaveFailed": "Die Auto-Login-Einstellung konnte nicht gespeichert werden. Ihre vorherige Einstellung ist unverändert."
+    "autoLoginSaveFailed": "Die Auto-Login-Einstellung konnte nicht gespeichert werden. Ihre vorherige Einstellung ist unverändert.",
+    "leaveRoomConfirmTitle": "Diesen Raum verlassen?",
+    "leaveRoomConfirmMessage": "Von diesem Raumserver loggen Sie sich über das Funkgerät aus. Sie können sich später mit dem Gast oder dem gespeicherten Passwort erneut anmelden."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

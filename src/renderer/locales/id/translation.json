@@ -1891,7 +1891,9 @@
     "stageEnterPinWindows": "Masukkan PIN yang ditampilkan di radio Anda untuk memasangkannya dengan Windows",
     "stagePairingWindows": "Memasangkan dengan Windows…",
     "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang.",
-    "mqttPacketTooLarge": "Broker mengirim paket MQTT yang lebih besar dari batas aman {{limit}} byte; sambungan ulang otomatis dinonaktifkan."
+    "mqttPacketTooLarge": "Broker mengirim paket MQTT yang lebih besar dari batas aman {{limit}} byte; sambungan ulang otomatis dinonaktifkan.",
+    "protocolGuideLink": "Panduan protokol ↗",
+    "mqttAuthDocsLink": "MQTT auth ↗"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -2800,7 +2802,7 @@
       "radioContactTableFull": "Daftar kontak radio Anda sudah penuh, jadi simpul ini tidak dapat ditambahkan untuk login. Hapus kontak yang tidak digunakan, lalu coba lagi."
     },
     "mqttHints": {
-      "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
+      "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
       "network": "Periksa jaringan, DNS, firewall, dan VPN.",
       "connackTimeout": "Jika Anda tidak melihat baris “kesalahan klien” sebelumnya, jabat tangan TLS/WebSocket mungkin terhenti (coba jaringan lain; aplikasi lebih memilih IPv4 untuk WSS).",
       "subscribeFailed": "Broker mungkin menolak berlangganan wildcard pada topik ini; pesan mungkin masih sampai jika broker mengizinkannya.",
@@ -5674,7 +5676,9 @@
     "loginAndSyncHeading": "Masuk dan sinkronisasi",
     "enableAutoLogin": "Aktifkan masuk otomatis",
     "enableAutoLoginAria": "Masuk ke ruangan ini secara otomatis saat radio terhubung",
-    "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah."
+    "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah.",
+    "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
+    "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
