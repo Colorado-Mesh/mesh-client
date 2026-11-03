@@ -2883,7 +2883,7 @@
 <p>Each finding shows a count and latest message. Expand <strong>View evidence</strong> for the newest 20 matching entries with timestamps, levels, and sources. The recommendations below the findings explain what to check. <strong>Copy troubleshooting report</strong> creates a plain-text summary with UTC timestamps, guidance, and up to three samples per finding. The copy happens only after clicking the button. Log samples can contain private information; review them before sharing. <strong>Log → Export</strong> and <strong>App → Support / Bug reports → Export for GitHub</strong> provide the fuller context when needed.</p>
 <p>Findings describe historical events, not necessarily ongoing failures. One line may match several categories, so category counts are not a count of unique incidents. <strong>Other warnings and errors</strong> retains unmatched warning/error lines without inventing a diagnosis; expected recovery messages can appear there. Cancelled page loads (<code>ERR_ABORTED</code>) remain excluded from findings.</p>
 <h2 id="review-of-current-logging">Review of current logging<a class="headerlink" href="#review-of-current-logging" title="Permanent link">&para;</a></h2>
-<p>Issue <a href="https://github.com/Colorado-Mesh/mesh-client/issues/915">#915</a> prompted an inventory of TypeScript log calls and Rust sidecar warning/error emitters, followed by a comparison with the existing patterns and the sidecar forwarding code. The review found that the recommendation resolver was ignoring the category recommendation map, causing specific failures to display generic internal-error advice. USB serial also lacked a recommendation. Both are now covered by map-completeness tests.</p>
+<p>Issue <a href="https://github.com/Colorado-Mesh/mesh-client/issues/915">#915</a> prompted an inventory of TypeScript log calls and Rust sidecar warning/error emitters, followed by a comparison with the existing patterns and the sidecar forwarding code. The review found that the recommendation resolver was ignoring the category recommendation map, causing specific failures to display generic internal-error advice. USB serial also lacked a recommendation. Both are now covered by map-completeness tests. Later emitters (MQTT packet caps, RF transport loss, auto-connect, MECP, offline maps, and related families) were added to the analyzer with <code>requireWarnOrError</code> and emitter-backed fixtures.</p>
 <table>
 <thead>
 <tr>
@@ -2894,52 +2894,92 @@
 <tbody>
 <tr>
 <td>BLE, handshake, pairing, notify watchdogs</td>
-<td>Retain existing transport patterns and noise exclusions. Device information showing <code>state=disconnected</code> is not itself a connection failure.</td>
+<td>Retain transport patterns. Exclude dual-radio <code>bleCoexistence</code> coordination from BLE connection findings. Linux <code>[IPC] bluetooth-connect</code> failures join pairing guidance. Device info with <code>state=disconnected</code> is not itself a connection failure.</td>
 </tr>
 <tr>
-<td>MQTT, retries, Meshtastic/MeshCore SDKs</td>
-<td>Retain specific network/retry patterns and level-gated SDK categories. Generic “connection refused” alone does not identify an MQTT broker.</td>
+<td>MQTT, packet limit, retries, SDKs</td>
+<td>Recognize tagged <code>[Meshtastic MQTT]</code> / <code>[MeshCore MQTT]</code> network, timeout, reconnect, connection-watchdog, wake token-refresh, and invalid publish PSK lines. Dedicated <code>mqtt-packet-limit</code> when the broker exceeds the safety cap and automatic reconnect is disabled. Do not classify bare <code>[IPC] mqtt:… failed</code> as broker issues. Level-gated SDK categories remain.</td>
+</tr>
+<tr>
+<td>RF transport loss</td>
+<td>Recognize <code>[meshtasticTransportLoss]</code> and <code>[meshcoreSerialTransportLoss]</code> link-lost lines (<code>transport-loss</code>).</td>
+</tr>
+<tr>
+<td>Startup RF auto-connect</td>
+<td>Recognize timed-out and transport auto-connect failures from <code>useProtocolRfAutoConnect</code> (<code>rf-auto-connect</code>). Cancelled/skipped coexistence paths stay unclassified.</td>
+</tr>
+<tr>
+<td>Power-save / wake</td>
+<td>Recognize <code>powerSaveBlocker</code> start/stop failures. Reticulum power-resume reconnect failures extend <code>reticulum-sidecar</code>.</td>
 </tr>
 <tr>
 <td>TCP and USB serial</td>
-<td>Add Meshtastic TCP connect/write failures alongside MeshCore TCP. Restore actionable serial-reconnect guidance.</td>
+<td>Meshtastic TCP connect/write failures alongside MeshCore TCP. Actionable serial-reconnect guidance retained.</td>
 </tr>
 <tr>
 <td>Database initialization, migrations, permissions</td>
-<td>Retain existing checks. Separately identify <code>[dbPersistRetry] degraded persistence</code> when retries exhaust or the write queue drops data; warn that visible state may not survive restart.</td>
+<td>Retain existing checks. Separately identify <code>[dbPersistRetry] degraded persistence</code> when retries exhaust or the write queue drops data.</td>
 </tr>
 <tr>
 <td>App crashes and UI stalls</td>
-<td>Retain process/load failures; add renderer heartbeat stalls and Electron unresponsive events from <code>rendererHeartbeatWatchdog.ts</code>. Recovery messages are not new hang findings.</td>
+<td>Retain process/load failures; renderer heartbeat stalls and Electron unresponsive events from <code>rendererHeartbeatWatchdog.ts</code>. Recovery messages are not new hang findings.</td>
 </tr>
 <tr>
 <td>Reticulum service</td>
-<td>Recognize watchdog health failures/restarts, failed start/stop, event/voice WebSocket errors, and failed runtime restarts. Avoid classifying every <code>[ReticulumSidecar]</code> warning as an outage.</td>
+<td>Watchdog health failures/restarts, failed start/stop, event/voice WebSocket errors, failed runtime restarts, and power-resume reconnect failures. Avoid classifying every <code>[ReticulumSidecar]</code> warning as an outage.</td>
 </tr>
 <tr>
 <td>Reticulum delivery and propagation</td>
-<td>Recognize terminal LXMF delivery/path-budget failures and failed propagation sync. Reticulum decrypt failures receive delivery guidance rather than LoRa channel-key advice. Stored-at-PN progress and normal packet reception are not delivery failures.</td>
+<td>Terminal LXMF delivery/path-budget failures and failed propagation sync. Reticulum decrypt failures receive delivery guidance rather than LoRa channel-key advice.</td>
 </tr>
 <tr>
 <td>Reticulum pressure and dropped events</td>
-<td>Recognize bounded-channel saturation, WebSocket subscriber lag, payload cap drops, and failed path-request enqueue. Recommend checking actual message status before retrying.</td>
+<td>Bounded-channel saturation, WebSocket subscriber lag, payload cap drops, and failed path-request enqueue.</td>
 </tr>
 <tr>
 <td>Firmware flashing</td>
-<td>Recognize the ESP32/nRF52 flasher stall messages that close the serial port.</td>
+<td>ESP32/nRF52 flasher stall messages that close the serial port.</td>
 </tr>
 <tr>
 <td>Nomad hosting, TAK server, remote TAK relay, updater, Store &amp; Forward</td>
-<td>Retain existing dedicated patterns and guidance.</td>
+<td>Retain dedicated patterns. TAK chat/DM/geochat bridge failures (<code>tak-chat</code>) cover tags outside <code>[TakServer]</code> / <code>[TakRemote]</code>.</td>
+</tr>
+<tr>
+<td>MECP</td>
+<td>Rebroadcast send failures, local audit append/rotate failures, language-pack load failures, and compose send/GPS failures (<code>mecp</code>). Public support bundles omit MECP audit details.</td>
+</tr>
+<tr>
+<td>Offline maps</td>
+<td>Region download/job failures, MBTiles inspect/import failures, custom-source cleanup, and unreadable <code>custom-sources.json</code> (<code>offline-maps</code>). Corrupt-row skips (<code>dropped invalid custom source record</code>) stay unclassified.</td>
+</tr>
+<tr>
+<td>MeshCore companion / remote CLI</td>
+<td>Companion CLI section and remote CLI flag read/write failures (<code>meshcore-cli</code>, MeshCore protocol only).</td>
+</tr>
+<tr>
+<td>AI catch-up / model pack</td>
+<td>Model download failures and catch-up startup status unavailable (<code>ai-summary</code>).</td>
+</tr>
+<tr>
+<td>Live traffic map</td>
+<td>Pop-out open/close/origin failures, window boot/init, regional feed resume, and keep-on-top / return-to-main failures (<code>live-map</code>).</td>
+</tr>
+<tr>
+<td>COI / renderer memory</td>
+<td>COI measurement/persist failures and renderer-memory auto-sampler persist failures (<code>coi-memory</code>). Debug-only metric/pid unavailable lines are not findings.</td>
+</tr>
+<tr>
+<td>GPS IP fallback</td>
+<td><code>[gps] ip fix failed</code> and <code>inetChecksite preflight failed</code> (<code>gps</code>). Radio GPS and static location are separate.</td>
 </tr>
 <tr>
 <td>Other UI, storage, remote/RRC, voice, games, and configuration logs</td>
-<td>Keep unmatched warnings/errors available as evidence. A module prefix alone is insufficient to diagnose corruption, unreachable peers, or a broken service. Existing specialized panels and debug snapshots supply richer state.</td>
+<td>Keep unmatched warnings/errors as evidence. A module prefix alone is insufficient to diagnose corruption, unreachable peers, or a broken service.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="maintaining-patterns">Maintaining patterns<a class="headerlink" href="#maintaining-patterns" title="Permanent link">&para;</a></h2>
-<p>The pure analyzer lives in <code>src/renderer/lib/logAnalyzer.ts</code>. Add a specific emitter-backed failure pattern and a harmless counterexample in <code>logAnalyzer.currentLogs.test.ts</code>. Add static label and recommendation keys in <code>logAnalyzerI18n.ts</code> plus English strings; run the normal translation workflow. <code>logAnalyzerI18n.test.ts</code> checks that every category label has specific, resolvable advice.</p>
+<p>The pure analyzer lives in <code>src/renderer/lib/logAnalyzer.ts</code>. Add a specific emitter-backed failure pattern and a harmless counterexample in <code>logAnalyzer.currentLogs.test.ts</code>. Add static label and recommendation keys in <code>logAnalyzerI18n.ts</code> plus English strings; run the normal translation workflow. <code>logAnalyzerI18n.test.ts</code> checks that every category label has specific, resolvable advice. Prefer <code>requireWarnOrError: true</code> for new categories so debug noise does not become a finding.</p>
 <p>Reticulum forwards some informational Rust tracing messages through the warning console channel for support visibility. Do not add broad prefix-only rules for it. Inspect <code>reticulum-sidecar-manager.ts</code> and the original Rust emitter before inferring failure from the captured level. Preserve protocol gating and cancellation exclusions, and do not infer recovery or current health without evidence.</p>
 
 
@@ -2961,7 +3001,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 25, 2026 11:56:31 UTC">September 25, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 3, 2026 03:30:20 UTC">November 3, 2026</span>
   </span>
 
     
