@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::stack::{
     LxmfPaperCreateRequest, LxmfPaperIngestRequest, LxmfReactionRequest, LxmfSendRequest,
-    StackHandle,
+    StackHandle, validate_lxmf_reaction_request,
 };
 
 pub async fn lxmf_send(
@@ -107,6 +107,9 @@ pub async fn lxmf_reaction(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<LxmfReactionRequest>,
 ) -> Json<serde_json::Value> {
+    if let Err(e) = validate_lxmf_reaction_request(&body) {
+        return Json(serde_json::json!({ "ok": false, "error": e }));
+    }
     match stack.lxmf_reaction(body).await {
         Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),

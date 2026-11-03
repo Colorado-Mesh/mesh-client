@@ -565,6 +565,121 @@ describe('useProtocolRfAutoConnect cold-start serial + BLE', () => {
     }
   });
 
+  it('does not overwrite remembered serial when the BLE fallback shares a peripheral', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'serial',
+      serialPortId: 'port-1',
+      bleDeviceId: 'shared-radio',
+      bleDeviceName: 'Radio',
+    });
+    mocks.loadLastBleDeviceId.mockReturnValue('shared-radio');
+    mocks.meshcoreTargetsSharedMeshtasticBlePeripheral.mockReturnValue(true);
+    const connectAutomatic = vi.fn().mockRejectedValueOnce(new Error('Serial auto-connect failed'));
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.meshcoreTargetsSharedMeshtasticBlePeripheral).toHaveBeenCalledWith(
+        'shared-radio',
+      );
+    });
+    expect(mocks.reconnectBleWithScan).not.toHaveBeenCalled();
+    expect(mocks.saveLastConnection).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite remembered serial when BLE fallback is cancelled', async () => {
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'serial',
+      serialPortId: 'port-1',
+      bleDeviceId: 'ble-fallback',
+      bleDeviceName: 'Radio',
+    });
+    mocks.loadLastBleDeviceId.mockReturnValue('ble-fallback');
+    let releaseCoexistence: () => void = () => {};
+    mocks.awaitReticulumBleCoexistenceClear.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseCoexistence = resolve;
+        }),
+    );
+    const connectAutomatic = vi.fn().mockRejectedValueOnce(new Error('Serial auto-connect failed'));
+
+    const { unmount } = renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.awaitReticulumBleCoexistenceClear).toHaveBeenCalled();
+    });
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    unmount();
+    releaseCoexistence();
+    await waitFor(() => {
+      expect(debug).toHaveBeenCalledWith(
+        expect.stringContaining('BLE auto-connect cancelled after coexistence wait'),
+      );
+    });
+    expect(mocks.saveLastConnection).not.toHaveBeenCalled();
+    expect(mocks.reconnectBleWithScan).not.toHaveBeenCalled();
+    debug.mockRestore();
+  });
+
+  it('does not promote serial to BLE when connect is cancelled during the scan', async () => {
+    const { cancelProtocolRfAutoConnect } =
+      await import('@/renderer/lib/protocolRfAutoConnectGate');
+    mocks.loadLastConnection.mockReturnValue({
+      type: 'serial',
+      serialPortId: 'port-1',
+      bleDeviceId: 'ble-fallback',
+      bleDeviceName: 'Radio',
+    });
+    mocks.loadLastBleDeviceId.mockReturnValue('ble-fallback');
+    let releaseScan: () => void = () => {};
+    mocks.reconnectBleWithScan.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseScan = () => {
+            resolve();
+          };
+        }),
+    );
+    const connectAutomatic = vi.fn().mockRejectedValueOnce(new Error('Serial auto-connect failed'));
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshcore',
+        state: disconnected,
+        connectAutomatic,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.reconnectBleWithScan).toHaveBeenCalled();
+    });
+    cancelProtocolRfAutoConnect('meshcore');
+    releaseScan();
+    await waitFor(() => {
+      expect(debug).toHaveBeenCalledWith(
+        expect.stringContaining('BLE auto-connect cancelled after connect'),
+      );
+    });
+    expect(mocks.saveLastConnection).not.toHaveBeenCalled();
+    warn.mockRestore();
+    debug.mockRestore();
+  });
+
   it('falls back to BLE after serial fails even when prepareRfConnect flips status to connecting', async () => {
     mocks.loadLastConnection.mockReturnValue({
       type: 'serial',

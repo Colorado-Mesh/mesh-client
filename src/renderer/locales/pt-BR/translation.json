@@ -8040,6 +8040,7 @@
     "directionOutbound": "Sent",
     "sender": "Remetente",
     "directMessage": "Mensagem direta",
+    "unknownSender": "Desconhecido",
     "senderPlaceholder": "nome do termo ou id",
     "meshcore": "MeshCore",
     "channel": "Canal {{index}}",
@@ -8113,7 +8114,8 @@
       "confirmMismatch": "Eles não correspondem",
       "doneHint": "A chave de {{name}} agora está marcada como verificada manualmente no seu rádio.",
       "rejectedHint": "A verificação foi cancelada. A chave de {{name}} não foi marcada como verificada. Se os caracteres forem diferentes, trate a chave deste nó como não confiável.",
-      "sendFailed": "Não foi possível alcançar o rádio. Verifique a conexão e tente novamente."
+      "sendFailed": "Não foi possível alcançar o rádio. Verifique a conexão e tente novamente.",
+      "missingNode": "Esta estação ainda não foi identificada. Espere até que seja e então confirme."
     }
   },
   "remoteShell": {

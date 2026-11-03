@@ -248,35 +248,40 @@ function compareMessageRecordsForTrim(a: MessageRecord, b: MessageRecord): numbe
   return a.id.localeCompare(b.id);
 }
 
+function isProtectedFromLiveTrim(message: MessageRecord): boolean {
+  return message.status === 'sending';
+}
+
 /** Keep newest `cap` rows; return the trimmed bucket and ids that were dropped. */
 function trimIdentityBucketToNewest(
   byIdentity: Record<string, MessageRecord>,
   cap: number,
 ): { next: Record<string, MessageRecord>; evictedIds: string[] } {
-  const size = Object.keys(byIdentity).length;
+  const values = Object.values(byIdentity);
+  const size = values.length;
   if (size <= cap) return { next: byIdentity, evictedIds: [] };
 
-  // Routine live insert is one over the cap: scan once and omit the oldest id.
-  if (size === cap + 1) {
-    let oldest: MessageRecord | null = null;
-    for (const message of Object.values(byIdentity)) {
-      if (oldest == null || compareMessageRecordsForTrim(message, oldest) < 0) {
-        oldest = message;
-      }
-    }
-    if (oldest == null) return { next: byIdentity, evictedIds: [] };
+  const protectedRows = values.filter(isProtectedFromLiveTrim);
+  const evictable = values
+    .filter((message) => !isProtectedFromLiveTrim(message))
+    .sort(compareMessageRecordsForTrim);
+  const evictCount = Math.min(evictable.length, Math.max(0, size - cap));
+  if (evictCount === 0) return { next: byIdentity, evictedIds: [] };
+
+  // Routine live insert is one over the cap: omit the oldest row that is not still sending.
+  if (size === cap + 1 && evictCount === 1) {
+    const oldest = evictable[0];
+    if (!oldest) return { next: byIdentity, evictedIds: [] };
     return { next: omitRecordKey(byIdentity, oldest.id), evictedIds: [oldest.id] };
   }
 
-  // Cap lowered or bulk overshoot: full newest-N rebuild.
-  const sorted = Object.values(byIdentity).sort(compareMessageRecordsForTrim);
-  const dropCount = size - cap;
-  const evictedIds = sorted.slice(0, dropCount).map((m) => m.id);
+  const evictedIds = evictable.slice(0, evictCount).map((m) => m.id);
+  const evicted = new Set(evictedIds);
   const next: Record<string, MessageRecord> = {};
-  for (let i = dropCount; i < sorted.length; i++) {
-    const m = sorted[i];
-    next[m.id] = m;
+  for (const message of protectedRows) {
+    if (!evicted.has(message.id)) next[message.id] = message;
   }
+  for (const message of evictable.slice(evictCount)) next[message.id] = message;
   return { next, evictedIds };
 }
 
@@ -312,7 +317,9 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
     return mergeIdentityMessages(s, identityId, grown);
   });
   cleanupEvictedLiveMessages(identityId, evictedIds);
-  if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
+  if (inserted && useMessageStore.getState().messages[identityId]?.[inserted.id]) {
+    emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
+  }
 }
 
 /**
@@ -346,7 +353,9 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     return mergeIdentityMessages(s, identityId, grown);
   });
   cleanupEvictedLiveMessages(identityId, evictedIds);
-  if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
+  if (inserted && useMessageStore.getState().messages[identityId]?.[inserted.id]) {
+    emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
+  }
 }
 
 /**

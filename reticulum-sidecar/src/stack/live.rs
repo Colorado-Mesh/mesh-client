@@ -789,7 +789,9 @@ impl LiveBridge {
                 state.nomad_serving_enabled,
                 name,
                 state.nomad_serving_content_source.clone(),
-                state.nomad_serving_allow_executable_pages,
+                super::restored_nomad_allow_executable_pages(
+                    state.nomad_serving_allow_executable_pages,
+                ),
             )
         };
         // Accepted local-state trust: resume the folders selected in an earlier
@@ -4383,17 +4385,17 @@ impl LiveBridge {
 
         // Stamp the standard LXMF FIELD_REACTION (0x40) so Ratspeak / Sideband peers
         // render a structured tapback. The emoji is always kept as message content so
-        // clients that ignore 0x40 still show something. An unparsable target_hash is
-        // treated as absent (send content-only) rather than poisoning the message.
-        let reaction_target = parse_optional_reply_to_hash(Some(&req.target_hash));
-        // Only surface structured reaction metadata to the renderer when the target hash parsed
-        // cleanly. The content-only fallback below must omit `reaction_target` so downstream
-        // consumers do not treat a plain-emoji send as a structured tapback.
-        let reaction_target_out: Option<String> =
-            reaction_target.as_ref().map(|_| req.target_hash.clone());
-        let (msg, message_hash_hex) = if let Some(target) = reaction_target {
+        // clients that ignore 0x40 still show something. Empty/overlong emoji and an
+        // unparsable target_hash are rejected before signing (no content-only DM).
+        super::types::validate_lxmf_reaction_request(req)?;
+        let reaction_target = parse_hash32(req.target_hash.trim())?;
+        let reaction_target_out = Some(req.target_hash.clone());
+        let (msg, message_hash_hex) = {
             let mut fields = HashMap::new();
-            fields.insert(FIELD_REACTION, encode_reaction_field(&target, &req.emoji));
+            fields.insert(
+                FIELD_REACTION,
+                encode_reaction_field(&reaction_target, &req.emoji),
+            );
             self.prepare_signed_outbound_lxmf_with_fields(
                 dest,
                 "",
@@ -4401,12 +4403,6 @@ impl LiveBridge {
                 delivery_method,
                 &fields,
             )?
-        } else {
-            tracing::warn!(
-                target: "lxmf",
-                "send_reaction: target_hash is not a 32-byte hex, sending content-only",
-            );
-            self.prepare_signed_outbound_lxmf(dest, "", &req.emoji, delivery_method, None, None)?
         };
         let mut router = self.router.lock().await;
         router

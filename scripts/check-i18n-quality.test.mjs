@@ -539,6 +539,40 @@ describe('localeStringQualityIssues', () => {
     }
   });
 
+  it('flags broken ATAK mention tokens even when English has prose @ and', () => {
+    const enVal =
+      "To reply to someone from ATAK, start with @ and the start of their name: @silver are you on? goes out as MeshCore's reply @[Silver Eagle] are you on?. @@ replies to whoever spoke last.";
+    for (const val of [
+      'mulai dengan @ dan nama: @ silver are you on? @[ Silver Eagle] @@',
+      '开始 @ 和名字： @ silver @ [Silver Eagle] @ @',
+      '@ silver @[ Silver Eagle] @ @',
+      '@[ Elang Perak] are you on?',
+      '@[  Nama] @@',
+    ]) {
+      const issues = localeStringQualityIssues({
+        locale: 'id',
+        flatKey: 'takServerPanel.channelRepliesHint',
+        val,
+        enVal,
+      });
+      expectIssue(issues, 'mention syntax');
+    }
+    const kept = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'takServerPanel.channelRepliesHint',
+      val: 'mulai dengan @ dan nama: @silver are you on? @[Silver Eagle] @@',
+      enVal,
+    });
+    expect(kept.filter((issue) => issue.includes('mention syntax'))).toEqual([]);
+    const translated = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'takServerPanel.channelRepliesHint',
+      val: 'mulai dengan @ dan nama: @silver are you on? @[Elang Perak] @@',
+      enVal,
+    });
+    expect(translated.filter((issue) => issue.includes('mention syntax'))).toEqual([]);
+  });
+
   it('accepts contiguous translated mention placeholders', () => {
     const issues = localeStringQualityIssues({
       locale: 'de',

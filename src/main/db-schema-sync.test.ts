@@ -604,6 +604,10 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
       .prepareOnce("SELECT priority FROM chat_outbox WHERE payload = 'legacy'")
       .get() as { priority: string };
     expect(legacy.priority).toBe('normal');
+    const legacyIdentity = db
+      .prepareOnce("SELECT identity_id FROM chat_outbox WHERE payload = 'legacy'")
+      .get() as { identity_id: string | null };
+    expect(legacyIdentity.identity_id).toBeNull();
 
     db.prepareOnce(
       `INSERT INTO chat_outbox (protocol, view_key, channel, payload, created_at, updated_at, priority)

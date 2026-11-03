@@ -275,6 +275,16 @@ export function registerLiveMapWindows(deps: LiveMapWindowDeps): void {
       if (existing.window.isMinimized()) existing.window.restore();
       existing.window.show();
       existing.window.focus();
+      // A null view only focuses the window. Replacing entry.view would push the last
+      // docked position over a map the user has since moved, and would clear the view
+      // returned when the pop-out closes.
+      const parsed = parseLiveMapView(view);
+      if (parsed) {
+        existing.view = parsed;
+        if (existing.ready) {
+          existing.window.webContents.send('liveMap:applyView', parsed);
+        }
+      }
       return;
     }
     watchMainWindow(main);

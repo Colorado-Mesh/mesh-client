@@ -38,6 +38,7 @@ const { canvas, map, mapContainer, marker, beaconFeed, feedRequest, translations
       zoomOut: vi.fn(),
       getCenter: () => ({ lat: 40.3, lng: -105.2 }),
       getZoom: () => 9.5,
+      setView: vi.fn(),
       getBounds: () => ({
         getSouth: (): number => 36,
         getWest: (): number => -110,
@@ -1115,6 +1116,35 @@ describe('LiveTrafficPanel moving between windows', () => {
     expect(map.fitBounds).not.toHaveBeenCalled();
     fireEvent.change(area, { target: { value: 'all' } });
     expect(map.fitBounds).toHaveBeenCalledOnce();
+  });
+
+  it('applies a pushed view that only changes the regional feed', async () => {
+    const base = {
+      center: [45.52, -122.68] as [number, number],
+      zoom: 11,
+      basemapId: 'osm',
+      trafficSource: 'beacon' as const,
+      feed: { baseUrl: 'https://map.example.org', region: 'PDX' },
+    };
+    const view = await renderPanel(
+      <LiveTrafficPanel nodes={nodes} myNodeNum={1} meshcorePackets={[]} initialView={base} />,
+    );
+    beaconFeed.connect.mockClear();
+    const next = { ...base, feed: { baseUrl: 'https://map.example.org', region: 'DEN' } };
+    view.rerender(
+      <LiveTrafficPanel
+        nodes={nodes}
+        myNodeNum={1}
+        meshcorePackets={[]}
+        initialView={base}
+        navView={next}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(beaconFeed.connect).toHaveBeenCalledWith('https://map.example.org', 'DEN');
+    expect(map.setView).toHaveBeenCalledWith(next.center, next.zoom, { animate: false });
   });
 
   it('logs a handed-over session that fails to resume and does not hand it on', async () => {

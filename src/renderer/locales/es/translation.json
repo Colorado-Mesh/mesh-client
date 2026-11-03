@@ -8039,6 +8039,7 @@
     "directionInbound": "Recibido",
     "directionOutbound": "Enviado",
     "sender": "Transmisor",
+    "unknownSender": "Desconocido",
     "senderPlaceholder": "Nombre o N.° DE IDENTIFICACIÓN",
     "channel": "Canal {{index}}",
     "directMessage": "Mensajes Directos",
@@ -8113,7 +8114,8 @@
       "confirmMismatch": "no coinciden",
       "doneHint": "La clave de {{name}} ahora está marcada como verificada manualmente en tu radio.",
       "rejectedHint": "Verificación cancelada. La clave de {{name}} no se marcó como verificada. Si los caracteres difieren, trate la clave de este nodo como no confiable.",
-      "sendFailed": "No se ha podido acceder a la radio. Compruebe la conexión e inténtelo de nuevo."
+      "sendFailed": "No se ha podido acceder a la radio. Compruebe la conexión e inténtelo de nuevo.",
+      "missingNode": "Esta estación aún no está identificada. Espere a que lo esté y luego confirme."
     }
   },
   "remoteShell": {

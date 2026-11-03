@@ -1,16 +1,10 @@
 import dns from 'node:dns/promises';
-import type { LookupFunction } from 'node:net';
 
-import { Agent, fetch as undiciFetch } from 'undici';
+import { fetch as undiciFetch } from 'undici';
 
 import { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
 import { stripConnectHostBrackets } from '../shared/connectHost';
-import {
-  ipLiteralFamily,
-  isGlobalIpLiteral,
-  isValidIpLiteral,
-  isValidIpv6Literal,
-} from '../shared/ipLiteral';
+import { isValidIpv6Literal } from '../shared/ipLiteral';
 import {
   baseMimeFromContentType,
   bufferToRasterImageDataUrl,
@@ -18,6 +12,7 @@ import {
   LINK_PREVIEW_IMAGE_MIMES,
   resolveSafeRasterImageMime,
 } from '../shared/safeRasterImageMime';
+import { createPinnedPublicAgent, isGlobalPublicAddress } from './pinnedPublicConnect';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
@@ -142,7 +137,7 @@ async function lookupHostname(hostname: string): Promise<string> {
 
 /** Returns whether an IP address is globally reachable. */
 function isGlobalIpAddress(address: string): boolean {
-  return isGlobalIpLiteral(address) === true;
+  return isGlobalPublicAddress(address);
 }
 
 /** Single DNS resolution used for both block checks and pinned connect (avoids lookup TOCTOU). */
@@ -165,37 +160,11 @@ async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
   return address;
 }
 
-/** Returns the explicit URL port or the protocol default. */
-function defaultConnectPort(url: URL): number {
-  if (url.port) return Number(url.port);
-  return url.protocol === 'http:' ? 80 : 443;
-}
-
-/** Creates a socket lookup that always returns the validated address. */
-function pinnedLookup(address: string): LookupFunction {
-  const family = ipLiteralFamily(address) === 4 ? 4 : 6;
-  return (_hostname, options, callback) => {
-    if (options.all) {
-      callback(null, [{ address, family }]);
-      return;
-    }
-    callback(null, address, family);
-  };
-}
-
 /** Fetches a URL through an agent pinned to its validated DNS result. */
 async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
   const url = new URL(urlString);
   const address = await resolvePinnedPreviewAddress(url.hostname);
-  const hostname = stripConnectHostBrackets(url.hostname);
-  const servername = isValidIpLiteral(hostname) ? undefined : hostname;
-  const agent = new Agent({
-    connect: {
-      lookup: pinnedLookup(address),
-      port: defaultConnectPort(url),
-      servername,
-    },
-  });
+  const agent = createPinnedPublicAgent(url, address);
   try {
     const response = (await undiciFetch(urlString, {
       ...init,

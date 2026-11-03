@@ -7,12 +7,24 @@ import {
 } from './reticulum-config-ini';
 import { readUtf8FileBounded } from './reticulum-config-read';
 
-/** Same set as SERIAL_INTERFACE_TYPES in reticulum-system-instance.ts. */
-const SERIAL_LOCAL_RADIO_TYPES = new Set(['rnodeinterface', 'kissinterface', 'ax25kissinterface']);
+/**
+ * Local radios that should hold the machine awake. RNodeMultiInterface is the
+ * sidecar's multi-port RNode; TCP RNodes (`tcp://`) stay network-only.
+ */
+const SERIAL_LOCAL_RADIO_TYPES = new Set([
+  'rnodeinterface',
+  'rnodemultiinterface',
+  'kissinterface',
+  'ax25kissinterface',
+]);
+
+const RNODE_TYPES = new Set(['rnodeinterface', 'rnode', 'rnodemultiinterface']);
 
 interface InterfaceBlockFields {
   ifaceType: string | null;
   enabled: boolean | null;
+  /** Set once `enabled` is seen so it wins over a later `interface_enabled` (sidecar order). */
+  enabledKeySeen: boolean;
   port: string | null;
 }
 
@@ -28,7 +40,7 @@ function isTcpRnodePort(port: string): boolean {
 function blockHasEnabledBleRnode(fields: InterfaceBlockFields): boolean {
   if (!fields.ifaceType || fields.enabled !== true || !fields.port) return false;
   const type = fields.ifaceType.toLowerCase();
-  if (type !== 'rnodeinterface' && type !== 'rnode') return false;
+  if (!RNODE_TYPES.has(type)) return false;
   return isBlePort(fields.port);
 }
 
@@ -43,29 +55,57 @@ function blockHasEnabledLocalRadio(fields: InterfaceBlockFields): boolean {
   return blockHasEnabledBleRnode(fields) || blockHasEnabledSerialLocalRadio(fields);
 }
 
+/** Drop `#` comments that are outside double quotes (same rule as the sidecar parser). */
+function stripInlineComment(line: string): string {
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') inQuote = !inQuote;
+    else if (ch === '#' && !inQuote) return line.slice(0, i);
+  }
+  return line;
+}
+
+function isSectionHeader(line: string): boolean {
+  return line.startsWith('[') && line.endsWith(']');
+}
+
 function scanConfigContent(
   content: string,
   predicate: (fields: InterfaceBlockFields) => boolean,
 ): boolean {
-  let current: InterfaceBlockFields = { ifaceType: null, enabled: null, port: null };
+  let current: InterfaceBlockFields = {
+    ifaceType: null,
+    enabled: null,
+    enabledKeySeen: false,
+    port: null,
+  };
 
   const flush = (): boolean => {
     const hit = predicate(current);
-    current = { ifaceType: null, enabled: null, port: null };
+    current = { ifaceType: null, enabled: null, enabledKeySeen: false, port: null };
     return hit;
   };
 
   for (const rawLine of content.split('\n')) {
-    const line = rawLine.trim();
+    const line = stripInlineComment(rawLine).trim();
     if (!line || line.startsWith('#') || line.startsWith(';')) continue;
-    if (line.startsWith('[[') && line.endsWith(']]')) {
+    // Any `[section]` / `[[interface]]` ends the previous block so a later
+    // `[logging]` (or other trailing section) cannot overwrite type/enabled/port.
+    if (isSectionHeader(line)) {
       if (flush()) return true;
       continue;
     }
     const parsed = parseReticulumIniInterfaceField(line);
     if (!parsed) continue;
     if (parsed.key === 'type') current.ifaceType = parsed.value;
-    if (parsed.key === 'enabled') current.enabled = parseReticulumIniEnabledValue(parsed.value);
+    // Sidecar: `enabled` if present, otherwise `interface_enabled`.
+    if (parsed.key === 'enabled') {
+      current.enabled = parseReticulumIniEnabledValue(parsed.value);
+      current.enabledKeySeen = true;
+    } else if (parsed.key === 'interface_enabled' && !current.enabledKeySeen) {
+      current.enabled = parseReticulumIniEnabledValue(parsed.value);
+    }
     if (parsed.key === 'port') current.port = parsed.value;
   }
   return flush();

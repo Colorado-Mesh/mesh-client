@@ -1,14 +1,15 @@
 import { AppWindow, ArrowDownToLine, ExternalLink } from 'lucide-react-motion';
-import { lazy, Suspense, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useLiveMapWindow } from '@/renderer/hooks/useLiveMapWindow';
 import type { LiveMapSnapshotInput } from '@/renderer/lib/map/liveMapSnapshot';
 import type { LiveMapProtocol, LiveMapView } from '@/shared/liveMapWindow';
 
+import { RetryableLazy } from '../RetryableLazy';
 import { Button, IconButton } from '../ui/Button';
 
-const LiveTrafficPanel = lazy(() => import('./LiveTrafficPanel'));
+const loadLiveTrafficPanel = () => import('./LiveTrafficPanel');
 
 interface LiveTrafficWindowSlotProps extends LiveMapSnapshotInput {
   active: boolean;
@@ -35,10 +36,12 @@ export function LiveTrafficWindowSlot({
   const rememberView = useCallback((next: LiveMapView) => {
     view.current = next;
   }, []);
-  const { popOut } = liveWindow;
+  const { popOut, open } = liveWindow;
   const openWindow = useCallback(() => {
-    popOut(view.current);
-  }, [popOut]);
+    // Show on an already-open window only focuses it. The remembered view is the last
+    // docked position, which is older than the map the user has been moving.
+    popOut(open ? null : view.current);
+  }, [open, popOut]);
 
   if (liveWindow.open) {
     if (!active) return null;
@@ -76,26 +79,32 @@ export function LiveTrafficWindowSlot({
   }
 
   return (
-    <Suspense fallback={<div className="text-muted p-4">{t('app.loadingApp')}</div>}>
-      <LiveTrafficPanel
-        key={liveWindow.docked.revision}
-        active={active}
-        {...data}
-        onNodeClick={onNodeClick}
-        initialView={liveWindow.docked.view}
-        onViewChange={rememberView}
-        windowActions={
-          liveWindow.available ? (
-            <IconButton
-              size="sm"
-              variant="ghost"
-              aria-label={t('liveTraffic.window.open')}
-              onClick={openWindow}
-              icon={<ExternalLink aria-hidden className="h-3.5 w-3.5" />}
-            />
-          ) : null
-        }
-      />
-    </Suspense>
+    <RetryableLazy
+      loader={loadLiveTrafficPanel}
+      fallback={<div className="text-muted p-4">{t('app.loadingApp')}</div>}
+      errorVariant="strip"
+    >
+      {(Panel) => (
+        <Panel
+          key={liveWindow.docked.revision}
+          active={active}
+          {...data}
+          onNodeClick={onNodeClick}
+          initialView={liveWindow.docked.view}
+          onViewChange={rememberView}
+          windowActions={
+            liveWindow.available ? (
+              <IconButton
+                size="sm"
+                variant="ghost"
+                aria-label={t('liveTraffic.window.open')}
+                onClick={openWindow}
+                icon={<ExternalLink aria-hidden className="h-3.5 w-3.5" />}
+              />
+            ) : null
+          }
+        />
+      )}
+    </RetryableLazy>
   );
 }

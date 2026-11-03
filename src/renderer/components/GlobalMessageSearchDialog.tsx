@@ -21,7 +21,7 @@ export interface GlobalMessageSearchDialogProps {
   reticulumIdentityId?: string | null;
   ownNodeIdsByProtocol?: Partial<Record<MeshProtocol, ReadonlySet<number>>>;
   ownReticulumHashes?: ReadonlySet<string>;
-  onSelectHit: (hit: GlobalMessageSearchHit) => void;
+  onSelectHit: (hit: GlobalMessageSearchHit, query: string) => void;
   /** Switch to the unified inbox (multi-select actions across protocols). */
   onOpenInbox?: () => void;
 }
@@ -173,7 +173,7 @@ export function GlobalMessageSearchDialog({
   if (!open) return null;
 
   const openHit = (hit: GlobalMessageSearchHit) => {
-    onSelectHit(hit);
+    onSelectHit(hit, query);
     onClose();
   };
 
@@ -344,7 +344,9 @@ export function GlobalMessageSearchDialog({
                     </span>
                   </div>
                   <div className="text-label text-ink-300 truncate">
-                    {hit.senderName}
+                    {hit.senderName.trim()
+                      ? hit.senderName
+                      : t('globalMessageSearch.unknownSender')}
                     <span className="text-muted"> · {convo}</span>
                   </div>
                   <div className="text-body text-ink-100 line-clamp-2">{hit.payload}</div>

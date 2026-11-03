@@ -3,7 +3,8 @@ import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types'
 import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, MS_PER_SECOND } from './timeConstants';
 
 /**
- * Scheduled send reuses the durable chat outbox (SQLite `chat_outbox`) with no schema change.
+ * Scheduled send reuses the durable chat outbox (SQLite `chat_outbox`). Rows may carry
+ * `identityId` so they fire only on that identity's radio; null is the legacy path.
  * A scheduled row is a normal-priority `queued` row with `attemptCount === 0` and a
  * `nextRetryAt` wall-clock target: the existing drain already skips rows whose `nextRetryAt` is
  * in the future, so a row survives restart and fires once the time has passed and a link is

@@ -119,11 +119,22 @@ describe('isPrivateOrLocalAddress', () => {
     'fe80::1',
     'fd00::1',
     '::ffff:10.0.0.1',
+    '198.18.0.1',
+    '::ffff:7f00:1',
+    '64:ff9b::7f00:1',
+    '64:ff9b::10.0.0.1',
+    '64:ff9b::c0a8:1',
   ])('flags %s', (ip) => {
     expect(isPrivateOrLocalAddress(ip)).toBe(true);
   });
-  it.each(['8.8.8.8', '172.32.0.1', '93.184.216.34', '2606:4700:4700::1111'])('allows %s', (ip) => {
-    expect(isPrivateOrLocalAddress(ip)).toBe(false);
+  it.each(['8.8.8.8', '172.32.0.1', '93.184.216.34', '2606:4700:4700::1111', '64:ff9b::8.8.8.8'])(
+    'allows %s',
+    (ip) => {
+      expect(isPrivateOrLocalAddress(ip)).toBe(false);
+    },
+  );
+  it('does not treat DNS names as private literals', () => {
+    expect(isPrivateOrLocalAddress('tiles.example.org')).toBe(false);
   });
 });
 

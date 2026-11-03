@@ -19,6 +19,8 @@ export interface EmergencyOutboxDrainTarget {
   protocol: MeshProtocol;
   isSendAvailable: boolean;
   sendFn: ChatOutboxSendFn;
+  /** Identity whose radio is up. Omitted keeps the legacy drain. */
+  connectedIdentityId?: string | null;
 }
 
 export interface UseEmergencyOutboxDrainOptions {
@@ -120,6 +122,8 @@ export function useEmergencyOutboxDrain({
           },
           isSendAvailable: () =>
             drainsRef.current.find((d) => d.protocol === protocol)?.isSendAvailable === true,
+          getConnectedIdentityId: () =>
+            drainsRef.current.find((d) => d.protocol === protocol)?.connectedIdentityId,
           rowFilter: isAppDrainedOutboxRow,
           ...(reticulumReceiptTimeoutMs != null ? { reticulumReceiptTimeoutMs } : {}),
         });
@@ -154,7 +158,9 @@ export function useEmergencyOutboxDrain({
     };
   }, [protocolsKey]);
 
-  const availabilityKey = drains.map((d) => `${d.protocol}:${d.isSendAvailable ? 1 : 0}`).join(',');
+  const availabilityKey = drains
+    .map((d) => `${d.protocol}:${d.isSendAvailable ? 1 : 0}:${d.connectedIdentityId ?? ''}`)
+    .join(',');
   useEffect(() => {
     for (const d of drainsRef.current) {
       if (d.isSendAvailable) void drainProtocolRef.current(d.protocol);

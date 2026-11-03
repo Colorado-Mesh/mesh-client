@@ -110,6 +110,8 @@ export interface LiveTrafficPanelProps {
   ourPosition?: OurPosition | null;
   /** Position, style and source to start from when the map moves between windows. */
   initialView?: LiveMapView | null;
+  /** A later view pushed onto an already-open pop-out. */
+  navView?: LiveMapView | null;
   /** Reports the current view so the other window can continue from it. */
   onViewChange?: (view: LiveMapView) => void;
   /** Window controls at the end of the toolbar: open in a new window, return, keep on top. */
@@ -149,6 +151,7 @@ function TrafficViewport({
   onBounds,
   initialViewport,
   onViewport,
+  pinnedView,
 }: {
   regionId: string;
   points: readonly LiveTrafficPoint[];
@@ -157,6 +160,7 @@ function TrafficViewport({
   onBounds: (bounds: LiveTrafficBounds) => void;
   initialViewport: MapViewport | null;
   onViewport: (viewport: MapViewport) => void;
+  pinnedView?: LiveMapView | null;
 }) {
   const map = useMap();
   const previousFit = useRef<string | null>(
@@ -203,6 +207,16 @@ function TrafficViewport({
     }
     reportBounds();
   }, [map, regionId, points, trafficPoints, focusRevision, reportBounds]);
+  const lastPinnedView = useRef<LiveMapView | null>(null);
+  useEffect(() => {
+    // A later request can repeat the same center after the user pans. Identity, not
+    // coordinates, is what makes that request new.
+    if (!pinnedView || pinnedView === lastPinnedView.current) return;
+    lastPinnedView.current = pinnedView;
+    keepRestoredView.current = true;
+    map.setView(pinnedView.center, pinnedView.zoom, { animate: false });
+    reportBounds();
+  }, [map, pinnedView, reportBounds]);
   return null;
 }
 
@@ -319,6 +333,7 @@ export default function LiveTrafficPanel({
   onNodeClick,
   ourPosition,
   initialView,
+  navView,
   onViewChange,
   windowActions,
 }: LiveTrafficPanelProps) {
@@ -371,7 +386,25 @@ export default function LiveTrafficPanel({
   );
   /** The regional session this view connected, handed to the other window when it moves. */
   const [connectedFeed, setConnectedFeed] = useState<LiveMapView['feed']>(null);
-  const resumeFeed = useRef(meshtastic ? null : (initialView?.feed ?? null));
+  const [queuedFeed, setQueuedFeed] = useState<LiveMapView['feed']>(
+    meshtastic ? null : (initialView?.feed ?? null),
+  );
+  const consumedFeedKey = useRef<string | null>(null);
+  const [seenNavView, setSeenNavView] = useState<LiveMapView | null>(null);
+  if (navView && navView !== seenNavView) {
+    setSeenNavView(navView);
+    setSavedViewport({ center: navView.center, zoom: navView.zoom });
+    if (isValidMapBasemapId(navView.basemapId)) setBasemapId(navView.basemapId);
+    if (!meshtastic) {
+      setTrafficSource(navView.trafficSource);
+      const pushedFeed = navView.feed;
+      const sameFeed =
+        pushedFeed != null &&
+        connectedFeed?.baseUrl === pushedFeed.baseUrl &&
+        connectedFeed?.region === pushedFeed.region;
+      if (pushedFeed && !sameFeed) setQueuedFeed(pushedFeed);
+    }
+  }
   const [frozenEvents, setFrozenEvents] = useState<readonly LiveTrafficEvent[]>([]);
   const [refreshTime, setRefreshTime] = useState(Date.now);
   useEffect(() => {
@@ -589,9 +622,11 @@ export default function LiveTrafficPanel({
 
   // A session connected in the other window continues here without refitting the map.
   useEffect(() => {
-    const feed = resumeFeed.current;
-    resumeFeed.current = null;
-    if (!feed || !regional) return;
+    if (!queuedFeed || !regional) return;
+    const key = `${queuedFeed.baseUrl}\0${queuedFeed.region ?? ''}`;
+    if (consumedFeedKey.current === key) return;
+    consumedFeedKey.current = key;
+    const feed = queuedFeed;
     connectSource(feed.baseUrl, feed.region)
       .then((connected) => {
         if (connected) setConnectedFeed(feed);
@@ -599,7 +634,7 @@ export default function LiveTrafficPanel({
       .catch((cause: unknown) => {
         console.warn('[live-map] regional feed did not resume', cause);
       });
-  }, [regional, connectSource]);
+  }, [regional, connectSource, queuedFeed]);
 
   const feedActive =
     beacon.status === 'live' || beacon.status === 'connecting' || beacon.status === 'reconnecting';
@@ -882,6 +917,7 @@ export default function LiveTrafficPanel({
                 onBounds={setViewport}
                 initialViewport={savedViewport}
                 onViewport={setSavedViewport}
+                pinnedView={navView}
               />
               <LiveTrafficCanvas
                 key={`${meshtastic ? 'meshtastic' : 'meshcore'}:${trafficSource}`}

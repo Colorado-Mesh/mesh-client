@@ -1,0 +1,8 @@
+[[rnode-usb]]
+type = RNodeInterface # comment must not stick to the type
+enabled = Yes
+port = /dev/cu.usbserial-0001
+
+[logging]
+enabled = No
+type = TCPClientInterface

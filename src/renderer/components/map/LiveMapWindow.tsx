@@ -24,6 +24,7 @@ export function LiveMapWindow() {
   const [init, setInit] = useState<LiveMapWindowInit | null | undefined>(undefined);
   const [data, setData] = useState<LiveMapWindowData | null>(null);
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
+  const [navView, setNavView] = useState<LiveMapView | null>(null);
 
   useEffect(() => {
     let ready = false;
@@ -53,9 +54,13 @@ export function LiveMapWindow() {
         console.error('[live-map] window init failed', cause);
         if (!cancelled) setInit(null);
       });
+    const stopApplyView = api.onApplyView?.((view) => {
+      setNavView(view);
+    });
     return () => {
       cancelled = true;
       stopSnapshots();
+      stopApplyView?.();
     };
   }, [api]);
 
@@ -108,6 +113,7 @@ export function LiveMapWindow() {
         pubKeyByNodeId={data.pubKeyByNodeId}
         onNodeClick={selectNode}
         initialView={init.view}
+        navView={navView}
         onViewChange={reportView}
         windowActions={
           <>

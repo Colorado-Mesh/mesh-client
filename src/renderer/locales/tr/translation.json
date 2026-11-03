@@ -8038,6 +8038,7 @@
     "directionAll": "Tüm",
     "directionOutbound": "Gönderilmiş",
     "directionInbound": "Kabul edilmiş",
+    "unknownSender": "Bilinmiyor",
     "senderPlaceholder": "Ad veya kimlik",
     "sender": "Gönderen",
     "directMessage": "Doğrudan mesaj",
@@ -8113,7 +8114,8 @@
       "doneHint": "{{name}}'ın anahtarı artık telsizinizde manuel olarak doğrulanmış olarak işaretlendi.",
       "confirmMismatch": "Bunlar eşleşmiyor",
       "rejectedHint": "Doğrulama iptal edildi. {{name}}'ın anahtarı doğrulandı olarak işaretlenmedi. Karakterler farklıysa bu düğümün anahtarına güvenilmeyen anahtar olarak davranın.",
-      "sendFailed": "Radyoya ulaşılamadı. Bağlantıyı kontrol edip tekrar deneyin."
+      "sendFailed": "Radyoya ulaşılamadı. Bağlantıyı kontrol edip tekrar deneyin.",
+      "missingNode": "Bu istasyon henüz tanımlanmadı. Tanımlanınca onaylayın."
     }
   },
   "remoteShell": {

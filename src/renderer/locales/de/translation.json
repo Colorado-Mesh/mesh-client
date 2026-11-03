@@ -8039,6 +8039,7 @@
     "directionInbound": "Erhalten",
     "directionOutbound": "Gesendet",
     "sender": "Sender",
+    "unknownSender": "Unbekannt",
     "senderPlaceholder": "Name oder #ID",
     "channel": "Kanal {{index}}",
     "directMessage": "Direktnachrichten",
@@ -8113,7 +8114,8 @@
       "confirmMismatch": "Stimmt nicht überein",
       "doneHint": "Der Schlüssel von {{name}} ist jetzt in deinem Funkgerät als manuell verifiziert markiert.",
       "rejectedHint": "Verifizierung abgebrochen. Der Schlüssel von {{name}} wurde nicht als verifiziert markiert. Wenn sich die Zeichen unterscheiden, behandeln Sie den Schlüssel dieses Knotens als nicht vertrauenswürdig.",
-      "sendFailed": "Konnte das Funkgerät nicht erreichen. Überprüfen Sie die Verbindung und versuchen Sie es erneut."
+      "sendFailed": "Konnte das Funkgerät nicht erreichen. Überprüfen Sie die Verbindung und versuchen Sie es erneut.",
+      "missingNode": "Diese Station ist noch nicht erkannt. Warten Sie, bis sie erkannt ist, und bestätigen Sie dann."
     }
   },
   "remoteShell": {

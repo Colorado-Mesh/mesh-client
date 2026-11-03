@@ -8039,6 +8039,7 @@
     "directionInbound": "Reçues",
     "directionOutbound": "Envoyé",
     "sender": "Expéditeur",
+    "unknownSender": "Inconnu",
     "senderPlaceholder": "Nom ou ID du formulaire",
     "directMessage": "Message privé",
     "channel": "Canal {{index}}",
@@ -8111,7 +8112,8 @@
       "confirmMatch": "Ils correspondent",
       "rejectedHint": "Vérification annulée. La clé de {{name}}n'a pas été marquée comme vérifiée. Si les caractères différaient, traitez la clé de ce nœud comme non fiable.",
       "doneHint": "La clé de {{name}} est maintenant marquée comme vérifiée manuellement sur votre radio.",
-      "sendFailed": "Impossible d'atteindre la radio. Vérifiez la connexion et réessayez."
+      "sendFailed": "Impossible d'atteindre la radio. Vérifiez la connexion et réessayez.",
+      "missingNode": "Cette station n'est pas encore identifiée. Attendez qu'elle le soit, puis confirmez."
     },
     "trustModelManual": "Clé vérifiée : vous et l'autre opérateur avez comparé un numéro de sécurité et des caractères correspondants, hors bande, à l'aide de la poignée de main de vérification de clé de cette radio.",
     "trustModelAdvice": "Seule la clé vérifiée signifie qu'une personne a confirmé la clé. Vérifiez en personne ou sur un canal auquel vous faites déjà confiance."
