@@ -2,8 +2,13 @@
  * LXMFace — deterministic identicon SVG for LXMF / Reticulum destination hashes.
  *
  * Vendored algorithm from https://github.com/ratspeak/LXMFace (MIT), adapted from
- * https://github.com/download13/blockies (MIT). Keep output byte-compatible with
- * upstream `js/lxmface.js` so faces match Ratspeak and other LXMFace clients.
+ * https://github.com/download13/blockies. Keep output byte-compatible with upstream
+ * `js/lxmface.js` so faces match Ratspeak and other LXMFace clients.
+ *
+ * Use the same case-sensitive ASCII address seed as Rust for matching output.
+ * Addresses are not validated; arbitrary Unicode seeds can differ across languages.
+ * Callers that feed Reticulum destination hashes should pass the canonical lowercase
+ * 32-hex form (`normalizeLxmfaceSeed`) so UI faces stay consistent.
  */
 
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';

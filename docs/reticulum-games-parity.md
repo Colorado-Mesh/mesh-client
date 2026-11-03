@@ -7,7 +7,7 @@ Living matrix for [issue #773](https://github.com/Colorado-Mesh/mesh-client/issu
 
 Update this file when Games PRs land. `pnpm run update` warns only when a **published** Ratspeak GitHub Release is newer than the `reviewed-ref` pin on the `games-parity` entry in `scripts/update.sh` (bump that pin after review). Tags, `main`, and RCs without a GitHub Release are ignored.
 
-**Last review:** 2026-10-23 (Ratspeak v1.0.34 — voice messages / Codec2, Windows/Android Bluetooth discovery cleanup, recording retry + reaction fallbacks; **no Games API delta**; `games_tab.js` unchanged vs v1.0.33. Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test). Prior: 2026-09-25 (Ratspeak v1.0.33 — large-file/photo attachment fixes, Bluetooth Peer transfer timeouts, discovery on busy links, first-message delivery; no Games API or `games_tab.js` delta vs v1.0.32).
+**Last review:** 2026-11-02 (Ratspeak v1.0.37 — Bluetooth RNode pairing/reconnect polish + Linux package/tray fixes; **no Games API / wire delta** vs v1.0.34. Intermediate: v1.0.35 mobile fullscreen boards + chess captured-tray readability; v1.0.36 markdown/spoilers/message delete — none of those change LRGP commands. Ratspeak `games.rs` now takes an LRGP admission transaction lease around session writes (client-internal). Four in a Row UI remains `done`; wire-interop rows still `todo` until a live gold test. Optional polish gap: mesh-client Chess still lacks Ratspeak’s captured-piece trays / material advantage). Prior: 2026-10-23 (Ratspeak v1.0.34 — voice / Codec2 / Bluetooth discovery; no Games API delta).
 
 Status: `done` | `partial` | `wontfix` | `todo`
 
@@ -61,3 +61,5 @@ Manual gold test: two clients on a TCP hub — challenge → accept → play →
 None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion `games_outbound.db` (not `lrgp-rs` `LrgpStore` schema).
 
 Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still **unverified on a live mesh** — run the manual gold test against Ratspeak before marking them `done`. The board follows `lrgp-rs` `SPEC.md` appendix C: 42 cells row-major (`row * 7 + column`), markers `A` (challenger, first) / `B`, local outgoing payload exactly `{ c }` with the sidecar deriving `n`, landing row/cell, and terminal claims.
+
+Optional UI polish (Ratspeak v1.0.35+): chess captured-piece trays with material advantage (FEN-diff local render in `games_tab.js`), and tighter mobile board fit / full-screen session chrome — neither is required for wire interop.

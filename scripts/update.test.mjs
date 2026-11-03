@@ -113,10 +113,10 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('ratspeak/rsLXST||rsLXST voice (lxst-telephony)|v0.3.0');
     expect(result.stdout).toContain('ratspeak/lrgp-rs||lrgp-rs games (LRGP)|v0.4.1');
     expect(result.stdout).toContain(
-      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.34',
+      'ratspeak/Ratspeak|games-parity|Ratspeak client (review Games tab parity)|v1.0.37',
     );
     expect(result.stdout).toContain('ratspeak/LXMFace||');
-    expect(result.stdout).toContain('file:js/lxmface.js@308a729d5bf951880633e5e174b3b7628203106b');
+    expect(result.stdout).toContain('file:js/lxmface.js@d1af21c4f4d1c2250991b7fe02a23898fe054851');
     expect(updateScript).toContain('"${stub}" = \'games-parity\'');
     expect(updateScript).toContain('docs/reticulum-games-parity.md');
     expect(updateScript).toContain('reviewed-ref');
@@ -435,7 +435,7 @@ exit 1
     expect(rustIdx).toBeGreaterThan(syncCallIdx);
   });
 
-  const LXMFACE_REVIEWED_SHA = '308a729d5bf951880633e5e174b3b7628203106b';
+  const LXMFACE_REVIEWED_SHA = 'd1af21c4f4d1c2250991b7fe02a23898fe054851';
 
   /**
    * @param {'release' | 'rate-limit' | 'malformed' | 'missing'} mode
@@ -553,9 +553,9 @@ exit 0
           body: 'lrgp-rs v0.4.1',
         },
         'ratspeak/Ratspeak': {
-          tag_name: 'v1.0.34',
-          published_at: '2026-10-10T23:12:40Z',
-          body: 'Voice messages, Codec2 calls, and Bluetooth discovery cleanup.',
+          tag_name: 'v1.0.37',
+          published_at: '2026-11-02T07:21:26Z',
+          body: 'Bluetooth RNode pairing/reconnect polish and Linux package fixes.',
         },
       },
       commits: {
@@ -616,9 +616,9 @@ exit 0
       PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect(result.stdout).toContain('v1.0.34');
+    expect(result.stdout).toContain('v1.0.37');
     expect(result.stdout).toContain('reviewed; current');
-    expect(result.stdout).toContain('js/lxmface.js @ 308a729d5bf9 (reviewed; current)');
+    expect(result.stdout).toContain('js/lxmface.js @ d1af21c4f4d1 (reviewed; current)');
     expect(result.stdout).toContain('v0.4.1');
     expect(result.stdout).toContain(
       'Ratspeak upstream watch complete (reviewed baselines current; no new-repo warnings).',
@@ -646,7 +646,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('v1.0.34');
+    expect(result.stdout).toContain('v1.0.37');
     expect(result.stdout).toContain('v9.9.9');
     expect(result.stdout).toContain('docs/reticulum-games-parity.md');
     expect(result.stdout).not.toContain('Four in a Row');
@@ -718,7 +718,7 @@ exit 0
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain('WARNING:');
-    expect(result.stdout).toContain('308a729d5bf9');
+    expect(result.stdout).toContain('d1af21c4f4d1');
     expect(result.stdout).toContain('aaaaaaaaaaaa');
     expect(result.stdout).toContain('compare with mesh-client vendored copy');
   });
