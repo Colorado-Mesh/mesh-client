@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Remote TAK Relay Problemen",
         "recommendation": "Het externe TAK-RELAIS kon geen verbinding maken of verloor zijn verbinding. Controleer het serveradres en de poort en of de geïmporteerde CA en het clientcertificaat tot die server behoren."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT pakketgroottelimiet",
+        "recommendation": "De makelaar heeft een pakket verzonden dat groter is dan de veiligheidslimiet van de app, dus automatische MQTT opnieuw verbinden is uitgeschakeld. Repareer of wijzig de makelaar en verbind MQTT handmatig opnieuw via Verbinding."
+      },
+      "transport-loss": {
+        "label": "straalverbinding",
+        "recommendation": "De seriële of BLE -link naar de radio is weggevallen. Controleer de USB -kabel of het Bluetooth-bereik, sluit andere apps via de poort en maak vervolgens opnieuw verbinding."
+      },
+      "rf-auto-connect": {
+        "label": "Opstarten automatisch verbinden mislukt",
+        "recommendation": "Automatische radioverbinding bij het opstarten is verlopen of mislukt. Bevestig dat het opgeslagen transport en apparaat beschikbaar zijn en maak vervolgens handmatig verbinding via Verbinding."
+      },
+      "power-save-blocker": {
+        "label": "Stay-awake-beleid mislukt",
+        "recommendation": "De app kon de energiebesparingsblokkering van het besturingssysteem niet starten of stoppen. Slaapstand kan radio's loskoppelen; controleer de stroominstellingen van het besturingssysteem en maak opnieuw verbinding na het ontwaken indien nodig."
+      },
+      "tak-chat": {
+        "label": "TAK chat of DM-brug mislukt",
+        "recommendation": "Het verzenden van een TAK chat, geochat of direct-message bridge is mislukt. Controleer of de TAK -server actief is, de mesh-radio is aangesloten en de kanaal- of DM-relaisinstellingen overeenkomen met het beoogde pad."
+      },
+      "mecp": {
+        "label": "MECP noodberichten problemen",
+        "recommendation": "Een MECP-verzending, taalpakket of lokaal auditlogboek schrijven is mislukt. Controleer de radioaansluiting en MECP-instellingen. Openbare steunbundels laten MECP-auditdetails weg — gebruik het Log-paneel of de lokale mecp-received.log voor bewijs."
+      },
+      "offline-maps": {
+        "label": "Downloaden of importeren van offline kaart mislukt",
+        "recommendation": "Het downloaden van een offline kaartregio, het importeren van MBTiles of het opruimen van een aangepaste bron is mislukt. Controleer de vrije schijfruimte, de tegelbron-URL of het MBTiles-pad en breng → offline regio's in kaart."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore metgezel of CLI op afstand mislukt",
+        "recommendation": "Een MeshCore CLI-begeleider of CLI-actie op afstand is mislukt. Bevestig dat de bijbehorende firmware v1.18 of nieuwer is, dat de radio is aangesloten en dat CLI op afstand is toegestaan op het knooppunt."
+      },
+      "ai-summary": {
+        "label": "AI-inhaal- of modeldownloadproblemen",
+        "recommendation": "Download van AI-model of inhaalstartstatus mislukt. Controleer de netwerktoegang voor het modelpakket, bevestig dat App → AI / catch-up is ingeschakeld en probeer het opnieuw nadat de installatie is voltooid."
+      },
+      "live-map": {
+        "label": "Problemen met live verkeerskaartvenster",
+        "recommendation": "De pop-out van de live verkeerskaart of regionale feed is mislukt. Open de pop-out van de kaart opnieuw, controleer de machtigingen voor meerdere vensters en probeer de regionale feed opnieuw nadat het netwerk is hersteld."
+      },
+      "coi-memory": {
+        "label": "Sampling van geheugentrend",
+        "recommendation": "De bemonstering van de geheugentrend van de renderer kon een monster niet meten of aanhouden. Controleer → de status van de COI-mogelijkheden van de app-ondersteuning, de vrije schijfruimte en of de map met app-gegevens beschrijfbaar is."
+      },
+      "gps": {
+        "label": "Opzoeken IP-locatie mislukt",
+        "recommendation": "De terugval van de IP-gebaseerde locatie is mislukt. Controleer de internetbereikbaarheid; radio GPS en een handmatig ingestelde statische locatie staan los van deze IP-opzoeking."
       }
     },
     "recommendationGroups": {

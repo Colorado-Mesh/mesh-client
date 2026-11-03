@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Probleme mit dem Remote-TAK-Relay",
         "recommendation": "Das Remote-TAK-Relay konnte keine Verbindung herstellen oder hat die Verbindung verloren. Prüfen Sie Serveradresse und Port und ob die importierte CA und das Client-Zertifikat zu diesem Server gehören."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT Paketgrößenbegrenzung",
+        "recommendation": "Der Broker hat ein Paket gesendet, das größer ist als das App-Sicherheitslimit, daher ist die automatische Wiederverbindung von MQTT deaktiviert. Repariere oder ändere den Broker und verbinde dann MQTT manuell über die Verbindung erneut."
+      },
+      "transport-loss": {
+        "label": "Richtfunkverbindung",
+        "recommendation": "Der serielle oder BLE Link zum Funkgerät wurde entfernt. Überprüfe die USB -Kabel- oder Bluetooth-Reichweite, schließe andere Apps über den Anschluss und stelle dann die Verbindung wieder her."
+      },
+      "rf-auto-connect": {
+        "label": "Start der automatischen Verbindung fehlgeschlagen",
+        "recommendation": "Die automatische Funkverbindung beim Start ist abgelaufen oder fehlgeschlagen. Vergewissern Sie sich, dass der gespeicherte Transport und das Gerät verfügbar sind, und verbinden Sie sich dann manuell über die Verbindung."
+      },
+      "power-save-blocker": {
+        "label": "Richtlinie zum Wachbleiben fehlgeschlagen",
+        "recommendation": "Die App konnte den Energiesparblocker des Betriebssystems nicht starten oder stoppen. Sleep kann Funkgeräte trennen. Überprüfen Sie die Netzeinstellungen des Betriebssystems und schließen Sie es bei Bedarf nach dem Aufwachen wieder an."
+      },
+      "tak-chat": {
+        "label": "TAK Chat oder DM-Bridge fehlgeschlagen",
+        "recommendation": "Ein TAK Chat-, Geochat- oder Direct-Message-Bridge-Versand ist fehlgeschlagen. Vergewissere dich, dass der TAK -Server läuft, das Mesh-Funkgerät angeschlossen ist und die Kanal- oder DM-Relay-Einstellungen mit dem vorgesehenen Pfad übereinstimmen."
+      },
+      "mecp": {
+        "label": "MECP-Notfall-Messaging-Probleme",
+        "recommendation": "Ein MECP-Sende-, Sprachpaket- oder lokales Auditprotokoll-Schreiben ist fehlgeschlagen. Überprüfen Sie die Funkverbindung und die MECP-Einstellungen. Öffentliche Unterstützungspakete lassen MECP-Auditdetails weg — verwenden Sie das Log-Panel oder das lokale mecp-received.log für Nachweise."
+      },
+      "offline-maps": {
+        "label": "Offline-Karten-Download oder -Import fehlgeschlagen",
+        "recommendation": "Ein Offline-Download der Kartenregion, ein MBTiles-Import oder eine benutzerdefinierte Quellbereinigung ist fehlgeschlagen. Überprüfen Sie den freien Speicherplatz auf der Festplatte, die Kachel-Quell-URL oder den MBTiles-Pfad und ordnen → Sie Offline-Regionen zu."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore Companion oder Remote-CLI fehlgeschlagen",
+        "recommendation": "Eine MeshCore Companion-CLI- oder Remote-CLI-Aktion ist fehlgeschlagen. Bestätigen Sie, dass die Firmware des Begleiters v1.18 oder neuer ist, das Radio verbunden ist und Remote-CLI auf dem Knoten zulässig ist."
+      },
+      "ai-summary": {
+        "label": "KI-Aufhol- oder Modell-Download-Probleme",
+        "recommendation": "KI-Modell-Download oder Catch-up-Startstatus fehlgeschlagen. Überprüfen Sie den Netzwerkzugriff für das Modellpaket, bestätigen Sie, dass App → AI / Catch-up aktiviert ist, und versuchen Sie es nach Abschluss der Einrichtung erneut."
+      },
+      "live-map": {
+        "label": "Probleme mit dem Live-Verkehrskartenfenster",
+        "recommendation": "Das Pop-Out der Live-Traffic-Karte oder der regionale Feed ist fehlgeschlagen. Öffnen Sie das Pop-out aus der Karte erneut, überprüfen Sie die Berechtigungen für mehrere Fenster und versuchen Sie den regionalen Feed erneut, nachdem das Netzwerk wiederhergestellt wurde."
+      },
+      "coi-memory": {
+        "label": "Speicher-Trendabtastung fehlgeschlagen",
+        "recommendation": "Renderer-Speicher-Trendabtastung konnte eine Probe nicht messen oder beibehalten. Überprüfen Sie den Status der COI-Fähigkeit der → App-Unterstützung, den freien Speicherplatz auf der Festplatte und ob der Datenordner der App beschreibbar ist."
+      },
+      "gps": {
+        "label": "IP-Standort-Suche fehlgeschlagen",
+        "recommendation": "Der IP-basierte Standort-Fallback ist fehlgeschlagen. Überprüfen Sie die Erreichbarkeit des Internets; Funk-GPS und ein manuell festgelegter statischer Standort sind von dieser IP-Suche getrennt."
       }
     },
     "recommendationGroups": {

@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Problemas com o relé TAK REMOTO",
         "recommendation": "O relé TAK remoto não conseguiu se conectar ou perdeu sua conexão. Verifique o endereço e a porta do servidor e se a autoridade de certificação e o certificado do cliente importados pertencem a esse servidor."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT limite DE tamanho DE pacote",
+        "recommendation": "O corretor enviou um pacote maior que o limite de segurança do aplicativo, portanto, a reconexão automática MQTT está desativada. Corrija ou altere o corretor e, em seguida, reconecte MQTT manualmente a partir da Conexão."
+      },
+      "transport-loss": {
+        "label": "LINK DE RÁDIO",
+        "recommendation": "O link serial ou BLE para o rádio caiu. Verifique o alcance do cabo USB ou Bluetooth, feche outros aplicativos usando a porta e reconecte."
+      },
+      "rf-auto-connect": {
+        "label": "Falha na ligação automática de arranque",
+        "recommendation": "A conexão automática de rádio na inicialização expirou ou falhou. Confirme se o transporte e o dispositivo salvos estão disponíveis e, em seguida, conecte-se manualmente a partir da Conexão."
+      },
+      "power-save-blocker": {
+        "label": "Falha na política de ficar acordado",
+        "recommendation": "O aplicativo não pôde iniciar ou parar o bloqueador de economia de energia do sistema operacional. A suspensão pode desconectar os rádios; verifique as configurações de energia do sistema operacional e reconecte após o despertar, se necessário."
+      },
+      "tak-chat": {
+        "label": "Falha no chat TAK ou na ponte DM",
+        "recommendation": "Falha no envio de um chat TAK, geochat ou bridge de mensagem direta. Confirme se o servidor TAK está em execução, se o rádio mesh está conectado e se as configurações do canal ou do relé DM correspondem ao caminho pretendido."
+      },
+      "mecp": {
+        "label": "Problemas de mensagens de emergência do MECP",
+        "recommendation": "Falha no envio de um MECP, pacote de idiomas ou gravação de log de auditoria local. Verifique a conexão de rádio e as configurações MECP. Os pacotes de suporte público omitem os detalhes da auditoria do MECP — use o painel Log ou o mecp-received.log local para obter evidências."
+      },
+      "offline-maps": {
+        "label": "Falha ao transferir ou importar mapa offline",
+        "recommendation": "Falha no download de uma região de mapa offline, na importação de MBTiles ou na limpeza de origem personalizada. Verifique o espaço livre em disco, a URL de origem do bloco ou o caminho MBTiles e mapeie as regiões → Offline."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore companheiro ou CLI remoto falhou",
+        "recommendation": "Uma ação de CLI complementar MeshCore ou CLI remota falhou. Confirme se o firmware complementar é v1.18 ou mais recente, se o rádio está conectado e se a CLI remota é permitida no nó."
+      },
+      "ai-summary": {
+        "label": "Problemas de atualização da IA ou de download do modelo",
+        "recommendation": "O download do modelo de IA ou o status de inicialização de recuperação falharam. Verifique o acesso à rede para o pacote de modelos, confirme se o aplicativo → AI / catch-up está ativado e tente novamente após a conclusão da configuração."
+      },
+      "live-map": {
+        "label": "Problemas com a janela do mapa de tráfego ao vivo",
+        "recommendation": "O pop-out do mapa de tráfego ao vivo ou feed regional falhou. Reabra o pop-out do Mapa, verifique as permissões de várias janelas e repita o feed regional após a recuperação da rede."
+      },
+      "coi-memory": {
+        "label": "Falha na amostragem de tendência de memória",
+        "recommendation": "A amostragem de tendência de memória do renderizador não pôde medir ou persistir uma amostra. Verifique o status do recurso COI do → Suporte a Aplicativos, o espaço livre em disco e se a pasta de dados do aplicativo pode ser gravada."
+      },
+      "gps": {
+        "label": "Falha na pesquisa de localização de IP",
+        "recommendation": "O fallback de localização baseado em IP falhou. Verifique a acessibilidade da Internet; o GPS de rádio e uma localização estática definida manualmente são separados desta pesquisa de IP."
       }
     },
     "recommendationGroups": {

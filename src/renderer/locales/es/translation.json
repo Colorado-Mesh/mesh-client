@@ -2587,6 +2587,54 @@
       "tak-remote": {
         "label": "Problemas con EL RELÉ TAK REMOTO",
         "recommendation": "El relé TAK remoto no pudo conectarse o perdió su conexión. Compruebe la dirección y el puerto del servidor, y que la CA importada y el certificado del cliente pertenecen a ese servidor."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT límite DE tamaño del paquete",
+        "recommendation": "El bróker envió un paquete más grande que el límite de seguridad de la aplicación, por lo que la reconexión automática de MQTT está desactivada. Arregla o cambia el bróker y, a continuación, vuelve a conectar MQTT manualmente desde Conexión."
+      },
+      "transport-loss": {
+        "label": "radioenlace",
+        "recommendation": "Se ha caído el enlace serie o BLE a la radio. Comprueba el cable USB o el rango de Bluetooth, cierra otras aplicaciones que usen el puerto y vuelve a conectarlas."
+      },
+      "rf-auto-connect": {
+        "label": "Error al iniciar la conexión automática",
+        "recommendation": "La conexión automática de radio en el arranque ha caducado o ha fallado. Confirme que el transporte y el dispositivo guardados estén disponibles, luego conéctelos manualmente desde Conexión."
+      },
+      "power-save-blocker": {
+        "label": "Fallo en la política de permanecer despierto",
+        "recommendation": "La aplicación no pudo iniciar o detener el bloqueador de ahorro de energía del sistema operativo. El sueño puede desconectar los radios; verifique la configuración de alimentación del sistema operativo y vuelva a conectarlo después de despertarse si es necesario."
+      },
+      "tak-chat": {
+        "label": "TAK chat o puente DM fallidos",
+        "recommendation": "Ha fallado el envío de un TAK chat, geochat o puente de mensaje directo. Confirme que el servidor TAK se esté ejecutando, que la radio de malla esté conectada y que la configuración del canal o del relé DM coincida con la ruta deseada."
+      },
+      "mecp": {
+        "label": "Problemas de mensajería de emergencia MECP",
+        "recommendation": "Ha fallado un envío MECP, un paquete de idioma o una escritura de registro de auditoría local. Compruebe la conexión de radio y la configuración de MECP. Los paquetes de soporte público omiten los detalles de auditoría de MECP: use el panel de registro o el mecp-received.log local para obtener evidencia."
+      },
+      "offline-maps": {
+        "label": "Error al descargar o importar el mapa sin conexión",
+        "recommendation": "Ha fallado una descarga de región de mapa sin conexión, la importación de MBTiles o la limpieza de origen personalizada. Compruebe el espacio libre en disco, la URL de origen del mosaico o la ruta MBTiles, y asigne regiones → sin conexión."
+      },
+      "meshcore-cli": {
+        "label": "MeshCore CLI compañera o remota falló",
+        "recommendation": "Ha fallado una MeshCore CLI complementaria o una acción de CLI remota. Confirme que el firmware complementario sea v1.18 o posterior, que la radio esté conectada y que la CLI remota esté permitida en el nodo."
+      },
+      "ai-summary": {
+        "label": "Problemas de actualización o descarga de modelos de IA",
+        "recommendation": "Error al descargar el modelo de IA o al ponerse al día con el estado de inicio. Compruebe el acceso a la red para el paquete de modelos, confirme que la aplicación → AI / catch-up esté habilitada y vuelva a intentarlo después de que finalice la configuración."
+      },
+      "live-map": {
+        "label": "Problemas con la ventana del mapa de tráfico en vivo",
+        "recommendation": "La ventana emergente del mapa de tráfico en vivo o la fuente regional fallaron. Vuelva a abrir la ventana emergente de Map, verifique los permisos de ventanas múltiples y vuelva a intentar el feed regional después de que la red se recupere."
+      },
+      "coi-memory": {
+        "label": "Fallo en el muestreo de tendencia de memoria",
+        "recommendation": "El muestreo de tendencia de memoria del renderizador no pudo medir o persistir una muestra. Compruebe el estado de la capacidad de COI del → soporte de la aplicación, el espacio libre en el disco y que la carpeta de datos de la aplicación se pueda escribir."
+      },
+      "gps": {
+        "label": "Error en la búsqueda de ubicación IP",
+        "recommendation": "La alternativa de ubicación basada en IP ha fallado. Compruebe la accesibilidad a Internet; el GPS de radio y una ubicación estática configurada manualmente están separados de esta búsqueda de IP."
       }
     },
     "recommendationGroups": {

@@ -2639,6 +2639,54 @@
       "tak-remote": {
         "label": "Problemy ze zdalnym przekaźnikiem TAK",
         "recommendation": "Zdalny przekaźnik TAK nie mógł się połączyć lub utracił połączenie. Sprawdź adres i port serwera oraz czy zaimportowany certyfikat CA i klienta należą do tego serwera."
+      },
+      "mqtt-packet-limit": {
+        "label": "MQTT limit rozmiaru pakietu",
+        "recommendation": "Broker wysłał pakiet większy niż limit bezpieczeństwa aplikacji, więc automatyczne ponowne połączenie MQTT jest wyłączone. Napraw lub zmień brokera, a następnie ponownie połącz ręcznie MQTT z Połączenia."
+      },
+      "transport-loss": {
+        "label": "linia radiowa teletransmisyjna",
+        "recommendation": "Łącze szeregowe lub BLE do radia zostało usunięte. Sprawdź kabel USB lub zasięg Bluetooth, zamknij inne aplikacje za pomocą portu, a następnie podłącz ponownie."
+      },
+      "rf-auto-connect": {
+        "label": "Automatyczne łączenie podczas uruchamiania nie powiodło się",
+        "recommendation": "Automatyczne połączenie radiowe po uruchomieniu przekroczyło limit czasu lub nie powiodło się. Upewnij się, że zapisany transport i urządzenie są dostępne, a następnie połącz się ręcznie z Połączenia."
+      },
+      "power-save-blocker": {
+        "label": "Zasady pozostawania w gotowości nie powiodły się",
+        "recommendation": "Aplikacja nie mogła uruchomić ani zatrzymać blokady oszczędzania energii systemu operacyjnego. Uśpienie może spowodować odłączenie radiotelefonów; sprawdź ustawienia zasilania systemu operacyjnego i w razie potrzeby podłącz ponownie po przebudzeniu."
+      },
+      "tak-chat": {
+        "label": "Czat TAK lub mostek DM nie powiódł się",
+        "recommendation": "Wysyłanie czatu, geochatu lub bezpośredniego mostu TAK nie powiodło się. Upewnij się, że serwer TAK jest uruchomiony, radio siatkowe jest podłączone, a ustawienia kanału lub przekaźnika DM są zgodne z zamierzoną ścieżką."
+      },
+      "mecp": {
+        "label": "Problemy z wiadomościami alarmowymi MECP",
+        "recommendation": "Wysyłanie MECP, pakiet językowy lub zapis lokalnego dziennika audytu nie powiodło się. Sprawdź połączenie radiowe i ustawienia MECP. Pakiety wsparcia publicznego pomijają szczegóły audytu MECP — użyj panelu Log lub lokalnego mecp-received.log jako dowodów."
+      },
+      "offline-maps": {
+        "label": "Pobieranie lub importowanie mapy offline nie powiodło się",
+        "recommendation": "Pobieranie regionu mapy offline, importowanie MBTiles lub niestandardowe czyszczenie źródła nie powiodło się. Sprawdź wolne miejsce na dysku, adres URL źródła kafli lub ścieżkę MBTiles i regiony Map → Offline."
+      },
+      "meshcore-cli": {
+        "label": "Interfejs CLI towarzyszący lub zdalny MeshCore nie powiódł się",
+        "recommendation": "Operacja towarzyszącego CLI MeshCore lub zdalnego CLI nie powiodła się. Potwierdź, że towarzyszące oprogramowanie sprzętowe jest w wersji1.18 lub nowszej, radio jest podłączone, a zdalny interfejs wiersza poleceń jest dozwolony w węźle."
+      },
+      "ai-summary": {
+        "label": "Nadrabianie zaległości w sztucznej inteligencji lub problemy z",
+        "recommendation": "Pobieranie modelu AI lub nadrabianie statusu uruchomienia nie powiodło się. Sprawdź dostęp do sieci dla pakietu modelu, potwierdź, że aplikacja → AI / nadrabianie zaległości jest włączona i spróbuj ponownie po zakończeniu konfiguracji."
+      },
+      "live-map": {
+        "label": "Problemy z oknem mapy ruchu drogowego na żywo",
+        "recommendation": "Wyskakująca mapa ruchu na żywo lub kanał regionalny nie powiodły się. Otwórz ponownie wyskakujące okienko z Mapy, sprawdź uprawnienia wielu okien i spróbuj ponownie regionalnego kanału po przywróceniu sieci."
+      },
+      "coi-memory": {
+        "label": "Próbkowanie trendu pamięci nie powiodło się",
+        "recommendation": "Próbkowanie trendu pamięci modułu renderowania nie mogło zmierzyć ani utrwalić próbki. Sprawdź stan możliwości COI → obsługi aplikacji, wolne miejsce na dysku i upewnij się, że folder danych aplikacji jest zapisywalny."
+      },
+      "gps": {
+        "label": "Wyszukiwanie lokalizacji IP nie powiodło się",
+        "recommendation": "Awaria lokalizacji opartej na IP nie powiodła się. Sprawdź dostępność Internetu; radio GPS i ręcznie ustawiona lokalizacja statyczna są oddzielone od tego wyszukiwania IP."
       }
     },
     "recommendationGroups": {
