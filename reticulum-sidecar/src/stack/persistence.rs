@@ -1361,6 +1361,10 @@ mod tests {
             loaded.nomad_serving_content_source.as_deref(),
             Some("/tmp/nomad-page")
         );
+        // Windows restore forces the CGI flag off even if the saved document says true.
+        #[cfg(windows)]
+        assert!(!loaded.nomad_serving_allow_executable_pages);
+        #[cfg(not(windows))]
         assert!(loaded.nomad_serving_allow_executable_pages);
 
         // Strip the new keys from a valid serialized document (older clients).
