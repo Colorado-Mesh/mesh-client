@@ -90,6 +90,9 @@ and manual dispatches. It has no path filter or dependency on related-test selec
 
 It uses the shared pinned Node/pnpm setup and frozen install, then runs
 `pnpm exec vitest run --project main scripts/esbuild-main-build.test.mjs --coverage.enabled=false --reporter=default`.
+The job sets `MESHTASTIC_SKIP_ELECTRON_REBUILD=1`, so the frozen install skips the lazy Electron
+binary download and `install-app-deps` probe: the check only bundles the main process with esbuild
+(`electron` stays external), and a flaky Electron release CDN (e.g. HTTP 504) must not fail it.
 This explicitly selects the existing esbuild regression because its string entrypoint is invisible
 to Vitest's import-based related selection. The test builds the production minified main process,
 checks worker/license artifacts and enforces the strict `MAIN_BUNDLE_SIZE_BUDGET_BYTES` budget

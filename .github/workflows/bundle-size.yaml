@@ -24,6 +24,11 @@ jobs:
     name: Main bundle size
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # The bundle check only builds with esbuild; it never runs Electron or native addons, so
+      # skip the lazy Electron binary download and install-app-deps probe. This keeps the gate
+      # green when the Electron release CDN is unavailable (e.g. 504s) and shaves install time.
+      MESHTASTIC_SKIP_ELECTRON_REBUILD: '1'
     steps:
       # actions/checkout v6.1.0; default PR checkout tests the proposed merge.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
