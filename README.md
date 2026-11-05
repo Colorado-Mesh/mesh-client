@@ -55,17 +55,72 @@ From real-time diagnostics to durable local history, Mesh-Client delivers the de
 
 Captured from the running desktop app with synthetic demo data and a simulated radio.
 Names, messages, node IDs, and positions are fictional; these views do not show live network activity.
-Select either image to view it at full size.
+Select any image to view it at full size.
 
-**MeshCore chat** — coordinate a field day across channels and direct messages, with hop counts
-and delivery status alongside the conversation.
-
-[![MeshCore Field Day channel with team check-ins, outgoing replies, and a North Trail direct-message tab](docs/images/readme/meshcore-chat.webp)](docs/images/readme/meshcore-chat.webp)
-
-**Meshtastic map** — explore node positions and inspect a node's signal, battery, and routing
-information without leaving the map.
-
-[![Meshtastic dark map with eight fictional nodes near Denver and the North Trail node's signal, battery, and position details](docs/images/readme/meshtastic-map.webp)](docs/images/readme/meshtastic-map.webp)
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/images/chat.png"><img src="docs/images/chat.png" height="200" loading="lazy" alt="Chat with channels, direct messages, hop counts, and delivery status" /></a><br />
+      <b>Chat</b> — channels, DMs, hop counts, and delivery status
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/map.png"><img src="docs/images/map.png" height="200" loading="lazy" alt="Map with node positions, live traffic, and offline basemaps" /></a><br />
+      <b>Map</b> — node positions, live traffic, and offline basemaps
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/node-detail.png"><img src="docs/images/node-detail.png" height="200" loading="lazy" alt="Node detail with signal, battery, telemetry, and routing" /></a><br />
+      <b>Node detail</b> — signal, battery, telemetry, and routing for one node
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/images/diagnostics.png"><img src="docs/images/diagnostics.png" height="200" loading="lazy" alt="Diagnostics with hop anomalies, hidden terminals, and noisy channels" /></a><br />
+      <b>Diagnostics</b> — hop anomalies, hidden terminals, and noisy channels
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/graph.png"><img src="docs/images/graph.png" height="200" loading="lazy" alt="Peer communication graph across the mesh" /></a><br />
+      <b>Graph</b> — peer communication graph across the mesh
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/stats.png"><img src="docs/images/stats.png" height="200" loading="lazy" alt="Packet statistics and distribution by device and type" /></a><br />
+      <b>Stats</b> — packet counts and distribution by device and type
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/images/sniffer.png"><img src="docs/images/sniffer.png" height="200" loading="lazy" alt="Live packet sniffer with type, SNR, RSSI, and hop details" /></a><br />
+      <b>Sniffer</b> — live packet log with type, SNR, RSSI, and hop details
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/RF.png"><img src="docs/images/RF.png" height="200" loading="lazy" alt="RF signal and SNR distribution across observed nodes" /></a><br />
+      <b>RF</b> — signal and SNR distribution across observed nodes
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/connection.png"><img src="docs/images/connection.png" height="200" loading="lazy" alt="Radio and MQTT connection settings" /></a><br />
+      <b>Connection</b> — radio and MQTT connection settings
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/images/repeaters.png"><img src="docs/images/repeaters.png" height="200" loading="lazy" alt="MeshCore repeater status, neighbors, trace, and CLI" /></a><br />
+      <b>Repeaters</b> — MeshCore repeater status, neighbors, trace, and CLI
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/mecp.png"><img src="docs/images/mecp.png" height="200" loading="lazy" alt="MECP emergency request and report composer" /></a><br />
+      <b>MECP</b> — emergency request and report composer
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/images/nomad.png"><img src="docs/images/nomad.png" height="200" loading="lazy" alt="Nomad Network page browsing" /></a><br />
+      <b>Nomad</b> — browse Nomad Network pages
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <a href="docs/images/language-selection.png"><img src="docs/images/language-selection.png" height="160" loading="lazy" alt="Interface language selector with 16 languages" /></a><br />
+      <b>Language</b> — switch the interface between 16 languages
+    </td>
+  </tr>
+</table>
 
 ---
 
