@@ -12,6 +12,8 @@ export const MAIN_ESBUILD_EXTERNALS = [
   // (undici alone was ~1.3 MiB of metafile inputs and pushed the bundle to 1.0mb).
   'undici',
   'ws',
+  // BlueZ D-Bus client (dynamic requires for usocket/path sockets; Linux pairing).
+  'dbus-next',
 ];
 
 /** CLI args: `--external:electron --external:...` */

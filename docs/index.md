@@ -70,8 +70,6 @@ A bundled Reticulum stack with TCP, I2P, Auto, and RNode interfaces. LXMF direct
 
 <div class="grid" markdown>
 
-![Nodes list](images/nodes.png)
-
 ![Map](images/map.png)
 
 ![Diagnostics](images/diagnostics.png)
@@ -80,9 +78,7 @@ A bundled Reticulum stack with TCP, I2P, Auto, and RNode interfaces. LXMF direct
 
 ![Repeaters](images/repeaters.png)
 
-![MECP emergency compose](images/MECP.png)
-
-![Reticulum peers](images/peers.png)
+![MECP emergency compose](images/mecp.png)
 
 ![Nomad Network](images/nomad.png)
 

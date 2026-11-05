@@ -158,6 +158,7 @@
     "@xterm/xterm": "^6.0.0",
     "@zip.js/zip.js": "^2.24.0",
     "builder-util-runtime": "^9.7.0",
+    "dbus-next": "0.10.2",
     "dompurify": "^3.4.17",
     "electron-updater": "^6.8.11",
     "emoji-picker-element": "^1.29.1",

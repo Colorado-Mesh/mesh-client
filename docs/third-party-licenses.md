@@ -21,6 +21,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
 | @zip.js/zip.js             | BSD-3-Clause                  | ^2.24.0         | 2.24.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
+| dbus-next                  | MIT                           | 0.10.2          | 0.10.2            | git+ssh://git@github.com/dbusjs/node-dbus-next.git                             |
 | dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.17         | 3.4.17            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.11         | 6.8.11            | git+https://github.com/electron-userland/electron-builder.git                  |
 | emoji-picker-element       | Apache-2.0                    | ^1.29.1         | 1.29.1            | git+https://github.com/nolanlawson/emoji-picker-element.git                    |

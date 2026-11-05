@@ -39,6 +39,10 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
   usb: true
+  # dbus-next optional native abstract-socket helper. mesh-client only supports
+  # path-based system buses (src/main/linux-bluez/systemBus.ts + tests); Flatpak
+  # and dbus-next default use unix:path=…, so usocket is not required.
+  usocket: false
 
 peerDependencyRules:
   allowedVersions:
@@ -49,6 +53,8 @@ overrides:
   '@meshtastic/core': npm:@jsr/meshtastic__core@^2.6.6
   cacheable-request: ^10.0.0
   form-data: ^4.0.6
+  # dbus-next → xml2js ^0.4.17 (GHSA-776f-qx25-q3cc / CVE-2023-0842). Floor ≥0.5.0.
+  'dbus-next>xml2js': ^0.6.2
   # Security floors (Dependabot GHSA-52cp-r559-cp3m / GHSA-395f-4hp3-45gv /
   # GHSA-w8wr-v893-vjvp / GHSA-3jxr-9vmj-r5cp / GHSA-r28c-9q8g-f849 /
   # GHSA-p2f4-r6v6-j797 / GHSA-7g7r-gx96-252g / GHSA-mh99-v99m-4gvg /

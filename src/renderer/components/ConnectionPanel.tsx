@@ -92,6 +92,7 @@ import {
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
+import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
@@ -240,14 +241,6 @@ function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boo
   );
 }
 
-/** Parse `bluetoothctl info <mac>` output for bond state (Linux / BlueZ). */
-function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
-  const s = info.toLowerCase();
-  if (/paired:\s*yes\b/.test(s)) return 'yes';
-  if (/paired:\s*no\b/.test(s)) return 'no';
-  return 'unknown';
-}
-
 const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';
 
 function resolveConnectionStageText(
@@ -290,7 +283,7 @@ function meshcorePresetDeviationText(
   }
 }
 
-/** BLE pairing PIN: 1–6 digits (bluetoothctl; MeshCore may show shorter codes). */
+/** BLE pairing PIN: 1–6 digits (BlueZ / WinRT; MeshCore may show shorter codes). */
 function normalizePairingPin(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
   return /^\d{1,6}$/.test(digits) ? digits : null;
@@ -920,7 +913,7 @@ export default function ConnectionPanel({
   // Tracks BLE device MAC for potential re-pairing on Linux
   const lastSelectedBleMacRef = useRef<string | null>(null);
   /**
-   * Linux (bluetoothctl) / Windows (WinRT in-app) pairing completes before opening the
+   * Linux (BlueZ D-Bus) / Windows (WinRT in-app) pairing completes before opening the
    * sidecar GATT session.
    */
   const pendingPairBleDeviceRef = useRef<{ deviceId: string } | null>(null);
@@ -1610,7 +1603,7 @@ export default function ConnectionPanel({
         });
       }
       if (isLinux) {
-        // OS-specific: BlueZ pairing uses bluetoothctl with the PIN entered in this panel.
+        // OS-specific: BlueZ D-Bus pairing uses the PIN entered in this panel.
         const pendingDevice = { deviceId };
         pendingPairBleDeviceRef.current = pendingDevice;
         setConnectionStage('connectionPanel.stageCheckingPairing');
