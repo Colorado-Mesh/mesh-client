@@ -54,6 +54,27 @@ function variantValue<T>(prop: DBusVariant | undefined, fallback: T): T {
   return prop.value as T;
 }
 
+/**
+ * Coerce a BlueZ Name/Alias property to a single-line display string and strip
+ * C0/C1 control characters so remote values cannot spoof `Paired:` info lines.
+ */
+export function sanitizeBluezDeviceName(value: unknown): string {
+  let raw = '';
+  if (typeof value === 'string') {
+    raw = value;
+  } else if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    raw = String(value);
+  }
+  let cleaned = '';
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    // Drop C0, DEL, and C1 controls (keeps newlines out of spoofable Name fields).
+    if (code <= 0x1f || (code >= 0x7f && code <= 0x9f)) continue;
+    cleaned += ch;
+  }
+  return cleaned.trim();
+}
+
 /** Reject `promise` if it does not settle within `ms`. */
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -86,6 +107,52 @@ async function sleep(ms: number): Promise<void> {
 export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluezClient {
   const createBus: BluezBusFactory = busFactory ?? (() => createBluezSystemBus());
 
+  /** Active StartDiscovery session — D-Bus sender must stay alive until StopDiscovery. */
+  let discoverySession: {
+    bus: dbus.MessageBus;
+    adapterPath: string;
+    settleBusErrors: () => void;
+  } | null = null;
+
+  /**
+   * Attach a MessageBus `error` listener. While unsettled, errors reject `busFault`;
+   * after {@link settle}, late errors are absorbed (not unhandled).
+   */
+  function attachBusErrorHandling(bus: dbus.MessageBus): {
+    busFault: Promise<never>;
+    settle: () => void;
+  } {
+    let rejectInFlight: ((err: Error) => void) | null = null;
+    const busFault = new Promise<never>((_resolve, reject) => {
+      rejectInFlight = reject;
+    });
+    const onBusError = (err: unknown): void => {
+      const formatted = new Error(formatBluezError(err));
+      if (rejectInFlight) {
+        rejectInFlight(formatted);
+        rejectInFlight = null;
+        return;
+      }
+      console.debug('[linux-bluez] late bus error:', formatted.message);
+    };
+    bus.on('error', onBusError);
+    return {
+      busFault,
+      settle: () => {
+        rejectInFlight = null;
+      },
+    };
+  }
+
+  /** Disconnect a bus; ignore cleanup failures. */
+  function disconnectBus(bus: dbus.MessageBus): void {
+    try {
+      bus.disconnect();
+    } catch {
+      // catch-no-log-ok — best-effort bus disconnect
+    }
+  }
+
   /**
    * Run `fn` on a MessageBus with an `error` listener that rejects in-flight work
    * via {@link formatBluezError}. The listener stays attached after settle so late
@@ -99,33 +166,14 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       throw new Error(formatBluezError(err));
     }
 
-    let rejectInFlight: ((err: Error) => void) | null = null;
-    const busFault = new Promise<never>((_resolve, reject) => {
-      rejectInFlight = reject;
-    });
-    const onBusError = (err: unknown): void => {
-      const formatted = new Error(formatBluezError(err));
-      if (rejectInFlight) {
-        rejectInFlight(formatted);
-        rejectInFlight = null;
-        return;
-      }
-      // Operation already settled — absorb so the error is not an unhandled event.
-      console.debug('[linux-bluez] late bus error:', formatted.message);
-    };
-    bus.on('error', onBusError);
-
+    const { busFault, settle } = attachBusErrorHandling(bus);
     try {
       return await Promise.race([fn(bus), busFault]);
     } catch (err) {
       throw new Error(formatBluezError(err));
     } finally {
-      rejectInFlight = null;
-      try {
-        bus.disconnect();
-      } catch {
-        // catch-no-log-ok — best-effort bus disconnect
-      }
+      settle();
+      disconnectBus(bus);
     }
   }
 
@@ -262,7 +310,9 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
               return `Device ${mac} not available\nPaired: no\nTrusted: no\nConnected: no`;
             }
             const props = objects[devicePath]?.['org.bluez.Device1'] ?? {};
-            const name = variantValue(props.Name, variantValue(props.Alias, ''));
+            const name = sanitizeBluezDeviceName(
+              variantValue(props.Name, variantValue(props.Alias, '')),
+            );
             const paired = variantValue(props.Paired, false);
             const trusted = variantValue(props.Trusted, false);
             const connected = variantValue(props.Connected, false);
@@ -388,31 +438,89 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       );
     },
 
+    /**
+     * Start adapter discovery and keep the D-Bus connection open for the session.
+     * BlueZ ties discovery to the requesting sender; disconnecting would stop it.
+     * AlreadyExists/InProgress leaves no owned session (foreign discovery).
+     */
     async startDiscovery(): Promise<void> {
-      return withBus(async (bus) =>
-        withTimeout(
-          (async () => {
-            const objects = await getManagedObjects(bus);
-            const adapter = await getAdapterInterface(bus, primaryAdapterPath(objects));
-            try {
-              await getMethod(adapter, 'StartDiscovery')();
-            } catch (err) {
-              if (isBluezAlreadyExistsOrInProgress(err)) return;
-              throw err;
-            }
-          })(),
-          15_000,
-          'bluetooth-start-scan',
-        ),
-      );
+      if (discoverySession) return;
+
+      let bus: dbus.MessageBus;
+      try {
+        bus = createBus();
+      } catch (err) {
+        throw new Error(formatBluezError(err));
+      }
+
+      const { busFault, settle } = attachBusErrorHandling(bus);
+      let owned = false;
+      try {
+        await Promise.race([
+          withTimeout(
+            (async () => {
+              const objects = await getManagedObjects(bus);
+              const adapterPath = primaryAdapterPath(objects);
+              const adapter = await getAdapterInterface(bus, adapterPath);
+              try {
+                await getMethod(adapter, 'StartDiscovery')();
+              } catch (err) {
+                if (isBluezAlreadyExistsOrInProgress(err)) return;
+                throw err;
+              }
+              discoverySession = { bus, adapterPath, settleBusErrors: settle };
+              owned = true;
+            })(),
+            15_000,
+            'bluetooth-start-scan',
+          ),
+          busFault,
+        ]);
+      } catch (err) {
+        settle();
+        disconnectBus(bus);
+        throw new Error(formatBluezError(err));
+      }
+
+      if (!owned) {
+        // AlreadyExists/InProgress — we did not start discovery; drop this bus.
+        settle();
+        disconnectBus(bus);
+      }
     },
 
+    /**
+     * Stop discovery on the held session bus (or best-effort ephemeral StopDiscovery).
+     * Always disconnects an owned session afterward.
+     */
     async stopDiscovery(): Promise<void> {
-      return withBus(async (bus) =>
-        withTimeout(
+      const session = discoverySession;
+      discoverySession = null;
+      if (!session) {
+        await withBus(async (bus) =>
+          withTimeout(
+            (async () => {
+              const objects = await getManagedObjects(bus);
+              const adapter = await getAdapterInterface(bus, primaryAdapterPath(objects));
+              try {
+                await getMethod(adapter, 'StopDiscovery')();
+              } catch {
+                // catch-no-log-ok — stop discovery failure is not critical
+              }
+            })(),
+            SHORT_TIMEOUT_MS,
+            'bluetooth-stop-scan',
+          ),
+        ).catch(() => {
+          // catch-no-log-ok — stop-scan must not reject (match prior bluetoothctl handler)
+        });
+        return;
+      }
+
+      try {
+        await withTimeout(
           (async () => {
-            const objects = await getManagedObjects(bus);
-            const adapter = await getAdapterInterface(bus, primaryAdapterPath(objects));
+            const adapter = await getAdapterInterface(session.bus, session.adapterPath);
             try {
               await getMethod(adapter, 'StopDiscovery')();
             } catch {
@@ -421,10 +529,13 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
           })(),
           SHORT_TIMEOUT_MS,
           'bluetooth-stop-scan',
-        ),
-      ).catch(() => {
-        // stop-scan must not reject — match prior bluetoothctl handler
-      });
+        );
+      } catch {
+        // catch-no-log-ok — stop-scan must not reject (match prior bluetoothctl handler)
+      } finally {
+        session.settleBusErrors();
+        disconnectBus(session.bus);
+      }
     },
 
     async connectDevice(mac: string): Promise<void> {

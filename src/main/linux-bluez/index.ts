@@ -3,6 +3,7 @@ export {
   createLinuxBluezClient,
   type LinuxBluezClient,
   linuxBluezClient,
+  sanitizeBluezDeviceName,
 } from './client';
 export {
   BLUEZ_UNAVAILABLE_MESSAGE,

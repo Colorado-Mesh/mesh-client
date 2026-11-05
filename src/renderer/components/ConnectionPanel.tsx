@@ -92,6 +92,7 @@ import {
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
+import { parseBluetoothctlPairedState } from '../lib/linuxBlePairingInfo';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import {
   applyMeshcoreMqttPreset,
@@ -238,14 +239,6 @@ function shouldShowLinuxRePairFromBleError(err: unknown, bleErrMsg: string): boo
     /not be properly paired/i.test(bleErrMsg) ||
     /pairing issue/i.test(rawMessage)
   );
-}
-
-/** Parse BlueZ device-info text (`Paired: yes|no`) for bond state (Linux). */
-function parseBluetoothctlPairedState(info: string): 'yes' | 'no' | 'unknown' {
-  const s = info.toLowerCase();
-  if (/paired:\s*yes\b/.test(s)) return 'yes';
-  if (/paired:\s*no\b/.test(s)) return 'no';
-  return 'unknown';
 }
 
 const STAGE_LINUX_UNPAIRED = 'connectionPanel.stageLinuxUnpaired';

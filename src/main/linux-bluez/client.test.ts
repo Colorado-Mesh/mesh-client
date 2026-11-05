@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createLinuxBluezClient } from './client';
+import { createLinuxBluezClient, sanitizeBluezDeviceName } from './client';
 
 type MethodFn = (...args: unknown[]) => Promise<unknown>;
 
@@ -139,6 +139,18 @@ describe('createLinuxBluezClient', () => {
     expect(info).toContain('MeshCore Radio');
   });
 
+  it('sanitizes control characters out of device names in info text', async () => {
+    const objects = pairedObjects(false);
+    objects[devicePath]['org.bluez.Device1'].Name = variant('Evil\nPaired: yes\u0000Name');
+    objects[devicePath]['org.bluez.Device1'].Alias = variant('Evil\nPaired: yes\u0000Name');
+    const { bus } = makeBus({ objects });
+    const client = createLinuxBluezClient(() => bus as never);
+    const info = await client.getDeviceInfoText(mac);
+    expect(info).toMatch(/^Paired: no$/m);
+    expect(info).not.toMatch(/^Paired: yes$/m);
+    expect(info).toContain('Name: EvilPaired: yesName');
+  });
+
   it('reports unpaired when device is missing', async () => {
     const { bus } = makeBus({
       objects: {
@@ -176,13 +188,35 @@ describe('createLinuxBluezClient', () => {
     expect(removeDevice).toHaveBeenCalledWith(devicePath);
   });
 
-  it('starts and stops discovery on the primary adapter', async () => {
+  it('keeps the discovery bus connected until stopDiscovery', async () => {
     const { bus, startDiscovery, stopDiscovery } = makeBus({ objects: pairedObjects(false) });
     const client = createLinuxBluezClient(() => bus as never);
     await client.startDiscovery();
-    await client.stopDiscovery();
     expect(startDiscovery).toHaveBeenCalled();
+    expect(bus.disconnect).not.toHaveBeenCalled();
+    await client.stopDiscovery();
     expect(stopDiscovery).toHaveBeenCalled();
+    expect(bus.disconnect).toHaveBeenCalled();
+  });
+
+  it('does not hold a discovery session when StartDiscovery is already in progress', async () => {
+    const { bus, startDiscovery, stopDiscovery } = makeBus({
+      objects: pairedObjects(false),
+      startDiscovery: vi.fn(() => Promise.reject(new Error('org.bluez.Error.InProgress'))),
+    });
+    const client = createLinuxBluezClient(() => bus as never);
+    await expect(client.startDiscovery()).resolves.toBeUndefined();
+    expect(startDiscovery).toHaveBeenCalled();
+    expect(bus.disconnect).toHaveBeenCalled();
+    await client.stopDiscovery();
+    // No owned session — ephemeral StopDiscovery still attempted.
+    expect(stopDiscovery).toHaveBeenCalled();
+  });
+
+  it('sanitizeBluezDeviceName strips controls and stringifies', () => {
+    expect(sanitizeBluezDeviceName('a\nb\u0000c')).toBe('abc');
+    expect(sanitizeBluezDeviceName(42)).toBe('42');
+    expect(sanitizeBluezDeviceName(null)).toBe('');
   });
 
   it('connects an existing device', async () => {
