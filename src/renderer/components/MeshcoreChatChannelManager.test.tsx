@@ -284,6 +284,15 @@ describe('MeshcoreChatChannelManager', () => {
     expect(underlyingKeyHandler).not.toHaveBeenCalled();
   });
 
+  it('renders the dialog at the document level, outside the row that holds the button', async () => {
+    const user = userEvent.setup();
+    renderManager();
+    const add = screen.getByRole('button', { name: '+ Add Channel' });
+    await user.click(add);
+    const dialog = screen.getByRole('dialog', { name: 'Add Channel' });
+    expect(add.parentElement?.contains(dialog)).toBe(false);
+  });
+
   it('keeps repeat entry opt-in and resets it after closing', async () => {
     const user = userEvent.setup();
     renderManager();

@@ -2659,6 +2659,12 @@ function ChatPanel({
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Escape belongs to an open modal (a confirm, for one), not to the chat behind it:
+        // otherwise it would also leave the DM. The target check still holds when the modal
+        // handled the key first and has already unmounted.
+        const target = e.target instanceof Element ? e.target : null;
+        if (target?.closest('[aria-modal="true"]') || document.querySelector('[aria-modal="true"]'))
+          return;
         const reactionPickerWasOpen = reactionCapturePendingRef.current;
         setPickerOpenFor(null);
         clearReactionCaptureRef.current({ refocusComposer: true });
@@ -3569,38 +3575,6 @@ function ChatPanel({
                     : []),
                 ]}
               />
-              {channelToRemove ? (
-                <ConfirmModal
-                  title={t('chatPanel.removeChannelTitle', { name: channelToRemove.name })}
-                  message={t('chatPanel.removeChannelMessage', { name: channelToRemove.name })}
-                  confirmLabel={t('chatPanel.removeChannel')}
-                  danger
-                  confirmDisabled={removingChannel}
-                  onConfirm={() => {
-                    void removeChannel(channelToRemove);
-                  }}
-                  onCancel={() => {
-                    if (!removingChannel) setChannelToRemove(null);
-                  }}
-                />
-              ) : null}
-              {channelToClear ? (
-                <ConfirmModal
-                  title={t('chatPanel.clearChannelMessagesTitle', { name: channelToClear.name })}
-                  message={t('chatPanel.clearChannelMessagesMessage', {
-                    name: channelToClear.name,
-                  })}
-                  confirmLabel={t('chatPanel.clearChannelMessages')}
-                  danger
-                  confirmDisabled={clearingChannel}
-                  onConfirm={() => {
-                    void clearChannelMessages(channelToClear);
-                  }}
-                  onCancel={() => {
-                    if (!clearingChannel) setChannelToClear(null);
-                  }}
-                />
-              ) : null}
             </>
           )}
         </div>
@@ -3886,6 +3860,41 @@ function ChatPanel({
           </div>
         </div>
       </div>
+
+      {/* Outside the row above: it is faded while a DM is open, and a faded parent would fade
+          these dialogs and let the message list paint over them. */}
+      {channelToRemove ? (
+        <ConfirmModal
+          title={t('chatPanel.removeChannelTitle', { name: channelToRemove.name })}
+          message={t('chatPanel.removeChannelMessage', { name: channelToRemove.name })}
+          confirmLabel={t('chatPanel.removeChannel')}
+          danger
+          confirmDisabled={removingChannel}
+          onConfirm={() => {
+            void removeChannel(channelToRemove);
+          }}
+          onCancel={() => {
+            if (!removingChannel) setChannelToRemove(null);
+          }}
+        />
+      ) : null}
+      {channelToClear ? (
+        <ConfirmModal
+          title={t('chatPanel.clearChannelMessagesTitle', { name: channelToClear.name })}
+          message={t('chatPanel.clearChannelMessagesMessage', {
+            name: channelToClear.name,
+          })}
+          confirmLabel={t('chatPanel.clearChannelMessages')}
+          danger
+          confirmDisabled={clearingChannel}
+          onConfirm={() => {
+            void clearChannelMessages(channelToClear);
+          }}
+          onCancel={() => {
+            if (!clearingChannel) setChannelToClear(null);
+          }}
+        />
+      ) : null}
 
       {protocol === 'reticulum' ? (
         <ReticulumPropagationNotice
