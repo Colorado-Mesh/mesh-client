@@ -78,6 +78,21 @@ describe('always-on bundle workflow', () => {
     );
   });
 
+  it('skips the lazy Electron binary download during the frozen install', () => {
+    // The bundle check builds with esbuild only; no Electron binary or native addon is needed.
+    // Job-level env reaches composite-action steps, so the shared install honors the skip flag
+    // and a flaky Electron release CDN cannot fail this gate.
+    expect(job.env).toEqual({ MESHTASTIC_SKIP_ELECTRON_REBUILD: '1' });
+    const setupAction = load(
+      fs.readFileSync(path.join(ROOT, '.github/actions/setup-node-pnpm/action.yaml'), 'utf8'),
+    );
+    const installStep = setupAction.runs.steps.find(
+      (step) => step.run === 'pnpm install --frozen-lockfile',
+    );
+    expect(installStep).toBeDefined();
+    expect(installStep).not.toHaveProperty('env');
+  });
+
   it.each([
     ['under budget', 110_000, 0],
     ['over budget', MAIN_BUNDLE_SIZE_BUDGET_BYTES, 1],
