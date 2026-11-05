@@ -10,6 +10,7 @@ overrides:
   '@meshtastic/core': npm:@jsr/meshtastic__core@^2.6.6
   cacheable-request: ^10.0.0
   form-data: ^4.0.6
+  dbus-next>xml2js: ^0.6.2
   '@xmldom/xmldom': ^0.8.15
   app-builder-lib: ^26.18.0
   baseline-browser-mapping: ^2.11.0
@@ -4654,8 +4655,8 @@ packages:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
 
-  xml2js@0.4.23:
-    resolution: {integrity: sha512-ySPiMjM0+pLDftHgXY4By0uswI3SPKLDw/i3UXbnO8M/p28zqexCUoPmQFrYD+/1BzhGJSs2i1ERWKJAtiLrug==}
+  xml2js@0.6.2:
+    resolution: {integrity: sha512-T4rieHaC1EXcES0Kxxj4JWgaUQHDk+qwHcYOCFHfiwKz7tOVPLq7Hjq9dM1WCMhylqMEfP7hMcOIChvotiZegA==}
     engines: {node: '>=4.0.0'}
 
   xmlbuilder@11.0.1:
@@ -6378,7 +6379,7 @@ snapshots:
       jsbi: 2.0.5
       long: 4.0.0
       safe-buffer: 5.2.1
-      xml2js: 0.4.23
+      xml2js: 0.6.2
     optionalDependencies:
       usocket: 0.3.0
 
@@ -9483,7 +9484,7 @@ snapshots:
 
   xml-name-validator@5.0.0: {}
 
-  xml2js@0.4.23:
+  xml2js@0.6.2:
     dependencies:
       sax: 1.6.1
       xmlbuilder: 11.0.1

@@ -6,8 +6,9 @@
 import dbus from 'dbus-next';
 
 import { BLUEZ_AGENT_CAPABILITY, BLUEZ_AGENT_PATH, BluezPairingAgent } from './agent';
-import { formatBluezError } from './errors';
+import { formatBluezError, isBluezAlreadyExistsOrInProgress } from './errors';
 import { isMacAddress, macToDeviceSuffix } from './mac';
+import { createBluezSystemBus } from './systemBus';
 
 const { Variant } = dbus;
 
@@ -38,6 +39,7 @@ export interface LinuxBluezClient {
 
 type DbusMethod = (...args: unknown[]) => Promise<unknown>;
 
+/** Look up a D-Bus method on a proxy interface and bind it. */
 function getMethod(iface: dbus.ClientInterface, name: string): DbusMethod {
   const fn = iface[name];
   if (typeof fn !== 'function') {
@@ -46,11 +48,13 @@ function getMethod(iface: dbus.ClientInterface, name: string): DbusMethod {
   return fn.bind(iface) as DbusMethod;
 }
 
+/** Read a D-Bus property Variant value, or `fallback` when missing. */
 function variantValue<T>(prop: DBusVariant | undefined, fallback: T): T {
   if (!prop) return fallback;
   return prop.value as T;
 }
 
+/** Reject `promise` if it does not settle within `ms`. */
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -75,9 +79,18 @@ async function sleep(ms: number): Promise<void> {
   });
 }
 
+/**
+ * Build a Linux BlueZ client. Optional `busFactory` is for tests; production uses
+ * {@link createBluezSystemBus} (path-based system bus only).
+ */
 export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluezClient {
-  const createBus: BluezBusFactory = busFactory ?? (() => dbus.systemBus());
+  const createBus: BluezBusFactory = busFactory ?? (() => createBluezSystemBus());
 
+  /**
+   * Run `fn` on a MessageBus with an `error` listener that rejects in-flight work
+   * via {@link formatBluezError}. The listener stays attached after settle so late
+   * bus errors are handled (not uncaught) until disconnect.
+   */
   async function withBus<T>(fn: (bus: dbus.MessageBus) => Promise<T>): Promise<T> {
     let bus: dbus.MessageBus;
     try {
@@ -85,11 +98,29 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
     } catch (err) {
       throw new Error(formatBluezError(err));
     }
+
+    let rejectInFlight: ((err: Error) => void) | null = null;
+    const busFault = new Promise<never>((_resolve, reject) => {
+      rejectInFlight = reject;
+    });
+    const onBusError = (err: unknown): void => {
+      const formatted = new Error(formatBluezError(err));
+      if (rejectInFlight) {
+        rejectInFlight(formatted);
+        rejectInFlight = null;
+        return;
+      }
+      // Operation already settled — absorb so the error is not an unhandled event.
+      console.debug('[linux-bluez] late bus error:', formatted.message);
+    };
+    bus.on('error', onBusError);
+
     try {
-      return await fn(bus);
+      return await Promise.race([fn(bus), busFault]);
     } catch (err) {
       throw new Error(formatBluezError(err));
     } finally {
+      rejectInFlight = null;
       try {
         bus.disconnect();
       } catch {
@@ -98,6 +129,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
     }
   }
 
+  /** Fetch the BlueZ object tree via ObjectManager.GetManagedObjects. */
   async function getManagedObjects(bus: dbus.MessageBus): Promise<ManagedObjects> {
     const root = await bus.getProxyObject(BLUEZ_SERVICE, '/');
     const manager = root.getInterface('org.freedesktop.DBus.ObjectManager');
@@ -108,6 +140,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
     return Object.keys(objects).filter((path) => Boolean(objects[path]?.['org.bluez.Adapter1']));
   }
 
+  /** Locate a Device1 object path by MAC (path suffix or Address property). */
   function findDevicePath(objects: ManagedObjects, mac: string): string | null {
     const suffix = macToDeviceSuffix(mac);
     const exact = Object.keys(objects).find(
@@ -155,6 +188,10 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
     return obj.getInterface('org.bluez.Adapter1');
   }
 
+  /**
+   * Resolve adapter + device paths for `mac`. When `discover` is true and the
+   * device is absent, start adapter discovery and poll until found or timeout.
+   */
   async function resolveDevicePath(
     bus: dbus.MessageBus,
     mac: string,
@@ -180,9 +217,8 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       await getMethod(adapter, 'StartDiscovery')();
       discoveryStarted = true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
       // Already discovering is fine.
-      if (!/InProgress|AlreadyExists/i.test(msg)) {
+      if (!isBluezAlreadyExistsOrInProgress(err)) {
         throw err;
       }
     }
@@ -214,6 +250,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
   }
 
   return {
+    /** bluetoothctl-compatible info text including `Paired: yes|no` for the UI. */
     async getDeviceInfoText(mac: string): Promise<string> {
       if (!isMacAddress(mac)) throw new Error('invalid MAC address format');
       return withBus(async (bus) =>
@@ -244,13 +281,17 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       );
     },
 
+    /**
+     * Register a KeyboardOnly Agent1, Pair the device, then best-effort Trust.
+     * Agent callbacks only accept the target device path.
+     */
     async pairWithPin(mac: string, pin: string | undefined): Promise<void> {
       if (!isMacAddress(mac)) throw new Error('invalid MAC address format');
       return withBus(async (bus) =>
         withTimeout(
           (async () => {
             const { devicePath } = await resolveDevicePath(bus, mac, { discover: true });
-            const agent = new BluezPairingAgent(pin);
+            const agent = new BluezPairingAgent(pin, devicePath);
             bus.export(BLUEZ_AGENT_PATH, agent);
 
             const managerObj = await bus.getProxyObject(BLUEZ_SERVICE, '/org/bluez');
@@ -262,8 +303,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
               try {
                 await registerAgent(BLUEZ_AGENT_PATH, BLUEZ_AGENT_CAPABILITY);
               } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                if (!/AlreadyExists/i.test(msg)) throw err;
+                if (!isBluezAlreadyExistsOrInProgress(err)) throw err;
                 await unregisterAgent(BLUEZ_AGENT_PATH);
                 await registerAgent(BLUEZ_AGENT_PATH, BLUEZ_AGENT_CAPABILITY);
               }
@@ -301,6 +341,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
       );
     },
 
+    /** Remove the OS bond via Adapter1.RemoveDevice. */
     async removeDevice(mac: string): Promise<void> {
       if (!isMacAddress(mac)) throw new Error('invalid MAC address format');
       return withBus(async (bus) =>
@@ -356,8 +397,7 @@ export function createLinuxBluezClient(busFactory?: BluezBusFactory): LinuxBluez
             try {
               await getMethod(adapter, 'StartDiscovery')();
             } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              if (/InProgress|AlreadyExists/i.test(msg)) return;
+              if (isBluezAlreadyExistsOrInProgress(err)) return;
               throw err;
             }
           })(),

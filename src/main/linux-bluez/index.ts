@@ -4,5 +4,16 @@ export {
   type LinuxBluezClient,
   linuxBluezClient,
 } from './client';
-export { BLUEZ_UNAVAILABLE_MESSAGE, formatBluezError } from './errors';
+export {
+  BLUEZ_UNAVAILABLE_MESSAGE,
+  dbusErrorType,
+  formatBluezError,
+  isBluezAlreadyExistsOrInProgress,
+} from './errors';
 export { isMacAddress, macToDeviceSuffix } from './mac';
+export {
+  assertPathBasedSystemBusAddress,
+  createBluezSystemBus,
+  isAbstractUnixBusAddress,
+  resolveSystemBusAddress,
+} from './systemBus';

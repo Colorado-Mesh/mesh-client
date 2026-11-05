@@ -2,8 +2,8 @@
  * Temporary org.bluez.Agent1 for in-app PIN pairing (KeyboardOnly).
  * The PIN is supplied by ConnectionPanel and must never be logged.
  *
- * Method parameter names match BlueZ Agent1; values are unused when the
- * in-panel PIN already answers the request.
+ * Callbacks are scoped to the device object path being paired; other devices
+ * are rejected with org.bluez.Error.Rejected.
  */
 import dbus from 'dbus-next';
 
@@ -12,16 +12,25 @@ const { interface: iface, DBusError } = dbus;
 export const BLUEZ_AGENT_PATH = '/org/coloradomesh/meshclient/agent';
 export const BLUEZ_AGENT_CAPABILITY = 'KeyboardOnly';
 
-function discardBluezArgs(...args: unknown[]): void {
-  // BlueZ invokes these with device/passkey args we do not surface in-panel.
-  if (args.length < 0) {
+function ignoreDisplayArgs(...args: unknown[]): void {
+  if (args.length === Number.NEGATIVE_INFINITY) {
     throw new Error('unreachable');
   }
 }
 
 export class BluezPairingAgent extends iface.Interface {
-  constructor(private readonly pin: string | undefined) {
+  constructor(
+    private readonly pin: string | undefined,
+    private readonly devicePath: string,
+  ) {
     super('org.bluez.Agent1');
+  }
+
+  /** Reject agent requests that are not for the device currently being paired. */
+  private assertTargetDevice(device: string): void {
+    if (device !== this.devicePath) {
+      throw new DBusError('org.bluez.Error.Rejected', 'unexpected device');
+    }
   }
 
   Release(): void {
@@ -33,7 +42,7 @@ export class BluezPairingAgent extends iface.Interface {
   }
 
   RequestPinCode(device: string): string {
-    discardBluezArgs(device);
+    this.assertTargetDevice(device);
     if (!this.pin) {
       throw new DBusError('org.bluez.Error.Rejected', 'PIN required');
     }
@@ -41,12 +50,13 @@ export class BluezPairingAgent extends iface.Interface {
   }
 
   DisplayPinCode(device: string, pincode: string): void {
-    discardBluezArgs(device, pincode);
+    this.assertTargetDevice(device);
+    ignoreDisplayArgs(pincode);
     // Display-only; PIN already entered in-panel for KeyboardOnly flow.
   }
 
   RequestPasskey(device: string): number {
-    discardBluezArgs(device);
+    this.assertTargetDevice(device);
     if (!this.pin) {
       throw new DBusError('org.bluez.Error.Rejected', 'PIN required');
     }
@@ -58,22 +68,25 @@ export class BluezPairingAgent extends iface.Interface {
   }
 
   DisplayPasskey(device: string, passkey: number, entered: number): void {
-    discardBluezArgs(device, passkey, entered);
+    this.assertTargetDevice(device);
+    ignoreDisplayArgs(passkey, entered);
     // Display-only; mesh-client does not surface remote-generated passkeys in-panel yet.
   }
 
   RequestConfirmation(device: string, passkey: number): void {
-    discardBluezArgs(device, passkey);
+    this.assertTargetDevice(device);
+    ignoreDisplayArgs(passkey);
     // Match prior bluetoothctl behavior (stdin "yes" on confirm/authorize).
   }
 
   RequestAuthorization(device: string): void {
-    discardBluezArgs(device);
+    this.assertTargetDevice(device);
     // Accept — same as bluetoothctl "yes" on authorize.
   }
 
   AuthorizeService(device: string, uuid: string): void {
-    discardBluezArgs(device, uuid);
+    this.assertTargetDevice(device);
+    ignoreDisplayArgs(uuid);
     // Accept service authorization during pairing.
   }
 }

@@ -34,6 +34,7 @@ function makeBus(opts: {
 
   const bus = {
     disconnect: vi.fn(),
+    on: vi.fn(),
     export: vi.fn((path: string, iface: unknown) => {
       exported.push({ path, iface });
     }),
@@ -196,5 +197,29 @@ describe('createLinuxBluezClient', () => {
       throw new Error('connect ENOENT');
     });
     await expect(client.getDeviceInfoText(mac)).rejects.toThrow(/BlueZ D-Bus unavailable/);
+  });
+
+  it('rejects in-flight work when the bus emits error', async () => {
+    const { bus } = makeBus({
+      objects: pairedObjects(true),
+      pair: vi.fn(
+        () =>
+          new Promise(() => {
+            /* never settles */
+          }),
+      ),
+    });
+    const listeners = new Map<string, (err: unknown) => void>();
+    bus.on = vi.fn((event: string, handler: (err: unknown) => void) => {
+      listeners.set(event, handler);
+    });
+    const client = createLinuxBluezClient(() => bus as never);
+    const pending = client.pairWithPin(mac, '123456');
+    // Allow pairWithPin to attach the listener and start Pair().
+    await Promise.resolve();
+    await Promise.resolve();
+    listeners.get('error')?.(new Error('connect ENOENT'));
+    await expect(pending).rejects.toThrow(/BlueZ D-Bus unavailable/);
+    expect(bus.on).toHaveBeenCalledWith('error', expect.any(Function));
   });
 });
