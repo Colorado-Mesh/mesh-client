@@ -1034,8 +1034,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('serial-port-cancelled');
   },
 
-  // ─── Bluetooth pairing (Linux) ──────────────────────────────────────
-  // Unpair a device via bluetoothctl remove
+  // ─── Bluetooth pairing (Linux BlueZ D-Bus) ──────────────────────────
+  // Unpair a device via BlueZ RemoveDevice
   bluetoothUnpair: (macAddress: string): Promise<void> =>
     ipcRenderer.invoke('bluetooth-unpair', macAddress),
 

@@ -12,6 +12,11 @@ const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'),
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
 const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+const LINUX_BLUETOOTH_IPC_SOURCE = readFileSync(
+  join(__dirname, 'ipc/linux-bluetooth-handlers.ts'),
+  'utf-8',
+);
+const LINUX_BLUEZ_MAC_SOURCE = readFileSync(join(__dirname, 'linux-bluez/mac.ts'), 'utf-8');
 const SERVICE_ANNOUNCEMENT_IPC_SOURCE = readFileSync(
   join(__dirname, 'ipc/service-announcement-handlers.ts'),
   'utf-8',
@@ -20,6 +25,7 @@ const SERVICE_ANNOUNCEMENT_IPC_SOURCE = readFileSync(
 function ipcHandlerBody(channel: string, span = 400): string {
   for (const src of [
     INDEX_SOURCE,
+    LINUX_BLUETOOTH_IPC_SOURCE,
     TCP_BRIDGE_SOURCE,
     TAK_IPC_SOURCE,
     GPS_IPC_SOURCE,
@@ -213,13 +219,15 @@ describe('secure-secret IPC contract (source contract)', () => {
 
 describe('bluetooth-pair input validation (source contract)', () => {
   it('validates MAC address format with isMacAddress', () => {
-    expect(INDEX_SOURCE).toContain('function isMacAddress(value: string): boolean');
+    expect(LINUX_BLUEZ_MAC_SOURCE).toContain(
+      'export function isMacAddress(value: string): boolean',
+    );
   });
 
   it('applies isMacAddress in bluetooth-pair handler', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-pair'");
+    const handlerIdx = LINUX_BLUETOOTH_IPC_SOURCE.indexOf("ipcMain.handle('bluetooth-pair'");
     expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    const body = LINUX_BLUETOOTH_IPC_SOURCE.slice(handlerIdx, handlerIdx + 600);
     expect(body).toContain('isMacAddress(macAddress)');
   });
 });
@@ -237,10 +245,14 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
     'bluetooth-get-info',
   ] as const;
 
+  it('registers linux bluetooth handlers from index', () => {
+    expect(INDEX_SOURCE).toContain('registerLinuxBluetoothIpcHandlers()');
+  });
+
   it.each(bluetoothChannels)('%s calls assertIpcSender', (channel) => {
-    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    const handlerIdx = LINUX_BLUETOOTH_IPC_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
     expect(handlerIdx).toBeGreaterThan(-1);
-    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    const handlerBody = LINUX_BLUETOOTH_IPC_SOURCE.slice(handlerIdx, handlerIdx + 300);
     expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
   });
 
@@ -282,31 +294,30 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
   });
 });
 
-// ─── H4: bluetoothctl stop-scan / get-info hang guards ──────────────
+// ─── H4: BlueZ D-Bus stop-scan / get-info hang guards ──────────────
 
-describe('bluetoothctl timeout hardening (source contract, H4)', () => {
-  it('defines 5s timeouts for stop-scan and get-info', () => {
-    expect(INDEX_SOURCE).toContain('const BLUETOOTH_STOP_SCAN_TIMEOUT_MS = 5_000;');
-    expect(INDEX_SOURCE).toContain('const BLUETOOTH_GET_INFO_TIMEOUT_MS = 5_000;');
+describe('BlueZ D-Bus timeout hardening (source contract, H4)', () => {
+  const CLIENT_SOURCE = readFileSync(join(__dirname, 'linux-bluez/client.ts'), 'utf-8');
+
+  it('defines short timeouts for info/remove and a longer pair budget', () => {
+    expect(CLIENT_SOURCE).toContain('const PAIR_TIMEOUT_MS = 45_000;');
+    expect(CLIENT_SOURCE).toContain('const SHORT_TIMEOUT_MS = 5_000;');
   });
 
-  it('bluetooth-stop-scan kills the process and settles the promise on timeout', () => {
-    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-stop-scan'");
+  it('bluetooth-stop-scan does not reject on failure', () => {
+    const idx = LINUX_BLUETOOTH_IPC_SOURCE.indexOf("ipcMain.handle('bluetooth-stop-scan'");
     expect(idx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(idx, idx + 1200);
-    expect(body).toContain('BLUETOOTH_STOP_SCAN_TIMEOUT_MS');
-    expect(body).toContain('proc.kill()');
-    // Must not leave the returned Promise pending forever — timeout resolves it.
-    expect(body).toMatch(/setTimeout\(\(\) => \{[\s\S]*?proc\.kill\(\);[\s\S]*?finish\(\);/);
+    const body = LINUX_BLUETOOTH_IPC_SOURCE.slice(idx, idx + 900);
+    expect(body).toContain('stopDiscovery');
+    expect(body).toContain("Don't reject — stop scan failure is not critical");
   });
 
-  it('bluetooth-get-info kills the process and resolves on timeout', () => {
-    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-get-info'");
+  it('bluetooth-get-info resolves with sanitized text on failure', () => {
+    const idx = LINUX_BLUETOOTH_IPC_SOURCE.indexOf("ipcMain.handle('bluetooth-get-info'");
     expect(idx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(idx, idx + 1500);
-    expect(body).toContain('BLUETOOTH_GET_INFO_TIMEOUT_MS');
-    expect(body).toContain('proc.kill()');
-    expect(body).toMatch(/setTimeout\(\(\) => \{[\s\S]*?proc\.kill\(\);[\s\S]*?finish\(/);
+    const body = LINUX_BLUETOOTH_IPC_SOURCE.slice(idx, idx + 900);
+    expect(body).toContain('getDeviceInfoText');
+    expect(body).toContain('sanitizeLogMessage(msg)');
   });
 });
 

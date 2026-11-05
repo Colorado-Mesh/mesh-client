@@ -38,7 +38,7 @@ export function registerGattPairingIpcHandlers(deps: GattPairingIpcDeps): void {
   const platform = deps.platform ?? (() => process.platform);
 
   const precheck = (channel: string, peripheralId: unknown): Failure | null => {
-    // OS-specific: Linux pairs via bluetoothctl (bluetooth-pair IPC) and macOS CoreBluetooth
+    // OS-specific: Linux pairs via BlueZ D-Bus (bluetooth-pair IPC) and macOS CoreBluetooth
     // shows its own pairing dialog; only WinRT needs mesh-client to drive custom pairing.
     if (platform() !== 'win32') {
       return failure('unsupported', 'in-app Bluetooth pairing is only used on Windows');
