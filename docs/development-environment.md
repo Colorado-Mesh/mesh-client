@@ -943,7 +943,8 @@ Log out/in after changing groups.
 LoRa BLE uses the reticulum-sidecar **btleplug** GATT stack on Linux (same as macOS/Windows) — not Web Bluetooth / Noble.
 
 - Requires a working BlueZ stack (`systemctl status bluetooth`, `rfkill list`)
-- Flatpak builds need Bluetooth allowed (`--allow=bluetooth` + BlueZ talk-name)
+- Flatpak builds need Bluetooth allowed (`--allow=bluetooth` + `--system-talk-name=org.bluez`)
+- In-app PIN pairing (Meshtastic / MeshCore) uses BlueZ D-Bus from Electron main (`src/main/linux-bluez/`), not `bluetoothctl`
 - ATT MTU / write sizing follows sidecar negotiation via `bleAttWriteLimit.ts` (spec min 23)
 
 Pairing failures and BlueZ steps: [BLE known issues](troubleshooting.md#ble-known-issues).

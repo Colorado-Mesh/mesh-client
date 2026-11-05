@@ -481,7 +481,7 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 **Linux-specific:**
 
 - LoRa BLE uses the reticulum-sidecar **btleplug** stack (same as macOS/Windows), not Web Bluetooth. You still need a working Bluetooth stack (`systemctl status bluetooth` / `rfkill list`).
-- **Flatpak:** Ensure the package allows Bluetooth (`--allow=bluetooth` with BlueZ talk-name). If pairing tools are missing in the sandbox, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
+- **Flatpak:** The package allows Bluetooth (`--allow=bluetooth` + `--system-talk-name=org.bluez`). In-app PIN pairing uses BlueZ D-Bus directly (no `bluetoothctl` in the sandbox). If pairing still fails, confirm `bluetoothd` is running on the host, or pair in system Bluetooth settings / host `bluetoothctl`, then Connect again from Flatpak. AppImage/`.deb`/`.rpm` remain alternatives.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
 - If device pairing fails with `pairing_required` / connection attempt failed, try **"Remove & Re-pair Device"** in the app, or manually remove via `bluetoothctl`:
   ```bash

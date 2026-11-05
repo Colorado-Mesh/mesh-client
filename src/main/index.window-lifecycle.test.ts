@@ -400,7 +400,10 @@ describe('Web Serial window ownership', () => {
     ) => void;
 
     const ipcStart = INDEX_SOURCE.indexOf('// ─── IPC: Serial port selected by user');
-    const ipcEnd = INDEX_SOURCE.indexOf('// ─── IPC: Unpair Bluetooth device', ipcStart);
+    const ipcEnd = INDEX_SOURCE.indexOf(
+      '// ─── IPC: Linux BlueZ pairing (D-Bus; see ipc/linux-bluetooth-handlers.ts)',
+      ipcStart,
+    );
     expect(ipcStart).toBeGreaterThan(-1);
     expect(ipcEnd).toBeGreaterThan(ipcStart);
     runInNewContext(

@@ -401,6 +401,16 @@ describe('humanizeBleError', () => {
     expect(result).not.toBe('');
     expect(result).toContain('bluetoothctlMissingHint');
   });
+
+  it('humanizes BlueZ D-Bus unavailable with the same hint', () => {
+    mockPlatform('linux');
+    const result = humanizeBleError(
+      new Error('BlueZ D-Bus unavailable — ensure bluetoothd is running'),
+      t,
+    );
+    expect(result).not.toBe('');
+    expect(result).toContain('bluetoothctlMissingHint');
+  });
 });
 
 describe('humanizeReticulumSidecarError', () => {

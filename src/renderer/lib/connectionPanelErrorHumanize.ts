@@ -202,7 +202,7 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
       : t('connectionPanel.humanize.ble.adapterGenericHint');
     return t('connectionPanel.humanize.prefixedHint', { message: msg, hint });
   }
-  if (/bluetoothctl not found/i.test(msg)) {
+  if (/bluetoothctl not found|BlueZ D-Bus unavailable/i.test(msg)) {
     return t('connectionPanel.humanize.prefixedHint', {
       message: msg,
       hint: t('connectionPanel.humanize.ble.bluetoothctlMissingHint'),

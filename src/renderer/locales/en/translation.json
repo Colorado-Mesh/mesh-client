@@ -1914,7 +1914,7 @@
     "stageScanning": "Scanning — select your device when it appears below",
     "stageEnterPin": "Enter the PIN shown on your device",
     "stageEnterPinPair": "Enter PIN to pair device",
-    "stagePairingBluetooth": "Pairing with PIN (bluetoothctl)…",
+    "stagePairingBluetooth": "Pairing with PIN…",
     "stageRemoving": "Removing device…",
     "stagePairingPin": "Pairing with PIN…",
     "stagePairingFailed": "Pairing failed. Please re-pair your device.",
@@ -1969,7 +1969,7 @@
         "scanBusy": "Another Bluetooth scan is in progress. Try again in a moment.",
         "sameDeviceConflict": "This Bluetooth device is already connected to {{owner}}.",
         "rnodeBondRecoveryHold": "Bluetooth is paused for Meshtastic and MeshCore because a Reticulum RNode has a broken Bluetooth pairing. Fix the RNode first: forget it in your system Bluetooth settings, then re-pair it from Reticulum → Admin. To use Bluetooth radios right away, stop the Reticulum stack or switch that RNode to USB or Wi-Fi.",
-        "bluetoothctlMissingHint": " OS Bluetooth pairing tools are unavailable in this environment (common in Flatpak). Use the official AppImage, .deb, or .rpm, or pair the radio with host bluetoothctl, then retry Connect."
+        "bluetoothctlMissingHint": " BlueZ is unavailable or not running. Ensure bluetoothd is active (systemctl status bluetooth), or pair the radio in system Bluetooth settings, then retry Connect."
       }
     },
     "error": {

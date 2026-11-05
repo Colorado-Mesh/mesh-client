@@ -314,8 +314,15 @@ function checkManifestBranchAndElectronPayload(pkg) {
   if (!yaml.includes('--allow=bluetooth')) {
     violations.push({
       file: rel,
+      message: 'manifest finish-args must include --allow=bluetooth for BLE (AF_BLUETOOTH)',
+    });
+  }
+
+  if (!yaml.includes('--system-talk-name=org.bluez')) {
+    violations.push({
+      file: rel,
       message:
-        'manifest finish-args must include --allow=bluetooth for Web Bluetooth (AF_BLUETOOTH)',
+        'manifest finish-args must include --system-talk-name=org.bluez for BlueZ D-Bus pairing/GATT',
     });
   }
 

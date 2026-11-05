@@ -39,6 +39,8 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
   usb: true
+  # dbus-next optional native abstract-socket helper; path sockets use net.Socket.
+  usocket: false
 
 peerDependencyRules:
   allowedVersions:

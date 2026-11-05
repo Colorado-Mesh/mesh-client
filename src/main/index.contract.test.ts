@@ -233,10 +233,11 @@ describe('MQTT forwarder dropped-event logs (source contract)', () => {
     );
   });
 
-  it('sanitizes Linux bluetoothctl spawn-error log paths', () => {
-    expect(INDEX_SOURCE).toMatch(/bluetooth-unpair error:',\s*sanitizeLogMessage\(msg\)/);
-    expect(INDEX_SOURCE).toMatch(/bluetooth-start-scan error:',\s*sanitizeLogMessage\(msg\)/);
-    expect(INDEX_SOURCE).toMatch(/bluetooth-connect error:',\s*sanitizeLogMessage\(msg\)/);
+  it('sanitizes Linux BlueZ bluetooth IPC error log paths', () => {
+    const linuxBt = readFileSync(join(__dirname, 'ipc/linux-bluetooth-handlers.ts'), 'utf-8');
+    expect(linuxBt).toMatch(/bluetooth-unpair error:',\s*sanitizeLogMessage\(msg\)/);
+    expect(linuxBt).toMatch(/bluetooth-start-scan error:',\s*sanitizeLogMessage\(msg\)/);
+    expect(linuxBt).toMatch(/bluetooth-connect error:',\s*sanitizeLogMessage\(msg\)/);
   });
 });
 
@@ -995,9 +996,10 @@ describe('Native crash observability (source contract)', () => {
   });
 
   it('uses shared Meshtastic Bluetooth PIN helpers in bluetooth-pair IPC', () => {
-    expect(INDEX_SOURCE).toContain("from '../shared/meshtasticBluetoothPin'");
-    expect(INDEX_SOURCE).toContain('formatMeshtasticBluetoothPin');
-    expect(INDEX_SOURCE).toContain('parseMeshtasticBluetoothPin');
+    const linuxBt = readFileSync(join(__dirname, 'ipc/linux-bluetooth-handlers.ts'), 'utf-8');
+    expect(linuxBt).toContain("from '../../shared/meshtasticBluetoothPin'");
+    expect(linuxBt).toContain('formatMeshtasticBluetoothPin');
+    expect(linuxBt).toContain('parseMeshtasticBluetoothPin');
   });
 });
 
@@ -1135,10 +1137,13 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toContain('await clipboard.writeText(text)');
   });
 
-  it('bounds bluetooth-start-scan with a 15 s timeout', () => {
-    expect(INDEX_SOURCE).toContain('BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000');
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('bluetooth-start-scan'");
-    expect(INDEX_SOURCE).toContain('bluetooth-start-scan: timed out after 15 s');
+  it('bounds bluetooth-start-scan with a 15 s timeout via BlueZ D-Bus', () => {
+    const linuxBt = readFileSync(join(__dirname, 'ipc/linux-bluetooth-handlers.ts'), 'utf-8');
+    const bluezClient = readFileSync(join(__dirname, 'linux-bluez/client.ts'), 'utf-8');
+    expect(INDEX_SOURCE).toContain('registerLinuxBluetoothIpcHandlers()');
+    expect(linuxBt).toContain("ipcMain.handle('bluetooth-start-scan'");
+    expect(bluezClient).toContain("'bluetooth-start-scan'");
+    expect(bluezClient).toContain('15_000');
   });
 
   it('reads meshcore import JSON via fs.promises.readFile', () => {

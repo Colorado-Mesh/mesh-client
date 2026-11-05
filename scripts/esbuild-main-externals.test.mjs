@@ -16,6 +16,7 @@ describe('esbuild-main-externals', () => {
         '@meshtastic/protobufs',
         'undici',
         'ws',
+        'dbus-next',
       ]),
     );
   });
