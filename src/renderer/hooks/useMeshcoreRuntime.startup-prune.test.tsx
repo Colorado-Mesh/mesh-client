@@ -1,8 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.spyOn(console, 'warn').mockImplementation(() => {});
-
 vi.mock('@liamcottle/meshcore.js', () => ({
   CayenneLpp: { parse: vi.fn().mockReturnValue([]) },
   Connection: class {
@@ -29,11 +27,15 @@ vi.mock('@liamcottle/meshcore.js', () => ({
 }));
 
 import { resetStartupDbPruneForTests, runStartupDbPrune } from '../lib/startupDbPrune';
+import { type ConsoleWarnMock, mockConsoleWarn } from '../lib/vitestConsoleMock';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
 describe('useMeshcoreRuntime mount load and the startup prune', () => {
+  let warn: ConsoleWarnMock;
+
   beforeEach(() => {
+    warn = mockConsoleWarn();
     resetMeshcoreRuntimeElectronMocks();
     resetStartupDbPruneForTests();
     vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockResolvedValue(0);
@@ -42,6 +44,7 @@ describe('useMeshcoreRuntime mount load and the startup prune', () => {
   afterEach(() => {
     resetStartupDbPruneForTests();
     vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockResolvedValue(0);
+    warn.restore();
   });
 
   it('reads contacts and messages only after the startup prune settles', async () => {
