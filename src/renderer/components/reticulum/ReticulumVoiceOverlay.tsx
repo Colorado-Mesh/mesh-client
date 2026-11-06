@@ -1,5 +1,5 @@
 import { Mic, MicOff, PhoneOff } from 'lucide-react-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveReticulumVoiceRemoteLabel } from '@/renderer/lib/reticulumVoiceRemoteLabel';
@@ -53,6 +53,7 @@ export function ReticulumVoiceOverlay() {
   // Re-resolve name when peer table updates (dial may start before peers hydrate).
   useReticulumPeerStore((s) => s.peersRevision);
   const [nowMs, setNowMs] = useState<number | null>(null);
+  const ringPanelRef = useRef<HTMLDivElement>(null);
 
   const activeStatus = active?.status ?? null;
 
@@ -102,17 +103,35 @@ export function ReticulumVoiceOverlay() {
     : (active?.remote_identity ?? '');
   const remoteLabel = remoteHash ? resolveReticulumVoiceRemoteLabel(remoteHash) : '';
 
+  // Focus the ring's panel, not Answer: a Space or Enter typed into the composer as the call
+  // arrives must not answer it. Focus goes back where it was when the ring ends.
+  useEffect(() => {
+    if (!showIncoming) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    ringPanelRef.current?.focus();
+    return () => {
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [showIncoming]);
+
   if (!showIncoming && !showInCall) return null;
 
   if (showIncoming && incoming) {
+    // z-[1300]: above every other overlay (the log analyzer is z-[1200]), so an open dialog
+    // never hides the ring. data-keyboard-owner (keyboardOwnerLayer) keeps Tab and Escape here.
     return (
       <div
-        className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-4 sm:items-center"
+        className="fixed inset-0 z-[1300] flex items-end justify-center bg-black/50 p-4 sm:items-center"
         role="dialog"
         aria-modal="true"
         aria-label={t('reticulumVoice.incomingTitle')}
+        data-keyboard-owner=""
       >
-        <div className="bg-deep-black shadow-level-3 border-ink-600 w-full max-w-md rounded-lg border p-4">
+        <div
+          ref={ringPanelRef}
+          tabIndex={-1}
+          className="bg-deep-black shadow-level-3 border-ink-600 w-full max-w-md rounded-lg border p-4"
+        >
           <h2 className="text-bright-green mb-2 text-lg font-semibold">
             {t('reticulumVoice.incomingTitle')}
           </h2>
