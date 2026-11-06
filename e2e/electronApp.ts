@@ -47,6 +47,7 @@ type ResolveLocalElectronBin = (
   fileExists?: (p: string) => boolean,
 ) => string;
 
+/** Load `resolveLocalElectronBin` from `scripts/start-electron.mjs`. */
 export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectronBin> {
   const modUrl = pathToFileURL(path.join(repoRoot, 'scripts', 'start-electron.mjs')).href;
   const mod = (await import(modUrl)) as {
@@ -55,6 +56,7 @@ export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectro
   return mod.resolveLocalElectronBin;
 }
 
+/** Throw if the production main bundle under `dist-electron/` is missing. */
 export function assertProductionBuildPresent(): void {
   if (!existsSync(MAIN_ENTRY)) {
     throw new Error(
@@ -63,6 +65,7 @@ export function assertProductionBuildPresent(): void {
   }
 }
 
+/** Create a unique `mesh-e2e-*` temp directory for an Electron user-data profile. */
 function createUserDataDir(): string {
   return mkdtempSync(path.join(tmpdir(), 'mesh-e2e-'));
 }
@@ -82,6 +85,7 @@ export function authorizeE2eProfile(userDataDir: string): string {
   return token;
 }
 
+/** Resolve after `ms` milliseconds (used by dispose retries and close timeouts). */
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -220,6 +224,7 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   }
 }
 
+/** True when `proc` is missing or has already exited (exit or signal code set). */
 function hasProcessExited(proc: ChildProcess | undefined): boolean {
   return proc?.exitCode !== null || proc?.signalCode !== null;
 }
@@ -277,10 +282,12 @@ export async function closeElectronApplication(app: ElectronApplication): Promis
   }
 }
 
+/** Close a launched E2E app with the bounded force-kill close path. */
 export async function closeApp(launched: LaunchedApp): Promise<void> {
   await closeElectronApplication(launched.app);
 }
 
+/** Close the app and delete its temp user-data dir unless `retainUserData` is set. */
 export async function teardownApp(launched: LaunchedApp): Promise<void> {
   await closeApp(launched);
   if (!launched.retainUserData) {
@@ -319,6 +326,7 @@ export const RENDERER_CONSOLE_ERROR_ALLOWLIST: RegExp[] = [
   /Autofill\.(enable|disable)/i,
 ];
 
+/** Drop known-benign renderer console errors using `RENDERER_CONSOLE_ERROR_ALLOWLIST`. */
 export function filterUnexpectedConsoleErrors(errors: string[]): string[] {
   return errors.filter((text) => !RENDERER_CONSOLE_ERROR_ALLOWLIST.some((re) => re.test(text)));
 }
@@ -349,6 +357,7 @@ export async function openPanel(page: Page, section: string, tab?: string): Prom
   }
 }
 
+/** Open the App rail section and wait until its panel is visible. */
 export async function openAppTab(page: Page): Promise<void> {
   await openPanel(page, 'App');
   await expectPanelOpen(page, 'App');
