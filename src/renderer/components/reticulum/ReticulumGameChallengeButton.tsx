@@ -11,7 +11,7 @@ interface ReticulumGameChallengeButtonProps {
   lxmfPeerHash: string;
   disabled?: boolean;
   className?: string;
-  /** Icon color class (Peers uses `text-purple-400`; DM chip inherits currentColor). */
+  /** Icon color class (defaults to purple for Peers / Chat DM Challenge). */
   iconClassName?: string;
 }
 
@@ -20,7 +20,7 @@ export function ReticulumGameChallengeButton({
   lxmfPeerHash,
   disabled = false,
   className = RETICULUM_DM_HEADER_ACTION_CLASS,
-  iconClassName,
+  iconClassName = 'text-purple-400',
 }: ReticulumGameChallengeButtonProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);

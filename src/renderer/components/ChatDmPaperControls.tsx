@@ -111,7 +111,7 @@ export function ChatDmPaperShareControl({
       aria-label={t('chatPanel.shareAsPaperAria')}
       onClick={openModal}
     >
-      <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <FileText className="h-3.5 w-3.5 shrink-0 text-yellow-400" aria-hidden />
       <span className="min-w-0 truncate">{t('chatPanel.shareAsPaper')}</span>
     </button>
   );

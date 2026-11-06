@@ -13,7 +13,7 @@ interface ReticulumVoiceCallButtonProps {
   identityHash?: string | null;
   disabled?: boolean;
   className?: string;
-  /** Icon color class (Peers uses `text-cyan-400`; DM chip inherits currentColor). */
+  /** Icon color class (defaults to cyan for Peers / Chat DM Call). */
   iconClassName?: string;
 }
 
@@ -23,7 +23,7 @@ export function ReticulumVoiceCallButton({
   identityHash = null,
   disabled = false,
   className = RETICULUM_DM_HEADER_ACTION_CLASS,
-  iconClassName,
+  iconClassName = 'text-cyan-400',
 }: ReticulumVoiceCallButtonProps) {
   const { t } = useTranslation();
   // Re-render when identity activity updates so capability badge can flip to heard.

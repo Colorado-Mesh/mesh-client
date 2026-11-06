@@ -62,6 +62,7 @@ import {
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { isReticulumStaleAlternateDismissed } from '@/renderer/lib/reticulum/reticulumStaleAlternateDismiss';
+import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
@@ -79,12 +80,10 @@ import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
-import { Button, buttonClassName } from './ui/Button';
+import { Button } from './ui/Button';
 import { INPUT_CLASS, SELECT_CLASS } from './ui/formClasses';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { SortIndicator } from './ui/SortIndicator';
-
-const PEER_ROW_ACTION_BUTTON_CLASS = buttonClassName('secondary', 'sm');
 
 type PeerListTab = 'peers' | 'history' | 'contacts' | 'favorites';
 type SortKey = ReticulumPeerSortKey;
@@ -732,7 +731,7 @@ export default function ReticulumPeerListPanel({
       <span className="inline-flex items-center gap-1.5">
         <button
           type="button"
-          className={PEER_ROW_ACTION_BUTTON_CLASS}
+          className={RETICULUM_DM_HEADER_ACTION_CLASS}
           disabled={busy || chatBlocked}
           title={chatBlocked ? t('peerListPanel.chatNeedsLxmfDelivery') : undefined}
           onClick={(e) => {
@@ -761,7 +760,7 @@ export default function ReticulumPeerListPanel({
             lxmfPeerHash={peer.destination_hash}
             identityHash={peer.identity_hash}
             disabled={busy || !isConnected}
-            className={PEER_ROW_ACTION_BUTTON_CLASS}
+            className={RETICULUM_DM_HEADER_ACTION_CLASS}
             iconClassName="text-cyan-400"
           />
         ) : null}
@@ -769,7 +768,7 @@ export default function ReticulumPeerListPanel({
           <ReticulumGameChallengeButton
             lxmfPeerHash={gamesLxmfHash}
             disabled={busy || !isConnected}
-            className={PEER_ROW_ACTION_BUTTON_CLASS}
+            className={RETICULUM_DM_HEADER_ACTION_CLASS}
             iconClassName="text-purple-400"
           />
         ) : null}

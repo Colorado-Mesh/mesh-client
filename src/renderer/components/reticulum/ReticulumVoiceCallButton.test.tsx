@@ -6,11 +6,11 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import i18n from '@/renderer/lib/i18n';
+import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { LXST_TELEPHONY_ASPECT } from '@/renderer/lib/reticulumVoiceCapability';
 import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 
-import { buttonClassName } from '../ui/Button';
 import { ReticulumVoiceCallButton } from './ReticulumVoiceCallButton';
 
 const callPeer = vi.fn();
@@ -39,12 +39,14 @@ describe('ReticulumVoiceCallButton', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('uses outlined cyan chip action class and keeps interop only in title', () => {
+  it('uses secondary action chrome with cyan icon and keeps interop only in title', () => {
     render(<ReticulumVoiceCallButton lxmfPeerHash={peerHash} identityHash={identityHash} />);
     const btn = screen.getByRole('button', { name: /start lxst voice call/i });
-    expect(btn.className).toContain('border-cyan-500/35');
-    expect(btn.className).toMatch(/text-cyan-/);
+    expect(btn.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
+    expect(btn.className).toContain('bg-sidebar-active-bg');
+    expect(btn.className).not.toContain('border-cyan-500/35');
     expect(btn.className).not.toContain('hover:underline');
+    expect(btn.querySelector('svg.text-cyan-400')).toBeTruthy();
     const interop = i18n.t('reticulumVoice.help.interop');
     expect(btn.getAttribute('aria-label')).not.toContain(interop);
     expect(btn.getAttribute('title')).toContain(interop);
@@ -61,27 +63,7 @@ describe('ReticulumVoiceCallButton', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows an LXST pill when telephony aspect was heard', () => {
-    useReticulumIdentityActivityStore.setState({
-      byDestination: new Map([
-        [
-          peerHash,
-          [
-            {
-              destination_hash: peerHash,
-              aspect: LXST_TELEPHONY_ASPECT,
-              identity_hash: identityHash,
-              last_seen: 1,
-            },
-          ],
-        ],
-      ]),
-    });
-    render(<ReticulumVoiceCallButton lxmfPeerHash={peerHash} identityHash={identityHash} />);
-    expect(screen.getByText(i18n.t('reticulumVoice.capabilityHeardShort'))).toBeInTheDocument();
-  });
-
-  it('supports Peers secondary styling with cyan icon and axe-clean LXST pill', async () => {
+  it('shows an LXST pill when telephony aspect was heard and stays axe-clean', async () => {
     useReticulumIdentityActivityStore.setState({
       byDestination: new Map([
         [
@@ -98,17 +80,8 @@ describe('ReticulumVoiceCallButton', () => {
       ]),
     });
     const { container } = render(
-      <ReticulumVoiceCallButton
-        lxmfPeerHash={peerHash}
-        identityHash={identityHash}
-        className={buttonClassName('secondary', 'sm')}
-        iconClassName="text-cyan-400"
-      />,
+      <ReticulumVoiceCallButton lxmfPeerHash={peerHash} identityHash={identityHash} />,
     );
-    const btn = screen.getByRole('button', { name: /start lxst voice call/i });
-    expect(btn.className).toContain('bg-sidebar-active-bg');
-    expect(btn.className).not.toContain('border-cyan-500/35');
-    expect(btn.querySelector('svg.text-cyan-400')).toBeTruthy();
     expect(screen.getByText(i18n.t('reticulumVoice.capabilityHeardShort'))).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
