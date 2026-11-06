@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "Nós DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Os posts da sala têm seu próprio limite do mesmo tamanho, então os canais ocupados nunca os empurram para fora."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -5726,7 +5727,8 @@
     "enableAutoLoginAria": "Faça login nesta sala automaticamente quando o rádio se conectar",
     "autoLoginSaveFailed": "Não foi possível salvar a configuração de login automático. Sua configuração anterior permanece inalterada.",
     "leaveRoomConfirmTitle": "Sair desta sala?",
-    "leaveRoomConfirmMessage": "Você sairá deste servidor de sala pelo rádio. Você pode fazer login novamente mais tarde com o convidado ou a senha salva."
+    "leaveRoomConfirmMessage": "Você sairá deste servidor de sala pelo rádio. Você pode fazer login novamente mais tarde com o convidado ou a senha salva.",
+    "syncSaveFailed": "Não foi possível salvar as configurações de sincronização. Suas configurações anteriores permanecem inalteradas."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",

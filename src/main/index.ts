@@ -130,6 +130,7 @@ import {
   type MeshcoreContactUpsertParams,
   migrateRfStubNodes,
   pruneMeshcoreContactsByCount,
+  pruneMeshcoreMessagesByCountOn,
   pruneMeshcorePathHistory,
   prunePositionHistory,
   prunePositionHistoryPerNode,
@@ -4577,17 +4578,15 @@ ipcMain.handle('db:pruneMeshcoreMessagesByCount', (event, maxCount: number) => {
     if (typeof maxCount !== 'number' || maxCount < 100 || !isFinite(maxCount))
       return { changes: 0 };
     const cap = Math.floor(maxCount);
-    const result = db
-      .prepareOnce(
-        'DELETE FROM meshcore_messages WHERE id NOT IN (SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT ?)',
-      )
-      .run(cap);
-    if (result.changes > 0) {
+    // Room posts keep their own newest `cap` rows (see pruneMeshcoreMessagesByCountOn).
+    const { chat, room } = pruneMeshcoreMessagesByCountOn(db, cap);
+    const changes = chat + room;
+    if (changes > 0) {
       console.debug(
-        `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${result.changes} messages, keeping newest ${cap}`,
+        `[IPC] db:pruneMeshcoreMessagesByCount: pruned ${changes} messages (${room} room posts), keeping newest ${cap} messages and ${cap} room posts`,
       );
     }
-    return { changes: Number(result.changes) };
+    return { changes };
   } catch (err) {
     finishDbIpcHandler('db:pruneMeshcoreMessagesByCount', err);
   }

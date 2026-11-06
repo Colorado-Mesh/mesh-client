@@ -530,6 +530,7 @@ import {
 } from '../lib/serialPortRecovery';
 import { LAST_SERIAL_PORT_KEY, persistSerialPortIdentity } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
+import { afterStartupDbPrune } from '../lib/startupDbPrune';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
@@ -1286,6 +1287,9 @@ export function useMeshcoreRuntime() {
   /** Reload MeshCore contacts + hop counts from SQLite (mount, and after disconnect). */
   const reloadMeshcoreNodesFromDb = useCallback(
     async (opts?: { hydrateMessages?: boolean; beforeCommit?: () => boolean }) => {
+      // The mount load runs before App's post-prune hydrate; without this wait it reads rows the
+      // startup prune is about to delete, and the later upsert hydrate never removes them.
+      await afterStartupDbPrune();
       const [rows, dbMsgs, savedNodes] = await Promise.all([
         window.electronAPI.db.getMeshcoreContacts(),
         loadMeshcoreMessagesForHydration(),

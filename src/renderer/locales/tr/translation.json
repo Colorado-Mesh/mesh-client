@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "DOM düğümleri: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Oda gönderilerinin aynı boyutta kendi sınırları vardır, bu nedenle meşgul kanallar onları asla dışarı itmez."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -5726,7 +5727,8 @@
     "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın",
     "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi.",
     "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
-    "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz."
+    "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz.",
+    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

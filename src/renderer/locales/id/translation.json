@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "Tumpukan JS Δ: {{value}}",
     "memoryDomNodes": "Simpul DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Pesan ruangan memiliki batas sendiri dengan ukuran yang sama, jadi saluran yang ramai tidak pernah menggesernya."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -5726,7 +5727,8 @@
     "enableAutoLoginAria": "Masuk ke ruangan ini secara otomatis saat radio terhubung",
     "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah.",
     "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
-    "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan."
+    "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan.",
+    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
