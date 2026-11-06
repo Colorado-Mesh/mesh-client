@@ -27,6 +27,13 @@ describe('BrowserWindow creation', () => {
     expect(INDEX_SOURCE).toContain('minWidth: 900');
     expect(INDEX_SOURCE).toContain('minHeight: 600');
   });
+
+  it('saves normal bounds and restores the saved display state on relaunch', () => {
+    // Capture works from normal bounds, so quitting while maximized keeps the last position.
+    expect(INDEX_SOURCE).toContain('captureWindowState(win)');
+    expect(INDEX_SOURCE).not.toContain('if (!win.isMinimized() && !win.isMaximized())');
+    expect(INDEX_SOURCE).toContain('restoreWindowState(win, bounds)');
+  });
 });
 
 describe('renderer origin recovery loads', () => {
