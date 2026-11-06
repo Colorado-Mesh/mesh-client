@@ -87,6 +87,20 @@ export function runStartupDbPrune(opts?: DbPruneOptions): Promise<void> {
   return startupDbPrunePromise;
 }
 
+/**
+ * Resolves once the startup prune has settled, so a load that reads SQLite on its own at launch
+ * (a protocol runtime's mount load) sees the pruned rows, not the ones the prune is deleting.
+ * Resolves at once when no startup prune has started (tests, or code running before App mounts),
+ * and resolves rather than rejects when the prune failed: `useAppStartupDbPrune` logs that.
+ */
+export async function afterStartupDbPrune(): Promise<void> {
+  const prune = startupDbPrunePromise;
+  if (!prune) return;
+  await prune.catch(() => {
+    /* catch-no-log-ok useAppStartupDbPrune logs a failed startup prune; loads go ahead anyway */
+  });
+}
+
 /** Periodic maintenance while the app stays connected (same ops as startup prune). */
 export function runSessionDbPrune(opts?: DbPruneOptions): Promise<void> {
   if (sessionDbPrunePromise) return sessionDbPrunePromise;

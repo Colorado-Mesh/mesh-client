@@ -27,7 +27,7 @@ Protocol SDK adapters: `src/renderer/lib/protocols/`. Connection lifecycle: `Con
 
 ## Database
 
-WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`. **Startup maintenance:** `lib/startupDbPrune.ts` — single-flight per session from `App.tsx` (node/message retention, RF stub migration); do not re-invoke from unstable effect deps.
+WAL SQLite; `user_version` in `database.ts`; migrations as `migration_N()`; `db-compat.ts` over `node:sqlite`. After schema changes: `pnpm run check:db-migrations`. **Startup maintenance:** `lib/startupDbPrune.ts` — single-flight per session from `App.tsx` (node/message retention, RF stub migration); do not re-invoke from unstable effect deps. `useAppStartupDbPrune` starts it in a layout effect, so it is in flight before any runtime mount effect runs; a load that reads SQLite on its own at launch awaits `afterStartupDbPrune()` first (the MeshCore runtime mount load does), or it shows rows the prune deletes, and App's post-prune upsert hydrate never removes them. Meshtastic and Reticulum read messages only on connect.
 
 ## UI
 

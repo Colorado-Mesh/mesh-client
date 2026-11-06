@@ -1,9 +1,43 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { render } from '@testing-library/react';
+import { createElement, useEffect } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EmergencyIncident } from '@/renderer/lib/mecp/incidentTypes';
+import { resetStartupDbPruneForTests } from '@/renderer/lib/startupDbPrune';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
 
-import { incidentPruneOptions } from './useAppStartupDbPrune';
+import { incidentPruneOptions, useAppStartupDbPrune } from './useAppStartupDbPrune';
+
+describe('useAppStartupDbPrune', () => {
+  beforeEach(() => {
+    resetStartupDbPruneForTests();
+    vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockClear();
+  });
+
+  afterEach(() => {
+    resetStartupDbPruneForTests();
+  });
+
+  it('starts the startup prune before passive effects declared ahead of it run', () => {
+    // App calls the protocol runtimes before this hook; their mount loads must find the prune
+    // already in flight so they can wait for it.
+    const warn = mockConsoleWarn();
+    let pruneCallsSeenByEarlierEffect = -1;
+    function Probe() {
+      useEffect(() => {
+        pruneCallsSeenByEarlierEffect = vi.mocked(window.electronAPI.db.migrateRfStubNodes).mock
+          .calls.length;
+      }, []);
+      useAppStartupDbPrune(() => undefined);
+      return null;
+    }
+    const view = render(createElement(Probe));
+    expect(pruneCallsSeenByEarlierEffect).toBe(1);
+    view.unmount();
+    warn.restore();
+  });
+});
 
 function incident(id: string, senderId: string, status: EmergencyIncident['status']) {
   return {
