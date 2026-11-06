@@ -70,6 +70,8 @@ export function HelpTooltip({
     },
   } as const;
 
+  // `sr-only` is absolutely positioned; both wrappers below are `relative` so it stays inside the
+  // trigger (and inside any clipped toolbar) instead of widening the page from the body.
   const hiddenDescription = (
     <span id={descriptionId} className="sr-only">
       {text}
@@ -87,7 +89,7 @@ export function HelpTooltip({
           ref={setRef}
           type="button"
           data-instant-tooltip-managed=""
-          className={['inline-flex cursor-help', className].filter(Boolean).join(' ')}
+          className={['relative inline-flex cursor-help', className].filter(Boolean).join(' ')}
           aria-label={ariaLabel ?? text}
           aria-describedby={descriptionId}
           {...showHandlers}
@@ -108,7 +110,7 @@ export function HelpTooltip({
     <span
       ref={setRef}
       data-instant-tooltip-managed=""
-      className={['inline-flex', !nonFocusableWrapper && 'cursor-help', className]
+      className={['relative inline-flex', !nonFocusableWrapper && 'cursor-help', className]
         .filter(Boolean)
         .join(' ')}
       aria-label={ariaLabel}

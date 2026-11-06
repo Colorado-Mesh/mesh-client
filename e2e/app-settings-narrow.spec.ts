@@ -1,0 +1,133 @@
+import { expect, type Page, test } from '@playwright/test';
+
+import {
+  launchApp,
+  type LaunchedApp,
+  openAppTab,
+  revealSettingInPage,
+  teardownApp,
+} from './electronApp';
+
+const COLOR_SCHEME_ANCHOR = 'app.appearance.colorScheme';
+
+interface ColorSchemeLayout {
+  detailsOpen: boolean;
+  /** Right edge of the Color scheme card; it sits inside the App tabpanel and its padding. */
+  sectionRight: number;
+  swatchRows: { label: string | null; lines: number; right: number }[];
+  scrollContainers: { overflowX: number }[];
+  pageOverflowX: number;
+}
+
+/** Reads where the colour swatch rows sit and how far each enclosing scroll container overflows. */
+function measureColorScheme(page: Page): Promise<ColorSchemeLayout> {
+  return page.evaluate((anchorId) => {
+    const details = document.querySelector<HTMLDetailsElement>(
+      `[data-setting-anchor="${anchorId}"]`,
+    );
+    const rows = details
+      ? [...details.querySelectorAll('[role="group"][aria-labelledby^="theme-color-heading-"]')]
+      : [];
+    const scrollContainers: ColorSchemeLayout['scrollContainers'] = [];
+    for (let node = details?.parentElement ?? null; node; node = node.parentElement) {
+      const overflowX = getComputedStyle(node).overflowX;
+      if (overflowX === 'auto' || overflowX === 'scroll') {
+        scrollContainers.push({ overflowX: node.scrollWidth - node.clientWidth });
+      }
+    }
+    return {
+      detailsOpen: details?.open ?? false,
+      sectionRight: details?.getBoundingClientRect().right ?? 0,
+      swatchRows: rows.map((row) => {
+        // The swatches, not the group box: a group that does not wrap keeps its own box inside
+        // the panel while its swatches run past it.
+        const swatches = [...row.querySelectorAll('button')].map((b) => b.getBoundingClientRect());
+        return {
+          label: row.getAttribute('aria-labelledby'),
+          lines: new Set(swatches.map((r) => Math.round(r.top))).size,
+          right: Math.max(...swatches.map((r) => r.right)),
+        };
+      }),
+      scrollContainers,
+      pageOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  }, COLOR_SCHEME_ANCHOR);
+}
+
+/** Resizes the app window's content area and waits until the page reports the new width. */
+async function setWindowWidth(launched: LaunchedApp, width: number): Promise<void> {
+  await launched.app.evaluate(({ BrowserWindow }, w) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    win?.setMinimumSize(360, 600);
+    win?.setContentSize(w, 700);
+  }, width);
+  await expect.poll(() => launched.page.evaluate(() => window.innerWidth)).toBe(width);
+}
+
+/** Checks the measurement found the open Color scheme card, its rows and the panel scroller. */
+function expectColorSchemeMeasured(layout: ColorSchemeLayout, width: number): void {
+  expect(layout.detailsOpen, `Color scheme open at ${width}`).toBe(true);
+  expect(layout.swatchRows.length, `colour rows at ${width}`).toBeGreaterThan(0);
+  expect(layout.scrollContainers.length, `App panel scroll container at ${width}`).toBeGreaterThan(
+    0,
+  );
+  expect(layout.sectionRight, `Color scheme card edge at ${width}`).toBeGreaterThan(0);
+}
+
+/** Checks that neither the App panel nor the page scrolls sideways. */
+function expectNoSidewaysScroll(layout: ColorSchemeLayout, width: number): void {
+  for (const container of layout.scrollContainers) {
+    expect(container.overflowX, `sideways scroll at ${width}`).toBeLessThanOrEqual(0);
+  }
+  expect(layout.pageOverflowX, `page sideways scroll at ${width}`).toBeLessThanOrEqual(0);
+}
+
+/**
+ * App settings either side of the phone breakpoint (under 768px, SHELL_COMPACT_QUERY and
+ * Tailwind md). Each colour row in Color scheme holds 27 preset swatches (about 750px), so on a
+ * phone the row has to wrap; a scrolling strip is ruled out by issue #356. On desktop the row keeps
+ * its single line. The AppPanel unit test can only pin the classes (jsdom has no layout); this
+ * checks the laid-out result in the built app.
+ */
+test.describe('App settings colour rows at phone and desktop widths', () => {
+  let launched: LaunchedApp;
+
+  test.afterEach(async () => {
+    if (launched) await teardownApp(launched);
+  });
+
+  test('Color scheme swatches wrap on phones and stay on one line on desktop', async () => {
+    launched = await launchApp();
+    const { page } = launched;
+    await openAppTab(page);
+    await revealSettingInPage(page, COLOR_SCHEME_ANCHOR);
+
+    for (const width of [375, 767]) {
+      await setWindowWidth(launched, width);
+      const layout = await measureColorScheme(page);
+      expectColorSchemeMeasured(layout, width);
+      for (const row of layout.swatchRows) {
+        expect(row.lines, `${row.label} wraps at ${width}`).toBeGreaterThan(1);
+        // The scroll container's edge would let swatches run into the padding around the
+        // tabpanel without scrolling, so the bound is the Color scheme card itself.
+        expect(
+          row.right,
+          `${row.label} inside the Color scheme card at ${width}`,
+        ).toBeLessThanOrEqual(layout.sectionRight + 1);
+      }
+      expectNoSidewaysScroll(layout, width);
+    }
+
+    for (const width of [768, 1200]) {
+      await setWindowWidth(launched, width);
+      const layout = await measureColorScheme(page);
+      expectColorSchemeMeasured(layout, width);
+      for (const row of layout.swatchRows) {
+        expect(row.lines, `${row.label} on one line at ${width}`).toBe(1);
+      }
+    }
+    // At 1200 the single line fits, as it did before the phone layout existed.
+    expectNoSidewaysScroll(await measureColorScheme(page), 1200);
+    expect(launched.crashed).toBe(false);
+  });
+});
