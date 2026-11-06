@@ -358,9 +358,10 @@ describe('AppPanel: theme presets', () => {
     localStorage.removeItem('mesh-client:themeSurface');
   });
 
-  it('wraps the swatches of each colour row instead of widening the panel', async () => {
-    // A row of 27 swatches is about 750px; on a phone or tablet it must wrap. A nested
-    // overflow-x-auto strip is not an option (see App.test.tsx, issue #356).
+  it('wraps the swatches of each colour row on phones and keeps one line on desktop', async () => {
+    // A row of 27 swatches is about 750px, so under 768px (SHELL_COMPACT_QUERY, Tailwind md) it
+    // must wrap; a nested overflow-x-auto strip is not an option (App.test.tsx, issue #356).
+    // From md up the row keeps the single-line layout desktop had before.
     render(
       <ToastProvider>
         <AppPanel {...defaultProps} />
@@ -372,8 +373,11 @@ describe('AppPanel: theme presets', () => {
     );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      expect(row.className).toContain('flex-wrap');
-      expect(row.className).not.toContain('flex-nowrap');
+      const classes = row.className.split(/\s+/);
+      expect(classes).toContain('flex-wrap');
+      expect(classes).not.toContain('flex-nowrap');
+      expect(classes).toContain('md:flex-nowrap');
+      expect(classes).toContain('md:flex-1');
     }
   });
 
