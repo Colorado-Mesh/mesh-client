@@ -5726,7 +5726,8 @@
     "enableAutoLoginAria": "Connectez-vous automatiquement à cette pièce lorsque la radio se connecte",
     "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés.",
     "leaveRoomConfirmTitle": "Quitter cette salle ?",
-    "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré."
+    "leaveRoomConfirmMessage": "Vous vous déconnectez de ce serveur de salle à la radio. Vous pouvez vous reconnecter plus tard avec le voyageur ou le mot de passe enregistré.",
+    "syncSaveFailed": "Impossible d'enregistrer les paramètres de synchronisation. Vos paramètres précédents sont inchangés."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

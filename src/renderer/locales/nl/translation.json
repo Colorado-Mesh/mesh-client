@@ -5726,7 +5726,8 @@
     "enableAutoLoginAria": "Automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt",
     "autoLoginSaveFailed": "Kon de instelling voor automatisch inloggen niet opslaan. Uw vorige instelling is ongewijzigd.",
     "leaveRoomConfirmTitle": "Deze ruimte verlaten?",
-    "leaveRoomConfirmMessage": "U logt uit bij deze roomserver op de radio. Je kunt later opnieuw inloggen met de gast of het opgeslagen wachtwoord."
+    "leaveRoomConfirmMessage": "U logt uit bij deze roomserver op de radio. Je kunt later opnieuw inloggen met de gast of het opgeslagen wachtwoord.",
+    "syncSaveFailed": "Kon de synchronisatie-instellingen niet opslaan. Je vorige instellingen zijn ongewijzigd."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

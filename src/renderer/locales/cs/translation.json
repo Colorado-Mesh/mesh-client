@@ -5770,7 +5770,8 @@
     "enableAutoLoginAria": "Přihlaste se do této místnosti automaticky, jakmile se rádio připojí",
     "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo.",
     "leaveRoomConfirmTitle": "Opustit tuto místnost?",
-    "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla."
+    "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla.",
+    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

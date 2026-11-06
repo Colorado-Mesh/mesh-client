@@ -5726,7 +5726,8 @@
     "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın",
     "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi.",
     "leaveRoomConfirmTitle": "Bu odadan çıkmak mı?",
-    "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz."
+    "leaveRoomConfirmMessage": "Radyodaki bu oda sunucusundan çıkış yapacaksınız. Misafir veya kayıtlı parola ile daha sonra tekrar giriş yapabilirsiniz.",
+    "syncSaveFailed": "Senkronizasyon ayarları kaydedilemedi. Önceki ayarlarınız değiştirilmedi."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

@@ -43,6 +43,7 @@ import { disposeAiSummaries, useAiSummaryStore } from '@/renderer/stores/aiSumma
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
+import { ToastProvider } from './Toast';
 
 const mockScrollToEnd = vi.fn();
 const mockScrollToIndex = vi.fn();
@@ -114,11 +115,12 @@ function makeRoom(nodeId: number, longName: string): MeshNode {
 function renderRoomsPanel(
   nodes: Map<number, MeshNode>,
   props: Partial<ComponentProps<typeof RoomsPanel>> = {},
+  options: { toasts?: boolean } = {},
 ) {
   const onLoginRoom = props.onLoginRoom ?? vi.fn().mockResolvedValue(undefined);
   const onCancelRoomLogin = props.onCancelRoomLogin ?? vi.fn();
   const onLeaveRoom = props.onLeaveRoom ?? vi.fn().mockResolvedValue(undefined);
-  render(
+  const panel = (
     <RoomsPanel
       nodes={nodes}
       messages={[]}
@@ -130,9 +132,16 @@ function renderRoomsPanel(
       onSendRoomPost={vi.fn()}
       onSendRoomAdminCli={vi.fn()}
       {...props}
-    />,
+    />
   );
+  render(options.toasts ? <ToastProvider>{panel}</ToastProvider> : panel);
   return { onLoginRoom, onCancelRoomLogin, onLeaveRoom };
+}
+
+/** The text of every toast currently shown (needs `renderRoomsPanel(..., { toasts: true })`). */
+function shownToasts(): string[] {
+  const stack = document.querySelector('[data-toast-stack]');
+  return stack ? [...stack.querySelectorAll('span')].map((s) => s.textContent ?? '') : [];
 }
 
 describe('RoomsPanel', () => {
@@ -1354,6 +1363,92 @@ describe('RoomsPanel', () => {
       expect(getMeshcoreRoomSyncConfig(room.node_id).enabled).toBe(true);
     });
     expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(true);
+  });
+
+  it('leaves auto-login off when the room has no session or saved password left', async () => {
+    const room = makeRoom(0x102b, 'Stale Switch Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test stale switch',
+    );
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id }, { toasts: true });
+    await act(async () => {});
+    if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
+      fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+    }
+    const toggle = screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' });
+    expect(toggle).toBeEnabled();
+
+    // The session ends while the enabled switch is still on screen.
+    meshcoreClearRoomSession(room.node_id);
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(shownToasts()).toContain('roomsPanel.autoLoginRequiresSavedPassword');
+    });
+    expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(false);
+    expect(getMeshcoreRoomCredential(room.node_id)).toBeUndefined();
+    expect(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  it('keeps the Auto-sync edit and says so when saving sync settings fails', async () => {
+    const room = makeRoom(0x102c, 'Full Disk Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    await setMeshcoreRoomCredential(room.node_id, { guestPassword: 'hello' });
+    const syncKey = meshcoreRoomSyncSettingForNode(room.node_id);
+    mergeAppSetting(
+      syncKey,
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test sync save failure',
+    );
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const originalSet = window.electronAPI.appSettings.set;
+    const setSpy = vi
+      .spyOn(window.electronAPI.appSettings, 'set')
+      .mockImplementation((key: string, value: string) =>
+        key === syncKey ? Promise.reject(new Error('disk full')) : originalSet(key, value),
+      );
+    const warn = mockConsoleWarn();
+    try {
+      renderRoomsPanel(nodes, { initialRoomTarget: room.node_id }, { toasts: true });
+      await act(async () => {});
+      if (!screen.queryByRole('switch', { name: 'roomsPanel.autoSync' })) {
+        fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+      }
+      await userEvent.click(screen.getByRole('switch', { name: 'roomsPanel.autoSync' }));
+      await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.saveSyncConfig' }));
+
+      await waitFor(() => {
+        expect(shownToasts()).toContain('roomsPanel.syncSaveFailed');
+      });
+      expect(warn.spy).toHaveBeenCalledWith(
+        expect.stringContaining('[RoomsPanel] save sync settings failed'),
+      );
+      expect(screen.getByRole('button', { name: 'roomsPanel.saveSyncConfig' })).toBeInTheDocument();
+      expect(screen.getByRole('switch', { name: 'roomsPanel.autoSync' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(getMeshcoreRoomSyncConfig(room.node_id).enabled).toBe(false);
+    } finally {
+      warn.restore();
+      setSpy.mockRestore();
+    }
   });
 
   it('opens Room details before login so auto-login can be set there', async () => {

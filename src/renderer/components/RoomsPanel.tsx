@@ -909,6 +909,14 @@ export default function RoomsPanel({
           await disableMeshcoreRoomAutoLogin(nodeId);
         } else {
           await saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId);
+          if (!getMeshcoreRoomSavedSecretsSummary(nodeId).hasCredential) {
+            // The room logged out under the switch: with no session and no saved password,
+            // connect auto-login could never use the setting, so leave it off.
+            if (selectedRoomIdRef.current === nodeId) setAutoLoginOnConnect(false);
+            addToast(t('roomsPanel.autoLoginRequiresSavedPassword'), 'error');
+            refreshStoredRooms();
+            return;
+          }
           await setMeshcoreRoomSyncConfig(nodeId, {
             enabled: prev.enabled,
             intervalMinutes: prev.intervalMinutes,
@@ -1106,16 +1114,30 @@ export default function RoomsPanel({
 
   const handleSaveSyncConfig = useCallback(async () => {
     if (selectedRoomId == null) return;
-    if (autoLoginOnConnect && (await saveMeshcoreRoomSessionPasswordIfUnsaved(selectedRoomId))) {
-      refreshStoredRooms();
+    try {
+      if (autoLoginOnConnect && (await saveMeshcoreRoomSessionPasswordIfUnsaved(selectedRoomId))) {
+        refreshStoredRooms();
+      }
+      await setMeshcoreRoomSyncConfig(selectedRoomId, {
+        enabled: syncEnabled,
+        intervalMinutes: syncInterval,
+        autoLoginOnConnect,
+      });
+      setSyncConfigDirty(false);
+    } catch (e: unknown) {
+      // Keep the edit and its Save button so it can be saved again.
+      console.warn('[RoomsPanel] save sync settings failed ' + errLikeToLogString(e));
+      addToast(t('roomsPanel.syncSaveFailed'), 'error');
     }
-    await setMeshcoreRoomSyncConfig(selectedRoomId, {
-      enabled: syncEnabled,
-      intervalMinutes: syncInterval,
-      autoLoginOnConnect,
-    });
-    setSyncConfigDirty(false);
-  }, [autoLoginOnConnect, refreshStoredRooms, selectedRoomId, syncEnabled, syncInterval]);
+  }, [
+    addToast,
+    autoLoginOnConnect,
+    refreshStoredRooms,
+    selectedRoomId,
+    syncEnabled,
+    syncInterval,
+    t,
+  ]);
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
 

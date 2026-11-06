@@ -5726,7 +5726,8 @@
     "enableAutoLoginAria": "Masuk ke ruangan ini secara otomatis saat radio terhubung",
     "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah.",
     "leaveRoomConfirmTitle": "Meninggalkan ruangan ini?",
-    "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan."
+    "leaveRoomConfirmMessage": "Anda akan keluar dari server ruangan ini di radio. Anda bisa masuk lagi nanti dengan tamu atau kata sandi yang disimpan.",
+    "syncSaveFailed": "Tidak dapat menyimpan pengaturan sinkronisasi. Pengaturan Anda sebelumnya tidak berubah."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",

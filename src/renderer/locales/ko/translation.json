@@ -5726,7 +5726,8 @@
     "enableAutoLoginAria": "라디오가 연결되면 이 룸에 자동으로 로그인",
     "autoLoginSaveFailed": "자동 로그인 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않았습니다.",
     "leaveRoomConfirmTitle": "이 방에서 나가시겠어요?",
-    "leaveRoomConfirmMessage": "라디오에서 이 룸 서버에서 로그아웃합니다. 나중에 게스트 또는 저장된 비밀번호로 다시 로그인할 수 있습니다."
+    "leaveRoomConfirmMessage": "라디오에서 이 룸 서버에서 로그아웃합니다. 나중에 게스트 또는 저장된 비밀번호로 다시 로그인할 수 있습니다.",
+    "syncSaveFailed": "동기화 설정을 저장할 수 없습니다. 이전 설정은 변경되지 않습니다."
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

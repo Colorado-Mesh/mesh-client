@@ -6648,6 +6648,7 @@
     "enableAutoLogin": "Enable auto-login",
     "enableAutoLoginAria": "Log in to this room automatically when the radio connects",
     "autoLoginSaveFailed": "Could not save the auto-login setting. Your previous setting is unchanged.",
+    "syncSaveFailed": "Could not save the sync settings. Your previous settings are unchanged.",
     "sidebarLegendTitle": "Room status markers",
     "legendNotSaved": "No saved password",
     "legendSaved": "Password saved",
