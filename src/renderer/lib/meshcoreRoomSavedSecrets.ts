@@ -8,6 +8,7 @@ import {
   setMeshcoreRoomCredential,
 } from './meshcoreRoomCredentialStorage';
 import {
+  meshcoreGetRoomSession,
   meshcoreIsRoomLoginAbortError,
   meshcoreRoomLoginErrorIsAuthFailure,
 } from './meshcoreRoomSession';
@@ -41,6 +42,22 @@ export async function forgetMeshcoreRoomSavedSecrets(nodeId: number): Promise<vo
     autoLoginOnConnect: false,
   });
   clearMeshcoreRoomAutoLoginFailure(nodeId);
+}
+
+/**
+ * Saves the logged-in session's passwords when none are saved for the room. Connect-time
+ * auto-login only runs for rooms with a saved password, so turning it on must keep one.
+ * Returns true when it saved a new credential.
+ */
+export async function saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId: number): Promise<boolean> {
+  if (getMeshcoreRoomCredential(nodeId) != null) return false;
+  const session = meshcoreGetRoomSession(nodeId);
+  if (!session) return false;
+  await setMeshcoreRoomCredential(nodeId, {
+    guestPassword: session.guestPassword,
+    ...(session.adminPassword.length > 0 ? { adminPassword: session.adminPassword } : {}),
+  });
+  return true;
 }
 
 /** Keeps saved password but stops connect-time auto-login. */
