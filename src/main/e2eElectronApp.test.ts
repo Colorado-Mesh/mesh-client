@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { ChildProcess } from 'node:child_process';
 import type * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,6 +10,7 @@ const rmSyncMock = vi.hoisted(() => vi.fn());
 const existsSyncMock = vi.hoisted(() => vi.fn());
 const mkdtempSyncMock = vi.hoisted(() => vi.fn());
 const electronLaunchMock = vi.hoisted(() => vi.fn());
+const execFileSyncMock = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<object>();
@@ -20,6 +22,14 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<object>();
+  return {
+    ...actual,
+    execFileSync: (...args: unknown[]) => execFileSyncMock(...args) as undefined,
+  };
+});
+
 vi.mock('@playwright/test', () => ({
   _electron: {
     launch: (...args: unknown[]) => electronLaunchMock(...args) as unknown,
@@ -27,7 +37,14 @@ vi.mock('@playwright/test', () => ({
   expect: vi.fn(),
 }));
 
-import { disposeUserData, launchApp } from '../../e2e/electronApp';
+import {
+  closeApp,
+  closeElectronApplication,
+  disposeUserData,
+  forceKillElectronProcess,
+  launchApp,
+  type LaunchedApp,
+} from '../../e2e/electronApp';
 
 describe('disposeUserData', () => {
   beforeEach(() => {
@@ -94,6 +111,7 @@ describe('launchApp failure cleanup', () => {
     electronLaunchMock.mockResolvedValue({
       firstWindow: () => Promise.reject(new Error('no window')),
       close,
+      process: () => ({ pid: 1, exitCode: 0, signalCode: null }),
     });
 
     await expect(launchApp()).rejects.toThrow('no window');
@@ -110,6 +128,7 @@ describe('launchApp failure cleanup', () => {
     electronLaunchMock.mockResolvedValue({
       firstWindow: () => Promise.reject(new Error('no window')),
       close,
+      process: () => ({ pid: 1, exitCode: 0, signalCode: null }),
     });
 
     await expect(launchApp({ userDataDir })).rejects.toThrow('no window');
@@ -121,5 +140,117 @@ describe('launchApp failure cleanup', () => {
     expect(actualFs.readFileSync(path.join(userDataDir, '.mesh-e2e-profile'), 'utf8')).toBe(
       launchOptions.env.MESH_E2E_PROFILE_TOKEN,
     );
+  });
+});
+
+describe('forceKillElectronProcess', () => {
+  beforeEach(() => {
+    execFileSyncMock.mockReset();
+  });
+
+  it('no-ops when the process has already exited', () => {
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    forceKillElectronProcess({
+      pid: 99,
+      exitCode: 0,
+      signalCode: null,
+    } as ChildProcess);
+    expect(killSpy).not.toHaveBeenCalled();
+    expect(execFileSyncMock).not.toHaveBeenCalled();
+    killSpy.mockRestore();
+  });
+
+  it.each(['linux', 'darwin'] as const)('SIGKILLs the main pid on %s', (platform) => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: platform });
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    forceKillElectronProcess({
+      pid: 55,
+      exitCode: null,
+      signalCode: null,
+    } as ChildProcess);
+    expect(killSpy).toHaveBeenCalledWith(55, 'SIGKILL');
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
+  });
+
+  it('uses taskkill /T on win32', () => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    forceKillElectronProcess({
+      pid: 88,
+      exitCode: null,
+      signalCode: null,
+    } as ChildProcess);
+    expect(execFileSyncMock).toHaveBeenCalledWith('taskkill', ['/pid', '88', '/T', '/F'], {
+      stdio: 'ignore',
+    });
+    expect(killSpy).not.toHaveBeenCalled();
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
+  });
+});
+
+describe('closeElectronApplication', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    execFileSyncMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('resolves when close finishes before the timeout', async () => {
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    const close = vi.fn(() => Promise.resolve());
+    const app = {
+      close,
+      process: () => ({ pid: 1, exitCode: null, signalCode: null }),
+    };
+
+    const done = closeElectronApplication(app as never);
+    await vi.runAllTimersAsync();
+    await done;
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(killSpy).not.toHaveBeenCalled();
+    killSpy.mockRestore();
+  });
+
+  it('force-kills when close hangs past CLOSE_APP_TIMEOUT_MS', async () => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    const close = vi.fn(() => new Promise<void>(() => undefined));
+    const app = {
+      close,
+      process: () => ({ pid: 1234, exitCode: null, signalCode: null }),
+    };
+
+    const done = closeElectronApplication(app as never);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await done;
+
+    expect(killSpy).toHaveBeenCalledWith(1234, 'SIGKILL');
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
+  });
+
+  it('closeApp delegates to closeElectronApplication', async () => {
+    const close = vi.fn(() => Promise.resolve());
+    const launched = {
+      app: {
+        close,
+        process: () => ({ pid: 1, exitCode: 0, signalCode: null }),
+      },
+    } as unknown as LaunchedApp;
+
+    const done = closeApp(launched);
+    await vi.runAllTimersAsync();
+    await done;
+    expect(close).toHaveBeenCalledTimes(1);
   });
 });

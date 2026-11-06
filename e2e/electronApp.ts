@@ -1,3 +1,5 @@
+import type { ChildProcess } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,6 +20,10 @@ const MAIN_ENTRY = path.join(repoRoot, 'dist-electron', 'main', 'index.js');
 
 const DISPOSE_USER_DATA_MAX_ATTEMPTS = 5;
 const DISPOSE_USER_DATA_RETRY_BASE_MS = 50;
+/** Graceful `app.close()` budget before escalating to a force-kill. */
+const CLOSE_APP_TIMEOUT_MS = 10_000;
+/** Short wait after SIGKILL / taskkill for Playwright's close promise to settle. */
+const FORCE_KILL_WAIT_MS = 2_000;
 
 export interface LaunchAppOptions {
   /** Reuse an existing user-data dir (for relaunch tests). */
@@ -202,11 +208,7 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
 
     return launched;
   } catch (err) {
-    try {
-      await app.close();
-    } catch {
-      // catch-no-log-ok best-effort close after launch failure
-    }
+    await closeElectronApplication(app);
     if (ownsUserDataDir) {
       try {
         await disposeUserData(userDataDir);
@@ -218,12 +220,65 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   }
 }
 
-export async function closeApp(launched: LaunchedApp): Promise<void> {
+function hasProcessExited(proc: ChildProcess | undefined): boolean {
+  return proc?.exitCode !== null || proc?.signalCode !== null;
+}
+
+/**
+ * Force-kill a stuck Electron process. Windows uses taskkill /T for the tree;
+ * POSIX SIGKILLs the main pid only (not the process group — Electron may share
+ * Playwright's group, and a group kill would take down the test worker).
+ */
+export function forceKillElectronProcess(proc: ChildProcess | undefined): void {
+  if (proc == null || hasProcessExited(proc)) return;
+  const pid = proc.pid;
+  if (pid == null) return;
+
   try {
-    await launched.app.close();
+    if (process.platform === 'win32') {
+      // OS-specific: taskkill /T ends the Electron process tree on Windows.
+      execFileSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' });
+      return;
+    }
+    process.kill(pid, 'SIGKILL');
   } catch {
-    // catch-no-log-ok app may already be exiting
+    // catch-no-log-ok process already exited or is inaccessible
   }
+}
+
+/**
+ * Close an ElectronApplication with a hard timeout. A hung `app.close()` (before-quit
+ * handlers, CDP sessions, stray children) previously burned the full Playwright test
+ * timeout in afterEach and then the worker teardown budget, failing CI even when the
+ * flaky test itself passed on retry.
+ */
+export async function closeElectronApplication(app: ElectronApplication): Promise<void> {
+  let proc: ChildProcess | undefined;
+  try {
+    proc = app.process();
+  } catch {
+    // catch-no-log-ok process() can throw if the app already exited
+  }
+
+  const closePromise = app.close().catch(() => {
+    // catch-no-log-ok app may already be exiting / force-killed
+  });
+
+  try {
+    await Promise.race([
+      closePromise,
+      sleepMs(CLOSE_APP_TIMEOUT_MS).then(() => {
+        throw new Error('Timed out closing Electron app');
+      }),
+    ]);
+  } catch {
+    forceKillElectronProcess(proc);
+    await Promise.race([closePromise, sleepMs(FORCE_KILL_WAIT_MS)]);
+  }
+}
+
+export async function closeApp(launched: LaunchedApp): Promise<void> {
+  await closeElectronApplication(launched.app);
 }
 
 export async function teardownApp(launched: LaunchedApp): Promise<void> {
