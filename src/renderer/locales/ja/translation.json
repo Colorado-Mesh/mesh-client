@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JSヒープΔ ： {{value}}",
     "memoryDomNodes": "DOMノード： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "ルームの投稿には同じサイズの制限があるため、ビジーチャンネルが投稿を押し出すことはありません。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

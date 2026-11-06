@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "Nós DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Os posts da sala têm seu próprio limite do mesmo tamanho, então os canais ocupados nunca os empurram para fora."
   },
   "aria": {
     "closeDialog": "Fechar janela",

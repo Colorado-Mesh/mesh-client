@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "DOM düğümleri: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Oda gönderilerinin aynı boyutta kendi sınırları vardır, bu nedenle meşgul kanallar onları asla dışarı itmez."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

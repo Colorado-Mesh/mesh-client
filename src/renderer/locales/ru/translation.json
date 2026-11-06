@@ -542,7 +542,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "Узлы DOM: {{count}}",
     "memoryHistoryHeap": "куча {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Публикации в комнатах имеют свой предел того же размера, поэтому занятые каналы никогда не вытесняют их."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

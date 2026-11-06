@@ -4,7 +4,10 @@ import path from 'path';
 
 import { normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
-import { MESHCORE_CONTACT_TYPE_ROOM } from '../shared/meshcoreContactHwLabels';
+import {
+  MESHCORE_CONTACT_TYPE_ROOM,
+  MESHCORE_ROOM_MESSAGE_CHANNEL,
+} from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import {
   MESHCORE_PATH_HISTORY_GLOBAL_ROW_LIMIT,
@@ -22,6 +25,7 @@ import {
 } from './db-schema-sync';
 import { confirmDatabaseSchemaUpgrade } from './fatal-startup-dialog';
 import { sanitizeLogMessage } from './log-service';
+import { MESHCORE_MESSAGE_CHANNEL_SQL } from './meshcoreMessageChannel';
 import { buildFtsMatchQuery, isMessageFtsReady } from './messageFts';
 
 /** Re-export for callers/tests that track the on-disk `user_version`. */
@@ -446,6 +450,38 @@ export function pruneMeshcoreContactsByCountOn(d: NodeSqliteDB, maxCount: number
     }
     return deleted;
   });
+}
+
+/**
+ * A room post is a row the Rooms view loads (`MESHCORE_MESSAGE_CHANNEL_SQL` is the room channel).
+ * `IS` is null-safe: a row with NULL `channel_idx` and no room id is a chat row, never skipped.
+ */
+const MESHCORE_ROOM_POST_SQL = `(${MESHCORE_MESSAGE_CHANNEL_SQL}) IS ${MESHCORE_ROOM_MESSAGE_CHANNEL}`;
+const MESHCORE_CHAT_MESSAGE_SQL = `(${MESHCORE_MESSAGE_CHANNEL_SQL}) IS NOT ${MESHCORE_ROOM_MESSAGE_CHANNEL}`;
+
+/**
+ * MeshCore message retention. Room posts and all other messages each keep their newest `cap`
+ * rows, so busy channel or DM traffic cannot push room history out, and room history stays
+ * bounded. Posts older builds stored as DMs stay with the chat rows: hydration loads them only
+ * through the chat window. Protocol-specific: MeshCore Rooms only (RRC has its own retention).
+ */
+export function pruneMeshcoreMessagesByCountOn(
+  d: NodeSqliteDB,
+  cap: number,
+): { chat: number; room: number } {
+  const prunePool = (poolSql: string): number =>
+    Number(
+      d
+        .prepareOnce(
+          `DELETE FROM meshcore_messages WHERE ${poolSql} AND id NOT IN (` +
+            `SELECT id FROM meshcore_messages WHERE ${poolSql} ORDER BY timestamp DESC, id DESC LIMIT ?)`,
+        )
+        .run(cap).changes,
+    );
+  return d.transaction(() => ({
+    chat: prunePool(MESHCORE_CHAT_MESSAGE_SQL),
+    room: prunePool(MESHCORE_ROOM_POST_SQL),
+  }))();
 }
 
 export interface MeshcoreContactUpsertParams {

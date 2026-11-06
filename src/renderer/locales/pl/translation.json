@@ -542,7 +542,8 @@
     "memoryDeltaJsHeap": "Sterta JS Δ: {{value}}",
     "memoryDomNodes": "Węzły DOM: {{count}}",
     "memoryHistoryHeap": "hałda {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Posty w pokojach mają własny limit tej samej wielkości, więc zajęte kanały nigdy ich nie wypychają."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

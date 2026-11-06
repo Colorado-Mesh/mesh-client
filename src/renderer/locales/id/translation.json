@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "Tumpukan JS Δ: {{value}}",
     "memoryDomNodes": "Simpul DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Pesan ruangan memiliki batas sendiri dengan ukuran yang sama, jadi saluran yang ramai tidak pernah menggesernya."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS 힙 Δ: {{value}}",
     "memoryDomNodes": "DOM 노드: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "방 게시물에는 동일한 크기의 제한이 있으므로 바쁜 채널은 절대 밀어내지 않습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

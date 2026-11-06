@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS堆Δ: {{value}}",
     "memoryDomNodes": "DOM节点： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "房间帖子有相同大小的限制，因此繁忙的频道永远不会将其推出。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

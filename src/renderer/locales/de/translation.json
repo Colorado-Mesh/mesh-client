@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS Heap Δ: {{value}}",
     "memoryDomNodes": "DOM Knoten: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Raumbeiträge haben ein eigenes Limit von der gleichen Größe, so dass belebte Kanäle sie nie verdrängen."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

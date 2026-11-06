@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS heap Δ: {{value}}",
     "memoryDomNodes": "Nodi DOM: {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "I post delle stanze hanno un proprio limite della stessa dimensione, quindi i canali occupati non li spingono mai fuori."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

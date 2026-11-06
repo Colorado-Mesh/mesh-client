@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS tas Δ : {{value}}",
     "memoryDomNodes": "Nœuds DOM : {{count}}",
     "memoryHistoryHeap": "tas {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Les messages de la salle ont leur propre limite, de la même taille, pour que les canaux chargés ne les évincent jamais."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

@@ -316,6 +316,7 @@
     "limitMessagesLoadedCountAria": "Limit messages loaded {{count}} messages",
     "capStoredMessagesLabel": "Cap stored messages, keep newest",
     "capStoredMessagesCountAria": "Cap stored messages, keep newest {{count}} messages",
+    "meshcoreRoomPostRetentionHint": "Room posts have their own limit of the same size, so busy channels never push them out.",
     "capStoredRrcMessages": "Cap stored RRC room history, keep newest",
     "capStoredRrcMessagesLabel": "Cap stored RRC room history, keep newest",
     "capStoredRrcMessagesCountAria": "Cap stored RRC room history, keep newest {{count}} messages",

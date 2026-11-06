@@ -534,7 +534,8 @@
     "memoryDeltaJsHeap": "JS halda Δ: {{value}}",
     "memoryDomNodes": "DOM uzly: {{count}}",
     "memoryHistoryHeap": "halda {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Příspěvky v místnosti mají svůj vlastní limit stejné velikosti, takže je zaneprázdněné kanály nikdy nevytlačují ven."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
