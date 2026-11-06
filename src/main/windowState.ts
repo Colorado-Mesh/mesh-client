@@ -42,10 +42,25 @@ export interface RestorableWindow {
   maximize(): void;
 }
 
+/** BrowserWindow-shaped surface used to wire save listeners and restore. */
+export interface PersistableWindow extends WindowStateSource, RestorableWindow {
+  on(event: 'move' | 'resize' | 'close', listener: () => void): unknown;
+}
+
+export interface AttachWindowStatePersistenceOptions {
+  initialState: WindowState;
+  writeState: (state: WindowState) => void;
+  /** Debounce for move/resize saves. Close always saves immediately. */
+  debounceMs?: number;
+  setTimeoutFn?: typeof setTimeout;
+  clearTimeoutFn?: typeof clearTimeout;
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+/** Parse a JSON object into a WindowState, or null when required fields are invalid. */
 export function parseWindowState(raw: unknown): WindowState | null {
   if (!raw || typeof raw !== 'object') return null;
   const record = raw as Record<string, unknown>;
@@ -69,6 +84,7 @@ export function parseWindowState(raw: unknown): WindowState | null {
   };
 }
 
+/** Read saved placement from disk, falling back to DEFAULT_WINDOW_STATE. */
 export function readWindowState(statePath: string): WindowState {
   try {
     const raw = JSON.parse(fs.readFileSync(statePath, 'utf-8')) as unknown;
@@ -79,6 +95,7 @@ export function readWindowState(statePath: string): WindowState {
   }
 }
 
+/** Persist placement to disk; failures are ignored (non-critical). */
 export function writeWindowState(statePath: string, state: WindowState): void {
   try {
     fs.writeFileSync(statePath, JSON.stringify(state), 'utf-8');
@@ -97,6 +114,7 @@ export function captureWindowState(win: WindowStateSource): WindowState | null {
   };
 }
 
+/** Re-apply maximized or full-screen after the window is created with normal bounds. */
 export function restoreWindowState(win: RestorableWindow, state: WindowState): void {
   if (win.isDestroyed()) return;
   if (state.fullScreen) {
@@ -104,6 +122,42 @@ export function restoreWindowState(win: RestorableWindow, state: WindowState): v
   } else if (state.maximized) {
     win.maximize();
   }
+}
+
+/**
+ * Register move/resize/close save listeners, then restore display state.
+ * Listeners are attached before restore so the transition itself can be persisted.
+ */
+export function attachWindowStatePersistence(
+  win: PersistableWindow,
+  options: AttachWindowStatePersistenceOptions,
+): { saveNow: () => void } {
+  const debounceMs = options.debounceMs ?? 300;
+  const setTimeoutFn = options.setTimeoutFn ?? setTimeout;
+  const clearTimeoutFn = options.clearTimeoutFn ?? clearTimeout;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const saveNow = () => {
+    const state = captureWindowState(win);
+    if (state) options.writeState(state);
+  };
+  const scheduleSave = () => {
+    if (timer) clearTimeoutFn(timer);
+    timer = setTimeoutFn(() => {
+      timer = null;
+      saveNow();
+    }, debounceMs);
+  };
+
+  win.on('move', scheduleSave);
+  win.on('resize', scheduleSave);
+  win.on('close', () => {
+    if (timer) clearTimeoutFn(timer);
+    timer = null;
+    saveNow();
+  });
+  restoreWindowState(win, options.initialState);
+  return { saveNow };
 }
 
 /** A saved window is reused only when part of it overlaps a connected display. */

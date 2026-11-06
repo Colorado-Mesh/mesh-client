@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,14 +7,34 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  attachWindowStatePersistence,
   captureWindowState,
   DEFAULT_WINDOW_STATE,
   isWindowStateOnScreen,
   parseWindowState,
+  type PersistableWindow,
   readWindowState,
   restoreWindowState,
+  type WindowBounds,
+  type WindowState,
   writeWindowState,
 } from './windowState';
+
+function createPersistableWindow(opts: {
+  normalBounds?: WindowBounds;
+  maximized?: boolean;
+  fullScreen?: boolean;
+  destroyed?: boolean;
+}): PersistableWindow & EventEmitter {
+  return Object.assign(new EventEmitter(), {
+    isDestroyed: () => opts.destroyed === true,
+    isMaximized: () => opts.maximized === true,
+    isFullScreen: () => opts.fullScreen === true,
+    getNormalBounds: vi.fn(() => opts.normalBounds ?? { x: 30, y: 40, width: 1100, height: 750 }),
+    setFullScreen: vi.fn(),
+    maximize: vi.fn(),
+  }) as PersistableWindow & EventEmitter;
+}
 
 describe('window state file', () => {
   let dir: string;
@@ -112,6 +133,24 @@ describe('captureWindowState', () => {
     expect(win.getNormalBounds).toHaveBeenCalledOnce();
   });
 
+  it('saves normal bounds while minimized (close path uses getNormalBounds)', () => {
+    const win = {
+      isDestroyed: () => false,
+      isMaximized: () => false,
+      isFullScreen: () => false,
+      getNormalBounds: vi.fn(() => ({ x: 12, y: 18, width: 1000, height: 700 })),
+    };
+    expect(captureWindowState(win)).toEqual({
+      x: 12,
+      y: 18,
+      width: 1000,
+      height: 700,
+      maximized: false,
+      fullScreen: false,
+    });
+    expect(win.getNormalBounds).toHaveBeenCalledOnce();
+  });
+
   it('does not read bounds from a destroyed window', () => {
     const win = {
       isDestroyed: () => true,
@@ -121,6 +160,91 @@ describe('captureWindowState', () => {
     };
     expect(captureWindowState(win)).toBeNull();
     expect(win.getNormalBounds).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachWindowStatePersistence', () => {
+  it('registers save listeners before restoring display state', () => {
+    const order: string[] = [];
+    const win = createPersistableWindow({ maximized: false });
+    const previousOn = win.on.bind(win);
+    win.on = ((event: string | symbol, listener: (...args: unknown[]) => void) => {
+      if (event === 'move' || event === 'resize' || event === 'close') {
+        order.push(`on:${event}`);
+      }
+      return previousOn(event, listener);
+    }) as typeof win.on;
+    win.maximize = vi.fn(() => {
+      order.push('restore:maximize');
+    });
+
+    attachWindowStatePersistence(win, {
+      initialState: { ...DEFAULT_WINDOW_STATE, maximized: true },
+      writeState: vi.fn(),
+      debounceMs: 0,
+    });
+
+    expect(order).toEqual(['on:move', 'on:resize', 'on:close', 'restore:maximize']);
+  });
+
+  it('writes normal bounds on close while the window is minimized', () => {
+    const writes: WindowState[] = [];
+    const normalBounds = { x: 55, y: 66, width: 980, height: 720 };
+    const win = createPersistableWindow({
+      normalBounds,
+      maximized: false,
+      fullScreen: false,
+    });
+
+    attachWindowStatePersistence(win, {
+      initialState: DEFAULT_WINDOW_STATE,
+      writeState: (state) => {
+        writes.push(state);
+      },
+      debounceMs: 0,
+    });
+    win.emit('close');
+
+    expect(writes).toEqual([{ ...normalBounds, maximized: false, fullScreen: false }]);
+    expect(win.getNormalBounds).toHaveBeenCalled();
+  });
+
+  it('writes maximized and full-screen flags through the close-and-save path', () => {
+    const writes: WindowState[] = [];
+    const normalBounds = { x: 1, y: 2, width: 1200, height: 800 };
+
+    const maximized = createPersistableWindow({
+      normalBounds,
+      maximized: true,
+      fullScreen: false,
+    });
+    attachWindowStatePersistence(maximized, {
+      initialState: DEFAULT_WINDOW_STATE,
+      writeState: (state) => {
+        writes.push(state);
+      },
+      debounceMs: 0,
+    });
+    maximized.emit('close');
+
+    const fullScreen = createPersistableWindow({
+      normalBounds,
+      maximized: true,
+      fullScreen: true,
+    });
+    attachWindowStatePersistence(fullScreen, {
+      initialState: DEFAULT_WINDOW_STATE,
+      writeState: (state) => {
+        writes.push(state);
+      },
+      debounceMs: 0,
+    });
+    fullScreen.emit('close');
+
+    expect(writes).toEqual([
+      { ...normalBounds, maximized: true, fullScreen: false },
+      { ...normalBounds, maximized: true, fullScreen: true },
+    ]);
   });
 });
 

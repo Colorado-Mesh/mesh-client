@@ -272,11 +272,10 @@ import {
 } from './webStorageOriginMigration';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
 import {
-  captureWindowState,
+  attachWindowStatePersistence,
   DEFAULT_WINDOW_STATE,
   isWindowStateOnScreen,
   readWindowState,
-  restoreWindowState,
   writeWindowState,
 } from './windowState';
 
@@ -1910,19 +1909,13 @@ function createWindow() {
   });
   let trustedRendererUrl = '';
 
-  let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null;
-  const saveCurrentWindowState = () => {
-    const state = captureWindowState(win);
-    if (state) writeWindowState(WINDOW_STATE_PATH, state);
-  };
-  const scheduleSaveWindowState = () => {
-    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
-    windowStateSaveTimer = setTimeout(saveCurrentWindowState, 300);
-  };
-  win.on('move', scheduleSaveWindowState);
-  win.on('resize', scheduleSaveWindowState);
-  // Restore the saved display state after the save listeners, so the transition is persisted.
-  restoreWindowState(win, bounds);
+  // Save listeners first, then restore, so a maximized/full-screen relaunch is persisted.
+  attachWindowStatePersistence(win, {
+    initialState: bounds,
+    writeState: (state) => {
+      writeWindowState(WINDOW_STATE_PATH, state);
+    },
+  });
 
   // External link handling: route http/https websites to the system browser.
   // Failure point: malicious URL schemes attempting protocol-handler abuse.
@@ -2409,12 +2402,6 @@ function createWindow() {
     reloadMainRenderer = null;
     rendererLoadPromise = null;
   });
-  win.on('close', () => {
-    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
-    windowStateSaveTimer = null;
-    saveCurrentWindowState();
-  });
-
   // Handle window close event (prevent-close when device connected).
   // Close-to-tray (default on) hides the window when a tray exists; if tray
   // setup failed, the helper falls back to the legacy hide/minimize behaviour
