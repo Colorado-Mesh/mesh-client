@@ -71,10 +71,7 @@ import {
   subscribeMeshcoreRoomAutoLoginFailureChanges,
 } from '@/renderer/lib/meshcoreRoomAutoLoginFailure';
 import { mergeDisplayedRoomPostChunks } from '@/renderer/lib/meshcoreRoomChunkMerge';
-import {
-  listMeshcoreRoomCredentialNodeIds,
-  setMeshcoreRoomCredential,
-} from '@/renderer/lib/meshcoreRoomCredentialStorage';
+import { listMeshcoreRoomCredentialNodeIds } from '@/renderer/lib/meshcoreRoomCredentialStorage';
 import {
   getMeshcoreRoomLoginQueueSnapshot,
   meshcoreIsRoomLoginQueued,
@@ -84,6 +81,7 @@ import {
   disableMeshcoreRoomAutoLogin,
   forgetMeshcoreRoomSavedSecrets,
   getMeshcoreRoomSavedSecretsSummary,
+  saveMeshcoreRoomSessionPasswordIfUnsaved,
 } from '@/renderer/lib/meshcoreRoomSavedSecrets';
 import {
   meshcoreCancelAllRoomLogins,
@@ -854,12 +852,36 @@ export default function RoomsPanel({
     setSyncConfigDirty(false);
   }, []);
 
+  const syncConfigDirtyRef = useRef(syncConfigDirty);
+  useEffect(() => {
+    syncConfigDirtyRef.current = syncConfigDirty;
+  }, [syncConfigDirty]);
+
+  // Auto-login and auto-sync also change outside this panel: logging in with Remember password
+  // turns auto-login on, and a wrong password turns both off. Keep the selected room's switches
+  // on the stored values without discarding unsaved Auto-sync edits.
+  useEffect(() => {
+    const refresh = () => {
+      const nodeId = selectedRoomIdRef.current;
+      if (nodeId == null) return;
+      const config = getMeshcoreRoomSyncConfig(nodeId);
+      setAutoLoginOnConnect(config.autoLoginOnConnect ?? false);
+      if (!syncConfigDirtyRef.current) {
+        setSyncEnabled(config.enabled);
+        setSyncInterval(config.intervalMinutes);
+      }
+    };
+    window.addEventListener('mesh-client:appSettings', refresh);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', refresh);
+    };
+  }, []);
+
   const handleStopAutoLogin = useCallback(
     async (nodeId: number) => {
       await disableMeshcoreRoomAutoLogin(nodeId);
       if (selectedRoomId === nodeId) {
         setAutoLoginOnConnect(false);
-        setSyncConfigDirty(false);
       }
       refreshStoredRooms();
     },
@@ -886,6 +908,7 @@ export default function RoomsPanel({
         if (!enabled) {
           await disableMeshcoreRoomAutoLogin(nodeId);
         } else {
+          await saveMeshcoreRoomSessionPasswordIfUnsaved(nodeId);
           await setMeshcoreRoomSyncConfig(nodeId, {
             enabled: prev.enabled,
             intervalMinutes: prev.intervalMinutes,
@@ -893,7 +916,7 @@ export default function RoomsPanel({
           });
           clearMeshcoreRoomAutoLoginFailure(nodeId);
         }
-        if (selectedRoomIdRef.current === nodeId) setSyncConfigDirty(false);
+        // Auto-login saves on its own; an unsaved Auto-sync edit keeps its Save button.
       } catch (e: unknown) {
         console.warn('[RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
         if (selectedRoomIdRef.current === nodeId) {
@@ -1083,15 +1106,8 @@ export default function RoomsPanel({
 
   const handleSaveSyncConfig = useCallback(async () => {
     if (selectedRoomId == null) return;
-    if (autoLoginOnConnect && !storedRoomIds.has(selectedRoomId)) {
-      const session = meshcoreGetRoomSession(selectedRoomId);
-      if (session) {
-        await setMeshcoreRoomCredential(selectedRoomId, {
-          guestPassword: session.guestPassword,
-          ...(session.adminPassword.length > 0 ? { adminPassword: session.adminPassword } : {}),
-        });
-        refreshStoredRooms();
-      }
+    if (autoLoginOnConnect && (await saveMeshcoreRoomSessionPasswordIfUnsaved(selectedRoomId))) {
+      refreshStoredRooms();
     }
     await setMeshcoreRoomSyncConfig(selectedRoomId, {
       enabled: syncEnabled,
@@ -1099,14 +1115,7 @@ export default function RoomsPanel({
       autoLoginOnConnect,
     });
     setSyncConfigDirty(false);
-  }, [
-    autoLoginOnConnect,
-    refreshStoredRooms,
-    selectedRoomId,
-    storedRoomIds,
-    syncEnabled,
-    syncInterval,
-  ]);
+  }, [autoLoginOnConnect, refreshStoredRooms, selectedRoomId, syncEnabled, syncInterval]);
 
   const roomViewKey = selectedRoomId != null ? `room:${selectedRoomId}` : 'room:none';
 
@@ -1605,16 +1614,28 @@ export default function RoomsPanel({
 
   const listColumn = (
     <>
-      <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-2 border-b pr-2 pl-3">
+      {/* The list column is 288px wide: icon actions share the title row, text actions get
+          their own row so the title is never squeezed. */}
+      <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-1.5 border-b pr-2 pl-3">
         <h2 className="text-ink-100 min-w-0 flex-1 truncate text-sm font-semibold">
           {t('roomsPanel.title')}{' '}
           <span className="text-muted font-normal tabular-nums">({roomServers.length})</span>
         </h2>
-        <DocsSiteLink href={MESHCORE_ROOMS_DOCS_URL} />
         <ChatOrderButton items={roomOrderItems} ids={roomOrder.ids} onSave={roomOrder.save} />
         {onSyncRadioChats && (
-          <RadioChatSyncButton onSync={onSyncRadioChats} disabled={!isConnected} />
+          <RadioChatSyncButton onSync={onSyncRadioChats} disabled={!isConnected} feedback="toast" />
         )}
+        {!layoutMode.compact && (
+          <IconButton
+            size="sm"
+            aria-label={t('roomsPanel.collapseRoomList')}
+            aria-expanded
+            onClick={handleRoomListToggle}
+            icon={<PanelLeftClose aria-hidden className="h-4 w-4" size={16} />}
+          />
+        )}
+      </div>
+      <div className="border-ink-800 flex shrink-0 items-center gap-2 border-b px-3 py-2">
         {onLoginAllSaved && roomServers.length > 0 ? (
           <Button
             size="sm"
@@ -1631,15 +1652,8 @@ export default function RoomsPanel({
             {t('roomsPanel.loginAllSaved')}
           </Button>
         ) : null}
-        {!layoutMode.compact && (
-          <IconButton
-            size="sm"
-            aria-label={t('roomsPanel.collapseRoomList')}
-            aria-expanded
-            onClick={handleRoomListToggle}
-            icon={<PanelLeftClose aria-hidden className="h-4 w-4" size={16} />}
-          />
-        )}
+        <span className="flex-1" />
+        <DocsSiteLink href={MESHCORE_ROOMS_DOCS_URL} />
       </div>
       {roomServers.length > 0 && (
         <ul
@@ -1770,6 +1784,18 @@ export default function RoomsPanel({
     />
   ) : null;
 
+  const roomDetailsButton = (
+    <IconButton
+      aria-label={t('roomsPanel.details')}
+      aria-pressed={detailsOpen}
+      active={detailsOpen ? 'brand' : false}
+      onClick={() => {
+        setDetailsOpen(!detailsOpen);
+      }}
+      icon={<Info aria-hidden className="h-4 w-4" size={16} />}
+    />
+  );
+
   const conversationHeader =
     selectedRoomId != null ? (
       <header className="border-ink-800 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
@@ -1852,15 +1878,7 @@ export default function RoomsPanel({
                 }
               />
             )}
-            <IconButton
-              aria-label={t('roomsPanel.details')}
-              aria-pressed={detailsOpen}
-              active={detailsOpen ? 'brand' : false}
-              onClick={() => {
-                setDetailsOpen(!detailsOpen);
-              }}
-              icon={<Info aria-hidden className="h-4 w-4" size={16} />}
-            />
+            {roomDetailsButton}
             <IconButton
               aria-label={
                 selectedRoomLeaveLoading ? t('roomsPanel.leavingRoom') : t('roomsPanel.leaveRoom')
@@ -1877,6 +1895,8 @@ export default function RoomsPanel({
             />
           </div>
         )}
+        {/* Login & sync settings (auto-login, auto-sync) stay reachable before login. */}
+        {!loggedIn && roomDetailsButton}
       </header>
     ) : null;
 
@@ -1990,7 +2010,7 @@ export default function RoomsPanel({
   );
 
   const detailsPanel =
-    selectedRoomId != null && loggedIn ? (
+    selectedRoomId != null ? (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-2 border-b pr-2 pl-3">
           <h3 className="text-ink-100 min-w-0 flex-1 truncate text-sm font-semibold">

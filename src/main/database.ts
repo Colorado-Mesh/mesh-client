@@ -344,48 +344,66 @@ function deleteMeshcoreContactsWithRoomMessageCascade(
   })();
 }
 
-export function deleteMeshcoreContactsNeverAdvertised(): number {
-  const d = getDatabase();
+/**
+ * True for a contact with no stored room posts. The automatic prunes below skip contacts that
+ * hold posts, as they skip favorites: pruning a Room contact deletes its whole post history, and
+ * a room that has not advertised lately (or whose clock is wrong) still has posts worth keeping.
+ * An explicit contact delete (`deleteMeshcoreContactOn`) still removes the posts.
+ */
+const NO_STORED_ROOM_POSTS_SQL =
+  'NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id = meshcore_contacts.node_id)';
+
+export function deleteMeshcoreContactsNeverAdvertisedOn(d: NodeSqliteDB): number {
   const roomIds = selectRoomContactIdsMatching(
     d,
-    'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+    `SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NULL AND (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL}`,
     [MESHCORE_CONTACT_TYPE_ROOM],
   );
   return deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
     Number(
       d
         .prepareOnce(
-          'DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0)',
+          `DELETE FROM meshcore_contacts WHERE last_advert IS NULL AND (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL}`,
         )
         .run().changes,
     ),
   );
 }
 
+export function deleteMeshcoreContactsNeverAdvertised(): number {
+  return deleteMeshcoreContactsNeverAdvertisedOn(getDatabase());
+}
+
 export { meshcoreContactsAgeCutoffSec } from '../shared/meshcoreContactAgeCutoff';
 
-export function deleteMeshcoreContactsByAge(days: number): number {
-  const d = getDatabase();
+export function deleteMeshcoreContactsByAgeOn(d: NodeSqliteDB, days: number): number {
   const cutoffSec = meshcoreContactsAgeCutoffSec(days);
   if (cutoffSec === null) return 0;
   const roomIds = selectRoomContactIdsMatching(
     d,
-    'SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+    `SELECT node_id FROM meshcore_contacts WHERE contact_type = ? AND last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL}`,
     [MESHCORE_CONTACT_TYPE_ROOM, MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec],
   );
   return deleteMeshcoreContactsWithRoomMessageCascade(d, roomIds, () =>
     Number(
       d
         .prepareOnce(
-          'DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0)',
+          `DELETE FROM meshcore_contacts WHERE last_advert IS NOT NULL AND last_advert >= ? AND last_advert < ? AND (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL}`,
         )
         .run(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, cutoffSec).changes,
     ),
   );
 }
 
+export function deleteMeshcoreContactsByAge(days: number): number {
+  return deleteMeshcoreContactsByAgeOn(getDatabase(), days);
+}
+
 export function pruneMeshcoreContactsByCount(maxCount: number): number {
-  const d = getDatabase();
+  return pruneMeshcoreContactsByCountOn(getDatabase(), maxCount);
+}
+
+export function pruneMeshcoreContactsByCountOn(d: NodeSqliteDB, maxCount: number): number {
   const total = (
     d.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_contacts').get() as { cnt: number }
   ).cnt;
@@ -393,7 +411,7 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
   const deletable = (
     d
       .prepareOnce(
-        'SELECT COUNT(*) as cnt FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0)',
+        `SELECT COUNT(*) as cnt FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL}`,
       )
       .get() as { cnt: number }
   ).cnt;
@@ -401,7 +419,7 @@ export function pruneMeshcoreContactsByCount(maxCount: number): number {
   if (toDelete <= 0) return 0;
   const doomed = d
     .prepareOnce(
-      'SELECT node_id, contact_type FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) ' +
+      `SELECT node_id, contact_type FROM meshcore_contacts WHERE (favorited IS NULL OR favorited = 0) AND ${NO_STORED_ROOM_POSTS_SQL} ` +
         'ORDER BY CASE WHEN last_advert IS NULL OR last_advert < ? THEN 1 ELSE 0 END, COALESCE(last_advert, 0) ASC LIMIT ?',
     )
     .all(MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC, toDelete) as {

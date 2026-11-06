@@ -96,7 +96,7 @@ Operator summary only — do not treat this page as the zero-hop / multi-hop RPC
 **Rooms** is the MeshCore room-server (BBS) UI. Login and posts use the companion radio over **RF** (BLE, serial, or TCP) — **MQTT does not carry room login/post**.
 
 - Blank guest login is read-only when the room allows it; guest password **`hello`** is the usual read/write default; admin uses the room password.
-- **Remember password** stores a per-room secret on this computer. **Auto-sync** can re-login on a timer while the radio stays connected.
+- **Remember password** stores a per-room secret on this computer and turns on **Auto-login when connected**. Auto-login and **Auto-sync** (re-login on a timer while the radio stays connected) are in **Room details**, which opens from the room header before or after you log in. Auto-login needs a saved password, so turning it on while logged in saves the password you logged in with.
 - Posts appear under Rooms (not Chat channel chips). Unread badges the Rooms tab.
 - Room ACL / CLI admin for a room server also appears on Repeaters room rows.
 
