@@ -1,5 +1,6 @@
 import { Plus, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -187,175 +188,186 @@ export default function MeshcoreChatChannelManager({
         <Plus aria-hidden className="h-4 w-4" size={16} />
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
-          <div
-            ref={panelRef}
-            tabIndex={-1}
-            role="dialog"
-            aria-busy={saving}
-            aria-modal="true"
-            aria-labelledby="meshcore-chat-channel-title"
-            className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto border p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="meshcore-chat-channel-title" className="text-base font-semibold text-white">
-                {t('radioPanel.meshcoreChannel.addTitle')}
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  closeDialog();
-                }}
-                disabled={saving}
-                aria-label={t('common.close')}
-                className="text-muted hover:bg-ink-700 rounded p-1 hover:text-white"
-              >
-                <X aria-hidden className="h-4 w-4" size={16} />
-              </button>
-            </div>
-
-            {configuredChannels.length > 0 ? (
+      {/* Portaled: the chat fades the row holding the button while a DM is open, and a faded
+          parent would fade this overlay and let the message list paint over it. */}
+      {open
+        ? createPortal(
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
               <div
-                className="flex max-h-32 flex-wrap gap-2 overflow-y-auto"
-                aria-label={t('chatPanel.channels')}
+                ref={panelRef}
+                tabIndex={-1}
+                role="dialog"
+                aria-busy={saving}
+                aria-modal="true"
+                aria-labelledby="meshcore-chat-channel-title"
+                className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto border p-4"
               >
-                {configuredChannels.map((channel) => (
-                  <span key={channel.index} className="inline-flex items-center gap-0.5">
-                    <button
-                      type="button"
-                      disabled={saving}
-                      aria-label={channel.name}
-                      onClick={() => {
-                        onSelectChannel(channel.index);
-                        closeDialog();
-                      }}
-                      className="bg-deep-black text-muted hover:border-brand-green border-ink-700 hover:text-ink-100 rounded-full border px-2.5 py-1 text-xs"
-                    >
-                      {channel.name}
-                    </button>
-                    {onRemoveChannel && channel.index !== MESHCORE_PUBLIC_CHANNEL_INDEX ? (
-                      <button
-                        type="button"
-                        disabled={saving || disabled}
-                        aria-label={t('chatPanel.removeChannelAria', { name: channel.name })}
-                        title={t('chatPanel.removeChannelAria', { name: channel.name })}
-                        onClick={() => {
-                          closeDialog();
-                          onRemoveChannel(channel);
-                        }}
-                        className="text-muted flex h-6 w-6 items-center justify-center rounded hover:bg-red-400/10 hover:text-red-400"
-                      >
-                        <X aria-hidden className="h-3.5 w-3.5" size={14} />
-                      </button>
-                    ) : null}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted text-xs">{t('radioPanel.noChannels')}</p>
-            )}
-
-            {feedback ? (
-              <p
-                role={feedback.type === 'error' ? 'alert' : 'status'}
-                className={`${NOTICE_CLASS[feedback.type]} [overflow-wrap:anywhere]`}
-              >
-                {feedback.message}
-              </p>
-            ) : null}
-
-            <form
-              className="space-y-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleAdd();
-              }}
-            >
-              <label className="text-muted flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={privateChannel}
-                  onChange={(event) => {
-                    setPrivateChannel(event.target.checked);
-                    setKeyHex('');
-                  }}
-                  disabled={saving || disabled}
-                  aria-label={t('radioPanel.meshcoreChannel.privateChannel')}
-                />
-                {t('radioPanel.meshcoreChannel.privateChannel')}
-              </label>
-              <label htmlFor="meshcore-chat-channel-name" className="text-muted block text-xs">
-                {t('radioPanel.meshcoreChannelNameLabel')}
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  id="meshcore-chat-channel-name"
-                  value={name}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                  }}
-                  maxLength={
-                    privateChannel
-                      ? undefined
-                      : name.trimStart().startsWith('#')
-                        ? MESHCORE_CHANNEL_NAME_MAX_LEN
-                        : MESHCORE_CHANNEL_NAME_MAX_LEN - 1
-                  }
-                  placeholder={privateChannel ? undefined : '#channel'}
-                  aria-label={t('radioPanel.meshcoreChannelNameLabel')}
-                  disabled={saving || disabled}
-                  className={`${INPUT_BOX_CLASS} min-w-0 flex-1`}
-                />
-                <button
-                  type="submit"
-                  disabled={!valid || saving || disabled}
-                  aria-label={saving ? t('common.saving') : t('common.save')}
-                  className="bg-brand-green hover:bg-brand-green/90 text-app-bg disabled:bg-ink-600 disabled:text-ink-400 rounded px-3 py-2 text-xs font-medium disabled:cursor-not-allowed"
-                >
-                  {saving ? t('common.saving') : t('common.save')}
-                </button>
-              </div>
-              {privateChannel ? (
-                <div className="space-y-2">
-                  <label htmlFor="meshcore-chat-channel-key" className="text-muted block text-xs">
-                    {t('radioPanel.meshcoreChannelKeyLabel')}
-                  </label>
-                  <input
-                    id="meshcore-chat-channel-key"
-                    type="password"
-                    value={keyHex}
-                    onChange={(event) => {
-                      setKeyHex(event.target.value);
+                <div className="flex items-center justify-between gap-3">
+                  <h2
+                    id="meshcore-chat-channel-title"
+                    className="text-base font-semibold text-white"
+                  >
+                    {t('radioPanel.meshcoreChannel.addTitle')}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeDialog();
                     }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    disabled={saving || disabled}
-                    aria-label={t('radioPanel.meshcoreChannelKeyLabel')}
-                    aria-describedby="meshcore-chat-channel-key-hint"
-                    aria-invalid={keyHex.length > 0 && !validKey}
-                    className={`${INPUT_BOX_CLASS} w-full font-mono`}
-                  />
-                  <p id="meshcore-chat-channel-key-hint" className="text-muted text-xs">
-                    {t('radioPanel.meshcoreChannel.privateKeyHint')}
-                  </p>
+                    disabled={saving}
+                    aria-label={t('common.close')}
+                    className="text-muted hover:bg-ink-700 rounded p-1 hover:text-white"
+                  >
+                    <X aria-hidden className="h-4 w-4" size={16} />
+                  </button>
                 </div>
-              ) : (
-                <p className="text-muted text-xs">{t('radioPanel.meshcoreSha256KeyTitle')}</p>
-              )}
-              <div className="border-ink-800 border-t pt-3">
-                <Switch
-                  checked={keepOpen}
-                  onChange={setKeepOpen}
-                  label={t('radioPanel.meshcoreChannel.keepOpen')}
-                  disabled={saving || disabled}
-                />
+
+                {configuredChannels.length > 0 ? (
+                  <div
+                    className="flex max-h-32 flex-wrap gap-2 overflow-y-auto"
+                    aria-label={t('chatPanel.channels')}
+                  >
+                    {configuredChannels.map((channel) => (
+                      <span key={channel.index} className="inline-flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          aria-label={channel.name}
+                          onClick={() => {
+                            onSelectChannel(channel.index);
+                            closeDialog();
+                          }}
+                          className="bg-deep-black text-muted hover:border-brand-green border-ink-700 hover:text-ink-100 rounded-full border px-2.5 py-1 text-xs"
+                        >
+                          {channel.name}
+                        </button>
+                        {onRemoveChannel && channel.index !== MESHCORE_PUBLIC_CHANNEL_INDEX ? (
+                          <button
+                            type="button"
+                            disabled={saving || disabled}
+                            aria-label={t('chatPanel.removeChannelAria', { name: channel.name })}
+                            title={t('chatPanel.removeChannelAria', { name: channel.name })}
+                            onClick={() => {
+                              closeDialog();
+                              onRemoveChannel(channel);
+                            }}
+                            className="text-muted flex h-6 w-6 items-center justify-center rounded hover:bg-red-400/10 hover:text-red-400"
+                          >
+                            <X aria-hidden className="h-3.5 w-3.5" size={14} />
+                          </button>
+                        ) : null}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted text-xs">{t('radioPanel.noChannels')}</p>
+                )}
+
+                {feedback ? (
+                  <p
+                    role={feedback.type === 'error' ? 'alert' : 'status'}
+                    className={`${NOTICE_CLASS[feedback.type]} [overflow-wrap:anywhere]`}
+                  >
+                    {feedback.message}
+                  </p>
+                ) : null}
+
+                <form
+                  className="space-y-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleAdd();
+                  }}
+                >
+                  <label className="text-muted flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={privateChannel}
+                      onChange={(event) => {
+                        setPrivateChannel(event.target.checked);
+                        setKeyHex('');
+                      }}
+                      disabled={saving || disabled}
+                      aria-label={t('radioPanel.meshcoreChannel.privateChannel')}
+                    />
+                    {t('radioPanel.meshcoreChannel.privateChannel')}
+                  </label>
+                  <label htmlFor="meshcore-chat-channel-name" className="text-muted block text-xs">
+                    {t('radioPanel.meshcoreChannelNameLabel')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      id="meshcore-chat-channel-name"
+                      value={name}
+                      onChange={(event) => {
+                        setName(event.target.value);
+                      }}
+                      maxLength={
+                        privateChannel
+                          ? undefined
+                          : name.trimStart().startsWith('#')
+                            ? MESHCORE_CHANNEL_NAME_MAX_LEN
+                            : MESHCORE_CHANNEL_NAME_MAX_LEN - 1
+                      }
+                      placeholder={privateChannel ? undefined : '#channel'}
+                      aria-label={t('radioPanel.meshcoreChannelNameLabel')}
+                      disabled={saving || disabled}
+                      className={`${INPUT_BOX_CLASS} min-w-0 flex-1`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!valid || saving || disabled}
+                      aria-label={saving ? t('common.saving') : t('common.save')}
+                      className="bg-brand-green hover:bg-brand-green/90 text-app-bg disabled:bg-ink-600 disabled:text-ink-400 rounded px-3 py-2 text-xs font-medium disabled:cursor-not-allowed"
+                    >
+                      {saving ? t('common.saving') : t('common.save')}
+                    </button>
+                  </div>
+                  {privateChannel ? (
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="meshcore-chat-channel-key"
+                        className="text-muted block text-xs"
+                      >
+                        {t('radioPanel.meshcoreChannelKeyLabel')}
+                      </label>
+                      <input
+                        id="meshcore-chat-channel-key"
+                        type="password"
+                        value={keyHex}
+                        onChange={(event) => {
+                          setKeyHex(event.target.value);
+                        }}
+                        autoComplete="off"
+                        spellCheck={false}
+                        disabled={saving || disabled}
+                        aria-label={t('radioPanel.meshcoreChannelKeyLabel')}
+                        aria-describedby="meshcore-chat-channel-key-hint"
+                        aria-invalid={keyHex.length > 0 && !validKey}
+                        className={`${INPUT_BOX_CLASS} w-full font-mono`}
+                      />
+                      <p id="meshcore-chat-channel-key-hint" className="text-muted text-xs">
+                        {t('radioPanel.meshcoreChannel.privateKeyHint')}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted text-xs">{t('radioPanel.meshcoreSha256KeyTitle')}</p>
+                  )}
+                  <div className="border-ink-800 border-t pt-3">
+                    <Switch
+                      checked={keepOpen}
+                      onChange={setKeepOpen}
+                      label={t('radioPanel.meshcoreChannel.keepOpen')}
+                      disabled={saving || disabled}
+                    />
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

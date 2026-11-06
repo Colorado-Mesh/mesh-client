@@ -6781,7 +6781,7 @@ describe('ChatPanel — screen reader announcements', () => {
 describe('ChatPanel removing a MeshCore channel (#1077)', () => {
   const secret = new Uint8Array([1, ...new Array<number>(15).fill(0)]);
   const baseProps = () => ({
-    messages: [],
+    messages: [] as ChatMessage[],
     channels: [
       { index: 0, name: 'Public' },
       { index: 3, name: '#test' },
@@ -7116,6 +7116,82 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     );
     await waitFor(() => {
       expect(props.onDeleteMeshcoreChannel).toHaveBeenCalledWith(3);
+    });
+  });
+
+  describe('while a DM is open', () => {
+    const alice: MeshNode = {
+      node_id: 2,
+      long_name: 'Alice',
+      short_name: '',
+      hw_model: '',
+      snr: 0,
+      battery: 0,
+      last_heard: Date.now(),
+      latitude: null,
+      longitude: null,
+    };
+    const dmFromAlice: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'Private hello',
+      channel: -1,
+      timestamp: Date.now(),
+      status: 'acked',
+      to: 1,
+    };
+    // The channel row is drawn at reduced opacity in DM view. Opacity makes it a stacking
+    // context, so a dialog inside it is faded and the message list paints over it.
+    const openDmAndGetFadedRow = async (user: ReturnType<typeof userEvent.setup>) => {
+      renderPanel({
+        messages: [dmFromAlice],
+        nodes: new Map([[2, alice]]),
+        onClearChannelMessages: vi.fn().mockResolvedValue(undefined),
+      } as Partial<ReturnType<typeof baseProps>>);
+      await user.click(screen.getByRole('button', { name: /^Alice/ }));
+      await screen.findByText('Private hello');
+      const row = screen.getByTestId('chat-conversation-row').parentElement;
+      expect(row).toHaveClass('opacity-60');
+      return row;
+    };
+
+    it('opens the + dialog and its remove confirm outside the faded channel row', async () => {
+      const user = userEvent.setup();
+      const row = await openDmAndGetFadedRow(user);
+      await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+      expect(row?.contains(screen.getByRole('dialog', { name: 'Add Channel' }))).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'Remove #test' }));
+      expect(row?.contains(screen.getByRole('alertdialog', { name: 'Remove #test?' }))).toBe(false);
+    });
+
+    it('opens the clear messages confirm outside the faded channel row', async () => {
+      const user = userEvent.setup();
+      const row = await openDmAndGetFadedRow(user);
+      fireEvent.contextMenu(chip('#test'));
+      await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+      expect(
+        row?.contains(screen.getByRole('alertdialog', { name: 'Clear messages in #test?' })),
+      ).toBe(false);
+    });
+
+    it('closes the remove confirm on Escape and stays in the DM', async () => {
+      const user = userEvent.setup();
+      const row = await openDmAndGetFadedRow(user);
+      await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+      await user.click(screen.getByRole('button', { name: 'Remove #test' }));
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+      expect(row).toHaveClass('opacity-60');
+      expect(screen.getByText('Private hello')).toBeInTheDocument();
+    });
+
+    it('closes the + dialog on Escape and stays in the DM', async () => {
+      const user = userEvent.setup();
+      const row = await openDmAndGetFadedRow(user);
+      await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog', { name: 'Add Channel' })).toBeNull();
+      expect(row).toHaveClass('opacity-60');
     });
   });
 });
