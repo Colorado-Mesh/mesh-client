@@ -57,10 +57,10 @@ describe('ReticulumDmPathActions', () => {
     expect(precedes(probe, path)).toBe(true);
     expect(probe.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
     expect(path.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
-    expect(probe.className).toContain('border-cyan-500/35');
-    expect(probe.className).toMatch(/text-cyan-/);
-    expect(probe.className).not.toMatch(/border-ink-600/);
-    expect(path.className).not.toMatch(/border-ink-600/);
+    expect(probe.className).toContain('bg-sidebar-active-bg');
+    expect(probe.className).toContain('border-secondary-dark');
+    expect(probe.className).not.toContain('border-cyan-500/35');
+    expect(path.className).not.toContain('border-cyan-500/35');
   });
 
   it('keeps Probe before Path when unreachable', () => {

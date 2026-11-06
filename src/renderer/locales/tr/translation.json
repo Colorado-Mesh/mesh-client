@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "TCP Hub",
     "heardViaTcpHubTitle": "Aktif yol bir TCP/ulaşım merkezi ({{interface}}) üzerindendir. Yalnızca RF Sohbetini test ederken RF'yi tercih edin veya hub'ları devre dışı bırakın.",
     "staleAlternateToast": "Sohbet LXMF {{openPrefix}}… tarihinde açıldı. Başka bir LXMF {{alternatePrefix}}… farklı bir uygulamada aynı kişi olabilir — Teslim Edildi'ye güvenmeden önce Ağ LXMF'sini onaylayın.",
-    "staleAlternateToastNamed": "Sohbet LXMF {{openPrefix}}… tarihinde açıldı. Başka bir LXMF {{alternatePrefix}}… ({{name}}) farklı bir uygulamada aynı kişi olabilir. Teslim Edildi'ye güvenmeden önce Ağ LXMF'sini onaylayın."
+    "staleAlternateToastNamed": "Sohbet LXMF {{openPrefix}}… tarihinde açıldı. Başka bir LXMF {{alternatePrefix}}… ({{name}}) farklı bir uygulamada aynı kişi olabilir. Teslim Edildi'ye güvenmeden önce Ağ LXMF'sini onaylayın.",
+    "colDiagnostics": "Tanılama",
+    "chat": "Sohbet"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",

@@ -4321,7 +4321,9 @@
     "heardViaTcpHub": "Centrum TCP",
     "heardViaTcpHubTitle": "Aktivní cesta je přes TCP/transportní rozbočovač ({{interface}}). Při testování chatu pouze s RF upřednostňujte RF nebo deaktivujte rozbočovače.",
     "staleAlternateToast": "Chat otevřen na LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… může být stejná osoba v jiné aplikaci — než se spolehnete na Doručeno, potvrďte Network LXMF.",
-    "staleAlternateToastNamed": "Chat otevřen na LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci — než se spolehneš na Doručeno, potvrď Network LXMF."
+    "staleAlternateToastNamed": "Chat otevřen na LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci — než se spolehneš na Doručeno, potvrď Network LXMF.",
+    "colDiagnostics": "Diagnostika",
+    "chat": "Chat"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "TCPハブ",
     "heardViaTcpHubTitle": "アクティブなパスはTCP/トランスポートハブ（ {{interface}} ）を介しています。RFのみのチャットをテストする場合は、RFを優先するか、ハブを無効にします。",
     "staleAlternateToast": "チャットはLXMF {{openPrefix}} …で開始されました。別のLXMF {{alternatePrefix}} …は、別のアプリで同じ人物である可能性があります。配信に依存する前に、ネットワークLXMFを確認してください。",
-    "staleAlternateToastNamed": "チャットはLXMF {{openPrefix}} …で開始されました。別のLXMF {{alternatePrefix}} … （ {{name}} ）が別のアプリで同じ人物である可能性があります。配信に依存する前にネットワークLXMFを確認してください。"
+    "staleAlternateToastNamed": "チャットはLXMF {{openPrefix}} …で開始されました。別のLXMF {{alternatePrefix}} … （ {{name}} ）が別のアプリで同じ人物である可能性があります。配信に依存する前にネットワークLXMFを確認してください。",
+    "colDiagnostics": "診断",
+    "chat": "チャットする"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

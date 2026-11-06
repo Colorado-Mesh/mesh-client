@@ -6364,12 +6364,14 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(precedes(path, call)).toBe(true);
     expect(precedes(call, sendFile)).toBe(true);
 
-    expect(peerDetails.className).toContain('border-cyan-500/35');
-    expect(peerDetails.className).toMatch(/text-cyan-/);
-    expect(peerDetails.className).not.toContain('bg-secondary-dark');
+    expect(peerDetails.className).toContain('bg-sidebar-active-bg');
+    expect(peerDetails.className).toContain('border-secondary-dark');
+    expect(peerDetails.className).not.toContain('border-cyan-500/35');
     expect(peerDetails.className).not.toContain('rounded-full');
-    expect(call.className).toContain('border-cyan-500/35');
-    expect(call.className).toMatch(/text-cyan-/);
+    expect(call.className).toContain('bg-sidebar-active-bg');
+    expect(call.className).toContain('border-secondary-dark');
+    expect(call.className).not.toContain('border-cyan-500/35');
+    expect(call.querySelector('svg.text-cyan-400')).toBeTruthy();
     expect(call.className).not.toContain('ml-2');
     expect(
       screen.queryByText(/LXST voice needs a peer running LXST telephony/i),

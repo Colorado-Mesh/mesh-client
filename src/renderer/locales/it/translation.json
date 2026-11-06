@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "Hub TCP",
     "heardViaTcpHubTitle": "Il percorso attivo avviene tramite un hub TCP/di trasporto ({{interface}}). Preferisci la RF o disabilita gli hub durante il test della chat solo RF.",
     "staleAlternateToast": "Chat aperta su LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}... potrebbe essere la stessa persona su un'app diversa: conferma Network LXMF prima di affidarti a Delivered.",
-    "staleAlternateToastNamed": "Chat aperta su LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}… ({{name}}) potrebbe essere la stessa persona su un'app diversa: conferma Network LXMF prima di fare affidamento su Delivered."
+    "staleAlternateToastNamed": "Chat aperta su LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}… ({{name}}) potrebbe essere la stessa persona su un'app diversa: conferma Network LXMF prima di fare affidamento su Delivered.",
+    "colDiagnostics": "Diagnostica",
+    "chat": "Chat"
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",

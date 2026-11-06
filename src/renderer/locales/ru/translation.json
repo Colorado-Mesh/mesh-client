@@ -4359,7 +4359,9 @@
     "heardViaTcpHub": "TCP Hub",
     "heardViaTcpHubTitle": "Активный путь проходит через TCP/транспортный узел ({{interface}}). Предпочитайте радиочастоты или отключите концентраторы при тестировании чата только для радиочастот.",
     "staleAlternateToast": "Чат открыт на LXMF {{openPrefix}}…. Другой LXMF {{alternatePrefix}}… может быть тем же человеком в другом приложении — подтвердите Network LXMF, прежде чем полагаться на Delivered.",
-    "staleAlternateToastNamed": "Чат открыт на LXMF {{openPrefix}}…. Другой LXMF {{alternatePrefix}}… ({{name}}) может быть тем же человеком в другом приложении. Подтвердите, что Network LXMF, прежде чем полагаться на «Доставлено»."
+    "staleAlternateToastNamed": "Чат открыт на LXMF {{openPrefix}}…. Другой LXMF {{alternatePrefix}}… ({{name}}) может быть тем же человеком в другом приложении. Подтвердите, что Network LXMF, прежде чем полагаться на «Доставлено».",
+    "colDiagnostics": "Диагностика",
+    "chat": "Чат"
   },
   "radioPanel": {
     "offloadedContacts": "Контакты {{count}} выгружены в базу данных.",

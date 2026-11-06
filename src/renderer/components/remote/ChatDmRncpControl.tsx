@@ -340,7 +340,7 @@ export function ChatDmRncpControl({
         }}
         className={`relative ${RETICULUM_DM_HEADER_ACTION_CLASS}`}
       >
-        <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <Upload className="h-3.5 w-3.5 shrink-0 text-yellow-400" aria-hidden="true" />
         <span>{t('chatPanel.rncp.sendFile')}</span>
         {(relevantOffers.length > 0 || activeTransferCount > 0) && (
           <span

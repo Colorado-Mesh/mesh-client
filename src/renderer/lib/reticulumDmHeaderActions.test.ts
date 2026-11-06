@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { buttonClassName } from '@/renderer/components/ui/Button';
+
 import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
 } from './reticulumDmHeaderActions';
 
 describe('reticulumDmHeaderActions', () => {
-  it('exports outlined cyan chip action class with hover fill', () => {
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('border');
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('border-cyan-500/35');
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('rounded-lg');
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toMatch(/text-cyan-/);
-    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('hover:bg-ink-800/70');
+  it('exports secondary sm action class matching Button', () => {
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toBe(buttonClassName('secondary', 'sm'));
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('bg-sidebar-active-bg');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).toContain('border-secondary-dark');
+    expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toContain('border-cyan-500/35');
     expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toContain('hover:underline');
     expect(RETICULUM_DM_HEADER_ACTION_CLASS).not.toContain('rounded-full');
   });

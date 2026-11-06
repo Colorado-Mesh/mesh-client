@@ -93,13 +93,14 @@ describe('ChatDmRncpControl', () => {
     expect(screen.getByRole('button', { name: 'Send file to Alice via rncp' })).toBeInTheDocument();
   });
 
-  it('styles Send file as an outlined cyan chip, not the old gray bordered box', () => {
+  it('styles Send file as a secondary action with a yellow upload icon', () => {
     render(<ChatDmRncpControl lxmfPeerHash={PEER_HASH} peerLabel="Alice" sidecarRunning />);
     const trigger = screen.getByRole('button', { name: 'Send file to Alice via rncp' });
-    expect(trigger.className).toContain('border-cyan-500/35');
-    expect(trigger.className).toMatch(/text-cyan-/);
+    expect(trigger.className).toContain('bg-sidebar-active-bg');
+    expect(trigger.className).toContain('border-secondary-dark');
+    expect(trigger.className).not.toContain('border-cyan-500/35');
     expect(trigger.className).not.toContain('hover:underline');
-    expect(trigger.className).not.toMatch(/border-ink-700\/60/);
+    expect(trigger.querySelector('svg.text-yellow-400')).toBeTruthy();
   });
 
   it('shows a pending-offer badge only for offers from this peer', () => {

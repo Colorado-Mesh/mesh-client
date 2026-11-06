@@ -62,6 +62,7 @@ import {
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { isReticulumStaleAlternateDismissed } from '@/renderer/lib/reticulum/reticulumStaleAlternateDismiss';
+import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
@@ -165,9 +166,11 @@ interface PeerTableRowProps {
   onPeerClick: (hash: string) => void;
   onToggleFavorite: (peer: ReticulumPeer) => void;
   renderActionButtons: (peer: ReticulumPeer, busy: boolean) => ReactNode;
+  renderDiagnosticButtons: (peer: ReticulumPeer, busy: boolean) => ReactNode;
   t: (key: string, opts?: Record<string, string>) => string;
 }
 
+/** One peers/history/contacts/favorites table row, including Actions and Diagnostics cells. */
 const PeerTableRow = memo(function PeerTableRow({
   prepared,
   activeTab,
@@ -182,9 +185,11 @@ const PeerTableRow = memo(function PeerTableRow({
   onPeerClick,
   onToggleFavorite,
   renderActionButtons,
+  renderDiagnosticButtons,
   t,
 }: PeerTableRowProps) {
   const peer = prepared.peer;
+  const telephonyOnly = isReticulumTelephonyOnlyDestination(peer.destination_hash);
   return (
     <tr
       data-selected={selected ? 'true' : undefined}
@@ -214,6 +219,14 @@ const PeerTableRow = memo(function PeerTableRow({
           >
             {displayLabel}
           </button>
+          {telephonyOnly ? (
+            <span
+              className="rounded-badge text-2xs shrink-0 bg-cyan-500/15 px-1 py-0.5 font-medium text-cyan-300"
+              title={t('peerListPanel.voiceAspectTitle')}
+            >
+              {t('peerListPanel.voiceAspectBadge')}
+            </span>
+          ) : null}
           {isReticulumPeerHeardViaTcpHub(peer.interface) ? (
             <span
               className="text-2xs shrink-0 rounded bg-sky-900/50 px-1 py-0.5 font-medium text-sky-300"
@@ -279,6 +292,7 @@ const PeerTableRow = memo(function PeerTableRow({
         </>
       )}
       <td className="py-2 pr-2 whitespace-nowrap">{renderActionButtons(peer, busy)}</td>
+      <td className="py-2 pr-2 whitespace-nowrap">{renderDiagnosticButtons(peer, busy)}</td>
     </tr>
   );
 });
@@ -659,7 +673,7 @@ export default function ReticulumPeerListPanel({
           ? 'peerListPanel.emptyFavorites'
           : 'peerListPanel.emptyPeers';
 
-  const tableColSpan = activeTab === 'peers' ? 6 : 5;
+  const tableColSpan = activeTab === 'peers' ? 7 : 6;
 
   const maybeToastStaleAlternate = useCallback(
     (openLxmfHash: string) => {
@@ -709,16 +723,17 @@ export default function ReticulumPeerListPanel({
     [addToast, t],
   );
 
+  /** Secondary Chat / Call / Challenge controls for the Actions column. */
   const renderActionButtons = (peer: ReticulumPeer, busy: boolean) => {
     const telephonyOnly = isReticulumTelephonyOnlyDestination(peer.destination_hash);
     const chatResolved = resolveReticulumChatLxmfDestination(peer.destination_hash);
     const chatBlocked = telephonyOnly && chatResolved.status !== 'ok';
     const gamesLxmfHash = chatResolved.status === 'ok' ? chatResolved.hash : peer.destination_hash;
     return (
-      <>
+      <span className="inline-flex items-center gap-1.5">
         <button
           type="button"
-          className="text-yellow-400 hover:underline disabled:opacity-40"
+          className={RETICULUM_DM_HEADER_ACTION_CLASS}
           disabled={busy || chatBlocked}
           title={chatBlocked ? t('peerListPanel.chatNeedsLxmfDelivery') : undefined}
           onClick={(e) => {
@@ -739,69 +754,72 @@ export default function ReticulumPeerListPanel({
           }}
           aria-label={t('peerListPanel.openChat')}
         >
-          <MessageCircle className="inline h-3.5 w-3.5" aria-hidden />
+          <MessageCircle className="h-3.5 w-3.5 shrink-0 text-yellow-400" aria-hidden />
+          <span>{t('peerListPanel.chat')}</span>
         </button>
-        {telephonyOnly ? (
-          <span
-            className="text-2xs ml-1 font-semibold text-cyan-400/90"
-            title={t('peerListPanel.voiceAspectTitle')}
-          >
-            {t('peerListPanel.voiceAspectBadge')}
-          </span>
-        ) : null}
         {hasLxstVoice ? (
           <ReticulumVoiceCallButton
             lxmfPeerHash={peer.destination_hash}
             identityHash={peer.identity_hash}
             disabled={busy || !isConnected}
+            className={RETICULUM_DM_HEADER_ACTION_CLASS}
+            iconClassName="text-cyan-400"
           />
         ) : null}
         {hasLrgpGames ? (
           <ReticulumGameChallengeButton
             lxmfPeerHash={gamesLxmfHash}
             disabled={busy || !isConnected}
+            className={RETICULUM_DM_HEADER_ACTION_CLASS}
+            iconClassName="text-purple-400"
           />
         ) : null}
-        <button
-          type="button"
-          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            void requestPath(peer.destination_hash);
-          }}
-        >
-          {t('connectionPanel.reticulumPeers.path')}
-        </button>
-        <button
-          type="button"
-          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            void probePeer(peer.destination_hash);
-          }}
-        >
-          {t('connectionPanel.reticulumPeers.probe')}
-        </button>
-        <button
-          type="button"
-          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
-          disabled={busy}
-          aria-label={t('peerListPanel.pathsAria', { hash: peer.destination_hash })}
-          aria-expanded={pathsDetailHash === peer.destination_hash}
-          onClick={(e) => {
-            e.stopPropagation();
-            setPathsDetailHash((cur) =>
-              cur === peer.destination_hash ? null : peer.destination_hash,
-            );
-          }}
-        >
-          {t('peerListPanel.paths')}
-        </button>
-      </>
+      </span>
     );
   };
+
+  /** Path / Probe / Paths text links for the Diagnostics column. */
+  const renderDiagnosticButtons = (peer: ReticulumPeer, busy: boolean) => (
+    <span className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        className="text-yellow-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          void requestPath(peer.destination_hash);
+        }}
+      >
+        {t('connectionPanel.reticulumPeers.path')}
+      </button>
+      <button
+        type="button"
+        className="text-yellow-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          void probePeer(peer.destination_hash);
+        }}
+      >
+        {t('connectionPanel.reticulumPeers.probe')}
+      </button>
+      <button
+        type="button"
+        className="text-yellow-400 hover:underline disabled:opacity-40"
+        disabled={busy}
+        aria-label={t('peerListPanel.pathsAria', { hash: peer.destination_hash })}
+        aria-expanded={pathsDetailHash === peer.destination_hash}
+        onClick={(e) => {
+          e.stopPropagation();
+          setPathsDetailHash((cur) =>
+            cur === peer.destination_hash ? null : peer.destination_hash,
+          );
+        }}
+      >
+        {t('peerListPanel.paths')}
+      </button>
+    </span>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -1051,6 +1069,7 @@ export default function ReticulumPeerListPanel({
                 </>
               )}
               <th className="py-2 pr-2">{t('connectionPanel.reticulumPeers.actions')}</th>
+              <th className="py-2 pr-2">{t('peerListPanel.colDiagnostics')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1105,6 +1124,7 @@ export default function ReticulumPeerListPanel({
                       void handleToggleFavorite(p);
                     }}
                     renderActionButtons={renderActionButtons}
+                    renderDiagnosticButtons={renderDiagnosticButtons}
                     t={t}
                   />
                 );

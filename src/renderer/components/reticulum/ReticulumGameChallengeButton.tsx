@@ -11,13 +11,16 @@ interface ReticulumGameChallengeButtonProps {
   lxmfPeerHash: string;
   disabled?: boolean;
   className?: string;
+  /** Icon color class (defaults to purple for Peers / Chat DM Challenge). */
+  iconClassName?: string;
 }
 
 /** Compact "Challenge" control for Peers rows / Chat DM header — opens an LRGP game. */
 export function ReticulumGameChallengeButton({
   lxmfPeerHash,
   disabled = false,
-  className = `${RETICULUM_DM_HEADER_ACTION_CLASS} ml-2`,
+  className = RETICULUM_DM_HEADER_ACTION_CLASS,
+  iconClassName = 'text-purple-400',
 }: ReticulumGameChallengeButtonProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -64,7 +67,10 @@ export function ReticulumGameChallengeButton({
           setMenuOpen((v) => !v);
         }}
       >
-        <Gamepad2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <Gamepad2
+          className={['h-3.5 w-3.5 shrink-0', iconClassName].filter(Boolean).join(' ')}
+          aria-hidden
+        />
         <span>{t('gamesPanel.challenge')}</span>
       </button>
       {showMenu && (

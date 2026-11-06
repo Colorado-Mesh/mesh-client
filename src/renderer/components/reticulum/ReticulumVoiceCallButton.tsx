@@ -13,6 +13,8 @@ interface ReticulumVoiceCallButtonProps {
   identityHash?: string | null;
   disabled?: boolean;
   className?: string;
+  /** Icon color class (defaults to cyan for Peers / Chat DM Call). */
+  iconClassName?: string;
 }
 
 /** Compact Call control for Peers rows / Chat DM header. */
@@ -20,7 +22,8 @@ export function ReticulumVoiceCallButton({
   lxmfPeerHash,
   identityHash = null,
   disabled = false,
-  className = `${RETICULUM_DM_HEADER_ACTION_CLASS} ml-2`,
+  className = RETICULUM_DM_HEADER_ACTION_CLASS,
+  iconClassName = 'text-cyan-400',
 }: ReticulumVoiceCallButtonProps) {
   const { t } = useTranslation();
   // Re-render when identity activity updates so capability badge can flip to heard.
@@ -35,6 +38,7 @@ export function ReticulumVoiceCallButton({
       : t('reticulumVoice.capabilityUnknown');
   const ariaLabel = `${t('reticulumVoice.callAria')} — ${capabilityLabel}`;
   const title = `${ariaLabel}. ${t('reticulumVoice.help.interop')}`;
+  const showLxstPill = capability === 'heard';
 
   return (
     <button
@@ -48,13 +52,16 @@ export function ReticulumVoiceCallButton({
         void reticulumVoiceCallPeer(lxmfPeerHash, { identityHash });
       }}
     >
-      <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <Phone
+        className={['h-3.5 w-3.5 shrink-0', iconClassName].filter(Boolean).join(' ')}
+        aria-hidden
+      />
       <span>{t('reticulumVoice.call')}</span>
-      <span className={capability === 'heard' ? 'text-2xs text-cyan-300' : 'text-2xs text-muted'}>
-        {capability === 'heard'
-          ? t('reticulumVoice.capabilityHeardShort')
-          : t('reticulumVoice.capabilityUnknownShort')}
-      </span>
+      {showLxstPill ? (
+        <span className="rounded-badge text-2xs bg-cyan-500/15 px-1 py-0.5 font-medium text-cyan-300">
+          {t('reticulumVoice.capabilityHeardShort')}
+        </span>
+      ) : null}
     </button>
   );
 }

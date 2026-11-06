@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "TCP-hub",
     "heardViaTcpHubTitle": "Het actieve pad loopt via een TCP/transporthub ({{interface}}). Geef de voorkeur aan RF of schakel hubs uit bij het testen van alleen RF-chat.",
     "staleAlternateToast": "Chat geopend op LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… kan dezelfde persoon zijn in een andere app. Bevestig Network LXMF voordat je vertrouwt op Delivered.",
-    "staleAlternateToastNamed": "Chat geopend op LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Bevestig Network LXMF voordat je vertrouwt op Delivered."
+    "staleAlternateToastNamed": "Chat geopend op LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Bevestig Network LXMF voordat je vertrouwt op Delivered.",
+    "colDiagnostics": "Diagnose",
+    "chat": "Chat"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",
