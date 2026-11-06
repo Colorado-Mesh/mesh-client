@@ -40,7 +40,9 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 - **`last_advert` is Unix seconds**, not milliseconds. Invalid retention day counts are ignored (they previously caused mass deletes).
 - **Favorited contacts are exempt** from age-based deletion.
-- Contacts with **`NULL last_advert`** are never age-pruned (only count-based limits apply).
+- **Room contacts that hold posts are exempt** from every automatic prune (age, never advertised, contact cap). Pruning a Room contact deletes its posts, so a room whose adverts look old (for example, a room server with a wrong clock) used to lose its history at the next prune. Deleting the contact yourself still removes them. Posts that older builds stored as DMs with the room count too: they show under Rooms only while the Room contact exists.
+- **Retention & limits > Cap stored messages, keep newest** (on by default, 4,000) keeps that many channel and DM messages and, separately, that many room posts, so a busy channel no longer pushes room posts out. Posts that older builds stored as DMs count with the channel and DM messages. These prunes run at launch and every 6 hours. **Clear all contacts** leaves room posts without a room; the next prune deletes them unless the room has been seen again.
+- Contacts with **`NULL last_advert`** are never age-pruned. The separate **never advertised** prune (on by default) removes them, along with the contact cap.
 - If favorite stars stopped working after a store migration, update to a build with identity-scoped favorite toggles (`patchNodeFavorited` on the active connection identity).
 
 ## MeshCore: UI slow or frozen with large repeater lists (USB serial)

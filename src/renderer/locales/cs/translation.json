@@ -534,7 +534,8 @@
     "memoryDeltaJsHeap": "JS halda Δ: {{value}}",
     "memoryDomNodes": "DOM uzly: {{count}}",
     "memoryHistoryHeap": "halda {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "Příspěvky v místnosti mají svůj vlastní limit stejné velikosti, takže je zaneprázdněné kanály nikdy nevytlačují ven."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -5770,7 +5771,8 @@
     "enableAutoLoginAria": "Přihlaste se do této místnosti automaticky, jakmile se rádio připojí",
     "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo.",
     "leaveRoomConfirmTitle": "Opustit tuto místnost?",
-    "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla."
+    "leaveRoomConfirmMessage": "Z tohoto serveru místnosti se odhlásíte v rádiu. Později se můžeš znovu přihlásit pomocí hosta nebo uloženého hesla.",
+    "syncSaveFailed": "Nastavení synchronizace se nepodařilo uložit. Tvá předchozí nastavení zůstala nezměněna."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

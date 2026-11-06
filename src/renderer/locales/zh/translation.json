@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JS堆Δ: {{value}}",
     "memoryDomNodes": "DOM节点： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "房间帖子有相同大小的限制，因此繁忙的频道永远不会将其推出。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -5726,7 +5727,8 @@
     "enableAutoLoginAria": "收音机连接时自动登录此房间",
     "autoLoginSaveFailed": "无法保存自动登录设置。您之前的设置保持不变。",
     "leaveRoomConfirmTitle": "要离开这个房间吗？",
-    "leaveRoomConfirmMessage": "您将通过收音机退出此房间服务器。您可以稍后使用房客密码或保存的密码重新登录。"
+    "leaveRoomConfirmMessage": "您将通过收音机退出此房间服务器。您可以稍后使用房客密码或保存的密码重新登录。",
+    "syncSaveFailed": "无法保存同步设置。您之前的设置保持不变。"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",

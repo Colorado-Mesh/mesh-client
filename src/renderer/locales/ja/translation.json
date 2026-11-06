@@ -526,7 +526,8 @@
     "memoryDeltaJsHeap": "JSヒープΔ ： {{value}}",
     "memoryDomNodes": "DOMノード： {{count}}",
     "memoryHistoryHeap": "heap {{value}}",
-    "memoryHistoryDelta": "Δ {{value}}"
+    "memoryHistoryDelta": "Δ {{value}}",
+    "meshcoreRoomPostRetentionHint": "ルームの投稿には同じサイズの制限があるため、ビジーチャンネルが投稿を押し出すことはありません。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -5726,7 +5727,8 @@
     "enableAutoLoginAria": "ラジオ接続時にこのルームへ自動的にログイン",
     "autoLoginSaveFailed": "自動ログイン設定を保存できませんでした。以前の設定は変更されていません。",
     "leaveRoomConfirmTitle": "このルームを出ますか？",
-    "leaveRoomConfirmMessage": "ラジオでこのルームサーバーからログアウトします。後でゲストまたは保存したパスワードを使用して再度ログインすることができます。"
+    "leaveRoomConfirmMessage": "ラジオでこのルームサーバーからログアウトします。後でゲストまたは保存したパスワードを使用して再度ログインすることができます。",
+    "syncSaveFailed": "同期設定を保存できませんでした。以前の設定は変更されていません。"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",

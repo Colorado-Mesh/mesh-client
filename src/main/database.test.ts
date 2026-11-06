@@ -493,10 +493,13 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     );
   });
 
-  it('db:pruneMeshcoreMessagesByCount keeps the newest N rows by timestamp', () => {
+  it('db:pruneMeshcoreMessagesByCount keeps the newest N rows by timestamp in each pool', () => {
+    // Behavior (chat and room pools, NULL channel rows) is covered with real SQLite in
+    // meshcore-message-retention.test.ts.
     expect(INDEX_SOURCE).toContain("'db:pruneMeshcoreMessagesByCount'");
-    expect(INDEX_SOURCE).toMatch(
-      /DELETE FROM meshcore_messages WHERE id NOT IN \(SELECT id FROM meshcore_messages ORDER BY timestamp DESC, id DESC LIMIT \?\)/,
+    expect(INDEX_SOURCE).toContain('pruneMeshcoreMessagesByCountOn(db, cap)');
+    expect(DB_SOURCE).toMatch(
+      /export function pruneMeshcoreMessagesByCountOn[\s\S]*?ORDER BY timestamp DESC, id DESC LIMIT \?/,
     );
   });
 

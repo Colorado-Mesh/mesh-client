@@ -1704,48 +1704,54 @@ export default function AppPanel({
               <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
             {protocol === 'meshcore' ? (
-              <div
-                data-setting-anchor="app.retention.meshcoreMessageCap"
-                className="border-ink-700 flex items-center gap-2 border-t pt-2"
-              >
-                <input
-                  type="checkbox"
-                  id="messageRetentionMeshcore"
-                  checked={retention.meshcoreEnabled}
-                  onChange={(e) => {
-                    updateRetentionEnabled('meshcore', e.target.checked);
-                  }}
-                  aria-label={t('appPanel.capStoredMessages')}
-                  className="accent-brand-green"
-                />
-                <label
-                  id="apppanel-message-retention-meshcore-label"
-                  htmlFor="messageRetentionMeshcore"
-                  className="text-ink-300 flex-1 cursor-pointer text-sm"
+              <>
+                <div
+                  data-setting-anchor="app.retention.meshcoreMessageCap"
+                  className="border-ink-700 flex items-center gap-2 border-t pt-2"
                 >
-                  {t('appPanel.capStoredMessagesLabel')}
-                </label>
-                <input
-                  id="apppanel-message-retention-meshcore-count"
-                  type="number"
-                  min={MESSAGE_RETENTION_MIN_COUNT}
-                  max={MESSAGE_RETENTION_MAX_COUNT}
-                  value={retention.meshcoreCount}
-                  onChange={(e) => {
-                    updateRetentionCount(
-                      'meshcore',
-                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                    );
-                  }}
-                  disabled={!retention.meshcoreEnabled}
-                  aria-labelledby="apppanel-message-retention-meshcore-label"
-                  aria-label={t('appPanel.capStoredMessagesCountAria', {
-                    count: retention.meshcoreCount,
-                  })}
-                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
-                />
-                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
-              </div>
+                  <input
+                    type="checkbox"
+                    id="messageRetentionMeshcore"
+                    checked={retention.meshcoreEnabled}
+                    onChange={(e) => {
+                      updateRetentionEnabled('meshcore', e.target.checked);
+                    }}
+                    aria-label={t('appPanel.capStoredMessages')}
+                    className="accent-brand-green"
+                  />
+                  <label
+                    id="apppanel-message-retention-meshcore-label"
+                    htmlFor="messageRetentionMeshcore"
+                    className="text-ink-300 flex-1 cursor-pointer text-sm"
+                  >
+                    {t('appPanel.capStoredMessagesLabel')}
+                  </label>
+                  <input
+                    id="apppanel-message-retention-meshcore-count"
+                    type="number"
+                    min={MESSAGE_RETENTION_MIN_COUNT}
+                    max={MESSAGE_RETENTION_MAX_COUNT}
+                    value={retention.meshcoreCount}
+                    onChange={(e) => {
+                      updateRetentionCount(
+                        'meshcore',
+                        parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                      );
+                    }}
+                    disabled={!retention.meshcoreEnabled}
+                    aria-labelledby="apppanel-message-retention-meshcore-label"
+                    aria-label={t('appPanel.capStoredMessagesCountAria', {
+                      count: retention.meshcoreCount,
+                    })}
+                    className={`${INPUT_BOX_CLASS} w-24 text-right`}
+                  />
+                  <span className="text-ink-300 text-sm">{t('common.messages')}</span>
+                </div>
+                {/* Protocol-specific: only MeshCore has Rooms in this cap (RRC has its own row). */}
+                <p className="text-muted pl-6 text-xs">
+                  {t('appPanel.meshcoreRoomPostRetentionHint')}
+                </p>
+              </>
             ) : protocol === 'reticulum' ? (
               <>
                 <div
