@@ -778,6 +778,10 @@ describe('ReticulumPeerListPanel', () => {
 
     const chatBtn = await screen.findByRole('button', { name: 'peerListPanel.openChat' });
     expect(chatBtn).toBeDisabled();
+    const voiceBadge = screen.getByText('peerListPanel.voiceAspectBadge');
+    const nameCell = voiceBadge.closest('td');
+    expect(nameCell?.textContent).toContain('Voice Only');
+    expect(chatBtn.closest('td')).not.toBe(nameCell);
 
     useReticulumIdentityActivityStore.setState({
       byDestination: new Map([
@@ -809,6 +813,82 @@ describe('ReticulumPeerListPanel', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'peerListPanel.openChat' })).not.toBeDisabled();
     });
+  });
+
+  it('renders secondary tinted Actions and a Diagnostics column', () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    const identity = '0f79468863d76b3ba574baa92606ffcb';
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'Action Peer',
+            identity_hash: identity,
+            hops: 1,
+            last_seen: Date.now() / 1000,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+      history: new Map(),
+      lastRefreshAt: null,
+      peersRevision: 1,
+    });
+    useReticulumIdentityActivityStore.setState({
+      byDestination: new Map([
+        [
+          hash,
+          [
+            {
+              destination_hash: hash,
+              aspect: 'lxst.telephony',
+              identity_hash: identity,
+              last_seen: 1,
+            },
+          ],
+        ],
+      ]),
+    });
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel
+          isConnected
+          onPeerClick={vi.fn()}
+          onSendMessage={vi.fn()}
+          hasLxstVoice
+          hasLrgpGames
+        />
+      </ToastProvider>,
+    );
+
+    expect(screen.getByText('peerListPanel.colDiagnostics')).toBeInTheDocument();
+    expect(screen.getByText('connectionPanel.reticulumPeers.actions')).toBeInTheDocument();
+
+    const chatBtn = screen.getByRole('button', { name: 'peerListPanel.openChat' });
+    expect(chatBtn.className).toContain('bg-sidebar-active-bg');
+    expect(chatBtn.className).not.toContain('border-cyan-500/35');
+    expect(chatBtn.className).not.toContain('hover:underline');
+    expect(chatBtn.querySelector('svg.text-yellow-400')).toBeTruthy();
+    expect(chatBtn.textContent).toContain('peerListPanel.chat');
+
+    const callBtn = screen.getByRole('button', {
+      name: /reticulumVoice\.callAria/,
+    });
+    expect(callBtn.className).toContain('bg-sidebar-active-bg');
+    expect(callBtn.className).not.toContain('border-cyan-500/35');
+    expect(callBtn.querySelector('svg.text-cyan-400')).toBeTruthy();
+    expect(callBtn.textContent).toContain('reticulumVoice.capabilityHeardShort');
+
+    const challengeBtn = screen.getByRole('button', { name: 'gamesPanel.challengeAria' });
+    expect(challengeBtn.className).toContain('bg-sidebar-active-bg');
+    expect(challengeBtn.querySelector('svg.text-purple-400')).toBeTruthy();
+
+    const pathBtn = screen.getByRole('button', { name: 'connectionPanel.reticulumPeers.path' });
+    expect(pathBtn.className).toContain('text-yellow-400');
+    expect(pathBtn.className).toContain('hover:underline');
+    expect(pathBtn.closest('td')).not.toBe(chatBtn.closest('td'));
   });
 
   it('shows TCP hub cue for transport-hub paths and not for RNode', async () => {

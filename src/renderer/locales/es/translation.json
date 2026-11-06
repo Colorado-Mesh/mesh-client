@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "Concentrador TCP",
     "heardViaTcpHubTitle": "La ruta activa es a través de un centro de TCP/transporte ({{interface}}). Prefiera RF o deshabilite los concentradores cuando pruebe el chat solo por RF.",
     "staleAlternateToast": "El chat se abrió el LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}... puede ser la misma persona en una aplicación diferente. Confirma Network LXMF antes de confiar en Delivered.",
-    "staleAlternateToastNamed": "El chat se abrió el LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Confirma Network LXMF antes de confiar en Delivered."
+    "staleAlternateToastNamed": "El chat se abrió el LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Confirma Network LXMF antes de confiar en Delivered.",
+    "colDiagnostics": "Diagnóstico",
+    "chat": "Chat"
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",

@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "Hub TCP",
     "heardViaTcpHubTitle": "Jalur aktif adalah melalui TCP/hub transportasi ({{interface}}). Lebih suka RF atau nonaktifkan hub saat menguji Obrolan khusus RF.",
     "staleAlternateToast": "Obrolan dibuka di LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya... mungkin orang yang sama di aplikasi lain — konfirmasikan Network LXMF sebelum mengandalkan Delivered.",
-    "staleAlternateToastNamed": "Obrolan dibuka di LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain — konfirmasikan Network LXMF sebelum mengandalkan Delivered."
+    "staleAlternateToastNamed": "Obrolan dibuka di LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain — konfirmasikan Network LXMF sebelum mengandalkan Delivered.",
+    "colDiagnostics": "DiagnosaComment",
+    "chat": "Chat"
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

@@ -4277,7 +4277,9 @@
     "heardViaTcpHub": "TCP HUB",
     "heardViaTcpHubTitle": "活动路径通过TCP/传输中心（ {{interface}} ）。测试仅射频聊天时，首选射频或禁用集线器。",
     "staleAlternateToast": "在LXMF {{openPrefix}}上打开的聊天。另一个LXMF {{alternatePrefix}} …可能是不同应用程序上的同一人—在依靠Delivered之前，请确认Network LXMF。",
-    "staleAlternateToastNamed": "在LXMF {{openPrefix}}上打开的聊天。另一个LXMF {{alternatePrefix}} …… （ {{name}} ）可能是另一个应用程序上的同一人—在依赖Delivered之前，请确认Network LXMF。"
+    "staleAlternateToastNamed": "在LXMF {{openPrefix}}上打开的聊天。另一个LXMF {{alternatePrefix}} …… （ {{name}} ）可能是另一个应用程序上的同一人—在依赖Delivered之前，请确认Network LXMF。",
+    "colDiagnostics": "诊断",
+    "chat": "聊天"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",
