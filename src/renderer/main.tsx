@@ -13,6 +13,7 @@ import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import { hydrateDurableRendererSettings } from './lib/hydrateDurableRendererSettings';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
+import { installKeyboardOwnerGuard } from './lib/keyboardOwnerLayer';
 import { ensureLocaleLoaded } from './lib/localeResources';
 import { parseStoredJson } from './lib/parseStoredJson';
 import {
@@ -81,6 +82,8 @@ if (import.meta.env.DEV) {
 installRendererUnhandledRejectionLogger();
 // Linux emoji picker reads vendored data instead of cdn.jsdelivr.net (works offline).
 installBundledEmojiData();
+// Before the first render, so it runs ahead of every modal's own key listener.
+installKeyboardOwnerGuard();
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);

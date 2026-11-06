@@ -5,9 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import {
+  installKeyboardOwnerGuard,
+  KEYBOARD_OWNER_ATTRIBUTE,
+} from '@/renderer/lib/keyboardOwnerLayer';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 import { useReticulumVoiceStore } from '@/renderer/stores/reticulumVoiceStore';
 
+import MeshcoreChatChannelManager from '../MeshcoreChatChannelManager';
+import { ToastProvider } from '../Toast';
 import { ReticulumVoiceOverlay } from './ReticulumVoiceOverlay';
 
 const answer = vi.fn();
@@ -68,6 +74,104 @@ describe('ReticulumVoiceOverlay', () => {
     expect(reject).toHaveBeenCalled();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  describe('ringing over the rest of the app', () => {
+    const ring = () => {
+      act(() => {
+        useReticulumVoiceStore.getState().applyIncoming({
+          link_id: 'a'.repeat(32),
+          remote_identity: 'b'.repeat(32),
+          role: 'incoming',
+          status: 'ringing',
+        });
+      });
+    };
+
+    it('takes focus on its panel, not Answer, and gives it back when the ring ends', () => {
+      const uninstall = installKeyboardOwnerGuard(window);
+      try {
+        render(
+          <>
+            <input aria-label="Message" />
+            <ReticulumVoiceOverlay />
+          </>,
+        );
+        const composer = screen.getByRole('textbox', { name: 'Message' });
+        composer.focus();
+
+        ring();
+        const dialog = screen.getByRole('dialog', { name: /incoming voice call/i });
+        expect(dialog.hasAttribute(KEYBOARD_OWNER_ATTRIBUTE)).toBe(true);
+        expect(dialog.contains(document.activeElement)).toBe(true);
+        expect(document.activeElement).not.toBe(
+          screen.getByRole('button', { name: /answer voice call/i }),
+        );
+
+        act(() => {
+          useReticulumVoiceStore.getState().clearCall();
+        });
+        expect(document.activeElement).toBe(composer);
+      } finally {
+        uninstall();
+      }
+    });
+
+    it('keeps Tab and Escape on the call while the Add Channel dialog is open under it', async () => {
+      const uninstall = installKeyboardOwnerGuard(window);
+      try {
+        const user = userEvent.setup();
+        const onSetChannel = vi.fn().mockResolvedValue(undefined);
+        render(
+          <ToastProvider>
+            <MeshcoreChatChannelManager
+              channels={[{ index: 0, name: '#general', secret: new Uint8Array(16).fill(1) }]}
+              disabled={false}
+              onSetChannel={onSetChannel}
+              onSelectChannel={vi.fn()}
+            />
+            <ReticulumVoiceOverlay />
+          </ToastProvider>,
+        );
+        await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+        const name = screen.getByLabelText('Name');
+        await user.type(name, 'storm');
+
+        ring();
+        const call = screen.getByRole('dialog', { name: /incoming voice call/i });
+        // The dialog under the call grabbing focus back (as ConfirmModal does when its parent
+        // re-renders) must not leave Enter pointed at it.
+        act(() => {
+          name.focus();
+        });
+        expect(call.contains(document.activeElement)).toBe(true);
+        await user.keyboard('{Enter}');
+        expect(onSetChannel).not.toHaveBeenCalled();
+
+        await user.keyboard('{Tab}');
+        expect(document.activeElement).toBe(
+          screen.getByRole('button', { name: /answer voice call/i }),
+        );
+        await user.keyboard('{Tab}');
+        expect(document.activeElement).toBe(
+          screen.getByRole('button', { name: /reject voice call/i }),
+        );
+        await user.keyboard('{Tab}');
+        expect(call.contains(document.activeElement)).toBe(true);
+        await user.keyboard('{Escape}');
+        expect(screen.getByRole('dialog', { name: 'Add Channel' })).toBeTruthy();
+        expect(screen.getByRole('dialog', { name: /incoming voice call/i })).toBe(call);
+
+        act(() => {
+          useReticulumVoiceStore.getState().clearCall();
+        });
+        expect(document.activeElement).toBe(name);
+        await user.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog', { name: 'Add Channel' })).toBeNull();
+      } finally {
+        uninstall();
+      }
+    });
   });
 
   it('in-call bar mute and hangup fire helpers with no axe violations', async () => {
