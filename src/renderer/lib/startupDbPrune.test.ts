@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  afterStartupDbPrune,
   resetReticulumVacuumScheduleForTests,
   resetStartupDbPruneForTests,
   runSessionDbPrune,
@@ -8,6 +9,7 @@ import {
   scheduleReticulumVacuumIfNeeded,
 } from './startupDbPrune';
 import { MESH_PROTOCOL_STORAGE_KEY } from './storedMeshProtocol';
+import { mockConsoleWarn } from './vitestConsoleMock';
 
 describe('runStartupDbPrune', () => {
   beforeEach(() => {
@@ -250,5 +252,57 @@ describe('scheduleReticulumVacuumIfNeeded', () => {
     void vi.advanceTimersByTimeAsync(30_000);
 
     expect(vacuum).not.toHaveBeenCalled();
+  });
+});
+
+describe('afterStartupDbPrune', () => {
+  beforeEach(() => {
+    resetStartupDbPruneForTests();
+    vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockResolvedValue(0);
+  });
+
+  afterEach(() => {
+    resetStartupDbPruneForTests();
+    vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockResolvedValue(0);
+  });
+
+  it('resolves at once when no startup prune has started', async () => {
+    await expect(afterStartupDbPrune()).resolves.toBeUndefined();
+    expect(window.electronAPI.db.migrateRfStubNodes).not.toHaveBeenCalled();
+  });
+
+  it('waits for the startup prune in flight', async () => {
+    let releasePrune: () => void = () => undefined;
+    vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockReturnValue(
+      new Promise<number>((resolve) => {
+        releasePrune = () => {
+          resolve(0);
+        };
+      }),
+    );
+    const prune = runStartupDbPrune();
+    let waited = false;
+    const wait = afterStartupDbPrune().then(() => {
+      waited = true;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(waited).toBe(false);
+
+    releasePrune();
+    await prune;
+    await wait;
+    expect(waited).toBe(true);
+  });
+
+  it('resolves when the startup prune fails', async () => {
+    const warn = mockConsoleWarn();
+    vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockImplementation(() => {
+      throw new Error('db closed');
+    });
+    const prune = runStartupDbPrune();
+    await expect(afterStartupDbPrune()).resolves.toBeUndefined();
+    await expect(prune).rejects.toThrow('db closed');
+    warn.restore();
   });
 });
