@@ -170,6 +170,7 @@ interface PeerTableRowProps {
   t: (key: string, opts?: Record<string, string>) => string;
 }
 
+/** One peers/history/contacts/favorites table row, including Actions and Diagnostics cells. */
 const PeerTableRow = memo(function PeerTableRow({
   prepared,
   activeTab,
@@ -722,6 +723,7 @@ export default function ReticulumPeerListPanel({
     [addToast, t],
   );
 
+  /** Secondary Chat / Call / Challenge controls for the Actions column. */
   const renderActionButtons = (peer: ReticulumPeer, busy: boolean) => {
     const telephonyOnly = isReticulumTelephonyOnlyDestination(peer.destination_hash);
     const chatResolved = resolveReticulumChatLxmfDestination(peer.destination_hash);
@@ -776,6 +778,7 @@ export default function ReticulumPeerListPanel({
     );
   };
 
+  /** Path / Probe / Paths text links for the Diagnostics column. */
   const renderDiagnosticButtons = (peer: ReticulumPeer, busy: boolean) => (
     <span className="inline-flex items-center gap-2">
       <button
