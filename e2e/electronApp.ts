@@ -212,8 +212,18 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
 
     return launched;
   } catch (err) {
-    await closeElectronApplication(app);
-    if (ownsUserDataDir) {
+    let shutdownFailed = false;
+    try {
+      await closeElectronApplication(app);
+    } catch (shutdownErr) {
+      shutdownFailed = true;
+      console.warn(
+        '[e2e] Electron shutdown failed after launch error:',
+        shutdownErr instanceof Error ? shutdownErr.message : shutdownErr,
+      );
+    }
+    // Only remove the profile once shutdown confirmed the process is gone.
+    if (ownsUserDataDir && !shutdownFailed) {
       try {
         await disposeUserData(userDataDir);
       } catch {
@@ -252,10 +262,14 @@ export function forceKillElectronProcess(proc: ChildProcess | undefined): void {
 }
 
 /**
- * Close an ElectronApplication with a hard timeout. A hung `app.close()` (before-quit
- * handlers, CDP sessions, stray children) previously burned the full Playwright test
- * timeout in afterEach and then the worker teardown budget, failing CI even when the
- * flaky test itself passed on retry.
+ * Close an ElectronApplication with a hard timeout. A hung or rejected `app.close()`
+ * (before-quit handlers, CDP sessions, stray children) previously burned the full
+ * Playwright test timeout in afterEach and then the worker teardown budget, failing
+ * CI even when the flaky test itself passed on retry.
+ *
+ * Resolves only after the Electron process has exited. Force-kills when close times
+ * out or settles while the process is still live; throws if it remains alive after
+ * the force-kill wait so callers do not delete a still-locked profile.
  */
 export async function closeElectronApplication(app: ElectronApplication): Promise<void> {
   let proc: ChildProcess | undefined;
@@ -265,20 +279,30 @@ export async function closeElectronApplication(app: ElectronApplication): Promis
     // catch-no-log-ok process() can throw if the app already exited
   }
 
+  // Settle rejections so the race can finish; process liveness is the success signal.
   const closePromise = app.close().catch(() => {
-    // catch-no-log-ok app may already be exiting / force-killed
+    // catch-no-log-ok close may reject while exiting or after a prior kill
   });
 
-  try {
-    await Promise.race([
-      closePromise,
-      sleepMs(CLOSE_APP_TIMEOUT_MS).then(() => {
-        throw new Error('Timed out closing Electron app');
-      }),
-    ]);
-  } catch {
+  const timedOut = await Promise.race([
+    closePromise.then(() => false as const),
+    sleepMs(CLOSE_APP_TIMEOUT_MS).then(() => true as const),
+  ]);
+
+  if (!hasProcessExited(proc)) {
     forceKillElectronProcess(proc);
-    await Promise.race([closePromise, sleepMs(FORCE_KILL_WAIT_MS)]);
+    // Always wait the budget — a settled closePromise must not skip the kill settle time.
+    if (!hasProcessExited(proc)) {
+      await sleepMs(FORCE_KILL_WAIT_MS);
+    }
+  }
+
+  if (!hasProcessExited(proc)) {
+    throw new Error(
+      timedOut
+        ? 'Timed out closing Electron app; process still running after force-kill'
+        : 'Electron process still running after close/force-kill',
+    );
   }
 }
 
@@ -287,7 +311,10 @@ export async function closeApp(launched: LaunchedApp): Promise<void> {
   await closeElectronApplication(launched.app);
 }
 
-/** Close the app and delete its temp user-data dir unless `retainUserData` is set. */
+/**
+ * Close the app and delete its temp user-data dir unless `retainUserData` is set.
+ * Profile removal runs only after `closeApp` confirms the Electron process has exited.
+ */
 export async function teardownApp(launched: LaunchedApp): Promise<void> {
   await closeApp(launched);
   if (!launched.retainUserData) {

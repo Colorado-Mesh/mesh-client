@@ -44,6 +44,7 @@ import {
   forceKillElectronProcess,
   launchApp,
   type LaunchedApp,
+  teardownApp,
 } from '../../e2e/electronApp';
 
 describe('disposeUserData', () => {
@@ -207,7 +208,8 @@ describe('closeElectronApplication', () => {
     const close = vi.fn(() => Promise.resolve());
     const app = {
       close,
-      process: () => ({ pid: 1, exitCode: null, signalCode: null }),
+      // Close completed and the process has already exited.
+      process: () => ({ pid: 1, exitCode: 0, signalCode: null }),
     };
 
     const done = closeElectronApplication(app as never);
@@ -222,11 +224,19 @@ describe('closeElectronApplication', () => {
   it('force-kills when close hangs past CLOSE_APP_TIMEOUT_MS', async () => {
     const previous = process.platform;
     Object.defineProperty(process, 'platform', { value: 'darwin' });
-    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    const proc = {
+      pid: 1234,
+      exitCode: null as number | null,
+      signalCode: null as NodeJS.Signals | null,
+    };
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
+      proc.exitCode = 1;
+      return true;
+    });
     const close = vi.fn(() => new Promise<void>(() => undefined));
     const app = {
       close,
-      process: () => ({ pid: 1234, exitCode: null, signalCode: null }),
+      process: () => proc,
     };
 
     const done = closeElectronApplication(app as never);
@@ -235,6 +245,55 @@ describe('closeElectronApplication', () => {
     await done;
 
     expect(killSpy).toHaveBeenCalledWith(1234, 'SIGKILL');
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
+  });
+
+  it('force-kills when close rejects while the process is still live', async () => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    const proc = {
+      pid: 5678,
+      exitCode: null as number | null,
+      signalCode: null as NodeJS.Signals | null,
+    };
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
+      proc.exitCode = 1;
+      return true;
+    });
+    const close = vi.fn(() => Promise.reject(new Error('close failed')));
+    const app = {
+      close,
+      process: () => proc,
+    };
+
+    const done = closeElectronApplication(app as never);
+    await vi.runAllTimersAsync();
+    await done;
+
+    expect(killSpy).toHaveBeenCalledWith(5678, 'SIGKILL');
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
+  });
+
+  it('throws when the process remains live after force-kill wait', async () => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    const close = vi.fn(() => Promise.reject(new Error('close failed')));
+    const app = {
+      close,
+      process: () => ({ pid: 999, exitCode: null, signalCode: null }),
+    };
+
+    const done = closeElectronApplication(app as never);
+    const assertion = expect(done).rejects.toThrow(
+      /Electron process still running after close\/force-kill/,
+    );
+    await vi.runAllTimersAsync();
+    await assertion;
+
+    expect(killSpy).toHaveBeenCalledWith(999, 'SIGKILL');
     killSpy.mockRestore();
     Object.defineProperty(process, 'platform', { value: previous });
   });
@@ -252,5 +311,40 @@ describe('closeElectronApplication', () => {
     await vi.runAllTimersAsync();
     await done;
     expect(close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('teardownApp', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    rmSyncMock.mockReset();
+    execFileSyncMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not dispose userData when Electron is still running after shutdown', async () => {
+    const previous = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+    const launched = {
+      retainUserData: false,
+      userDataDir: '/tmp/mesh-e2e-still-live',
+      app: {
+        close: () => Promise.reject(new Error('close failed')),
+        process: () => ({ pid: 42, exitCode: null, signalCode: null }),
+      },
+    } as unknown as LaunchedApp;
+
+    const done = teardownApp(launched);
+    const assertion = expect(done).rejects.toThrow(/still running/);
+    await vi.runAllTimersAsync();
+    await assertion;
+
+    expect(rmSyncMock).not.toHaveBeenCalled();
+    killSpy.mockRestore();
+    Object.defineProperty(process, 'platform', { value: previous });
   });
 });
