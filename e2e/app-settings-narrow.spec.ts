@@ -12,8 +12,10 @@ const COLOR_SCHEME_ANCHOR = 'app.appearance.colorScheme';
 
 interface ColorSchemeLayout {
   detailsOpen: boolean;
+  /** Right edge of the Color scheme card; it sits inside the App tabpanel and its padding. */
+  sectionRight: number;
   swatchRows: { label: string | null; lines: number; right: number }[];
-  scrollContainers: { right: number; overflowX: number }[];
+  scrollContainers: { overflowX: number }[];
   pageOverflowX: number;
 }
 
@@ -30,14 +32,12 @@ function measureColorScheme(page: Page): Promise<ColorSchemeLayout> {
     for (let node = details?.parentElement ?? null; node; node = node.parentElement) {
       const overflowX = getComputedStyle(node).overflowX;
       if (overflowX === 'auto' || overflowX === 'scroll') {
-        scrollContainers.push({
-          right: node.getBoundingClientRect().right,
-          overflowX: node.scrollWidth - node.clientWidth,
-        });
+        scrollContainers.push({ overflowX: node.scrollWidth - node.clientWidth });
       }
     }
     return {
       detailsOpen: details?.open ?? false,
+      sectionRight: details?.getBoundingClientRect().right ?? 0,
       swatchRows: rows.map((row) => {
         // The swatches, not the group box: a group that does not wrap keeps its own box inside
         // the panel while its swatches run past it.
@@ -88,12 +88,15 @@ test.describe('App settings at narrow widths', () => {
         layout.scrollContainers.length,
         `App panel scroll container at ${width}`,
       ).toBeGreaterThan(0);
-      const panelRight = layout.scrollContainers[0]?.right ?? width;
+      // The scroll container's edge would let swatches run into the padding around the tabpanel
+      // without scrolling, so the bound is the Color scheme card itself.
+      expect(layout.sectionRight, `Color scheme card edge at ${width}`).toBeGreaterThan(0);
       for (const row of layout.swatchRows) {
         expect(row.lines, `${row.label} wraps at ${width}`).toBeGreaterThan(1);
-        expect(row.right, `${row.label} inside the panel at ${width}`).toBeLessThanOrEqual(
-          panelRight + 1,
-        );
+        expect(
+          row.right,
+          `${row.label} inside the Color scheme card at ${width}`,
+        ).toBeLessThanOrEqual(layout.sectionRight + 1);
       }
       for (const container of layout.scrollContainers) {
         expect(container.overflowX, `sideways scroll at ${width}`).toBeLessThanOrEqual(0);
