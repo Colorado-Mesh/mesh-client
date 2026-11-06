@@ -271,6 +271,13 @@ import {
   runWebStorageOriginMigration,
 } from './webStorageOriginMigration';
 import { buildWindowsAboutDocumentHtml } from './windows-about-html';
+import {
+  attachWindowStatePersistence,
+  DEFAULT_WINDOW_STATE,
+  isWindowStateOnScreen,
+  readWindowState,
+  writeWindowState,
+} from './windowState';
 
 // Route main-process console through log file + Log panel (must run before other code logs)
 patchMainConsole();
@@ -333,57 +340,7 @@ const HELP_URL_GITHUB = 'https://github.com/Colorado-Mesh/mesh-client';
 const HELP_URL_DISCORD = 'https://discord.com/invite/McChKR5NpS';
 
 // ─── Window state persistence ───────────────────────────────────────
-interface WindowState {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 const WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-state.json');
-const DEFAULT_WINDOW_STATE: WindowState = { x: 0, y: 0, width: 1200, height: 800 };
-
-function loadWindowState(): WindowState {
-  try {
-    if (fs.existsSync(WINDOW_STATE_PATH)) {
-      const raw = JSON.parse(fs.readFileSync(WINDOW_STATE_PATH, 'utf-8')) as unknown;
-      if (
-        raw &&
-        typeof raw === 'object' &&
-        typeof (raw as Record<string, unknown>).x === 'number' &&
-        typeof (raw as Record<string, unknown>).y === 'number' &&
-        typeof (raw as Record<string, unknown>).width === 'number' &&
-        typeof (raw as Record<string, unknown>).height === 'number'
-      ) {
-        return raw as WindowState;
-      }
-    }
-  } catch {
-    // catch-no-log-ok: non-critical; fall through to defaults
-  }
-  return DEFAULT_WINDOW_STATE;
-}
-
-function saveWindowState(state: WindowState): void {
-  try {
-    fs.writeFileSync(WINDOW_STATE_PATH, JSON.stringify(state), 'utf-8');
-  } catch {
-    // catch-no-log-ok: non-critical persistence failure
-  }
-}
-
-function isWindowStateOnScreen(state: WindowState): boolean {
-  const displays = screen.getAllDisplays();
-  return displays.some((d) => {
-    const { x, y, width, height } = d.workArea;
-    return (
-      state.x < x + width &&
-      state.x + state.width > x &&
-      state.y < y + height &&
-      state.y + state.height > y
-    );
-  });
-}
 
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
@@ -1911,8 +1868,10 @@ function readPowerSaveMode(): PowerSaveMode {
 
 function createWindow() {
   rendererHeartbeatWatchdog.expectVisibleHeartbeat();
-  const savedState = loadWindowState();
-  const bounds = isWindowStateOnScreen(savedState) ? savedState : DEFAULT_WINDOW_STATE;
+  const savedState = readWindowState(WINDOW_STATE_PATH);
+  const bounds = isWindowStateOnScreen(savedState, screen.getAllDisplays())
+    ? savedState
+    : DEFAULT_WINDOW_STATE;
   const center = bounds === DEFAULT_WINDOW_STATE;
 
   const win = new BrowserWindow({
@@ -1950,17 +1909,13 @@ function createWindow() {
   });
   let trustedRendererUrl = '';
 
-  let windowStateSaveTimer: ReturnType<typeof setTimeout> | null = null;
-  const scheduleSaveWindowState = () => {
-    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
-    windowStateSaveTimer = setTimeout(() => {
-      if (!win.isMinimized() && !win.isMaximized()) {
-        saveWindowState(win.getBounds());
-      }
-    }, 300);
-  };
-  win.on('move', scheduleSaveWindowState);
-  win.on('resize', scheduleSaveWindowState);
+  // Save listeners first, then restore, so a maximized/full-screen relaunch is persisted.
+  attachWindowStatePersistence(win, {
+    initialState: bounds,
+    writeState: (state) => {
+      writeWindowState(WINDOW_STATE_PATH, state);
+    },
+  });
 
   // External link handling: route http/https websites to the system browser.
   // Failure point: malicious URL schemes attempting protocol-handler abuse.
@@ -2447,13 +2402,6 @@ function createWindow() {
     reloadMainRenderer = null;
     rendererLoadPromise = null;
   });
-  win.on('close', () => {
-    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
-    if (!win.isMinimized() && !win.isMaximized()) {
-      saveWindowState(win.getBounds());
-    }
-  });
-
   // Handle window close event (prevent-close when device connected).
   // Close-to-tray (default on) hides the window when a tray exists; if tray
   // setup failed, the helper falls back to the legacy hide/minimize behaviour

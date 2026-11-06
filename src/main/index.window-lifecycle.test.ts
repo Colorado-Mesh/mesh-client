@@ -27,6 +27,11 @@ describe('BrowserWindow creation', () => {
     expect(INDEX_SOURCE).toContain('minWidth: 900');
     expect(INDEX_SOURCE).toContain('minHeight: 600');
   });
+
+  it('wires window-state persistence through attachWindowStatePersistence', () => {
+    // Behavioral coverage lives in windowState.test.ts (listeners before restore, close save).
+    expect(INDEX_SOURCE).toContain('attachWindowStatePersistence(win,');
+  });
 });
 
 describe('renderer origin recovery loads', () => {
