@@ -358,6 +358,25 @@ describe('AppPanel: theme presets', () => {
     localStorage.removeItem('mesh-client:themeSurface');
   });
 
+  it('wraps the swatches of each colour row instead of widening the panel', async () => {
+    // A row of 27 swatches is about 750px; on a phone or tablet it must wrap. A nested
+    // overflow-x-auto strip is not an option (see App.test.tsx, issue #356).
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    await screen.findByRole('button', { name: 'Slate' });
+    const rows = document.querySelectorAll(
+      '[role="group"][aria-labelledby^="theme-color-heading-"]',
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.className).toContain('flex-wrap');
+      expect(row.className).not.toContain('flex-nowrap');
+    }
+  });
+
   it('picks surfaces and an accent separately, one click each', async () => {
     render(
       <ToastProvider>

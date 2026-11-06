@@ -2214,8 +2214,10 @@ export default function AppPanel({
                       {t(meta.descriptionKey)}
                     </div>
                   </div>
+                  {/* Wraps rather than scrolling on its own (no nested strips, #356). The 18rem
+                      basis drops the swatches below the label when the row is too narrow. */}
                   <div
-                    className="flex max-w-full min-w-0 flex-1 [scrollbar-width:thin] flex-nowrap gap-1 py-0.5"
+                    className="flex max-w-full min-w-0 flex-[1_1_18rem] flex-wrap gap-1 py-0.5"
                     role="group"
                     aria-labelledby={`theme-color-heading-${meta.key}`}
                   >

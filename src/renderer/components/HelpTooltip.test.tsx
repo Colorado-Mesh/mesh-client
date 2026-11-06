@@ -180,4 +180,26 @@ describe('HelpTooltip', () => {
     expect(tooltip.style.transform).toBe('translateY(-100%)');
     vi.restoreAllMocks();
   });
+
+  it.each([
+    ['the default trigger', () => <HelpTooltip text="Queue help" />],
+    [
+      'custom children',
+      () => (
+        <HelpTooltip text="Queue help">
+          <span>Q: 0/256</span>
+        </HelpTooltip>
+      ),
+    ],
+  ])('keeps the hidden description positioned inside %s', (_label, tooltip) => {
+    // The sr-only description is absolutely positioned. Without a positioned wrapper its
+    // containing block is the body, so a clipped toolbar (the status bar) cannot clip it and
+    // it widens the page on a phone.
+    const { container } = render(tooltip());
+    const trigger = container.querySelector('[aria-describedby]')!;
+    const description = document.getElementById(trigger.getAttribute('aria-describedby')!)!;
+    expect(description).toHaveClass('sr-only');
+    expect(trigger.contains(description)).toBe(true);
+    expect(trigger).toHaveClass('relative');
+  });
 });
