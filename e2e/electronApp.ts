@@ -1,3 +1,5 @@
+import type { ChildProcess } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,6 +20,10 @@ const MAIN_ENTRY = path.join(repoRoot, 'dist-electron', 'main', 'index.js');
 
 const DISPOSE_USER_DATA_MAX_ATTEMPTS = 5;
 const DISPOSE_USER_DATA_RETRY_BASE_MS = 50;
+/** Graceful `app.close()` budget before escalating to a force-kill. */
+const CLOSE_APP_TIMEOUT_MS = 10_000;
+/** Short wait after SIGKILL / taskkill for Playwright's close promise to settle. */
+const FORCE_KILL_WAIT_MS = 2_000;
 
 export interface LaunchAppOptions {
   /** Reuse an existing user-data dir (for relaunch tests). */
@@ -41,6 +47,7 @@ type ResolveLocalElectronBin = (
   fileExists?: (p: string) => boolean,
 ) => string;
 
+/** Load `resolveLocalElectronBin` from `scripts/start-electron.mjs`. */
 export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectronBin> {
   const modUrl = pathToFileURL(path.join(repoRoot, 'scripts', 'start-electron.mjs')).href;
   const mod = (await import(modUrl)) as {
@@ -49,6 +56,7 @@ export async function loadResolveLocalElectronBin(): Promise<ResolveLocalElectro
   return mod.resolveLocalElectronBin;
 }
 
+/** Throw if the production main bundle under `dist-electron/` is missing. */
 export function assertProductionBuildPresent(): void {
   if (!existsSync(MAIN_ENTRY)) {
     throw new Error(
@@ -57,6 +65,7 @@ export function assertProductionBuildPresent(): void {
   }
 }
 
+/** Create a unique `mesh-e2e-*` temp directory for an Electron user-data profile. */
 function createUserDataDir(): string {
   return mkdtempSync(path.join(tmpdir(), 'mesh-e2e-'));
 }
@@ -76,6 +85,7 @@ export function authorizeE2eProfile(userDataDir: string): string {
   return token;
 }
 
+/** Resolve after `ms` milliseconds (used by dispose retries and close timeouts). */
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -202,12 +212,18 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
 
     return launched;
   } catch (err) {
+    let shutdownFailed = false;
     try {
-      await app.close();
-    } catch {
-      // catch-no-log-ok best-effort close after launch failure
+      await closeElectronApplication(app);
+    } catch (shutdownErr) {
+      shutdownFailed = true;
+      console.warn(
+        '[e2e] Electron shutdown failed after launch error:',
+        shutdownErr instanceof Error ? shutdownErr.message : shutdownErr,
+      );
     }
-    if (ownsUserDataDir) {
+    // Only remove the profile once shutdown confirmed the process is gone.
+    if (ownsUserDataDir && !shutdownFailed) {
       try {
         await disposeUserData(userDataDir);
       } catch {
@@ -218,14 +234,87 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
   }
 }
 
-export async function closeApp(launched: LaunchedApp): Promise<void> {
+/** True when `proc` is missing or has already exited (exit or signal code set). */
+function hasProcessExited(proc: ChildProcess | undefined): boolean {
+  return proc?.exitCode !== null || proc?.signalCode !== null;
+}
+
+/**
+ * Force-kill a stuck Electron process. Windows uses taskkill /T for the tree;
+ * POSIX SIGKILLs the main pid only (not the process group — Electron may share
+ * Playwright's group, and a group kill would take down the test worker).
+ */
+export function forceKillElectronProcess(proc: ChildProcess | undefined): void {
+  if (proc == null || hasProcessExited(proc)) return;
+  const pid = proc.pid;
+  if (pid == null) return;
+
   try {
-    await launched.app.close();
+    if (process.platform === 'win32') {
+      // OS-specific: taskkill /T ends the Electron process tree on Windows.
+      execFileSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' });
+      return;
+    }
+    process.kill(pid, 'SIGKILL');
   } catch {
-    // catch-no-log-ok app may already be exiting
+    // catch-no-log-ok process already exited or is inaccessible
   }
 }
 
+/**
+ * Close an ElectronApplication with a hard timeout. A hung or rejected `app.close()`
+ * (before-quit handlers, CDP sessions, stray children) previously burned the full
+ * Playwright test timeout in afterEach and then the worker teardown budget, failing
+ * CI even when the flaky test itself passed on retry.
+ *
+ * Resolves only after the Electron process has exited. Force-kills when close times
+ * out or settles while the process is still live; throws if it remains alive after
+ * the force-kill wait so callers do not delete a still-locked profile.
+ */
+export async function closeElectronApplication(app: ElectronApplication): Promise<void> {
+  let proc: ChildProcess | undefined;
+  try {
+    proc = app.process();
+  } catch {
+    // catch-no-log-ok process() can throw if the app already exited
+  }
+
+  // Settle rejections so the race can finish; process liveness is the success signal.
+  const closePromise = app.close().catch(() => {
+    // catch-no-log-ok close may reject while exiting or after a prior kill
+  });
+
+  const timedOut = await Promise.race([
+    closePromise.then(() => false as const),
+    sleepMs(CLOSE_APP_TIMEOUT_MS).then(() => true as const),
+  ]);
+
+  if (!hasProcessExited(proc)) {
+    forceKillElectronProcess(proc);
+    // Always wait the budget — a settled closePromise must not skip the kill settle time.
+    if (!hasProcessExited(proc)) {
+      await sleepMs(FORCE_KILL_WAIT_MS);
+    }
+  }
+
+  if (!hasProcessExited(proc)) {
+    throw new Error(
+      timedOut
+        ? 'Timed out closing Electron app; process still running after force-kill'
+        : 'Electron process still running after close/force-kill',
+    );
+  }
+}
+
+/** Close a launched E2E app with the bounded force-kill close path. */
+export async function closeApp(launched: LaunchedApp): Promise<void> {
+  await closeElectronApplication(launched.app);
+}
+
+/**
+ * Close the app and delete its temp user-data dir unless `retainUserData` is set.
+ * Profile removal runs only after `closeApp` confirms the Electron process has exited.
+ */
 export async function teardownApp(launched: LaunchedApp): Promise<void> {
   await closeApp(launched);
   if (!launched.retainUserData) {
@@ -264,6 +353,7 @@ export const RENDERER_CONSOLE_ERROR_ALLOWLIST: RegExp[] = [
   /Autofill\.(enable|disable)/i,
 ];
 
+/** Drop known-benign renderer console errors using `RENDERER_CONSOLE_ERROR_ALLOWLIST`. */
 export function filterUnexpectedConsoleErrors(errors: string[]): string[] {
   return errors.filter((text) => !RENDERER_CONSOLE_ERROR_ALLOWLIST.some((re) => re.test(text)));
 }
@@ -294,6 +384,7 @@ export async function openPanel(page: Page, section: string, tab?: string): Prom
   }
 }
 
+/** Open the App rail section and wait until its panel is visible. */
 export async function openAppTab(page: Page): Promise<void> {
   await openPanel(page, 'App');
   await expectPanelOpen(page, 'App');
