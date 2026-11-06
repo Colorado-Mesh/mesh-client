@@ -349,9 +349,17 @@ function deleteMeshcoreContactsWithRoomMessageCascade(
  * hold posts, as they skip favorites: pruning a Room contact deletes its whole post history, and
  * a room that has not advertised lately (or whose clock is wrong) still has posts worth keeping.
  * An explicit contact delete (`deleteMeshcoreContactOn`) still removes the posts.
+ *
+ * Older builds stored some room traffic the DM way (`room_server_id` NULL, the room as
+ * `sender_id` or `to_node`). Hydration shows those rows as room posts only while the Room contact
+ * exists (`repairMeshcoreMisfiledRoomDmMessages`), so a Room contact holding them is kept too.
+ * The second clause runs its subquery for Room contacts only.
  */
 const NO_STORED_ROOM_POSTS_SQL =
-  'NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id = meshcore_contacts.node_id)';
+  '(NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id = meshcore_contacts.node_id)' +
+  ` AND (meshcore_contacts.contact_type IS NOT ${MESHCORE_CONTACT_TYPE_ROOM}` +
+  ' OR NOT EXISTS (SELECT 1 FROM meshcore_messages WHERE meshcore_messages.room_server_id IS NULL' +
+  ' AND (meshcore_messages.sender_id = meshcore_contacts.node_id OR meshcore_messages.to_node = meshcore_contacts.node_id))))';
 
 export function deleteMeshcoreContactsNeverAdvertisedOn(d: NodeSqliteDB): number {
   const roomIds = selectRoomContactIdsMatching(
