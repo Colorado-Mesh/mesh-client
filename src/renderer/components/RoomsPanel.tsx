@@ -40,6 +40,7 @@ import { MessageTranslateButton } from '@/renderer/components/chat/MessageTransl
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
+import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
@@ -544,17 +545,22 @@ export default function RoomsPanel({
     [estimatePostSize],
   );
 
+  const postRowKey = useCallback(
+    (index: number) => {
+      const post = filteredRoomPosts[index];
+      if (!post) return `room-slot-${index}`;
+      return roomPostVirtualizerKey(post, index);
+    },
+    [filteredRoomPosts],
+  );
+
   const postVirtualizer = useVirtualizer({
     count: filteredRoomPosts.length,
     getScrollElement: () => streamRef.current,
     estimateSize: estimatePostSize,
     measureElement: measurePostElement,
     overscan: 10,
-    getItemKey: (index) => {
-      const post = filteredRoomPosts[index];
-      if (!post) return `room-slot-${index}`;
-      return roomPostVirtualizerKey(post, index);
-    },
+    getItemKey: (index) => postRowKey(index),
     anchorTo: 'end',
     followOnAppend: true,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
@@ -567,6 +573,15 @@ export default function RoomsPanel({
 
   const postVirtualizerRef = useRef(postVirtualizer);
   postVirtualizerRef.current = postVirtualizer;
+
+  useDropStaleDividerRowSize({
+    unreadStartIndex,
+    count: filteredRoomPosts.length,
+    rowKey: postRowKey,
+    estimateSize: estimatePostSize,
+    virtualizerRef: postVirtualizerRef,
+    containerRef: streamRef,
+  });
 
   const schedulePostRowRemeasure = useCallback((rowIndex: number) => {
     scheduleVirtualRowRemeasure(

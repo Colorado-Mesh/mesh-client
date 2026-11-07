@@ -26,6 +26,7 @@ import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMes
 import { ChatComposer } from '@/renderer/components/ChatComposer';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcFormattedBody } from '@/renderer/components/rrc/RrcFormattedBody';
+import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import { useReactionPicker } from '@/renderer/hooks/useReactionPicker';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
@@ -36,7 +37,6 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
-  resetVirtualRowSizes,
   revealElementWithinContainer,
   scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
@@ -521,7 +521,6 @@ export function RrcChatView({
   unreadStartIndexRef.current = unreadStartIndex;
   const unreadPositionedForRef = useRef<string | null>(null);
   const pendingOpeningScrollRef = useRef(true);
-  const measuredUnreadIndexRef = useRef(-1);
   const [expandedNoticeIds, setExpandedNoticeIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -667,13 +666,18 @@ export function RrcChatView({
     [estimateSize],
   );
 
+  const rowKey = useCallback(
+    (index: number) => rrcDisplayRowVirtualizerKey(displayRows[index], index),
+    [displayRows],
+  );
+
   const messageVirtualizer = useVirtualizer({
     count: displayRows.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize,
     measureElement,
     overscan: 10,
-    getItemKey: (index) => rrcDisplayRowVirtualizerKey(displayRows[index], index),
+    getItemKey: (index) => rowKey(index),
     anchorTo: 'end',
     followOnAppend: isActive && !appWindowInactive && unreadStartIndex < 0,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
@@ -686,6 +690,15 @@ export function RrcChatView({
 
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
+
+  useDropStaleDividerRowSize({
+    unreadStartIndex,
+    count: displayRows.length,
+    rowKey,
+    estimateSize,
+    virtualizerRef: messageVirtualizerRef,
+    containerRef: scrollContainerRef,
+  });
 
   const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
     scheduleVirtualRowRemeasure(
@@ -802,10 +815,6 @@ export function RrcChatView({
   }, [streamKey, isActive, unreadWatermark]);
 
   useLayoutEffect(() => {
-    if (measuredUnreadIndexRef.current !== unreadStartIndex) {
-      measuredUnreadIndexRef.current = unreadStartIndex;
-      resetVirtualRowSizes(messageVirtualizerRef.current, scrollContainerRef.current);
-    }
     if (!isActive || !historyReady || !pendingOpeningScrollRef.current) return;
     const key = `${hubDestHash}::${activeRoom}::${unreadWatermark}`;
     if (unreadPositionedForRef.current === key) return;
