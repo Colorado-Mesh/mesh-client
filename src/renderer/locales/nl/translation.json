@@ -8316,6 +8316,9 @@
       "rrcRoom": "RRC-ruimte"
     },
     "airtimeWarning": "Uurschema's met veel doelen gebruiken veel zendtijd.",
-    "respectWarning": "Respecteer gedeelde LoRa-zendtijd en andere operators. Spam geen kanalen, ruimtes of hubs — geef de voorkeur aan onregelmatige schema's, weinig doelen en berichten die het netwerk echt nodig heeft."
+    "respectWarning": "Respecteer gedeelde LoRa-zendtijd en andere operators. Spam geen kanalen, ruimtes of hubs — geef de voorkeur aan onregelmatige schema's, weinig doelen en berichten die het netwerk echt nodig heeft.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

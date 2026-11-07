@@ -8316,6 +8316,9 @@
       "rrcRoom": "Sala RRC"
     },
     "airtimeWarning": "Gli orari con molti obiettivi utilizzano molto tempo di trasmissione.",
-    "respectWarning": "Rispetta il tempo di trasmissione condiviso LoRa e gli altri operatori. Non inviare spam a canali, stanze o hub: preferisci pianificazioni poco frequenti, pochi obiettivi e messaggi di cui la mesh ha effettivamente bisogno."
+    "respectWarning": "Rispetta il tempo di trasmissione condiviso LoRa e gli altri operatori. Non inviare spam a canali, stanze o hub: preferisci pianificazioni poco frequenti, pochi obiettivi e messaggi di cui la mesh ha effettivamente bisogno.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

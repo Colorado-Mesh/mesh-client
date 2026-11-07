@@ -8458,6 +8458,9 @@
       "rrcRoom": "Pokój RRC"
     },
     "airtimeWarning": "Rozkłady godzinowe z wieloma celami zużywają dużo czasu antenowego.",
-    "respectWarning": "Szanuj wspólny czas antenowy LoRa i innych operatorów. Nie spamuj kanałów, pokoi ani centrów — preferuj rzadkie harmonogramy, kilka celów i wiadomości, których siatka faktycznie potrzebuje."
+    "respectWarning": "Szanuj wspólny czas antenowy LoRa i innych operatorów. Nie spamuj kanałów, pokoi ani centrów — preferuj rzadkie harmonogramy, kilka celów i wiadomości, których siatka faktycznie potrzebuje.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

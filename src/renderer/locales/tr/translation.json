@@ -8316,6 +8316,9 @@
       "rrcRoom": "RRC odası"
     },
     "airtimeWarning": "Birçok hedefi olan saatlik programlar çok fazla yayın süresi kullanır.",
-    "respectWarning": "Paylaşılan LoRa yayın süresine ve diğer operatörlere saygılı olun. Kanallara, odalara veya merkezlere istenmeyen e - posta göndermeyin — sık olmayan programları, az sayıda hedefi ve mesh'in gerçekten ihtiyaç duyduğu mesajları tercih edin."
+    "respectWarning": "Paylaşılan LoRa yayın süresine ve diğer operatörlere saygılı olun. Kanallara, odalara veya merkezlere istenmeyen e - posta göndermeyin — sık olmayan programları, az sayıda hedefi ve mesh'in gerçekten ihtiyaç duyduğu mesajları tercih edin.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

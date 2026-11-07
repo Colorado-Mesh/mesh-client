@@ -34,17 +34,33 @@ function todayYmd(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function minsToHhMm(mins: number): string {
-  const hh = Math.floor(mins / 60);
-  const mm = mins % 60;
+/** Format minutes-since-midnight for `<input type="time">` (`HH:MM`). */
+export function minsToHhMm(mins: number): string {
+  const clamped = Math.max(0, Math.min(1439, Math.trunc(mins)));
+  const hh = Math.floor(clamped / 60);
+  const mm = clamped % 60;
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
-function hhMmToMins(value: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(value);
-  if (!m) return null;
-  const hh = Number(m[1]);
-  const mm = Number(m[2]);
+/**
+ * Parse a time-input value to minutes-since-midnight.
+ * Accepts `HH:MM` and `HH:MM:SS` (some browsers emit seconds even with step=60).
+ */
+export function hhMmToMins(value: string): number | null {
+  const parts = value.trim().split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+  const hhRaw = parts[0] ?? '';
+  const mmRaw = parts[1] ?? '';
+  if (hhRaw === '' || mmRaw === '' || mmRaw.length !== 2) return null;
+  const hh = Number(hhRaw);
+  const mm = Number(mmRaw);
+  if (!Number.isInteger(hh) || !Number.isInteger(mm)) return null;
+  if (parts.length === 3) {
+    const ssRaw = parts[2] ?? '';
+    if (ssRaw === '') return null;
+    const ss = Number(ssRaw);
+    if (!Number.isFinite(ss) || ss < 0 || ss >= 60) return null;
+  }
   if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
   return hh * 60 + mm;
 }
@@ -69,9 +85,11 @@ export function ScheduledBroadcastEditorDialog({
   const [interval, setInterval] = useState<ScheduledBroadcastInterval>(
     existing?.interval ?? 'weekly',
   );
-  const [timeOfDayMin, setTimeOfDayMin] = useState(existing?.timeOfDayMin ?? 540);
+  // Keep time/date as strings while editing so controlled inputs do not reformat mid-keystroke
+  // (cursor jumps / minutes stuck). Parse to numbers only on save.
+  const [timeValue, setTimeValue] = useState(() => minsToHhMm(existing?.timeOfDayMin ?? 540));
   const [weekday, setWeekday] = useState<number>(existing?.weekday ?? 1);
-  const [dayOfMonth, setDayOfMonth] = useState<number>(existing?.dayOfMonth ?? 1);
+  const [dayOfMonthValue, setDayOfMonthValue] = useState(String(existing?.dayOfMonth ?? 1));
   const [anchorYmd, setAnchorYmd] = useState(existing?.anchorYmd ?? todayYmd());
   const [targets, setTargets] = useState<ScheduledBroadcastTarget[]>(existing?.targets ?? []);
   const [saving, setSaving] = useState(false);
@@ -96,6 +114,24 @@ export function ScheduledBroadcastEditorDialog({
 
   const handleSave = async () => {
     if (!canSave) return;
+    const timeOfDayMin = hhMmToMins(timeValue);
+    if (timeOfDayMin == null) {
+      setError(t('scheduledBroadcasts.invalidTime'));
+      return;
+    }
+    let dayOfMonth: number | null = null;
+    if (interval === 'monthly') {
+      const day = Number(dayOfMonthValue);
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        setError(t('scheduledBroadcasts.invalidDayOfMonth'));
+        return;
+      }
+      dayOfMonth = day;
+    }
+    if (interval === 'biweekly' && !/^\d{4}-\d{2}-\d{2}$/.test(anchorYmd)) {
+      setError(t('scheduledBroadcasts.invalidAnchorDate'));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -103,7 +139,7 @@ export function ScheduledBroadcastEditorDialog({
         interval,
         timeOfDayMin,
         weekday: interval === 'weekly' || interval === 'biweekly' ? weekday : null,
-        dayOfMonth: interval === 'monthly' ? dayOfMonth : null,
+        dayOfMonth,
         anchorYmd: interval === 'biweekly' ? anchorYmd : null,
       };
       const nextDueAt = enabled ? firstDueAt(rule, Date.now()) : null;
@@ -201,11 +237,12 @@ export function ScheduledBroadcastEditorDialog({
             {t('scheduledBroadcasts.timeOfDay')}
             <input
               type="time"
+              step={60}
               className="bg-ink-800 text-ink-100 rounded-control border-ink-600 border px-2 py-1"
-              value={minsToHhMm(timeOfDayMin)}
+              value={timeValue}
               onChange={(e) => {
-                const mins = hhMmToMins(e.target.value);
-                if (mins != null) setTimeOfDayMin(mins);
+                // Keep the raw input string — do not round-trip through minutes here.
+                setTimeValue(e.target.value);
               }}
               aria-label={t('scheduledBroadcasts.timeOfDay')}
             />
@@ -238,10 +275,11 @@ export function ScheduledBroadcastEditorDialog({
                 type="number"
                 min={1}
                 max={31}
+                inputMode="numeric"
                 className="bg-ink-800 text-ink-100 rounded-control border-ink-600 border px-2 py-1"
-                value={dayOfMonth}
+                value={dayOfMonthValue}
                 onChange={(e) => {
-                  setDayOfMonth(Number(e.target.value));
+                  setDayOfMonthValue(e.target.value);
                 }}
                 aria-label={t('scheduledBroadcasts.dayOfMonth')}
               />

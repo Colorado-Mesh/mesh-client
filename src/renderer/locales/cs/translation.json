@@ -8399,6 +8399,9 @@
       "rrcRoom": "Místnost RRC"
     },
     "airtimeWarning": "Hodinové rozvrhy s mnoha cíli spotřebují spoustu vysílacího času.",
-    "respectWarning": "Respektuj sdílený LoRa vysílací čas a ostatní operátory. Nespamujte kanály, místnosti ani rozbočovače — dejte přednost nepravidelným plánům, několika cílům a zprávám, které síť skutečně potřebuje."
+    "respectWarning": "Respektuj sdílený LoRa vysílací čas a ostatní operátory. Nespamujte kanály, místnosti ani rozbočovače — dejte přednost nepravidelným plánům, několika cílům a zprávám, které síť skutečně potřebuje.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }

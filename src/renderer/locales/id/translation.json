@@ -8316,6 +8316,9 @@
       "rrcRoom": "Ruang RRC"
     },
     "airtimeWarning": "Jadwal per jam dengan banyak target menggunakan banyak airtime.",
-    "respectWarning": "Hormati waktu tayang LoRa bersama dan operator lainnya. Jangan mengirim spam ke saluran, ruangan, atau hub — lebih suka jadwal yang jarang, beberapa target, dan pesan yang benar-benar dibutuhkan mesh."
+    "respectWarning": "Hormati waktu tayang LoRa bersama dan operator lainnya. Jangan mengirim spam ke saluran, ruangan, atau hub — lebih suka jadwal yang jarang, beberapa target, dan pesan yang benar-benar dibutuhkan mesh.",
+    "invalidTime": "Enter a valid time.",
+    "invalidDayOfMonth": "Day of month must be between 1 and 31.",
+    "invalidAnchorDate": "Enter a valid biweekly anchor date."
   }
 }
