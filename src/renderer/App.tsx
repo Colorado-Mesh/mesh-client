@@ -187,6 +187,7 @@ import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
+import { useMeshcoreChannelsDeviceSync } from './hooks/useMeshcoreChannelsDeviceSync';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
@@ -1085,6 +1086,10 @@ function AppContent() {
     identityId: meshcoreIdentityId,
     radioNodeId: meshcoreRadioNodeId,
     keyByIndex: meshcoreChannelKeyByIndex,
+  });
+  useMeshcoreChannelsDeviceSync({
+    identityId: meshcoreIdentityId,
+    channels: meshcoreRuntime.channels,
   });
   const meshtasticUiMessages = useMemo(
     () =>

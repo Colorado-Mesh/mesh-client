@@ -14,6 +14,7 @@ import {
 
 import {
   formatScheduledBroadcastChannelLabel,
+  formatScheduledBroadcastRrcRoomLabel,
   formatScheduledBroadcastTargetLabel,
   lookupChannelName,
 } from './channelLabel';
@@ -24,6 +25,9 @@ function englishT(): TFunction {
     if (key === 'scheduledBroadcasts.targetKind.meshcoreChannel') return 'MeshCore channel';
     if (key === 'scheduledBroadcasts.channelNamed' && opts) {
       return `${String(opts.kind)} ${String(opts.index)}: ${String(opts.name)}`;
+    }
+    if (key === 'scheduledBroadcasts.rrcRoomNamed' && opts) {
+      return `${String(opts.hub)} — ${String(opts.room)}`;
     }
     return key;
   }) as TFunction;
@@ -185,5 +189,34 @@ describe('formatScheduledBroadcastTargetLabel', () => {
         t,
       ),
     ).toBe('BBS');
+  });
+
+  it('formats RRC rooms with hub override or hash prefix', () => {
+    expect(
+      formatScheduledBroadcastRrcRoomLabel(
+        {
+          hubDestHash: 'aabbccddeeff00112233445566778899',
+          room: 'lobby',
+          label: 'lobby',
+        },
+        t,
+        'Denver Hub',
+      ),
+    ).toBe('Denver Hub — lobby');
+    expect(
+      formatScheduledBroadcastTargetLabel(
+        {
+          kind: 'rrc-room',
+          identityId: 'rns',
+          label: 'stale',
+          enabled: true,
+          hubDestHash: 'aabbccddeeff00112233445566778899',
+          room: 'lobby',
+        },
+        t,
+        undefined,
+        'Denver Hub',
+      ),
+    ).toBe('Denver Hub — lobby');
   });
 });

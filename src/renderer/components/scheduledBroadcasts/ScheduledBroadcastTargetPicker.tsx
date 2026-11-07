@@ -1,12 +1,19 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { formatScheduledBroadcastChannelLabel } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
+import {
+  formatScheduledBroadcastChannelLabel,
+  formatScheduledBroadcastRrcRoomLabel,
+  resolveRrcHubDisplayLabel,
+} from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import { SCHEDULED_BROADCAST_MAX_TARGETS } from '@/renderer/lib/scheduledBroadcasts/constants';
+import { formatScheduledBroadcastIdentityLegend } from '@/renderer/lib/scheduledBroadcasts/identityLabel';
+import { useConnectionStore } from '@/renderer/stores/connectionStore';
 import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { useLiveChannelKeyStore } from '@/renderer/stores/liveChannelKeyStore';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
+import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { ScheduledBroadcastTarget } from '@/shared/scheduledBroadcastTypes';
 
@@ -61,9 +68,17 @@ export function ScheduledBroadcastTargetPicker({
   const identities = useIdentityStore((s) => s.identities);
   const devices = useDeviceStore((s) => s.devices);
   const nodesByIdentity = useNodeStore((s) => s.nodes);
+  // Tick so identity legends re-render when RF/MQTT status changes (helpers use getConnection).
+  const connectionLegendTick = useConnectionStore((s) =>
+    Object.values(s.connections)
+      .map((c) => `${c.identityId}:${c.status}:${c.mqttStatus}`)
+      .sort()
+      .join('|'),
+  );
   const liveByProtocol = useLiveChannelKeyStore((s) => s.byProtocol);
   const rrcHub = useRrcSessionStore((s) => s.hubDestHash);
   const rrcRooms = useRrcSessionStore((s) => s.rooms);
+  const rrcHubs = useRrcHubStore((s) => s.hubs);
   const rrcIdentityId = useMemo(
     () => Object.values(identities).find((i) => i.protocol.type === 'reticulum')?.id,
     [identities],
@@ -122,20 +137,37 @@ export function ScheduledBroadcastTargetPicker({
     }
 
     if (rrcIdentityId && rrcHub) {
+      const hubDisplayName = resolveRrcHubDisplayLabel(
+        rrcHub,
+        rrcHubs.get(rrcHub.toLowerCase())?.display_name,
+      );
       for (const room of rrcRooms.keys()) {
-        list.push({
-          kind: 'rrc-room',
+        const partial = {
+          kind: 'rrc-room' as const,
           identityId: rrcIdentityId,
-          label: room,
-          enabled: true,
           hubDestHash: rrcHub,
           room,
+        };
+        list.push({
+          ...partial,
+          label: formatScheduledBroadcastRrcRoomLabel(partial, t, hubDisplayName),
+          enabled: true,
         });
       }
     }
 
     return { candidates: list, liveUnavailableByIdentity: liveUnavailable };
-  }, [identities, devices, nodesByIdentity, liveByProtocol, rrcHub, rrcRooms, rrcIdentityId, t]);
+  }, [
+    identities,
+    devices,
+    nodesByIdentity,
+    liveByProtocol,
+    rrcHub,
+    rrcRooms,
+    rrcHubs,
+    rrcIdentityId,
+    t,
+  ]);
 
   const isSelected = (candidate: ScheduledBroadcastTarget): boolean => {
     const liveUnavailable = liveUnavailableByIdentity.get(candidate.identityId) === true;
@@ -188,7 +220,9 @@ export function ScheduledBroadcastTargetPicker({
               const displayLabel =
                 saved.kind === 'meshtastic-channel' || saved.kind === 'meshcore-channel'
                   ? formatScheduledBroadcastChannelLabel(saved, t, devices[saved.identityId])
-                  : saved.label;
+                  : saved.kind === 'rrc-room'
+                    ? formatScheduledBroadcastRrcRoomLabel(saved, t)
+                    : saved.label;
               return (
                 <li key={key}>
                   <label htmlFor={id} className="text-label text-ink-100 flex items-center gap-2">
@@ -215,9 +249,13 @@ export function ScheduledBroadcastTargetPicker({
         const identityCandidates = candidates.filter((c) => c.identityId === identity.id);
         if (identityCandidates.length === 0) return null;
         return (
-          <fieldset key={identity.id} className="border-ink-700 rounded-card border p-2">
+          <fieldset
+            key={identity.id}
+            data-sb-conn={connectionLegendTick}
+            className="border-ink-700 rounded-card border p-2"
+          >
             <legend className="text-ink-200 text-label px-1">
-              {identity.displayName ?? identity.id.slice(0, 8)}
+              {formatScheduledBroadcastIdentityLegend(identity, t)}
             </legend>
             <ul className="flex flex-col gap-1">
               {identityCandidates.map((candidate) => {

@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 
 import type { DeviceRecord } from '@/renderer/stores/deviceStore';
 import { getDevice } from '@/renderer/stores/deviceStore';
+import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import type { ScheduledBroadcastTarget } from '@/shared/scheduledBroadcastTypes';
 
 import { resolveChannelTargetIndex } from './resolveChannelTarget';
@@ -59,14 +60,44 @@ export function formatScheduledBroadcastChannelLabel(
   return `${kindLabel} ${channelIndex}`;
 }
 
+/** Hub display name or short hash for RRC room labels. */
+export function resolveRrcHubDisplayLabel(
+  hubDestHash: string | undefined,
+  hubDisplayNameOverride?: string | null,
+): string {
+  const override = hubDisplayNameOverride?.trim();
+  if (override) return override;
+  if (!hubDestHash) return '';
+  const fromStore = useRrcHubStore.getState().getHub(hubDestHash)?.display_name?.trim();
+  if (fromStore) return fromStore;
+  return hubDestHash.slice(0, 8);
+}
+
+/** Display label for an RRC room target (`hub — room`). */
+export function formatScheduledBroadcastRrcRoomLabel(
+  target: Pick<ScheduledBroadcastTarget, 'hubDestHash' | 'room'> &
+    Partial<Pick<ScheduledBroadcastTarget, 'label'>>,
+  t: TFunction,
+  hubDisplayNameOverride?: string | null,
+): string {
+  const room = (target.room ?? target.label ?? '').trim();
+  const hub = resolveRrcHubDisplayLabel(target.hubDestHash, hubDisplayNameOverride);
+  if (!hub) return room;
+  return t('scheduledBroadcasts.rrcRoomNamed', { hub, room });
+}
+
 /** Refresh display label from live data for any target kind. */
 export function formatScheduledBroadcastTargetLabel(
   target: ScheduledBroadcastTarget,
   t: TFunction,
   deviceOverride?: DeviceRecord,
+  hubDisplayNameOverride?: string | null,
 ): string {
   if (target.kind === 'meshtastic-channel' || target.kind === 'meshcore-channel') {
     return formatScheduledBroadcastChannelLabel(target, t, deviceOverride);
+  }
+  if (target.kind === 'rrc-room') {
+    return formatScheduledBroadcastRrcRoomLabel(target, t, hubDisplayNameOverride);
   }
   return target.label;
 }
