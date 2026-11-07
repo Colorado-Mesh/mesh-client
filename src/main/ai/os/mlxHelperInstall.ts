@@ -1,4 +1,4 @@
-import { chmodSync, cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -11,10 +11,57 @@ export const MLX_HELPER_SIDE_BUNDLES = [
   'swift-crypto_Crypto.bundle',
 ] as const;
 
+/**
+ * Prefer the Xcode build system so Cmlx Metal shaders land in `mlx-swift_Cmlx.bundle`.
+ * Keep in sync with `scripts/lib/stage-mlx-helper.mjs`.
+ */
+export const MLX_SWIFT_BUILD_ARGS = [
+  'build',
+  '-c',
+  'release',
+  '--product',
+  'mesh-ai-mlx',
+  '--build-system',
+  'xcode',
+] as const;
+
 /** True when the binary and the Cmlx metallib bundle are present. */
 export function isMlxHelperInstallComplete(binaryPath: string): boolean {
   if (!binaryPath || !existsSync(binaryPath)) return false;
   return existsSync(path.join(path.dirname(binaryPath), 'mlx-swift_Cmlx.bundle'));
+}
+
+/** Locate a SwiftPM side bundle under a package `.build` tree. */
+export function findMlxSideBundle(packageRoot: string, bundleName: string): string | null {
+  const buildRoot = path.join(packageRoot, '.build');
+  const candidates = [
+    path.join(buildRoot, 'release', bundleName),
+    path.join(buildRoot, 'out', 'Products', 'Release', bundleName),
+  ];
+  if (existsSync(buildRoot)) {
+    for (const entry of readdirSync(buildRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (!entry.name.includes('apple-macos')) continue;
+      candidates.push(path.join(buildRoot, entry.name, 'release', bundleName));
+    }
+  }
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/** Copy known side bundles from `.build` next to the release binary when needed. */
+export function coLocateMlxSideBundles(binaryPath: string, packageRoot: string): void {
+  const destDir = path.dirname(binaryPath);
+  for (const name of MLX_HELPER_SIDE_BUNDLES) {
+    const dest = path.join(destDir, name);
+    if (existsSync(dest)) continue;
+    const found = findMlxSideBundle(packageRoot, name);
+    if (!found) continue;
+    rmSync(dest, { recursive: true, force: true });
+    cpSync(found, dest, { recursive: true });
+  }
 }
 
 /**

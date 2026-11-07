@@ -6,9 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { EnsureMlxCommand } from './ensureMlxHelper';
 import {
+  coLocateMlxSideBundles,
   ensureMlxHelper,
   isMetalToolchainMissingOutput,
   isMlxHelperInstallComplete,
+  MLX_SWIFT_BUILD_ARGS,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './ensureMlxHelper';
@@ -111,6 +113,20 @@ describe('ensureMlxHelper', () => {
     expect(isMlxHelperInstallComplete(dest)).toBe(true);
   });
 
+  it('coLocateMlxSideBundles copies Products/Release bundles beside the binary', () => {
+    root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
+    const release = path.join(root, '.build', 'release');
+    const products = path.join(root, '.build', 'out', 'Products', 'Release');
+    mkdirSync(release, { recursive: true });
+    mkdirSync(path.join(products, 'mlx-swift_Cmlx.bundle'), { recursive: true });
+    writeFileSync(path.join(products, 'mlx-swift_Cmlx.bundle', 'default.metallib'), 'metal');
+    const binary = path.join(release, 'mesh-ai-mlx');
+    writeFileSync(binary, 'bin');
+    expect(isMlxHelperInstallComplete(binary)).toBe(false);
+    coLocateMlxSideBundles(binary, root);
+    expect(isMlxHelperInstallComplete(binary)).toBe(true);
+  });
+
   it('returns xcodeNotFound when Applications has no Xcode', async () => {
     root = mkdtempSync(path.join(os.tmpdir(), 'mesh-mlx-ensure-'));
     const apps = path.join(root, 'Apps');
@@ -203,5 +219,7 @@ describe('ensureMlxHelper', () => {
     });
     expect(result.reason).toBe('metalToolchainMissing');
     expect(runCommand).toHaveBeenCalledTimes(2);
+    expect(runCommand.mock.calls[1]?.[0]).toBe('swift');
+    expect(runCommand.mock.calls[1]?.[1]).toEqual([...MLX_SWIFT_BUILD_ARGS]);
   });
 });

@@ -6,14 +6,18 @@ import type { AiMlxHelperReason } from '../../../shared/ai-types';
 import { isAppleSiliconMac } from '../local/modelManifest';
 import { classifyXcodeDeveloperDir, discoverXcodeDeveloperDir } from './discoverXcodeDeveloperDir';
 import {
+  coLocateMlxSideBundles,
   isMlxHelperInstallComplete,
+  MLX_SWIFT_BUILD_ARGS,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './mlxHelperInstall';
 
 export {
+  coLocateMlxSideBundles,
   isMlxHelperInstallComplete,
   MLX_HELPER_SIDE_BUNDLES,
+  MLX_SWIFT_BUILD_ARGS,
   resolveMlxBinaryPath,
   stageMlxHelperBinary,
 } from './mlxHelperInstall';
@@ -193,7 +197,7 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
 
   try {
     const env = { ...process.env, DEVELOPER_DIR: developer };
-    await runCommand('swift', ['build', '-c', 'release', '--product', 'mesh-ai-mlx'], {
+    await runCommand('swift', [...MLX_SWIFT_BUILD_ARGS], {
       cwd: paths.mlxPackageRoot,
       env,
       maxBuffer: 16 * 1024 * 1024,
@@ -203,6 +207,7 @@ export async function ensureMlxHelper(paths: EnsureMlxHelperPaths): Promise<Ensu
       logEnsureFailure('buildFailed', 'release binary missing after swift build');
       return { available: false, reason: 'buildFailed', binaryPath: null };
     }
+    coLocateMlxSideBundles(built, paths.mlxPackageRoot);
     if (!isMlxHelperInstallComplete(built)) {
       logEnsureFailure('buildFailed', 'mlx-swift_Cmlx.bundle missing next to release binary');
       return { available: false, reason: 'buildFailed', binaryPath: null };
