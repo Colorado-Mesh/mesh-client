@@ -3,8 +3,10 @@ import { type RefObject, useLayoutEffect, useRef } from 'react';
 
 type RowKey = ReturnType<Virtualizer<HTMLDivElement, Element>['options']['getItemKey']>;
 
-/** About two seconds at 60 frames per second; after that the row is resized anyway. */
+/** About two seconds at 60 frames per second; after that the rows are resized anyway. */
 const MAX_WAIT_FRAMES = 120;
+/** Old divider rows kept until they are found in the list again; the oldest is dropped first. */
+const MAX_PENDING_ROWS = 8;
 
 export interface DropStaleDividerRowSizeOptions {
   unreadStartIndex: number;
@@ -29,6 +31,10 @@ export interface DropStaleDividerRowSizeOptions {
  * the row is measured fresh when it mounts. A fast scroll such as End can clear the divider
  * while its row is still rendered and unmount it before ResizeObserver reports the change,
  * and resizing the row during an animated scroll stops that scroll short of the bottom.
+ *
+ * The row is found by key when it is sized, so rows shifting during the wait are fine. A row
+ * that is not in the list then (the reader switched conversations) stays pending and is sized
+ * when it shows up again, because cached sizes outlive a conversation switch.
  */
 export function useDropStaleDividerRowSize({
   unreadStartIndex,
@@ -39,6 +45,8 @@ export function useDropStaleDividerRowSize({
   containerRef,
 }: DropStaleDividerRowSizeOptions): void {
   const dividerKeyRef = useRef<RowKey | null>(null);
+  const pendingRef = useRef(new Set<RowKey>());
+  const waitingRef = useRef(false);
   const latestRef = useRef({ count, rowKey, estimateSize });
 
   useLayoutEffect(() => {
@@ -49,35 +57,40 @@ export function useDropStaleDividerRowSize({
     const previous = dividerKeyRef.current;
     const next = unreadStartIndex >= 0 ? rowKey(unreadStartIndex) : null;
     dividerKeyRef.current = next;
-    if (previous === null || previous === next) return;
-
-    // Look the row up when it is sized: rows can shift while the list scrolls.
-    const findRow = () => {
-      const latest = latestRef.current;
-      for (let i = 0; i < latest.count; i++) {
-        if (latest.rowKey(i) === previous) return i;
+    const pending = pendingRef.current;
+    if (previous !== null && previous !== next) {
+      pending.add(previous);
+      if (pending.size > MAX_PENDING_ROWS) {
+        const oldest = pending.values().next();
+        if (!oldest.done) pending.delete(oldest.value);
       }
-      return -1;
-    };
-    const resize = (frame: number) => {
+    }
+    if (pending.size === 0 || waitingRef.current) return;
+    waitingRef.current = true;
+
+    const resizePending = (frame: number) => {
       const virtualizer = virtualizerRef.current;
       if (virtualizer.isScrolling && frame < MAX_WAIT_FRAMES) {
         requestAnimationFrame(() => {
-          resize(frame + 1);
+          resizePending(frame + 1);
         });
         return;
       }
+      waitingRef.current = false;
       const container = containerRef.current;
-      const found = findRow();
-      if (!container || found < 0) return;
-      const row = container.querySelector<HTMLElement>(`[data-index="${found}"]`);
-      // 0 means its panel is hidden: use the estimate, and it is measured once shown.
-      const height = row?.offsetHeight ?? 0;
-      virtualizer.resizeItem(found, height > 0 ? height : latestRef.current.estimateSize(found));
+      if (!container) return;
+      const latest = latestRef.current;
+      for (let i = 0; i < latest.count && pending.size > 0; i++) {
+        if (!pending.delete(latest.rowKey(i))) continue;
+        const row = container.querySelector<HTMLElement>(`[data-index="${i}"]`);
+        // 0 means its panel is hidden: use the estimate, and it is measured once shown.
+        const height = row?.offsetHeight ?? 0;
+        virtualizer.resizeItem(i, height > 0 ? height : latest.estimateSize(i));
+      }
     };
     // resizeItem may flush a render, which React refuses during a commit.
     queueMicrotask(() => {
-      resize(0);
+      resizePending(0);
     });
   }, [unreadStartIndex, rowKey, virtualizerRef, containerRef]);
 }

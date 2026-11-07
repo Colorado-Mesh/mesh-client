@@ -15,6 +15,7 @@ const mockScrollToEnd = vi.fn();
 const mockScrollToIndex = vi.fn();
 const mockMeasure = vi.fn();
 const mockMeasureElement = vi.fn();
+const mockResizeItem = vi.fn();
 let mockIsAtEnd = true;
 let mockVirtualWindowSize = Infinity;
 /** Last options handed to the virtualizer, for row-estimate assertions. */
@@ -37,7 +38,7 @@ vi.mock('@tanstack/react-virtual', () => ({
         })),
       getTotalSize: () => count * 22,
       measureElement: mockMeasureElement,
-      resizeItem: vi.fn(),
+      resizeItem: mockResizeItem,
       containerRef: { current: null },
       isAtEnd: () => mockIsAtEnd,
       scrollToEnd: mockScrollToEnd,
@@ -203,20 +204,25 @@ describe.each(['linux', 'darwin', 'win32'] as const)('RRC unread markers on %s',
 
   // Dropping every measured size here put rows back at estimates that leave out reaction
   // chips: the chips covered the next line, and catching up pushed the view off the bottom.
-  it('keeps measured row sizes when the unread divider appears and clears', () => {
+  it('keeps measured row sizes when the unread divider appears and clears', async () => {
     const messages = [
       makeMsg({ id: 'old', body: 'Read already', timestamp: 100 }),
       makeMsg({ id: 'new', body: 'Incoming', timestamp: 101 }),
     ];
     const { rerender } = render(<RrcChatView {...baseProps} messages={messages} />);
     mockMeasure.mockClear();
+    mockResizeItem.mockClear();
 
     rerender(<RrcChatView {...baseProps} unreadWatermark={100} messages={messages} />);
     expect(screen.getByRole('separator')).toBeInTheDocument();
     rerender(<RrcChatView {...baseProps} unreadWatermark={null} messages={messages} />);
     expect(screen.queryByRole('separator')).toBeNull();
+    await Promise.resolve();
 
     expect(mockMeasure).not.toHaveBeenCalled();
+    // Only the row that held the divider ("new", row 1) is sized again.
+    expect(mockResizeItem).toHaveBeenCalledTimes(1);
+    expect(mockResizeItem).toHaveBeenCalledWith(1, expect.any(Number));
   });
 
   it('marks an incoming whisper and isolates openings for the same room on another hub', () => {
