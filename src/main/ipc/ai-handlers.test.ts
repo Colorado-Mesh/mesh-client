@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AI_ON_DEVICE_MAX_PROMPT_BYTES } from '../../shared/ai-types';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
+import * as ensureMlxHelperModule from '../ai/os/ensureMlxHelper';
 import { MlxAiHelper } from '../ai/os/mlxAiHelper';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerAiHandlers } from './ai-handlers';
@@ -58,6 +59,11 @@ beforeEach(async () => {
   vi.clearAllMocks();
   settings.clear();
   fixture.directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mesh-ai-ipc-'));
+  vi.spyOn(ensureMlxHelperModule, 'ensureMlxHelper').mockResolvedValue({
+    available: false,
+    reason: 'helperMissing',
+    binaryPath: null,
+  });
   dispose = registerAiHandlers({
     getSetting: (key) => settings.get(key),
     setSetting: (key, value) => {
@@ -506,25 +512,57 @@ describe('AI IPC lifecycle and opt-in', () => {
     }
   });
 
-  it('rejects MLX install and select when the Metal helper binary is missing', async () => {
+  it('allows MLX download but rejects select when the Metal helper binary is missing', async () => {
     settings.set('aiEnabled', '1');
     const manifest = await import('../ai/local/modelManifest');
     const available = vi.spyOn(manifest, 'isCatalogPackAvailable').mockReturnValue(true);
     const host = vi.spyOn(MlxAiHelper.prototype, 'availableOnHost').mockReturnValue(false);
-    const install = vi.spyOn(AiModelPackManager.prototype, 'install');
+    const install = vi
+      .spyOn(AiModelPackManager.prototype, 'install')
+      .mockResolvedValue({ ok: true });
+    const list = vi.spyOn(AiModelPackManager.prototype, 'list').mockResolvedValue([
+      {
+        id: 'qwen2.5-1.5b-instruct-mlx-4bit',
+        name: 'Qwen',
+        paramsLabel: '1.5B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'Apache-2.0',
+        installed: false,
+        runtime: 'mlx',
+      },
+      {
+        id: 'llama3.2-3b-instruct-mlx-4bit',
+        name: 'Llama',
+        paramsLabel: '3B',
+        downloadBytes: 1,
+        diskBytes: 1,
+        license: 'Llama',
+        installed: false,
+        runtime: 'mlx',
+      },
+    ]);
     try {
-      await expect(
-        handler('ai:installLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
-      ).rejects.toThrow('Invalid AI model');
+      expect(await handler('ai:listLocalModels')({})).toHaveLength(2);
+      expect(await handler('ai:installLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit')).toEqual({
+        ok: true,
+      });
+      expect(install).toHaveBeenCalledWith('qwen2.5-1.5b-instruct-mlx-4bit');
       await expect(
         handler('ai:selectLocalModel')({}, 'qwen2.5-1.5b-instruct-mlx-4bit'),
       ).rejects.toThrow('Invalid AI model');
-      expect(install).not.toHaveBeenCalled();
-      expect(await handler('ai:getStatus')({})).toMatchObject({ mlxHelperAvailable: false });
+      await vi.waitFor(async () => {
+        expect(await handler('ai:getStatus')({})).toMatchObject({
+          mlxHelperAvailable: false,
+          mlxHelperStatus: 'unavailable',
+          mlxHelperReason: 'helperMissing',
+        });
+      });
     } finally {
       available.mockRestore();
       host.mockRestore();
       install.mockRestore();
+      list.mockRestore();
     }
   });
 
@@ -549,9 +587,13 @@ describe('AI IPC lifecycle and opt-in', () => {
         ok: false,
         reason: 'engineNotReady',
       });
-      expect(await handler('ai:getStatus')({})).toMatchObject({
-        localEngine: { ready: false, modelId: 'qwen2.5-1.5b-instruct-mlx-4bit' },
-        mlxHelperAvailable: false,
+      await vi.waitFor(async () => {
+        expect(await handler('ai:getStatus')({})).toMatchObject({
+          localEngine: { ready: false, modelId: 'qwen2.5-1.5b-instruct-mlx-4bit' },
+          mlxHelperAvailable: false,
+          mlxHelperStatus: 'unavailable',
+          mlxHelperReason: 'helperMissing',
+        });
       });
     } finally {
       available.mockRestore();

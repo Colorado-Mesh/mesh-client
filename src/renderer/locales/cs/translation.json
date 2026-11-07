@@ -8070,8 +8070,15 @@
     "unusedDownloadRetired": "Již není v katalogu",
     "fixCatchUpEngine": "Opravit Dohnat motor",
     "mlxRecommendedOnMacos": "Na tomto Macu se pro Catch up doporučují modely Apple Silicon (MLX).",
-    "mlxHelperUnavailable": "MLX Catch up potřebuje kovového pomocníka, který v této instalaci chybí. Níže vyberte přenosný procesor ke stažení nebo na vývojovém Macu nainstalujte plný Xcode a spusťte sestavení pomocníka AI.",
-    "mlxHelperMissingSelected": "Vybraný model MLX nelze spustit, protože chybí kovový pomocník. Vyberte si přenosný procesor ke stažení nebo nainstalujte plný Xcode a znovu sestavte pomocníka AI."
+    "mlxHelperMissingSelected": "Vybraný model MLX nelze spustit, protože chybí kovový pomocník. Vyberte si přenosný procesor ke stažení nebo nainstalujte plný Xcode a znovu sestavte pomocníka AI.",
+    "mlxHelperPreparing": "Příprava kovového úlovku na tomto Macu...",
+    "mlxHelperRetry": "Zkus to znovu s kovovým doháněním",
+    "mlxHelperReason": {
+      "helperMissing": "Funkce Metal Catch Up není v této instalaci připravena. Níže vyberte přenosný model procesoru nebo aktualizujte Mesh Client, pokud by tato verze měla obsahovat Metal. Stále si můžete stáhnout modely MLX a používat je, až bude Metal připraven.",
+      "xcodeNotFound": "Metal Catch up nemohl na tomto Macu najít Xcode. Otevřete Xcode z aplikací (nebo jej nainstalujte z App Store), dokončete nastavení prvního spuštění a klepněte na Zkusit znovu. Mezitím použijte přenosný model procesoru.",
+      "xcodeIncomplete": "Xcode je nainstalován, ale jeho kovové nástroje ještě nejsou připraveny. Otevřete Xcode z aplikací, dokončete nastavení prvního spuštění a klepněte na Opakovat. Mezitím použijte přenosný model procesoru.",
+      "buildFailed": "Metal Catch up nemohl na tomto Macu dokončit přípravu. Po jednom otevření Xcode klepni na Opakovat nebo použij přenosný model procesoru. Aktualizace Mesh Client může také pomoci, pokud verze obsahuje Metal."
+    }
   },
   "chatOrder": {
     "title": "Změnit pořadí chatů",

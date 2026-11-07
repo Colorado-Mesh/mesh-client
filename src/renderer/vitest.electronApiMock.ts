@@ -60,6 +60,7 @@ export function createElectronAPIMock(): ElectronAPI {
       cancelLocalModel: vi.fn(),
       removeLocalModel: vi.fn(),
       selectLocalModel: vi.fn(),
+      ensureMlxHelper: vi.fn(),
       summarize: vi.fn(),
       cancel: vi.fn(),
       onSummaryChunk: vi.fn().mockReturnValue(() => {}),

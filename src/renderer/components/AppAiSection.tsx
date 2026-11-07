@@ -26,9 +26,11 @@ import {
   aiSummaryTimeoutMs,
   estimateAiSummaryMessageCapacity,
 } from '@/shared/ai-types';
+import { AI_CATCH_UP_DOCS_URL } from '@/shared/docsSite';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { Button } from './ui/Button';
+import { DocsSiteLink } from './ui/DocsSiteLink';
 import { CHECKBOX_CLASS, INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 import { SettingsCollapsible } from './ui/SettingsSection';
 
@@ -256,21 +258,46 @@ export function AppAiSection() {
             <div data-setting-anchor="app.aiProvider.catalog" className="space-y-3">
               {engine === 'bundled' && (
                 <>
-                  <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h4 className="text-sm font-medium">{t('aiSummary.catalog')}</h4>
+                    <DocsSiteLink href={AI_CATCH_UP_DOCS_URL} />
+                  </div>
                   <p className="text-muted text-xs">{t('aiSummary.offlineSummaryHint')}</p>
-                  {status.mlxHelperAvailable && models.some((item) => item.runtime === 'mlx') && (
-                    <p className="text-bright-green text-xs">
-                      {t('aiSummary.mlxRecommendedOnMacos')}
+                  {status.mlxHelperStatus === 'ready' &&
+                    models.some((item) => item.runtime === 'mlx') && (
+                      <p className="text-bright-green text-xs">
+                        {t('aiSummary.mlxRecommendedOnMacos')}
+                      </p>
+                    )}
+                  {status.mlxHelperStatus === 'preparing' && (
+                    <p role="status" className="text-muted text-xs">
+                      {t('aiSummary.mlxHelperPreparing')}
                     </p>
                   )}
-                  {!status.mlxHelperAvailable && (
-                    <p role="status" className="text-muted text-xs">
-                      {t('aiSummary.mlxHelperUnavailable')}
-                    </p>
+                  {status.mlxHelperStatus === 'unavailable' && status.mlxHelperReason && (
+                    <div className="space-y-2">
+                      <p role="status" className="text-muted text-xs">
+                        {t(`aiSummary.mlxHelperReason.${status.mlxHelperReason}`)}
+                      </p>
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        aria-label={t('aiSummary.mlxHelperRetry')}
+                        onClick={() => {
+                          void action(async () => {
+                            useAiSummaryStore
+                              .getState()
+                              .setStatus(await window.electronAPI.ai.ensureMlxHelper());
+                          });
+                        }}
+                      >
+                        {t('aiSummary.mlxHelperRetry')}
+                      </Button>
+                    </div>
                   )}
                   {status.localEngine.modelId &&
                     !status.localEngine.ready &&
-                    !status.mlxHelperAvailable &&
+                    status.mlxHelperStatus === 'unavailable' &&
                     models.some(
                       (item) => item.id === status.localEngine.modelId && item.runtime === 'mlx',
                     ) && (

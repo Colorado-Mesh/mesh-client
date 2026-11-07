@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Artık katalogda yok",
     "fixCatchUpEngine": "Onar Motoru yakala",
     "mlxRecommendedOnMacos": "Bu Mac'te, Yakalama için Apple Silicon (MLX) modelleri önerilir.",
-    "mlxHelperUnavailable": "MLX Catch up, bu kurulumda eksik olan Metal yardımcıya ihtiyaç duyar. Aşağıdan veya bir geliştirme Mac'inden taşınabilir bir CPU indirmeyi seçin, tam Xcode'u yükleyin ve AI yardımcı derlemesini çalıştırın.",
-    "mlxHelperMissingSelected": "Metal yardımcı eksik olduğundan seçilen MLX modeli çalıştırılamıyor. Taşınabilir bir CPU indirmesi seçin veya tam Xcode'u yükleyin ve AI yardımcısını yeniden oluşturun."
+    "mlxHelperMissingSelected": "Metal yardımcı eksik olduğundan seçilen MLX modeli çalıştırılamıyor. Taşınabilir bir CPU indirmesi seçin veya tam Xcode'u yükleyin ve AI yardımcısını yeniden oluşturun.",
+    "mlxHelperPreparing": "Bu Mac'te Metal Yakalama Hazırlanıyor…",
+    "mlxHelperRetry": "Metal Yakalamayı Yeniden Dene",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Yakalama bu kurulumda hazır değildir. Aşağıdan taşınabilir bir CPU modeli seçin veya bu sürümün Metal içermesi gerekiyorsa Mesh Client'ı güncelleyin. MLX modellerini şimdi indirebilir ve Metal hazır olduktan sonra kullanabilirsiniz.",
+      "xcodeNotFound": "Metal Yakalama bu Mac'te Xcode bulamadı. Uygulamalardan Xcode'u açın (veya App Store'dan yükleyin), herhangi bir ilk başlatma kurulumunu tamamlayın, ardından Yeniden Dene'ye dokunun. Bu arada taşınabilir bir CPU modeli kullanın.",
+      "xcodeIncomplete": "Xcode yüklendi ancak Metal araçları henüz hazır değil. Uygulamalar'dan Xcode'u açın, herhangi bir ilk başlatma kurulumunu tamamlayın, ardından Yeniden Dene'ye dokunun. Bu arada taşınabilir bir CPU modeli kullanın.",
+      "buildFailed": "Metal Yakalama, bu Mac'te hazırlığı bitiremedi. Xcode'u bir kez açtıktan sonra Yeniden Dene'ye dokunun veya taşınabilir bir CPU modeli kullanın. Mesh İstemcisini güncellemek, bir sürüm Metal içeriyorsa da yardımcı olabilir."
+    }
   },
   "chatOrder": {
     "title": "Sohbetleri sırala",

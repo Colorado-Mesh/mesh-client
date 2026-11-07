@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "不再在目录中",
     "fixCatchUpEngine": "修复追赶引擎",
     "mlxRecommendedOnMacos": "在这款Mac上，建议使用Apple Silicon (MLX)型号进行追赶。",
-    "mlxHelperUnavailable": "MLX Catch up需要Metal helper ，此安装中缺少Metal helper。在下面选择一个便携式CPU下载，或者在开发Mac上安装完整的Xcode并运行AI助手版本。",
-    "mlxHelperMissingSelected": "所选MLX模型无法运行，因为缺少金属助手。选择便携式CPU下载，或安装完整的Xcode并重建AI助手。"
+    "mlxHelperMissingSelected": "所选MLX模型无法运行，因为缺少金属助手。选择便携式CPU下载，或安装完整的Xcode并重建AI助手。",
+    "mlxHelperPreparing": "正在准备这款Mac上的金属追赶……",
+    "mlxHelperRetry": "重试金属追赶",
+    "mlxHelperReason": {
+      "helperMissing": "在此安装中，金属追赶尚未准备就绪。在下面选择一个便携式CPU型号，如果此版本应包含Metal ，则更新Mesh Client。您现在仍然可以下载MLX模型，并在Metal准备就绪后使用它们。",
+      "xcodeNotFound": "Metal Catch up在此Mac上找不到Xcode。从应用程序打开Xcode （或从App Store安装） ，完成首次启动设置，然后点击重试。同时使用便携式计划工作站(CPU)型号。",
+      "xcodeIncomplete": "Xcode已安装，但其Metal工具尚未准备就绪。打开应用程序中的Xcode ，完成任何首次启动设置，然后点击重试。同时使用便携式计划工作站(CPU)型号。",
+      "buildFailed": "Metal Catch up无法在此Mac上完成准备。打开Xcode一次后点击重试，或使用便携式CPU型号。如果版本包含Metal ，更新Mesh Client也可能有所帮助。"
+    }
   },
   "chatOrder": {
     "title": "调整聊天顺序",

@@ -34,5 +34,7 @@ export const MESHCORE_DOCS_URL = docsSitePageUrl('meshcore');
 /** MeshCore Rooms (BBS) section of the MeshCore user guide. */
 export const MESHCORE_ROOMS_DOCS_URL = docsSitePageUrl('meshcore', 'rooms-bbs');
 export const SETTINGS_DOCS_URL = docsSitePageUrl('settings');
+/** Catch up / AI conversation summaries (User Guide). */
+export const AI_CATCH_UP_DOCS_URL = docsSitePageUrl('ai-catch-up');
 /** LetsMesh MQTT JWT / v1_ username auth (Engineering docs). */
 export const LETSMESH_MQTT_AUTH_DOCS_URL = docsSitePageUrl('letsmesh-mqtt-auth');

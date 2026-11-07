@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Niet meer in catalogus",
     "fixCatchUpEngine": "Fix Inhaalmotor",
     "mlxRecommendedOnMacos": "Op deze Mac worden Apple Silicon (MLX) -modellen aanbevolen voor inhalen.",
-    "mlxHelperUnavailable": "MLX Catch up heeft de Metal helper nodig, die ontbreekt in deze installatie. Kies hieronder een draagbare CPU-download of installeer de volledige Xcode op een ontwikkelings-Mac en voer de AI-helper-build uit.",
-    "mlxHelperMissingSelected": "Het geselecteerde MLX-model kan niet worden uitgevoerd omdat de metalen helper ontbreekt. Kies een draagbare CPU-download of installeer de volledige Xcode en herbouw de AI-helper."
+    "mlxHelperMissingSelected": "Het geselecteerde MLX-model kan niet worden uitgevoerd omdat de metalen helper ontbreekt. Kies een draagbare CPU-download of installeer de volledige Xcode en herbouw de AI-helper.",
+    "mlxHelperPreparing": "Metaal voorbereiden Inhalen op deze Mac...",
+    "mlxHelperRetry": "Probeer Metal Catch up opnieuw",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Catch up is in deze installatie nog niet gereed. Kies hieronder een draagbaar CPU-model of werk Mesh Client bij als deze release Metal moet bevatten. Je kunt nu nog steeds MLX-modellen downloaden en ze gebruiken nadat Metal klaar is.",
+      "xcodeNotFound": "Metal Catch up kon Xcode niet vinden op deze Mac. Open Xcode vanuit applicaties (of installeer het vanuit de App Store), voltooi de installatie voor de eerste keer en tik vervolgens op Opnieuw proberen. Gebruik ondertussen een draagbaar CPU-model.",
+      "xcodeIncomplete": "Xcode is geïnstalleerd, maar de metalen gereedschappen zijn nog niet klaar. Open Xcode vanuit toepassingen, voltooi de installatie voor de eerste keer en tik vervolgens op Opnieuw proberen. Gebruik ondertussen een draagbaar CPU-model.",
+      "buildFailed": "Metal Catch up kon de voorbereiding op deze Mac niet voltooien. Tik eenmaal op Opnieuw proberen na het openen van Xcode of gebruik een draagbaar CPU-model. Het bijwerken van Mesh Client kan ook helpen als een release Metal bevat."
+    }
   },
   "chatOrder": {
     "title": "Chats ordenen",

@@ -15,6 +15,8 @@ import {
   AI_FOLLOW_UP_OUTPUT_TOKENS,
   AI_MAX_RESPONSE_BYTES,
   type AiActionResult,
+  type AiMlxHelperReason,
+  type AiMlxHelperStatus,
   type AiOsAiStatus,
   type AiProviderStatus,
   aiSummaryOutputTokens,
@@ -31,9 +33,10 @@ import { querySummaryHistory, validateHistoryQuery } from '../ai/history';
 import { loadAiLocalModels } from '../ai/loadAiLocalModels';
 import { loadBuildAiFollowUpPrompt } from '../ai/loadFollowUpPrompt';
 import { loadBuildAiSummaryPrompt } from '../ai/loadSummaryPrompt';
-import { isCatalogPackAvailable } from '../ai/local/modelManifest';
+import { isAppleSiliconMac, isCatalogPackAvailable } from '../ai/local/modelManifest';
 import { AiModelPackManager } from '../ai/local/modelPackManager';
 import { createAiModelProtocol } from '../ai/local/protocol';
+import { ensureMlxHelper, resolveMlxBinaryPath } from '../ai/os/ensureMlxHelper';
 import { MlxAiHelper } from '../ai/os/mlxAiHelper';
 import { OsAiHelper } from '../ai/os/osAiHelper';
 import { classifyEndpoint, validateAiEndpointUrl } from '../ai/urlPolicy';
@@ -80,13 +83,25 @@ export function registerAiHandlers(deps: Dependencies): () => void {
       app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources'),
       app.isPackaged ? 'ai-helper' : 'ai-helper/active',
     );
+  const mlxUserBinary = () => path.join(app.getPath('userData'), 'ai-helper', 'mesh-ai-mlx');
+  const mlxBundledCandidates = () => [
+    path.join(helperRoot(), 'mesh-ai-mlx'),
+    path.join(app.getAppPath(), 'resources', 'ai-helper', 'staged', 'darwin', 'mesh-ai-mlx'),
+    path.join(app.getAppPath(), 'resources', 'ai-helper', 'mesh-ai-mlx'),
+  ];
+  const mlxBinaryPath = () =>
+    resolveMlxBinaryPath(mlxUserBinary(), mlxBundledCandidates()) ?? mlxUserBinary();
   // OS-specific: Foundation Models and Windows AI APIs require native platform helpers.
   const os = new OsAiHelper(() =>
     path.join(helperRoot(), process.platform === 'win32' ? 'mesh-ai.exe' : 'mesh-ai'),
   );
-  // OS-specific: Apple Silicon MLX Metal Catch up helper (optional staged binary).
-  const mlx = new MlxAiHelper(() => path.join(helperRoot(), 'mesh-ai-mlx'));
+  // OS-specific: Apple Silicon MLX Metal Catch up helper (bundled, userData, or ensure-built).
+  const mlx = new MlxAiHelper(() => mlxBinaryPath());
   let osStatus: AiOsAiStatus = { available: false, platform: null, reason: 'unsupported-platform' };
+  let mlxHelperStatus: AiMlxHelperStatus = isAppleSiliconMac() ? 'unavailable' : 'unsupported';
+  let mlxHelperReason: AiMlxHelperReason | null = isAppleSiliconMac() ? 'helperMissing' : null;
+  let mlxEnsureInFlight: Promise<void> | null = null;
+  let mlxEnsureAttempted = false;
   let revision = 0;
   const active = new Map<string, AbortController>();
   const reads = createIpcRateLimiter({ max: 180, windowMs: MS_PER_MINUTE, label: 'ai:read' });
@@ -119,14 +134,74 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     if (model.runtime === 'mlx') return mlx.availableOnHost() && (await mlx.probe());
     return true;
   };
-  const mlxPackUsable = (pack: { runtime?: string }) =>
+  const mlxPackSelectable = (pack: { runtime?: string }) =>
     pack.runtime !== 'mlx' || mlx.availableOnHost();
-  const status = async (): Promise<AiProviderStatus> => {
+  const syncMlxHelperFlagsFromDisk = () => {
+    if (!isAppleSiliconMac()) {
+      mlxHelperStatus = 'unsupported';
+      mlxHelperReason = null;
+      return;
+    }
+    if (mlx.availableOnHost()) {
+      mlxHelperStatus = 'ready';
+      mlxHelperReason = 'ready';
+    } else if (mlxHelperStatus !== 'preparing') {
+      mlxHelperStatus = 'unavailable';
+      if (
+        !mlxHelperReason ||
+        mlxHelperReason === 'ready' ||
+        mlxHelperReason === 'preparing' ||
+        mlxHelperReason === 'unsupported'
+      )
+        mlxHelperReason = 'helperMissing';
+    }
+  };
+  const runEnsureMlxHelper = async (force = false): Promise<void> => {
+    if (!isAppleSiliconMac()) {
+      mlxHelperStatus = 'unsupported';
+      mlxHelperReason = null;
+      return;
+    }
+    if (!force && mlx.availableOnHost()) {
+      mlxHelperStatus = 'ready';
+      mlxHelperReason = 'ready';
+      mlxEnsureAttempted = true;
+      return;
+    }
+    if (mlxEnsureInFlight) {
+      await mlxEnsureInFlight;
+      return;
+    }
+    mlxEnsureAttempted = true;
+    mlxHelperStatus = 'preparing';
+    mlxHelperReason = 'preparing';
+    send('ai:statusChanged', await statusSnapshot());
+    mlxEnsureInFlight = (async () => {
+      const result = await ensureMlxHelper({
+        userBinary: mlxUserBinary(),
+        bundledCandidates: mlxBundledCandidates(),
+        mlxPackageRoot: path.join(app.getAppPath(), 'native', 'ai', 'mlx'),
+      });
+      mlxHelperStatus = result.available
+        ? 'ready'
+        : result.reason === 'unsupported'
+          ? 'unsupported'
+          : 'unavailable';
+      mlxHelperReason = result.reason;
+      mlx.kill();
+      send('ai:statusChanged', await statusSnapshot());
+    })().finally(() => {
+      mlxEnsureInFlight = null;
+    });
+    await mlxEnsureInFlight;
+  };
+  const statusSnapshot = async (): Promise<AiProviderStatus> => {
     const c = config.read();
     const catalog = await loadAiLocalModels();
     const selectedPack = catalog.find((model) => model.id === c.localModelId);
     const selectedModel =
       selectedPack && isCatalogPackAvailable(selectedPack) ? selectedPack.id : null;
+    syncMlxHelperFlagsFromDisk();
     return {
       enabled: enabled(),
       engine: c.engine,
@@ -147,8 +222,36 @@ export function registerAiHandlers(deps: Dependencies): () => void {
         downloading: packs.progress().length > 0,
       },
       mlxHelperAvailable: mlx.availableOnHost(),
+      mlxHelperStatus,
+      mlxHelperReason:
+        mlxHelperStatus === 'unavailable'
+          ? mlxHelperReason &&
+            mlxHelperReason !== 'ready' &&
+            mlxHelperReason !== 'preparing' &&
+            mlxHelperReason !== 'unsupported'
+            ? mlxHelperReason
+            : 'helperMissing'
+          : mlxHelperStatus === 'preparing'
+            ? 'preparing'
+            : mlxHelperStatus === 'ready'
+              ? 'ready'
+              : null,
       osAi: osStatus,
     };
+  };
+  const status = async (): Promise<AiProviderStatus> => {
+    if (
+      enabled() &&
+      isAppleSiliconMac() &&
+      !mlx.availableOnHost() &&
+      !mlxEnsureAttempted &&
+      !mlxEnsureInFlight
+    ) {
+      void runEnsureMlxHelper().catch((error: unknown) => {
+        console.warn('[ai] ensureMlxHelper failed', error instanceof Error ? error.message : error);
+      });
+    }
+    return statusSnapshot();
   };
   const check = async (): Promise<AiActionResult> => {
     if (!enabled()) return { ok: false, reason: 'disabled' };
@@ -205,9 +308,24 @@ export function registerAiHandlers(deps: Dependencies): () => void {
     deps.setSetting('aiEnabled', value ? '1' : '0');
     stop();
     if (!value) await packs.cancelAll();
-    const next = await status();
+    if (value && isAppleSiliconMac()) {
+      mlxEnsureAttempted = false;
+      void runEnsureMlxHelper().catch((error: unknown) => {
+        console.warn(
+          '[ai] ensureMlxHelper on enable failed',
+          error instanceof Error ? error.message : error,
+        );
+      });
+    }
+    const next = await statusSnapshot();
     send('ai:statusChanged', next);
     return next;
+  });
+  ipcMain.handle('ai:ensureMlxHelper', async (event) => {
+    guard(event, 'ai:ensureMlxHelper', true);
+    if (!enabled()) return statusSnapshot();
+    await runEnsureMlxHelper(true);
+    return statusSnapshot();
   });
   ipcMain.handle('ai:probeOsAi', async (event) => {
     guard(event, 'ai:probeOsAi');
@@ -232,17 +350,15 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:listLocalModels', async (event) => {
     guard(event, 'ai:listLocalModels');
-    if (!enabled()) return [];
-    const listed = await packs.list();
-    // Hide MLX catalog cards when the Metal helper is missing; keep installed packs for Remove.
-    if (mlx.availableOnHost()) return listed;
-    return listed.filter((entry) => entry.runtime !== 'mlx' || entry.installed);
+    // Full platform-eligible catalog (MLX twins + GGUF); helper only gates select/ready.
+    return enabled() ? packs.list() : [];
   });
   ipcMain.handle('ai:installLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:installLocalModel', true);
     const modelId = await id(value);
     const pack = await packs.getPack(modelId);
-    if (!isCatalogPackAvailable(pack) || !mlxPackUsable(pack)) throw new Error('Invalid AI model');
+    // Allow MLX weight download without the Metal helper; select/Catch up stay gated.
+    if (!isCatalogPackAvailable(pack)) throw new Error('Invalid AI model');
     return packs.install(modelId);
   });
   ipcMain.handle('ai:cancelLocalModel', async (event, value: unknown) => {
@@ -262,16 +378,16 @@ export function registerAiHandlers(deps: Dependencies): () => void {
   });
   ipcMain.handle('ai:selectLocalModel', async (event, value: unknown) => {
     guard(event, 'ai:selectLocalModel', true);
-    if (!enabled()) return status();
+    if (!enabled()) return statusSnapshot();
     if (value !== null) {
       const modelId = await id(value);
       const pack = await packs.getPack(modelId);
-      if (!isCatalogPackAvailable(pack) || !mlxPackUsable(pack))
+      if (!isCatalogPackAvailable(pack) || !mlxPackSelectable(pack))
         throw new Error('Invalid AI model');
     }
     config.write({ engine: 'bundled', localModelId: value as string | null });
     stop();
-    const next = await status();
+    const next = await statusSnapshot();
     send('ai:statusChanged', next);
     return next;
   });

@@ -30,6 +30,8 @@ it('explains offline processing time in the downloaded-model settings', async ()
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
     mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: null,
     osAi: { available: false, platform: null },
   };
   const unsubscribe = () => () => {};
@@ -111,6 +113,8 @@ async function openSettings(patch: Partial<AiProviderStatus> = {}) {
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
     mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: null,
     osAi: { available: false, platform: null },
     ...patch,
   };
@@ -208,6 +212,8 @@ it.each(['linux', 'darwin', 'win32'])(
       isRemote: false,
       localEngine: { ready: false, modelId: null, downloading: false },
       mlxHelperAvailable: true,
+      mlxHelperStatus: 'ready',
+      mlxHelperReason: 'ready',
       osAi: { available: false, platform: null },
     };
     const unsubscribe = () => () => {};
@@ -321,6 +327,8 @@ it('lists retired on-disk models so they can be removed', async () => {
     isRemote: false,
     localEngine: { ready: false, modelId: null, downloading: false },
     mlxHelperAvailable: false,
+    mlxHelperStatus: 'unavailable',
+    mlxHelperReason: null,
     osAi: {
       available: true,
       platform: 'apple-foundation-models',

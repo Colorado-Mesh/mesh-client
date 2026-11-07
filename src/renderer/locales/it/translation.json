@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Non più a catalogo",
     "fixCatchUpEngine": "Ripara il motore di recupero",
     "mlxRecommendedOnMacos": "Su questo Mac, i modelli Apple Silicon (MLX) sono consigliati per il recupero.",
-    "mlxHelperUnavailable": "MLX Recupero ha bisogno del Metal helper, che manca in questa installazione. Scegli un download di CPU portatile qui sotto o su un Mac di sviluppo installa Xcode completo ed esegui la build AI helper.",
-    "mlxHelperMissingSelected": "Il modello MLX selezionato non può essere eseguito perché manca l'helper Metal. Scegli un download della CPU portatile o installa Xcode completo e ricostruisci l'assistente AI."
+    "mlxHelperMissingSelected": "Il modello MLX selezionato non può essere eseguito perché manca l'helper Metal. Scegli un download della CPU portatile o installa Xcode completo e ricostruisci l'assistente AI.",
+    "mlxHelperPreparing": "Preparazione del Metal Recupero su questo Mac...",
+    "mlxHelperRetry": "Riprova a recuperare metallo",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Recupero non è pronto in questa installazione. Scegli un modello di CPU portatile di seguito o aggiorna Mesh Client se questa versione dovrebbe includere Metal. Puoi ancora scaricare i modelli MLX ora e usarli dopo che Metal è pronto.",
+      "xcodeNotFound": "Metal Recupero non è riuscito a trovare Xcode su questo Mac. Apri Xcode dalle applicazioni (o installalo dall'App Store), completa qualsiasi configurazione di primo avvio, quindi tocca Riprova. Nel frattempo utilizza un modello di CPU portatile.",
+      "xcodeIncomplete": "Xcode è installato ma i suoi strumenti Metal non sono ancora pronti. Apri Xcode da Applicazioni, completa qualsiasi configurazione di primo avvio, quindi tocca Riprova. Nel frattempo utilizza un modello di CPU portatile.",
+      "buildFailed": "Metal Recupero non è riuscito a completare la preparazione su questo Mac. Toccare Riprova dopo aver aperto Xcode una volta o utilizzare un modello di CPU portatile. L'aggiornamento di Mesh Client può anche essere utile se una versione include Metal."
+    }
   },
   "chatOrder": {
     "title": "Riordina le chat",

@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "더 이상 카탈로그에 없음",
     "fixCatchUpEngine": "캐치업 엔진 수정",
     "mlxRecommendedOnMacos": "이 Mac에서는 Apple Silicon (MLX) 모델이 따라잡기에 권장됩니다.",
-    "mlxHelperUnavailable": "MLX 따라잡기에는 이 설치에서 누락된 금속 도우미가 필요합니다. 아래에서 휴대용 CPU 다운로드를 선택하거나 개발 Mac에서 전체 Xcode를 설치하고 AI 도우미 빌드를 실행하십시오.",
-    "mlxHelperMissingSelected": "금속 도우미가 없어 선택한 MLX 모델을 실행할 수 없습니다. 휴대용 CPU 다운로드를 선택하거나 전체 Xcode를 설치하고 AI 도우미를 다시 구축하십시오."
+    "mlxHelperMissingSelected": "금속 도우미가 없어 선택한 MLX 모델을 실행할 수 없습니다. 휴대용 CPU 다운로드를 선택하거나 전체 Xcode를 설치하고 AI 도우미를 다시 구축하십시오.",
+    "mlxHelperPreparing": "이 Mac에서 메탈 따라잡기 준비 중...",
+    "mlxHelperRetry": "금속 따라잡기 재시도",
+    "mlxHelperReason": {
+      "helperMissing": "이 설치에서는 금속 따라잡기가 준비되지 않았습니다. 아래에서 휴대용 CPU 모델을 선택하거나 이 릴리스에 Metal이 포함되어야 하는 경우 Mesh Client를 업데이트하십시오. MLX 모델을 지금 다운로드하고 Metal이 준비된 후 사용할 수 있습니다.",
+      "xcodeNotFound": "Metal Catch up이 Mac에서 Xcode를 찾을 수 없습니다. 애플리케이션에서 Xcode를 열고 (또는 App Store에서 설치) 첫 실행 설정을 완료한 다음 재시도를 누릅니다. 한편 휴대용 CPU 모델을 사용합니다.",
+      "xcodeIncomplete": "Xcode가 설치되어 있지만 금속 도구가 아직 준비되지 않았습니다. 애플리케이션에서 Xcode를 열고 첫 실행 설정을 완료한 다음 재시도를 누릅니다. 한편 휴대용 CPU 모델을 사용합니다.",
+      "buildFailed": "Metal Catch up은 이 Mac에서 준비를 완료할 수 없습니다. Xcode를 한 번 연 후 재시도를 누르거나 휴대용 CPU 모델을 사용하십시오. 릴리스에 Metal이 포함된 경우 Mesh Client를 업데이트하는 것도 도움이 될 수 있습니다."
+    }
   },
   "chatOrder": {
     "title": "채팅 순서 변경",

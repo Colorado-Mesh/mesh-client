@@ -2,6 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
+import { discoverXcodeDeveloperDir } from './lib/discover-xcode-developer-dir.mjs';
+
 const root = path.resolve(import.meta.dirname, '..');
 const output = path.join(root, 'resources/ai-helper');
 mkdirSync(output, { recursive: true });
@@ -40,15 +42,18 @@ if (process.platform === 'darwin') {
   );
   mkdirSync(path.join(output, 'staged/darwin'), { recursive: true });
   cpSync(path.join(output, 'mesh-ai'), path.join(output, 'staged/darwin/mesh-ai'));
-  // Apple Silicon only: Metal MLX Catch up helper (optional — fail soft if SPM build fails).
-  // Requires full Xcode (metal compiler); Command Line Tools alone are not enough.
+  // Apple Silicon: Metal MLX Catch up helper. Discover Xcode.app (ignore CLT xcode-select).
+  // Soft-fail locally; hard-fail in CI so release DMGs ship mesh-ai-mlx.
   if (process.arch === 'arm64') {
     const mlxPackage = path.join(root, 'native/ai/mlx');
     try {
-      const xcodeDeveloper = '/Applications/Xcode.app/Contents/Developer';
+      const xcodeDeveloper = discoverXcodeDeveloperDir();
       const env = { ...process.env };
-      if (existsSync(xcodeDeveloper) && !env.DEVELOPER_DIR) {
-        env.DEVELOPER_DIR = xcodeDeveloper;
+      if (xcodeDeveloper) env.DEVELOPER_DIR = xcodeDeveloper;
+      else if (!env.DEVELOPER_DIR) {
+        throw new Error(
+          'Xcode.app with Metal toolchain not found under /Applications (CLT-only is not enough)',
+        );
       }
       execFileSync('swift', ['build', '-c', 'release', '--product', 'mesh-ai-mlx'], {
         cwd: mlxPackage,
@@ -62,9 +67,14 @@ if (process.platform === 'darwin') {
       cpSync(built, path.join(output, 'staged/darwin/mesh-ai-mlx'));
       console.debug('[build-ai-helper] Staged mesh-ai-mlx for Apple Silicon Catch up');
     } catch (error) {
+      const message = error instanceof Error ? error.message : error;
+      if (process.env.CI) {
+        console.error('[build-ai-helper] MLX helper required in CI:', message);
+        throw error instanceof Error ? error : new Error(String(error));
+      }
       console.warn(
-        '[build-ai-helper] Optional MLX helper build failed; MLX catalog models will be unavailable.',
-        error instanceof Error ? error.message : error,
+        '[build-ai-helper] Optional MLX helper build failed; MLX Catch up unavailable until ensure runs.',
+        message,
       );
     }
   }

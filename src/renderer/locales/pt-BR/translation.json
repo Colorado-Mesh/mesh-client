@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Não está mais no catálogo",
     "fixCatchUpEngine": "Corrigir motor de recuperação",
     "mlxRecommendedOnMacos": "Neste Mac, os modelos Apple Silicon (MLX) são recomendados para atualização.",
-    "mlxHelperUnavailable": "O MLX Catch up precisa do auxiliar de metal, que está faltando nesta instalação. Escolha um download de CPU portátil abaixo ou, em um Mac de desenvolvimento, instale o Xcode completo e execute a compilação auxiliar de IA.",
-    "mlxHelperMissingSelected": "O modelo MLX selecionado não pode ser executado porque o auxiliar de metal está ausente. Escolha um download de CPU portátil ou instale o Xcode completo e reconstrua o assistente de IA."
+    "mlxHelperMissingSelected": "O modelo MLX selecionado não pode ser executado porque o auxiliar de metal está ausente. Escolha um download de CPU portátil ou instale o Xcode completo e reconstrua o assistente de IA.",
+    "mlxHelperPreparing": "Preparando Metal Catch up neste Mac...",
+    "mlxHelperRetry": "Repetir recuperação de metal",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Catch up não está pronto nesta instalação. Escolha um modelo de CPU portátil abaixo ou atualize o Mesh Client se esta versão incluir Metal. Você ainda pode baixar os modelos MLX agora e usá-los depois que o Metal estiver pronto.",
+      "xcodeNotFound": "Metal Catch up não conseguiu encontrar o Xcode neste Mac. Abra o Xcode em Aplicativos (ou instale-o na App Store), conclua qualquer configuração de primeira inicialização e toque em Repetir. Enquanto isso, use um modelo de CPU portátil.",
+      "xcodeIncomplete": "O Xcode está instalado, mas suas ferramentas de metal ainda não estão prontas. Abra o Xcode em Aplicativos, conclua qualquer configuração de primeiro lançamento e toque em Repetir. Enquanto isso, use um modelo de CPU portátil.",
+      "buildFailed": "O Metal Catch up não conseguiu terminar a preparação neste Mac. Toque em Tentar novamente depois de abrir o Xcode uma vez ou use um modelo de CPU portátil. Atualizar o Cliente Mesh também pode ajudar se uma versão incluir Metal."
+    }
   },
   "chatOrder": {
     "title": "Reordenar conversas",

@@ -1,5 +1,7 @@
 # AI conversation summaries
 
+End-user workflow (engines, MLX vs CPU, Metal helper messaging): [Catch up user guide](../ai-catch-up.md).
+
 Catch up summarizes the selected conversation without posting to the mesh. It supports
 Meshtastic and MeshCore channels/DMs, Reticulum LXMF DMs, MeshCore rooms and RRC rooms.
 The shared button and card provide unread/hour/loaded scopes, streamed text, cancellation,

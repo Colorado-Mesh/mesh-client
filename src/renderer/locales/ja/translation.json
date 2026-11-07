@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "もはやカタログにはありません",
     "fixCatchUpEngine": "キャッチアップエンジンを修正",
     "mlxRecommendedOnMacos": "このMacでは、キャッチアップにApple Silicon （ MLX ）モデルをお勧めします。",
-    "mlxHelperUnavailable": "MLXキャッチアップにはメタルヘルパーが必要です。このインストールにはメタルヘルパーがありません。以下のポータブルCPUダウンロードを選択するか、開発用Macで完全なXcodeをインストールし、AIヘルパービルドを実行します。",
-    "mlxHelperMissingSelected": "Metalヘルパーが見つからないため、選択したMLXモデルを実行できません。ポータブルCPUのダウンロードを選択するか、完全なXcodeをインストールしてAIヘルパーを再構築します。"
+    "mlxHelperMissingSelected": "Metalヘルパーが見つからないため、選択したMLXモデルを実行できません。ポータブルCPUのダウンロードを選択するか、完全なXcodeをインストールしてAIヘルパーを再構築します。",
+    "mlxHelperPreparing": "このMacでメタルキャッチアップを準備しています…",
+    "mlxHelperRetry": "メタルキャッチアップを再試行",
+    "mlxHelperReason": {
+      "helperMissing": "このインストールでは、メタルキャッチアップの準備ができていません。以下のポータブルCPUモデルを選択するか、このリリースにMetalを含める必要がある場合はMesh Clientを更新します。今すぐMLXモデルをダウンロードして、Metalの準備ができたら使用することができます。",
+      "xcodeNotFound": "Metal Catch upは、このMacでXcodeを見つけることができませんでした。アプリケーションからXcodeを開き（またはApp Storeからインストール）、最初の起動セットアップを完了してから、[再試行]をタップします。その間、ポータブルCPUモデルを使用してください。",
+      "xcodeIncomplete": "Xcodeはインストールされていますが、Metalツールはまだ準備ができていません。アプリケーションからXcodeを開き、最初の起動セットアップを完了してから、[再試行]をタップします。その間、ポータブルCPUモデルを使用してください。",
+      "buildFailed": "このMacでは、メタルキャッチアップの準備を完了できませんでした。Xcodeを開いてから[再試行]をタップするか、ポータブルCPUモデルを使用します。メッシュクライアントの更新は、リリースにメタルが含まれている場合にも役立ちます。"
+    }
   },
   "chatOrder": {
     "title": "チャットを並べ替える",

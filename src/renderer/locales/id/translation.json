@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Tidak ada lagi di katalog",
     "fixCatchUpEngine": "Perbaiki Catch up engine",
     "mlxRecommendedOnMacos": "Di Mac ini, model Apple Silicon (MLX) direkomendasikan untuk Catch up.",
-    "mlxHelperUnavailable": "MLX Catch up membutuhkan Metal helper, yang hilang dari instalasi ini. Pilih unduhan CPU portabel di bawah ini, atau pada pengembangan Mac instal Xcode lengkap dan jalankan build AI helper.",
-    "mlxHelperMissingSelected": "Model MLX yang dipilih tidak dapat berjalan karena Metal helper hilang. Pilih unduhan CPU portabel, atau instal Xcode lengkap dan bangun kembali AI helper."
+    "mlxHelperMissingSelected": "Model MLX yang dipilih tidak dapat berjalan karena Metal helper hilang. Pilih unduhan CPU portabel, atau instal Xcode lengkap dan bangun kembali AI helper.",
+    "mlxHelperPreparing": "Mempersiapkan Penangkapan Logam di Mac ini...",
+    "mlxHelperRetry": "Coba lagi Metal Catch up",
+    "mlxHelperReason": {
+      "helperMissing": "Penangkapan Logam belum siap dalam instalasi ini. Pilih model CPU portabel di bawah ini, atau perbarui Mesh Client jika rilis ini harus menyertakan Metal. Anda masih dapat mengunduh model MLX sekarang dan menggunakannya setelah Metal siap.",
+      "xcodeNotFound": "Metal Catch up tidak dapat menemukan Xcode di Mac ini. Buka Xcode dari Aplikasi (atau instal dari App Store), selesaikan pengaturan peluncuran pertama, lalu ketuk Coba Lagi. Sementara itu, gunakan model CPU portabel.",
+      "xcodeIncomplete": "Xcode diinstal tetapi alat Metal - nya belum siap. Buka Xcode dari Aplikasi, selesaikan pengaturan peluncuran pertama, lalu ketuk Coba Lagi. Sementara itu, gunakan model CPU portabel.",
+      "buildFailed": "Metal Catch up tidak dapat menyelesaikan persiapan di Mac ini. Ketuk Coba lagi setelah membuka Xcode sekali, atau gunakan model CPU portabel. Memperbarui Klien Mesh juga dapat membantu jika rilis menyertakan Metal."
+    }
   },
   "chatOrder": {
     "title": "Atur urutan obrolan",

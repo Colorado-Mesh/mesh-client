@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "N'est plus dans le catalogue",
     "fixCatchUpEngine": "Corriger le moteur de rattrapage",
     "mlxRecommendedOnMacos": "Sur ce Mac, les modèles Apple Silicon (MLX) sont recommandés pour le rattrapage.",
-    "mlxHelperUnavailable": "MLX Catchup a besoin de l'assistant en métal, qui est manquant dans cette installation. Choisissez un téléchargement de processeur portable ci-dessous, ou sur un Mac de développement, installez Xcode complet et exécutez la version AI Helper.",
-    "mlxHelperMissingSelected": "Le modèle MLX sélectionné ne peut pas être exécuté car l'assistant Metal est manquant. Choisissez un téléchargement de processeur portable, ou installez Xcode complet et reconstruisez l'assistant IA."
+    "mlxHelperMissingSelected": "Le modèle MLX sélectionné ne peut pas être exécuté car l'assistant Metal est manquant. Choisissez un téléchargement de processeur portable, ou installez Xcode complet et reconstruisez l'assistant IA.",
+    "mlxHelperPreparing": "Préparation du rattrapage du métal sur ce Mac…",
+    "mlxHelperRetry": "Réessayer de rattraper le métal",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Catch up n'est pas prêt dans cette installation. Choisissez un modèle de processeur portable ci-dessous ou mettez à jour Mesh Client si cette version doit inclure Metal. Vous pouvez toujours télécharger des modèles MLX maintenant et les utiliser une fois que Metal est prêt.",
+      "xcodeNotFound": "Metal Catchup n'a pas pu trouver Xcode sur ce Mac. Ouvrez Xcode à partir des applications (ou installez-le à partir de l'App Store), terminez la configuration du premier lancement, puis appuyez sur Réessayer. En attendant, utilisez un modèle de CPU portable.",
+      "xcodeIncomplete": "Xcode est installé mais ses outils Metal ne sont pas encore prêts. Ouvrez Xcode à partir des applications, terminez la configuration du premier lancement, puis appuyez sur Réessayer. En attendant, utilisez un modèle de CPU portable.",
+      "buildFailed": "Metal Catch up n'a pas pu terminer la préparation sur ce Mac. Appuyez sur Réessayer après avoir ouvert Xcode une fois, ou utilisez un modèle de processeur portable. La mise à jour du client Mesh peut également aider si une version inclut du métal."
+    }
   },
   "chatOrder": {
     "title": "Réorganiser les discussions",

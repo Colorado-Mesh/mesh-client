@@ -13,9 +13,10 @@ import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-buil
  * Catch up summary / follow-up prompt text ships as sibling `ai-summary-prompt.js` and
  * `ai-follow-up-prompt.js`; the offline model catalog as `ai-local-models.js` (not in
  * index.js). +1 KiB vs the follow-up raise covers MLX Metal host glue (`mesh-ai-mlx`);
- * keep HF catalog / prompt text in siblings — do not fold them back into index.js.
+ * +4 KiB for in-app Metal helper ensure (Xcode discovery + staging). Keep HF catalog /
+ * prompt text in siblings — do not fold them back into index.js.
  */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 762 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 766 * 1024;
 
 function expectMainBundleSize(outfile) {
   const { size } = fs.statSync(outfile);

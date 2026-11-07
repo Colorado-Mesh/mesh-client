@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Nicht mehr im Katalog",
     "fixCatchUpEngine": "Fix Aufhol-Engine",
     "mlxRecommendedOnMacos": "Auf diesem Mac werden Apple Silicon (MLX) -Modelle zum Nachholen empfohlen.",
-    "mlxHelperUnavailable": "MLX Catch up benötigt den Metallhelfer, der bei dieser Installation fehlt. Wählen Sie unten einen tragbaren CPU-Download aus, oder installieren Sie auf einem Entwicklungs-Mac den vollständigen Xcode und führen Sie den AI-Helfer-Build aus.",
-    "mlxHelperMissingSelected": "Das ausgewählte MLX-Modell kann nicht ausgeführt werden, da der Metallhelfer fehlt. Wählen Sie einen tragbaren CPU-Download oder installieren Sie den vollständigen Xcode und bauen Sie den KI-Helfer neu auf."
+    "mlxHelperMissingSelected": "Das ausgewählte MLX-Modell kann nicht ausgeführt werden, da der Metallhelfer fehlt. Wählen Sie einen tragbaren CPU-Download oder installieren Sie den vollständigen Xcode und bauen Sie den KI-Helfer neu auf.",
+    "mlxHelperPreparing": "Vorbereiten von Metal Catch up auf diesem Mac...",
+    "mlxHelperRetry": "Metallaufholversuch wiederholen",
+    "mlxHelperReason": {
+      "helperMissing": "Der Metallaufholer ist in dieser Installation nicht bereit. Wählen Sie unten ein tragbares CPU-Modell oder aktualisieren Sie den Mesh-Client, wenn diese Version Metal enthalten sollte. Sie können MLX-Modelle jetzt noch herunterladen und verwenden, nachdem Metal fertig ist.",
+      "xcodeNotFound": "Metal Catch up konnte Xcode auf diesem Mac nicht finden. Öffnen Sie Xcode aus Anwendungen (oder installieren Sie es aus dem App Store), schließen Sie das Setup für den ersten Start ab und tippen Sie dann auf Wiederholen. Verwenden Sie in der Zwischenzeit ein tragbares CPU-Modell.",
+      "xcodeIncomplete": "Xcode ist installiert, aber die Metallwerkzeuge sind noch nicht fertig. Öffnen Sie Xcode aus Anwendungen, schließen Sie alle Einstellungen für den ersten Start ab und tippen Sie dann auf Wiederholen. Verwenden Sie in der Zwischenzeit ein tragbares CPU-Modell.",
+      "buildFailed": "Metal Catch up konnte die Vorbereitung auf diesem Mac nicht beenden. Tippen Sie auf Wiederholen, nachdem Sie Xcode einmal geöffnet haben, oder verwenden Sie ein tragbares CPU-Modell. Das Aktualisieren des Mesh-Clients kann auch hilfreich sein, wenn eine Version Metall enthält."
+    }
   },
   "chatOrder": {
     "title": "Chats sortieren",

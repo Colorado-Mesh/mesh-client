@@ -7992,8 +7992,15 @@
     "unusedDownloadRetired": "Ya no está en el catálogo",
     "fixCatchUpEngine": "Arreglar el motor de recuperación",
     "mlxRecommendedOnMacos": "En este Mac, se recomiendan los modelos Apple Silicon (MLX) para ponerse al día.",
-    "mlxHelperUnavailable": "MLX Catch up necesita el Metal helper, que falta en esta instalación. Elija una descarga de CPU portátil a continuación, o en un Mac de desarrollo instale Xcode completo y ejecute la compilación del ayudante de IA.",
-    "mlxHelperMissingSelected": "El modelo MLX seleccionado no se puede ejecutar porque falta el ayudante de metal. Elija una descarga de CPU portátil o instale Xcode completo y reconstruya el ayudante de IA."
+    "mlxHelperMissingSelected": "El modelo MLX seleccionado no se puede ejecutar porque falta el ayudante de metal. Elija una descarga de CPU portátil o instale Xcode completo y reconstruya el ayudante de IA.",
+    "mlxHelperPreparing": "Preparando el metal Ponte al día con este Mac...",
+    "mlxHelperRetry": "Reintentar la recuperación de metales",
+    "mlxHelperReason": {
+      "helperMissing": "La recuperación de metales no está lista en esta instalación. Elija un modelo de CPU portátil a continuación, o actualice Mesh Client si esta versión debe incluir Metal. Todavía puedes descargar los modelos MLX ahora y usarlos después de que Metal esté listo.",
+      "xcodeNotFound": "Metal Catch up no ha podido encontrar Xcode en este Mac. Abra Xcode desde Aplicaciones (o instálelo desde la App Store), termine cualquier configuración de primer lanzamiento y luego toque Reintentar. Mientras tanto, use un modelo de CPU portátil.",
+      "xcodeIncomplete": "Xcode está instalado, pero sus herramientas de metal aún no están listas. Abra Xcode desde Aplicaciones, termine cualquier configuración de primer lanzamiento y luego toque Reintentar. Mientras tanto, use un modelo de CPU portátil.",
+      "buildFailed": "Metal Catch up no pudo terminar de prepararse en este Mac. Toque Reintentar después de abrir Xcode una vez o use un modelo de CPU portátil. Actualizar el cliente de malla también puede ayudar si una versión incluye Metal."
+    }
   },
   "chatOrder": {
     "title": "Ordenar chats",

@@ -8143,8 +8143,15 @@
     "modelRuntimeMlx": "Recommended on macOS (Apple Silicon / Metal)",
     "modelRuntimeCpu": "CPU (portable)",
     "mlxRecommendedOnMacos": "On this Mac, Apple Silicon (MLX) models are recommended for Catch up.",
-    "mlxHelperUnavailable": "MLX Catch up needs the Metal helper, which is missing from this installation. Choose a portable CPU download below, or on a development Mac install full Xcode and run the AI helper build.",
-    "mlxHelperMissingSelected": "The selected MLX model cannot run because the Metal helper is missing. Choose a portable CPU download, or install full Xcode and rebuild the AI helper.",
+    "mlxHelperPreparing": "Preparing Metal Catch up on this Mac…",
+    "mlxHelperRetry": "Retry Metal Catch up",
+    "mlxHelperReason": {
+      "helperMissing": "Metal Catch up is not ready in this installation. Choose a portable CPU model below, or update Mesh Client if this release should include Metal. You can still download MLX models now and Use them after Metal is ready.",
+      "xcodeNotFound": "Metal Catch up could not find Xcode on this Mac. Open Xcode from Applications (or install it from the App Store), finish any first-launch setup, then tap Retry. Meanwhile use a portable CPU model.",
+      "xcodeIncomplete": "Xcode is installed but its Metal tools are not ready yet. Open Xcode from Applications, finish any first-launch setup, then tap Retry. Meanwhile use a portable CPU model.",
+      "buildFailed": "Metal Catch up could not finish preparing on this Mac. Tap Retry after opening Xcode once, or use a portable CPU model. Updating Mesh Client may also help if a release includes Metal."
+    },
+    "mlxHelperMissingSelected": "The selected MLX model cannot run until Metal Catch up is ready. Choose a portable CPU model, or tap Retry after fixing Metal setup.",
     "unusedDownloads": "Unused downloads",
     "unusedDownloadsHint": "These models are no longer in the catalog (for example after an upgrade) but still use disk space. Remove them if you do not need them.",
     "unusedDownloadRetired": "No longer in catalog",

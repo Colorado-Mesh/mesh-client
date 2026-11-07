@@ -8124,8 +8124,15 @@
     "unusedDownloadRetired": "Nie ma już w katalogu",
     "fixCatchUpEngine": "Napraw silnik nadrabiania zaległości",
     "mlxRecommendedOnMacos": "Na tym komputerze Mac zalecane są modele Apple Silicon (MLX) do nadrabiania zaległości.",
-    "mlxHelperUnavailable": "MLX Catch up potrzebuje Metalowego pomocnika, którego brakuje w tej instalacji. Wybierz przenośny procesor do pobrania poniżej lub na komputerze Mac zainstaluj pełny Xcode i uruchom kompilację pomocniczą AI.",
-    "mlxHelperMissingSelected": "Wybrany model MLX nie może zostać uruchomiony, ponieważ brakuje Metalowego pomocnika. Wybierz przenośny procesor do pobrania lub zainstaluj pełny Xcode i odbuduj pomocnika sztucznej inteligencji."
+    "mlxHelperMissingSelected": "Wybrany model MLX nie może zostać uruchomiony, ponieważ brakuje Metalowego pomocnika. Wybierz przenośny procesor do pobrania lub zainstaluj pełny Xcode i odbuduj pomocnika sztucznej inteligencji.",
+    "mlxHelperPreparing": "Przygotowywanie metalowego nadrobienia zaległości na tym komputerze Mac…",
+    "mlxHelperRetry": "Ponów metalowe nadrabianie zaległości",
+    "mlxHelperReason": {
+      "helperMissing": "Metalowe nadrabianie zaległości nie jest gotowe w tej instalacji. Wybierz poniżej model przenośnego procesora lub zaktualizuj Mesh Client, jeśli ta wersja powinna zawierać Metal. Nadal możesz pobrać modele MLX i używać ich, gdy Metal będzie gotowy.",
+      "xcodeNotFound": "Metalowe nadrabianie zaległości nie mogło znaleźć Xcode na tym komputerze Mac. Otwórz Xcode z aplikacji (lub zainstaluj go ze sklepu App Store), dokończ konfigurację pierwszego uruchomienia, a następnie naciśnij Ponów. W międzyczasie użyj przenośnego modelu procesora.",
+      "xcodeIncomplete": "Xcode jest zainstalowany, ale jego narzędzia metalowe nie są jeszcze gotowe. Otwórz Xcode z Aplikacji, zakończ konfigurację pierwszego uruchomienia, a następnie stuknij Ponów. W międzyczasie użyj przenośnego modelu procesora.",
+      "buildFailed": "Metalowe nadrabianie zaległości nie mogło zakończyć się na tym Macu. Stuknij Ponów po jednokrotnym otwarciu Xcode lub użyj modelu przenośnego procesora. Aktualizacja Mesh Client może również pomóc, jeśli wydanie zawiera Metal."
+    }
   },
   "chatOrder": {
     "title": "Zmień kolejność czatów",

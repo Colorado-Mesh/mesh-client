@@ -126,13 +126,33 @@ export interface AiProviderStatus {
   /** bundled engine state */
   localEngine: { ready: boolean; modelId: string | null; downloading: boolean };
   /**
-   * True when the staged `mesh-ai-mlx` binary is present (Apple Silicon only).
-   * MLX catalog packs are offered only when this is true.
+   * True when `mesh-ai-mlx` is present and usable (Apple Silicon only).
+   * MLX packs may still list/download when false; select/Catch up stay gated.
    */
   mlxHelperAvailable: boolean;
+  /** Coarse helper lifecycle for AI settings status lines. */
+  mlxHelperStatus: AiMlxHelperStatus;
+  /** Why Metal Catch up is unavailable (when status is `unavailable`). */
+  mlxHelperReason: AiMlxHelperReason | null;
   /** OS-AI engine state (probe result; computed only while enabled / while settings are open) */
   osAi: AiOsAiStatus;
 }
+
+/** UI lifecycle for the optional Apple Silicon Metal helper. */
+export type AiMlxHelperStatus = 'ready' | 'preparing' | 'unavailable' | 'unsupported';
+
+/**
+ * Structured reasons for in-app copy (never CLI/`xcode-select` instructions).
+ * `ready` / `preparing` / `unsupported` mirror status; others explain `unavailable`.
+ */
+export type AiMlxHelperReason =
+  | 'ready'
+  | 'preparing'
+  | 'unsupported'
+  | 'helperMissing'
+  | 'xcodeNotFound'
+  | 'xcodeIncomplete'
+  | 'buildFailed';
 
 export interface AiEndpointConfig {
   engine: AiEngine;
@@ -352,6 +372,8 @@ export interface AiAPI {
   cancelLocalModel: (id: string) => Promise<void>;
   removeLocalModel: (id: string) => Promise<AiModelInfo[]>;
   selectLocalModel: (id: string | null) => Promise<AiProviderStatus>;
+  /** Re-run Metal helper ensure (Apple Silicon); no-op elsewhere. */
+  ensureMlxHelper: () => Promise<AiProviderStatus>;
   summarize: (request: AiSummaryRequest) => Promise<AiActionResult>;
   cancel: (requestId: string) => Promise<void>;
   onSummaryChunk: (cb: (chunk: AiSummaryChunk) => void) => () => void;

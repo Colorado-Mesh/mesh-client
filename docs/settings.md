@@ -54,7 +54,7 @@ One-liners for each **App Settings** collapsible (and the MECP / Translation / A
 | **Appearance**                | Theme, colors, font size, reduce motion, 24-hour time, compact messages                |
 | **Notifications**             | Sound, chat policy, notification tones, operational alerts, RRC unread                 |
 | **Translation**               | Offline packs and optional LibreTranslate                                              |
-| **AI conversation summaries** | Opt-in Catch up engines (off by default)                                               |
+| **AI conversation summaries** | Opt-in Catch up engines (off by default); see [Catch up](ai-catch-up.md)               |
 | **Data Management**           | Export / import-merge database; support bundles for GitHub or developer                |
 | **MECP**                      | Chat buttons, Incident Command station, blocked senders, audit export, bridge          |
 | **Danger Zone**               | Destructive clears (diagnostics, GPS, nodes, messages, MeshCore/Reticulum, everything) |
