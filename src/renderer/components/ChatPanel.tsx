@@ -49,6 +49,7 @@ import { MessageTranslateButton } from '@/renderer/components/chat/MessageTransl
 import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import { useChatOrder } from '@/renderer/hooks/useChatOrder';
 import { useConversationSummary } from '@/renderer/hooks/useConversationSummary';
+import { useDropStaleDividerRowSize } from '@/renderer/hooks/useDropStaleDividerRowSize';
 import {
   type BatchedMessageAnnouncer,
   createBatchedMessageAnnouncer,
@@ -1960,13 +1961,18 @@ function ChatPanel({
     [estimateMessageSize],
   );
 
+  const messageVirtualRowKey = useCallback(
+    (index: number) => getChatMessageVirtualizerKey(filteredMessages[index], index),
+    [filteredMessages],
+  );
+
   const messageVirtualizer = useVirtualizer({
     count: filteredMessages.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: estimateMessageSize,
     measureElement: measureMessageElement,
     overscan: 10,
-    getItemKey: (index) => getChatMessageVirtualizerKey(filteredMessages[index], index),
+    getItemKey: (index) => messageVirtualRowKey(index),
     anchorTo: 'end',
     followOnAppend: true,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
@@ -1979,6 +1985,15 @@ function ChatPanel({
 
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
+
+  useDropStaleDividerRowSize({
+    unreadStartIndex,
+    count: filteredMessages.length,
+    rowKey: messageVirtualRowKey,
+    estimateSize: estimateMessageSize,
+    virtualizerRef: messageVirtualizerRef,
+    containerRef: scrollContainerRef,
+  });
 
   // Global search hit: apply the dialog query, load a missing row, then scroll/flash.
   useEffect(() => {
