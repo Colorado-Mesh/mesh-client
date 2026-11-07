@@ -157,6 +157,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreRepeaterSession.test.ts',
   'src/renderer/lib/meshcoreRoomSavedSecrets.test.ts',
   'src/renderer/lib/meshcoreRoomSession.test.ts',
+  'src/renderer/lib/scheduledBroadcasts/meshcoreRoomEligibility.test.ts',
   'src/renderer/lib/meshcoreRoomSyncStorage.test.ts',
   'src/renderer/lib/meshcoreStoreDedup.test.ts',
   'src/renderer/lib/meshcoreDirectMessageDecode.test.ts',

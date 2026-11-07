@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMeshcoreRoomCredentialRevision } from '@/renderer/hooks/useMeshcoreRoomCredentialRevision';
+import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import {
   formatScheduledBroadcastChannelLabel,
   formatScheduledBroadcastRrcRoomLabel,
@@ -8,6 +10,7 @@ import {
 } from '@/renderer/lib/scheduledBroadcasts/channelLabel';
 import { SCHEDULED_BROADCAST_MAX_TARGETS } from '@/renderer/lib/scheduledBroadcasts/constants';
 import { formatScheduledBroadcastIdentityLegend } from '@/renderer/lib/scheduledBroadcasts/identityLabel';
+import { isScheduledBroadcastMeshcoreRoomEligible } from '@/renderer/lib/scheduledBroadcasts/meshcoreRoomEligibility';
 import { useConnectionStore } from '@/renderer/stores/connectionStore';
 import { useDeviceStore } from '@/renderer/stores/deviceStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
@@ -16,6 +19,7 @@ import { useNodeStore } from '@/renderer/stores/nodeStore';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { ScheduledBroadcastTarget } from '@/shared/scheduledBroadcastTypes';
+import { touch } from '@/shared/touch';
 
 const FALLBACK_CHANNEL_INDEXES = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -79,12 +83,18 @@ export function ScheduledBroadcastTargetPicker({
   const rrcHub = useRrcSessionStore((s) => s.hubDestHash);
   const rrcRooms = useRrcSessionStore((s) => s.rooms);
   const rrcHubs = useRrcHubStore((s) => s.hubs);
+  // Re-filter MeshCore rooms when login/logout or Forget/save password changes eligibility.
+  const roomSessionRevision = useMeshcoreRoomSessionRevision();
+  const roomCredentialRevision = useMeshcoreRoomCredentialRevision();
   const rrcIdentityId = useMemo(
     () => Object.values(identities).find((i) => i.protocol.type === 'reticulum')?.id,
     [identities],
   );
 
   const { candidates, liveUnavailableByIdentity } = useMemo(() => {
+    // Re-read canPost / guest credentials after login/logout or credential set/clear.
+    touch(roomSessionRevision);
+    touch(roomCredentialRevision);
     const list: ScheduledBroadcastTarget[] = [];
     const liveUnavailable = new Map<string, boolean>();
 
@@ -95,7 +105,12 @@ export function ScheduledBroadcastTargetPicker({
       const nodes = nodesByIdentity[identity.id] ?? {};
       const rooms =
         protocolId === 'meshcore'
-          ? Object.values(nodes).filter((n) => n.hwModel === 'Room' && n.publicKeyHex)
+          ? Object.values(nodes).filter(
+              (n) =>
+                n.hwModel === 'Room' &&
+                n.publicKeyHex &&
+                isScheduledBroadcastMeshcoreRoomEligible(n.nodeId),
+            )
           : [];
       const live = liveByProtocol[protocolId];
       const noLive = !live;
@@ -166,6 +181,8 @@ export function ScheduledBroadcastTargetPicker({
     rrcRooms,
     rrcHubs,
     rrcIdentityId,
+    roomSessionRevision,
+    roomCredentialRevision,
     t,
   ]);
 

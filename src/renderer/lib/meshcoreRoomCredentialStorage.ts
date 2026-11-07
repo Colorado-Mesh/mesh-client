@@ -64,4 +64,39 @@ export function meshcoreRoomCredentialSettingForNode(nodeId: number): string {
 export const readMeshcoreRoomCredentialMap = roomCredentialStorage.readMap;
 export const getMeshcoreRoomCredential = roomCredentialStorage.get;
 export const listMeshcoreRoomCredentialNodeIds = roomCredentialStorage.listNodeIds;
-export const setMeshcoreRoomCredential = roomCredentialStorage.set;
+
+type RoomCredentialChangeListener = () => void;
+const roomCredentialChangeListeners = new Set<RoomCredentialChangeListener>();
+
+function notifyMeshcoreRoomCredentialChanged(): void {
+  for (const listener of roomCredentialChangeListeners) {
+    listener();
+  }
+}
+
+/** Subscribe to saved room credential set/clear (including Forget). Returns unsubscribe. */
+export function subscribeMeshcoreRoomCredentialChanges(
+  cb: RoomCredentialChangeListener,
+): () => void {
+  roomCredentialChangeListeners.add(cb);
+  return () => {
+    roomCredentialChangeListeners.delete(cb);
+  };
+}
+
+/**
+ * True when a guest password was intentionally saved for the room (including blank `""`).
+ * Admin-only records (no `guestPassword` key) return false — those cannot drive guest SendLogin.
+ */
+export function meshcoreRoomHasSavedGuestCredential(nodeId: number): boolean {
+  const cred = getMeshcoreRoomCredential(nodeId);
+  return cred != null && Object.prototype.hasOwnProperty.call(cred, 'guestPassword');
+}
+
+export async function setMeshcoreRoomCredential(
+  nodeId: number,
+  cred: MeshcoreRoomStoredCredential | null,
+): Promise<void> {
+  await roomCredentialStorage.set(nodeId, cred);
+  notifyMeshcoreRoomCredentialChanged();
+}
