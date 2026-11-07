@@ -276,6 +276,13 @@ export function upsertMeshcoreChannel(id: IdentityId, ch: MeshcoreChannelEvent):
   });
 }
 
+/** Replace the MeshCore channel list for an identity (runtime → deviceStore sync). */
+export function setMeshcoreChannels(id: IdentityId, channels: MeshcoreChannelEvent[]): void {
+  patch(id, {
+    meshcoreChannels: [...channels].sort((a, b) => a.index - b.index),
+  });
+}
+
 // --- Meshtastic per-port packet buffers ---
 
 const MAX_PORT_BUFFER = 200;

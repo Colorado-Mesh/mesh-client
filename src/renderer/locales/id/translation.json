@@ -8352,6 +8352,9 @@
     "invalidTime": "Enter a valid time.",
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
     "invalidAnchorDate": "Enter a valid biweekly anchor date.",
-    "channelNamed": "{{kind}} {{index}}: {{name}}"
+    "channelNamed": "{{kind}} {{index}}: {{name}}",
+    "identityConnected": "{{name}} (terhubung)",
+    "identityDisconnected": "{{name}} (offline)",
+    "rrcRoomNamed": "{{hub}} — {{room}}"
   }
 }

@@ -7523,6 +7523,9 @@
       "rrcRoom": "RRC room"
     },
     "channelNamed": "{{kind}} {{index}}: {{name}}",
+    "identityConnected": "{{name}} (connected)",
+    "identityDisconnected": "{{name}} (offline)",
+    "rrcRoomNamed": "{{hub}} — {{room}}",
     "airtimeWarning": "Hourly schedules with many targets use a lot of airtime."
   },
   "mecp": {

@@ -8352,6 +8352,9 @@
     "invalidDayOfMonth": "Day of month must be between 1 and 31.",
     "invalidAnchorDate": "Enter a valid biweekly anchor date.",
     "savedTargets": "已保存的目标",
-    "channelNamed": "{{kind}} {{index}} ： {{name}}"
+    "channelNamed": "{{kind}} {{index}} ： {{name}}",
+    "identityConnected": "{{name}} （已连接）",
+    "identityDisconnected": "{{name}} （离线）",
+    "rrcRoomNamed": "{{hub}} — {{room}}"
   }
 }

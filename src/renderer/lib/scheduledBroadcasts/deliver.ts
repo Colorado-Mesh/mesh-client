@@ -39,6 +39,7 @@ import {
   SCHEDULED_BROADCAST_RUN_MAX_MS,
   SCHEDULED_BROADCAST_TARGET_GAP_MS,
 } from './constants';
+import { isScheduledBroadcastIdentityConnected } from './identityLabel';
 import { resolveChannelTargetIndex } from './resolveChannelTarget';
 
 export type ScheduledBroadcastFailReason =
@@ -128,11 +129,7 @@ function defaultGetSenderDisplayName(identityId: IdentityId): string {
 }
 
 function defaultIsIdentityConnected(identityId: IdentityId): boolean {
-  const conn = getConnection(identityId);
-  if (!conn) return false;
-  if (conn.status === 'connected' || conn.status === 'configured') return true;
-  // Meshtastic can send over MQTT alone (sendChatOnIdentity handles the no-handle case).
-  return getIdentity(identityId)?.protocol.type === 'meshtastic' && conn.mqttStatus === 'connected';
+  return isScheduledBroadcastIdentityConnected(identityId);
 }
 
 function defaultGetRrcHubRoomState(hubDestHash: string, room: string): RrcHubRoomState {
