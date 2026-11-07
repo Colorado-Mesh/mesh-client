@@ -983,7 +983,8 @@
       "tooltip": "Kirim berkas atau foto dalam pesan langsung LXMF ini (lampiran asli — bukan rncp). Hingga {{count}} berkas, total {{limitKib}} KiB. Foto diubah ukuran dan metadata dihapus.",
       "transfersAria": "Lampiran sedang dikirim"
     },
-    "sendLater": "Kirim nanti"
+    "sendLater": "Kirim nanti",
+    "sendMenuButton": "Kirim opsi"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

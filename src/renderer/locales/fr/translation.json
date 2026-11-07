@@ -983,7 +983,8 @@
       "tooltip": "Envoyez des fichiers ou une photo dans ce message direct LXMF (pièce jointe native — pas rncp). Jusqu’à {{count}} fichiers, {{limitKib}} Kio au total. Les photos sont redimensionnées et les métadonnées supprimées.",
       "transfersAria": "Pièces jointes en cours d’envoi"
     },
-    "sendLater": "Envoyer plus tard"
+    "sendLater": "Envoyer plus tard",
+    "sendMenuButton": "Envoyer des notifications par courriel"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

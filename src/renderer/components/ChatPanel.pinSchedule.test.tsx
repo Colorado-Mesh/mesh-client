@@ -161,16 +161,16 @@ describe.each<MeshProtocol>(['meshtastic', 'meshcore', 'reticulum'])(
           <ChatPanel {...props(protocol)} />
         </ToastProvider>,
       );
-      const sendLaterChevron = screen.getByRole('button', { name: 'Send later' });
-      expect(sendLaterChevron).toBeEnabled();
-      await user.click(sendLaterChevron);
+      const sendOptions = screen.getByRole('button', { name: 'Send options' });
+      expect(sendOptions).toBeEnabled();
+      await user.click(sendOptions);
       expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeDisabled();
       const composer = (await screen.findAllByRole('textbox')).find(
         (el): el is HTMLTextAreaElement => el.tagName === 'TEXTAREA',
       );
       if (!composer) throw new Error('composer not found');
-      await user.type(composer, 'remind the net');
-      await user.click(screen.getByRole('button', { name: 'Send later' }));
+      // Keep the menu open so Send later re-enables when the draft becomes non-empty.
+      fireEvent.change(composer, { target: { value: 'remind the net' } });
       // fireEvent: portaled menu is off-screen in jsdom (zero button rect).
       fireEvent.click(screen.getByRole('menuitem', { name: 'Send later' }));
       const dialog = await screen.findByRole('dialog', { name: 'Schedule message' });

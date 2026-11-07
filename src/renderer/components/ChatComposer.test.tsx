@@ -65,11 +65,12 @@ vi.mock('react-i18next', () => ({
         'chatPanel.floodScopeOverrideCustomInvalid': 'Enter a valid region hashtag',
         'common.cancel': 'Cancel',
         'chatPanel.sendLater': 'Send later',
+        'chatPanel.sendMenuButton': 'Send options',
         'chatPanel.scheduleSend': 'Schedule send',
         'chatPanel.scheduleSendTitle': 'Schedule message',
         'chatPanel.scheduleSendWhen': 'Send at',
         'chatPanel.scheduleSendHint':
-          'Choose Send later from the Send menu. Scheduled messages are saved on this device.',
+          'Open Send options and choose Send later. Scheduled messages are saved on this device.',
         'chatPanel.scheduleSendConfirm': 'Schedule',
         'chatPanel.scheduleSendPreset15m': 'In 15 minutes',
         'chatPanel.scheduleSendPreset1h': 'In 1 hour',
@@ -2033,29 +2034,61 @@ describe('ChatComposer', () => {
     expect(alert).toHaveTextContent('Nickname is too long (limit 32 bytes).');
   });
 
-  it('opens Schedule message from the Send later menu without sending immediately', async () => {
-    const onSendChunk = vi.fn().mockResolvedValue(undefined);
-    const queueOutbox = vi.fn().mockResolvedValue({ id: 'out-1' });
-    const user = userEvent.setup();
-    render(
-      <ChatComposer
-        protocol="meshtastic"
-        viewKey="ch:0"
-        isConnected
-        allowOutbox
-        allowScheduledSend
-        queueOutbox={queueOutbox}
-        onSendChunk={onSendChunk}
-      />,
-    );
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later please' } });
-    await user.click(screen.getByRole('button', { name: 'Send later' }));
-    // fireEvent: portaled menu is off-screen in jsdom (zero button rect).
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Send later' }));
-    expect(await screen.findByRole('heading', { name: 'Schedule message' })).toBeInTheDocument();
-    expect(onSendChunk).not.toHaveBeenCalled();
-    expect(queueOutbox).not.toHaveBeenCalled();
-  });
+  it.each(['meshtastic', 'reticulum'] as const)(
+    'opens Schedule message from the Send later menu without sending immediately (%s)',
+    async (protocol) => {
+      const onSendChunk = vi.fn().mockResolvedValue(undefined);
+      const queueOutbox = vi.fn().mockResolvedValue({ id: 'out-1' });
+      const user = userEvent.setup();
+      render(
+        <ChatComposer
+          protocol={protocol}
+          viewKey="ch:0"
+          isConnected
+          allowOutbox
+          allowScheduledSend
+          queueOutbox={queueOutbox}
+          onSendChunk={onSendChunk}
+        />,
+      );
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'later please' } });
+      await user.click(screen.getByRole('button', { name: 'Send options' }));
+      // fireEvent: portaled menu is off-screen in jsdom (zero button rect).
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Send later' }));
+      expect(await screen.findByRole('heading', { name: 'Schedule message' })).toBeInTheDocument();
+      expect(onSendChunk).not.toHaveBeenCalled();
+      expect(queueOutbox).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['meshtastic', 'meshcore', 'reticulum'] as const)(
+    'disables Send later until the draft has text (%s)',
+    async (protocol) => {
+      const user = userEvent.setup();
+      render(
+        <ChatComposer
+          protocol={protocol}
+          viewKey="ch:0"
+          isConnected
+          allowOutbox
+          allowScheduledSend
+          showFloodScopeOverride={protocol === 'meshcore'}
+          floodScopePresets={protocol === 'meshcore' ? ['#eu'] : undefined}
+          queueOutbox={vi.fn().mockResolvedValue({ id: 'out-1' })}
+          onSendChunk={vi.fn()}
+        />,
+      );
+      const menuButton =
+        protocol === 'meshcore'
+          ? screen.getByRole('button', { name: 'Change flood scope for this channel' })
+          : screen.getByRole('button', { name: 'Send options' });
+      await user.click(menuButton);
+      expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeDisabled();
+      // Keep the menu open so the menuitem re-renders when the draft becomes non-empty.
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hello' } });
+      expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeEnabled();
+    },
+  );
 
   it('still sends immediately from the main Send control when schedule is enabled', async () => {
     const onSendChunk = vi.fn().mockResolvedValue(undefined);
@@ -2095,7 +2128,10 @@ describe('ChatComposer', () => {
     );
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'both' } });
     await user.click(screen.getByRole('button', { name: 'Change flood scope for this channel' }));
-    expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Send later' })).toBeEnabled();
     expect(screen.getByRole('option', { name: 'Default scope' })).toBeInTheDocument();
+    // fireEvent: portaled menu is off-screen in jsdom (zero button rect).
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Send later' }));
+    expect(await screen.findByRole('heading', { name: 'Schedule message' })).toBeInTheDocument();
   });
 });

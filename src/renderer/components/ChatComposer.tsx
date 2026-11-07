@@ -318,6 +318,7 @@ export function ChatComposer({
   const counterLiveId = useId();
   const floodScopeListboxId = useId();
   const floodScopeCustomInputId = useId();
+  const sendMenuPanelId = useId();
   const memoPhase = useReticulumVoiceMemoStore((s) => s.phase);
   const memoRecordingActive =
     memoPhase === 'recording' ||
@@ -1421,13 +1422,14 @@ export function ChatComposer({
 
   const scheduleSendAllowed = Boolean(allowScheduledSend && queueOutboxProp);
   const showSendSplit = showFloodScopeOverride || scheduleSendAllowed;
+  // Same for Meshtastic, MeshCore, and Reticulum: Send later needs a non-empty sendable draft.
   const scheduleSendDisabled =
     disabled || sending || !input.trim() || inputChunks === null || (!isConnected && !allowOutbox);
   const sendMenuChevronAria = showFloodScopeOverride
     ? floodScopeOverrideIndicator
       ? `${t('chatPanel.floodScopeOverrideMenuButton')}: ${floodScopeOverrideIndicator}`
       : t('chatPanel.floodScopeOverrideMenuButton')
-    : t('chatPanel.sendLater');
+    : t('chatPanel.sendMenuButton');
   const sendMenuChevronTitle = showFloodScopeOverride
     ? t('chatPanel.floodScopeOverrideHint')
     : t('chatPanel.scheduleSendHint');
@@ -1759,7 +1761,13 @@ export function ChatComposer({
                 aria-label={sendMenuChevronAria}
                 aria-haspopup={showFloodScopeOverride ? 'listbox' : 'menu'}
                 aria-expanded={floodScopeMenuOpen}
-                aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
+                aria-controls={
+                  floodScopeMenuOpen
+                    ? showFloodScopeOverride
+                      ? floodScopeListboxId
+                      : sendMenuPanelId
+                    : undefined
+                }
                 title={floodScopeMenuOpen ? undefined : sendMenuChevronTitle}
                 {...floodScopeChevronTooltipProps}
                 className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] min-w-0 items-center gap-0.5`}
@@ -1791,6 +1799,7 @@ export function ChatComposer({
                 ? createPortal(
                     <div
                       ref={floodScopeMenuRef}
+                      id={showFloodScopeOverride ? undefined : sendMenuPanelId}
                       style={{
                         position: 'fixed',
                         bottom: floodScopeMenuPos.bottom,

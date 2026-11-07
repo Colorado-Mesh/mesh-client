@@ -1002,7 +1002,8 @@
       "tooltip": "Odesílejte soubory nebo fotografii v této přímé zprávě LXMF (nativní příloha — ne rncp). Až {{count}} souborů, celkem {{limitKib}} KiB. Fotografie se zmenší a odstraní se metadata.",
       "transfersAria": "Odesílané přílohy"
     },
-    "sendLater": "Odeslat později..."
+    "sendLater": "Odeslat později...",
+    "sendMenuButton": "Možnosti odeslání"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

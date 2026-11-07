@@ -983,7 +983,8 @@
       "tooltip": "Envie arquivos ou uma foto nesta mensagem direta LXMF (anexo nativo — não rncp). Até {{count}} arquivos, {{limitKib}} KiB no total. Fotos são redimensionadas e metadados removidos.",
       "transfersAria": "Anexos sendo enviados"
     },
-    "sendLater": "Enviar mais tarde"
+    "sendLater": "Enviar mais tarde",
+    "sendMenuButton": "Formato de envio"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
