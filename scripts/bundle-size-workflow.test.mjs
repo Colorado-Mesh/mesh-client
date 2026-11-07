@@ -156,9 +156,17 @@ describe('always-on bundle workflow', () => {
             `export const AI_LOCAL_MODELS = ${JSON.stringify('x'.repeat(1_100))};\n`,
           );
           fs.mkdirSync(path.join(fixture, 'src/main/ai'), { recursive: true });
+          // Fixed ASCII pad only — do not embed JSON.stringify into generated source
+          // (CodeQL js/bad-code-sanitization).
+          const nativeRuntimePad = 'x'.repeat(1_100);
           fs.writeFileSync(
             path.join(fixture, 'src/main/ai/nativeRuntime.ts'),
-            `export function ensureMlxHelper() { return ${JSON.stringify('x'.repeat(1_100))}; }\n`,
+            [
+              'export function ensureMlxHelper() {',
+              `  return '${nativeRuntimePad}';`,
+              '}',
+              '',
+            ].join('\n'),
           );
         }
 
