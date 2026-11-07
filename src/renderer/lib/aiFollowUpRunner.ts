@@ -4,6 +4,7 @@ import type { AiFollowUpTurnState } from '@/renderer/stores/aiSummaryStore';
 import { aiReady, useAiSummaryStore } from '@/renderer/stores/aiSummaryStore';
 import type { AiSummaryErrorReason, AiSummaryRequest } from '@/shared/ai-types';
 import {
+  AI_MAX_FOLLOW_UP_ANSWER_CHARS,
   AI_MAX_FOLLOW_UP_QUESTION_CHARS,
   AI_MAX_FOLLOW_UP_SUMMARY_CHARS,
   AI_MAX_FOLLOW_UP_TURNS,
@@ -54,7 +55,10 @@ export async function runAskFollowUp(
   const priorTurns = (entry.followUps ?? [])
     .filter((turn) => !turn.streaming && !turn.error && turn.answer.trim())
     .slice(-AI_MAX_FOLLOW_UP_TURNS)
-    .map((turn) => ({ question: turn.question, answer: turn.answer }));
+    .map((turn) => ({
+      question: turn.question,
+      answer: turn.answer.slice(0, AI_MAX_FOLLOW_UP_ANSWER_CHARS),
+    }));
   const selection = selectFollowUpContext(
     trimmed,
     entry.text,
@@ -98,9 +102,9 @@ export async function runAskFollowUp(
   });
   if (previous) deps.patchFollowUp(key, turnId, { queued: true });
 
+  let signal: AbortSignal = controller.signal;
   const abortReason = (): AiSummaryErrorReason =>
-    controller.signal.reason instanceof DOMException &&
-    controller.signal.reason.name === 'TimeoutError'
+    signal.reason instanceof DOMException && signal.reason.name === 'TimeoutError'
       ? 'timeout'
       : 'cancelled';
   let rejectAbort!: () => void;
@@ -119,7 +123,6 @@ export async function runAskFollowUp(
     /* catch-no-log-ok cancellation is handled by the turn state */
   });
 
-  let signal: AbortSignal = controller.signal;
   try {
     if (previous) await Promise.race([previous, aborted]);
     controller.signal.throwIfAborted();
@@ -130,7 +133,7 @@ export async function runAskFollowUp(
       AbortSignal.timeout(aiSummaryTimeoutMs(status.engine, status.timeoutSeconds)),
     ]);
     const activePassIds = new Set<string>();
-    await executePass(
+    const pass = await executePass(
       request,
       signal,
       null,
@@ -178,6 +181,7 @@ export async function runAskFollowUp(
       aiSummaryTimeoutMs(status.engine, status.timeoutSeconds),
       { requireFullCoverage: false },
     );
+    const limited = selection.limited || pass.truncated;
     const current = useAiSummaryStore
       .getState()
       .summaries[key]?.followUps?.find((turn) => turn.id === turnId);
@@ -185,9 +189,9 @@ export async function runAskFollowUp(
       deps.patchFollowUp(key, turnId, {
         streaming: false,
         phase: undefined,
-        truncated: selection.limited,
+        truncated: limited,
       });
-    else if (current && !current.error && selection.limited)
+    else if (current && !current.error && limited)
       deps.patchFollowUp(key, turnId, { truncated: true });
   } catch (error) {
     // catch-no-log-ok never retain error details containing conversation content

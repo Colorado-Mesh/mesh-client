@@ -386,6 +386,7 @@ export function dismissSummary(key: string): void {
   });
 }
 
+/** Abort one follow-up turn without clearing the Catch up summary text. */
 export function cancelFollowUp(key: string, id: string): void {
   const controller = followUpControllers.get(id);
   if (!controller) return;
@@ -401,6 +402,7 @@ export function cancelFollowUp(key: string, id: string): void {
     // catch-no-log-ok local state already reflects cancellation
   });
 }
+/** Map thrown/abort failures to `AiSummaryErrorReason` without retaining conversation text. */
 function mapAiError(
   error: unknown,
   signal: AbortSignal,
@@ -725,6 +727,7 @@ export async function runSummary(
   }
 }
 
+/** Queue a follow-up about a completed Catch up (lazy-loads the heavy runner). */
 export async function askFollowUp(key: string, question: string): Promise<void> {
   const { runAskFollowUp } = await import('@/renderer/lib/aiFollowUpRunner');
   await runAskFollowUp(key, question, {

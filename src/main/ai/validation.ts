@@ -80,6 +80,7 @@ export function validateAiConfig(value: unknown): AiEndpointConfig {
   };
 }
 
+/** Validate and sanitize a follow-up payload; rejects jobId / non-final mode at the caller. */
 function validateFollowUp(value: unknown): AiSummaryFollowUp {
   if (
     !record(value) ||

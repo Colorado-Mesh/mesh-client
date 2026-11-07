@@ -26,6 +26,11 @@ export interface AiFollowUpPromptInput {
   maxPromptBytes?: number;
 }
 
+/**
+ * Build a follow-up Q&A prompt from the Catch up summary, prior turns, and
+ * retained source context. Degrades prior turns → summary → context under budget;
+ * returns `fits: false` when even the framing cannot fit.
+ */
 export function buildAiFollowUpPrompt(
   input: AiFollowUpPromptInput,
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,

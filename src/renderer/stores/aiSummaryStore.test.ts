@@ -758,6 +758,56 @@ describe('AI follow-up questions', () => {
     );
   });
 
+  it('caps prior follow-up answers before sending them over IPC', async () => {
+    const pending = runSummary('chat', request);
+    await waitFor(() => {
+      expect(api.summarize).toHaveBeenCalled();
+    });
+    finish('id');
+    await pending;
+    useAiSummaryStore.setState((state) => {
+      const current = state.summaries.chat;
+      if (!current) return {};
+      return {
+        summaries: {
+          ...state.summaries,
+          chat: {
+            ...current,
+            followUps: [
+              {
+                id: 'prior',
+                question: 'Who?',
+                answer: 'a'.repeat(2500),
+                streaming: false,
+              },
+            ],
+          },
+        },
+      };
+    });
+    let followUpId = '';
+    vi.mocked(api.summarize).mockImplementation((value) => {
+      followUpId = value.requestId;
+      return Promise.resolve({ ok: true, summaryInput: { messageCount: 1, truncated: false } });
+    });
+    const asking = askFollowUp('chat', 'Next?');
+    await waitFor(() => {
+      expect(followUpId).toBeTruthy();
+    });
+    expect(
+      vi.mocked(api.summarize).mock.calls.at(-1)?.[0].followUp?.turns?.[0]?.answer,
+    ).toHaveLength(2000);
+    done({
+      requestId: followUpId,
+      text: 'Ok',
+      provider: 'test',
+      model: 'test',
+      messageCount: 1,
+      truncated: false,
+    });
+    await asking;
+  });
+
   it('cancels a follow-up without clearing the summary', async () => {
     const pending = runSummary('chat', request);
     await waitFor(() => {

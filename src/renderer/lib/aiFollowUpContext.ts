@@ -98,6 +98,10 @@ export function selectFollowUpContext(
   };
 }
 
+/**
+ * Score messages by question + summary tokens (summary weighted lower), always
+ * keep the newest 8, take the top `max`, then return chronological unique rows.
+ */
 export function selectRelevantMessages(
   question: string,
   summary: string,

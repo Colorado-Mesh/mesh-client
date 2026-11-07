@@ -52,7 +52,10 @@ function formatDigestLine(message: AiSummaryMessage): string {
   return JSON.stringify(message.body);
 }
 
-/** Newest-first inclusion under char and UTF-8 budgets; returns chronological lines. */
+/**
+ * Include transcript/digest lines newest-first under char and UTF-8 budgets,
+ * then return them in chronological order for the prompt body.
+ */
 export function selectContextLines(
   messages: AiSummaryMessage[],
   options: {
